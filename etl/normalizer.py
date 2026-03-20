@@ -57,7 +57,12 @@ class DataNormalizer:
                     "type": "county",
                 },
                 "taita taveta": {
-                    "canonical_name": "Taita Taveta County",
+                    "canonical_name": "Taita-Taveta County",
+                    "code": "006",
+                    "type": "county",
+                },
+                "taita-taveta": {
+                    "canonical_name": "Taita-Taveta County",
                     "code": "006",
                     "type": "county",
                 },
@@ -92,7 +97,12 @@ class DataNormalizer:
                     "type": "county",
                 },
                 "tharaka nithi": {
-                    "canonical_name": "Tharaka Nithi County",
+                    "canonical_name": "Tharaka-Nithi County",
+                    "code": "013",
+                    "type": "county",
+                },
+                "tharaka-nithi": {
+                    "canonical_name": "Tharaka-Nithi County",
                     "code": "013",
                     "type": "county",
                 },
@@ -132,7 +142,17 @@ class DataNormalizer:
                     "type": "county",
                 },
                 "muranga": {
-                    "canonical_name": "Muranga County",
+                    "canonical_name": "Murang'a County",
+                    "code": "021",
+                    "type": "county",
+                },
+                "murang'a": {
+                    "canonical_name": "Murang'a County",
+                    "code": "021",
+                    "type": "county",
+                },
+                "murang\u2019a": {
+                    "canonical_name": "Murang'a County",
                     "code": "021",
                     "type": "county",
                 },
@@ -157,7 +177,12 @@ class DataNormalizer:
                     "type": "county",
                 },
                 "trans nzoia": {
-                    "canonical_name": "Trans Nzoia County",
+                    "canonical_name": "Trans-Nzoia County",
+                    "code": "026",
+                    "type": "county",
+                },
+                "trans-nzoia": {
+                    "canonical_name": "Trans-Nzoia County",
                     "code": "026",
                     "type": "county",
                 },
@@ -167,7 +192,12 @@ class DataNormalizer:
                     "type": "county",
                 },
                 "elgeyo marakwet": {
-                    "canonical_name": "Elgeyo Marakwet County",
+                    "canonical_name": "Elgeyo-Marakwet County",
+                    "code": "028",
+                    "type": "county",
+                },
+                "elgeyo-marakwet": {
+                    "canonical_name": "Elgeyo-Marakwet County",
                     "code": "028",
                     "type": "county",
                 },
@@ -242,6 +272,11 @@ class DataNormalizer:
                     "type": "county",
                 },
                 "homa bay": {
+                    "canonical_name": "Homa Bay County",
+                    "code": "043",
+                    "type": "county",
+                },
+                "homabay": {
                     "canonical_name": "Homa Bay County",
                     "code": "043",
                     "type": "county",
@@ -359,10 +394,32 @@ class DataNormalizer:
 
         raw_name_clean = raw_name.strip().lower()
 
-        # Try exact matches first
+        # Build candidate lookup forms: original, stripped " county", punctuation-normalized
+        candidates = [raw_name_clean]
+        # Strip trailing " county" suffix
+        stripped = re.sub(r"\s+county$", "", raw_name_clean)
+        if stripped != raw_name_clean:
+            candidates.append(stripped)
+        # Replace hyphens with spaces
+        dehyphenated = raw_name_clean.replace("-", " ")
+        if dehyphenated not in candidates:
+            candidates.append(dehyphenated)
+        # Strip " county" from dehyphenated too
+        dehyphenated_stripped = re.sub(r"\s+county$", "", dehyphenated)
+        if dehyphenated_stripped not in candidates:
+            candidates.append(dehyphenated_stripped)
+        # Remove apostrophes / smart quotes
+        no_apos = re.sub(r"[\u2018\u2019\u0027\u0060\u00B4]", "", raw_name_clean)
+        if no_apos not in candidates:
+            candidates.append(no_apos)
+        no_apos_stripped = re.sub(r"\s+county$", "", no_apos)
+        if no_apos_stripped not in candidates:
+            candidates.append(no_apos_stripped)
+
+        # Try exact matches first (against all candidate forms)
         for category, entities in self.entity_mappings.items():
             for key, entity_info in entities.items():
-                if key == raw_name_clean:
+                if key in candidates:
                     return {
                         "canonical_name": entity_info["canonical_name"],
                         "type": entity_info["type"],
