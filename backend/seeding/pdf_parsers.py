@@ -17,8 +17,14 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-import pdfplumber
-from pdfplumber.page import Page
+try:
+    import pdfplumber
+    from pdfplumber.page import Page
+    _PDFPLUMBER_AVAILABLE = True
+except ImportError:  # pragma: no cover
+    pdfplumber = None  # type: ignore[assignment]
+    Page = object  # type: ignore[assignment,misc]
+    _PDFPLUMBER_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +73,15 @@ class TableNotFoundError(PDFParserError):
     pass
 
 
+def _require_pdfplumber() -> None:
+    """Raise ImportError with helpful message if pdfplumber is not installed."""
+    if not _PDFPLUMBER_AVAILABLE:
+        raise ImportError(
+            "pdfplumber is required for PDF parsing. "
+            "Install it with: pip install pdfplumber"
+        )
+
+
 def extract_all_tables(pdf_path: Path) -> List[ExtractedTable]:
     """
     Extract all tables from a PDF document.
@@ -81,6 +96,7 @@ def extract_all_tables(pdf_path: Path) -> List[ExtractedTable]:
         PDFNotFoundError: If PDF file does not exist
         PDFCorruptedError: If PDF cannot be opened
     """
+    _require_pdfplumber()
     if not pdf_path.exists():
         raise PDFNotFoundError(f"PDF file not found: {pdf_path}")
 
@@ -144,6 +160,7 @@ def extract_text_from_pdf(pdf_path: Path, pages: Optional[List[int]] = None) -> 
         PDFNotFoundError: If PDF file does not exist
         PDFCorruptedError: If PDF cannot be opened
     """
+    _require_pdfplumber()
     if not pdf_path.exists():
         raise PDFNotFoundError(f"PDF file not found: {pdf_path}")
 
