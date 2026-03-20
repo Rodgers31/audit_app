@@ -73,6 +73,15 @@ class PopulationResponse(BaseModel):
         from_attributes = True
 
 
+class PopulationLatestResponse(BaseModel):
+    """Lightweight response for the latest national population figure."""
+
+    population: int
+    year: int
+    source: Optional[str] = None
+    updated_at: Optional[str] = None
+
+
 class GDPResponse(BaseModel):
     """GDP/GCP data response."""
 
@@ -182,6 +191,45 @@ def get_entity_info(entity_id: Optional[int], db: Session) -> tuple:
 
 
 # ===== Population Endpoints =====
+
+
+@router.get(
+    "/population/latest",
+    response_model=PopulationLatestResponse,
+    summary="Get Latest National Population",
+)
+async def get_population_latest(db: Session = Depends(get_db)):
+    """Return the most recent national-level population record."""
+    if not DATABASE_AVAILABLE or db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    try:
+        row = (
+            db.query(PopulationData)
+            .filter(PopulationData.entity_id.is_(None))
+            .order_by(desc(PopulationData.year))
+            .first()
+        )
+    except OperationalError as e:
+        logger.error("Database connection error on /population/latest: %s", e)
+        raise HTTPException(status_code=503, detail="Database unavailable")
+    except SQLAlchemyError as e:
+        logger.error("Database error on /population/latest: %s", e)
+        raise HTTPException(status_code=500, detail="Database query failed")
+
+    if not row:
+        raise HTTPException(status_code=404, detail="No population data found")
+
+    source_name = None
+    if row.source_document:
+        source_name = row.source_document.title
+
+    return PopulationLatestResponse(
+        population=row.total_population,
+        year=row.year,
+        source=source_name or "KNBS",
+        updated_at=row.created_at.isoformat() if row.created_at else None,
+    )
 
 
 @router.get(

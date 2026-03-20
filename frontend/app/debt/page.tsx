@@ -27,7 +27,8 @@ import {
   TrendingUp,
   Users,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { apiClient } from '@/lib/api/axios';
 import {
   Area,
   AreaChart,
@@ -181,6 +182,14 @@ export default function NationalDebtPage() {
 
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [loanSort, setLoanSort] = useState<'outstanding' | 'rate' | 'service'>('outstanding');
+  const [fetchedPopulation, setFetchedPopulation] = useState<number | null>(null);
+
+  useEffect(() => {
+    apiClient
+      .get('/economic/population/latest')
+      .then((res) => setFetchedPopulation(res.data?.population ?? null))
+      .catch(() => setFetchedPopulation(null));
+  }, []);
 
   // Derived data
   const d = useMemo(() => {
@@ -191,8 +200,7 @@ export default function NationalDebtPage() {
     const summary = api.summary || {};
     const categories = api.categories || {};
     const sustainability = api.debt_sustainability || {};
-    // Kenya's 2024 census estimate; TODO: fetch from /api/v1/population when available
-    const population = api.population || 57_500_000;
+    const population = fetchedPopulation || api.population || 57_500_000;
     const perCapita = totalDebt > 0 ? totalDebt / population : 0;
 
     return {
@@ -210,7 +218,7 @@ export default function NationalDebtPage() {
       externalPct: summary.external_percentage || 0,
       domesticPct: summary.domestic_percentage || 0,
     };
-  }, [overview]);
+  }, [overview, fetchedPopulation]);
 
   const loans = useMemo(() => {
     if (!loansResp?.loans) return [];
