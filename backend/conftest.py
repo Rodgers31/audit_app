@@ -17,26 +17,12 @@ from sqlalchemy import Text, create_engine, event
 from sqlalchemy.orm import sessionmaker
 
 # ── path setup ──────────────────────────────────────────────────────────
+# Only add BACKEND_DIR — do NOT add ROOT_DIR, as the repo root contains a
+# stub `seeding/` package that shadows `backend/seeding/` and breaks imports.
 BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(BACKEND_DIR)
-for p in (ROOT_DIR, BACKEND_DIR):
-    if p not in sys.path:
-        sys.path.insert(0, p)
-
-# ── graceful collection for optional-dependency tests ───────────────────
-# If seeding.pdf_parsers cannot be imported (e.g. pdfplumber import chain
-# issue), skip that test module rather than aborting collection entirely.
-collect_ignore_glob = []
-try:
-    import seeding.pdf_parsers  # noqa: F401
-except Exception as _pdf_import_err:
-    import warnings
-    warnings.warn(
-        f"seeding.pdf_parsers unavailable ({_pdf_import_err!r}), "
-        "skipping tests/test_pdf_parsers.py",
-        stacklevel=1,
-    )
-    collect_ignore_glob.append("tests/test_pdf_parsers.py")
+if BACKEND_DIR not in sys.path:
+    sys.path.insert(0, BACKEND_DIR)
 
 # ── JSONB → TEXT compile shim (must be registered before metadata.create_all) ─
 from sqlalchemy.dialects.postgresql import JSONB
