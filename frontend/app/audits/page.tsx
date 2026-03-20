@@ -1,5 +1,6 @@
 'use client';
 
+import DataFreshnessBadge from '@/components/DataFreshnessBadge';
 import PageShell from '@/components/layout/PageShell';
 import type { FindingsFilters, WorstCounty } from '@/lib/api/audits';
 import {
@@ -15,6 +16,8 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ExternalLink,
+  FileText,
   FileWarning,
   Loader2,
   Search,
@@ -588,7 +591,9 @@ export default function AuditFindingsPage() {
                     <th className='py-2 pr-3 font-semibold text-gov-dark/70 text-right'>Amount</th>
                     <th className='py-2 pr-3 font-semibold text-gov-dark/70'>Severity</th>
                     <th className='py-2 pr-3 font-semibold text-gov-dark/70'>Status</th>
-                    <th className='py-2 font-semibold text-gov-dark/70'>Opinion</th>
+                    <th className='py-2 pr-3 font-semibold text-gov-dark/70'>Opinion</th>
+                    <th className='py-2 pr-3 font-semibold text-gov-dark/70 text-center w-10'>Source</th>
+                    <th className='py-2 font-semibold text-gov-dark/70 text-center w-8' title='Data confidence'>DQ</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -625,7 +630,7 @@ export default function AuditFindingsPage() {
                       <td className='py-2.5 pr-3'>
                         <StatusBadge status={f.status} />
                       </td>
-                      <td className='py-2.5'>
+                      <td className='py-2.5 pr-3'>
                         {f.audit_opinion ? (
                           <span
                             className='text-xs font-medium'
@@ -635,6 +640,23 @@ export default function AuditFindingsPage() {
                         ) : (
                           '—'
                         )}
+                      </td>
+                      <td className='py-2.5 pr-3 text-center'>
+                        {f.source_document_url ? (
+                          <a
+                            href={f.source_document_url}
+                            target='_blank'
+                            rel='noopener noreferrer'
+                            className='inline-flex items-center text-gov-sage hover:text-gov-forest transition-colors'
+                            title='View OAG source report'>
+                            <FileText className='w-4 h-4' />
+                          </a>
+                        ) : (
+                          <span className='text-gov-dark/20'>—</span>
+                        )}
+                      </td>
+                      <td className='py-2.5 text-center'>
+                        <ConfidenceIndicator score={f.confidence_score} />
                       </td>
                     </tr>
                   ))}
@@ -671,6 +693,9 @@ export default function AuditFindingsPage() {
           </div>
         )}
       </Section>
+
+      {/* Data freshness badge */}
+      <DataFreshnessBadge sources="OAG" className="mt-6 justify-center" />
     </PageShell>
   );
 }
@@ -777,6 +802,29 @@ function StatusBadge({ status }: { status: string | null }) {
   return (
     <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${styles[status] || 'bg-gray-100 text-gray-600'}`}>
       {status}
+    </span>
+  );
+}
+
+function ConfidenceIndicator({ score }: { score: number | null }) {
+  if (score === null || score > 0.8) {
+    // High confidence or unknown — no indicator needed
+    return <span className='text-gov-dark/15'>—</span>;
+  }
+  if (score >= 0.5) {
+    return (
+      <span
+        className='cursor-help text-amber-500'
+        title='Medium confidence — data extracted via heuristic parsing'>
+        &#9888;&#65039;
+      </span>
+    );
+  }
+  return (
+    <span
+      className='cursor-help text-red-500'
+      title='Low confidence — verify against source document'>
+      &#128308;
     </span>
   );
 }

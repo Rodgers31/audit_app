@@ -1,5 +1,6 @@
 'use client';
 
+import DataFreshnessBadge from '@/components/DataFreshnessBadge';
 import { apiClient } from '@/lib/api/axios';
 import { useCounties } from '@/lib/react-query';
 import { County } from '@/types';
@@ -1739,6 +1740,8 @@ export default function CountyExplorerPage() {
             </div>
           </div>
         </div>
+
+        <DataFreshnessBadge sources="COB" className="mt-4 justify-center" />
 
         {/* Spacer so bottom scenic image peeks through */}
         <div className='h-24' />

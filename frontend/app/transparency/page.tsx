@@ -1,5 +1,6 @@
 'use client';
 
+import DataFreshnessBadge from '@/components/DataFreshnessBadge';
 import FollowTheMoney, { YearSelector } from '@/components/FollowTheMoney';
 import PageShell from '@/components/layout/PageShell';
 import { useCounties } from '@/lib/react-query';
@@ -328,6 +329,8 @@ export default function TransparencyPage() {
           )}
         </div>
       </Section>
+
+      <DataFreshnessBadge sources="COB/Treasury" className="mt-6 justify-center" />
     </PageShell>
   );
 }

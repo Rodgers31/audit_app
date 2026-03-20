@@ -1,5 +1,6 @@
 'use client';
 
+import DataFreshnessBadge from '@/components/DataFreshnessBadge';
 import PageShell from '@/components/layout/PageShell';
 import PDFExportButton from '@/components/PDFExportButton';
 import {
@@ -1766,6 +1767,7 @@ export default function NationalDebtPage() {
         Controller of Budget Reports, and the Budget Policy Statement. Last updated:{' '}
         {timelineResp?.last_updated || fiscalResp?.last_updated || '—'}
       </div>
+      <DataFreshnessBadge sources="CBK/Treasury" className="mt-2 justify-center" />
     </PageShell>
   );
 }

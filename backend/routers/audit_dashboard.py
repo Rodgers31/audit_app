@@ -24,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 try:
     from database import get_db
-    from models import Audit, Entity, EntityType
+    from models import Audit, Entity, EntityType, Extraction, SourceDocument
 
     DATABASE_AVAILABLE = True
 except Exception:
@@ -99,6 +99,8 @@ class FindingDetail(BaseModel):
     follow_up_status: Optional[str] = None
     external_reference: Optional[str] = None
     management_response: Optional[str] = None
+    source_document_url: Optional[str] = None
+    confidence_score: Optional[float] = None
 
 
 class FindingsListResponse(BaseModel):
@@ -382,8 +384,29 @@ async def get_audit_findings(
     """Return paginated list of audit findings with filters."""
     _check_db(db)
     try:
-        query = db.query(Audit, Entity.canonical_name).join(
-            Entity, Audit.entity_id == Entity.id
+        # Subquery: average confidence per source_document from extractions
+        confidence_sub = (
+            db.query(
+                Extraction.source_document_id,
+                func.avg(Extraction.confidence).label("avg_confidence"),
+            )
+            .group_by(Extraction.source_document_id)
+            .subquery()
+        )
+
+        query = (
+            db.query(
+                Audit,
+                Entity.canonical_name,
+                SourceDocument.url.label("doc_url"),
+                confidence_sub.c.avg_confidence,
+            )
+            .join(Entity, Audit.entity_id == Entity.id)
+            .outerjoin(SourceDocument, Audit.source_document_id == SourceDocument.id)
+            .outerjoin(
+                confidence_sub,
+                Audit.source_document_id == confidence_sub.c.source_document_id,
+            )
         )
 
         if county_id is not None:
@@ -403,26 +426,40 @@ async def get_audit_findings(
         offset = (page - 1) * limit
         rows = query.order_by(desc(Audit.audit_year), desc(Audit.id)).offset(offset).limit(limit).all()
 
-        items = [
-            FindingDetail(
-                id=a.id,
-                entity_id=a.entity_id,
-                county_name=county_name,
-                period_id=a.period_id,
-                finding_text=a.finding_text,
-                severity=a.severity.value if hasattr(a.severity, "value") else str(a.severity),
-                recommended_action=a.recommended_action,
-                query_type=a.query_type,
-                amount=float(a.amount) if a.amount is not None else None,
-                status=a.status,
-                audit_opinion=a.audit_opinion,
-                audit_year=a.audit_year,
-                follow_up_status=a.follow_up_status,
-                external_reference=a.external_reference,
-                management_response=a.management_response,
+        items = []
+        for a, county_name, doc_url, avg_conf in rows:
+            # Build source document URL: prefer external_reference, then doc URL
+            source_url = None
+            if a.external_reference:
+                ref = a.external_reference.strip()
+                if ref.startswith("http"):
+                    source_url = ref
+                else:
+                    source_url = f"https://www.oagkenya.go.ke/wp-content/uploads/{ref}"
+            elif doc_url:
+                source_url = doc_url
+
+            items.append(
+                FindingDetail(
+                    id=a.id,
+                    entity_id=a.entity_id,
+                    county_name=county_name,
+                    period_id=a.period_id,
+                    finding_text=a.finding_text,
+                    severity=a.severity.value if hasattr(a.severity, "value") else str(a.severity),
+                    recommended_action=a.recommended_action,
+                    query_type=a.query_type,
+                    amount=float(a.amount) if a.amount is not None else None,
+                    status=a.status,
+                    audit_opinion=a.audit_opinion,
+                    audit_year=a.audit_year,
+                    follow_up_status=a.follow_up_status,
+                    external_reference=a.external_reference,
+                    management_response=a.management_response,
+                    source_document_url=source_url,
+                    confidence_score=float(avg_conf) if avg_conf is not None else None,
+                )
             )
-            for a, county_name in rows
-        ]
 
         return FindingsListResponse(
             items=items,

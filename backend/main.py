@@ -741,6 +741,14 @@ try:
 except Exception as e:
     logger.warning(f"Could not register money flow router: {e}")
 
+try:
+    from routers.data_freshness import router as data_freshness_router
+
+    app.include_router(data_freshness_router)
+    logger.info("Data freshness router registered at /api/v1/data/freshness")
+except Exception as e:
+    logger.warning(f"Could not register data freshness router: {e}")
+
 
 # Request logging middleware
 @app.middleware("http")

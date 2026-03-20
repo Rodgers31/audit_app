@@ -163,12 +163,20 @@ export const buildUrlWithParams = (endpoint: string, params?: Record<string, any
 /**
  * All endpoints grouped for easy reference
  */
+/**
+ * Data Quality Endpoints
+ */
+export const DATA_QUALITY_ENDPOINTS = {
+  FRESHNESS: '/data/freshness',
+} as const;
+
 export const API_ENDPOINTS = {
   COUNTIES: COUNTIES_ENDPOINTS,
   AUDITS: AUDITS_ENDPOINTS,
   BUDGET: BUDGET_ENDPOINTS,
   DEBT: DEBT_ENDPOINTS,
   STATISTICS: STATISTICS_ENDPOINTS,
+  DATA_QUALITY: DATA_QUALITY_ENDPOINTS,
 } as const;
 
 /**

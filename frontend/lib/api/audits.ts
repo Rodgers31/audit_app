@@ -234,6 +234,8 @@ export interface FindingDetailItem {
   follow_up_status: string | null;
   external_reference: string | null;
   management_response: string | null;
+  source_document_url: string | null;
+  confidence_score: number | null;
 }
 
 export interface FindingsListData {
