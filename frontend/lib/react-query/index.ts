@@ -48,12 +48,15 @@ export {
 // Debt hooks
 export {
   useCountyDebtData,
+  useCountyPendingBills,
   useDebtBreakdown,
   useDebtComparison,
   useDebtRiskAssessment,
+  useDebtSustainability,
   useDebtSustainabilityIndicators,
   useDebtTimeline,
   useNationalDebtOverview,
+  usePendingBillsSummary,
   useTopLoans,
 } from './useDebt';
 

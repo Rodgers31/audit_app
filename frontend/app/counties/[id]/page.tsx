@@ -6,6 +6,7 @@ import WatchButton from '@/components/WatchButton';
 import { useCountyAccountability, useCountyComprehensive } from '@/lib/react-query/useCounties';
 import { useCountyMoneyFlow } from '@/lib/react-query/useMoneyFlow';
 import { useAvailableFiscalYears } from '@/lib/react-query';
+import { useCountyPendingBills } from '@/lib/react-query/useDebt';
 import { AccountabilityScorecard, CountyComprehensive } from '@/types';
 import { AnimatePresence, motion } from 'framer-motion';
 import FollowTheMoney, { YearSelector } from '@/components/FollowTheMoney';
@@ -21,6 +22,7 @@ import {
   CircleDollarSign,
   Clock,
   ExternalLink,
+  FileWarning,
   HardHat,
   Info,
   Landmark,
@@ -568,6 +570,7 @@ function OverviewTab({ data }: { data: CountyComprehensive }) {
 /* ═══════════ Tab: Budget & Debt ═══════════ */
 function BudgetTab({ data }: { data: CountyComprehensive }) {
   const { budget, debt } = data;
+  const { data: countyPendingBills } = useCountyPendingBills(data.id.toString());
 
   const sectors = useMemo(
     () =>
@@ -723,6 +726,106 @@ function BudgetTab({ data }: { data: CountyComprehensive }) {
             <span className='text-gray-500'>Total Debt</span>
             <span className='font-bold text-red-700'>{fmtKES(debt.total_debt)}</span>
           </div>
+        </div>
+      )}
+
+      {/* County Pending Bills Breakdown */}
+      {(countyPendingBills || debt.pending_bills > 0) && (
+        <div className='bg-white rounded-xl border border-red-200 p-5'>
+          <div className='flex items-center gap-2 mb-4'>
+            <FileWarning size={16} className='text-red-600' />
+            <h3 className='text-sm font-semibold text-gray-800'>Pending Bills</h3>
+            <span className='text-sm font-bold text-red-700 ml-auto'>
+              {fmtKES(countyPendingBills?.total_pending || debt.pending_bills)}
+            </span>
+          </div>
+
+          {/* Breakdown by type */}
+          {countyPendingBills?.breakdown_by_type && countyPendingBills.breakdown_by_type.length > 0 && (
+            <div className='space-y-2 mb-4'>
+              <h4 className='text-xs font-semibold text-gray-500 uppercase tracking-wider'>By Type</h4>
+              {countyPendingBills.breakdown_by_type.map((t) => {
+                const colors: Record<string, string> = {
+                  supplier_arrears: 'bg-red-500',
+                  salary: 'bg-blue-500',
+                  pension: 'bg-purple-500',
+                  statutory: 'bg-amber-500',
+                  court_awards: 'bg-orange-500',
+                };
+                const bgColor = Object.entries(colors).find(([k]) => t.type.toLowerCase().includes(k))?.[1] || 'bg-gray-400';
+                return (
+                  <div key={t.type}>
+                    <div className='flex items-center justify-between mb-0.5'>
+                      <span className='text-xs text-gray-700'>
+                        {t.type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                      </span>
+                      <span className='text-xs font-semibold text-gray-800'>{fmtKES(t.amount)}</span>
+                    </div>
+                    <div className='h-2 bg-gray-100 rounded-full overflow-hidden'>
+                      <div
+                        className={`h-full rounded-full ${bgColor}`}
+                        style={{ width: `${Math.min(t.percentage, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Aging buckets */}
+          {countyPendingBills?.aging_buckets && countyPendingBills.aging_buckets.length > 0 && (
+            <div>
+              <h4 className='text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2'>Aging</h4>
+              <div className='flex h-4 rounded-full overflow-hidden'>
+                {countyPendingBills.aging_buckets.map((bucket) => {
+                  const colors: Record<string, string> = {
+                    '0-30d': '#22c55e',
+                    '31-90d': '#f59e0b',
+                    '91-180d': '#f97316',
+                    '180d+': '#ef4444',
+                  };
+                  return (
+                    <div
+                      key={bucket.bucket}
+                      className='transition-all'
+                      style={{
+                        width: `${bucket.percentage}%`,
+                        backgroundColor: colors[bucket.bucket] || '#94a3b8',
+                      }}
+                      title={`${bucket.bucket}: ${fmtKES(bucket.amount)} (${bucket.percentage.toFixed(1)}%)`}
+                    />
+                  );
+                })}
+              </div>
+              <div className='flex items-center gap-3 mt-2 text-[10px] text-gray-400 flex-wrap'>
+                {countyPendingBills.aging_buckets.map((bucket) => {
+                  const colors: Record<string, string> = {
+                    '0-30d': '#22c55e',
+                    '31-90d': '#f59e0b',
+                    '91-180d': '#f97316',
+                    '180d+': '#ef4444',
+                  };
+                  return (
+                    <div key={bucket.bucket} className='flex items-center gap-1'>
+                      <div
+                        className='w-2 h-2 rounded-full'
+                        style={{ backgroundColor: colors[bucket.bucket] || '#94a3b8' }}
+                      />
+                      <span>{bucket.bucket}: {fmtKES(bucket.amount)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {!countyPendingBills && debt.pending_bills > 0 && (
+            <p className='text-xs text-gray-500'>
+              This county has {fmtKES(debt.pending_bills)} in pending bills. Detailed breakdown data
+              will be available once the county reports are processed.
+            </p>
+          )}
         </div>
       )}
     </div>

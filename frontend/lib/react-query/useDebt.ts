@@ -3,19 +3,25 @@
  */
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 import {
+  CountyPendingBillsResponse,
+  DebtSustainabilityResponse,
   DebtTimelineResponse,
   getCountyDebtData,
   getCountyDebtTimeline,
+  getCountyPendingBills,
   getDebtBreakdown,
   getDebtComparison,
   getDebtRiskAssessment,
+  getDebtSustainability,
   getDebtSustainabilityIndicators,
   getDebtTimeline,
   getNationalDebtOverview,
   getNationalLoans,
   getPendingBills,
+  getPendingBillsSummary,
   getTopLoans,
   PendingBillsResponse,
+  PendingBillsSummaryResponse,
 } from '../api/debt';
 import { DebtDataResponse } from '../api/types';
 
@@ -31,7 +37,10 @@ const QUERY_KEYS = {
   topLoans: (limit: number) => ['debt', 'top-loans', limit] as const,
   nationalLoans: ['debt', 'national-loans'] as const,
   pendingBills: ['debt', 'pending-bills'] as const,
+  pendingBillsSummary: ['debt', 'pending-bills-summary'] as const,
+  countyPendingBills: (countyId: string) => ['debt', 'pending-bills', 'county', countyId] as const,
   sustainability: (countyId?: string) => ['debt', 'sustainability', countyId] as const,
+  debtSustainability: ['debt', 'debt-sustainability'] as const,
   riskAssessment: ['debt', 'risk-assessment'] as const,
 };
 
@@ -170,6 +179,44 @@ export const usePendingBills = (
     queryKey: QUERY_KEYS.pendingBills,
     queryFn: getPendingBills,
     staleTime: 60 * 60 * 1000, // 1 hour — pending bills data updated quarterly
+    ...options,
+  });
+};
+
+// Enhanced pending bills summary with breakdown, aging, top counties, trend
+export const usePendingBillsSummary = (
+  options?: Omit<UseQueryOptions<PendingBillsSummaryResponse>, 'queryKey' | 'queryFn'>
+) => {
+  return useQuery({
+    queryKey: QUERY_KEYS.pendingBillsSummary,
+    queryFn: getPendingBillsSummary,
+    staleTime: 60 * 60 * 1000,
+    ...options,
+  });
+};
+
+// County-level pending bills breakdown
+export const useCountyPendingBills = (
+  countyId: string,
+  options?: Omit<UseQueryOptions<CountyPendingBillsResponse>, 'queryKey' | 'queryFn'>
+) => {
+  return useQuery({
+    queryKey: QUERY_KEYS.countyPendingBills(countyId),
+    queryFn: () => getCountyPendingBills(countyId),
+    enabled: !!countyId,
+    staleTime: 30 * 60 * 1000,
+    ...options,
+  });
+};
+
+// National debt sustainability indicators (GDP ratio, projections, regional peers)
+export const useDebtSustainability = (
+  options?: Omit<UseQueryOptions<DebtSustainabilityResponse>, 'queryKey' | 'queryFn'>
+) => {
+  return useQuery({
+    queryKey: QUERY_KEYS.debtSustainability,
+    queryFn: getDebtSustainability,
+    staleTime: 60 * 60 * 1000,
     ...options,
   });
 };

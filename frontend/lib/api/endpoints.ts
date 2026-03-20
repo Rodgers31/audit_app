@@ -95,11 +95,14 @@ export const DEBT_ENDPOINTS = {
   BREAKDOWN_BY_COUNTY: (countyId: string) => `/debt/breakdown/${countyId}`,
   TIMELINE: '/debt/timeline',
   PENDING_BILLS: '/pending-bills',
+  PENDING_BILLS_SUMMARY: '/pending-bills/summary',
+  PENDING_BILLS_COUNTY: (countyId: string) => `/pending-bills/counties/${countyId}`,
 
   // Analysis and comparison
   COMPARISON: '/debt/comparison',
   TOP_LOANS: '/debt/top-loans',
   SUSTAINABILITY: '/debt/sustainability',
+  DEBT_SUSTAINABILITY: '/debt/sustainability',
   RISK_ASSESSMENT: '/debt/risk-assessment',
 } as const;
 

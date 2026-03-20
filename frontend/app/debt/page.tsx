@@ -4,9 +4,11 @@ import PageShell from '@/components/layout/PageShell';
 import PDFExportButton from '@/components/PDFExportButton';
 import {
   useDebtTimeline,
+  useDebtSustainability,
   useNationalDebtOverview,
   useNationalLoans,
   usePendingBills,
+  usePendingBillsSummary,
 } from '@/lib/react-query/useDebt';
 import { useFiscalSummary } from '@/lib/react-query/useFiscal';
 import { motion } from 'framer-motion';
@@ -17,13 +19,17 @@ import {
   Building2,
   ChevronDown,
   ChevronUp,
+  Clock,
   DollarSign,
   FileWarning,
   Flag,
+  Gauge,
   Globe,
   Landmark,
+  MapPin,
   Scale,
   ShieldAlert,
+  TrendingDown,
   TrendingUp,
   Users,
 } from 'lucide-react';
@@ -37,8 +43,11 @@ import {
   CartesianGrid,
   Cell,
   Legend,
+  Line,
+  LineChart,
   Pie,
   PieChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -179,6 +188,8 @@ export default function NationalDebtPage() {
   } = useDebtTimeline();
   const { data: fiscalResp } = useFiscalSummary();
   const { data: pendingBillsData } = usePendingBills();
+  const { data: pendingBillsSummary } = usePendingBillsSummary();
+  const { data: debtSustainability } = useDebtSustainability();
 
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [loanSort, setLoanSort] = useState<'outstanding' | 'rate' | 'service'>('outstanding');
@@ -753,8 +764,8 @@ export default function NationalDebtPage() {
         </motion.section>
       )}
 
-      {/* SECTION 5 — PENDING BILLS (from COB) */}
-      {pb && pb.total > 0 && (
+      {/* SECTION 5 — ENHANCED PENDING BILLS TRACKER */}
+      {(pb && pb.total > 0) && (
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -768,56 +779,215 @@ export default function NationalDebtPage() {
                   <FileWarning className='text-red-600' size={20} />
                 </div>
                 <div>
-                  <h2 className='text-base font-bold text-red-900'>Government Pending Bills</h2>
+                  <h2 className='text-base font-bold text-red-900'>Pending Bills Tracker</h2>
                   <p className='text-xs text-red-700 mt-0.5'>
-                    Verified but unpaid invoices owed to suppliers &amp; contractors
+                    Verified but unpaid invoices owed to suppliers, contractors &amp; staff
                   </p>
                 </div>
               </div>
             </div>
 
             <div className='p-5 space-y-5'>
-              {/* Totals row */}
-              <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
-                <div className='bg-red-50 rounded-lg p-4 text-center'>
-                  <p className='text-xs font-semibold text-red-600 uppercase tracking-wider mb-1'>
-                    Total Pending Bills
-                  </p>
-                  <p className='text-2xl font-bold text-red-700'>{fmtKES(pb.total)}</p>
-                </div>
-                <div className='bg-orange-50 rounded-lg p-4 text-center'>
-                  <p className='text-xs font-semibold text-orange-600 uppercase tracking-wider mb-1'>
-                    National Government
-                  </p>
-                  <p className='text-xl font-bold text-orange-700'>{fmtKES(pb.national)}</p>
-                </div>
-                <div className='bg-amber-50 rounded-lg p-4 text-center'>
-                  <p className='text-xs font-semibold text-amber-600 uppercase tracking-wider mb-1'>
-                    County Governments
-                  </p>
-                  <p className='text-xl font-bold text-amber-700'>{fmtKES(pb.county)}</p>
+              {/* Hero number */}
+              <div className='text-center py-4'>
+                <p className='text-xs font-semibold text-red-600 uppercase tracking-wider mb-2'>
+                  Total Pending Bills — All Government
+                </p>
+                <p className='text-4xl sm:text-5xl font-black text-red-700'>{fmtKES(pendingBillsSummary?.total_pending_amount || pb.total)}</p>
+                <div className='flex items-center justify-center gap-6 mt-3'>
+                  <div>
+                    <span className='text-sm font-semibold text-orange-700'>{fmtKES(pb.national)}</span>
+                    <span className='text-xs text-gray-500 ml-1'>National</span>
+                  </div>
+                  <div className='w-px h-4 bg-gray-200' />
+                  <div>
+                    <span className='text-sm font-semibold text-amber-700'>{fmtKES(pb.county)}</span>
+                    <span className='text-xs text-gray-500 ml-1'>Counties</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Detail table */}
+              {/* Breakdown by type + Aging buckets */}
+              {pendingBillsSummary && (
+                <div className='grid grid-cols-1 lg:grid-cols-2 gap-4'>
+                  {/* Breakdown by type — donut chart */}
+                  {pendingBillsSummary.breakdown_by_type?.length > 0 && (
+                    <div className='bg-gray-50 rounded-xl p-4'>
+                      <h3 className='text-sm font-semibold text-gray-800 mb-3'>Breakdown by Type</h3>
+                      <ResponsiveContainer width='100%' height={220}>
+                        <PieChart>
+                          <Pie
+                            data={pendingBillsSummary.breakdown_by_type.map((t) => ({
+                              name: t.type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+                              value: t.amount,
+                            }))}
+                            cx='50%'
+                            cy='50%'
+                            innerRadius={50}
+                            outerRadius={85}
+                            paddingAngle={2}
+                            dataKey='value'
+                            stroke='none'>
+                            {pendingBillsSummary.breakdown_by_type.map((_, i) => (
+                              <Cell key={i} fill={['#ef4444', '#f59e0b', '#8b5cf6', '#3b82f6', '#10b981', '#ec4899'][i % 6]} />
+                            ))}
+                          </Pie>
+                          <Tooltip formatter={(val: number) => fmtKES(val)} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className='grid grid-cols-2 gap-x-3 gap-y-1 mt-2'>
+                        {pendingBillsSummary.breakdown_by_type.map((t, i) => (
+                          <div key={t.type} className='flex items-center gap-2 text-xs'>
+                            <div
+                              className='w-2.5 h-2.5 rounded-full flex-shrink-0'
+                              style={{ backgroundColor: ['#ef4444', '#f59e0b', '#8b5cf6', '#3b82f6', '#10b981', '#ec4899'][i % 6] }}
+                            />
+                            <span className='text-gray-600 truncate'>
+                              {t.type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                            </span>
+                            <span className='text-gray-400 ml-auto'>{t.percentage.toFixed(1)}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Aging buckets — stacked bar visualization */}
+                  {pendingBillsSummary.aging_buckets?.length > 0 && (
+                    <div className='bg-gray-50 rounded-xl p-4'>
+                      <h3 className='text-sm font-semibold text-gray-800 mb-3'>
+                        Aging Analysis
+                      </h3>
+                      <div className='space-y-3'>
+                        {pendingBillsSummary.aging_buckets.map((bucket) => {
+                          const colors: Record<string, string> = {
+                            '0-30d': 'bg-green-500',
+                            '31-90d': 'bg-yellow-500',
+                            '91-180d': 'bg-orange-500',
+                            '180d+': 'bg-red-500',
+                          };
+                          const bgColor = colors[bucket.bucket] || 'bg-gray-400';
+                          return (
+                            <div key={bucket.bucket}>
+                              <div className='flex items-center justify-between mb-1'>
+                                <div className='flex items-center gap-2'>
+                                  <Clock size={12} className='text-gray-400' />
+                                  <span className='text-sm text-gray-700 font-medium'>{bucket.bucket}</span>
+                                  <span className='text-xs text-gray-400'>{bucket.count} bills</span>
+                                </div>
+                                <span className='text-sm font-semibold text-gray-800'>{fmtKES(bucket.amount)}</span>
+                              </div>
+                              <div className='h-3 bg-gray-200 rounded-full overflow-hidden'>
+                                <div
+                                  className={`h-full rounded-full ${bgColor} transition-all`}
+                                  style={{ width: `${Math.min(bucket.percentage, 100)}%` }}
+                                />
+                              </div>
+                              <div className='text-[10px] text-gray-400 mt-0.5 text-right'>
+                                {bucket.percentage.toFixed(1)}% of total
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Top counties by pending bills */}
+              {(pendingBillsSummary?.top_counties_by_amount?.length ?? 0) > 0 && pendingBillsSummary && (
+                <div className='bg-gray-50 rounded-xl p-4'>
+                  <h3 className='text-sm font-semibold text-gray-800 mb-3'>
+                    <MapPin size={14} className='inline mr-1 text-red-500' />
+                    Top Counties by Pending Bills
+                  </h3>
+                  <div className='space-y-2'>
+                    {pendingBillsSummary.top_counties_by_amount.slice(0, 10).map((county, i) => {
+                      const maxAmount = pendingBillsSummary.top_counties_by_amount[0]?.amount || 1;
+                      const barWidth = (county.amount / maxAmount) * 100;
+                      return (
+                        <div key={county.county_id} className='flex items-center gap-3'>
+                          <span className='w-5 text-xs text-gray-400 text-right'>{i + 1}</span>
+                          <div className='w-32 sm:w-40 text-sm truncate'>
+                            <span className='font-medium text-gray-800'>{county.county_name}</span>
+                          </div>
+                          <div className='flex-1 h-4 bg-gray-200 rounded-full overflow-hidden'>
+                            <div
+                              className='h-full rounded-full bg-red-400 transition-all'
+                              style={{ width: `${barWidth}%` }}
+                            />
+                          </div>
+                          <div className='text-right shrink-0'>
+                            <span className='text-xs font-semibold text-gray-700'>{fmtKES(county.amount)}</span>
+                            {county.per_capita > 0 && (
+                              <div className='text-[10px] text-gray-400'>
+                                {fmtKES(county.per_capita)}/person
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Year-over-year trend */}
+              {(pendingBillsSummary?.trend?.length ?? 0) > 1 && pendingBillsSummary && (
+                <div className='bg-gray-50 rounded-xl p-4'>
+                  <h3 className='text-sm font-semibold text-gray-800 mb-3'>
+                    <TrendingUp size={14} className='inline mr-1 text-red-500' />
+                    Pending Bills Trend — Are They Growing?
+                  </h3>
+                  <ResponsiveContainer width='100%' height={200}>
+                    <BarChart data={pendingBillsSummary.trend}>
+                      <CartesianGrid strokeDasharray='3 3' stroke='#f0f0f0' />
+                      <XAxis dataKey='year' tick={{ fontSize: 11, fill: '#6b7280' }} tickLine={false} />
+                      <YAxis
+                        tick={{ fontSize: 11, fill: '#6b7280' }}
+                        tickLine={false}
+                        axisLine={false}
+                        tickFormatter={(v) => `${v >= 1e9 ? (v / 1e9).toFixed(0) + 'B' : (v / 1e6).toFixed(0) + 'M'}`}
+                        width={50}
+                      />
+                      <Tooltip
+                        contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 11 }}
+                        formatter={(val: number) => [fmtKES(val), 'Pending Bills']}
+                      />
+                      <Bar dataKey='amount' name='Pending Bills' fill='#ef4444' radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                  {(() => {
+                    const t = pendingBillsSummary.trend;
+                    const last = t[t.length - 1];
+                    const prev = t[t.length - 2];
+                    if (!last || !prev || prev.amount === 0) return null;
+                    const change = ((last.amount - prev.amount) / prev.amount) * 100;
+                    const growing = change > 0;
+                    return (
+                      <div className={`flex items-center gap-2 mt-3 text-xs ${growing ? 'text-red-700' : 'text-green-700'}`}>
+                        {growing ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                        <span>
+                          Pending bills {growing ? 'grew' : 'decreased'} by <strong>{Math.abs(change).toFixed(1)}%</strong> from {prev.year} to {last.year}
+                        </span>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* Detail table (existing) */}
               {pb.bills.length > 0 && (
                 <div className='overflow-x-auto'>
                   <table className='w-full text-sm'>
                     <thead>
                       <tr className='bg-gray-50 border-b border-gray-200'>
                         <th className='text-left py-2 px-3 font-semibold text-gray-600'>Entity</th>
-                        <th className='text-left py-2 px-3 font-semibold text-gray-600'>
-                          Category
-                        </th>
-                        <th className='text-right py-2 px-3 font-semibold text-gray-600'>
-                          Total Pending
-                        </th>
-                        <th className='text-right py-2 px-3 font-semibold text-gray-600'>
-                          Eligible
-                        </th>
-                        <th className='text-right py-2 px-3 font-semibold text-gray-600'>
-                          Ineligible
-                        </th>
+                        <th className='text-left py-2 px-3 font-semibold text-gray-600'>Category</th>
+                        <th className='text-right py-2 px-3 font-semibold text-gray-600'>Total Pending</th>
+                        <th className='text-right py-2 px-3 font-semibold text-gray-600'>Eligible</th>
+                        <th className='text-right py-2 px-3 font-semibold text-gray-600'>Ineligible</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -825,22 +995,16 @@ export default function NationalDebtPage() {
                         <tr
                           key={`${bill.entity_name}-${idx}`}
                           className='border-b border-gray-100 hover:bg-gray-50 transition-colors'>
-                          <td className='py-2 px-3 font-medium text-gray-800'>
-                            {bill.entity_name}
-                          </td>
+                          <td className='py-2 px-3 font-medium text-gray-800'>{bill.entity_name}</td>
                           <td className='py-2 px-3 text-gray-500 capitalize'>
                             {(bill.category || bill.entity_type).replace(/_/g, ' ')}
                           </td>
-                          <td className='py-2 px-3 text-right font-semibold text-red-600'>
-                            {fmtKES(bill.total_pending)}
-                          </td>
+                          <td className='py-2 px-3 text-right font-semibold text-red-600'>{fmtKES(bill.total_pending)}</td>
                           <td className='py-2 px-3 text-right text-green-700'>
                             {bill.eligible_pending != null ? fmtKES(bill.eligible_pending) : '—'}
                           </td>
                           <td className='py-2 px-3 text-right text-gray-500'>
-                            {bill.ineligible_pending != null
-                              ? fmtKES(bill.ineligible_pending)
-                              : '—'}
+                            {bill.ineligible_pending != null ? fmtKES(bill.ineligible_pending) : '—'}
                           </td>
                         </tr>
                       ))}
@@ -868,6 +1032,278 @@ export default function NationalDebtPage() {
               </div>
             </div>
           </div>
+        </motion.section>
+      )}
+
+      {/* SECTION 5b — DEBT SUSTAINABILITY WARNING */}
+      {debtSustainability && (
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}>
+          {/* Warning banner if any threshold breached */}
+          {(debtSustainability.debt_to_gdp > 55 || debtSustainability.debt_service_to_revenue > 30) && (
+            <div className='flex items-center gap-3 bg-red-600 text-white rounded-xl px-5 py-4 mb-4 shadow-lg'>
+              <ShieldAlert size={24} className='flex-shrink-0' />
+              <div>
+                <h3 className='font-bold text-sm'>Debt Sustainability Warning</h3>
+                <p className='text-xs text-white/90 mt-0.5'>
+                  {debtSustainability.debt_to_gdp > 55 && `Debt-to-GDP (${debtSustainability.debt_to_gdp.toFixed(1)}%) exceeds the IMF 55% threshold. `}
+                  {debtSustainability.debt_service_to_revenue > 30 && `Debt service (${debtSustainability.debt_service_to_revenue.toFixed(1)}% of revenue) exceeds the 30% danger threshold.`}
+                </p>
+              </div>
+            </div>
+          )}
+
+          <h2 className='text-xl font-bold text-gov-dark mb-1'>Debt Sustainability Indicators</h2>
+          <p className='text-sm text-gray-500 mb-4'>
+            Key ratios that determine whether Kenya&apos;s debt is on a sustainable path
+          </p>
+
+          {/* Gauge indicators row */}
+          <div className='grid grid-cols-1 md:grid-cols-3 gap-4 mb-4'>
+            {/* Debt-to-GDP gauge */}
+            <div className='bg-white rounded-xl border border-gray-100 p-5'>
+              <div className='flex items-center gap-2 mb-3'>
+                <Gauge size={16} className='text-gov-forest' />
+                <h3 className='text-sm font-semibold text-gray-800'>Debt-to-GDP Ratio</h3>
+              </div>
+              {(() => {
+                const val = debtSustainability.debt_to_gdp;
+                const color = val < 50 ? '#22c55e' : val <= 55 ? '#f59e0b' : '#ef4444';
+                const label = val < 50 ? 'Safe Zone' : val <= 55 ? 'Caution Zone' : 'Danger Zone';
+                const r = 60;
+                const circ = Math.PI * r;
+                const offset = circ - (Math.min(val, 100) / 100) * circ;
+                return (
+                  <div className='flex flex-col items-center'>
+                    <div className='relative' style={{ width: 140, height: 80 }}>
+                      <svg width={140} height={80} viewBox='0 0 140 80'>
+                        <path
+                          d='M 10 75 A 60 60 0 0 1 130 75'
+                          fill='none'
+                          stroke='#f3f4f6'
+                          strokeWidth={10}
+                          strokeLinecap='round'
+                        />
+                        <path
+                          d='M 10 75 A 60 60 0 0 1 130 75'
+                          fill='none'
+                          stroke={color}
+                          strokeWidth={10}
+                          strokeLinecap='round'
+                          strokeDasharray={circ}
+                          strokeDashoffset={offset}
+                          className='transition-all duration-700'
+                        />
+                      </svg>
+                      <div className='absolute inset-0 flex items-end justify-center pb-0'>
+                        <span className='text-2xl font-black' style={{ color }}>{val.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                    <span className='text-xs font-semibold mt-1' style={{ color }}>{label}</span>
+                    <div className='flex items-center gap-3 mt-2 text-[10px] text-gray-400'>
+                      <span>EAC: 50%</span>
+                      <span>IMF: 55%</span>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Debt-service-to-revenue */}
+            <div className='bg-white rounded-xl border border-gray-100 p-5'>
+              <div className='flex items-center gap-2 mb-3'>
+                <Scale size={16} className='text-gov-forest' />
+                <h3 className='text-sm font-semibold text-gray-800'>Debt Service / Revenue</h3>
+              </div>
+              {(() => {
+                const val = debtSustainability.debt_service_to_revenue;
+                const color = val < 20 ? '#22c55e' : val <= 30 ? '#f59e0b' : '#ef4444';
+                const label = val < 20 ? 'Manageable' : val <= 30 ? 'Elevated' : 'Critical';
+                return (
+                  <div className='flex flex-col items-center'>
+                    <div className='text-4xl font-black' style={{ color }}>{val.toFixed(1)}%</div>
+                    <span className='text-xs font-semibold mt-1' style={{ color }}>{label}</span>
+                    <p className='text-[10px] text-gray-400 mt-1'>Threshold: 30%</p>
+                    <div className='w-full h-3 bg-gray-100 rounded-full mt-3 overflow-hidden'>
+                      <div
+                        className='h-full rounded-full transition-all'
+                        style={{ width: `${Math.min(val, 100)}%`, backgroundColor: color }}
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* External debt share */}
+            <div className='bg-white rounded-xl border border-gray-100 p-5'>
+              <div className='flex items-center gap-2 mb-3'>
+                <Globe size={16} className='text-gov-forest' />
+                <h3 className='text-sm font-semibold text-gray-800'>External Debt Share</h3>
+              </div>
+              {(() => {
+                const val = debtSustainability.external_debt_share;
+                const color = val < 40 ? '#22c55e' : val <= 60 ? '#f59e0b' : '#ef4444';
+                return (
+                  <div className='flex flex-col items-center'>
+                    <div className='text-4xl font-black' style={{ color }}>{val.toFixed(1)}%</div>
+                    <span className='text-xs text-gray-500 mt-1'>of total public debt</span>
+                    <div className='w-full mt-3'>
+                      <div className='flex h-3 rounded-full overflow-hidden'>
+                        <div
+                          className='transition-all'
+                          style={{ width: `${val}%`, backgroundColor: '#3b82f6' }}
+                        />
+                        <div
+                          className='transition-all'
+                          style={{ width: `${100 - val}%`, backgroundColor: '#10b981' }}
+                        />
+                      </div>
+                      <div className='flex items-center justify-between mt-1 text-[10px] text-gray-400'>
+                        <span>External {val.toFixed(0)}%</span>
+                        <span>Domestic {(100 - val).toFixed(0)}%</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+
+          {/* 5-year projection chart */}
+          {debtSustainability.projections?.length > 0 && (
+            <div className='bg-white rounded-xl border border-gray-100 p-5 mb-4'>
+              <h3 className='text-sm font-semibold text-gray-800 mb-1'>5-Year Debt Trajectory</h3>
+              <p className='text-xs text-gray-500 mb-3'>
+                Projected debt-to-GDP and debt-service-to-revenue ratios
+              </p>
+              <ResponsiveContainer width='100%' height={280}>
+                <LineChart data={debtSustainability.projections}>
+                  <CartesianGrid strokeDasharray='3 3' stroke='#f0f0f0' />
+                  <XAxis dataKey='year' tick={{ fontSize: 11, fill: '#6b7280' }} tickLine={false} />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: '#6b7280' }}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(v) => `${v}%`}
+                    width={45}
+                    domain={[0, 'auto']}
+                  />
+                  <Tooltip
+                    contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 11 }}
+                    formatter={(val: number, name: string) => [`${val.toFixed(1)}%`, name]}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
+                  <ReferenceLine y={55} stroke='#ef4444' strokeDasharray='5 5' label={{ value: 'IMF 55%', position: 'right', fill: '#ef4444', fontSize: 10 }} />
+                  <ReferenceLine y={30} stroke='#f59e0b' strokeDasharray='5 5' label={{ value: '30% Service', position: 'right', fill: '#f59e0b', fontSize: 10 }} />
+                  <Line
+                    type='monotone'
+                    dataKey='debt_to_gdp'
+                    name='Debt-to-GDP'
+                    stroke='#ef4444'
+                    strokeWidth={2.5}
+                    dot={{ r: 4, fill: '#ef4444' }}
+                    activeDot={{ r: 6 }}
+                  />
+                  <Line
+                    type='monotone'
+                    dataKey='debt_service_to_revenue'
+                    name='Service-to-Revenue'
+                    stroke='#8b5cf6'
+                    strokeWidth={2.5}
+                    dot={{ r: 4, fill: '#8b5cf6' }}
+                    activeDot={{ r: 6 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* Regional peers comparison table */}
+          {debtSustainability.regional_peers?.length > 0 && (
+            <div className='bg-white rounded-xl border border-gray-100 p-5'>
+              <h3 className='text-sm font-semibold text-gray-800 mb-1'>Regional Comparison</h3>
+              <p className='text-xs text-gray-500 mb-3'>
+                Kenya vs East African Community peers
+              </p>
+              {/* Mobile cards */}
+              <div className='md:hidden space-y-3'>
+                {debtSustainability.regional_peers.map((peer) => {
+                  const isKenya = peer.country.toLowerCase() === 'kenya';
+                  return (
+                    <div
+                      key={peer.country}
+                      className={`rounded-lg border p-3 ${isKenya ? 'border-gov-forest bg-gov-forest/5' : 'border-gray-100'}`}>
+                      <div className='flex items-center justify-between mb-2'>
+                        <span className={`text-sm font-semibold ${isKenya ? 'text-gov-dark' : 'text-gray-800'}`}>
+                          {peer.country} {isKenya && '(You)'}
+                        </span>
+                      </div>
+                      <div className='grid grid-cols-3 gap-2 text-center'>
+                        <div>
+                          <div className='text-[10px] text-gray-500'>Debt/GDP</div>
+                          <div className={`text-sm font-bold ${peer.debt_to_gdp > 55 ? 'text-red-600' : peer.debt_to_gdp > 50 ? 'text-amber-600' : 'text-green-600'}`}>
+                            {peer.debt_to_gdp.toFixed(1)}%
+                          </div>
+                        </div>
+                        <div>
+                          <div className='text-[10px] text-gray-500'>Service/Rev</div>
+                          <div className={`text-sm font-bold ${peer.debt_service_to_revenue > 30 ? 'text-red-600' : 'text-amber-600'}`}>
+                            {peer.debt_service_to_revenue.toFixed(1)}%
+                          </div>
+                        </div>
+                        <div>
+                          <div className='text-[10px] text-gray-500'>External</div>
+                          <div className='text-sm font-bold text-blue-600'>
+                            {peer.external_debt_share.toFixed(1)}%
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Desktop table */}
+              <div className='hidden md:block overflow-x-auto'>
+                <table className='w-full text-sm'>
+                  <thead>
+                    <tr className='bg-gray-50 border-b border-gray-200'>
+                      <th className='text-left py-2 px-3 font-semibold text-gray-600'>Country</th>
+                      <th className='text-right py-2 px-3 font-semibold text-gray-600'>Debt-to-GDP</th>
+                      <th className='text-right py-2 px-3 font-semibold text-gray-600'>Service/Revenue</th>
+                      <th className='text-right py-2 px-3 font-semibold text-gray-600'>External Debt %</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {debtSustainability.regional_peers.map((peer) => {
+                      const isKenya = peer.country.toLowerCase() === 'kenya';
+                      return (
+                        <tr
+                          key={peer.country}
+                          className={`border-b border-gray-100 ${isKenya ? 'bg-gov-forest/5 font-semibold' : 'hover:bg-gray-50'}`}>
+                          <td className='py-2.5 px-3 text-gray-800'>
+                            {peer.country} {isKenya && <span className='text-xs text-gov-forest'>(You)</span>}
+                          </td>
+                          <td className={`py-2.5 px-3 text-right ${peer.debt_to_gdp > 55 ? 'text-red-600 font-bold' : peer.debt_to_gdp > 50 ? 'text-amber-600' : 'text-green-600'}`}>
+                            {peer.debt_to_gdp.toFixed(1)}%
+                          </td>
+                          <td className={`py-2.5 px-3 text-right ${peer.debt_service_to_revenue > 30 ? 'text-red-600 font-bold' : 'text-gray-700'}`}>
+                            {peer.debt_service_to_revenue.toFixed(1)}%
+                          </td>
+                          <td className='py-2.5 px-3 text-right text-gray-700'>
+                            {peer.external_debt_share.toFixed(1)}%
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </motion.section>
       )}
 
