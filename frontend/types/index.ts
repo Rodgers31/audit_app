@@ -203,6 +203,27 @@ export interface AccountabilityScorecard {
   };
 }
 
+export interface MoneyFlowStage {
+  stage: string;
+  label: string;
+  amount: number | null;
+  source?: string;
+  source_doc?: string;
+  gap_from_prev?: number | null;
+  gap_label?: string;
+  data_unavailable?: boolean;
+}
+
+export interface MoneyFlowData {
+  county_id: number | null;
+  county_name: string;
+  fiscal_year: string;
+  stages: MoneyFlowStage[];
+  total_waste_estimate: number | null;
+  efficiency_score: number | null;
+  county_count?: number;
+}
+
 export interface ChartData {
   name: string;
   value: number;

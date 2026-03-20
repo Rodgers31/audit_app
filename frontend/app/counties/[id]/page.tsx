@@ -4,14 +4,18 @@ import PageShell from '@/components/layout/PageShell';
 import PDFExportButton from '@/components/PDFExportButton';
 import WatchButton from '@/components/WatchButton';
 import { useCountyAccountability, useCountyComprehensive } from '@/lib/react-query/useCounties';
+import { useCountyMoneyFlow } from '@/lib/react-query/useMoneyFlow';
+import { useAvailableFiscalYears } from '@/lib/react-query';
 import { AccountabilityScorecard, CountyComprehensive } from '@/types';
 import { AnimatePresence, motion } from 'framer-motion';
+import FollowTheMoney, { YearSelector } from '@/components/FollowTheMoney';
 import {
   AlertTriangle,
   ArrowDown,
   ArrowLeft,
   ArrowUp,
   Award,
+  Banknote,
   CheckCircle2,
   ChevronDown,
   CircleDollarSign,
@@ -89,10 +93,11 @@ const PALETTE = [
   '#94a3b8',
 ];
 
-type Tab = 'overview' | 'budget' | 'audit' | 'accountability' | 'projects';
+type Tab = 'overview' | 'budget' | 'audit' | 'accountability' | 'projects' | 'money';
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'overview', label: 'Overview', icon: Landmark },
+  { id: 'money', label: 'Follow the Money', icon: Banknote },
   { id: 'budget', label: 'Budget & Debt', icon: CircleDollarSign },
   { id: 'audit', label: 'Audit Findings', icon: ShieldAlert },
   { id: 'accountability', label: 'Accountability', icon: Award },
@@ -1386,6 +1391,34 @@ function AccountabilityTab({ data: countyData }: { data: CountyComprehensive }) 
   );
 }
 
+/* ═══════════ Tab: Follow the Money ═══════════ */
+const DEFAULT_FISCAL_YEARS = ['2024/25', '2023/24', '2022/23', '2021/22', '2020/21'];
+
+function MoneyFlowTab({ data: countyData }: { data: CountyComprehensive }) {
+  const [selectedYear, setSelectedYear] = useState(DEFAULT_FISCAL_YEARS[0]);
+  const { data: fiscalYears } = useAvailableFiscalYears();
+  const { data, isLoading } = useCountyMoneyFlow(countyData.id, selectedYear);
+
+  const years = fiscalYears && fiscalYears.length > 0 ? fiscalYears : DEFAULT_FISCAL_YEARS;
+
+  return (
+    <div className='space-y-4'>
+      <div className='bg-white rounded-xl border border-gray-100 p-5'>
+        <div className='flex items-center justify-between mb-4'>
+          <div>
+            <h3 className='text-sm font-semibold text-gray-800'>Follow the Money</h3>
+            <p className='text-xs text-gray-500 mt-0.5'>
+              Trace how public funds flow from allocation to expenditure
+            </p>
+          </div>
+          <YearSelector value={selectedYear} onChange={setSelectedYear} years={years} />
+        </div>
+        <FollowTheMoney data={data} isLoading={isLoading} />
+      </div>
+    </div>
+  );
+}
+
 /* ═══════════ Data Sources Footer ═══════════ */
 function SourcesFooter({ data }: { data: CountyComprehensive }) {
   const sources = [
@@ -1433,7 +1466,7 @@ export default function CountyDetailPage() {
   const { data, isLoading, error } = useCountyComprehensive(countyId);
 
   const initialTab = (searchParams.get('tab') as Tab) || 'overview';
-  const validTabs: Tab[] = ['overview', 'budget', 'audit', 'accountability', 'projects'];
+  const validTabs: Tab[] = ['overview', 'money', 'budget', 'audit', 'accountability', 'projects'];
   const [tab, setTab] = useState<Tab>(validTabs.includes(initialTab) ? initialTab : 'overview');
   const [showHealthModal, setShowHealthModal] = useState(false);
 
@@ -1466,6 +1499,7 @@ export default function CountyDetailPage() {
   /* Tab content */
   const TabContent = {
     overview: OverviewTab,
+    money: MoneyFlowTab,
     budget: BudgetTab,
     audit: AuditTab,
     accountability: AccountabilityTab,
