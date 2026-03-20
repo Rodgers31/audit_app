@@ -17,11 +17,12 @@ from sqlalchemy import Text, create_engine, event
 from sqlalchemy.orm import sessionmaker
 
 # ── path setup ──────────────────────────────────────────────────────────
+# Only add BACKEND_DIR — do NOT add ROOT_DIR, as the repo root contains a
+# stub `seeding/` package that shadows `backend/seeding/` and breaks imports.
 BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(BACKEND_DIR)
-for p in (ROOT_DIR, BACKEND_DIR):
-    if p not in sys.path:
-        sys.path.insert(0, p)
+if BACKEND_DIR not in sys.path:
+    sys.path.insert(0, BACKEND_DIR)
 
 # ── JSONB → TEXT compile shim (must be registered before metadata.create_all) ─
 from sqlalchemy.dialects.postgresql import JSONB

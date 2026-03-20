@@ -26,7 +26,7 @@ from auth import (
 from database import get_db
 from fastapi import APIRouter, Depends, HTTPException, status
 from models import User
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import ConfigDict, BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
@@ -60,8 +60,7 @@ class UserPublic(BaseModel):
     roles: list
     created_at: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ProfileUpdate(BaseModel):

@@ -1,35 +1,34 @@
-"""Top-level access to backend seeding utilities."""
+"""Root-level seeding shim — immediately replaces itself with backend/seeding.
+
+This file exists so `python -m seeding.cli` works from the repository root.
+On import, it replaces sys.modules['seeding'] with the real backend/seeding
+package, making all submodules (pdf_parsers, config, http_client, etc.) work
+transparently regardless of where Python is run from.
+"""
 
 from __future__ import annotations
 
-import importlib
+import importlib.util
 import sys
 from pathlib import Path
 
-_BACKEND_ROOT = Path(__file__).resolve().parent.parent / "backend"
-if str(_BACKEND_ROOT) not in sys.path:
-    sys.path.insert(0, str(_BACKEND_ROOT))
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+_BACKEND_SEEDING_DIR = _REPO_ROOT / "backend" / "seeding"
+_BACKEND_DIR = str(_REPO_ROOT / "backend")
 
-_backend_module = importlib.import_module("backend.seeding")
-for _submodule in (
-    "config",
-    "domains",
-    "http_client",
-    "logging",
-    "rate_limiter",
-    "registries",
-    "storage",
-    "types",
-    "utils",
-):
-    sys.modules.setdefault(
-        f"seeding.{_submodule}",
-        importlib.import_module(f"backend.seeding.{_submodule}"),
-    )
+# Ensure backend/ is on sys.path
+if _BACKEND_DIR not in sys.path:
+    sys.path.insert(0, _BACKEND_DIR)
 
-from backend.seeding import *  # noqa: F401,F403,E402
-
-try:  # pragma: no cover - passthrough metadata
-    __all__ = list(_backend_module.__all__)  # type: ignore[attr-defined]
-except AttributeError:  # pragma: no cover - best effort
-    __all__ = [name for name in globals() if not name.startswith("_")]
+# Load the real backend/seeding package and replace ourselves in sys.modules
+_spec = importlib.util.spec_from_file_location(
+    "seeding",
+    str(_BACKEND_SEEDING_DIR / "__init__.py"),
+    submodule_search_locations=[str(_BACKEND_SEEDING_DIR)],
+)
+if _spec and _spec.loader:
+    _real = importlib.util.module_from_spec(_spec)
+    _real.__path__ = [str(_BACKEND_SEEDING_DIR)]  # type: ignore[attr-defined]
+    _real.__package__ = "seeding"
+    sys.modules["seeding"] = _real
+    _spec.loader.exec_module(_real)  # type: ignore[union-attr]

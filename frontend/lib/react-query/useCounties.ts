@@ -1,7 +1,7 @@
 /**
  * Custom React Query hooks for counties data
  */
-import { CountyComprehensive } from '@/types';
+import { AccountabilityScorecard, CountyComprehensive } from '@/types';
 import { useInfiniteQuery, useQuery, UseQueryOptions } from '@tanstack/react-query';
 import {
   getCounties,
@@ -9,6 +9,7 @@ import {
   getCounty,
   getCountyByCode,
   getCountyComprehensive,
+  getCountyAccountability,
   getCountyFinancialSummary,
   getFlaggedCounties,
   getTopPerformingCounties,
@@ -26,6 +27,7 @@ const QUERY_KEYS = {
   topPerforming: (limit: number) => ['counties', 'top-performing', limit] as const,
   flagged: ['counties', 'flagged'] as const,
   financialSummary: (id: string) => ['counties', id, 'financial-summary'] as const,
+  accountability: (id: string) => ['counties', id, 'accountability'] as const,
 };
 
 // Get all counties
@@ -137,6 +139,20 @@ export const useCountyFinancialSummary = (
     queryFn: () => getCountyFinancialSummary(id),
     enabled: !!id,
     staleTime: 10 * 60 * 1000, // 10 minutes
+    ...options,
+  });
+};
+
+// Get county accountability scorecard
+export const useCountyAccountability = (
+  id: string,
+  options?: Omit<UseQueryOptions<AccountabilityScorecard>, 'queryKey' | 'queryFn'>
+) => {
+  return useQuery({
+    queryKey: QUERY_KEYS.accountability(id),
+    queryFn: () => getCountyAccountability(id),
+    enabled: !!id,
+    staleTime: 10 * 60 * 1000,
     ...options,
   });
 };

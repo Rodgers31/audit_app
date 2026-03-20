@@ -210,6 +210,23 @@ COUNTY_COORDINATES = {
 # Reverse mapping for backend to frontend ID conversion
 NAME_TO_ID_MAPPING = {v: k for k, v in COUNTY_MAPPING.items()}
 
+# County regions for peer comparison (based on Kenya's former provinces)
+COUNTY_REGIONS = {
+    "001": "Nairobi",
+    "002": "Coast", "003": "Coast", "004": "Coast", "005": "Coast", "006": "Coast", "047": "Coast",
+    "007": "North Eastern", "008": "North Eastern", "009": "North Eastern",
+    "010": "Eastern", "011": "Eastern", "012": "Eastern", "013": "Eastern", "014": "Eastern",
+    "015": "Eastern", "016": "Eastern", "017": "Eastern",
+    "018": "Central", "019": "Central", "020": "Central", "021": "Central", "022": "Central",
+    "023": "Rift Valley", "024": "Rift Valley", "025": "Rift Valley", "026": "Rift Valley",
+    "027": "Rift Valley", "028": "Rift Valley", "029": "Rift Valley", "030": "Rift Valley",
+    "031": "Rift Valley", "032": "Rift Valley", "033": "Rift Valley", "034": "Rift Valley",
+    "035": "Rift Valley", "036": "Rift Valley",
+    "037": "Western", "038": "Western", "039": "Western", "040": "Western",
+    "041": "Nyanza", "042": "Nyanza", "043": "Nyanza", "044": "Nyanza",
+    "045": "Nyanza", "046": "Nyanza",
+}
+
 # Enhanced County Analytics API base URL
 ENHANCED_COUNTY_API_BASE = "http://localhost:8003"
 
@@ -707,6 +724,30 @@ try:
     logger.info("User features router registered (newsletter endpoints)")
 except Exception as e:
     logger.warning(f"Could not register user features router: {e}")
+
+try:
+    from routers.audit_dashboard import router as audit_dashboard_router
+
+    app.include_router(audit_dashboard_router)
+    logger.info("Audit dashboard router registered at /api/v1/audit")
+except Exception as e:
+    logger.warning(f"Could not register audit dashboard router: {e}")
+
+try:
+    from routers.money_flow import router as money_flow_router
+
+    app.include_router(money_flow_router)
+    logger.info("Money flow router registered at /api/v1/counties/*/money-flow")
+except Exception as e:
+    logger.warning(f"Could not register money flow router: {e}")
+
+try:
+    from routers.data_freshness import router as data_freshness_router
+
+    app.include_router(data_freshness_router)
+    logger.info("Data freshness router registered at /api/v1/data/freshness")
+except Exception as e:
+    logger.warning(f"Could not register data freshness router: {e}")
 
 
 # Request logging middleware
@@ -3302,6 +3343,328 @@ async def list_county_audits(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+# ---------------------------------------------------------------------------
+# County Accountability Scorecard
+# ---------------------------------------------------------------------------
+
+def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
+    """Compute accountability scorecard for a county entity.
+
+    Returns dict with opinion history, flagged amounts, recurring/unresolved
+    findings, absorption rate, grade, and peer comparison.
+    """
+    audits = (
+        db.query(DBAudit)
+        .filter(DBAudit.entity_id == entity.id)
+        .all()
+    )
+
+    # --- audit_opinion_history ---
+    opinion_by_year: Dict[int, str] = {}
+    for a in audits:
+        if a.audit_year and a.audit_opinion:
+            opinion_by_year[a.audit_year] = a.audit_opinion
+    audit_opinion_history = sorted(
+        [{"year": y, "opinion": o} for y, o in opinion_by_year.items()],
+        key=lambda x: x["year"],
+    )
+
+    # --- total_flagged_amount ---
+    total_flagged_amount = float(sum(float(a.amount or 0) for a in audits))
+
+    # --- recurring_findings_count ---
+    qt_years: Dict[str, set] = {}
+    for a in audits:
+        if a.query_type and a.audit_year:
+            qt_years.setdefault(a.query_type, set()).add(a.audit_year)
+    recurring_findings_count = sum(1 for years in qt_years.values() if len(years) >= 2)
+
+    # --- unresolved_findings_count ---
+    unresolved_statuses = {"pending", "unresolved", "recurring"}
+    unresolved_findings_count = sum(
+        1 for a in audits
+        if a.status and a.status.lower() in unresolved_statuses
+    )
+
+    # --- absorption_rate from budget data ---
+    budget_lines = (
+        db.query(DBBudgetLine)
+        .filter(DBBudgetLine.entity_id == entity.id)
+        .all()
+    )
+    total_allocated = sum(float(b.allocated_amount or 0) for b in budget_lines)
+    total_spent = sum(float(b.actual_spent or 0) for b in budget_lines)
+    absorption_rate = (
+        round(total_spent / total_allocated, 4) if total_allocated > 0 else None
+    )
+
+    # --- accountability_grade ---
+    grade_order = ["A", "B", "C", "D", "F"]
+
+    def _drop_grade(current: str, steps: int = 1) -> str:
+        idx = grade_order.index(current)
+        return grade_order[min(idx + steps, len(grade_order) - 1)]
+
+    grade = "A"
+
+    # Adverse/Disclaimer opinion any year -> drop to D
+    for entry in audit_opinion_history:
+        op = entry["opinion"].lower()
+        if op in ("adverse", "disclaimer"):
+            grade = _drop_grade(grade, max(0, grade_order.index("D") - grade_order.index(grade)))
+            break
+
+    # Qualified opinion in latest year -> drop to C (if not already worse)
+    if audit_opinion_history:
+        latest_opinion = audit_opinion_history[-1]["opinion"].lower()
+        if latest_opinion == "qualified" and grade_order.index(grade) < grade_order.index("C"):
+            grade = "C"
+
+    # recurring_findings_count > 5 -> drop one grade
+    if recurring_findings_count > 5:
+        grade = _drop_grade(grade)
+
+    # unresolved_findings_count > 10 -> drop one grade
+    if unresolved_findings_count > 10:
+        grade = _drop_grade(grade)
+
+    # absorption_rate < 0.5 -> drop one grade
+    if absorption_rate is not None and absorption_rate < 0.5:
+        grade = _drop_grade(grade)
+
+    # --- peer_comparison ---
+    region = COUNTY_REGIONS.get(county_id, "Unknown")
+    region_county_ids = [cid for cid, r in COUNTY_REGIONS.items() if r == region and cid != county_id]
+
+    pop_data = (
+        db.query(DBPopulationData)
+        .filter(DBPopulationData.entity_id == entity.id)
+        .order_by(DBPopulationData.year.desc())
+        .first()
+    )
+    population = pop_data.total_population if pop_data else 0
+
+    if population < 500_000:
+        pop_bracket = "<500k"
+    elif population < 1_000_000:
+        pop_bracket = "500k-1M"
+    elif population < 2_000_000:
+        pop_bracket = "1M-2M"
+    else:
+        pop_bracket = ">2M"
+
+    # Collect peer stats for region
+    region_flagged_amounts: List[float] = []
+    region_grades: List[str] = []
+
+    def _grade_to_num(g: str) -> float:
+        return {"A": 4.0, "B": 3.0, "C": 2.0, "D": 1.0, "F": 0.0}.get(g, 0.0)
+
+    def _num_to_grade(n: float) -> str:
+        if n >= 3.5:
+            return "A"
+        if n >= 2.5:
+            return "B"
+        if n >= 1.5:
+            return "C"
+        if n >= 0.5:
+            return "D"
+        return "F"
+
+    for peer_cid in region_county_ids:
+        peer_name = COUNTY_MAPPING.get(peer_cid)
+        if not peer_name:
+            continue
+        peer_entity = (
+            db.query(DBEntity)
+            .filter(DBEntity.type == EntityType.COUNTY)
+            .filter(DBEntity.canonical_name == f"{peer_name} County")
+            .first()
+        )
+        if not peer_entity:
+            continue
+        peer_audits = (
+            db.query(DBAudit)
+            .filter(DBAudit.entity_id == peer_entity.id)
+            .all()
+        )
+        peer_flagged = float(sum(float(pa.amount or 0) for pa in peer_audits))
+        region_flagged_amounts.append(peer_flagged)
+
+        # Simplified peer grade (opinion-based for efficiency)
+        peer_opinions: Dict[int, str] = {}
+        for pa in peer_audits:
+            if pa.audit_year and pa.audit_opinion:
+                peer_opinions[pa.audit_year] = pa.audit_opinion
+        pg = "A"
+        for op in peer_opinions.values():
+            if op.lower() in ("adverse", "disclaimer"):
+                pg = "D"
+                break
+        if peer_opinions:
+            latest_y = max(peer_opinions.keys())
+            if peer_opinions[latest_y].lower() == "qualified" and pg == "A":
+                pg = "C"
+        region_grades.append(pg)
+
+    region_avg_flagged = (
+        round(sum(region_flagged_amounts) / len(region_flagged_amounts), 2)
+        if region_flagged_amounts else 0.0
+    )
+    region_avg_grade = (
+        _num_to_grade(sum(_grade_to_num(g) for g in region_grades) / len(region_grades))
+        if region_grades else None
+    )
+
+    # Population bracket average
+    bracket_flagged_amounts: List[float] = []
+    for cid, cname in COUNTY_MAPPING.items():
+        if cid == county_id:
+            continue
+        ce = (
+            db.query(DBEntity)
+            .filter(DBEntity.type == EntityType.COUNTY)
+            .filter(DBEntity.canonical_name == f"{cname} County")
+            .first()
+        )
+        if not ce:
+            continue
+        cp = (
+            db.query(DBPopulationData)
+            .filter(DBPopulationData.entity_id == ce.id)
+            .order_by(DBPopulationData.year.desc())
+            .first()
+        )
+        cpop = cp.total_population if cp else 0
+        if cpop < 500_000:
+            cb = "<500k"
+        elif cpop < 1_000_000:
+            cb = "500k-1M"
+        elif cpop < 2_000_000:
+            cb = "1M-2M"
+        else:
+            cb = ">2M"
+        if cb == pop_bracket:
+            ca = db.query(DBAudit).filter(DBAudit.entity_id == ce.id).all()
+            bracket_flagged_amounts.append(float(sum(float(x.amount or 0) for x in ca)))
+
+    population_bracket_avg = (
+        round(sum(bracket_flagged_amounts) / len(bracket_flagged_amounts), 2)
+        if bracket_flagged_amounts else 0.0
+    )
+
+    peer_comparison = {
+        "region": region,
+        "region_avg_flagged_amount": region_avg_flagged,
+        "region_avg_grade": region_avg_grade,
+        "population_bracket": pop_bracket,
+        "population_bracket_avg": population_bracket_avg,
+    }
+
+    return {
+        "county_id": county_id,
+        "county_name": (entity.canonical_name or "").replace(" County", ""),
+        "audit_opinion_history": audit_opinion_history,
+        "total_flagged_amount": total_flagged_amount,
+        "recurring_findings_count": recurring_findings_count,
+        "unresolved_findings_count": unresolved_findings_count,
+        "absorption_rate": absorption_rate,
+        "accountability_grade": grade,
+        "peer_comparison": peer_comparison,
+    }
+
+
+@app.get("/api/v1/counties/{county_id}/accountability")
+@cached(key_prefix="county:accountability", ttl=3600)
+async def get_county_accountability(county_id: str):
+    """County accountability scorecard with opinion history, grade, and peer comparison."""
+    if not DATABASE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+    county_name = COUNTY_MAPPING.get(county_id)
+    if not county_name:
+        raise HTTPException(status_code=404, detail="County not found")
+
+    try:
+        with next(get_db()) as db:
+            entity = (
+                db.query(DBEntity)
+                .filter(DBEntity.type == EntityType.COUNTY)
+                .filter(DBEntity.canonical_name == f"{county_name} County")
+                .first()
+            )
+            if not entity:
+                slug = county_name.lower().replace(" ", "-") + "-county"
+                entity = db.query(DBEntity).filter(DBEntity.slug == slug).first()
+            if not entity:
+                raise HTTPException(status_code=404, detail="County entity not found")
+
+            return _compute_accountability(db, entity, county_id)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Accountability scorecard failed for {county_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.get("/api/v1/counties/{county_id}/summary")
+@cached(key_prefix="county:summary", ttl=1800)
+async def get_county_summary(county_id: str):
+    """Lightweight county summary including accountability grade."""
+    if not DATABASE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+    county_name = COUNTY_MAPPING.get(county_id)
+    if not county_name:
+        raise HTTPException(status_code=404, detail="County not found")
+
+    try:
+        with next(get_db()) as db:
+            entity = (
+                db.query(DBEntity)
+                .filter(DBEntity.type == EntityType.COUNTY)
+                .filter(DBEntity.canonical_name == f"{county_name} County")
+                .first()
+            )
+            if not entity:
+                slug = county_name.lower().replace(" ", "-") + "-county"
+                entity = db.query(DBEntity).filter(DBEntity.slug == slug).first()
+            if not entity:
+                raise HTTPException(status_code=404, detail="County entity not found")
+
+            pop_data = (
+                db.query(DBPopulationData)
+                .filter(DBPopulationData.entity_id == entity.id)
+                .order_by(DBPopulationData.year.desc())
+                .first()
+            )
+            budget_lines = (
+                db.query(DBBudgetLine)
+                .filter(DBBudgetLine.entity_id == entity.id)
+                .all()
+            )
+            total_allocated = sum(float(b.allocated_amount or 0) for b in budget_lines)
+            total_spent = sum(float(b.actual_spent or 0) for b in budget_lines)
+            audits = db.query(DBAudit).filter(DBAudit.entity_id == entity.id).all()
+
+            scorecard = _compute_accountability(db, entity, county_id)
+
+            return {
+                "county_id": county_id,
+                "county_name": (entity.canonical_name or "").replace(" County", ""),
+                "population": pop_data.total_population if pop_data else 0,
+                "total_budget": total_allocated,
+                "total_spent": total_spent,
+                "audit_findings_count": len(audits),
+                "accountability_grade": scorecard["accountability_grade"],
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"County summary failed for {county_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
 @app.get("/api/v1/sources/status")
 async def get_sources_status():
     """Summarize crawl status from ETL manifest and latest pipeline results file."""
@@ -5448,6 +5811,483 @@ async def get_pending_bills(
             ],
         },
     }
+
+
+# ── Pending Bills Summary & County Breakdown ──────────────────────────
+
+
+@app.get("/api/v1/pending-bills/summary")
+@cached(key_prefix="pending_bills:summary_enhanced", ttl=43200)
+async def get_pending_bills_summary(db: Session = Depends(get_db)):
+    """Get pending bills summary with breakdown by type, aging, and county.
+
+    Returns total_pending_amount, breakdown_by_type, top_counties_by_amount,
+    aging_buckets, and trend data.
+    """
+    from models import BillType, PendingBill
+
+    try:
+        bills = db.query(PendingBill).all()
+
+        if not bills:
+            # Fallback: derive summary from Loan table (PENDING_BILLS category)
+            return _pending_bills_summary_from_loans(db)
+
+        total_pending = sum(float(b.amount or 0) for b in bills)
+
+        # Breakdown by type
+        breakdown_by_type = {}
+        for b in bills:
+            bt = b.bill_type.value if b.bill_type else "other"
+            breakdown_by_type[bt] = breakdown_by_type.get(bt, 0) + float(b.amount or 0)
+
+        # Top counties by amount
+        county_totals: Dict[int, Dict[str, Any]] = {}
+        for b in bills:
+            eid = b.entity_id
+            if eid not in county_totals:
+                entity = db.query(DBEntity).filter(DBEntity.id == eid).first()
+                county_totals[eid] = {
+                    "county": entity.canonical_name if entity else f"Entity {eid}",
+                    "entity_id": eid,
+                    "amount": 0,
+                    "entity_type": entity.type.value if entity and entity.type else "unknown",
+                }
+            county_totals[eid]["amount"] += float(b.amount or 0)
+
+        # Get population for per_capita (best-effort)
+        _pop_map = _get_population_map(db)
+        top_counties = sorted(county_totals.values(), key=lambda x: x["amount"], reverse=True)[:15]
+        for c in top_counties:
+            pop = _pop_map.get(c["county"], 0)
+            c["per_capita"] = round(c["amount"] / pop, 2) if pop > 0 else None
+
+        # Aging buckets
+        aging_buckets = {"0-30d": 0, "31-90d": 0, "91-180d": 0, "180d+": 0}
+        for b in bills:
+            amt = float(b.amount or 0)
+            days = b.aging_days or 0
+            if days <= 30:
+                aging_buckets["0-30d"] += amt
+            elif days <= 90:
+                aging_buckets["31-90d"] += amt
+            elif days <= 180:
+                aging_buckets["91-180d"] += amt
+            else:
+                aging_buckets["180d+"] += amt
+
+        # Trend by fiscal year
+        trend_map: Dict[str, float] = {}
+        for b in bills:
+            fy = b.fiscal_year or "unknown"
+            trend_map[fy] = trend_map.get(fy, 0) + float(b.amount or 0)
+        trend = [{"year": k, "total_amount": v} for k, v in sorted(trend_map.items())]
+
+        return {
+            "status": "success",
+            "data_source": "pending_bills_table",
+            "total_pending_amount": total_pending,
+            "breakdown_by_type": breakdown_by_type,
+            "top_counties_by_amount": top_counties,
+            "aging_buckets": aging_buckets,
+            "trend": trend,
+            "currency": "KES",
+        }
+
+    except Exception as e:
+        logging.error(f"Pending bills summary failed: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+def _get_population_map(db: Session) -> Dict[str, int]:
+    """Return {county_name: population} from latest PopulationData."""
+    try:
+        from sqlalchemy import func as sqlfunc
+
+        latest_year_sub = (
+            db.query(sqlfunc.max(DBPopulationData.year))
+            .filter(DBPopulationData.entity_id.isnot(None))
+            .scalar()
+        )
+        if not latest_year_sub:
+            return {}
+        rows = (
+            db.query(DBPopulationData, DBEntity)
+            .join(DBEntity, DBPopulationData.entity_id == DBEntity.id)
+            .filter(DBPopulationData.year == latest_year_sub)
+            .all()
+        )
+        return {e.canonical_name: int(p.population) for p, e in rows if p.population}
+    except Exception:
+        return {}
+
+
+def _pending_bills_summary_from_loans(db: Session) -> dict:
+    """Fallback: build summary from Loan table where debt_category = PENDING_BILLS."""
+    from models import DebtCategory
+
+    pending_loans = (
+        db.query(DBLoan)
+        .filter(DBLoan.debt_category == DebtCategory.PENDING_BILLS)
+        .all()
+    )
+    if not pending_loans:
+        return {
+            "status": "no_data",
+            "total_pending_amount": 0,
+            "breakdown_by_type": {},
+            "top_counties_by_amount": [],
+            "aging_buckets": {"0-30d": 0, "31-90d": 0, "91-180d": 0, "180d+": 0},
+            "trend": [],
+            "currency": "KES",
+            "note": "No pending bills data. Run: python -m seeding.cli seed --domain pending_bills",
+        }
+
+    total = sum(float(l.outstanding or l.principal or 0) for l in pending_loans)
+
+    # Group by entity
+    entity_totals: Dict[int, Dict[str, Any]] = {}
+    for l in pending_loans:
+        eid = l.entity_id
+        if eid not in entity_totals:
+            entity = db.query(DBEntity).filter(DBEntity.id == eid).first()
+            entity_totals[eid] = {
+                "county": entity.canonical_name if entity else f"Entity {eid}",
+                "entity_id": eid,
+                "amount": 0,
+            }
+        entity_totals[eid]["amount"] += float(l.outstanding or l.principal or 0)
+
+    top_counties = sorted(entity_totals.values(), key=lambda x: x["amount"], reverse=True)[:15]
+
+    # Derive bill type from lender name
+    breakdown_by_type: Dict[str, float] = {}
+    for l in pending_loans:
+        lender = (l.lender or "").lower()
+        if "salary" in lender or "wage" in lender:
+            bt = "salary"
+        elif "pension" in lender:
+            bt = "pension"
+        elif "statutory" in lender:
+            bt = "statutory"
+        elif "court" in lender or "award" in lender:
+            bt = "court_awards"
+        else:
+            bt = "supplier_arrears"
+        breakdown_by_type[bt] = breakdown_by_type.get(bt, 0) + float(
+            l.outstanding or l.principal or 0
+        )
+
+    # Trend from provenance fiscal_year
+    trend_map: Dict[str, float] = {}
+    for l in pending_loans:
+        prov = l.provenance if isinstance(l.provenance, dict) else {}
+        fy = prov.get("fiscal_year", "unknown")
+        trend_map[fy] = trend_map.get(fy, 0) + float(l.outstanding or l.principal or 0)
+    trend = [{"year": k, "total_amount": v} for k, v in sorted(trend_map.items())]
+
+    return {
+        "status": "success",
+        "data_source": "loans_table_fallback",
+        "total_pending_amount": total,
+        "breakdown_by_type": breakdown_by_type,
+        "top_counties_by_amount": top_counties,
+        "aging_buckets": {"0-30d": 0, "31-90d": 0, "91-180d": 0, "180d+": total},
+        "trend": trend,
+        "currency": "KES",
+        "note": "Derived from loans table. Seed pending_bills table for richer data.",
+    }
+
+
+@app.get("/api/v1/pending-bills/counties/{county_id}")
+@cached(key_prefix="pending_bills:county", ttl=43200)
+async def get_pending_bills_by_county(county_id: str, db: Session = Depends(get_db)):
+    """Get pending bills breakdown for a specific county by type and aging."""
+    from models import BillType, PendingBill
+
+    try:
+        # Resolve county entity
+        entity = _resolve_county_entity(db, county_id)
+        if not entity:
+            raise HTTPException(status_code=404, detail=f"County '{county_id}' not found")
+
+        bills = db.query(PendingBill).filter(PendingBill.entity_id == entity.id).all()
+
+        if not bills:
+            # Fallback to loans table
+            from models import DebtCategory
+
+            pending_loans = (
+                db.query(DBLoan)
+                .filter(
+                    DBLoan.entity_id == entity.id,
+                    DBLoan.debt_category == DebtCategory.PENDING_BILLS,
+                )
+                .all()
+            )
+            total = sum(float(l.outstanding or l.principal or 0) for l in pending_loans)
+            return {
+                "status": "success" if pending_loans else "no_data",
+                "data_source": "loans_table_fallback" if pending_loans else "none",
+                "county": entity.canonical_name,
+                "county_id": county_id,
+                "total_pending": total,
+                "breakdown_by_type": {"supplier_arrears": total} if total else {},
+                "aging_buckets": {"0-30d": 0, "31-90d": 0, "91-180d": 0, "180d+": total},
+                "bills": [],
+                "currency": "KES",
+            }
+
+        total_pending = sum(float(b.amount or 0) for b in bills)
+
+        # Breakdown by type
+        by_type: Dict[str, float] = {}
+        for b in bills:
+            bt = b.bill_type.value if b.bill_type else "other"
+            by_type[bt] = by_type.get(bt, 0) + float(b.amount or 0)
+
+        # Aging buckets
+        aging = {"0-30d": 0, "31-90d": 0, "91-180d": 0, "180d+": 0}
+        for b in bills:
+            amt = float(b.amount or 0)
+            days = b.aging_days or 0
+            if days <= 30:
+                aging["0-30d"] += amt
+            elif days <= 90:
+                aging["31-90d"] += amt
+            elif days <= 180:
+                aging["91-180d"] += amt
+            else:
+                aging["180d+"] += amt
+
+        bill_details = [
+            {
+                "bill_type": b.bill_type.value if b.bill_type else "other",
+                "amount": float(b.amount or 0),
+                "fiscal_year": b.fiscal_year,
+                "aging_days": b.aging_days,
+            }
+            for b in bills
+        ]
+
+        return {
+            "status": "success",
+            "data_source": "pending_bills_table",
+            "county": entity.canonical_name,
+            "county_id": county_id,
+            "total_pending": total_pending,
+            "breakdown_by_type": by_type,
+            "aging_buckets": aging,
+            "bills": bill_details,
+            "currency": "KES",
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Pending bills county lookup failed: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+def _resolve_county_entity(db: Session, county_id: str):
+    """Resolve county by numeric ID, slug, or name."""
+    # Try by entity table id
+    if county_id.isdigit():
+        entity = (
+            db.query(DBEntity)
+            .filter(DBEntity.id == int(county_id), DBEntity.type == EntityType.COUNTY)
+            .first()
+        )
+        if entity:
+            return entity
+
+    # Try by slug
+    entity = (
+        db.query(DBEntity)
+        .filter(DBEntity.slug == county_id.lower(), DBEntity.type == EntityType.COUNTY)
+        .first()
+    )
+    if entity:
+        return entity
+
+    # Try by COUNTY_MAPPING
+    county_name = COUNTY_MAPPING.get(county_id)
+    if county_name:
+        entity = (
+            db.query(DBEntity)
+            .filter(
+                DBEntity.canonical_name == county_name,
+                DBEntity.type == EntityType.COUNTY,
+            )
+            .first()
+        )
+        if entity:
+            return entity
+
+    # Try by name (case-insensitive)
+    entity = (
+        db.query(DBEntity)
+        .filter(
+            DBEntity.canonical_name.ilike(county_id),
+            DBEntity.type == EntityType.COUNTY,
+        )
+        .first()
+    )
+    return entity
+
+
+# ── Debt Sustainability Indicators ─────────────────────────────────────
+
+
+@app.get("/api/v1/debt/sustainability")
+@cached(key_prefix="debt:sustainability", ttl=86400)
+async def get_debt_sustainability(db: Session = Depends(get_db)):
+    """Get debt sustainability indicators, projections, and regional comparison.
+
+    Returns debt-to-GDP, debt-service-to-revenue, external share,
+    5-year projections, and EAC regional peers.
+    """
+    from models import DebtTimeline, FiscalSummary
+
+    try:
+        # Latest debt timeline entry (has debt/GDP data)
+        latest_dt = (
+            db.query(DebtTimeline).order_by(DebtTimeline.year.desc()).first()
+        )
+        # Latest fiscal summary (has debt service and revenue)
+        latest_fs = (
+            db.query(FiscalSummary).order_by(FiscalSummary.fiscal_year.desc()).first()
+        )
+
+        if not latest_dt and not latest_fs:
+            return {
+                "status": "no_data",
+                "note": "Run seeders: debt_timeline and fiscal_summary",
+                "debt_to_gdp": None,
+                "debt_service_to_revenue": None,
+                "external_debt_share": None,
+                "projections": [],
+                "regional_peers": _get_regional_peers(),
+            }
+
+        # ── Debt-to-GDP ────────────────────────────────────────────
+        debt_to_gdp = None
+        if latest_dt and latest_dt.gdp_ratio:
+            ratio = float(latest_dt.gdp_ratio)
+            if ratio > 55:
+                status = "above"
+            elif ratio > 50:
+                status = "warning"
+            else:
+                status = "below"
+            debt_to_gdp = {
+                "value": ratio,
+                "year": latest_dt.year,
+                "threshold_imf": 55.0,
+                "threshold_eac": 50.0,
+                "status": status,
+            }
+
+        # ── Debt Service to Revenue ────────────────────────────────
+        debt_service_to_revenue = None
+        if latest_fs and latest_fs.debt_service_cost and latest_fs.total_revenue:
+            ds = float(latest_fs.debt_service_cost)
+            rev = float(latest_fs.total_revenue)
+            if rev > 0:
+                ratio_val = round(ds / rev * 100, 1)
+                debt_service_to_revenue = {
+                    "value": ratio_val,
+                    "year": latest_fs.fiscal_year,
+                    "threshold": 30.0,
+                    "status": "above" if ratio_val > 30 else ("warning" if ratio_val > 25 else "below"),
+                }
+
+        # ── External Debt Share ────────────────────────────────────
+        external_share = None
+        if latest_dt and latest_dt.total and latest_dt.external:
+            total = float(latest_dt.total)
+            ext = float(latest_dt.external)
+            if total > 0:
+                external_share = round(ext / total * 100, 1)
+
+        # ── 5-Year Projections (linear extrapolation) ──────────────
+        projections = _compute_debt_projections(db)
+
+        # ── Regional Peers ─────────────────────────────────────────
+        peers = _get_regional_peers(
+            kenya_ratio=float(latest_dt.gdp_ratio) if latest_dt and latest_dt.gdp_ratio else None
+        )
+
+        return {
+            "status": "success",
+            "debt_to_gdp": debt_to_gdp,
+            "debt_service_to_revenue": debt_service_to_revenue,
+            "external_debt_share": external_share,
+            "projections": projections,
+            "regional_peers": peers,
+            "currency": "KES",
+            "source": "National Treasury BPS, CBK Annual Reports",
+        }
+
+    except Exception as e:
+        logging.error(f"Debt sustainability failed: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+def _compute_debt_projections(db: Session) -> list:
+    """Simple linear extrapolation of debt-to-GDP for next 5 years."""
+    from models import DebtTimeline
+
+    rows = (
+        db.query(DebtTimeline)
+        .filter(DebtTimeline.gdp_ratio.isnot(None))
+        .order_by(DebtTimeline.year.asc())
+        .all()
+    )
+    if len(rows) < 2:
+        return []
+
+    # Use last 5 data points (or all if < 5) for linear fit
+    recent = rows[-5:]
+    n = len(recent)
+    xs = [float(r.year) for r in recent]
+    ys = [float(r.gdp_ratio) for r in recent]
+
+    x_mean = sum(xs) / n
+    y_mean = sum(ys) / n
+    num = sum((xs[i] - x_mean) * (ys[i] - y_mean) for i in range(n))
+    den = sum((xs[i] - x_mean) ** 2 for i in range(n))
+
+    if den == 0:
+        return []
+
+    slope = num / den
+    intercept = y_mean - slope * x_mean
+
+    last_year = int(xs[-1])
+    projections = []
+    for i in range(1, 6):
+        proj_year = last_year + i
+        proj_val = round(slope * proj_year + intercept, 1)
+        projections.append({"year": proj_year, "projected_debt_to_gdp": proj_val})
+
+    return projections
+
+
+def _get_regional_peers(kenya_ratio: Optional[float] = None) -> list:
+    """Return EAC regional debt-to-GDP comparison.
+
+    Uses latest known values from IMF/World Bank data.
+    """
+    # Latest known values (IMF World Economic Outlook, 2024 estimates)
+    peers = [
+        {"country": "Kenya", "debt_to_gdp": kenya_ratio or 68.8},
+        {"country": "Ethiopia", "debt_to_gdp": 37.3},
+        {"country": "Tanzania", "debt_to_gdp": 42.1},
+        {"country": "Uganda", "debt_to_gdp": 48.4},
+        {"country": "Rwanda", "debt_to_gdp": 66.2},
+    ]
+    return peers
 
 
 @app.get("/api/v1/entities", response_model=List[EntityResponse])

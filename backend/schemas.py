@@ -108,6 +108,14 @@ class AuditResponse(BaseModel):
     recommended_action: Optional[str]
     source_document_id: int
     provenance: List[ProvenanceResponse] = []
+    query_type: Optional[str] = None
+    amount: Optional[float] = None
+    status: Optional[str] = None
+    audit_opinion: Optional[str] = None
+    audit_year: Optional[int] = None
+    external_reference: Optional[str] = None
+    management_response: Optional[str] = None
+    follow_up_status: Optional[str] = None
 
     class Config:
         from_attributes = True

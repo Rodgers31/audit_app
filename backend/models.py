@@ -262,6 +262,17 @@ class Audit(Base):
         Integer, ForeignKey("source_documents.id"), nullable=False
     )
     provenance = Column(JSONB, default=list)
+
+    # Audit finding detail columns
+    query_type = Column(String(100), nullable=True)
+    amount = Column(Numeric(15, 2), nullable=True)
+    status = Column(String(50), nullable=True)
+    audit_opinion = Column(String(50), nullable=True)
+    audit_year = Column(Integer, nullable=True)
+    external_reference = Column(String(200), nullable=True)
+    management_response = Column(Text, nullable=True)
+    follow_up_status = Column(String(100), nullable=True)
+
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relationships
@@ -674,6 +685,55 @@ class FiscalSummary(Base):
     )
 
     # Relationships
+    source_document = relationship("SourceDocument")
+
+
+class BillType(enum.Enum):
+    """Classification of pending bill types."""
+
+    SUPPLIER_ARREARS = "supplier_arrears"
+    SALARY = "salary"
+    PENSION = "pension"
+    STATUTORY = "statutory"
+    COURT_AWARDS = "court_awards"
+    OTHER = "other"
+
+
+class PendingBill(Base):
+    """Pending bills (unpaid government obligations) with aging and type info.
+
+    Source: Office of the Controller of Budget (OCOB) reports.
+    """
+
+    __tablename__ = "pending_bills"
+    __table_args__ = (
+        UniqueConstraint(
+            "entity_id", "bill_type", "fiscal_year",
+            name="uq_pending_bill_entity_type_fy",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    entity_id = Column(Integer, ForeignKey("entities.id"), nullable=False)
+    bill_type = Column(Enum(BillType), nullable=False, default=BillType.SUPPLIER_ARREARS)
+    amount = Column(Numeric(15, 2), nullable=False)  # KES
+    fiscal_year = Column(String(20), nullable=False, index=True)  # e.g. "2024/25"
+    aging_days = Column(Integer, nullable=True)  # days the bill has been pending
+    eligible_amount = Column(Numeric(15, 2), nullable=True)
+    ineligible_amount = Column(Numeric(15, 2), nullable=True)
+    source_document_id = Column(
+        Integer, ForeignKey("source_documents.id"), nullable=True
+    )
+    meta = Column("metadata", JSONB, default=dict)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    # Relationships
+    entity = relationship("Entity")
     source_document = relationship("SourceDocument")
 
 

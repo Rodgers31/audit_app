@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import and_, desc, func
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -69,8 +69,16 @@ class PopulationResponse(BaseModel):
     source_document_id: Optional[int]
     created_at: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PopulationLatestResponse(BaseModel):
+    """Lightweight response for the latest national population figure."""
+
+    population: int
+    year: int
+    source: Optional[str] = None
+    updated_at: Optional[str] = None
 
 
 class GDPResponse(BaseModel):
@@ -89,8 +97,7 @@ class GDPResponse(BaseModel):
     source_document_id: Optional[int]
     created_at: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class EconomicIndicatorResponse(BaseModel):
@@ -108,8 +115,7 @@ class EconomicIndicatorResponse(BaseModel):
     source_document_id: Optional[int]
     created_at: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PovertyIndexResponse(BaseModel):
@@ -127,8 +133,7 @@ class PovertyIndexResponse(BaseModel):
     source_document_id: Optional[int]
     created_at: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CountyEconomicProfile(BaseModel):
@@ -182,6 +187,45 @@ def get_entity_info(entity_id: Optional[int], db: Session) -> tuple:
 
 
 # ===== Population Endpoints =====
+
+
+@router.get(
+    "/population/latest",
+    response_model=PopulationLatestResponse,
+    summary="Get Latest National Population",
+)
+async def get_population_latest(db: Session = Depends(get_db)):
+    """Return the most recent national-level population record."""
+    if not DATABASE_AVAILABLE or db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    try:
+        row = (
+            db.query(PopulationData)
+            .filter(PopulationData.entity_id.is_(None))
+            .order_by(desc(PopulationData.year))
+            .first()
+        )
+    except OperationalError as e:
+        logger.error("Database connection error on /population/latest: %s", e)
+        raise HTTPException(status_code=503, detail="Database unavailable")
+    except SQLAlchemyError as e:
+        logger.error("Database error on /population/latest: %s", e)
+        raise HTTPException(status_code=500, detail="Database query failed")
+
+    if not row:
+        raise HTTPException(status_code=404, detail="No population data found")
+
+    source_name = None
+    if row.source_document:
+        source_name = row.source_document.title
+
+    return PopulationLatestResponse(
+        population=row.total_population,
+        year=row.year,
+        source=source_name or "KNBS",
+        updated_at=row.created_at.isoformat() if row.created_at else None,
+    )
 
 
 @router.get(

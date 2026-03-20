@@ -169,3 +169,81 @@ export const getPendingBills = async (): Promise<PendingBillsResponse> => {
   const response = await apiClient.get<PendingBillsResponse>(DEBT_ENDPOINTS.PENDING_BILLS);
   return response.data;
 };
+
+// Enhanced pending bills summary (breakdown by type, aging, top counties, trend)
+export interface PendingBillsSummaryResponse {
+  total_pending_amount: number;
+  breakdown_by_type: {
+    type: string;
+    amount: number;
+    percentage: number;
+  }[];
+  top_counties_by_amount: {
+    county_id: string;
+    county_name: string;
+    amount: number;
+    per_capita: number;
+    population: number;
+  }[];
+  aging_buckets: {
+    bucket: string;
+    amount: number;
+    percentage: number;
+    count: number;
+  }[];
+  trend: {
+    year: string;
+    amount: number;
+  }[];
+}
+
+export const getPendingBillsSummary = async (): Promise<PendingBillsSummaryResponse> => {
+  const response = await apiClient.get<PendingBillsSummaryResponse>(DEBT_ENDPOINTS.PENDING_BILLS_SUMMARY);
+  return response.data;
+};
+
+// County-level pending bills breakdown
+export interface CountyPendingBillsResponse {
+  county_id: string;
+  county_name: string;
+  total_pending: number;
+  breakdown_by_type: {
+    type: string;
+    amount: number;
+    percentage: number;
+  }[];
+  aging_buckets: {
+    bucket: string;
+    amount: number;
+    percentage: number;
+    count: number;
+  }[];
+}
+
+export const getCountyPendingBills = async (countyId: string): Promise<CountyPendingBillsResponse> => {
+  const response = await apiClient.get<CountyPendingBillsResponse>(DEBT_ENDPOINTS.PENDING_BILLS_COUNTY(countyId));
+  return response.data;
+};
+
+// Debt sustainability indicators (national level)
+export interface DebtSustainabilityResponse {
+  debt_to_gdp: number;
+  debt_service_to_revenue: number;
+  external_debt_share: number;
+  projections: {
+    year: number;
+    debt_to_gdp: number;
+    debt_service_to_revenue: number;
+  }[];
+  regional_peers: {
+    country: string;
+    debt_to_gdp: number;
+    debt_service_to_revenue: number;
+    external_debt_share: number;
+  }[];
+}
+
+export const getDebtSustainability = async (): Promise<DebtSustainabilityResponse> => {
+  const response = await apiClient.get<DebtSustainabilityResponse>(DEBT_ENDPOINTS.DEBT_SUSTAINABILITY);
+  return response.data;
+};

@@ -9,6 +9,7 @@ export {
   useCountiesInfinite,
   useCountiesSearch,
   useCounty,
+  useCountyAccountability,
   useCountyByCode,
   useCountyComprehensive,
   useCountyFinancialSummary,
@@ -18,14 +19,18 @@ export {
 
 // Audits hooks
 export {
+  useAuditDashboardSummary,
+  useAuditFindings,
   useAuditReport,
   useAuditReports,
   useAuditReportsInfinite,
   useAuditStatistics,
+  useAuditTrends,
   useAvailableFiscalYears,
   useCountyAuditReports,
   useCountyAuditsEnriched,
   useLatestCountyAudit,
+  useRecurringFindings,
 } from './useAudits';
 
 // Budget hooks
@@ -43,12 +48,15 @@ export {
 // Debt hooks
 export {
   useCountyDebtData,
+  useCountyPendingBills,
   useDebtBreakdown,
   useDebtComparison,
   useDebtRiskAssessment,
+  useDebtSustainability,
   useDebtSustainabilityIndicators,
   useDebtTimeline,
   useNationalDebtOverview,
+  usePendingBillsSummary,
   useTopLoans,
 } from './useDebt';
 
@@ -65,6 +73,9 @@ export {
   useSectorPerformance,
   useTransparencyIndex,
 } from './useStatistics';
+
+// Money Flow hooks
+export { useCountyMoneyFlow, useNationalMoneyFlow } from './useMoneyFlow';
 
 // Query Provider
 export { QueryProvider } from './QueryProvider';

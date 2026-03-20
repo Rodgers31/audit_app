@@ -18,7 +18,7 @@ from auth import get_current_user
 from database import get_db
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from models import DataAlert, NewsletterSubscriber, User, WatchlistItem
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import ConfigDict, BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 
 router = APIRouter(tags=["user-features"])
@@ -42,8 +42,7 @@ class WatchlistItemOut(BaseModel):
     notify: bool
     created_at: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AlertOut(BaseModel):
@@ -56,8 +55,7 @@ class AlertOut(BaseModel):
     read: bool
     created_at: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class NewsletterRequest(BaseModel):

@@ -41,6 +41,8 @@ export const COUNTIES_ENDPOINTS = {
   DEBT: (id: string) => `/counties/${id}/debt`,
   DEBT_TIMELINE: (id: string) => `/counties/${id}/debt/timeline`,
   DEBT_SUSTAINABILITY: (id: string) => `/counties/${id}/debt/sustainability`,
+  ACCOUNTABILITY: (id: string) => `/counties/${id}/accountability`,
+  MONEY_FLOW: (id: string) => `/counties/${id}/money-flow`,
 } as const;
 
 /**
@@ -58,6 +60,13 @@ export const AUDITS_ENDPOINTS = {
 
   // Federal / national government audits
   FEDERAL: '/audits/federal',
+
+  // National audit dashboard
+  DASHBOARD_SUMMARY: '/audit/summary',
+  DASHBOARD_TRENDS: '/audit/trends',
+  DASHBOARD_RECURRING: '/audit/recurring',
+  DASHBOARD_FINDINGS: '/audit/findings',
+  MONEY_FLOW_NATIONAL: '/audit/money-flow/national',
 } as const;
 
 /**
@@ -86,11 +95,14 @@ export const DEBT_ENDPOINTS = {
   BREAKDOWN_BY_COUNTY: (countyId: string) => `/debt/breakdown/${countyId}`,
   TIMELINE: '/debt/timeline',
   PENDING_BILLS: '/pending-bills',
+  PENDING_BILLS_SUMMARY: '/pending-bills/summary',
+  PENDING_BILLS_COUNTY: (countyId: string) => `/pending-bills/counties/${countyId}`,
 
   // Analysis and comparison
   COMPARISON: '/debt/comparison',
   TOP_LOANS: '/debt/top-loans',
   SUSTAINABILITY: '/debt/sustainability',
+  DEBT_SUSTAINABILITY: '/debt/sustainability',
   RISK_ASSESSMENT: '/debt/risk-assessment',
 } as const;
 
@@ -151,12 +163,20 @@ export const buildUrlWithParams = (endpoint: string, params?: Record<string, any
 /**
  * All endpoints grouped for easy reference
  */
+/**
+ * Data Quality Endpoints
+ */
+export const DATA_QUALITY_ENDPOINTS = {
+  FRESHNESS: '/data/freshness',
+} as const;
+
 export const API_ENDPOINTS = {
   COUNTIES: COUNTIES_ENDPOINTS,
   AUDITS: AUDITS_ENDPOINTS,
   BUDGET: BUDGET_ENDPOINTS,
   DEBT: DEBT_ENDPOINTS,
   STATISTICS: STATISTICS_ENDPOINTS,
+  DATA_QUALITY: DATA_QUALITY_ENDPOINTS,
 } as const;
 
 /**

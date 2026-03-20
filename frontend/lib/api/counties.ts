@@ -1,7 +1,7 @@
 /**
  * Counties API service
  */
-import { County, CountyComprehensive } from '@/types';
+import { AccountabilityScorecard, County, CountyComprehensive } from '@/types';
 import { apiClient } from './axios';
 import { COUNTIES_ENDPOINTS, buildUrlWithParams } from './endpoints';
 import { ApiResponse, CountyFilters, CountyResponse, PaginatedResponse } from './types';
@@ -199,5 +199,13 @@ export const getFlaggedCounties = async (): Promise<CountyResponse[]> => {
 // Get comprehensive county data (one-stop detail)
 export const getCountyComprehensive = async (id: string): Promise<CountyComprehensive> => {
   const response = await apiClient.get<CountyComprehensive>(COUNTIES_ENDPOINTS.COMPREHENSIVE(id));
+  return response.data;
+};
+
+// Get county accountability scorecard
+export const getCountyAccountability = async (id: string): Promise<AccountabilityScorecard> => {
+  const response = await apiClient.get<AccountabilityScorecard>(
+    COUNTIES_ENDPOINTS.ACCOUNTABILITY(id)
+  );
   return response.data;
 };
