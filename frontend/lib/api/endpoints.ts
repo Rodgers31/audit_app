@@ -42,6 +42,7 @@ export const COUNTIES_ENDPOINTS = {
   DEBT_TIMELINE: (id: string) => `/counties/${id}/debt/timeline`,
   DEBT_SUSTAINABILITY: (id: string) => `/counties/${id}/debt/sustainability`,
   ACCOUNTABILITY: (id: string) => `/counties/${id}/accountability`,
+  MONEY_FLOW: (id: string) => `/counties/${id}/money-flow`,
 } as const;
 
 /**
@@ -65,6 +66,7 @@ export const AUDITS_ENDPOINTS = {
   DASHBOARD_TRENDS: '/audit/trends',
   DASHBOARD_RECURRING: '/audit/recurring',
   DASHBOARD_FINDINGS: '/audit/findings',
+  MONEY_FLOW_NATIONAL: '/audit/money-flow/national',
 } as const;
 
 /**

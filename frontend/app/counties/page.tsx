@@ -1,7 +1,9 @@
 'use client';
 
+import { apiClient } from '@/lib/api/axios';
 import { useCounties } from '@/lib/react-query';
 import { County } from '@/types';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
   AlertTriangle,
@@ -95,6 +97,50 @@ function gradeCategory(score: number): string {
   if (score >= 40) return 'C';
   if (score >= 20) return 'D';
   return 'D-';
+}
+
+/* ── Accountability Grade Badge ─────────── */
+const ACCT_GRADE_COLORS: Record<string, string> = {
+  A: 'bg-emerald-500 text-white',
+  B: 'bg-teal-500 text-white',
+  C: 'bg-yellow-400 text-yellow-900',
+  D: 'bg-orange-500 text-white',
+  F: 'bg-red-600 text-white',
+};
+
+function useAccountabilityGrades(countyIds: string[]) {
+  return useQuery({
+    queryKey: ['accountability-grades', countyIds.sort().join(',')],
+    queryFn: async () => {
+      const results: Record<string, string> = {};
+      const promises = countyIds.map(async (id) => {
+        try {
+          const res = await apiClient.get<{ accountability_grade: string }>(
+            `/counties/${id}/summary`
+          );
+          results[id] = res.data.accountability_grade;
+        } catch {
+          // Skip failed fetches
+        }
+      });
+      await Promise.all(promises);
+      return results;
+    },
+    enabled: countyIds.length > 0,
+    staleTime: 30 * 60 * 1000,
+  });
+}
+
+function AccountabilityBadge({ grade }: { grade?: string }) {
+  if (!grade) return null;
+  const cls = ACCT_GRADE_COLORS[grade] || 'bg-gray-200 text-gray-700';
+  return (
+    <span
+      className={`inline-flex items-center justify-center w-5 h-5 text-[9px] font-bold rounded ${cls}`}
+      title={`Accountability Grade: ${grade}`}>
+      {grade}
+    </span>
+  );
 }
 
 /* ── County → Region mapping (Kenya's 8 former provinces) ─────────── */
@@ -1102,6 +1148,7 @@ function CountyRankingsTable({
   onSort,
   showAll,
   setShowAll,
+  acctGrades,
 }: {
   counties: County[];
   sortField: SortField;
@@ -1109,6 +1156,7 @@ function CountyRankingsTable({
   onSort: (f: SortField) => void;
   showAll: boolean;
   setShowAll: React.Dispatch<React.SetStateAction<boolean>>;
+  acctGrades?: Record<string, string>;
 }) {
   const [page, setPage] = useState(1);
   const totalPages = Math.ceil(counties.length / PAGE_SIZE);
@@ -1196,6 +1244,7 @@ function CountyRankingsTable({
                       <span className='font-semibold text-sm text-gray-900 group-hover:text-gov-forest transition-colors'>
                         {county.name}
                       </span>
+                      <AccountabilityBadge grade={acctGrades?.[county.id]} />
                     </Link>
                   </td>
                   <td className='py-3 px-3 text-sm text-gray-600 tabular-nums'>
@@ -1321,6 +1370,10 @@ export default function CountyExplorerPage() {
   const [yearOpen, setYearOpen] = useState(false);
 
   const { data: counties, isLoading, error, refetch } = useCounties({ fiscalYear: selectedYear });
+
+  // Fetch accountability grades for all counties
+  const countyIds = useMemo(() => (counties || []).map((c) => c.id), [counties]);
+  const { data: acctGrades } = useAccountabilityGrades(countyIds);
 
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -1680,6 +1733,7 @@ export default function CountyExplorerPage() {
                   onSort={handleSort}
                   showAll={showAll}
                   setShowAll={setShowAll}
+                  acctGrades={acctGrades}
                 />
               </motion.div>
             </div>
