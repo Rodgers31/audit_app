@@ -72,7 +72,9 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/audit_app_test
           REDIS_URL: redis://localhost:6379
           TESTING: true
-          PYTHONPATH: .
+          # Use absolute path to backend/ so the repo-root stub seeding/ package
+          # never shadows backend/seeding/ in sys.path.
+          PYTHONPATH: ${{ github.workspace }}/backend
 
       - name: Check Test Coverage Threshold
         continue-on-error: true
