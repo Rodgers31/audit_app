@@ -6,9 +6,6 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-# Skip entire module if pdfplumber is not installed (e.g. minimal CI environments)
-pdfplumber = pytest.importorskip("pdfplumber", reason="pdfplumber not installed")
-
 from seeding.pdf_parsers import (
     CoBQuarterlyReportParser,
     ExtractedTable,
