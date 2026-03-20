@@ -9,11 +9,13 @@ from utils.exchange_rate import FALLBACK_RATE, get_usd_kes_rate, _fetch_rate
 
 
 @pytest.fixture(autouse=True)
-def _clear_cache():
-    """Ensure cache is clean for each test."""
-    with patch("utils.exchange_rate.cache") as mock_cache:
-        mock_cache.get.return_value = None
-        yield mock_cache
+def _clear_caches(tmp_path, monkeypatch):
+    """Disable file and Redis caches for each test."""
+    # Point file cache to a temp file (always missing = no file cache hit)
+    monkeypatch.setattr("utils.exchange_rate.FILE_CACHE_PATH", str(tmp_path / "rate.json"))
+    # Make Redis unavailable so we fall through to HTTP
+    with patch("utils.exchange_rate._get_redis_cache", return_value=None):
+        yield
 
 
 class TestFetchRate:
@@ -39,11 +41,19 @@ class TestFetchRate:
 
 
 class TestGetUsdKesRate:
-    def test_returns_cached_value(self, _clear_cache):
-        _clear_cache.get.return_value = 130.0
-        assert get_usd_kes_rate() == 130.0
+    def test_returns_cached_value(self, tmp_path, monkeypatch):
+        """File cache hit returns cached value without HTTP call."""
+        import json, time
+        cache_file = tmp_path / "rate.json"
+        cache_file.write_text(json.dumps({"rate": 130.0, "timestamp": time.time()}))
+        monkeypatch.setattr("utils.exchange_rate.FILE_CACHE_PATH", str(cache_file))
+        monkeypatch.setattr("utils.exchange_rate._get_redis_cache", lambda: None)
 
-    def test_fetches_and_caches_on_miss(self, _clear_cache):
+        with patch("utils.exchange_rate.httpx.get") as mock_get:
+            assert get_usd_kes_rate() == 130.0
+            mock_get.assert_not_called()
+
+    def test_fetches_and_caches_on_miss(self):
         mock_resp = MagicMock()
         mock_resp.json.return_value = {"rates": {"KES": 132.0}}
         mock_resp.raise_for_status = MagicMock()
@@ -52,13 +62,12 @@ class TestGetUsdKesRate:
             rate = get_usd_kes_rate()
 
         assert rate == 132.0
-        _clear_cache.set.assert_called_once()
 
-    def test_falls_back_on_all_failures(self, _clear_cache):
+    def test_falls_back_on_all_failures(self):
         with patch("utils.exchange_rate.httpx.get", side_effect=httpx.ConnectError("fail")):
             assert get_usd_kes_rate() == FALLBACK_RATE
 
-    def test_tries_fallback_url(self, _clear_cache):
+    def test_tries_fallback_url(self):
         fail_resp = httpx.ConnectError("fail")
         ok_resp = MagicMock()
         ok_resp.json.return_value = {"rates": {"KES": 133.0}}
