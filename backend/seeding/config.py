@@ -64,7 +64,7 @@ class SeedingSettings(BaseSettings):
         description="Whether HTTP client should automatically follow redirects.",
     )
     population_dataset_url: str = Field(
-        default="file://backend/seeding/real_data/population.json",
+        default="file://seeding/real_data/population.json",
         description=(
             "Endpoint providing population statistics payloads. "
             "Use file:// for local fixtures or https:// for production APIs "
@@ -72,7 +72,7 @@ class SeedingSettings(BaseSettings):
         ),
     )
     budgets_dataset_url: str = Field(
-        default="file://backend/seeding/real_data/budgets.json",
+        default="file://seeding/real_data/budgets.json",
         description=(
             "Endpoint containing county budget summaries. "
             "Use file:// for local fixtures or https:// for production APIs "
@@ -80,7 +80,7 @@ class SeedingSettings(BaseSettings):
         ),
     )
     audits_dataset_url: str = Field(
-        default="file://backend/seeding/real_data/audits.json",
+        default="file://seeding/real_data/audits.json",
         description=(
             "Endpoint containing audit findings dataset. "
             "Use file:// for local fixtures or https:// for production APIs "
@@ -88,7 +88,7 @@ class SeedingSettings(BaseSettings):
         ),
     )
     economic_indicators_dataset_url: str = Field(
-        default="file://backend/seeding/real_data/economic_indicators.json",
+        default="file://seeding/real_data/economic_indicators.json",
         description=(
             "Endpoint containing economic indicator time series. "
             "Use file:// for local fixtures or https:// for production APIs "
@@ -96,7 +96,7 @@ class SeedingSettings(BaseSettings):
         ),
     )
     national_debt_dataset_url: str = Field(
-        default="file://backend/seeding/real_data/national_debt.json",
+        default="file://seeding/real_data/national_debt.json",
         description=(
             "Endpoint containing national debt and loan data (CBK Public Debt Bulletin). "
             "Use file:// for local data or https:// for production APIs "
@@ -104,7 +104,7 @@ class SeedingSettings(BaseSettings):
         ),
     )
     pending_bills_dataset_url: Optional[str] = Field(
-        default="file://backend/seeding/fixtures/pending_bills.json",
+        default="file://seeding/fixtures/pending_bills.json",
         description=(
             "Endpoint containing pending bills data. "
             "If None, the live COB ETL extractor runs instead. "
@@ -115,7 +115,7 @@ class SeedingSettings(BaseSettings):
         ),
     )
     debt_timeline_dataset_url: str = Field(
-        default="file://backend/seeding/real_data/debt_timeline.json",
+        default="file://seeding/real_data/debt_timeline.json",
         description=(
             "Endpoint containing historical public debt timeline by year. "
             "Use file:// for local fixtures or https:// for production APIs. "
@@ -123,7 +123,7 @@ class SeedingSettings(BaseSettings):
         ),
     )
     fiscal_summary_dataset_url: str = Field(
-        default="file://backend/seeding/real_data/fiscal_summary.json",
+        default="file://seeding/real_data/fiscal_summary.json",
         description=(
             "Endpoint containing national fiscal summary (budget, revenue, debt service). "
             "Use file:// for local fixtures or https:// for production APIs. "
@@ -131,7 +131,7 @@ class SeedingSettings(BaseSettings):
         ),
     )
     revenue_by_source_dataset_url: str = Field(
-        default="file://backend/seeding/real_data/revenue_by_source.json",
+        default="file://seeding/real_data/revenue_by_source.json",
         description=(
             "Endpoint containing revenue breakdown by tax type per fiscal year. "
             "Use file:// for local fixtures or https:// for production APIs. "
@@ -139,14 +139,14 @@ class SeedingSettings(BaseSettings):
         ),
     )
     learning_hub_dataset_url: str = Field(
-        default="file://backend/seeding/fixtures/learning_hub.json",
+        default="file://seeding/fixtures/learning_hub.json",
         description=(
             "Endpoint containing educational questions for the learning hub. "
             "Use file:// for local fixtures or curated content APIs."
         ),
     )
     national_budget_execution_dataset_url: str = Field(
-        default="file://backend/seeding/real_data/national_budget_execution.json",
+        default="file://seeding/real_data/national_budget_execution.json",
         description=(
             "Endpoint containing national government budget execution by sector. "
             "Use file:// for local fixtures or https:// for production APIs. "
