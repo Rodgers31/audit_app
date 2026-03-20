@@ -2,18 +2,29 @@
  * Custom React Query hooks for audit data
  */
 import { useInfiniteQuery, useQuery, UseQueryOptions } from '@tanstack/react-query';
-import type { FederalAuditResponse } from '../api/audits';
+import type {
+  AuditDashboardSummary,
+  AuditTrendsData,
+  FederalAuditResponse,
+  FindingsFilters,
+  FindingsListData,
+  RecurringFindingsData,
+} from '../api/audits';
 import {
+  getAuditDashboardSummary,
+  getAuditFindings,
   getAuditReport,
   getAuditReports,
   getAuditReportsPaginated,
   getAuditStatistics,
+  getAuditTrends,
   getAvailableFiscalYears,
   getCountyAuditList,
   getCountyAuditReports,
   getCountyAuditsEnriched,
   getFederalAudits,
   getLatestCountyAudit,
+  getRecurringFindings,
 } from '../api/audits';
 import { AuditFilters, AuditReportResponse } from '../api/types';
 
@@ -171,6 +182,54 @@ export const useFederalAudits = (
     queryKey: QUERY_KEYS.federal,
     queryFn: getFederalAudits,
     staleTime: 15 * 60 * 1000, // 15 minutes
+    ...options,
+  });
+};
+
+// ===== National Audit Dashboard Hooks =====
+
+export const useAuditDashboardSummary = (
+  options?: Omit<UseQueryOptions<AuditDashboardSummary>, 'queryKey' | 'queryFn'>
+) => {
+  return useQuery({
+    queryKey: ['audit', 'dashboard', 'summary'],
+    queryFn: getAuditDashboardSummary,
+    staleTime: 15 * 60 * 1000,
+    ...options,
+  });
+};
+
+export const useAuditTrends = (
+  params?: { county_id?: number; query_type?: string },
+  options?: Omit<UseQueryOptions<AuditTrendsData>, 'queryKey' | 'queryFn'>
+) => {
+  return useQuery({
+    queryKey: ['audit', 'dashboard', 'trends', params],
+    queryFn: () => getAuditTrends(params),
+    staleTime: 15 * 60 * 1000,
+    ...options,
+  });
+};
+
+export const useRecurringFindings = (
+  options?: Omit<UseQueryOptions<RecurringFindingsData>, 'queryKey' | 'queryFn'>
+) => {
+  return useQuery({
+    queryKey: ['audit', 'dashboard', 'recurring'],
+    queryFn: getRecurringFindings,
+    staleTime: 15 * 60 * 1000,
+    ...options,
+  });
+};
+
+export const useAuditFindings = (
+  filters?: FindingsFilters,
+  options?: Omit<UseQueryOptions<FindingsListData>, 'queryKey' | 'queryFn'>
+) => {
+  return useQuery({
+    queryKey: ['audit', 'dashboard', 'findings', filters],
+    queryFn: () => getAuditFindings(filters),
+    staleTime: 5 * 60 * 1000,
     ...options,
   });
 };

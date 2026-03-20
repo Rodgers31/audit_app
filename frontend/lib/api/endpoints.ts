@@ -41,6 +41,7 @@ export const COUNTIES_ENDPOINTS = {
   DEBT: (id: string) => `/counties/${id}/debt`,
   DEBT_TIMELINE: (id: string) => `/counties/${id}/debt/timeline`,
   DEBT_SUSTAINABILITY: (id: string) => `/counties/${id}/debt/sustainability`,
+  ACCOUNTABILITY: (id: string) => `/counties/${id}/accountability`,
 } as const;
 
 /**
@@ -58,6 +59,12 @@ export const AUDITS_ENDPOINTS = {
 
   // Federal / national government audits
   FEDERAL: '/audits/federal',
+
+  // National audit dashboard
+  DASHBOARD_SUMMARY: '/audit/summary',
+  DASHBOARD_TRENDS: '/audit/trends',
+  DASHBOARD_RECURRING: '/audit/recurring',
+  DASHBOARD_FINDINGS: '/audit/findings',
 } as const;
 
 /**

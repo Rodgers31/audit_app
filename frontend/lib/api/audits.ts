@@ -178,3 +178,115 @@ export const getAvailableFiscalYears = async (): Promise<string[]> => {
   const response = await apiClient.get<ApiResponse<string[]>>(AUDITS_ENDPOINTS.FISCAL_YEARS);
   return response.data.data;
 };
+
+// ===== National Audit Dashboard API =====
+
+export interface WorstCounty {
+  county_id: number;
+  county_name: string;
+  total_amount: number;
+  finding_count: number;
+}
+
+export interface AuditDashboardSummary {
+  total_irregular_expenditure: number;
+  total_unsupported_expenditure: number;
+  total_findings: number;
+  findings_by_type: Record<string, number>;
+  findings_by_opinion: Record<string, number>;
+  worst_counties: WorstCounty[];
+  year_range: { min_year: number | null; max_year: number | null };
+}
+
+export interface AuditTrendsData {
+  years: number[];
+  findings_per_year: Record<string, number>;
+  amount_per_year: Record<string, number>;
+  opinion_per_year: Record<string, Record<string, number>>;
+}
+
+export interface RecurringFindingItem {
+  county_name: string;
+  query_type: string;
+  years_appeared: number[];
+  total_amount: number;
+  finding_ids: number[];
+}
+
+export interface RecurringFindingsData {
+  recurring_findings: RecurringFindingItem[];
+  total: number;
+}
+
+export interface FindingDetailItem {
+  id: number;
+  entity_id: number;
+  county_name: string | null;
+  period_id: number;
+  finding_text: string;
+  severity: string;
+  recommended_action: string | null;
+  query_type: string | null;
+  amount: number | null;
+  status: string | null;
+  audit_opinion: string | null;
+  audit_year: number | null;
+  follow_up_status: string | null;
+  external_reference: string | null;
+  management_response: string | null;
+}
+
+export interface FindingsListData {
+  items: FindingDetailItem[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface FindingsFilters {
+  county_id?: number;
+  year?: number;
+  query_type?: string;
+  severity?: string;
+  audit_opinion?: string;
+  status?: string;
+  page?: number;
+  limit?: number;
+}
+
+export const getAuditDashboardSummary = async (): Promise<AuditDashboardSummary> => {
+  const response = await apiClient.get<AuditDashboardSummary>(AUDITS_ENDPOINTS.DASHBOARD_SUMMARY);
+  return response.data;
+};
+
+export const getAuditTrends = async (params?: {
+  county_id?: number;
+  query_type?: string;
+}): Promise<AuditTrendsData> => {
+  const qp: Record<string, any> = {};
+  if (params?.county_id) qp.county_id = params.county_id;
+  if (params?.query_type) qp.query_type = params.query_type;
+  const url = buildUrlWithParams(AUDITS_ENDPOINTS.DASHBOARD_TRENDS, qp);
+  const response = await apiClient.get<AuditTrendsData>(url);
+  return response.data;
+};
+
+export const getRecurringFindings = async (): Promise<RecurringFindingsData> => {
+  const response = await apiClient.get<RecurringFindingsData>(AUDITS_ENDPOINTS.DASHBOARD_RECURRING);
+  return response.data;
+};
+
+export const getAuditFindings = async (filters?: FindingsFilters): Promise<FindingsListData> => {
+  const qp: Record<string, any> = {};
+  if (filters?.county_id) qp.county_id = filters.county_id;
+  if (filters?.year) qp.year = filters.year;
+  if (filters?.query_type) qp.query_type = filters.query_type;
+  if (filters?.severity) qp.severity = filters.severity;
+  if (filters?.audit_opinion) qp.audit_opinion = filters.audit_opinion;
+  if (filters?.status) qp.status = filters.status;
+  if (filters?.page) qp.page = filters.page;
+  if (filters?.limit) qp.limit = filters.limit;
+  const url = buildUrlWithParams(AUDITS_ENDPOINTS.DASHBOARD_FINDINGS, qp);
+  const response = await apiClient.get<FindingsListData>(url);
+  return response.data;
+};

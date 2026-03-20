@@ -9,6 +9,7 @@ export {
   useCountiesInfinite,
   useCountiesSearch,
   useCounty,
+  useCountyAccountability,
   useCountyByCode,
   useCountyComprehensive,
   useCountyFinancialSummary,
@@ -18,14 +19,18 @@ export {
 
 // Audits hooks
 export {
+  useAuditDashboardSummary,
+  useAuditFindings,
   useAuditReport,
   useAuditReports,
   useAuditReportsInfinite,
   useAuditStatistics,
+  useAuditTrends,
   useAvailableFiscalYears,
   useCountyAuditReports,
   useCountyAuditsEnriched,
   useLatestCountyAudit,
+  useRecurringFindings,
 } from './useAudits';
 
 // Budget hooks

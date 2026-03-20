@@ -185,6 +185,24 @@ export interface Ministry {
   citizenServices: string[];
 }
 
+export interface AccountabilityScorecard {
+  county_id: string;
+  county_name: string;
+  audit_opinion_history: Array<{ year: number; opinion: string }>;
+  total_flagged_amount: number;
+  recurring_findings_count: number;
+  unresolved_findings_count: number;
+  absorption_rate: number | null;
+  accountability_grade: string; // A/B/C/D/F
+  peer_comparison: {
+    region: string;
+    region_avg_flagged_amount: number;
+    region_avg_grade: string;
+    population_bracket: string;
+    population_bracket_avg: number;
+  };
+}
+
 export interface ChartData {
   name: string;
   value: number;
