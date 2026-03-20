@@ -262,6 +262,17 @@ class Audit(Base):
         Integer, ForeignKey("source_documents.id"), nullable=False
     )
     provenance = Column(JSONB, default=list)
+
+    # Audit finding detail columns
+    query_type = Column(String(100), nullable=True)
+    amount = Column(Numeric(15, 2), nullable=True)
+    status = Column(String(50), nullable=True)
+    audit_opinion = Column(String(50), nullable=True)
+    audit_year = Column(Integer, nullable=True)
+    external_reference = Column(String(200), nullable=True)
+    management_response = Column(Text, nullable=True)
+    follow_up_status = Column(String(100), nullable=True)
+
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relationships

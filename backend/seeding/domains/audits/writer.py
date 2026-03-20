@@ -158,6 +158,14 @@ def persist_audit_records(
             prov_entry["source_url"] = record.source_url
         provenance = [prov_entry] if prov_entry else []
 
+        # Parse audit_year as integer
+        audit_year_int = None
+        if record.audit_year is not None:
+            try:
+                audit_year_int = int(record.audit_year)
+            except (ValueError, TypeError):
+                pass
+
         if existing is None:
             audit = Audit(
                 entity_id=entity.id,
@@ -167,6 +175,11 @@ def persist_audit_records(
                 recommended_action=record.recommended_action,
                 source_document_id=source.id,
                 provenance=provenance,
+                query_type=record.query_type,
+                amount=record.amount,
+                status=record.status,
+                audit_year=audit_year_int,
+                external_reference=record.reference,
             )
             session.add(audit)
             stats.created += 1
@@ -187,6 +200,22 @@ def persist_audit_records(
             # Always refresh provenance with rich data
             if provenance and existing.provenance != provenance:
                 existing.provenance = provenance
+                updated = True
+            # Update new structured columns
+            if record.query_type and existing.query_type != record.query_type:
+                existing.query_type = record.query_type
+                updated = True
+            if record.amount is not None and existing.amount != record.amount:
+                existing.amount = record.amount
+                updated = True
+            if record.status and existing.status != record.status:
+                existing.status = record.status
+                updated = True
+            if audit_year_int is not None and existing.audit_year != audit_year_int:
+                existing.audit_year = audit_year_int
+                updated = True
+            if record.reference and existing.external_reference != record.reference:
+                existing.external_reference = record.reference
                 updated = True
             if updated:
                 stats.updated += 1
