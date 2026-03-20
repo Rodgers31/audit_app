@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import and_, desc, func
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -69,8 +69,7 @@ class PopulationResponse(BaseModel):
     source_document_id: Optional[int]
     created_at: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PopulationLatestResponse(BaseModel):
@@ -98,8 +97,7 @@ class GDPResponse(BaseModel):
     source_document_id: Optional[int]
     created_at: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class EconomicIndicatorResponse(BaseModel):
@@ -117,8 +115,7 @@ class EconomicIndicatorResponse(BaseModel):
     source_document_id: Optional[int]
     created_at: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PovertyIndexResponse(BaseModel):
@@ -136,8 +133,7 @@ class PovertyIndexResponse(BaseModel):
     source_document_id: Optional[int]
     created_at: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CountyEconomicProfile(BaseModel):
