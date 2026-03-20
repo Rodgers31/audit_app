@@ -210,6 +210,23 @@ COUNTY_COORDINATES = {
 # Reverse mapping for backend to frontend ID conversion
 NAME_TO_ID_MAPPING = {v: k for k, v in COUNTY_MAPPING.items()}
 
+# County regions for peer comparison (based on Kenya's former provinces)
+COUNTY_REGIONS = {
+    "001": "Nairobi",
+    "002": "Coast", "003": "Coast", "004": "Coast", "005": "Coast", "006": "Coast", "047": "Coast",
+    "007": "North Eastern", "008": "North Eastern", "009": "North Eastern",
+    "010": "Eastern", "011": "Eastern", "012": "Eastern", "013": "Eastern", "014": "Eastern",
+    "015": "Eastern", "016": "Eastern", "017": "Eastern",
+    "018": "Central", "019": "Central", "020": "Central", "021": "Central", "022": "Central",
+    "023": "Rift Valley", "024": "Rift Valley", "025": "Rift Valley", "026": "Rift Valley",
+    "027": "Rift Valley", "028": "Rift Valley", "029": "Rift Valley", "030": "Rift Valley",
+    "031": "Rift Valley", "032": "Rift Valley", "033": "Rift Valley", "034": "Rift Valley",
+    "035": "Rift Valley", "036": "Rift Valley",
+    "037": "Western", "038": "Western", "039": "Western", "040": "Western",
+    "041": "Nyanza", "042": "Nyanza", "043": "Nyanza", "044": "Nyanza",
+    "045": "Nyanza", "046": "Nyanza",
+}
+
 # Enhanced County Analytics API base URL
 ENHANCED_COUNTY_API_BASE = "http://localhost:8003"
 
@@ -707,6 +724,22 @@ try:
     logger.info("User features router registered (newsletter endpoints)")
 except Exception as e:
     logger.warning(f"Could not register user features router: {e}")
+
+try:
+    from routers.audit_dashboard import router as audit_dashboard_router
+
+    app.include_router(audit_dashboard_router)
+    logger.info("Audit dashboard router registered at /api/v1/audit")
+except Exception as e:
+    logger.warning(f"Could not register audit dashboard router: {e}")
+
+try:
+    from routers.money_flow import router as money_flow_router
+
+    app.include_router(money_flow_router)
+    logger.info("Money flow router registered at /api/v1/counties/*/money-flow")
+except Exception as e:
+    logger.warning(f"Could not register money flow router: {e}")
 
 
 # Request logging middleware
@@ -3299,6 +3332,328 @@ async def list_county_audits(
         raise
     except Exception as e:
         logging.error(f"Error listing audit queries for {county_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+# ---------------------------------------------------------------------------
+# County Accountability Scorecard
+# ---------------------------------------------------------------------------
+
+def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
+    """Compute accountability scorecard for a county entity.
+
+    Returns dict with opinion history, flagged amounts, recurring/unresolved
+    findings, absorption rate, grade, and peer comparison.
+    """
+    audits = (
+        db.query(DBAudit)
+        .filter(DBAudit.entity_id == entity.id)
+        .all()
+    )
+
+    # --- audit_opinion_history ---
+    opinion_by_year: Dict[int, str] = {}
+    for a in audits:
+        if a.audit_year and a.audit_opinion:
+            opinion_by_year[a.audit_year] = a.audit_opinion
+    audit_opinion_history = sorted(
+        [{"year": y, "opinion": o} for y, o in opinion_by_year.items()],
+        key=lambda x: x["year"],
+    )
+
+    # --- total_flagged_amount ---
+    total_flagged_amount = float(sum(float(a.amount or 0) for a in audits))
+
+    # --- recurring_findings_count ---
+    qt_years: Dict[str, set] = {}
+    for a in audits:
+        if a.query_type and a.audit_year:
+            qt_years.setdefault(a.query_type, set()).add(a.audit_year)
+    recurring_findings_count = sum(1 for years in qt_years.values() if len(years) >= 2)
+
+    # --- unresolved_findings_count ---
+    unresolved_statuses = {"pending", "unresolved", "recurring"}
+    unresolved_findings_count = sum(
+        1 for a in audits
+        if a.status and a.status.lower() in unresolved_statuses
+    )
+
+    # --- absorption_rate from budget data ---
+    budget_lines = (
+        db.query(DBBudgetLine)
+        .filter(DBBudgetLine.entity_id == entity.id)
+        .all()
+    )
+    total_allocated = sum(float(b.allocated_amount or 0) for b in budget_lines)
+    total_spent = sum(float(b.actual_spent or 0) for b in budget_lines)
+    absorption_rate = (
+        round(total_spent / total_allocated, 4) if total_allocated > 0 else None
+    )
+
+    # --- accountability_grade ---
+    grade_order = ["A", "B", "C", "D", "F"]
+
+    def _drop_grade(current: str, steps: int = 1) -> str:
+        idx = grade_order.index(current)
+        return grade_order[min(idx + steps, len(grade_order) - 1)]
+
+    grade = "A"
+
+    # Adverse/Disclaimer opinion any year -> drop to D
+    for entry in audit_opinion_history:
+        op = entry["opinion"].lower()
+        if op in ("adverse", "disclaimer"):
+            grade = _drop_grade(grade, max(0, grade_order.index("D") - grade_order.index(grade)))
+            break
+
+    # Qualified opinion in latest year -> drop to C (if not already worse)
+    if audit_opinion_history:
+        latest_opinion = audit_opinion_history[-1]["opinion"].lower()
+        if latest_opinion == "qualified" and grade_order.index(grade) < grade_order.index("C"):
+            grade = "C"
+
+    # recurring_findings_count > 5 -> drop one grade
+    if recurring_findings_count > 5:
+        grade = _drop_grade(grade)
+
+    # unresolved_findings_count > 10 -> drop one grade
+    if unresolved_findings_count > 10:
+        grade = _drop_grade(grade)
+
+    # absorption_rate < 0.5 -> drop one grade
+    if absorption_rate is not None and absorption_rate < 0.5:
+        grade = _drop_grade(grade)
+
+    # --- peer_comparison ---
+    region = COUNTY_REGIONS.get(county_id, "Unknown")
+    region_county_ids = [cid for cid, r in COUNTY_REGIONS.items() if r == region and cid != county_id]
+
+    pop_data = (
+        db.query(DBPopulationData)
+        .filter(DBPopulationData.entity_id == entity.id)
+        .order_by(DBPopulationData.year.desc())
+        .first()
+    )
+    population = pop_data.total_population if pop_data else 0
+
+    if population < 500_000:
+        pop_bracket = "<500k"
+    elif population < 1_000_000:
+        pop_bracket = "500k-1M"
+    elif population < 2_000_000:
+        pop_bracket = "1M-2M"
+    else:
+        pop_bracket = ">2M"
+
+    # Collect peer stats for region
+    region_flagged_amounts: List[float] = []
+    region_grades: List[str] = []
+
+    def _grade_to_num(g: str) -> float:
+        return {"A": 4.0, "B": 3.0, "C": 2.0, "D": 1.0, "F": 0.0}.get(g, 0.0)
+
+    def _num_to_grade(n: float) -> str:
+        if n >= 3.5:
+            return "A"
+        if n >= 2.5:
+            return "B"
+        if n >= 1.5:
+            return "C"
+        if n >= 0.5:
+            return "D"
+        return "F"
+
+    for peer_cid in region_county_ids:
+        peer_name = COUNTY_MAPPING.get(peer_cid)
+        if not peer_name:
+            continue
+        peer_entity = (
+            db.query(DBEntity)
+            .filter(DBEntity.type == EntityType.COUNTY)
+            .filter(DBEntity.canonical_name == f"{peer_name} County")
+            .first()
+        )
+        if not peer_entity:
+            continue
+        peer_audits = (
+            db.query(DBAudit)
+            .filter(DBAudit.entity_id == peer_entity.id)
+            .all()
+        )
+        peer_flagged = float(sum(float(pa.amount or 0) for pa in peer_audits))
+        region_flagged_amounts.append(peer_flagged)
+
+        # Simplified peer grade (opinion-based for efficiency)
+        peer_opinions: Dict[int, str] = {}
+        for pa in peer_audits:
+            if pa.audit_year and pa.audit_opinion:
+                peer_opinions[pa.audit_year] = pa.audit_opinion
+        pg = "A"
+        for op in peer_opinions.values():
+            if op.lower() in ("adverse", "disclaimer"):
+                pg = "D"
+                break
+        if peer_opinions:
+            latest_y = max(peer_opinions.keys())
+            if peer_opinions[latest_y].lower() == "qualified" and pg == "A":
+                pg = "C"
+        region_grades.append(pg)
+
+    region_avg_flagged = (
+        round(sum(region_flagged_amounts) / len(region_flagged_amounts), 2)
+        if region_flagged_amounts else 0.0
+    )
+    region_avg_grade = (
+        _num_to_grade(sum(_grade_to_num(g) for g in region_grades) / len(region_grades))
+        if region_grades else None
+    )
+
+    # Population bracket average
+    bracket_flagged_amounts: List[float] = []
+    for cid, cname in COUNTY_MAPPING.items():
+        if cid == county_id:
+            continue
+        ce = (
+            db.query(DBEntity)
+            .filter(DBEntity.type == EntityType.COUNTY)
+            .filter(DBEntity.canonical_name == f"{cname} County")
+            .first()
+        )
+        if not ce:
+            continue
+        cp = (
+            db.query(DBPopulationData)
+            .filter(DBPopulationData.entity_id == ce.id)
+            .order_by(DBPopulationData.year.desc())
+            .first()
+        )
+        cpop = cp.total_population if cp else 0
+        if cpop < 500_000:
+            cb = "<500k"
+        elif cpop < 1_000_000:
+            cb = "500k-1M"
+        elif cpop < 2_000_000:
+            cb = "1M-2M"
+        else:
+            cb = ">2M"
+        if cb == pop_bracket:
+            ca = db.query(DBAudit).filter(DBAudit.entity_id == ce.id).all()
+            bracket_flagged_amounts.append(float(sum(float(x.amount or 0) for x in ca)))
+
+    population_bracket_avg = (
+        round(sum(bracket_flagged_amounts) / len(bracket_flagged_amounts), 2)
+        if bracket_flagged_amounts else 0.0
+    )
+
+    peer_comparison = {
+        "region": region,
+        "region_avg_flagged_amount": region_avg_flagged,
+        "region_avg_grade": region_avg_grade,
+        "population_bracket": pop_bracket,
+        "population_bracket_avg": population_bracket_avg,
+    }
+
+    return {
+        "county_id": county_id,
+        "county_name": (entity.canonical_name or "").replace(" County", ""),
+        "audit_opinion_history": audit_opinion_history,
+        "total_flagged_amount": total_flagged_amount,
+        "recurring_findings_count": recurring_findings_count,
+        "unresolved_findings_count": unresolved_findings_count,
+        "absorption_rate": absorption_rate,
+        "accountability_grade": grade,
+        "peer_comparison": peer_comparison,
+    }
+
+
+@app.get("/api/v1/counties/{county_id}/accountability")
+@cached(key_prefix="county:accountability", ttl=3600)
+async def get_county_accountability(county_id: str):
+    """County accountability scorecard with opinion history, grade, and peer comparison."""
+    if not DATABASE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+    county_name = COUNTY_MAPPING.get(county_id)
+    if not county_name:
+        raise HTTPException(status_code=404, detail="County not found")
+
+    try:
+        with next(get_db()) as db:
+            entity = (
+                db.query(DBEntity)
+                .filter(DBEntity.type == EntityType.COUNTY)
+                .filter(DBEntity.canonical_name == f"{county_name} County")
+                .first()
+            )
+            if not entity:
+                slug = county_name.lower().replace(" ", "-") + "-county"
+                entity = db.query(DBEntity).filter(DBEntity.slug == slug).first()
+            if not entity:
+                raise HTTPException(status_code=404, detail="County entity not found")
+
+            return _compute_accountability(db, entity, county_id)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Accountability scorecard failed for {county_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.get("/api/v1/counties/{county_id}/summary")
+@cached(key_prefix="county:summary", ttl=1800)
+async def get_county_summary(county_id: str):
+    """Lightweight county summary including accountability grade."""
+    if not DATABASE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+    county_name = COUNTY_MAPPING.get(county_id)
+    if not county_name:
+        raise HTTPException(status_code=404, detail="County not found")
+
+    try:
+        with next(get_db()) as db:
+            entity = (
+                db.query(DBEntity)
+                .filter(DBEntity.type == EntityType.COUNTY)
+                .filter(DBEntity.canonical_name == f"{county_name} County")
+                .first()
+            )
+            if not entity:
+                slug = county_name.lower().replace(" ", "-") + "-county"
+                entity = db.query(DBEntity).filter(DBEntity.slug == slug).first()
+            if not entity:
+                raise HTTPException(status_code=404, detail="County entity not found")
+
+            pop_data = (
+                db.query(DBPopulationData)
+                .filter(DBPopulationData.entity_id == entity.id)
+                .order_by(DBPopulationData.year.desc())
+                .first()
+            )
+            budget_lines = (
+                db.query(DBBudgetLine)
+                .filter(DBBudgetLine.entity_id == entity.id)
+                .all()
+            )
+            total_allocated = sum(float(b.allocated_amount or 0) for b in budget_lines)
+            total_spent = sum(float(b.actual_spent or 0) for b in budget_lines)
+            audits = db.query(DBAudit).filter(DBAudit.entity_id == entity.id).all()
+
+            scorecard = _compute_accountability(db, entity, county_id)
+
+            return {
+                "county_id": county_id,
+                "county_name": (entity.canonical_name or "").replace(" County", ""),
+                "population": pop_data.total_population if pop_data else 0,
+                "total_budget": total_allocated,
+                "total_spent": total_spent,
+                "audit_findings_count": len(audits),
+                "accountability_grade": scorecard["accountability_grade"],
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"County summary failed for {county_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
