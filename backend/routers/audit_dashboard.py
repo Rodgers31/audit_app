@@ -328,44 +328,53 @@ async def get_recurring_findings(db: Session = Depends(get_db)):
         if not all_keys:
             return RecurringFindingsResponse(recurring_findings=[], total=0)
 
-        # --- Step 2: fetch all findings for these groups in ONE query with JOIN ---
-        key_filters = [
-            and_(Audit.entity_id == eid, Audit.query_type == qt)
-            for eid, qt in all_keys
-            if qt != "Unknown"
-        ]
-        # Handle "Unknown" query_type (NULL) groups
-        unknown_eids = [eid for eid, qt in all_keys if qt == "Unknown"]
-        if unknown_eids:
-            key_filters.append(
-                and_(Audit.entity_id.in_(unknown_eids), Audit.query_type.is_(None))
-            )
+        # --- Step 2: fetch all findings for these groups with JOIN ---
+        # Batch-load entity names to avoid N+1
+        all_entity_ids = list({eid for eid, _ in all_keys})
+        entity_name_map: Dict[int, str] = {}
+        if all_entity_ids:
+            for eid, name in (
+                db.query(Entity.id, Entity.canonical_name)
+                .filter(Entity.id.in_(all_entity_ids))
+                .all()
+            ):
+                entity_name_map[eid] = name
 
-        rows = (
-            db.query(
-                Audit.entity_id,
-                func.coalesce(Audit.query_type, "Unknown").label("qt"),
-                Entity.canonical_name,
-                # Aggregates
-                func.array_agg(func.distinct(Audit.audit_year)).label("years"),
-                func.sum(Audit.amount).label("total_amount"),
-                func.array_agg(Audit.id).label("finding_ids"),
+        # Build result by querying findings per group (compatible with SQLite + Postgres)
+        result_map: Dict[tuple, dict] = {}
+        for entity_id, qt in all_keys:
+            qt_filter = Audit.query_type == qt if qt != "Unknown" else Audit.query_type.is_(None)
+            findings = (
+                db.query(Audit.id, Audit.audit_year, Audit.amount)
+                .filter(Audit.entity_id == entity_id, qt_filter)
+                .all()
             )
-            .join(Entity, Audit.entity_id == Entity.id)
-            .filter(or_(*key_filters))
-            .group_by(Audit.entity_id, func.coalesce(Audit.query_type, "Unknown"), Entity.canonical_name)
-            .all()
-        )
+            years_set: set = set()
+            total_amt = 0.0
+            ids_list: list = []
+            for fid, yr, amt in findings:
+                if yr is not None:
+                    years_set.add(yr)
+                if amt is not None:
+                    total_amt += float(amt)
+                ids_list.append(fid)
+
+            result_map[(entity_id, qt)] = {
+                "county_name": entity_name_map.get(entity_id, "Unknown"),
+                "query_type": qt,
+                "years": years_set,
+                "amount": total_amt,
+                "ids": ids_list,
+            }
 
         recurring = []
-        for eid, qt, county_name, years_arr, total_amt, ids_arr in rows:
-            clean_years = sorted(y for y in (years_arr or []) if y is not None)
+        for v in result_map.values():
             recurring.append(RecurringFinding(
-                county_name=county_name or "Unknown",
-                query_type=qt,
-                years_appeared=clean_years,
-                total_amount=float(total_amt) if total_amt else 0.0,
-                finding_ids=sorted(set(ids_arr or [])),
+                county_name=v["county_name"],
+                query_type=v["query_type"],
+                years_appeared=sorted(v["years"]),
+                total_amount=v["amount"],
+                finding_ids=sorted(set(v["ids"])),
             ))
 
         return RecurringFindingsResponse(
