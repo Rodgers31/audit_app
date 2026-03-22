@@ -153,6 +153,60 @@ class SeedingSettings(BaseSettings):
             "Source: Controller of Budget Annual NG-BIRR Reports."
         ),
     )
+    # ── Live PDF source URLs ────────────────────────────────────
+    cbk_public_debt_page_url: str = Field(
+        default="https://www.centralbank.go.ke/public-debt/",
+        description=(
+            "CBK public debt page URL. Scraped to discover the latest "
+            "Monthly Statistical Bulletin PDF link."
+        ),
+    )
+    cob_birr_page_url: str = Field(
+        default="https://cob.go.ke/reports/national-government-budget-implementation-review-reports/",
+        description=(
+            "COB National Government BIRR reports page. Scraped to discover "
+            "the latest quarterly budget implementation review PDF."
+        ),
+    )
+    treasury_bps_page_url: str = Field(
+        default="https://www.treasury.go.ke/budget-policy-statement/",
+        description=(
+            "National Treasury Budget Policy Statement page. "
+            "Scraped to discover the latest BPS PDF."
+        ),
+    )
+    live_pdf_fetch_enabled: bool = Field(
+        default=True,
+        description=(
+            "Whether to attempt live PDF fetching from government websites. "
+            "When False, only fixture/configured URLs are used."
+        ),
+    )
+
+    # ── World Bank API (free, unauthenticated) ───────────────────
+    worldbank_api_base_url: str = Field(
+        default="https://api.worldbank.org/v2",
+        description=(
+            "Base URL for World Bank Indicators API. "
+            "Used to enrich GDP data in debt_timeline and economic_indicators. "
+            "Free, no API key needed. Rate limit ~30 req/s."
+        ),
+    )
+    worldbank_cache_ttl_seconds: int = Field(
+        default=86_400,
+        description=(
+            "TTL for cached World Bank API responses (seconds). "
+            "Default 24 hours — this data rarely changes."
+        ),
+    )
+    enrich_with_worldbank: bool = Field(
+        default=True,
+        description=(
+            "Whether to attempt World Bank API enrichment during seeding. "
+            "When False, only fixture/configured URLs are used."
+        ),
+    )
+
     budget_default_currency: str = Field(
         default="KES",
         description="Fallback currency code for budget records when missing.",
