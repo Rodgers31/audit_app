@@ -36,6 +36,8 @@ export function useDataFreshness() {
       return data;
     },
     staleTime: 30 * 60 * 1000, // 30 min
+    retry: 1, // Don't hammer a failing endpoint
+    meta: { silent: true }, // Suppress console noise for non-critical data
   });
 }
 

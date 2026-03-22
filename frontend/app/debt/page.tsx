@@ -189,8 +189,77 @@ export default function NationalDebtPage() {
   } = useDebtTimeline();
   const { data: fiscalResp } = useFiscalSummary();
   const { data: pendingBillsData } = usePendingBills();
-  const { data: pendingBillsSummary } = usePendingBillsSummary();
-  const { data: debtSustainability } = useDebtSustainability();
+  const { data: rawPendingBillsSummary } = usePendingBillsSummary();
+
+  // Normalize pendingBillsSummary — API returns dicts for breakdown/aging,
+  // but the UI expects arrays with percentage fields
+  const pendingBillsSummary = useMemo(() => {
+    if (!rawPendingBillsSummary) return null;
+    const raw = rawPendingBillsSummary as any;
+    const totalPending = raw.total_pending_amount || 0;
+
+    // breakdown_by_type: API returns {supplier_arrears: 123} → need [{type, amount, percentage}]
+    let breakdownByType = raw.breakdown_by_type;
+    if (breakdownByType && !Array.isArray(breakdownByType)) {
+      breakdownByType = Object.entries(breakdownByType).map(([type, amount]: [string, any]) => ({
+        type,
+        amount: Number(amount) || 0,
+        percentage: totalPending > 0 ? ((Number(amount) || 0) / totalPending) * 100 : 0,
+      }));
+    }
+
+    // aging_buckets: API returns {0-30d: 0, ...} → need [{bucket, amount, percentage, count}]
+    let agingBuckets = raw.aging_buckets;
+    if (agingBuckets && !Array.isArray(agingBuckets)) {
+      agingBuckets = Object.entries(agingBuckets).map(([bucket, amount]: [string, any]) => ({
+        bucket,
+        amount: Number(amount) || 0,
+        percentage: totalPending > 0 ? ((Number(amount) || 0) / totalPending) * 100 : 0,
+        count: 0,
+      }));
+    }
+
+    // top_counties: API uses {county, entity_id} → UI uses {county_name, county_id}
+    const topCounties = (raw.top_counties_by_amount || []).map((c: any) => ({
+      ...c,
+      county_name: c.county_name || c.county || 'Unknown',
+      county_id: c.county_id || c.entity_id || c.id,
+    }));
+
+    return {
+      ...raw,
+      breakdown_by_type: breakdownByType || [],
+      aging_buckets: agingBuckets || [],
+      top_counties_by_amount: topCounties,
+    };
+  }, [rawPendingBillsSummary]);
+  const { data: rawDebtSustainability } = useDebtSustainability();
+
+  // Normalize debtSustainability — API returns nested objects {value, year, ...}
+  // but the UI expects flat numbers. Handle both shapes safely.
+  const debtSustainability = useMemo(() => {
+    if (!rawDebtSustainability) return null;
+    const raw = rawDebtSustainability as any;
+    const extractNum = (field: any): number | null => {
+      if (field == null) return null;
+      if (typeof field === 'number') return field;
+      if (typeof field === 'object' && field.value != null) return Number(field.value);
+      return null;
+    };
+    return {
+      ...raw,
+      debt_to_gdp: extractNum(raw.debt_to_gdp) ?? 0,
+      debt_service_to_revenue: extractNum(raw.debt_service_to_revenue) ?? 0,
+      external_debt_share: extractNum(raw.external_debt_share) ?? 0,
+      projections: raw.projections || [],
+      regional_peers: (raw.regional_peers || []).map((p: any) => ({
+        ...p,
+        debt_to_gdp: extractNum(p.debt_to_gdp) ?? 0,
+        debt_service_to_revenue: extractNum(p.debt_service_to_revenue) ?? 0,
+        external_debt_share: extractNum(p.external_debt_share) ?? 0,
+      })),
+    };
+  }, [rawDebtSustainability]);
 
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [loanSort, setLoanSort] = useState<'outstanding' | 'rate' | 'service'>('outstanding');
@@ -908,10 +977,10 @@ export default function NationalDebtPage() {
                       const maxAmount = pendingBillsSummary.top_counties_by_amount[0]?.amount || 1;
                       const barWidth = (county.amount / maxAmount) * 100;
                       return (
-                        <div key={county.county_id} className='flex items-center gap-3'>
+                        <div key={`${county.entity_id ?? county.county_id ?? i}-${i}`} className='flex items-center gap-3'>
                           <span className='w-5 text-xs text-gray-400 text-right'>{i + 1}</span>
                           <div className='w-32 sm:w-40 text-sm truncate'>
-                            <span className='font-medium text-gray-800'>{county.county_name}</span>
+                            <span className='font-medium text-gray-800'>{county.county_name ?? county.county ?? 'Unknown'}</span>
                           </div>
                           <div className='flex-1 h-4 bg-gray-200 rounded-full overflow-hidden'>
                             <div

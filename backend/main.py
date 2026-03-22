@@ -762,6 +762,7 @@ async def log_requests(request: Request, call_next):
     try:
         response = await call_next(request)
         process_time = (datetime.datetime.now() - start_time).total_seconds()
+        response.headers["X-Process-Time"] = f"{process_time:.3f}"
         logger.info(
             f"SUCCESS {method} {url} - {response.status_code} - {process_time:.3f}s"
         )
@@ -5657,28 +5658,36 @@ async def get_pending_bills(
             national_total = D("0")
             county_total = D("0")
 
+            # Batch-load all entity names in ONE query (avoid N+1 with remote DB)
+            unique_eids = list({l.entity_id for l in pending_loans if l.entity_id})
+            entity_map: Dict[int, tuple] = {}
+            if unique_eids:
+                for eid, ename, etype in db.query(
+                    DBEntity.id, DBEntity.canonical_name, DBEntity.type
+                ).filter(DBEntity.id.in_(unique_eids)).all():
+                    entity_map[eid] = (ename, etype.value if etype else "national")
+
             for loan in pending_loans:
                 outstanding = loan.outstanding or loan.principal or D("0")
                 total_amount += outstanding
 
-                # Determine entity type from entity relationship
-                entity = (
-                    db.query(DBEntity).filter(DBEntity.id == loan.entity_id).first()
-                    if loan.entity_id
-                    else None
+                entity_name, entity_type = entity_map.get(
+                    loan.entity_id, ("National Government", "national")
                 )
-                entity_type = "national"
-                entity_name = "National Government"
-                if entity:
-                    entity_name = entity.canonical_name
-                    entity_type = entity.type.value if entity.type else "national"
 
                 if entity_type == "county":
                     county_total += outstanding
                 else:
                     national_total += outstanding
 
-                provenance = loan.provenance or {}
+                # provenance can be a dict or list — normalize to dict
+                raw_prov = loan.provenance
+                if isinstance(raw_prov, list):
+                    provenance = raw_prov[0] if raw_prov and isinstance(raw_prov[0], dict) else {}
+                elif isinstance(raw_prov, dict):
+                    provenance = raw_prov
+                else:
+                    provenance = {}
 
                 bills.append(
                     {
@@ -5945,14 +5954,21 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
 
     total = sum(float(l.outstanding or l.principal or 0) for l in pending_loans)
 
-    # Group by entity
+    # Group by entity — batch-load all entity names in ONE query (avoid N+1)
+    unique_eids = list({l.entity_id for l in pending_loans if l.entity_id})
+    entity_name_map = {}
+    if unique_eids:
+        entity_rows = db.query(DBEntity.id, DBEntity.canonical_name).filter(
+            DBEntity.id.in_(unique_eids)
+        ).all()
+        entity_name_map = {eid: name for eid, name in entity_rows}
+
     entity_totals: Dict[int, Dict[str, Any]] = {}
     for l in pending_loans:
         eid = l.entity_id
         if eid not in entity_totals:
-            entity = db.query(DBEntity).filter(DBEntity.id == eid).first()
             entity_totals[eid] = {
-                "county": entity.canonical_name if entity else f"Entity {eid}",
+                "county": entity_name_map.get(eid, f"Entity {eid}"),
                 "entity_id": eid,
                 "amount": 0,
             }

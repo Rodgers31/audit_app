@@ -172,6 +172,7 @@ export const useNationalLoans = (options?: Omit<UseQueryOptions<any>, 'queryKey'
 };
 
 // Get government pending bills (from COB reports)
+// May return 503 if pending bills data not yet seeded — don't retry aggressively
 export const usePendingBills = (
   options?: Omit<UseQueryOptions<PendingBillsResponse>, 'queryKey' | 'queryFn'>
 ) => {
@@ -179,11 +180,13 @@ export const usePendingBills = (
     queryKey: QUERY_KEYS.pendingBills,
     queryFn: getPendingBills,
     staleTime: 60 * 60 * 1000, // 1 hour — pending bills data updated quarterly
+    retry: 1,
     ...options,
   });
 };
 
 // Enhanced pending bills summary with breakdown, aging, top counties, trend
+// May fail if PendingBill table not populated — graceful degradation
 export const usePendingBillsSummary = (
   options?: Omit<UseQueryOptions<PendingBillsSummaryResponse>, 'queryKey' | 'queryFn'>
 ) => {
@@ -191,6 +194,7 @@ export const usePendingBillsSummary = (
     queryKey: QUERY_KEYS.pendingBillsSummary,
     queryFn: getPendingBillsSummary,
     staleTime: 60 * 60 * 1000,
+    retry: 1,
     ...options,
   });
 };

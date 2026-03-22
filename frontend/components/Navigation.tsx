@@ -50,7 +50,6 @@ export default function Navigation() {
     { href: '/budget', label: 'Budget & Spending' },
     { href: '/counties', label: 'County Explorer' },
     { href: '/transparency', label: 'Follow the Money' },
-    { href: '/audits', label: 'Audit Findings' },
     { href: '/learn', label: 'Learn' },
   ];
 

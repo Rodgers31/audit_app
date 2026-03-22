@@ -35,15 +35,17 @@ const RETRY_BASE_DELAY = 2000;
 function isRetryable(error: AxiosError): boolean {
   // Network error (ECONNREFUSED, ECONNRESET, etc.)
   if (!error.response) return true;
-  // 502/503/504 — backend is booting or overloaded
+  // 502/504 — backend is booting or overloaded (worth retrying)
+  // 503 is NOT retried here — it means "data not seeded/available" in this app,
+  // not a transient failure. React Query handles its own retry logic.
   const status = error.response.status;
-  return status === 502 || status === 503 || status === 504;
+  return status === 502 || status === 504;
 }
 
 // Create axios instance with default configuration
 export const apiClient = axios.create({
   baseURL,
-  timeout: 15000,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -113,14 +115,21 @@ apiClient.interceptors.response.use(
       return apiClient(config);
     }
 
-    // Log errors
-    console.error('❌ API Error:', {
-      url: error.config?.url,
-      method: error.config?.method,
-      status: error.response?.status,
-      message: (error.response?.data as any)?.message || error.message,
-      retries: config.__retryCount || 0,
-    });
+    // Log errors — downgrade to warn for expected failures (503 = data not seeded, 404 = not found)
+    const status = error.response?.status;
+    const isExpectedFailure = status === 503 || status === 404;
+    const logFn = isExpectedFailure ? console.warn : console.error;
+    const prefix = isExpectedFailure ? '⚠️ API Warning' : '❌ API Error';
+
+    if (process.env.NODE_ENV === 'development' || !isExpectedFailure) {
+      logFn(`${prefix}:`, {
+        url: error.config?.url,
+        method: error.config?.method,
+        status,
+        message: (error.response?.data as any)?.message || (error.response?.data as any)?.detail || error.message,
+        retries: config.__retryCount || 0,
+      });
+    }
 
     return Promise.reject(error);
   }

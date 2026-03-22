@@ -3,7 +3,7 @@
  */
 import { MoneyFlowData } from '@/types';
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
-import { getCountyMoneyFlow, getNationalMoneyFlow } from '../api/moneyFlow';
+import { getAllCountiesMoneyFlow, getCountyMoneyFlow, getNationalMoneyFlow } from '../api/moneyFlow';
 
 const QUERY_KEYS = {
   countyMoneyFlow: (id: string, year: string) => ['counties', id, 'money-flow', year] as const,
@@ -21,6 +21,15 @@ export const useCountyMoneyFlow = (
     enabled: !!countyId && !!year,
     staleTime: 10 * 60 * 1000,
     ...options,
+  });
+};
+
+export const useAllCountiesMoneyFlow = (year: string) => {
+  return useQuery({
+    queryKey: ['money-flow', 'all-counties', year],
+    queryFn: () => getAllCountiesMoneyFlow(year),
+    enabled: !!year,
+    staleTime: 10 * 60 * 1000,
   });
 };
 

@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 try:
     from database import get_db
-    from models import IngestionJob, SourceDocument
+    from models import IngestionJob, IngestionStatus, SourceDocument
 
     DATABASE_AVAILABLE = True
 except Exception:
@@ -125,11 +125,15 @@ async def get_data_freshness(db: Session = Depends(get_db)):
 
         if DATABASE_AVAILABLE and db is not None:
             # Try IngestionJob first (most accurate)
+            # Use the IngestionStatus enum values (not plain strings) to match the column type
             job = (
                 db.query(func.max(IngestionJob.finished_at))
                 .filter(
                     IngestionJob.domain.ilike(f"%{cfg['domain']}%"),
-                    IngestionJob.status.in_(["completed", "completed_with_errors"]),
+                    IngestionJob.status.in_([
+                        IngestionStatus.COMPLETED,
+                        IngestionStatus.COMPLETED_WITH_ERRORS,
+                    ]),
                 )
                 .scalar()
             )
