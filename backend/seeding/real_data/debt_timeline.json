@@ -12,71 +12,71 @@
       "external": 1500,
       "domestic": 1600,
       "total": 3100,
-      "gdp": 7100,
-      "gdp_ratio": 43.7
+      "gdp": 7381,
+      "gdp_ratio": 42.0
     },
     {
       "year": 2014,
       "external": 1700,
       "domestic": 1900,
       "total": 3600,
-      "gdp": 7800,
-      "gdp_ratio": 46.2
+      "gdp": 8145,
+      "gdp_ratio": 44.2
     },
     {
       "year": 2015,
       "external": 2100,
       "domestic": 2200,
       "total": 4300,
-      "gdp": 8500,
-      "gdp_ratio": 50.6
+      "gdp": 8866,
+      "gdp_ratio": 48.5
     },
     {
       "year": 2016,
       "external": 2500,
       "domestic": 2500,
       "total": 5000,
-      "gdp": 9200,
-      "gdp_ratio": 54.3
+      "gdp": 9940,
+      "gdp_ratio": 50.3
     },
     {
       "year": 2017,
       "external": 2700,
       "domestic": 2700,
       "total": 5400,
-      "gdp": 9800,
-      "gdp_ratio": 55.1
+      "gdp": 10385,
+      "gdp_ratio": 52.0
     },
     {
       "year": 2018,
       "external": 2900,
       "domestic": 2900,
       "total": 5800,
-      "gdp": 10200,
-      "gdp_ratio": 56.9
+      "gdp": 10781,
+      "gdp_ratio": 53.8
     },
     {
       "year": 2019,
       "external": 3200,
       "domestic": 3300,
       "total": 6500,
-      "gdp": 10400,
-      "gdp_ratio": 62.5
+      "gdp": 11566,
+      "gdp_ratio": 56.2
     },
     {
       "year": 2020,
       "external": 3600,
       "domestic": 3600,
       "total": 7200,
-      "gdp": 10750,
-      "gdp_ratio": 67.0
+      "gdp": 11538,
+      "gdp_ratio": 62.4
     },
     {
       "year": 2021,
       "external": 3900,
       "domestic": 4300,
       "total": 8200,
-      "gdp": 12100,
+      "gdp": 12094,
       "gdp_ratio": 67.8
     },
     {
@@ -84,32 +84,33 @@
       "external": 4300,
       "domestic": 4800,
       "total": 9100,
-      "gdp": 13360,
-      "gdp_ratio": 68.1
+      "gdp": 14444,
+      "gdp_ratio": 63.0
     },
     {
       "year": 2023,
       "external": 4800,
       "domestic": 5400,
       "total": 10200,
-      "gdp": 14090,
-      "gdp_ratio": 72.4
+      "gdp": 14509,
+      "gdp_ratio": 70.3
     },
     {
       "year": 2024,
       "external": 5326,
       "domestic": 6164,
       "total": 11490,
-      "gdp": 14800,
-      "gdp_ratio": 77.6
+      "gdp": 17542,
+      "gdp_ratio": 65.5
     },
     {
       "year": 2025,
       "external": 5680,
       "domestic": 6820,
       "total": 12500,
-      "gdp": 15700,
-      "gdp_ratio": 79.6
+      "gdp": 18382,
+      "gdp_ratio": 68.0
     }
-  ]
+  ],
+  "source": "CBK Annual Reports, National Treasury BPS, KNBS rebased GDP"
 }

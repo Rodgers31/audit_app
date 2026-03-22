@@ -1430,15 +1430,14 @@ async def get_counties(fiscal_year: Optional[str] = None):
                 )
 
             # Resolve fiscal period IDs for the requested year
+            from models import FiscalPeriod as _FP
+
             period_ids = None
             if fiscal_year:
-                from models import FiscalPeriod as _FP
-
                 # Parse requested year: accept '2024/25', '2023/24', etc.
                 # Match against period start_date year
                 try:
                     start_yr = int(fiscal_year.split("/")[0])
-                    # Also try matching the label directly (flexible)
                     all_periods = db.query(_FP).all()
                     matched = []
                     for fp in all_periods:
@@ -1450,6 +1449,15 @@ async def get_counties(fiscal_year: Optional[str] = None):
                     period_ids = list(set(matched)) if matched else None
                 except (ValueError, IndexError):
                     pass  # Ignore bad fiscal_year format, return unfiltered
+            else:
+                # Default to latest fiscal period to avoid summing across all years
+                latest_fp = (
+                    db.query(_FP)
+                    .order_by(_FP.start_date.desc())
+                    .first()
+                )
+                if latest_fp:
+                    period_ids = [latest_fp.id]
 
             results = []
             for e in entities:
@@ -4533,8 +4541,8 @@ SECTOR_NORMALIZE = {
     "lands & urban planning": "Environment",
     "social services": "Social Protection",
     "social protection": "Social Protection",
-    "defense": "Defense & Security",
-    "public order & safety": "Defense & Security",
+    "defense": "Defense",
+    "public order & safety": "Public Order & Safety",
     "energy": "Energy",
     "other": "Other",
 }
@@ -4542,8 +4550,9 @@ SECTOR_NORMALIZE = {
 SECTOR_ORDER = [
     "Education",
     "Infrastructure",
+    "Public Order & Safety",
     "Administration",
-    "Defense & Security",
+    "Defense",
     "Health",
     "Energy",
     "Social Protection",
@@ -6295,13 +6304,14 @@ def _get_regional_peers(kenya_ratio: Optional[float] = None) -> list:
 
     Uses latest known values from IMF/World Bank data.
     """
-    # Latest known values (IMF World Economic Outlook, 2024 estimates)
+    # 2024 actuals from CBK, Bank of Tanzania, Bank of Uganda, NBE, IMF
+    # Sources: Trading Economics (verified Mar 2026)
     peers = [
-        {"country": "Kenya", "debt_to_gdp": kenya_ratio or 68.8},
-        {"country": "Ethiopia", "debt_to_gdp": 37.3},
-        {"country": "Tanzania", "debt_to_gdp": 42.1},
-        {"country": "Uganda", "debt_to_gdp": 48.4},
-        {"country": "Rwanda", "debt_to_gdp": 66.2},
+        {"country": "Kenya", "debt_to_gdp": kenya_ratio or 65.5},
+        {"country": "Ethiopia", "debt_to_gdp": 32.0},
+        {"country": "Tanzania", "debt_to_gdp": 48.2},
+        {"country": "Uganda", "debt_to_gdp": 51.8},
+        {"country": "Rwanda", "debt_to_gdp": 67.2},
     ]
     return peers
 
