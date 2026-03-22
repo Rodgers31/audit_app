@@ -1,5 +1,6 @@
 'use client';
 
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import { useFederalAudits } from '@/lib/react-query/useAudits';
 import { motion } from 'framer-motion';
 import {
@@ -8,7 +9,6 @@ import {
   Building2,
   ChevronRight,
   ExternalLink,
-  Loader2,
   RotateCcw,
   Scale,
   SearchX,
@@ -123,11 +123,7 @@ export default function AuditReportsSection() {
 
   /* ─── Loading / Error ─── */
   if (isLoading) {
-    return (
-      <div className='glass-card p-10 flex items-center justify-center min-h-[400px]'>
-        <Loader2 className='w-5 h-5 animate-spin text-neutral-muted/40' />
-      </div>
-    );
+    return <SkeletonCard className='min-h-[400px]' />;
   }
   if (error || !data) {
     return (

@@ -13,7 +13,14 @@
  * skeletons), and client-side React Query retries will fill in data
  * once the backend wakes up (~2-5s later).
  */
+import { Metadata } from 'next';
 import { getFederalAudits } from '@/lib/api/audits';
+
+export const metadata: Metadata = {
+  title: 'AuditGava — Kenya Public Money Tracker',
+  description:
+    "Track how Kenya's government spends public money. Real-time data on county budgets, national debt, audit findings, and financial accountability.",
+};
 import { getNationalBudgetSummary } from '@/lib/api/budget';
 import { getCounties } from '@/lib/api/counties';
 import { getDebtTimeline, getNationalDebtOverview, getNationalLoans } from '@/lib/api/debt';

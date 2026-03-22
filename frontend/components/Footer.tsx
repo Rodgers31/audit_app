@@ -69,7 +69,7 @@ export default function Footer() {
           <div className='flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-white/40'>
             <p>&copy; {new Date().getFullYear()} AuditGava. All rights reserved.</p>
             <p className='flex items-center gap-1'>
-              Built with <Heart className='w-3 h-3 text-gov-copper/70' /> for transparency
+              Built with <Heart className='w-3 h-3 fill-current text-red-400' /> for transparency
             </p>
           </div>
         </div>
