@@ -887,8 +887,8 @@ export default function NationalDebtPage() {
                       <ResponsiveContainer width='100%' height={220}>
                         <PieChart>
                           <Pie
-                            data={pendingBillsSummary.breakdown_by_type.map((t) => ({
-                              name: t.type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+                            data={pendingBillsSummary.breakdown_by_type.map((t: { type: string; amount: number }) => ({
+                              name: t.type.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()),
                               value: t.amount,
                             }))}
                             cx='50%'
@@ -898,7 +898,7 @@ export default function NationalDebtPage() {
                             paddingAngle={2}
                             dataKey='value'
                             stroke='none'>
-                            {pendingBillsSummary.breakdown_by_type.map((_, i) => (
+                            {pendingBillsSummary.breakdown_by_type.map((_: { type: string }, i: number) => (
                               <Cell key={i} fill={['#ef4444', '#f59e0b', '#8b5cf6', '#3b82f6', '#10b981', '#ec4899'][i % 6]} />
                             ))}
                           </Pie>
@@ -906,14 +906,14 @@ export default function NationalDebtPage() {
                         </PieChart>
                       </ResponsiveContainer>
                       <div className='grid grid-cols-2 gap-x-3 gap-y-1 mt-2'>
-                        {pendingBillsSummary.breakdown_by_type.map((t, i) => (
+                        {pendingBillsSummary.breakdown_by_type.map((t: { type: string; amount: number; percentage: number }, i: number) => (
                           <div key={t.type} className='flex items-center gap-2 text-xs'>
                             <div
                               className='w-2.5 h-2.5 rounded-full flex-shrink-0'
                               style={{ backgroundColor: ['#ef4444', '#f59e0b', '#8b5cf6', '#3b82f6', '#10b981', '#ec4899'][i % 6] }}
                             />
                             <span className='text-gray-600 truncate'>
-                              {t.type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                              {t.type.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
                             </span>
                             <span className='text-gray-400 ml-auto'>{t.percentage.toFixed(1)}%</span>
                           </div>
@@ -929,7 +929,7 @@ export default function NationalDebtPage() {
                         Aging Analysis
                       </h3>
                       <div className='space-y-3'>
-                        {pendingBillsSummary.aging_buckets.map((bucket) => {
+                        {pendingBillsSummary.aging_buckets.map((bucket: { bucket: string; amount: number; percentage: number; count?: number }) => {
                           const colors: Record<string, string> = {
                             '0-30d': 'bg-green-500',
                             '31-90d': 'bg-yellow-500',
@@ -973,7 +973,7 @@ export default function NationalDebtPage() {
                     Top Counties by Pending Bills
                   </h3>
                   <div className='space-y-2'>
-                    {pendingBillsSummary.top_counties_by_amount.slice(0, 10).map((county, i) => {
+                    {pendingBillsSummary.top_counties_by_amount.slice(0, 10).map((county: { county_name: string; county_id: string; entity_id?: number; county?: string; amount: number; per_capita?: number }, i: number) => {
                       const maxAmount = pendingBillsSummary.top_counties_by_amount[0]?.amount || 1;
                       const barWidth = (county.amount / maxAmount) * 100;
                       return (
@@ -990,9 +990,9 @@ export default function NationalDebtPage() {
                           </div>
                           <div className='text-right shrink-0'>
                             <span className='text-xs font-semibold text-gray-700'>{fmtKES(county.amount)}</span>
-                            {county.per_capita > 0 && (
+                            {(county.per_capita ?? 0) > 0 && (
                               <div className='text-[10px] text-gray-400'>
-                                {fmtKES(county.per_capita)}/person
+                                {fmtKES(county.per_capita ?? 0)}/person
                               </div>
                             )}
                           </div>
@@ -1301,7 +1301,7 @@ export default function NationalDebtPage() {
               </p>
               {/* Mobile cards */}
               <div className='md:hidden space-y-3'>
-                {debtSustainability.regional_peers.map((peer) => {
+                {debtSustainability.regional_peers.map((peer: { country: string; debt_to_gdp: number; debt_service_to_revenue: number; external_debt_share: number }) => {
                   const isKenya = peer.country.toLowerCase() === 'kenya';
                   return (
                     <div
@@ -1348,7 +1348,7 @@ export default function NationalDebtPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {debtSustainability.regional_peers.map((peer) => {
+                    {debtSustainability.regional_peers.map((peer: { country: string; debt_to_gdp: number; debt_service_to_revenue: number; external_debt_share: number }) => {
                       const isKenya = peer.country.toLowerCase() === 'kenya';
                       return (
                         <tr
