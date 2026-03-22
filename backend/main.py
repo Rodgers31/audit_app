@@ -6360,11 +6360,21 @@ def _get_regional_peers_cached(kenya_ratio: Optional[float] = None) -> list:
                 if iso not in latest or year > latest[iso]["year"]:
                     latest[iso] = {"year": year, "value": item["value"]}
 
+        # Verified fallback values (2024 from central banks, Mar 2026)
+        _fallback_ratios = {
+            "KEN": 65.5, "ETH": 32.0, "TZA": 48.2, "UGA": 51.8, "RWA": 67.2,
+        }
+
         peers = []
         for iso, name in _EAC_COUNTRIES.items():
-            ratio = latest.get(iso, {}).get("value")
+            wb_ratio = latest.get(iso, {}).get("value")
+            fallback = _fallback_ratios.get(iso)
             if iso == "KEN" and kenya_ratio is not None:
                 ratio = kenya_ratio  # Prefer our CBK-sourced data for Kenya
+            elif wb_ratio is not None:
+                ratio = wb_ratio  # Use World Bank if available
+            else:
+                ratio = fallback  # Fall back to verified 2024 values
             peers.append({
                 "country": name,
                 "debt_to_gdp": round(ratio, 1) if ratio else None,
