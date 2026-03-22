@@ -200,12 +200,37 @@ async def get_population_latest(db: Session = Depends(get_db)):
         raise HTTPException(status_code=503, detail="Database not available")
 
     try:
+        # Try national-level record first (entity_id IS NULL)
         row = (
             db.query(PopulationData)
             .filter(PopulationData.entity_id.is_(None))
             .order_by(desc(PopulationData.year))
             .first()
         )
+
+        # Fallback: aggregate county populations if no national record exists
+        if not row:
+            from sqlalchemy import func as sqlfunc
+            agg = (
+                db.query(
+                    sqlfunc.sum(PopulationData.total_population),
+                    sqlfunc.max(PopulationData.year),
+                )
+                .filter(PopulationData.entity_id.isnot(None))
+                .first()
+            )
+            if agg and agg[0]:
+                # Create a synthetic response (don't save to DB)
+                class _SyntheticPop:
+                    total_population = int(agg[0])
+                    year = agg[1]
+                    male_population = None
+                    female_population = None
+                    urban_population = None
+                    rural_population = None
+                    population_density = None
+                    source_document_id = None
+                row = _SyntheticPop()
     except OperationalError as e:
         logger.error("Database connection error on /population/latest: %s", e)
         raise HTTPException(status_code=503, detail="Database unavailable")
