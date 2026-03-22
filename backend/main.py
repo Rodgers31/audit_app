@@ -832,6 +832,15 @@ async def startup_event():
     logger.info("Main Backend API starting up...")
     logger.info(f"Working directory: {os.getcwd()}")
     logger.info("Initializing database connections...")
+
+    # Pre-warm the database connection pool so the first user request isn't slow
+    try:
+        with next(get_db()) as db:
+            db.execute("SELECT 1")
+        logger.info("Database connection pool warmed up successfully")
+    except Exception as e:
+        logger.warning(f"Database pre-warm failed (non-fatal): {e}")
+
     logger.info("Main Backend API startup complete!")
 
 
