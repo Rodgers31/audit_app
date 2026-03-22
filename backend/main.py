@@ -6302,18 +6302,94 @@ def _compute_debt_projections(db: Session) -> list:
 def _get_regional_peers(kenya_ratio: Optional[float] = None) -> list:
     """Return EAC regional debt-to-GDP comparison.
 
-    Uses latest known values from IMF/World Bank data.
+    Tries the World Bank API first for fresh data (cached 6 hours),
+    falls back to hardcoded values verified Mar 2026.
     """
-    # 2024 actuals from CBK, Bank of Tanzania, Bank of Uganda, NBE, IMF
-    # Sources: Trading Economics (verified Mar 2026)
-    peers = [
-        {"country": "Kenya", "debt_to_gdp": kenya_ratio or 65.5},
-        {"country": "Ethiopia", "debt_to_gdp": 32.0},
-        {"country": "Tanzania", "debt_to_gdp": 48.2},
-        {"country": "Uganda", "debt_to_gdp": 51.8},
-        {"country": "Rwanda", "debt_to_gdp": 67.2},
-    ]
-    return peers
+    return _get_regional_peers_cached(kenya_ratio)
+
+
+# ── World Bank live peer data with TTL cache ──────────────────────
+_EAC_COUNTRIES = {
+    "KEN": "Kenya",
+    "ETH": "Ethiopia",
+    "TZA": "Tanzania",
+    "UGA": "Uganda",
+    "RWA": "Rwanda",
+}
+
+# Simple TTL cache: (timestamp, data)
+_peers_cache: Dict[str, Any] = {"ts": 0.0, "data": None}
+_PEERS_CACHE_TTL = 6 * 3600  # 6 hours
+
+
+def _get_regional_peers_cached(kenya_ratio: Optional[float] = None) -> list:
+    """Fetch EAC peers from World Bank API with 6-hour TTL cache."""
+    now = time.time()
+
+    # Check cache
+    if _peers_cache["data"] is not None and (now - _peers_cache["ts"]) < _PEERS_CACHE_TTL:
+        cached = _peers_cache["data"]
+        # Still override Kenya with our CBK data if provided
+        if kenya_ratio is not None:
+            for p in cached:
+                if p["country"] == "Kenya":
+                    p["debt_to_gdp"] = round(kenya_ratio, 1)
+        return cached
+
+    # Try World Bank API
+    try:
+        codes = ";".join(_EAC_COUNTRIES.keys())
+        # GC.DOD.TOTL.GD.ZS = Central government debt, total (% of GDP)
+        url = (
+            f"https://api.worldbank.org/v2/country/{codes}"
+            f"/indicator/GC.DOD.TOTL.GD.ZS?format=json&per_page=50&date=2018:2025"
+        )
+        resp = httpx.get(url, timeout=10)
+        resp.raise_for_status()
+        wb_data = resp.json()
+
+        if not isinstance(wb_data, list) or len(wb_data) < 2 or not wb_data[1]:
+            raise ValueError("Unexpected World Bank response format")
+
+        # Find latest available value per country
+        latest: Dict[str, Dict[str, Any]] = {}
+        for item in wb_data[1]:
+            if item.get("value") is not None:
+                iso = item["countryiso3code"]
+                year = int(item["date"])
+                if iso not in latest or year > latest[iso]["year"]:
+                    latest[iso] = {"year": year, "value": item["value"]}
+
+        peers = []
+        for iso, name in _EAC_COUNTRIES.items():
+            ratio = latest.get(iso, {}).get("value")
+            if iso == "KEN" and kenya_ratio is not None:
+                ratio = kenya_ratio  # Prefer our CBK-sourced data for Kenya
+            peers.append({
+                "country": name,
+                "debt_to_gdp": round(ratio, 1) if ratio else None,
+            })
+
+        _peers_cache["ts"] = now
+        _peers_cache["data"] = peers
+        logging.getLogger("audit_app.sustainability").info(
+            "Updated regional peers from World Bank API (%d countries with data)",
+            sum(1 for p in peers if p["debt_to_gdp"] is not None),
+        )
+        return peers
+
+    except Exception as exc:
+        logging.getLogger("audit_app.sustainability").warning(
+            "World Bank API unavailable for regional peers, using fallback: %s", exc
+        )
+        # Fallback to known values (verified Mar 2026 from central banks)
+        return [
+            {"country": "Kenya", "debt_to_gdp": round(kenya_ratio, 1) if kenya_ratio else 65.5},
+            {"country": "Ethiopia", "debt_to_gdp": 32.0},
+            {"country": "Tanzania", "debt_to_gdp": 48.2},
+            {"country": "Uganda", "debt_to_gdp": 51.8},
+            {"country": "Rwanda", "debt_to_gdp": 67.2},
+        ]
 
 
 @app.get("/api/v1/entities", response_model=List[EntityResponse])
