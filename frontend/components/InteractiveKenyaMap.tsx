@@ -230,6 +230,8 @@ export default function InteractiveKenyaMap({
       {/* ═══════════ Map Container ═══════════ */}
       <div
         className='relative w-full flex-1 rounded-xl overflow-hidden border border-white/30'
+        role="application"
+        aria-label="Interactive map of Kenya's 47 counties. Hover to see county details, click to select a county. Counties are color-coded by audit status."
         style={{ minHeight: 560 }}>
         {/* Subtle radial vignette overlay */}
         <div

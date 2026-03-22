@@ -138,8 +138,9 @@ function GradeBadge({
       }}
       title='Click to see how this score is calculated'
       style={{ position: 'relative', zIndex: 100 }}
+      aria-label={`Financial health grade: ${grade}, score: ${score.toFixed(0)} out of 100`}
       className={`inline-flex items-center gap-2.5 px-5 py-2.5 rounded-xl bg-gradient-to-r ${bg[grade] || bg.C} text-white shadow-lg cursor-pointer hover:brightness-110 hover:scale-105 transition-all group`}>
-      <span className='text-3xl font-black leading-none'>{grade}</span>
+      <span className='text-3xl font-black leading-none' aria-hidden="true">{grade}</span>
       <div className='border-l border-white/30 pl-2.5'>
         <div className='text-[10px] uppercase tracking-widest opacity-70 flex items-center gap-1'>
           Health <Info size={10} className='opacity-0 group-hover:opacity-100 transition-opacity' />
@@ -398,6 +399,33 @@ function CircleProgress({
   );
 }
 
+/* ═══════════ Summary Metric Card ═══════════ */
+function SummaryMetricCard({
+  label,
+  value,
+  icon,
+  color,
+}: {
+  label: string;
+  value: string;
+  icon: React.ReactNode;
+  color?: string;
+}) {
+  return (
+    <div className='bg-white rounded-xl border border-gray-100 p-4 flex items-center gap-3'>
+      <div
+        className='w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0'
+        style={{ backgroundColor: color ? `${color}15` : '#1a563210' }}>
+        {icon}
+      </div>
+      <div className='min-w-0'>
+        <div className='text-xs font-medium text-gray-500 uppercase tracking-wider'>{label}</div>
+        <div className='text-lg font-bold text-gray-900 truncate'>{value}</div>
+      </div>
+    </div>
+  );
+}
+
 /* ═══════════ Tab: Overview ═══════════ */
 function OverviewTab({ data }: { data: CountyComprehensive }) {
   const {
@@ -427,8 +455,47 @@ function OverviewTab({ data }: { data: CountyComprehensive }) {
     arid_semi_arid: 'Arid / Semi-Arid',
   };
 
+  // Summary card helpers
+  const utilColor =
+    budget.utilization_rate >= 70
+      ? '#22c55e'
+      : budget.utilization_rate >= 50
+        ? '#f59e0b'
+        : '#ef4444';
+  const gradeColor: Record<string, string> = {
+    A: '#22c55e', 'B+': '#22c55e', B: '#f59e0b', 'B-': '#f97316', C: '#ef4444',
+  };
+
   return (
     <div className='space-y-5'>
+      {/* At-a-glance summary cards */}
+      <div className='grid grid-cols-2 lg:grid-cols-4 gap-3'>
+        <SummaryMetricCard
+          label='Total Budget'
+          value={fmtKES(budget.total_allocated)}
+          icon={<CircleDollarSign size={20} style={{ color: '#3b82f6' }} />}
+          color='#3b82f6'
+        />
+        <SummaryMetricCard
+          label='Budget Utilization'
+          value={pct(budget.utilization_rate)}
+          icon={<CheckCircle2 size={20} style={{ color: utilColor }} />}
+          color={utilColor}
+        />
+        <SummaryMetricCard
+          label='Audit Findings'
+          value={String(audit.findings_count)}
+          icon={<ShieldAlert size={20} style={{ color: '#ef4444' }} />}
+          color='#ef4444'
+        />
+        <SummaryMetricCard
+          label='Health Grade'
+          value={`${financial_summary.grade} (${financial_summary.health_score.toFixed(0)})`}
+          icon={<Award size={20} style={{ color: gradeColor[financial_summary.grade] || '#ef4444' }} />}
+          color={gradeColor[financial_summary.grade] || '#ef4444'}
+        />
+      </div>
+
       {/* Key indicators row */}
       <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
         {/* Budget execution */}

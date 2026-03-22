@@ -1,8 +1,9 @@
 'use client';
 
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import { useAuditStatistics } from '@/lib/react-query/useAudits';
 import { motion } from 'framer-motion';
-import { AlertTriangle, Loader2, MapPin, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, MapPin, ShieldAlert, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 
 function fmtB(val: number): string {
@@ -16,11 +17,7 @@ export default function AccountabilityPulseCard() {
   const { data: stats, isLoading, error } = useAuditStatistics();
 
   if (isLoading) {
-    return (
-      <div className='glass-card p-8 flex items-center justify-center min-h-[340px]'>
-        <Loader2 className='w-5 h-5 animate-spin text-neutral-muted/40' />
-      </div>
-    );
+    return <SkeletonCard className='min-h-[340px]' />;
   }
 
   if (error || !stats) {

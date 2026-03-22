@@ -4,6 +4,7 @@ import { DebtTimelineEntry } from '@/lib/api/debt';
 import { useDebtTimeline, useNationalDebtOverview } from '@/lib/react-query/useDebt';
 import { useFiscalSummary } from '@/lib/react-query/useFiscal';
 import { motion } from 'framer-motion';
+import { Skeleton, SkeletonChart } from '@/components/ui/Skeleton';
 import { AlertTriangle, Landmark, Loader2, TrendingUp } from 'lucide-react';
 import { useMemo } from 'react';
 import {
@@ -189,8 +190,17 @@ export default function NationalDebtCard() {
       {/* Chart */}
       <div className='px-4 sm:px-6 pt-3 pb-2 flex-1 min-h-0'>
         {isTimelineLoading ? (
-          <div className='h-64 sm:h-72 flex items-center justify-center'>
-            <Loader2 className='w-6 h-6 animate-spin text-neutral-muted/40' />
+          <div className='h-64 sm:h-72 flex flex-col justify-end gap-2 px-2'>
+            <div className='flex items-end gap-1 h-full'>
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Skeleton
+                  key={i}
+                  className='flex-1 rounded-t-sm'
+                  style={{ height: `${30 + Math.random() * 60}%` }}
+                />
+              ))}
+            </div>
+            <Skeleton className='h-2 w-full' />
           </div>
         ) : !hasTimeline ? (
           <div className='h-64 sm:h-72 flex items-center justify-center text-neutral-muted text-sm'>

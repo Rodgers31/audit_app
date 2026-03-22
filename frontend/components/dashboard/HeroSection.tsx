@@ -1,5 +1,6 @@
 'use client';
 
+import { Skeleton } from '@/components/ui/Skeleton';
 import { useDebtTimeline, useNationalDebtOverview } from '@/lib/react-query/useDebt';
 import { useFiscalSummary } from '@/lib/react-query/useFiscal';
 import { motion } from 'framer-motion';
@@ -205,8 +206,20 @@ export function KenyanGovCard() {
       {/* ── Fiscal stats ── */}
       <div className='flex-1 flex flex-col bg-gradient-to-b from-white/60 to-white/40 backdrop-blur-md'>
         {isLoading ? (
-          <div className='flex-1 flex items-center justify-center p-6'>
-            <Loader2 className='w-5 h-5 animate-spin text-gray-300' />
+          <div className='flex-1 p-3 space-y-3'>
+            <div className='grid grid-cols-2 gap-2'>
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className='rounded-lg border border-gray-100 px-2.5 py-2 space-y-1.5'>
+                  <Skeleton className='h-2 w-12' />
+                  <Skeleton className='h-4 w-16' />
+                  <Skeleton className='h-2 w-10' />
+                </div>
+              ))}
+            </div>
+            <div className='rounded-lg border border-gray-100 px-2 py-3 space-y-2'>
+              <Skeleton className='h-2 w-20' />
+              <Skeleton className='h-2.5 w-full rounded-full' />
+            </div>
           </div>
         ) : fy ? (
           <div className='p-3 flex-1 flex flex-col gap-2'>

@@ -1,8 +1,9 @@
 'use client';
 
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import { useNationalBudgetSummary } from '@/lib/react-query/useBudget';
 import { motion } from 'framer-motion';
-import { Banknote, Loader2, TrendingUp } from 'lucide-react';
+import { Banknote, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 
 function fmtB(val: number): string {
@@ -65,11 +66,7 @@ export default function BudgetSnapshotCard() {
   const { data: resp, isLoading, error } = useNationalBudgetSummary();
 
   if (isLoading) {
-    return (
-      <div className='glass-card p-8 flex items-center justify-center min-h-[340px]'>
-        <Loader2 className='w-5 h-5 animate-spin text-neutral-muted/40' />
-      </div>
-    );
+    return <SkeletonCard className='min-h-[340px]' />;
   }
 
   if (error || !resp) {

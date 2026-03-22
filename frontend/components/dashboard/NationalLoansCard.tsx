@@ -1,9 +1,10 @@
 'use client';
 
+import { SkeletonTable } from '@/components/ui/Skeleton';
 import { NationalLoan } from '@/lib/api/debt';
 import { useNationalLoans } from '@/lib/react-query/useDebt';
 import { motion } from 'framer-motion';
-import { ExternalLink, Landmark, Loader2, TrendingUp } from 'lucide-react';
+import { ExternalLink, Landmark, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import DebtExplainerModal from './DebtExplainerModal';
 
@@ -67,11 +68,7 @@ export default function NationalLoansCard() {
   const { data, isLoading, error } = useNationalLoans();
 
   if (isLoading) {
-    return (
-      <div className='glass-card p-8 flex items-center justify-center min-h-[340px]'>
-        <Loader2 className='w-5 h-5 animate-spin text-neutral-muted/40' />
-      </div>
-    );
+    return <SkeletonTable rows={8} cols={4} />;
   }
 
   if (error || !data) {
