@@ -4,7 +4,10 @@ Follow the Money – county and national money-flow waterfall endpoints.
 Traces public funds through: Allocation → Release → Expenditure → Audit Flags.
 """
 
+import functools
 import logging
+import time
+from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -15,6 +18,44 @@ from database import get_db
 from models import Audit, BudgetLine, Entity, EntityType, FiscalPeriod
 
 logger = logging.getLogger(__name__)
+
+# Try to import Redis cache; fall back to in-memory TTL cache
+try:
+    from cache.redis_cache import RedisCache
+    _redis_cache = RedisCache()
+except Exception:
+    _redis_cache = None
+
+
+def _cached(key_prefix: str, ttl: int = 1800):
+    """Cache decorator with Redis + in-memory fallback."""
+    def decorator(fn):
+        _mem: Dict[str, Dict[str, Any]] = {}
+
+        @functools.wraps(fn)
+        async def wrapper(*args, **kwargs):
+            parts = [key_prefix]
+            for k, v in kwargs.items():
+                if k not in ("db", "request", "background_tasks"):
+                    parts.append(f"{k}:{v}")
+            cache_key = ":".join(parts)
+
+            if _redis_cache:
+                hit = _redis_cache.get(cache_key)
+                if hit is not None:
+                    return hit
+                result = await fn(*args, **kwargs)
+                _redis_cache.set(cache_key, result, ttl=ttl)
+                return result
+
+            rec = _mem.get(cache_key)
+            if rec and (time.time() - rec["ts"]) < ttl:
+                return rec["value"]
+            result = await fn(*args, **kwargs)
+            _mem[cache_key] = {"value": result, "ts": time.time()}
+            return result
+        return wrapper
+    return decorator
 
 router = APIRouter(prefix="/api/v1", tags=["money-flow"])
 
@@ -327,3 +368,145 @@ async def national_money_flow(
         "total_waste_estimate": flagged,
         "efficiency_score": efficiency,
     }
+
+
+@router.get("/money-flow/all-counties")
+@_cached(key_prefix="money-flow:all-counties", ttl=1800)
+async def all_counties_money_flow(
+    year: str = Query(..., description="Fiscal year label, e.g. '2024/25'"),
+    db: Session = Depends(get_db),
+):
+    """Batch endpoint: money flow for every county in a single response.
+
+    Replaces N individual /counties/{id}/money-flow calls with 3 SQL queries.
+    """
+    period_ids = _resolve_periods(db, year)
+
+    # 1. All county entities in ONE query
+    county_entities = (
+        db.query(Entity.id, Entity.canonical_name)
+        .filter(Entity.type == EntityType.COUNTY)
+        .all()
+    )
+    if not county_entities:
+        return []
+
+    entity_map = {eid: name for eid, name in county_entities}
+    entity_ids = list(entity_map.keys())
+
+    # Short-circuit if no matching fiscal periods
+    if not period_ids:
+        no_data_stages = [
+            _build_stage("Allocated", "Budget Allocation", None,
+                         source="CRA Allocation + Conditional Grants", data_unavailable=True),
+            _build_stage("Released", "Funds Released", None,
+                         gap_label="Withheld/Delayed", data_unavailable=True),
+            _build_stage("Spent", "Actual Expenditure", None,
+                         gap_label="Unspent Funds", data_unavailable=True),
+            _build_stage("Flagged", "Auditor Flagged", None,
+                         gap_label="Irregular/Unsupported Expenditure", data_unavailable=True),
+        ]
+        return [
+            {
+                "county_id": eid,
+                "county_name": name,
+                "fiscal_year": year,
+                "stages": no_data_stages,
+                "total_waste_estimate": None,
+                "efficiency_score": None,
+            }
+            for eid, name in county_entities
+        ]
+
+    # 2. Aggregate budget lines per entity in ONE query
+    budget_rows = (
+        db.query(
+            BudgetLine.entity_id,
+            func.sum(func.coalesce(BudgetLine.allocated_amount, 0)).label("allocated"),
+            func.sum(func.coalesce(BudgetLine.actual_spent, 0)).label("spent"),
+            func.sum(BudgetLine.committed_amount).label("committed"),
+        )
+        .filter(
+            BudgetLine.entity_id.in_(entity_ids),
+            BudgetLine.period_id.in_(period_ids),
+        )
+        .group_by(BudgetLine.entity_id)
+        .all()
+    )
+    budget_map: Dict[int, Dict[str, Any]] = {}
+    for eid, alloc, spent, committed in budget_rows:
+        budget_map[eid] = {
+            "allocated": float(alloc) if alloc else None,
+            "spent": float(spent) if spent else None,
+            "released": float(committed) if committed else None,
+        }
+
+    # 3. Aggregate audit flagged amounts per entity in ONE query
+    audit_rows = (
+        db.query(
+            Audit.entity_id,
+            func.sum(Audit.amount),
+        )
+        .filter(
+            Audit.entity_id.in_(entity_ids),
+            Audit.period_id.in_(period_ids),
+        )
+        .group_by(Audit.entity_id)
+        .all()
+    )
+    flagged_map: Dict[int, float] = {
+        eid: float(amt) for eid, amt in audit_rows if amt
+    }
+
+    # 4. Build response for every county
+    results = []
+    for eid, name in county_entities:
+        b = budget_map.get(eid, {})
+        allocated = b.get("allocated")
+        released = b.get("released")
+        spent = b.get("spent")
+        flagged = flagged_map.get(eid)
+
+        stages: List[Dict[str, Any]] = []
+
+        stages.append(_build_stage(
+            stage="Allocated", label="Budget Allocation", amount=allocated,
+            source="CRA Allocation + Conditional Grants",
+            data_unavailable=allocated is None,
+        ))
+
+        gap_rel = round(allocated - released, 2) if (released is not None and allocated is not None) else None
+        stages.append(_build_stage(
+            stage="Released", label="Funds Released", amount=released,
+            gap_from_prev=gap_rel, gap_label="Withheld/Delayed",
+            data_unavailable=released is None,
+        ))
+
+        prev = released if released is not None else allocated
+        gap_spent = round(prev - spent, 2) if (spent is not None and prev is not None) else None
+        stages.append(_build_stage(
+            stage="Spent", label="Actual Expenditure", amount=spent,
+            gap_from_prev=gap_spent, gap_label="Unspent Funds",
+            data_unavailable=spent is None,
+        ))
+
+        stages.append(_build_stage(
+            stage="Flagged", label="Auditor Flagged", amount=flagged,
+            gap_from_prev=None, gap_label="Irregular/Unsupported Expenditure",
+            data_unavailable=flagged is None,
+        ))
+
+        efficiency = None
+        if spent is not None and allocated and allocated > 0:
+            efficiency = round((spent / allocated) * 100, 2)
+
+        results.append({
+            "county_id": eid,
+            "county_name": name,
+            "fiscal_year": year,
+            "stages": stages,
+            "total_waste_estimate": flagged,
+            "efficiency_score": efficiency,
+        })
+
+    return results

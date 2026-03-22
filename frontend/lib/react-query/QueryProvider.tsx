@@ -26,11 +26,16 @@ export function QueryProvider({ children }: QueryProviderProps) {
             gcTime: 60 * 60 * 1000,
             // Retry configuration
             retry: (failureCount, error: any) => {
+              const status = error?.response?.status;
               // Don't retry on 4xx errors (client errors)
-              if (error?.response?.status >= 400 && error?.response?.status < 500) {
+              if (status >= 400 && status < 500) {
                 return false;
               }
-              // Retry up to 2 times for other errors
+              // Don't retry on 503 — means "data not seeded", not transient
+              if (status === 503) {
+                return false;
+              }
+              // Retry up to 2 times for other errors (502, 504, network)
               return failureCount < 2;
             },
             // Retry delay with exponential backoff

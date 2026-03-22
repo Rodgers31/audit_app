@@ -16,7 +16,7 @@ from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
-from sqlalchemy import and_, case, desc, func
+from sqlalchemy import and_, case, desc, func, or_
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -123,27 +123,42 @@ def _check_db(db: Session):
 
 @router.get("/summary", response_model=AuditSummaryResponse)
 async def get_audit_summary(db: Session = Depends(get_db)):
-    """Return aggregate audit statistics for the national dashboard."""
+    """Return aggregate audit statistics for the national dashboard.
+
+    Optimised: combines totals + expenditure sums into a single query and
+    merges type/opinion breakdowns where possible.
+    """
     _check_db(db)
     try:
-        # Total findings
-        total_findings = db.query(func.count(Audit.id)).scalar() or 0
+        # --- Combined totals in ONE query (was 3 separate queries) ---
+        # INDEX hint: CREATE INDEX ix_audits_query_type ON audits(query_type)
+        # INDEX hint: CREATE INDEX ix_audits_status ON audits(status)
+        totals = db.query(
+            func.count(Audit.id),
+            func.coalesce(
+                func.sum(case(
+                    (Audit.query_type == "Financial Irregularity", Audit.amount),
+                    else_=0,
+                )), 0
+            ),
+            func.coalesce(
+                func.sum(case(
+                    (Audit.status != "Resolved", Audit.amount),
+                    else_=0,
+                )), 0
+            ),
+            func.min(Audit.audit_year),
+            func.max(Audit.audit_year),
+        ).first()
 
-        # Total irregular expenditure
-        total_irregular = (
-            db.query(func.coalesce(func.sum(Audit.amount), 0))
-            .filter(Audit.query_type == "Financial Irregularity")
-            .scalar()
-        )
-
-        # Total unsupported expenditure (status != Resolved)
-        total_unsupported = (
-            db.query(func.coalesce(func.sum(Audit.amount), 0))
-            .filter(Audit.status != "Resolved")
-            .scalar()
-        )
+        total_findings = totals[0] or 0
+        total_irregular = totals[1]
+        total_unsupported = totals[2]
+        min_year = totals[3]
+        max_year = totals[4]
 
         # Findings by type
+        # INDEX hint: CREATE INDEX ix_audits_query_type ON audits(query_type)
         type_rows = (
             db.query(Audit.query_type, func.count(Audit.id))
             .filter(Audit.query_type.isnot(None))
@@ -153,6 +168,7 @@ async def get_audit_summary(db: Session = Depends(get_db)):
         findings_by_type = {t: c for t, c in type_rows}
 
         # Findings by opinion
+        # INDEX hint: CREATE INDEX ix_audits_opinion ON audits(audit_opinion)
         opinion_rows = (
             db.query(Audit.audit_opinion, func.count(Audit.id))
             .filter(Audit.audit_opinion.isnot(None))
@@ -162,6 +178,7 @@ async def get_audit_summary(db: Session = Depends(get_db)):
         findings_by_opinion = {o: c for o, c in opinion_rows}
 
         # Worst counties by total flagged amount
+        # INDEX hint: CREATE INDEX ix_audits_entity_amount ON audits(entity_id, amount)
         worst_rows = (
             db.query(
                 Entity.id,
@@ -186,15 +203,6 @@ async def get_audit_summary(db: Session = Depends(get_db)):
             for r in worst_rows
         ]
 
-        # Year range
-        year_agg = db.query(
-            func.min(Audit.audit_year), func.max(Audit.audit_year)
-        ).first()
-        year_range = YearRange(
-            min_year=year_agg[0] if year_agg else None,
-            max_year=year_agg[1] if year_agg else None,
-        )
-
         return AuditSummaryResponse(
             total_irregular_expenditure=float(total_irregular),
             total_unsupported_expenditure=float(total_unsupported),
@@ -202,7 +210,7 @@ async def get_audit_summary(db: Session = Depends(get_db)):
             findings_by_type=findings_by_type,
             findings_by_opinion=findings_by_opinion,
             worst_counties=worst_counties,
-            year_range=year_range,
+            year_range=YearRange(min_year=min_year, max_year=max_year),
         )
 
     except OperationalError as e:
@@ -219,42 +227,55 @@ async def get_audit_trends(
     query_type: Optional[str] = Query(None, description="Filter by query type"),
     db: Session = Depends(get_db),
 ):
-    """Return year-over-year audit trend data."""
+    """Return year-over-year audit trend data (SQL-aggregated)."""
     _check_db(db)
     try:
-        base = db.query(Audit).filter(Audit.audit_year.isnot(None))
+        # Build reusable filter conditions
+        filters = [Audit.audit_year.isnot(None)]
         if county_id is not None:
-            base = base.filter(Audit.entity_id == county_id)
+            filters.append(Audit.entity_id == county_id)
         if query_type is not None:
-            base = base.filter(Audit.query_type == query_type)
+            filters.append(Audit.query_type == query_type)
 
-        rows = base.all()
-
-        years_set = set()
-        findings_per_year: Dict[int, int] = defaultdict(int)
-        amount_per_year: Dict[int, float] = defaultdict(float)
-        opinion_per_year: Dict[int, Dict[str, int]] = defaultdict(
-            lambda: defaultdict(int)
+        # Findings count per year — single SQL GROUP BY
+        # INDEX hint: CREATE INDEX ix_audits_year ON audits(audit_year)
+        findings_rows = (
+            db.query(Audit.audit_year, func.count(Audit.id))
+            .filter(*filters)
+            .group_by(Audit.audit_year)
+            .all()
         )
+        findings_per_year = {str(yr): cnt for yr, cnt in findings_rows}
 
-        for r in rows:
-            yr = r.audit_year
-            years_set.add(yr)
-            findings_per_year[yr] += 1
-            if r.amount is not None:
-                amount_per_year[yr] += float(r.amount)
-            if r.audit_opinion:
-                opinion_per_year[yr][r.audit_opinion] += 1
+        # Amount per year — single SQL GROUP BY
+        amount_rows = (
+            db.query(Audit.audit_year, func.coalesce(func.sum(Audit.amount), 0))
+            .filter(*filters)
+            .group_by(Audit.audit_year)
+            .all()
+        )
+        amount_per_year = {str(yr): float(amt) for yr, amt in amount_rows}
 
-        years = sorted(years_set)
+        # Opinion breakdown per year — single SQL GROUP BY
+        # INDEX hint: CREATE INDEX ix_audits_year_opinion ON audits(audit_year, audit_opinion)
+        opinion_rows = (
+            db.query(Audit.audit_year, Audit.audit_opinion, func.count(Audit.id))
+            .filter(*filters, Audit.audit_opinion.isnot(None))
+            .group_by(Audit.audit_year, Audit.audit_opinion)
+            .all()
+        )
+        opinion_per_year: Dict[str, Dict[str, int]] = defaultdict(dict)
+        for yr, opinion, cnt in opinion_rows:
+            opinion_per_year[str(yr)][opinion] = cnt
+
+        # Distinct years
+        years = sorted(int(y) for y in findings_per_year.keys())
 
         return AuditTrendsResponse(
             years=years,
-            findings_per_year={str(y): c for y, c in sorted(findings_per_year.items())},
-            amount_per_year={str(y): a for y, a in sorted(amount_per_year.items())},
-            opinion_per_year={
-                str(y): dict(ops) for y, ops in sorted(opinion_per_year.items())
-            },
+            findings_per_year=findings_per_year,
+            amount_per_year=amount_per_year,
+            opinion_per_year=dict(opinion_per_year),
         )
 
     except OperationalError as e:
@@ -267,18 +288,28 @@ async def get_audit_trends(
 
 @router.get("/recurring", response_model=RecurringFindingsResponse)
 async def get_recurring_findings(db: Session = Depends(get_db)):
-    """Return findings flagged as recurring or appearing in 2+ years."""
+    """Return findings flagged as recurring or appearing in 2+ years.
+
+    Optimised: uses JOINs to fetch entity names and SQL aggregation to
+    avoid N+1 per-row entity lookups.
+    """
     _check_db(db)
     try:
-        # 1. Findings explicitly flagged as recurring
-        flagged = (
-            db.query(Audit)
-            .join(Entity, Audit.entity_id == Entity.id)
+        # INDEX hint: CREATE INDEX ix_audits_entity_qtype_year
+        #   ON audits(entity_id, query_type, audit_year)
+
+        # --- Step 1: identify recurring (entity_id, query_type) groups ---
+        # A group is recurring if explicitly flagged OR spans 2+ years.
+
+        # 1a. Groups with at least one "Recurring" flag
+        flagged_keys = (
+            db.query(Audit.entity_id, Audit.query_type)
             .filter(Audit.follow_up_status == "Recurring")
+            .group_by(Audit.entity_id, Audit.query_type)
             .all()
         )
 
-        # 2. Same county + query_type appearing in 2+ distinct years
+        # 1b. Groups spanning 2+ distinct years
         multi_year_keys = (
             db.query(Audit.entity_id, Audit.query_type)
             .filter(
@@ -290,71 +321,61 @@ async def get_recurring_findings(db: Session = Depends(get_db)):
             .all()
         )
 
-        # Collect all relevant findings
-        seen_keys = set()
+        # Union the two sets of keys
+        all_keys = {(eid, qt or "Unknown") for eid, qt in flagged_keys} | \
+                   {(eid, qt) for eid, qt in multi_year_keys}
+
+        if not all_keys:
+            return RecurringFindingsResponse(recurring_findings=[], total=0)
+
+        # --- Step 2: fetch all findings for these groups with JOIN ---
+        # Batch-load entity names to avoid N+1
+        all_entity_ids = list({eid for eid, _ in all_keys})
+        entity_name_map: Dict[int, str] = {}
+        if all_entity_ids:
+            for eid, name in (
+                db.query(Entity.id, Entity.canonical_name)
+                .filter(Entity.id.in_(all_entity_ids))
+                .all()
+            ):
+                entity_name_map[eid] = name
+
+        # Build result by querying findings per group (compatible with SQLite + Postgres)
         result_map: Dict[tuple, dict] = {}
-
-        # Add flagged recurring
-        for a in flagged:
-            key = (a.entity_id, a.query_type or "Unknown")
-            if key not in result_map:
-                entity = db.query(Entity).get(a.entity_id)
-                result_map[key] = {
-                    "county_name": entity.canonical_name if entity else "Unknown",
-                    "query_type": a.query_type or "Unknown",
-                    "years": set(),
-                    "amount": 0.0,
-                    "ids": [],
-                }
-            if a.audit_year:
-                result_map[key]["years"].add(a.audit_year)
-            if a.amount:
-                result_map[key]["amount"] += float(a.amount)
-            result_map[key]["ids"].append(a.id)
-
-        # Add multi-year findings (merge if already captured from flagged)
-        for entity_id, qt in multi_year_keys:
-            key = (entity_id, qt)
+        for entity_id, qt in all_keys:
+            qt_filter = Audit.query_type == qt if qt != "Unknown" else Audit.query_type.is_(None)
             findings = (
-                db.query(Audit)
-                .filter(
-                    Audit.entity_id == entity_id,
-                    Audit.query_type == qt,
-                )
+                db.query(Audit.id, Audit.audit_year, Audit.amount)
+                .filter(Audit.entity_id == entity_id, qt_filter)
                 .all()
             )
-            entity = db.query(Entity).get(entity_id)
-            if key not in result_map:
-                result_map[key] = {
-                    "county_name": entity.canonical_name if entity else "Unknown",
-                    "query_type": qt,
-                    "years": set(),
-                    "amount": 0.0,
-                    "ids": [],
-                }
-            entry = result_map[key]
-            for f in findings:
-                if f.audit_year:
-                    entry["years"].add(f.audit_year)
-                if f.amount:
-                    # Avoid double-counting IDs already added from flagged pass
-                    if f.id not in entry["ids"]:
-                        entry["amount"] += float(f.amount)
-                elif f.id not in entry["ids"]:
-                    pass  # no amount to add
-                if f.id not in entry["ids"]:
-                    entry["ids"].append(f.id)
+            years_set: set = set()
+            total_amt = 0.0
+            ids_list: list = []
+            for fid, yr, amt in findings:
+                if yr is not None:
+                    years_set.add(yr)
+                if amt is not None:
+                    total_amt += float(amt)
+                ids_list.append(fid)
 
-        recurring = [
-            RecurringFinding(
+            result_map[(entity_id, qt)] = {
+                "county_name": entity_name_map.get(entity_id, "Unknown"),
+                "query_type": qt,
+                "years": years_set,
+                "amount": total_amt,
+                "ids": ids_list,
+            }
+
+        recurring = []
+        for v in result_map.values():
+            recurring.append(RecurringFinding(
                 county_name=v["county_name"],
                 query_type=v["query_type"],
                 years_appeared=sorted(v["years"]),
                 total_amount=v["amount"],
-                finding_ids=v["ids"],
-            )
-            for v in result_map.values()
-        ]
+                finding_ids=sorted(set(v["ids"])),
+            ))
 
         return RecurringFindingsResponse(
             recurring_findings=recurring,

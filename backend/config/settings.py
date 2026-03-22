@@ -51,6 +51,10 @@ class Settings(BaseSettings):
     # CORS – accepts JSON array '["https://a.com"]' OR comma-separated 'https://a.com,https://b.com'
     CORS_ORIGINS: Union[List[str], str] = [
         "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
+        "https://audit-app-4pwa.onrender.com",
+        "https://audit-app-frontend.onrender.com",
     ]
 
     @field_validator("CORS_ORIGINS", mode="before")

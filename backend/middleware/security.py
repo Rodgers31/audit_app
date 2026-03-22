@@ -47,6 +47,10 @@ class RedisRateLimitMiddleware(BaseHTTPMiddleware):
                 self.use_redis = False
 
     async def dispatch(self, request: Request, call_next: Callable):
+        # Skip OPTIONS (CORS preflight) — let CORSMiddleware handle it
+        if request.method == "OPTIONS":
+            return await call_next(request)
+
         # Initialize Redis on first request
         if self.redis_client is None and settings.REDIS_URL:
             await self.init_redis()
@@ -134,6 +138,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.clients: Dict[str, list] = defaultdict(list)
 
     async def dispatch(self, request: Request, call_next: Callable):
+        # Skip OPTIONS (CORS preflight) — let CORSMiddleware handle it
+        if request.method == "OPTIONS":
+            return await call_next(request)
+
         # Get client IP
         client_ip = request.client.host if request.client else "unknown"
 
@@ -168,6 +176,10 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
     """Log all API requests for audit trail."""
 
     async def dispatch(self, request: Request, call_next: Callable):
+        # Skip OPTIONS (CORS preflight) — not useful to audit
+        if request.method == "OPTIONS":
+            return await call_next(request)
+
         start_time = time.time()
 
         # Get client info
@@ -213,6 +225,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Add security headers to all responses."""
 
     async def dispatch(self, request: Request, call_next: Callable):
+        # Skip OPTIONS (CORS preflight)
+        if request.method == "OPTIONS":
+            return await call_next(request)
+
         response = await call_next(request)
 
         # Add security headers
@@ -222,7 +238,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Strict-Transport-Security"] = (
             "max-age=31536000; includeSubDomains"
         )
-        response.headers["Content-Security-Policy"] = "default-src 'self'"
+        # CSP: allow API responses to be consumed cross-origin (frontend on different port)
+        response.headers["Content-Security-Policy"] = "default-src 'self'; connect-src *"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = (
             "geolocation=(), microphone=(), camera=()"

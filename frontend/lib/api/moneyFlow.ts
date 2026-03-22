@@ -21,3 +21,10 @@ export const getNationalMoneyFlow = async (year: string): Promise<MoneyFlowData>
   const response = await apiClient.get<MoneyFlowData>(url);
   return response.data;
 };
+
+// Get money flow for ALL counties in a single batch call
+export const getAllCountiesMoneyFlow = async (year: string): Promise<MoneyFlowData[]> => {
+  const url = buildUrlWithParams('/money-flow/all-counties', { year });
+  const response = await apiClient.get<MoneyFlowData[]>(url);
+  return response.data;
+};
