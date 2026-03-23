@@ -749,6 +749,14 @@ try:
 except Exception as e:
     logger.warning(f"Could not register data freshness router: {e}")
 
+try:
+    from routers.data_provenance import router as data_provenance_router
+
+    app.include_router(data_provenance_router)
+    logger.info("Data provenance router registered at /api/v1/provenance")
+except Exception as e:
+    logger.warning(f"Could not register data provenance router: {e}")
+
 
 # Request logging middleware
 @app.middleware("http")
@@ -1207,38 +1215,12 @@ async def get_countries(db: Session = Depends(get_db)):
     try:
         countries = db.query(DBCountry).all()
         if not countries:
-            # Return mock data if database is empty
-            logger.info("🔄 No countries found in database, returning mock data")
-            return [
-                {
-                    "id": 1,
-                    "name": "Kenya",
-                    "iso_code": "KEN",
-                    "currency": "KES",
-                    "summary": {
-                        "total_entities": 47,
-                        "total_budget": "25T KES",
-                        "transparency_score": 75.5,
-                    },
-                }
-            ]
+            logger.warning("No countries found in database — run bootstrap seeding")
+            return []
         return countries
     except Exception as e:
         logger.error(f"Database error in get_countries: {str(e)}")
-        # Return mock data on database error
-        return [
-            {
-                "id": 1,
-                "name": "Kenya",
-                "iso_code": "KEN",
-                "currency": "KES",
-                "summary": {
-                    "total_entities": 47,
-                    "total_budget": "25T KES",
-                    "transparency_score": 75.5,
-                },
-            }
-        ]
+        return []
 
 
 @app.get("/api/v1/countries/{country_id}/summary")
@@ -6369,7 +6351,9 @@ def _get_regional_peers_cached(kenya_ratio: Optional[float] = None) -> list:
                 if iso not in latest or year > latest[iso]["year"]:
                     latest[iso] = {"year": year, "value": item["value"]}
 
-        # Verified fallback values (2024 from central banks, Mar 2026)
+        # Last-resort fallback values — ONLY used when World Bank API is
+        # unreachable AND no cached data exists.  These MUST be updated
+        # whenever the seed pipeline runs (see debt_timeline domain).
         _fallback_ratios = {
             "KEN": 65.5, "ETH": 32.0, "TZA": 48.2, "UGA": 51.8, "RWA": 67.2,
         }
@@ -6522,56 +6506,8 @@ async def get_entities(
 
     except Exception as e:
         logger.error(f"Database error in get_entities: {str(e)}")
-        # Return mock data on database error
-        mock_entities = [
-            {
-                "id": 1,
-                "canonical_name": "Ministry of Health",
-                "type": "ministry",
-                "code": "MOH",
-                "country": "Kenya",
-                "parent_entity_id": None,
-                "financial_summary": {
-                    "total_allocation": 850000000000.0,
-                    "total_spent": 680000000000.0,
-                    "execution_rate": 80.0,
-                },
-                "audit_findings_count": 5,
-                "created_at": "2024-01-01T00:00:00",
-            },
-            {
-                "id": 2,
-                "canonical_name": "Ministry of Education",
-                "type": "ministry",
-                "code": "MOE",
-                "country": "Kenya",
-                "parent_entity_id": None,
-                "financial_summary": {
-                    "total_allocation": 1200000000000.0,
-                    "total_spent": 960000000000.0,
-                    "execution_rate": 80.0,
-                },
-                "audit_findings_count": 3,
-                "created_at": "2024-01-01T00:00:00",
-            },
-            {
-                "id": 3,
-                "canonical_name": "National Treasury",
-                "type": "ministry",
-                "code": "NT",
-                "country": "Kenya",
-                "parent_entity_id": None,
-                "financial_summary": {
-                    "total_allocation": 500000000000.0,
-                    "total_spent": 425000000000.0,
-                    "execution_rate": 85.0,
-                },
-                "audit_findings_count": 8,
-                "created_at": "2024-01-01T00:00:00",
-            },
-        ]
-
-        return mock_entities
+        # Return empty list on database error — never serve hardcoded data
+        return []
 
 
 @app.get("/api/v1/entities/{entity_id}", response_model=EntityDetailResponse)

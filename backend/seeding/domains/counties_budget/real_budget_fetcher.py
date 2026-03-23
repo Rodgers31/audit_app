@@ -1,6 +1,14 @@
 """
-Real Budget Data Fetcher - Generates real county budget data
-Uses realistic estimates based on Kenya's actual budget framework and county populations
+Real Budget Data Fetcher - DEPRECATED
+
+This script was used to generate the initial budgets.json fixture from
+hardcoded county population data and CRA formula estimates.
+
+The seeding pipeline now fetches live budget data from:
+- COB (Controller of Budget) quarterly C-BIRR PDF reports
+- Fixture files serve only as FALLBACK when live sources are unreachable
+
+See counties_budget/fetcher.py for the live implementation.
 """
 
 import json

@@ -24,6 +24,8 @@ from sqlalchemy.orm import Session
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from cache.redis_cache import cached
+
 try:
     from database import get_db
     from models import (
@@ -319,10 +321,26 @@ async def get_population(
         logger.error("Database error on /population: %s", e)
         raise HTTPException(status_code=500, detail="Database query failed")
 
+    # Batch load all entities in one query
+    entity_ids = {r.entity_id for r in results if r.entity_id}
+    entities_map = {}
+    if entity_ids:
+        entities = db.query(Entity).filter(Entity.id.in_(entity_ids)).all()
+        entities_map = {e.id: e for e in entities}
+
     # Enrich with entity information
     response = []
     for row in results:
-        entity_name, entity_type = get_entity_info(row.entity_id, db)
+        entity = entities_map.get(row.entity_id)
+        if entity:
+            entity_name = entity.canonical_name
+            try:
+                entity_type = entity.type.value if entity.type else "unknown"
+            except Exception:
+                entity_type = "unknown"
+        else:
+            entity_name = None
+            entity_type = "national" if row.entity_id is None else "unknown"
         response.append(
             PopulationResponse(
                 id=row.id,
@@ -419,10 +437,26 @@ async def get_gdp(
         logger.error("Database error on /gdp: %s", e)
         raise HTTPException(status_code=500, detail="Database query failed")
 
+    # Batch load all entities in one query
+    entity_ids = {r.entity_id for r in results if r.entity_id}
+    entities_map = {}
+    if entity_ids:
+        entities = db.query(Entity).filter(Entity.id.in_(entity_ids)).all()
+        entities_map = {e.id: e for e in entities}
+
     # Enrich with entity information
     response = []
     for row in results:
-        entity_name, entity_type = get_entity_info(row.entity_id, db)
+        entity = entities_map.get(row.entity_id)
+        if entity:
+            entity_name = entity.canonical_name
+            try:
+                entity_type = entity.type.value if entity.type else "unknown"
+            except Exception:
+                entity_type = "unknown"
+        else:
+            entity_name = None
+            entity_type = "national" if row.entity_id is None else "unknown"
         response.append(
             GDPResponse(
                 id=row.id,
@@ -531,10 +565,26 @@ async def get_economic_indicators(
         logger.error("Database error on /indicators: %s", e)
         raise HTTPException(status_code=500, detail="Database query failed")
 
+    # Batch load all entities in one query
+    entity_ids = {r.entity_id for r in results if r.entity_id}
+    entities_map = {}
+    if entity_ids:
+        entities = db.query(Entity).filter(Entity.id.in_(entity_ids)).all()
+        entities_map = {e.id: e for e in entities}
+
     # Enrich with entity information
     response = []
     for row in results:
-        entity_name, entity_type = get_entity_info(row.entity_id, db)
+        entity = entities_map.get(row.entity_id)
+        if entity:
+            entity_name = entity.canonical_name
+            try:
+                entity_type = entity.type.value if entity.type else "unknown"
+            except Exception:
+                entity_type = "unknown"
+        else:
+            entity_name = None
+            entity_type = "national" if row.entity_id is None else "unknown"
         response.append(
             EconomicIndicatorResponse(
                 id=row.id,
@@ -624,10 +674,26 @@ async def get_poverty_indices(
         logger.error("Database error on /poverty: %s", e)
         raise HTTPException(status_code=500, detail="Database query failed")
 
+    # Batch load all entities in one query
+    entity_ids = {r.entity_id for r in results if r.entity_id}
+    entities_map = {}
+    if entity_ids:
+        entities = db.query(Entity).filter(Entity.id.in_(entity_ids)).all()
+        entities_map = {e.id: e for e in entities}
+
     # Enrich with entity information
     response = []
     for row in results:
-        entity_name, entity_type = get_entity_info(row.entity_id, db)
+        entity = entities_map.get(row.entity_id)
+        if entity:
+            entity_name = entity.canonical_name
+            try:
+                entity_type = entity.type.value if entity.type else "unknown"
+            except Exception:
+                entity_type = "unknown"
+        else:
+            entity_name = None
+            entity_type = "national" if row.entity_id is None else "unknown"
         response.append(
             PovertyIndexResponse(
                 id=row.id,
@@ -903,6 +969,7 @@ async def get_county_economic_profile(
     response_model=EconomicSummary,
     summary="Get National Economic Summary",
 )
+@cached(ttl=300, key_prefix="economic_summary")
 async def get_economic_summary(
     db: Session = Depends(get_db),
 ):

@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import time
 from functools import wraps
 from typing import Any, Callable, Optional
 
@@ -17,7 +18,8 @@ class RedisCache:
     def __init__(self, redis_url: str = None):
         self.redis_url = redis_url or os.getenv("REDIS_URL", "redis://localhost:6379")
         self.client: Optional[redis.Redis] = None
-        self._memory_cache = {}  # Fallback in-memory cache
+        self._memory_cache = {}  # {key: (value, expiry_timestamp)}
+        self._memory_cache_max_size = 1024
         self._initialize()
 
     def _initialize(self):
@@ -47,7 +49,13 @@ class RedisCache:
                     return json.loads(value)
             else:
                 # Fallback to memory cache
-                return self._memory_cache.get(key)
+                entry = self._memory_cache.get(key)
+                if entry is not None:
+                    value, expiry = entry
+                    if time.time() < expiry:
+                        return value
+                    else:
+                        del self._memory_cache[key]  # Expired
         except Exception as e:
             logger.error(f"Cache get error: {e}")
         return None
@@ -58,8 +66,18 @@ class RedisCache:
             if self.client:
                 self.client.setex(key, ttl, json.dumps(value))
             else:
-                # Fallback to memory cache (no TTL in simple version)
-                self._memory_cache[key] = value
+                # Fallback to memory cache with TTL
+                if len(self._memory_cache) >= self._memory_cache_max_size:
+                    # Evict expired entries first
+                    now = time.time()
+                    expired_keys = [k for k, (_, exp) in self._memory_cache.items() if now >= exp]
+                    for k in expired_keys:
+                        del self._memory_cache[k]
+                    # If still full, evict oldest entry
+                    if len(self._memory_cache) >= self._memory_cache_max_size:
+                        oldest_key = next(iter(self._memory_cache))
+                        del self._memory_cache[oldest_key]
+                self._memory_cache[key] = (value, time.time() + ttl)
         except Exception as e:
             logger.error(f"Cache set error: {e}")
 
