@@ -17,12 +17,14 @@ from models import (
     Country,
     DebtCategory,
     DocumentType,
+    EconomicIndicator,
     Entity,
     EntityType,
     FiscalPeriod,
     GDPData,
     Loan,
     PopulationData,
+    PovertyIndex,
     Severity,
     SourceDocument,
 )
@@ -481,11 +483,21 @@ def _upsert_audit_records(
         ]
 
         severity = _map_severity(entry.get("severity", "medium"))
+        query_type = entry.get("query_type") or entry.get("category")
+        amount_value = _parse_kes_amount(entry.get("amount_involved"))
+        amount = Decimal(str(amount_value)) if amount_value > 0 else None
+        status = entry.get("status")
+        audit_opinion = entry.get("audit_opinion", "Qualified")
 
         if audit_record:
             audit_record.severity = severity
             audit_record.source_document_id = audit_doc.id
             audit_record.provenance = provenance
+            audit_record.query_type = query_type
+            audit_record.amount = amount
+            audit_record.status = status
+            audit_record.audit_opinion = audit_opinion
+            audit_record.audit_year = 2024
             session.add(audit_record)
             continue
 
@@ -497,6 +509,11 @@ def _upsert_audit_records(
             recommended_action=None,
             source_document_id=audit_doc.id,
             provenance=provenance,
+            query_type=query_type,
+            amount=amount,
+            status=status,
+            audit_opinion=audit_opinion,
+            audit_year=2024,
         )
         session.add(audit_record)
 
@@ -520,6 +537,119 @@ NATIONAL_GDP_SERIES = [
 # Source: CBK Public Debt Statistical Bulletin, April 2025.
 
 NATIONAL_POPULATION = 47_564_296  # Census 2019 (KNBS)
+
+
+def _seed_economic_indicators(
+    session: Session,
+    *,
+    source_document_id: int,
+) -> None:
+    """Seed key economic indicators that the /economic/summary endpoint needs."""
+    # Source: KNBS Economic Survey 2025 + CBK Monthly Economic Indicators
+    indicators = [
+        # Inflation rates (KNBS CPI releases)
+        {"type": "inflation_rate", "date": datetime(2024, 12, 31), "value": Decimal("6.6"), "unit": "percent",
+         "source": "KNBS CPI December 2024"},
+        {"type": "inflation_rate", "date": datetime(2024, 6, 30), "value": Decimal("4.6"), "unit": "percent",
+         "source": "KNBS CPI June 2024"},
+        {"type": "inflation_rate", "date": datetime(2023, 12, 31), "value": Decimal("6.6"), "unit": "percent",
+         "source": "KNBS CPI December 2023"},
+        {"type": "inflation_rate", "date": datetime(2023, 6, 30), "value": Decimal("7.9"), "unit": "percent",
+         "source": "KNBS CPI June 2023"},
+        {"type": "inflation_rate", "date": datetime(2025, 1, 31), "value": Decimal("3.3"), "unit": "percent",
+         "source": "KNBS CPI January 2025"},
+        # Unemployment rates (KNBS Labour Force Survey)
+        {"type": "unemployment_rate", "date": datetime(2024, 12, 31), "value": Decimal("5.4"), "unit": "percent",
+         "source": "KNBS QLFS Q4 2024"},
+        {"type": "unemployment_rate", "date": datetime(2023, 12, 31), "value": Decimal("5.6"), "unit": "percent",
+         "source": "KNBS QLFS Q4 2023"},
+        {"type": "unemployment_rate", "date": datetime(2022, 12, 31), "value": Decimal("5.7"), "unit": "percent",
+         "source": "KNBS QLFS Q4 2022"},
+        # CPI index values
+        {"type": "CPI", "date": datetime(2025, 1, 31), "value": Decimal("143.08"), "unit": "index",
+         "source": "KNBS Consumer Price Index January 2025"},
+        {"type": "CPI", "date": datetime(2024, 12, 31), "value": Decimal("142.47"), "unit": "index",
+         "source": "KNBS Consumer Price Index December 2024"},
+    ]
+
+    for ind in indicators:
+        existing = (
+            session.query(EconomicIndicator)
+            .filter(
+                EconomicIndicator.indicator_type == ind["type"],
+                EconomicIndicator.indicator_date == ind["date"],
+                EconomicIndicator.entity_id.is_(None),
+            )
+            .first()
+        )
+        if existing:
+            existing.value = ind["value"]
+            existing.unit = ind["unit"]
+            existing.source_document_id = source_document_id
+            session.add(existing)
+        else:
+            session.add(
+                EconomicIndicator(
+                    indicator_type=ind["type"],
+                    indicator_date=ind["date"],
+                    value=ind["value"],
+                    entity_id=None,
+                    unit=ind["unit"],
+                    source_document_id=source_document_id,
+                    confidence=Decimal("0.90"),
+                    meta={"source": ind["source"], "bootstrap": True},
+                )
+            )
+
+    logger.info("Seeded %d economic indicator records", len(indicators))
+
+
+def _seed_poverty_indices(
+    session: Session,
+    *,
+    source_document_id: int,
+) -> None:
+    """Seed national poverty data from KNBS."""
+    # Source: KNBS Kenya Poverty Report 2024, World Bank Kenya Economic Update
+    poverty_data = [
+        {"year": 2024, "headcount": Decimal("33.4"), "extreme": Decimal("8.6"), "gini": Decimal("0.408"),
+         "source": "World Bank Kenya Economic Update 2024"},
+        {"year": 2021, "headcount": Decimal("36.1"), "extreme": Decimal("10.2"), "gini": Decimal("0.410"),
+         "source": "KNBS KIHBS 2021"},
+        {"year": 2019, "headcount": Decimal("36.1"), "extreme": Decimal("8.5"), "gini": Decimal("0.408"),
+         "source": "KNBS KIHBS 2015/16 (adjusted for 2019 Census)"},
+    ]
+
+    for data in poverty_data:
+        existing = (
+            session.query(PovertyIndex)
+            .filter(
+                PovertyIndex.entity_id.is_(None),
+                PovertyIndex.year == data["year"],
+            )
+            .first()
+        )
+        if existing:
+            existing.poverty_headcount_rate = data["headcount"]
+            existing.extreme_poverty_rate = data["extreme"]
+            existing.gini_coefficient = data["gini"]
+            existing.source_document_id = source_document_id
+            session.add(existing)
+        else:
+            session.add(
+                PovertyIndex(
+                    entity_id=None,
+                    year=data["year"],
+                    poverty_headcount_rate=data["headcount"],
+                    extreme_poverty_rate=data["extreme"],
+                    gini_coefficient=data["gini"],
+                    source_document_id=source_document_id,
+                    confidence=Decimal("0.85"),
+                    meta={"source": data["source"], "bootstrap": True},
+                )
+            )
+
+    logger.info("Seeded %d poverty index records", len(poverty_data))
 
 
 def _seed_national_data(
@@ -595,6 +725,29 @@ def _seed_national_data(
                 )
             )
 
+    # Also seed GDP with entity_id=None for the /economic/summary endpoint
+    for year, gdp_val in NATIONAL_GDP_SERIES:
+        existing_null_gdp = (
+            session.query(GDPData)
+            .filter(GDPData.entity_id.is_(None), GDPData.year == year)
+            .first()
+        )
+        if not existing_null_gdp:
+            session.add(
+                GDPData(
+                    entity_id=None,
+                    year=year,
+                    gdp_value=Decimal(str(gdp_val)),
+                    source_document_id=national_doc.id,
+                    confidence=Decimal("0.90"),
+                    currency="KES",
+                    meta={"source": "KNBS Economic Survey", "bootstrap": True, "scope": "national"},
+                )
+            )
+        elif existing_null_gdp.gdp_value != Decimal(str(gdp_val)):
+            existing_null_gdp.gdp_value = Decimal(str(gdp_val))
+            session.add(existing_null_gdp)
+
     # National population
     _upsert_population(
         session,
@@ -602,6 +755,29 @@ def _seed_national_data(
         population=NATIONAL_POPULATION,
         source_document_id=national_doc.id,
     )
+
+    # Also seed a national population record with entity_id=None
+    # This is what the /economic/population/latest and /economic/summary endpoints query for
+    existing_null_pop = (
+        session.query(PopulationData)
+        .filter(PopulationData.entity_id.is_(None), PopulationData.year == 2019)
+        .first()
+    )
+    if not existing_null_pop:
+        session.add(
+            PopulationData(
+                entity_id=None,
+                year=2019,
+                total_population=NATIONAL_POPULATION,
+                source_document_id=national_doc.id,
+                confidence=Decimal("0.95"),
+                meta={"source": "Kenya Census 2019", "bootstrap": True, "scope": "national"},
+            )
+        )
+    elif existing_null_pop.total_population != NATIONAL_POPULATION:
+        existing_null_pop.total_population = NATIONAL_POPULATION
+        existing_null_pop.source_document_id = national_doc.id
+        session.add(existing_null_pop)
 
     # National debt breakdown is now handled by the seeding pipeline:
     #   python -m seeding.cli seed --domain national_debt
@@ -626,8 +802,12 @@ def _seed_national_data(
             f"(debt data now comes from seeding pipeline)"
         )
 
+    # Seed economic indicators and poverty indices
+    _seed_economic_indicators(session, source_document_id=national_doc.id)
+    _seed_poverty_indices(session, source_document_id=national_doc.id)
+
     logger.info(
-        "National-level data seeded (GDP, population). "
+        "National-level data seeded (GDP, population, economic indicators, poverty indices). "
         "Run 'python -m seeding.cli seed --domain national_debt' for debt records."
     )
 
@@ -728,11 +908,23 @@ def _seed_federal_audits(
             }
         ]
 
+        query_type = entry.get("query_type") or entry.get("category")
+        amount_value = _parse_kes_amount(entry.get("amount_involved"))
+        amount = Decimal(str(amount_value)) if amount_value > 0 else None
+        status = entry.get("status")
+        audit_opinion = entry.get("audit_opinion", "Qualified")
+        audit_year = int(report_meta.get("fiscal_year", "2024").split("/")[0]) if report_meta.get("fiscal_year") else 2024
+
         if existing:
             existing.severity = severity
             existing.recommended_action = entry.get("recommended_action")
             existing.source_document_id = oag_doc.id
             existing.provenance = provenance
+            existing.query_type = query_type
+            existing.amount = amount
+            existing.status = status
+            existing.audit_opinion = audit_opinion
+            existing.audit_year = audit_year
             session.add(existing)
         else:
             session.add(
@@ -744,6 +936,11 @@ def _seed_federal_audits(
                     recommended_action=entry.get("recommended_action"),
                     source_document_id=oag_doc.id,
                     provenance=provenance,
+                    query_type=query_type,
+                    amount=amount,
+                    status=status,
+                    audit_opinion=audit_opinion,
+                    audit_year=audit_year,
                 )
             )
             seeded += 1

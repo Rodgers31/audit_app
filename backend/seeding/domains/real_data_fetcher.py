@@ -1,6 +1,20 @@
 """
-Real Data Fetcher - Integrates Kenya government data sources with seeding domains
-Replaces fixture files with real data from KNBS, CoB, OAG, Treasury
+Real Data Fetcher - DEPRECATED
+
+This script was used to generate initial fixture files from hardcoded data.
+It is no longer the primary data source.
+
+The seeding pipeline now fetches live data from:
+- World Bank API (population, GDP, inflation, unemployment, CPI)
+- CBK website (debt bulletins via PDF scraping)
+- COB website (budget implementation reports via PDF scraping)
+- OAG website (audit reports via PDF scraping)
+
+Fixture files in seeding/real_data/ serve only as FALLBACKS when
+live APIs are unreachable. See each domain's fetcher.py for details.
+
+To refresh fixture files from live sources, use:
+    python -m seeding.cli seed --all --dry-run
 """
 
 import json

@@ -1,15 +1,21 @@
-name: Database Seeding
+name: Database Seeding & Data Refresh
 
 on:
-  # Schedule nightly seeding at 2 AM UTC (5 AM EAT)
+  # ── Scheduled runs ─────────────────────────────────────────────────
+  # Nightly full refresh at 2 AM UTC (5 AM EAT)
   schedule:
     - cron: '0 2 * * *'
+
+  # Weekly deep refresh (bootstrap + all domains) on Sundays at 3 AM UTC
+  # This ensures any schema changes or new seed data is picked up
+  # schedule:
+  #   - cron: '0 3 * * 0'
 
   # Allow manual triggering
   workflow_dispatch:
     inputs:
       domain:
-        description: 'Domain to seed (leave empty for all)'
+        description: 'Domain to seed (leave empty for all domains)'
         required: false
         type: string
       dry_run:
@@ -17,126 +23,340 @@ on:
         required: false
         type: boolean
         default: false
+      run_bootstrap:
+        description: 'Also run bootstrap seeding (county data + national data)'
+        required: false
+        type: boolean
+        default: false
+      run_validation:
+        description: 'Run data validation after seeding'
+        required: false
+        type: boolean
+        default: true
 
 permissions:
   contents: read
   issues: write
 
+env:
+  # Shared database and seeding configuration
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  SEED_RATE_LIMIT: ${{ vars.SEED_RATE_LIMIT || '60/min' }}
+  SEED_TIMEOUT_SECONDS: ${{ vars.SEED_TIMEOUT_SECONDS || '30.0' }}
+  SEED_BUDGETS_DATASET_URL: ${{ secrets.SEED_BUDGETS_DATASET_URL }}
+  SEED_AUDITS_DATASET_URL: ${{ secrets.SEED_AUDITS_DATASET_URL }}
+  SEED_POPULATION_DATASET_URL: ${{ secrets.SEED_POPULATION_DATASET_URL }}
+  SEED_ECONOMIC_INDICATORS_DATASET_URL: ${{ secrets.SEED_ECONOMIC_INDICATORS_DATASET_URL }}
+  SEED_LOG_LEVEL: INFO
+
 jobs:
-  seed:
-    name: Seed Database
+  # ══════════════════════════════════════════════════════════════════
+  # Step 1: Run database migrations
+  # ══════════════════════════════════════════════════════════════════
+  migrate:
+    name: Run Migrations
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-
+    timeout-minutes: 10
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
           cache: 'pip'
+      - run: pip install --upgrade pip && pip install -r backend/requirements.txt
+      - name: Run alembic migrations
+        run: cd backend && alembic upgrade head
 
-      - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install -r backend/requirements.txt
-
-      - name: Run database migrations
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: |
-          cd backend
-          alembic upgrade head
-
-      - name: Seed all domains
-        if: github.event.inputs.domain == ''
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          SEED_RATE_LIMIT: ${{ vars.SEED_RATE_LIMIT || '60/min' }}
-          SEED_TIMEOUT_SECONDS: ${{ vars.SEED_TIMEOUT_SECONDS || '30.0' }}
-          SEED_BUDGETS_DATASET_URL: ${{ secrets.SEED_BUDGETS_DATASET_URL }}
-          SEED_AUDITS_DATASET_URL: ${{ secrets.SEED_AUDITS_DATASET_URL }}
-          SEED_POPULATION_DATASET_URL: ${{ secrets.SEED_POPULATION_DATASET_URL }}
-          SEED_ECONOMIC_INDICATORS_DATASET_URL: ${{ secrets.SEED_ECONOMIC_INDICATORS_DATASET_URL }}
-          SEED_LOG_LEVEL: INFO
-        run: |
-          cd backend
-          python -m seeding.cli seed --all ${{ github.event.inputs.dry_run && '--dry-run' || '' }}
-
-      - name: Seed specific domain
-        if: github.event.inputs.domain != ''
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          SEED_RATE_LIMIT: ${{ vars.SEED_RATE_LIMIT || '60/min' }}
-          SEED_TIMEOUT_SECONDS: ${{ vars.SEED_TIMEOUT_SECONDS || '30.0' }}
-          SEED_BUDGETS_DATASET_URL: ${{ secrets.SEED_BUDGETS_DATASET_URL }}
-          SEED_AUDITS_DATASET_URL: ${{ secrets.SEED_AUDITS_DATASET_URL }}
-          SEED_POPULATION_DATASET_URL: ${{ secrets.SEED_POPULATION_DATASET_URL }}
-          SEED_ECONOMIC_INDICATORS_DATASET_URL: ${{ secrets.SEED_ECONOMIC_INDICATORS_DATASET_URL }}
-          SEED_LOG_LEVEL: INFO
-        run: |
-          cd backend
-          python -m seeding.cli seed --domain ${{ github.event.inputs.domain }} ${{ github.event.inputs.dry_run && '--dry-run' || '' }}
-
-      - name: Check ingestion jobs
-        if: always()
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  # ══════════════════════════════════════════════════════════════════
+  # Step 2: Bootstrap seeding (counties, national GDP, population, etc.)
+  # Runs on manual trigger with run_bootstrap=true, or on Sunday schedule
+  # ══════════════════════════════════════════════════════════════════
+  bootstrap:
+    name: Bootstrap Reference Data
+    needs: migrate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: >-
+      github.event.inputs.run_bootstrap == 'true' ||
+      (github.event_name == 'schedule' && github.event.schedule == '0 3 * * 0')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      - run: pip install --upgrade pip && pip install -r backend/requirements.txt
+      - name: Run bootstrap seeding
         run: |
           cd backend
           python -c "
+          import logging
+          logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s %(levelname)s %(message)s')
+          from bootstrap import initialize_reference_data
+          initialize_reference_data()
+          print('Bootstrap seeding completed successfully')
+          "
+
+  # ══════════════════════════════════════════════════════════════════
+  # Step 3: Domain seeding (economic indicators, debt, budgets, etc.)
+  # ══════════════════════════════════════════════════════════════════
+  seed:
+    name: Seed Data Domains
+    needs: migrate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      - run: pip install --upgrade pip && pip install -r backend/requirements.txt
+
+      - name: Seed all domains
+        if: github.event.inputs.domain == '' || github.event.inputs.domain == null
+        run: |
+          cd backend
+          python -m seeding.cli seed --all ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}
+
+      - name: Seed specific domain
+        if: github.event.inputs.domain != '' && github.event.inputs.domain != null
+        run: |
+          cd backend
+          python -m seeding.cli seed --domain ${{ github.event.inputs.domain }} ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}
+
+      - name: Check ingestion job results
+        if: always()
+        run: |
+          cd backend
+          python -c "
+          import sys
           from database import SessionLocal
-          from models import IngestionJob
+          from models import IngestionJob, IngestionStatus
           from datetime import datetime, timedelta
 
           session = SessionLocal()
           cutoff = datetime.utcnow() - timedelta(minutes=30)
-          jobs = session.query(IngestionJob).filter(IngestionJob.started_at >= cutoff).all()
+          jobs = session.query(IngestionJob).filter(IngestionJob.started_at >= cutoff).order_by(IngestionJob.id.desc()).all()
 
-          print('\n📊 Recent Ingestion Jobs:')
+          failed = 0
+          print('\n--- Ingestion Job Results ---')
           for job in jobs:
-              status_emoji = '✅' if job.status.value == 'completed' else '⚠️' if job.status.value == 'completed_with_errors' else '❌'
-              print(f'{status_emoji} Job #{job.id}: {job.domain} ({job.status.value})')
-              print(f'   Created: {job.items_created}, Updated: {job.items_updated}, Processed: {job.items_processed}')
+              status = job.status.value
+              emoji = 'OK' if status == 'completed' else 'WARN' if status == 'completed_with_errors' else 'FAIL'
+              print(f'[{emoji}] {job.domain}: {status} | created={job.items_created} updated={job.items_updated} processed={job.items_processed}')
               if job.errors:
-                  print(f'   Errors: {job.errors[:200]}')
+                  for err in job.errors[:3]:
+                      print(f'  ERROR: {str(err)[:200]}')
+              if status == 'failed':
+                  failed += 1
 
           session.close()
+          if failed > 0:
+              print(f'\n{failed} domain(s) failed!')
+              sys.exit(1)
+          print('\nAll domains completed successfully.')
           "
 
-      - name: Create summary
-        if: always()
+  # ══════════════════════════════════════════════════════════════════
+  # Step 4: Data validation — verify tables have data and key metrics are sane
+  # ══════════════════════════════════════════════════════════════════
+  validate:
+    name: Validate Data Integrity
+    needs: [seed]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.event.inputs.run_validation != 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      - run: pip install --upgrade pip && pip install -r backend/requirements.txt
+
+      - name: Validate seeded data
         run: |
-          echo "## Seeding Summary" >> $GITHUB_STEP_SUMMARY
+          cd backend
+          python -c "
+          import sys
+          from database import SessionLocal
+          from models import (
+              Entity, EntityType, Audit, BudgetLine, Loan, PopulationData,
+              GDPData, EconomicIndicator, PovertyIndex, DebtTimeline,
+              FiscalSummary, FiscalPeriod,
+          )
+          from sqlalchemy import func
+
+          session = SessionLocal()
+          errors = []
+          warnings = []
+
+          def check(label, query_count, min_expected, is_warning=False):
+              count = query_count
+              status = 'OK' if count >= min_expected else ('WARN' if is_warning else 'FAIL')
+              print(f'[{status}] {label}: {count} rows (expected >= {min_expected})')
+              if count < min_expected:
+                  msg = f'{label}: {count} rows (expected >= {min_expected})'
+                  if is_warning:
+                      warnings.append(msg)
+                  else:
+                      errors.append(msg)
+
+          # ── Core reference data ──
+          check('Counties',
+                session.query(Entity).filter(Entity.type == EntityType.COUNTY).count(),
+                47)
+          check('National Entity',
+                session.query(Entity).filter(Entity.type == EntityType.NATIONAL).count(),
+                1)
+          check('Fiscal Periods',
+                session.query(FiscalPeriod).count(),
+                1)
+
+          # ── Budget data ──
+          check('Budget Lines',
+                session.query(BudgetLine).count(),
+                400)
+
+          # ── Audit data ──
+          total_audits = session.query(Audit).count()
+          check('Audit Records', total_audits, 50)
+          audits_with_year = session.query(Audit).filter(Audit.audit_year.isnot(None)).count()
+          check('Audits with audit_year', audits_with_year, 50)
+          audits_with_type = session.query(Audit).filter(Audit.query_type.isnot(None)).count()
+          check('Audits with query_type', audits_with_type, 30)
+
+          # ── Population data ──
+          check('Population Records',
+                session.query(PopulationData).count(),
+                48)
+          check('National Population (entity_id=NULL)',
+                session.query(PopulationData).filter(PopulationData.entity_id.is_(None)).count(),
+                1)
+
+          # ── GDP data ──
+          check('GDP Records (entity-linked)',
+                session.query(GDPData).filter(GDPData.entity_id.isnot(None)).count(),
+                5)
+          check('GDP Records (national, entity_id=NULL)',
+                session.query(GDPData).filter(GDPData.entity_id.is_(None)).count(),
+                5)
+
+          # ── Economic indicators ──
+          check('Economic Indicators',
+                session.query(EconomicIndicator).count(),
+                5)
+          check('Inflation Rate records',
+                session.query(EconomicIndicator).filter(EconomicIndicator.indicator_type == 'inflation_rate').count(),
+                1)
+          check('Unemployment Rate records',
+                session.query(EconomicIndicator).filter(EconomicIndicator.indicator_type == 'unemployment_rate').count(),
+                1)
+
+          # ── Poverty data ──
+          check('Poverty Index Records',
+                session.query(PovertyIndex).count(),
+                1, is_warning=True)
+
+          # ── Debt data ──
+          check('Loan Records',
+                session.query(Loan).count(),
+                50)
+          check('Debt Timeline',
+                session.query(DebtTimeline).count(),
+                5, is_warning=True)
+          check('Fiscal Summaries',
+                session.query(FiscalSummary).count(),
+                3, is_warning=True)
+
+          # ── Sanity checks: values in reasonable ranges ──
+          latest_pop = session.query(PopulationData).filter(
+              PopulationData.entity_id.is_(None)
+          ).first()
+          if latest_pop and (latest_pop.total_population < 40_000_000 or latest_pop.total_population > 70_000_000):
+              errors.append(f'National population out of range: {latest_pop.total_population}')
+              print(f'[FAIL] National population sanity check: {latest_pop.total_population}')
+          elif latest_pop:
+              print(f'[OK] National population sanity: {latest_pop.total_population:,}')
+
+          latest_gdp = session.query(GDPData).filter(
+              GDPData.entity_id.is_(None)
+          ).order_by(GDPData.year.desc()).first()
+          if latest_gdp:
+              gdp_trillions = float(latest_gdp.gdp_value) / 1e12
+              if gdp_trillions < 5 or gdp_trillions > 30:
+                  errors.append(f'National GDP out of range: {gdp_trillions:.1f}T KES')
+                  print(f'[FAIL] GDP sanity: {gdp_trillions:.1f}T KES')
+              else:
+                  print(f'[OK] GDP sanity: {gdp_trillions:.1f}T KES (year {latest_gdp.year})')
+
+          session.close()
+
+          print(f'\n--- Summary ---')
+          print(f'Errors: {len(errors)}, Warnings: {len(warnings)}')
+          if errors:
+              print('CRITICAL ERRORS:')
+              for e in errors:
+                  print(f'  - {e}')
+              sys.exit(1)
+          if warnings:
+              print('Warnings (non-blocking):')
+              for w in warnings:
+                  print(f'  - {w}')
+          print('Data validation passed.')
+          "
+
+  # ══════════════════════════════════════════════════════════════════
+  # Step 5: Summary and notifications
+  # ══════════════════════════════════════════════════════════════════
+  notify:
+    name: Post-Run Summary
+    needs: [seed, validate]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Create summary
+        run: |
+          echo "## Database Seeding Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Run Time:** $(date -u)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Triggered By:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
-          if [ -n "${{ github.event.inputs.domain }}" ]; then
-            echo "- **Domain:** ${{ github.event.inputs.domain }}" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "- **Domain:** All" >> $GITHUB_STEP_SUMMARY
-          fi
-          echo "- **Dry Run:** ${{ github.event.inputs.dry_run || 'false' }}" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Run Time** | $(date -u '+%Y-%m-%d %H:%M UTC') |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Triggered By** | ${{ github.event_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Domain** | ${{ github.event.inputs.domain || 'all' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Dry Run** | ${{ github.event.inputs.dry_run || 'false' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Bootstrap** | ${{ github.event.inputs.run_bootstrap || 'false' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Seed Status** | ${{ needs.seed.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Validation** | ${{ needs.validate.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "See [seeding guide](https://github.com/${{ github.repository }}/blob/main/docs/seeding-guide.md) for details." >> $GITHUB_STEP_SUMMARY
 
-      - name: Notify on failure
-        if: failure()
+      - name: Create issue on failure
+        if: needs.seed.result == 'failure' || needs.validate.result == 'failure'
         uses: actions/github-script@v7
         with:
           script: |
+            const seedResult = '${{ needs.seed.result }}';
+            const validateResult = '${{ needs.validate.result }}';
+            const failedSteps = [];
+            if (seedResult === 'failure') failedSteps.push('Seeding');
+            if (validateResult === 'failure') failedSteps.push('Validation');
+
             github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `🚨 Database seeding failed - ${new Date().toISOString().split('T')[0]}`,
-              body: `Automated database seeding workflow failed.
-              
-              **Run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}
-              **Triggered by:** ${context.eventName}
-              **Domain:** ${{ github.event.inputs.domain || 'all' }}
-              
-              Please check the logs and ingestion_jobs table for details.`,
-              labels: ['bug', 'seeding', 'automated']
+              title: `Data pipeline failed: ${failedSteps.join(', ')} - ${new Date().toISOString().split('T')[0]}`,
+              body: `## Automated Data Pipeline Failure\n\n` +
+                `**Failed Steps:** ${failedSteps.join(', ')}\n` +
+                `**Run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n` +
+                `**Triggered by:** ${context.eventName}\n` +
+                `**Domain:** ${{ github.event.inputs.domain || 'all' }}\n\n` +
+                `### Action Required\n` +
+                `1. Check the [workflow run logs](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})\n` +
+                `2. Verify the \`ingestion_jobs\` table for domain-level errors\n` +
+                `3. If a data source is down, the workflow will retry tomorrow automatically\n` +
+                `4. For persistent failures, check if the upstream API/URL has changed\n`,
+              labels: ['bug', 'data-pipeline', 'automated']
             });

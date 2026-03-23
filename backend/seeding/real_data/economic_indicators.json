@@ -1,16 +1,26 @@
 [
   {
-    "indicator_type": "gdp_growth_rate",
-    "date": "2023-09-30",
-    "value": 5.4,
+    "indicator_type": "inflation_rate",
+    "date": "2025-01-31",
+    "value": 3.3,
     "unit": "percent",
-    "source_url": "https://www.knbs.or.ke/download/quarterly-gross-domestic-product-report-third-quarter-2023/",
-    "source": "KNBS Quarterly GDP Report Q3 2023",
+    "source_url": "https://www.knbs.or.ke/consumer-price-indices/",
+    "source": "KNBS Consumer Price Index January 2025",
     "data_quality": "official",
-    "notes": "Real growth rate from KNBS published report"
+    "notes": "Annual inflation rate (year-on-year CPI change). Source: KNBS CPI Release."
   },
   {
-    "indicator_type": "inflation_rate_cpi",
+    "indicator_type": "inflation_rate",
+    "date": "2024-12-31",
+    "value": 3.0,
+    "unit": "percent",
+    "source_url": "https://www.knbs.or.ke/consumer-price-indices/",
+    "source": "KNBS Consumer Price Index December 2024",
+    "data_quality": "official",
+    "notes": "Annual inflation rate. Source: KNBS CPI Release."
+  },
+  {
+    "indicator_type": "inflation_rate",
     "date": "2024-01-31",
     "value": 6.3,
     "unit": "percent",
@@ -20,14 +30,14 @@
     "notes": "Annual inflation rate from KNBS"
   },
   {
-    "indicator_type": "total_national_gdp",
-    "date": "2023-12-31",
-    "value": 13896000,
-    "unit": "KES_millions",
-    "source_url": "https://www.knbs.or.ke/economic-survey-2024/",
-    "source": "KNBS Economic Survey 2024",
+    "indicator_type": "unemployment_rate",
+    "date": "2024-12-31",
+    "value": 5.4,
+    "unit": "percent",
+    "source_url": "https://www.knbs.or.ke/labour-force-basic-report/",
+    "source": "KNBS Quarterly Labour Force Survey Q4 2024",
     "data_quality": "official",
-    "notes": "Nominal GDP in Kenya Shillings (value in millions: 13,896,000 million = 13.896 trillion)"
+    "notes": "National unemployment rate. Source: KNBS QLFS."
   },
   {
     "indicator_type": "unemployment_rate",
@@ -38,5 +48,55 @@
     "source": "KNBS Labour Force Report 2023",
     "data_quality": "official",
     "notes": "National unemployment rate"
+  },
+  {
+    "indicator_type": "gdp_growth_rate",
+    "date": "2024-12-31",
+    "value": 5.0,
+    "unit": "percent",
+    "source_url": "https://www.knbs.or.ke/download/quarterly-gross-domestic-product-report/",
+    "source": "KNBS GDP Report 2024 Preliminary",
+    "data_quality": "official",
+    "notes": "Preliminary real GDP growth rate for 2024. Source: KNBS."
+  },
+  {
+    "indicator_type": "gdp_growth_rate",
+    "date": "2023-12-31",
+    "value": 5.6,
+    "unit": "percent",
+    "source_url": "https://www.knbs.or.ke/download/quarterly-gross-domestic-product-report-2023/",
+    "source": "KNBS GDP Report 2023",
+    "data_quality": "official",
+    "notes": "Real GDP growth rate for 2023. Source: KNBS Economic Survey 2024."
+  },
+  {
+    "indicator_type": "total_national_gdp",
+    "date": "2024-12-31",
+    "value": 14800000,
+    "unit": "KES_millions",
+    "source_url": "https://www.knbs.or.ke/economic-survey-2025/",
+    "source": "KNBS Economic Survey 2025 (Preliminary)",
+    "data_quality": "official",
+    "notes": "Nominal GDP in KES millions (14.8 trillion). Source: KNBS."
+  },
+  {
+    "indicator_type": "total_national_gdp",
+    "date": "2023-12-31",
+    "value": 13896000,
+    "unit": "KES_millions",
+    "source_url": "https://www.knbs.or.ke/economic-survey-2024/",
+    "source": "KNBS Economic Survey 2024",
+    "data_quality": "official",
+    "notes": "Nominal GDP in KES millions (13.896 trillion). Source: KNBS."
+  },
+  {
+    "indicator_type": "CPI",
+    "date": "2025-01-31",
+    "value": 143.08,
+    "unit": "index",
+    "source_url": "https://www.knbs.or.ke/consumer-price-indices/",
+    "source": "KNBS CPI January 2025",
+    "data_quality": "official",
+    "notes": "Consumer Price Index (Feb 2009 = 100). Source: KNBS."
   }
 ]

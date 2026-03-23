@@ -22,6 +22,8 @@ from sqlalchemy.orm import Session
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from cache.redis_cache import cached
+
 try:
     from database import get_db
     from models import Audit, Entity, EntityType, Extraction, SourceDocument
@@ -122,6 +124,7 @@ def _check_db(db: Session):
 
 
 @router.get("/summary", response_model=AuditSummaryResponse)
+@cached(ttl=300, key_prefix="audit_summary")
 async def get_audit_summary(db: Session = Depends(get_db)):
     """Return aggregate audit statistics for the national dashboard.
 
@@ -222,6 +225,7 @@ async def get_audit_summary(db: Session = Depends(get_db)):
 
 
 @router.get("/trends", response_model=AuditTrendsResponse)
+@cached(ttl=300, key_prefix="audit_trends")
 async def get_audit_trends(
     county_id: Optional[int] = Query(None, description="Filter by county entity ID"),
     query_type: Optional[str] = Query(None, description="Filter by query type"),

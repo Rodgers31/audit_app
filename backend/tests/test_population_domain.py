@@ -86,7 +86,9 @@ def _bootstrap_entities(session: Session) -> None:
     session.commit()
 
 
-def _build_settings(tmp_path, url: str) -> SeedingSettings:
+def _build_settings(
+    tmp_path, url: str, *, enrich_with_worldbank: bool = False
+) -> SeedingSettings:
     settings = SeedingSettings(
         storage_path=tmp_path / "storage",
         cache_path=tmp_path / "cache",
@@ -94,6 +96,10 @@ def _build_settings(tmp_path, url: str) -> SeedingSettings:
         population_dataset_url=url,
         retry_backoff=0.01,
         max_retries=2,
+        # Disable live enrichment in unit tests so the mock transport
+        # only serves the test fixture payload (not World Bank API calls).
+        enrich_with_worldbank=enrich_with_worldbank,
+        live_pdf_fetch_enabled=False,
     )
     settings.ensure_directories()
     return settings
