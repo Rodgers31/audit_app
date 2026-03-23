@@ -20,13 +20,11 @@ class TestGetCountries:
         data = client.get("/api/v1/countries").json()
         assert isinstance(data, list)
 
-    def test_fallback_mock_data_when_empty(self, client):
-        """When the DB is empty, the endpoint returns hardcoded Kenya mock."""
+    def test_returns_empty_when_no_data_seeded(self, client):
+        """When the DB is empty, the endpoint returns an empty list (no mock data)."""
         data = client.get("/api/v1/countries").json()
-        assert len(data) >= 1
-        first = data[0]
-        assert first["iso_code"] == "KEN"
-        assert first["currency"] == "KES"
+        assert isinstance(data, list)
+        assert len(data) == 0
 
     def test_returns_seeded_country(self, client, seed_country):
         """With a real country row, the endpoint returns it."""
