@@ -339,16 +339,16 @@ export default function InteractiveKenyaMap({
                       style={{
                         default: {
                           fill: fillColor,
-                          stroke: isActive ? '#0F1A12' : '#a3b5a8',
-                          strokeWidth: isActive ? 2 : 0.6,
+                          stroke: isActive ? '#0F1A12' : '#3d5a45',
+                          strokeWidth: isActive ? 2.5 : 1.2,
                           outline: 'none',
                           filter: isActive ? 'url(#countyGlow)' : 'url(#innerShadow)',
                           transition: 'fill 300ms ease, stroke-width 200ms ease',
                         },
                         hover: {
                           fill: hoverFill,
-                          stroke: '#1B3A2A',
-                          strokeWidth: 1.5,
+                          stroke: '#0F1A12',
+                          strokeWidth: 2,
                           outline: 'none',
                           filter: 'url(#countyGlow)',
                           cursor: county ? 'pointer' : 'default',
@@ -357,7 +357,7 @@ export default function InteractiveKenyaMap({
                         pressed: {
                           fill: '#1B3A2A',
                           stroke: '#0F1A12',
-                          strokeWidth: 2,
+                          strokeWidth: 2.5,
                           outline: 'none',
                         },
                       }}

@@ -164,9 +164,48 @@ jobs:
 
           echo "✅ Quality Gate PASSED - Proceeding with build and deployment"
 
-  build-and-push:
+  # ── Database Migrations ─────────────────────────────────────────────
+  # Runs Alembic migrations against the real database BEFORE building
+  # and deploying, so the schema is always in sync with the new code.
+  run-migrations:
     runs-on: ubuntu-latest
     needs: [quality-gate]
+    if: |
+      always() &&
+      (needs.quality-gate.result == 'success' ||
+       (github.event.inputs.skip_tests == 'true' && needs.quality-gate.result == 'skipped'))
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install migration dependencies
+        run: |
+          cd backend
+          python -m pip install --upgrade pip
+          pip install alembic sqlalchemy psycopg2-binary
+
+      - name: Run Alembic migrations
+        run: |
+          cd backend
+          echo "Running database migrations..."
+          alembic upgrade head
+          echo "✅ Migrations applied successfully"
+        env:
+          # Use the Supabase connection POOLER URL (IPv4, port 6543) for CI.
+          # The direct connection (port 5432) resolves to IPv6 which GitHub
+          # Actions runners cannot reach.
+          DATABASE_URL: ${{ secrets.DATABASE_POOLER_URL }}
+
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs: [quality-gate, run-migrations]
     # Allow builds if tests skipped (emergency deployment)
     if: |
       always() && 

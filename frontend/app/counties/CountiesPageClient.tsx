@@ -1,10 +1,8 @@
 'use client';
 
 import DataFreshnessBadge from '@/components/DataFreshnessBadge';
-import { apiClient } from '@/lib/api/axios';
 import { useCounties } from '@/lib/react-query';
 import { County } from '@/types';
-import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
   AlertTriangle,
@@ -109,27 +107,26 @@ const ACCT_GRADE_COLORS: Record<string, string> = {
   F: 'bg-red-600 text-white',
 };
 
-function useAccountabilityGrades(countyIds: string[]) {
-  return useQuery({
-    queryKey: ['accountability-grades', countyIds.sort().join(',')],
-    queryFn: async () => {
-      const results: Record<string, string> = {};
-      const promises = countyIds.map(async (id) => {
-        try {
-          const res = await apiClient.get<{ accountability_grade: string }>(
-            `/counties/${id}/summary`
-          );
-          results[id] = res.data.accountability_grade;
-        } catch {
-          // Skip failed fetches
-        }
-      });
-      await Promise.all(promises);
-      return results;
-    },
-    enabled: countyIds.length > 0,
-    staleTime: 30 * 60 * 1000,
-  });
+/**
+ * Derive accountability grades from the health scores already present in the
+ * counties list response, avoiding 47 individual /counties/{id}/summary calls.
+ */
+function deriveAccountabilityGrades(counties: County[]): Record<string, string> {
+  const results: Record<string, string> = {};
+  for (const c of counties) {
+    const score = c.financial_health_score ?? 0;
+    let grade = 'D-';
+    if (score >= 85) grade = 'A';
+    else if (score >= 75) grade = 'A-';
+    else if (score >= 70) grade = 'B+';
+    else if (score >= 60) grade = 'B';
+    else if (score >= 50) grade = 'B-';
+    else if (score >= 40) grade = 'C';
+    else if (score >= 30) grade = 'C+';
+    else if (score >= 20) grade = 'D';
+    results[c.id] = grade;
+  }
+  return results;
 }
 
 function AccountabilityBadge({ grade }: { grade?: string }) {
@@ -1372,9 +1369,8 @@ export default function CountyExplorerPage() {
 
   const { data: counties, isLoading, error, refetch } = useCounties({ fiscalYear: selectedYear });
 
-  // Fetch accountability grades for all counties
-  const countyIds = useMemo(() => (counties || []).map((c) => c.id), [counties]);
-  const { data: acctGrades } = useAccountabilityGrades(countyIds);
+  // Derive accountability grades from health scores already in counties data (no extra API calls)
+  const acctGrades = useMemo(() => deriveAccountabilityGrades(counties || []), [counties]);
 
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);

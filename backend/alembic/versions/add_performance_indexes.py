@@ -113,6 +113,32 @@ def upgrade():
         unique=False, if_not_exists=True,
     )
 
+    # ── Population Data ─────────────────────────────────────────────────
+    op.create_index(
+        "ix_population_data_entity", "population_data", ["entity_id"],
+        unique=False, if_not_exists=True,
+    )
+    op.create_index(
+        "ix_population_data_entity_year", "population_data", ["entity_id", "year"],
+        unique=False, if_not_exists=True,
+    )
+
+    # ── GDP Data ─────────────────────────────────────────────────────────
+    op.create_index(
+        "ix_gdp_data_entity", "gdp_data", ["entity_id"],
+        unique=False, if_not_exists=True,
+    )
+    op.create_index(
+        "ix_gdp_data_entity_year", "gdp_data", ["entity_id", "year"],
+        unique=False, if_not_exists=True,
+    )
+
+    # ── Pending Bills ────────────────────────────────────────────────────
+    op.create_index(
+        "ix_pending_bills_entity", "pending_bills", ["entity_id"],
+        unique=False, if_not_exists=True,
+    )
+
     # ── Fiscal Periods ──────────────────────────────────────────────────
     op.create_index(
         "ix_fiscal_periods_country", "fiscal_periods", ["country_id"],
@@ -158,6 +184,17 @@ def downgrade():
 
     # Extractions
     op.drop_index("ix_extractions_source_doc", table_name="extractions")
+
+    # Population Data
+    op.drop_index("ix_population_data_entity", table_name="population_data")
+    op.drop_index("ix_population_data_entity_year", table_name="population_data")
+
+    # GDP Data
+    op.drop_index("ix_gdp_data_entity", table_name="gdp_data")
+    op.drop_index("ix_gdp_data_entity_year", table_name="gdp_data")
+
+    # Pending Bills
+    op.drop_index("ix_pending_bills_entity", table_name="pending_bills")
 
     # Fiscal Periods
     op.drop_index("ix_fiscal_periods_country", table_name="fiscal_periods")
