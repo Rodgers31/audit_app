@@ -851,6 +851,37 @@ async def startup_event():
 
     logger.info("Main Backend API startup complete!")
 
+    # Pre-warm critical endpoint caches in the background so the first
+    # real user request is fast.  Runs async after startup completes.
+    import asyncio
+
+    async def _warm_caches():
+        """Hit the slowest endpoints once to populate their in-memory caches."""
+        await asyncio.sleep(2)  # Let the server finish binding
+        try:
+            import httpx as _httpx
+
+            base = "http://127.0.0.1:" + str(os.environ.get("PORT", 8000))
+            endpoints = [
+                "/api/v1/debt/national",
+                "/api/v1/debt/timeline",
+                "/api/v1/debt/sustainability",
+                "/api/v1/fiscal/summary",
+                "/api/v1/pending-bills",
+                "/api/v1/pending-bills/summary",
+            ]
+            async with _httpx.AsyncClient(timeout=30) as client:
+                for ep in endpoints:
+                    try:
+                        await client.get(base + ep)
+                        logger.info(f"Cache warmed: {ep}")
+                    except Exception:
+                        pass  # Non-fatal; cache will fill on first user request
+        except Exception as e:
+            logger.warning(f"Cache pre-warm failed (non-fatal): {e}")
+
+    asyncio.create_task(_warm_caches())
+
 
 @app.api_route("/", methods=["GET", "HEAD"])
 async def root(request: Request):
@@ -1450,21 +1481,97 @@ async def get_counties(fiscal_year: Optional[str] = None):
                 if latest_fp:
                     period_ids = [latest_fp.id]
 
+            # ── BATCH LOAD all related data in 5 queries (not 47×6) ──
+            entity_ids = [e.id for e in entities]
+
+            # 1. Population: latest per entity
+            from sqlalchemy import func as _fn
+
+            _pop_sub = (
+                db.query(
+                    DBPopulationData.entity_id,
+                    _fn.max(DBPopulationData.year).label("max_year"),
+                )
+                .filter(DBPopulationData.entity_id.in_(entity_ids))
+                .group_by(DBPopulationData.entity_id)
+                .subquery()
+            )
+            pop_rows = (
+                db.query(DBPopulationData)
+                .join(
+                    _pop_sub,
+                    (DBPopulationData.entity_id == _pop_sub.c.entity_id)
+                    & (DBPopulationData.year == _pop_sub.c.max_year),
+                )
+                .all()
+            )
+            pop_map = {p.entity_id: p for p in pop_rows}
+
+            # 2. Budget lines (all at once, optionally filtered by period)
+            bl_query = db.query(DBBudgetLine).filter(
+                DBBudgetLine.entity_id.in_(entity_ids)
+            )
+            if period_ids:
+                bl_query = bl_query.filter(DBBudgetLine.period_id.in_(period_ids))
+            all_budget_lines = bl_query.all()
+            bl_by_entity: dict = {}
+            for bl in all_budget_lines:
+                bl_by_entity.setdefault(bl.entity_id, []).append(bl)
+
+            # 3. Loans (all county loans at once)
+            all_loans = (
+                db.query(DBLoan)
+                .filter(DBLoan.entity_id.in_(entity_ids))
+                .all()
+            )
+            loans_by_entity: dict = {}
+            for loan in all_loans:
+                loans_by_entity.setdefault(loan.entity_id, []).append(loan)
+
+            # 4. Audits (all at once, optionally filtered by period)
+            audit_q = db.query(DBAudit).filter(
+                DBAudit.entity_id.in_(entity_ids)
+            )
+            if period_ids:
+                audit_q = audit_q.filter(DBAudit.period_id.in_(period_ids))
+            all_audits = audit_q.order_by(
+                DBAudit.entity_id, DBAudit.created_at.desc()
+            ).all()
+            audits_by_entity: dict = {}
+            for a in all_audits:
+                audits_by_entity.setdefault(a.entity_id, []).append(a)
+
+            # 5. GDP data: latest per entity
+            from models import GDPData as _GDPData
+
+            _gdp_sub = (
+                db.query(
+                    _GDPData.entity_id,
+                    _fn.max(_GDPData.year).label("max_year"),
+                )
+                .filter(_GDPData.entity_id.in_(entity_ids))
+                .group_by(_GDPData.entity_id)
+                .subquery()
+            )
+            gdp_rows = (
+                db.query(_GDPData)
+                .join(
+                    _gdp_sub,
+                    (_GDPData.entity_id == _gdp_sub.c.entity_id)
+                    & (_GDPData.year == _gdp_sub.c.max_year),
+                )
+                .all()
+            )
+            gdp_map = {g.entity_id: g for g in gdp_rows}
+
+            # ── BUILD RESULTS from pre-loaded data ──
             results = []
             for e in entities:
-                # Get population from PopulationData table
-                pop_data = (
-                    db.query(DBPopulationData)
-                    .filter(DBPopulationData.entity_id == e.id)
-                    .order_by(DBPopulationData.year.desc())
-                    .first()
-                )
-
-                # Get budget lines for this entity, optionally filtered by fiscal period
-                bl_query = db.query(DBBudgetLine).filter(DBBudgetLine.entity_id == e.id)
-                if period_ids:
-                    bl_query = bl_query.filter(DBBudgetLine.period_id.in_(period_ids))
-                budget_lines = bl_query.all()
+                pop_data = pop_map.get(e.id)
+                budget_lines = bl_by_entity.get(e.id, [])
+                loans = loans_by_entity.get(e.id, [])
+                audits = audits_by_entity.get(e.id, [])
+                gdp_data = gdp_map.get(e.id)
 
                 total_allocated = sum(
                     float(b.allocated_amount or 0) for b in budget_lines
@@ -1483,7 +1590,6 @@ async def get_counties(fiscal_year: Optional[str] = None):
                     sector_breakdown[cat]["allocated"] += amt
                     sector_breakdown[cat]["spent"] += spent
 
-                    # Classify as development or recurrent based on category keywords
                     cat_lower = cat.lower()
                     if any(
                         kw in cat_lower
@@ -1499,14 +1605,12 @@ async def get_counties(fiscal_year: Optional[str] = None):
                     else:
                         recurrent_total += amt
 
-                # If no explicit dev/recurrent split found, use metadata or leave as-is
                 if (
                     development_total == 0
                     and recurrent_total == 0
                     and total_allocated > 0
                 ):
                     meta = e.meta or {}
-                    # Try requested fiscal year key first, then fall back
                     _fy_key = f"FY{fiscal_year}" if fiscal_year else "FY2024/25"
                     metrics = (meta.get("metrics") or {}).get(_fy_key) or {}
                     if not metrics:
@@ -1514,13 +1618,10 @@ async def get_counties(fiscal_year: Optional[str] = None):
                     development_total = float(metrics.get("development_budget", 0))
                     recurrent_total = float(metrics.get("recurrent_budget", 0))
 
-                # Get real debt data from Loan table
-                loans = db.query(DBLoan).filter(DBLoan.entity_id == e.id).all()
                 total_debt = sum(
                     float(loan.outstanding or loan.principal or 0) for loan in loans
                 )
 
-                # Get pending bills from budget lines with specific category or from metadata
                 pending_bills = sum(
                     float(bl.allocated_amount or 0)
                     for bl in budget_lines
@@ -1534,16 +1635,10 @@ async def get_counties(fiscal_year: Optional[str] = None):
                         metrics = (meta.get("metrics") or {}).get("FY2024/25") or {}
                     pending_bills = float(metrics.get("pending_bills", 0))
 
-                # Get audit findings for this entity, optionally filtered by period
-                audit_q = db.query(DBAudit).filter(DBAudit.entity_id == e.id)
-                if period_ids:
-                    audit_q = audit_q.filter(DBAudit.period_id.in_(period_ids))
-                audits = audit_q.order_by(DBAudit.created_at.desc()).all()
                 latest_audit = audits[0] if audits else None
 
-                # Build audit issues list from real findings
                 audit_issues = []
-                for a in audits[:10]:  # Cap at 10 most recent
+                for a in audits[:10]:
                     audit_issues.append(
                         {
                             "id": str(a.id),
@@ -1554,7 +1649,6 @@ async def get_counties(fiscal_year: Optional[str] = None):
                         }
                     )
 
-                # Determine audit status from latest finding severity
                 audit_status = "pending"
                 audit_rating = ""
                 if latest_audit and latest_audit.severity:
@@ -1567,13 +1661,11 @@ async def get_counties(fiscal_year: Optional[str] = None):
                     elif sev == "critical":
                         audit_status = "adverse"
 
-                # Compute financial health score from real data
                 health_score = 0.0
                 if total_allocated > 0:
                     utilization = (
                         (total_spent / total_allocated * 100) if total_spent > 0 else 0
                     )
-                    # Score: higher utilization (up to 95%) = better, penalize >100% overspend
                     if utilization <= 95:
                         health_score = min(utilization, 95)
                     elif utilization <= 100:
@@ -1581,7 +1673,6 @@ async def get_counties(fiscal_year: Optional[str] = None):
                     else:
                         health_score = max(0, 80 - (utilization - 100))
 
-                # Get revenue collection from metadata or economic indicators
                 meta = e.meta or {}
                 _fy_key = f"FY{fiscal_year}" if fiscal_year else "FY2024/25"
                 metrics = (meta.get("metrics") or {}).get(_fy_key) or {}
@@ -1591,20 +1682,6 @@ async def get_counties(fiscal_year: Optional[str] = None):
                 money_received = float(
                     metrics.get("transfers_received", total_allocated)
                 )
-
-                # Get GCP (Gross County Product) from GDP table
-                gdp_data = None
-                try:
-                    from models import GDPData as _GDPData
-
-                    gdp_data = (
-                        db.query(_GDPData)
-                        .filter(_GDPData.entity_id == e.id)
-                        .order_by(_GDPData.year.desc())
-                        .first()
-                    )
-                except Exception:
-                    pass
 
                 name = e.canonical_name.replace(" County", "")
                 county_id = NAME_TO_ID_MAPPING.get(name, e.slug)
@@ -1621,7 +1698,6 @@ async def get_counties(fiscal_year: Optional[str] = None):
                         "code": county_id or "",
                         "coordinates": coords,
                         "population": pop_data.total_population if pop_data else 0,
-                        # Budget data
                         "budget_2025": total_allocated,
                         "total_budget": total_allocated,
                         "total_spent": total_spent,
@@ -1636,23 +1712,18 @@ async def get_counties(fiscal_year: Optional[str] = None):
                         "development_budget": development_total,
                         "recurrent_budget": recurrent_total,
                         "sector_breakdown": sector_breakdown,
-                        # Revenue
                         "money_received": money_received,
                         "revenue_collection": revenue_collection,
                         "pending_bills": pending_bills,
-                        # Debt
                         "debt": total_debt,
                         "total_debt": total_debt,
-                        # Economic
                         "gdp": float(gdp_data.gdp_value) if gdp_data else None,
-                        # Audit
                         "financial_health_score": round(health_score, 1),
                         "audit_rating": audit_rating,
                         "audit_status": audit_status,
                         "last_audit_date": last_audit_date,
                         "audit_issues": audit_issues,
                         "audit_findings_count": len(audits),
-                        # Provenance
                         "data_freshness": {
                             "budget_source": (
                                 budget_lines[0].source_document_id
@@ -5309,7 +5380,7 @@ async def get_national_loans(db: Session = Depends(get_db)):
 
 
 @app.get("/api/v1/debt/national")
-@cached(key_prefix="debt:national", ttl=1800)
+@cached(key_prefix="debt:national", ttl=43200)  # 12 hours — national debt data changes infrequently
 async def get_national_debt():
     """Get national debt overview with categorized breakdown."""
     # Try database first
@@ -5850,17 +5921,25 @@ async def get_pending_bills_summary(db: Session = Depends(get_db)):
             bt = b.bill_type.value if b.bill_type else "other"
             breakdown_by_type[bt] = breakdown_by_type.get(bt, 0) + float(b.amount or 0)
 
-        # Top counties by amount
+        # Top counties by amount — batch-load entities to avoid N+1
+        unique_eids = list({b.entity_id for b in bills if b.entity_id})
+        entity_map: Dict[int, tuple] = {}
+        if unique_eids:
+            for eid, ename, etype in db.query(
+                DBEntity.id, DBEntity.canonical_name, DBEntity.type
+            ).filter(DBEntity.id.in_(unique_eids)).all():
+                entity_map[eid] = (ename, etype.value if etype else "unknown")
+
         county_totals: Dict[int, Dict[str, Any]] = {}
         for b in bills:
             eid = b.entity_id
             if eid not in county_totals:
-                entity = db.query(DBEntity).filter(DBEntity.id == eid).first()
+                ename, etype = entity_map.get(eid, (f"Entity {eid}", "unknown"))
                 county_totals[eid] = {
-                    "county": entity.canonical_name if entity else f"Entity {eid}",
+                    "county": ename,
                     "entity_id": eid,
                     "amount": 0,
-                    "entity_type": entity.type.value if entity and entity.type else "unknown",
+                    "entity_type": etype,
                 }
             county_totals[eid]["amount"] += float(b.amount or 0)
 
@@ -6254,17 +6333,19 @@ def _compute_debt_projections(db: Session) -> list:
     """Simple linear extrapolation of debt-to-GDP for next 5 years."""
     from models import DebtTimeline
 
-    rows = (
+    # Fetch only the last 5 data points directly from DB (not all rows)
+    recent = (
         db.query(DebtTimeline)
         .filter(DebtTimeline.gdp_ratio.isnot(None))
-        .order_by(DebtTimeline.year.asc())
+        .order_by(DebtTimeline.year.desc())
+        .limit(5)
         .all()
     )
-    if len(rows) < 2:
+    if len(recent) < 2:
         return []
 
-    # Use last 5 data points (or all if < 5) for linear fit
-    recent = rows[-5:]
+    # Reverse so oldest-first for the linear fit
+    recent = list(reversed(recent))
     n = len(recent)
     xs = [float(r.year) for r in recent]
     ys = [float(r.gdp_ratio) for r in recent]
@@ -6335,7 +6416,7 @@ def _get_regional_peers_cached(kenya_ratio: Optional[float] = None) -> list:
             f"https://api.worldbank.org/v2/country/{codes}"
             f"/indicator/GC.DOD.TOTL.GD.ZS?format=json&per_page=50&date=2018:2025"
         )
-        resp = httpx.get(url, timeout=10)
+        resp = httpx.get(url, timeout=3)
         resp.raise_for_status()
         wb_data = resp.json()
 

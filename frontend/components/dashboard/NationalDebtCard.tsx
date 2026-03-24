@@ -192,11 +192,11 @@ export default function NationalDebtCard() {
         {isTimelineLoading ? (
           <div className='h-64 sm:h-72 flex flex-col justify-end gap-2 px-2'>
             <div className='flex items-end gap-1 h-full'>
-              {Array.from({ length: 8 }).map((_, i) => (
+              {[68, 45, 72, 38, 55, 82, 60, 50].map((h, i) => (
                 <Skeleton
                   key={i}
                   className='flex-1 rounded-t-sm'
-                  style={{ height: `${30 + Math.random() * 60}%` }}
+                  style={{ height: `${h}%` }}
                 />
               ))}
             </div>

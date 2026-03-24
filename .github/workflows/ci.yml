@@ -242,8 +242,41 @@ jobs:
 
           echo "✅ Quality Gate PASSED - All tests successful"
 
-  deploy-staging:
+  # ── Database Migrations ─────────────────────────────────────────────
+  # Runs Alembic migrations against the real database AFTER tests pass
+  # but BEFORE deployment, so the schema is always in sync with code.
+  # Only runs on pushes to main/develop (not on PRs).
+  run-migrations:
     needs: [quality-gate]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install migration dependencies
+        run: |
+          cd backend
+          python -m pip install --upgrade pip
+          pip install alembic sqlalchemy psycopg2-binary
+
+      - name: Run Alembic migrations
+        run: |
+          cd backend
+          echo "Running database migrations..."
+          alembic upgrade head
+          echo "✅ Migrations applied successfully"
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+  deploy-staging:
+    needs: [quality-gate, run-migrations]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/develop'
 
@@ -257,7 +290,7 @@ jobs:
           # Example: Deploy to Railway, Render, or AWS
 
   deploy-production:
-    needs: [quality-gate]
+    needs: [quality-gate, run-migrations]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     environment:

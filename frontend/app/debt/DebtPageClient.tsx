@@ -175,21 +175,27 @@ export default function NationalDebtPage() {
     isError: ovError,
     refetch: refetchOverview,
   } = useNationalDebtOverview();
+
+  // Stagger secondary requests: only fire after the primary (overview) succeeds.
+  // This avoids hammering a cold Render backend with 6+ simultaneous requests that
+  // all timeout. The overview request wakes the backend; the rest fire instantly.
+  const backendReady = !!overview;
+
   const {
     data: loansResp,
     isLoading: loansLoading,
     isError: loansError,
     refetch: refetchLoans,
-  } = useNationalLoans();
+  } = useNationalLoans({ enabled: backendReady });
   const {
     data: timelineResp,
     isLoading: tlLoading,
     isError: tlError,
     refetch: refetchTimeline,
-  } = useDebtTimeline();
-  const { data: fiscalResp } = useFiscalSummary();
-  const { data: pendingBillsData } = usePendingBills();
-  const { data: rawPendingBillsSummary } = usePendingBillsSummary();
+  } = useDebtTimeline({ enabled: backendReady });
+  const { data: fiscalResp } = useFiscalSummary({ enabled: backendReady });
+  const { data: pendingBillsData } = usePendingBills({ enabled: backendReady });
+  const { data: rawPendingBillsSummary } = usePendingBillsSummary({ enabled: backendReady });
 
   // Normalize pendingBillsSummary — API returns dicts for breakdown/aging,
   // but the UI expects arrays with percentage fields
@@ -233,7 +239,7 @@ export default function NationalDebtPage() {
       top_counties_by_amount: topCounties,
     };
   }, [rawPendingBillsSummary]);
-  const { data: rawDebtSustainability } = useDebtSustainability();
+  const { data: rawDebtSustainability } = useDebtSustainability({ enabled: backendReady });
 
   // Normalize debtSustainability — API returns nested objects {value, year, ...}
   // but the UI expects flat numbers. Handle both shapes safely.
@@ -266,11 +272,12 @@ export default function NationalDebtPage() {
   const [fetchedPopulation, setFetchedPopulation] = useState<number | null>(null);
 
   useEffect(() => {
+    if (!backendReady) return;
     apiClient
       .get('/economic/population/latest')
       .then((res) => setFetchedPopulation(res.data?.population ?? null))
       .catch(() => setFetchedPopulation(null));
-  }, []);
+  }, [backendReady]);
 
   // Derived data
   const d = useMemo(() => {

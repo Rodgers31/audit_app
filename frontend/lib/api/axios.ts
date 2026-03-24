@@ -28,8 +28,8 @@ const baseURL = `${API_BASE}/api/${API_VERSION}`;
 
 /** Max retries for network errors / timeouts (cold-start recovery) */
 const MAX_RETRIES = 2;
-/** Base delay between retries in ms (doubles each attempt: 2s → 4s) */
-const RETRY_BASE_DELAY = 2000;
+/** Base delay between retries in ms (doubles each attempt: 1.5s → 3s) */
+const RETRY_BASE_DELAY = 1500;
 
 /** Returns true if the error is a network/timeout issue worth retrying */
 function isRetryable(error: AxiosError): boolean {
@@ -45,7 +45,7 @@ function isRetryable(error: AxiosError): boolean {
 // Create axios instance with default configuration
 export const apiClient = axios.create({
   baseURL,
-  timeout: 30000,
+  timeout: 12000,
   headers: {
     'Content-Type': 'application/json',
   },

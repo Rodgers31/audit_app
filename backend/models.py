@@ -181,8 +181,8 @@ class BudgetLine(Base):
     )
 
     id = Column(Integer, primary_key=True, index=True)
-    entity_id = Column(Integer, ForeignKey("entities.id"), nullable=False)
-    period_id = Column(Integer, ForeignKey("fiscal_periods.id"), nullable=False)
+    entity_id = Column(Integer, ForeignKey("entities.id"), nullable=False, index=True)
+    period_id = Column(Integer, ForeignKey("fiscal_periods.id"), nullable=False, index=True)
     category = Column(String(200), nullable=False)
     subcategory = Column(String(200), nullable=True)
     allocated_amount = Column(Numeric(15, 2), nullable=True)
@@ -222,10 +222,10 @@ class Loan(Base):
     )
 
     id = Column(Integer, primary_key=True, index=True)
-    entity_id = Column(Integer, ForeignKey("entities.id"), nullable=False)
+    entity_id = Column(Integer, ForeignKey("entities.id"), nullable=False, index=True)
     lender = Column(String(200), nullable=False)
     debt_category = Column(
-        Enum(DebtCategory), nullable=True, default=DebtCategory.OTHER
+        Enum(DebtCategory), nullable=True, default=DebtCategory.OTHER, index=True
     )
     principal = Column(Numeric(15, 2), nullable=False)
     outstanding = Column(Numeric(15, 2), nullable=False)
@@ -253,8 +253,8 @@ class Audit(Base):
     __tablename__ = "audits"
 
     id = Column(Integer, primary_key=True, index=True)
-    entity_id = Column(Integer, ForeignKey("entities.id"), nullable=False)
-    period_id = Column(Integer, ForeignKey("fiscal_periods.id"), nullable=False)
+    entity_id = Column(Integer, ForeignKey("entities.id"), nullable=False, index=True)
+    period_id = Column(Integer, ForeignKey("fiscal_periods.id"), nullable=False, index=True)
     finding_text = Column(Text, nullable=False)
     severity = Column(Enum(Severity), nullable=False)
     recommended_action = Column(Text, nullable=True)
@@ -462,7 +462,7 @@ class PopulationData(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     entity_id = Column(
-        Integer, ForeignKey("entities.id"), nullable=True
+        Integer, ForeignKey("entities.id"), nullable=True, index=True
     )  # County or national
     year = Column(Integer, nullable=False, index=True)
     total_population = Column(Integer, nullable=False)
@@ -499,7 +499,7 @@ class GDPData(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     entity_id = Column(
-        Integer, ForeignKey("entities.id"), nullable=True
+        Integer, ForeignKey("entities.id"), nullable=True, index=True
     )  # NULL for national, county_id for GCP
     year = Column(Integer, nullable=False, index=True)
     quarter = Column(String(2), nullable=True, index=True)  # Q1, Q2, Q3, Q4
@@ -714,7 +714,7 @@ class PendingBill(Base):
     )
 
     id = Column(Integer, primary_key=True, index=True)
-    entity_id = Column(Integer, ForeignKey("entities.id"), nullable=False)
+    entity_id = Column(Integer, ForeignKey("entities.id"), nullable=False, index=True)
     bill_type = Column(Enum(BillType), nullable=False, default=BillType.SUPPLIER_ARREARS)
     amount = Column(Numeric(15, 2), nullable=False)  # KES
     fiscal_year = Column(String(20), nullable=False, index=True)  # e.g. "2024/25"

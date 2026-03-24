@@ -232,6 +232,8 @@ async def get_population_latest(db: Session = Depends(get_db)):
                     rural_population = None
                     population_density = None
                     source_document_id = None
+                    source_document = None
+                    created_at = None
                 row = _SyntheticPop()
     except OperationalError as e:
         logger.error("Database connection error on /population/latest: %s", e)
@@ -244,14 +246,15 @@ async def get_population_latest(db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="No population data found")
 
     source_name = None
-    if row.source_document:
+    if getattr(row, "source_document", None):
         source_name = row.source_document.title
 
+    created_at = getattr(row, "created_at", None)
     return PopulationLatestResponse(
         population=row.total_population,
         year=row.year,
         source=source_name or "KNBS",
-        updated_at=row.created_at.isoformat() if row.created_at else None,
+        updated_at=created_at.isoformat() if created_at else None,
     )
 
 
