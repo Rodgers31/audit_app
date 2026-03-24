@@ -198,7 +198,10 @@ jobs:
           alembic upgrade head
           echo "✅ Migrations applied successfully"
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          # Use the Supabase connection POOLER URL (IPv4, port 6543) for CI.
+          # The direct connection (port 5432) resolves to IPv6 which GitHub
+          # Actions runners cannot reach.
+          DATABASE_URL: ${{ secrets.DATABASE_POOLER_URL }}
 
   build-and-push:
     runs-on: ubuntu-latest

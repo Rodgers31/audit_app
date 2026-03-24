@@ -269,11 +269,31 @@ jobs:
       - name: Run Alembic migrations
         run: |
           cd backend
+          # Debug: verify the DATABASE_URL points to the pooler (not direct)
+          python3 -c "
+          import os
+          url = os.environ.get('DATABASE_URL', '')
+          if 'pooler.supabase.com' in url:
+              print('✅ Using Supabase connection pooler (IPv4)')
+          elif 'db.' in url and 'supabase.co' in url:
+              print('❌ ERROR: DATABASE_URL points to direct connection (IPv6). Use the pooler URL instead.')
+              print('   Expected host: aws-*-*.pooler.supabase.com:6543')
+              exit(1)
+          elif not url:
+              print('❌ ERROR: DATABASE_URL is empty. Set the DATABASE_POOLER_URL secret.')
+              exit(1)
+          else:
+              print(f'⚠️  Unknown host format — attempting connection anyway')
+          "
           echo "Running database migrations..."
           alembic upgrade head
           echo "✅ Migrations applied successfully"
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          # Use the Supabase connection POOLER URL (IPv4, port 6543) for CI.
+          # The direct connection (port 5432) resolves to IPv6 which GitHub
+          # Actions runners cannot reach.
+          # Set this secret to: postgresql://postgres.[project-ref]:[password]@aws-1-ap-south-1.pooler.supabase.com:6543/postgres
+          DATABASE_URL: ${{ secrets.DATABASE_POOLER_URL }}
 
   deploy-staging:
     needs: [quality-gate, run-migrations]
