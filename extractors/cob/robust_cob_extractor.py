@@ -365,9 +365,9 @@ class RobustCOBExtractor:
                 "check_frequency": "Weekly",
             },
             "url_patterns_to_monitor": [
-                "https://cob.go.ke/reports/consolidated-county-budget-implementation-review-reports/",
+                "https://cob.go.ke/publications/consolidated-county-budget-implementation-review-reports/",
                 "https://cob.go.ke/wp-content/uploads/",
-                "https://cob.go.ke/reports/",
+                "https://cob.go.ke/publications/",
             ],
             "download_rules": {
                 "file_types": [".pdf"],

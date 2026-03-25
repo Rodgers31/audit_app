@@ -286,8 +286,8 @@ class KenyaDataPipeline:
                 "name": "Controller of Budget",
                 "base_url": "https://cob.go.ke",
                 "reports_url": "https://cob.go.ke/publications/",
-                "county_reports_url": "https://cob.go.ke/reports/county-government-budget-implementation-review-reports/",
-                "national_reports_url": "https://cob.go.ke/reports/national-government-budget-implementation-review-reports/",
+                "county_reports_url": "https://cob.go.ke/publications/county-government-budget-implementation-review-reports/",
+                "national_reports_url": "https://cob.go.ke/publications/national-government-budget-implementation-review-reports/",
                 "documents": [
                     "county-budget-implementation",
                     "quarterly-reports",
@@ -878,9 +878,9 @@ class KenyaDataPipeline:
         # Focus on exact National and Consolidated County BIRR pages with deep lists
         sections = [
             # County consolidated BIRR (deep history, back to ~2014)
-            "https://cob.go.ke/reports/consolidated-county-budget-implementation-review-reports/",
+            "https://cob.go.ke/publications/consolidated-county-budget-implementation-review-reports/",
             # National government BIRR
-            "https://cob.go.ke/reports/national-government-budget-implementation-review-reports/",
+            "https://cob.go.ke/publications/national-government-budget-implementation-review-reports/",
             # Publications page (main reports index)
             "https://cob.go.ke/publications/",
             # Generic reports index as a safety net

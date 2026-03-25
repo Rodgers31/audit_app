@@ -140,7 +140,7 @@ const DATA_SOURCES = [
       'Sector-level expenditure vs. approved estimates from the Annual National Government Budget Implementation Review Reports (NG-BIRR).',
     methodology:
       'Approved Estimates from the Appropriation Act; Actual Expenditure from CoB Exchequer release reports to Parliament per Article 228(6) of the Constitution of Kenya.',
-    url: 'https://cob.go.ke/reports/annual-national-government-budget-implementation-review-reports/',
+    url: 'https://cob.go.ke/publications/annual-national-government-budget-implementation-review-reports/',
     urlLabel: 'CoB Annual NG-BIRR Reports',
   },
   {

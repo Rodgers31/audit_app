@@ -1,11 +1,11 @@
 """Extract pending bills data from Controller of Budget (COB) reports.
 
 Primary source: COB National Government Budget Implementation Review Reports
-  - https://cob.go.ke/reports/national-government-budget-implementation-review-reports/
+  - https://cob.go.ke/publications/national-government-budget-implementation-review-reports/
   - These PDF reports contain detailed pending bills tables broken down by MDA/vote
 
 Secondary source: COB County Government Budget Implementation Review Reports
-  - https://cob.go.ke/reports/county-government-budget-implementation-review-reports/
+  - https://cob.go.ke/publications/county-government-budget-implementation-review-reports/
 
 The extractor:
   1. Scrapes the COB reports listing page for the latest report PDF link
@@ -33,15 +33,15 @@ logger = logging.getLogger("etl.pending_bills")
 # ── COB source URLs ──────────────────────────────────────────────────────
 COB_BASE = "https://cob.go.ke"
 COB_NATIONAL_REPORTS = (
-    "https://cob.go.ke/reports/"
+    "https://cob.go.ke/publications/"
     "national-government-budget-implementation-review-reports/"
 )
 COB_COUNTY_REPORTS = (
-    "https://cob.go.ke/reports/"
+    "https://cob.go.ke/publications/"
     "county-government-budget-implementation-review-reports/"
 )
 COB_DOWNLOADS_BASE = "https://cob.go.ke/download/"
-COB_PENDING_BILLS_PAGE = "https://cob.go.ke/reports/pending-bills/"
+COB_PENDING_BILLS_PAGE = "https://cob.go.ke/publications/pending-bills/"
 
 # Known report download pages by fiscal year (discovered via scraping)
 KNOWN_REPORT_PAGES: dict[str, str] = {

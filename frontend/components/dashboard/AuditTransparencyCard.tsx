@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { AlertTriangle } from 'lucide-react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
+import InfoTip from '@/components/InfoTip';
 
 const auditStatusData = [
   { name: 'Complete', value: 51, color: '#4A7C5C' },
@@ -67,7 +68,26 @@ export default function AuditTransparencyCard() {
               className='w-2.5 h-2.5 rounded-full flex-shrink-0'
               style={{ background: d.color }}
             />
-            <span className='text-xs text-neutral-muted'>{d.name}</span>
+            <div className='flex items-center gap-1'>
+              <span className='text-xs text-neutral-muted'>{d.name}</span>
+              {(d.name === 'Complete' ||
+                d.name === 'Overspending' ||
+                d.name === 'Average' ||
+                d.name === 'Pending') && (
+                <InfoTip
+                  term={
+                    d.name === 'Complete'
+                      ? 'audit-clean'
+                      : d.name === 'Overspending'
+                        ? 'audit-adverse'
+                        : d.name === 'Average'
+                          ? 'audit-qualified'
+                          : 'audit-disclaimer'
+                  }
+                  size={10}
+                />
+              )}
+            </div>
             <span className='ml-auto text-xs font-semibold tabular-nums' style={{ color: d.color }}>
               {d.value}%
             </span>

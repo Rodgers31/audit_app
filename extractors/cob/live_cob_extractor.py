@@ -111,7 +111,7 @@ class LiveCOBExtractor:
             logger.warning(f"⚠️ Main discovery failed: {str(e)}")
 
         # Try the specific consolidated reports URL you showed
-        consolidated_url = "https://cob.go.ke/reports/consolidated-county-budget-implementation-review-reports/"
+        consolidated_url = "https://cob.go.ke/publications/consolidated-county-budget-implementation-review-reports/"
         try:
             logger.info(f"🔍 Checking consolidated reports: {consolidated_url}")
             response = self.session.get(consolidated_url, timeout=45)

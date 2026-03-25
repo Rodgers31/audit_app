@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { Skeleton, SkeletonChart } from '@/components/ui/Skeleton';
 import { AlertTriangle, Landmark, Loader2, TrendingUp } from 'lucide-react';
 import { useMemo } from 'react';
+import InfoTip from '@/components/InfoTip';
 import {
   Area,
   CartesianGrid,
@@ -157,7 +158,12 @@ export default function NationalDebtCard() {
           />
           <StatCard
             icon={<TrendingUp className='w-3.5 h-3.5 text-gov-gold opacity-70' />}
-            label='Debt-to-GDP'
+            label={
+              <div className='flex items-center gap-1'>
+                <span>Debt-to-GDP</span>
+                <InfoTip term='debt-to-gdp' size={11} />
+              </div>
+            }
             value={`${gdpRatio}%`}
             sub={`From ${firstYear?.gdpRatio ?? '—'}% in ${firstYear?.year || '—'}`}
             accent='gold'
@@ -168,7 +174,12 @@ export default function NationalDebtCard() {
                 🏦
               </span>
             }
-            label='External Debt'
+            label={
+              <div className='flex items-center gap-1'>
+                <span>External Debt</span>
+                <InfoTip term='external-debt' size={11} />
+              </div>
+            }
             value={fmtKES(externalDebt)}
             sub={`${externalPct}% of total`}
             accent='forest'
@@ -179,7 +190,12 @@ export default function NationalDebtCard() {
                 🇰🇪
               </span>
             }
-            label='Domestic Debt'
+            label={
+              <div className='flex items-center gap-1'>
+                <span>Domestic Debt</span>
+                <InfoTip term='domestic-debt' size={11} />
+              </div>
+            }
             value={fmtKES(domesticDebt)}
             sub={`${domesticPct}% of total`}
             accent='sage'
@@ -344,7 +360,7 @@ function StatCard({
   accent,
 }: {
   icon: React.ReactNode;
-  label: string;
+  label: React.ReactNode;
   value: string;
   sub: string;
   accent: string;

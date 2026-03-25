@@ -47,7 +47,7 @@ TARGETS = [
     },
     {
         "name": "COB – County Reports",
-        "url": "https://cob.go.ke/reports/consolidated-county-budget-implementation-review-reports/",
+        "url": "https://cob.go.ke/publications/consolidated-county-budget-implementation-review-reports/",
         "critical": True,
         "expect_pdf_links": True,
         "expect_text": "county",

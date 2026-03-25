@@ -1,6 +1,7 @@
 'use client';
 
 import DataFreshnessBadge from '@/components/DataFreshnessBadge';
+import InfoTip from '@/components/InfoTip';
 import PageShell from '@/components/layout/PageShell';
 import PDFExportButton from '@/components/PDFExportButton';
 import {
@@ -20,7 +21,6 @@ import {
   Building2,
   ChevronDown,
   ChevronUp,
-  Clock,
   DollarSign,
   FileWarning,
   Flag,
@@ -112,6 +112,7 @@ function StatCard({
   sub,
   accent = 'text-gov-dark',
   delay = 0,
+  tip,
 }: {
   icon: React.ElementType;
   label: string;
@@ -119,6 +120,7 @@ function StatCard({
   sub?: string;
   accent?: string;
   delay?: number;
+  tip?: string;
 }) {
   return (
     <motion.div
@@ -132,6 +134,7 @@ function StatCard({
         </div>
         <span className='text-xs font-semibold text-gray-500 uppercase tracking-wider'>
           {label}
+          {tip && <InfoTip term={tip} size={12} />}
         </span>
       </div>
       <div className={`text-2xl sm:text-3xl font-bold ${accent} leading-tight`}>{value}</div>
@@ -145,16 +148,18 @@ function FiscalRow({
   value,
   sub,
   warn,
+  tip,
 }: {
   label: string;
   value: string;
   sub?: string;
   warn?: boolean;
+  tip?: string;
 }) {
   return (
     <div className='flex items-start justify-between'>
       <div>
-        <span className='text-sm text-gray-700'>{label}</span>
+        <span className='text-sm text-gray-700'>{label}{tip && <InfoTip term={tip} size={12} />}</span>
         {sub && <p className='text-xs text-gray-400 mt-0.5'>{sub}</p>}
       </div>
       <span className={`text-sm font-semibold ${warn ? 'text-red-600' : 'text-gray-800'}`}>
@@ -261,8 +266,8 @@ export default function NationalDebtPage() {
       regional_peers: (raw.regional_peers || []).map((p: any) => ({
         ...p,
         debt_to_gdp: extractNum(p.debt_to_gdp) ?? 0,
-        debt_service_to_revenue: extractNum(p.debt_service_to_revenue) ?? 0,
-        external_debt_share: extractNum(p.external_debt_share) ?? 0,
+        debt_service_to_revenue: extractNum(p.debt_service_to_revenue) ?? null,
+        external_debt_share: extractNum(p.external_debt_share) ?? null,
       })),
     };
   }, [rawDebtSustainability]);
@@ -270,6 +275,7 @@ export default function NationalDebtPage() {
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [loanSort, setLoanSort] = useState<'outstanding' | 'rate' | 'service'>('outstanding');
   const [fetchedPopulation, setFetchedPopulation] = useState<number | null>(null);
+  const [pbView, setPbView] = useState<'national' | 'counties'>('national');
 
   useEffect(() => {
     if (!backendReady) return;
@@ -421,6 +427,7 @@ export default function NationalDebtPage() {
         <StatCard
           icon={DollarSign}
           label='Total Outstanding'
+          tip='outstanding'
           value={fmtKES(d.totalDebt)}
           sub={`${d.loanCount} active loan facilities`}
           accent='text-red-600'
@@ -436,6 +443,7 @@ export default function NationalDebtPage() {
         <StatCard
           icon={TrendingUp}
           label='Debt-to-GDP'
+          tip='debt-to-gdp'
           value={pct(d.gdpRatio)}
           sub={d.gdpRatio > 55 ? 'Exceeds IMF 55% recommended threshold' : 'Within safe levels'}
           accent={d.gdpRatio > 55 ? 'text-red-600' : 'text-green-600'}
@@ -444,6 +452,7 @@ export default function NationalDebtPage() {
         <StatCard
           icon={ShieldAlert}
           label='Risk Level'
+          tip='debt-sustainability'
           value={d.sustainability.risk_level || '—'}
           sub={
             d.sustainability.assessment ? d.sustainability.assessment.slice(0, 70) + '…' : undefined
@@ -519,7 +528,7 @@ export default function NationalDebtPage() {
             <div className='mt-4 pt-4 border-t border-gray-100 space-y-2'>
               <div className='flex items-center justify-between text-sm'>
                 <span className='flex items-center gap-2 text-gray-600'>
-                  <Globe size={14} className='text-blue-500' /> External Debt
+                  <Globe size={14} className='text-blue-500' /> External Debt <InfoTip term='external-debt' size={12} />
                 </span>
                 <span className='font-semibold'>
                   {fmtKES(d.externalDebt)} ({pct(d.externalPct)})
@@ -527,7 +536,7 @@ export default function NationalDebtPage() {
               </div>
               <div className='flex items-center justify-between text-sm'>
                 <span className='flex items-center gap-2 text-gray-600'>
-                  <Landmark size={14} className='text-green-500' /> Domestic Debt
+                  <Landmark size={14} className='text-green-500' /> Domestic Debt <InfoTip term='domestic-debt' size={12} />
                 </span>
                 <span className='font-semibold'>
                   {fmtKES(d.domesticDebt)} ({pct(d.domesticPct)})
@@ -752,6 +761,7 @@ export default function NationalDebtPage() {
               <div className='space-y-3'>
                 <FiscalRow
                   label='Appropriated Budget'
+                  tip='appropriated-budget'
                   value={`KES ${fmtB(fiscal.current.appropriated_budget)}`}
                 />
                 <FiscalRow
@@ -761,12 +771,14 @@ export default function NationalDebtPage() {
                 />
                 <FiscalRow
                   label='Borrowing Required'
+                  tip='borrowing-vs-budget'
                   value={`KES ${fmtB(fiscal.current.total_borrowing)}`}
                   sub={`${fiscal.current.borrowing_pct_of_budget}% of the budget`}
                   warn
                 />
                 <FiscalRow
                   label='Debt Service Cost'
+                  tip='debt-service'
                   value={`KES ${fmtB(fiscal.current.debt_service_cost)}`}
                   sub={`For every KES 100 collected, KES ${fiscal.current.debt_service_per_shilling?.toFixed(0) || '—'} goes to debt`}
                   warn
@@ -790,7 +802,7 @@ export default function NationalDebtPage() {
               <div className='flex items-center gap-2 mb-3'>
                 <Flag size={16} className='text-gov-copper' />
                 <h3 className='font-semibold text-sm text-gray-800'>
-                  Borrowing vs Development Spending
+                  Borrowing vs Development Spending <InfoTip term='development-spending' size={12} />
                 </h3>
               </div>
               <p className='text-xs text-gray-500 mb-3'>
@@ -850,276 +862,273 @@ export default function NationalDebtPage() {
         </motion.section>
       )}
 
-      {/* SECTION 5 — ENHANCED PENDING BILLS TRACKER */}
-      {(pb && pb.total > 0) && (
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}>
-          <div className='bg-white rounded-xl border border-red-200 shadow-sm overflow-hidden'>
-            {/* Header */}
-            <div className='bg-red-50 border-b border-red-200 px-5 py-4'>
-              <div className='flex items-center gap-3'>
-                <div className='w-9 h-9 rounded-lg bg-red-100 flex items-center justify-center'>
-                  <FileWarning className='text-red-600' size={20} />
+      {/* SECTION 5 — REDESIGNED PENDING BILLS TRACKER */}
+      {(pb && pb.total > 0) && (() => {
+        const nationalBills = pb.bills.filter((b: any) => b.entity_type === 'national');
+        const countyBills = pb.bills.filter((b: any) => b.entity_type === 'county');
+        const activeBills = pbView === 'national' ? nationalBills : countyBills;
+        const activeTotal = pbView === 'national' ? pb.national : pb.county;
+
+        // Category labels for cleaner display
+        const categoryLabel = (cat: string) => {
+          const labels: Record<string, string> = {
+            mda: 'Ministry / Dept / Agency',
+            state_corporation: 'State Corporation',
+            judiciary: 'Judiciary',
+            parliament: 'Parliament',
+            county: 'County Government',
+          };
+          return labels[cat?.toLowerCase()] || cat?.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) || '—';
+        };
+
+        return (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}>
+            <div className='bg-white rounded-xl border border-red-200 shadow-sm overflow-hidden'>
+              {/* Header */}
+              <div className='bg-red-50 border-b border-red-200 px-5 py-4'>
+                <div className='flex items-center justify-between'>
+                  <div className='flex items-center gap-3'>
+                    <div className='w-9 h-9 rounded-lg bg-red-100 flex items-center justify-center'>
+                      <FileWarning className='text-red-600' size={20} />
+                    </div>
+                    <div>
+                      <h2 className='text-base font-bold text-red-900'>Pending Bills Tracker</h2>
+                      <p className='text-xs text-red-700 mt-0.5'>
+                        Verified but unpaid government obligations to suppliers, contractors &amp; staff
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <h2 className='text-base font-bold text-red-900'>Pending Bills Tracker</h2>
-                  <p className='text-xs text-red-700 mt-0.5'>
-                    Verified but unpaid invoices owed to suppliers, contractors &amp; staff
+              </div>
+
+              <div className='p-5 space-y-5'>
+                {/* Summary cards — National vs Counties side by side */}
+                <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
+                  <div className='bg-red-50 rounded-xl p-4 text-center border border-red-100'>
+                    <p className='text-[10px] font-semibold text-red-500 uppercase tracking-wider mb-1'>Total — All Government</p>
+                    <p className='text-2xl sm:text-3xl font-black text-red-700'>{fmtKES(pendingBillsSummary?.total_pending_amount || pb.total)}</p>
+                  </div>
+                  <button
+                    onClick={() => setPbView('national')}
+                    className={`rounded-xl p-4 text-center border transition-all ${pbView === 'national' ? 'bg-orange-50 border-orange-300 ring-2 ring-orange-200' : 'bg-gray-50 border-gray-200 hover:border-orange-200'}`}>
+                    <div className='flex items-center justify-center gap-1.5 mb-1'>
+                      <Landmark size={12} className='text-orange-600' />
+                      <p className='text-[10px] font-semibold text-orange-600 uppercase tracking-wider'>National Gov&apos;t</p>
+                    </div>
+                    <p className='text-xl font-bold text-orange-700'>{fmtKES(pb.national)}</p>
+                    <p className='text-[10px] text-gray-500 mt-0.5'>{nationalBills.length} entities</p>
+                  </button>
+                  <button
+                    onClick={() => setPbView('counties')}
+                    className={`rounded-xl p-4 text-center border transition-all ${pbView === 'counties' ? 'bg-amber-50 border-amber-300 ring-2 ring-amber-200' : 'bg-gray-50 border-gray-200 hover:border-amber-200'}`}>
+                    <div className='flex items-center justify-center gap-1.5 mb-1'>
+                      <MapPin size={12} className='text-amber-600' />
+                      <p className='text-[10px] font-semibold text-amber-600 uppercase tracking-wider'>County Gov&apos;ts</p>
+                    </div>
+                    <p className='text-xl font-bold text-amber-700'>{fmtKES(pb.county)}</p>
+                    <p className='text-[10px] text-gray-500 mt-0.5'>{countyBills.length} counties</p>
+                  </button>
+                </div>
+
+                {/* Context banner explaining what this means */}
+                <div className='flex items-start gap-2.5 bg-blue-50 border border-blue-200 rounded-lg p-3'>
+                  <Scale size={14} className='flex-shrink-0 mt-0.5 text-blue-500' />
+                  <p className='text-xs text-blue-800 leading-relaxed'>
+                    {pbView === 'national'
+                      ? 'These are unpaid obligations owed by national government Ministries, Departments, and Agencies (MDAs) to their suppliers and contractors. They represent verified invoices that have been approved but not yet paid from the Exchequer.'
+                      : 'These are unpaid obligations owed by individual county governments to their local suppliers, contractors, and staff. Each county manages its own pending bills from its equitable share allocation and own-source revenue.'}
                   </p>
                 </div>
-              </div>
-            </div>
 
-            <div className='p-5 space-y-5'>
-              {/* Hero number */}
-              <div className='text-center py-4'>
-                <p className='text-xs font-semibold text-red-600 uppercase tracking-wider mb-2'>
-                  Total Pending Bills — All Government
-                </p>
-                <p className='text-4xl sm:text-5xl font-black text-red-700'>{fmtKES(pendingBillsSummary?.total_pending_amount || pb.total)}</p>
-                <div className='flex items-center justify-center gap-6 mt-3'>
-                  <div>
-                    <span className='text-sm font-semibold text-orange-700'>{fmtKES(pb.national)}</span>
-                    <span className='text-xs text-gray-500 ml-1'>National</span>
-                  </div>
-                  <div className='w-px h-4 bg-gray-200' />
-                  <div>
-                    <span className='text-sm font-semibold text-amber-700'>{fmtKES(pb.county)}</span>
-                    <span className='text-xs text-gray-500 ml-1'>Counties</span>
-                  </div>
-                </div>
-              </div>
+                {/* Year-over-year trend — only show if we have multiple valid fiscal years */}
+                {(() => {
+                  const validTrend = (pendingBillsSummary?.trend || [])
+                    .filter((t: any) => t.year && t.year.toLowerCase() !== 'unknown')
+                    .map((t: any) => ({ ...t, amount: t.total_amount ?? t.amount ?? 0 }));
 
-              {/* Breakdown by type + Aging buckets */}
-              {pendingBillsSummary && (
-                <div className='grid grid-cols-1 lg:grid-cols-2 gap-4'>
-                  {/* Breakdown by type — donut chart */}
-                  {pendingBillsSummary.breakdown_by_type?.length > 0 && (
-                    <div className='bg-gray-50 rounded-xl p-4'>
-                      <h3 className='text-sm font-semibold text-gray-800 mb-3'>Breakdown by Type</h3>
-                      <ResponsiveContainer width='100%' height={220}>
-                        <PieChart>
-                          <Pie
-                            data={pendingBillsSummary.breakdown_by_type.map((t: { type: string; amount: number }) => ({
-                              name: t.type.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()),
-                              value: t.amount,
-                            }))}
-                            cx='50%'
-                            cy='50%'
-                            innerRadius={50}
-                            outerRadius={85}
-                            paddingAngle={2}
-                            dataKey='value'
-                            stroke='none'>
-                            {pendingBillsSummary.breakdown_by_type.map((_: { type: string }, i: number) => (
-                              <Cell key={i} fill={['#ef4444', '#f59e0b', '#8b5cf6', '#3b82f6', '#10b981', '#ec4899'][i % 6]} />
-                            ))}
-                          </Pie>
-                          <Tooltip formatter={(val: number) => fmtKES(val)} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                      <div className='grid grid-cols-2 gap-x-3 gap-y-1 mt-2'>
-                        {pendingBillsSummary.breakdown_by_type.map((t: { type: string; amount: number; percentage: number }, i: number) => (
-                          <div key={t.type} className='flex items-center gap-2 text-xs'>
-                            <div
-                              className='w-2.5 h-2.5 rounded-full flex-shrink-0'
-                              style={{ backgroundColor: ['#ef4444', '#f59e0b', '#8b5cf6', '#3b82f6', '#10b981', '#ec4899'][i % 6] }}
-                            />
-                            <span className='text-gray-600 truncate'>
-                              {t.type.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
-                            </span>
-                            <span className='text-gray-400 ml-auto'>{t.percentage.toFixed(1)}%</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  if (validTrend.length < 2) return null;
 
-                  {/* Aging buckets — stacked bar visualization */}
-                  {pendingBillsSummary.aging_buckets?.length > 0 && (
+                  return (
                     <div className='bg-gray-50 rounded-xl p-4'>
                       <h3 className='text-sm font-semibold text-gray-800 mb-3'>
-                        Aging Analysis
+                        <TrendingUp size={14} className='inline mr-1 text-red-500' />
+                        Pending Bills Trend
                       </h3>
-                      <div className='space-y-3'>
-                        {pendingBillsSummary.aging_buckets.map((bucket: { bucket: string; amount: number; percentage: number; count?: number }) => {
-                          const colors: Record<string, string> = {
-                            '0-30d': 'bg-green-500',
-                            '31-90d': 'bg-yellow-500',
-                            '91-180d': 'bg-orange-500',
-                            '180d+': 'bg-red-500',
-                          };
-                          const bgColor = colors[bucket.bucket] || 'bg-gray-400';
-                          return (
-                            <div key={bucket.bucket}>
-                              <div className='flex items-center justify-between mb-1'>
-                                <div className='flex items-center gap-2'>
-                                  <Clock size={12} className='text-gray-400' />
-                                  <span className='text-sm text-gray-700 font-medium'>{bucket.bucket}</span>
-                                  <span className='text-xs text-gray-400'>{bucket.count} bills</span>
-                                </div>
-                                <span className='text-sm font-semibold text-gray-800'>{fmtKES(bucket.amount)}</span>
-                              </div>
-                              <div className='h-3 bg-gray-200 rounded-full overflow-hidden'>
-                                <div
-                                  className={`h-full rounded-full ${bgColor} transition-all`}
-                                  style={{ width: `${Math.min(bucket.percentage, 100)}%` }}
-                                />
-                              </div>
-                              <div className='text-[10px] text-gray-400 mt-0.5 text-right'>
-                                {bucket.percentage.toFixed(1)}% of total
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
+                      <ResponsiveContainer width='100%' height={200}>
+                        <BarChart data={validTrend}>
+                          <CartesianGrid strokeDasharray='3 3' stroke='#f0f0f0' />
+                          <XAxis dataKey='year' tick={{ fontSize: 11, fill: '#6b7280' }} tickLine={false} />
+                          <YAxis
+                            tick={{ fontSize: 11, fill: '#6b7280' }}
+                            tickLine={false}
+                            axisLine={false}
+                            tickFormatter={(v) => `${v >= 1e9 ? (v / 1e9).toFixed(0) + 'B' : (v / 1e6).toFixed(0) + 'M'}`}
+                            width={50}
+                          />
+                          <Tooltip
+                            contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 11 }}
+                            formatter={(val: number) => [fmtKES(val), 'Pending Bills']}
+                          />
+                          <Bar dataKey='amount' name='Pending Bills' fill='#ef4444' radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                      {(() => {
+                        const last = validTrend[validTrend.length - 1];
+                        const prev = validTrend[validTrend.length - 2];
+                        if (!last || !prev || !prev.amount || prev.amount === 0) return null;
+                        const change = ((last.amount - prev.amount) / prev.amount) * 100;
+                        if (isNaN(change)) return null;
+                        const growing = change > 0;
+                        return (
+                          <div className={`flex items-center gap-2 mt-3 text-xs ${growing ? 'text-red-700' : 'text-green-700'}`}>
+                            {growing ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                            <span>
+                              Pending bills {growing ? 'grew' : 'decreased'} by <strong>{Math.abs(change).toFixed(1)}%</strong> from {prev.year} to {last.year}
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </div>
-                  )}
-                </div>
-              )}
+                  );
+                })()}
 
-              {/* Top counties by pending bills */}
-              {(pendingBillsSummary?.top_counties_by_amount?.length ?? 0) > 0 && pendingBillsSummary && (
-                <div className='bg-gray-50 rounded-xl p-4'>
-                  <h3 className='text-sm font-semibold text-gray-800 mb-3'>
-                    <MapPin size={14} className='inline mr-1 text-red-500' />
-                    Top Counties by Pending Bills
-                  </h3>
-                  <div className='space-y-2'>
-                    {pendingBillsSummary.top_counties_by_amount.slice(0, 10).map((county: { county_name: string; county_id: string; entity_id?: number; county?: string; amount: number; per_capita?: number }, i: number) => {
-                      const maxAmount = pendingBillsSummary.top_counties_by_amount[0]?.amount || 1;
-                      const barWidth = (county.amount / maxAmount) * 100;
-                      return (
-                        <div key={`${county.entity_id ?? county.county_id ?? i}-${i}`} className='flex items-center gap-3'>
-                          <span className='w-5 text-xs text-gray-400 text-right'>{i + 1}</span>
-                          <div className='w-32 sm:w-40 text-sm truncate'>
-                            <span className='font-medium text-gray-800'>{county.county_name ?? county.county ?? 'Unknown'}</span>
-                          </div>
-                          <div className='flex-1 h-4 bg-gray-200 rounded-full overflow-hidden'>
-                            <div
-                              className='h-full rounded-full bg-red-400 transition-all'
-                              style={{ width: `${barWidth}%` }}
-                            />
-                          </div>
-                          <div className='text-right shrink-0'>
-                            <span className='text-xs font-semibold text-gray-700'>{fmtKES(county.amount)}</span>
-                            {(county.per_capita ?? 0) > 0 && (
-                              <div className='text-[10px] text-gray-400'>
-                                {fmtKES(county.per_capita ?? 0)}/person
-                              </div>
+                {/* Filtered detail table — National or Counties */}
+                {activeBills.length > 0 && (
+                  <div>
+                    <div className='flex items-center justify-between mb-3'>
+                      <h3 className='text-sm font-semibold text-gray-800'>
+                        {pbView === 'national' ? 'National Government Entities' : 'County Governments'} — Detail
+                      </h3>
+                      <span className='text-xs text-gray-400'>{activeBills.length} records totalling {fmtKES(activeTotal)}</span>
+                    </div>
+                    <div className='overflow-x-auto rounded-lg border border-gray-200'>
+                      <table className='w-full text-sm'>
+                        <thead>
+                          <tr className='bg-gray-50 border-b border-gray-200'>
+                            <th className='text-left py-2.5 px-3 font-semibold text-gray-600 w-8'>#</th>
+                            <th className='text-left py-2.5 px-3 font-semibold text-gray-600'>
+                              {pbView === 'national' ? 'Entity' : 'County'}
+                            </th>
+                            {pbView === 'national' && (
+                              <th className='text-left py-2.5 px-3 font-semibold text-gray-600'>Type</th>
                             )}
-                          </div>
-                        </div>
-                      );
-                    })}
+                            <th className='text-right py-2.5 px-3 font-semibold text-gray-600'>Total Pending <InfoTip term='pending-bills' size={12} /></th>
+                            <th className='text-right py-2.5 px-3 font-semibold text-gray-600'>Eligible <InfoTip term='eligible-bills' size={12} /></th>
+                            <th className='text-right py-2.5 px-3 font-semibold text-gray-600'>Ineligible <InfoTip term='ineligible-bills' size={12} /></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {activeBills
+                            .sort((a: any, b: any) => (b.total_pending || 0) - (a.total_pending || 0))
+                            .map((bill: any, idx: number) => (
+                            <tr
+                              key={`${bill.entity_name}-${idx}`}
+                              className='border-b border-gray-100 hover:bg-gray-50/50 transition-colors'>
+                              <td className='py-2.5 px-3 text-xs text-gray-400'>{idx + 1}</td>
+                              <td className='py-2.5 px-3'>
+                                <div className='font-medium text-gray-800'>
+                                  {bill.entity_name}
+                                </div>
+                                {bill.lender && bill.lender !== bill.entity_name && (
+                                  <div className='text-[11px] text-gray-400 mt-0.5'>{bill.lender}</div>
+                                )}
+                                {bill.fiscal_year && (
+                                  <div className='text-[11px] text-gray-400'>FY {bill.fiscal_year}</div>
+                                )}
+                              </td>
+                              {pbView === 'national' && (
+                                <td className='py-2.5 px-3'>
+                                  <span className='inline-block text-xs bg-gray-100 text-gray-600 rounded-full px-2 py-0.5'>
+                                    {categoryLabel(bill.category || bill.entity_type)}
+                                  </span>
+                                </td>
+                              )}
+                              <td className='py-2.5 px-3 text-right font-semibold text-red-600'>{fmtKES(bill.total_pending)}</td>
+                              <td className='py-2.5 px-3 text-right text-green-700'>
+                                {bill.eligible_pending != null ? fmtKES(bill.eligible_pending) : '—'}
+                              </td>
+                              <td className='py-2.5 px-3 text-right text-gray-500'>
+                                {bill.ineligible_pending != null ? fmtKES(bill.ineligible_pending) : '—'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Year-over-year trend */}
-              {(pendingBillsSummary?.trend?.length ?? 0) > 1 && pendingBillsSummary && (
-                <div className='bg-gray-50 rounded-xl p-4'>
-                  <h3 className='text-sm font-semibold text-gray-800 mb-3'>
-                    <TrendingUp size={14} className='inline mr-1 text-red-500' />
-                    Pending Bills Trend — Are They Growing?
-                  </h3>
-                  <ResponsiveContainer width='100%' height={200}>
-                    <BarChart data={pendingBillsSummary.trend}>
-                      <CartesianGrid strokeDasharray='3 3' stroke='#f0f0f0' />
-                      <XAxis dataKey='year' tick={{ fontSize: 11, fill: '#6b7280' }} tickLine={false} />
-                      <YAxis
-                        tick={{ fontSize: 11, fill: '#6b7280' }}
-                        tickLine={false}
-                        axisLine={false}
-                        tickFormatter={(v) => `${v >= 1e9 ? (v / 1e9).toFixed(0) + 'B' : (v / 1e6).toFixed(0) + 'M'}`}
-                        width={50}
-                      />
-                      <Tooltip
-                        contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 11 }}
-                        formatter={(val: number) => [fmtKES(val), 'Pending Bills']}
-                      />
-                      <Bar dataKey='amount' name='Pending Bills' fill='#ef4444' radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                  {(() => {
-                    const t = pendingBillsSummary.trend;
-                    const last = t[t.length - 1];
-                    const prev = t[t.length - 2];
-                    if (!last || !prev || prev.amount === 0) return null;
-                    const change = ((last.amount - prev.amount) / prev.amount) * 100;
-                    const growing = change > 0;
-                    return (
-                      <div className={`flex items-center gap-2 mt-3 text-xs ${growing ? 'text-red-700' : 'text-green-700'}`}>
-                        {growing ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                        <span>
-                          Pending bills {growing ? 'grew' : 'decreased'} by <strong>{Math.abs(change).toFixed(1)}%</strong> from {prev.year} to {last.year}
-                        </span>
-                      </div>
-                    );
-                  })()}
-                </div>
-              )}
+                {/* Top counties by pending bills — only show on counties tab */}
+                {pbView === 'counties' && (pendingBillsSummary?.top_counties_by_amount?.length ?? 0) > 0 && pendingBillsSummary && (
+                  <div className='bg-gray-50 rounded-xl p-4'>
+                    <h3 className='text-sm font-semibold text-gray-800 mb-3'>
+                      <MapPin size={14} className='inline mr-1 text-red-500' />
+                      Top Counties by Pending Bills
+                    </h3>
+                    <div className='space-y-2'>
+                      {pendingBillsSummary.top_counties_by_amount.slice(0, 10).map((county: { county_name: string; county_id: string; entity_id?: number; county?: string; amount: number; per_capita?: number }, i: number) => {
+                        const maxAmount = pendingBillsSummary.top_counties_by_amount[0]?.amount || 1;
+                        const barWidth = (county.amount / maxAmount) * 100;
+                        return (
+                          <div key={`${county.entity_id ?? county.county_id ?? i}-${i}`} className='flex items-center gap-3'>
+                            <span className='w-5 text-xs text-gray-400 text-right'>{i + 1}</span>
+                            <div className='w-32 sm:w-40 text-sm truncate'>
+                              <span className='font-medium text-gray-800'>{county.county_name ?? county.county ?? 'Unknown'}</span>
+                            </div>
+                            <div className='flex-1 h-4 bg-gray-200 rounded-full overflow-hidden'>
+                              <div
+                                className='h-full rounded-full bg-red-400 transition-all'
+                                style={{ width: `${barWidth}%` }}
+                              />
+                            </div>
+                            <div className='text-right shrink-0'>
+                              <span className='text-xs font-semibold text-gray-700'>{fmtKES(county.amount)}</span>
+                              {(county.per_capita ?? 0) > 0 && (
+                                <div className='text-[10px] text-gray-400'>
+                                  {fmtKES(county.per_capita ?? 0)}/person
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
-              {/* Detail table (existing) */}
-              {pb.bills.length > 0 && (
-                <div className='overflow-x-auto'>
-                  <table className='w-full text-sm'>
-                    <thead>
-                      <tr className='bg-gray-50 border-b border-gray-200'>
-                        <th className='text-left py-2 px-3 font-semibold text-gray-600'>Entity</th>
-                        <th className='text-left py-2 px-3 font-semibold text-gray-600'>Category</th>
-                        <th className='text-right py-2 px-3 font-semibold text-gray-600'>Total Pending</th>
-                        <th className='text-right py-2 px-3 font-semibold text-gray-600'>Eligible</th>
-                        <th className='text-right py-2 px-3 font-semibold text-gray-600'>Ineligible</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {pb.bills.map((bill, idx) => (
-                        <tr
-                          key={`${bill.entity_name}-${idx}`}
-                          className='border-b border-gray-100 hover:bg-gray-50 transition-colors'>
-                          <td className='py-2 px-3 font-medium text-gray-800'>{bill.entity_name}</td>
-                          <td className='py-2 px-3 text-gray-500 capitalize'>
-                            {(bill.category || bill.entity_type).replace(/_/g, ' ')}
-                          </td>
-                          <td className='py-2 px-3 text-right font-semibold text-red-600'>{fmtKES(bill.total_pending)}</td>
-                          <td className='py-2 px-3 text-right text-green-700'>
-                            {bill.eligible_pending != null ? fmtKES(bill.eligible_pending) : '—'}
-                          </td>
-                          <td className='py-2 px-3 text-right text-gray-500'>
-                            {bill.ineligible_pending != null ? fmtKES(bill.ineligible_pending) : '—'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              {/* Explanation & source */}
-              <div className='flex flex-col sm:flex-row items-start gap-3 bg-gray-50 rounded-lg p-3 text-xs text-gray-600'>
-                <AlertTriangle size={14} className='flex-shrink-0 mt-0.5 text-amber-500' />
-                <div>
-                  <p>{pb.explanation}</p>
-                  <p className='mt-1.5'>
-                    Source:{' '}
-                    <a
-                      href={pb.sourceUrl}
-                      target='_blank'
-                      rel='noopener noreferrer'
-                      className='text-gov-forest hover:underline'>
-                      {pb.source}
-                    </a>
-                  </p>
+                {/* Explanation & source */}
+                <div className='flex flex-col sm:flex-row items-start gap-3 bg-gray-50 rounded-lg p-3 text-xs text-gray-600'>
+                  <AlertTriangle size={14} className='flex-shrink-0 mt-0.5 text-amber-500' />
+                  <div>
+                    <p>
+                      <strong>Why do counties appear in national debt?</strong> Kenya&apos;s Public Finance Management Act requires
+                      all levels of government to report pending bills. National MDAs owe suppliers through the Exchequer, while counties
+                      owe local suppliers from their equitable share. Both are public obligations tracked by the Controller of Budget.
+                    </p>
+                    {pb.explanation && <p className='mt-1.5'>{pb.explanation}</p>}
+                    {pb.source && (
+                      <p className='mt-1.5'>
+                        Source:{' '}
+                        <a
+                          href={pb.sourceUrl}
+                          target='_blank'
+                          rel='noopener noreferrer'
+                          className='text-gov-forest hover:underline'>
+                          {pb.source}
+                        </a>
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </motion.section>
-      )}
+          </motion.section>
+        );
+      })()}
 
       {/* SECTION 5b — DEBT SUSTAINABILITY WARNING */}
       {debtSustainability && (
@@ -1153,7 +1162,7 @@ export default function NationalDebtPage() {
             <div className='bg-white rounded-xl border border-gray-100 p-5'>
               <div className='flex items-center gap-2 mb-3'>
                 <Gauge size={16} className='text-gov-forest' />
-                <h3 className='text-sm font-semibold text-gray-800'>Debt-to-GDP Ratio</h3>
+                <h3 className='text-sm font-semibold text-gray-800'>Debt-to-GDP Ratio <InfoTip term='debt-to-gdp' size={12} /></h3>
               </div>
               {(() => {
                 const val = debtSustainability.debt_to_gdp;
@@ -1190,8 +1199,8 @@ export default function NationalDebtPage() {
                     </div>
                     <span className='text-xs font-semibold mt-1' style={{ color }}>{label}</span>
                     <div className='flex items-center gap-3 mt-2 text-[10px] text-gray-400'>
-                      <span>EAC: 50%</span>
-                      <span>IMF: 55%</span>
+                      <span>EAC: 50% <InfoTip term='eac-benchmark' size={10} /></span>
+                      <span>IMF: 55% <InfoTip term='imf-threshold' size={10} /></span>
                     </div>
                   </div>
                 );
@@ -1202,7 +1211,7 @@ export default function NationalDebtPage() {
             <div className='bg-white rounded-xl border border-gray-100 p-5'>
               <div className='flex items-center gap-2 mb-3'>
                 <Scale size={16} className='text-gov-forest' />
-                <h3 className='text-sm font-semibold text-gray-800'>Debt Service / Revenue</h3>
+                <h3 className='text-sm font-semibold text-gray-800'>Debt Service / Revenue <InfoTip term='debt-service-to-revenue' size={12} /></h3>
               </div>
               {(() => {
                 const val = debtSustainability.debt_service_to_revenue;
@@ -1228,7 +1237,7 @@ export default function NationalDebtPage() {
             <div className='bg-white rounded-xl border border-gray-100 p-5'>
               <div className='flex items-center gap-2 mb-3'>
                 <Globe size={16} className='text-gov-forest' />
-                <h3 className='text-sm font-semibold text-gray-800'>External Debt Share</h3>
+                <h3 className='text-sm font-semibold text-gray-800'>External Debt Share <InfoTip term='external-debt-share' size={12} /></h3>
               </div>
               {(() => {
                 const val = debtSustainability.external_debt_share;
@@ -1309,7 +1318,17 @@ export default function NationalDebtPage() {
           )}
 
           {/* Regional peers comparison table */}
-          {debtSustainability.regional_peers?.length > 0 && (
+          {debtSustainability.regional_peers?.length > 0 && (() => {
+            const peers = debtSustainability.regional_peers as { country: string; debt_to_gdp: number; debt_service_to_revenue: number; external_debt_share: number }[];
+            // Only show columns that have real data (at least one peer with a non-zero value)
+            const hasDebtGdp = peers.some(p => p.debt_to_gdp != null && p.debt_to_gdp > 0);
+            const hasServiceRev = peers.some(p => p.debt_service_to_revenue != null && p.debt_service_to_revenue > 0);
+            const hasExternal = peers.some(p => p.external_debt_share != null && p.external_debt_share > 0);
+            // If only debt-to-GDP has data, no point showing a comparison table with one column
+            const visibleCols = [hasDebtGdp, hasServiceRev, hasExternal].filter(Boolean).length;
+            if (visibleCols === 0) return null;
+
+            return (
             <div className='bg-white rounded-xl border border-gray-100 p-5'>
               <h3 className='text-sm font-semibold text-gray-800 mb-1'>Regional Comparison</h3>
               <p className='text-xs text-gray-500 mb-3'>
@@ -1317,7 +1336,7 @@ export default function NationalDebtPage() {
               </p>
               {/* Mobile cards */}
               <div className='md:hidden space-y-3'>
-                {debtSustainability.regional_peers.map((peer: { country: string; debt_to_gdp: number; debt_service_to_revenue: number; external_debt_share: number }) => {
+                {peers.map((peer) => {
                   const isKenya = peer.country.toLowerCase() === 'kenya';
                   return (
                     <div
@@ -1328,25 +1347,31 @@ export default function NationalDebtPage() {
                           {peer.country} {isKenya && '(You)'}
                         </span>
                       </div>
-                      <div className='grid grid-cols-3 gap-2 text-center'>
-                        <div>
-                          <div className='text-[10px] text-gray-500'>Debt/GDP</div>
-                          <div className={`text-sm font-bold ${peer.debt_to_gdp > 55 ? 'text-red-600' : peer.debt_to_gdp > 50 ? 'text-amber-600' : 'text-green-600'}`}>
-                            {peer.debt_to_gdp.toFixed(1)}%
+                      <div className={`grid gap-2 text-center`} style={{ gridTemplateColumns: `repeat(${visibleCols}, 1fr)` }}>
+                        {hasDebtGdp && (
+                          <div>
+                            <div className='text-[10px] text-gray-500'>Debt/GDP</div>
+                            <div className={`text-sm font-bold ${peer.debt_to_gdp > 55 ? 'text-red-600' : peer.debt_to_gdp > 50 ? 'text-amber-600' : 'text-green-600'}`}>
+                              {peer.debt_to_gdp.toFixed(1)}%
+                            </div>
                           </div>
-                        </div>
-                        <div>
-                          <div className='text-[10px] text-gray-500'>Service/Rev</div>
-                          <div className={`text-sm font-bold ${peer.debt_service_to_revenue > 30 ? 'text-red-600' : 'text-amber-600'}`}>
-                            {peer.debt_service_to_revenue.toFixed(1)}%
+                        )}
+                        {hasServiceRev && (
+                          <div>
+                            <div className='text-[10px] text-gray-500'>Service/Rev</div>
+                            <div className={`text-sm font-bold ${(peer.debt_service_to_revenue ?? 0) > 30 ? 'text-red-600' : 'text-amber-600'}`}>
+                              {peer.debt_service_to_revenue != null ? `${peer.debt_service_to_revenue.toFixed(1)}%` : '—'}
+                            </div>
                           </div>
-                        </div>
-                        <div>
-                          <div className='text-[10px] text-gray-500'>External</div>
-                          <div className='text-sm font-bold text-blue-600'>
-                            {peer.external_debt_share.toFixed(1)}%
+                        )}
+                        {hasExternal && (
+                          <div>
+                            <div className='text-[10px] text-gray-500'>External</div>
+                            <div className='text-sm font-bold text-blue-600'>
+                              {peer.external_debt_share != null ? `${peer.external_debt_share.toFixed(1)}%` : '—'}
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -1358,13 +1383,13 @@ export default function NationalDebtPage() {
                   <thead>
                     <tr className='bg-gray-50 border-b border-gray-200'>
                       <th className='text-left py-2 px-3 font-semibold text-gray-600'>Country</th>
-                      <th className='text-right py-2 px-3 font-semibold text-gray-600'>Debt-to-GDP</th>
-                      <th className='text-right py-2 px-3 font-semibold text-gray-600'>Service/Revenue</th>
-                      <th className='text-right py-2 px-3 font-semibold text-gray-600'>External Debt %</th>
+                      {hasDebtGdp && <th className='text-right py-2 px-3 font-semibold text-gray-600'>Debt-to-GDP</th>}
+                      {hasServiceRev && <th className='text-right py-2 px-3 font-semibold text-gray-600'>Service/Revenue</th>}
+                      {hasExternal && <th className='text-right py-2 px-3 font-semibold text-gray-600'>External Debt %</th>}
                     </tr>
                   </thead>
                   <tbody>
-                    {debtSustainability.regional_peers.map((peer: { country: string; debt_to_gdp: number; debt_service_to_revenue: number; external_debt_share: number }) => {
+                    {peers.map((peer) => {
                       const isKenya = peer.country.toLowerCase() === 'kenya';
                       return (
                         <tr
@@ -1373,15 +1398,21 @@ export default function NationalDebtPage() {
                           <td className='py-2.5 px-3 text-gray-800'>
                             {peer.country} {isKenya && <span className='text-xs text-gov-forest'>(You)</span>}
                           </td>
-                          <td className={`py-2.5 px-3 text-right ${peer.debt_to_gdp > 55 ? 'text-red-600 font-bold' : peer.debt_to_gdp > 50 ? 'text-amber-600' : 'text-green-600'}`}>
-                            {peer.debt_to_gdp.toFixed(1)}%
-                          </td>
-                          <td className={`py-2.5 px-3 text-right ${peer.debt_service_to_revenue > 30 ? 'text-red-600 font-bold' : 'text-gray-700'}`}>
-                            {peer.debt_service_to_revenue.toFixed(1)}%
-                          </td>
-                          <td className='py-2.5 px-3 text-right text-gray-700'>
-                            {peer.external_debt_share.toFixed(1)}%
-                          </td>
+                          {hasDebtGdp && (
+                            <td className={`py-2.5 px-3 text-right ${peer.debt_to_gdp > 55 ? 'text-red-600 font-bold' : peer.debt_to_gdp > 50 ? 'text-amber-600' : 'text-green-600'}`}>
+                              {peer.debt_to_gdp.toFixed(1)}%
+                            </td>
+                          )}
+                          {hasServiceRev && (
+                            <td className={`py-2.5 px-3 text-right ${(peer.debt_service_to_revenue ?? 0) > 30 ? 'text-red-600 font-bold' : 'text-gray-700'}`}>
+                              {peer.debt_service_to_revenue != null ? `${peer.debt_service_to_revenue.toFixed(1)}%` : '—'}
+                            </td>
+                          )}
+                          {hasExternal && (
+                            <td className='py-2.5 px-3 text-right text-gray-700'>
+                              {peer.external_debt_share != null ? `${peer.external_debt_share.toFixed(1)}%` : '—'}
+                            </td>
+                          )}
                         </tr>
                       );
                     })}
@@ -1389,7 +1420,8 @@ export default function NationalDebtPage() {
                 </table>
               </div>
             </div>
-          )}
+            );
+          })()}
         </motion.section>
       )}
 
@@ -1535,16 +1567,16 @@ export default function NationalDebtPage() {
                       Type
                     </th>
                     <th className='px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right'>
-                      Principal
+                      Principal <InfoTip term='principal' size={10} />
                     </th>
                     <th className='px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right'>
-                      Outstanding
+                      Outstanding <InfoTip term='outstanding' size={10} />
                     </th>
                     <th className='px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right'>
                       Rate
                     </th>
                     <th className='px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right'>
-                      Annual Cost
+                      Annual Cost <InfoTip term='debt-service' size={10} />
                     </th>
                     <th className='px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider'>
                       Status

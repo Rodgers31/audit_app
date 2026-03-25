@@ -25,11 +25,12 @@ from ...utils import load_json_resource
 
 logger = logging.getLogger("seeding.counties_budget.fetcher")
 
-# COB county BIRR reports page
-_COB_COUNTY_BIRR_URL = (
-    "https://cob.go.ke/reports/"
-    "county-governments-budget-implementation-review-reports/"
-)
+# COB migrated from /reports/ to /publications/ paths (2025)
+_COB_COUNTY_BIRR_URLS = [
+    "https://cob.go.ke/publications/county-reports/",
+    "https://cob.go.ke/publications/consolidated-county-budget-implementation-review-reports/",
+    "https://cob.go.ke/reports/county-governments-budget-implementation-review-reports/",  # legacy
+]
 
 
 def fetch_budget_payload(
@@ -75,11 +76,21 @@ def _fetch_from_cob_county_pdf(
     client: SeedingHttpClient, settings: SeedingSettings
 ) -> Optional[List[Dict[str, Any]]]:
     """Discover and parse the latest COB county BIRR PDF."""
-    page_url = _COB_COUNTY_BIRR_URL
-    logger.info("Fetching COB county BIRR reports page: %s", page_url)
+    # Try multiple URLs since COB restructures their site periodically
+    html = None
+    page_url = _COB_COUNTY_BIRR_URLS[0]
+    for url in _COB_COUNTY_BIRR_URLS:
+        try:
+            logger.info("Fetching COB county BIRR reports page: %s", url)
+            response = client.get(url, raise_for_status=True)
+            html = response.text
+            page_url = url
+            break
+        except Exception as exc:
+            logger.warning("COB county page unavailable at %s: %s", url, exc)
 
-    response = client.get(page_url, raise_for_status=True)
-    html = response.text
+    if not html:
+        raise RuntimeError("Could not reach COB county reports at any known URL")
 
     pdf_url = _discover_latest_county_birr_pdf(html, page_url)
     if not pdf_url:

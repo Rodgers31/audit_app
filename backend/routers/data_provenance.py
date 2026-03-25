@@ -116,13 +116,13 @@ OFFICIAL_SOURCES = {
         "datasets": [
             {
                 "name": "County Government Audit Reports",
-                "url": "https://www.oagkenya.go.ke/reports/",
+                "url": "https://www.oagkenya.go.ke/",
                 "covers": "County audit findings, irregular expenditure",
                 "frequency": "Annual (published ~Dec)",
             },
             {
                 "name": "National Government Audit Report",
-                "url": "https://www.oagkenya.go.ke/reports/",
+                "url": "https://www.oagkenya.go.ke/",
                 "covers": "National government audit opinion, findings",
                 "frequency": "Annual",
             },
@@ -134,13 +134,13 @@ OFFICIAL_SOURCES = {
         "datasets": [
             {
                 "name": "County Budget Implementation Review",
-                "url": "https://cob.go.ke/reports/county-governments-budget-implementation-review-reports/",
+                "url": "https://cob.go.ke/publications/county-reports/",
                 "covers": "County budget execution rates, spending by sector",
                 "frequency": "Quarterly",
             },
             {
                 "name": "National Government BIRR",
-                "url": "https://cob.go.ke/reports/national-government-budget-implementation-review-reports/",
+                "url": "https://cob.go.ke/publications/national-government-budget-implementation-review-reports/",
                 "covers": "National budget execution by ministry",
                 "frequency": "Quarterly",
             },

@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { AlertTriangle } from 'lucide-react';
+import InfoTip from '@/components/InfoTip';
 
 /**
  * Zone 3: Floating metrics surface — overlaps the hero.
@@ -23,11 +24,12 @@ export default function MetricsStrip() {
             <div className='flex flex-col sm:flex-row items-start sm:items-end gap-6 sm:gap-10'>
               {/* Total Debt */}
               <div>
-                <div className='flex items-center gap-3 mb-1'>
+                <div className='flex items-center gap-2 mb-1'>
                   <span className='text-2xl'>🇰🇪</span>
                   <span className='text-xs font-medium text-neutral-muted uppercase tracking-widest'>
                     Total Debt as of 2024
                   </span>
+                  <InfoTip term='debt-to-gdp' size={11} />
                 </div>
                 <span className='metric-hero text-gov-dark'>
                   11.5<span className='text-4xl md:text-5xl ml-1'>T</span>
@@ -39,9 +41,12 @@ export default function MetricsStrip() {
 
               {/* Risk Level */}
               <div>
-                <span className='text-xs font-medium text-neutral-muted uppercase tracking-widest block mb-1'>
-                  Risk Level
-                </span>
+                <div className='flex items-center gap-2 mb-1'>
+                  <span className='text-xs font-medium text-neutral-muted uppercase tracking-widest'>
+                    Risk Level
+                  </span>
+                  <InfoTip term='debt-sustainability' size={11} />
+                </div>
                 <div className='flex items-end gap-3'>
                   <span className='metric-large text-gov-dark'>74%</span>
                   <span className='pill-risk mb-1'>

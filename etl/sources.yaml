@@ -29,7 +29,7 @@ KEN:
     - source_id: 'ken_ocob_reports'
       publisher: 'Office of the Controller of Budget'
       name: 'Budget Implementation Reports'
-      url: 'https://cob.go.ke/reports/'
+      url: 'https://cob.go.ke/publications/'
       doc_type: 'report'
       fetch_rules:
         type: 'html_scraper'

@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { ExternalLink, Landmark, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import DebtExplainerModal from './DebtExplainerModal';
+import InfoTip from '@/components/InfoTip';
 
 function fmtB(val: number): string {
   if (val >= 1_000_000_000_000) return `${(val / 1_000_000_000_000).toFixed(1)}T`;
@@ -123,6 +124,7 @@ export default function NationalLoansCard() {
               <span className='text-[10px] text-neutral-muted font-medium uppercase tracking-wider'>
                 Outstanding Debt
               </span>
+              <InfoTip term='outstanding' size={11} />
               <DebtExplainerModal context='loans' />
             </div>
             <span className='text-lg font-bold text-gov-copper tabular-nums leading-none'>
@@ -160,10 +162,26 @@ export default function NationalLoansCard() {
                 <span className='text-xs font-semibold text-gov-dark truncate min-w-0 flex-1'>
                   {shortLender(loan.lender)}
                 </span>
-                <span
-                  className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 ${typeInfo.color}`}>
-                  {typeInfo.label}
-                </span>
+                <div className='flex items-center gap-1 flex-shrink-0'>
+                  <span
+                    className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${typeInfo.color}`}>
+                    {typeInfo.label}
+                  </span>
+                  {(typeInfo.label === 'Multilateral' ||
+                    typeInfo.label === 'Bilateral' ||
+                    typeInfo.label === 'Commercial') && (
+                    <InfoTip
+                      term={
+                        typeInfo.label === 'Multilateral'
+                          ? 'multilateral'
+                          : typeInfo.label === 'Bilateral'
+                            ? 'bilateral'
+                            : 'commercial'
+                      }
+                      size={10}
+                    />
+                  )}
+                </div>
                 <span className='text-xs font-bold text-gov-dark tabular-nums flex-shrink-0'>
                   {fmtB(loan.outstanding_numeric)}
                 </span>

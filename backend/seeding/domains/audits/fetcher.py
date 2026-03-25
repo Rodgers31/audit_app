@@ -25,7 +25,11 @@ from ...utils import load_json_resource
 
 logger = logging.getLogger("seeding.audits.fetcher")
 
-_OAG_REPORTS_URL = "https://www.oagkenya.go.ke/reports/"
+# OAG migrated from /reports/ to root page with direct PDF links (2025)
+_OAG_REPORTS_URLS = [
+    "https://www.oagkenya.go.ke/",
+    "https://www.oagkenya.go.ke/reports/",  # legacy fallback
+]
 
 
 def fetch_audit_payload(
@@ -85,16 +89,22 @@ def _fetch_from_oag(
     The OAG website lists PDF reports. We look for county and national
     audit report PDFs, download, and attempt to extract findings.
     """
-    page_url = _OAG_REPORTS_URL
-    logger.info("Fetching OAG reports page: %s", page_url)
+    # Try multiple URLs since OAG restructures their site periodically
+    html = None
+    page_url = _OAG_REPORTS_URLS[0]
+    for url in _OAG_REPORTS_URLS:
+        try:
+            logger.info("Fetching OAG reports page: %s", url)
+            response = client.get(url, raise_for_status=True)
+            html = response.text
+            page_url = url
+            break
+        except Exception as exc:
+            logger.warning("Could not reach OAG at %s: %s", url, exc)
 
-    try:
-        response = client.get(page_url, raise_for_status=True)
-    except Exception as exc:
-        logger.warning("Could not reach OAG website: %s", exc)
+    if not html:
+        logger.warning("Could not reach OAG website at any known URL")
         return None
-
-    html = response.text
 
     # Find audit report PDF links
     pdf_urls = _discover_audit_pdfs(html, page_url)

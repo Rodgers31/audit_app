@@ -268,7 +268,7 @@ def _run_live_extraction() -> dict[str, Any]:
         return {
             "pending_bills": [],
             "summary": {},
-            "source_url": "https://cob.go.ke/reports/",
+            "source_url": "https://cob.go.ke/publications/",
             "source_title": "Controller of Budget Reports",
             "extraction_error": str(exc),
         }
@@ -277,7 +277,7 @@ def _run_live_extraction() -> dict[str, Any]:
         return {
             "pending_bills": [],
             "summary": {},
-            "source_url": "https://cob.go.ke/reports/",
+            "source_url": "https://cob.go.ke/publications/",
             "source_title": "Controller of Budget Reports",
             "extraction_error": str(exc),
         }

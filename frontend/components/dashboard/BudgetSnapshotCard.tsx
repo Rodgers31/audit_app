@@ -5,6 +5,7 @@ import { useNationalBudgetSummary } from '@/lib/react-query/useBudget';
 import { motion } from 'framer-motion';
 import { Banknote, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
+import InfoTip from '@/components/InfoTip';
 
 function fmtB(val: number): string {
   if (val >= 1_000_000_000_000) return `${(val / 1_000_000_000_000).toFixed(1)}T`;
@@ -144,8 +145,9 @@ export default function BudgetSnapshotCard() {
             <div className='flex items-center gap-1.5 mb-1'>
               <TrendingUp className='w-3.5 h-3.5 text-gov-gold opacity-70' />
               <span className='text-[10px] text-neutral-muted font-medium uppercase tracking-wider'>
-                Execution Rate
+                Budget Execution
               </span>
+              <InfoTip term='budget-execution' size={11} />
             </div>
             <span className='text-lg font-bold text-gov-gold tabular-nums leading-none'>
               {executionRate}%
@@ -164,6 +166,12 @@ export default function BudgetSnapshotCard() {
                   <div className='flex items-center gap-2 min-w-0'>
                     <span className='text-sm leading-none'>{sectorIcon(s.sector)}</span>
                     <span className='text-xs text-gov-dark font-medium truncate'>{s.sector}</span>
+                    {(s.sector === 'Development' || s.sector === 'Recurrent') && (
+                      <InfoTip
+                        term={s.sector === 'Development' ? 'development-spending' : 'recurrent-spending'}
+                        size={11}
+                      />
+                    )}
                   </div>
                   <div className='flex items-center gap-2 flex-shrink-0'>
                     <span className='text-xs font-bold text-gov-dark tabular-nums'>
