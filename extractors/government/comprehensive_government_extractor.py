@@ -56,19 +56,19 @@ class ComprehensiveGovernmentExtractor:
         # COB report categories from the website structure
         cob_report_urls = {
             "county_reports": [
-                "https://cob.go.ke/reports/consolidated-county-budget-implementation-review-reports/",
-                "https://cob.go.ke/reports/county-budget-implementation-review-reports/",
-                "https://cob.go.ke/reports/county-reports/",
+                "https://cob.go.ke/publications/consolidated-county-budget-implementation-review-reports/",
+                "https://cob.go.ke/publications/county-budget-implementation-review-reports/",
+                "https://cob.go.ke/publications/county-reports/",
             ],
             "national_reports": [
-                "https://cob.go.ke/reports/national-reports/",
-                "https://cob.go.ke/reports/budget-implementation-review-reports/",
-                "https://cob.go.ke/reports/national-government-budget-implementation/",
-                "https://cob.go.ke/reports/",
+                "https://cob.go.ke/publications/national-reports/",
+                "https://cob.go.ke/publications/budget-implementation-review-reports/",
+                "https://cob.go.ke/publications/national-government-budget-implementation/",
+                "https://cob.go.ke/publications/",
             ],
             "other_reports": [
-                "https://cob.go.ke/reports/other-reports/",
-                "https://cob.go.ke/reports/expenditure-templates/",
+                "https://cob.go.ke/publications/other-reports/",
+                "https://cob.go.ke/publications/expenditure-templates/",
             ],
         }
 

@@ -111,7 +111,7 @@ class SeedingSettings(BaseSettings):
             "Use file:// for local fixtures or https:// for production APIs "
             "(e.g., https://cob.go.ke/api/pending-bills). "
             "Source: Office of the Controller of Budget "
-            "(https://cob.go.ke/reports/pending-bills/)."
+            "(https://cob.go.ke/publications/pending-bills/)."
         ),
     )
     debt_timeline_dataset_url: str = Field(
@@ -162,7 +162,7 @@ class SeedingSettings(BaseSettings):
         ),
     )
     cob_birr_page_url: str = Field(
-        default="https://cob.go.ke/reports/national-government-budget-implementation-review-reports/",
+        default="https://cob.go.ke/publications/national-government-budget-implementation-review-reports/",
         description=(
             "COB National Government BIRR reports page. Scraped to discover "
             "the latest quarterly budget implementation review PDF."

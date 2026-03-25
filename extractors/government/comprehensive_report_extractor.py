@@ -156,9 +156,9 @@ class KenyaReportExtractor:
 
         cob_urls = [
             "https://cob.go.ke",
-            "https://cob.go.ke/reports/",
-            "https://cob.go.ke/county-budget-implementation-review-reports/",
             "https://cob.go.ke/publications/",
+            "https://cob.go.ke/county-budget-implementation-review-reports/",
+            "https://cob.go.ke/reports/",  # legacy fallback
         ]
 
         all_documents = []

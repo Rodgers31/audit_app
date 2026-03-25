@@ -95,24 +95,41 @@ def _discover_latest_pdf_url(html: str, base_url: str) -> Optional[str]:
     if not all_pdfs:
         return None
 
+    # Exclude PDFs that are clearly NOT debt bulletins
+    exclude_keywords = [
+        "auction", "guidelines", "tender", "vacancy", "career",
+        "press-release", "speech", "circular", "calendar",
+        "monetary-policy", "cbk-annual",
+    ]
+
     # Filter for debt-related PDFs
     debt_keywords = [
         "debt", "bulletin", "public-debt", "public_debt",
-        "statistical", "borrowing",
+        "statistical-bulletin", "borrowing",
     ]
     debt_pdfs = [
         url for url in all_pdfs
         if any(kw in url.lower() for kw in debt_keywords)
+        and not any(ex in url.lower() for ex in exclude_keywords)
     ]
 
-    # Prefer debt-specific PDFs, fall back to any PDF
-    candidates = debt_pdfs if debt_pdfs else all_pdfs
+    # If no debt-specific PDFs, try statistical bulletins
+    if not debt_pdfs:
+        stat_pdfs = [
+            url for url in all_pdfs
+            if "statistical" in url.lower() or "bulletin" in url.lower()
+            and not any(ex in url.lower() for ex in exclude_keywords)
+        ]
+        debt_pdfs = stat_pdfs
 
-    if not candidates:
+    if not debt_pdfs:
+        logger.warning(
+            "No debt-related PDFs found among %d PDFs on page", len(all_pdfs)
+        )
         return None
 
     # Pick the first match (usually the most recent on CBK page)
-    chosen = candidates[0]
+    chosen = debt_pdfs[0]
 
     # Make absolute URL
     if not chosen.startswith(("http://", "https://")):

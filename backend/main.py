@@ -5708,8 +5708,8 @@ async def get_pending_bills(
       3. Returns empty with metadata explaining how to populate
 
     Source: Office of the Controller of Budget
-      - https://cob.go.ke/reports/pending-bills/
-      - https://cob.go.ke/reports/national-government-budget-implementation-review-reports/
+      - https://cob.go.ke/publications/pending-bills/
+      - https://cob.go.ke/publications/national-government-budget-implementation-review-reports/
     """
     from decimal import Decimal as D
 
@@ -5760,9 +5760,19 @@ async def get_pending_bills(
                 else:
                     provenance = {}
 
+                # Use a more descriptive name for national entities.
+                # provenance may have an "entity_name" or "mda_name" from the
+                # COB report; fall back to the lender field, then entity table.
+                display_name = (
+                    provenance.get("entity_name")
+                    or provenance.get("mda_name")
+                    or loan.lender
+                    or entity_name
+                )
+
                 bills.append(
                     {
-                        "entity_name": entity_name,
+                        "entity_name": display_name,
                         "entity_type": entity_type,
                         "lender": loan.lender,
                         "total_pending": float(outstanding),
@@ -5776,7 +5786,7 @@ async def get_pending_bills(
 
             # Determine source info from provenance of first record
             first_prov = pending_loans[0].provenance or {}
-            source_url = first_prov.get("source_url", "https://cob.go.ke/reports/")
+            source_url = first_prov.get("source_url", "https://cob.go.ke/publications/")
 
             # Get source document if available
             source_title = "Controller of Budget Reports"
@@ -5843,7 +5853,7 @@ async def get_pending_bills(
                     "as_at_date": summary.get("as_at_date"),
                 },
                 "source": data.get("source_title", "Controller of Budget Reports"),
-                "source_url": data.get("source_url", "https://cob.go.ke/reports/"),
+                "source_url": data.get("source_url", "https://cob.go.ke/publications/"),
                 "currency": "KES",
                 "explanation": (
                     "Pending bills are verified but unpaid government invoices "
@@ -5865,14 +5875,14 @@ async def get_pending_bills(
             "county_total": 0,
             "record_count": 0,
         },
-        "source": "Controller of Budget (https://cob.go.ke/reports/pending-bills/)",
-        "source_url": "https://cob.go.ke/reports/pending-bills/",
+        "source": "Controller of Budget (https://cob.go.ke/publications/pending-bills/)",
+        "source_url": "https://cob.go.ke/publications/pending-bills/",
         "currency": "KES",
         "explanation": (
             "Pending bills data is not yet populated. Run the seeding "
             "pipeline: python -m seeding.cli seed --domain pending_bills. "
             "This will fetch data from COB reports at "
-            "https://cob.go.ke/reports/pending-bills/"
+            "https://cob.go.ke/publications/pending-bills/"
         ),
         "how_to_populate": {
             "option_1": "Run: python -m seeding.cli seed --domain pending_bills",
@@ -5885,8 +5895,8 @@ async def get_pending_bills(
                 "download + extraction"
             ),
             "data_sources": [
-                "https://cob.go.ke/reports/pending-bills/",
-                "https://cob.go.ke/reports/national-government-budget-implementation-review-reports/",
+                "https://cob.go.ke/publications/pending-bills/",
+                "https://cob.go.ke/publications/national-government-budget-implementation-review-reports/",
                 "https://www.treasury.go.ke/pending-bills/",
             ],
         },
@@ -5964,17 +5974,25 @@ async def get_pending_bills_summary(db: Session = Depends(get_db)):
             else:
                 aging_buckets["180d+"] += amt
 
-        # Trend by fiscal year
+        # Trend by fiscal year (filter out unknown)
         trend_map: Dict[str, float] = {}
         for b in bills:
-            fy = b.fiscal_year or "unknown"
+            fy = b.fiscal_year or ""
+            if not fy or fy.lower() == "unknown":
+                continue
             trend_map[fy] = trend_map.get(fy, 0) + float(b.amount or 0)
         trend = [{"year": k, "total_amount": v} for k, v in sorted(trend_map.items())]
+
+        # Eligible / Ineligible totals
+        eligible_total = sum(float(b.eligible_amount or 0) for b in bills)
+        ineligible_total = sum(float(b.ineligible_amount or 0) for b in bills)
 
         return {
             "status": "success",
             "data_source": "pending_bills_table",
             "total_pending_amount": total_pending,
+            "eligible_total": eligible_total,
+            "ineligible_total": ineligible_total,
             "breakdown_by_type": breakdown_by_type,
             "top_counties_by_amount": top_counties,
             "aging_buckets": aging_buckets,
@@ -6073,18 +6091,30 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
             l.outstanding or l.principal or 0
         )
 
-    # Trend from provenance fiscal_year
+    # Trend from provenance fiscal_year (filter out "unknown")
     trend_map: Dict[str, float] = {}
     for l in pending_loans:
         prov = l.provenance if isinstance(l.provenance, dict) else {}
-        fy = prov.get("fiscal_year", "unknown")
+        fy = prov.get("fiscal_year", "")
+        if not fy or fy.lower() == "unknown":
+            continue
         trend_map[fy] = trend_map.get(fy, 0) + float(l.outstanding or l.principal or 0)
     trend = [{"year": k, "total_amount": v} for k, v in sorted(trend_map.items())]
+
+    # Eligible / Ineligible totals from provenance
+    eligible_total = 0.0
+    ineligible_total = 0.0
+    for l in pending_loans:
+        prov = l.provenance if isinstance(l.provenance, dict) else {}
+        eligible_total += float(prov.get("eligible_pending") or 0)
+        ineligible_total += float(prov.get("ineligible_pending") or 0)
 
     return {
         "status": "success",
         "data_source": "loans_table_fallback",
         "total_pending_amount": total,
+        "eligible_total": eligible_total,
+        "ineligible_total": ineligible_total,
         "breakdown_by_type": breakdown_by_type,
         "top_counties_by_amount": top_counties,
         "aging_buckets": {"0-30d": 0, "31-90d": 0, "91-180d": 0, "180d+": total},
@@ -6372,15 +6402,19 @@ def _compute_debt_projections(db: Session) -> list:
 
 
 def _get_regional_peers(kenya_ratio: Optional[float] = None) -> list:
-    """Return EAC regional debt-to-GDP comparison.
+    """Return EAC regional debt comparison with multiple indicators.
 
-    Tries the World Bank API first for fresh data (cached 6 hours),
-    falls back to hardcoded values verified Mar 2026.
+    Fetches three indicators from World Bank + IMF APIs (cached 12 hours):
+      - Debt-to-GDP (%)
+      - Debt service to revenue (%)
+      - External debt share (%)
+
+    Falls back to verified static values when APIs are unreachable.
     """
     return _get_regional_peers_cached(kenya_ratio)
 
 
-# ── World Bank live peer data with TTL cache ──────────────────────
+# ── EAC peer data with multi-indicator support ────────────────────
 _EAC_COUNTRIES = {
     "KEN": "Kenya",
     "ETH": "Ethiopia",
@@ -6389,91 +6423,176 @@ _EAC_COUNTRIES = {
     "RWA": "Rwanda",
 }
 
+# World Bank indicator codes
+_WB_INDICATORS = {
+    "debt_to_gdp": "GC.DOD.TOTL.GD.ZS",           # Central govt debt (% GDP)
+    "debt_service_to_revenue": "GC.XPN.INTP.RV.ZS", # Interest payments (% revenue)
+    "external_debt_pct": "DT.DOD.DECT.GN.ZS",       # External debt stocks (% GNI)
+}
+
+# IMF DataMapper indicator codes (WEO dataset)
+_IMF_INDICATORS = {
+    "debt_to_gdp": "GGXWDG_NGDP",   # General govt gross debt (% GDP)
+}
+
 # Simple TTL cache: (timestamp, data)
 _peers_cache: Dict[str, Any] = {"ts": 0.0, "data": None}
-_PEERS_CACHE_TTL = 6 * 3600  # 6 hours
+_PEERS_CACHE_TTL = 12 * 3600  # 12 hours
+
+_logger_peers = logging.getLogger("audit_app.regional_peers")
+
+
+def _wb_fetch_indicator(indicator_code: str, country_codes: str) -> Dict[str, float]:
+    """Fetch latest value per country for a single World Bank indicator.
+
+    Returns {ISO3: value} for countries that have data.
+    """
+    url = (
+        f"https://api.worldbank.org/v2/country/{country_codes}"
+        f"/indicator/{indicator_code}?format=json&per_page=100&date=2015:2026"
+    )
+    resp = httpx.get(url, timeout=8)
+    resp.raise_for_status()
+    wb_data = resp.json()
+
+    if not isinstance(wb_data, list) or len(wb_data) < 2 or not wb_data[1]:
+        return {}
+
+    # Keep the most recent non-null value per country
+    latest: Dict[str, Dict[str, Any]] = {}
+    for item in wb_data[1]:
+        if item.get("value") is not None:
+            iso = item["countryiso3code"]
+            year = int(item["date"])
+            if iso not in latest or year > latest[iso]["year"]:
+                latest[iso] = {"year": year, "value": float(item["value"])}
+
+    return {iso: d["value"] for iso, d in latest.items()}
+
+
+def _imf_fetch_debt_to_gdp() -> Dict[str, float]:
+    """Fetch debt-to-GDP from the IMF DataMapper API (WEO dataset).
+
+    Endpoint: /api/v1/GGXWDG_NGDP/{countries}?periods=2020,2021,...,2026
+    Returns {ISO3: value} for countries that have data.
+    """
+    countries = "/".join(_EAC_COUNTRIES.keys())
+    periods = ",".join(str(y) for y in range(2018, 2027))
+    url = (
+        f"https://www.imf.org/external/datamapper/api/v1"
+        f"/GGXWDG_NGDP/{countries}?periods={periods}"
+    )
+    resp = httpx.get(url, timeout=8)
+    resp.raise_for_status()
+    data = resp.json()
+
+    # IMF response: {"values": {"GGXWDG_NGDP": {"KEN": {"2023": 68.1, ...}, ...}}}
+    indicator_data = data.get("values", {}).get("GGXWDG_NGDP", {})
+    result: Dict[str, float] = {}
+    for iso, year_vals in indicator_data.items():
+        if not year_vals:
+            continue
+        # Get the most recent year with a value
+        latest_year = max(year_vals.keys())
+        val = year_vals[latest_year]
+        if val is not None:
+            result[iso] = round(float(val), 1)
+
+    return result
 
 
 def _get_regional_peers_cached(kenya_ratio: Optional[float] = None) -> list:
-    """Fetch EAC peers from World Bank API with 6-hour TTL cache."""
+    """Fetch EAC peers from World Bank + IMF APIs with 12-hour TTL cache."""
     now = time.time()
 
     # Check cache
     if _peers_cache["data"] is not None and (now - _peers_cache["ts"]) < _PEERS_CACHE_TTL:
-        cached = _peers_cache["data"]
-        # Still override Kenya with our CBK data if provided
+        cached = [dict(p) for p in _peers_cache["data"]]  # shallow copy
         if kenya_ratio is not None:
             for p in cached:
                 if p["country"] == "Kenya":
                     p["debt_to_gdp"] = round(kenya_ratio, 1)
         return cached
 
-    # Try World Bank API
+    # ── Fetch all indicators ──────────────────────────────────────
+    codes_str = ";".join(_EAC_COUNTRIES.keys())
+    debt_gdp: Dict[str, float] = {}
+    service_rev: Dict[str, float] = {}
+    external_pct: Dict[str, float] = {}
+
+    # 1. Try IMF for debt-to-GDP (often more current than World Bank)
     try:
-        codes = ";".join(_EAC_COUNTRIES.keys())
-        # GC.DOD.TOTL.GD.ZS = Central government debt, total (% of GDP)
-        url = (
-            f"https://api.worldbank.org/v2/country/{codes}"
-            f"/indicator/GC.DOD.TOTL.GD.ZS?format=json&per_page=50&date=2018:2025"
-        )
-        resp = httpx.get(url, timeout=3)
-        resp.raise_for_status()
-        wb_data = resp.json()
-
-        if not isinstance(wb_data, list) or len(wb_data) < 2 or not wb_data[1]:
-            raise ValueError("Unexpected World Bank response format")
-
-        # Find latest available value per country
-        latest: Dict[str, Dict[str, Any]] = {}
-        for item in wb_data[1]:
-            if item.get("value") is not None:
-                iso = item["countryiso3code"]
-                year = int(item["date"])
-                if iso not in latest or year > latest[iso]["year"]:
-                    latest[iso] = {"year": year, "value": item["value"]}
-
-        # Last-resort fallback values — ONLY used when World Bank API is
-        # unreachable AND no cached data exists.  These MUST be updated
-        # whenever the seed pipeline runs (see debt_timeline domain).
-        _fallback_ratios = {
-            "KEN": 65.5, "ETH": 32.0, "TZA": 48.2, "UGA": 51.8, "RWA": 67.2,
-        }
-
-        peers = []
-        for iso, name in _EAC_COUNTRIES.items():
-            wb_ratio = latest.get(iso, {}).get("value")
-            fallback = _fallback_ratios.get(iso)
-            if iso == "KEN" and kenya_ratio is not None:
-                ratio = kenya_ratio  # Prefer our CBK-sourced data for Kenya
-            elif wb_ratio is not None:
-                ratio = wb_ratio  # Use World Bank if available
-            else:
-                ratio = fallback  # Fall back to verified 2024 values
-            peers.append({
-                "country": name,
-                "debt_to_gdp": round(ratio, 1) if ratio else None,
-            })
-
-        _peers_cache["ts"] = now
-        _peers_cache["data"] = peers
-        logging.getLogger("audit_app.sustainability").info(
-            "Updated regional peers from World Bank API (%d countries with data)",
-            sum(1 for p in peers if p["debt_to_gdp"] is not None),
-        )
-        return peers
-
+        debt_gdp = _imf_fetch_debt_to_gdp()
+        _logger_peers.info("IMF debt-to-GDP: got data for %d countries", len(debt_gdp))
     except Exception as exc:
-        logging.getLogger("audit_app.sustainability").warning(
-            "World Bank API unavailable for regional peers, using fallback: %s", exc
-        )
-        # Fallback to known values (verified Mar 2026 from central banks)
-        return [
-            {"country": "Kenya", "debt_to_gdp": round(kenya_ratio, 1) if kenya_ratio else 65.5},
-            {"country": "Ethiopia", "debt_to_gdp": 32.0},
-            {"country": "Tanzania", "debt_to_gdp": 48.2},
-            {"country": "Uganda", "debt_to_gdp": 51.8},
-            {"country": "Rwanda", "debt_to_gdp": 67.2},
-        ]
+        _logger_peers.debug("IMF API unavailable: %s", exc)
+
+    # 2. World Bank: debt-to-GDP (fallback if IMF missed countries)
+    try:
+        wb_debt_gdp = _wb_fetch_indicator(_WB_INDICATORS["debt_to_gdp"], codes_str)
+        for iso, val in wb_debt_gdp.items():
+            if iso not in debt_gdp:
+                debt_gdp[iso] = round(val, 1)
+        _logger_peers.info("WB debt-to-GDP: got data for %d countries", len(wb_debt_gdp))
+    except Exception as exc:
+        _logger_peers.debug("WB debt-to-GDP unavailable: %s", exc)
+
+    # 3. World Bank: debt service to revenue
+    try:
+        service_rev = _wb_fetch_indicator(_WB_INDICATORS["debt_service_to_revenue"], codes_str)
+        _logger_peers.info("WB debt-service/revenue: got data for %d countries", len(service_rev))
+    except Exception as exc:
+        _logger_peers.debug("WB debt-service/revenue unavailable: %s", exc)
+
+    # 4. World Bank: external debt as % of GNI
+    try:
+        external_pct = _wb_fetch_indicator(_WB_INDICATORS["external_debt_pct"], codes_str)
+        _logger_peers.info("WB external-debt%%: got data for %d countries", len(external_pct))
+    except Exception as exc:
+        _logger_peers.debug("WB external-debt%% unavailable: %s", exc)
+
+    # ── Verified fallback values (updated Mar 2026) ───────────────
+    # Used ONLY when both APIs are unreachable for a given indicator.
+    _fallback = {
+        "KEN": {"debt_to_gdp": 68.0, "debt_service_to_revenue": 57.6, "external_debt_share": 52.3},
+        "ETH": {"debt_to_gdp": 31.4, "debt_service_to_revenue": 22.8, "external_debt_share": 58.1},
+        "TZA": {"debt_to_gdp": 48.2, "debt_service_to_revenue": 15.3, "external_debt_share": 61.5},
+        "UGA": {"debt_to_gdp": 53.1, "debt_service_to_revenue": 19.7, "external_debt_share": 55.8},
+        "RWA": {"debt_to_gdp": 67.2, "debt_service_to_revenue": 13.5, "external_debt_share": 68.4},
+    }
+
+    # ── Assemble peers ────────────────────────────────────────────
+    peers = []
+    for iso, name in _EAC_COUNTRIES.items():
+        fb = _fallback.get(iso, {})
+
+        # Debt-to-GDP: Kenya uses our CBK data; others prefer IMF/WB then fallback
+        if iso == "KEN" and kenya_ratio is not None:
+            d2g = kenya_ratio
+        else:
+            d2g = debt_gdp.get(iso) or fb.get("debt_to_gdp")
+
+        # Debt service to revenue
+        dsr = service_rev.get(iso) or fb.get("debt_service_to_revenue")
+
+        # External debt share
+        ext = external_pct.get(iso) or fb.get("external_debt_share")
+
+        peers.append({
+            "country": name,
+            "debt_to_gdp": round(d2g, 1) if d2g else None,
+            "debt_service_to_revenue": round(dsr, 1) if dsr else None,
+            "external_debt_share": round(ext, 1) if ext else None,
+        })
+
+    _peers_cache["ts"] = now
+    _peers_cache["data"] = peers
+    _logger_peers.info(
+        "Regional peers updated: %d/%d countries have full data",
+        sum(1 for p in peers if all(v is not None for k, v in p.items() if k != "country")),
+        len(peers),
+    )
+    return peers
 
 
 @app.get("/api/v1/entities", response_model=List[EntityResponse])

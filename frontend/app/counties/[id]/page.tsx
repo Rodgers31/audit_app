@@ -1595,7 +1595,7 @@ function SourcesFooter({ data }: { data: CountyComprehensive }) {
     {
       key: 'budget',
       label: 'Budget',
-      url: 'https://cob.go.ke/reports/county-budget-implementation-review-reports/',
+      url: 'https://cob.go.ke/publications/county-budget-implementation-review-reports/',
     },
     {
       key: 'audit',

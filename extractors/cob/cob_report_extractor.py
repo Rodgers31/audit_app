@@ -95,11 +95,11 @@ class COBReportExtractor:
 
         cob_urls = [
             "https://cob.go.ke",
-            "https://cob.go.ke/reports/",
-            "https://cob.go.ke/reports/consolidated-county-budget-implementation-review-reports/",
-            "https://cob.go.ke/reports/county-budget-implementation-review-reports/",
-            "https://cob.go.ke/reports/budget-implementation-review-reports/",
             "https://cob.go.ke/publications/",
+            "https://cob.go.ke/publications/consolidated-county-budget-implementation-review-reports/",
+            "https://cob.go.ke/publications/county-budget-implementation-review-reports/",
+            "https://cob.go.ke/publications/budget-implementation-review-reports/",
+            "https://cob.go.ke/reports/",  # legacy fallback
         ]
 
         extracted_reports = []

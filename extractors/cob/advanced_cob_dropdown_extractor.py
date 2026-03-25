@@ -57,7 +57,7 @@ class AdvancedCOBDropdownExtractor:
         # Based on the screenshots, these are the actual dropdown categories
         dropdown_categories = {
             "county_reports": {
-                "main_url": "https://cob.go.ke/reports/",
+                "main_url": "https://cob.go.ke/publications/",
                 "sub_categories": [
                     "county-budget-implementation-review-reports",
                     "consolidated-county-budget-implementation-review-reports",
@@ -68,7 +68,7 @@ class AdvancedCOBDropdownExtractor:
                 ],
             },
             "national_reports": {
-                "main_url": "https://cob.go.ke/reports/",
+                "main_url": "https://cob.go.ke/publications/",
                 "sub_categories": [
                     "national-government-budget-implementation-review-reports",
                     "quarterly-budget-implementation-reports",
@@ -79,7 +79,7 @@ class AdvancedCOBDropdownExtractor:
                 ],
             },
             "sector_reports": {
-                "main_url": "https://cob.go.ke/reports/",
+                "main_url": "https://cob.go.ke/publications/",
                 "sub_categories": [
                     "sectoral-budget-reports",
                     "ministry-reports",
@@ -88,7 +88,7 @@ class AdvancedCOBDropdownExtractor:
                 ],
             },
             "expenditure_reports": {
-                "main_url": "https://cob.go.ke/reports/",
+                "main_url": "https://cob.go.ke/publications/",
                 "sub_categories": [
                     "expenditure-reviews",
                     "expenditure-templates",
@@ -474,7 +474,7 @@ class AdvancedCOBDropdownExtractor:
             "https://cob.go.ke/downloads/{year}/",
             "https://cob.go.ke/files/{year}/",
             "https://cob.go.ke/documents/{year}/",
-            "https://cob.go.ke/reports/{year}/",
+            "https://cob.go.ke/publications/{year}/",
         ]
 
         # Years to check

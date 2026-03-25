@@ -695,9 +695,15 @@ def _seed_national_data(
         },
     )
 
-    # GDP series — also clean up any orphan rows from other entities
+    # GDP series — clean up orphan rows from other entities (but NOT NULL rows,
+    # which are intentional national-level records for /economic/summary)
     orphan_gdp = (
-        session.query(GDPData).filter(GDPData.entity_id != national_entity.id).all()
+        session.query(GDPData)
+        .filter(
+            GDPData.entity_id != national_entity.id,
+            GDPData.entity_id.isnot(None),
+        )
+        .all()
     )
     for orphan in orphan_gdp:
         session.delete(orphan)

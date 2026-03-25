@@ -1,6 +1,7 @@
 'use client';
 
 import DataFreshnessBadge from '@/components/DataFreshnessBadge';
+import InfoTip from '@/components/InfoTip';
 import { useCounties } from '@/lib/react-query';
 import { County } from '@/types';
 import { motion } from 'framer-motion';
@@ -363,7 +364,7 @@ function KPICards({ counties }: { counties: County[] }) {
         className='bg-white/40 backdrop-blur-xl rounded-2xl p-5 shadow-[0_8px_40px_rgba(0,0,0,0.08)] border border-white/50 flex items-center justify-between hover:shadow-lg hover:scale-[1.02] transition-all cursor-pointer'
         title='See county rankings below'>
         <div>
-          <div className='text-xs font-medium text-gray-500 mb-1'>Avg. Execution Rate</div>
+          <div className='text-xs font-medium text-gray-500 mb-1'>Avg. Execution Rate <InfoTip term='budget-execution' size={11} /></div>
           <div className='text-2xl font-bold text-gray-900 tracking-tight'>
             {stats.avgExec.toFixed(0)}%
           </div>
@@ -600,7 +601,7 @@ function FiltersSidebar({
         {/* Audit Status */}
         <div>
           <label className='text-[11px] font-semibold text-gray-600 uppercase tracking-wider mb-1.5 block'>
-            Audit Status
+            Audit Status <InfoTip term='audit-clean' size={11} />
           </label>
           <div className='space-y-2'>
             {(['clean', 'qualified', 'adverse'] as const).map((status) => {
@@ -1198,19 +1199,19 @@ function CountyRankingsTable({
                 Population
               </Th>
               <Th field='health' current={sortField} dir={sortDir} onSort={onSort}>
-                Grade
+                Grade <InfoTip term='financial-health' size={10} />
               </Th>
               <Th field='budget' current={sortField} dir={sortDir} onSort={onSort} suffix='(KES)'>
                 Budget
               </Th>
               <Th field='utilization' current={sortField} dir={sortDir} onSort={onSort}>
-                Execution
+                Execution <InfoTip term='budget-execution' size={10} />
               </Th>
               <Th field='debt' current={sortField} dir={sortDir} onSort={onSort}>
                 Debt
               </Th>
               <th className='text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 py-3 px-3'>
-                Audit
+                Audit <InfoTip term='audit-clean' size={10} />
               </th>
               <th className='text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 py-3 px-3'>
                 Trends

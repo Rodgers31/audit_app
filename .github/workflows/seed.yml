@@ -3,13 +3,10 @@ name: Database Seeding & Data Refresh
 on:
   # ── Scheduled runs ─────────────────────────────────────────────────
   # Nightly full refresh at 2 AM UTC (5 AM EAT)
+  # Weekly deep refresh (bootstrap + all domains) on Sundays at 3 AM UTC
   schedule:
     - cron: '0 2 * * *'
-
-  # Weekly deep refresh (bootstrap + all domains) on Sundays at 3 AM UTC
-  # This ensures any schema changes or new seed data is picked up
-  # schedule:
-  #   - cron: '0 3 * * 0'
+    - cron: '0 3 * * 0'
 
   # Allow manual triggering
   workflow_dispatch:
@@ -50,6 +47,117 @@ env:
   SEED_LOG_LEVEL: INFO
 
 jobs:
+  # ══════════════════════════════════════════════════════════════════
+  # Step 0: Health-check all government data source URLs
+  # Catches broken/migrated URLs BEFORE seeding starts so failures
+  # are surfaced immediately instead of buried in log warnings.
+  # ══════════════════════════════════════════════════════════════════
+  healthcheck:
+    name: Data Source Health Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      report: ${{ steps.check.outputs.report }}
+      has_failures: ${{ steps.check.outputs.has_failures }}
+    steps:
+      - name: Check data source URLs
+        id: check
+        run: |
+          #!/usr/bin/env bash
+          set -euo pipefail
+
+          # ── Data source registry ──────────────────────────────────
+          # Each entry: "LABEL|URL|CRITICAL"
+          # CRITICAL=true  → workflow fails and creates an issue
+          # CRITICAL=false → logged as warning only
+          SOURCES=(
+            "COB Publications|https://cob.go.ke/publications/|true"
+            "COB County Reports|https://cob.go.ke/publications/county-reports/|true"
+            "COB National Reports|https://cob.go.ke/publications/national-government-budget-implementation-review-reports/|false"
+            "OAG Homepage|https://www.oagkenya.go.ke/|true"
+            "OAG National Audit Reports|https://www.oagkenya.go.ke/national-government-audit-reports/|false"
+            "CBK Homepage|https://www.centralbank.go.ke/|true"
+            "CBK Public Debt|https://www.centralbank.go.ke/public-debt/|true"
+            "Treasury|https://newsite.treasury.go.ke/|false"
+            "World Bank API|https://api.worldbank.org/v2/country/KE?format=json|true"
+            "IMF DataMapper|https://www.imf.org/external/datamapper/api/v1/GGXWDG_NGDP/KEN|false"
+            "COB WP REST API|https://cob.go.ke/wp-json/wp/v2/media?per_page=1&mime_type=application/pdf|false"
+          )
+
+          REPORT=""
+          FAILED_CRITICAL=0
+          FAILED_WARN=0
+          TOTAL=${#SOURCES[@]}
+          OK_COUNT=0
+
+          for entry in "${SOURCES[@]}"; do
+            IFS='|' read -r label url critical <<< "$entry"
+
+            # Curl: follow redirects, 15s timeout, accept any 2xx/3xx
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+              -L --max-time 15 --retry 2 --retry-delay 3 \
+              -A "KenyaAuditApp-HealthCheck/1.0" \
+              "$url" 2>/dev/null || echo "000")
+
+            if [[ "$HTTP_CODE" =~ ^[23] ]]; then
+              echo "  [OK]   $label ($HTTP_CODE)"
+              REPORT="${REPORT}OK|${label}|${url}|${HTTP_CODE}\n"
+              ((OK_COUNT++))
+            else
+              severity="WARNING"
+              if [ "$critical" = "true" ]; then
+                severity="CRITICAL"
+                ((FAILED_CRITICAL++))
+              else
+                ((FAILED_WARN++))
+              fi
+              echo "  [${severity}] $label → HTTP $HTTP_CODE ($url)"
+              REPORT="${REPORT}${severity}|${label}|${url}|${HTTP_CODE}\n"
+            fi
+          done
+
+          echo ""
+          echo "─── Health Check Summary ───"
+          echo "Total: $TOTAL | OK: $OK_COUNT | Critical Failures: $FAILED_CRITICAL | Warnings: $FAILED_WARN"
+
+          # Write outputs for downstream jobs
+          # Escape newlines for GitHub Actions output
+          EOF_MARKER=$(dd if=/dev/urandom bs=15 count=1 2>/dev/null | base64)
+          echo "report<<${EOF_MARKER}" >> "$GITHUB_OUTPUT"
+          echo -e "$REPORT" >> "$GITHUB_OUTPUT"
+          echo "${EOF_MARKER}" >> "$GITHUB_OUTPUT"
+
+          if [ "$FAILED_CRITICAL" -gt 0 ]; then
+            echo "has_failures=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_failures=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          # Write to step summary
+          echo "## Data Source Health Check" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Status | Source | URL | HTTP Code |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|--------|-----|-----------|" >> $GITHUB_STEP_SUMMARY
+          echo -e "$REPORT" | while IFS='|' read -r status label url code; do
+            [ -z "$status" ] && continue
+            if [ "$status" = "OK" ]; then
+              echo "| ✅ OK | $label | $url | $code |" >> $GITHUB_STEP_SUMMARY
+            elif [ "$status" = "CRITICAL" ]; then
+              echo "| ❌ CRITICAL | **$label** | $url | $code |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| ⚠️ WARNING | $label | $url | $code |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**OK:** $OK_COUNT / $TOTAL | **Critical:** $FAILED_CRITICAL | **Warnings:** $FAILED_WARN" >> $GITHUB_STEP_SUMMARY
+
+          # Fail the job if any critical source is down
+          if [ "$FAILED_CRITICAL" -gt 0 ]; then
+            echo "::error::$FAILED_CRITICAL critical data source(s) unreachable. Seeding will proceed but may produce incomplete data."
+            # We exit 0 so seeding still runs — the notify job will create the issue.
+            # Change to exit 1 if you want to block seeding entirely when sources are down.
+          fi
+
   # ══════════════════════════════════════════════════════════════════
   # Step 1: Run database migrations
   # ══════════════════════════════════════════════════════════════════
@@ -102,7 +210,7 @@ jobs:
   # ══════════════════════════════════════════════════════════════════
   seed:
     name: Seed Data Domains
-    needs: migrate
+    needs: [migrate, healthcheck]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -312,7 +420,7 @@ jobs:
   # ══════════════════════════════════════════════════════════════════
   notify:
     name: Post-Run Summary
-    needs: [seed, validate]
+    needs: [healthcheck, seed, validate]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -328,12 +436,102 @@ jobs:
           echo "| **Domain** | ${{ github.event.inputs.domain || 'all' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **Dry Run** | ${{ github.event.inputs.dry_run || 'false' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **Bootstrap** | ${{ github.event.inputs.run_bootstrap || 'false' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Health Check** | ${{ needs.healthcheck.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **Seed Status** | ${{ needs.seed.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **Validation** | ${{ needs.validate.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "See [seeding guide](https://github.com/${{ github.repository }}/blob/main/docs/seeding-guide.md) for details." >> $GITHUB_STEP_SUMMARY
 
-      - name: Create issue on failure
+      - name: Create issue on URL health-check failure
+        if: needs.healthcheck.outputs.has_failures == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Parse the health-check report to build a readable table
+            const report = `${{ needs.healthcheck.outputs.report }}`;
+            const lines = report.trim().split('\n').filter(l => l.trim());
+
+            let tableRows = '';
+            const failedSources = [];
+            for (const line of lines) {
+              const parts = line.split('|');
+              if (parts.length < 4) continue;
+              const [status, label, url, code] = parts;
+              if (status === 'CRITICAL' || status === 'WARNING') {
+                const icon = status === 'CRITICAL' ? '🔴' : '🟡';
+                tableRows += `| ${icon} ${status} | ${label} | ${url} | ${code} |\n`;
+                if (status === 'CRITICAL') failedSources.push(label);
+              }
+            }
+
+            // Check for existing open issue to avoid duplicates
+            const existingIssues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'data-source-down',
+              state: 'open',
+            });
+
+            const today = new Date().toISOString().split('T')[0];
+            const title = `⚠️ Data source(s) unreachable: ${failedSources.join(', ')} — ${today}`;
+            const body = [
+              `## Data Source Health Check Failed`,
+              ``,
+              `The nightly seeding pipeline detected **${failedSources.length} critical** data source(s) returning errors.`,
+              ``,
+              `### Affected Sources`,
+              ``,
+              `| Status | Source | URL | HTTP Code |`,
+              `|--------|--------|-----|-----------|`,
+              tableRows,
+              ``,
+              `### What This Means`,
+              `- The seeding pipeline still ran, but affected domains may have **stale or missing data**`,
+              `- Government websites (OAG, COB, CBK) occasionally restructure their URLs`,
+              `- External APIs (World Bank, IMF) may have temporary outages`,
+              ``,
+              `### Action Required`,
+              `1. Check if the URLs load in a browser — if they redirect to a new path, update the fetcher`,
+              `2. Look at the [workflow run logs](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for details`,
+              `3. If the site is temporarily down, this issue can be closed — the pipeline retries nightly`,
+              `4. If the URL has permanently changed, update the source URLs in:`,
+              `   - \`backend/seeding/domains/*/fetcher.py\``,
+              `   - \`backend/seeding/config.py\``,
+              `   - \`backend/routers/data_provenance.py\``,
+              ``,
+              `### Common URL Migrations`,
+              `| Site | Old Pattern | New Pattern |`,
+              `|------|------------|-------------|`,
+              `| COB | \`cob.go.ke/reports/\` | \`cob.go.ke/publications/\` |`,
+              `| OAG | \`oagkenya.go.ke/reports/\` | \`oagkenya.go.ke/\` (root) |`,
+              `| Treasury | \`treasury.go.ke/\` | \`newsite.treasury.go.ke/\` |`,
+              ``,
+              `---`,
+              `*Auto-generated by the Database Seeding & Data Refresh workflow*`,
+            ].join('\n');
+
+            // If there's already an open issue with this label, comment on it instead
+            if (existingIssues.data.length > 0) {
+              const existing = existingIssues.data[0];
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body: `### Update — ${today}\n\nHealth check still failing:\n\n${tableRows}\n\n[Workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`,
+              });
+              console.log(`Commented on existing issue #${existing.number}`);
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ['bug', 'data-pipeline', 'data-source-down', 'automated'],
+              });
+              console.log('Created new health-check failure issue');
+            }
+
+      - name: Create issue on seeding/validation failure
         if: needs.seed.result == 'failure' || needs.validate.result == 'failure'
         uses: actions/github-script@v7
         with:
@@ -347,9 +545,10 @@ jobs:
             github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `Data pipeline failed: ${failedSteps.join(', ')} - ${new Date().toISOString().split('T')[0]}`,
+              title: `Data pipeline failed: ${failedSteps.join(', ')} — ${new Date().toISOString().split('T')[0]}`,
               body: `## Automated Data Pipeline Failure\n\n` +
                 `**Failed Steps:** ${failedSteps.join(', ')}\n` +
+                `**Health Check:** ${{ needs.healthcheck.outputs.has_failures == 'true' && '⚠️ Some sources were unreachable (may be related)' || '✅ All sources reachable' }}\n` +
                 `**Run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n` +
                 `**Triggered by:** ${context.eventName}\n` +
                 `**Domain:** ${{ github.event.inputs.domain || 'all' }}\n\n` +
