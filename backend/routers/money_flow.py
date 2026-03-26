@@ -257,6 +257,7 @@ async def county_money_flow(
 
 
 @router.get("/audit/money-flow/national")
+@_cached(key_prefix="money-flow:national", ttl=1800)
 async def national_money_flow(
     year: str = Query(..., description="Fiscal year label, e.g. '2024/25'"),
     db: Session = Depends(get_db),

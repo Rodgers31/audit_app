@@ -863,17 +863,31 @@ async def startup_event():
 
             base = "http://127.0.0.1:" + str(os.environ.get("PORT", 8000))
             endpoints = [
+                # Debt pages
                 "/api/v1/debt/national",
                 "/api/v1/debt/timeline",
                 "/api/v1/debt/sustainability",
                 "/api/v1/debt/loans",
+                # Fiscal & budget
                 "/api/v1/fiscal/summary",
+                "/api/v1/budget/national",
+                "/api/v1/budget/overview",
+                "/api/v1/budget/enhanced",
+                "/api/v1/budget/utilization",
+                # Pending bills
                 "/api/v1/pending-bills",
                 "/api/v1/pending-bills/summary",
+                # Audits
                 "/api/v1/audits/federal",
-                "/api/v1/counties",
-                "/api/v1/data/freshness",
                 "/api/v1/audits/fiscal-years",
+                "/api/v1/audit/summary",
+                # Counties & economic
+                "/api/v1/counties",
+                "/api/v1/economic/population/latest",
+                "/api/v1/data/freshness",
+                # Money flow (default fiscal year)
+                "/api/v1/audit/money-flow/national?year=2024/25",
+                "/api/v1/money-flow/all-counties?year=2024/25",
             ]
             async with _httpx.AsyncClient(timeout=60) as client:
                 # Fire all requests concurrently — much faster than sequential

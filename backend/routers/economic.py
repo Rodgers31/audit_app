@@ -196,6 +196,7 @@ def get_entity_info(entity_id: Optional[int], db: Session) -> tuple:
     response_model=PopulationLatestResponse,
     summary="Get Latest National Population",
 )
+@cached(key_prefix="economic:population_latest", ttl=3600)
 async def get_population_latest(db: Session = Depends(get_db)):
     """Return the most recent national-level population record."""
     if not DATABASE_AVAILABLE or db is None:
