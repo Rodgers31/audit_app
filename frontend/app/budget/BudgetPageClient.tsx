@@ -897,11 +897,14 @@ export default function BudgetSpendingPage() {
                   {Object.keys(REVENUE_COLORS).map((type) => {
                     const color = REVENUE_COLORS[type];
                     const Icon = REVENUE_ICONS[type] || DollarSign;
-                    // Get values per year for this type
-                    const yearValues = revenueTrendData.map((fy: any) => ({
-                      year: fy.year,
-                      amount: fy[type] ?? 0,
-                    }));
+                    // Get values per year for this type — only years with actual data
+                    const yearValues = revenueTrendData
+                      .map((fy: any) => ({
+                        year: fy.year,
+                        amount: fy[type] ?? 0,
+                      }))
+                      .filter((v: any) => v.amount > 0);
+                    if (yearValues.length === 0) return null; // skip types with no data
                     const max = Math.max(...yearValues.map((v: any) => v.amount), 1);
                     const latest = yearValues[yearValues.length - 1];
                     const prev = yearValues.length > 1 ? yearValues[yearValues.length - 2] : null;
