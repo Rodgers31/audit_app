@@ -660,9 +660,14 @@ export default function NationalDebtPage() {
                 <CartesianGrid strokeDasharray='3 3' stroke='#f0f0f0' />
                 <XAxis
                   dataKey='year'
-                  tick={{ fontSize: 11, fill: '#6b7280' }}
+                  tick={{ fontSize: 10, fill: '#6b7280' }}
                   tickLine={false}
                   axisLine={{ stroke: '#e5e7eb' }}
+                  angle={-45}
+                  textAnchor='end'
+                  height={45}
+                  interval='preserveStartEnd'
+                  tickFormatter={(y: number) => `'${String(y).slice(-2)}`}
                 />
                 <YAxis
                   tick={{ fontSize: 11, fill: '#6b7280' }}
