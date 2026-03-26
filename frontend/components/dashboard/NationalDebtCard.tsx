@@ -244,8 +244,9 @@ export default function NationalDebtCard() {
                     dataKey='year'
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fontSize: 11, fill: '#6B7280' }}
-                    interval={0}
+                    tick={{ fontSize: 10, fill: '#6B7280' }}
+                    interval='preserveStartEnd'
+                    tickFormatter={(y: string) => `'${y.slice(-2)}`}
                   />
                   <YAxis
                     yAxisId='debt'

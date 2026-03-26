@@ -357,7 +357,7 @@ export default function AuditFindingsPage() {
                 <ResponsiveContainer width='100%' height='100%'>
                   <LineChart data={trendsChartData} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
                     <CartesianGrid strokeDasharray='3 3' stroke='#e5e7eb' />
-                    <XAxis dataKey='year' tick={{ fontSize: 11 }} />
+                    <XAxis dataKey='year' tick={{ fontSize: 10 }} interval='preserveStartEnd' />
                     <YAxis
                       yAxisId='left'
                       tick={{ fontSize: 11 }}
