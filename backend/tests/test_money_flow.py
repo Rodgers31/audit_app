@@ -151,13 +151,7 @@ class TestNationalMoneyFlow:
 
     def test_no_counties_returns_404(self, client):
         """Without any county entities seeded, should return 404."""
-        # Clear all cache layers so prior test's cached 200 doesn't leak through.
-        # The _cached decorator uses RedisCache (with in-memory fallback) when
-        # _redis_cache is not None, and its own _mem dict otherwise.
-        from routers.money_flow import national_money_flow, _redis_cache
-        if hasattr(national_money_flow, "_cache"):
-            national_money_flow._cache.clear()
-        if _redis_cache is not None:
-            _redis_cache._memory_cache.clear()
-        response = client.get("/api/v1/audit/money-flow/national?year=2024/25")
+        # Use a unique year that no other test has cached to avoid
+        # cross-test cache contamination from any cache layer.
+        response = client.get("/api/v1/audit/money-flow/national?year=1999/00")
         assert response.status_code == 404
