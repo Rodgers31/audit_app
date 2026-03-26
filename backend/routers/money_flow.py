@@ -54,6 +54,8 @@ def _cached(key_prefix: str, ttl: int = 1800):
             result = await fn(*args, **kwargs)
             _mem[cache_key] = {"value": result, "ts": time.time()}
             return result
+
+        wrapper._cache = _mem  # expose for test teardown
         return wrapper
     return decorator
 
@@ -257,6 +259,7 @@ async def county_money_flow(
 
 
 @router.get("/audit/money-flow/national")
+@_cached(key_prefix="money-flow:national", ttl=1800)
 async def national_money_flow(
     year: str = Query(..., description="Fiscal year label, e.g. '2024/25'"),
     db: Session = Depends(get_db),

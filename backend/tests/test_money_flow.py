@@ -151,5 +151,7 @@ class TestNationalMoneyFlow:
 
     def test_no_counties_returns_404(self, client):
         """Without any county entities seeded, should return 404."""
-        response = client.get("/api/v1/audit/money-flow/national?year=2024/25")
+        # Use a unique year that no other test has cached to avoid
+        # cross-test cache contamination from any cache layer.
+        response = client.get("/api/v1/audit/money-flow/national?year=1999/00")
         assert response.status_code == 404

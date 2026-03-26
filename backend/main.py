@@ -863,17 +863,31 @@ async def startup_event():
 
             base = "http://127.0.0.1:" + str(os.environ.get("PORT", 8000))
             endpoints = [
+                # Debt pages
                 "/api/v1/debt/national",
                 "/api/v1/debt/timeline",
                 "/api/v1/debt/sustainability",
                 "/api/v1/debt/loans",
+                # Fiscal & budget
                 "/api/v1/fiscal/summary",
+                "/api/v1/budget/national",
+                "/api/v1/budget/overview",
+                "/api/v1/budget/enhanced",
+                "/api/v1/budget/utilization",
+                # Pending bills
                 "/api/v1/pending-bills",
                 "/api/v1/pending-bills/summary",
+                # Audits
                 "/api/v1/audits/federal",
-                "/api/v1/counties",
-                "/api/v1/data/freshness",
                 "/api/v1/audits/fiscal-years",
+                "/api/v1/audit/summary",
+                # Counties & economic
+                "/api/v1/counties",
+                "/api/v1/economic/population/latest",
+                "/api/v1/data/freshness",
+                # Money flow (default fiscal year)
+                "/api/v1/audit/money-flow/national?year=2024/25",
+                "/api/v1/money-flow/all-counties?year=2024/25",
             ]
             async with _httpx.AsyncClient(timeout=60) as client:
                 # Fire all requests concurrently — much faster than sequential
@@ -4720,23 +4734,31 @@ async def get_budget_overview():
             fiscal_rows = db.query(FSModel).order_by(FSModel.fiscal_year.asc()).all()
             fiscal_years = []
             for r in fiscal_rows:
-                fiscal_years.append(
-                    {
-                        "fiscal_year": r.fiscal_year,
-                        "appropriated_budget": float(r.appropriated_budget or 0),
-                        "total_revenue": float(r.total_revenue or 0),
-                        "tax_revenue": float(r.tax_revenue or 0),
-                        "non_tax_revenue": float(r.non_tax_revenue or 0),
-                        "total_borrowing": float(r.total_borrowing or 0),
-                        "borrowing_pct_of_budget": float(
-                            r.borrowing_pct_of_budget or 0
-                        ),
-                        "debt_service_cost": float(r.debt_service_cost or 0),
-                        "development_spending": float(r.development_spending or 0),
-                        "recurrent_spending": float(r.recurrent_spending or 0),
-                        "county_allocation": float(r.county_allocation or 0),
-                    }
-                )
+                entry = {
+                    "fiscal_year": r.fiscal_year,
+                    "appropriated_budget": float(r.appropriated_budget or 0),
+                    "total_revenue": float(r.total_revenue or 0),
+                    "tax_revenue": float(r.tax_revenue or 0),
+                    "non_tax_revenue": float(r.non_tax_revenue or 0),
+                    "total_borrowing": float(r.total_borrowing or 0),
+                    "borrowing_pct_of_budget": float(
+                        r.borrowing_pct_of_budget or 0
+                    ),
+                    "debt_service_cost": float(r.debt_service_cost or 0),
+                    "development_spending": float(r.development_spending or 0),
+                    "recurrent_spending": float(r.recurrent_spending or 0),
+                    "county_allocation": float(r.county_allocation or 0),
+                }
+                # Only include years with substantially complete data —
+                # World Bank back-fill years often only have 1-2 fields.
+                key_fields = [
+                    entry["appropriated_budget"],
+                    entry["total_revenue"],
+                    entry["total_borrowing"],
+                    entry["county_allocation"],
+                ]
+                if sum(1 for v in key_fields if v > 0) >= 3:
+                    fiscal_years.append(entry)
 
             latest = fiscal_years[-1] if fiscal_years else {}
 
@@ -5147,8 +5169,18 @@ async def get_fiscal_summary(db: Session = Depends(get_db)):
                 ),
             }
 
-        fiscal_years = [_row_to_dict(r) for r in rows]
-        latest = fiscal_years[-1]
+        all_fiscal_years = [_row_to_dict(r) for r in rows]
+        # Only include years with substantially complete data —
+        # World Bank back-fill years often only have 1-2 fields.
+        fiscal_years = [
+            fy for fy in all_fiscal_years
+            if sum(
+                1
+                for k in ("appropriated_budget", "total_revenue", "total_borrowing", "county_allocation")
+                if (fy.get(k) or 0) > 0
+            ) >= 3
+        ]
+        latest = fiscal_years[-1] if fiscal_years else all_fiscal_years[-1]
 
         # Source info
         source_title = "National Treasury BPS & Controller of Budget Reports"

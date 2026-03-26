@@ -378,7 +378,16 @@ export default function BudgetSpendingPage() {
   /* ── derived data ── */
   const summary = overview?.summary ?? {};
   const sectors = overview?.sectors ?? [];
-  const fiscalHistory = overview?.fiscal_history ?? fiscal?.history ?? [];
+  const fiscalHistoryRaw = overview?.fiscal_history ?? fiscal?.history ?? [];
+  // Only keep fiscal years that have at least one meaningful data field
+  const fiscalHistory = useMemo(
+    () =>
+      fiscalHistoryRaw.filter((f: any) =>
+        [f.appropriated_budget, f.total_revenue, f.total_borrowing, f.debt_service_cost, f.county_allocation]
+          .some((v) => v != null && v > 0)
+      ),
+    [fiscalHistoryRaw]
+  );
   const countyUtil = overview?.county_utilization ?? {};
   const current = fiscal?.current ?? {};
 
@@ -897,11 +906,14 @@ export default function BudgetSpendingPage() {
                   {Object.keys(REVENUE_COLORS).map((type) => {
                     const color = REVENUE_COLORS[type];
                     const Icon = REVENUE_ICONS[type] || DollarSign;
-                    // Get values per year for this type
-                    const yearValues = revenueTrendData.map((fy: any) => ({
-                      year: fy.year,
-                      amount: fy[type] ?? 0,
-                    }));
+                    // Get values per year for this type — only years with actual data
+                    const yearValues = revenueTrendData
+                      .map((fy: any) => ({
+                        year: fy.year,
+                        amount: fy[type] ?? 0,
+                      }))
+                      .filter((v: any) => v.amount > 0);
+                    if (yearValues.length === 0) return null; // skip types with no data
                     const max = Math.max(...yearValues.map((v: any) => v.amount), 1);
                     const latest = yearValues[yearValues.length - 1];
                     const prev = yearValues.length > 1 ? yearValues[yearValues.length - 2] : null;
