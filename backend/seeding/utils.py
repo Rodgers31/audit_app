@@ -76,7 +76,21 @@ def load_json_resource(
     if parsed.scheme in {"", "file"}:
         path = _resolve_local_path(url)
         if not path.exists():
-            raise FileNotFoundError(f"{label} fixture not found at {path!s}")
+            # The path may include a "backend/" prefix while CWD is already
+            # backend/, or vice-versa. Try common alternatives before failing.
+            alternatives = [
+                Path("backend") / path,        # CWD is repo root
+                Path(str(path).removeprefix("backend/")),  # CWD is backend/
+                Path(__file__).resolve().parent.parent / path,  # relative to backend/
+            ]
+            resolved = None
+            for alt in alternatives:
+                if alt.exists():
+                    resolved = alt
+                    break
+            if resolved is None:
+                raise FileNotFoundError(f"{label} fixture not found at {path!s}")
+            path = resolved
         raw_bytes = path.read_bytes()
         try:
             payload = json.loads(raw_bytes.decode("utf-8"))
