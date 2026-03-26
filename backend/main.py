@@ -856,7 +856,7 @@ async def startup_event():
     import asyncio
 
     async def _warm_caches():
-        """Hit the slowest endpoints once to populate their in-memory caches."""
+        """Hit the slowest endpoints concurrently to populate their caches."""
         await asyncio.sleep(2)  # Let the server finish binding
         try:
             import httpx as _httpx
@@ -866,17 +866,21 @@ async def startup_event():
                 "/api/v1/debt/national",
                 "/api/v1/debt/timeline",
                 "/api/v1/debt/sustainability",
+                "/api/v1/debt/loans",
                 "/api/v1/fiscal/summary",
                 "/api/v1/pending-bills",
                 "/api/v1/pending-bills/summary",
+                "/api/v1/audits/federal",
+                "/api/v1/counties",
+                "/api/v1/data/freshness",
+                "/api/v1/audits/fiscal-years",
             ]
-            async with _httpx.AsyncClient(timeout=30) as client:
-                for ep in endpoints:
-                    try:
-                        await client.get(base + ep)
-                        logger.info(f"Cache warmed: {ep}")
-                    except Exception:
-                        pass  # Non-fatal; cache will fill on first user request
+            async with _httpx.AsyncClient(timeout=60) as client:
+                # Fire all requests concurrently — much faster than sequential
+                tasks = [client.get(base + ep) for ep in endpoints]
+                results = await asyncio.gather(*tasks, return_exceptions=True)
+                warmed = sum(1 for r in results if not isinstance(r, Exception))
+                logger.info(f"Cache warmed: {warmed}/{len(endpoints)} endpoints")
         except Exception as e:
             logger.warning(f"Cache pre-warm failed (non-fatal): {e}")
 
@@ -2789,6 +2793,35 @@ async def get_audit_statistics():
         raise
     except Exception as e:
         logging.error(f"Error computing audit statistics: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.get("/api/v1/audits/fiscal-years")
+@cached(key_prefix="audits:fiscal_years", ttl=86400)
+async def get_available_fiscal_years(db: Session = Depends(get_db)):
+    """Return a sorted list of fiscal-year strings available in the database.
+
+    Used by the transparency and county money-flow selectors.
+    """
+    try:
+        periods = (
+            db.query(DBFiscalPeriod.label)
+            .order_by(DBFiscalPeriod.start_date.desc())
+            .all()
+        )
+        years = [p.label for p in periods if p.label]
+        if not years:
+            # Fallback: derive from fiscal_summaries table
+            from models import FiscalSummary
+            summaries = (
+                db.query(FiscalSummary.fiscal_year)
+                .order_by(FiscalSummary.fiscal_year.desc())
+                .all()
+            )
+            years = [s.fiscal_year for s in summaries if s.fiscal_year]
+        return {"status": "success", "data": years}
+    except Exception as e:
+        logger.error(f"Error fetching fiscal years: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 

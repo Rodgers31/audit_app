@@ -48,9 +48,9 @@ DATABASE_URL = _build_db_url_from_env()
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,
-    pool_size=20,
-    max_overflow=40,
-    pool_recycle=3600,
+    pool_size=5,        # Supabase transaction pooler allows ~15 concurrent connections;
+    max_overflow=10,    # keep headroom for migrations, seeding, and other clients
+    pool_recycle=300,   # recycle connections every 5 min (Supabase may drop idle ones)
     pool_timeout=30,
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
