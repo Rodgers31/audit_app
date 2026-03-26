@@ -660,14 +660,9 @@ export default function NationalDebtPage() {
                 <CartesianGrid strokeDasharray='3 3' stroke='#f0f0f0' />
                 <XAxis
                   dataKey='year'
-                  tick={{ fontSize: 10, fill: '#6b7280' }}
+                  tick={{ fontSize: 11, fill: '#6b7280' }}
                   tickLine={false}
                   axisLine={{ stroke: '#e5e7eb' }}
-                  angle={-45}
-                  textAnchor='end'
-                  height={45}
-                  interval='preserveStartEnd'
-                  tickFormatter={(y: number) => `'${String(y).slice(-2)}`}
                 />
                 <YAxis
                   tick={{ fontSize: 11, fill: '#6b7280' }}
@@ -823,7 +818,7 @@ export default function NationalDebtPage() {
                     development: fy.development_spending,
                   }))}>
                   <CartesianGrid strokeDasharray='3 3' stroke='#f0f0f0' />
-                  <XAxis dataKey='year' tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} interval='preserveStartEnd' angle={-35} textAnchor='end' height={40} />
+                  <XAxis dataKey='year' tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} />
                   <YAxis
                     tick={{ fontSize: 10, fill: '#6b7280' }}
                     tickLine={false}
@@ -966,7 +961,7 @@ export default function NationalDebtPage() {
                       <ResponsiveContainer width='100%' height={200}>
                         <BarChart data={validTrend}>
                           <CartesianGrid strokeDasharray='3 3' stroke='#f0f0f0' />
-                          <XAxis dataKey='year' tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} interval='preserveStartEnd' />
+                          <XAxis dataKey='year' tick={{ fontSize: 11, fill: '#6b7280' }} tickLine={false} />
                           <YAxis
                             tick={{ fontSize: 11, fill: '#6b7280' }}
                             tickLine={false}
@@ -1283,7 +1278,7 @@ export default function NationalDebtPage() {
               <ResponsiveContainer width='100%' height={280}>
                 <LineChart data={debtSustainability.projections}>
                   <CartesianGrid strokeDasharray='3 3' stroke='#f0f0f0' />
-                  <XAxis dataKey='year' tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} interval='preserveStartEnd' />
+                  <XAxis dataKey='year' tick={{ fontSize: 11, fill: '#6b7280' }} tickLine={false} />
                   <YAxis
                     tick={{ fontSize: 11, fill: '#6b7280' }}
                     tickLine={false}
@@ -1760,7 +1755,7 @@ export default function NationalDebtPage() {
                     cost: fy.debt_service_cost,
                   }))}>
                   <CartesianGrid strokeDasharray='3 3' stroke='#f0f0f0' />
-                  <XAxis dataKey='year' tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} interval='preserveStartEnd' angle={-35} textAnchor='end' height={40} />
+                  <XAxis dataKey='year' tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} />
                   <YAxis
                     tick={{ fontSize: 10, fill: '#6b7280' }}
                     tickLine={false}

@@ -6,7 +6,7 @@ import { useFiscalSummary } from '@/lib/react-query/useFiscal';
 import { motion } from 'framer-motion';
 import { Skeleton, SkeletonChart } from '@/components/ui/Skeleton';
 import { AlertTriangle, Landmark, Loader2, TrendingUp } from 'lucide-react';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import InfoTip from '@/components/InfoTip';
 import {
   Area,
@@ -84,7 +84,20 @@ function CustomTooltip({ active, payload, label }: any) {
   );
 }
 
+function useIsMobile(breakpoint = 640) {
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${breakpoint}px)`);
+    setMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, [breakpoint]);
+  return mobile;
+}
+
 export default function NationalDebtCard() {
+  const isMobile = useIsMobile();
   const { data: resp, isLoading } = useNationalDebtOverview();
   const { data: timelineResp, isLoading: isTimelineLoading } = useDebtTimeline();
   const { data: fiscal } = useFiscalSummary();
@@ -244,9 +257,8 @@ export default function NationalDebtCard() {
                     dataKey='year'
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fontSize: 10, fill: '#6B7280' }}
-                    interval='preserveStartEnd'
-                    tickFormatter={(y: string) => `'${y.slice(-2)}`}
+                    tick={{ fontSize: isMobile ? 9 : 11, fill: '#6B7280' }}
+                    interval={isMobile ? 1 : 0}
                   />
                   <YAxis
                     yAxisId='debt'

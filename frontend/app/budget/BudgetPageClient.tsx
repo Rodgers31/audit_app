@@ -681,7 +681,7 @@ export default function BudgetSpendingPage() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray='3 3' stroke='#f0f0f0' />
-                <XAxis dataKey='year' tick={{ fontSize: 10 }} interval='preserveStartEnd' />
+                <XAxis dataKey='year' tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `${v}B`} />
                 <Tooltip content={<ChartTooltip />} />
                 <Legend iconType='circle' wrapperStyle={{ fontSize: 13 }} />
@@ -1330,7 +1330,7 @@ export default function BudgetSpendingPage() {
             <ResponsiveContainer width='100%' height='100%'>
               <BarChart data={spendingMixData} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
                 <CartesianGrid strokeDasharray='3 3' stroke='#f0f0f0' />
-                <XAxis dataKey='year' tick={{ fontSize: 10 }} interval='preserveStartEnd' />
+                <XAxis dataKey='year' tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `${v}B`} />
                 <Tooltip content={<ChartTooltip />} />
                 <Legend iconType='circle' wrapperStyle={{ fontSize: 13 }} />
