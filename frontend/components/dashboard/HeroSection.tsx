@@ -35,7 +35,7 @@ export default function HeroSection() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
         className='max-w-2xl'>
-        <h1 className='font-display text-4xl sm:text-5xl lg:text-[3.5rem] text-white leading-[1.08] mb-2 drop-shadow-lg whitespace-nowrap'>
+        <h1 className='font-display text-[1.75rem] sm:text-5xl lg:text-[3.5rem] text-white leading-[1.08] mb-2 drop-shadow-lg'>
           Kenya Public Money Tracker
         </h1>
         <p className='text-base sm:text-lg text-white/70 font-light tracking-wide drop-shadow-md'>
