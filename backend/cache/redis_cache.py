@@ -133,6 +133,31 @@ class RedisCache:
 cache = RedisCache()
 
 
+_SKIP_CACHE_KEY_TYPES: tuple = ()  # populated at import time below
+
+def _is_cacheable_param(value: Any) -> bool:
+    """Return True if the value should be part of a cache key.
+
+    SQLAlchemy Sessions, Requests, and other non-serialisable DI objects
+    are excluded so the cache key stays stable across requests.
+    """
+    global _SKIP_CACHE_KEY_TYPES
+    if not _SKIP_CACHE_KEY_TYPES:
+        skip = []
+        try:
+            from sqlalchemy.orm import Session
+            skip.append(Session)
+        except ImportError:
+            pass
+        try:
+            from starlette.requests import Request
+            skip.append(Request)
+        except ImportError:
+            pass
+        _SKIP_CACHE_KEY_TYPES = tuple(skip) if skip else (type(None),)
+    return not isinstance(value, _SKIP_CACHE_KEY_TYPES)
+
+
 def cached(ttl: int = 3600, key_prefix: str = ""):
     """Decorator for caching function results.
 
@@ -144,16 +169,17 @@ def cached(ttl: int = 3600, key_prefix: str = ""):
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(*args, **kwargs):
-            # Generate cache key from function name and arguments
+            # Generate cache key from function name and arguments,
+            # excluding non-serialisable DI objects (db sessions, requests)
             cache_key_parts = [key_prefix or func.__name__]
 
-            # Add args to key
             for arg in args:
-                cache_key_parts.append(str(arg))
+                if _is_cacheable_param(arg):
+                    cache_key_parts.append(str(arg))
 
-            # Add kwargs to key
             for k, v in sorted(kwargs.items()):
-                cache_key_parts.append(f"{k}={v}")
+                if _is_cacheable_param(v):
+                    cache_key_parts.append(f"{k}={v}")
 
             cache_key = ":".join(cache_key_parts)
 
