@@ -164,7 +164,7 @@ export default function LearningHubPage() {
       {/* Non-sticky scroll anchor — scrollIntoView targets this */}
       <div ref={scrollAnchorRef} className='scroll-mt-[72px]' aria-hidden />
       <div className='sticky top-[72px] z-20'>
-        <div className='rounded-2xl bg-gradient-to-r from-gov-forest to-gov-dark p-4 sm:p-5 text-white relative overflow-hidden shadow-elevated'>
+        <div className='rounded-2xl bg-gradient-to-r from-gov-forest to-gov-dark p-3 sm:p-5 text-white relative overflow-hidden shadow-elevated'>
           {/* Decorative circles */}
           <div className='absolute -right-10 -top-10 h-32 w-32 rounded-full border border-white/10 pointer-events-none' />
           <div className='absolute -right-4 -bottom-4 h-20 w-20 rounded-full border border-white/5 pointer-events-none' />
@@ -174,8 +174,8 @@ export default function LearningHubPage() {
             <h3 className='font-bold text-sm sm:text-base'>Your Learning Journey</h3>
           </div>
 
-          {/* Steps row */}
-          <div className='flex gap-1 sm:gap-2'>
+          {/* Steps row — scrollable on very narrow screens */}
+          <div className='flex gap-1 sm:gap-2 overflow-x-auto -mx-1 px-1 pb-1 scrollbar-hide'>
             {steps.map((step) => {
               const isActive = active === step.id;
               const Icon = step.icon;
@@ -184,7 +184,7 @@ export default function LearningHubPage() {
                 <button
                   key={step.id}
                   onClick={() => switchSection(step.id)}
-                  className={`relative flex-1 rounded-xl px-2 py-2.5 sm:px-3 sm:py-3 text-left transition-all duration-300 ${
+                  className={`relative flex-1 min-w-0 rounded-xl px-1.5 py-2 sm:px-3 sm:py-3 text-left transition-all duration-300 ${
                     isActive
                       ? 'bg-white/20 ring-2 ring-gov-gold shadow-lg scale-[1.02]'
                       : 'bg-white/5 hover:bg-white/10'
