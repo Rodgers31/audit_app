@@ -64,7 +64,8 @@ jobs:
         id: check
         run: |
           #!/usr/bin/env bash
-          set -euo pipefail
+          # No set -e or pipefail — this script must always exit 0
+          # so it never blocks seeding. Failures are reported via outputs.
 
           # ── Data source registry ──────────────────────────────────
           # Each entry: "LABEL|URL|CRITICAL"
@@ -102,14 +103,14 @@ jobs:
             if [[ "$HTTP_CODE" =~ ^[23] ]]; then
               echo "  [OK]   $label ($HTTP_CODE)"
               REPORT="${REPORT}OK|${label}|${url}|${HTTP_CODE}\n"
-              ((OK_COUNT++))
+              OK_COUNT=$((OK_COUNT + 1))
             else
               severity="WARNING"
               if [ "$critical" = "true" ]; then
                 severity="CRITICAL"
-                ((FAILED_CRITICAL++))
+                FAILED_CRITICAL=$((FAILED_CRITICAL + 1))
               else
-                ((FAILED_WARN++))
+                FAILED_WARN=$((FAILED_WARN + 1))
               fi
               echo "  [${severity}] $label → HTTP $HTTP_CODE ($url)"
               REPORT="${REPORT}${severity}|${label}|${url}|${HTTP_CODE}\n"
@@ -151,12 +152,14 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**OK:** $OK_COUNT / $TOTAL | **Critical:** $FAILED_CRITICAL | **Warnings:** $FAILED_WARN" >> $GITHUB_STEP_SUMMARY
 
-          # Fail the job if any critical source is down
+          # Log a warning annotation if critical sources are down
           if [ "$FAILED_CRITICAL" -gt 0 ]; then
-            echo "::error::$FAILED_CRITICAL critical data source(s) unreachable. Seeding will proceed but may produce incomplete data."
-            # We exit 0 so seeding still runs — the notify job will create the issue.
-            # Change to exit 1 if you want to block seeding entirely when sources are down.
+            echo "::warning::$FAILED_CRITICAL critical data source(s) unreachable. Seeding will proceed but may produce incomplete data."
           fi
+
+          # Always exit 0 — health check is informational only.
+          # The notify job reads outputs to create GitHub issues.
+          exit 0
 
   # ══════════════════════════════════════════════════════════════════
   # Step 1: Run database migrations
@@ -210,7 +213,7 @@ jobs:
   # ══════════════════════════════════════════════════════════════════
   seed:
     name: Seed Data Domains
-    needs: [migrate, healthcheck]
+    needs: [migrate]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
