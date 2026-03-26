@@ -70,6 +70,7 @@ _BUILTIN_DOMAIN_PACKAGES = [
     "seeding.domains.revenue_by_source",
     "seeding.domains.learning_hub",
     "seeding.domains.stalled_projects",
+    "seeding.domains.national_gdp",
 ]
 
 

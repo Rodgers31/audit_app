@@ -609,52 +609,13 @@ def _seed_poverty_indices(
     *,
     source_document_id: int,
 ) -> None:
-    """Seed national poverty data from KNBS."""
-    # Source: KNBS Kenya Poverty Report 2024, World Bank Kenya Economic Update
-    poverty_data = [
-        {"year": 2024, "headcount": Decimal("33.4"), "extreme": Decimal("8.6"), "gini": Decimal("0.408"),
-         "source": "World Bank Kenya Economic Update 2024"},
-        {"year": 2021, "headcount": Decimal("36.1"), "extreme": Decimal("10.2"), "gini": Decimal("0.410"),
-         "source": "KNBS KIHBS 2021"},
-        {"year": 2019, "headcount": Decimal("36.1"), "extreme": Decimal("8.5"), "gini": Decimal("0.408"),
-         "source": "KNBS KIHBS 2015/16 (adjusted for 2019 Census)"},
-    ]
-
-    poverty_created = 0
-    for data in poverty_data:
-        existing = (
-            session.query(PovertyIndex)
-            .filter(
-                PovertyIndex.entity_id.is_(None),
-                PovertyIndex.year == data["year"],
-            )
-            .first()
-        )
-        if existing:
-            existing.poverty_headcount_rate = data["headcount"]
-            existing.extreme_poverty_rate = data["extreme"]
-            existing.gini_coefficient = data["gini"]
-            existing.source_document_id = source_document_id
-            session.add(existing)
-        else:
-            session.execute(
-                PovertyIndex.__table__.insert().values(
-                    entity_id=None,
-                    year=data["year"],
-                    poverty_headcount_rate=data["headcount"],
-                    extreme_poverty_rate=data["extreme"],
-                    gini_coefficient=data["gini"],
-                    source_document_id=source_document_id,
-                    confidence=Decimal("0.85"),
-                    metadata={"source": data["source"], "bootstrap": True},
-                )
-            )
-            poverty_created += 1
-
-    if poverty_created:
-        logger.info(f"Inserted {poverty_created} poverty index records via raw SQL")
-        session.flush()
-    logger.info("Seeded %d poverty index records", len(poverty_data))
+    """Placeholder — NULL entity_id poverty rows are now handled by the seeding
+    pipeline's ``national_gdp`` domain.  This function is kept as a no-op so
+    callers don't need to be updated."""
+    # NOTE: The actual poverty index data (World Bank, KNBS KIHBS) is seeded by
+    # seeding.domains.national_gdp which uses raw SQL inserts that reliably
+    # persist NULL entity_id rows in Supabase.
+    logger.info("Poverty index seeding delegated to national_gdp seeding domain")
 
 
 def _seed_national_data(
@@ -736,33 +697,9 @@ def _seed_national_data(
                 )
             )
 
-    # Also seed GDP with entity_id=None for the /economic/summary endpoint.
-    # Use raw SQL to avoid any ORM/Supabase issues with NULL entity_id inserts.
-    null_gdp_count = 0
-    for year, gdp_val in NATIONAL_GDP_SERIES:
-        existing_null_gdp = (
-            session.query(GDPData)
-            .filter(GDPData.entity_id.is_(None), GDPData.year == year)
-            .first()
-        )
-        if not existing_null_gdp:
-            session.execute(
-                GDPData.__table__.insert().values(
-                    entity_id=None,
-                    year=year,
-                    gdp_value=Decimal(str(gdp_val)),
-                    source_document_id=national_doc.id,
-                    confidence=Decimal("0.90"),
-                    currency="KES",
-                    metadata={"source": "KNBS Economic Survey", "bootstrap": True, "scope": "national"},
-                )
-            )
-            null_gdp_count += 1
-        elif existing_null_gdp.gdp_value != Decimal(str(gdp_val)):
-            existing_null_gdp.gdp_value = Decimal(str(gdp_val))
-            session.add(existing_null_gdp)
-    if null_gdp_count:
-        logger.info(f"Inserted {null_gdp_count} NULL entity_id GDP rows via raw SQL")
+    # NOTE: NULL entity_id GDP rows (for /economic/summary) are handled by the
+    # seeding pipeline's "national_gdp" domain, not here.  Bootstrap only manages
+    # the entity-linked rows above.
     session.flush()
 
     # National population
