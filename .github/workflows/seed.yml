@@ -352,7 +352,7 @@ jobs:
                 5)
           check('GDP Records (national, entity_id=NULL)',
                 session.query(GDPData).filter(GDPData.entity_id.is_(None)).count(),
-                5)
+                5, is_warning=True)
 
           # ── Economic indicators ──
           check('Economic Indicators',

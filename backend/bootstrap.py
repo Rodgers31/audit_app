@@ -620,6 +620,7 @@ def _seed_poverty_indices(
          "source": "KNBS KIHBS 2015/16 (adjusted for 2019 Census)"},
     ]
 
+    poverty_created = 0
     for data in poverty_data:
         existing = (
             session.query(PovertyIndex)
@@ -636,8 +637,8 @@ def _seed_poverty_indices(
             existing.source_document_id = source_document_id
             session.add(existing)
         else:
-            session.add(
-                PovertyIndex(
+            session.execute(
+                PovertyIndex.__table__.insert().values(
                     entity_id=None,
                     year=data["year"],
                     poverty_headcount_rate=data["headcount"],
@@ -645,10 +646,14 @@ def _seed_poverty_indices(
                     gini_coefficient=data["gini"],
                     source_document_id=source_document_id,
                     confidence=Decimal("0.85"),
-                    meta={"source": data["source"], "bootstrap": True},
+                    metadata={"source": data["source"], "bootstrap": True},
                 )
             )
+            poverty_created += 1
 
+    if poverty_created:
+        logger.info(f"Inserted {poverty_created} poverty index records via raw SQL")
+        session.flush()
     logger.info("Seeded %d poverty index records", len(poverty_data))
 
 
@@ -731,7 +736,9 @@ def _seed_national_data(
                 )
             )
 
-    # Also seed GDP with entity_id=None for the /economic/summary endpoint
+    # Also seed GDP with entity_id=None for the /economic/summary endpoint.
+    # Use raw SQL to avoid any ORM/Supabase issues with NULL entity_id inserts.
+    null_gdp_count = 0
     for year, gdp_val in NATIONAL_GDP_SERIES:
         existing_null_gdp = (
             session.query(GDPData)
@@ -739,20 +746,24 @@ def _seed_national_data(
             .first()
         )
         if not existing_null_gdp:
-            session.add(
-                GDPData(
+            session.execute(
+                GDPData.__table__.insert().values(
                     entity_id=None,
                     year=year,
                     gdp_value=Decimal(str(gdp_val)),
                     source_document_id=national_doc.id,
                     confidence=Decimal("0.90"),
                     currency="KES",
-                    meta={"source": "KNBS Economic Survey", "bootstrap": True, "scope": "national"},
+                    metadata={"source": "KNBS Economic Survey", "bootstrap": True, "scope": "national"},
                 )
             )
+            null_gdp_count += 1
         elif existing_null_gdp.gdp_value != Decimal(str(gdp_val)):
             existing_null_gdp.gdp_value = Decimal(str(gdp_val))
             session.add(existing_null_gdp)
+    if null_gdp_count:
+        logger.info(f"Inserted {null_gdp_count} NULL entity_id GDP rows via raw SQL")
+    session.flush()
 
     # National population
     _upsert_population(
