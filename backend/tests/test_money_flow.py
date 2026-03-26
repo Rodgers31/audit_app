@@ -151,5 +151,9 @@ class TestNationalMoneyFlow:
 
     def test_no_counties_returns_404(self, client):
         """Without any county entities seeded, should return 404."""
+        # Clear in-memory cache from prior tests so we hit the real handler
+        from routers.money_flow import national_money_flow
+        if hasattr(national_money_flow, "_cache"):
+            national_money_flow._cache.clear()
         response = client.get("/api/v1/audit/money-flow/national?year=2024/25")
         assert response.status_code == 404

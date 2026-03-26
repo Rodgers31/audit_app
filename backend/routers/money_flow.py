@@ -54,6 +54,8 @@ def _cached(key_prefix: str, ttl: int = 1800):
             result = await fn(*args, **kwargs)
             _mem[cache_key] = {"value": result, "ts": time.time()}
             return result
+
+        wrapper._cache = _mem  # expose for test teardown
         return wrapper
     return decorator
 
