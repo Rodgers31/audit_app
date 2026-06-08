@@ -6,6 +6,7 @@ import argparse
 import signal
 import sys
 import threading
+import time
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -128,7 +129,35 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
 
     status = 0
 
-    for domain in domains:
+    # Materialise so we can index / slice / len for "remaining domains"
+    # reporting, regardless of what _collect_domains returned.
+    domains = list(domains)
+
+    # Global wall-clock budget for the whole `seed --all` run. The per-domain
+    # SIGALRM guard below caps any single stuck domain, but it does nothing
+    # about cumulative drift: enough slow-but-under-budget domains in a row
+    # still blow past the CI step timeout, which SIGKILLs the process — failing
+    # the step and skipping the downstream validation job. This deadline makes
+    # the run stop itself cleanly first: we quit starting new domains once it
+    # passes, and cap the in-flight domain's alarm at the time remaining.
+    total_budget = settings.total_timeout_seconds
+    loop_start = time.monotonic()
+    deadline = loop_start + total_budget if total_budget > 0 else None
+
+    for index, domain in enumerate(domains):
+        if deadline is not None and time.monotonic() >= deadline:
+            skipped = domains[index:]
+            logger.warning(
+                "Global seed budget of %ss exhausted after %.0fs; "
+                "skipping %d remaining domain(s): %s",
+                total_budget,
+                time.monotonic() - loop_start,
+                len(skipped),
+                ", ".join(skipped),
+                extra={"skipped_domains": skipped},
+            )
+            break
+
         handler = REGISTRY.get(domain)
         if handler is None:
             logger.error(
@@ -141,6 +170,9 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
         started_at = datetime.now(timezone.utc)
         result: Optional[DomainRunResult] = None
         job_id: Optional[int] = None
+        # Set inside the try once we know the time left; referenced in the
+        # except handler, so it must exist even if we fail before computing it.
+        global_capped = False
 
         _ensure_db_sessionlocal()
         assert SessionLocal is not None  # for type-checkers
@@ -179,7 +211,20 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
                 # `seed --all` run. Falls through to the except below,
                 # which rolls back the session, marks the job FAILED,
                 # and lets the outer loop move to the next domain.
-                with _domain_timeout(settings.domain_timeout_seconds):
+                #
+                # If a global budget is active, cap this domain's alarm at the
+                # time remaining so the in-flight domain can't push the run past
+                # the global deadline. `global_capped` records that the global
+                # budget (not this domain's own budget) is the binding limit, so
+                # a resulting timeout is treated as a clean stop, not a failure.
+                domain_budget = settings.domain_timeout_seconds
+                if deadline is not None:
+                    remaining = int(deadline - time.monotonic())
+                    if remaining < domain_budget:
+                        domain_budget = max(1, remaining)
+                        global_capped = True
+
+                with _domain_timeout(domain_budget):
                     result = handler(session=session, settings=settings, context=context)
 
                 # Update job with results
@@ -244,6 +289,39 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
 
             except Exception as exc:  # pragma: no cover - requires integration tests
                 session.rollback()
+
+                # A DomainTimeoutError raised because the *global* budget capped
+                # this domain's alarm is an expected, clean "out of time" stop —
+                # not a domain failure. Record it as non-fatal so the CI step
+                # stays green (and the validation job still runs), then stop the
+                # loop. A timeout from the domain's *own* budget falls through to
+                # the failure handling below, exactly as before.
+                if global_capped and isinstance(exc, DomainTimeoutError):
+                    logger.warning(
+                        "Global seed budget exhausted during '%s' (%.0fs elapsed); "
+                        "stopping run cleanly",
+                        domain,
+                        time.monotonic() - loop_start,
+                    )
+                    if job_id:
+                        try:
+                            with SessionLocal() as budget_session:
+                                from models import IngestionJob, IngestionStatus
+
+                                stopped_job = budget_session.get(IngestionJob, job_id)
+                                if stopped_job:
+                                    stopped_job.status = (
+                                        IngestionStatus.COMPLETED_WITH_ERRORS
+                                    )
+                                    stopped_job.finished_at = datetime.now(timezone.utc)
+                                    stopped_job.errors = [
+                                        "stopped: global seed budget exhausted"
+                                    ]
+                                    budget_session.commit()
+                        except Exception:  # pragma: no cover - best-effort
+                            pass
+                    break
+
                 logger.exception(
                     "Domain run failed", extra={"domain": domain, "error": str(exc)}
                 )
