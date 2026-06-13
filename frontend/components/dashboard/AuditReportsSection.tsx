@@ -191,7 +191,9 @@ export default function AuditReportsSection() {
           {
             icon: Building2,
             labelKey: 'home.audits.stat_ministries' as TranslationKey,
-            value: stats?.total_ministries_audited ?? data.total_findings,
+            // Authoritative count only; never fall back to the findings
+            // count (which inflated this to "25"). Honest "—" when absent.
+            value: stats?.total_ministries_audited ?? '—',
             accent: 'text-gov-forest dark:text-emerald-100',
           },
           {
@@ -208,13 +210,17 @@ export default function AuditReportsSection() {
           {
             icon: ShieldAlert,
             labelKey: 'home.audits.stat_critical' as TranslationKey,
-            value: sev.CRITICAL || stats?.critical_findings || 0,
+            // Prefer the OAG report's own critical count (the severity-band
+            // tally over-counts because seed maps "high" -> CRITICAL).
+            value: stats?.critical_findings ?? sev.CRITICAL ?? '—',
             accent: 'text-gov-copper',
           },
           {
             icon: RotateCcw,
             labelKey: 'home.audits.stat_recurring' as TranslationKey,
-            value: stats?.recurring_issues_from_prior_year ?? 0,
+            // Honest "—" when unavailable: a fake "0" reads as "no recurring
+            // issues", the opposite of the truth when the figure is missing.
+            value: stats?.recurring_issues_from_prior_year ?? '—',
             accent: 'text-gov-gold',
           },
         ] as const).map((s) => (
