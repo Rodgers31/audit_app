@@ -148,19 +148,26 @@ export function KenyanGovCard() {
   const { data: fiscal, isLoading } = useFiscalSummary();
   const fy = fiscal?.current;
 
-  const ceilingPct = fy ? Math.min(fy.debt_ceiling_usage_pct, 100) : 0;
-  const ceilingRaw = fy?.debt_ceiling_usage_pct ?? 0;
-  const ceilingOver = ceilingRaw > 100;
+  // Debt vs the PFM Act 2023 anchor (55% of GDP). The former KES 10T numeric
+  // ceiling was repealed in 2023, so debt is no longer framed as "% of 10T".
+  const anchor = fiscal?.debt_anchor;
+  const anchorLine = anchor?.anchor_pct_gdp ?? 55;
+  const debtToGdp = anchor?.debt_to_gdp_pct ?? null;
+  const aboveAnchor =
+    anchor?.above_anchor ?? (debtToGdp != null ? debtToGdp > anchorLine : false);
+  const gaugePct = debtToGdp != null ? Math.min(debtToGdp, 100) : 0;
   const fyLabel = fy?.fiscal_year || '—';
 
-  /* Derive a "fiscal health" tier from the data */
+  /* Derive a "fiscal health" tier from debt-to-GDP vs the anchor */
   const healthTier = !fy
     ? 'loading'
-    : ceilingRaw > 110
-      ? 'critical'
-      : ceilingRaw > 90
-        ? 'warning'
-        : 'stable';
+    : debtToGdp == null
+      ? 'stable'
+      : debtToGdp > anchorLine + 12
+        ? 'critical'
+        : debtToGdp > anchorLine
+          ? 'warning'
+          : 'stable';
 
   const tierColors = {
     critical: {
@@ -285,57 +292,50 @@ export function KenyanGovCard() {
               />
             </div>
 
-            {/* Debt ceiling gauge — dramatic arc */}
+            {/* Debt-to-GDP vs the PFM Act 2023 anchor (55% of GDP) */}
             <div className='mt-1 px-2 py-3 rounded-lg bg-white/50 dark:bg-surface-elevated border border-gray-100 dark:border-neutral-border'>
               <div className='flex items-center justify-between mb-2'>
                 <span className='text-[10px] uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-semibold'>
                   {t('home.govcard.debt_ceiling')}
                 </span>
                 <span
-                  className={`text-xs font-black tabular-nums ${ceilingOver ? 'text-gov-copper' : 'text-gov-dark dark:text-white'}`}>
-                  {ceilingRaw.toFixed(0)}%
+                  className={`text-xs font-black tabular-nums ${aboveAnchor ? 'text-gov-copper' : 'text-gov-dark dark:text-white'}`}>
+                  {debtToGdp != null ? `${debtToGdp.toFixed(0)}%` : '—'}
                 </span>
               </div>
-              {/* Multi-segment bar */}
+              {/* Bar: debt as % of GDP (0–100), with the 55% anchor marked */}
               <div className='relative h-2.5 rounded-full bg-gray-100 dark:bg-surface-elevated overflow-hidden'>
-                {/* Safe zone fill */}
                 <div
                   className='absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out'
                   style={{
-                    width: `${Math.min(ceilingPct, 75)}%`,
-                    background: 'linear-gradient(90deg, #4A7C5C 0%, #D9A441 100%)',
+                    width: `${gaugePct}%`,
+                    background: aboveAnchor
+                      ? 'linear-gradient(90deg, #D9A441 0%, #C94A4A 100%)'
+                      : 'linear-gradient(90deg, #4A7C5C 0%, #D9A441 100%)',
                   }}
                 />
-                {/* Warning zone fill */}
-                {ceilingPct > 75 && (
-                  <div
-                    className='absolute inset-y-0 rounded-full transition-all duration-700 ease-out'
-                    style={{
-                      left: '75%',
-                      width: `${Math.min(ceilingPct - 75, 25)}%`,
-                      background: 'linear-gradient(90deg, #D9A441 0%, #C94A4A 100%)',
-                    }}
-                  />
-                )}
-                {/* 100% threshold marker */}
+                {/* 55% PFM Act anchor marker */}
                 <div
-                  className='absolute top-0 bottom-0 w-[2px] bg-gov-dark/40'
-                  style={{ left: '100%', transform: 'translateX(-2px)' }}
+                  className='absolute top-0 bottom-0 w-[2px] bg-gov-dark/50'
+                  style={{ left: `${anchorLine}%`, transform: 'translateX(-1px)' }}
                 />
               </div>
               {/* Scale markers */}
               <div className='flex justify-between mt-1'>
                 <span className='text-[8px] text-gray-400 dark:text-neutral-muted/80'>0%</span>
-                <span className='text-[8px] text-gray-400 dark:text-neutral-muted/80'>50%</span>
-                <span className='text-[8px] text-gray-400 dark:text-neutral-muted/80 font-semibold'>100%</span>
+                <span className='text-[8px] text-gray-500 dark:text-neutral-muted font-semibold'>
+                  {anchorLine.toFixed(0)}% anchor
+                </span>
+                <span className='text-[8px] text-gray-400 dark:text-neutral-muted/80'>100%</span>
               </div>
-              {ceilingOver && (
-                <p
-                  className='text-[9px] text-gov-copper font-medium mt-1.5 text-center'
-                  suppressHydrationWarning>
-                  ⚠ {t('home.govcard.ceiling_breached').replace('{pct}', (ceilingRaw - 100).toFixed(0))}
-                </p>
-              )}
+              <p className='text-[9px] text-neutral-muted mt-1.5 text-center leading-snug'>
+                {aboveAnchor && (
+                  <span className='text-gov-copper font-medium'>
+                    ⚠ {t('home.govcard.ceiling_breached')} ·{' '}
+                  </span>
+                )}
+                {t('home.govcard.anchor_caption')}
+              </p>
             </div>
 
             {/* ── Where the Money Goes — budget breakdown bar ── */}

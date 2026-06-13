@@ -7340,6 +7340,29 @@ async def get_fiscal_summary(db: Session = Depends(get_db)):
         if rows[-1].updated_at:
             last_updated = rows[-1].updated_at.isoformat()
 
+        # Fiscal anchor: the KES 10T NUMERIC debt ceiling was REPEALED by the
+        # PFM (Amendment) Act 2023, which replaced it with a debt anchor of
+        # 55% of GDP in present-value terms (target 2028). The debt_ceiling /
+        # debt_ceiling_usage_pct fields are retained only for historical
+        # context — they are no longer the binding fiscal rule.
+        _imf_d2g = _latest_imf_debt_to_gdp(db)
+        debt_anchor = {
+            "anchor_pct_gdp": 55.0,
+            "basis": (
+                "PFM (Amendment) Act 2023 — 55% of GDP in present-value terms "
+                "(target 2028); replaced the repealed KES 10T numeric ceiling"
+            ),
+            "debt_to_gdp_pct": _imf_d2g[0] if _imf_d2g else None,
+            "debt_to_gdp_year": _imf_d2g[1] if _imf_d2g else None,
+            "debt_to_gdp_basis": (
+                "IMF General Government Gross Debt, % of GDP (nominal); compared "
+                "to the 55% present-value anchor this is indicative, not exact"
+            ),
+            "above_anchor": (_imf_d2g[0] > 55.0) if _imf_d2g else None,
+            "former_numeric_ceiling_kes_billion": 10000,
+            "former_ceiling_repealed": True,
+        }
+
         return {
             "status": "success",
             "data_source": "database",
@@ -7349,6 +7372,7 @@ async def get_fiscal_summary(db: Session = Depends(get_db)):
             "current": latest,
             "history": fiscal_years,
             "total_fiscal_years": len(fiscal_years),
+            "debt_anchor": debt_anchor,
         }
     except Exception as e:
         logging.error(f"Error fetching fiscal summary: {e}")
