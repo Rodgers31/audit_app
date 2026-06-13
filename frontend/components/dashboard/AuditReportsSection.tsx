@@ -197,7 +197,12 @@ export default function AuditReportsSection() {
           {
             icon: SearchX,
             labelKey: 'home.audits.stat_amount' as TranslationKey,
-            value: `KES ${fmtKES(data.total_amount_questioned)}`,
+            // Authoritative OAG questioned total; fall back to the report's
+            // own label string, then an em-dash — never a fabricated sum.
+            value:
+              data.total_amount_questioned != null
+                ? `KES ${fmtKES(data.total_amount_questioned)}`
+                : data.total_amount_questioned_label || '—',
             accent: 'text-gov-copper',
           },
           {

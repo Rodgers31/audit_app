@@ -148,8 +148,12 @@ export interface FederalAuditResponse {
   report_date: string;
   opinion_type: string;
   total_findings: number;
-  total_amount_questioned: number;
+  // Authoritative OAG questioned total (parsed from the report), or null
+  // when the report carries no figure. NOT a naive sum of finding amounts.
+  total_amount_questioned: number | null;
   total_amount_questioned_label: string;
+  // Transparency only: raw sum across all finding amounts (not "questioned").
+  total_amount_in_findings?: number;
   by_severity: Record<string, number>;
   basis_for_qualification: string[];
   emphasis_of_matter: string[];
@@ -165,7 +169,7 @@ export interface FederalAuditResponse {
   };
   findings: FederalAuditFinding[];
   top_ministries: { ministry: string; finding_count: number }[];
-  last_updated: string;
+  last_updated: string | null;
 }
 
 export const getFederalAudits = async (): Promise<FederalAuditResponse> => {

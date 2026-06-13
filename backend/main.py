@@ -3562,6 +3562,30 @@ async def get_available_fiscal_years(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+def _parse_kes_amount_str(value) -> "float | None":
+    """Parse 'KES 981.3B' / '1.2T' / '500M' / '5K' into a number, else None.
+
+    Used for the OAG report's authoritative questioned total so the headline
+    is the report's own figure rather than a naive sum of finding amounts.
+    """
+    if not value:
+        return None
+    cleaned = str(value).upper().replace("KES", "").strip()
+    mult = 1.0
+    if cleaned.endswith("T"):
+        mult, cleaned = 1_000_000_000_000, cleaned[:-1]
+    elif cleaned.endswith("B"):
+        mult, cleaned = 1_000_000_000, cleaned[:-1]
+    elif cleaned.endswith("M"):
+        mult, cleaned = 1_000_000, cleaned[:-1]
+    elif cleaned.endswith("K"):
+        mult, cleaned = 1_000, cleaned[:-1]
+    try:
+        return float(cleaned.replace(",", "").strip()) * mult
+    except (ValueError, TypeError):
+        return None
+
+
 @app.get("/api/v1/audits/federal")
 @cached(key_prefix="audits:federal", ttl=3600)
 async def get_federal_audits():
@@ -3766,10 +3790,19 @@ async def get_federal_audits():
                 "report_date": derived_report_date,
                 "opinion_type": opinion_summary.get("opinion_type", "Qualified"),
                 "total_findings": len(findings),
-                "total_amount_questioned": total_amount,
+                # Headline "Amount Questioned" = the OAG report's own
+                # authoritative questioned total, NOT a naive sum of every
+                # finding's amount (which conflated debt-service stock, asset
+                # valuations etc. and produced the misleading ~3.3T).
+                "total_amount_questioned": _parse_kes_amount_str(
+                    opinion_summary.get("total_amount_questioned", "")
+                ),
                 "total_amount_questioned_label": opinion_summary.get(
                     "total_amount_questioned", ""
                 ),
+                # Transparency only: the raw sum across all finding amounts.
+                # NOT the questioned headline (see above).
+                "total_amount_in_findings": total_amount,
                 "by_severity": severity_counts,
                 "basis_for_qualification": opinion_summary.get(
                     "basis_for_qualification", []
