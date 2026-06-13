@@ -25,6 +25,7 @@ from sqlalchemy.orm import Session
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from cache.redis_cache import cached
+from provenance import vintage_iso
 
 try:
     from database import get_db
@@ -160,7 +161,9 @@ class EconomicSummary(BaseModel):
     inflation_rate: Optional[float]
     unemployment_rate: Optional[float]
     poverty_rate: Optional[float]
-    data_as_of: str
+    # Real source vintage (publication date) of the underlying data, or null
+    # when no provenance is available — never the request time (audit §2.9).
+    data_as_of: Optional[str] = None
 
 
 # ===== Helper Functions =====
@@ -1072,7 +1075,20 @@ async def get_economic_summary(
             inflation_rate=inflation_rate,
             unemployment_rate=unemployment_rate,
             poverty_rate=poverty_rate,
-            data_as_of=datetime.now().isoformat(),
+            # Real source vintage, not the request time (audit §2.9).
+            data_as_of=vintage_iso(
+                db,
+                [
+                    getattr(r, "source_document_id", None)
+                    for r in (
+                        latest_pop,
+                        latest_gdp,
+                        latest_inflation,
+                        latest_unemployment,
+                        latest_poverty,
+                    )
+                ],
+            ),
         )
     except OperationalError as e:
         logger.error("Database connection error on /summary: %s", e)

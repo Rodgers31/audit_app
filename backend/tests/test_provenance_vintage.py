@@ -113,3 +113,17 @@ def test_debt_national_uses_vintage_helper_not_now():
     # the 0.2 freshness work; this asserts the /debt/national fix only.)
     assert "resolve_data_vintage(" in src
     assert '"last_updated": _vintage_iso,' in src
+
+
+def test_wired_endpoints_use_real_vintage_not_now():
+    """audits/federal, budget/national, budget/overview, economic summary
+    must report a real source vintage, not the request time."""
+    main_src = (BACKEND_DIR / "main.py").read_text(encoding="utf-8")
+    econ_src = (BACKEND_DIR / "routers" / "economic.py").read_text(encoding="utf-8")
+    # audits/federal + budget/national wired via the inline vintage helper.
+    assert "vintage_iso(" in main_src
+    # budget/overview serves the already-computed real source timestamp.
+    assert "src_updated_at.isoformat() if src_updated_at else None" in main_src
+    # economic /summary no longer stamps the request time.
+    assert "data_as_of=datetime.now().isoformat()" not in econ_src
+    assert "data_as_of=vintage_iso(" in econ_src

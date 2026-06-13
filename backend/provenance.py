@@ -94,3 +94,13 @@ def resolve_data_vintage(db, source_document_ids: Iterable) -> Optional[_dt.date
     if not vintages:
         return None
     return max(vintages, key=_naive)
+
+
+def vintage_iso(db, source_document_ids) -> Optional[str]:
+    """``resolve_data_vintage`` as an ISO string, or ``None`` (honest unknown).
+
+    Convenience for endpoint response bodies so ``last_updated`` reports the
+    real source vintage inline instead of ``datetime.now()``.
+    """
+    vintage = resolve_data_vintage(db, source_document_ids)
+    return vintage.isoformat() if vintage else None

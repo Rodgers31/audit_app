@@ -3586,6 +3586,8 @@ async def get_federal_audits():
                 .all()
             )
 
+            from provenance import vintage_iso
+
             findings = []
             total_amount = 0.0
             severity_counts = {}
@@ -3795,9 +3797,9 @@ async def get_federal_audits():
                         or None
                     ),
                 ),
-                "last_updated": datetime.datetime.now(
-                    datetime.timezone.utc
-                ).isoformat(),
+                "last_updated": vintage_iso(
+                    db, [a.source_document_id for a, _ in federal_audits]
+                ),
             }
     except HTTPException:
         raise
@@ -6125,6 +6127,8 @@ async def get_national_budget_summary(fiscal_year: str = None):
                     .join(DBEntity, DBBudgetLine.entity_id == DBEntity.id)
                     .filter(DBEntity.type == EntityType.NATIONAL)
                 )
+                from provenance import vintage_iso
+
                 if fiscal_year:
                     fp = (
                         db.query(DBFiscalPeriod)
@@ -6265,7 +6269,17 @@ async def get_national_budget_summary(fiscal_year: str = None):
                         "currency": "KES",
                     },
                     "data_source": "database",
-                    "last_updated": datetime.datetime.now().isoformat(),
+                    "last_updated": vintage_iso(
+                        db,
+                        [
+                            r[0]
+                            for r in budget_query.with_entities(
+                                DBBudgetLine.source_document_id
+                            )
+                            .distinct()
+                            .all()
+                        ],
+                    ),
                 }
         except Exception as exc:
             logging.error(f"DB national budget failed: {exc}")
@@ -6785,7 +6799,9 @@ async def get_budget_overview():
                 "status": "success",
                 "data_source": "database",
                 "fiscal_period": period_label,
-                "last_updated": datetime.datetime.now().isoformat(),
+                "last_updated": (
+                    src_updated_at.isoformat() if src_updated_at else None
+                ),
                 "_meta": _budget_overview_meta,
                 "summary": {
                     "total_budget": total_allocated,
