@@ -3678,8 +3678,9 @@ async def get_federal_audits():
                     }
                 )
 
-            # Load the audit opinion summary from the JSON file
+            # Load the audit opinion summary + report metadata from the JSON.
             opinion_summary = {}
+            report_meta = {}
             try:
                 import json
                 from pathlib import Path
@@ -3693,6 +3694,7 @@ async def get_federal_audits():
                     with open(nat_path) as f:
                         nat_data = json.load(f)
                     opinion_summary = nat_data.get("audit_opinion_summary", {})
+                    report_meta = nat_data.get("metadata", {})
             except Exception:
                 pass
 
@@ -3760,16 +3762,24 @@ async def get_federal_audits():
                     .first()
                 )
 
+            # The OAG report's own metadata (from the source JSON) is the
+            # authoritative fiscal year + title + date for the federal report
+            # — NOT the global FISCAL_LABEL the audits happen to be attached
+            # to in the DB (audit §3.8). Fall back to DB-derived values.
+            report_fy = report_meta.get("fiscal_year") or latest_period_label
             derived_report_title = (
-                latest_source.title
-                if latest_source and latest_source.title
-                else opinion_summary.get("report_title")
+                report_meta.get("report_title")
+                or (latest_source.title if latest_source and latest_source.title else None)
+                or opinion_summary.get("report_title")
                 or "Report of the Auditor General on the National Government"
             )
-            derived_report_date = (
+            derived_report_date = report_meta.get("report_date") or (
                 latest_source.fetch_date.date().isoformat()
                 if latest_source and latest_source.fetch_date
                 else None
+            )
+            derived_fiscal_years_covered = (
+                [report_fy] if report_meta.get("fiscal_year") else fiscal_years_covered
             )
             # The sitting Auditor-General is a public officeholder, not a
             # computed figure. Prefer the publisher name from the latest
@@ -3781,12 +3791,24 @@ async def get_federal_audits():
                 if latest_source and latest_source.publisher
                 else "Office of the Auditor General of Kenya"
             )
+            # Severity distribution: prefer the OAG report's own counts so the
+            # donut isn't inflated by the seed's "high"->CRITICAL mapping
+            # (audit §3.3). key_statistics splits critical/significant/minor.
+            ks = opinion_summary.get("key_statistics", {})
+            if ks.get("critical_findings") is not None:
+                by_severity = {
+                    "CRITICAL": ks.get("critical_findings", 0),
+                    "WARNING": ks.get("significant_findings", 0),
+                    "INFO": ks.get("minor_findings", 0),
+                }
+            else:
+                by_severity = severity_counts
 
             return {
                 "report_title": derived_report_title,
                 "auditor_general": derived_auditor_general,
-                "fiscal_year": latest_period_label,
-                "fiscal_years_covered": fiscal_years_covered,
+                "fiscal_year": report_fy,
+                "fiscal_years_covered": derived_fiscal_years_covered,
                 "report_date": derived_report_date,
                 "opinion_type": opinion_summary.get("opinion_type", "Qualified"),
                 "total_findings": len(findings),
@@ -3803,7 +3825,7 @@ async def get_federal_audits():
                 # Transparency only: the raw sum across all finding amounts.
                 # NOT the questioned headline (see above).
                 "total_amount_in_findings": total_amount,
-                "by_severity": severity_counts,
+                "by_severity": by_severity,
                 "basis_for_qualification": opinion_summary.get(
                     "basis_for_qualification", []
                 ),
@@ -3817,15 +3839,15 @@ async def get_federal_audits():
                 "_meta": _response_meta(
                     unit="kes",
                     entity_scope="national",
-                    fiscal_period=latest_period_label,
-                    covers_through=latest_period_label,
+                    fiscal_period=report_fy,
+                    covers_through=report_fy,
                     cache_ttl_seconds=3600,
-                    data_quality="official" if latest_period_label else "unknown",
+                    data_quality="official" if report_fy else "unknown",
                     quality_notes=(
                         check_period_nonempty(
                             len(findings),
                             endpoint="/audits/federal",
-                            period_label=latest_period_label,
+                            period_label=report_fy,
                         )
                         or None
                     ),
