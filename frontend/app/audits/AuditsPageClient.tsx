@@ -240,6 +240,18 @@ export default function AuditFindingsPage() {
         </div>
       </Section>
 
+      {/* Standing civic-risk disclaimer — questioned ≠ proven loss (audit §2.6/§6) */}
+      <Section delay={0.05}>
+        <div className='flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50/70 dark:border-amber-500/30 dark:bg-amber-500/10 px-4 py-3'>
+          <AlertTriangle className='w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0' />
+          <p className='text-[12.5px] leading-relaxed text-amber-900 dark:text-amber-200'>
+            <strong>Questioned ≠ confirmed loss.</strong> These are amounts the
+            Auditor-General could not confirm were properly spent or supported — queries to
+            be resolved, not proven theft or loss.
+          </p>
+        </div>
+      </Section>
+
       {/* ═══ B. WORST OFFENDERS ═══ */}
       <Section delay={0.1}>
         <div className='space-y-3'>

@@ -128,8 +128,21 @@ export default function SourcesPage() {
           </div>
         )}
 
+        {/* Empty state — manifest indexed nothing (audit §2.9: no silent "0 documents" void) */}
+        {!isLoading && !error && sources.length === 0 && (
+          <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-10 text-center'>
+            <p className='text-sm font-semibold text-gray-700 dark:text-neutral-muted'>
+              No source documents indexed yet
+            </p>
+            <p className='mt-1 text-xs text-gray-500 dark:text-neutral-muted/80'>
+              The source manifest is empty for this environment — the ingestion pipeline has
+              not recorded any documents.
+            </p>
+          </div>
+        )}
+
         {/* Source list */}
-        {!isLoading && !error && (
+        {!isLoading && !error && sources.length > 0 && (
           <div className='grid grid-cols-1 lg:grid-cols-2 gap-4'>
             {sources.map((s) => (
               <article
