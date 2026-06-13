@@ -1,6 +1,7 @@
 'use client';
 
 import DataFreshnessBadge from '@/components/DataFreshnessBadge';
+import ModelledDataNote from '@/components/ModelledDataNote';
 import InfoTip from '@/components/InfoTip';
 import { useLang } from '@/lib/i18n/LangProvider';
 import type { TranslationKey } from '@/lib/i18n/messages';
@@ -1763,6 +1764,8 @@ export default function CountyExplorerPage() {
         <div className='max-w-[1340px] mx-auto px-5 lg:px-8 py-8'>
           {/* Data freshness banner */}
           <DataFreshnessBadge sources='COB' variant='banner' className='mb-2' />
+          {/* County financials are modelled estimates, not official COB data */}
+          <ModelledDataNote className='mb-4' />
 
           {/* KPI Cards */}
           <motion.div

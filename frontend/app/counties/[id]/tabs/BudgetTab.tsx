@@ -14,6 +14,7 @@ import { CountyComprehensive } from '@/types';
 import { FileWarning } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
+import ModelledDataNote from '@/components/ModelledDataNote';
 import { fmtKES, PALETTE, pct } from '../shared';
 import KPI from './KPI';
 
@@ -60,6 +61,7 @@ export default function BudgetTab({ data }: { data: CountyComprehensive }) {
 
   return (
     <div className='space-y-5'>
+      <ModelledDataNote />
       {/* Top-level budget stats */}
       <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-5'>
         <h3 className='text-sm font-semibold text-gray-800 dark:text-neutral-text mb-4'>{t('county.budget.summary')}</h3>

@@ -16,7 +16,7 @@ import CountyExplorerPage from './CountiesPageClient';
 export const metadata: Metadata = {
   title: 'County Explorer — AuditGava',
   description:
-    'Compare all 47 Kenyan counties by budget, spending efficiency, audit findings, and financial health. Data from Controller of Budget and OAG.',
+    'Compare all 47 Kenyan counties by budget, spending efficiency, audit findings, and financial health. County budget/debt figures are modelled estimates (CRA equitable-share formula); audit findings are from the Office of the Auditor-General.',
 };
 
 const SSR_TIMEOUT_MS = 5000;
