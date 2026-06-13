@@ -5109,6 +5109,45 @@ async def get_sector_spending():
         eids_for_filter = list({p[0] for p in entity_period_pairs})
         pids_for_filter = list({p[1] for p in entity_period_pairs})
         valid_pairs = set(entity_period_pairs)
+
+        # Resolve the dominant fiscal period (for the page label) and whether
+        # that FY is still in progress — if so, the execution figures are
+        # projected/partial, NOT final actuals (audit §2.10).
+        import datetime as _dt_sectors
+
+        _period_meta = {}  # pid -> (label, end_date)
+        if pids_for_filter:
+            for _pid, _lbl, _end in (
+                db.query(
+                    DBFiscalPeriod.id,
+                    DBFiscalPeriod.label,
+                    DBFiscalPeriod.end_date,
+                )
+                .filter(DBFiscalPeriod.id.in_(pids_for_filter))
+                .all()
+            ):
+                _period_meta[_pid] = (_lbl, _end)
+        _label_counts = {}
+        for _eid, _pid in valid_pairs:
+            _lbl = _period_meta.get(_pid, (None, None))[0]
+            if _lbl:
+                _label_counts[_lbl] = _label_counts.get(_lbl, 0) + 1
+        dominant_fy = (
+            max(_label_counts, key=_label_counts.get) if _label_counts else None
+        )
+        _today_sectors = _dt_sectors.date.today()
+
+        def _period_in_progress(_end) -> bool:
+            if _end is None:
+                return False
+            _d = _end.date() if hasattr(_end, "date") else _end
+            return _d >= _today_sectors
+
+        is_partial_year = any(
+            _period_in_progress(_period_meta.get(pid, (None, None))[1])
+            for pid in pids_for_filter
+        )
+
         all_lines = (
             db.query(
                 DBBudgetLine.entity_id,
@@ -5185,6 +5224,14 @@ async def get_sector_spending():
     out.sort(key=lambda x: x["spent"], reverse=True)
 
     return {
+        "fiscal_year": dominant_fy,
+        "is_partial_year": is_partial_year,
+        "is_projected": is_partial_year,
+        "source": (
+            "County budget allocations modelled from CRA equitable-share data; "
+            "figures for an in-progress fiscal year are projected (National "
+            "Treasury BPS), not final Controller-of-Budget actuals"
+        ),
         "total_allocated": round(total_allocated, 2),
         "total_spent": round(total_spent, 2),
         "counties_reporting": counties_seen,
