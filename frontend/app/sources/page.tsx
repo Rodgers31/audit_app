@@ -10,7 +10,7 @@
 import PageShell from '@/components/layout/PageShell';
 import api from '@/lib/api/axios';
 import { useQuery } from '@tanstack/react-query';
-import { Clock, Database, ExternalLink, FileText, Globe, Loader2 } from 'lucide-react';
+import { Activity, Clock, Database, ExternalLink, FileText, Globe, Loader2 } from 'lucide-react';
 
 interface SourceSummary {
   publisher: string;
@@ -27,6 +27,26 @@ interface SourcesResponse {
   sources: SourceSummary[];
   total_documents: number;
 }
+
+interface TableHealth {
+  table: string;
+  label: string;
+  row_count: number;
+  source: string;
+  status: string; // healthy | degraded | critical | empty
+  notes?: string | null;
+}
+
+interface HealthResponse {
+  tables: TableHealth[];
+}
+
+const HEALTH_STYLE: Record<string, { dot: string; text: string; label: string }> = {
+  healthy: { dot: 'bg-emerald-500', text: 'text-emerald-700', label: 'Healthy' },
+  degraded: { dot: 'bg-amber-500', text: 'text-amber-700', label: 'Partial' },
+  critical: { dot: 'bg-rose-500', text: 'text-rose-700', label: 'Critical' },
+  empty: { dot: 'bg-gray-400 dark:bg-neutral-muted/60', text: 'text-gray-500 dark:text-neutral-muted/80', label: 'Empty' },
+};
 
 function fmtRelativeDate(iso: string | null): string {
   if (!iso) return 'Never';
@@ -75,6 +95,15 @@ export default function SourcesPage() {
   const sources = data?.sources || [];
   const total = data?.total_documents || 0;
 
+  // Data-health grid — surfaces the /provenance/health endpoint (previously
+  // unused by any page; audit §2.9). Shows live completeness of each dataset.
+  const { data: health } = useQuery<HealthResponse>({
+    queryKey: ['provenance', 'health'],
+    queryFn: async () => (await api.get<HealthResponse>('/provenance/health')).data,
+    staleTime: 10 * 60 * 1000,
+  });
+  const healthTables = health?.tables || [];
+
   return (
     <PageShell
       title='Where the data comes from'
@@ -114,6 +143,51 @@ export default function SourcesPage() {
             may not reflect the latest publication.
           </div>
         </div>
+
+        {/* Data health grid — surfaces /provenance/health */}
+        {healthTables.length > 0 && (
+          <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-5'>
+            <div className='flex items-center gap-2 mb-1'>
+              <Activity size={16} className='text-gov-forest dark:text-emerald-100' />
+              <h2 className='text-base font-bold text-gray-900 dark:text-neutral-text'>Data health</h2>
+            </div>
+            <p className='text-xs text-gray-500 dark:text-neutral-muted/80 mb-4 max-w-2xl'>
+              Live completeness of each dataset behind the site. Green means the table is fully
+              populated from its source; amber or red means it&apos;s thin or empty, so some
+              figures may be limited.
+            </p>
+            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'>
+              {healthTables.map((tb) => {
+                const s = HEALTH_STYLE[tb.status] || HEALTH_STYLE.empty;
+                return (
+                  <div
+                    key={tb.table}
+                    className='rounded-lg border border-gray-100 dark:border-neutral-border p-3'>
+                    <div className='flex items-center justify-between gap-2'>
+                      <span className='text-sm font-semibold text-gray-800 dark:text-neutral-text truncate'>
+                        {tb.label}
+                      </span>
+                      <span
+                        className={`inline-flex items-center gap-1 text-[11px] font-semibold flex-shrink-0 ${s.text}`}>
+                        <span className={`w-2 h-2 rounded-full ${s.dot}`} />
+                        {s.label}
+                      </span>
+                    </div>
+                    <div className='mt-1 text-lg font-bold text-gray-900 dark:text-neutral-text tabular-nums'>
+                      {tb.row_count.toLocaleString()}{' '}
+                      <span className='text-xs font-normal text-gray-400 dark:text-neutral-muted/80'>
+                        rows
+                      </span>
+                    </div>
+                    <div className='text-[11px] text-gray-500 dark:text-neutral-muted/80 truncate'>
+                      {tb.source}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Loading / Error */}
         {isLoading && (
