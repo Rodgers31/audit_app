@@ -230,9 +230,12 @@ export default function ArticleViewer({
 
             {article.explanation && (
               <div className='mt-4 rounded-xl bg-gradient-to-br from-gov-gold/15 via-gov-sand to-gov-cream/80 dark:from-gov-gold/[0.12] dark:via-surface-base dark:to-surface-elevated p-4 ring-1 ring-gov-gold/30 dark:ring-gov-gold/40'>
-                <div className='mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-gov-forest dark:text-emerald-100'>
+                <div className='mb-1 flex flex-wrap items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-gov-forest dark:text-emerald-100'>
                   <Lightbulb size={13} className='text-gov-gold' />
                   Why it matters
+                  <span className='normal-case font-normal tracking-normal text-gov-dark/50 dark:text-white/50'>
+                    · our plain-language take, not the law
+                  </span>
                 </div>
                 <p className='text-[13.5px] leading-relaxed text-gov-dark dark:text-white'>
                   {renderProse(article.explanation, { query, onRefClick: onReferenceClick })}
