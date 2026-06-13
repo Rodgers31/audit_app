@@ -6331,24 +6331,24 @@ async def get_national_budget_summary(fiscal_year: str = None):
                             .scalar()
                         )
 
+                # Honest scope label — this endpoint sums BudgetLine rows for
+                # EntityType=NATIONAL only (CoB NG-BIRR records). It represents
+                # National-Government execution, NOT the full consolidated
+                # national budget (which additionally includes the county
+                # equitable share transfer, ~400B+ KES for recent years).
+                # Surfaced in BOTH _meta and data so the frontend (which reads
+                # only ``data``) can render it next to the figure.
+                scope_detail = (
+                    "National-Government execution only (CoB NG-BIRR); "
+                    "excludes county equitable share transfers."
+                )
                 return {
                     "status": "success",
                     "_meta": _response_meta(
                         unit="kes",
                         entity_scope="national",
                         fiscal_period=period_label,
-                        # IMPORTANT honesty label — this endpoint sums
-                        # BudgetLine rows for EntityType=NATIONAL only
-                        # (CoB NG-BIRR records). It therefore represents
-                        # National-Government execution, NOT the full
-                        # consolidated national budget, which additionally
-                        # includes the county equitable share transfer
-                        # (~400B+ KES for recent years).
-                        scope_detail=(
-                            "National-Government execution only "
-                            "(CoB NG-BIRR); excludes county equitable "
-                            "share transfers."
-                        ),
+                        scope_detail=scope_detail,
                         covers_through=period_label,
                         cache_ttl_seconds=1800,
                         data_quality="official",
@@ -6364,6 +6364,7 @@ async def get_national_budget_summary(fiscal_year: str = None):
                     "data": {
                         "total": total_allocated,
                         "total_label": "National-Government allocation (CoB NG-BIRR)",
+                        "scope_detail": scope_detail,
                         "total_spent": total_spent,
                         "execution_rate": execution_rate,
                         "development_budget": dev_budget,
@@ -7022,6 +7023,26 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
         for e in econ_rows:
             econ_map[e.indicator_type] = float(e.value) if e.value else None
 
+        # Inflation (CPI): take the LATEST observation by date and surface its
+        # real as-of date, so a stale figure is shown dated rather than implied
+        # current (audit §3.10). Kenyan CPI is published by KNBS, not CBK.
+        inflation_row = (
+            db.query(EconomicIndicator)
+            .filter(EconomicIndicator.indicator_type == "inflation_rate_cpi")
+            .order_by(EconomicIndicator.indicator_date.desc())
+            .first()
+        )
+        inflation_pct = (
+            float(inflation_row.value)
+            if inflation_row and inflation_row.value is not None
+            else econ_map.get("inflation_rate_cpi")
+        )
+        inflation_as_of = (
+            inflation_row.indicator_date.isoformat()
+            if inflation_row and inflation_row.indicator_date
+            else None
+        )
+
         # Get total population (sum of all counties)
         total_pop = db.query(func.sum(PopulationData.total_population)).scalar()
         total_pop = int(total_pop) if total_pop else None
@@ -7045,7 +7066,9 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
         economic_context = {
             "gdp_billion_kes": gdp_billion,
             "gdp_growth_pct": econ_map.get("gdp_growth_rate"),
-            "inflation_pct": econ_map.get("inflation_rate_cpi"),
+            "inflation_pct": inflation_pct,
+            "inflation_as_of": inflation_as_of,
+            "inflation_source": "KNBS Consumer Price Index",
             "unemployment_pct": econ_map.get("unemployment_rate"),
             "total_population": total_pop,
             "budget_to_gdp_pct": (
@@ -7083,9 +7106,20 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
             db.query(Entity.id).filter(Entity.slug == "national-government").scalar()
         )
 
+        # The execution pipeline below is scoped to ONE national period; surface
+        # its fiscal-year label so the UI can show which FY the execution figures
+        # cover. CoB NG-BIRR execution lags the page's selected FY (audit §2.3),
+        # so it must be labelled with its own FY, not the page's.
+        execution_fiscal_year = None
         if national_entity:
             # Scope to latest national FY to avoid summing across all periods
             _nat_pid = _latest_national_period(db)
+            if _nat_pid:
+                execution_fiscal_year = (
+                    db.query(DBFiscalPeriod.label)
+                    .filter(DBFiscalPeriod.id == _nat_pid)
+                    .scalar()
+                )
             sector_q = (
                 db.query(
                     BudgetLine.category,
@@ -7146,6 +7180,7 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
             "revenue_by_source": revenue_by_source,
             "economic_context": economic_context,
             "execution_by_sector": execution_by_sector,
+            "execution_fiscal_year": execution_fiscal_year,
         }
 
     except HTTPException:

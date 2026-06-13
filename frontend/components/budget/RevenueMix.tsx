@@ -151,14 +151,16 @@ export default function RevenueMix({ revenueBySource }: Props) {
       <div className='flex items-start justify-between gap-4 flex-wrap mb-4'>
         <div>
           <div className='text-[11px] font-semibold uppercase tracking-[0.18em] text-gov-forest/80 dark:text-emerald-100/80'>
-            Where revenue comes from
+            Where tax revenue comes from
           </div>
           <h3 className='font-display text-xl sm:text-[22px] text-gov-dark dark:text-white leading-tight mt-0.5'>
             How KRA collected KES {fmtB(totalB)} in {latest.fiscal_year}
           </h3>
           <p className='text-[12.5px] text-neutral-muted mt-1 max-w-2xl'>
-            Tax revenue broken down by stream. {topSource?.label} is the single largest
-            contributor — {topSource?.share.toFixed(0)}% of the total.
+            Tax revenue broken down by stream — shares are of{' '}
+            <strong className='font-semibold text-gov-dark dark:text-white'>tax revenue</strong>, excluding
+            non-tax revenue (fees, investment income, A-in-A, and grants).{' '}
+            {topSource?.label} is the single largest — {topSource?.share.toFixed(0)}% of tax revenue.
           </p>
         </div>
         <div className='text-right'>

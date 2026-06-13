@@ -371,7 +371,10 @@ export default function BudgetSpendingPage() {
 
       {/* ─── 5. The audit lens: execution by sector ─── */}
       {viewingCurrentFY && (
-        <ExecutionAuditLens rows={executionBySector as any} />
+        <ExecutionAuditLens
+          rows={executionBySector as any}
+          fiscalYear={(enhanced as any)?.execution_fiscal_year ?? undefined}
+        />
       )}
 
       {/* ─── 6. County best/worst absorbers ─── */}
