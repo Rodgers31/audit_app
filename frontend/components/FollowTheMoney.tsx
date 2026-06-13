@@ -142,7 +142,7 @@ const GAP_SUBLABEL: Record<string, string> = {
   'Withheld/Delayed':
     'Allocated but not released by Treasury at report time.',
   'Irregular/Unsupported Expenditure':
-    'Spent but flagged by the Auditor-General as unaccounted-for.',
+    'Spent, but the Auditor-General could not confirm it was properly supported — questioned, not proven loss.',
 };
 
 function GapIndicator({
@@ -348,10 +348,10 @@ export default function FollowTheMoney({ data, isLoading, compact }: FollowTheMo
             </div>
             <div>
               <div className='text-sm font-semibold text-red-900'>
-                {fmtKES(data.total_waste_estimate)} Flagged by Auditors
+                {fmtKES(data.total_waste_estimate)} Questioned by the Auditor General
               </div>
               <div className='text-xs text-red-700'>
-                Irregular or unsupported expenditure identified by the Office of the Auditor General
+                Irregular or unsupported expenditure questioned by the Auditor-General — could not be confirmed as properly spent; not proven loss
               </div>
             </div>
           </div>

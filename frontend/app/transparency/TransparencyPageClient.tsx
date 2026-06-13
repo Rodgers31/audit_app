@@ -271,13 +271,13 @@ export default function TransparencyPage() {
     const spent = nationalFlow.stages.find((s) => s.stage === 'Spent')?.amount ?? 0;
     const flagged = nationalFlow.stages.find((s) => s.stage === 'Flagged')?.amount ?? 0;
     const gap = (allocated ?? 0) - (spent ?? 0);
-    const lostPct = allocated > 0 ? (gap / allocated) * 100 : 0;
+    const unspentPct = allocated > 0 ? (gap / allocated) * 100 : 0;
     return {
       allocated: allocated ?? 0,
       spent: spent ?? 0,
       flagged: flagged ?? 0,
       gap,
-      lostPct,
+      unspentPct,
       efficiency: nationalFlow.efficiency_score,
     };
   }, [nationalFlow]);
@@ -394,7 +394,7 @@ export default function TransparencyPage() {
   return (
     <PageShell
       title='Follow the Money'
-      subtitle='Trace every shilling from the Treasury to citizens — and see where it leaks.'>
+      subtitle='Trace every shilling from the Treasury to citizens — and see what the Auditor-General has questioned.'>
       {/* ═══ 1. Narrative intro ═══ */}
       <Section>
         <div className='max-w-3xl'>
@@ -404,7 +404,7 @@ export default function TransparencyPage() {
             the journey — from <strong>allocation</strong> by the Commission on Revenue
             Allocation, to <strong>release</strong> by the Exchequer, to what counties
             actually <strong>spent</strong>, to the portion the Auditor General
-            <strong> flagged</strong> as irregular.
+            <strong> questioned</strong> as irregular or unsupported.
           </p>
         </div>
       </Section>
@@ -448,12 +448,12 @@ export default function TransparencyPage() {
               sublabel={
                 isProjectedFY
                   ? 'Execution figures publish as the CoB releases quarterly CBIRRs'
-                  : `${insights.lostPct.toFixed(1)}% of allocation never reached programmes`
+                  : `${insights.unspentPct.toFixed(1)}% of allocation unspent at report time`
               }
               accent={isProjectedFY ? 'gray' : 'amber'}
             />
             <InsightCard
-              label='Flagged by Auditor General'
+              label='Questioned by Auditor General'
               value={isProjectedFY ? 'Not yet audited' : fmtKES(insights.flagged)}
               sublabel={
                 isProjectedFY
