@@ -297,7 +297,7 @@ export const glossaryTerms: GlossaryTerm[] = [
     longDef:
       "GDP adds up the market value of all final goods and services made in Kenya over a year — from tea at Kericho to code in Nairobi. It's the baseline most budget ratios (debt, deficit, tax) are measured against.",
     examples: [
-      "Kenya's nominal GDP was approximately KES 14.6 trillion in 2023 (KNBS).",
+      "Kenya's nominal GDP was approximately KES 15.0 trillion in 2023 (World Bank / KNBS).",
       'Agriculture still contributes roughly a fifth of GDP.',
       'A debt-to-GDP ratio of 70% means debt is 70% the size of annual output.',
     ],
