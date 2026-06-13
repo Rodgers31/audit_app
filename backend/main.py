@@ -3488,6 +3488,16 @@ async def get_audit_statistics():
                 reverse=True,
             )
 
+            # Honest data vintage from the contributing source documents — never
+            # datetime.now() (audit §2.9). Mirrors /audits/federal.
+            from provenance import vintage_iso
+
+            _audit_doc_ids = [
+                row[0]
+                for row in db.query(DBAudit.source_document_id).distinct().all()
+                if row[0]
+            ]
+
             return {
                 "total_findings": total,
                 "counties_audited": counties_audited,
@@ -3522,9 +3532,7 @@ async def get_audit_statistics():
                         or None
                     ),
                 ),
-                "last_updated": datetime.datetime.now(
-                    datetime.timezone.utc
-                ).isoformat(),
+                "last_updated": vintage_iso(db, _audit_doc_ids),
             }
     except HTTPException:
         raise

@@ -63,7 +63,12 @@ def _parse_kes_amount(value: Any) -> float:
         cleaned = str(value).upper().replace("KES", "").strip()
         cleaned = cleaned.replace(",", "")
         multiplier = 1.0
-        if cleaned.endswith("B"):
+        if cleaned.endswith("T"):
+            # Trillions — without this branch "KES 1.2T" raised and fell through
+            # to 0, undercounting the audit DB (audit §2.6 / §3.4).
+            multiplier = 1_000_000_000_000.0
+            cleaned = cleaned[:-1]
+        elif cleaned.endswith("B"):
             multiplier = 1_000_000_000.0
             cleaned = cleaned[:-1]
         elif cleaned.endswith("M"):
@@ -478,8 +483,13 @@ def _upsert_county_debt(
 
 
 def _map_severity(level: str) -> Severity:
+    # The Severity enum is coarse (INFO/WARNING/CRITICAL — no HIGH). OAG "high"
+    # findings must NOT be promoted to CRITICAL: that inflated the "critical
+    # findings" count and overstated the donut (audit §2.6). Map "high" to
+    # WARNING; the original OAG wording is preserved per-finding in provenance
+    # (severity_label) so nothing is lost.
     mapping = {
-        "high": Severity.CRITICAL,
+        "high": Severity.WARNING,
         "medium": Severity.WARNING,
         "low": Severity.INFO,
         "critical": Severity.CRITICAL,
@@ -523,6 +533,7 @@ def _upsert_audit_records(
             {
                 "source": AUDIT_DATA_PATH.name,
                 "external_id": entry.get("id"),
+                "severity_label": entry.get("severity"),
                 "amount_involved": entry.get("amount_involved"),
                 "status": entry.get("status"),
                 "category": entry.get("category"),
@@ -536,7 +547,9 @@ def _upsert_audit_records(
         amount_value = _parse_kes_amount(entry.get("amount_involved"))
         amount = Decimal(str(amount_value)) if amount_value > 0 else None
         status = entry.get("status")
-        audit_opinion = entry.get("audit_opinion", "Qualified")
+        # No fabricated default — a missing per-finding opinion stays None
+        # rather than asserting "Qualified" for every row (audit §2.6).
+        audit_opinion = entry.get("audit_opinion")
 
         if audit_record:
             audit_record.severity = severity
@@ -968,6 +981,7 @@ def _seed_federal_audits(
             {
                 "source": NATIONAL_AUDIT_PATH.name,
                 "external_id": entry.get("id"),
+                "severity_label": entry.get("severity"),
                 "amount_involved": entry.get("amount_involved"),
                 "status": entry.get("status"),
                 "category": entry.get("category"),
@@ -982,7 +996,9 @@ def _seed_federal_audits(
         amount_value = _parse_kes_amount(entry.get("amount_involved"))
         amount = Decimal(str(amount_value)) if amount_value > 0 else None
         status = entry.get("status")
-        audit_opinion = entry.get("audit_opinion", "Qualified")
+        # No fabricated default — a missing per-finding opinion stays None
+        # rather than asserting "Qualified" for every row (audit §2.6).
+        audit_opinion = entry.get("audit_opinion")
         fiscal_year_raw = report_meta.get("fiscal_year") or ""
         fiscal_year_digits = "".join(
             c for c in fiscal_year_raw.split("/")[0] if c.isdigit()
