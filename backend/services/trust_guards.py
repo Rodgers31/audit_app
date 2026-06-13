@@ -156,6 +156,58 @@ def reconcile_debt_totals(
     return "consistent", diff_pct, notes
 
 
+# ── Debt composition plausibility ────────────────────────────────────
+
+
+def check_debt_composition(
+    *,
+    total: Optional[float],
+    external: Optional[float],
+    domestic: Optional[float],
+    debt_to_gdp: Optional[float] = None,
+    tolerance_pct: float = 2.0,
+) -> list[str]:
+    """Objective plausibility checks on the national-debt composition.
+
+    Returns notes (empty if clean). Deliberately makes NO assumption about
+    which side *should* be larger (that changes over time) — it only flags
+    structural impossibilities and out-of-band ratios:
+      - negative components,
+      - external + domestic exceeding the headline total (cannot reconcile),
+      - external + domestic covering well under the total (uncategorised gap),
+      - debt-to-GDP outside a 30-120% plausible band.
+    """
+    notes: list[str] = []
+    for label, v in (("external", external), ("domestic", domestic), ("total", total)):
+        if v is not None and v < 0:
+            notes.append(f"Implausible: {label} debt is negative.")
+            _warn(f"debt composition: {label} is negative ({v})")
+    if total and total > 0 and external is not None and domestic is not None:
+        split = external + domestic
+        if split > total * (1 + tolerance_pct / 100.0):
+            msg = (
+                "External + domestic debt exceed the headline total — the "
+                "composition does not reconcile."
+            )
+            notes.append(msg)
+            _warn(msg)
+        elif split < total * (1 - tolerance_pct / 100.0):
+            covered = split / total * 100.0
+            notes.append(
+                f"External + domestic cover only {covered:.0f}% of the headline "
+                "total; the remainder is uncategorised."
+            )
+    if (
+        debt_to_gdp is not None
+        and debt_to_gdp > 0
+        and not (30.0 <= debt_to_gdp <= 120.0)
+    ):
+        msg = f"Debt-to-GDP {debt_to_gdp:.1f}% is outside the plausible 30-120% band."
+        notes.append(msg)
+        _warn(msg)
+    return notes
+
+
 # ── Coverage / staleness check ───────────────────────────────────────
 
 

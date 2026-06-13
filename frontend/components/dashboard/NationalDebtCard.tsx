@@ -145,8 +145,12 @@ export default function NationalDebtCard() {
     apiData?.summary?.external_debt ?? (lastYear ? lastYear.external * 1_000_000_000 : 0);
   const domesticDebt =
     apiData?.summary?.domestic_debt ?? (lastYear ? lastYear.domestic * 1_000_000_000 : 0);
-  const externalPct = totalDebt > 0 ? +((externalDebt / totalDebt) * 100).toFixed(1) : 0;
-  const domesticPct = totalDebt > 0 ? +((domesticDebt / totalDebt) * 100).toFixed(1) : 0;
+  // External vs domestic split — shares of (external + domestic) so the two
+  // always sum to exactly 100%. Rounding each independently off the total
+  // previously produced 100.2% (51.5% + 48.7%).
+  const splitBase = externalDebt + domesticDebt;
+  const externalPct = splitBase > 0 ? +((externalDebt / splitBase) * 100).toFixed(1) : 0;
+  const domesticPct = splitBase > 0 ? +(100 - externalPct).toFixed(1) : 0;
 
   // IMF's "General Government Gross Debt" — the broader figure that
   // includes counties, SOEs, pending bills + arrears. Shown here as a

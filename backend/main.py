@@ -20,6 +20,7 @@ from config.settings import settings
 from services.trust_guards import (
     check_budget_sectors,
     check_coverage_staleness,
+    check_debt_composition,
     check_period_nonempty,
     check_plausible_total,
     reconcile_debt_totals,
@@ -8064,6 +8065,15 @@ async def get_national_debt():
                     )
                     _vintage_iso = _vintage.isoformat() if _vintage else None
 
+                    # Surface objective composition plausibility (0.4) so an
+                    # implausible split/ratio is flagged, not shown as fact.
+                    _composition_notes = check_debt_composition(
+                        total=total_outstanding,
+                        external=external_debt,
+                        domestic=domestic_debt,
+                        debt_to_gdp=debt_to_gdp_ratio,
+                    )
+
                     return {
                         "status": "success",
                         "data_source": "database",
@@ -8135,7 +8145,11 @@ async def get_national_debt():
                         },
                         "currency": "KES",
                         "source": "Central Bank of Kenya / National Treasury",
-                        "_meta": _response_meta(unit="kes", entity_scope="national"),
+                        "_meta": _response_meta(
+                            unit="kes",
+                            entity_scope="national",
+                            quality_notes=_composition_notes or None,
+                        ),
                     }
         except Exception as e:
             logging.error(f"DB debt query failed: {e}")
