@@ -8026,6 +8026,27 @@ async def get_national_debt():
                     latest_timeline_row = (
                         db.query(_DT).order_by(_DT.year.desc()).first()
                     )
+
+                    # Correct the external-vs-domestic DIRECTION using the
+                    # authoritative CBK aggregate (DebtTimeline). The loan register
+                    # individually tracks external loans but under-represents
+                    # domestic instruments (T-bonds/bills), which inverted the split
+                    # (audit §3.3 — domestic has led external since ~2024). Keep the
+                    # loan-register total as the base and apply the CBK split
+                    # proportion, so the parts still sum to the total.
+                    if (
+                        latest_timeline_row
+                        and latest_timeline_row.external
+                        and latest_timeline_row.domestic
+                    ):
+                        _tl_ext = float(latest_timeline_row.external)
+                        _tl_dom = float(latest_timeline_row.domestic)
+                        _tl_split = _tl_ext + _tl_dom
+                        _base = external_debt + domestic_debt
+                        if _tl_split > 0 and _base > 0:
+                            external_debt = _base * (_tl_ext / _tl_split)
+                            domestic_debt = _base * (_tl_dom / _tl_split)
+
                     reconciliation: dict = {
                         "primary_source": "loans_table",
                         "primary_value_kes": total_outstanding,
