@@ -146,6 +146,17 @@ def run(
             errors.append(f"GDP fetch failed: {exc}")
 
         gdp_years = len(gdp_by_year)
+        # Record the data vintage (latest covered year) on the source doc so
+        # downstream endpoints can report an honest "as of", not the request
+        # time. See backend/provenance.py.
+        if gdp_by_year and isinstance(gdp_doc.meta, dict):
+            latest_gdp_year = max(gdp_by_year)
+            gdp_doc.meta = {
+                **gdp_doc.meta,
+                "publication_date": f"{latest_gdp_year}-12-31",
+                "covers_through_year": latest_gdp_year,
+            }
+            session.add(gdp_doc)
         for year, gdp_kes in sorted(gdp_by_year.items()):
             value = Decimal(str(gdp_kes))
             existing = (

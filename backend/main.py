@@ -7910,10 +7910,22 @@ async def get_national_debt():
                         )
                         debt_to_gdp_source = "CBK / World Bank"
 
+                    # Real data vintage from source-document provenance —
+                    # NOT the request time. Stops the card claiming it was
+                    # "updated just now" for data that is months old.
+                    from provenance import resolve_data_vintage
+
+                    _vintage = resolve_data_vintage(
+                        db,
+                        [getattr(loan, "source_document_id", None) for loan in loans]
+                        + [getattr(latest_gdp_row, "source_document_id", None)],
+                    )
+                    _vintage_iso = _vintage.isoformat() if _vintage else None
+
                     return {
                         "status": "success",
                         "data_source": "database",
-                        "last_updated": datetime.datetime.now().isoformat(),
+                        "last_updated": _vintage_iso,
                         "data": {
                             "total_debt": total_debt,
                             "total_outstanding": total_outstanding,
