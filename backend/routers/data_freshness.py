@@ -3,11 +3,20 @@ Data Freshness Router — reports how recent each data source is.
 
 GET /api/v1/data/freshness
 
-Both ``last_updated`` (when the ETL last successfully ran) AND
-``covers_through`` (the most recent *fiscal period / observation year*
-present in the data) are derived from the live database. No fiscal-year
-string is hardcoded so the endpoint stays truthful as the underlying
-tables grow.
+All three recency signals are derived from the live database (no
+hardcoded dates):
+
+* ``last_updated`` — the source document's PUBLICATION date (when the
+  publisher released the data), from SourceDocument provenance. This is
+  what drives the fresh/stale/outdated status, so a nightly ETL run can
+  no longer make a year-old report look "fresh".
+* ``last_checked`` — when our pipeline last fetched/ingested this source
+  (honest "when we last looked"); informational only.
+* ``covers_through`` — the most recent fiscal period / observation year
+  present in the data.
+
+Status is frequency-aware: "fresh" means within roughly one expected
+publication cycle for the source's update_frequency.
 """
 
 import logging
@@ -22,6 +31,8 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from provenance import resolve_data_vintage
 
 try:
     from database import get_db
@@ -55,7 +66,8 @@ logger = logging.getLogger(__name__)
 class SourceFreshness(BaseModel):
     source: str
     label: str
-    last_updated: Optional[str] = None
+    last_updated: Optional[str] = None  # source PUBLICATION date (drives status)
+    last_checked: Optional[str] = None  # when our pipeline last fetched it
     covers_through: Optional[str] = None
     update_frequency: str
     status: str  # fresh | stale | outdated
@@ -119,14 +131,22 @@ SOURCE_CONFIG = [
 ]
 
 
-def _freshness_status(last_updated: Optional[date]) -> str:
-    """fresh = <45 days, stale = 45-180 days, outdated = >180 days."""
+# Approx one publication cycle (days) per declared update frequency.
+_CYCLE_DAYS = {"Monthly": 45, "Quarterly": 135, "Annually": 400}
+
+
+def _freshness_status(last_updated: Optional[date], frequency: str = "") -> str:
+    """Frequency-aware status: fresh within ~1 publication cycle, stale within
+    ~2.5 cycles, outdated beyond — so an annually-published report is not
+    judged against a 45-day window (nor a monthly series given a year's grace).
+    """
     if last_updated is None:
         return "outdated"
     delta = (date.today() - last_updated).days
-    if delta < 45:
+    cycle = _CYCLE_DAYS.get(frequency, 90)
+    if delta <= cycle:
         return "fresh"
-    if delta <= 180:
+    if delta <= cycle * 2.5:
         return "stale"
     return "outdated"
 
@@ -232,6 +252,30 @@ def _covers_through(db: Session, cfg: dict) -> Optional[str]:
     return None
 
 
+def _source_publication_date(db: Session, publisher_pattern: str) -> Optional[date]:
+    """Latest PUBLICATION date across a publisher's source documents.
+
+    Uses SourceDocument provenance (meta['publication_date'] then fetch_date)
+    via resolve_data_vintage — NOT the ingestion-run time — so reported
+    recency reflects when the publisher actually released the data.
+    """
+    try:
+        ids = [
+            row[0]
+            for row in db.query(SourceDocument.id)
+            .filter(SourceDocument.publisher.ilike(f"%{publisher_pattern}%"))
+            .all()
+        ]
+        vintage = resolve_data_vintage(db, ids)
+        if vintage is not None:
+            return vintage.date() if isinstance(vintage, datetime) else vintage
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.warning(
+            "publication-date lookup failed for %s: %s", publisher_pattern, exc
+        )
+    return None
+
+
 @router.get("/freshness", response_model=FreshnessResponse)
 async def get_data_freshness(db: Session = Depends(get_db)):
     """Return freshness information for each data source."""
@@ -239,12 +283,14 @@ async def get_data_freshness(db: Session = Depends(get_db)):
     results: List[SourceFreshness] = []
 
     for cfg in SOURCE_CONFIG:
+        last_checked_date: Optional[date] = None
         last_updated_date: Optional[date] = None
         covers_through: Optional[str] = None
 
         if DATABASE_AVAILABLE and db is not None:
-            # Try IngestionJob first (most accurate)
-            # Use the IngestionStatus enum values (not plain strings) to match the column type
+            # last_checked = when our pipeline last fetched/ingested this
+            # source. IngestionJob.finished_at is most accurate; fall back to
+            # SourceDocument.fetch_date.
             job = (
                 db.query(func.max(IngestionJob.finished_at))
                 .filter(
@@ -259,10 +305,8 @@ async def get_data_freshness(db: Session = Depends(get_db)):
                 .scalar()
             )
             if job:
-                last_updated_date = job.date() if isinstance(job, datetime) else job
-
-            # Fallback to SourceDocument fetch_date
-            if last_updated_date is None:
+                last_checked_date = job.date() if isinstance(job, datetime) else job
+            if last_checked_date is None:
                 doc_date = (
                     db.query(func.max(SourceDocument.fetch_date))
                     .filter(
@@ -271,12 +315,16 @@ async def get_data_freshness(db: Session = Depends(get_db)):
                     .scalar()
                 )
                 if doc_date:
-                    last_updated_date = (
+                    last_checked_date = (
                         doc_date.date() if isinstance(doc_date, datetime) else doc_date
                     )
 
-            # Derived coverage (replaces the old hardcoded SOURCE_CONFIG
-            # strings — stays truthful as the DB grows).
+            # last_updated = the source's PUBLICATION date (drives status),
+            # NOT the ingestion-run time. This stops a nightly ETL run from
+            # making a year-old report read "fresh".
+            last_updated_date = _source_publication_date(db, cfg["publisher_pattern"])
+
+            # Derived coverage (stays truthful as the DB grows).
             covers_through = _covers_through(db, cfg)
 
         results.append(
@@ -286,9 +334,12 @@ async def get_data_freshness(db: Session = Depends(get_db)):
                 last_updated=(
                     last_updated_date.isoformat() if last_updated_date else None
                 ),
+                last_checked=(
+                    last_checked_date.isoformat() if last_checked_date else None
+                ),
                 covers_through=covers_through,
                 update_frequency=cfg["update_frequency"],
-                status=_freshness_status(last_updated_date),
+                status=_freshness_status(last_updated_date, cfg["update_frequency"]),
             )
         )
 
