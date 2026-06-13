@@ -429,6 +429,9 @@ function KPICards({ counties }: { counties: County[] }) {
             {t('counties.kpi.no_audits_year')}
           </div>
         )}
+        <p className='mt-2 text-[10px] leading-snug text-gray-400 dark:text-neutral-muted/80 italic'>
+          {t('counties.kpi.audit_status_derived')}
+        </p>
       </div>
 
       {/* Card 5: High Debt Counties */}

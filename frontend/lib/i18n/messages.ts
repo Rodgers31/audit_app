@@ -461,7 +461,8 @@ export const MESSAGES = {
   'counties.kpi.total_budget': { en: 'Total Budget', sw: 'Bajeti Jumla', plain: 'Total Budget' },
   'counties.kpi.across_counties': { en: 'Across {n} counties', sw: 'Kutoka kaunti {n}', plain: 'From {n} counties' },
   'counties.kpi.total_debt': { en: 'Total Debt', sw: 'Deni Jumla', plain: 'Total Debt' },
-  'counties.kpi.pending_bills_loans': { en: 'Pending bills & loans', sw: 'Ankara zilizokwama na mikopo', plain: 'Unpaid bills and loans' },
+  'counties.kpi.pending_bills_loans': { en: 'County debt (excl. pending bills)', sw: 'Deni la kaunti (bila ankara zilizokwama)', plain: 'County loans (not counting unpaid bills)' },
+  'counties.kpi.audit_status_derived': { en: 'Status derived from finding severity — not an official OAG audit opinion.', sw: 'Hali imetokana na uzito wa matokeo — si maoni rasmi ya ukaguzi ya OAG.', plain: 'Based on how serious the findings are — not an official OAG opinion.' },
   'counties.kpi.avg_execution_rate': { en: 'Avg. Execution Rate', sw: 'Wastani wa Matumizi', plain: 'Average spent' },
   'counties.kpi.see_rankings': { en: 'See county rankings below', sw: 'Tazama orodha ya kaunti chini', plain: 'See county rankings below' },
   'counties.kpi.target_70': { en: 'Target: 70%', sw: 'Lengo: 70%', plain: 'Goal: 70%' },
@@ -834,6 +835,7 @@ export const MESSAGES = {
   'county.overview.kpi.census': { en: 'Census', sw: 'Sensa', plain: 'Census' },
   'county.overview.kpi.na': { en: 'N/A', sw: 'Haipo', plain: 'None' },
   'county.overview.key_challenges': { en: 'Key Challenges', sw: 'Changamoto Kuu', plain: 'Main Problems' },
+  'county.overview.challenges_generic_note': { en: "Representative challenges common across many counties — not derived from this county's specific records.", sw: 'Changamoto za kawaida katika kaunti nyingi — si kutoka kwa rekodi mahususi za kaunti hii.', plain: 'Common problems in many counties — not specific to this one.' },
 
   // Stalled projects summary (overview)
   'county.overview.stalled_n': { en: 'Stalled Project', sw: 'Mradi Uliokwama', plain: 'Stuck Project' },

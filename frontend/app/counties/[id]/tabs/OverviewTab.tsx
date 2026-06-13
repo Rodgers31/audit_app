@@ -381,6 +381,9 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
                 </span>
               ))}
             </div>
+            <p className='mt-2 text-[11px] text-gray-400 dark:text-neutral-muted/80 italic'>
+              {t('county.overview.challenges_generic_note')}
+            </p>
           </div>
         )}
       </div>
