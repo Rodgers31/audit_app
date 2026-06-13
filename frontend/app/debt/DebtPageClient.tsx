@@ -843,7 +843,7 @@ export default function NationalDebtPage() {
                 threshold={55}
                 thresholdLabel='PFM Act'
                 label='Debt-to-GDP'
-                subLabel='Total debt as % of the economy (PFM Act anchor, PV)'
+                subLabel='Public debt as % of GDP (nominal). The PFM Act 55% anchor is measured in present-value terms.'
               />
               <RingGauge
                 value={debtSustainability.debt_service_to_revenue}

@@ -7561,6 +7561,47 @@ async def get_national_loans(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+def _latest_imf_debt_to_gdp(db):
+    """Latest IMF GGXWDG_NGDP (general-government gross debt, % of GDP) for Kenya.
+
+    Returns ``(ratio_pct, year, vintage_iso)`` for the most recent ACTUAL
+    (non-projection) year in the newest WEO vintage, or ``None`` if the IMF
+    table is not seeded. This is the vintage-consistent headline
+    debt-to-GDP measure (same-year debt and GDP) and avoids the prior bug
+    of dividing a current debt stock by a stale/low nominal-GDP year.
+    """
+    try:
+        from models import ImfWeoObservation
+        from sqlalchemy import func as _func
+
+        latest_vintage = (
+            db.query(_func.max(ImfWeoObservation.vintage))
+            .filter(ImfWeoObservation.country_code == "KEN")
+            .scalar()
+        )
+        if latest_vintage is None:
+            return None
+        rows = (
+            db.query(ImfWeoObservation)
+            .filter(
+                ImfWeoObservation.country_code == "KEN",
+                ImfWeoObservation.indicator == "GGXWDG_NGDP",
+                ImfWeoObservation.vintage == latest_vintage,
+            )
+            .order_by(ImfWeoObservation.year)
+            .all()
+        )
+        usable = [r for r in rows if r.value is not None]
+        if not usable:
+            return None
+        actuals = [r for r in usable if not r.is_projection]
+        chosen = (actuals or usable)[-1]
+        return (round(float(chosen.value), 1), chosen.year, latest_vintage.isoformat())
+    except Exception as exc:  # pragma: no cover - defensive
+        logging.warning("IMF debt-to-GDP lookup failed: %s", exc)
+        return None
+
+
 @app.get("/api/v1/debt/national")
 @cached(
     key_prefix="debt:national", ttl=43200
@@ -7840,6 +7881,35 @@ async def get_national_debt():
                             else:
                                 reconciliation["status"] = "consistent"
 
+                    # Headline debt-to-GDP: prefer the IMF published ratio
+                    # (GGXWDG_NGDP), which is vintage-consistent (same-year
+                    # debt and GDP). Fall back to central-government debt /
+                    # nominal GDP (World Bank) with the GDP year labelled.
+                    # This replaces the old bug of dividing current debt by a
+                    # stale/low hardcoded GDP (which produced 82% vs ~68%).
+                    _computed_ratio = (
+                        round(total_outstanding / gdp_value * 100, 1)
+                        if gdp_value > 0
+                        else 0
+                    )
+                    _imf = _latest_imf_debt_to_gdp(db)
+                    if _imf is not None:
+                        debt_to_gdp_ratio = _imf[0]
+                        debt_to_gdp_year = _imf[1]
+                        debt_to_gdp_basis = (
+                            "IMF General Government Gross Debt, % of GDP "
+                            "(GGXWDG_NGDP) — vintage-consistent"
+                        )
+                        debt_to_gdp_source = "IMF World Economic Outlook"
+                    else:
+                        debt_to_gdp_ratio = _computed_ratio
+                        debt_to_gdp_year = gdp_year
+                        debt_to_gdp_basis = (
+                            "Central government debt (CBK) / nominal GDP "
+                            f"(World Bank, {gdp_year}) — approximate"
+                        )
+                        debt_to_gdp_source = "CBK / World Bank"
+
                     return {
                         "status": "success",
                         "data_source": "database",
@@ -7850,11 +7920,11 @@ async def get_national_debt():
                             "loan_count": len(loans),
                             "gdp": gdp_value,
                             "gdp_year": gdp_year,
-                            "debt_to_gdp_ratio": (
-                                round(total_outstanding / gdp_value * 100, 1)
-                                if gdp_value > 0
-                                else 0
-                            ),
+                            "debt_to_gdp_ratio": debt_to_gdp_ratio,
+                            "debt_to_gdp_year": debt_to_gdp_year,
+                            "debt_to_gdp_basis": debt_to_gdp_basis,
+                            "debt_to_gdp_source": debt_to_gdp_source,
+                            "debt_to_gdp_computed_central_gov": _computed_ratio,
                             "reconciliation": reconciliation,
                             # High-level breakdown
                             "summary": {
@@ -7894,19 +7964,17 @@ async def get_national_debt():
                             "debt_sustainability": {
                                 "risk_level": (
                                     "High"
-                                    if gdp_value > 0
-                                    and total_outstanding / gdp_value > 0.65
-                                    else ("Moderate" if gdp_value > 0 else "Unknown")
+                                    if debt_to_gdp_ratio > 65
+                                    else (
+                                        "Moderate"
+                                        if debt_to_gdp_ratio > 0
+                                        else "Unknown"
+                                    )
                                 ),
-                                "debt_to_gdp": (
-                                    round(total_outstanding / gdp_value * 100, 1)
-                                    if gdp_value > 0
-                                    else 0
-                                ),
+                                "debt_to_gdp": debt_to_gdp_ratio,
                                 "assessment": (
                                     "Kenya's debt remains elevated. The IMF classifies Kenya at high risk of debt distress."
-                                    if gdp_value > 0
-                                    and total_outstanding / gdp_value > 0.65
+                                    if debt_to_gdp_ratio > 65
                                     else "Seed GDP data for full sustainability assessment."
                                 ),
                             },

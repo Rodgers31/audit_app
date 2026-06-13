@@ -567,18 +567,28 @@ def _upsert_audit_records(
         session.add(audit_record)
 
 
-# ── National-level (Kenya) GDP + Sovereign Debt ────────────────────────
-# Sources:
-#   GDP — Kenya National Bureau of Statistics (KNBS) Economic Survey 2025
-#   Debt — Central Bank of Kenya Public Debt CSV (April 2025)
-NATIONAL_GDP_SERIES = [
-    (2020, 10_751_000_000_000),  # KES — KNBS
-    (2021, 12_098_000_000_000),
-    (2022, 13_362_000_000_000),
-    (2023, 14_088_000_000_000),
-    (2024, 14_800_000_000_000),  # KNBS preliminary
-    (2025, 15_400_000_000_000),  # Estimate
-]
+# ── National-level (Kenya) GDP ─────────────────────────────────────────
+# GDP is loaded from the World Bank-sourced fixture (seeding/real_data/
+# national_gdp.json), NOT a hardcoded series. A wrong constant here
+# (2025 = 15.4T vs the real ~16-18T) is exactly what previously inflated
+# the headline debt-to-GDP ratio to 82%. The live `national_gdp` seeding
+# domain overlays current World Bank values nightly. (Sovereign debt
+# likewise comes from the seeding pipeline; see national_debt.json.)
+def _load_national_gdp_series() -> "list[tuple[int, int]]":
+    """Return [(year, nominal_gdp_kes)] from the World Bank-sourced fixture."""
+    fixture = (
+        Path(__file__).resolve().parent / "seeding" / "real_data" / "national_gdp.json"
+    )
+    try:
+        data = json.loads(fixture.read_text(encoding="utf-8"))
+        return [
+            (int(r["year"]), int(r["gdp_kes"]))
+            for r in data.get("gdp", [])
+            if r.get("gdp_kes") is not None
+        ]
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.warning("Could not load national_gdp.json fixture: %s", exc)
+        return []
 
 # NATIONAL_DEBT_BREAKDOWN removed — debt data now comes from the seeding
 # pipeline via `python -m seeding.cli seed --domain national_debt`.
@@ -775,7 +785,7 @@ def _seed_national_data(
     if orphan_gdp:
         logger.info(f"Deleted {len(orphan_gdp)} orphan GDP rows")
 
-    for year, gdp_val in NATIONAL_GDP_SERIES:
+    for year, gdp_val in _load_national_gdp_series():
         existing = (
             session.query(GDPData)
             .filter(GDPData.entity_id == national_entity.id, GDPData.year == year)
@@ -791,8 +801,11 @@ def _seed_national_data(
                     year=year,
                     gdp_value=Decimal(str(gdp_val)),
                     source_document_id=national_doc.id,
-                    confidence=Decimal("0.90"),
-                    meta={"source": "KNBS Economic Survey", "bootstrap": True},
+                    confidence=Decimal("0.95"),
+                    meta={
+                        "source": "World Bank NY.GDP.MKTP.CN (fixture)",
+                        "bootstrap": True,
+                    },
                 )
             )
 

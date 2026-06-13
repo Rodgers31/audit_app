@@ -26,21 +26,19 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ...config import SeedingSettings
+from ...http_client import create_http_client
 from ...registries import register_domain
 from ...types import DomainRunContext, DomainRunResult
+from . import fetcher
 
 logger = logging.getLogger("seeding.national_gdp")
 
-# ── Static data series ─────────────────────────────────────────────────
-# Source: KNBS Economic Survey 2025 (GDP in KES)
-NATIONAL_GDP_SERIES = [
-    (2020, 10_751_000_000_000),
-    (2021, 12_098_000_000_000),
-    (2022, 13_362_000_000_000),
-    (2023, 14_088_000_000_000),
-    (2024, 14_800_000_000_000),  # KNBS preliminary
-    (2025, 15_400_000_000_000),  # Estimate
-]
+# GDP is fetched live from the World Bank (NY.GDP.MKTP.CN), with an in-repo
+# World Bank-sourced fixture as the last-known-good fallback. There is
+# intentionally NO hardcoded GDP series here: a wrong/low GDP constant
+# (previously 2025 = 15.4T vs the real ~16-18T) is exactly what inflated
+# the headline debt-to-GDP ratio to 82%. See national_gdp/fetcher.py and
+# seeding/real_data/national_gdp.json.
 
 # Source: World Bank, KNBS KIHBS
 POVERTY_SERIES = [
@@ -68,8 +66,33 @@ POVERTY_SERIES = [
 ]
 
 
+def _ensure_gdp_source_document(session: Session) -> SourceDocument:
+    """Get or create the World Bank source document for national GDP."""
+    url = "https://api.worldbank.org/v2/country/KEN/indicator/NY.GDP.MKTP.CN"
+    stmt = select(SourceDocument).where(SourceDocument.url == url)
+    doc = session.execute(stmt).scalar_one_or_none()
+    if doc is None:
+        country = session.execute(
+            select(Country).order_by(Country.id.asc())
+        ).scalar_one_or_none()
+        doc = SourceDocument(
+            country_id=country.id if country else None,
+            publisher="World Bank",
+            title="World Bank — Kenya GDP, current LCU (NY.GDP.MKTP.CN)",
+            url=url,
+            file_path=None,
+            fetch_date=datetime.now(timezone.utc),
+            doc_type=DocumentType.REPORT,
+            md5=None,
+            meta={"seeding_domain": "national_gdp", "indicator": "NY.GDP.MKTP.CN"},
+        )
+        session.add(doc)
+        session.flush()
+    return doc
+
+
 def _ensure_source_document(session: Session) -> SourceDocument:
-    """Get or create the source document for national GDP data."""
+    """Get or create the source document for national poverty data."""
     url = "https://www.knbs.or.ke/economic-survey-2025/"
     stmt = select(SourceDocument).where(SourceDocument.url == url)
     doc = session.execute(stmt).scalar_one_or_none()
@@ -102,30 +125,48 @@ def run(
     updated = 0
     errors: list[str] = []
 
+    gdp_years = 0
     try:
         doc = _ensure_source_document(session)
+        gdp_doc = _ensure_gdp_source_document(session)
 
-        # ── GDP records with entity_id=NULL ──────────────────────────
-        for year, gdp_val in NATIONAL_GDP_SERIES:
+        # ── GDP records (entity_id=NULL) — fetched from the World Bank ─
+        # Live World Bank NY.GDP.MKTP.CN, with the World Bank-sourced
+        # fixture as the last-known-good fallback. On total fetch failure
+        # we keep whatever GDP rows already exist — never overwrite real
+        # data with a guess, never inject a hardcoded estimate.
+        try:
+            with create_http_client(settings) as client:
+                gdp_by_year = fetcher.fetch_national_gdp_kes(client, settings)
+        except Exception as exc:
+            logger.warning(
+                "national_gdp: GDP fetch failed (%s); keeping existing rows", exc
+            )
+            gdp_by_year = {}
+            errors.append(f"GDP fetch failed: {exc}")
+
+        gdp_years = len(gdp_by_year)
+        for year, gdp_kes in sorted(gdp_by_year.items()):
+            value = Decimal(str(gdp_kes))
             existing = (
                 session.query(GDPData)
                 .filter(GDPData.entity_id.is_(None), GDPData.year == year)
                 .first()
             )
-            value = Decimal(str(gdp_val))
             if existing is None:
                 session.execute(
                     GDPData.__table__.insert().values(
                         entity_id=None,
                         year=year,
                         gdp_value=value,
-                        source_document_id=doc.id,
-                        confidence=Decimal("0.90"),
+                        source_document_id=gdp_doc.id,
+                        confidence=Decimal("0.95"),
                         currency="KES",
                         metadata={
-                            "source": "KNBS Economic Survey",
+                            "source": "World Bank NY.GDP.MKTP.CN",
                             "seeding_domain": "national_gdp",
                             "scope": "national",
+                            "data_quality": "official",
                         },
                     )
                 )
@@ -133,7 +174,7 @@ def run(
                 logger.info("Created NULL-entity GDP row for %d", year)
             elif existing.gdp_value != value:
                 existing.gdp_value = value
-                existing.source_document_id = doc.id
+                existing.source_document_id = gdp_doc.id
                 session.add(existing)
                 updated += 1
 
@@ -187,7 +228,7 @@ def run(
         logger.exception("national_gdp seeding failed: %s", exc)
         errors.append(str(exc))
 
-    processed = len(NATIONAL_GDP_SERIES) + len(POVERTY_SERIES)
+    processed = gdp_years + len(POVERTY_SERIES)
     logger.info(
         "national_gdp complete: %d created, %d updated, %d processed",
         created,
