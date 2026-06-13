@@ -189,6 +189,23 @@ export default function NationalDebtCard() {
         </div>
       </div>
 
+      {/* Reconciliation divergence — surfaced on home too (audit §2.1/§4), not
+          just /debt. Renders only when the two debt sources disagree materially. */}
+      {apiData?.reconciliation?.status === 'divergent' && (
+        <div className='mx-6 sm:mx-8 mt-3 flex items-start gap-2 rounded-lg border border-amber-300/50 bg-amber-50/70 dark:bg-amber-500/10 px-3 py-2'>
+          <AlertTriangle className='w-3.5 h-3.5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0' />
+          <p className='text-[11px] leading-snug text-amber-800 dark:text-amber-200'>
+            Sources differ by{' '}
+            {Math.abs(Number(apiData.reconciliation.percent_diff) || 0).toFixed(1)}% —{' '}
+            {apiData.reconciliation.primary_source} vs {apiData.reconciliation.secondary_source}.{' '}
+            <Link href='/debt' className='font-semibold underline hover:no-underline'>
+              See the audit trail
+            </Link>
+            .
+          </p>
+        </div>
+      )}
+
       {/* Stat cards row */}
       <div className='px-6 sm:px-8 pt-5 pb-2'>
         <div className='grid grid-cols-2 sm:grid-cols-4 gap-3'>
