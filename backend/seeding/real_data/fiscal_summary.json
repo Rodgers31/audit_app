@@ -30,13 +30,17 @@
         "publisher": "National Treasury & Economic Planning",
         "url": "https://www.treasury.go.ke/wp-content/uploads/2025/02/2025-Budget-Policy-Statement...pdf",
         "published": "2025-02",
-        "note": "Budgeted TOTAL debt service (interest + principal redemptions), ~KSh 1.9T — consistent with the seed's debt_service_cost definition, the rising trend (FY24/25 = 1,854B), and the Treasury/BPS projected debt-service-to-revenue of ~64-65% (Cytonn 2025 Review of Kenya's Public Debt; latest actual 67.1% as at May 2025). Corrects the earlier narrow 'CFS charge' figure (1,620B) that understated the ratio to ~56%. The ratio is now DERIVED from debt_service_cost / total_revenue at seed time, so it self-corrects when these are revised once the FY25/26 APDMR lands ~Nov 2026."
+        "note": "Budgeted, not actual. Uses a FY25/26 budget estimate of TOTAL debt service (interest + principal redemptions) over tax + non-tax revenue so the published ratio stays comparable with the APDMR series while the 2025/26 APDMR is still pending. Will be revised once FY25/26 APDMR lands in Nov 2026."
       }
     },
+    "methodology_notes": {
+      "FY 2022/23 / 2023/24 / 2024/25": "APDMR framing: total debt service (interest + principal redemptions) divided by tax+non-tax revenue including ministerial A-i-A.",
+      "FY 2025/26": "Budget estimate framed to stay comparable with the APDMR series: total debt service (interest + principal redemptions) divided by tax+non-tax revenue. Values are budgeted from the BPS until the FY2025/26 APDMR publishes."
+    },
     "definitions": {
-      "debt_service_cost": "TOTAL debt service = interest payments + principal redemptions (domestic + external), per National Treasury APDMR.",
-      "debt_service_per_shilling": "Shillings of total debt service paid per KSh 100 of total revenue (tax + non-tax, excluding grants). Matches the Treasury APDMR 'debt service / revenue' ratio.",
-      "total_revenue": "Tax + non-tax revenue (ordinary revenue + ministerial A-i-A), excluding grants. This is the denominator Treasury uses in the APDMR's debt-service-to-revenue ratio."
+      "debt_service_cost": "FY22/23–FY24/25: TOTAL debt service per APDMR (interest + principal redemptions, domestic + external). FY25/26: budgeted total debt service using the same broad definition until the APDMR actual is published.",
+      "debt_service_per_shilling": "Shillings of total debt service paid per KSh 100 of revenue. The ratio is derived from debt_service_cost / total_revenue at seed time.",
+      "total_revenue": "FY22/23–FY24/25: tax + non-tax revenue including ministerial A-i-A (APDMR denominator). FY25/26: budgeted tax + non-tax revenue to preserve series comparability until the APDMR actual publishes."
     }
   },
   "fiscal_years": [
@@ -106,7 +110,8 @@
       "debt_ceiling_usage_pct": 125.0,
       "development_spending": 672,
       "recurrent_spending": 2850,
-      "county_allocation": 415
+      "county_allocation": 415,
+      "methodology": "APDMR-style budget estimate"
     }
   ]
 }

@@ -40,6 +40,10 @@ env:
   DATABASE_URL: ${{ secrets.DATABASE_URL }}
   SEED_RATE_LIMIT: ${{ vars.SEED_RATE_LIMIT || '60/min' }}
   SEED_TIMEOUT_SECONDS: ${{ vars.SEED_TIMEOUT_SECONDS || '30.0' }}
+  # Global wall-clock budget for `seed --all` (seconds). Kept below the
+  # "Seed all domains" step timeout-minutes (25) so the CLI exits cleanly
+  # before GitHub SIGKILLs the step. Bump both together if domains are added.
+  SEED_TOTAL_TIMEOUT_SECONDS: ${{ vars.SEED_TOTAL_TIMEOUT_SECONDS || '1320' }}
   SEED_BUDGETS_DATASET_URL: ${{ secrets.SEED_BUDGETS_DATASET_URL }}
   SEED_AUDITS_DATASET_URL: ${{ secrets.SEED_AUDITS_DATASET_URL }}
   SEED_POPULATION_DATASET_URL: ${{ secrets.SEED_POPULATION_DATASET_URL }}

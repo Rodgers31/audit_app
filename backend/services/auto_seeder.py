@@ -120,6 +120,19 @@ class AutoSeeder:
     - Updates database without human intervention
     """
 
+    # Domains seeded synchronously at boot via seed_all_domains().
+    # Exposed as a class attribute so _initial_seed_and_loop can backfill
+    # last_refresh only for REFRESH_SCHEDULE domains that AREN'T in this
+    # set — preserving the existing retry-on-next-tick behaviour for
+    # boot-seeded domains that fail at startup.
+    _BOOT_DOMAINS: tuple = (
+        "counties",
+        "national_entity",
+        "debt",
+        "population",
+        "economic",
+    )
+
     def __init__(self):
         self.last_refresh: Dict[str, datetime] = {}
         self.is_running = False
@@ -153,6 +166,23 @@ class AutoSeeder:
             await self.seed_all_domains()
         except Exception as exc:
             logger.warning(f"[AUTO-SEEDER] Initial seed failed (non-critical): {exc}")
+
+        # Backfill last_refresh ONLY for REFRESH_SCHEDULE domains that
+        # aren't boot-seeded (registry-only: budgets, audits,
+        # counties_budget). Without this they have last_refresh=None
+        # forever and the hourly tick re-runs the registry pipeline
+        # (pdfplumber + pandas + HTTP scrapes) every hour — which OOMs
+        # a 512 MB worker on Render.
+        #
+        # Boot-seeded domains are deliberately excluded: if their seed
+        # raised, last_refresh stays None and the hourly tick retries
+        # them on next iteration — that's the existing transient-failure
+        # behaviour and we don't want to suppress it.
+        boot_time = datetime.now(timezone.utc)
+        for domain in REFRESH_SCHEDULE:
+            if domain not in self._BOOT_DOMAINS:
+                self.last_refresh.setdefault(domain, boot_time)
+
         await self._refresh_loop()
 
     async def stop(self):
@@ -212,16 +242,11 @@ class AutoSeeder:
         """Seed all data domains from live sources."""
         logger.info("[AUTO-SEEDER] === FULL DATA REFRESH FROM LIVE SOURCES ===")
 
-        # Order matters: entities first, then data that references them
-        domains = [
-            "counties",  # Create county entities first
-            "national_entity",  # National government entity
-            "debt",  # National debt (requires national entity)
-            "population",  # Population (requires county entities)
-            "economic",  # Economic indicators
-        ]
-
-        for domain in domains:
+        # Order matters: entities first, then data that references them.
+        # Sourced from the class attribute so _initial_seed_and_loop and
+        # this method stay in sync — drift between the two is what
+        # caused the hourly OOM cycle in the first place.
+        for domain in self._BOOT_DOMAINS:
             try:
                 logger.info(f"[AUTO-SEEDER] Processing domain: {domain}")
                 await self._seed_domain(domain)

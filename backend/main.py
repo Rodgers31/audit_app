@@ -600,6 +600,11 @@ class InternalAPIClient:
     # simple in-memory TTL cache to reduce flakiness and repeated fetches during a session
     _cache: Dict[str, Dict[str, Any]] = {}
     _ttl_seconds = 6 * 60 * 60  # 6 hours
+    # Hard cap so the cache can't grow unbounded under traffic that hits
+    # many distinct keys (e.g. all 47 county detail endpoints in one
+    # session). Mirrors the bound used by RedisCache._memory_cache_max_size
+    # in cache/redis_cache.py.
+    _max_size = 1024
 
     @classmethod
     def _cache_get(cls, key: str):
@@ -613,6 +618,19 @@ class InternalAPIClient:
 
     @classmethod
     def _cache_set(cls, key: str, value: Any):
+        # Evict expired entries first; if still at cap, drop the oldest
+        # by insertion order (Py 3.7+ dicts preserve it). This matches
+        # the eviction behaviour in cache/redis_cache.py.
+        if len(cls._cache) >= cls._max_size:
+            now = time.time()
+            for k in [
+                k for k, rec in cls._cache.items()
+                if now - rec["ts"] > cls._ttl_seconds
+            ]:
+                cls._cache.pop(k, None)
+            while len(cls._cache) >= cls._max_size:
+                oldest = next(iter(cls._cache))
+                cls._cache.pop(oldest, None)
         cls._cache[key] = {"value": value, "ts": time.time()}
 
     @staticmethod
@@ -1026,18 +1044,44 @@ async def stop_auto_seeder_service() -> None:
 # in priority order; later entries depend on prior endpoints' data.
 # Disable via AUTO_WARMUP_ENABLED=false (useful for lightweight dev boots).
 _WARMUP_ENABLED = os.getenv("AUTO_WARMUP_ENABLED", "true").lower() in ("true", "1", "yes")
+# Cap on simultaneous in-flight warm-up requests. Firing all paths at
+# once pinned a DB result set in memory per request and pushed the
+# 512 MB Render container over its limit during boot. Tunable via
+# AUTO_WARMUP_CONCURRENCY; the default of 3 keeps peak memory bounded
+# while still finishing the full batch in under a minute.
+_WARMUP_CONCURRENCY = max(1, int(os.getenv("AUTO_WARMUP_CONCURRENCY", "3")))
 _WARMUP_PATHS: List[str] = [
+    # Fiscal & budget
     "/api/v1/fiscal/summary",
-    "/api/v1/debt/national",
-    "/api/v1/debt/timeline",
-    "/api/v1/debt/national-loans",
     "/api/v1/budget/national",
-    "/api/v1/counties",
+    "/api/v1/budget/overview",
+    "/api/v1/budget/enhanced",
+    "/api/v1/budget/utilization",
+    # Debt
+    "/api/v1/debt/national",
+    "/api/v1/debt/national-loans",
+    "/api/v1/debt/timeline",
+    "/api/v1/debt/sustainability",
+    "/api/v1/debt/loans",
+    # Audits
     "/api/v1/audits/federal",
     "/api/v1/audits/statistics",
+    "/api/v1/audits/fiscal-years",
+    "/api/v1/audit/summary",
+    # Counties & spending
+    "/api/v1/counties",
     "/api/v1/sectors/spending",
     "/api/v1/accountability/missing-funds",
     "/api/v1/sources/summary",
+    # Pending bills
+    "/api/v1/pending-bills",
+    "/api/v1/pending-bills/summary",
+    # Economic & freshness
+    "/api/v1/economic/population/latest",
+    "/api/v1/data/freshness",
+    # Money flow (default fiscal year)
+    "/api/v1/audit/money-flow/national?year=2024/25",
+    "/api/v1/money-flow/all-counties?year=2024/25",
 ]
 
 
@@ -1046,10 +1090,10 @@ async def warm_cache_on_startup() -> None:
     """Pre-warm the response cache for high-traffic endpoints.
 
     Without this, the first user after a deploy pays the full cold-path
-    latency on each endpoint they hit. We fire the warm-ups
-    concurrently; on a fast local DB the whole batch finishes in under
-    a second, and even with the rewritten batch queries each one is
-    single-digit seconds in the worst case.
+    latency on each endpoint they hit. Requests are gated by a
+    semaphore (AUTO_WARMUP_CONCURRENCY, default 3) so the boot never
+    pins more than N DB result sets in memory at once — without the
+    cap the full list ran the 512 MB container out of memory.
     """
     if not _WARMUP_ENABLED:
         logger.info("Cache warmup disabled via AUTO_WARMUP_ENABLED=false")
@@ -1065,15 +1109,17 @@ async def warm_cache_on_startup() -> None:
         # the launch script, default to 8000.
         port = int(os.getenv("PORT", "8000"))
         base = f"http://127.0.0.1:{port}"
+        sem = asyncio.Semaphore(_WARMUP_CONCURRENCY)
 
         async def _hit(client: "httpx.AsyncClient", path: str) -> None:
-            try:
-                r = await client.get(f"{base}{path}", timeout=30.0)
-                logger.info(
-                    f"[WARMUP] {path} → {r.status_code} ({r.elapsed.total_seconds():.2f}s)"
-                )
-            except Exception as exc:
-                logger.warning(f"[WARMUP] {path} failed: {exc}")
+            async with sem:
+                try:
+                    r = await client.get(f"{base}{path}", timeout=30.0)
+                    logger.info(
+                        f"[WARMUP] {path} → {r.status_code} ({r.elapsed.total_seconds():.2f}s)"
+                    )
+                except Exception as exc:
+                    logger.warning(f"[WARMUP] {path} failed: {exc}")
 
         async with httpx.AsyncClient() as client:
             await asyncio.gather(*[_hit(client, p) for p in _WARMUP_PATHS])
@@ -1366,55 +1412,6 @@ async def startup_event():
         logger.warning(f"Database pre-warm failed (non-fatal): {e}")
 
     logger.info("Main Backend API startup complete!")
-
-    # Pre-warm critical endpoint caches in the background so the first
-    # real user request is fast.  Runs async after startup completes.
-    import asyncio
-
-    async def _warm_caches():
-        """Hit the slowest endpoints concurrently to populate their caches."""
-        await asyncio.sleep(2)  # Let the server finish binding
-        try:
-            import httpx as _httpx
-
-            base = "http://127.0.0.1:" + str(os.environ.get("PORT", 8000))
-            endpoints = [
-                # Debt pages
-                "/api/v1/debt/national",
-                "/api/v1/debt/timeline",
-                "/api/v1/debt/sustainability",
-                "/api/v1/debt/loans",
-                # Fiscal & budget
-                "/api/v1/fiscal/summary",
-                "/api/v1/budget/national",
-                "/api/v1/budget/overview",
-                "/api/v1/budget/enhanced",
-                "/api/v1/budget/utilization",
-                # Pending bills
-                "/api/v1/pending-bills",
-                "/api/v1/pending-bills/summary",
-                # Audits
-                "/api/v1/audits/federal",
-                "/api/v1/audits/fiscal-years",
-                "/api/v1/audit/summary",
-                # Counties & economic
-                "/api/v1/counties",
-                "/api/v1/economic/population/latest",
-                "/api/v1/data/freshness",
-                # Money flow (default fiscal year)
-                "/api/v1/audit/money-flow/national?year=2024/25",
-                "/api/v1/money-flow/all-counties?year=2024/25",
-            ]
-            async with _httpx.AsyncClient(timeout=60) as client:
-                # Fire all requests concurrently — much faster than sequential
-                tasks = [client.get(base + ep) for ep in endpoints]
-                results = await asyncio.gather(*tasks, return_exceptions=True)
-                warmed = sum(1 for r in results if not isinstance(r, Exception))
-                logger.info(f"Cache warmed: {warmed}/{len(endpoints)} endpoints")
-        except Exception as e:
-            logger.warning(f"Cache pre-warm failed (non-fatal): {e}")
-
-    asyncio.create_task(_warm_caches())
 
 
 @app.api_route("/", methods=["GET", "HEAD"])

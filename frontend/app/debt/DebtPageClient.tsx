@@ -21,6 +21,10 @@ import {
 } from '@/lib/react-query/useDebt';
 import { useFiscalSummary } from '@/lib/react-query/useFiscal';
 import { apiClient } from '@/lib/api/axios';
+import {
+  computeRevenueAllocation,
+  formatHeadlineKes,
+} from '@/lib/debt/revenueAllocation';
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 import {
   AlertTriangle,
@@ -468,52 +472,22 @@ export default function NationalDebtPage() {
   }, [d.gdpRatio]);
 
   /* ── Revenue allocation (per KES 100 of revenue — authoritative) ──
-     Uses backend's debt_service_per_shilling (Treasury figure).
+     APDMR-style framing: tax + non-tax revenue as denominator, total
+     debt service (interest + principal redemptions) as numerator.
+     Backend exposes the pre-computed ratio in
+     `debt_service_per_shilling`; we fall back to (ds / rev) × 100 only
+     if it's missing.
      Framed as "per 100 of revenue" because:
        – Revenue doesn't fund the whole budget (borrowing covers the gap)
        – Debt service is a first-call charge BEFORE anything else
        – Revenue-based framing lets citizens see how much of their taxes
-         the debt actually consumes before a single school is funded. */
-  const taxAllocation = useMemo(() => {
-    if (!fiscal?.current) return null;
-    const c: any = fiscal.current;
-    const rev = c.total_revenue || 0;
-    if (!rev) return null;
-    const ds = c.debt_service_cost || 0;
-    const rec = Math.max((c.recurrent_spending || 0) - ds, 0);
-    const dev = c.development_spending || 0;
-    const counties = c.county_allocation || 0;
-    const budget = c.appropriated_budget || ds + rec + dev + counties;
-    const borrowing = Math.max(budget - rev, 0);
-
-    // Authoritative: use backend-provided debt_service_per_shilling where available.
-    const debtServicePerRev =
-      c.debt_service_per_shilling != null
-        ? c.debt_service_per_shilling
-        : rev > 0
-          ? (ds / rev) * 100
-          : 0;
-
-    const recPerRev = rev > 0 ? (rec / rev) * 100 : 0;
-    const devPerRev = rev > 0 ? (dev / rev) * 100 : 0;
-    const countiesPerRev = rev > 0 ? (counties / rev) * 100 : 0;
-    const allocatedPerRev =
-      debtServicePerRev + recPerRev + devPerRev + countiesPerRev;
-    const borrowingPerRev = Math.max(allocatedPerRev - 100, 0);
-
-    return {
-      rev,
-      budget,
-      ds,
-      borrowing,
-      debtServicePerRev, // e.g. 47.7
-      recPerRev,
-      devPerRev,
-      countiesPerRev,
-      borrowingPerRev, // how much extra per 100 of rev is funded by borrowing
-      fiscalYear: c.fiscal_year,
-    };
-  }, [fiscal]);
+         the debt actually consumes before a single school is funded.
+     The math itself lives in lib/debt/revenueAllocation.ts so it can be
+     unit-tested in isolation. */
+  const taxAllocation = useMemo(
+    () => computeRevenueAllocation(fiscal?.current),
+    [fiscal],
+  );
 
   /* ── Loading / Error states ── */
   const isLoading = ovLoading || loansLoading || tlLoading;
@@ -932,16 +906,19 @@ export default function NationalDebtPage() {
               {/* Left: dramatic headline */}
               <div className='relative p-6 sm:p-8 bg-gradient-to-br from-gov-copper/12 via-gov-copper/6 to-white border-b lg:border-b-0 lg:border-r border-neutral-border/40'>
                 <div className='text-[11px] uppercase tracking-[0.2em] font-semibold text-gov-copper mb-2'>
-                  Debt service takes
+                  Debt service takes about
                 </div>
                 <div className='flex items-baseline gap-2 leading-none'>
-                  <span className='text-[64px] sm:text-[88px] font-extrabold text-gov-copper tabular-nums tracking-tight'>
-                    {taxAllocation.debtServicePerRev.toFixed(0)}
+                  <span
+                    className='text-[64px] sm:text-[88px] font-extrabold text-gov-copper tabular-nums tracking-tight'
+                    data-testid='debt-headline-kes'>
+                    {formatHeadlineKes(taxAllocation.debtServicePerRev)}
                   </span>
                   <span className='text-2xl sm:text-3xl font-bold text-gov-copper/70'>KES</span>
                 </div>
                 <div className='text-sm text-gov-dark dark:text-white font-medium mt-2'>
-                  out of every <span className='font-bold'>KES 100</span> collected in tax &amp; non-tax revenue
+                  out of every <span className='font-bold'>KES 100</span> collected in
+                  tax &amp; non-tax revenue
                 </div>
                 <div className='mt-4 flex items-center gap-2 text-xs text-neutral-muted'>
                   <span className='inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gov-copper/10 text-gov-copper font-semibold'>
@@ -950,9 +927,41 @@ export default function NationalDebtPage() {
                   </span>
                 </div>
                 <p className='text-[11px] text-neutral-muted mt-3 leading-relaxed max-w-sm'>
-                  Source: National Treasury Budget Policy Statement {taxAllocation.fiscalYear}.
-                  Includes interest + principal redemption on Consolidated Fund Services.
+                  Source: National Treasury fiscal summary{' '}
+                  {taxAllocation.fiscalYear}. Uses tax &amp; non-tax
+                  revenue; debt figure includes total debt service
+                  (interest + principal redemptions).
                 </p>
+                <details className='group mt-3 max-w-sm'>
+                  <summary className='flex items-center gap-1.5 cursor-pointer list-none text-[11px] font-semibold text-gov-forest dark:text-emerald-300 hover:underline'>
+                    <ChevronDown
+                      size={12}
+                      className='transition-transform group-open:rotate-180'
+                    />
+                    How this is calculated
+                  </summary>
+                  <div className='mt-2 pl-5 text-[11px] text-neutral-muted leading-relaxed space-y-2'>
+                    <p>
+                      Calculated as {taxAllocation.fiscalYear} total
+                      debt service of about KSh{' '}
+                      {(taxAllocation.ds / 1000).toFixed(3)}T divided by
+                      tax &amp; non-tax revenue of about KSh{' '}
+                      {(taxAllocation.rev / 1000).toFixed(3)}T (
+                      {(taxAllocation.ds / 1000).toFixed(3)} ÷{' '}
+                      {(taxAllocation.rev / 1000).toFixed(3)} × 100 ≈{' '}
+                      {taxAllocation.debtServicePerRev.toFixed(1)}). This
+                      keeps the published ratio aligned with the Treasury
+                      APDMR series while FY2025/26 remains budgeted.
+                    </p>
+                    <p>
+                      Different official debt-service measures may give
+                      lower or higher figures depending on the numerator
+                      or denominator used, but this card sticks to the
+                      seeded fiscal-summary ratio so the page stays
+                      internally consistent.
+                    </p>
+                  </div>
+                </details>
               </div>
 
               {/* Right: coin split visual */}
@@ -1006,12 +1015,13 @@ export default function NationalDebtPage() {
 
             {/* Breakdown bar */}
             <div className='px-6 sm:px-8 pb-6 sm:pb-8 pt-4 border-t border-neutral-border/30'>
-              <div className='flex items-center justify-between mb-2'>
+              <div className='flex items-center justify-between mb-2 gap-3'>
                 <span className='text-xs font-semibold text-gov-dark dark:text-white'>
                   Full allocation per KES 100 of revenue
                 </span>
-                <span className='text-[11px] text-neutral-muted'>
-                  Sum exceeds 100 — shortfall funded by borrowing
+                <span className='text-[11px] text-neutral-muted text-right'>
+                  Sum exceeds 100 because revenue doesn&rsquo;t
+                  fund the whole budget — the shortfall is borrowed.
                 </span>
               </div>
               <div className='flex w-full h-10 rounded-lg overflow-hidden shadow-sm border border-neutral-border/30'>
