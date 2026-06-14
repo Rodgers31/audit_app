@@ -122,6 +122,7 @@ export const getCounties = async (filters?: CountyFilters): Promise<County[]> =>
     queryParams.budget_min = filters.budgetRange[0];
     queryParams.budget_max = filters.budgetRange[1];
   }
+  if (filters?.fiscalYear) queryParams.fiscal_year = filters.fiscalYear;
   if (filters?.page) queryParams.page = filters.page;
   if (filters?.limit) queryParams.limit = filters.limit;
 
@@ -198,8 +199,15 @@ export const getFlaggedCounties = async (): Promise<CountyResponse[]> => {
 };
 
 // Get comprehensive county data (one-stop detail)
-export const getCountyComprehensive = async (id: string): Promise<CountyComprehensive> => {
-  const response = await apiClient.get<CountyComprehensive>(COUNTIES_ENDPOINTS.COMPREHENSIVE(id));
+// fiscalYear (e.g. "2024/25") scopes the health/budget snapshot to that FY.
+// When omitted, the backend falls back to the latest period with execution data.
+export const getCountyComprehensive = async (
+  id: string,
+  fiscalYear?: string
+): Promise<CountyComprehensive> => {
+  const base = COUNTIES_ENDPOINTS.COMPREHENSIVE(id);
+  const url = fiscalYear ? buildUrlWithParams(base, { fiscal_year: fiscalYear }) : base;
+  const response = await apiClient.get<CountyComprehensive>(url);
   return response.data;
 };
 

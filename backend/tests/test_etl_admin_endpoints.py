@@ -13,19 +13,38 @@ Covers:
   GET  /api/v1/etl/kenya/sources
   GET  /api/v1/storage/status
   GET  /api/v1/docs/resolve
+
+Auth assertion convention
+-------------------------
+Every ``/api/v1/admin/*`` route now goes through ``require_admin`` from
+``supabase_auth.py``. With no Bearer token there are exactly two
+acceptable outcomes:
+
+  * 401 / 403 — auth machinery rejected the request (expected in CI
+    when ``SUPABASE_URL`` etc. are configured)
+  * 500       — the auth dependency itself couldn't run because the
+    env vars are missing (acceptable in a bare test container; the
+    request still didn't reach the handler)
+
+We deliberately do **not** allow 200. If the route ever becomes
+publicly readable without a token the test must fail loudly so the
+regression is caught in CI rather than discovered in prod logs.
+``ADMIN_UNAUTHED`` captures that contract in one place.
 """
 
-import pytest
+ADMIN_UNAUTHED = (401, 403, 500)
 
 
 class TestETLAdminRun:
     """Tests for POST /api/v1/admin/etl/run."""
 
     def test_etl_run_returns_response(self, client):
-        """ETL run should return a job status response."""
+        """ETL run requires auth; unauthenticated calls must NOT succeed."""
         response = client.post("/api/v1/admin/etl/run")
-        # Could be 200 or 401 if auth required, or 500 if ETL unavailable
-        assert response.status_code in (200, 401, 403, 422, 500)
+        # 422 covers the case where the handler runs but rejects the
+        # body before auth (request-validation errors) — kept because
+        # FastAPI evaluates body validation before some dependencies.
+        assert response.status_code in ADMIN_UNAUTHED + (422,)
 
 
 class TestETLAdminStatus:
@@ -33,7 +52,9 @@ class TestETLAdminStatus:
 
     def test_returns_status(self, client):
         response = client.get("/api/v1/admin/etl/status")
-        assert response.status_code in (200, 404, 500)
+        # /etl/status is itself admin-gated; 404 is allowed because the
+        # route has been removed in some configurations.
+        assert response.status_code in ADMIN_UNAUTHED + (404,)
 
 
 class TestETLSchedule:
@@ -41,15 +62,7 @@ class TestETLSchedule:
 
     def test_returns_schedule(self, client):
         response = client.get("/api/v1/admin/etl/schedule")
-        # 401 if auth is required, 200 otherwise
-        assert response.status_code in (200, 401)
-
-    def test_schedule_has_data(self, client):
-        response = client.get("/api/v1/admin/etl/schedule")
-        if response.status_code == 401:
-            pytest.skip("Admin auth required")
-        data = response.json()
-        assert isinstance(data, dict)
+        assert response.status_code in ADMIN_UNAUTHED
 
 
 class TestETLScheduleSummary:
@@ -57,14 +70,7 @@ class TestETLScheduleSummary:
 
     def test_returns_summary(self, client):
         response = client.get("/api/v1/admin/etl/schedule/summary")
-        assert response.status_code in (200, 401)
-
-    def test_summary_structure(self, client):
-        response = client.get("/api/v1/admin/etl/schedule/summary")
-        if response.status_code == 401:
-            pytest.skip("Admin auth required")
-        data = response.json()
-        assert isinstance(data, dict)
+        assert response.status_code in ADMIN_UNAUTHED
 
 
 class TestETLHealth:
@@ -72,7 +78,7 @@ class TestETLHealth:
 
     def test_returns_health(self, client):
         response = client.get("/api/v1/admin/etl/health")
-        assert response.status_code in (200, 401)
+        assert response.status_code in ADMIN_UNAUTHED
 
 
 class TestIngestionJobs:
@@ -80,11 +86,11 @@ class TestIngestionJobs:
 
     def test_returns_list(self, client):
         response = client.get("/api/v1/admin/ingestion-jobs")
-        assert response.status_code in (200, 500)
+        assert response.status_code in ADMIN_UNAUTHED
 
     def test_pagination_params(self, client):
         response = client.get("/api/v1/admin/ingestion-jobs?page=1&page_size=5")
-        assert response.status_code in (200, 500)
+        assert response.status_code in ADMIN_UNAUTHED
 
 
 class TestIngestionJobStats:
@@ -92,7 +98,7 @@ class TestIngestionJobStats:
 
     def test_returns_stats(self, client):
         response = client.get("/api/v1/admin/ingestion-jobs/stats/summary")
-        assert response.status_code in (200, 500)
+        assert response.status_code in ADMIN_UNAUTHED
 
 
 class TestETLJobStatus:

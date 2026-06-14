@@ -32,8 +32,8 @@ export default function ErrorCard({
         )}>
         <AlertTriangle className='w-4 h-4 text-red-500/70 flex-shrink-0' />
         <div className='flex-1 min-w-0'>
-          <p className='text-xs font-medium text-gov-dark'>{title}</p>
-          <p className='text-[11px] text-gov-dark/50'>{message}</p>
+          <p className='text-xs font-medium text-gov-dark dark:text-white'>{title}</p>
+          <p className='text-[11px] text-gov-dark/50 dark:text-white/50'>{message}</p>
         </div>
         {onRetry && (
           <button
@@ -56,8 +56,8 @@ export default function ErrorCard({
       <div className='w-12 h-12 rounded-full bg-red-50 border border-red-200/40 flex items-center justify-center mb-4'>
         <AlertTriangle className='w-6 h-6 text-red-500/70' />
       </div>
-      <h3 className='font-display text-lg text-gov-dark mb-1'>{title}</h3>
-      <p className='text-sm text-gov-dark/50 max-w-sm mb-5'>{message}</p>
+      <h3 className='font-display text-lg text-gov-dark dark:text-white mb-1'>{title}</h3>
+      <p className='text-sm text-gov-dark/50 dark:text-white/50 max-w-sm mb-5'>{message}</p>
       {onRetry && (
         <button
           onClick={onRetry}

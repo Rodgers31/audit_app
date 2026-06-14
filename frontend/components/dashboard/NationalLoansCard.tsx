@@ -3,6 +3,8 @@
 import InfoTip from '@/components/InfoTip';
 import { SkeletonTable } from '@/components/ui/Skeleton';
 import { NationalLoan } from '@/lib/api/debt';
+import { useLang } from '@/lib/i18n/LangProvider';
+import type { TranslationKey } from '@/lib/i18n/messages';
 import { useNationalLoans } from '@/lib/react-query/useDebt';
 import { fmtKES } from '@/lib/utils';
 import { motion } from 'framer-motion';
@@ -51,17 +53,18 @@ function lenderEmoji(name: string): string {
   return '🏛️';
 }
 
-const TYPE_LABEL: Record<string, { label: string; color: string }> = {
-  external_multilateral: { label: 'Multilateral', color: 'text-blue-600 bg-blue-50' },
-  external_bilateral: { label: 'Bilateral', color: 'text-purple-600 bg-purple-50' },
-  external_commercial: { label: 'Commercial', color: 'text-gov-copper bg-gov-copper/10' },
-  domestic_bond: { label: 'Domestic', color: 'text-gov-forest bg-gov-sage/10' },
-  domestic_tbill: { label: 'T-Bill', color: 'text-gov-gold bg-gov-gold/10' },
-  domestic_cbk: { label: 'CBK', color: 'text-gov-dark bg-gov-sand' },
-  domestic_legacy: { label: 'Legacy', color: 'text-neutral-muted bg-neutral-border/20' },
+const TYPE_LABEL: Record<string, { key: TranslationKey; color: string }> = {
+  external_multilateral: { key: 'home.loans.type.multilateral', color: 'text-blue-600 bg-blue-50' },
+  external_bilateral: { key: 'home.loans.type.bilateral', color: 'text-purple-600 bg-purple-50' },
+  external_commercial: { key: 'home.loans.type.commercial', color: 'text-gov-copper bg-gov-copper/10' },
+  domestic_bond: { key: 'home.loans.type.domestic', color: 'text-gov-forest dark:text-emerald-100 bg-gov-sage/10' },
+  domestic_tbill: { key: 'home.loans.type.tbill', color: 'text-gov-gold bg-gov-gold/10' },
+  domestic_cbk: { key: 'home.loans.type.cbk', color: 'text-gov-dark dark:text-white bg-gov-sand' },
+  domestic_legacy: { key: 'home.loans.type.legacy', color: 'text-neutral-muted bg-neutral-border/20' },
 };
 
 export default function NationalLoansCard() {
+  const { t } = useLang();
   const { data, isLoading, error } = useNationalLoans();
 
   if (isLoading) {
@@ -72,7 +75,7 @@ export default function NationalLoansCard() {
     return (
       <div className='glass-card p-8 flex flex-col items-center justify-center min-h-[340px] gap-2'>
         <Landmark className='w-6 h-6 text-neutral-muted/25' />
-        <p className='text-xs text-neutral-muted'>Loan data unavailable</p>
+        <p className='text-xs text-neutral-muted'>{t('home.loans.unavailable')}</p>
       </div>
     );
   }
@@ -91,12 +94,14 @@ export default function NationalLoansCard() {
       transition={{ duration: 0.6, delay: 0.2 }}
       className='glass-card overflow-hidden flex flex-col'>
       {/* Header */}
-      <div className='bg-gradient-to-r from-gov-copper/[0.06] via-gov-sand/40 to-transparent px-6 sm:px-8 pt-5 pb-4 border-b border-neutral-border/20'>
+      <div className='bg-gradient-to-r from-gov-copper/[0.06] via-gov-sand/40 to-transparent dark:from-surface-elevated/40 dark:via-surface-base/20 dark:to-transparent px-6 sm:px-8 pt-5 pb-4 border-b border-neutral-border/20'>
         <div className='flex items-start justify-between'>
           <div>
-            <h3 className='font-display text-lg text-gov-dark mb-0.5'>National Government Loans</h3>
+            <h3 className='font-display text-lg text-gov-dark dark:text-white mb-0.5'>{t('home.loans.header_title')}</h3>
             <p className='text-xs text-neutral-muted'>
-              {data.total_loans} active loans — {data.source}
+              {t('home.loans.header_sub')
+                .replace('{n}', String(data.total_loans))
+                .replace('{src}', data.source || '')}
             </p>
           </div>
           {data.source_url && (
@@ -104,7 +109,7 @@ export default function NationalLoansCard() {
               href={data.source_url}
               target='_blank'
               rel='noopener noreferrer'
-              className='flex items-center gap-1 text-[10px] text-neutral-muted hover:text-gov-forest transition-colors mt-1'>
+              className='flex items-center gap-1 text-[10px] text-neutral-muted hover:text-gov-forest dark:text-emerald-100 transition-colors mt-1'>
               Treasury <ExternalLink className='w-3 h-3' />
             </a>
           )}
@@ -118,7 +123,7 @@ export default function NationalLoansCard() {
             <div className='flex items-center gap-1.5 mb-1'>
               <Landmark className='w-3.5 h-3.5 text-gov-copper opacity-70' />
               <span className='text-[10px] text-neutral-muted font-medium uppercase tracking-wider'>
-                Outstanding Debt
+                {t('home.loans.outstanding')}
               </span>
               <InfoTip term='outstanding' size={11} />
               <DebtExplainerModal context='loans' />
@@ -131,7 +136,7 @@ export default function NationalLoansCard() {
             <div className='flex items-center gap-1.5 mb-1'>
               <TrendingUp className='w-3.5 h-3.5 text-gov-gold opacity-70' />
               <span className='text-[10px] text-neutral-muted font-medium uppercase tracking-wider'>
-                Annual Service Cost
+                {t('home.loans.annual_service')}
               </span>
             </div>
             <span className='text-lg font-bold text-gov-gold tabular-nums leading-none'>
@@ -151,26 +156,26 @@ export default function NationalLoansCard() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.4, delay: 0.05 * i }}
-                className='flex items-center gap-2 rounded-lg border border-neutral-border/25 bg-white/40 hover:bg-gov-sand/30 transition-colors px-3 py-2'>
+                className='flex items-center gap-2 rounded-lg border border-neutral-border/25 bg-white/40 dark:bg-surface-elevated hover:bg-gov-sand/30 transition-colors px-3 py-2'>
                 <span className='text-sm leading-none flex-shrink-0' suppressHydrationWarning>
                   {lenderEmoji(loan.lender)}
                 </span>
-                <span className='text-xs font-semibold text-gov-dark truncate min-w-0 flex-1'>
+                <span className='text-xs font-semibold text-gov-dark dark:text-white truncate min-w-0 flex-1'>
                   {shortLender(loan.lender)}
                 </span>
                 <div className='flex items-center gap-1 flex-shrink-0'>
                   <span
                     className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${typeInfo.color}`}>
-                    {typeInfo.label}
+                    {t(typeInfo.key)}
                   </span>
-                  {(typeInfo.label === 'Multilateral' ||
-                    typeInfo.label === 'Bilateral' ||
-                    typeInfo.label === 'Commercial') && (
+                  {(typeInfo.key === 'home.loans.type.multilateral' ||
+                    typeInfo.key === 'home.loans.type.bilateral' ||
+                    typeInfo.key === 'home.loans.type.commercial') && (
                     <InfoTip
                       term={
-                        typeInfo.label === 'Multilateral'
+                        typeInfo.key === 'home.loans.type.multilateral'
                           ? 'multilateral'
-                          : typeInfo.label === 'Bilateral'
+                          : typeInfo.key === 'home.loans.type.bilateral'
                             ? 'bilateral'
                             : 'commercial'
                       }
@@ -178,7 +183,7 @@ export default function NationalLoansCard() {
                     />
                   )}
                 </div>
-                <span className='text-xs font-bold text-gov-dark tabular-nums flex-shrink-0'>
+                <span className='text-xs font-bold text-gov-dark dark:text-white tabular-nums flex-shrink-0'>
                   {fmtKES(loan.outstanding_numeric)}
                 </span>
                 <span className='text-[10px] text-neutral-muted tabular-nums flex-shrink-0'>
@@ -195,8 +200,8 @@ export default function NationalLoansCard() {
         {data.loans.length > VISIBLE && (
           <Link
             href='/debt'
-            className='group mt-auto pt-4 flex items-center justify-center gap-1.5 w-full rounded-lg bg-white/60 border border-neutral-border/40 hover:border-gov-copper/30 hover:bg-gov-copper/[0.03] px-4 py-2.5 transition-all text-xs font-medium text-gov-dark'>
-            See all {data.loans.length} loans →
+            className='group mt-auto pt-4 flex items-center justify-center gap-1.5 w-full rounded-lg bg-white/60 dark:bg-surface-elevated border border-neutral-border/40 hover:border-gov-copper/30 hover:bg-gov-copper/[0.03] px-4 py-2.5 transition-all text-xs font-medium text-gov-dark dark:text-white'>
+            {t('home.loans.see_all_n').replace('{n}', String(data.loans.length))}
           </Link>
         )}
       </div>

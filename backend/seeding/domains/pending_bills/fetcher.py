@@ -1,22 +1,33 @@
-"""Fetcher for pending bills data from COB reports.
+"""Fetcher for pending bills data from National Treasury BROP.
 
 Strategy (in order):
-1. If live_pdf_fetch_enabled, try to discover the latest COB National
-   Government BIRR PDF, download it, and parse with CoBQuarterlyReportParser.
-2. If pending_bills_dataset_url is configured, load from that source.
+1. If live_pdf_fetch_enabled AND treasury_brop_url is configured,
+   download and parse the BROP PDF — gives the para-18 national
+   aggregate + Table 10 per-county breakdown.
+2. If pending_bills_dataset_url is configured, load from that
+   fixture / API.
 3. Otherwise, run the live ETL extractor against COB website.
+
+Why not the COB NG-BIRR
+-----------------------
+The previous implementation downloaded the COB National Government
+BIRR and ran it through ``CoBQuarterlyReportParser``, which is
+anchored on the 47-county invariant of the *Consolidated County*
+BIRR. The NG-BIRR has neither a 47-county table nor any pending-
+bills tables (TOC search confirmed in the FY 2025/26 H1 issue).
+On top of that, the fallback formula ``pending = allocated -
+absorbed`` was a non-sequitur — that's unspent budget, not unpaid
+obligations. Both issues are removed here.
 """
 
 from __future__ import annotations
 
 import asyncio
 import logging
-import re
 import tempfile
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from urllib.parse import urljoin
 
 from ...config import SeedingSettings
 from ...http_client import SeedingHttpClient
@@ -31,28 +42,41 @@ def fetch_pending_bills_payload(
     Fetch pending bills data.
 
     Strategy:
-      1. Try live PDF fetch from COB reports page (if enabled).
-      2. If pending_bills_dataset_url is configured, load from fixture/API.
+      1. Try live BROP fetch (if enabled + URL configured).
+      2. If pending_bills_dataset_url is configured, load fixture/API.
       3. Otherwise, run the live ETL extractor against COB website.
     """
-    # Strategy 1: Live PDF fetch
-    if settings.live_pdf_fetch_enabled:
+    # Strategy 1: Treasury BROP. ``treasury_brop_url`` ships with the
+    # latest known BROP URL as its default and is overridable via
+    # ``SEED_TREASURY_BROP_URL`` env var when the next BROP drops; an
+    # operator can also explicitly set it to None to fall through to
+    # the fixture path (Strategy 2). The ``getattr`` fallback to
+    # ``None`` is defensive — older settings instances may not have
+    # the field if a stale module is imported.
+    brop_url = getattr(settings, "treasury_brop_url", None)
+    if settings.live_pdf_fetch_enabled and brop_url:
         try:
-            payload = _fetch_from_cob_pdf(client, settings)
-            if payload and payload.get("pending_bills"):
+            payload = _fetch_from_treasury_brop(client, brop_url)
+            if payload and (
+                payload.get("pending_bills") or payload.get("summary")
+            ):
                 logger.info(
-                    "Successfully fetched pending bills from COB PDF (%d records)",
-                    len(payload["pending_bills"]),
+                    "Successfully fetched pending bills from BROP "
+                    "(%d records)",
+                    len(payload.get("pending_bills") or []),
                 )
                 return payload
-            else:
-                logger.warning(
-                    "COB PDF fetch returned no pending bills, trying fixture"
-                )
+            logger.warning(
+                "BROP fetch returned no pending bills, trying fixture"
+            )
         except Exception as exc:
             logger.warning(
-                "COB PDF fetch failed, trying fixture: %s", exc
+                "BROP fetch failed, trying fixture: %s", exc
             )
+    elif settings.live_pdf_fetch_enabled:
+        logger.info(
+            "treasury_brop_url not configured; skipping live BROP fetch"
+        )
 
     # Strategy 2: Configured fixture / API URL
     dataset_url = getattr(settings, "pending_bills_dataset_url", None)
@@ -74,166 +98,137 @@ def fetch_pending_bills_payload(
     return _run_live_extraction()
 
 
-def _fetch_from_cob_pdf(
-    client: SeedingHttpClient, settings: SeedingSettings
+def _fetch_from_treasury_brop(
+    client: SeedingHttpClient, brop_url: str,
 ) -> Optional[Dict[str, Any]]:
-    """Discover and parse the latest COB BIRR PDF."""
-    page_url = settings.cob_birr_page_url
-    logger.info("Fetching COB BIRR reports page: %s", page_url)
+    """Download the BROP PDF, parse it, return pending bills payload.
 
-    response = client.get(page_url, raise_for_status=True)
-    html = response.text
-
-    pdf_url = _discover_latest_birr_pdf(html, page_url)
-    if not pdf_url:
-        logger.warning("No BIRR PDF link found on COB reports page")
-        return None
-
-    logger.info("Downloading COB BIRR PDF: %s", pdf_url)
-    return _download_and_parse_cob_pdf(client, pdf_url)
-
-
-def _discover_latest_birr_pdf(html: str, base_url: str) -> Optional[str]:
-    """Extract the most recent BIRR PDF URL from the COB reports page.
-
-    Looks for links matching common COB BIRR naming patterns like:
-    - BIRR-*.pdf
-    - Budget-Implementation-Review-*.pdf
-    - NG-BIRR-*.pdf
-    - national-government-budget-implementation*.pdf
+    file:// URLs are read from disk so tests and offline runs don't
+    require a live HTTP path.
     """
-    pdf_pattern = re.compile(
-        r'href=["\']([^"\']*\.pdf)["\']',
-        re.IGNORECASE,
-    )
-    all_pdfs = pdf_pattern.findall(html)
+    from .brop_parser import parse_brop_pdf
 
-    if not all_pdfs:
-        return None
-
-    # Filter for BIRR-related PDFs
-    birr_keywords = [
-        "birr", "budget-implementation", "budget_implementation",
-        "implementation-review", "implementation_review",
-        "pending-bill", "pending_bill",
-    ]
-    birr_pdfs = [
-        url for url in all_pdfs
-        if any(kw in url.lower() for kw in birr_keywords)
-    ]
-
-    candidates = birr_pdfs if birr_pdfs else all_pdfs
-
-    if not candidates:
-        return None
-
-    # Pick the first match (usually the most recent)
-    chosen = candidates[0]
-
-    if not chosen.startswith(("http://", "https://")):
-        chosen = urljoin(base_url, chosen)
-
-    return chosen
-
-
-def _download_and_parse_cob_pdf(
-    client: SeedingHttpClient, pdf_url: str
-) -> Optional[Dict[str, Any]]:
-    """Download a COB PDF to a temp file, parse it, and return pending bills payload."""
-    from ...pdf_parsers import CoBQuarterlyReportParser
-
+    logger.info("Downloading Treasury BROP PDF: %s", brop_url)
     tmp_path: Optional[Path] = None
     try:
-        response = client.get(pdf_url, raise_for_status=True)
+        if brop_url.startswith("file://"):
+            content = Path(brop_url[len("file://"):]).read_bytes()
+        else:
+            response = client.get(brop_url, raise_for_status=True)
+            content = response.content
 
         with tempfile.NamedTemporaryFile(
-            suffix=".pdf", delete=False, prefix="cob_birr_"
+            suffix=".pdf", delete=False, prefix="treasury_brop_"
         ) as tmp:
-            tmp.write(response.content)
+            tmp.write(content)
             tmp_path = Path(tmp.name)
 
-        logger.info(
-            "Downloaded COB PDF (%d bytes) to %s",
-            len(response.content),
-            tmp_path,
-        )
+        logger.info("Downloaded BROP PDF (%d bytes) to %s", len(content), tmp_path)
+        result = parse_brop_pdf(tmp_path)
 
-        # Parse with CoBQuarterlyReportParser
-        parser = CoBQuarterlyReportParser(tmp_path)
-        parsed_records = parser.parse()
-
-        if not parsed_records:
-            logger.warning("CoBQuarterlyReportParser returned no records")
-            return None
-
-        # Convert parsed budget execution records into pending bills format.
-        # The COB parser extracts county budget execution data (allocated vs absorbed).
-        # We derive "pending bills" as the gap between allocated and absorbed —
-        # unspent allocations often correspond to pending obligations.
-        pending_bills: List[Dict[str, Any]] = []
-        for record in parsed_records:
-            allocated = record.get("allocated", 0)
-            absorbed = record.get("absorbed", 0)
-            if isinstance(allocated, str):
-                try:
-                    from decimal import Decimal
-                    allocated = float(Decimal(allocated))
-                except Exception:
-                    allocated = 0
-            if isinstance(absorbed, str):
-                try:
-                    from decimal import Decimal
-                    absorbed = float(Decimal(absorbed))
-                except Exception:
-                    absorbed = 0
-
-            # Pending ≈ allocated - absorbed (unspent = potential pending bills)
-            pending = max(float(allocated) - float(absorbed), 0)
-            if pending <= 0:
-                continue
-
-            county = record.get("county", "Unknown")
-            fy = record.get("fiscal_year", "")
-            quarter = record.get("quarter", "")
-
-            pending_bills.append({
-                "entity_name": f"County Government of {county}",
-                "entity_type": "county",
-                "category": "county",
-                "fiscal_year": fy,
-                "total_pending": pending,
-                "eligible_pending": None,
-                "ineligible_pending": None,
-                "notes": (
-                    f"Derived from COB BIRR {quarter} {fy}: "
-                    f"allocated {allocated:,.0f} - absorbed {absorbed:,.0f} = "
-                    f"{pending:,.0f} unspent (proxy for pending obligations)"
-                ),
-            })
-
-        if not pending_bills:
-            logger.warning("No pending bills derived from COB budget data")
-            return None
-
-        return {
-            "pending_bills": pending_bills,
-            "summary": {
-                "fiscal_year": parsed_records[0].get("fiscal_year", ""),
-                "total_county": sum(
-                    pb["total_pending"] for pb in pending_bills
-                ),
-            },
-            "source_url": pdf_url,
-            "source_title": f"COB BIRR Report (live fetch)",
-        }
-
+        return _brop_result_to_payload(result, brop_url)
     finally:
         if tmp_path and tmp_path.exists():
             try:
                 tmp_path.unlink()
-                logger.debug("Cleaned up temp PDF: %s", tmp_path)
             except OSError:
                 pass
+
+
+def _brop_result_to_payload(
+    result, brop_url: str,
+) -> Dict[str, Any]:
+    """Convert a ``BropParseResult`` into the dict shape
+    ``parse_pending_bills_payload`` expects.
+
+    Emits:
+    * One ``state_corporation`` record for the SOEs aggregate.
+    * One ``mda`` record for the MDAs aggregate.
+    * One ``county`` record per parsed county row.
+    * A ``summary`` block with grand totals so the parser's
+      summary-fallback path can also produce useful aggregates if
+      the per-row records get filtered out downstream.
+    """
+    pending_bills: List[Dict[str, Any]] = []
+    fy_label = result.fiscal_year_label
+    source_title = f"Treasury BROP {fy_label}"
+
+    if result.national:
+        nb = result.national
+        as_at = nb.as_at_date.isoformat()
+        pending_bills.append(
+            {
+                "entity_name": "National Government — State Corporations",
+                "entity_type": "national",
+                "category": "state_corporation",
+                "fiscal_year": fy_label,
+                "total_pending": str(nb.state_corporations),
+                "notes": f"Treasury BROP para-18 aggregate as at {as_at}",
+            }
+        )
+        pending_bills.append(
+            {
+                "entity_name": "National Government — MDAs",
+                "entity_type": "national",
+                "category": "mda",
+                "fiscal_year": fy_label,
+                "total_pending": str(nb.mdas),
+                "notes": f"Treasury BROP para-18 aggregate as at {as_at}",
+            }
+        )
+
+    for cb in result.counties:
+        breakdown_parts = []
+        if cb.executive_subtotal is not None:
+            breakdown_parts.append(
+                f"Exec subtotal {float(cb.executive_subtotal):,.0f}"
+            )
+        if cb.assembly_subtotal is not None:
+            breakdown_parts.append(
+                f"Assembly subtotal {float(cb.assembly_subtotal):,.0f}"
+            )
+        if cb.fy_budget is not None:
+            breakdown_parts.append(
+                f"FY budget {float(cb.fy_budget):,.0f}"
+            )
+        notes = "Treasury BROP Table 10"
+        if breakdown_parts:
+            notes += " — " + "; ".join(breakdown_parts)
+        # Match the fixture's "{County} County" entity-name format —
+        # the writer's _get_or_create_entity does an exact
+        # canonical_name match first, and that's the format the
+        # bootstrap-seeded county entities use. Earlier seed run
+        # 24966698677 had this code emitting "County Government of
+        # X" which fell through to the ILIKE fallback and failed for
+        # all 46 counties.
+        pending_bills.append(
+            {
+                "entity_name": f"{cb.county} County",
+                "entity_type": "county",
+                "category": "county",
+                "fiscal_year": fy_label,
+                "total_pending": str(cb.total),
+                "notes": notes,
+            }
+        )
+
+    # Summary aggregates — useful for headline cards and as a
+    # fallback if per-row writers drop records.
+    summary: Dict[str, Any] = {"fiscal_year": fy_label}
+    if result.national:
+        summary["total_national"] = str(result.national.total)
+        summary["as_at_date"] = result.national.as_at_date.isoformat()
+    if result.counties:
+        summary["total_county"] = str(
+            sum((c.total for c in result.counties), Decimal(0))
+        )
+
+    return {
+        "pending_bills": pending_bills,
+        "summary": summary,
+        "source_url": brop_url,
+        "source_title": source_title,
+    }
 
 
 def _run_live_extraction() -> dict[str, Any]:

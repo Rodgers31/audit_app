@@ -26,7 +26,7 @@ export default function StoriesGrid({ stories, searchTerm }: StoriesGridProps) {
 
   return (
     <div className='mb-12'>
-      <h3 className='text-2xl font-bold text-gray-900 mb-6'>Real Stories, Real Impact</h3>
+      <h3 className='text-2xl font-bold text-gray-900 dark:text-neutral-text mb-6'>Real Stories, Real Impact</h3>
 
       {/* Stories Grid */}
       <div className='grid grid-cols-1 md:grid-cols-2 gap-6 mb-8'>
@@ -44,9 +44,9 @@ export default function StoriesGrid({ stories, searchTerm }: StoriesGridProps) {
       {/* No Results Message */}
       {filteredStories.length === 0 && (
         <div className='text-center py-12'>
-          <Heart size={48} className='text-gray-300 mx-auto mb-4' />
-          <h3 className='text-xl font-semibold text-gray-600 mb-2'>No stories found</h3>
-          <p className='text-gray-500'>Try adjusting your search term</p>
+          <Heart size={48} className='text-gray-300 dark:text-neutral-muted/60 mx-auto mb-4' />
+          <h3 className='text-xl font-semibold text-gray-600 dark:text-neutral-muted mb-2'>No stories found</h3>
+          <p className='text-gray-500 dark:text-neutral-muted/80'>Try adjusting your search term</p>
         </div>
       )}
     </div>

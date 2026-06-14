@@ -1,26 +1,47 @@
 /**
- * Server-side QueryClient factory for React Query SSR prefetching.
+ * Shared QueryClient factory for both server (RSC prefetch) and client renders.
  *
- * Use this in Server Components to prefetch data before rendering.
- * The dehydrated state is passed to HydrationBoundary so client
- * components get data immediately — no loading spinners on first paint.
+ * Pattern (per TanStack's Next.js App Router guide):
+ *   - On the server, every request gets a fresh client so one user's
+ *     prefetch cache doesn't leak into another's.
+ *   - In the browser, we hold onto a singleton so navigations can reuse
+ *     cached queries and HydrationBoundary finds the same client that
+ *     our `QueryProvider` registered.
  *
- * NOTE: retry is set to 1 for SSR so a cold-start failure gets one
- * fast retry (the axios interceptor already retries at the HTTP level,
- * but React Query retry gives an additional layer of resilience).
+ * The shared config here is the single source of truth — `QueryProvider`
+ * also calls `getQueryClient()` instead of new-ing up its own, so the
+ * server-dehydrated cache hydrates cleanly into the client-provided one.
  */
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, isServer } from '@tanstack/react-query';
 
-// Create a new QueryClient for each server request (no shared state)
-export function getQueryClient() {
+function makeQueryClient() {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 10 * 60 * 1000, // 10 min — matches client defaults
+        staleTime: 10 * 60 * 1000,
         gcTime: 60 * 60 * 1000,
-        retry: 1, // One quick retry for cold-start recovery
-        retryDelay: 2000, // 2s — enough for the backend to wake up
+        retry: (failureCount, error: unknown) => {
+          const status = (error as { response?: { status?: number } })?.response?.status;
+          if (status !== undefined && status >= 400 && status < 500) return false;
+          if (status === 503) return false;
+          return failureCount < 2;
+        },
+        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 15000),
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+      },
+      mutations: {
+        retry: 1,
+        retryDelay: 1000,
       },
     },
   });
+}
+
+let browserQueryClient: QueryClient | undefined = undefined;
+
+export function getQueryClient(): QueryClient {
+  if (isServer) return makeQueryClient();
+  if (!browserQueryClient) browserQueryClient = makeQueryClient();
+  return browserQueryClient;
 }

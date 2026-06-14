@@ -35,16 +35,16 @@ export default function QuizCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className='bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-300'>
+      className='bg-white dark:bg-surface-base rounded-2xl border border-gray-200 dark:border-neutral-border p-6 hover:shadow-lg transition-all duration-300'>
       {/* Quiz Icon */}
       <div className='text-4xl mb-4'>{icon}</div>
 
       {/* Quiz Info */}
-      <h3 className='text-xl font-bold text-gray-900 mb-2'>{title}</h3>
-      <p className='text-gray-600 text-sm mb-4'>{description}</p>
+      <h3 className='text-xl font-bold text-gray-900 dark:text-neutral-text mb-2'>{title}</h3>
+      <p className='text-gray-600 dark:text-neutral-muted text-sm mb-4'>{description}</p>
 
       {/* Metadata */}
-      <div className='flex items-center gap-4 mb-6 text-sm text-gray-500'>
+      <div className='flex items-center gap-4 mb-6 text-sm text-gray-500 dark:text-neutral-muted/80'>
         <div
           className={`px-2 py-1 rounded-lg ${
             difficulty === 'beginner'
@@ -58,7 +58,7 @@ export default function QuizCard({
 
       {/* Footer */}
       <div className='flex items-center justify-between'>
-        <div className='text-sm text-gray-600'>{questionCount} questions</div>
+        <div className='text-sm text-gray-600 dark:text-neutral-muted'>{questionCount} questions</div>
 
         <motion.button
           onClick={() => onStart(id)}

@@ -53,7 +53,7 @@ export default function DebtOverviewCard() {
   if (!data?.timeline?.length) {
     return (
       <div className='glass-card p-6 sm:p-8'>
-        <h3 className='font-display text-xl text-gov-dark mb-1'>National Debt Overview</h3>
+        <h3 className='font-display text-xl text-gov-dark dark:text-white mb-1'>National Debt Overview</h3>
         <p className='text-sm text-neutral-muted mt-4'>Debt timeline data unavailable.</p>
       </div>
     );
@@ -66,7 +66,7 @@ export default function DebtOverviewCard() {
       viewport={{ once: true, margin: '-60px' }}
       transition={{ duration: 0.6, delay: 0.15 }}
       className='glass-card p-6 sm:p-8'>
-      <h3 className='font-display text-xl text-gov-dark mb-1'>National Debt Overview</h3>
+      <h3 className='font-display text-xl text-gov-dark dark:text-white mb-1'>National Debt Overview</h3>
 
       {/* Chart */}
       <div className='h-48 mt-4 mb-5'>
@@ -119,7 +119,7 @@ export default function DebtOverviewCard() {
         <div>
           <div className='flex items-center gap-2 mb-0.5'>
             <span className='text-xl'>🇰🇪</span>
-            <span className='metric-medium text-gov-dark'>{debtLabel}</span>
+            <span className='metric-medium text-gov-dark dark:text-white'>{debtLabel}</span>
           </div>
           <p className='text-xs text-neutral-muted'>Total Debt as of {latestYear}</p>
         </div>

@@ -41,11 +41,12 @@ const AUDIT_PALETTE: Record<
   string,
   { base: string; hover: string; active: string; muted: string }
 > = {
-  // Greens — gov-sage / gov-forest
-  clean: { base: '#5a946c', hover: '#4A7C5C', active: '#1B3A2A', muted: '#b5d4bf' },
-  'A+': { base: '#3d6a4e', hover: '#2f5940', active: '#1B3A2A', muted: '#a6ccb4' },
-  A: { base: '#4A7C5C', hover: '#3d6a4e', active: '#1B3A2A', muted: '#b5d4bf' },
-  'A-': { base: '#5a946c', hover: '#4A7C5C', active: '#2f5940', muted: '#c4dec9' },
+  // Greens — gov-sage / gov-forest (richer bases so good counties read as a
+  // confident green at a glance, not a washed-out pale wash)
+  clean: { base: '#4A7C5C', hover: '#3d6a4e', active: '#1B3A2A', muted: '#b5d4bf' },
+  'A+': { base: '#2f5940', hover: '#244632', active: '#1B3A2A', muted: '#a6ccb4' },
+  A: { base: '#3d6a4e', hover: '#2f5940', active: '#1B3A2A', muted: '#b5d4bf' },
+  'A-': { base: '#4f8a62', hover: '#427552', active: '#2f5940', muted: '#c4dec9' },
   // Yellows — gov-gold
   qualified: { base: '#D9A441', hover: '#c49338', active: '#a87a24', muted: '#edd5a2' },
   'B+': { base: '#89a851', hover: '#6f8e40', active: '#557430', muted: '#c8daa5' },
@@ -86,9 +87,12 @@ export const getCountyColor = (
   // Selected county — deepest shade
   if (selectedCounty?.id === county.id) return pal.active;
 
-  // Auto-rotating county — same as selected
+  // Auto-rotating county — deepest shade, but ONLY when nothing else is
+  // active. If the user is hovering anywhere, drop the auto-rotate
+  // visual back to base shade so the hovered county is the one that
+  // reads as "active" on the map.
   const currentCounty = counties[currentCountyIndex] ?? null;
-  if (!selectedCounty && currentCounty?.id === county.id) return pal.active;
+  if (!selectedCounty && !hoveredCounty && currentCounty?.id === county.id) return pal.active;
 
   // Hovered county — mid shade
   if (hoveredCounty === geoCountyName) return pal.hover;
@@ -131,9 +135,10 @@ export const getNextAnimationMode = (
 
 /* ────────────────── legend items (for header bar) ────────────────── */
 
+/** Translation keys for legend labels — the consumer resolves via useLang.t() */
 export const LEGEND_ITEMS = [
-  { label: 'Clean / A+', color: '#4A7C5C' },
-  { label: 'Qualified / B', color: '#D9A441' },
-  { label: 'Adverse / C', color: '#C94A4A' },
-  { label: 'Disclaimer', color: '#7c5cbf' },
+  { labelKey: 'home.map.legend.clean' as const, color: '#4A7C5C' },
+  { labelKey: 'home.map.legend.qualified' as const, color: '#D9A441' },
+  { labelKey: 'home.map.legend.adverse' as const, color: '#C94A4A' },
+  { labelKey: 'home.map.legend.disclaimer' as const, color: '#7c5cbf' },
 ] as const;

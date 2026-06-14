@@ -94,19 +94,19 @@ export default function AuditIssuesModal({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className='fixed inset-x-4 top-4 bottom-4 md:inset-x-8 md:top-8 md:bottom-8 lg:inset-x-16 lg:top-16 lg:bottom-16 bg-white rounded-2xl shadow-2xl z-50 flex flex-col max-w-6xl mx-auto'>
+            className='fixed inset-x-4 top-4 bottom-4 md:inset-x-8 md:top-8 md:bottom-8 lg:inset-x-16 lg:top-16 lg:bottom-16 bg-white dark:bg-surface-base rounded-2xl shadow-2xl z-50 flex flex-col max-w-6xl mx-auto'>
             {/* Header */}
-            <div className='flex items-center justify-between p-6 border-b border-gray-200'>
+            <div className='flex items-center justify-between p-6 border-b border-gray-200 dark:border-neutral-border'>
               <div>
-                <h2 className='text-2xl font-bold text-gray-900'>Audit Issues - {countyName}</h2>
-                <p className='text-sm text-gray-600 mt-1'>
+                <h2 className='text-2xl font-bold text-gray-900 dark:text-neutral-text'>Audit Issues - {countyName}</h2>
+                <p className='text-sm text-gray-600 dark:text-neutral-muted mt-1'>
                   {auditIssues.length} issues found in the latest audit report
                 </p>
               </div>
               <button
                 onClick={onClose}
-                className='p-2 hover:bg-gray-100 rounded-full transition-colors'>
-                <X size={24} className='text-gray-500' />
+                className='p-2 hover:bg-gray-100 dark:bg-surface-elevated rounded-full transition-colors'>
+                <X size={24} className='text-gray-500 dark:text-neutral-muted/80' />
               </button>
             </div>
 
@@ -115,10 +115,10 @@ export default function AuditIssuesModal({
               {auditIssues.length === 0 ? (
                 <div className='text-center py-16'>
                   <Shield className='mx-auto h-16 w-16 text-green-500 mb-4' />
-                  <h3 className='text-lg font-semibold text-gray-900 mb-2'>
+                  <h3 className='text-lg font-semibold text-gray-900 dark:text-neutral-text mb-2'>
                     No Audit Issues Found
                   </h3>
-                  <p className='text-gray-600'>
+                  <p className='text-gray-600 dark:text-neutral-muted'>
                     This county has a clean audit report with no issues identified.
                   </p>
                 </div>
@@ -135,7 +135,7 @@ export default function AuditIssuesModal({
                       <div key={severity} className='space-y-4'>
                         <div className='flex items-center gap-3'>
                           <Icon className={`${config.color} h-6 w-6`} />
-                          <h3 className='text-lg font-semibold text-gray-900 capitalize'>
+                          <h3 className='text-lg font-semibold text-gray-900 dark:text-neutral-text capitalize'>
                             {severity} Priority Issues ({issues.length})
                           </h3>
                         </div>
@@ -163,13 +163,13 @@ export default function AuditIssuesModal({
                                   </span>
                                 </div>
                                 {issue.amount && (
-                                  <span className='text-sm font-semibold text-gray-900'>
+                                  <span className='text-sm font-semibold text-gray-900 dark:text-neutral-text'>
                                     {formatCurrency(issue.amount)}
                                   </span>
                                 )}
                               </div>
 
-                              <p className='text-gray-800 leading-relaxed'>{issue.description}</p>
+                              <p className='text-gray-800 dark:text-neutral-text leading-relaxed'>{issue.description}</p>
                             </motion.div>
                           ))}
                         </div>
@@ -181,9 +181,9 @@ export default function AuditIssuesModal({
             </div>
 
             {/* Footer */}
-            <div className='border-t border-gray-200 p-6'>
+            <div className='border-t border-gray-200 dark:border-neutral-border p-6'>
               <div className='flex items-center justify-between'>
-                <div className='text-sm text-gray-500'>
+                <div className='text-sm text-gray-500 dark:text-neutral-muted/80'>
                   Last updated from Auditor-General's office
                 </div>
                 <button

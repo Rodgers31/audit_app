@@ -47,6 +47,11 @@ export interface ScenicBackgroundLayoutProps {
   children: React.ReactNode;
   topImage: string;
   bottomImage: string;
+  /** Optional dark-mode variants. When provided, both light + dark
+   * images render stacked and crossfade via opacity on
+   * ``prefers-color-scheme: dark``. */
+  topImageDark?: string;
+  bottomImageDark?: string;
   /** Height of the top scenic zone. Default "65vh". */
   topHeight?: string;
   /** Height of the bottom scenic zone. Default "45vh". */
@@ -79,6 +84,8 @@ export default function ScenicBackgroundLayout({
   children,
   topImage,
   bottomImage,
+  topImageDark,
+  bottomImageDark,
   topHeight = '65vh',
   bottomHeight = '45vh',
   readabilityMode = 'light',
@@ -100,9 +107,17 @@ export default function ScenicBackgroundLayout({
             Content scrolls past them naturally.
             ═══════════════════════════════════════════════ */}
 
-        {/* Top image — anchored to top of layout container */}
+        {/* Top image — anchored to top of layout container.
+            ``lg:!h-[65vh]`` overrides the inline 50vh on laptop-sized
+            viewports so the wider container still shows enough
+            vertical image to keep both the starfield (top of image)
+            and the moon/sun (~70% down) in frame at once. Without
+            this, ``object-cover`` scales by width on wide screens
+            and crops to ~55% of the image height — moon ends up
+            below the visible region. ``!`` is required to beat the
+            inline ``style`` declaration's specificity. */}
         <div
-          className='scenic-bg-top'
+          className='scenic-bg-top lg:!h-[65vh]'
           aria-hidden='true'
           style={{
             position: 'absolute',
@@ -112,13 +127,34 @@ export default function ScenicBackgroundLayout({
             height: topHeight,
             zIndex: 0,
           }}>
+          {/* ``object-position: center 20%`` anchors the image so the
+              upper portion (where the dark variant's starfield lives)
+              stays visible. ``object-cover`` keeps the full hero
+              filled — ``object-contain`` was tried briefly but left
+              an ugly empty band on the sides, so we accept the
+              bottom-of-image crop in exchange for full coverage. */}
           <img
             src={topImage}
             alt=''
-            className='absolute inset-0 w-full h-full object-cover object-center'
+            className={`absolute inset-0 w-full h-full object-cover ${
+              topImageDark
+                ? 'opacity-100 dark:opacity-0 transition-opacity duration-500'
+                : ''
+            }`}
+            style={{ objectPosition: 'center 20%' }}
             loading='eager'
             decoding='async'
           />
+          {topImageDark && (
+            <img
+              src={topImageDark}
+              alt=''
+              className='absolute inset-0 w-full h-full object-cover opacity-0 dark:opacity-100 transition-opacity duration-500'
+              style={{ objectPosition: 'center 20%' }}
+              loading='eager'
+              decoding='async'
+            />
+          )}
           {/* L2 — header-matching tint: seamless merge with fixed nav.
                Uses a smooth multi-stop gradient that avoids any visible
                "line" where the nav ends and the image begins. */}
@@ -196,11 +232,25 @@ export default function ScenicBackgroundLayout({
           <img
             src={bottomImage}
             alt=''
-            className='absolute inset-0 w-full h-full object-cover'
+            className={`absolute inset-0 w-full h-full object-cover ${
+              bottomImageDark
+                ? 'opacity-100 dark:opacity-0 transition-opacity duration-500'
+                : ''
+            }`}
             style={{ objectPosition: 'center 75%' }}
             loading='lazy'
             decoding='async'
           />
+          {bottomImageDark && (
+            <img
+              src={bottomImageDark}
+              alt=''
+              className='absolute inset-0 w-full h-full object-cover opacity-0 dark:opacity-100 transition-opacity duration-500'
+              style={{ objectPosition: 'center 75%' }}
+              loading='lazy'
+              decoding='async'
+            />
+          )}
           {/* L2 — cinematic overlay on bottom image */}
           <div
             className='absolute inset-0'

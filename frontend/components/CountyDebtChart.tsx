@@ -132,17 +132,17 @@ export default function CountyDebtChart({ county }: CountyDebtChartProps) {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.1 + 0.3, duration: 0.5 }}
-            className='flex items-center justify-between p-3 bg-gray-50 rounded-lg'>
+            className='flex items-center justify-between p-3 bg-gray-50 dark:bg-surface-elevated rounded-lg'>
             <div className='flex items-center gap-3'>
               <div className='w-4 h-4 rounded-full' style={{ backgroundColor: segment.color }} />
               <div>
-                <div className='font-medium text-gray-900'>{segment.type}</div>
-                <div className='text-sm text-gray-600'>{segment.description}</div>
+                <div className='font-medium text-gray-900 dark:text-neutral-text'>{segment.type}</div>
+                <div className='text-sm text-gray-600 dark:text-neutral-muted'>{segment.description}</div>
               </div>
             </div>
             <div className='text-right'>
-              <div className='font-semibold text-gray-900'>{formatAmount(segment.amount)}</div>
-              <div className='text-sm text-gray-500'>{formatPercentage(segment.amount)}</div>
+              <div className='font-semibold text-gray-900 dark:text-neutral-text'>{formatAmount(segment.amount)}</div>
+              <div className='text-sm text-gray-500 dark:text-neutral-muted/80'>{formatPercentage(segment.amount)}</div>
             </div>
           </motion.div>
         ))}

@@ -89,23 +89,32 @@ class TestCountyMoneyFlow:
         assert data["fiscal_year"] == "2024/25"
 
         stages = data["stages"]
-        assert len(stages) == 4
+        # Three-stage waterfall: Allocated → Spent → Flagged.
+        # An earlier 4-stage version included "Released" (backed by
+        # `BudgetLine.committed_amount`), but committed = procurement
+        # encumbrance, NOT Treasury exchequer disbursement. The label
+        # was actively misleading (spent > released is impossible) so
+        # it was removed. `committed_amount` is surfaced as a separate
+        # supplementary field on the response, not as a stage.
+        assert len(stages) == 3
 
         # Stage names
         assert stages[0]["stage"] == "Allocated"
-        assert stages[1]["stage"] == "Released"
-        assert stages[2]["stage"] == "Spent"
-        assert stages[3]["stage"] == "Flagged"
+        assert stages[1]["stage"] == "Spent"
+        assert stages[2]["stage"] == "Flagged"
 
         # Amounts
         assert stages[0]["amount"] == 15_000_000.0  # 10M + 5M
-        assert stages[1]["amount"] == 13_800_000.0  # 9M + 4.8M
-        assert stages[2]["amount"] == 11_500_000.0  # 7M + 4.5M
-        assert stages[3]["amount"] == 1_200_000.0
+        assert stages[1]["amount"] == 11_500_000.0  # 7M + 4.5M
+        assert stages[2]["amount"] == 1_200_000.0
 
-        # Gaps
-        assert stages[1]["gap_from_prev"] == 1_200_000.0  # 15M - 13.8M
-        assert stages[2]["gap_from_prev"] == 2_300_000.0  # 13.8M - 11.5M
+        # Gap is now Allocated → Spent directly.
+        assert stages[1]["gap_from_prev"] == 3_500_000.0  # 15M - 11.5M
+
+        # Supplementary: committed_amount still surfaced on the single-
+        # county endpoint so callers can show "procurement-encumbered"
+        # without conflating it with a released/disbursement figure.
+        assert data["committed_amount"] == 13_800_000.0  # 9M + 4.8M
 
         # Derived
         assert data["total_waste_estimate"] == 1_200_000.0
@@ -142,7 +151,9 @@ class TestNationalMoneyFlow:
 
         assert data["county_name"] == "National (All Counties)"
         assert data["county_count"] >= 1
-        assert len(data["stages"]) == 4
+        # 3-stage waterfall — see note in test_returns_waterfall above.
+        assert len(data["stages"]) == 3
+        assert [s["stage"] for s in data["stages"]] == ["Allocated", "Spent", "Flagged"]
         assert data["stages"][0]["amount"] == 15_000_000.0
 
     def test_missing_year_param(self, client):

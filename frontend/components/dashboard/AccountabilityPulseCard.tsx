@@ -41,8 +41,8 @@ export default function AccountabilityPulseCard() {
       transition={{ duration: 0.6, delay: 0.2 }}
       className='glass-card overflow-hidden'>
       {/* Header */}
-      <div className='bg-gradient-to-r from-gov-copper/[0.06] via-gov-sand/40 to-transparent px-6 sm:px-8 pt-5 pb-4 border-b border-neutral-border/20'>
-        <h3 className='font-display text-lg text-gov-dark mb-0.5'>Accountability Pulse</h3>
+      <div className='bg-gradient-to-r from-gov-copper/[0.06] via-gov-sand/40 to-transparent dark:from-surface-elevated/40 dark:via-surface-base/20 dark:to-transparent px-6 sm:px-8 pt-5 pb-4 border-b border-neutral-border/20'>
+        <h3 className='font-display text-lg text-gov-dark dark:text-white mb-0.5'>Accountability Pulse</h3>
         <p className='text-xs text-neutral-muted'>
           Audit findings across {stats.counties_audited || '--'} counties &amp; national government
         </p>
@@ -80,7 +80,7 @@ export default function AccountabilityPulseCard() {
             <span className='text-[10px] text-neutral-muted font-medium uppercase tracking-wider'>
               Finding Distribution
             </span>
-            <span className='text-xs font-semibold text-gov-dark tabular-nums'>
+            <span className='text-xs font-semibold text-gov-dark dark:text-white tabular-nums'>
               {stats.total_findings || total} total
             </span>
           </div>
@@ -116,7 +116,7 @@ export default function AccountabilityPulseCard() {
               <AlertTriangle className='w-4 h-4 text-gov-copper' />
             </div>
             <div>
-              <span className='text-sm font-bold text-gov-dark tabular-nums'>
+              <span className='text-sm font-bold text-gov-dark dark:text-white tabular-nums'>
                 {fmtKES(stats.total_amount_flagged)}
               </span>
               <p className='text-[11px] text-neutral-muted leading-snug'>
@@ -135,11 +135,11 @@ export default function AccountabilityPulseCard() {
             {topCounties.map((c: any, i: number) => (
               <div
                 key={c.county}
-                className='flex items-center gap-2.5 rounded-lg bg-white/40 border border-neutral-border/20 px-3 py-2'>
+                className='flex items-center gap-2.5 rounded-lg bg-white/40 dark:bg-surface-elevated border border-neutral-border/20 px-3 py-2'>
                 <span className='w-5 h-5 rounded-md bg-gov-copper/10 flex items-center justify-center flex-shrink-0'>
                   <MapPin className='w-3 h-3 text-gov-copper' />
                 </span>
-                <span className='text-xs text-gov-dark font-medium flex-1 truncate'>
+                <span className='text-xs text-gov-dark dark:text-white font-medium flex-1 truncate'>
                   {c.county}
                 </span>
                 <span className='text-[11px] font-bold text-gov-copper tabular-nums'>
@@ -157,7 +157,7 @@ export default function AccountabilityPulseCard() {
               Latest Critical Finding
             </p>
             <div className='rounded-lg border-l-[3px] border-l-gov-copper bg-gov-copper/[0.04] px-4 py-2.5'>
-              <p className='text-xs text-gov-dark leading-relaxed line-clamp-2'>
+              <p className='text-xs text-gov-dark dark:text-white leading-relaxed line-clamp-2'>
                 {recentCritical[0].finding}
               </p>
               <p className='text-[10px] text-neutral-muted mt-1'>
@@ -169,7 +169,7 @@ export default function AccountabilityPulseCard() {
 
         <Link
           href='/counties'
-          className='group flex items-center justify-center gap-1.5 w-full rounded-lg bg-white/60 border border-neutral-border/40 hover:border-gov-copper/30 hover:bg-gov-copper/[0.03] px-4 py-2.5 transition-all text-xs font-medium text-gov-dark'>
+          className='group flex items-center justify-center gap-1.5 w-full rounded-lg bg-white/60 dark:bg-surface-elevated border border-neutral-border/40 hover:border-gov-copper/30 hover:bg-gov-copper/[0.03] px-4 py-2.5 transition-all text-xs font-medium text-gov-dark dark:text-white'>
           Explore County Audits →
         </Link>
       </div>

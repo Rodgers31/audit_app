@@ -191,6 +191,97 @@ class TestDebtNational:
         response = client.get("/api/v1/debt/national")
         assert response.status_code == 200
 
+    def test_total_excludes_pending_bills_but_breakdown_reports_them(
+        self, client, db_session, seed_country, seed_source_doc
+    ):
+        """Headline totals must NOT include PENDING_BILLS rows, but the
+        per-category ``summary.pending_bills`` line must still report
+        them. PR #84 made the seeding writer actually persist 48
+        pending-bills rows into the ``loans`` table for the first
+        time, which exposed a latent bug at this aggregator: it was
+        summing every loan as debt and the displayed Total Debt KPI
+        jumped 11.8T → 13.59T (+702B = the per-row pending bills the
+        user confirmed via screen recording). This test pins the
+        post-fix behaviour so a future endpoint touching this code
+        path can't silently re-inflate the headline.
+        """
+        entity = Entity(
+            id=4090,
+            country_id=seed_country.id,
+            type=EntityType.NATIONAL,
+            canonical_name="National Government 4090",
+            slug="national-government-4090",
+        )
+        db_session.add(entity)
+        db_session.flush()
+
+        # Two real-debt loans + one pending-bills row + one NULL-
+        # category row. The NULL row is the second half of Copilot's
+        # review feedback on PR #90: SQL ``debt_category != X``
+        # silently drops NULL rows because of three-valued logic, so
+        # the helper now wraps the filter in
+        # ``or_(is_(None), != PENDING_BILLS)`` to keep NULLs in the
+        # debt total. Test would pass even with the broken filter if
+        # we omitted this row.
+        db_session.add_all(
+            [
+                Loan(
+                    entity_id=entity.id,
+                    lender="Test World Bank",
+                    debt_category=DebtCategory.EXTERNAL_MULTILATERAL,
+                    principal=1_000_000_000_000,
+                    outstanding=900_000_000_000,
+                    currency="KES",
+                    source_document_id=seed_source_doc.id,
+                    issue_date=datetime(2024, 1, 1),
+                ),
+                Loan(
+                    entity_id=entity.id,
+                    lender="Test Treasury Bonds",
+                    debt_category=DebtCategory.DOMESTIC_BONDS,
+                    principal=500_000_000_000,
+                    outstanding=480_000_000_000,
+                    currency="KES",
+                    source_document_id=seed_source_doc.id,
+                    issue_date=datetime(2023, 7, 1),
+                ),
+                Loan(
+                    entity_id=entity.id,
+                    lender="Test Pending Bills",
+                    debt_category=DebtCategory.PENDING_BILLS,
+                    principal=200_000_000_000,
+                    outstanding=200_000_000_000,
+                    currency="KES",
+                    source_document_id=seed_source_doc.id,
+                    issue_date=datetime(2024, 6, 30),
+                ),
+                Loan(
+                    entity_id=entity.id,
+                    lender="Test Legacy Untagged",
+                    debt_category=None,  # NULL — must still count as debt
+                    principal=50_000_000_000,
+                    outstanding=50_000_000_000,
+                    currency="KES",
+                    source_document_id=seed_source_doc.id,
+                    issue_date=datetime(2022, 1, 1),
+                ),
+            ]
+        )
+        db_session.commit()
+
+        body = client.get("/api/v1/debt/national").json()
+        data = body.get("data", body)
+
+        # Headline excludes the 200B pending-bills row; includes the
+        # 50B NULL-category row → total_outstanding = 900 + 480 + 50.
+        assert data["total_outstanding"] == 1_430_000_000_000
+        # Same shape on the ``total_debt`` (principal sum) field.
+        assert data["total_debt"] == 1_550_000_000_000  # 1000 + 500 + 50
+
+        # Per-category breakdown still reports the pending bills.
+        summary = data.get("summary", {})
+        assert summary.get("pending_bills") == 200_000_000_000
+
 
 class TestFiscalSummary:
     """Tests for GET /api/v1/fiscal/summary."""

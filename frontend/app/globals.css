@@ -4,29 +4,117 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Serif+Display&display=swap');
 
+/* ── CSS variables for light/dark theme ──
+   These power both inline ``rgba(...)`` gradients (PageShell etc.)
+   AND Tailwind's ``neutral`` palette, which is wired to ``rgb(var(--c-neutral-*) / <alpha-value>)``
+   in tailwind.config.js. That means every existing
+   ``text-neutral-text``, ``border-neutral-border``,
+   ``text-neutral-muted/60`` etc. crossfades automatically when
+   the OS scheme flips — no per-component ``dark:`` variant
+   needed for those tokens. */
+:root {
+  /* Comma-separated (legacy ``rgba(var, alpha)`` consumers like
+     PageShell's gradients). */
+  --page-bg-rgb: 245, 240, 232; /* gov-sand */
+  /* Space-separated triplets for the Tailwind colour palette,
+     which generates ``rgb(var(--c-neutral-text) / <alpha-value>)``.
+     Modern ``rgb(R G B / A)`` syntax requires spaces, not commas. */
+  --c-neutral-text: 28 28 28;
+  --c-neutral-muted: 107 114 128;
+  --c-neutral-border: 226 221 213;
+  /* Surface tokens — used for cards & elevated surfaces. In light
+     mode the cards are white, so all three resolve to the same
+     value. In dark mode they fan out into three distinct elevations
+     so depth reads visually instead of flat-on-flat. */
+  --c-surface-base: 255 255 255; /* card body */
+  --c-surface-elevated: 255 255 255; /* hover / floating */
+  --c-surface-sunken: 250 247 240; /* nested input, list rows */
+}
+
+/* Dark theme triggers when ``<html>`` carries the ``dark`` class
+   (set by the boot script in app/layout.tsx). Tailwind also
+   matches its ``dark:`` variants on this same class — see
+   tailwind.config.js ``darkMode: 'class'``.
+
+   Palette is intentionally NOT pure-green-on-green. Instead the
+   body sits at a warm near-black with a hint of the brand's
+   forest tone, cards step UP to a clearly distinct slate-warm
+   surface, and elevated/hover state goes another step lighter.
+   Text is a warm cream-white (inverted from the light-mode cream
+   on dark) so the brand identity carries through. Muted text and
+   borders use warm taupe-grays to break the green monotony.
+   gov-gold and the SubStat accent palette pop crisply on this
+   warm dark. */
+:root.dark {
+  /* Body bg stays cream in dark mode — matches the home page's hybrid
+     ``ScenicBackgroundLayout readabilityMode='light'`` look so inner
+     pages share the same cream-with-floating-slate-cards structure
+     instead of a flat near-black page. The cards themselves still go
+     full slate-warm via the surface-* tokens below. */
+  --page-bg-rgb: 245, 240, 232; /* gov-sand — kept cream in dark mode */
+  --c-neutral-text: 240 234 222; /* #F0EADE — warm cream-white (inverted cream) */
+  --c-neutral-muted: 168 162 148; /* #A8A294 — warm taupe-gray */
+  --c-neutral-border: 50 56 50; /* #323832 — visible but subtle warm dark */
+  --c-surface-base: 28 34 30; /* #1C221E — slate-warm card surface */
+  --c-surface-elevated: 38 46 40; /* #262E28 — hover / floating */
+  --c-surface-sunken: 22 26 24; /* #161A18 — nested input bg */
+}
+
 /* ── Base ── */
 @layer base {
   html {
     font-family: 'Inter', system-ui, sans-serif;
     scroll-behavior: smooth;
+    /* Tells the browser which native form widget / scrollbar palette
+       to use. Pairs with Tailwind ``darkMode: 'media'`` so the user
+       gets dark scrollbars + form controls without a manual toggle. */
+    color-scheme: light dark;
   }
 
   body {
     @apply bg-gov-sand text-neutral-text;
+    /* Body keeps its cream bg in dark mode (matches the home page's
+       hybrid scenic layout). Cards, glass bodies and surface-* tokens
+       provide the dark slate floating on top. */
+    /* Body-level fallback so text doesn't snap. Per-element
+       transitions are applied below to cards, borders, etc. */
+    transition:
+      background-color 300ms ease,
+      color 300ms ease,
+      border-color 300ms ease;
+  }
+
+  /* Crossfade colour and stroke values everywhere when the OS theme
+     flips. Without this, dark-mode flicks instantly which feels
+     jarring. ``transition-property`` is scoped — opacity, transform
+     etc. are intentionally untouched so existing animations behave
+     identically. */
+  *,
+  *::before,
+  *::after {
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-duration: 300ms;
+    transition-timing-function: ease;
   }
 }
 
 /* ── Component tokens ── */
 @layer components {
-  /* Glass surfaces */
+  /* Glass surfaces — light keeps cream/white tints, dark switches to
+     the layered surface tokens so cards read as warm-slate (not flat
+     green-on-green) and shadows deepen for proper depth. */
   .glass-surface {
-    @apply bg-white/60 backdrop-blur-xl border border-white/30 shadow-surface;
+    @apply bg-white/60 backdrop-blur-xl border border-white/30 shadow-surface
+           dark:bg-surface-base/60 dark:border-white/10;
   }
   .glass-surface-dark {
-    @apply bg-gov-dark/40 backdrop-blur-xl border border-white/10;
+    @apply bg-gov-dark/40 backdrop-blur-xl border border-white/10
+           dark:bg-surface-base/60;
   }
   .glass-card {
-    @apply bg-white/70 backdrop-blur-lg border border-white/40 shadow-surface rounded-2xl;
+    @apply bg-white/70 backdrop-blur-lg border border-white/40 shadow-surface rounded-2xl
+           dark:bg-surface-base/80 dark:border-white/10
+           dark:shadow-[0_8px_40px_rgba(0,0,0,0.35)];
   }
 
   /* Editorial metric type */
@@ -52,7 +140,9 @@
   }
   .btn-secondary {
     @apply btn bg-white/80 text-gov-forest border border-gov-forest/20
-           hover:bg-gov-forest hover:text-white focus:ring-gov-forest;
+           hover:bg-gov-forest hover:text-white focus:ring-gov-forest
+           dark:bg-surface-elevated dark:text-emerald-100 dark:border-emerald-100/25
+           dark:hover:bg-emerald-100/15 dark:hover:text-white;
   }
   .btn-ghost {
     @apply btn bg-transparent text-white/80 hover:bg-white/10 hover:text-white;
@@ -68,9 +158,12 @@
            text-xs font-semibold bg-gov-sage/15 text-gov-sage;
   }
 
-  /* Cards / panels */
+  /* Cards / panels — dark mode picks up the surface-base token so
+     cards stand a step above the page bg, with a subtle warm-dark
+     border instead of the harsh light-mode gray-200. */
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6;
+    @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6
+           dark:bg-surface-base dark:border-neutral-border;
   }
   .metric-card {
     @apply card hover:shadow-md transition-shadow duration-200;

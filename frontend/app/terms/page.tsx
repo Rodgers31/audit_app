@@ -141,7 +141,7 @@ export default function TermsPage() {
 
       {/* ── Disclaimer ── */}
       <Section title='8. Disclaimer of Warranties'>
-        <div className='bg-white rounded-xl p-5 border border-neutral-border shadow-surface'>
+        <div className='bg-white dark:bg-surface-base rounded-xl p-5 border border-neutral-border shadow-surface'>
           <p>
             AuditGava is provided <strong>&quot;as is&quot;</strong> and{' '}
             <strong>&quot;as available&quot;</strong> without warranties of any kind, either express

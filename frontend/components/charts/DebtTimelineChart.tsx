@@ -14,7 +14,7 @@ export default function DebtTimelineChart({ data }: DebtTimelineChartProps) {
   if (years.length === 0 || values.length === 0) {
     return (
       <div>
-        <div className='text-sm text-gray-600 mb-3'>Total debt over time (KES Billions)</div>
+        <div className='text-sm text-gray-600 dark:text-neutral-muted mb-3'>Total debt over time (KES Billions)</div>
         <DataIntegrityBanner
           message="Historical debt timeline data is not yet available."
           severity="info"
@@ -28,7 +28,7 @@ export default function DebtTimelineChart({ data }: DebtTimelineChartProps) {
 
   return (
     <div>
-      <div className='text-sm text-gray-600 mb-3'>Total debt over time (KES Billions)</div>
+      <div className='text-sm text-gray-600 dark:text-neutral-muted mb-3'>Total debt over time (KES Billions)</div>
       <div className='flex items-end gap-2 h-40'>
         {values.map((v, i) => (
           <motion.div
@@ -42,7 +42,7 @@ export default function DebtTimelineChart({ data }: DebtTimelineChartProps) {
           />
         ))}
       </div>
-      <div className='flex justify-between text-xs text-gray-500 mt-2'>
+      <div className='flex justify-between text-xs text-gray-500 dark:text-neutral-muted/80 mt-2'>
         {years.map((y) => (
           <span key={y}>{y}</span>
         ))}

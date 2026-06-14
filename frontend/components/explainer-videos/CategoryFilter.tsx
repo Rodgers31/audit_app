@@ -20,7 +20,7 @@ export default function CategoryFilter({
 }: CategoryFilterProps) {
   return (
     <div className='mb-8'>
-      <h3 className='text-lg font-semibold text-gray-900 mb-4'>Categories</h3>
+      <h3 className='text-lg font-semibold text-gray-900 dark:text-neutral-text mb-4'>Categories</h3>
       <div className='flex flex-wrap gap-3'>
         {categories.map((category) => {
           const Icon = category.icon;
@@ -31,7 +31,7 @@ export default function CategoryFilter({
               className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all duration-200 ${
                 selectedCategory === category.id
                   ? 'bg-red-100 border-red-300 text-red-800'
-                  : 'bg-white border-gray-200 text-gray-700 hover:border-red-300'
+                  : 'bg-white dark:bg-surface-base border-gray-200 dark:border-neutral-border text-gray-700 dark:text-neutral-muted hover:border-red-300'
               }`}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}>

@@ -49,7 +49,7 @@ export default function MetricsStrip() {
                 {isLoading ? (
                   <div className='h-16 w-40 bg-neutral-200 rounded animate-pulse' />
                 ) : (
-                  <span className='metric-hero text-gov-dark'>
+                  <span className='metric-hero text-gov-dark dark:text-white'>
                     {heroValue}
                     <span className='text-4xl md:text-5xl ml-1'>{heroUnit}</span>
                   </span>
@@ -71,7 +71,7 @@ export default function MetricsStrip() {
                   <div className='h-12 w-32 bg-neutral-200 rounded animate-pulse' />
                 ) : (
                   <div className='flex items-end gap-3'>
-                    <span className='metric-large text-gov-dark'>{Math.round(debtToGdp)}%</span>
+                    <span className='metric-large text-gov-dark dark:text-white'>{Math.round(debtToGdp)}%</span>
                     {debtToGdp >= 55 && (
                       <span className='pill-risk mb-1'>
                         <AlertTriangle className='w-3.5 h-3.5' />
@@ -97,7 +97,7 @@ export default function MetricsStrip() {
                 <circle cx='90' cy='65' r='2.5' fill='#4A7C5C' opacity='0.6' />
                 <circle cx='125' cy='72' r='2.5' fill='#D9A441' opacity='0.6' />
               </svg>
-              <div className='absolute bottom-2 right-2 text-[10px] text-gov-forest/40 font-medium'>
+              <div className='absolute bottom-2 right-2 text-[10px] text-gov-forest/40 dark:text-emerald-100/40 font-medium'>
                 47 Counties
               </div>
             </div>

@@ -40,7 +40,7 @@ export default function CountySlider({
   if (!counties || counties.length === 0) {
     return (
       <div className={`p-4 ${className}`}>
-        <div className='text-center text-gray-500'>Loading counties data...</div>
+        <div className='text-center text-gray-500 dark:text-neutral-muted/80'>Loading counties data...</div>
       </div>
     );
   }
@@ -77,12 +77,12 @@ export default function CountySlider({
           ${
             isActive
               ? 'bg-green-50 border-green-400 border-2 shadow-md'
-              : 'bg-gray-50 border-gray-300 opacity-70'
+              : 'bg-gray-50 dark:bg-surface-elevated border-gray-300 dark:border-neutral-border opacity-70'
           }
         `}>
           {/* County Name and Status */}
           <div className='flex items-start justify-between mb-2'>
-            <h4 className='font-semibold text-sm text-gray-900 truncate pr-2'>{county.name}</h4>
+            <h4 className='font-semibold text-sm text-gray-900 dark:text-neutral-text truncate pr-2'>{county.name}</h4>
             <span
               className={`
               px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0
@@ -104,13 +104,13 @@ export default function CountySlider({
           <div className='space-y-1 flex-1'>
             {/* Population */}
             <div className='text-xs'>
-              <span className='text-gray-500'>Pop: </span>
-              <span className='font-medium text-gray-700'>{formatPop(county.population)}</span>
+              <span className='text-gray-500 dark:text-neutral-muted/80'>Pop: </span>
+              <span className='font-medium text-gray-700 dark:text-neutral-muted'>{formatPop(county.population)}</span>
             </div>
 
             {/* Budget */}
             <div className='text-xs'>
-              <span className='text-gray-500'>Budget: </span>
+              <span className='text-gray-500 dark:text-neutral-muted/80'>Budget: </span>
               <span className='font-medium text-green-600'>
                 {formatKES(county.budget ?? county.totalBudget ?? 0)}
               </span>
@@ -118,7 +118,7 @@ export default function CountySlider({
 
             {/* Debt */}
             <div className='text-xs'>
-              <span className='text-gray-500'>Debt: </span>
+              <span className='text-gray-500 dark:text-neutral-muted/80'>Debt: </span>
               <span className='font-medium text-red-600'>
                 {formatKES(county.debt ?? county.totalDebt ?? 0)}
               </span>

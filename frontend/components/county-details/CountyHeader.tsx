@@ -18,8 +18,8 @@ export default function CountyHeader({ county }: CountyHeaderProps) {
     <div className='flex items-center justify-between mb-6'>
       {/* County Info */}
       <div>
-        <h1 className='text-2xl font-semibold text-gray-900 mb-1'>{county.name} County</h1>
-        <div className='flex items-center gap-2 text-gray-600'>
+        <h1 className='text-2xl font-semibold text-gray-900 dark:text-neutral-text mb-1'>{county.name} County</h1>
+        <div className='flex items-center gap-2 text-gray-600 dark:text-neutral-muted'>
           <Users size={16} />
           <span className='text-base'>Population: {formatPopulation(county.population)}</span>
         </div>

@@ -5,9 +5,31 @@ Strategy (in order):
    PDFs from the OAG (Office of the Auditor General) website.
 2. Fall back to the static fixture / configured URL.
 
-Note: OAG Kenya does not provide a structured API. Audit findings are
-published as PDF reports at https://www.oagkenya.go.ke/reports/.
-The live fetcher attempts to discover and parse the latest reports.
+Known limitation: OAG report PDFs are scanned images
+-----------------------------------------------------
+Most published OAG audit reports are scanned (raster) PDFs with no
+embedded text, so pdfplumber's ``extract_text`` returns empty and
+the live path produces zero findings. Probed 2026-04-26: the home
+page links one matching "performance-audit" PDF (32 MB, scanned)
+plus an Annual Corporate Report (text but doesn't match the audit
+keyword filter); the per-category listings
+(/national-government-audit-reports/, /county-governments-reports/,
+/financial-audit-reports/) are JS-rendered and don't expose PDFs in
+raw HTML.
+
+Two paths to actually solve this, both larger scope than this file:
+
+* Add an OCR pipeline (pytesseract + pdf2image, plus
+  apt-installed tesseract-ocr + poppler-utils in CI). Heavy on
+  runtime — OCR is ~2-5 sec/page and an OAG report is 100+ pages.
+* JS-render the per-category listing pages with Playwright to find
+  text-based PDFs — assumes any exist; we haven't confirmed.
+
+Until one of those lands, the live path here will keep returning
+None and the fixture is authoritative. The "no extractable text"
+log used to fire as WARNING; it's INFO now because the fallback
+works correctly and a real warning would be misleading on every
+nightly run.
 """
 
 from __future__ import annotations
@@ -21,7 +43,7 @@ from urllib.parse import urljoin
 
 from ...config import SeedingSettings
 from ...http_client import SeedingHttpClient
-from ...utils import load_json_resource
+from ...utils import load_json_resource, slugify_entity
 
 logger = logging.getLogger("seeding.audits.fetcher")
 
@@ -41,7 +63,13 @@ def fetch_audit_payload(
     1. Try live PDF fetch from OAG reports page (if enabled).
     2. Fall back to configured fixture/API URL.
     """
-    # Strategy 1: Live PDF fetch from OAG
+    # Strategy 1: Live PDF fetch from OAG.
+    # Empty results are EXPECTED on the live path while OAG continues
+    # to publish scanned-image PDFs (see module docstring) — the
+    # "fall back to fixture" log is INFO not WARNING so we don't
+    # noise up every nightly run. Real exceptions still WARN because
+    # they signal a NEW failure (e.g. OAG site reorganisation,
+    # network outage, pdfplumber regression).
     if settings.live_pdf_fetch_enabled:
         try:
             payload = _fetch_from_oag(client, settings)
@@ -52,8 +80,9 @@ def fetch_audit_payload(
                 )
                 return payload
             else:
-                logger.warning(
-                    "OAG fetch returned no findings, falling back to fixture"
+                logger.info(
+                    "OAG live fetch produced no findings (expected: "
+                    "OAG PDFs are scanned images); falling back to fixture"
                 )
         except Exception as exc:
             logger.warning(
@@ -204,7 +233,14 @@ def _download_and_parse_audit_pdf(
                     full_text += text + "\n"
 
             if not full_text.strip():
-                logger.warning("PDF appears to contain no extractable text")
+                # OAG publishes scanned-image PDFs — see module docstring
+                # for the full context and the OCR / Playwright paths
+                # required to actually fix this. INFO not WARNING so the
+                # log doesn't suggest a new fault on every nightly run.
+                logger.info(
+                    "PDF appears to contain no extractable text "
+                    "(scanned image; OCR not configured)"
+                )
                 return None
 
             # Extract audit findings using pattern matching
@@ -295,9 +331,11 @@ def _extract_findings_from_text(
                     pass
 
             entity = current_county or "National Government"
-            entity_slug = entity.lower().replace(" ", "-")
-            if current_county:
-                entity_slug += "-county"
+            # slugify_entity collapses punctuation (incl. apostrophes) so
+            # "Murang'a" normalises to "muranga" — matches the DB slug
+            # format. Prior `.lower().replace(" ", "-")` left apostrophes
+            # in place and triggered "Unknown entity slug" warnings.
+            entity_slug = slugify_entity(entity, county_suffix=bool(current_county))
 
             # Truncate finding text to reasonable length
             finding_text = section.strip()[:500]

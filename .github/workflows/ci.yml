@@ -8,7 +8,14 @@ on:
 
 permissions:
   contents: read
+  # Trivy's upload-sarif step uploads results here.
   security-events: write
+  # upload-sarif@v4 calls the workflow-runs API under the hood to
+  # fingerprint SARIF entries (so re-runs don't create duplicate
+  # alerts). Without actions:read it logs "Resource not accessible by
+  # integration" and the step exits non-zero, which fails the
+  # security-scan job and blocks the quality-gate.
+  actions: read
 
 jobs:
   test-backend:

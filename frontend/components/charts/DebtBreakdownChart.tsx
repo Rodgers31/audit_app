@@ -96,7 +96,7 @@ export default function DebtBreakdownChart({
   return (
     <div className='h-80 w-full'>
       <div className='mb-4'>
-        <p className='text-gray-600 text-sm'>
+        <p className='text-gray-600 dark:text-neutral-muted text-sm'>
           Kenya's debt is split between{' '}
           <span className='font-semibold text-red-600'>external lenders</span> (World Bank, China,
           etc.) and <span className='font-semibold text-amber-600'>domestic sources</span> (local
@@ -129,10 +129,10 @@ export default function DebtBreakdownChart({
           {/* Center text */}
           <div className='absolute inset-0 flex items-center justify-center'>
             <div className='text-center'>
-              <div className='text-lg font-bold text-gray-800'>
+              <div className='text-lg font-bold text-gray-800 dark:text-neutral-text'>
                 KES {totalDebt.toLocaleString()}B
               </div>
-              <div className='text-xs text-gray-500'>Total Debt</div>
+              <div className='text-xs text-gray-500 dark:text-neutral-muted/80'>Total Debt</div>
             </div>
           </div>
         </div>
@@ -150,11 +150,11 @@ export default function DebtBreakdownChart({
                 className='w-4 h-4 rounded-full'
                 style={{ backgroundColor: segment.color }}></div>
               <div>
-                <div className='font-semibold text-gray-800'>{segment.type}</div>
-                <div className='text-sm text-gray-600'>
+                <div className='font-semibold text-gray-800 dark:text-neutral-text'>{segment.type}</div>
+                <div className='text-sm text-gray-600 dark:text-neutral-muted'>
                   KES {segment.amount.toLocaleString()}B ({segment.percentage.toFixed(1)}%)
                 </div>
-                <div className='text-xs text-gray-500'>{segment.description}</div>
+                <div className='text-xs text-gray-500 dark:text-neutral-muted/80'>{segment.description}</div>
               </div>
             </motion.div>
           ))}
@@ -167,15 +167,15 @@ export default function DebtBreakdownChart({
           <div className='text-2xl font-bold text-red-600 mb-1'>
             {((DEBT_BREAKDOWN[0].amount / totalDebt) * 100).toFixed(1)}%
           </div>
-          <div className='text-sm font-medium text-gray-700 mb-1'>External Debt</div>
-          <div className='text-xs text-gray-500'>Mainly from China, World Bank, IMF</div>
+          <div className='text-sm font-medium text-gray-700 dark:text-neutral-muted mb-1'>External Debt</div>
+          <div className='text-xs text-gray-500 dark:text-neutral-muted/80'>Mainly from China, World Bank, IMF</div>
         </div>
         <div className='bg-amber-50 rounded-lg p-4 text-center'>
           <div className='text-2xl font-bold text-amber-600 mb-1'>
             {((DEBT_BREAKDOWN[1].amount / totalDebt) * 100).toFixed(1)}%
           </div>
-          <div className='text-sm font-medium text-gray-700 mb-1'>Domestic Debt</div>
-          <div className='text-xs text-gray-500'>Banks, pension funds, treasury bills</div>
+          <div className='text-sm font-medium text-gray-700 dark:text-neutral-muted mb-1'>Domestic Debt</div>
+          <div className='text-xs text-gray-500 dark:text-neutral-muted/80'>Banks, pension funds, treasury bills</div>
         </div>
       </div>
     </div>

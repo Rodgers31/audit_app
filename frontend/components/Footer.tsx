@@ -4,6 +4,7 @@ import { Heart, Mail } from 'lucide-react';
 import Link from 'next/link';
 
 const FOOTER_LINKS = [
+  { label: 'Data & Sources', href: '/sources' },
   { label: 'About', href: '/about' },
   { label: 'Privacy Policy', href: '/privacy' },
   { label: 'Terms of Use', href: '/terms' },

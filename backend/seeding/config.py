@@ -23,6 +23,16 @@ class SeedingSettings(BaseSettings):
         default=30.0,
         description="HTTP request timeout in seconds for upstream fetches.",
     )
+    # Hard cap on how long a single domain handler may run before the CLI
+    # aborts it and moves to the next domain. Protects `seed --all` from
+    # a single stuck domain (e.g. counties_budget blocking on a slow PDF
+    # parse) eating the whole nightly window. 10 min is generous — the
+    # slowest healthy domain runs in ~5 min.
+    domain_timeout_seconds: int = Field(
+        default=600,
+        ge=1,
+        description="Per-domain hard timeout; aborts one domain without killing the run.",
+    )
     max_retries: int = Field(
         default=3, description="Maximum retry attempts for transient HTTP failures."
     )
@@ -161,11 +171,41 @@ class SeedingSettings(BaseSettings):
             "Monthly Statistical Bulletin PDF link."
         ),
     )
+    cbk_statistical_bulletin_url: Optional[str] = Field(
+        default=None,
+        description=(
+            "Direct URL to the latest CBK Statistical Bulletin PDF. "
+            "When set, the national_debt domain extracts Table 4.1.4 "
+            "('Composition of Government Gross Domestic Debt by "
+            "Instrument') and overlays per-instrument domestic debt "
+            "values onto the fixture. When unset (the default) or the "
+            "URL 404s, domestic debt stays on fixture values. "
+            "Example: https://www.centralbank.go.ke/uploads/cbk_"
+            "statistical_bulletins/<hash>/sbull_jun25.pdf — the path "
+            "changes each release, so this is opt-in via env var. "
+            "Auto-discovery from the CBK statistics page is a planned "
+            "follow-up."
+        ),
+    )
     cob_birr_page_url: str = Field(
         default="https://cob.go.ke/publications/national-government-budget-implementation-review-reports/",
         description=(
             "COB National Government BIRR reports page. Scraped to discover "
             "the latest quarterly budget implementation review PDF."
+        ),
+    )
+    kra_revenue_url: Optional[str] = Field(
+        default=None,
+        description=(
+            "KRA revenue-performance page or PDF URL (FY revenue results). "
+            "When set, the revenue_by_source domain extracts the per-tax-type "
+            "breakdown (PAYE, VAT, Corporation, Excise, Customs) and overlays "
+            "it onto the fixture for the matched fiscal year — ONLY if the "
+            "parse passes the plausibility/reconciliation gate. When unset "
+            "(the default) or unreachable, the breakdown stays on fixture "
+            "values. Opt-in because KRA's publication URL/format changes each "
+            "release and must be confirmed before trusting the parse. Example: "
+            "https://www.kra.go.ke/news-center/press-release/<slug>"
         ),
     )
     treasury_bps_page_url: str = Field(
@@ -175,11 +215,63 @@ class SeedingSettings(BaseSettings):
             "Scraped to discover the latest BPS PDF."
         ),
     )
+    treasury_brop_url: Optional[str] = Field(
+        default=(
+            "https://www.treasury.go.ke/sites/default/files/"
+            "2025-Budget-Review-and-Outlook-Paper-1.pdf"
+        ),
+        description=(
+            "Direct URL to the latest National Treasury Budget Review "
+            "and Outlook Paper (BROP) PDF. The pending_bills domain "
+            "extracts paragraph 18 (national aggregate) and Table 10 "
+            "(per-county breakdown) from this document. The path "
+            "changes each year — set ``SEED_TREASURY_BROP_URL`` to the "
+            "new release URL when the next BROP drops, or set to None "
+            "to skip live fetch and use the fixture. Auto-discovery "
+            "from the Treasury landing page is a planned follow-up."
+        ),
+    )
     live_pdf_fetch_enabled: bool = Field(
         default=True,
         description=(
             "Whether to attempt live PDF fetching from government websites. "
             "When False, only fixture/configured URLs are used."
+        ),
+    )
+    counties_budget_prefer_live_source: bool = Field(
+        default=True,
+        description=(
+            "When True (default), the counties_budget fetcher tries the "
+            "Controller of Budget County BIRR PDFs before falling back to "
+            "the local CRA-formula fixture at seeding/real_data/"
+            "budgets.json. When False, the fixture is used unconditionally "
+            "— useful for offline development or reproducing a known state. "
+            "Independent of live_pdf_fetch_enabled: set both True for "
+            "production, both False for a fully-deterministic local run."
+        ),
+    )
+    counties_budget_cob_reports_url: str = Field(
+        default="https://cob.go.ke/publications/consolidated-county-budget-implementation-review-reports/",
+        description=(
+            "Controller of Budget Consolidated County BIRR landing page, "
+            "scraped to discover the latest quarterly and annual county "
+            "execution PDFs. Secondary candidate (tried when the primary "
+            "404s): https://cob.go.ke/publications/county-reports/."
+        ),
+    )
+    counties_budget_cob_wp_api_url: str = Field(
+        default=(
+            "https://cob.go.ke/wp-json/wp/v2/media"
+            "?per_page=100&mime_type=application/pdf&orderby=date&order=desc"
+        ),
+        description=(
+            "Controller of Budget WordPress REST API endpoint for PDF "
+            "media. Preferred over HTML scraping because the landing "
+            "pages frequently return 415/5xx behind the CDN while the "
+            "WP JSON endpoint stays 200 and returns structured "
+            "{title, date, source_url, mime_type} records we can sort "
+            "and filter deterministically. See "
+            "counties_budget.fetcher._discover_latest_county_birr_via_wp_api."
         ),
     )
 

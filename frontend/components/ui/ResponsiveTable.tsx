@@ -51,7 +51,7 @@ export default function ResponsiveTable({ children, className }: ResponsiveTable
       {/* Scroll hint — only on mobile when content overflows */}
       {showHint && (
         <div className='md:hidden absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full pt-2'>
-          <span className='text-[10px] text-gov-dark/30 font-medium animate-pulse'>
+          <span className='text-[10px] text-gov-dark/30 dark:text-white/30 font-medium animate-pulse'>
             ← scroll →
           </span>
         </div>

@@ -34,7 +34,7 @@ export default function CountyDetails({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className={`bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-all duration-300 ${className}`}
+      className={`bg-white dark:bg-surface-base rounded-2xl shadow-sm border border-gray-200 dark:border-neutral-border p-6 hover:shadow-lg transition-all duration-300 ${className}`}
       data-testid='county-details'
       onMouseEnter={onHoverStart}
       onMouseLeave={onHoverEnd}>

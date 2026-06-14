@@ -64,7 +64,7 @@ export default function ActionSteps() {
 
   return (
     <div className='bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl p-6'>
-      <h3 className='text-2xl font-bold text-gray-900 mb-6'>What You Can Do</h3>
+      <h3 className='text-2xl font-bold text-gray-900 dark:text-neutral-text mb-6'>What You Can Do</h3>
 
       <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'>
         {actionSteps.map((step, index) => (
@@ -73,22 +73,22 @@ export default function ActionSteps() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.1, duration: 0.5 }}
-            className='bg-white rounded-xl p-4 border border-gray-200'>
+            className='bg-white dark:bg-surface-base rounded-xl p-4 border border-gray-200 dark:border-neutral-border'>
             {/* Step Header */}
             <div className='flex items-center gap-3 mb-3'>
               <div className='w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-800 font-bold text-sm'>
                 {step.step}
               </div>
-              <h4 className='font-bold text-gray-900'>{step.title}</h4>
+              <h4 className='font-bold text-gray-900 dark:text-neutral-text'>{step.title}</h4>
             </div>
 
             {/* Step Description */}
-            <p className='text-sm text-gray-600 mb-3'>{step.description}</p>
+            <p className='text-sm text-gray-600 dark:text-neutral-muted mb-3'>{step.description}</p>
 
             {/* Action Items */}
             <ul className='space-y-1'>
               {step.actions.map((action, i) => (
-                <li key={i} className='flex items-start gap-2 text-xs text-gray-700'>
+                <li key={i} className='flex items-start gap-2 text-xs text-gray-700 dark:text-neutral-muted'>
                   <CheckCircle size={12} className='text-green-500 mt-0.5 flex-shrink-0' />
                   <span>{action}</span>
                 </li>
@@ -100,7 +100,7 @@ export default function ActionSteps() {
 
       {/* Footer Message */}
       <div className='mt-6 text-center'>
-        <p className='text-gray-700 font-medium'>
+        <p className='text-gray-700 dark:text-neutral-muted font-medium'>
           Remember: Government accountability starts with informed citizens. Every question you ask
           and every oversight you provide makes a difference.
         </p>

@@ -63,7 +63,7 @@ export default function AuditTransparencyCard() {
   if (!opinionEntries.length) {
     return (
       <div className='glass-card p-6 sm:p-8'>
-        <h3 className='font-display text-xl text-gov-dark mb-5'>Audit Transparency Reports</h3>
+        <h3 className='font-display text-xl text-gov-dark dark:text-white mb-5'>Audit Transparency Reports</h3>
         <p className='text-sm text-neutral-muted'>Audit data unavailable.</p>
       </div>
     );
@@ -76,7 +76,7 @@ export default function AuditTransparencyCard() {
       viewport={{ once: true, margin: '-60px' }}
       transition={{ duration: 0.6, delay: 0.2 }}
       className='glass-card p-6 sm:p-8'>
-      <h3 className='font-display text-xl text-gov-dark mb-5'>Audit Transparency Reports</h3>
+      <h3 className='font-display text-xl text-gov-dark dark:text-white mb-5'>Audit Transparency Reports</h3>
 
       <p className='text-xs text-neutral-muted uppercase tracking-wider mb-3 font-medium'>
         Audit Opinion Distribution
@@ -138,7 +138,7 @@ export default function AuditTransparencyCard() {
           <span className='text-sm font-semibold text-gov-copper'>Unresolved Issues</span>
         </div>
         <div className='flex items-baseline gap-2'>
-          <span className='text-lg font-bold text-gov-dark tabular-nums'>
+          <span className='text-lg font-bold text-gov-dark dark:text-white tabular-nums'>
             {formatKES(totalIrregular)}
           </span>
           <span className='text-xs text-neutral-muted'>{totalFindings} flagged by auditors</span>
@@ -150,7 +150,7 @@ export default function AuditTransparencyCard() {
         <div className='flex items-center gap-2'>
           <AlertTriangle className='w-4 h-4 text-gov-copper flex-shrink-0' />
           <div>
-            <span className='text-sm font-semibold text-gov-dark'>High Risk Counties</span>
+            <span className='text-sm font-semibold text-gov-dark dark:text-white'>High Risk Counties</span>
             <span className='text-xs text-neutral-muted block'>
               {worstCountiesCount} identified with major financial findings
             </span>

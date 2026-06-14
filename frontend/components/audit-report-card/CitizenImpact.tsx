@@ -11,7 +11,7 @@ interface CitizenImpactProps {
 export default function CitizenImpact({ auditStatus = 'pending' }: CitizenImpactProps) {
   return (
     <div>
-      <h5 className='text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2'>
+      <h5 className='text-lg font-semibold text-gray-900 dark:text-neutral-text mb-4 flex items-center gap-2'>
         <CheckCircle size={20} className='text-indigo-600' />
         What This Means for Citizens
       </h5>

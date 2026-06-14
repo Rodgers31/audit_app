@@ -19,7 +19,7 @@ const GLOSSARY: Record<string, { title: string; body: string }> = {
   // ── Debt terms ────────────────────────────────────────
   'debt-to-gdp': {
     title: 'Debt-to-GDP Ratio',
-    body: 'This shows the country\'s total debt as a percentage of its annual economic output (GDP). A higher ratio means the country owes more relative to what it earns. The IMF considers 55% a warning threshold for countries like Kenya.',
+    body: 'This shows the country\'s total debt as a percentage of its annual economic output (GDP). A higher ratio means the country owes more relative to what it earns. Kenya\'s PFM Act anchors public debt at 55% of GDP in present-value terms — a ceiling aligned with the IMF\'s LIC-DSF benchmark for medium-capacity performers.',
   },
   'debt-service': {
     title: 'Debt Service Cost',
@@ -280,7 +280,7 @@ export default function InfoTip({ term, size = 14, className = '' }: InfoTipProp
         onMouseLeave={scheduleClose}
         onFocus={show}
         onBlur={scheduleClose}
-        className='ml-1 p-0.5 text-gray-400 hover:text-blue-500 transition-colors focus:outline-none focus:ring-1 focus:ring-blue-300 rounded-full cursor-pointer'
+        className='ml-1 p-0.5 text-gray-400 dark:text-neutral-muted/80 hover:text-blue-500 transition-colors focus:outline-none focus:ring-1 focus:ring-blue-300 rounded-full cursor-pointer'
       >
         <Info size={size} />
       </button>
@@ -291,10 +291,10 @@ export default function InfoTip({ term, size = 14, className = '' }: InfoTipProp
           onMouseEnter={clearClose}
           onMouseLeave={scheduleClose}
           style={getStyle()}
-          className='w-72 bg-white border border-gray-200 rounded-xl shadow-xl p-3.5 text-left pointer-events-auto animate-fade-in'
+          className='w-[min(18rem,calc(100vw-1rem))] bg-white dark:bg-surface-base border border-gray-200 dark:border-neutral-border rounded-xl shadow-xl p-3.5 text-left pointer-events-auto animate-fade-in'
         >
-          <div className='text-xs font-semibold text-gray-800 mb-1.5'>{entry.title}</div>
-          <div className='text-[11px] text-gray-600 leading-relaxed'>{entry.body}</div>
+          <div className='text-xs font-semibold text-gray-800 dark:text-neutral-text mb-1.5'>{entry.title}</div>
+          <div className='text-[11px] text-gray-600 dark:text-neutral-muted leading-relaxed'>{entry.body}</div>
         </div>,
         document.body
       )}

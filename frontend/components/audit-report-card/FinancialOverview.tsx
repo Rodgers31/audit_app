@@ -12,7 +12,7 @@ interface FinancialOverviewProps {
 export default function FinancialOverview({ county }: FinancialOverviewProps) {
   return (
     <div>
-      <h5 className='text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2'>
+      <h5 className='text-lg font-semibold text-gray-900 dark:text-neutral-text mb-4 flex items-center gap-2'>
         <DollarSign size={20} className='text-blue-600' />
         Financial Overview
       </h5>

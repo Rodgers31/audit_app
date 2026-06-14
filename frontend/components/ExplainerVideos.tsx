@@ -29,11 +29,11 @@ export default function ExplainerVideos({ searchTerm }: ExplainerVideosProps) {
     : null;
 
   return (
-    <div className='bg-white rounded-3xl p-8 shadow-xl border border-gray-200'>
+    <div className='bg-white dark:bg-surface-base rounded-3xl p-8 shadow-xl border border-gray-200 dark:border-neutral-border'>
       {/* Page Header */}
       <div className='flex items-center gap-3 mb-8'>
         <Play size={32} className='text-red-600' />
-        <h2 className='text-3xl font-bold text-gray-900'>Explainer Videos</h2>
+        <h2 className='text-3xl font-bold text-gray-900 dark:text-neutral-text'>Explainer Videos</h2>
       </div>
 
       {/* Category Filter */}

@@ -160,11 +160,12 @@ export const useCountyAccountability = (
 // Get comprehensive county data (one-stop detail)
 export const useCountyComprehensive = (
   id: string,
+  fiscalYear?: string,
   options?: Omit<UseQueryOptions<CountyComprehensive>, 'queryKey' | 'queryFn'>
 ) => {
   return useQuery({
-    queryKey: ['counties', id, 'comprehensive'] as const,
-    queryFn: () => getCountyComprehensive(id),
+    queryKey: ['counties', id, 'comprehensive', fiscalYear ?? null] as const,
+    queryFn: () => getCountyComprehensive(id, fiscalYear),
     enabled: !!id,
     staleTime: 10 * 60 * 1000, // 10 minutes
     ...options,

@@ -39,6 +39,72 @@ def _safe_float(val: Any) -> float | None:
         return None
 
 
+def _derive_debt_service_per_shilling(
+    debt_service_cost: float | None,
+    total_revenue: float | None,
+    declared: float | None,
+    *,
+    label: str,
+) -> float | None:
+    """Debt service per KSh 100 of revenue — DERIVED from the numerator and
+    denominator rather than read as a hand-entered figure.
+
+    Why derived: a stored ratio drifts from its inputs. FY2025/26 had a
+    declared 55.7 computed off a narrow "CFS charge" numerator, understating
+    the true ratio (authoritative ~64-65%; Treasury APDMR / Cytonn 2025).
+    Computing ``debt_service_cost / total_revenue`` guarantees the published
+    number always matches the inputs and **auto-updates** when either changes
+    on the next seed run. If the JSON still carries a declared value that
+    diverges by >2pp we warn (data-quality signal) but always serve the
+    computed one. Also flags an implausible result (outside a 30-95% band).
+    """
+    if not debt_service_cost or not total_revenue:
+        return declared  # nothing to compute from — keep any declared value
+    computed = round(debt_service_cost / total_revenue * 100, 1)
+    if declared is not None and abs(declared - computed) > 2.0:
+        logger.warning(
+            "fiscal_summary %s: declared debt_service_per_shilling %.1f diverges "
+            "from computed %.1f (ds=%.0f / rev=%.0f) — serving computed",
+            label, declared, computed, debt_service_cost, total_revenue,
+        )
+    if not (30.0 <= computed <= 95.0):
+        logger.warning(
+            "fiscal_summary %s: debt-service-to-revenue %.1f%% outside the "
+            "plausible 30-95%% band — review inputs (ds=%.0f / rev=%.0f)",
+            label, computed, debt_service_cost, total_revenue,
+        )
+    return computed
+
+
+def _derive_borrowing_pct_of_budget(
+    total_borrowing: float | None,
+    appropriated_budget: float | None,
+    declared: float | None,
+    *,
+    label: str,
+) -> float | None:
+    """Borrowing as a % of the appropriated budget — DERIVED from its inputs,
+    never read as a hand-entered figure.
+
+    Same rationale as ``_derive_debt_service_per_shilling``: a stored ratio
+    drifts from its numerator/denominator. Deriving ``total_borrowing /
+    appropriated_budget`` guarantees the published share always matches the
+    budget — so when the budget headline is corrected or refreshed (fixture
+    bless or a live COB overlay), this share updates automatically instead of
+    silently contradicting it. Warns if a declared value diverges by >1pp.
+    """
+    if not total_borrowing or not appropriated_budget:
+        return declared  # nothing to compute from — keep any declared value
+    computed = round(total_borrowing / appropriated_budget * 100, 1)
+    if declared is not None and abs(declared - computed) > 1.0:
+        logger.warning(
+            "fiscal_summary %s: declared borrowing_pct_of_budget %.1f diverges "
+            "from computed %.1f (borrow=%.0f / budget=%.0f) — serving computed",
+            label, declared, computed, total_borrowing, appropriated_budget,
+        )
+    return computed
+
+
 def parse_fiscal_summary_payload(payload: dict[str, Any]) -> list[FiscalSummaryRecord]:
     """Parse fiscal summary JSON payload into records."""
     fiscal_years = payload.get("fiscal_years", [])
@@ -61,10 +127,22 @@ def parse_fiscal_summary_payload(payload: dict[str, Any]) -> list[FiscalSummaryR
                 tax_revenue=_safe_float(fy.get("tax_revenue")),
                 non_tax_revenue=_safe_float(fy.get("non_tax_revenue")),
                 total_borrowing=_safe_float(fy.get("total_borrowing")),
-                borrowing_pct_of_budget=_safe_float(fy.get("borrowing_pct_of_budget")),
+                # DERIVED from total_borrowing / appropriated_budget so it
+                # always matches the budget and auto-updates on re-seed.
+                borrowing_pct_of_budget=_derive_borrowing_pct_of_budget(
+                    _safe_float(fy.get("total_borrowing")),
+                    _safe_float(fy.get("appropriated_budget")),
+                    _safe_float(fy.get("borrowing_pct_of_budget")),
+                    label=label,
+                ),
                 debt_service_cost=_safe_float(fy.get("debt_service_cost")),
-                debt_service_per_shilling=_safe_float(
-                    fy.get("debt_service_per_shilling")
+                # DERIVED from debt_service_cost / total_revenue so it can never
+                # drift from its inputs and updates automatically on re-seed.
+                debt_service_per_shilling=_derive_debt_service_per_shilling(
+                    _safe_float(fy.get("debt_service_cost")),
+                    _safe_float(fy.get("total_revenue")),
+                    _safe_float(fy.get("debt_service_per_shilling")),
+                    label=label,
                 ),
                 debt_ceiling=_safe_float(fy.get("debt_ceiling")),
                 actual_debt=_safe_float(fy.get("actual_debt")),

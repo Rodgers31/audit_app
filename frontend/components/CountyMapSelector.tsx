@@ -18,7 +18,7 @@ export default function CountyMapSelector({
   return (
     <div className='w-full'>
       {/* Map Container */}
-      <div className='relative bg-slate-50 rounded-2xl p-6 border-2 border-slate-200'>
+      <div className='relative bg-slate-50 dark:bg-surface-elevated rounded-2xl p-6 border-2 border-slate-200'>
         <ComposableMap
           projection='geoMercator'
           projectionConfig={{
@@ -105,7 +105,7 @@ export default function CountyMapSelector({
 
       {/* Quick Select Grid */}
       <div className='mt-6'>
-        <h3 className='text-lg font-semibold text-gray-900 mb-4'>Quick Select County:</h3>
+        <h3 className='text-lg font-semibold text-gray-900 dark:text-neutral-text mb-4'>Quick Select County:</h3>
         <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2'>
           {counties.slice(0, 12).map((county) => {
             const isSelected = selectedCounty?.id === county.id;
@@ -119,7 +119,7 @@ export default function CountyMapSelector({
                   ${
                     isSelected
                       ? 'bg-blue-600 text-white shadow-lg scale-105'
-                      : 'bg-white text-gray-700 border border-gray-200 hover:border-blue-300 hover:text-blue-600'
+                      : 'bg-white dark:bg-surface-base text-gray-700 dark:text-neutral-muted border border-gray-200 dark:border-neutral-border hover:border-blue-300 hover:text-blue-600'
                   }
                 `}
                 whileHover={{ scale: 1.05 }}
@@ -131,7 +131,7 @@ export default function CountyMapSelector({
         </div>
 
         {counties.length > 12 && (
-          <p className='text-sm text-gray-500 mt-2'>
+          <p className='text-sm text-gray-500 dark:text-neutral-muted/80 mt-2'>
             Showing {Math.min(12, counties.length)} of {counties.length} counties. Click on the map
             or use search to find others.
           </p>

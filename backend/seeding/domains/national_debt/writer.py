@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
-import json
 import logging
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -94,15 +92,24 @@ def _get_or_create_source_document(
     return doc
 
 
-def compute_loan_hash(record: DebtRecord, entity_id: int) -> str:
-    """Compute deterministic hash for a loan record."""
-    data = (
-        f"{entity_id}:{record.lender}:{record.principal}:"
-        f"{record.outstanding}:{record.issue_date.isoformat()}:"
-        f"{record.maturity_date.isoformat() if record.maturity_date else 'None'}:"
-        f"{record.currency}"
-    )
-    return hashlib.sha256(data.encode()).hexdigest()
+def _resolve_debt_category(value: str | None):
+    """Map a debt_category string to the DebtCategory enum, defaulting
+    to ``OTHER`` for unknown values. Returns ``None`` when the input is
+    falsy so callers can leave the column unset on existing rows."""
+    if not value:
+        return None
+    from models import DebtCategory as _DC
+
+    return {
+        "external_multilateral": _DC.EXTERNAL_MULTILATERAL,
+        "external_bilateral": _DC.EXTERNAL_BILATERAL,
+        "external_commercial": _DC.EXTERNAL_COMMERCIAL,
+        "domestic_bonds": _DC.DOMESTIC_BONDS,
+        "domestic_bills": _DC.DOMESTIC_BILLS,
+        "domestic_overdraft": _DC.DOMESTIC_OVERDRAFT,
+        "pending_bills": _DC.PENDING_BILLS,
+        "county_guaranteed": _DC.COUNTY_GUARANTEED,
+    }.get(value, _DC.OTHER)
 
 
 def write_debt_records(
@@ -110,6 +117,18 @@ def write_debt_records(
 ) -> tuple[int, int]:
     """
     Persist debt records to database.
+
+    Dedupe by ``(entity_id, lender)`` rather than the writer's older
+    ``(entity_id, lender, issue_date)`` triple. National-debt loans
+    are aggregate buckets (e.g. "Multilateral (World Bank / IDA /
+    IBRD)") with synthetic issue dates that change as live overlays
+    advance their data vintage. Keying on issue_date too caused every
+    new vintage to insert a NEW row alongside the prior one, leaving
+    a trail of stale zombies. We now find all rows for (entity,
+    lender), update one in-place to the latest values, and DELETE any
+    extras as a one-shot cleanup of pre-existing zombies. Safe because
+    the national_debt domain enforces one row per lender bucket
+    (verified against the fixture and both live overlays).
 
     Args:
         session: Database session
@@ -124,7 +143,6 @@ def write_debt_records(
     updated = 0
 
     for record in records:
-        # Get or create entity
         entity = _get_or_create_entity(session, record.entity_name, record.entity_type)
         if not entity:
             logger.warning(
@@ -132,20 +150,16 @@ def write_debt_records(
             )
             continue
 
-        # Get or create source document
         source_doc = _get_or_create_source_document(session, record)
 
-        # Check if loan already exists using hash
-        loan_hash = compute_loan_hash(record, entity.id)
-
-        existing_loan = (
+        existing_loans = (
             session.query(Loan)
             .filter(
                 Loan.entity_id == entity.id,
                 Loan.lender == record.lender,
-                Loan.issue_date == record.issue_date,
             )
-            .first()
+            .order_by(Loan.id)
+            .all()
         )
 
         provenance_entry = {
@@ -154,75 +168,70 @@ def write_debt_records(
             "ingested_at": datetime.now(timezone.utc).isoformat(),
         }
 
-        if existing_loan:
-            # Update if outstanding amount changed or debt_category missing
-            needs_update = (
-                existing_loan.outstanding != record.outstanding
-                or existing_loan.debt_category is None
-            )
-            if needs_update:
-                logger.info(
-                    f"Updating loan: {record.lender} for {record.entity_name} "
-                    f"(outstanding: {existing_loan.outstanding} → {record.outstanding})"
-                )
-                existing_loan.outstanding = record.outstanding
-                existing_loan.principal = record.principal
-                existing_loan.maturity_date = record.maturity_date
+        if existing_loans:
+            keeper = existing_loans[0]
+            zombies = existing_loans[1:]
 
-                # Update debt_category and interest_rate if provided
-                if record.debt_category:
-                    from models import DebtCategory as _DC
-
-                    _cat_map = {
-                        "external_multilateral": _DC.EXTERNAL_MULTILATERAL,
-                        "external_bilateral": _DC.EXTERNAL_BILATERAL,
-                        "external_commercial": _DC.EXTERNAL_COMMERCIAL,
-                        "domestic_bonds": _DC.DOMESTIC_BONDS,
-                        "domestic_bills": _DC.DOMESTIC_BILLS,
-                        "domestic_overdraft": _DC.DOMESTIC_OVERDRAFT,
-                        "pending_bills": _DC.PENDING_BILLS,
-                        "county_guaranteed": _DC.COUNTY_GUARANTEED,
-                    }
-                    existing_loan.debt_category = _cat_map.get(
-                        record.debt_category, _DC.OTHER
+            # Drop zombies BEFORE mutating the keeper. The Loan table
+            # carries a UniqueConstraint(entity_id, lender, issue_date),
+            # and SQLAlchemy's unit-of-work flushes UPDATEs ahead of
+            # DELETEs — so updating keeper.issue_date to a value still
+            # held by a not-yet-deleted zombie raises IntegrityError.
+            # Explicit flush after the deletes guarantees the row is
+            # gone before the keeper takes its date.
+            if zombies:
+                for zombie in zombies:
+                    logger.info(
+                        "Deleting zombie loan #%s (lender=%s, "
+                        "issue_date=%s) consolidated into #%s",
+                        zombie.id, zombie.lender, zombie.issue_date,
+                        keeper.id,
                     )
+                    session.delete(zombie)
+                session.flush()
+
+            # Counts toward `updated` only when something actually
+            # shifted, so the metric still reflects real churn rather
+            # than counting every no-op re-write.
+            changed = (
+                keeper.outstanding != record.outstanding
+                or keeper.principal != record.principal
+                or keeper.issue_date != record.issue_date
+                or keeper.maturity_date != record.maturity_date
+                or keeper.debt_category is None
+            )
+            if changed or zombies:
+                logger.info(
+                    "Updating loan: %s for %s (outstanding: %s → %s%s)",
+                    record.lender,
+                    record.entity_name,
+                    keeper.outstanding,
+                    record.outstanding,
+                    f"; consolidated {len(zombies)} zombie row(s)" if zombies else "",
+                )
+                keeper.outstanding = record.outstanding
+                keeper.principal = record.principal
+                keeper.issue_date = record.issue_date
+                keeper.maturity_date = record.maturity_date
+                resolved_cat = _resolve_debt_category(record.debt_category)
+                if resolved_cat is not None:
+                    keeper.debt_category = resolved_cat
                 if record.interest_rate is not None:
-                    existing_loan.interest_rate = record.interest_rate
+                    keeper.interest_rate = record.interest_rate
 
-                # Append to provenance
-                provenance = existing_loan.provenance or []
+                provenance = keeper.provenance or []
                 provenance.append(provenance_entry)
-                existing_loan.provenance = provenance
-
+                keeper.provenance = provenance
                 updated += 1
         else:
-            # Create new loan
             logger.info(
                 f"Creating loan: {record.lender} for {record.entity_name} "
                 f"(principal: {record.principal}, outstanding: {record.outstanding})"
             )
-
-            # Map debt_category string to DebtCategory enum
-            debt_cat = None
-            if record.debt_category:
-                from models import DebtCategory
-
-                cat_map = {
-                    "external_multilateral": DebtCategory.EXTERNAL_MULTILATERAL,
-                    "external_bilateral": DebtCategory.EXTERNAL_BILATERAL,
-                    "external_commercial": DebtCategory.EXTERNAL_COMMERCIAL,
-                    "domestic_bonds": DebtCategory.DOMESTIC_BONDS,
-                    "domestic_bills": DebtCategory.DOMESTIC_BILLS,
-                    "domestic_overdraft": DebtCategory.DOMESTIC_OVERDRAFT,
-                    "pending_bills": DebtCategory.PENDING_BILLS,
-                    "county_guaranteed": DebtCategory.COUNTY_GUARANTEED,
-                }
-                debt_cat = cat_map.get(record.debt_category, DebtCategory.OTHER)
-
             loan = Loan(
                 entity_id=entity.id,
                 lender=record.lender,
-                debt_category=debt_cat,
+                debt_category=_resolve_debt_category(record.debt_category),
                 principal=record.principal,
                 outstanding=record.outstanding,
                 interest_rate=record.interest_rate or Decimal("0"),

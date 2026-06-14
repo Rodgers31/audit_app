@@ -86,9 +86,9 @@ function StageCard({
               {stage.stage}
             </span>
           </div>
-          <div className='text-sm text-gray-600 mb-1'>{stage.label}</div>
+          <div className='text-sm text-gray-600 dark:text-neutral-muted mb-1'>{stage.label}</div>
           {stage.data_unavailable ? (
-            <div className='flex items-center gap-1.5 text-gray-400'>
+            <div className='flex items-center gap-1.5 text-gray-400 dark:text-neutral-muted/80'>
               <Ban size={14} />
               <span className='text-sm italic'>Data not available</span>
             </div>
@@ -98,7 +98,7 @@ function StageCard({
             </div>
           )}
           {stage.source && (
-            <div className='text-[11px] text-gray-400 mt-1'>Source: {stage.source}</div>
+            <div className='text-[11px] text-gray-400 dark:text-neutral-muted/80 mt-1'>Source: {stage.source}</div>
           )}
         </div>
       </div>
@@ -128,6 +128,23 @@ function StageCard({
 
 /* ═══════════ Gap Indicator ═══════════ */
 
+/**
+ * One-line explainer for each gap label. The gaps in our waterfall have
+ * subtly different meanings and an earlier version of the UI let readers
+ * (understandably) mistake "Unspent Funds" for "missing money". It isn't:
+ * unspent just means the budget line hadn't been paid out YET at the
+ * time the CoB report was generated (these are often mid-year H1 reports,
+ * so some gap is always expected).
+ */
+const GAP_SUBLABEL: Record<string, string> = {
+  'Unspent Funds':
+    'Budget still available — not yet paid out at report time. Not missing.',
+  'Withheld/Delayed':
+    'Allocated but not released by Treasury at report time.',
+  'Irregular/Unsupported Expenditure':
+    'Spent, but the Auditor-General could not confirm it was properly supported — questioned, not proven loss.',
+};
+
 function GapIndicator({
   gap,
   label,
@@ -138,28 +155,34 @@ function GapIndicator({
   index: number;
 }) {
   const colors = GAP_COLORS[label] || GAP_COLORS['Unspent Funds'];
+  const sublabel = GAP_SUBLABEL[label];
 
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.2, delay: index * 0.1 + 0.15 }}
-      className='flex items-center gap-3 px-4 py-2'>
+      className='flex items-start gap-3 px-4 py-2'>
       {/* Vertical connector line */}
-      <div className='flex flex-col items-center'>
-        <ArrowDown size={16} className='text-gray-300' />
+      <div className='flex flex-col items-center pt-1.5'>
+        <ArrowDown size={16} className='text-gray-300 dark:text-neutral-muted/60' />
       </div>
 
       {/* Gap pill */}
       <div
-        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border border-dashed ${colors.bg} ${colors.border}`}>
-        <TrendingDown size={14} className={colors.text} />
-        <div>
+        className={`flex flex-col gap-0.5 px-3 py-1.5 rounded-lg border border-dashed ${colors.bg} ${colors.border}`}>
+        <div className='flex items-center gap-2'>
+          <TrendingDown size={14} className={colors.text} />
           <span className={`text-xs font-semibold ${colors.text}`}>{label}</span>
-          <span className={`text-sm font-bold ml-2 ${colors.text} tabular-nums`}>
+          <span className={`text-sm font-bold ${colors.text} tabular-nums`}>
             {fmtKES(gap)}
           </span>
         </div>
+        {sublabel && (
+          <p className='text-[10.5px] text-gray-500 dark:text-neutral-muted/80 leading-snug max-w-xs pl-5'>
+            {sublabel}
+          </p>
+        )}
       </div>
     </motion.div>
   );
@@ -205,7 +228,7 @@ function EfficiencyRing({ score }: { score: number }) {
           />
         </svg>
         <div className='absolute text-center'>
-          <div className='text-xl font-bold text-gray-900'>{score.toFixed(0)}%</div>
+          <div className='text-xl font-bold text-gray-900 dark:text-neutral-text'>{score.toFixed(0)}%</div>
         </div>
       </div>
       <div className='text-xs font-semibold mt-1' style={{ color }}>
@@ -233,15 +256,15 @@ export default function FollowTheMoney({ data, isLoading, compact }: FollowTheMo
     return (
       <div className='flex items-center justify-center py-16'>
         <Loader2 className='w-6 h-6 animate-spin text-gov-sage' />
-        <span className='ml-3 text-gov-dark/60 font-medium'>Tracing the money...</span>
+        <span className='ml-3 text-gov-dark/60 dark:text-white/60 font-medium'>Tracing the money...</span>
       </div>
     );
   }
 
   if (!data || !data.stages || data.stages.length === 0) {
     return (
-      <div className='text-center py-12 text-gray-400'>
-        <AlertTriangle size={28} className='mx-auto mb-2 text-gray-300' />
+      <div className='text-center py-12 text-gray-400 dark:text-neutral-muted/80'>
+        <AlertTriangle size={28} className='mx-auto mb-2 text-gray-300 dark:text-neutral-muted/60' />
         <p className='text-sm'>No money flow data available for this period.</p>
       </div>
     );
@@ -255,8 +278,10 @@ export default function FollowTheMoney({ data, isLoading, compact }: FollowTheMo
       {!compact && (
         <div className='flex items-center justify-between mb-4'>
           <div>
-            <h3 className='text-sm font-semibold text-gray-800'>{data.county_name}</h3>
-            <p className='text-xs text-gray-500'>FY {data.fiscal_year}</p>
+            <h3 className='text-sm font-semibold text-gray-800 dark:text-neutral-text'>{data.county_name}</h3>
+            <p className='text-xs text-gray-500 dark:text-neutral-muted/80'>
+              FY {data.fiscal_year?.startsWith('FY') ? data.fiscal_year.slice(2) : data.fiscal_year}
+            </p>
           </div>
           {data.efficiency_score != null && <EfficiencyRing score={data.efficiency_score} />}
         </div>
@@ -265,8 +290,8 @@ export default function FollowTheMoney({ data, isLoading, compact }: FollowTheMo
       {/* Compact efficiency display */}
       {compact && data.efficiency_score != null && (
         <div className='flex items-center justify-end mb-3'>
-          <div className='flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-1.5'>
-            <span className='text-xs text-gray-500'>Efficiency:</span>
+          <div className='flex items-center gap-2 bg-gray-50 dark:bg-surface-elevated rounded-lg px-3 py-1.5'>
+            <span className='text-xs text-gray-500 dark:text-neutral-muted/80'>Efficiency:</span>
             <span
               className={`text-sm font-bold ${
                 data.efficiency_score >= 70
@@ -303,7 +328,7 @@ export default function FollowTheMoney({ data, isLoading, compact }: FollowTheMo
             {/* Connector arrow when no gap to show */}
             {!showGap && i < data.stages.length - 1 && (
               <div className='flex justify-center py-1'>
-                <ArrowDown size={16} className='text-gray-300' />
+                <ArrowDown size={16} className='text-gray-300 dark:text-neutral-muted/60' />
               </div>
             )}
           </React.Fragment>
@@ -323,14 +348,48 @@ export default function FollowTheMoney({ data, isLoading, compact }: FollowTheMo
             </div>
             <div>
               <div className='text-sm font-semibold text-red-900'>
-                {fmtKES(data.total_waste_estimate)} Flagged by Auditors
+                {fmtKES(data.total_waste_estimate)} Questioned by the Auditor General
               </div>
               <div className='text-xs text-red-700'>
-                Irregular or unsupported expenditure identified by the Office of the Auditor General
+                Irregular or unsupported expenditure questioned by the Auditor-General — could not be confirmed as properly spent; not proven loss
               </div>
             </div>
           </div>
         </motion.div>
+      )}
+
+      {/* Committed-to-procurement note (optional) — distinct from "Released"
+          because Treasury disbursements aren't in our data. Showing this as
+          a supplementary figure rather than a waterfall stage is deliberate:
+          it keeps readers from inferring a cause-and-effect "allocated →
+          released → spent" chain that the data doesn't support. */}
+      {hasAnyData && data.committed_amount != null && data.committed_amount > 0 && (
+        <div className='text-xs text-gray-500 dark:text-neutral-muted/80 mt-2 px-1'>
+          Of the spent total, <span className='font-semibold text-gray-700 dark:text-neutral-muted'>{fmtKES(data.committed_amount)}</span>{' '}
+          was procurement-encumbered (earmarked for contracts in progress).
+        </div>
+      )}
+
+      {/* Source provenance — every figure traces back to a specific CoB
+          publication. Surfacing the exact title matters because CoB reports
+          are often half-year or quarterly snapshots, not full-year finals. */}
+      {(data.source_document_title || data.source_document_url) && (
+        <div className='text-[11px] text-gray-500 dark:text-neutral-muted/80 mt-3 pt-3 border-t border-gray-100 dark:border-neutral-border'>
+          <span className='uppercase tracking-wider font-semibold text-gray-400 dark:text-neutral-muted/80 mr-2'>
+            Source
+          </span>
+          {data.source_document_url ? (
+            <a
+              href={data.source_document_url}
+              target='_blank'
+              rel='noopener noreferrer'
+              className='text-gov-forest dark:text-emerald-100 hover:underline'>
+              {data.source_document_title || 'Controller of Budget'}
+            </a>
+          ) : (
+            <span className='text-gray-600 dark:text-neutral-muted'>{data.source_document_title}</span>
+          )}
+        </div>
       )}
     </div>
   );
@@ -352,17 +411,26 @@ export function YearSelector({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className='text-sm px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gov-sage/30 focus:border-gov-sage appearance-none pr-8 cursor-pointer'
+        aria-label='Fiscal year'
+        title='Fiscal year'
+        className='text-sm px-3 py-1.5 rounded-lg bg-white dark:bg-surface-base border border-gray-200 dark:border-neutral-border text-gray-700 dark:text-neutral-muted focus:outline-none focus:ring-2 focus:ring-gov-sage/30 focus:border-gov-sage appearance-none pr-8 cursor-pointer'
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'right 8px center',
         }}>
-        {years.map((y) => (
-          <option key={y} value={y}>
-            FY {y}
-          </option>
-        ))}
+        {years.map((y) => {
+          // Backend and util helpers return the FY in two different
+          // formats — some start with "FY" ("FY2024/25"), some don't
+          // ("2024/25"). Strip the prefix before rendering so the
+          // visible label is always exactly one "FY …".
+          const bare = y.startsWith('FY') ? y.slice(2) : y;
+          return (
+            <option key={y} value={y}>
+              FY {bare}
+            </option>
+          );
+        })}
       </select>
     </div>
   );

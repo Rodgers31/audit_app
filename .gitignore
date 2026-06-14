@@ -70,6 +70,8 @@ etl/downloads/
 data/
 !data/README.md
 !frontend/data/
+!frontend/lib/data/
+!frontend/public/data/
 
 # Node / JavaScript
 node_modules/

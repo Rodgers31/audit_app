@@ -188,6 +188,304 @@ class TestCoBQuarterlyReportParser:
         with pytest.raises(TableNotFoundError):
             parser.parse()
 
+    @patch("seeding.pdf_parsers.extract_all_tables")
+    def test_parse_h1_fy2025_26_layout(self, mock_extract):
+        """Regression: COB H1 FY2025/26 reword headers from
+        Allocated/Absorbed → Budget Estimates / Actual Expenditure
+        and added a two-row "group / Rec/Dev/Total" sub-header.
+        The new parser must:
+          (a) find the table by 47-county anchor (not literal keywords),
+          (b) flatten the two-row header into combined labels,
+          (c) extract Total + Recurrent + Development from one table
+              by addressing different sub-columns.
+        """
+        from seeding.pdf_parsers import KENYAN_COUNTIES
+
+        # Header row + sub-row + 47 county data rows.
+        group_headers = [
+            "County",
+            "Budget Estimates (Kshs.Million)", "", "",
+            "Actual Expenditure (Kshs.Million)", "", "",
+            "Absorption Rate(%)", "", "",
+        ]
+        sub_row = [
+            "", "Rec", "Dev", "Total",
+            "Rec", "Dev", "Total",
+            "Rec", "Dev", "Total",
+        ]
+        county_rows = [
+            [c, "5,000", "3,000", "8,000",
+                 "2,500", "1,200", "3,700",
+                 "50", "40", "46"]
+            for c in KENYAN_COUNTIES
+        ]
+        mock_extract.return_value = [
+            ExtractedTable(
+                page_number=55, table_index=0,
+                headers=group_headers,
+                rows=[sub_row, *county_rows],
+                bbox=(0, 0, 100, 100),
+            )
+        ]
+
+        parser = CoBQuarterlyReportParser(
+            Path("h1-fy2025-26-county-birr.pdf")
+        )
+        records = parser.parse()
+
+        # 47 counties × 3 categories = 141 records (no PE table).
+        assert len(records) == 141
+        cats = {r["category"] for r in records}
+        assert cats == {"Total", "Recurrent", "Development"}
+        counties_seen = {r["county"] for r in records if r["category"] == "Total"}
+        assert "Murang'a" in counties_seen, "apostrophe county must round-trip"
+        assert len(counties_seen) == 47
+
+        # Pin the column-resolution: "Total" must read sub-columns
+        # 3 (Budget Estimates Total) and 6 (Actual Expenditure Total).
+        sample = next(r for r in records if r["county"] == "Nairobi" and r["category"] == "Total")
+        assert sample["allocated"] == Decimal("8000")
+        assert sample["absorbed"] == Decimal("3700")
+        assert sample["absorption_rate"] == 46.0
+
+    @patch("seeding.pdf_parsers.extract_all_tables")
+    def test_anchor_matches_hyphenated_county_forms(self, mock_extract):
+        """Regression: COB sometimes prints "Taita-Taveta" /
+        "Trans-Nzoia" / "Tharaka-Nithi" / "Elgeyo-Marakwet" with a
+        hyphen instead of a space. The canonical anchor list uses the
+        space form. Without hyphen normalisation those rows wouldn't
+        substring-match and we'd silently lose 4 counties from the
+        anchor count — possibly dropping us under the min_matches
+        threshold. Both sides of the comparison must normalise."""
+        from seeding.pdf_parsers import KENYAN_COUNTIES
+
+        hyphen_rows = [
+            ["Taita-Taveta", "1", "2", "3", "1", "1", "2"],
+            ["Tharaka-Nithi", "1", "2", "3", "1", "1", "2"],
+            ["Trans-Nzoia", "1", "2", "3", "1", "1", "2"],
+            ["Elgeyo-Marakwet", "1", "2", "3", "1", "1", "2"],
+        ]
+        # Pad with enough extra space-form counties to clear the
+        # min_matches=30 threshold the parser uses.
+        others = [
+            c for c in KENYAN_COUNTIES
+            if c not in ("Taita Taveta", "Tharaka Nithi", "Trans Nzoia", "Elgeyo Marakwet")
+        ]
+        extra_rows = [[c, "1", "2", "3", "1", "1", "2"] for c in others[:27]]
+        mock_extract.return_value = [
+            ExtractedTable(
+                page_number=55, table_index=0,
+                headers=[
+                    "County",
+                    "Budget Estimates (Kshs.Million)", "", "",
+                    "Actual Expenditure (Kshs.Million)", "", "",
+                ],
+                rows=[
+                    ["", "Rec", "Dev", "Total", "Rec", "Dev", "Total"],
+                    *hyphen_rows,
+                    *extra_rows,
+                ],
+                bbox=(0, 0, 100, 100),
+            )
+        ]
+        records = CoBQuarterlyReportParser(Path("hyphenated.pdf")).parse()
+        counties = {r["county"] for r in records}
+        # The parser preserves the original spelling — the hyphenated
+        # rows are still extracted (we don't rewrite the row label,
+        # only the matching code is hyphen-insensitive).
+        assert "Taita-Taveta" in counties
+        assert "Tharaka-Nithi" in counties
+        assert "Trans-Nzoia" in counties
+        assert "Elgeyo-Marakwet" in counties
+
+    @patch("seeding.pdf_parsers.extract_all_tables")
+    def test_derives_absorption_rate_when_column_missing(self, mock_extract):
+        """Some BIRR vintages drop the absorption-rate sub-column.
+        We should compute it ourselves from absorbed/allocated rather
+        than leak a None into downstream consumers (the
+        /budget/overview probe expects this field)."""
+        from seeding.pdf_parsers import KENYAN_COUNTIES
+
+        # Headers cover Total only — no rate column.
+        mock_extract.return_value = [
+            ExtractedTable(
+                page_number=1, table_index=0,
+                headers=["County", "Budget Estimates Total", "Actual Expenditure Total"],
+                rows=[[c, "1000", "500"] for c in KENYAN_COUNTIES],
+                bbox=(0, 0, 100, 100),
+            )
+        ]
+        records = CoBQuarterlyReportParser(Path("no-rate.pdf")).parse()
+        total = next(r for r in records if r["category"] == "Total")
+        assert total["absorption_rate"] == 50.0
+
+    @patch("seeding.pdf_parsers.extract_all_tables")
+    def test_falls_back_to_separate_recurrent_table_for_legacy_format(
+        self, mock_extract
+    ):
+        """Pre-FY2024 BIRR PDFs published Recurrent / Development as
+        SEPARATE tables instead of as sub-columns of a consolidated
+        one. The new parser should still pick them up via the legacy
+        _extract_category fallback when the consolidated table didn't
+        carry that category — otherwise we silently drop categories
+        for older vintages that resurface."""
+        from seeding.pdf_parsers import KENYAN_COUNTIES
+
+        consolidated_total_only = ExtractedTable(
+            page_number=1, table_index=0,
+            headers=["County", "Budget Estimates Total", "Actual Expenditure Total"],
+            rows=[[c, "1000", "500"] for c in KENYAN_COUNTIES],
+            bbox=(0, 0, 100, 100),
+        )
+        recurrent_separate = ExtractedTable(
+            page_number=2, table_index=0,
+            headers=["County", "Recurrent Allocated", "Recurrent Absorbed", "Rate"],
+            rows=[[c, "600", "400", "67"] for c in KENYAN_COUNTIES],
+            bbox=(0, 0, 100, 100),
+        )
+        mock_extract.return_value = [consolidated_total_only, recurrent_separate]
+
+        records = CoBQuarterlyReportParser(Path("legacy.pdf")).parse()
+        cats = {r["category"] for r in records}
+        assert "Total" in cats
+        assert "Recurrent" in cats, "legacy separate-table fallback should fire"
+        rec_sample = next(r for r in records if r["category"] == "Recurrent")
+        assert rec_sample["allocated"] == Decimal("600")
+
+    @patch("seeding.pdf_parsers.extract_all_tables")
+    def test_validator_falls_through_top_anchor_when_columns_unresolvable(
+        self, mock_extract
+    ):
+        """Regression for the seeding run on 2026-04-25
+        ([24934906752](https://github.com/Rodgers31/audit_app/actions/runs/24934906752)):
+
+        Real BIRR PDF had FIVE tables with >=30 county anchors. The
+        Arrears table on page 52 ranked highest (45 anchors, no
+        budget keywords); the Budget Execution table on page 55 ranked
+        third (39 anchors). Tiebreaker rules can't recover from this —
+        the parser must validate each candidate against its actual
+        column needs and fall through when the top pick can't supply
+        a usable Total/allocated column.
+        """
+        from seeding.pdf_parsers import KENYAN_COUNTIES
+
+        # Top-ranked: many county rows but no budget column.
+        arrears_high_anchor = ExtractedTable(
+            page_number=52, table_index=0,
+            headers=["County", "Arrears (Kshs.Million)", "", "", ""],
+            rows=[
+                ["", "Ordinary OSR", "FIF", "Equitable Share", "Totals"],
+                *[[c, "10", "5", "8", "23"] for c in KENYAN_COUNTIES],  # 47 hits
+            ],
+            bbox=(0, 0, 100, 100),
+        )
+        # Lower-ranked: fewer counties but the actual budget data.
+        budget_lower_anchor = ExtractedTable(
+            page_number=55, table_index=0,
+            headers=[
+                "County",
+                "Budget Estimates (Kshs.Million)", "", "",
+                "Actual Expenditure (Kshs.Million)", "", "",
+            ],
+            rows=[
+                ["", "Rec", "Dev", "Total", "Rec", "Dev", "Total"],
+                # Only 35 counties → 35 anchors, less than arrears_high's 47.
+                *[[c, "1", "2", "3", "1", "1", "2"]
+                  for c in KENYAN_COUNTIES[:35]],
+            ],
+            bbox=(0, 0, 100, 100),
+        )
+        mock_extract.return_value = [arrears_high_anchor, budget_lower_anchor]
+
+        records = CoBQuarterlyReportParser(Path("validator.pdf")).parse()
+
+        assert records, "validator must fall through arrears to budget"
+        # Budget table values are alloc=3 / abs=2 — Arrears would have
+        # been alloc=8 (Equitable Share) / abs=23 (Totals).
+        assert records[0]["allocated"] == Decimal("3")
+        assert records[0]["absorbed"] == Decimal("2")
+
+    @patch("seeding.pdf_parsers.extract_all_tables")
+    def test_anchor_score_outranks_header_score(self, mock_extract):
+        """Pin sort precedence: anchor count is primary, header
+        synonyms are only the tiebreaker. A junk-header table with
+        all 47 counties must beat a clean-header table with only 2
+        counties — otherwise "invariant-anchored" loses to vocabulary
+        matching, which is the whole bug we're trying to fix."""
+        from seeding.pdf_parsers import (
+            KENYAN_COUNTIES, find_table_by_row_anchors,
+        )
+
+        big_anchor_junk_header = ExtractedTable(
+            page_number=99, table_index=0,
+            headers=["County", "Junk Header"],
+            rows=[["", "x"], *[[c, "1"] for c in KENYAN_COUNTIES]],
+            bbox=(0, 0, 100, 100),
+        )
+        small_anchor_clean_header = ExtractedTable(
+            page_number=1, table_index=0,
+            headers=["County", "Budget Estimates Total", "Actual Expenditure Total"],
+            rows=[["Mombasa", "5", "2"], ["Kwale", "3", "1"]],
+            bbox=(0, 0, 100, 100),
+        )
+        result = find_table_by_row_anchors(
+            [big_anchor_junk_header, small_anchor_clean_header],
+            list(KENYAN_COUNTIES),
+            min_matches=2,
+            header_synonyms=[["budget", "expenditure"]],
+        )
+        assert result is big_anchor_junk_header, (
+            "anchor count must outrank header_score; got page "
+            f"{result.page_number if result else 'None'}"
+        )
+
+    @patch("seeding.pdf_parsers.extract_all_tables")
+    def test_picks_budget_table_when_multiple_county_tables_present(
+        self, mock_extract
+    ):
+        """A real BIRR has many tables that all list the 47 counties
+        (revenue, arrears, expenditure, …). The header_synonyms
+        tiebreaker must prefer the budget-execution table over
+        unrelated ones — otherwise we'd parse the arrears table on
+        page 52 instead of the budget table on page 55."""
+        from seeding.pdf_parsers import KENYAN_COUNTIES
+
+        arrears = ExtractedTable(
+            page_number=52, table_index=0,
+            headers=["County", "Arrears as at 31st December 2025", "", "", ""],
+            rows=[
+                ["", "Ordinary OSR", "FIF", "Equitable Share", "Totals"],
+                *[[c, "10", "5", "8", "23"] for c in KENYAN_COUNTIES],
+            ],
+            bbox=(0, 0, 100, 100),
+        )
+        budget = ExtractedTable(
+            page_number=55, table_index=0,
+            headers=[
+                "County",
+                "Budget Estimates (Kshs.Million)", "", "",
+                "Actual Expenditure (Kshs.Million)", "", "",
+            ],
+            rows=[
+                ["", "Rec", "Dev", "Total", "Rec", "Dev", "Total"],
+                *[[c, "1", "2", "3", "1", "1", "2"] for c in KENYAN_COUNTIES],
+            ],
+            bbox=(0, 0, 100, 100),
+        )
+
+        # Arrears comes FIRST in the list — without a header tiebreaker
+        # it would win the anchor match and yield zero useful records.
+        mock_extract.return_value = [arrears, budget]
+        parser = CoBQuarterlyReportParser(Path("multi-table.pdf"))
+        records = parser.parse()
+
+        assert len(records) > 0, "should pick the budget table over arrears"
+        # All records must have come from the budget table — its
+        # alloc=3 / abs=2 values are unambiguous.
+        sample = records[0]
+        assert sample["allocated"] == Decimal("3")
+        assert sample["absorbed"] == Decimal("2")
+
 
 class TestOAGAuditReportParser:
     """Test OAG audit report parser."""

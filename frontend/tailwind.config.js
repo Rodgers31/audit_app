@@ -6,6 +6,14 @@ module.exports = {
     './app/**/*.{js,ts,jsx,tsx,mdx}',
     './src/**/*.{js,ts,jsx,tsx,mdx}',
   ],
+  // Class strategy: ``dark:`` variants activate when ``<html>``
+  // carries the ``dark`` class. The boot script in app/layout.tsx
+  // sets that class on first paint based on either an explicit
+  // user choice (localStorage ``theme = 'dark'`` / ``'light'``)
+  // or — when no choice has been made — the OS
+  // ``prefers-color-scheme`` setting. ThemeToggle in the top nav
+  // lets the user override OS at any time.
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
@@ -21,9 +29,28 @@ module.exports = {
           warning: '#D97706',
         },
         neutral: {
-          text: '#1C1C1C',
-          muted: '#6B7280',
-          border: '#E2DDD5',
+          // Theme-aware via CSS variables defined in globals.css.
+          // Tailwind v3.3+ syntax: ``rgb(... / <alpha-value>)`` lets
+          // us keep using ``text-neutral-text/60`` etc. and have the
+          // resolved value crossfade with prefers-color-scheme.
+          text: 'rgb(var(--c-neutral-text) / <alpha-value>)',
+          muted: 'rgb(var(--c-neutral-muted) / <alpha-value>)',
+          border: 'rgb(var(--c-neutral-border) / <alpha-value>)',
+          // Hex literals retained for any rare consumer that
+          // imports the colour as a JS value rather than via a
+          // Tailwind class.
+          100: '#F4F2EE',
+        },
+        // Surface tokens that switch between light + dark via the
+        // CSS vars in globals.css. In light mode all three are
+        // white-ish so cards look like the existing ``bg-white``;
+        // in dark mode they fan out into a layered slate-warm
+        // hierarchy (base → elevated → sunken) that gives proper
+        // depth instead of the flat green-on-green look.
+        surface: {
+          base: 'rgb(var(--c-surface-base) / <alpha-value>)',
+          elevated: 'rgb(var(--c-surface-elevated) / <alpha-value>)',
+          sunken: 'rgb(var(--c-surface-sunken) / <alpha-value>)',
         },
         primary: {
           50: '#f0f9ff',

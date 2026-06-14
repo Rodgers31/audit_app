@@ -68,10 +68,9 @@ frontend/
 │   ├── layout.tsx         # Root layout
 │   └── page.tsx           # Home dashboard
 ├── components/            # React components
-│   ├── CountyInfoStrip.tsx    # County details panel
-│   ├── KenyaMap.tsx           # Interactive map
-│   ├── NationalDebtPanel.tsx  # National debt display
-│   └── Tooltip.tsx            # Tooltip component
+│   ├── dashboard/             # Home dashboard widgets (Summary, Debt, Budget, etc.)
+│   ├── InteractiveKenyaMap.tsx # Interactive map
+│   └── ...                    # See `components/` for the full tree
 ├── data/                  # Mock data and constants
 │   └── mock-data.ts       # Kenya counties and national data
 ├── lib/                   # Utility functions
@@ -83,7 +82,7 @@ frontend/
 
 ## Components
 
-### NationalDebtPanel
+### dashboard/NationalDebtCard
 
 Displays Kenya's total national debt with:
 
@@ -93,7 +92,7 @@ Displays Kenya's total national debt with:
 - Domestic vs External debt breakdown
 - Explanatory notes with tooltips
 
-### KenyaMap
+### InteractiveKenyaMap
 
 Interactive map of Kenya with:
 
@@ -103,7 +102,7 @@ Interactive map of Kenya with:
 - Popup with basic county information
 - Responsive positioning
 
-### CountyInfoStrip
+### dashboard/CountyDetailsPanel
 
 County detail panel showing:
 

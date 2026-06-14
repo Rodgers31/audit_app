@@ -103,7 +103,7 @@ function StatusBadge({ status }: { status: 'healthy' | 'degraded' | 'unhealthy' 
       label: 'Degraded',
     },
     unhealthy: { bg: 'bg-red-500/15', text: 'text-red-400', icon: XCircle, label: 'Unhealthy' },
-  }[status] ?? { bg: 'bg-gray-500/15', text: 'text-gray-400', icon: Activity, label: status };
+  }[status] ?? { bg: 'bg-gray-500/15', text: 'text-gray-400 dark:text-neutral-muted/80', icon: Activity, label: status };
 
   const Icon = config.icon;
   return (
@@ -433,7 +433,7 @@ function StatusDashboard() {
                           ? 'bg-blue-500/15 text-blue-400'
                           : job.status === 'failed'
                             ? 'bg-red-500/15 text-red-400'
-                            : 'bg-gray-500/15 text-gray-400'
+                            : 'bg-gray-500/15 text-gray-400 dark:text-neutral-muted/80'
                     }`}>
                     {job.status}
                   </span>

@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import argparse
+import signal
 import sys
+import threading
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Iterable, Optional, Sequence
+from typing import Iterable, Iterator, Optional, Sequence
 
 from dotenv import load_dotenv
 
@@ -48,6 +51,56 @@ def _collect_domains(requested: Iterable[str], include_all: bool) -> Sequence[st
     if unknown:
         raise ValueError(f"Unknown domain(s) requested: {', '.join(sorted(unknown))}")
     return domains
+
+
+class DomainTimeoutError(RuntimeError):
+    """Raised when a single domain handler exceeds its time budget."""
+
+
+@contextmanager
+def _domain_timeout(seconds: int) -> Iterator[None]:
+    """Abort the wrapped block with DomainTimeoutError after `seconds`.
+
+    Uses POSIX SIGALRM so the timeout actually kills Python-level work
+    (including `time.sleep`, `httpx` connect/read, and pdfplumber between
+    its Python frames). Three preconditions must hold to install the
+    handler; if any fail we silently yield without a timeout so callers
+    in unsupported contexts degrade gracefully:
+
+      * `seconds > 0`
+      * SIGALRM exists (POSIX only — Windows has no equivalent)
+      * we are on the main thread (CPython's `signal.signal` raises
+        ValueError otherwise, which would crash rather than degrade).
+
+    The seeding CLI always runs in the main thread in CI; the main-
+    thread guard is there for pytest and embedded-runner scenarios
+    that invoke the CLI from a worker thread.
+
+    Caveat: code stuck in a blocking C extension call that never yields
+    to Python (e.g. some tabula JVM bridge calls) won't be interruptible
+    until it returns. In practice SIGALRM catches most real-world stalls
+    we've seen.
+    """
+    if (
+        seconds <= 0
+        or not hasattr(signal, "SIGALRM")
+        or threading.current_thread() is not threading.main_thread()
+    ):
+        yield
+        return
+
+    def _handler(signum, frame):  # pragma: no cover - signal path
+        raise DomainTimeoutError(
+            f"domain exceeded {seconds}s budget; aborted by the CLI"
+        )
+
+    previous = signal.signal(signal.SIGALRM, _handler)
+    signal.alarm(seconds)
+    try:
+        yield
+    finally:
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, previous)
 
 
 def _ensure_db_sessionlocal() -> None:
@@ -111,10 +164,23 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
                 session.add(job)
                 session.flush()
                 job_id = job.id
+                # Commit the RUNNING record immediately so it survives a
+                # later session.rollback() (e.g. on DomainTimeoutError or
+                # any other handler exception). Without this commit the
+                # job insert is inside the same transaction as the handler
+                # work, so rollback erases it and error_session.get(…)
+                # returns None, leaving no trace of the failed domain run.
+                session.commit()
 
                 context = DomainRunContext(since=since, dry_run=dry_run, job_id=job_id)
 
-                result = handler(session=session, settings=settings, context=context)
+                # Per-domain timeout so one stuck domain (e.g. a stalled
+                # PDF parse in counties_budget) can't take down the whole
+                # `seed --all` run. Falls through to the except below,
+                # which rolls back the session, marks the job FAILED,
+                # and lets the outer loop move to the next domain.
+                with _domain_timeout(settings.domain_timeout_seconds):
+                    result = handler(session=session, settings=settings, context=context)
 
                 # Update job with results
                 job.finished_at = datetime.now(timezone.utc)
@@ -132,10 +198,44 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
                     job.status = IngestionStatus.COMPLETED
 
                 if dry_run:
+                    finished_at_dry = datetime.now(timezone.utc)
                     session.rollback()
                     logger.info(
                         "Dry run - rolled back all changes", extra={"domain": domain}
                     )
+                    # The rollback above also undoes the in-flight job status
+                    # update (job was committed as RUNNING before the handler
+                    # ran). Persist the final status in a separate session so
+                    # the record doesn't stay orphaned in RUNNING state.
+                    if job_id:
+                        final_status = (
+                            IngestionStatus.COMPLETED_WITH_ERRORS
+                            if result and result.errors
+                            else IngestionStatus.COMPLETED
+                        )
+                        try:
+                            with SessionLocal() as status_session:
+                                dry_job = status_session.get(IngestionJob, job_id)
+                                if dry_job:
+                                    dry_job.status = final_status
+                                    dry_job.finished_at = finished_at_dry
+                                    dry_job.items_processed = (
+                                        result.items_processed if result else 0
+                                    )
+                                    dry_job.items_created = (
+                                        result.items_created if result else 0
+                                    )
+                                    dry_job.items_updated = (
+                                        result.items_updated if result else 0
+                                    )
+                                    dry_job.errors = result.errors if result else []
+                                    status_session.commit()
+                        except Exception:  # pragma: no cover - best-effort
+                            logger.warning(
+                                "Failed to update dry-run job status",
+                                extra={"domain": domain, "job_id": job_id},
+                                exc_info=True,
+                            )
                 else:
                     session.commit()
                     logger.info(

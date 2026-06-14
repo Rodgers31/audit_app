@@ -1,6 +1,8 @@
 'use client';
 
 import { SkeletonCard } from '@/components/ui/Skeleton';
+import { useLang } from '@/lib/i18n/LangProvider';
+import type { TranslationKey } from '@/lib/i18n/messages';
 import { useFederalAudits } from '@/lib/react-query/useAudits';
 import { motion } from 'framer-motion';
 import {
@@ -34,14 +36,18 @@ const shortMinistry = (n: string) =>
     .replace(', Housing & Urban Development', '')
     .replace(' and ', ' & ');
 
-const SEV_CFG = {
-  CRITICAL: { color: 'var(--gov-copper, #C94A4A)', label: 'Critical', ring: '#C94A4A' },
-  WARNING: { color: 'var(--gov-gold, #D9A441)', label: 'Significant', ring: '#D9A441' },
-  INFO: { color: 'var(--gov-sage, #4A7C5C)', label: 'Minor', ring: '#4A7C5C' },
-} as const;
+const SEV_CFG: Record<
+  'CRITICAL' | 'WARNING' | 'INFO',
+  { color: string; labelKey: TranslationKey; ring: string }
+> = {
+  CRITICAL: { color: 'var(--gov-copper, #C94A4A)', labelKey: 'home.audits.sev_critical', ring: '#C94A4A' },
+  WARNING: { color: 'var(--gov-gold, #D9A441)', labelKey: 'home.audits.sev_significant', ring: '#D9A441' },
+  INFO: { color: 'var(--gov-sage, #4A7C5C)', labelKey: 'home.audits.sev_minor', ring: '#4A7C5C' },
+};
 
 /* ─── SVG donut ─── */
 function SeverityDonut({ sev }: { sev: Record<string, number> }) {
+  const { t } = useLang();
   const total = Object.values(sev).reduce((a, b) => a + b, 0) || 1;
   const r = 44;
   const circ = 2 * Math.PI * r;
@@ -76,8 +82,8 @@ function SeverityDonut({ sev }: { sev: Record<string, number> }) {
         ))}
       </svg>
       <div className='absolute inset-0 flex flex-col items-center justify-center'>
-        <span className='text-2xl font-bold text-gov-dark tabular-nums leading-none'>{total}</span>
-        <span className='text-[10px] text-neutral-muted mt-0.5'>findings</span>
+        <span className='text-2xl font-bold text-gov-dark dark:text-white tabular-nums leading-none'>{total}</span>
+        <span className='text-[10px] text-neutral-muted mt-0.5'>{t('home.audits.findings_label')}</span>
       </div>
     </div>
   );
@@ -85,6 +91,7 @@ function SeverityDonut({ sev }: { sev: Record<string, number> }) {
 
 /* ═══════════════ MAIN COMPONENT ═══════════════ */
 export default function AuditReportsSection() {
+  const { t } = useLang();
   const { data, isLoading, error } = useFederalAudits();
   const [expandedFinding, setExpandedFinding] = useState<number | null>(null);
 
@@ -129,7 +136,7 @@ export default function AuditReportsSection() {
     return (
       <div className='glass-card p-10 flex flex-col items-center justify-center min-h-[400px] gap-2'>
         <ShieldAlert className='w-6 h-6 text-neutral-muted/25' />
-        <p className='text-xs text-neutral-muted'>Audit data unavailable</p>
+        <p className='text-xs text-neutral-muted'>{t('home.audits.unavailable')}</p>
       </div>
     );
   }
@@ -144,20 +151,20 @@ export default function AuditReportsSection() {
       transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
       className='glass-card overflow-hidden'>
       {/* ════════ HEADER ════════ */}
-      <div className='bg-gradient-to-r from-gov-sand/60 via-gov-cream/40 to-transparent px-6 sm:px-8 pt-6 pb-5 flex items-start justify-between border-b border-neutral-border/20'>
+      <div className='bg-gradient-to-r from-gov-sand/60 via-gov-cream/40 to-transparent dark:from-surface-elevated/40 dark:via-surface-base/20 dark:to-transparent px-6 sm:px-8 pt-6 pb-5 flex items-start justify-between border-b border-neutral-border/20'>
         <div>
-          <h2 className='font-display text-xl sm:text-2xl text-gov-dark leading-tight'>
-            Auditor General&apos;s Report
+          <h2 className='font-display text-xl sm:text-2xl text-gov-dark dark:text-white leading-tight'>
+            {t('home.audits.report_title')}
           </h2>
           <p className='text-sm text-neutral-muted mt-0.5'>
-            National Government — {data.fiscal_year}
+            {t('home.audits.national_govt_fy').replace('{fy}', String(data.fiscal_year || ''))}
           </p>
         </div>
         <a
           href='https://www.oagkenya.go.ke'
           target='_blank'
           rel='noopener noreferrer'
-          className='flex items-center gap-1 text-[11px] text-neutral-muted hover:text-gov-forest transition-colors mt-1'>
+          className='flex items-center gap-1 text-[11px] text-neutral-muted hover:text-gov-forest dark:text-emerald-100 transition-colors mt-1'>
           OAG Kenya <ExternalLink className='w-3 h-3' />
         </a>
       </div>
@@ -167,49 +174,59 @@ export default function AuditReportsSection() {
         <div className='flex items-center gap-2 mb-2'>
           <Scale className='w-4 h-4 text-gov-copper' />
           <span className='text-xs font-bold uppercase tracking-wider text-gov-copper'>
-            Audit Opinion: {data.opinion_type}
+            {t('home.audits.opinion_label')} {data.opinion_type}
           </span>
         </div>
-        <p className='text-sm text-gov-dark/80 leading-relaxed'>
-          {data.basis_for_qualification?.[0] ||
-            'Material misstatements identified across multiple ministries'}
+        <p className='text-sm text-gov-dark/80 dark:text-white/80 leading-relaxed'>
+          {data.basis_for_qualification?.[0] || t('home.audits.default_basis')}
         </p>
         <p className='text-[11px] text-neutral-muted mt-2 italic'>
-          Signed by {data.auditor_general}
+          {t('home.audits.signed_by').replace('{name}', data.auditor_general || '')}
         </p>
       </div>
 
       {/* ════════ STAT CARDS ════════ */}
       <div className='px-6 sm:px-8 mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3'>
-        {[
+        {([
           {
             icon: Building2,
-            label: 'Ministries Audited',
-            value: stats?.total_ministries_audited ?? data.total_findings,
-            accent: 'text-gov-forest',
+            labelKey: 'home.audits.stat_ministries' as TranslationKey,
+            // Authoritative count only; never fall back to the findings
+            // count (which inflated this to "25"). Honest "—" when absent.
+            value: stats?.total_ministries_audited ?? '—',
+            accent: 'text-gov-forest dark:text-emerald-100',
           },
           {
             icon: SearchX,
-            label: 'Amount Questioned',
-            value: `KES ${fmtKES(data.total_amount_questioned)}`,
+            labelKey: 'home.audits.stat_amount' as TranslationKey,
+            // Authoritative OAG questioned total; fall back to the report's
+            // own label string, then an em-dash — never a fabricated sum.
+            value:
+              data.total_amount_questioned != null
+                ? `KES ${fmtKES(data.total_amount_questioned)}`
+                : data.total_amount_questioned_label || '—',
             accent: 'text-gov-copper',
           },
           {
             icon: ShieldAlert,
-            label: 'Critical Findings',
-            value: sev.CRITICAL || stats?.critical_findings || 0,
+            labelKey: 'home.audits.stat_critical' as TranslationKey,
+            // Prefer the OAG report's own critical count (the severity-band
+            // tally over-counts because seed maps "high" -> CRITICAL).
+            value: stats?.critical_findings ?? sev.CRITICAL ?? '—',
             accent: 'text-gov-copper',
           },
           {
             icon: RotateCcw,
-            label: 'Recurring Issues',
-            value: stats?.recurring_issues_from_prior_year ?? 0,
+            labelKey: 'home.audits.stat_recurring' as TranslationKey,
+            // Honest "—" when unavailable: a fake "0" reads as "no recurring
+            // issues", the opposite of the truth when the figure is missing.
+            value: stats?.recurring_issues_from_prior_year ?? '—',
             accent: 'text-gov-gold',
           },
-        ].map((s) => (
+        ] as const).map((s) => (
           <div
-            key={s.label}
-            className={`rounded-xl border border-neutral-border/40 px-4 py-3 ${
+            key={s.labelKey}
+            className={`rounded-xl border border-neutral-border/40 px-4 py-3 dark:bg-surface-elevated/40 ${
               s.accent === 'text-gov-copper'
                 ? 'bg-gov-copper/[0.04]'
                 : s.accent === 'text-gov-gold'
@@ -219,7 +236,7 @@ export default function AuditReportsSection() {
             <div className='flex items-center gap-1.5 mb-2'>
               <s.icon className={`w-3.5 h-3.5 ${s.accent} opacity-70`} />
               <span className='text-[10px] text-neutral-muted font-medium uppercase tracking-wider'>
-                {s.label}
+                {t(s.labelKey)}
               </span>
             </div>
             <span className={`text-lg font-bold ${s.accent} tabular-nums leading-none`}>
@@ -232,8 +249,8 @@ export default function AuditReportsSection() {
       {/* ════════ TWO-COL: Findings + Ministries ════════ */}
       <div className='px-6 sm:px-8 pb-5 grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-5'>
         {/* ── Left: Findings + Donut ── */}
-        <div className='rounded-xl bg-gov-sand/30 border border-neutral-border/20 p-4'>
-          <h3 className='font-display text-base text-gov-dark mb-4'>Audit Findings Overview</h3>
+        <div className='rounded-xl bg-gov-sand/30 dark:bg-surface-elevated/40 border border-neutral-border/20 p-4'>
+          <h3 className='font-display text-base text-gov-dark dark:text-white mb-4'>{t('home.audits.findings_overview')}</h3>
 
           <div className='flex gap-5 items-start'>
             {/* Findings list */}
@@ -248,7 +265,7 @@ export default function AuditReportsSection() {
                     key={f.id}
                     onClick={() => setExpandedFinding(isOpen ? null : f.id)}
                     className='w-full text-left group'>
-                    <div className='flex items-start gap-2.5 px-3 py-2.5 rounded-lg hover:bg-gov-sand/50 transition-colors'>
+                    <div className='flex items-start gap-2.5 px-3 py-2.5 rounded-lg hover:bg-gov-sand/50 dark:hover:bg-surface-elevated transition-colors'>
                       <span
                         className='mt-1 w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0'
                         style={{ backgroundColor: `${cfg.ring}18` }}>
@@ -261,7 +278,7 @@ export default function AuditReportsSection() {
                         )}
                       </span>
                       <div className='min-w-0 flex-1'>
-                        <p className='text-sm font-semibold text-gov-dark leading-snug'>
+                        <p className='text-sm font-semibold text-gov-dark dark:text-white leading-snug'>
                           {shortMinistry(f.entity_name)}
                         </p>
                         <p className='text-xs text-neutral-muted leading-relaxed mt-0.5 line-clamp-2'>
@@ -273,12 +290,12 @@ export default function AuditReportsSection() {
                             animate={{ height: 'auto', opacity: 1 }}
                             className='mt-2 pt-2 border-t border-neutral-border/30'>
                             <p className='text-xs text-neutral-muted leading-relaxed'>
-                              <span className='font-semibold text-gov-dark'>Amount:</span>{' '}
+                              <span className='font-semibold text-gov-dark dark:text-white'>{t('home.audits.amount_prefix')}</span>{' '}
                               {f.amount_involved}
                             </p>
                             {f.recommended_action && (
                               <p className='text-xs text-neutral-muted leading-relaxed mt-1'>
-                                <span className='font-semibold text-gov-dark'>Action:</span>{' '}
+                                <span className='font-semibold text-gov-dark dark:text-white'>{t('home.audits.action_prefix')}</span>{' '}
                                 {f.recommended_action}
                               </p>
                             )}
@@ -309,9 +326,9 @@ export default function AuditReportsSection() {
                         style={{ backgroundColor: SEV_CFG[level].color }}
                       />
                       <span className='text-[11px] text-neutral-muted'>
-                        {SEV_CFG[level].label} ({sev[level] || 0})
+                        {t(SEV_CFG[level].labelKey)} ({sev[level] || 0})
                       </span>
-                      <span className='text-[11px] font-semibold text-gov-dark tabular-nums ml-auto'>
+                      <span className='text-[11px] font-semibold text-gov-dark dark:text-white tabular-nums ml-auto'>
                         {pct}%
                       </span>
                     </div>
@@ -323,13 +340,13 @@ export default function AuditReportsSection() {
 
           {/* ── Emphasis of Matter ── */}
           {data.emphasis_of_matter?.[0] && (
-            <div className='mt-4 rounded-xl bg-gov-gold/[0.07] border border-gov-gold/15 px-4 py-3 flex items-start gap-2.5'>
+            <div className='mt-4 rounded-xl bg-gov-gold/[0.07] dark:bg-gov-gold/[0.12] border border-gov-gold/15 dark:border-gov-gold/30 px-4 py-3 flex items-start gap-2.5'>
               <AlertTriangle className='w-4 h-4 text-gov-gold flex-shrink-0 mt-0.5' />
               <div className='min-w-0'>
                 <p className='text-[11px] font-bold uppercase tracking-wider text-gov-gold mb-1'>
-                  Emphasis of Matter
+                  {t('home.audits.emphasis')}
                 </p>
-                <p className='text-xs text-gov-dark/70 leading-relaxed line-clamp-2'>
+                <p className='text-xs text-gov-dark/70 dark:text-white/70 leading-relaxed line-clamp-2'>
                   {data.emphasis_of_matter[0]}
                 </p>
               </div>
@@ -339,15 +356,15 @@ export default function AuditReportsSection() {
         </div>
 
         {/* ── Right: Top Ministries Flagged ── */}
-        <div className='rounded-xl border border-neutral-border/40 bg-gov-forest/[0.03] p-4'>
-          <h4 className='font-display text-sm text-gov-dark mb-4'>Top Ministries Flagged</h4>
+        <div className='rounded-xl border border-neutral-border/40 bg-gov-forest/[0.03] dark:bg-surface-elevated/40 p-4'>
+          <h4 className='font-display text-sm text-gov-dark dark:text-white mb-4'>{t('home.audits.top_ministries')}</h4>
           <div className='space-y-3'>
             {ministryBars.map((m) => (
               <div key={m.ministry}>
                 <div className='flex items-center justify-between mb-1'>
                   <div className='flex items-center gap-2 min-w-0'>
                     <Building2 className='w-3.5 h-3.5 text-neutral-muted/50 flex-shrink-0' />
-                    <span className='text-xs text-gov-dark truncate'>{m.short}</span>
+                    <span className='text-xs text-gov-dark dark:text-white truncate'>{m.short}</span>
                   </div>
                   <span
                     className='ml-2 flex-shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-bold text-white tabular-nums'
@@ -386,7 +403,7 @@ export default function AuditReportsSection() {
           <Link
             href='/audits'
             className='group mt-5 flex items-center justify-center gap-1.5 w-full rounded-lg bg-gov-forest text-white hover:bg-gov-forest/90 active:scale-[0.98] px-4 py-2.5 transition-all text-xs font-medium shadow-sm'>
-            View All Findings
+            {t('home.audits.view_all_findings')}
             <ArrowRight className='w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform' />
           </Link>
         </div>

@@ -1,29 +1,34 @@
 /**
- * /learn/glossary — Key government finance terms explained.
+ * /learn/glossary — Plain-English index of government finance terms.
  */
 'use client';
 
 import InteractiveGlossary from '@/components/InteractiveGlossary';
 import PageShell from '@/components/layout/PageShell';
-import { useState } from 'react';
+import { glossaryTerms, GLOSSARY_CATEGORIES } from '@/data/glossaryTerms';
 
 export default function GlossaryPage() {
-  const [search, setSearch] = useState('');
+  const termCount = glossaryTerms.length;
+  const themeCount = GLOSSARY_CATEGORIES.length - 1;
 
   return (
     <PageShell
-      title='Key Terms Explained'
-      subtitle='Master essential government finance vocabulary with clear, jargon-free definitions and real-world examples'>
-      <div className='mb-4 max-w-md'>
-        <input
-          type='text'
-          placeholder='Search terms…'
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className='w-full rounded-xl border border-neutral-border bg-white/60 backdrop-blur px-4 py-2.5 text-sm placeholder:text-neutral-muted focus:outline-none focus:ring-2 focus:ring-gov-sage/40 transition-shadow'
-        />
+      title='Plain-English glossary'
+      subtitle='Every budget, audit and finance term on this site, translated into language that actually makes sense — with real examples and links to the Constitution.'
+      back={{ href: '/learn', label: 'Back to Learning Hub' }}>
+      <div className='flex flex-wrap items-center justify-end gap-4 text-[12.5px] text-neutral-muted'>
+        <span>
+          <strong className='text-gov-dark dark:text-white'>{termCount}</strong> terms
+        </span>
+        <span className='text-neutral-border'>·</span>
+        <span>
+          <strong className='text-gov-dark dark:text-white'>{themeCount}</strong> themes
+        </span>
+        <span className='text-neutral-border'>·</span>
+        <span>Linked to the Constitution</span>
       </div>
-      <InteractiveGlossary searchTerm={search} />
+
+      <InteractiveGlossary />
     </PageShell>
   );
 }

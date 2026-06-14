@@ -17,7 +17,7 @@ export default function DebtTimelineChart({ data }: DebtTimelineChartProps) {
   if (timelineData.length === 0) {
     return (
       <div className='h-80 w-full flex items-center justify-center'>
-        <p className='text-sm text-gray-500'>Debt timeline data unavailable.</p>
+        <p className='text-sm text-gray-500 dark:text-neutral-muted/80'>Debt timeline data unavailable.</p>
       </div>
     );
   }
@@ -44,7 +44,7 @@ export default function DebtTimelineChart({ data }: DebtTimelineChartProps) {
   return (
     <div className='h-80 w-full'>
       <div className='mb-4'>
-        <p className='text-gray-600 text-sm'>
+        <p className='text-gray-600 dark:text-neutral-muted text-sm'>
           Kenya's debt has grown dramatically over the past decade, increasing by over
           <span className='font-semibold text-red-600'> {growthPct}%</span> since {minYear}.
         </p>
@@ -111,7 +111,7 @@ export default function DebtTimelineChart({ data }: DebtTimelineChartProps) {
         {/* X-axis labels */}
         <div className='flex justify-between mt-2 px-2'>
           {timelineData.map((item, index) => (
-            <div key={index} className='text-xs text-gray-500 font-medium'>
+            <div key={index} className='text-xs text-gray-500 dark:text-neutral-muted/80 font-medium'>
               {item.year}
             </div>
           ))}
@@ -120,7 +120,7 @@ export default function DebtTimelineChart({ data }: DebtTimelineChartProps) {
         {/* Y-axis labels */}
         <div className='absolute left-0 top-0 h-full flex flex-col justify-between py-4'>
           {[maxDebt, maxDebt * 0.75, maxDebt * 0.5, maxDebt * 0.25, 0].map((value, index) => (
-            <div key={index} className='text-xs text-gray-500 font-medium -ml-12'>
+            <div key={index} className='text-xs text-gray-500 dark:text-neutral-muted/80 font-medium -ml-12'>
               {value.toLocaleString()}B
             </div>
           ))}
@@ -131,17 +131,17 @@ export default function DebtTimelineChart({ data }: DebtTimelineChartProps) {
       <div className='mt-4 grid grid-cols-3 gap-4 text-center'>
         <div className='bg-red-50 rounded-lg p-3'>
           <div className='text-lg font-bold text-red-600'>+{growthPct}%</div>
-          <div className='text-xs text-gray-600'>Growth since {minYear}</div>
+          <div className='text-xs text-gray-600 dark:text-neutral-muted'>Growth since {minYear}</div>
         </div>
         <div className='bg-orange-50 rounded-lg p-3'>
           <div className='text-lg font-bold text-orange-600'>KES {addedLast.toLocaleString()}B</div>
-          <div className='text-xs text-gray-600'>
+          <div className='text-xs text-gray-600 dark:text-neutral-muted'>
             Added in {timelineData[timelineData.length - 1]?.year}
           </div>
         </div>
         <div className='bg-blue-50 rounded-lg p-3'>
           <div className='text-lg font-bold text-blue-600'>KES {avgGrowth}B</div>
-          <div className='text-xs text-gray-600'>Avg annual growth</div>
+          <div className='text-xs text-gray-600 dark:text-neutral-muted'>Avg annual growth</div>
         </div>
       </div>
     </div>

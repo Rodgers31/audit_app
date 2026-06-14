@@ -35,7 +35,7 @@ export default function AuditCard({ county }: AuditCardProps) {
       case 'disclaimer':
         return 'text-orange-700';
       default:
-        return 'text-gray-700';
+        return 'text-gray-700 dark:text-neutral-muted';
     }
   };
 
@@ -50,7 +50,7 @@ export default function AuditCard({ county }: AuditCardProps) {
       case 'disclaimer':
         return 'text-orange-800';
       default:
-        return 'text-gray-800';
+        return 'text-gray-800 dark:text-neutral-text';
     }
   };
 
@@ -65,7 +65,7 @@ export default function AuditCard({ county }: AuditCardProps) {
       case 'disclaimer':
         return 'text-orange-600';
       default:
-        return 'text-gray-600';
+        return 'text-gray-600 dark:text-neutral-muted';
     }
   };
 

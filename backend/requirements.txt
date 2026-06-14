@@ -1,5 +1,11 @@
 fastapi>=0.115.5
 uvicorn[standard]>=0.32.0
+# Production process manager for the FastAPI app — Dockerfile.prod runs
+# ``gunicorn main:app --worker-class uvicorn.workers.UvicornWorker``.
+# Uvicorn alone works for dev / single-process; gunicorn adds graceful
+# worker recycling (--max-requests), proper SIGTERM handling, and a
+# single supervisor process so OOM restarts are clean.
+gunicorn>=23.0.0
 sqlalchemy>=2.0.23
 alembic>=1.12.1
 pydantic>=2.10.2

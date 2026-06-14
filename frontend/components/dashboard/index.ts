@@ -8,6 +8,7 @@ export { default as DebtOverviewCard } from './DebtOverviewCard';
 export { default as FeatureNavCards } from './FeatureNavCards';
 export { default as HeroSection, KenyanGovCard, SummaryStrip } from './HeroSection';
 export { default as LearningHubCTA } from './LearningHubCTA';
+export { default as MapWithDetailPanel } from './MapWithDetailPanel';
 export { default as MetricsStrip } from './MetricsStrip';
 export { default as NationalDebtCard } from './NationalDebtCard';
 export { default as NationalLoansCard } from './NationalLoansCard';

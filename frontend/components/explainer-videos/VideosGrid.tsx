@@ -26,9 +26,9 @@ export default function VideosGrid({ videos, onVideoSelect }: VideosGridProps) {
       {/* No Results */}
       {videos.length === 0 && (
         <div className='text-center py-12'>
-          <Play size={48} className='text-gray-300 mx-auto mb-4' />
-          <h3 className='text-xl font-semibold text-gray-600 mb-2'>No videos found</h3>
-          <p className='text-gray-500'>Try adjusting your search or category filter</p>
+          <Play size={48} className='text-gray-300 dark:text-neutral-muted/60 mx-auto mb-4' />
+          <h3 className='text-xl font-semibold text-gray-600 dark:text-neutral-muted mb-2'>No videos found</h3>
+          <p className='text-gray-500 dark:text-neutral-muted/80'>Try adjusting your search or category filter</p>
         </div>
       )}
     </>

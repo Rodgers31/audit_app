@@ -1,0 +1,63 @@
+{
+  "number": 13,
+  "title": "The Public Service",
+  "summary": "The Public Service: values, principles, and the commissions that hire, oversee, and discipline public servants.",
+  "articles": [
+    {
+      "number": 232,
+      "title": "Values and principles of public service",
+      "paragraphs": [
+        "(1) The values and principles of public service include— (a) high standards of professional ethics; (b) efficient, effective and economic use of resources; (c) responsive, prompt, effective, impartial and equitable provision of services; (d) involvement of the people in the process of policy making; (e) accountability for administrative acts; (f) transparency and provision to the public of timely, accurate information; (g) subject to paragraphs (h) and (i), fair competition and merit as the basis of appointments and promotions; (h) representation of Kenya’s diverse communities; and (i) affording adequate and equal opportunities for appointment, training and advancement, at all levels of the public service, of— (i) men and women; (ii) the members of all ethnic groups; and (iii) persons with disabilities.",
+        "(2) The values and principles of public service apply to public service in— (a) all State organs in both levels of government; and (b) all State corporations.",
+        "(3) Parliament shall enact legislation to give full effect to this Article."
+      ]
+    },
+    {
+      "number": 233,
+      "title": "The Public Service Commission",
+      "paragraphs": [
+        "(1) There is established the Public Service Commission.",
+        "(2) The Public Service Commission consists of a chairperson, a vice chairperson and seven other members appointed by the President with the approval of the National Assembly.",
+        "(3) Subject to clause (4), a person is not eligible for appointment as a member of the Commission if the person–— (a) has, at any time within the preceding five years, held office, or stood for election as— (i) a member of Parliament or of a county assembly; or (ii) a member of the governing body of a political party; or (b) holds any State office; (c) is, or has at any time been, a candidate for election as a member of Parliament or of a county assembly; or (d) is, or has at any time been, the holder of an office in any political organisation that sponsors or otherwise supports, or has at any time sponsored or otherwise supported, a candidate for election as a member of Parliament or of a county assembly.",
+        "(4) Clause (3)(c) and (d) cease to apply to a person after two general elections for Parliament have been held since the person ceased to be such a candidate or office holder.",
+        "(5) There shall be a secretary to the Commission.",
+        "(6) The secretary— (a) is the chief executive of the Commission; and (b) shall be appointed by the Commission for a term of five years, and is eligible for re-appointment once."
+      ]
+    },
+    {
+      "number": 234,
+      "title": "Functions and powers of the Public Service Commission",
+      "paragraphs": [
+        "(1) The functions and powers of the Commission are as set out in this Article.",
+        "(2) The Commission shall— (a) subject to this Constitution and legislation— (i) establish and abolish offices in the public service; and (ii) appoint persons to hold or act in those offices, and to confirm appointments; (b) exercise disciplinary control over and remove persons holding or acting in those offices; (c) promote the values and principles referred to in Articles 10 and 232 throughout the public service; (d) investigate, monitor and evaluate the organisation, administration and personnel practices of the public service; (e) ensure that the public service is efficient and effective; (f) develop human resources in the public service; (g) review and make recommendations to the national government in respect of conditions of service, code of conduct and qualifications of officers in the public service; (h) evaluate and report to the President and Parliament on the extent to which the values and principles referred to in Articles 10 and 232 are complied with in the public service; (i) hear and determine appeals in respect of county governments’ public service; and (j) perform any other functions and exercise any other powers conferred by national legislation.",
+        "(3) Clauses (1) and (2) shall not apply to any of the following offices in the public service— (a) State offices; (b) an office of high commissioner, ambassador or other diplomatic or consular representative of the Republic; (c) an office or position subject to— (i) the Parliamentary Service Commission; (ii) the Judicial Service Commission; (iii) the Teachers Service Commission; (iv) the National Police Service Commission; or (d) an office in the service of a county government, except as contemplated in clause (2)(i).",
+        "(4) The Commission shall not appoint a person under clause (2) to hold or act in any office on the personal staff of the President or a retired President, except with the consent of the President or retired President.",
+        "(5) The Commission may delegate, in writing, with or without conditions, any of its functions and powers under this Article to any one or more of its members, or to any officer, body or authority in the public service."
+      ]
+    },
+    {
+      "number": 235,
+      "title": "Staffing of county governments",
+      "paragraphs": [
+        "(1) A county government is responsible, within a framework of uniform norms and standards prescribed by an Act of Parliament, for— (a) establishing and abolishing offices in its public service; (b) appointing persons to hold or act in those offices, and confirming appointments; and (c) exercising disciplinary control over and removing persons holding or acting in those offices.",
+        "(2) Clause (1) shall not apply to any office or position subject to the Teachers Service Commission."
+      ]
+    },
+    {
+      "number": 236,
+      "title": "Protection of public officers",
+      "paragraphs": [
+        "A public officer shall not be— (a) victimised or discriminated against for having performed the functions of office in accordance with this Constitution or any other law; or (b) dismissed, removed from office, demoted in rank or otherwise subjected to disciplinary action without due process of law."
+      ]
+    },
+    {
+      "number": 237,
+      "title": "Teachers Service Commission",
+      "paragraphs": [
+        "(1) There is established the Teachers Service Commission.",
+        "(2) The functions of the Commission are— (a) to register trained teachers; (b) to recruit and employ registered teachers; (c) to assign teachers employed by the Commission for service in any public school or institution; (d) to promote and transfer teachers; (e) to exercise disciplinary control over teachers; and (f) to terminate the employment of teachers.",
+        "(3) The Commission shall— (a) review the standards of education and training of persons entering the teaching service; (b) review the demand for and the supply of teachers; and (c) advise the national government on matters relating to the teaching profession."
+      ]
+    }
+  ]
+}

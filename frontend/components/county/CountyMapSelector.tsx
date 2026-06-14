@@ -73,7 +73,7 @@ export default function CountyMapSelector({
   return (
     <div className='w-full'>
       {/* Map Container */}
-      <div className='relative bg-slate-50 rounded-2xl p-6 border-2 border-slate-200'>
+      <div className='relative bg-slate-50 dark:bg-surface-elevated rounded-2xl p-6 border-2 border-slate-200'>
         <ComposableMap
           projection='geoMercator'
           projectionConfig={{
@@ -177,9 +177,9 @@ export default function CountyMapSelector({
       {/* Quick Select Grid */}
       <div className='mt-6'>
         <div className='flex items-center justify-between mb-4'>
-          <h3 className='text-lg font-semibold text-gray-900'>Quick Select County:</h3>
+          <h3 className='text-lg font-semibold text-gray-900 dark:text-neutral-text'>Quick Select County:</h3>
           <div className='flex items-center gap-2'>
-            <div className='text-xs text-gray-500'>
+            <div className='text-xs text-gray-500 dark:text-neutral-muted/80'>
               {totalPages > 1 && `Page ${currentPage + 1} of ${totalPages}`}
             </div>
             {totalPages > 1 && (
@@ -223,7 +223,7 @@ export default function CountyMapSelector({
                   ${
                     isSelected
                       ? 'bg-blue-600 text-white shadow-lg scale-105'
-                      : 'bg-white text-gray-700 border border-gray-200 hover:border-blue-300 hover:text-blue-600'
+                      : 'bg-white dark:bg-surface-base text-gray-700 dark:text-neutral-muted border border-gray-200 dark:border-neutral-border hover:border-blue-300 hover:text-blue-600'
                   }
                 `}
                 initial={{ opacity: 0, y: 20 }}
@@ -239,7 +239,7 @@ export default function CountyMapSelector({
         </motion.div>
 
         <div className='flex items-center justify-between mt-3'>
-          <p className='text-sm text-gray-500'>
+          <p className='text-sm text-gray-500 dark:text-neutral-muted/80'>
             Showing {currentCounties.length} of {counties.length} counties
             {!isUserInteracting && totalPages > 1 && (
               <span className='ml-2 text-blue-600'>• Auto-cycling</span>
@@ -254,7 +254,7 @@ export default function CountyMapSelector({
                   setIsUserInteracting(true);
                   setTimerKey((prev) => prev + 1); // Reset timer
                 }}
-                className='px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors'>
+                className='px-2 py-1 text-xs bg-gray-100 dark:bg-surface-elevated hover:bg-gray-200 dark:bg-surface-sunken rounded transition-colors'>
                 ←
               </button>
               <button
@@ -263,7 +263,7 @@ export default function CountyMapSelector({
                   setIsUserInteracting(true);
                   setTimerKey((prev) => prev + 1); // Reset timer
                 }}
-                className='px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors'>
+                className='px-2 py-1 text-xs bg-gray-100 dark:bg-surface-elevated hover:bg-gray-200 dark:bg-surface-sunken rounded transition-colors'>
                 →
               </button>
             </div>

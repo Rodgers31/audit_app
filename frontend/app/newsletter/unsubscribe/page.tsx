@@ -177,7 +177,7 @@ function UnsubscribeForm() {
         </div>
 
         {/* Footer attribution */}
-        <p className='text-center text-gov-forest/40 text-xs mt-6'>
+        <p className='text-center text-gov-forest/40 dark:text-emerald-100/40 text-xs mt-6'>
           Kenya Public Money Tracker · Government Financial Transparency
         </p>
       </motion.div>

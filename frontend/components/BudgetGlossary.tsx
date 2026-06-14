@@ -109,7 +109,7 @@ export default function BudgetGlossary({ term, children }: BudgetGlossaryProps) 
                 top: tooltipPosition.y,
                 transform: 'translateX(-50%) translateY(-100%)',
               }}
-              className='absolute bg-white rounded-xl shadow-2xl border border-gray-200 p-6 max-w-sm pointer-events-auto'>
+              className='absolute bg-white dark:bg-surface-base rounded-xl shadow-2xl border border-gray-200 dark:border-neutral-border p-6 max-w-sm pointer-events-auto'>
               {/* Arrow */}
               <div
                 className='absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0'
@@ -124,16 +124,16 @@ export default function BudgetGlossary({ term, children }: BudgetGlossaryProps) 
               <div className='space-y-4'>
                 <div className='flex items-center gap-2'>
                   <HelpCircle size={18} className='text-indigo-600' />
-                  <h4 className='font-semibold text-gray-900'>{term}</h4>
+                  <h4 className='font-semibold text-gray-900 dark:text-neutral-text'>{term}</h4>
                 </div>
 
-                <p className='text-gray-700 text-sm leading-relaxed'>{glossaryData.definition}</p>
+                <p className='text-gray-700 dark:text-neutral-muted text-sm leading-relaxed'>{glossaryData.definition}</p>
 
                 <div>
-                  <h5 className='font-medium text-gray-900 text-sm mb-2'>Examples:</h5>
+                  <h5 className='font-medium text-gray-900 dark:text-neutral-text text-sm mb-2'>Examples:</h5>
                   <ul className='space-y-1'>
                     {glossaryData.examples.map((example, index) => (
-                      <li key={index} className='text-xs text-gray-600 flex items-start gap-2'>
+                      <li key={index} className='text-xs text-gray-600 dark:text-neutral-muted flex items-start gap-2'>
                         <span className='text-indigo-400 mt-1'>•</span>
                         <span>{example}</span>
                       </li>
@@ -141,8 +141,8 @@ export default function BudgetGlossary({ term, children }: BudgetGlossaryProps) 
                   </ul>
                 </div>
 
-                <div className='pt-2 border-t border-gray-100'>
-                  <p className='text-xs text-gray-500 italic'>
+                <div className='pt-2 border-t border-gray-100 dark:border-neutral-border'>
+                  <p className='text-xs text-gray-500 dark:text-neutral-muted/80 italic'>
                     Hover over underlined terms for explanations
                   </p>
                 </div>

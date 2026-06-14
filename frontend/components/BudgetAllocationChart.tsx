@@ -56,11 +56,11 @@ export default function BudgetAllocationChart({
         <div className='flex justify-center gap-8 mb-6'>
           <div className='flex items-center gap-2'>
             <div className='w-4 h-4 bg-blue-500 rounded'></div>
-            <span className='text-sm text-gray-600'>2024 Budget</span>
+            <span className='text-sm text-gray-600 dark:text-neutral-muted'>2024 Budget</span>
           </div>
           <div className='flex items-center gap-2'>
             <div className='w-4 h-4 bg-blue-200 rounded'></div>
-            <span className='text-sm text-gray-600'>2023 Budget</span>
+            <span className='text-sm text-gray-600 dark:text-neutral-muted'>2023 Budget</span>
           </div>
         </div>
       )}
@@ -91,15 +91,15 @@ export default function BudgetAllocationChart({
                       <Icon size={20} style={{ color: item.color }} />
                     </div>
                     <div>
-                      <h4 className='font-semibold text-gray-900'>{item.sector}</h4>
-                      <div className='text-sm text-gray-600'>
+                      <h4 className='font-semibold text-gray-900 dark:text-neutral-text'>{item.sector}</h4>
+                      <div className='text-sm text-gray-600 dark:text-neutral-muted'>
                         {item.percentage}% of total budget
                       </div>
                     </div>
                   </div>
 
                   <div className='text-right'>
-                    <div className='font-bold text-gray-900 text-lg'>
+                    <div className='font-bold text-gray-900 dark:text-neutral-text text-lg'>
                       {formatCurrency(item.amount)}
                     </div>
                     {comparison && (
@@ -117,7 +117,7 @@ export default function BudgetAllocationChart({
                 {/* Progress Bars */}
                 <div className='relative'>
                   {/* Current Year Bar */}
-                  <div className='w-full bg-gray-200 rounded-full h-6'>
+                  <div className='w-full bg-gray-200 dark:bg-surface-sunken rounded-full h-6'>
                     <motion.div
                       className='h-6 rounded-full flex items-center justify-end pr-3'
                       style={{ backgroundColor: item.color }}
@@ -144,7 +144,7 @@ export default function BudgetAllocationChart({
 
                 {/* Additional Info for Comparison */}
                 {showComparison && comparison && (
-                  <div className='text-xs text-gray-500 ml-13'>
+                  <div className='text-xs text-gray-500 dark:text-neutral-muted/80 ml-13'>
                     2023: {formatCurrency(comparison.prevAmount)}
                     {comparison.isIncrease ? ' → ' : ' → '}
                     2024: {formatCurrency(item.amount)}
@@ -156,29 +156,29 @@ export default function BudgetAllocationChart({
       </div>
 
       {/* Chart Summary */}
-      <div className='mt-8 p-6 bg-gray-50 rounded-2xl'>
-        <h4 className='font-semibold text-gray-900 mb-4'>Budget Summary</h4>
+      <div className='mt-8 p-6 bg-gray-50 dark:bg-surface-elevated rounded-2xl'>
+        <h4 className='font-semibold text-gray-900 dark:text-neutral-text mb-4'>Budget Summary</h4>
         <div className='grid grid-cols-2 md:grid-cols-4 gap-4 text-center'>
           <div>
             <div className='text-2xl font-bold text-blue-600'>{data.allocations.length}</div>
-            <div className='text-sm text-gray-600'>Major Sectors</div>
+            <div className='text-sm text-gray-600 dark:text-neutral-muted'>Major Sectors</div>
           </div>
           <div>
             <div className='text-2xl font-bold text-green-600'>{formatCurrency(data.total)}</div>
-            <div className='text-sm text-gray-600'>Total Budget</div>
+            <div className='text-sm text-gray-600 dark:text-neutral-muted'>Total Budget</div>
           </div>
           <div>
             <div className='text-2xl font-bold text-purple-600'>
               {data.allocations[0].percentage}%
             </div>
-            <div className='text-sm text-gray-600'>Largest Allocation</div>
+            <div className='text-sm text-gray-600 dark:text-neutral-muted'>Largest Allocation</div>
           </div>
           {showComparison && comparisonData && (
             <div>
               <div className='text-2xl font-bold text-orange-600'>
                 +{(((data.total - comparisonData.total) / comparisonData.total) * 100).toFixed(1)}%
               </div>
-              <div className='text-sm text-gray-600'>Growth vs 2023</div>
+              <div className='text-sm text-gray-600 dark:text-neutral-muted'>Growth vs 2023</div>
             </div>
           )}
         </div>

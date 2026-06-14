@@ -62,13 +62,23 @@ _WB_INDICATORS = {
         "round_digits": 1,
         "description": "Consumer price index (2010 = 100)",
     },
-    # Government revenue as % of GDP
-    "GC.REV.TOTL.GD.ZS": {
+    # Government revenue as % of GDP. The older code was
+    # "GC.REV.TOTL.GD.ZS" ("Revenue and grants %"), which the World
+    # Bank deprecated and now returns HTTP 200 with
+    # ``"Invalid value: The provided parameter value is not valid"``
+    # for any country query — that's what produced the
+    # "World Bank API returned no data for GC.REV.TOTL.GD.ZS"
+    # warning on every nightly run. The replacement
+    # ``GC.REV.XGRT.GD.ZS`` ("Revenue, excluding grants, % of GDP")
+    # is what fiscal analysts now use as the canonical
+    # revenue-to-GDP ratio. Returns valid Kenya data through 2023:
+    # 17.35%, 17.88%, 18.64% for 2021/2022/2023.
+    "GC.REV.XGRT.GD.ZS": {
         "indicator_type": "govt_revenue_pct_gdp",
         "unit": "percent",
         "divisor": 1,
         "round_digits": 1,
-        "description": "Government revenue % of GDP",
+        "description": "Government revenue (excl. grants) % of GDP",
     },
     # Government expenditure as % of GDP
     "GC.XPN.TOTL.GD.ZS": {

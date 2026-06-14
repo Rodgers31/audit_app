@@ -10,7 +10,8 @@ export default function WhyItMattersPage() {
   return (
     <PageShell
       title='Why This Matters'
-      subtitle='Real stories showing how government finances affect healthcare, education, roads, and everyday life for Kenyans'>
+      subtitle='Real stories showing how government finances affect healthcare, education, roads, and everyday life for Kenyans'
+      back={{ href: '/learn', label: 'Back to Learning Hub' }}>
       <WhyThisMatters searchTerm='' />
     </PageShell>
   );

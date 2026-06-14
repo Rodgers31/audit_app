@@ -26,7 +26,7 @@ export default function CountiesWithApi({ onCountySelect, selectedCounty }: Coun
     return (
       <div className='flex items-center justify-center p-8'>
         <Loader2 className='h-8 w-8 animate-spin text-blue-600' />
-        <span className='ml-2 text-gray-600'>Loading counties...</span>
+        <span className='ml-2 text-gray-600 dark:text-neutral-muted'>Loading counties...</span>
       </div>
     );
   }
@@ -58,7 +58,7 @@ export default function CountiesWithApi({ onCountySelect, selectedCounty }: Coun
       {/* Counties Grid */}
       <div>
         <div className='flex items-center justify-between mb-4'>
-          <h2 className='text-2xl font-bold text-gray-900'>All Counties ({counties.length})</h2>
+          <h2 className='text-2xl font-bold text-gray-900 dark:text-neutral-text'>All Counties ({counties.length})</h2>
           <button
             onClick={() => refetch()}
             disabled={isRefetching}
@@ -78,12 +78,12 @@ export default function CountiesWithApi({ onCountySelect, selectedCounty }: Coun
               className={`p-4 border rounded-lg cursor-pointer transition-colors ${
                 selectedCounty?.id === county.id
                   ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 hover:border-gray-300'
+                  : 'border-gray-200 dark:border-neutral-border hover:border-gray-300 dark:border-neutral-border'
               }`}
               onClick={() => onCountySelect(county)}>
-              <h3 className='font-semibold text-gray-900'>{county.name} County</h3>
-              <p className='text-sm text-gray-600'>Code: {county.code}</p>
-              <p className='text-sm text-gray-600'>
+              <h3 className='font-semibold text-gray-900 dark:text-neutral-text'>{county.name} County</h3>
+              <p className='text-sm text-gray-600 dark:text-neutral-muted'>Code: {county.code}</p>
+              <p className='text-sm text-gray-600 dark:text-neutral-muted'>
                 Population: {(county.population / 1e6).toFixed(1)}M
               </p>
               <div className='mt-2'>
@@ -95,7 +95,7 @@ export default function CountiesWithApi({ onCountySelect, selectedCounty }: Coun
                       ? 'bg-yellow-100 text-yellow-800'
                       : county.auditStatus === 'adverse'
                       ? 'bg-red-100 text-red-800'
-                      : 'bg-gray-100 text-gray-800'
+                      : 'bg-gray-100 dark:bg-surface-elevated text-gray-800 dark:text-neutral-text'
                   }`}>
                   {county.auditStatus}
                 </span>
@@ -108,7 +108,7 @@ export default function CountiesWithApi({ onCountySelect, selectedCounty }: Coun
       {/* Top Performing Counties */}
       {!isLoadingTop && topCounties.length > 0 && (
         <div>
-          <h3 className='text-xl font-bold text-gray-900 mb-4'>Top Performing Counties</h3>
+          <h3 className='text-xl font-bold text-gray-900 dark:text-neutral-text mb-4'>Top Performing Counties</h3>
           <div className='flex flex-wrap gap-2'>
             {topCounties.map((county) => (
               <motion.button

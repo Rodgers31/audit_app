@@ -38,9 +38,9 @@ const getAuditConfig = (status: string) => {
     },
     disclaimer: {
       label: 'Disclaimer',
-      color: 'text-gray-700',
-      bgColor: 'bg-gray-50',
-      borderColor: 'border-gray-200',
+      color: 'text-gray-700 dark:text-neutral-muted',
+      bgColor: 'bg-gray-50 dark:bg-surface-elevated',
+      borderColor: 'border-gray-200 dark:border-neutral-border',
       icon: '❓',
       description: 'Insufficient information',
     },
@@ -59,11 +59,11 @@ const getAuditConfig = (status: string) => {
 export default function CountyInfoStrip({ county, className = '' }: CountyInfoStripProps) {
   if (!county) {
     return (
-      <div className={`bg-white rounded-2xl border border-gray-200 p-8 ${className}`}>
-        <div className='text-center text-gray-500 py-8'>
+      <div className={`bg-white dark:bg-surface-base rounded-2xl border border-gray-200 dark:border-neutral-border p-8 ${className}`}>
+        <div className='text-center text-gray-500 dark:text-neutral-muted/80 py-8'>
           <div className='text-4xl mb-4'>🏛️</div>
-          <div className='text-lg font-medium text-gray-700 mb-2'>No County Selected</div>
-          <div className='text-sm text-gray-500'>
+          <div className='text-lg font-medium text-gray-700 dark:text-neutral-muted mb-2'>No County Selected</div>
+          <div className='text-sm text-gray-500 dark:text-neutral-muted/80'>
             Click on a county or use the slider to view details
           </div>
         </div>
@@ -87,12 +87,12 @@ export default function CountyInfoStrip({ county, className = '' }: CountyInfoSt
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className={`bg-white rounded-2xl border border-gray-200 p-8 ${className}`}>
+      className={`bg-white dark:bg-surface-base rounded-2xl border border-gray-200 dark:border-neutral-border p-8 ${className}`}>
       {/* Header Section */}
       <div className='flex items-start justify-between mb-8'>
         <div>
-          <h2 className='text-3xl font-bold text-gray-900 mb-2'>{county.name} County</h2>
-          <div className='flex items-center text-gray-600'>
+          <h2 className='text-3xl font-bold text-gray-900 dark:text-neutral-text mb-2'>{county.name} County</h2>
+          <div className='flex items-center text-gray-600 dark:text-neutral-muted'>
             <Users className='w-4 h-4 mr-2' />
             <span>Population: {formatNumber(county.population)}</span>
           </div>
@@ -186,7 +186,7 @@ export default function CountyInfoStrip({ county, className = '' }: CountyInfoSt
 
           <div className={`text-2xl font-bold ${auditConfig.color} mb-2`}>{auditConfig.label}</div>
           <div className={`text-sm ${auditConfig.color} mb-1`}>{auditConfig.description}</div>
-          <div className='text-sm text-gray-600'>Year: 2024</div>
+          <div className='text-sm text-gray-600 dark:text-neutral-muted'>Year: 2024</div>
         </motion.div>
       </div>
 
@@ -195,26 +195,26 @@ export default function CountyInfoStrip({ county, className = '' }: CountyInfoSt
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4, duration: 0.3 }}
-        className='bg-gray-50 rounded-xl p-6'>
-        <h3 className='text-lg font-semibold text-gray-900 mb-4'>Financial Summary</h3>
+        className='bg-gray-50 dark:bg-surface-elevated rounded-xl p-6'>
+        <h3 className='text-lg font-semibold text-gray-900 dark:text-neutral-text mb-4'>Financial Summary</h3>
 
         <div className='grid grid-cols-2 lg:grid-cols-4 gap-6'>
           <div>
-            <div className='text-sm text-gray-600 mb-1'>Revenue</div>
+            <div className='text-sm text-gray-600 dark:text-neutral-muted mb-1'>Revenue</div>
             <div className='text-xl font-bold text-green-600'>
               {formatCurrency(revenue).replace('KES ', 'KES ')}
             </div>
           </div>
 
           <div>
-            <div className='text-sm text-gray-600 mb-1'>Expenditure</div>
+            <div className='text-sm text-gray-600 dark:text-neutral-muted mb-1'>Expenditure</div>
             <div className='text-xl font-bold text-blue-600'>
               {formatCurrency(expenditure).replace('KES ', 'KES ')}
             </div>
           </div>
 
           <div>
-            <div className='text-sm text-gray-600 mb-1'>Balance</div>
+            <div className='text-sm text-gray-600 dark:text-neutral-muted mb-1'>Balance</div>
             <div
               className={`text-xl font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {formatCurrency(Math.abs(balance)).replace('KES ', 'KES ')}
@@ -222,7 +222,7 @@ export default function CountyInfoStrip({ county, className = '' }: CountyInfoSt
           </div>
 
           <div>
-            <div className='text-sm text-gray-600 mb-1'>Per Capita Debt</div>
+            <div className='text-sm text-gray-600 dark:text-neutral-muted mb-1'>Per Capita Debt</div>
             <div className='text-xl font-bold text-orange-600'>
               {formatCurrency(perCapitaDebt).replace('KES ', 'KES ')}
             </div>

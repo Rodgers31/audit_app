@@ -19,6 +19,43 @@ export const getNationalDebtOverview = async (): Promise<any> => {
   return response.data;
 };
 
+/** IMF General-Government Gross Debt ("broader measure").
+ *
+ * Populated nightly by the `imf_weo` seeder. Shape documented in
+ * backend/main.py `get_debt_broader`. Returns `status: 'unavailable'`
+ * when the seeder has not yet run — callers should hide the UI that
+ * depends on this in that case rather than show placeholder zeros. */
+export interface BroaderDebtYearPoint {
+  year: number;
+  debt_to_gdp: number | null;
+  gdp_kes: number | null;
+  value_kes: number | null;
+  is_projection: boolean;
+}
+
+export interface BroaderDebtResponse {
+  status: 'success' | 'unavailable';
+  reason?: string;
+  source?: {
+    name: string;
+    indicator: string;
+    code: string;
+    dataset_url: string;
+  };
+  latest?: BroaderDebtYearPoint | null;
+  timeseries?: BroaderDebtYearPoint[];
+  fx_rate_used?: number;
+  vintage?: string;
+  vintage_age_days?: number;
+  stale?: boolean;
+  as_of?: string;
+}
+
+export const getBroaderDebt = async (): Promise<BroaderDebtResponse> => {
+  const response = await apiClient.get<BroaderDebtResponse>(DEBT_ENDPOINTS.BROADER);
+  return response.data;
+};
+
 // Get debt breakdown by category
 export const getDebtBreakdown = async (countyId?: string): Promise<any> => {
   const endpoint = countyId

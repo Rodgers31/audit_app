@@ -1,0 +1,114 @@
+{
+  "number": 6,
+  "title": "Leadership and Integrity",
+  "summary": "Chapter 6 is the constitutional contract every State officer signs with the public: leadership is a public trust, not a personal prize. It prohibits conflicts of interest and demands honesty, accountability, and selfless service.",
+  "articles": [
+    {
+      "number": 73,
+      "title": "Responsibilities of leadership",
+      "paragraphs": [
+        "(1) Authority assigned to a State officer— (a) is a public trust to be exercised in a manner that— (i) is consistent with the purposes and objects of this Constitution; (ii) demonstrates respect for the people; (iii) brings honour to the nation and dignity to the office; and (iv) promotes public confidence in the integrity of the office; and (b) vests in the State officer the responsibility to serve the people, rather than the power to rule them.",
+        "(2) The guiding principles of leadership and integrity include— (a) selection on the basis of personal integrity, competence and suitability, or election in free and fair elections; (b) objectivity and impartiality in decision making, and in ensuring that decisions are not influenced by nepotism, favouritism, other improper motives or corrupt practices; (c) selfless service based solely on the public interest, demonstrated by— (i) honesty in the execution of public duties; and (ii) the declaration of any personal interest that may conflict with public duties; (d) accountability to the public for decisions and actions; and (e) discipline and commitment in service to the people."
+      ],
+      "summary": "Being in public office is a trust, not a reward. Decisions must be honest, impartial, and selfless — and you must be accountable for them.",
+      "explanation": "This is the article Kenyans invoke when they say 'Chapter 6 matters'. Every audit finding of conflict of interest or procurement favouritism is, at heart, a breach of Article 73.",
+      "tags": [
+        "leadership",
+        "integrity",
+        "public-trust"
+      ]
+    },
+    {
+      "number": 74,
+      "title": "Oath of office of State officers",
+      "paragraphs": [
+        "Before assuming a State office, acting in a State office, or performing any functions of a State office, a person shall take and subscribe the oath or affirmation of office, in the manner and form prescribed by the Third Schedule or under an Act of Parliament."
+      ],
+      "summary": "No one acts as a State officer until they have sworn to uphold the Constitution.",
+      "tags": [
+        "oath",
+        "office"
+      ]
+    },
+    {
+      "number": 75,
+      "title": "Conduct of State officers",
+      "paragraphs": [
+        "(1) A State officer shall behave, whether in public and official life, in private life, or in association with other persons, in a manner that avoids— (a) any conflict between personal interests and public or official duties; (b) compromising any public or official interest in favour of a personal interest; or (c) demeaning the office the officer holds.",
+        "(2) A person who contravenes clause (1), or Article 76, 77 or 78(2)— (a) shall be subject to the applicable disciplinary procedure for the relevant office; and (b) may, in accordance with the disciplinary procedure referred to in paragraph (a), be dismissed or otherwise removed from office.",
+        "(3) A person who has been dismissed or otherwise removed from office for a contravention of the provisions specified in clause (2) is disqualified from holding any other State office."
+      ],
+      "summary": "State officers must avoid conflicts of interest — in public and in private. Breaches can end in dismissal and permanent disqualification from State office.",
+      "tags": [
+        "conflict-of-interest",
+        "conduct",
+        "dismissal"
+      ]
+    },
+    {
+      "number": 76,
+      "title": "Financial probity of State officers",
+      "paragraphs": [
+        "(1) A gift or donation to a State officer on a public or official occasion is a gift or donation to the Republic and shall be delivered to the State unless exempted under an Act of Parliament.",
+        "(2) A State officer shall not— (a) maintain a bank account outside Kenya except in accordance with an Act of Parliament; or (b) seek or accept a personal loan or benefit in circumstances that compromise the integrity of the State officer."
+      ],
+      "summary": "Gifts to officials belong to the State. No secret foreign accounts. No loans or perks that could compromise integrity.",
+      "explanation": "This clause is what makes a procurement kickback or undisclosed foreign account not just a scandal but a direct constitutional violation.",
+      "tags": [
+        "probity",
+        "gifts",
+        "conflict-of-interest"
+      ]
+    },
+    {
+      "number": 77,
+      "title": "Restriction on activities of State officers",
+      "paragraphs": [
+        "(1) A full-time State officer shall not participate in any other gainful employment.",
+        "(2) Any appointed State officer shall not hold office in a political party.",
+        "(3) A retired State officer who is receiving a pension from public funds shall not hold more than two concurrent remunerative positions as chairperson, director or employee of— (a) a company owned or controlled by the State; or (b) a State organ.",
+        "(4) A retired State officer shall not receive remuneration from public funds other than as contemplated in clause (3)."
+      ],
+      "tags": [
+        "restrictions",
+        "employment"
+      ]
+    },
+    {
+      "number": 78,
+      "title": "Citizenship and leadership",
+      "paragraphs": [
+        "(1) A person is not eligible for election or appointment to a State office unless the person is a citizen of Kenya.",
+        "(2) A State officer or a member of the defence forces shall not hold dual citizenship.",
+        "(3) Clauses (1) and (2) do not apply to— (a) judges and members of commissions; or (b) any person who has been made a citizen of another country by operation of that country’s law, without ability to opt out."
+      ],
+      "tags": [
+        "citizenship",
+        "eligibility"
+      ]
+    },
+    {
+      "number": 79,
+      "title": "Legislation to establish the ethics and anti-corruption commission",
+      "paragraphs": [
+        "Parliament shall enact legislation to establish an independent ethics and anti-corruption commission, which shall be and have the status and powers of a commission under Chapter Fifteen, for purposes of ensuring compliance with, and enforcement of, the provisions of this Chapter."
+      ],
+      "summary": "The EACC exists because of this single article — a constitutional watchdog for leadership integrity.",
+      "tags": [
+        "EACC",
+        "enforcement"
+      ]
+    },
+    {
+      "number": 80,
+      "title": "Legislation on leadership",
+      "paragraphs": [
+        "Parliament shall enact legislation— (a) establishing procedures and mechanisms for the effective administration of this Chapter; (b) prescribing the penalties, in addition to the penalties referred to in Article 75, that may be imposed for a contravention of this Chapter; (c) providing for the application of this Chapter, with the necessary modifications, to public officers; and (d) making any other provision necessary for ensuring the promotion of the principles of leadership and integrity referred to in this Chapter, and the enforcement of this Chapter."
+      ],
+      "tags": [
+        "legislation",
+        "enforcement"
+      ]
+    }
+  ]
+}

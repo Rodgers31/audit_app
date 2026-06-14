@@ -136,7 +136,76 @@ def compute_hash(payload: Any) -> str:
 
 import re as _re
 
-_FY_PATTERN = _re.compile(r"^(?:FY\s*)?(\d{4})[/\-](\d{2,4})$")
+# Optional trailing sub-period marker preserves quarter / half-year /
+# nine-months distinctions in the canonical label. The COB BIRR
+# domains emit labels like "FY 2025/26 H1" or "FY 2024/25 Q1" — these
+# need to be kept distinct from the annual "FY 2025/26" so the writer
+# doesn't collide records on the same FiscalPeriod natural key.
+_FY_PATTERN = _re.compile(
+    r"^(?:FY\s*)?(\d{4})[/\-](\d{2,4})(?:\s+(H[12]|Q[1-4]|\d+M))?$",
+    _re.IGNORECASE,
+)
+
+
+_SLUG_STRIP_RE = _re.compile(r"[^a-z0-9]+")
+# Apostrophes (ASCII + Unicode right-single-quote) are *stripped*
+# rather than replaced with a hyphen so "Murang'a" → "muranga"
+# matches the canonical DB slug. Everything else non-alphanumeric
+# collapses to a hyphen.
+_APOSTROPHE_RE = _re.compile(r"['\u2019]")
+
+
+def canonicalize_slug(slug: str) -> str:
+    """Normalise an already-formed slug to canonical kebab-case.
+
+    Use on slugs coming in from JSON fixtures or partner exports before
+    you do an Entity-by-slug lookup. This is the SAFE re-canoncalisation:
+    strip apostrophes, collapse non-alphanumeric runs, trim edges. It
+    does NOT add or remove the ``-county`` suffix because national vs
+    county entities differ and we don't want ``national-government`` to
+    accidentally become ``national-government-county``.
+
+    Idempotent — applying twice yields the same result.
+    """
+    if not slug:
+        return ""
+    deaposted = _APOSTROPHE_RE.sub("", slug.strip().lower())
+    return _SLUG_STRIP_RE.sub("-", deaposted).strip("-")
+
+
+def slugify_entity(name: str, *, county_suffix: bool = True) -> str:
+    """Canonicalise an entity name into the slug format used in the DB.
+
+    The ``entities`` table's ``slug`` column is kept in kebab-case with
+    no punctuation — e.g. ``muranga-county``, not ``murang'a-county``.
+    Callers historically did a naive ``name.lower().replace(" ", "-")``
+    which produced ``murang'a-county`` for Murang'a and then failed the
+    lookup, generating the "Unknown entity slug" warnings we saw every
+    run.
+
+    Rules:
+      * ASCII-lowercase.
+      * Apostrophes are stripped (so Murang'a → muranga, O'Brien → obrien).
+      * Every other non-alphanumeric run collapses to a single hyphen
+        (commas, dots, em-dashes, multi-spaces all normalise).
+      * Leading / trailing hyphens trimmed.
+      * Whitespace-only input returns "" (no stray ``-county`` leaks).
+      * Optionally appends ``-county`` — set to False when the caller
+        passes an already-fully-qualified entity name like
+        "National Government".
+    """
+    if not name:
+        return ""
+    lowered = name.strip().lower()
+    # Strip apostrophes BEFORE the non-alphanumeric collapse so they
+    # don't leave hyphens behind.
+    deaposted = _APOSTROPHE_RE.sub("", lowered)
+    collapsed = _SLUG_STRIP_RE.sub("-", deaposted).strip("-")
+    if not collapsed:
+        return ""
+    if county_suffix and not collapsed.endswith("-county"):
+        collapsed = f"{collapsed}-county"
+    return collapsed
 
 
 def normalize_fiscal_label(raw: str) -> str:
@@ -144,11 +213,19 @@ def normalize_fiscal_label(raw: str) -> str:
 
     Accepted inputs and their canonical output::
 
-        "FY2023/24"   -> "FY2023/24"
-        "FY 2024/25"  -> "FY2024/25"
-        "2023/2024"   -> "FY2023/24"
-        "2022/2023"   -> "FY2022/23"
-        "FY2025/26"   -> "FY2025/26"
+        "FY2023/24"          -> "FY2023/24"
+        "FY 2024/25"         -> "FY2024/25"
+        "2023/2024"          -> "FY2023/24"
+        "2022/2023"          -> "FY2022/23"
+        "FY2025/26"          -> "FY2025/26"
+
+    Sub-period markers (case-insensitive) are preserved with a single
+    space separator so the FiscalPeriod natural key stays distinct
+    from the same FY's annual record::
+
+        "FY 2025/26 H1"      -> "FY2025/26 H1"
+        "FY2025/26 Q1"       -> "FY2025/26 Q1"
+        "FY 2024/25 9M"      -> "FY2024/25 9M"
 
     Raises ``ValueError`` for strings that cannot be parsed.
     """
@@ -158,7 +235,11 @@ def normalize_fiscal_label(raw: str) -> str:
     start_year = int(m.group(1))
     end_raw = m.group(2)
     end_short = int(end_raw) % 100
-    return f"FY{start_year}/{end_short:02d}"
+    base = f"FY{start_year}/{end_short:02d}"
+    sub_period = m.group(3)
+    if sub_period:
+        return f"{base} {sub_period.upper()}"
+    return base
 
 
 __all__ = [
@@ -166,4 +247,6 @@ __all__ = [
     "load_json_resource",
     "compute_hash",
     "normalize_fiscal_label",
+    "slugify_entity",
+    "canonicalize_slug",
 ]

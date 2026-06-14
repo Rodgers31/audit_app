@@ -27,7 +27,7 @@ export default function CountyFinancesCard() {
       viewport={{ once: true, margin: '-60px' }}
       transition={{ duration: 0.6, delay: 0.1 }}
       className='glass-card p-6 sm:p-8'>
-      <h3 className='font-display text-xl text-gov-dark mb-5'>Explore County Finances</h3>
+      <h3 className='font-display text-xl text-gov-dark dark:text-white mb-5'>Explore County Finances</h3>
 
       {/* Map legend strip */}
       <div className='flex items-center gap-4 mb-4'>
@@ -78,7 +78,7 @@ export default function CountyFinancesCard() {
             {isLoading ? (
               <div className='h-6 w-24 bg-neutral-200 rounded animate-pulse' />
             ) : (
-              <span className='text-lg font-bold text-gov-dark tabular-nums'>
+              <span className='text-lg font-bold text-gov-dark dark:text-white tabular-nums'>
                 {formatKES(totalBudget)}
               </span>
             )}
@@ -91,7 +91,7 @@ export default function CountyFinancesCard() {
             {isLoading ? (
               <div className='h-6 w-24 bg-neutral-200 rounded animate-pulse' />
             ) : (
-              <span className='text-lg font-bold text-gov-dark tabular-nums'>
+              <span className='text-lg font-bold text-gov-dark dark:text-white tabular-nums'>
                 {formatKES(totalAllocations)}
               </span>
             )}

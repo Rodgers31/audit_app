@@ -58,6 +58,12 @@ class RedisRateLimitMiddleware(BaseHTTPMiddleware):
         # Get client IP
         client_ip = request.client.host if request.client else "unknown"
 
+        # Skip rate limiting for loopback (local dev traffic from same machine — SSR
+        # prefetch, HMR reloads, React Query hydration, and Strict-Mode double-invocation
+        # legitimately generate bursts that would trip a public-facing rate limit).
+        if client_ip in ("127.0.0.1", "::1", "localhost", "unknown"):
+            return await call_next(request)
+
         # Skip rate limiting for health checks
         if request.url.path in ["/", "/health", "/metrics"]:
             return await call_next(request)
@@ -144,6 +150,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         # Get client IP
         client_ip = request.client.host if request.client else "unknown"
+
+        # Skip rate limiting for loopback (local dev traffic from same machine)
+        if client_ip in ("127.0.0.1", "::1", "localhost", "unknown"):
+            return await call_next(request)
 
         # Skip rate limiting for health checks
         if request.url.path in ["/", "/health", "/metrics"]:

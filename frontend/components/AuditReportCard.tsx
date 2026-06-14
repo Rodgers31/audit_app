@@ -29,7 +29,7 @@ export default function AuditReportCard({ county, statusIcon, statusColor }: Aud
   return (
     <motion.div
       layout
-      className='bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden hover:shadow-2xl transition-shadow duration-300'>
+      className='bg-white dark:bg-surface-base rounded-3xl shadow-xl border border-gray-200 dark:border-neutral-border overflow-hidden hover:shadow-2xl transition-shadow duration-300'>
       <CardHeader
         county={county}
         statusIcon={statusIcon}

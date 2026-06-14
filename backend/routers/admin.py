@@ -7,7 +7,6 @@ Provides endpoints for:
 - Filtering jobs by domain, status, date range
 """
 
-import os
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
@@ -18,21 +17,12 @@ from pydantic import ConfigDict, BaseModel
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
-# Optional: Add authentication dependency
-# Set ADMIN_API_AUTH_REQUIRED=true in production to enable authentication
-_admin_dep = []
-if os.getenv("ADMIN_API_AUTH_REQUIRED", "false").lower() == "true":
-    try:
-        from auth import require_roles
-
-        _admin_dep = [Depends(require_roles(["admin"]))]
-    except Exception:
-        pass  # Auth module not available
+from supabase_auth import require_admin
 
 router = APIRouter(
     prefix="/api/v1/admin",
     tags=["Admin"],
-    dependencies=_admin_dep,
+    dependencies=[Depends(require_admin)],
 )
 
 

@@ -87,29 +87,29 @@ export default function AuditStatusFilter({
         case 'red':
           return `${baseClasses} bg-red-100 border-red-300 text-red-800 shadow-lg scale-105 ${disabledClasses}`;
         case 'gray':
-          return `${baseClasses} bg-gray-100 border-gray-300 text-gray-800 shadow-lg scale-105 ${disabledClasses}`;
+          return `${baseClasses} bg-gray-100 dark:bg-surface-elevated border-gray-300 dark:border-neutral-border text-gray-800 dark:text-neutral-text shadow-lg scale-105 ${disabledClasses}`;
         default:
           return `${baseClasses} bg-blue-100 border-blue-300 text-blue-800 shadow-lg scale-105 ${disabledClasses}`;
       }
     } else {
       switch (color) {
         case 'green':
-          return `${baseClasses} bg-white border-green-200 text-green-700 hover:bg-green-50 hover:border-green-300 ${disabledClasses}`;
+          return `${baseClasses} bg-white dark:bg-surface-base border-green-200 text-green-700 hover:bg-green-50 hover:border-green-300 ${disabledClasses}`;
         case 'yellow':
-          return `${baseClasses} bg-white border-yellow-200 text-yellow-700 hover:bg-yellow-50 hover:border-yellow-300 ${disabledClasses}`;
+          return `${baseClasses} bg-white dark:bg-surface-base border-yellow-200 text-yellow-700 hover:bg-yellow-50 hover:border-yellow-300 ${disabledClasses}`;
         case 'red':
-          return `${baseClasses} bg-white border-red-200 text-red-700 hover:bg-red-50 hover:border-red-300 ${disabledClasses}`;
+          return `${baseClasses} bg-white dark:bg-surface-base border-red-200 text-red-700 hover:bg-red-50 hover:border-red-300 ${disabledClasses}`;
         case 'gray':
-          return `${baseClasses} bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 ${disabledClasses}`;
+          return `${baseClasses} bg-white dark:bg-surface-base border-gray-200 dark:border-neutral-border text-gray-700 dark:text-neutral-muted hover:bg-gray-50 dark:bg-surface-elevated hover:border-gray-300 dark:border-neutral-border ${disabledClasses}`;
         default:
-          return `${baseClasses} bg-white border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 ${disabledClasses}`;
+          return `${baseClasses} bg-white dark:bg-surface-base border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 ${disabledClasses}`;
       }
     }
   };
 
   return (
     <div>
-      <h3 className='text-lg font-semibold text-gray-900 mb-4'>Filter by Audit Status</h3>
+      <h3 className='text-lg font-semibold text-gray-900 dark:text-neutral-text mb-4'>Filter by Audit Status</h3>
 
       <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3'>
         {filters.map((filter, index) => {

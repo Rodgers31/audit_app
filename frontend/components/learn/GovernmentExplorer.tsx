@@ -77,12 +77,12 @@ const branches: Branch[] = [
     iconBg: 'bg-sky-100 text-sky-700',
     details: [
       {
-        office: 'National Assembly (349 members)',
+        office: 'National Assembly (350 members, incl. Speaker)',
         description:
           'Enacts legislation, determines taxation & expenditures, and approves or rejects presidential nominees.',
       },
       {
-        office: 'Senate (67 members)',
+        office: 'Senate (68 members, incl. Speaker)',
         description:
           'Protects county interests, participates in law-making affecting counties, and determines allocation of national revenue among counties.',
       },
@@ -181,7 +181,7 @@ export default function GovernmentExplorer() {
     <div className='space-y-10'>
       {/* ── Three Branches ── */}
       <div>
-        <h3 className='font-display text-2xl text-gov-dark mb-1'>Three Arms of Government</h3>
+        <h3 className='font-display text-2xl text-gov-dark dark:text-white mb-1'>Three Arms of Government</h3>
         <p className='text-sm text-neutral-muted mb-6'>
           Click a branch to explore its structure and functions
         </p>
@@ -198,14 +198,14 @@ export default function GovernmentExplorer() {
                 {/* Header */}
                 <motion.button
                   onClick={() => toggle(b.id)}
-                  className='w-full flex items-center gap-4 p-5 bg-white/60 backdrop-blur hover:bg-white/80 transition-colors text-left'
+                  className='w-full flex items-center gap-4 p-5 bg-white/60 dark:bg-surface-elevated backdrop-blur hover:bg-white/80 dark:bg-surface-elevated transition-colors text-left'
                   whileTap={{ scale: 0.995 }}>
                   <div
                     className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${b.iconBg}`}>
                     <Icon size={24} />
                   </div>
                   <div className='flex-1 min-w-0'>
-                    <h4 className='font-bold text-gov-dark text-lg'>{b.title}</h4>
+                    <h4 className='font-bold text-gov-dark dark:text-white text-lg'>{b.title}</h4>
                     <p className='text-sm text-neutral-muted truncate'>{b.tagline}</p>
                   </div>
                   <motion.div
@@ -230,8 +230,8 @@ export default function GovernmentExplorer() {
                           {b.details.map((d) => (
                             <div
                               key={d.office}
-                              className='rounded-xl bg-white/50 border border-white/40 p-4'>
-                              <h5 className='font-semibold text-gov-dark text-sm mb-1'>
+                              className='rounded-xl bg-white/50 dark:bg-surface-elevated border border-white/40 p-4'>
+                              <h5 className='font-semibold text-gov-dark dark:text-white text-sm mb-1'>
                                 {d.office}
                               </h5>
                               <p className='text-xs leading-relaxed text-neutral-muted'>
@@ -265,7 +265,7 @@ export default function GovernmentExplorer() {
 
       {/* ── Devolution Section ── */}
       <div>
-        <h3 className='font-display text-2xl text-gov-dark mb-1'>Devolution: Power Shared</h3>
+        <h3 className='font-display text-2xl text-gov-dark dark:text-white mb-1'>Devolution: Power Shared</h3>
         <p className='text-sm text-neutral-muted mb-6'>
           The 2010 Constitution created two levels of government — national and county
         </p>
@@ -282,12 +282,12 @@ export default function GovernmentExplorer() {
                 transition={{ duration: 0.5 }}
                 className={`rounded-2xl border-2 ${tier.color} p-5`}>
                 <div className='flex items-center gap-3 mb-4'>
-                  <Icon size={22} className='text-gov-dark' />
-                  <h4 className='font-bold text-gov-dark'>{tier.title}</h4>
+                  <Icon size={22} className='text-gov-dark dark:text-white' />
+                  <h4 className='font-bold text-gov-dark dark:text-white'>{tier.title}</h4>
                 </div>
                 <ul className='space-y-2'>
                   {tier.items.map((item) => (
-                    <li key={item} className='flex items-start gap-2 text-sm text-gov-dark/80'>
+                    <li key={item} className='flex items-start gap-2 text-sm text-gov-dark/80 dark:text-white/80'>
                       <span className='mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gov-sage' />
                       {item}
                     </li>

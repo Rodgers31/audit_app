@@ -20,8 +20,8 @@ export default function CountyBottomOverview({
         className={`bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 shadow-lg max-w-sm mx-auto ${className}`}>
         <CardContent className='p-6'>
           <div className='text-center'>
-            <h3 className='text-lg font-semibold text-gray-700 mb-2'>Kenya Counties Overview</h3>
-            <div className='text-sm text-gray-500'>Select a county to view details</div>
+            <h3 className='text-lg font-semibold text-gray-700 dark:text-neutral-muted mb-2'>Kenya Counties Overview</h3>
+            <div className='text-sm text-gray-500 dark:text-neutral-muted/80'>Select a county to view details</div>
           </div>
         </CardContent>
       </Card>
@@ -67,7 +67,7 @@ export default function CountyBottomOverview({
       default:
         return {
           label: 'PENDING',
-          color: 'bg-gray-100 text-gray-700 border-gray-300',
+          color: 'bg-gray-100 dark:bg-surface-elevated text-gray-700 dark:text-neutral-muted border-gray-300 dark:border-neutral-border',
         };
     }
   };
@@ -89,8 +89,8 @@ export default function CountyBottomOverview({
         <CardContent className='p-6'>
           {/* Header */}
           <div className='text-center mb-4'>
-            <h3 className='text-xl font-bold text-slate-800 mb-1'>{county.name} County</h3>
-            <p className='text-sm text-slate-600'>
+            <h3 className='text-xl font-bold text-slate-800 dark:text-neutral-text mb-1'>{county.name} County</h3>
+            <p className='text-sm text-slate-600 dark:text-neutral-muted'>
               Population: {formatPopulation(county.population)}
             </p>
           </div>
@@ -98,22 +98,22 @@ export default function CountyBottomOverview({
           {/* 2x2 Metrics Grid */}
           <div className='grid grid-cols-2 gap-3 mb-4'>
             {/* Budget */}
-            <div className='bg-white/80 rounded-lg p-3 text-center'>
-              <div className='text-xs text-gray-600 mb-1'>Budget</div>
+            <div className='bg-white/80 dark:bg-surface-elevated rounded-lg p-3 text-center'>
+              <div className='text-xs text-gray-600 dark:text-neutral-muted mb-1'>Budget</div>
               <div className='text-sm font-bold text-green-600'>
                 {formatKES(county.budget || county.budget_2025 || 0)}
               </div>
             </div>
 
             {/* Debt */}
-            <div className='bg-white/80 rounded-lg p-3 text-center'>
-              <div className='text-xs text-gray-600 mb-1'>Debt</div>
+            <div className='bg-white/80 dark:bg-surface-elevated rounded-lg p-3 text-center'>
+              <div className='text-xs text-gray-600 dark:text-neutral-muted mb-1'>Debt</div>
               <div className='text-sm font-bold text-orange-600'>{formatKES(county.debt || 0)}</div>
             </div>
 
             {/* Received */}
-            <div className='bg-white/80 rounded-lg p-3 text-center'>
-              <div className='text-xs text-gray-600 mb-1'>Received</div>
+            <div className='bg-white/80 dark:bg-surface-elevated rounded-lg p-3 text-center'>
+              <div className='text-xs text-gray-600 dark:text-neutral-muted mb-1'>Received</div>
               <div className='text-sm font-bold text-blue-600'>
                 {formatKES(
                   county.moneyReceived || (county.budget || county.budget_2025 || 0) * 0.94
@@ -122,8 +122,8 @@ export default function CountyBottomOverview({
             </div>
 
             {/* Issues */}
-            <div className='bg-white/80 rounded-lg p-3 text-center'>
-              <div className='text-xs text-gray-600 mb-1'>Issues</div>
+            <div className='bg-white/80 dark:bg-surface-elevated rounded-lg p-3 text-center'>
+              <div className='text-xs text-gray-600 dark:text-neutral-muted mb-1'>Issues</div>
               <div className='text-lg font-bold text-red-600'>{issuesCount}</div>
             </div>
           </div>

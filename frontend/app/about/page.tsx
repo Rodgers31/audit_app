@@ -81,7 +81,7 @@ const PRINCIPLES = [
 ];
 
 const FEATURES = [
-  { icon: BarChart3, label: 'National debt tracking in real time' },
+  { icon: BarChart3, label: 'National debt tracking, updated nightly' },
   { icon: Search, label: 'County-level budget explorer for all 47 counties' },
   { icon: BookOpen, label: 'Audit report summaries from the Auditor General' },
   { icon: Database, label: 'Economic indicators (GDP, inflation, population)' },
@@ -102,7 +102,7 @@ export default function AboutPage() {
         </div>
         <div className='bg-gradient-to-r from-gov-sage/5 to-gov-gold/5 rounded-2xl p-6 border border-gov-sage/10'>
           <p className='text-neutral-text leading-relaxed text-[15px]'>
-            <strong className='text-gov-forest'>AuditGava</strong> — <em>"Gava"</em> is Kenyan
+            <strong className='text-gov-forest dark:text-emerald-100'>AuditGava</strong> — <em>"Gava"</em> is Kenyan
             Swahili slang for government, widely used in everyday conversation. We chose it because
             this platform is built for everyday Kenyans, not policy insiders. AuditGava is a civic
             technology platform that makes Kenya's public finances accessible to every citizen. We
@@ -129,7 +129,7 @@ export default function AboutPage() {
               whileInView='show'
               viewport={{ once: true, margin: '-30px' }}
               custom={i}
-              className='bg-white rounded-2xl p-5 border border-neutral-border shadow-surface hover:shadow-elevated transition-shadow'>
+              className='bg-white dark:bg-surface-base rounded-2xl p-5 border border-neutral-border shadow-surface hover:shadow-elevated transition-shadow'>
               <div className='flex items-start gap-3'>
                 <div className='w-9 h-9 rounded-lg bg-gov-sage/10 flex items-center justify-center shrink-0 border border-gov-sage/15'>
                   <p.icon className='w-[18px] h-[18px] text-gov-sage' />
@@ -156,7 +156,7 @@ export default function AboutPage() {
               whileInView='show'
               viewport={{ once: true, margin: '-30px' }}
               custom={i}
-              className='flex items-center gap-3 bg-white rounded-xl p-4 border border-neutral-border shadow-surface'>
+              className='flex items-center gap-3 bg-white dark:bg-surface-base rounded-xl p-4 border border-neutral-border shadow-surface'>
               <f.icon className='w-5 h-5 text-gov-gold shrink-0' />
               <span className='text-sm text-neutral-text'>{f.label}</span>
             </motion.div>
@@ -183,7 +183,7 @@ export default function AboutPage() {
               whileInView='show'
               viewport={{ once: true, margin: '-20px' }}
               custom={i}
-              className='flex items-center justify-between gap-3 bg-white rounded-xl p-4 border border-neutral-border shadow-surface hover:shadow-elevated hover:border-gov-sage/30 transition-all group'>
+              className='flex items-center justify-between gap-3 bg-white dark:bg-surface-base rounded-xl p-4 border border-neutral-border shadow-surface hover:shadow-elevated hover:border-gov-sage/30 transition-all group'>
               <div>
                 <h3 className='font-semibold text-sm text-neutral-text group-hover:text-gov-sage transition-colors'>
                   {s.name}
@@ -228,7 +228,7 @@ export default function AboutPage() {
       {/* ── Contact ── */}
       <section className='space-y-3'>
         <h2 className='font-display text-2xl text-neutral-text'>Contact</h2>
-        <div className='bg-white rounded-2xl p-5 border border-neutral-border shadow-surface'>
+        <div className='bg-white dark:bg-surface-base rounded-2xl p-5 border border-neutral-border shadow-surface'>
           <p className='text-neutral-muted text-sm leading-relaxed'>
             Have a tip, question, or partnership inquiry? Reach out:
           </p>

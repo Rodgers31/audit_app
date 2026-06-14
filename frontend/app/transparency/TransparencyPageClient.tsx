@@ -1,7 +1,23 @@
 'use client';
 
-import DataFreshnessBadge from '@/components/DataFreshnessBadge';
-import FollowTheMoney, { YearSelector } from '@/components/FollowTheMoney';
+/**
+ * Follow the Money — narrative-first redesign.
+ *
+ * The page now mirrors the Budget and Debt pages:
+ *   1. A small intro strip
+ *   2. FiscalYearPicker drives the entire page
+ *   3. MoneyFlowHero — the centrepiece waterfall (Allocated → Released →
+ *      Spent → Flagged) with explicit gap callouts between stages
+ *   4. KPI cards — allocated / unspent / flagged / national efficiency
+ *   5. County comparison table (sortable, searchable)
+ *   6. "What can you do" action cards
+ *   7. Source reconciliation panel so every figure is traceable to an
+ *      official CoB / OAG / CRA document for the chosen fiscal year
+ */
+
+import MoneyFlowHero from '@/components/transparency/MoneyFlowHero';
+import MoneyFlowSourceReconciliation from '@/components/transparency/MoneyFlowSourceReconciliation';
+import FiscalYearPicker from '@/components/budget/FiscalYearPicker';
 import PageShell from '@/components/layout/PageShell';
 import ResponsiveTable from '@/components/ui/ResponsiveTable';
 import { useAvailableFiscalYears } from '@/lib/react-query';
@@ -13,9 +29,8 @@ import {
   AlertTriangle,
   ArrowRight,
   ArrowUpDown,
-  BookOpen,
-  ChevronDown,
-  ChevronUp,
+  CalendarClock,
+  Clock,
   ExternalLink,
   GraduationCap,
   Loader2,
@@ -37,15 +52,6 @@ function fmtKES(n: number | null | undefined): string {
   return `KES ${n.toLocaleString()}`;
 }
 
-function fmtShort(n: number): string {
-  const abs = Math.abs(n);
-  if (abs >= 1e12) return `${(n / 1e12).toFixed(1)}T`;
-  if (abs >= 1e9) return `${(n / 1e9).toFixed(1)}B`;
-  if (abs >= 1e6) return `${(n / 1e6).toFixed(0)}M`;
-  return n.toLocaleString();
-}
-
-/** Estimate what an amount could fund — makes numbers relatable */
 function fundingImpact(amount: number): string {
   if (amount >= 5e9) return `${Math.floor(amount / 10e6)} schools`;
   if (amount >= 1e9) return `${Math.floor(amount / 3e6)} classrooms`;
@@ -54,10 +60,61 @@ function fundingImpact(amount: number): string {
   return '';
 }
 
+/** Strip an optional "FY" or "FY " prefix so year strings from all
+ * sources normalise to the same "YYYY/YY" canonical form. The audits
+ * API returns "FY2025/26" but `generateFiscalYears()` (and the rest of
+ * the app) uses bare "2025/26" — mixing them left `selectedYear` and
+ * the picker buttons never comparing equal, so no button highlighted
+ * on page load. */
+function normalizeFY(y: string): string {
+  return (y || '').replace(/^FY\s*/i, '').trim();
+}
+
+/** Convert a raw "YYYY/YY" string into the shape FiscalYearPicker wants. */
+function toPickerOptions(years: string[]): { fiscal_year: string; is_current?: boolean }[] {
+  if (!years || years.length === 0) return [];
+  const now = new Date();
+  const startYr = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
+  const currentLabel = `${startYr}/${String(startYr + 1).slice(-2)}`;
+  return years.map((y) => ({ fiscal_year: y, is_current: y === currentLabel }));
+}
+
 const DEFAULT_FISCAL_YEARS = generateFiscalYears();
 
-type SortKey = 'efficiency' | 'flagged' | 'gap' | 'name';
+type SortKey = 'efficiency' | 'flagged' | 'gap' | 'name' | 'allocated';
 type SortDir = 'asc' | 'desc';
+
+/** Strip an optional "FY " prefix so we always operate on "YYYY/YY". */
+function stripFY(label: string): string {
+  return (label || '').replace(/^FY\s*/i, '').trim();
+}
+
+/** Parse the starting calendar year out of a fiscal-year label. */
+function fiscalStartYear(label: string): number | null {
+  const parts = stripFY(label).split('/');
+  const y = parseInt(parts[0], 10);
+  return Number.isNaN(y) ? null : y;
+}
+
+/**
+ * Publication milestones for a projected FY.
+ *
+ * The Kenyan calendar: fiscal year starts 1 Jul and ends 30 Jun. The
+ * Controller of Budget publishes quarterly County Budget Implementation
+ * Review Reports (CBIRRs) roughly 2 months after each quarter closes, and
+ * an annual consolidated CBIRR about 3-4 months after year-end. OAG then
+ * audits the closed year, typically releasing findings ~18 months after
+ * year-end.
+ */
+function projectedFYMilestones(label: string) {
+  const startYr = fiscalStartYear(label);
+  if (startYr == null) return null;
+  return {
+    firstQuarter: `Q1 CBIRR — expected Nov ${startYr}`,
+    annual: `Annual CBIRR — expected Oct ${startYr + 1}`,
+    audit: `OAG audit — expected Dec ${startYr + 2}`,
+  };
+}
 
 /* ═══════════ Animation Wrapper ═══════════ */
 
@@ -94,6 +151,70 @@ interface CountyFlowRow {
   spent: number | null;
 }
 
+/* ═══════════ Projected-FY banner ═══════════ */
+
+function MilestoneChip({ icon, label, sub }: { icon: React.ReactNode; label: string; sub: string }) {
+  return (
+    <div className='rounded-xl bg-white/70 dark:bg-surface-elevated border border-amber-200/50 px-3 py-2 flex items-start gap-2'>
+      <div className='flex-shrink-0 mt-0.5 text-amber-700'>{icon}</div>
+      <div className='min-w-0'>
+        <p className='text-[10px] font-semibold text-amber-900/60 uppercase tracking-wider'>
+          {label}
+        </p>
+        <p className='text-xs text-amber-900 font-medium mt-0.5 truncate'>{sub}</p>
+      </div>
+    </div>
+  );
+}
+
+function ProjectedFYBanner({ yearLabel }: { yearLabel: string }) {
+  const milestones = projectedFYMilestones(yearLabel);
+  const clean = stripFY(yearLabel);
+  return (
+    <div className='rounded-2xl border border-amber-200/60 bg-gradient-to-br from-amber-50/70 to-white p-5 sm:p-6'>
+      <div className='flex items-start gap-4'>
+        <div className='flex-shrink-0 w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center'>
+          <Clock className='w-5 h-5 text-amber-700' />
+        </div>
+        <div className='flex-1 min-w-0 space-y-3'>
+          <div>
+            <h3 className='font-display text-base sm:text-lg text-amber-900'>
+              FY {clean} is still executing
+            </h3>
+            <p className='text-sm text-amber-900/80 leading-relaxed mt-1'>
+              Counties have been <strong>allocated</strong> their share of the Equitable
+              Revenue, but spending and auditing happen over the full year. Execution
+              figures appear here once the <strong>Controller of Budget</strong> publishes
+              each quarterly County Budget Implementation Review Report (CBIRR). The{' '}
+              <strong>Auditor General</strong> follows with findings roughly 18 months
+              after year-end.
+            </p>
+          </div>
+          {milestones && (
+            <div className='grid grid-cols-1 sm:grid-cols-3 gap-2'>
+              <MilestoneChip
+                icon={<CalendarClock size={14} />}
+                label='Next release'
+                sub={milestones.firstQuarter}
+              />
+              <MilestoneChip
+                icon={<CalendarClock size={14} />}
+                label='Annual review'
+                sub={milestones.annual}
+              />
+              <MilestoneChip
+                icon={<AlertTriangle size={14} />}
+                label='Audit findings'
+                sub={milestones.audit}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ═══════════ Mini Efficiency Bar ═══════════ */
 
 function EfficiencyBar({ score }: { score: number }) {
@@ -102,7 +223,7 @@ function EfficiencyBar({ score }: { score: number }) {
     score >= 70 ? 'text-emerald-700' : score >= 50 ? 'text-amber-700' : 'text-red-700';
   return (
     <div className='flex items-center gap-2 min-w-[120px]'>
-      <div className='flex-1 h-2 bg-gray-100 rounded-full overflow-hidden'>
+      <div className='flex-1 h-2 bg-gray-100 dark:bg-surface-elevated rounded-full overflow-hidden'>
         <motion.div
           initial={{ width: 0 }}
           whileInView={{ width: `${Math.min(score, 100)}%` }}
@@ -121,18 +242,27 @@ function EfficiencyBar({ score }: { score: number }) {
 /* ═══════════ Page ═══════════ */
 
 export default function TransparencyPage() {
-  const [selectedYear, setSelectedYear] = useState(DEFAULT_FISCAL_YEARS[0]);
+  const { data: fiscalYearsRaw } = useAvailableFiscalYears();
+  // Normalize every source to bare "YYYY/YY" so the API-returned
+  // "FY2025/26" doesn't diverge from the local `generateFiscalYears()`
+  // fallback — otherwise `selectedYear` (set from the fallback on
+  // first render) never matches any button once the API resolves, and
+  // no pill is highlighted.
+  const years = useMemo(() => {
+    const raw = fiscalYearsRaw && fiscalYearsRaw.length > 0 ? fiscalYearsRaw : DEFAULT_FISCAL_YEARS;
+    return raw.map(normalizeFY);
+  }, [fiscalYearsRaw]);
+  const pickerYears = useMemo(() => toPickerOptions(years), [years]);
+
+  const defaultYear = pickerYears.find((y) => y.is_current)?.fiscal_year ?? years[0];
+  const [selectedYear, setSelectedYear] = useState(defaultYear);
   const [sortKey, setSortKey] = useState<SortKey>('efficiency');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [searchQuery, setSearchQuery] = useState('');
-  const [showGuide, setShowGuide] = useState(false);
 
-  const { data: fiscalYears } = useAvailableFiscalYears();
   const { data: nationalFlow, isLoading: nationalLoading } = useNationalMoneyFlow(selectedYear);
   const { data: allCountyFlows, isLoading: allCountyFlowsLoading } =
     useAllCountiesMoneyFlow(selectedYear);
-
-  const years = fiscalYears && fiscalYears.length > 0 ? fiscalYears : DEFAULT_FISCAL_YEARS;
 
   /* ── Derived national insights ── */
   const insights = useMemo(() => {
@@ -140,12 +270,19 @@ export default function TransparencyPage() {
     const allocated = nationalFlow.stages.find((s) => s.stage === 'Allocated')?.amount ?? 0;
     const spent = nationalFlow.stages.find((s) => s.stage === 'Spent')?.amount ?? 0;
     const flagged = nationalFlow.stages.find((s) => s.stage === 'Flagged')?.amount ?? 0;
-    const gap = allocated - spent;
-    const lostPct = allocated > 0 ? (gap / allocated) * 100 : 0;
-    return { allocated, spent, flagged, gap, lostPct, efficiency: nationalFlow.efficiency_score };
+    const gap = (allocated ?? 0) - (spent ?? 0);
+    const unspentPct = allocated > 0 ? (gap / allocated) * 100 : 0;
+    return {
+      allocated: allocated ?? 0,
+      spent: spent ?? 0,
+      flagged: flagged ?? 0,
+      gap,
+      unspentPct,
+      efficiency: nationalFlow.efficiency_score,
+    };
   }, [nationalFlow]);
 
-  /* ── County rows from batch endpoint ── */
+  /* ── County rows ── */
   const countyRows: CountyFlowRow[] = useMemo(() => {
     if (!allCountyFlows || allCountyFlows.length === 0) return [];
     return allCountyFlows
@@ -173,12 +310,36 @@ export default function TransparencyPage() {
       });
   }, [allCountyFlows, searchQuery]);
 
-  /* ── Sort ── */
+  /**
+   * "Projected FY" = allocations are known but no execution data has been
+   * published yet. We detect this from the data rather than the calendar so
+   * that any mid-year CoB release flips the page into full-data mode
+   * automatically. Guarded by a year check so a genuinely missing dataset
+   * for a closed FY shows the normal empty-state.
+   */
+  const isProjectedFY = useMemo(() => {
+    if (countyRows.length === 0) return false;
+    const noSpendData = countyRows.every((r) => r.spent == null || r.spent === 0);
+    if (!noSpendData) return false;
+    const startYr = fiscalStartYear(selectedYear);
+    if (startYr == null) return false;
+    const now = new Date();
+    const currentStartYr = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
+    return startYr >= currentStartYr;
+  }, [countyRows, selectedYear]);
+
   const sortedRows = useMemo(() => {
     const sorted = [...countyRows];
+    // In projected mode the efficiency/flagged/gap keys have no data to
+    // compare — fall back to sorting by allocation so the table still shows
+    // something coherent.
+    const effectiveKey: SortKey =
+      isProjectedFY && (sortKey === 'efficiency' || sortKey === 'flagged' || sortKey === 'gap')
+        ? 'allocated'
+        : sortKey;
     sorted.sort((a, b) => {
       let cmp = 0;
-      switch (sortKey) {
+      switch (effectiveKey) {
         case 'name':
           cmp = a.county_name.localeCompare(b.county_name);
           break;
@@ -191,11 +352,14 @@ export default function TransparencyPage() {
         case 'gap':
           cmp = b.total_gap - a.total_gap;
           break;
+        case 'allocated':
+          cmp = (b.allocated ?? 0) - (a.allocated ?? 0);
+          break;
       }
       return sortDir === 'asc' ? cmp : -cmp;
     });
     return sorted;
-  }, [countyRows, sortKey, sortDir]);
+  }, [countyRows, sortKey, sortDir, isProjectedFY]);
 
   const toggleSort = useCallback(
     (key: SortKey) => {
@@ -213,14 +377,14 @@ export default function TransparencyPage() {
 
   const SortHeader = ({ label, field }: { label: string; field: SortKey }) => (
     <th
-      className='py-3 pr-3 font-semibold text-gov-dark/60 text-xs uppercase tracking-wider cursor-pointer select-none group'
+      className='py-3 pr-3 font-semibold text-gov-dark/60 dark:text-white/60 text-xs uppercase tracking-wider cursor-pointer select-none group'
       onClick={() => toggleSort(field)}>
       <span className='inline-flex items-center gap-1'>
         {label}
         <ArrowUpDown
           size={11}
           className={`transition-colors ${
-            sortKey === field ? 'text-gov-forest' : 'text-gray-300 group-hover:text-gray-400'
+            sortKey === field ? 'text-gov-forest dark:text-emerald-100' : 'text-gray-300 dark:text-neutral-muted/60 group-hover:text-gray-400 dark:text-neutral-muted/80'
           }`}
         />
       </span>
@@ -230,196 +394,284 @@ export default function TransparencyPage() {
   return (
     <PageShell
       title='Follow the Money'
-      subtitle='Trace how public funds flow from allocation to expenditure across all 47 counties'>
-      {/* ═══ A. NARRATIVE INTRO ═══ */}
+      subtitle='Trace every shilling from the Treasury to citizens — and see what the Auditor-General has questioned.'>
+      {/* ═══ 1. Narrative intro ═══ */}
       <Section>
         <div className='max-w-3xl'>
-          <p className='text-base text-gov-dark/70 leading-relaxed'>
-            Every year, the Kenyan government allocates trillions of shillings to 47 counties. But
-            how much actually reaches citizens? This page traces the journey of public money — from
-            treasury allocation to actual spending — exposing where funds leak, get stuck, or
-            disappear.
+          <p className='text-base text-gov-dark/70 dark:text-white/70 leading-relaxed'>
+            Every year, the Treasury allocates trillions of shillings to Kenya&apos;s 47
+            counties. But how much actually reaches citizens? The waterfall below traces
+            the journey — from <strong>allocation</strong> by the Commission on Revenue
+            Allocation, to <strong>release</strong> by the Exchequer, to what counties
+            actually <strong>spent</strong>, to the portion the Auditor General
+            <strong> questioned</strong> as irregular or unsupported.
           </p>
-          <button
-            onClick={() => setShowGuide(!showGuide)}
-            className='mt-3 inline-flex items-center gap-1.5 text-sm text-gov-sage hover:text-gov-forest transition-colors font-medium'>
-            <BookOpen size={14} />
-            {showGuide ? 'Hide' : 'How to read this page'}
-            {showGuide ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-          </button>
-          {showGuide && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className='mt-3 p-4 rounded-xl bg-gov-forest/5 border border-gov-forest/10 text-sm text-gov-dark/70 space-y-2'>
-              <p>
-                <strong>Allocated</strong> — How much the treasury earmarked for a county.
-              </p>
-              <p>
-                <strong>Released</strong> — How much was actually sent. The gap is money delayed or
-                withheld.
-              </p>
-              <p>
-                <strong>Spent</strong> — What the county actually spent. Unspent funds are returned
-                or rolled over.
-              </p>
-              <p>
-                <strong>Flagged</strong> — Amount the Auditor General identified as irregular,
-                unsupported, or misused.
-              </p>
-              <p>
-                <strong>Efficiency Score</strong> — Spent ÷ Allocated × 100. Higher is better (up to
-                ~95%).
-              </p>
-            </motion.div>
-          )}
         </div>
       </Section>
 
-      {/* ═══ B. KEY INSIGHTS ═══ */}
-      {insights && (
-        <Section delay={0.05}>
+      {/* ═══ 2. Fiscal year picker drives the page ═══ */}
+      <Section delay={0.05}>
+        <FiscalYearPicker
+          years={pickerYears}
+          selected={selectedYear}
+          onSelect={setSelectedYear}
+        />
+      </Section>
+
+      {/* ═══ 3. The waterfall hero ═══ */}
+      <Section delay={0.08}>
+        {nationalLoading ? (
+          <div className='rounded-2xl bg-white dark:bg-surface-base border border-neutral-border/40 shadow-surface p-16 flex items-center justify-center'>
+            <Loader2 className='w-6 h-6 animate-spin text-gov-sage' />
+            <span className='ml-3 text-gov-dark/60 dark:text-white/60 font-medium'>
+              Loading money-flow waterfall…
+            </span>
+          </div>
+        ) : (
+          <MoneyFlowHero data={nationalFlow} />
+        )}
+      </Section>
+
+      {/* ═══ 4. KPI cards ═══ */}
+      {insights && insights.allocated > 0 && (
+        <Section delay={0.12}>
           <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
             <InsightCard
-              label='Total Allocated'
+              label='Total allocated'
               value={fmtKES(insights.allocated)}
-              sublabel={`FY ${selectedYear}`}
+              sublabel={`47 counties · FY ${stripFY(selectedYear)}`}
               accent='blue'
             />
             <InsightCard
-              label='Unspent / Lost'
-              value={fmtKES(insights.gap)}
-              sublabel={`${insights.lostPct.toFixed(1)}% of allocation`}
-              accent='amber'
-            />
-            <InsightCard
-              label='Flagged by Auditors'
-              value={fmtKES(insights.flagged)}
+              label={isProjectedFY ? 'Spent so far' : 'Gap to spend'}
+              value={isProjectedFY ? 'Pending' : fmtKES(insights.gap)}
               sublabel={
-                insights.flagged > 0
-                  ? fundingImpact(insights.flagged) || 'Irregular expenditure'
-                  : 'No flags'
+                isProjectedFY
+                  ? 'Execution figures publish as the CoB releases quarterly CBIRRs'
+                  : `${insights.unspentPct.toFixed(1)}% of allocation unspent at report time`
               }
-              accent='red'
+              accent={isProjectedFY ? 'gray' : 'amber'}
             />
             <InsightCard
-              label='National Efficiency'
-              value={insights.efficiency != null ? `${insights.efficiency.toFixed(1)}%` : '—'}
+              label='Questioned by Auditor General'
+              value={isProjectedFY ? 'Not yet audited' : fmtKES(insights.flagged)}
               sublabel={
-                insights.efficiency != null
-                  ? insights.efficiency >= 70
-                    ? 'Good — above target'
-                    : insights.efficiency >= 50
-                      ? 'Fair — needs improvement'
-                      : 'Poor — significant waste'
-                  : 'No data'
+                isProjectedFY
+                  ? 'OAG audits close ~18 months after year-end'
+                  : insights.flagged > 0
+                    ? `≈ ${fundingImpact(insights.flagged) || 'irregular expenditure'}`
+                    : 'No flagged findings'
+              }
+              accent={isProjectedFY ? 'gray' : 'red'}
+            />
+            <InsightCard
+              label='National efficiency'
+              value={
+                isProjectedFY
+                  ? '—'
+                  : insights.efficiency != null
+                    ? `${insights.efficiency.toFixed(1)}%`
+                    : '—'
+              }
+              sublabel={
+                isProjectedFY
+                  ? 'Calculated once CoB + OAG publish'
+                  : insights.efficiency != null
+                    ? insights.efficiency >= 70
+                      ? 'Good — above target'
+                      : insights.efficiency >= 50
+                        ? 'Fair — needs improvement'
+                        : 'Poor — significant waste'
+                    : 'Execution data pending'
               }
               accent={
-                insights.efficiency != null
-                  ? insights.efficiency >= 70
-                    ? 'green'
-                    : insights.efficiency >= 50
-                      ? 'amber'
-                      : 'red'
-                  : 'gray'
+                isProjectedFY
+                  ? 'gray'
+                  : insights.efficiency != null
+                    ? insights.efficiency >= 70
+                      ? 'green'
+                      : insights.efficiency >= 50
+                        ? 'amber'
+                        : 'red'
+                    : 'gray'
               }
             />
           </div>
         </Section>
       )}
 
-      {/* ═══ C. YEAR SELECTOR + NATIONAL WATERFALL ═══ */}
-      <Section delay={0.1}>
-        <div className='space-y-4'>
-          <div className='flex items-center justify-between'>
-            <div>
-              <h2 className='font-display text-xl text-gov-dark'>National Money Flow</h2>
-              <p className='text-sm text-gov-dark/50 mt-0.5'>All 47 counties combined</p>
-            </div>
-            <YearSelector value={selectedYear} onChange={setSelectedYear} years={years} />
-          </div>
-          <div className='bg-gradient-to-br from-white to-blue-50/30 rounded-2xl border border-gray-200/80 shadow-sm p-6'>
-            <FollowTheMoney data={nationalFlow} isLoading={nationalLoading} />
-          </div>
-        </div>
-      </Section>
+      {/* ═══ 4b. Projected-FY explainer (shown when no execution data yet) ═══ */}
+      {isProjectedFY && (
+        <Section delay={0.14}>
+          <ProjectedFYBanner yearLabel={selectedYear} />
+        </Section>
+      )}
 
-      {/* ═══ D. COUNTY COMPARISON ═══ */}
+      {/* ═══ 5. County comparison ═══ */}
       <Section delay={0.15}>
         <div className='space-y-4'>
-          {/* Header row */}
           <div className='flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3'>
             <div>
-              <h2 className='font-display text-xl text-gov-dark'>County-by-County Breakdown</h2>
-              <p className='text-sm text-gov-dark/50'>
+              <h2 className='font-display text-xl text-gov-dark dark:text-white'>County-by-county breakdown</h2>
+              <p className='text-sm text-gov-dark/50 dark:text-white/50'>
                 {countiesWithData > 0
-                  ? `${countiesWithData} of 47 counties with data for FY ${selectedYear}`
-                  : 'Loading county data...'}
+                  ? isProjectedFY
+                    ? `${countiesWithData} of 47 counties have published allocations for FY ${stripFY(
+                        selectedYear,
+                      )} — execution figures pending`
+                    : `${countiesWithData} of 47 counties have CoB + OAG data for FY ${stripFY(
+                        selectedYear,
+                      )}`
+                  : 'Loading county data…'}
               </p>
             </div>
             <div className='relative'>
               <Search
                 size={14}
-                className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400'
+                className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-neutral-muted/80'
               />
               <input
                 type='text'
-                placeholder='Search county...'
+                placeholder='Search county…'
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className='pl-8 pr-3 py-2 text-sm rounded-xl border border-gray-200 bg-white/80 focus:outline-none focus:ring-2 focus:ring-gov-sage/30 focus:border-gov-sage w-60'
+                className='pl-8 pr-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-neutral-border bg-white/80 dark:bg-surface-elevated focus:outline-none focus:ring-2 focus:ring-gov-sage/30 focus:border-gov-sage w-60'
               />
             </div>
           </div>
 
-          {/* Sort chips */}
           <div className='flex flex-wrap gap-2'>
-            {[
-              { key: 'efficiency' as SortKey, label: '🔻 Least Efficient' },
-              { key: 'flagged' as SortKey, label: '🚩 Most Flagged' },
-              { key: 'gap' as SortKey, label: '📉 Highest Gap' },
-              { key: 'name' as SortKey, label: '🔤 A–Z' },
-            ].map((btn) => (
+            {(isProjectedFY
+              ? [
+                  { key: 'allocated' as SortKey, label: 'Largest allocation' },
+                  { key: 'name' as SortKey, label: 'A–Z' },
+                ]
+              : [
+                  { key: 'efficiency' as SortKey, label: 'Least efficient' },
+                  { key: 'flagged' as SortKey, label: 'Most flagged' },
+                  { key: 'gap' as SortKey, label: 'Highest gap' },
+                  { key: 'name' as SortKey, label: 'A–Z' },
+                ]
+            ).map((btn) => (
               <button
                 key={btn.key}
                 onClick={() => toggleSort(btn.key)}
                 className={`text-xs px-3 py-1.5 rounded-full transition-all ${
                   sortKey === btn.key
                     ? 'bg-gov-forest text-white shadow-sm'
-                    : 'bg-white/60 text-gov-dark/60 hover:bg-white border border-gray-200/60'
+                    : 'bg-white/60 dark:bg-surface-elevated text-gov-dark/60 dark:text-white/60 hover:bg-white dark:bg-surface-base border border-gray-200/60 dark:border-neutral-border/60'
                 }`}>
                 {btn.label}
               </button>
             ))}
           </div>
 
-          {/* Table */}
           {allCountyFlowsLoading ? (
             <div className='flex items-center justify-center py-20'>
               <Loader2 className='w-6 h-6 animate-spin text-gov-sage' />
-              <span className='ml-3 text-gov-dark/60 font-medium'>Loading county data...</span>
+              <span className='ml-3 text-gov-dark/60 dark:text-white/60 font-medium'>Loading county data…</span>
             </div>
-          ) : (
+          ) : isProjectedFY ? (
             <ResponsiveTable>
-              <div className='rounded-xl border border-gray-200/60 bg-white/60'>
+              <div className='rounded-xl border border-gray-200/60 dark:border-neutral-border/60 bg-white/60 dark:bg-surface-elevated'>
                 <table className='w-full text-sm'>
                   <thead>
-                    <tr className='border-b border-gray-200 bg-gray-50/50 text-left'>
-                      <th className='py-3 pl-4 pr-3 font-semibold text-gov-dark/60 text-xs uppercase tracking-wider w-8'>
+                    <tr className='border-b border-gray-200 dark:border-neutral-border bg-gray-50/50 dark:bg-surface-elevated/70 text-left'>
+                      <th className='py-3 pl-4 pr-3 font-semibold text-gov-dark/60 dark:text-white/60 text-xs uppercase tracking-wider w-8'>
                         #
                       </th>
                       <SortHeader label='County' field='name' />
-                      <th className='py-3 pr-3 font-semibold text-gov-dark/60 text-xs uppercase tracking-wider text-right'>
+                      <SortHeader label='Allocated' field='allocated' />
+                      <th className='py-3 pr-3 font-semibold text-gov-dark/60 dark:text-white/60 text-xs uppercase tracking-wider'>
+                        Share of national pot
+                      </th>
+                      <th className='py-3 pr-4 font-semibold text-gov-dark/60 dark:text-white/60 text-xs uppercase tracking-wider'>
+                        Status
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const nationalAllocated =
+                        countyRows.reduce((s, r) => s + (r.allocated ?? 0), 0) || 0;
+                      return sortedRows.map((row, i) => {
+                        const share =
+                          nationalAllocated > 0 && row.allocated != null
+                            ? (row.allocated / nationalAllocated) * 100
+                            : null;
+                        return (
+                          <tr
+                            key={row.county_id}
+                            className={`border-b border-gray-100 dark:border-neutral-border hover:bg-gov-forest/[0.04] transition-colors ${
+                              i % 2 === 0 ? 'bg-white/40 dark:bg-surface-elevated' : 'bg-gray-50/30 dark:bg-surface-elevated/70'
+                            }`}>
+                            <td className='py-3 pl-4 pr-3 text-gov-dark/30 dark:text-white/30 font-mono text-xs'>
+                              {i + 1}
+                            </td>
+                            <td className='py-3 pr-3'>
+                              <Link
+                                href={`/counties/${row.county_id}?tab=money&from=transparency`}
+                                className='text-gov-forest dark:text-emerald-100 font-medium hover:underline decoration-gov-sage/30 underline-offset-2'>
+                                {row.county_name}
+                              </Link>
+                            </td>
+                            <td className='py-3 pr-3 font-mono text-xs text-gov-dark/80 dark:text-white/80'>
+                              {row.allocated != null ? fmtKES(row.allocated) : '—'}
+                            </td>
+                            <td className='py-3 pr-3'>
+                              {share != null ? (
+                                <div className='flex items-center gap-2 min-w-[140px]'>
+                                  <div className='flex-1 h-1.5 bg-gray-100 dark:bg-surface-elevated rounded-full overflow-hidden'>
+                                    <motion.div
+                                      initial={{ width: 0 }}
+                                      whileInView={{ width: `${Math.min(share * 4, 100)}%` }}
+                                      viewport={{ once: true }}
+                                      transition={{ duration: 0.6, ease: 'easeOut' }}
+                                      className='h-full rounded-full bg-gov-sage/70'
+                                    />
+                                  </div>
+                                  <span className='text-xs font-mono text-gov-dark/50 dark:text-white/50 w-10 text-right'>
+                                    {share.toFixed(1)}%
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className='text-gray-300 dark:text-neutral-muted/60 text-xs'>—</span>
+                              )}
+                            </td>
+                            <td className='py-3 pr-4'>
+                              <span className='inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200/60 text-[11px] font-medium text-amber-800'>
+                                <Clock size={11} />
+                                Execution pending
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      });
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+            </ResponsiveTable>
+          ) : (
+            <ResponsiveTable>
+              <div className='rounded-xl border border-gray-200/60 dark:border-neutral-border/60 bg-white/60 dark:bg-surface-elevated'>
+                <table className='w-full text-sm'>
+                  <thead>
+                    <tr className='border-b border-gray-200 dark:border-neutral-border bg-gray-50/50 dark:bg-surface-elevated/70 text-left'>
+                      <th className='py-3 pl-4 pr-3 font-semibold text-gov-dark/60 dark:text-white/60 text-xs uppercase tracking-wider w-8'>
+                        #
+                      </th>
+                      <SortHeader label='County' field='name' />
+                      <th className='py-3 pr-3 font-semibold text-gov-dark/60 dark:text-white/60 text-xs uppercase tracking-wider text-right'>
                         Allocated
                       </th>
-                      <th className='py-3 pr-3 font-semibold text-gov-dark/60 text-xs uppercase tracking-wider text-right'>
+                      <th className='py-3 pr-3 font-semibold text-gov-dark/60 dark:text-white/60 text-xs uppercase tracking-wider text-right'>
                         Spent
                       </th>
                       <SortHeader label='Efficiency' field='efficiency' />
                       <SortHeader label='Flagged' field='flagged' />
                       <SortHeader label='Gap' field='gap' />
-                      <th className='py-3 pr-4 font-semibold text-gov-dark/60 text-xs uppercase tracking-wider hidden lg:table-cell'>
+                      <th className='py-3 pr-4 font-semibold text-gov-dark/60 dark:text-white/60 text-xs uppercase tracking-wider hidden lg:table-cell'>
                         Impact
                       </th>
                     </tr>
@@ -430,30 +682,30 @@ export default function TransparencyPage() {
                       return (
                         <tr
                           key={row.county_id}
-                          className={`border-b border-gray-100 hover:bg-gov-forest/[0.04] transition-colors ${
-                            i % 2 === 0 ? 'bg-white/40' : 'bg-gray-50/30'
+                          className={`border-b border-gray-100 dark:border-neutral-border hover:bg-gov-forest/[0.04] transition-colors ${
+                            i % 2 === 0 ? 'bg-white/40 dark:bg-surface-elevated' : 'bg-gray-50/30 dark:bg-surface-elevated/70'
                           }`}>
-                          <td className='py-3 pl-4 pr-3 text-gov-dark/30 font-mono text-xs'>
+                          <td className='py-3 pl-4 pr-3 text-gov-dark/30 dark:text-white/30 font-mono text-xs'>
                             {i + 1}
                           </td>
                           <td className='py-3 pr-3'>
                             <Link
-                              href={`/counties/${row.county_id}?tab=money`}
-                              className='text-gov-forest font-medium hover:underline decoration-gov-sage/30 underline-offset-2'>
+                              href={`/counties/${row.county_id}?tab=money&from=transparency`}
+                              className='text-gov-forest dark:text-emerald-100 font-medium hover:underline decoration-gov-sage/30 underline-offset-2'>
                               {row.county_name}
                             </Link>
                           </td>
-                          <td className='py-3 pr-3 text-right font-mono text-xs text-gov-dark/70'>
+                          <td className='py-3 pr-3 text-right font-mono text-xs text-gov-dark/70 dark:text-white/70'>
                             {row.allocated != null ? fmtKES(row.allocated) : '—'}
                           </td>
-                          <td className='py-3 pr-3 text-right font-mono text-xs text-gov-dark/70'>
+                          <td className='py-3 pr-3 text-right font-mono text-xs text-gov-dark/70 dark:text-white/70'>
                             {row.spent != null ? fmtKES(row.spent) : '—'}
                           </td>
                           <td className='py-3 pr-3'>
                             {row.efficiency_score != null ? (
                               <EfficiencyBar score={row.efficiency_score} />
                             ) : (
-                              <span className='text-gray-300 text-xs'>—</span>
+                              <span className='text-gray-300 dark:text-neutral-muted/60 text-xs'>—</span>
                             )}
                           </td>
                           <td className='py-3 pr-3 text-right'>
@@ -462,7 +714,7 @@ export default function TransparencyPage() {
                                 {fmtKES(row.flagged_amount)}
                               </span>
                             ) : (
-                              <span className='text-gray-300 text-xs'>—</span>
+                              <span className='text-gray-300 dark:text-neutral-muted/60 text-xs'>—</span>
                             )}
                           </td>
                           <td className='py-3 pr-3 text-right'>
@@ -471,12 +723,12 @@ export default function TransparencyPage() {
                                 {fmtKES(row.total_gap)}
                               </span>
                             ) : (
-                              <span className='text-gray-300 text-xs'>—</span>
+                              <span className='text-gray-300 dark:text-neutral-muted/60 text-xs'>—</span>
                             )}
                           </td>
                           <td className='py-3 pr-4 hidden lg:table-cell'>
                             {impact && (
-                              <span className='text-[11px] text-gov-dark/40 italic'>
+                              <span className='text-[11px] text-gov-dark/40 dark:text-white/40 italic'>
                                 ≈ {impact}
                               </span>
                             )}
@@ -491,7 +743,7 @@ export default function TransparencyPage() {
           )}
 
           {!allCountyFlowsLoading && sortedRows.length === 0 && (
-            <div className='text-center py-12 text-gov-dark/40'>
+            <div className='text-center py-12 text-gov-dark/40 dark:text-white/40'>
               {searchQuery
                 ? 'No counties match your search.'
                 : 'No data available for this fiscal year.'}
@@ -500,55 +752,43 @@ export default function TransparencyPage() {
         </div>
       </Section>
 
-      {/* ═══ E. WHAT CAN YOU DO? ═══ */}
-      <Section delay={0.2}>
+      {/* ═══ 6. Source reconciliation ═══ */}
+      <Section delay={0.18}>
+        <MoneyFlowSourceReconciliation fiscalYear={selectedYear} />
+      </Section>
+
+      {/* ═══ 7. What can you do? ═══ */}
+      <Section delay={0.22}>
         <div className='rounded-2xl bg-gradient-to-br from-gov-forest/5 to-gov-sage/5 border border-gov-forest/10 p-6 sm:p-8'>
-          <h2 className='font-display text-xl text-gov-dark mb-2'>What Can You Do?</h2>
-          <p className='text-sm text-gov-dark/60 mb-5 max-w-2xl'>
-            Public money transparency isn't just data — it's accountability. Here's how you can turn
-            these numbers into action.
+          <h2 className='font-display text-xl text-gov-dark dark:text-white mb-2'>What can you do?</h2>
+          <p className='text-sm text-gov-dark/60 dark:text-white/60 mb-5 max-w-2xl'>
+            Public-money transparency isn&apos;t just data — it&apos;s accountability.
+            Here&apos;s how to turn these numbers into action.
           </p>
           <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
             <ActionCard
               icon={<Users size={20} />}
-              title='Explore Your County'
+              title='Explore your county'
               description='See how your county spends public money — budget, audit findings, and accountability grade.'
               href='/counties'
               linkText='County Explorer'
             />
             <ActionCard
               icon={<AlertTriangle size={20} />}
-              title='Check Audit Reports'
-              description='The Office of the Auditor General publishes annual reports for every county.'
+              title='Read the audit reports'
+              description='The Office of the Auditor General publishes a full report for every county each year.'
               href='https://www.oagkenya.go.ke'
-              linkText='OAG Website'
+              linkText='OAG website'
               external
             />
             <ActionCard
               icon={<GraduationCap size={20} />}
-              title='Learn How It Works'
+              title='Learn how it works'
               description='Understand how public finance works in Kenya — budgets, audits, and devolution.'
               href='/learn'
               linkText='Learning Hub'
             />
           </div>
-        </div>
-      </Section>
-
-      {/* ═══ F. DATA SOURCES ═══ */}
-      <Section delay={0.25}>
-        <div className='flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-gov-dark/40'>
-          <div className='space-y-1'>
-            <p>
-              <strong>Budget data:</strong> Controller of Budget (COB) — County Budget
-              Implementation Review Reports
-            </p>
-            <p>
-              <strong>Audit data:</strong> Office of the Auditor General (OAG) — County Government
-              Audit Reports
-            </p>
-          </div>
-          <DataFreshnessBadge sources='COB/Treasury' />
         </div>
       </Section>
     </PageShell>
@@ -573,7 +813,7 @@ function InsightCard({
     amber: 'bg-amber-50/80 border-amber-200/50 text-amber-900',
     red: 'bg-red-50/80 border-red-200/50 text-red-900',
     green: 'bg-emerald-50/80 border-emerald-200/50 text-emerald-900',
-    gray: 'bg-gray-50/80 border-gray-200/50 text-gray-700',
+    gray: 'bg-gray-50/80 dark:bg-surface-elevated/70 border-gray-200/50 dark:border-neutral-border/50 text-gray-700 dark:text-neutral-muted',
   };
   return (
     <div className={`rounded-xl border p-4 transition-shadow hover:shadow-md ${styles[accent]}`}>
@@ -604,15 +844,15 @@ function ActionCard({
   const Comp = external ? 'a' : Link;
   const extraProps = external ? { target: '_blank', rel: 'noopener noreferrer' } : {};
   return (
-    <div className='bg-white/60 rounded-xl border border-white/80 p-4 space-y-2 hover:shadow-sm transition-shadow'>
-      <div className='w-9 h-9 rounded-lg bg-gov-forest/10 flex items-center justify-center text-gov-forest'>
+    <div className='bg-white/60 dark:bg-surface-elevated rounded-xl border border-white/80 p-4 space-y-2 hover:shadow-sm transition-shadow'>
+      <div className='w-9 h-9 rounded-lg bg-gov-forest/10 flex items-center justify-center text-gov-forest dark:text-emerald-100'>
         {icon}
       </div>
-      <h3 className='font-semibold text-gov-dark text-sm'>{title}</h3>
-      <p className='text-xs text-gov-dark/50 leading-relaxed'>{description}</p>
+      <h3 className='font-semibold text-gov-dark dark:text-white text-sm'>{title}</h3>
+      <p className='text-xs text-gov-dark/50 dark:text-white/50 leading-relaxed'>{description}</p>
       <Comp
         href={href}
-        className='inline-flex items-center gap-1 text-xs font-medium text-gov-sage hover:text-gov-forest transition-colors'
+        className='inline-flex items-center gap-1 text-xs font-medium text-gov-sage hover:text-gov-forest dark:text-emerald-100 transition-colors'
         {...extraProps}>
         {linkText}
         {external ? <ExternalLink size={11} /> : <ArrowRight size={11} />}

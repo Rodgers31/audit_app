@@ -30,21 +30,21 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const STATUS_BANNER_BG: Record<string, string> = {
-  fresh: 'bg-emerald-50 border-emerald-200',
-  stale: 'bg-amber-50 border-amber-200',
-  outdated: 'bg-red-50 border-red-200',
+  fresh: 'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-700/40',
+  stale: 'bg-amber-50 border-amber-200 dark:bg-amber-900/30 dark:border-amber-700/40',
+  outdated: 'bg-red-50 border-red-200 dark:bg-red-900/30 dark:border-red-700/40',
 };
 
 const STATUS_BANNER_TEXT: Record<string, string> = {
-  fresh: 'text-emerald-800',
-  stale: 'text-amber-800',
-  outdated: 'text-red-800',
+  fresh: 'text-emerald-800 dark:text-emerald-100',
+  stale: 'text-amber-800 dark:text-amber-100',
+  outdated: 'text-red-800 dark:text-red-100',
 };
 
 const STATUS_ICON_COLOR: Record<string, string> = {
-  fresh: 'text-emerald-500',
-  stale: 'text-amber-500',
-  outdated: 'text-red-500',
+  fresh: 'text-emerald-500 dark:text-emerald-300',
+  stale: 'text-amber-500 dark:text-amber-300',
+  outdated: 'text-red-500 dark:text-red-300',
 };
 
 export function useDataFreshness() {
@@ -135,7 +135,7 @@ export default function DataFreshnessBadge({
               </span>
             )}
           </div>
-          <div className="text-xs opacity-60 mt-0.5">
+          <div className="text-xs opacity-60 dark:opacity-90 mt-0.5">
             Source: {label || sources}
             {latestDate && (
               <>
@@ -160,7 +160,7 @@ export default function DataFreshnessBadge({
   // Default: inline variant
   if (matched.length === 0) {
     return (
-      <div className={`flex items-center gap-2 text-xs text-gray-400 ${className}`}>
+      <div className={`flex items-center gap-2 text-xs text-gray-400 dark:text-neutral-muted/80 ${className}`}>
         <span
           className='inline-block w-2 h-2 rounded-full bg-gray-300'
           aria-label="Data freshness status: unknown"
@@ -172,7 +172,7 @@ export default function DataFreshnessBadge({
 
   return (
     <div
-      className={`flex items-center gap-2 text-xs text-gray-500 ${className}`}
+      className={`flex items-center gap-2 text-xs text-gray-500 dark:text-neutral-muted/80 ${className}`}
       title={`${label} — ${STATUS_LABEL[worstStatus]}. Updated: ${latestDate || 'unknown'}`}>
       <span
         className={`inline-block w-2 h-2 rounded-full ${STATUS_DOT[worstStatus]}`}

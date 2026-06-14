@@ -34,15 +34,15 @@ export default function CountySpendingChart({ county }: CountySpendingChartProps
   return (
     <div className='space-y-6'>
       {/* Summary */}
-      <div className='bg-gray-50 rounded-xl p-4'>
-        <h4 className='text-lg font-semibold text-gray-900 mb-2'>Budget Breakdown</h4>
-        <p className='text-sm text-gray-600'>
+      <div className='bg-gray-50 dark:bg-surface-elevated rounded-xl p-4'>
+        <h4 className='text-lg font-semibold text-gray-900 dark:text-neutral-text mb-2'>Budget Breakdown</h4>
+        <p className='text-sm text-gray-600 dark:text-neutral-muted'>
           Total Annual Budget: <span className='font-semibold'>{formatAmount(totalBudget)}</span>
         </p>
       </div>
 
       {spendingCategories.length === 0 ? (
-        <p className='text-sm text-gray-500 text-center py-4'>
+        <p className='text-sm text-gray-500 dark:text-neutral-muted/80 text-center py-4'>
           Sector spending breakdown is not available for this county.
         </p>
       ) : (
@@ -67,19 +67,19 @@ export default function CountySpendingChart({ county }: CountySpendingChartProps
                       style={{ backgroundColor: `${category.color}20` }}>
                       <Icon size={16} style={{ color: category.color }} />
                     </div>
-                    <span className='font-medium text-gray-900'>{category.name}</span>
+                    <span className='font-medium text-gray-900 dark:text-neutral-text'>{category.name}</span>
                   </div>
                   <div className='text-right'>
-                    <div className='font-semibold text-gray-900'>
+                    <div className='font-semibold text-gray-900 dark:text-neutral-text'>
                       {formatAmount(category.amount)}
                     </div>
-                    <div className='text-sm text-gray-500'>{formatPercentage(category.amount)}</div>
+                    <div className='text-sm text-gray-500 dark:text-neutral-muted/80'>{formatPercentage(category.amount)}</div>
                   </div>
                 </div>
 
                 {/* Progress Bar */}
                 <div className='relative'>
-                  <div className='w-full bg-gray-200 rounded-full h-3'>
+                  <div className='w-full bg-gray-200 dark:bg-surface-sunken rounded-full h-3'>
                     <motion.div
                       className='h-3 rounded-full'
                       style={{ backgroundColor: category.color }}

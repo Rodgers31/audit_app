@@ -12,12 +12,11 @@ quarterly NG-BIRR reports.
 from __future__ import annotations
 
 import logging
-import re
 import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from urllib.parse import urljoin
 
+from ...cob_discovery import discover_latest_cob_pdf_url
 from ...config import SeedingSettings
 from ...http_client import SeedingHttpClient
 from ...utils import load_json_resource
@@ -90,46 +89,46 @@ def _fetch_from_cob_ng_pdf(
     return _download_and_parse_ng_pdf(client, pdf_url)
 
 
+_NG_BIRR_KEYWORDS = (
+    "ng-birr", "national-government-budget",
+    "national_government_budget", "birr",
+    "budget-implementation", "budget_implementation",
+)
+
+
 def _discover_latest_ng_birr_pdf(
     html: str, base_url: str
 ) -> Optional[str]:
-    """Extract the most recent NG-BIRR PDF URL from the COB page."""
-    pdf_pattern = re.compile(
-        r'href=["\']([^"\']*\.pdf)["\']',
-        re.IGNORECASE,
+    """Extract the most recent NG-BIRR PDF URL from the COB page.
+
+    Delegates to the shared COB WPDM discovery helper — see
+    ``seeding.cob_discovery`` for why direct ``.pdf`` regex stopped
+    matching after COB migrated to the WordPress Download Manager
+    plugin.
+    """
+    return discover_latest_cob_pdf_url(
+        html, base_url, keywords=_NG_BIRR_KEYWORDS
     )
-    all_pdfs = pdf_pattern.findall(html)
-    if not all_pdfs:
-        return None
-
-    birr_keywords = [
-        "ng-birr", "national-government-budget",
-        "national_government_budget", "birr",
-        "budget-implementation", "budget_implementation",
-    ]
-    birr_pdfs = [
-        url for url in all_pdfs
-        if any(kw in url.lower() for kw in birr_keywords)
-    ]
-
-    candidates = birr_pdfs if birr_pdfs else all_pdfs
-    if not candidates:
-        return None
-
-    chosen = candidates[0]
-    if not chosen.startswith(("http://", "https://")):
-        chosen = urljoin(base_url, chosen)
-
-    return chosen
 
 
 def _download_and_parse_ng_pdf(
     client: SeedingHttpClient, pdf_url: str
 ) -> Optional[List[Dict[str, Any]]]:
-    """Download a COB NG-BIRR PDF, parse it, return budget execution records."""
+    """Download a COB NG-BIRR PDF, parse it, return budget execution records.
+
+    Uses ``NgBirrSectoralParser`` which targets Tables 2.5 (Sectoral
+    Development) and 2.6 (Sectoral Recurrent) — see
+    ``pdf_parser.py`` for why these tables and not the older
+    ``CoBQuarterlyReportParser`` (which is anchored on the 47-county
+    invariant and only matches the *Consolidated County* BIRR).
+
+    Output dicts feed ``parse_national_budget_payload``, which is why
+    they include ``start_date``/``end_date`` (the writer keys
+    ``BudgetLine`` on entity+period+category+subcategory).
+    """
     tmp_path: Optional[Path] = None
     try:
-        from ...pdf_parsers import CoBQuarterlyReportParser
+        from .pdf_parser import NgBirrSectoralParser
 
         response = client.get(pdf_url, raise_for_status=True)
 
@@ -141,56 +140,52 @@ def _download_and_parse_ng_pdf(
 
         logger.info(
             "Downloaded COB NG-BIRR PDF (%d bytes) to %s",
-            len(response.content),
-            tmp_path,
+            len(response.content), tmp_path,
         )
 
-        parser = CoBQuarterlyReportParser(tmp_path)
-        parsed_records = parser.parse()
+        parser = NgBirrSectoralParser(tmp_path)
+        period, sectoral_records = parser.parse()
 
-        if not parsed_records:
-            logger.warning("CoBQuarterlyReportParser returned no records")
+        if not sectoral_records:
+            logger.warning("NgBirrSectoralParser returned no records")
             return None
 
-        # Convert to national budget execution format
+        # Convert to the dict shape parse_national_budget_payload expects.
+        # Sector aggregates: net_estimates → allocated, exchequer_issues
+        # → actual_spent (proxy: NG-BIRR publishes Exchequer Issues at
+        # the sector level, not Expenditure — see pdf_parser.py
+        # docstring).
         budget_records: List[Dict[str, Any]] = []
-        for record in parsed_records:
-            entity = record.get("entity", record.get("ministry", "Unknown"))
-            entity_slug = entity.lower().replace(" ", "-").replace(",", "")
-            fy = record.get("fiscal_year", "")
+        for r in sectoral_records:
+            budget_records.append(
+                {
+                    "entity_slug": "national-government",
+                    "entity": "National Government of Kenya",
+                    "fiscal_year": period.label,
+                    "start_date": period.start_date.isoformat(),
+                    "end_date": period.end_date.isoformat(),
+                    "category": r.sector,
+                    "subcategory": r.subcategory,
+                    "allocated_amount": str(r.net_estimates),
+                    "actual_spent": str(r.exchequer_issues),
+                    "committed_amount": None,
+                    "source": f"CoB NG-BIRR {period.label}",
+                    "source_url": pdf_url,
+                    "data_quality": "official",
+                    "notes": (
+                        "Sectoral aggregate from CoB NG-BIRR Tables 2.5 "
+                        "(Development) / 2.6 (Recurrent). actual_spent "
+                        "is Exchequer Issues — the closest sector-level "
+                        "spending proxy CoB publishes."
+                    ),
+                }
+            )
 
-            allocated = record.get("allocated", 0)
-            absorbed = record.get("absorbed", 0)
-            if isinstance(allocated, str):
-                try:
-                    allocated = float(allocated.replace(",", ""))
-                except ValueError:
-                    allocated = 0
-            if isinstance(absorbed, str):
-                try:
-                    absorbed = float(absorbed.replace(",", ""))
-                except ValueError:
-                    absorbed = 0
-
-            budget_records.append({
-                "entity_slug": entity_slug,
-                "entity": entity,
-                "fiscal_year": fy,
-                "category": record.get("category", record.get("sector", "General")),
-                "allocated_amount": float(allocated),
-                "actual_spent": float(absorbed),
-                "committed_amount": None,
-                "source": "Controller of Budget NG-BIRR Report",
-                "source_url": pdf_url,
-                "data_quality": "official",
-            })
-
-        return budget_records if budget_records else None
+        return budget_records or None
 
     except ImportError:
         logger.warning(
-            "CoBQuarterlyReportParser not available — "
-            "install pdfplumber for live PDF parsing"
+            "pdfplumber not available — install it for live NG-BIRR parsing"
         )
         return None
     finally:

@@ -247,6 +247,262 @@ def find_table_by_header(
     return None
 
 
+def find_table_by_row_anchors(
+    tables: List[ExtractedTable],
+    anchors: List[str],
+    *,
+    min_matches: int = 30,
+    column: int = 0,
+    header_synonyms: Optional[List[List[str]]] = None,
+) -> Optional[ExtractedTable]:
+    """Find the table whose ``column`` matches the most ``anchors``.
+
+    Robust alternative to ``find_table_by_header`` for cases where the
+    table you want has a stable invariant in its row labels (e.g., a
+    consolidated county table is the only table in the report whose
+    first column lists 47 Kenyan counties — the column header text
+    can drift forever and this still works).
+
+    A real report typically has SEVERAL tables that all list every
+    county (revenue, arrears, budget execution, expenditure, …). To
+    pick the right one, callers can pass ``header_synonyms`` — the
+    same shape as for ``find_column_index`` — and tables whose
+    flattened header text doesn't satisfy at least one synonym group
+    are demoted in the ranking. Anchor count is still primary; header
+    match is the tiebreaker.
+
+    Returns the highest-ranked table, or None if no candidate reaches
+    ``min_matches`` anchors. Matching is case-insensitive substring;
+    apostrophes are stripped so "Murang'a" lines up with the
+    canonical "Muranga".
+    """
+    # Normalise on both sides: COB sometimes prints hyphenated forms
+    # ("Taita-Taveta", "Trans-Nzoia") that wouldn't substring-match a
+    # space-separated canonical anchor. Also collapse all unicode
+    # apostrophes and dashes, then squish whitespace.
+    def _normalise(s: str) -> str:
+        s = s.lower().replace("'", "").replace("\u2019", "")
+        # Map every dash variant (ASCII + unicode \u2010-\u2015) to a space.
+        for ch in ("-", "\u2010", "\u2011", "\u2012", "\u2013", "\u2014", "\u2015"):
+            s = s.replace(ch, " ")
+        return re.sub(r"\s+", " ", s).strip()
+
+    normalised_anchors = [_normalise(a) for a in anchors]
+
+    def _strip(s: str) -> str:
+        return _normalise(s)
+
+    candidates: List[Tuple[int, int, ExtractedTable]] = []  # (anchor_score, header_score, table)
+    for table in tables:
+        if not table.rows:
+            continue
+        col_values = [
+            _strip(row[column]) if len(row) > column else ""
+            for row in table.rows
+        ]
+        anchor_score = sum(
+            1 for a in normalised_anchors if any(a in v for v in col_values)
+        )
+        if anchor_score < min_matches:
+            continue
+        header_score = 0
+        if header_synonyms is not None:
+            # Combine the original header row + the first data row so
+            # two-row "group / sub-label" headers are scored as one.
+            haystack = " ".join(table.headers).lower()
+            if table.rows:
+                haystack += " " + " ".join(table.rows[0]).lower()
+            header_score = sum(
+                1
+                for group in header_synonyms
+                if all(kw.lower() in haystack for kw in group)
+            )
+        candidates.append((anchor_score, header_score, table))
+
+    if not candidates:
+        return None
+    # Rank: anchor_score primary (the whole point of "invariant-anchored"),
+    # header_score as the tiebreaker for the common case where MANY tables
+    # in one report happen to list all 47 counties (revenue, arrears,
+    # expenditure …). Stable sort means PDF-order is the final tiebreaker.
+    candidates.sort(key=lambda t: (t[0], t[1]), reverse=True)
+    return candidates[0][2]
+
+
+def rank_tables_by_row_anchors(
+    tables: List[ExtractedTable],
+    anchors: List[str],
+    *,
+    min_matches: int = 30,
+    column: int = 0,
+    header_synonyms: Optional[List[List[str]]] = None,
+) -> List[ExtractedTable]:
+    """Like ``find_table_by_row_anchors`` but returns ALL qualifying
+    candidates ranked best-first, instead of only the top hit.
+
+    Why this exists: in real reports, ranking-by-anchor-count can be
+    fooled. A 700-page CoB BIRR has multiple tables that list all 47
+    counties (Arrears, Expenditure, Pending Bills, …). The single-pick
+    version commits to the top-scoring candidate even if that candidate
+    turns out to be unparseable for the caller's use-case (e.g. Arrears
+    has no "allocated" column). With the ranked list the caller can
+    walk it, validating each table — if column resolution fails on
+    candidate #1, fall through to candidate #2, etc. That makes the
+    pipeline robust to noisy pdfplumber output and to PDFs where the
+    "right" table isn't the highest-scoring one.
+
+    Same scoring/normalisation as the single-pick version. Stable sort
+    so PDF order breaks ties beyond anchor + header score.
+    """
+    def _normalise(s: str) -> str:
+        s = s.lower().replace("'", "").replace("\u2019", "")
+        for ch in ("-", "\u2010", "\u2011", "\u2012", "\u2013", "\u2014", "\u2015"):
+            s = s.replace(ch, " ")
+        return re.sub(r"\s+", " ", s).strip()
+
+    normalised_anchors = [_normalise(a) for a in anchors]
+    candidates: List[Tuple[int, int, ExtractedTable]] = []
+    for table in tables:
+        if not table.rows:
+            continue
+        col_values = [
+            _normalise(row[column]) if len(row) > column else ""
+            for row in table.rows
+        ]
+        anchor_score = sum(
+            1 for a in normalised_anchors if any(a in v for v in col_values)
+        )
+        if anchor_score < min_matches:
+            continue
+        header_score = 0
+        if header_synonyms is not None:
+            haystack = " ".join(table.headers).lower()
+            if table.rows:
+                haystack += " " + " ".join(table.rows[0]).lower()
+            header_score = sum(
+                1
+                for group in header_synonyms
+                if all(kw.lower() in haystack for kw in group)
+            )
+        candidates.append((anchor_score, header_score, table))
+    candidates.sort(key=lambda t: (t[0], t[1]), reverse=True)
+    return [t for _, _, t in candidates]
+
+
+def flatten_grouped_headers(table: ExtractedTable) -> ExtractedTable:
+    """Fold a two-row "group label / sub-label" header into single labels.
+
+    Many financial PDFs render headers like::
+
+        | County | Budget Estimates       | Actual Expenditure     | Absorption |
+        |        | Rec | Dev | Total      | Rec | Dev | Total      | Rec | ...  |
+
+    pdfplumber treats the first row as the header and the second as
+    data, which destroys positional column lookups. This helper
+    detects that pattern (the second row has no numeric content but
+    repeated short labels like Rec/Dev/Total/Q1/etc.) and produces a
+    new ExtractedTable whose headers carry the combined label
+    ("Budget Estimates Total"). Group labels forward-fill across
+    empty cells.
+
+    Returns the input unchanged when no grouping is detected.
+    """
+    if not table.rows:
+        return table
+    sub_row = [c.strip() for c in table.rows[0]]
+    if not sub_row or all(not c for c in sub_row):
+        return table
+    # Heuristic: every non-empty cell must be SHORT and NON-NUMERIC for
+    # the row to count as a sub-header (rules out actual data rows
+    # whose first cell happens to be a county name).
+    non_empty = [c for c in sub_row if c]
+    looks_like_subheader = all(
+        len(c) <= 25 and not _re_compiled_numeric.search(c) for c in non_empty
+    )
+    if not looks_like_subheader:
+        return table
+    # Forward-fill group labels across empties so each column inherits
+    # the most recent group label.
+    filled_groups: List[str] = []
+    last_group = ""
+    for cell in table.headers:
+        cell = (cell or "").strip()
+        if cell:
+            last_group = cell
+        filled_groups.append(last_group)
+    # zip_longest, not zip — pdfplumber occasionally returns ragged
+    # tables where the sub-row is shorter than the group-row. Truncating
+    # would silently drop trailing columns and break find_column_index
+    # downstream. Fillvalue "" so missing sub-labels just leave the
+    # group label intact.
+    from itertools import zip_longest
+    combined = [
+        " ".join(filter(None, [grp, sub])).strip()
+        for grp, sub in zip_longest(filled_groups, sub_row, fillvalue="")
+    ]
+    return ExtractedTable(
+        page_number=table.page_number,
+        table_index=table.table_index,
+        headers=combined,
+        rows=table.rows[1:],
+        bbox=table.bbox,
+    )
+
+
+def find_column_index(
+    headers: List[str], synonym_groups: List[List[str]]
+) -> Optional[int]:
+    """Pick the first column whose header satisfies any synonym group.
+
+    Each synonym group is a list of keywords ALL of which must appear
+    (case-insensitive substring) in the header cell. The first group
+    that matches any column wins. Useful when terminology has drifted
+    across report vintages — pass multiple synonym groups in priority
+    order and the matcher tries each in turn.
+
+    Example::
+
+        find_column_index(
+            headers,
+            [
+                ["budget", "estimates", "total"],   # H1 FY2025/26 wording
+                ["approved", "budget", "total"],    # alt phrasing
+                ["allocated", "total"],             # legacy
+                ["allocated"],                      # bare-bones legacy
+            ],
+        )
+    """
+    lowered = [(h or "").lower() for h in headers]
+    for group in synonym_groups:
+        for col_idx, header in enumerate(lowered):
+            if all(kw.lower() in header for kw in group):
+                return col_idx
+    return None
+
+
+# Module-level compiled regex used by flatten_grouped_headers. A digit
+# appearing anywhere in a "sub-header" cell is a strong signal that
+# we're looking at actual data, not headers.
+_re_compiled_numeric = re.compile(r"\d")
+
+
+# ──────────────────────────────────────────────────────────────────
+# Canonical entity lists used as row-anchors for invariant-based
+# table identification. Keep these in sync with the entities table.
+# ──────────────────────────────────────────────────────────────────
+KENYAN_COUNTIES: Tuple[str, ...] = (
+    "Baringo", "Bomet", "Bungoma", "Busia", "Elgeyo Marakwet", "Embu",
+    "Garissa", "Homa Bay", "Isiolo", "Kajiado", "Kakamega", "Kericho",
+    "Kiambu", "Kilifi", "Kirinyaga", "Kisii", "Kisumu", "Kitui", "Kwale",
+    "Laikipia", "Lamu", "Machakos", "Makueni", "Mandera", "Marsabit",
+    "Meru", "Migori", "Mombasa", "Murang'a", "Nairobi", "Nakuru", "Nandi",
+    "Narok", "Nyamira", "Nyandarua", "Nyeri", "Samburu", "Siaya",
+    "Taita Taveta", "Tana River", "Tharaka Nithi", "Trans Nzoia",
+    "Turkana", "Uasin Gishu", "Vihiga", "Wajir", "West Pokot",
+)
+assert len(KENYAN_COUNTIES) == 47, "Kenya has 47 counties"
+
+
 class CoBQuarterlyReportParser:
     """Parser for Controller of Budget quarterly budget execution reports."""
 
@@ -264,73 +520,390 @@ class CoBQuarterlyReportParser:
         """
         Parse CoB report and extract budget execution data.
 
+        The Consolidated County BIRR PDFs publish at least four tables
+        relevant to the Budget page:
+
+        * Aggregate: ``County | Allocated | Absorbed | Absorption Rate``
+          → emitted as ``category="Total"``.
+        * Recurrent: ``County | Allocated | Absorbed | ...`` with the
+          word "recurrent" in the header → ``category="Recurrent"``.
+        * Development: same layout with "development" in the header →
+          ``category="Development"``.
+        * Personnel Emoluments: ``County | PE | Absorbed | ...`` with
+          the header literal "Personnel Emoluments" → persisted as a
+          sub-category under Recurrent so the /budget/overview
+          Personnel Emoluments trust-guard check passes.
+
+        Tables are looked up best-effort; missing ones emit a warning
+        but don't raise, so older PDFs that only publish the aggregate
+        still produce useful output.
+
         Returns:
-            List of budget execution records with structure:
-            {
-                "county": "Nairobi",
-                "allocated": Decimal("1500000000"),
-                "absorbed": Decimal("1200000000"),
-                "absorption_rate": 80.0,
-                "quarter": "Q2",
-                "fiscal_year": "2023/24",
-                "currency": "KES"
-            }
+            List of budget execution records with structure::
+
+                {
+                    "county": "Nairobi",
+                    "category": "Total" | "Recurrent" | "Development"
+                               | "Personnel Emoluments",
+                    "subcategory": Optional[str],
+                    "allocated": Decimal("1500000000"),
+                    "absorbed": Decimal("1200000000"),
+                    "absorption_rate": 80.0,
+                    "quarter": "Q2",
+                    "fiscal_year": "2023/24",
+                    "currency": "KES"
+                }
 
         Raises:
-            TableNotFoundError: If county budget table not found
+            TableNotFoundError: If the aggregate county budget table
+                cannot be located — other categories are optional.
         """
         self.tables = extract_all_tables(self.pdf_path)
 
-        # Look for county budget execution table
-        budget_table = find_table_by_header(
-            self.tables, ["county", "allocated", "absorbed"]
+        # ── Primary path: invariant-anchored, validator-driven ─────
+        # COB reword the table headers every couple of vintages
+        # ("Allocated"/"Absorbed" → "Budget Estimates"/"Actual
+        # Expenditure" in FY2025/26), but the row labels stay constant
+        # — there are always 47 Kenyan counties down the left column.
+        #
+        # A 700-page BIRR typically has SEVERAL tables that list all
+        # 47 counties (Arrears, Pending Bills, Recurrent/Development
+        # Expenditure, the consolidated Budget Execution table, …).
+        # Anchor-count ranking alone picks the wrong one in real PDFs:
+        # the Arrears table on page 52 had 45 county hits and beat the
+        # actual budget table on page 55 (39 hits) in CI run
+        # 24934906752. The header-synonym tiebreaker is too easy to
+        # spoof when pdfplumber returns degraded headers.
+        #
+        # Robust answer: get the RANKED candidate list and walk it,
+        # validating each one against the parser's actual needs (can
+        # we resolve a "Total allocated" column?). First validating
+        # candidate wins; reject others with a debug log so future
+        # mis-picks are visible.
+        primary_total_synonyms: List[List[str]] = [
+            ["budget", "estimates", "total"],
+            ["approved", "budget", "total"],
+            ["allocated", "total"],
+            ["allocated"],
+        ]
+        ranked = rank_tables_by_row_anchors(
+            self.tables,
+            list(KENYAN_COUNTIES),
+            min_matches=30,
+            header_synonyms=[
+                ["budget", "expenditure"],
+                ["budget", "estimates", "actual"],
+                ["approved", "actual"],
+                ["allocated", "absorbed"],
+                ["budget", "absorption"],
+            ],
         )
 
-        if not budget_table:
+        budget_table: Optional[ExtractedTable] = None
+        for candidate in ranked:
+            flat = flatten_grouped_headers(candidate)
+            if find_column_index(flat.headers, primary_total_synonyms) is not None:
+                budget_table = flat
+                break
+            logger.info(
+                "Anchored candidate at page %d rejected — no Total allocated column",
+                candidate.page_number,
+                extra={"page": candidate.page_number, "headers": flat.headers},
+            )
+
+        # ── Legacy fallback: original 3-keyword header probe ───────
+        # Kept so the existing test fixtures and any older PDFs that
+        # still use the literal "allocated"/"absorbed" wording still
+        # work. The anchor pass above handles every vintage we've
+        # seen since 2024.
+        if budget_table is None:
+            legacy = find_table_by_header(
+                self.tables, ["county", "allocated", "absorbed"]
+            )
+            if legacy is not None:
+                budget_table = flatten_grouped_headers(legacy)
+
+        if budget_table is None:
             raise TableNotFoundError(
                 "Could not find county budget execution table in report"
             )
 
-        records = []
-        for row in budget_table.rows:
-            try:
-                # Assuming table structure: County | Allocated | Absorbed | Rate
-                county_name = row[0].strip()
+        records: List[Dict[str, Any]] = []
 
-                # Skip summary/total rows
+        # ── Extract Total / Recurrent / Development from the same
+        # consolidated table by picking different sub-columns ──────
+        for category, allocated_synonyms, absorbed_synonyms, rate_synonyms in [
+            (
+                "Total",
+                [
+                    ["budget", "estimates", "total"],
+                    ["approved", "budget", "total"],
+                    ["allocated", "total"],
+                    ["allocated"],  # legacy single-column tables
+                ],
+                [
+                    ["actual", "expenditure", "total"],
+                    ["expenditure", "total"],
+                    ["absorbed", "total"],
+                    ["absorbed"],
+                ],
+                [
+                    ["absorption", "rate", "total"],
+                    ["absorption", "total"],
+                    ["absorption", "rate"],
+                    ["absorption"],
+                    ["rate"],  # legacy fixture / older PDFs
+                ],
+            ),
+            (
+                "Recurrent",
+                [
+                    ["budget", "estimates", "rec"],
+                    ["approved", "budget", "rec"],
+                    ["recurrent", "allocated"],
+                    ["recurrent", "budget"],
+                ],
+                [
+                    ["actual", "expenditure", "rec"],
+                    ["recurrent", "expenditure"],
+                    ["recurrent", "absorbed"],
+                ],
+                [
+                    ["absorption", "rate", "rec"],
+                    ["recurrent", "absorption"],
+                ],
+            ),
+            (
+                "Development",
+                [
+                    ["budget", "estimates", "dev"],
+                    ["approved", "budget", "dev"],
+                    ["development", "allocated"],
+                    ["development", "budget"],
+                ],
+                [
+                    ["actual", "expenditure", "dev"],
+                    ["development", "expenditure"],
+                    ["development", "absorbed"],
+                ],
+                [
+                    ["absorption", "rate", "dev"],
+                    ["development", "absorption"],
+                ],
+            ),
+        ]:
+            allocated_col = find_column_index(budget_table.headers, allocated_synonyms)
+            absorbed_col = find_column_index(budget_table.headers, absorbed_synonyms)
+            rate_col = find_column_index(budget_table.headers, rate_synonyms)
+            # We only require the allocated and absorbed columns;
+            # absorption rate is derivable when missing.
+            if allocated_col is None or absorbed_col is None:
+                # Log at INFO not WARNING — categories CAN legitimately be
+                # missing (e.g. older PDFs only carry the Total column;
+                # the Recurrent / Development synonyms then won't match).
+                # But silent-skip-without-signal makes partial-parse
+                # failures invisible in nightly runs, so emit the
+                # available headers so an operator can confirm.
+                logger.info(
+                    "Skipping consolidated category — required columns not resolved",
+                    extra={
+                        "source": str(self.pdf_path),
+                        "category": category,
+                        "available_headers": budget_table.headers,
+                        "allocated_col": allocated_col,
+                        "absorbed_col": absorbed_col,
+                    },
+                )
+                continue
+            records.extend(
+                self._rows_from_columns(
+                    budget_table,
+                    category=category,
+                    allocated_col=allocated_col,
+                    absorbed_col=absorbed_col,
+                    rate_col=rate_col,
+                )
+            )
+
+        # ── Backward-compat fallbacks for older PDF formats ────────
+        # Pre-FY2024 reports published Recurrent / Development as
+        # SEPARATE tables rather than as sub-columns of a consolidated
+        # one. The new parser path above prefers the consolidated table,
+        # but if a category came up empty we try the legacy separate-
+        # table path before giving up — so old fixtures and any older
+        # vintage that resurfaces still produce useful output.
+        extracted_categories = {r["category"] for r in records}
+        for category, header_keywords in (
+            ("Recurrent", ["recurrent"]),
+            ("Development", ["development"]),
+        ):
+            if category in extracted_categories:
+                continue
+            fallback = self._extract_category(category, header_keywords)
+            if fallback:
+                logger.info(
+                    "%s category extracted via legacy separate-table fallback "
+                    "(consolidated table didn't carry it)",
+                    category,
+                )
+                records.extend(fallback)
+
+        # Personnel Emoluments still lives in its own table when
+        # present — the consolidated table doesn't break PE out.
+        records.extend(
+            self._extract_category(
+                "Personnel Emoluments",
+                ["personnel", "emolument"],
+                subcategory="PE",
+            )
+        )
+
+        logger.info(
+            f"Parsed {len(records)} budget execution records from CoB report",
+            extra={
+                "source": str(self.pdf_path),
+                "record_count": len(records),
+                "categories": sorted({r.get("category") for r in records}),
+            },
+        )
+
+        return records
+
+    def _extract_category(
+        self,
+        category: str,
+        header_keywords: List[str],
+        subcategory: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Locate a sub-aggregate table by header keywords and
+        convert it to the category-tagged record shape."""
+        # The sub-aggregate tables share the "county | allocated |
+        # absorbed" columns; the extra keyword disambiguates them.
+        probe = list(header_keywords) + ["county"]
+        table = find_table_by_header(self.tables, probe)
+        if not table:
+            # Some PDFs put category labels in a caption rather than
+            # the header row — fall back to scanning for an "allocated"
+            # + keyword combo without strict ordering.
+            table = find_table_by_header(self.tables, header_keywords + ["allocated"])
+        if not table:
+            logger.info(
+                "CoB PDF has no '%s' breakdown table (keywords=%s)",
+                category,
+                header_keywords,
+            )
+            return []
+        return self._rows_to_records(table, category=category, subcategory=subcategory)
+
+    def _rows_from_columns(
+        self,
+        table: ExtractedTable,
+        *,
+        category: str,
+        allocated_col: int,
+        absorbed_col: int,
+        rate_col: Optional[int],
+        subcategory: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Like ``_rows_to_records`` but picks values by EXPLICIT column
+        index instead of fixed positions 1/2/3. Required for multi-column
+        consolidated tables where the same row contains Rec / Dev / Total
+        sub-columns for both budget-estimates AND actual-expenditure
+        sides — fixed positions can't address them all."""
+        out: List[Dict[str, Any]] = []
+        for row in table.rows:
+            try:
+                county_name = (row[0] or "").strip()
+                if not county_name:
+                    continue
+                low = county_name.lower()
                 if any(
-                    keyword in county_name.lower()
-                    for keyword in ["total", "average", "summary"]
+                    kw in low
+                    for kw in ("total", "average", "summary", "grand total")
+                ):
+                    continue
+                # Defensive: skip if the row is shorter than the
+                # column we want to read.
+                if len(row) <= max(allocated_col, absorbed_col):
+                    continue
+
+                allocated, currency = parse_currency(row[allocated_col])
+                absorbed, _ = parse_currency(row[absorbed_col])
+                absorption_rate: Optional[float] = None
+                if rate_col is not None and len(row) > rate_col:
+                    absorption_rate = parse_percentage(row[rate_col])
+                # Derive when missing or unparseable. Some vintages drop
+                # the absorption-rate sub-column entirely; downstream
+                # consumers (the /budget/overview probe in particular)
+                # expect this field, so compute it ourselves rather than
+                # leaving a None that propagates as a UI gap.
+                if (
+                    absorption_rate is None
+                    and allocated
+                    and absorbed is not None
+                    and allocated != Decimal("0")
+                ):
+                    absorption_rate = float(absorbed / allocated * Decimal("100"))
+
+                out.append(
+                    {
+                        "county": county_name,
+                        "category": category,
+                        "subcategory": subcategory,
+                        "allocated": allocated,
+                        "absorbed": absorbed,
+                        "absorption_rate": absorption_rate,
+                        "currency": currency,
+                        "quarter": self._extract_quarter(),
+                        "fiscal_year": self._extract_fiscal_year(),
+                    }
+                )
+            except (IndexError, ValueError) as e:
+                logger.warning("Failed to parse row %s: %s", row, e)
+                continue
+        return out
+
+    def _rows_to_records(
+        self,
+        table: ExtractedTable,
+        category: str,
+        subcategory: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Shared row-parsing loop for any county×amount table."""
+        out: List[Dict[str, Any]] = []
+        for row in table.rows:
+            try:
+                county_name = (row[0] or "").strip()
+                if not county_name:
+                    continue
+                if any(
+                    kw in county_name.lower()
+                    for kw in ("total", "average", "summary", "grand total")
                 ):
                     continue
 
                 allocated, currency = parse_currency(row[1])
                 absorbed, _ = parse_currency(row[2])
-                absorption_rate = parse_percentage(row[3])
+                absorption_rate = (
+                    parse_percentage(row[3]) if len(row) > 3 else None
+                )
 
-                record = {
+                record: Dict[str, Any] = {
                     "county": county_name,
+                    "category": category,
+                    "subcategory": subcategory,
                     "allocated": allocated,
                     "absorbed": absorbed,
                     "absorption_rate": absorption_rate,
                     "currency": currency,
-                    # Extract quarter and FY from filename or text
                     "quarter": self._extract_quarter(),
                     "fiscal_year": self._extract_fiscal_year(),
                 }
-
-                records.append(record)
-
+                out.append(record)
             except (IndexError, ValueError) as e:
-                logger.warning(f"Failed to parse row {row}: {e}")
+                logger.warning("Failed to parse row %s: %s", row, e)
                 continue
-
-        logger.info(
-            f"Parsed {len(records)} budget execution records from CoB report",
-            extra={"source": str(self.pdf_path), "record_count": len(records)},
-        )
-
-        return records
+        return out
 
     def _extract_quarter(self) -> str:
         """Extract quarter from PDF filename or content."""

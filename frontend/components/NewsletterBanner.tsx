@@ -1,6 +1,8 @@
 'use client';
 
 import { subscribeNewsletter } from '@/lib/api/auth';
+import { useLang } from '@/lib/i18n/LangProvider';
+import type { TranslationKey } from '@/lib/i18n/messages';
 import { motion } from 'framer-motion';
 import { CheckCircle2, Info, Loader2, Mail, Send } from 'lucide-react';
 import { useCallback, useState } from 'react';
@@ -13,24 +15,26 @@ type Status =
   | 'already_subscribed'
   | 'error';
 
-const STATUS_MESSAGES: Record<string, { icon: typeof CheckCircle2; text: string; color: string }> =
-  {
-    subscribed: {
-      icon: CheckCircle2,
-      text: "You're subscribed! Check your email to confirm.",
-      color: 'text-green-300',
-    },
-    resubscribed: {
-      icon: CheckCircle2,
-      text: 'Welcome back! Your subscription has been reactivated.',
-      color: 'text-green-300',
-    },
-    already_subscribed: {
-      icon: Info,
-      text: 'This email is already subscribed to our newsletter.',
-      color: 'text-amber-300',
-    },
-  };
+const STATUS_MESSAGES: Record<
+  string,
+  { icon: typeof CheckCircle2; textKey: TranslationKey; color: string }
+> = {
+  subscribed: {
+    icon: CheckCircle2,
+    textKey: 'home.newsletter.subscribed',
+    color: 'text-green-300',
+  },
+  resubscribed: {
+    icon: CheckCircle2,
+    textKey: 'home.newsletter.resubscribed',
+    color: 'text-green-300',
+  },
+  already_subscribed: {
+    icon: Info,
+    textKey: 'home.newsletter.already',
+    color: 'text-amber-300',
+  },
+};
 
 /**
  * Newsletter email capture banner.
@@ -38,6 +42,7 @@ const STATUS_MESSAGES: Record<string, { icon: typeof CheckCircle2; text: string;
  * Drop into any page (dashboard footer, learn page, etc.)
  */
 export default function NewsletterBanner() {
+  const { t } = useLang();
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<Status>('idle');
   const [errorMsg, setErrorMsg] = useState('');
@@ -54,10 +59,10 @@ export default function NewsletterBanner() {
         if (result.status === 'subscribed') setEmail('');
       } catch (err: any) {
         setStatus('error');
-        setErrorMsg(err?.message || 'Something went wrong. Please try again.');
+        setErrorMsg(err?.message || t('home.newsletter.generic_error'));
       }
     },
-    [email]
+    [email, t]
   );
 
   const statusInfo = STATUS_MESSAGES[status];
@@ -74,11 +79,8 @@ export default function NewsletterBanner() {
           <div className='w-12 h-12 rounded-2xl bg-gov-sage/20 flex items-center justify-center mx-auto mb-4 border border-gov-sage/30'>
             <Mail className='w-6 h-6 text-gov-sage' />
           </div>
-          <h3 className='font-display text-xl sm:text-2xl text-white mb-2'>Stay informed</h3>
-          <p className='text-white/60 text-sm mb-6'>
-            Get a concise weekly summary of new audits, budget changes, and county data — straight
-            to your inbox. No account required.
-          </p>
+          <h3 className='font-display text-xl sm:text-2xl text-white mb-2'>{t('home.newsletter.title')}</h3>
+          <p className='text-white/60 text-sm mb-6'>{t('home.newsletter.body')}</p>
 
           {statusInfo ? (
             <motion.div
@@ -86,7 +88,7 @@ export default function NewsletterBanner() {
               animate={{ scale: 1, opacity: 1 }}
               className={`flex items-center justify-center gap-2 ${statusInfo.color} font-semibold text-sm`}>
               <statusInfo.icon className='w-5 h-5' />
-              {statusInfo.text}
+              {t(statusInfo.textKey)}
             </motion.div>
           ) : (
             <form onSubmit={handleSubmit} className='flex flex-col sm:flex-row gap-3'>
@@ -97,7 +99,7 @@ export default function NewsletterBanner() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder='your@email.com'
+                  placeholder={t('home.newsletter.placeholder')}
                   className='w-full pl-10 pr-4 py-3 rounded-xl bg-white/10 border border-white/15 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-gov-sage/50 transition-all'
                 />
               </div>
@@ -110,7 +112,7 @@ export default function NewsletterBanner() {
                 ) : (
                   <>
                     <Send className='w-4 h-4' />
-                    Subscribe
+                    {t('home.newsletter.subscribe')}
                   </>
                 )}
               </button>

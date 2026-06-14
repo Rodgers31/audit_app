@@ -60,7 +60,7 @@ export default function ImpactCategories() {
 
   return (
     <div className='mb-12'>
-      <h3 className='text-2xl font-bold text-gray-900 mb-6'>How It Affects You</h3>
+      <h3 className='text-2xl font-bold text-gray-900 dark:text-neutral-text mb-6'>How It Affects You</h3>
 
       <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
         {impactCategories.map((category, index) => {
@@ -77,16 +77,16 @@ export default function ImpactCategories() {
                 <div className='w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center'>
                   <Icon size={20} className='text-blue-600' />
                 </div>
-                <h4 className='text-lg font-bold text-gray-900'>{category.title}</h4>
+                <h4 className='text-lg font-bold text-gray-900 dark:text-neutral-text'>{category.title}</h4>
               </div>
 
               {/* Category Description */}
-              <p className='text-gray-600 text-sm mb-4'>{category.description}</p>
+              <p className='text-gray-600 dark:text-neutral-muted text-sm mb-4'>{category.description}</p>
 
               {/* Examples List */}
               <ul className='space-y-2'>
                 {category.examples.map((example, i) => (
-                  <li key={i} className='flex items-start gap-2 text-sm text-gray-700'>
+                  <li key={i} className='flex items-start gap-2 text-sm text-gray-700 dark:text-neutral-muted'>
                     <div className='w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0' />
                     <span>{example}</span>
                   </li>

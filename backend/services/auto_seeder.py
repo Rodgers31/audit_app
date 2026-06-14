@@ -52,6 +52,7 @@ REFRESH_SCHEDULE = {
     "counties": 168,  # Weekly - Budget implementation updates
     "budgets": 168,  # Weekly - Treasury releases
     "audits": 168,  # Weekly - OAG releases
+    "counties_budget": 168,  # Weekly — CoB CBIRR releases
 }
 
 # Kenya's 47 counties - Official codes (ISO 3166-2:KE)
@@ -248,6 +249,59 @@ class AutoSeeder:
             await self._seed_population_live()
         elif domain == "economic":
             await self._seed_economic_live()
+        elif domain in ("counties_budget", "audits", "budgets"):
+            # Delegate to the seeding-registry domain so the CoB CBIRR and
+            # OAG audit data used by the Follow-the-Money waterfall stay
+            # current without a manual CLI run.
+            await self._seed_registry_domain(
+                "counties_budget" if domain == "budgets" else domain
+            )
+
+    async def _seed_registry_domain(self, domain_name: str):
+        """Run a registry-based seeding domain (counties_budget, audits).
+
+        Delegates to the same pipeline the CLI uses so CoB CBIRR and OAG
+        audit data refresh on the same schedule as the rest of the
+        Follow-the-Money waterfall, without requiring a manual run.
+        """
+        logger.info(
+            "[AUTO-SEEDER] Running registry domain %s via seeding pipeline",
+            domain_name,
+        )
+        try:
+            from seeding.config import get_settings
+            from seeding.registries import REGISTRY, load_builtin_domains
+            from seeding.types import DomainRunContext
+
+            load_builtin_domains()
+            runner = REGISTRY.get(domain_name)
+            if runner is None:
+                logger.warning(
+                    "[AUTO-SEEDER] Registry domain %s not registered", domain_name
+                )
+                return
+
+            settings = get_settings()
+            loop = asyncio.get_running_loop()
+
+            def _run() -> None:
+                with SessionLocal() as db:
+                    ctx = DomainRunContext(
+                        since=None, dry_run=False, job_id=None
+                    )
+                    runner(db, settings, ctx)
+                    db.commit()
+
+            await loop.run_in_executor(None, _run)
+            logger.info(
+                "[AUTO-SEEDER] Registry domain %s refresh complete", domain_name
+            )
+        except Exception as exc:
+            logger.warning(
+                "[AUTO-SEEDER] Registry domain %s refresh failed: %s",
+                domain_name,
+                exc,
+            )
 
     async def _seed_counties_live(self):
         """

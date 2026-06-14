@@ -22,8 +22,13 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Create non-root user
-RUN groupadd -r appuser && useradd -r -g appuser appuser
+# Create non-root user with a writable home directory.
+# ``-m -d /home/appuser`` is required because gunicorn's control
+# server (and various other libs) write small files under ``$HOME``
+# at boot — without a real home dir gunicorn fails with
+# ``Permission denied: '/home/appuser'`` and the master exits.
+RUN groupadd -r appuser \
+    && useradd -r -g appuser -m -d /home/appuser -s /bin/bash appuser
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
@@ -52,22 +57,42 @@ ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 ENV ENVIRONMENT=production
 
-# Expose port
+# Expose the default port so platforms that auto-detect from EXPOSE
+# (Render, Railway, Fly.io) still see 8000 when ``$PORT`` isn't set.
+# At runtime we bind to ``$PORT`` if the platform set one — see CMD.
 EXPOSE 8000
 
-# Health check
+# Health check — uses the same ``$PORT`` env var as the server bind so
+# it works whether the platform sets PORT or not.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD curl -f http://localhost:${PORT:-8000}/health || exit 1
 
-# Run with Gunicorn for production
-CMD ["gunicorn", "main:app", \
-     "--workers", "4", \
-     "--worker-class", "uvicorn.workers.UvicornWorker", \
-     "--bind", "0.0.0.0:8000", \
-     "--access-logfile", "-", \
-     "--error-logfile", "-", \
-     "--log-level", "info", \
-     "--timeout", "120", \
-     "--keep-alive", "5", \
-     "--max-requests", "1000", \
-     "--max-requests-jitter", "100"]
+# Run with Gunicorn for production.
+#
+# Two things make this CMD slightly unusual:
+#
+# 1. Worker count is intentionally NOT specified on the command line so
+#    gunicorn falls back to the ``WEB_CONCURRENCY`` env var (its native
+#    default lookup), which in turn defaults to 1 if unset. That makes
+#    the worker count tunable from the host's env-vars panel without a
+#    rebuild — set ``WEB_CONCURRENCY=2`` (or higher) when CPU saturates,
+#    revert to ``1`` to drop memory. Each Uvicorn worker re-imports the
+#    full app (pandas, numpy, pdfplumber, the auto-seeder, APScheduler,
+#    the in-memory cache) — about ~200MB resident per worker — so a
+#    single async worker is the right default for this codebase.
+#
+# 2. The bind address uses ``${PORT:-8000}`` so the server listens on
+#    whatever port the host expects. Render in particular sets
+#    ``PORT=10000`` by default and runs a port scan against that
+#    address; binding to a hardcoded 8000 would make the deploy fail
+#    with ``no open ports detected``. The ``${...}`` expansion needs a
+#    shell, so we wrap in ``sh -c "exec gunicorn ..."``. The ``exec``
+#    is important: it replaces the shell with gunicorn so SIGTERM (used
+#    for graceful shutdown) reaches gunicorn directly instead of dying
+#    at the shell wrapper.
+CMD ["sh", "-c", "exec gunicorn main:app \
+  --worker-class uvicorn.workers.UvicornWorker \
+  --bind 0.0.0.0:${PORT:-8000} \
+  --access-logfile - --error-logfile - --log-level info \
+  --timeout 120 --keep-alive 5 \
+  --max-requests 1000 --max-requests-jitter 100"]

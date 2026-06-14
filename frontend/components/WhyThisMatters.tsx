@@ -17,17 +17,17 @@ interface WhyThisMattersProps {
 
 export default function WhyThisMatters({ searchTerm }: WhyThisMattersProps) {
   return (
-    <div className='bg-white rounded-3xl p-8 shadow-xl border border-gray-200'>
+    <div className='bg-white dark:bg-surface-base rounded-3xl p-8 shadow-xl border border-gray-200 dark:border-neutral-border'>
       {/* Page Header */}
       <div className='flex items-center gap-3 mb-8'>
         <Heart size={32} className='text-red-600' />
-        <h2 className='text-3xl font-bold text-gray-900'>Why This Matters</h2>
+        <h2 className='text-3xl font-bold text-gray-900 dark:text-neutral-text'>Why This Matters</h2>
       </div>
 
       {/* Introduction Section */}
       <div className='bg-gradient-to-r from-blue-50 to-red-50 rounded-2xl p-6 mb-8'>
-        <h3 className='text-xl font-bold text-gray-900 mb-4'>Your Money, Your Life</h3>
-        <p className='text-gray-700 leading-relaxed'>
+        <h3 className='text-xl font-bold text-gray-900 dark:text-neutral-text mb-4'>Your Money, Your Life</h3>
+        <p className='text-gray-700 dark:text-neutral-muted leading-relaxed'>
           Government budgets aren't just numbers on paper – they're decisions about your life. Every
           shilling spent (or misspent) affects whether you have good schools, functioning hospitals,
           clean water, and safe roads. When you understand how government finance works, you can

@@ -71,6 +71,7 @@ _BUILTIN_DOMAIN_PACKAGES = [
     "seeding.domains.learning_hub",
     "seeding.domains.stalled_projects",
     "seeding.domains.national_gdp",
+    "seeding.domains.imf_weo",
 ]
 
 

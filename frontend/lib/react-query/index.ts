@@ -52,6 +52,7 @@ export {
   useDebtBreakdown,
   useDebtComparison,
   useDebtRiskAssessment,
+  useBroaderDebt,
   useDebtSustainability,
   useDebtSustainabilityIndicators,
   useDebtTimeline,

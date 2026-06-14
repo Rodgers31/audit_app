@@ -1,0 +1,1327 @@
+{
+  "model": "Xenova/all-MiniLM-L6-v2",
+  "dim": 384,
+  "count": 264,
+  "articles": [
+    {
+      "ch": 1,
+      "art": 1,
+      "title": "Sovereignty of the people"
+    },
+    {
+      "ch": 1,
+      "art": 2,
+      "title": "Supremacy of this Constitution"
+    },
+    {
+      "ch": 1,
+      "art": 3,
+      "title": "Defence of this Constitution"
+    },
+    {
+      "ch": 2,
+      "art": 4,
+      "title": "Declaration of the Republic"
+    },
+    {
+      "ch": 2,
+      "art": 5,
+      "title": "Territory of Kenya"
+    },
+    {
+      "ch": 2,
+      "art": 6,
+      "title": "Devolution and access to services"
+    },
+    {
+      "ch": 2,
+      "art": 7,
+      "title": "National, official and other languages"
+    },
+    {
+      "ch": 2,
+      "art": 8,
+      "title": "State and religion"
+    },
+    {
+      "ch": 2,
+      "art": 9,
+      "title": "National symbols and national days"
+    },
+    {
+      "ch": 2,
+      "art": 10,
+      "title": "National values and principles of governance"
+    },
+    {
+      "ch": 2,
+      "art": 11,
+      "title": "Culture"
+    },
+    {
+      "ch": 3,
+      "art": 12,
+      "title": "Entitlements of citizens"
+    },
+    {
+      "ch": 3,
+      "art": 13,
+      "title": "Retention and acquisition of citizenship"
+    },
+    {
+      "ch": 3,
+      "art": 14,
+      "title": "Citizenship by birth"
+    },
+    {
+      "ch": 3,
+      "art": 15,
+      "title": "Citizenship by registration"
+    },
+    {
+      "ch": 3,
+      "art": 16,
+      "title": "Dual citizenship"
+    },
+    {
+      "ch": 3,
+      "art": 17,
+      "title": "Revocation of citizenship"
+    },
+    {
+      "ch": 3,
+      "art": 18,
+      "title": "Legislation on citizenship"
+    },
+    {
+      "ch": 4,
+      "art": 19,
+      "title": "Rights and fundamental freedoms"
+    },
+    {
+      "ch": 4,
+      "art": 20,
+      "title": "Application of Bill of Rights"
+    },
+    {
+      "ch": 4,
+      "art": 21,
+      "title": "Implementation of rights and fundamental freedoms"
+    },
+    {
+      "ch": 4,
+      "art": 22,
+      "title": "Enforcement of Bill of Rights"
+    },
+    {
+      "ch": 4,
+      "art": 23,
+      "title": "Authority of courts to uphold and enforce the Bill of Rights"
+    },
+    {
+      "ch": 4,
+      "art": 24,
+      "title": "Limitation of rights and fundamental freedoms"
+    },
+    {
+      "ch": 4,
+      "art": 25,
+      "title": "Fundamental Rights and freedoms that may not be limited"
+    },
+    {
+      "ch": 4,
+      "art": 26,
+      "title": "Right to life"
+    },
+    {
+      "ch": 4,
+      "art": 27,
+      "title": "Equality and freedom from discrimination"
+    },
+    {
+      "ch": 4,
+      "art": 28,
+      "title": "Human dignity"
+    },
+    {
+      "ch": 4,
+      "art": 29,
+      "title": "Freedom and security of the person"
+    },
+    {
+      "ch": 4,
+      "art": 30,
+      "title": "Slavery, servitude and forced labour"
+    },
+    {
+      "ch": 4,
+      "art": 31,
+      "title": "Privacy"
+    },
+    {
+      "ch": 4,
+      "art": 32,
+      "title": "Freedom of conscience, religion, belief and opinion"
+    },
+    {
+      "ch": 4,
+      "art": 33,
+      "title": "Freedom of expression"
+    },
+    {
+      "ch": 4,
+      "art": 34,
+      "title": "Freedom of the media"
+    },
+    {
+      "ch": 4,
+      "art": 35,
+      "title": "Access to information"
+    },
+    {
+      "ch": 4,
+      "art": 36,
+      "title": "Freedom of association"
+    },
+    {
+      "ch": 4,
+      "art": 37,
+      "title": "Assembly, demonstration, picketing and petition"
+    },
+    {
+      "ch": 4,
+      "art": 38,
+      "title": "Political rights"
+    },
+    {
+      "ch": 4,
+      "art": 39,
+      "title": "Freedom of movement and residence"
+    },
+    {
+      "ch": 4,
+      "art": 40,
+      "title": "Protection of right to property"
+    },
+    {
+      "ch": 4,
+      "art": 41,
+      "title": "Labour relations"
+    },
+    {
+      "ch": 4,
+      "art": 42,
+      "title": "Environment"
+    },
+    {
+      "ch": 4,
+      "art": 43,
+      "title": "Economic and social rights"
+    },
+    {
+      "ch": 4,
+      "art": 44,
+      "title": "Language and culture"
+    },
+    {
+      "ch": 4,
+      "art": 45,
+      "title": "Family"
+    },
+    {
+      "ch": 4,
+      "art": 46,
+      "title": "Consumer rights"
+    },
+    {
+      "ch": 4,
+      "art": 47,
+      "title": "Fair administrative action"
+    },
+    {
+      "ch": 4,
+      "art": 48,
+      "title": "Access to justice"
+    },
+    {
+      "ch": 4,
+      "art": 49,
+      "title": "Rights of arrested persons"
+    },
+    {
+      "ch": 4,
+      "art": 50,
+      "title": "Fair hearing"
+    },
+    {
+      "ch": 4,
+      "art": 51,
+      "title": "Rights of persons detained, held in custody or imprisoned"
+    },
+    {
+      "ch": 4,
+      "art": 52,
+      "title": "Interpretation of Part"
+    },
+    {
+      "ch": 4,
+      "art": 53,
+      "title": "Children"
+    },
+    {
+      "ch": 4,
+      "art": 54,
+      "title": "Persons with disabilities"
+    },
+    {
+      "ch": 4,
+      "art": 55,
+      "title": "Youth"
+    },
+    {
+      "ch": 4,
+      "art": 56,
+      "title": "Minorities and marginalised groups"
+    },
+    {
+      "ch": 4,
+      "art": 57,
+      "title": "Older members of society"
+    },
+    {
+      "ch": 4,
+      "art": 58,
+      "title": "State of emergency"
+    },
+    {
+      "ch": 4,
+      "art": 59,
+      "title": "Kenya National Human Rights and Equality Commission"
+    },
+    {
+      "ch": 5,
+      "art": 60,
+      "title": "Principles of land policy"
+    },
+    {
+      "ch": 5,
+      "art": 61,
+      "title": "Classification of land"
+    },
+    {
+      "ch": 5,
+      "art": 62,
+      "title": "Public land"
+    },
+    {
+      "ch": 5,
+      "art": 63,
+      "title": "Community land"
+    },
+    {
+      "ch": 5,
+      "art": 64,
+      "title": "Private land"
+    },
+    {
+      "ch": 5,
+      "art": 65,
+      "title": "Landholding by non-citizens"
+    },
+    {
+      "ch": 5,
+      "art": 66,
+      "title": "Regulation of land use and property"
+    },
+    {
+      "ch": 5,
+      "art": 67,
+      "title": "National Land Commission"
+    },
+    {
+      "ch": 5,
+      "art": 68,
+      "title": "Legislation on land"
+    },
+    {
+      "ch": 5,
+      "art": 69,
+      "title": "Obligations in respect of the environment"
+    },
+    {
+      "ch": 5,
+      "art": 70,
+      "title": "Enforcement of environmental rights"
+    },
+    {
+      "ch": 5,
+      "art": 71,
+      "title": "Agreements relating to natural resource"
+    },
+    {
+      "ch": 5,
+      "art": 72,
+      "title": "Legislation relating to the environment"
+    },
+    {
+      "ch": 6,
+      "art": 73,
+      "title": "Responsibilities of leadership"
+    },
+    {
+      "ch": 6,
+      "art": 74,
+      "title": "Oath of office of State officers"
+    },
+    {
+      "ch": 6,
+      "art": 75,
+      "title": "Conduct of State officers"
+    },
+    {
+      "ch": 6,
+      "art": 76,
+      "title": "Financial probity of State officers"
+    },
+    {
+      "ch": 6,
+      "art": 77,
+      "title": "Restriction on activities of State officers"
+    },
+    {
+      "ch": 6,
+      "art": 78,
+      "title": "Citizenship and leadership"
+    },
+    {
+      "ch": 6,
+      "art": 79,
+      "title": "Legislation to establish the ethics and anti-corruption commission"
+    },
+    {
+      "ch": 6,
+      "art": 80,
+      "title": "Legislation on leadership"
+    },
+    {
+      "ch": 7,
+      "art": 81,
+      "title": "General principles for the electoral system"
+    },
+    {
+      "ch": 7,
+      "art": 82,
+      "title": "Legislation on elections"
+    },
+    {
+      "ch": 7,
+      "art": 83,
+      "title": "Registration as a voter"
+    },
+    {
+      "ch": 7,
+      "art": 84,
+      "title": "Candidates for election and political parties to comply with code of conduct"
+    },
+    {
+      "ch": 7,
+      "art": 85,
+      "title": "Eligibility to stand as an independent candidate"
+    },
+    {
+      "ch": 7,
+      "art": 86,
+      "title": "Voting"
+    },
+    {
+      "ch": 7,
+      "art": 87,
+      "title": "Electoral disputes"
+    },
+    {
+      "ch": 7,
+      "art": 88,
+      "title": "Independent Electoral and Boundaries Commission"
+    },
+    {
+      "ch": 7,
+      "art": 89,
+      "title": "Delimitation of electoral units"
+    },
+    {
+      "ch": 7,
+      "art": 90,
+      "title": "Allocation of party list seats"
+    },
+    {
+      "ch": 7,
+      "art": 91,
+      "title": "Basic requirements for political parties"
+    },
+    {
+      "ch": 7,
+      "art": 92,
+      "title": "Legislation on political parties"
+    },
+    {
+      "ch": 8,
+      "art": 93,
+      "title": "Establishment of Parliament"
+    },
+    {
+      "ch": 8,
+      "art": 94,
+      "title": "Role of Parliament"
+    },
+    {
+      "ch": 8,
+      "art": 95,
+      "title": "Role of the National Assembly"
+    },
+    {
+      "ch": 8,
+      "art": 96,
+      "title": "Role of the Senate"
+    },
+    {
+      "ch": 8,
+      "art": 97,
+      "title": "Membership of the National Assembly"
+    },
+    {
+      "ch": 8,
+      "art": 98,
+      "title": "Membership of the Senate"
+    },
+    {
+      "ch": 8,
+      "art": 99,
+      "title": "Qualifications and disqualifications for election as member of Parliament"
+    },
+    {
+      "ch": 8,
+      "art": 100,
+      "title": "Promotion of representation of marginalised groups"
+    },
+    {
+      "ch": 8,
+      "art": 101,
+      "title": "Election of members of Parliament"
+    },
+    {
+      "ch": 8,
+      "art": 102,
+      "title": "Term of Parliament"
+    },
+    {
+      "ch": 8,
+      "art": 103,
+      "title": "Vacation of office of member of Parliament"
+    },
+    {
+      "ch": 8,
+      "art": 104,
+      "title": "Right of recall"
+    },
+    {
+      "ch": 8,
+      "art": 105,
+      "title": "Determination of questions of membership"
+    },
+    {
+      "ch": 8,
+      "art": 106,
+      "title": "Speakers and Deputy Speakers of Parliament"
+    },
+    {
+      "ch": 8,
+      "art": 107,
+      "title": "Presiding in Parliament"
+    },
+    {
+      "ch": 8,
+      "art": 108,
+      "title": "Party leaders"
+    },
+    {
+      "ch": 8,
+      "art": 109,
+      "title": "Exercise of legislative powers"
+    },
+    {
+      "ch": 8,
+      "art": 110,
+      "title": "Bills concerning county government"
+    },
+    {
+      "ch": 8,
+      "art": 111,
+      "title": "Special Bills concerning county governments"
+    },
+    {
+      "ch": 8,
+      "art": 112,
+      "title": "Ordinary Bills concerning county governments"
+    },
+    {
+      "ch": 8,
+      "art": 113,
+      "title": "Mediation committees"
+    },
+    {
+      "ch": 8,
+      "art": 114,
+      "title": "Money Bills"
+    },
+    {
+      "ch": 8,
+      "art": 115,
+      "title": "Presidential assent and referral"
+    },
+    {
+      "ch": 8,
+      "art": 116,
+      "title": "Coming into force of laws"
+    },
+    {
+      "ch": 8,
+      "art": 117,
+      "title": "Powers, privileges and immunities"
+    },
+    {
+      "ch": 8,
+      "art": 118,
+      "title": "Public access and participation"
+    },
+    {
+      "ch": 8,
+      "art": 119,
+      "title": "Right to petition Parliament"
+    },
+    {
+      "ch": 8,
+      "art": 120,
+      "title": "Official languages of Parliament"
+    },
+    {
+      "ch": 8,
+      "art": 121,
+      "title": "Quorum"
+    },
+    {
+      "ch": 8,
+      "art": 122,
+      "title": "Voting in Parliament"
+    },
+    {
+      "ch": 8,
+      "art": 123,
+      "title": "Decisions of Senate"
+    },
+    {
+      "ch": 8,
+      "art": 124,
+      "title": "Committees and Standing Orders"
+    },
+    {
+      "ch": 8,
+      "art": 125,
+      "title": "Power to call for evidence"
+    },
+    {
+      "ch": 8,
+      "art": 126,
+      "title": "Location of sittings of Parliament"
+    },
+    {
+      "ch": 8,
+      "art": 127,
+      "title": "Parliamentary Service Commission"
+    },
+    {
+      "ch": 8,
+      "art": 128,
+      "title": "Clerks and staff of Parliament"
+    },
+    {
+      "ch": 9,
+      "art": 129,
+      "title": "Principles of executive authority"
+    },
+    {
+      "ch": 9,
+      "art": 130,
+      "title": "The National Executive"
+    },
+    {
+      "ch": 9,
+      "art": 131,
+      "title": "Authority of the President"
+    },
+    {
+      "ch": 9,
+      "art": 132,
+      "title": "Functions of the President"
+    },
+    {
+      "ch": 9,
+      "art": 133,
+      "title": "Power of mercy"
+    },
+    {
+      "ch": 9,
+      "art": 134,
+      "title": "Exercise of presidential powers during temporary incumbency"
+    },
+    {
+      "ch": 9,
+      "art": 135,
+      "title": "Decisions of the President"
+    },
+    {
+      "ch": 9,
+      "art": 136,
+      "title": "Election of the President"
+    },
+    {
+      "ch": 9,
+      "art": 137,
+      "title": "Qualifications and disqualifications for election as President"
+    },
+    {
+      "ch": 9,
+      "art": 138,
+      "title": "Procedure at presidential election"
+    },
+    {
+      "ch": 9,
+      "art": 139,
+      "title": "Death before assuming office"
+    },
+    {
+      "ch": 9,
+      "art": 140,
+      "title": "Questions as to validity of presidential election"
+    },
+    {
+      "ch": 9,
+      "art": 141,
+      "title": "Assumption of office of President"
+    },
+    {
+      "ch": 9,
+      "art": 142,
+      "title": "Term of office of President"
+    },
+    {
+      "ch": 9,
+      "art": 143,
+      "title": "Protection from legal proceedings"
+    },
+    {
+      "ch": 9,
+      "art": 144,
+      "title": "Removal of President on grounds of incapacity"
+    },
+    {
+      "ch": 9,
+      "art": 145,
+      "title": "Removal of President by impeachment"
+    },
+    {
+      "ch": 9,
+      "art": 146,
+      "title": "Vacancy in the office of President"
+    },
+    {
+      "ch": 9,
+      "art": 147,
+      "title": "Functions of the Deputy President"
+    },
+    {
+      "ch": 9,
+      "art": 148,
+      "title": "Election and swearing-in of Deputy President"
+    },
+    {
+      "ch": 9,
+      "art": 149,
+      "title": "Vacancy in the office of Deputy President"
+    },
+    {
+      "ch": 9,
+      "art": 150,
+      "title": "Removal of Deputy President"
+    },
+    {
+      "ch": 9,
+      "art": 151,
+      "title": "Remuneration and benefits of President and Deputy President"
+    },
+    {
+      "ch": 9,
+      "art": 152,
+      "title": "Cabinet"
+    },
+    {
+      "ch": 9,
+      "art": 153,
+      "title": "Decisions, responsibility and accountability of the Cabinet"
+    },
+    {
+      "ch": 9,
+      "art": 154,
+      "title": "Secretary to the Cabinet"
+    },
+    {
+      "ch": 9,
+      "art": 155,
+      "title": "Principal Secretaries"
+    },
+    {
+      "ch": 9,
+      "art": 156,
+      "title": "Attorney-General"
+    },
+    {
+      "ch": 9,
+      "art": 157,
+      "title": "Director of Public Prosecutions"
+    },
+    {
+      "ch": 9,
+      "art": 158,
+      "title": "Removal and resignation of Director of Public Prosecutions"
+    },
+    {
+      "ch": 10,
+      "art": 159,
+      "title": "Judicial authority"
+    },
+    {
+      "ch": 10,
+      "art": 160,
+      "title": "Independence of the Judiciary"
+    },
+    {
+      "ch": 10,
+      "art": 161,
+      "title": "Judicial offices and officers"
+    },
+    {
+      "ch": 10,
+      "art": 162,
+      "title": "System of courts"
+    },
+    {
+      "ch": 10,
+      "art": 163,
+      "title": "Supreme Court"
+    },
+    {
+      "ch": 10,
+      "art": 164,
+      "title": "Court of Appeal"
+    },
+    {
+      "ch": 10,
+      "art": 165,
+      "title": "High Court"
+    },
+    {
+      "ch": 10,
+      "art": 166,
+      "title": "Appointment of Chief Justice, Deputy Chief Justice and other judges"
+    },
+    {
+      "ch": 10,
+      "art": 167,
+      "title": "Tenure of office of the Chief Justice and other judges"
+    },
+    {
+      "ch": 10,
+      "art": 168,
+      "title": "Removal from office"
+    },
+    {
+      "ch": 10,
+      "art": 169,
+      "title": "Subordinate courts"
+    },
+    {
+      "ch": 10,
+      "art": 170,
+      "title": "Kadhis’ courts"
+    },
+    {
+      "ch": 10,
+      "art": 171,
+      "title": "Establishment of the Judicial Service Commission"
+    },
+    {
+      "ch": 10,
+      "art": 172,
+      "title": "Functions of the Judicial Service Commission"
+    },
+    {
+      "ch": 10,
+      "art": 173,
+      "title": "Judiciary Fund"
+    },
+    {
+      "ch": 11,
+      "art": 174,
+      "title": "Objects of devolution"
+    },
+    {
+      "ch": 11,
+      "art": 175,
+      "title": "Principles of devolved government"
+    },
+    {
+      "ch": 11,
+      "art": 176,
+      "title": "County governments"
+    },
+    {
+      "ch": 11,
+      "art": 177,
+      "title": "Membership of county assembly"
+    },
+    {
+      "ch": 11,
+      "art": 178,
+      "title": "Speaker of a county assembly"
+    },
+    {
+      "ch": 11,
+      "art": 179,
+      "title": "County executive committees"
+    },
+    {
+      "ch": 11,
+      "art": 180,
+      "title": "Election of county governor and deputy county governor"
+    },
+    {
+      "ch": 11,
+      "art": 181,
+      "title": "Removal of a county governor"
+    },
+    {
+      "ch": 11,
+      "art": 182,
+      "title": "Vacancy in the office of county governor"
+    },
+    {
+      "ch": 11,
+      "art": 183,
+      "title": "Functions of county executive committees"
+    },
+    {
+      "ch": 11,
+      "art": 184,
+      "title": "Urban areas and cities"
+    },
+    {
+      "ch": 11,
+      "art": 185,
+      "title": "Legislative authority of county assemblies"
+    },
+    {
+      "ch": 11,
+      "art": 186,
+      "title": "Respective functions and powers of national and county governments"
+    },
+    {
+      "ch": 11,
+      "art": 187,
+      "title": "Transfer of functions and powers between levels of government"
+    },
+    {
+      "ch": 11,
+      "art": 188,
+      "title": "Boundaries of counties"
+    },
+    {
+      "ch": 11,
+      "art": 189,
+      "title": "Cooperation between national and county governments"
+    },
+    {
+      "ch": 11,
+      "art": 190,
+      "title": "Support for county governments"
+    },
+    {
+      "ch": 11,
+      "art": 191,
+      "title": "Conflict of laws"
+    },
+    {
+      "ch": 11,
+      "art": 192,
+      "title": "Suspension of a county government"
+    },
+    {
+      "ch": 11,
+      "art": 193,
+      "title": "Qualifications for election as member of county assembly"
+    },
+    {
+      "ch": 11,
+      "art": 194,
+      "title": "Vacation of office of member of county assembly"
+    },
+    {
+      "ch": 11,
+      "art": 195,
+      "title": "County assembly power to summon witnesses"
+    },
+    {
+      "ch": 11,
+      "art": 196,
+      "title": "Public participation and county assembly powers, privileges and immunities"
+    },
+    {
+      "ch": 11,
+      "art": 197,
+      "title": "County assembly gender balance and diversity"
+    },
+    {
+      "ch": 11,
+      "art": 198,
+      "title": "County government during transition"
+    },
+    {
+      "ch": 11,
+      "art": 199,
+      "title": "Publication of county legislation"
+    },
+    {
+      "ch": 11,
+      "art": 200,
+      "title": "Legislation on Chapter"
+    },
+    {
+      "ch": 12,
+      "art": 201,
+      "title": "Principles of public finance"
+    },
+    {
+      "ch": 12,
+      "art": 202,
+      "title": "Equitable sharing of national revenue"
+    },
+    {
+      "ch": 12,
+      "art": 203,
+      "title": "Equitable share and other financial laws"
+    },
+    {
+      "ch": 12,
+      "art": 204,
+      "title": "Equalisation Fund"
+    },
+    {
+      "ch": 12,
+      "art": 205,
+      "title": "Consultation on financial legislation affecting counties"
+    },
+    {
+      "ch": 12,
+      "art": 206,
+      "title": "Consolidated Fund and other public funds"
+    },
+    {
+      "ch": 12,
+      "art": 207,
+      "title": "Revenue Funds for county governments"
+    },
+    {
+      "ch": 12,
+      "art": 208,
+      "title": "Contingencies Fund"
+    },
+    {
+      "ch": 12,
+      "art": 209,
+      "title": "Power to impose taxes and charges"
+    },
+    {
+      "ch": 12,
+      "art": 210,
+      "title": "Imposition of tax"
+    },
+    {
+      "ch": 12,
+      "art": 211,
+      "title": "Borrowing by national government"
+    },
+    {
+      "ch": 12,
+      "art": 212,
+      "title": "Borrowing by counties"
+    },
+    {
+      "ch": 12,
+      "art": 213,
+      "title": "Loan guarantees by national government"
+    },
+    {
+      "ch": 12,
+      "art": 214,
+      "title": "Public debt"
+    },
+    {
+      "ch": 12,
+      "art": 215,
+      "title": "Commission on Revenue Allocation"
+    },
+    {
+      "ch": 12,
+      "art": 216,
+      "title": "Functions of the Commission on Revenue Allocation"
+    },
+    {
+      "ch": 12,
+      "art": 217,
+      "title": "Division of revenue"
+    },
+    {
+      "ch": 12,
+      "art": 218,
+      "title": "Annual Division and Allocation of Revenue Bills"
+    },
+    {
+      "ch": 12,
+      "art": 219,
+      "title": "Transfer of equitable share"
+    },
+    {
+      "ch": 12,
+      "art": 220,
+      "title": "Form, content and timing of budgets"
+    },
+    {
+      "ch": 12,
+      "art": 221,
+      "title": "Budget estimates and annual Appropriation Bill"
+    },
+    {
+      "ch": 12,
+      "art": 222,
+      "title": "Expenditure before annual budget is passed"
+    },
+    {
+      "ch": 12,
+      "art": 223,
+      "title": "Supplementary appropriation"
+    },
+    {
+      "ch": 12,
+      "art": 224,
+      "title": "County appropriation Bills"
+    },
+    {
+      "ch": 12,
+      "art": 225,
+      "title": "Financial control"
+    },
+    {
+      "ch": 12,
+      "art": 226,
+      "title": "Accounts and audit of public entities"
+    },
+    {
+      "ch": 12,
+      "art": 227,
+      "title": "Procurement of public goods and services"
+    },
+    {
+      "ch": 12,
+      "art": 228,
+      "title": "Controller of Budget"
+    },
+    {
+      "ch": 12,
+      "art": 229,
+      "title": "Auditor-General"
+    },
+    {
+      "ch": 12,
+      "art": 230,
+      "title": "Salaries and Remuneration Commission"
+    },
+    {
+      "ch": 12,
+      "art": 231,
+      "title": "Central Bank of Kenya"
+    },
+    {
+      "ch": 13,
+      "art": 232,
+      "title": "Values and principles of public service"
+    },
+    {
+      "ch": 13,
+      "art": 233,
+      "title": "The Public Service Commission"
+    },
+    {
+      "ch": 13,
+      "art": 234,
+      "title": "Functions and powers of the Public Service Commission"
+    },
+    {
+      "ch": 13,
+      "art": 235,
+      "title": "Staffing of county governments"
+    },
+    {
+      "ch": 13,
+      "art": 236,
+      "title": "Protection of public officers"
+    },
+    {
+      "ch": 13,
+      "art": 237,
+      "title": "Teachers Service Commission"
+    },
+    {
+      "ch": 14,
+      "art": 238,
+      "title": "Principles of national security"
+    },
+    {
+      "ch": 14,
+      "art": 239,
+      "title": "National security organs"
+    },
+    {
+      "ch": 14,
+      "art": 240,
+      "title": "Establishment of the National Security Council"
+    },
+    {
+      "ch": 14,
+      "art": 241,
+      "title": "Establishment of Defence Forces and Defence Council"
+    },
+    {
+      "ch": 14,
+      "art": 242,
+      "title": "Establishment of National Intelligence Service"
+    },
+    {
+      "ch": 14,
+      "art": 243,
+      "title": "Establishment of the National Police Service"
+    },
+    {
+      "ch": 14,
+      "art": 244,
+      "title": "Objects and functions of the National Police Service"
+    },
+    {
+      "ch": 14,
+      "art": 245,
+      "title": "Command of the National Police Service"
+    },
+    {
+      "ch": 14,
+      "art": 246,
+      "title": "National Police Service Commission"
+    },
+    {
+      "ch": 14,
+      "art": 247,
+      "title": "Other police services"
+    },
+    {
+      "ch": 15,
+      "art": 248,
+      "title": "Application of Chapter"
+    },
+    {
+      "ch": 15,
+      "art": 249,
+      "title": "Objects, authority and funding of commissions and independent offices"
+    },
+    {
+      "ch": 15,
+      "art": 250,
+      "title": "Composition, appointment and terms of office"
+    },
+    {
+      "ch": 15,
+      "art": 251,
+      "title": "Removal from office"
+    },
+    {
+      "ch": 15,
+      "art": 252,
+      "title": "General functions and powers"
+    },
+    {
+      "ch": 15,
+      "art": 253,
+      "title": "Incorporation of commissions and independent offices"
+    },
+    {
+      "ch": 15,
+      "art": 254,
+      "title": "Reporting by commissions and independent offices"
+    },
+    {
+      "ch": 16,
+      "art": 255,
+      "title": "Amendment of this Constitution"
+    },
+    {
+      "ch": 16,
+      "art": 256,
+      "title": "Amendment by parliamentary initiative"
+    },
+    {
+      "ch": 16,
+      "art": 257,
+      "title": "Amendment by popular initiative"
+    },
+    {
+      "ch": 17,
+      "art": 258,
+      "title": "Enforcement of this Constitution"
+    },
+    {
+      "ch": 17,
+      "art": 259,
+      "title": "Construing this Constitution"
+    },
+    {
+      "ch": 17,
+      "art": 260,
+      "title": "Interpretation"
+    },
+    {
+      "ch": 18,
+      "art": 261,
+      "title": "Consequential legislation"
+    },
+    {
+      "ch": 18,
+      "art": 262,
+      "title": "Transitional and consequential provisions"
+    },
+    {
+      "ch": 18,
+      "art": 263,
+      "title": "Effective Date"
+    },
+    {
+      "ch": 18,
+      "art": 264,
+      "title": "Repeal of previous constitution"
+    }
+  ]
+}

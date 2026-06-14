@@ -28,7 +28,7 @@ export default function AuditIssues({ auditIssues }: AuditIssuesProps) {
 
   return (
     <div>
-      <h5 className='text-lg font-semibold text-gray-900 mb-4'>Specific Issues Found</h5>
+      <h5 className='text-lg font-semibold text-gray-900 dark:text-neutral-text mb-4'>Specific Issues Found</h5>
       <div className='space-y-3'>
         {auditIssues.map((issue) => (
           <div key={issue.id} className='p-4 bg-yellow-50 border border-yellow-200 rounded-xl'>
@@ -40,12 +40,12 @@ export default function AuditIssues({ auditIssues }: AuditIssuesProps) {
                 {issue.severity.toUpperCase()} PRIORITY
               </span>
               {issue.amount && (
-                <span className='text-sm font-semibold text-gray-700'>
+                <span className='text-sm font-semibold text-gray-700 dark:text-neutral-muted'>
                   {formatCurrency(issue.amount)}
                 </span>
               )}
             </div>
-            <p className='text-gray-700'>{issue.description}</p>
+            <p className='text-gray-700 dark:text-neutral-muted'>{issue.description}</p>
           </div>
         ))}
       </div>

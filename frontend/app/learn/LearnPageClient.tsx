@@ -1,287 +1,274 @@
 /**
- * Learning Hub — Single-page with sticky section navigator.
+ * Learning Hub — civic learning hub for AuditGava.
  *
- * The "Your Learning Journey" stepper stays pinned below the header.
- * Clicking a step switches the content shown below it inline — no
- * page navigation, feels like one continuous page.
+ * Layout (top → bottom):
+ *   1. LearnHero          — headline + hero search (hybrid BM25 + semantic)
+ *   2. ConstitutionBook   — interactive reader for the Constitution
+ *   3. Keep learning      — three entry points into dedicated practice pages
+ *   4. PopularQuestions   — expandable civic FAQ
+ *   5. CTA                — jump back to the dashboard
+ *
+ * The hero search pipes into the ConstitutionBook: number queries (e.g.
+ * "Article 229") directly open that article; keyword queries seed the
+ * book's search so the user sees matches in context.
  */
 'use client';
 
-// TODO: Re-enable when real video content is ready
-// import ExplainerVideos from '@/components/ExplainerVideos';
-import InteractiveGlossary from '@/components/InteractiveGlossary';
 import PageShell from '@/components/layout/PageShell';
-import GovernmentExplorer from '@/components/learn/GovernmentExplorer';
-import QuizGame from '@/components/learn/QuizGame';
-import WhyThisMatters from '@/components/WhyThisMatters';
-import { TOTAL_QUESTIONS } from '@/data/quizData';
-import { AnimatePresence, motion, useInView } from 'framer-motion';
+import ConstitutionBook from '@/components/learn/constitution/ConstitutionBook';
+import LearnHero from '@/components/learn/LearnHero';
+import PopularQuestions from '@/components/learn/PopularQuestions';
+import {
+  CONSTITUTION_META,
+  findChapterForArticle,
+  TOTAL_ARTICLES,
+} from '@/data/constitution';
+import { motion } from 'framer-motion';
 import {
   ArrowRight,
-  BookOpen,
-  Brain,
   Gamepad2,
-  GraduationCap,
+  Heart,
   Landmark,
-  Lightbulb,
-  // Play,  // TODO: Re-enable for videos step
+  Library,
   Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useRef, useState } from 'react';
 
-/* ── Animated counter ── */
-function AnimatedNumber({ value }: { value: number }) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, margin: '-40px' });
-  const [display, setDisplay] = useState(0);
-
-  const started = useRef(false);
-  if (inView && !started.current) {
-    started.current = true;
-    let frame = 0;
-    const totalFrames = 40;
-    const step = value / totalFrames;
-    const tick = () => {
-      frame++;
-      setDisplay(Math.min(Math.round(step * frame), value));
-      if (frame < totalFrames) requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-  }
-
-  return <span ref={ref}>{display}</span>;
-}
-
-/* ── Step config ── */
-// TODO: Re-enable 'videos' when real content is ready
-// type SectionId = 'quiz' | 'government' | 'glossary' | 'videos' | 'why';
-type SectionId = 'quiz' | 'government' | 'glossary' | 'why';
-
-interface Step {
-  id: SectionId;
-  n: number;
+const KEEP_LEARNING: {
+  href: string;
+  eyebrow: string;
   title: string;
-  desc: string;
+  description: string;
   icon: React.ElementType;
-  gradient: string;
-}
-
-const steps: Step[] = [
+  accent: string;
+  iconTint: string;
+}[] = [
   {
-    id: 'quiz',
-    n: 1,
-    title: 'Play',
-    desc: 'Quiz games',
+    href: '/learn/quiz',
+    eyebrow: 'Practice',
+    title: 'Civic quiz',
+    description:
+      'Short, playful questions that turn what you just read into recall you can use.',
     icon: Gamepad2,
-    gradient: 'from-emerald-500 to-teal-600',
+    accent:
+      'from-gov-forest/10 via-white to-gov-sage/20 dark:from-gov-forest/[0.18] dark:via-surface-base dark:to-surface-elevated',
+    iconTint: 'bg-gov-forest text-white',
   },
   {
-    id: 'government',
-    n: 2,
-    title: 'Explore',
-    desc: 'Government',
+    href: '/learn/government',
+    eyebrow: 'Explore',
+    title: 'Government explorer',
+    description:
+      'Walk through the three arms of government and the commissions that keep them honest.',
     icon: Landmark,
-    gradient: 'from-sky-500 to-indigo-600',
+    accent:
+      'from-gov-gold/15 via-white to-gov-sand dark:from-gov-gold/[0.18] dark:via-surface-base dark:to-surface-elevated',
+    iconTint: 'bg-gov-gold text-gov-dark dark:text-white',
   },
   {
-    id: 'glossary',
-    n: 3,
-    title: 'Study',
-    desc: 'Key terms',
-    icon: BookOpen,
-    gradient: 'from-violet-500 to-purple-600',
+    href: '/learn/glossary',
+    eyebrow: 'Reference',
+    title: 'Plain-English glossary',
+    description:
+      'Every budget, audit and finance term, translated into language that actually makes sense.',
+    icon: Library,
+    accent:
+      'from-gov-sage/15 via-white to-gov-cream dark:from-gov-sage/[0.22] dark:via-surface-base dark:to-surface-elevated',
+    iconTint: 'bg-gov-sage text-white',
   },
-  // TODO: Re-enable when real video content is ready
-  // {
-  //   id: 'videos',
-  //   n: 4,
-  //   title: 'Watch',
-  //   desc: 'Videos',
-  //   icon: Play,
-  //   gradient: 'from-rose-500 to-red-600',
-  // },
   {
-    id: 'why',
-    n: 4,
-    title: 'Apply',
-    desc: 'Real impact',
-    icon: Lightbulb,
-    gradient: 'from-amber-500 to-orange-600',
+    href: '/learn/why-it-matters',
+    eyebrow: 'Real life',
+    title: 'Why this matters',
+    description:
+      'The stories behind each clause — how constitutional rights touch your day-to-day.',
+    icon: Heart,
+    accent:
+      'from-rose-100 via-white to-gov-cream dark:from-rose-500/20 dark:via-surface-base dark:to-surface-elevated',
+    iconTint: 'bg-rose-500 text-white',
   },
 ];
 
-/* ═══════════════════════════════════════
-   PAGE
-   ═══════════════════════════════════════ */
-export default function LearningHubPage() {
-  const [active, setActive] = useState<SectionId>('quiz');
-  const [glossarySearch, setGlossarySearch] = useState('');
-  const scrollAnchorRef = useRef<HTMLDivElement>(null);
+function parseArticleNumber(q: string): number | null {
+  const trimmed = q.trim();
+  const m = trimmed.match(/^(?:article|art\.?)\s+(\d+)$/i);
+  if (m) return parseInt(m[1]!, 10);
+  if (/^\d{1,3}$/.test(trimmed)) return parseInt(trimmed, 10);
+  return null;
+}
 
-  const switchSection = useCallback((id: SectionId) => {
-    setActive(id);
-    // Scroll the non-sticky anchor into view so the stepper appears at the top
-    scrollAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+export default function LearningHubPage() {
+  /* ── Constitution book seeding ── */
+  const [seedQuery, setSeedQuery] = useState<string>('');
+  const [seedChapter, setSeedChapter] = useState<number>(12);
+  const [seedArticle, setSeedArticle] = useState<number | undefined>(229);
+  const [bookKey, setBookKey] = useState<number>(0);
+  const bookRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBook = useCallback(() => {
+    // Small delay so that:
+    //   • React has committed the state update (bookKey bump, seeds)
+    //   • The ConstitutionBook's own re-focus/re-fetch effects have run
+    //   • The exit animation of the hero dropdown has finished its first frame
+    // Smooth scroll otherwise gets silently cancelled by those concurrent layout
+    // shifts on some browsers.
+    setTimeout(() => {
+      bookRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 60);
   }, []);
+
+  const openArticle = useCallback(
+    (articleNumber: number) => {
+      const meta = findChapterForArticle(articleNumber);
+      if (!meta) return;
+      setSeedChapter(meta.number);
+      setSeedArticle(articleNumber);
+      setSeedQuery('');
+      setBookKey((k) => k + 1);
+      scrollToBook();
+    },
+    [scrollToBook]
+  );
+
+  /** Jump to a specific chapter + article (used by hero autocomplete). */
+  const jumpToArticle = useCallback(
+    (chapterNumber: number, articleNumber: number) => {
+      setSeedChapter(chapterNumber);
+      setSeedArticle(articleNumber);
+      setSeedQuery('');
+      setBookKey((k) => k + 1);
+      scrollToBook();
+    },
+    [scrollToBook]
+  );
+
+  const handleHeroSearch = useCallback(
+    (raw: string) => {
+      const q = raw.trim();
+      if (!q) return;
+      const articleNum = parseArticleNumber(q);
+      if (articleNum !== null) {
+        openArticle(articleNum);
+        return;
+      }
+      setSeedQuery(q);
+      setBookKey((k) => k + 1);
+      scrollToBook();
+    },
+    [openArticle, scrollToBook]
+  );
 
   return (
     <PageShell
       title='Learning Hub'
-      subtitle="Understand how Kenya's government works, where your taxes go, and how to hold leaders accountable">
-      {/* ── Quick Stats ── */}
-      <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className='grid grid-cols-3 gap-4'>
-        {[
-          { value: 6, label: 'Quiz Categories', icon: Gamepad2, color: 'text-gov-forest' },
-          { value: TOTAL_QUESTIONS, label: 'Quiz Questions', icon: Brain, color: 'text-gov-gold' },
-          { value: 8, label: 'Glossary Terms', icon: BookOpen, color: 'text-sky-600' },
-          // TODO: Re-enable when real video content is ready
-          // { value: 6, label: 'Video Lessons', icon: Play, color: 'text-gov-copper' },
-        ].map((s) => {
-          const Icon = s.icon;
-          return (
-            <motion.div
-              key={s.label}
-              whileHover={{ y: -3 }}
-              className='rounded-xl bg-white/60 backdrop-blur border border-white/50 p-4 text-center shadow-surface'>
-              <Icon size={18} className={`mx-auto mb-2 ${s.color}`} />
-              <div className={`text-2xl font-bold ${s.color}`}>
-                <AnimatedNumber value={s.value} />
-              </div>
-              <div className='text-xs text-neutral-muted mt-1'>{s.label}</div>
-            </motion.div>
-          );
-        })}
-      </motion.div>
+      subtitle='Understand the rules behind every shilling — the Constitution, budgets, audits and devolution, in plain Kenyan English.'>
+      {/* 1 ── Hero ─────────────────────────────────── */}
+      <LearnHero onSearchSubmit={handleHeroSearch} onArticleSelect={jumpToArticle} />
 
-      {/* ══════════════════════════════════
-         STICKY LEARNING JOURNEY STEPPER
-         ══════════════════════════════════ */}
-      {/* Non-sticky scroll anchor — scrollIntoView targets this */}
-      <div ref={scrollAnchorRef} className='scroll-mt-[72px]' aria-hidden />
-      <div className='sticky top-[72px] z-20'>
-        <div className='rounded-2xl bg-gradient-to-r from-gov-forest to-gov-dark p-3 sm:p-5 text-white relative overflow-hidden shadow-elevated'>
-          {/* Decorative circles */}
-          <div className='absolute -right-10 -top-10 h-32 w-32 rounded-full border border-white/10 pointer-events-none' />
-          <div className='absolute -right-4 -bottom-4 h-20 w-20 rounded-full border border-white/5 pointer-events-none' />
-
-          <div className='flex items-center gap-2 mb-3'>
-            <GraduationCap size={18} className='text-gov-gold' />
-            <h3 className='font-bold text-sm sm:text-base'>Your Learning Journey</h3>
+      {/* 2 ── Constitution book ───────────────────── */}
+      <div ref={bookRef} className='scroll-mt-[72px]'>
+        <div className='mb-3 flex items-end justify-between gap-4'>
+          <div>
+            <h2 className='font-display text-2xl leading-tight text-gov-dark dark:text-white sm:text-[1.7rem]'>
+              The Constitution, as a book you can actually read
+            </h2>
+            <p className='text-sm text-neutral-muted'>
+              {CONSTITUTION_META.length} chapters, {TOTAL_ARTICLES} articles, every one with a plain-English note.
+            </p>
           </div>
-
-          {/* Steps row — scrollable on very narrow screens */}
-          <div className='flex gap-1 sm:gap-2 overflow-x-auto -mx-1 px-1 pb-1 scrollbar-hide'>
-            {steps.map((step) => {
-              const isActive = active === step.id;
-              const Icon = step.icon;
-
-              return (
-                <button
-                  key={step.id}
-                  onClick={() => switchSection(step.id)}
-                  className={`relative flex-1 min-w-0 rounded-xl px-1.5 py-2 sm:px-3 sm:py-3 text-left transition-all duration-300 ${
-                    isActive
-                      ? 'bg-white/20 ring-2 ring-gov-gold shadow-lg scale-[1.02]'
-                      : 'bg-white/5 hover:bg-white/10'
-                  }`}>
-                  {/* Active indicator bar */}
-                  {isActive && (
-                    <motion.div
-                      layoutId='activeStep'
-                      className={`absolute inset-x-0 top-0 h-1 rounded-t-xl bg-gradient-to-r ${step.gradient}`}
-                      transition={{ type: 'spring', bounce: 0.2, duration: 0.5 }}
-                    />
-                  )}
-
-                  <div className='flex items-center gap-1.5 sm:gap-2 mb-1'>
-                    <span
-                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors ${
-                        isActive ? 'bg-gov-gold text-gov-dark' : 'bg-white/15 text-white/70'
-                      }`}>
-                      {isActive ? <Icon size={14} /> : step.n}
-                    </span>
-                    <span
-                      className={`font-semibold text-xs sm:text-sm truncate transition-colors ${
-                        isActive ? 'text-gov-gold' : 'text-white/70'
-                      }`}>
-                      {step.title}
-                    </span>
-                  </div>
-                  <p
-                    className={`text-[10px] sm:text-xs leading-tight truncate transition-colors ${
-                      isActive ? 'text-white/90' : 'text-white/40'
-                    }`}>
-                    {step.desc}
-                  </p>
-                </button>
-              );
-            })}
-          </div>
+          <Link
+            href='#constitution-book'
+            className='hidden shrink-0 items-center gap-1.5 rounded-full bg-gov-forest/10 px-3 py-1.5 text-xs font-semibold text-gov-forest dark:text-emerald-100 hover:bg-gov-forest/15 sm:inline-flex'>
+            <Sparkles size={12} />
+            New
+          </Link>
         </div>
+        <ConstitutionBook
+          key={bookKey}
+          initialChapter={seedChapter}
+          initialArticle={seedArticle}
+          seedQuery={seedQuery}
+        />
       </div>
 
-      {/* ══════════════════════════════════
-         SECTION CONTENT
-         ══════════════════════════════════ */}
-      <AnimatePresence mode='wait'>
-        <motion.div
-          key={active}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -12 }}
-          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
-          {active === 'quiz' && <QuizGame />}
+      {/* 3 ── Keep learning ───────────────────────── */}
+      <section aria-labelledby='keep-learning-heading' className='space-y-4'>
+        <div className='flex flex-wrap items-end justify-between gap-3'>
+          <div>
+            <h2
+              id='keep-learning-heading'
+              className='font-display text-2xl leading-tight text-gov-dark dark:text-white sm:text-[1.7rem]'>
+              Keep learning
+            </h2>
+            <p className='text-sm text-neutral-muted'>
+              Four focused stops once you&rsquo;ve closed the book — pick whichever fits your
+              mood.
+            </p>
+          </div>
+        </div>
 
-          {active === 'government' && <GovernmentExplorer />}
+        <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4'>
+          {KEEP_LEARNING.map((card, i) => {
+            const Icon = card.icon;
+            return (
+              <motion.div
+                key={card.href}
+                initial={{ opacity: 0, y: 14 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.4 }}
+                transition={{ duration: 0.4, delay: i * 0.06 }}>
+                <Link
+                  href={card.href}
+                  className={`group relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/70 dark:border-neutral-border bg-gradient-to-br ${card.accent} p-5 shadow-surface transition-shadow hover:shadow-elevated`}>
+                  <span
+                    className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${card.iconTint} shadow-surface`}>
+                    <Icon size={18} />
+                  </span>
+                  <div className='mt-4 text-[11px] font-semibold uppercase tracking-wider text-gov-forest/70 dark:text-emerald-100/70'>
+                    {card.eyebrow}
+                  </div>
+                  <h3 className='mt-0.5 font-display text-lg text-gov-dark dark:text-white'>
+                    {card.title}
+                  </h3>
+                  <p className='mt-1 flex-1 text-[13.5px] leading-relaxed text-neutral-text'>
+                    {card.description}
+                  </p>
+                  <span className='mt-4 inline-flex items-center gap-1 text-sm font-semibold text-gov-forest dark:text-emerald-100 transition-transform group-hover:translate-x-0.5'>
+                    Open
+                    <ArrowRight size={14} />
+                  </span>
+                </Link>
+              </motion.div>
+            );
+          })}
+        </div>
+      </section>
 
-          {active === 'glossary' && (
-            <div className='space-y-4'>
-              <div className='max-w-md'>
-                <input
-                  type='text'
-                  placeholder='Search terms…'
-                  value={glossarySearch}
-                  onChange={(e) => setGlossarySearch(e.target.value)}
-                  className='w-full rounded-xl border border-neutral-border bg-white/60 backdrop-blur px-4 py-2.5 text-sm placeholder:text-neutral-muted focus:outline-none focus:ring-2 focus:ring-gov-sage/40 transition-shadow'
-                />
-              </div>
-              <InteractiveGlossary searchTerm={glossarySearch} />
-            </div>
-          )}
+      {/* 4 ── Popular questions ───────────────────── */}
+      <PopularQuestions onOpenArticle={openArticle} />
 
-          {/* TODO: Re-enable when real video content is ready */}
-          {/* {active === 'videos' && <ExplainerVideos searchTerm='' />} */}
-
-          {active === 'why' && <WhyThisMatters searchTerm='' />}
-        </motion.div>
-      </AnimatePresence>
-
-      {/* ── CTA ── */}
+      {/* 5 ── CTA ─────────────────────────────────── */}
       <motion.div
-        initial={{ opacity: 0, y: 24 }}
+        initial={{ opacity: 0, y: 22 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5 }}
-        className='rounded-2xl bg-gradient-to-br from-gov-forest via-gov-dark to-gov-forest p-8 sm:p-10 text-center text-white relative overflow-hidden'>
-        <div className='absolute -left-10 -top-10 h-32 w-32 rounded-full bg-gov-gold/10' />
-        <div className='absolute -right-8 -bottom-8 h-24 w-24 rounded-full bg-white/5' />
-        <Sparkles size={28} className='mx-auto mb-4 text-gov-gold' />
-        <h2 className='font-display text-2xl sm:text-3xl mb-3'>
+        className='relative overflow-hidden rounded-3xl bg-gradient-to-br from-gov-forest via-gov-dark to-gov-forest p-8 text-center text-white sm:p-10'>
+        <div className='pointer-events-none absolute -left-10 -top-10 h-32 w-32 rounded-full bg-gov-gold/10' />
+        <div className='pointer-events-none absolute -right-8 -bottom-8 h-24 w-24 rounded-full bg-white/5' />
+        <Sparkles size={26} className='mx-auto mb-3 text-gov-gold' />
+        <h2 className='font-display text-2xl sm:text-3xl'>
           Ready to put your knowledge to use?
         </h2>
-        <p className='text-white/70 max-w-lg mx-auto mb-6'>
-          Explore live government data on our dashboard — track budgets, audit reports, and county
-          spending in real time.
+        <p className='mx-auto mt-2 max-w-lg text-white/75'>
+          Explore live government data — audits, budgets, debt and county spending — powered by the
+          same constitutional rules you just read.
         </p>
         <Link
           href='/'
-          className='inline-flex items-center gap-2 rounded-xl bg-gov-gold px-6 py-3 font-semibold text-gov-dark hover:bg-gov-gold/90 transition-colors shadow-elevated'>
-          Go to Dashboard
+          className='mt-6 inline-flex items-center gap-2 rounded-xl bg-gov-gold px-6 py-3 font-semibold text-gov-dark dark:text-white shadow-elevated transition-colors hover:bg-gov-gold/90'>
+          Go to dashboard
           <ArrowRight size={16} />
         </Link>
       </motion.div>

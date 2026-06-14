@@ -77,8 +77,8 @@ export default function PDFExportButton({
         title={isAuthenticated ? label : 'Sign in to export PDF'}
         className={`p-2 rounded-lg transition-all ${
           isAuthenticated
-            ? 'text-gov-forest/60 hover:text-gov-sage hover:bg-gov-sage/10'
-            : 'text-gov-forest/30 hover:text-gov-forest/50'
+            ? 'text-gov-forest/60 dark:text-emerald-100/60 hover:text-gov-sage hover:bg-gov-sage/10'
+            : 'text-gov-forest/30 dark:text-emerald-100/30 hover:text-gov-forest/50 dark:text-emerald-100/50'
         } disabled:opacity-50 ${className}`}>
         {exporting ? (
           <Loader2 className='w-4 h-4 animate-spin' />
@@ -98,8 +98,8 @@ export default function PDFExportButton({
       whileTap={{ scale: 0.96 }}
       className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all border shadow-sm ${
         isAuthenticated
-          ? 'bg-white/80 text-gov-forest/70 border-gov-sage/20 hover:bg-gov-sage/10 hover:text-gov-sage'
-          : 'bg-white/60 text-gov-forest/40 border-gov-sage/10 hover:bg-white/80'
+          ? 'bg-white/80 dark:bg-surface-elevated text-gov-forest/70 dark:text-emerald-100/70 border-gov-sage/20 hover:bg-gov-sage/10 hover:text-gov-sage'
+          : 'bg-white/60 dark:bg-surface-elevated text-gov-forest/40 dark:text-emerald-100/40 border-gov-sage/10 hover:bg-white/80 dark:bg-surface-elevated'
       } disabled:opacity-50 ${className}`}>
       {exporting ? (
         <Loader2 className='w-4 h-4 animate-spin' />

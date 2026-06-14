@@ -48,7 +48,7 @@ export default function PrivacyPolicyPage() {
 
       {/* ── What we collect ── */}
       <Section title='1. Information We Collect'>
-        <div className='bg-white rounded-xl p-5 border border-neutral-border shadow-surface space-y-4'>
+        <div className='bg-white dark:bg-surface-base rounded-xl p-5 border border-neutral-border shadow-surface space-y-4'>
           <div>
             <h3 className='font-semibold text-sm text-neutral-text mb-1'>
               Newsletter Subscription

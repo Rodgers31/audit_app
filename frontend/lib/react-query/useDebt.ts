@@ -3,9 +3,11 @@
  */
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 import {
+  BroaderDebtResponse,
   CountyPendingBillsResponse,
   DebtSustainabilityResponse,
   DebtTimelineResponse,
+  getBroaderDebt,
   getCountyDebtData,
   getCountyDebtTimeline,
   getCountyPendingBills,
@@ -66,6 +68,21 @@ export const useNationalDebtOverview = (
     queryKey: QUERY_KEYS.nationalOverview,
     queryFn: getNationalDebtOverview,
     staleTime: 60 * 60 * 1000, // 1 hour — national debt overview rarely changes
+    ...options,
+  });
+};
+
+/** IMF's General-Government Gross Debt for Kenya — the broader measure
+ * displayed beside the CBK central-gov figure. Cache aggressively:
+ * IMF only re-publishes twice a year, and the backend already edge-
+ * caches for 24h, so a long React-Query staleTime here costs nothing. */
+export const useBroaderDebt = (
+  options?: Omit<UseQueryOptions<BroaderDebtResponse>, 'queryKey' | 'queryFn'>
+) => {
+  return useQuery({
+    queryKey: ['debt', 'broader'] as const,
+    queryFn: getBroaderDebt,
+    staleTime: 24 * 60 * 60 * 1000, // 24 hours
     ...options,
   });
 };

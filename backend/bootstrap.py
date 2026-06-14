@@ -63,7 +63,12 @@ def _parse_kes_amount(value: Any) -> float:
         cleaned = str(value).upper().replace("KES", "").strip()
         cleaned = cleaned.replace(",", "")
         multiplier = 1.0
-        if cleaned.endswith("B"):
+        if cleaned.endswith("T"):
+            # Trillions — without this branch "KES 1.2T" raised and fell through
+            # to 0, undercounting the audit DB (audit §2.6 / §3.4).
+            multiplier = 1_000_000_000_000.0
+            cleaned = cleaned[:-1]
+        elif cleaned.endswith("B"):
             multiplier = 1_000_000_000.0
             cleaned = cleaned[:-1]
         elif cleaned.endswith("M"):
@@ -478,8 +483,13 @@ def _upsert_county_debt(
 
 
 def _map_severity(level: str) -> Severity:
+    # The Severity enum is coarse (INFO/WARNING/CRITICAL — no HIGH). OAG "high"
+    # findings must NOT be promoted to CRITICAL: that inflated the "critical
+    # findings" count and overstated the donut (audit §2.6). Map "high" to
+    # WARNING; the original OAG wording is preserved per-finding in provenance
+    # (severity_label) so nothing is lost.
     mapping = {
-        "high": Severity.CRITICAL,
+        "high": Severity.WARNING,
         "medium": Severity.WARNING,
         "low": Severity.INFO,
         "critical": Severity.CRITICAL,
@@ -523,6 +533,7 @@ def _upsert_audit_records(
             {
                 "source": AUDIT_DATA_PATH.name,
                 "external_id": entry.get("id"),
+                "severity_label": entry.get("severity"),
                 "amount_involved": entry.get("amount_involved"),
                 "status": entry.get("status"),
                 "category": entry.get("category"),
@@ -536,7 +547,9 @@ def _upsert_audit_records(
         amount_value = _parse_kes_amount(entry.get("amount_involved"))
         amount = Decimal(str(amount_value)) if amount_value > 0 else None
         status = entry.get("status")
-        audit_opinion = entry.get("audit_opinion", "Qualified")
+        # No fabricated default — a missing per-finding opinion stays None
+        # rather than asserting "Qualified" for every row (audit §2.6).
+        audit_opinion = entry.get("audit_opinion")
 
         if audit_record:
             audit_record.severity = severity
@@ -567,18 +580,28 @@ def _upsert_audit_records(
         session.add(audit_record)
 
 
-# ── National-level (Kenya) GDP + Sovereign Debt ────────────────────────
-# Sources:
-#   GDP — Kenya National Bureau of Statistics (KNBS) Economic Survey 2025
-#   Debt — Central Bank of Kenya Public Debt CSV (April 2025)
-NATIONAL_GDP_SERIES = [
-    (2020, 10_751_000_000_000),  # KES — KNBS
-    (2021, 12_098_000_000_000),
-    (2022, 13_362_000_000_000),
-    (2023, 14_088_000_000_000),
-    (2024, 14_800_000_000_000),  # KNBS preliminary
-    (2025, 15_400_000_000_000),  # Estimate
-]
+# ── National-level (Kenya) GDP ─────────────────────────────────────────
+# GDP is loaded from the World Bank-sourced fixture (seeding/real_data/
+# national_gdp.json), NOT a hardcoded series. A wrong constant here
+# (2025 = 15.4T vs the real ~16-18T) is exactly what previously inflated
+# the headline debt-to-GDP ratio to 82%. The live `national_gdp` seeding
+# domain overlays current World Bank values nightly. (Sovereign debt
+# likewise comes from the seeding pipeline; see national_debt.json.)
+def _load_national_gdp_series() -> "list[tuple[int, int]]":
+    """Return [(year, nominal_gdp_kes)] from the World Bank-sourced fixture."""
+    fixture = (
+        Path(__file__).resolve().parent / "seeding" / "real_data" / "national_gdp.json"
+    )
+    try:
+        data = json.loads(fixture.read_text(encoding="utf-8"))
+        return [
+            (int(r["year"]), int(r["gdp_kes"]))
+            for r in data.get("gdp", [])
+            if r.get("gdp_kes") is not None
+        ]
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.warning("Could not load national_gdp.json fixture: %s", exc)
+        return []
 
 # NATIONAL_DEBT_BREAKDOWN removed — debt data now comes from the seeding
 # pipeline via `python -m seeding.cli seed --domain national_debt`.
@@ -775,7 +798,8 @@ def _seed_national_data(
     if orphan_gdp:
         logger.info(f"Deleted {len(orphan_gdp)} orphan GDP rows")
 
-    for year, gdp_val in NATIONAL_GDP_SERIES:
+    gdp_series = _load_national_gdp_series()
+    for year, gdp_val in gdp_series:
         existing = (
             session.query(GDPData)
             .filter(GDPData.entity_id == national_entity.id, GDPData.year == year)
@@ -791,9 +815,43 @@ def _seed_national_data(
                     year=year,
                     gdp_value=Decimal(str(gdp_val)),
                     source_document_id=national_doc.id,
-                    confidence=Decimal("0.90"),
-                    meta={"source": "KNBS Economic Survey", "bootstrap": True},
+                    confidence=Decimal("0.95"),
+                    meta={
+                        "source": "World Bank NY.GDP.MKTP.CN (fixture)",
+                        "bootstrap": True,
+                    },
                 )
+            )
+
+    # Reconcile to the authoritative series: prune national-entity GDP rows for
+    # any year BEYOND the latest fixture year. Without this, a stale/fabricated
+    # FUTURE year left by an earlier seed (e.g. 2025 = 15.4T from the old
+    # hardcoded NATIONAL_GDP_SERIES) survives forever and — being the newest
+    # year — out-ranks the real latest World Bank value in every
+    # `order_by(year.desc())` lookup, re-inflating the debt-to-GDP/GDP headline
+    # the fix was meant to correct. We prune ``year > max`` (not "not in set")
+    # so a shorter fixture can never delete legitimate earlier history. Guarded
+    # by a non-empty series.
+    fixture_years = [year for year, _ in gdp_series]
+    if fixture_years:
+        latest_fixture_year = max(fixture_years)
+        stale_gdp = (
+            session.query(GDPData)
+            .filter(
+                GDPData.entity_id == national_entity.id,
+                GDPData.year > latest_fixture_year,
+            )
+            .all()
+        )
+        for row in stale_gdp:
+            session.delete(row)
+        if stale_gdp:
+            logger.info(
+                "Pruned %d stale national GDP year(s) beyond latest fixture "
+                "year %d: %s",
+                len(stale_gdp),
+                latest_fixture_year,
+                sorted(r.year for r in stale_gdp),
             )
 
     # NOTE: NULL entity_id GDP rows (for /economic/summary) are handled by the
@@ -955,6 +1013,7 @@ def _seed_federal_audits(
             {
                 "source": NATIONAL_AUDIT_PATH.name,
                 "external_id": entry.get("id"),
+                "severity_label": entry.get("severity"),
                 "amount_involved": entry.get("amount_involved"),
                 "status": entry.get("status"),
                 "category": entry.get("category"),
@@ -969,12 +1028,14 @@ def _seed_federal_audits(
         amount_value = _parse_kes_amount(entry.get("amount_involved"))
         amount = Decimal(str(amount_value)) if amount_value > 0 else None
         status = entry.get("status")
-        audit_opinion = entry.get("audit_opinion", "Qualified")
-        audit_year = (
-            int(report_meta.get("fiscal_year", "2024").split("/")[0])
-            if report_meta.get("fiscal_year")
-            else 2024
+        # No fabricated default — a missing per-finding opinion stays None
+        # rather than asserting "Qualified" for every row (audit §2.6).
+        audit_opinion = entry.get("audit_opinion")
+        fiscal_year_raw = report_meta.get("fiscal_year") or ""
+        fiscal_year_digits = "".join(
+            c for c in fiscal_year_raw.split("/")[0] if c.isdigit()
         )
+        audit_year = int(fiscal_year_digits) if fiscal_year_digits else 2024
 
         if existing:
             existing.severity = severity
@@ -1009,16 +1070,61 @@ def _seed_federal_audits(
     logger.info("Federal audit findings seeded: %d new records", seeded)
 
 
+def _seed_national_budget(session: Session) -> None:
+    """Seed national-government BudgetLine rows from the CoB NG-BIRR fixture.
+
+    Delegates to the national_budget seeding domain so bootstrap stays
+    aligned with the canonical pipeline. Uses the local fixture
+    (live_pdf_fetch_enabled=False) to keep restart time bounded; the
+    CLI entrypoint (`python -m seeding.cli seed --domain national_budget`)
+    is still the right tool when a fresh live fetch is wanted.
+
+    Idempotent — the domain writer matches on
+    (entity_id, period_id, category, subcategory), so repeat calls are no-ops
+    when the fixture hasn't changed.
+    """
+    try:
+        from seeding.config import SeedingSettings
+        from seeding.domains.national_budget import run as _run
+        from seeding.types import DomainRunContext
+    except ImportError as exc:  # seeding package missing — safe to skip
+        logger.warning("national_budget seed skipped (import failed): %s", exc)
+        return
+
+    try:
+        settings = SeedingSettings(live_pdf_fetch_enabled=False)
+        context = DomainRunContext(since=None, dry_run=False, job_id=None)
+        result = _run(session=session, settings=settings, context=context)
+        if result.errors:
+            logger.warning(
+                "national_budget seed completed with errors: %s", result.errors
+            )
+        logger.info(
+            "National budget execution seeded (processed=%d, created=%d, updated=%d)",
+            result.items_processed,
+            result.items_created,
+            result.items_updated,
+        )
+    except Exception as exc:  # don't crash startup on seeder hiccups
+        logger.warning("national_budget seed skipped: %s", exc)
+
+
 def initialize_reference_data(
     code_lookup: Optional[Dict[str, str]] = None, *, force: bool = False
 ) -> None:
     """Seed canonical county + audit data into the database if missing.
 
-    Performs a fast check first: if 47 county entities already exist we
-    skip the expensive per-county loop entirely.  This cuts restart time
-    from ~3 min to <1 s on subsequent boots.
+    The per-county loop is the expensive part (~3 min on a cold DB); once
+    47 county entities exist it's skipped on subsequent boots. The
+    national-level seeders (GDP, population, federal audits) are cheap
+    and idempotent, so they always run — that way a new data file
+    (e.g. federal audit findings) is picked up on restart without
+    needing `--force`.
     """
-    # ── fast path: skip if data already present ──────────────────────
+    # Fast-path check — skip the expensive county loop only. National
+    # seeders further down still run so newly added data files get picked
+    # up even when the county entities are already in place.
+    skip_county_loop = False
     if not force:
         quick_session = SessionLocal()
         try:
@@ -1029,32 +1135,32 @@ def initialize_reference_data(
             )
             if county_count >= 47:
                 logger.info(
-                    "Reference data already present (%d county entities) — skipping bootstrap",
+                    "County data present (%d counties) — skipping county loop; "
+                    "still refreshing national-level data",
                     county_count,
                 )
-                quick_session.close()
-                return
+                skip_county_loop = True
         except Exception:
             pass  # table might not exist yet; fall through to full seed
         finally:
             quick_session.close()
 
-    # ── full seed path ───────────────────────────────────────────────
-    county_payload = _load_json(COUNTY_DATA_PATH)
-    county_records = county_payload.get("county_data", {})
-    if not county_records:
-        logger.warning("No county data available for seeding")
-        return
-
-    audit_payload = _load_json(AUDIT_DATA_PATH)
+    county_records: Dict[str, Any] = {}
     audit_by_county: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
     missing_by_county: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
 
-    for entry in audit_payload.get("audit_queries", []) or []:
-        audit_by_county[entry.get("county", "")].append(entry)
+    if not skip_county_loop:
+        county_payload = _load_json(COUNTY_DATA_PATH)
+        county_records = county_payload.get("county_data", {})
+        if not county_records:
+            logger.warning("No county data available for seeding")
 
-    for entry in audit_payload.get("missing_funds_cases", []) or []:
-        missing_by_county[entry.get("county", "")].append(entry)
+        audit_payload = _load_json(AUDIT_DATA_PATH)
+        for entry in audit_payload.get("audit_queries", []) or []:
+            audit_by_county[entry.get("county", "")].append(entry)
+
+        for entry in audit_payload.get("missing_funds_cases", []) or []:
+            missing_by_county[entry.get("county", "")].append(entry)
 
     session = SessionLocal()
     try:
@@ -1220,10 +1326,20 @@ def initialize_reference_data(
         # --- Federal/National government audit findings ---
         _seed_federal_audits(session, country=country, period=period)
 
+        # --- National-government budget execution (CoB NG-BIRR) ---
+        _seed_national_budget(session)
+
         session.commit()
-        logger.info(
-            "Reference county data initialized (%d counties)", len(county_records)
-        )
+        if skip_county_loop:
+            logger.info(
+                "National-level data refreshed (GDP, population, "
+                "federal audits, national budget)"
+            )
+        else:
+            logger.info(
+                "Reference county data initialized (%d counties)",
+                len(county_records),
+            )
     except Exception as exc:
         session.rollback()
         logger.error("Failed to initialize reference data: %s", exc)

@@ -26,10 +26,10 @@ export default function AuditListWithSources({
     severity,
   });
 
-  if (isLoading) return <div className='text-sm text-slate-600'>Loading audits…</div>;
+  if (isLoading) return <div className='text-sm text-slate-600 dark:text-neutral-muted'>Loading audits…</div>;
   if (error) return <div className='text-sm text-red-600'>Failed to load audits</div>;
   if (!data || data.items.length === 0)
-    return <div className='text-sm text-slate-600'>No audits found</div>;
+    return <div className='text-sm text-slate-600 dark:text-neutral-muted'>No audits found</div>;
 
   return (
     <ul className='space-y-2'>
@@ -38,9 +38,9 @@ export default function AuditListWithSources({
         const page = item.source?.page;
         const anchor = url ? `${url}${page ? `#page=${page}` : ''}` : undefined;
         return (
-          <li key={String(item.id)} className='p-3 rounded-lg border border-slate-200 bg-white'>
-            <div className='text-sm text-slate-800'>{item.description || 'Audit finding'}</div>
-            <div className='flex gap-3 text-xs text-slate-600 mt-1'>
+          <li key={String(item.id)} className='p-3 rounded-lg border border-slate-200 bg-white dark:bg-surface-base'>
+            <div className='text-sm text-slate-800 dark:text-neutral-text'>{item.description || 'Audit finding'}</div>
+            <div className='flex gap-3 text-xs text-slate-600 dark:text-neutral-muted mt-1'>
               {item.severity && <span>Severity: {item.severity}</span>}
               {item.status && <span>Status: {item.status}</span>}
               {item.fiscal_year && <span>FY: {item.fiscal_year}</span>}

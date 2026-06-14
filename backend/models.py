@@ -7,6 +7,7 @@ from sqlalchemy import (
     DateTime,
     Enum,
     ForeignKey,
+    Index,
     Integer,
     Numeric,
     String,
@@ -561,6 +562,65 @@ class EconomicIndicator(Base):
     source_document = relationship("SourceDocument")
 
 
+class ImfWeoObservation(Base):
+    """One IMF World Economic Outlook observation for a country/indicator/year.
+
+    Kept separate from ``economic_indicators`` because the semantics differ:
+      * Country-level, not entity-level (no FK into `entities` which is
+        county-scoped in this app).
+      * Year granularity, not an arbitrary date — WEO publishes annual
+        values, with future years being IMF projections.
+      * Vintage-aware — we preserve every snapshot IMF publishes (WEO
+        drops twice a year in April and October) so we can tell stories
+        like "IMF revised Kenya's 2027 projection from 72% → 75%
+        between the April and October vintages". `(country, indicator,
+        year)` can therefore have multiple rows, each with a different
+        `vintage` timestamp.
+
+    Primary consumer: the ``/api/v1/debt/broader`` endpoint that shows
+    IMF's general-government gross debt alongside the CBK central-
+    government figure on the debt page and home dashboard. Seeded
+    nightly by ``backend.seeding.domains.imf_weo``.
+    """
+
+    __tablename__ = "imf_weo_observations"
+    __table_args__ = (
+        UniqueConstraint(
+            "country_code",
+            "indicator",
+            "year",
+            "vintage",
+            name="uq_imf_weo_country_indicator_year_vintage",
+        ),
+        Index(
+            "ix_imf_weo_country_indicator_year",
+            "country_code",
+            "indicator",
+            "year",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    # ISO3 is 3 chars, but IMF DataMapper also returns regional aggregate
+    # codes (WEOWORLD, ADVEC, EURO, EU) that can reach ~8 chars. We filter
+    # them out in the parser, but widen the column as defense-in-depth so
+    # a parser regression surfaces as garbage data rather than a crash.
+    country_code = Column(String(16), nullable=False)  # e.g. "KEN"
+    indicator = Column(String(32), nullable=False)  # e.g. "GGXWDG_NGDP"
+    year = Column(Integer, nullable=False)
+    # Can be NULL — some years have no IMF value (especially for recently
+    # added indicators or data-gap countries).
+    value = Column(Numeric(20, 4), nullable=True)
+    is_projection = Column(Boolean, nullable=False, default=False)
+    # When this value was published/fetched. Multiple vintages per
+    # (country, indicator, year) let us track IMF's revisions over time.
+    vintage = Column(DateTime(timezone=True), nullable=False)
+    source = Column(String(32), nullable=False, default="imf_datamapper")
+    created_at = Column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+
+
 class IngestionStatus(enum.Enum):
     PENDING = "pending"
     RUNNING = "running"
@@ -963,3 +1023,44 @@ class ParliamentSourceDocument(Base):
 
     # Relationships
     source_document = relationship("SourceDocument")
+
+
+class AdminAuditLog(Base):
+    """
+    Append-only log of admin write actions.
+
+    Every destructive or privileged operation in the admin API
+    (modifying user roles, deleting users, manually triggering ETL,
+    etc.) records a row here so we have a "who did what, when"
+    trail. Read-only operations are NOT logged — only mutations.
+
+    Schema design:
+    - ``actor_id`` is the Supabase user UUID of the admin performing
+      the action (from the JWT ``sub`` claim).
+    - ``action`` is a short stable identifier like
+      ``"users.update_roles"`` or ``"etl.trigger"`` — these strings
+      become the filterable axis on the admin audit-log UI.
+    - ``target_type`` + ``target_id`` describe what the action was
+      performed on (``"user"`` + a UUID, ``"etl_source"`` + ``"cob"``,
+      etc.). Both nullable for actions that have no specific target.
+    - ``payload`` is the JSON body of the action — the
+      ``{old: [...], new: [...]}`` for a role change, the request
+      body for a trigger, etc. Useful for forensics; sensitive bits
+      (passwords, tokens) MUST be redacted before this is written.
+    """
+
+    __tablename__ = "admin_audit_log"
+
+    id = Column(Integer, primary_key=True, index=True)
+    actor_id = Column(String(64), nullable=False, index=True)
+    actor_email = Column(String(255), nullable=True)
+    action = Column(String(80), nullable=False, index=True)
+    target_type = Column(String(40), nullable=True, index=True)
+    target_id = Column(String(64), nullable=True, index=True)
+    payload = Column(JSONB, nullable=False, default=dict)
+    created_at = Column(
+        DateTime,
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        index=True,
+    )

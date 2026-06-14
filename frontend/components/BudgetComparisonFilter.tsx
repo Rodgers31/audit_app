@@ -70,22 +70,22 @@ export default function BudgetComparisonFilter({
     } else {
       switch (color) {
         case 'blue':
-          return `${baseClasses} bg-white text-blue-600 border-blue-200 hover:border-blue-400 hover:bg-blue-50`;
+          return `${baseClasses} bg-white dark:bg-surface-base text-blue-600 border-blue-200 hover:border-blue-400 hover:bg-blue-50`;
         case 'green':
-          return `${baseClasses} bg-white text-green-600 border-green-200 hover:border-green-400 hover:bg-green-50`;
+          return `${baseClasses} bg-white dark:bg-surface-base text-green-600 border-green-200 hover:border-green-400 hover:bg-green-50`;
         case 'purple':
-          return `${baseClasses} bg-white text-purple-600 border-purple-200 hover:border-purple-400 hover:bg-purple-50`;
+          return `${baseClasses} bg-white dark:bg-surface-base text-purple-600 border-purple-200 hover:border-purple-400 hover:bg-purple-50`;
         default:
-          return `${baseClasses} bg-white text-gray-600 border-gray-200 hover:border-gray-400 hover:bg-gray-50`;
+          return `${baseClasses} bg-white dark:bg-surface-base text-gray-600 dark:text-neutral-muted border-gray-200 dark:border-neutral-border hover:border-gray-400 hover:bg-gray-50 dark:bg-surface-elevated`;
       }
     }
   };
 
   return (
-    <div className='bg-white rounded-3xl p-8 shadow-xl border border-gray-200'>
+    <div className='bg-white dark:bg-surface-base rounded-3xl p-8 shadow-xl border border-gray-200 dark:border-neutral-border'>
       <div className='text-center mb-8'>
-        <h2 className='text-2xl font-bold text-gray-900 mb-2'>Choose Budget Period</h2>
-        <p className='text-gray-600'>
+        <h2 className='text-2xl font-bold text-gray-900 dark:text-neutral-text mb-2'>Choose Budget Period</h2>
+        <p className='text-gray-600 dark:text-neutral-muted'>
           Select a fiscal year or compare budget allocations across years
         </p>
       </div>
@@ -121,7 +121,7 @@ export default function BudgetComparisonFilter({
                 </div>
                 <div>
                   <h3 className='text-lg font-semibold'>{option.label}</h3>
-                  <p className={`text-sm ${isSelected ? 'text-white/80' : 'text-gray-600'}`}>
+                  <p className={`text-sm ${isSelected ? 'text-white/80' : 'text-gray-600 dark:text-neutral-muted'}`}>
                     {option.description}
                   </p>
                 </div>
@@ -132,7 +132,7 @@ export default function BudgetComparisonFilter({
                   {option.id === 'comparison' ? '+' : ''}
                   {formatCurrency(Math.abs(option.value))}
                 </div>
-                <div className={`text-sm ${isSelected ? 'text-white/80' : 'text-gray-600'}`}>
+                <div className={`text-sm ${isSelected ? 'text-white/80' : 'text-gray-600 dark:text-neutral-muted'}`}>
                   {option.id === 'comparison'
                     ? `Increase from 2023 to 2024`
                     : `Total budget allocation`}
@@ -153,8 +153,8 @@ export default function BudgetComparisonFilter({
       </div>
 
       {/* Additional Info */}
-      <div className='mt-8 p-6 bg-gray-50 rounded-2xl'>
-        <h4 className='font-semibold text-gray-900 mb-3'>Quick Facts</h4>
+      <div className='mt-8 p-6 bg-gray-50 dark:bg-surface-elevated rounded-2xl'>
+        <h4 className='font-semibold text-gray-900 dark:text-neutral-text mb-3'>Quick Facts</h4>
         <div className='grid grid-cols-1 md:grid-cols-3 gap-4 text-sm'>
           <div className='text-center'>
             <div className='text-lg font-bold text-blue-600'>
@@ -164,19 +164,19 @@ export default function BudgetComparisonFilter({
               ).toFixed(1)}
               %
             </div>
-            <div className='text-gray-600'>Budget Growth</div>
+            <div className='text-gray-600 dark:text-neutral-muted'>Budget Growth</div>
           </div>
           <div className='text-center'>
             <div className='text-lg font-bold text-green-600'>
               {budgetData['2024'].allocations.length}
             </div>
-            <div className='text-gray-600'>Major Sectors</div>
+            <div className='text-gray-600 dark:text-neutral-muted'>Major Sectors</div>
           </div>
           <div className='text-center'>
             <div className='text-lg font-bold text-purple-600'>
               {formatCurrency(budgetData['2024'].total)}
             </div>
-            <div className='text-gray-600'>Current Total</div>
+            <div className='text-gray-600 dark:text-neutral-muted'>Current Total</div>
           </div>
         </div>
       </div>

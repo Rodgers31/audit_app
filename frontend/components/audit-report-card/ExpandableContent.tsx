@@ -30,7 +30,7 @@ export default function ExpandableContent({ county, isExpanded }: ExpandableCont
           exit={{ height: 0, opacity: 0 }}
           transition={{ duration: 0.3, ease: 'easeInOut' }}
           className='overflow-hidden'>
-          <div className='px-6 pb-6 border-t border-gray-100'>
+          <div className='px-6 pb-6 border-t border-gray-100 dark:border-neutral-border'>
             <div className='pt-6 space-y-6'>
               <KeyFindings
                 keyFindings={county.auditSummary.keyFindings}

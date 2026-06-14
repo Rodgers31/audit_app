@@ -63,6 +63,10 @@ export interface CountyComprehensive {
     recurrent_budget: number;
     per_capita_budget: number;
     sector_breakdown: Record<string, { allocated: number; spent: number }>;
+    /** Fiscal year these budget numbers refer to (e.g. "FY2024/25").
+     * Set by the backend to the latest FY with actual execution data,
+     * not necessarily the current FY. */
+    fiscal_year?: string | null;
   };
   revenue: {
     total_revenue: number;
@@ -109,6 +113,9 @@ export interface CountyComprehensive {
     pending_bills_ratio: number;
     debt_sustainability: string;
   };
+  /** Per-FY health scores, oldest → newest. Only periods with actual
+   * execution are included; allocated-only years are skipped. */
+  health_history?: Array<{ fy: string; score: number; grade: string }>;
   data_sources: Record<string, string>;
 }
 
@@ -185,15 +192,44 @@ export interface Ministry {
   citizenServices: string[];
 }
 
+export interface GradeFactor {
+  impact: 'positive' | 'minor' | 'moderate' | 'major';
+  label: string;
+  detail: string;
+  /** Point delta applied to the 100-point accountability score.
+   * Negative for penalties, 0 for neutral/positive factors. */
+  points?: number;
+}
+
 export interface AccountabilityScorecard {
   county_id: string;
   county_name: string;
   audit_opinion_history: Array<{ year: number; opinion: string }>;
+  /** Per-year audit findings severity score (0-100, higher = fewer/less-severe findings).
+   * Used for the hero AUDIT trend sparkline. Separate from opinion_history so we
+   * never conflate "critical findings" with "adverse opinion" in scoring. */
+  audit_severity_history?: Array<{
+    year: number;
+    score: number;
+    info: number;
+    warning: number;
+    critical: number;
+  }>;
   total_flagged_amount: number;
+  /** Total raw findings count (may not equal sum of critical+warning if some have no severity). */
+  total_findings?: number;
+  critical_findings?: number;
+  warning_findings?: number;
   recurring_findings_count: number;
   unresolved_findings_count: number;
   absorption_rate: number | null;
+  /** Total flagged amount as % of current-FY budget. */
+  flagged_pct_of_budget?: number;
   accountability_grade: string; // A/B/C/D/F
+  /** Derived from a 100-point scale: A≥85, B≥70, C≥55, D≥40, else F. */
+  accountability_score?: number;
+  /** Ordered list of penalty/positive factors that drove the score. */
+  grade_factors?: GradeFactor[];
   peer_comparison: {
     region: string;
     region_avg_flagged_amount: number;
@@ -222,6 +258,14 @@ export interface MoneyFlowData {
   total_waste_estimate: number | null;
   efficiency_score: number | null;
   county_count?: number;
+  /** Official CoB publication that produced these figures. Surfaced
+   * in the UI so every number is traceable to a government source. */
+  source_document_title?: string | null;
+  source_document_url?: string | null;
+  /** Procurement encumbrances — not a waterfall stage but shown as a
+   * supplementary line under "Spent" when present, so readers can see
+   * how much of the budget is committed to contracts vs fully free. */
+  committed_amount?: number | null;
 }
 
 export interface ChartData {

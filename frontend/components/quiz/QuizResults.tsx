@@ -43,15 +43,15 @@ export default function QuizResults({
       className='text-center'>
       {/* Trophy and Score */}
       <Trophy size={64} className='text-yellow-500 mx-auto mb-6' />
-      <h2 className='text-3xl font-bold text-gray-900 mb-4'>Quiz Complete!</h2>
+      <h2 className='text-3xl font-bold text-gray-900 dark:text-neutral-text mb-4'>Quiz Complete!</h2>
       <div className='text-6xl font-bold text-blue-600 mb-2'>{percentage}%</div>
-      <p className='text-xl text-gray-600 mb-6'>
+      <p className='text-xl text-gray-600 dark:text-neutral-muted mb-6'>
         You got {score} out of {totalQuestions} questions correct
       </p>
 
       {/* Performance Breakdown */}
       <div className='bg-blue-50 rounded-2xl p-6 mb-8'>
-        <h3 className='text-lg font-semibold text-gray-900 mb-4'>Your Performance</h3>
+        <h3 className='text-lg font-semibold text-gray-900 dark:text-neutral-text mb-4'>Your Performance</h3>
         <div className='space-y-3'>
           {questions.map((question, index) => (
             <div key={index} className='flex items-center gap-3'>
@@ -60,7 +60,7 @@ export default function QuizResults({
               ) : (
                 <XCircle size={20} className='text-red-500' />
               )}
-              <span className='text-sm text-gray-700'>Question {index + 1}</span>
+              <span className='text-sm text-gray-700 dark:text-neutral-muted'>Question {index + 1}</span>
             </div>
           ))}
         </div>

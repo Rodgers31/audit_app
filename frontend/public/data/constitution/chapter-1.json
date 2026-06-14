@@ -1,0 +1,56 @@
+{
+  "number": 1,
+  "title": "Sovereignty of the People and Supremacy of This Constitution",
+  "summary": "Chapter 1 sets the foundation of the Republic: power belongs to the people of Kenya and every act of government must flow from this Constitution.",
+  "articles": [
+    {
+      "number": 1,
+      "title": "Sovereignty of the people",
+      "paragraphs": [
+        "(1) All sovereign power belongs to the people of Kenya and shall be exercised only in accordance with this Constitution.",
+        "(2) The people may exercise their sovereign power either directly or through their democratically elected representatives.",
+        "(3) Sovereign power under this Constitution is delegated to the following State organs, which shall perform their functions in accordance with this Constitution— (a) Parliament and the legislative assemblies in the county governments; (b) the national executive and the executive structures in the county governments; and (c) the Judiciary and independent tribunals.",
+        "(4) The sovereign power of the people is exercised at— (a) the national level; and (b) the county level."
+      ],
+      "summary": "Every cent of public money, every public office, every law — traces its authority back to ordinary Kenyans. Leaders do not own power; they borrow it from the people.",
+      "explanation": "When you demand an audit report or question a budget, you are exercising the sovereignty Article 1 guarantees. AuditGava is built around this idea: make the delegated power visible so the people who lent it can see how it is being used.",
+      "tags": [
+        "sovereignty",
+        "democracy",
+        "foundations"
+      ]
+    },
+    {
+      "number": 2,
+      "title": "Supremacy of this Constitution",
+      "paragraphs": [
+        "(1) This Constitution is the supreme law of the Republic and binds all persons and all State organs at both levels of government.",
+        "(2) No person may claim or exercise State authority except as authorised under this Constitution.",
+        "(3) The validity or legality of this Constitution is not subject to challenge by or before any court or other State organ.",
+        "(4) Any law, including customary law, that is inconsistent with this Constitution is void to the extent of the inconsistency, and any act or omission in contravention of this Constitution is invalid.",
+        "(5) The general rules of international law shall form part of the law of Kenya.",
+        "(6) Any treaty or convention ratified by Kenya shall form part of the law of Kenya under this Constitution."
+      ],
+      "summary": "Nothing — not an Act of Parliament, not a presidential directive, not a county by-law, not a tradition — sits above the Constitution. If it clashes with the Constitution, the Constitution wins.",
+      "explanation": "This is the clause that makes Chapter 12's audit rules and Chapter 6's integrity rules enforceable. Any procurement shortcut or budget manoeuvre that violates the Constitution is void, full stop.",
+      "tags": [
+        "supremacy",
+        "rule-of-law"
+      ]
+    },
+    {
+      "number": 3,
+      "title": "Defence of this Constitution",
+      "paragraphs": [
+        "(1) Every person has an obligation to respect, uphold and defend this Constitution.",
+        "(2) Any attempt to establish a government otherwise than in compliance with this Constitution is unlawful."
+      ],
+      "summary": "Defending the Constitution is not a job reserved for judges or the army. It is every Kenyan's civic duty.",
+      "explanation": "Reading the audit, flagging misuse, voting, petitioning — these are constitutional defence in practice.",
+      "tags": [
+        "civic-duty",
+        "defence"
+      ]
+    }
+  ]
+}

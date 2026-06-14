@@ -8,7 +8,7 @@ export function Skeleton({
   className?: string;
   style?: React.CSSProperties;
 }) {
-  return <div className={cn('animate-pulse bg-gray-200 rounded', className)} style={style} />;
+  return <div className={cn('animate-pulse bg-gray-200 dark:bg-surface-sunken rounded', className)} style={style} />;
 }
 
 /** Card-shaped skeleton with title + 3 content lines */
@@ -63,6 +63,25 @@ export function SkeletonChart({
   );
 }
 
+/**
+ * Full-page skeleton that mirrors a typical dashboard page (headline chart +
+ * a two-up card row + a table), so loading reads as "the page is assembling"
+ * instead of a lone spinner over a blank void. Render inside a PageShell.
+ */
+export function PageSkeleton() {
+  return (
+    <div className='space-y-6' role='status' aria-live='polite' aria-busy='true'>
+      <span className='sr-only'>Loading…</span>
+      <SkeletonChart height={300} />
+      <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
+        <SkeletonCard />
+        <SkeletonCard />
+      </div>
+      <SkeletonTable rows={6} />
+    </div>
+  );
+}
+
 /** Table-shaped skeleton with header + rows */
 export function SkeletonTable({
   rows = 5,
@@ -81,7 +100,7 @@ export function SkeletonTable({
       {/* Table rows */}
       <div className='p-4 space-y-3'>
         {/* Header row */}
-        <div className='flex gap-4 pb-2 border-b border-gray-100'>
+        <div className='flex gap-4 pb-2 border-b border-gray-100 dark:border-neutral-border'>
           {Array.from({ length: cols }).map((_, i) => (
             <Skeleton key={i} className='h-3 flex-1' />
           ))}

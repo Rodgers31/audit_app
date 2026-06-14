@@ -192,7 +192,7 @@ export default function AccountDashboard() {
   return (
     <div className='max-w-4xl mx-auto px-4 py-8'>
       {/* Tab bar */}
-      <div className='flex gap-1 bg-white/60 backdrop-blur-md border border-gov-sage/20 p-1 rounded-2xl mb-8 shadow-sm'>
+      <div className='flex gap-1 bg-white/60 dark:bg-surface-elevated backdrop-blur-md border border-gov-sage/20 p-1 rounded-2xl mb-8 shadow-sm'>
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -200,7 +200,7 @@ export default function AccountDashboard() {
             className={`flex items-center gap-2 flex-1 justify-center py-3 px-4 rounded-xl text-sm font-semibold transition-all relative ${
               activeTab === tab.id
                 ? 'bg-gov-forest text-white shadow-md'
-                : 'text-gov-forest/70 hover:bg-gov-sage/10'
+                : 'text-gov-forest/70 dark:text-emerald-100/70 hover:bg-gov-sage/10'
             }`}>
             {tab.icon}
             {tab.label}
@@ -224,29 +224,29 @@ export default function AccountDashboard() {
             exit={{ opacity: 0, y: -12 }}
             className='space-y-6'>
             {/* ── Identity card ── */}
-            <div className='bg-white/80 backdrop-blur-md border border-gov-sage/15 rounded-2xl p-6 shadow-sm'>
+            <div className='bg-white/80 dark:bg-surface-elevated backdrop-blur-md border border-gov-sage/15 rounded-2xl p-6 shadow-sm'>
               <div className='flex items-center gap-4 mb-8'>
                 <div className='w-16 h-16 rounded-2xl bg-gradient-to-br from-gov-sage to-gov-forest flex items-center justify-center text-white text-2xl font-bold shadow-lg'>
                   {(user?.display_name || user?.email || 'C')[0].toUpperCase()}
                 </div>
                 <div>
-                  <h2 className='text-xl font-bold text-gov-dark'>
+                  <h2 className='text-xl font-bold text-gov-dark dark:text-white'>
                     {user?.display_name || 'Citizen'}
                   </h2>
-                  <p className='text-gov-forest/60 text-sm'>{user?.email}</p>
+                  <p className='text-gov-forest/60 dark:text-emerald-100/60 text-sm'>{user?.email}</p>
                 </div>
               </div>
 
               <div className='space-y-5'>
                 <div>
-                  <label className='block text-xs font-semibold uppercase tracking-wider text-gov-forest/50 mb-1.5'>
+                  <label className='block text-xs font-semibold uppercase tracking-wider text-gov-forest/50 dark:text-emerald-100/50 mb-1.5'>
                     Display Name
                   </label>
                   <input
                     type='text'
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
-                    className='w-full px-4 py-3 rounded-xl bg-gov-sand/60 border border-gov-sage/20 text-gov-dark placeholder:text-gov-forest/30 focus:outline-none focus:ring-2 focus:ring-gov-sage/40 transition-all'
+                    className='w-full px-4 py-3 rounded-xl bg-gov-sand/60 border border-gov-sage/20 text-gov-dark dark:text-white placeholder:text-gov-forest/30 dark:text-emerald-100/30 focus:outline-none focus:ring-2 focus:ring-gov-sage/40 transition-all'
                     placeholder='Your display name'
                   />
                 </div>
@@ -276,14 +276,14 @@ export default function AccountDashboard() {
 
               {/* Role badges */}
               <div className='mt-8 pt-6 border-t border-gov-sage/10'>
-                <p className='text-xs font-semibold uppercase tracking-wider text-gov-forest/40 mb-2'>
+                <p className='text-xs font-semibold uppercase tracking-wider text-gov-forest/40 dark:text-emerald-100/40 mb-2'>
                   Roles
                 </p>
                 <div className='flex flex-wrap gap-2'>
                   {user?.roles.map((role) => (
                     <span
                       key={role}
-                      className='px-3 py-1 bg-gov-sage/15 text-gov-forest text-xs font-semibold rounded-full border border-gov-sage/20'>
+                      className='px-3 py-1 bg-gov-sage/15 text-gov-forest dark:text-emerald-100 text-xs font-semibold rounded-full border border-gov-sage/20'>
                       {role}
                     </span>
                   ))}
@@ -292,12 +292,12 @@ export default function AccountDashboard() {
             </div>
 
             {/* ── Change Email ── */}
-            <div className='bg-white/80 backdrop-blur-md border border-gov-sage/15 rounded-2xl p-6 shadow-sm'>
+            <div className='bg-white/80 dark:bg-surface-elevated backdrop-blur-md border border-gov-sage/15 rounded-2xl p-6 shadow-sm'>
               <div className='flex items-center gap-2 mb-4'>
                 <Mail className='w-5 h-5 text-gov-sage' />
-                <h3 className='font-bold text-gov-dark'>Change Email</h3>
+                <h3 className='font-bold text-gov-dark dark:text-white'>Change Email</h3>
               </div>
-              <p className='text-sm text-gov-forest/60 mb-4'>
+              <p className='text-sm text-gov-forest/60 dark:text-emerald-100/60 mb-4'>
                 A confirmation link will be sent to the new email address. Your email won&apos;t
                 change until you click that link.
               </p>
@@ -307,7 +307,7 @@ export default function AccountDashboard() {
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
                   placeholder='new-email@example.com'
-                  className='flex-1 px-4 py-3 rounded-xl bg-gov-sand/60 border border-gov-sage/20 text-gov-dark placeholder:text-gov-forest/30 focus:outline-none focus:ring-2 focus:ring-gov-sage/40 transition-all'
+                  className='flex-1 px-4 py-3 rounded-xl bg-gov-sand/60 border border-gov-sage/20 text-gov-dark dark:text-white placeholder:text-gov-forest/30 dark:text-emerald-100/30 focus:outline-none focus:ring-2 focus:ring-gov-sage/40 transition-all'
                 />
                 <button
                   onClick={handleChangeEmail}
@@ -339,14 +339,14 @@ export default function AccountDashboard() {
             </div>
 
             {/* ── Reset Password ── */}
-            <div className='bg-white/80 backdrop-blur-md border border-gov-sage/15 rounded-2xl p-6 shadow-sm'>
+            <div className='bg-white/80 dark:bg-surface-elevated backdrop-blur-md border border-gov-sage/15 rounded-2xl p-6 shadow-sm'>
               <div className='flex items-center gap-2 mb-4'>
                 <KeyRound className='w-5 h-5 text-gov-sage' />
-                <h3 className='font-bold text-gov-dark'>Reset Password</h3>
+                <h3 className='font-bold text-gov-dark dark:text-white'>Reset Password</h3>
               </div>
-              <p className='text-sm text-gov-forest/60 mb-4'>
+              <p className='text-sm text-gov-forest/60 dark:text-emerald-100/60 mb-4'>
                 We&apos;ll send a secure reset link to{' '}
-                <span className='font-medium text-gov-dark'>{user?.email}</span>. Follow the link to
+                <span className='font-medium text-gov-dark dark:text-white'>{user?.email}</span>. Follow the link to
                 set a new password.
               </p>
               <button
@@ -378,12 +378,12 @@ export default function AccountDashboard() {
             </div>
 
             {/* ── Danger Zone: Delete Account ── */}
-            <div className='bg-white/80 backdrop-blur-md border border-gov-copper/20 rounded-2xl p-6 shadow-sm'>
+            <div className='bg-white/80 dark:bg-surface-elevated backdrop-blur-md border border-gov-copper/20 rounded-2xl p-6 shadow-sm'>
               <div className='flex items-center gap-2 mb-4'>
                 <UserX className='w-5 h-5 text-gov-copper' />
                 <h3 className='font-bold text-gov-copper'>Delete Account</h3>
               </div>
-              <p className='text-sm text-gov-forest/60 mb-4'>
+              <p className='text-sm text-gov-forest/60 dark:text-emerald-100/60 mb-4'>
                 Permanently delete your account and all associated data including your watchlist,
                 alerts, and preferences. This action{' '}
                 <span className='font-semibold text-gov-copper'>cannot be undone</span>.
@@ -403,10 +403,10 @@ export default function AccountDashboard() {
                   <div className='flex items-start gap-3'>
                     <AlertTriangle className='w-5 h-5 text-gov-copper mt-0.5 shrink-0' />
                     <div>
-                      <p className='font-semibold text-gov-dark text-sm'>
+                      <p className='font-semibold text-gov-dark dark:text-white text-sm'>
                         Are you absolutely sure?
                       </p>
-                      <p className='text-xs text-gov-forest/60 mt-1'>
+                      <p className='text-xs text-gov-forest/60 dark:text-emerald-100/60 mt-1'>
                         Type <span className='font-mono font-bold text-gov-copper'>DELETE</span>{' '}
                         below to confirm you want to permanently remove your account.
                       </p>
@@ -417,7 +417,7 @@ export default function AccountDashboard() {
                     value={deleteTyped}
                     onChange={(e) => setDeleteTyped(e.target.value)}
                     placeholder='Type DELETE to confirm'
-                    className='w-full px-4 py-3 rounded-xl bg-white border border-red-300 text-gov-dark placeholder:text-gov-forest/30 focus:outline-none focus:ring-2 focus:ring-gov-copper/40 transition-all font-mono'
+                    className='w-full px-4 py-3 rounded-xl bg-white dark:bg-surface-base border border-red-300 text-gov-dark dark:text-white placeholder:text-gov-forest/30 dark:text-emerald-100/30 focus:outline-none focus:ring-2 focus:ring-gov-copper/40 transition-all font-mono'
                   />
                   <div className='flex gap-3'>
                     <button
@@ -436,7 +436,7 @@ export default function AccountDashboard() {
                         setShowDeleteConfirm(false);
                         setDeleteTyped('');
                       }}
-                      className='px-6 py-3 rounded-xl border border-gov-sage/20 text-gov-forest/70 font-semibold hover:bg-gov-sage/5 transition-all'>
+                      className='px-6 py-3 rounded-xl border border-gov-sage/20 text-gov-forest/70 dark:text-emerald-100/70 font-semibold hover:bg-gov-sage/5 transition-all'>
                       Cancel
                     </button>
                   </div>
@@ -458,10 +458,10 @@ export default function AccountDashboard() {
                 <Loader2 className='w-6 h-6 animate-spin text-gov-sage' />
               </div>
             ) : watchlist.length === 0 ? (
-              <div className='text-center py-20 bg-white/60 backdrop-blur-md rounded-2xl border border-gov-sage/15'>
+              <div className='text-center py-20 bg-white/60 dark:bg-surface-elevated backdrop-blur-md rounded-2xl border border-gov-sage/15'>
                 <Bookmark className='w-12 h-12 mx-auto text-gov-sage/30 mb-4' />
-                <h3 className='text-lg font-bold text-gov-dark mb-2'>No items yet</h3>
-                <p className='text-gov-forest/50 text-sm max-w-md mx-auto'>
+                <h3 className='text-lg font-bold text-gov-dark dark:text-white mb-2'>No items yet</h3>
+                <p className='text-gov-forest/50 dark:text-emerald-100/50 text-sm max-w-md mx-auto'>
                   Browse County Explorer or Budget & Spending and tap the{' '}
                   <Bookmark className='inline w-4 h-4 align-text-bottom' /> button to start tracking
                   items.
@@ -476,7 +476,7 @@ export default function AccountDashboard() {
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, x: -40 }}
-                    className='flex items-center justify-between p-4 bg-white/80 backdrop-blur-md border border-gov-sage/15 rounded-xl shadow-sm hover:shadow-md transition-shadow'>
+                    className='flex items-center justify-between p-4 bg-white/80 dark:bg-surface-elevated backdrop-blur-md border border-gov-sage/15 rounded-xl shadow-sm hover:shadow-md transition-shadow'>
                     <Link
                       href={item.item_type === 'county' ? `/counties/${item.item_id}` : '/budget'}
                       className='flex items-center gap-3 flex-1 min-w-0'>
@@ -489,11 +489,11 @@ export default function AccountDashboard() {
                         <MapPin className='w-5 h-5' />
                       </div>
                       <div className='min-w-0'>
-                        <p className='font-semibold text-gov-dark text-sm flex items-center gap-1.5'>
+                        <p className='font-semibold text-gov-dark dark:text-white text-sm flex items-center gap-1.5'>
                           <span className='truncate'>{item.label}</span>
                           <ExternalLink className='w-3 h-3 text-gov-sage/40 shrink-0' />
                         </p>
-                        <p className='text-xs text-gov-forest/50 capitalize'>
+                        <p className='text-xs text-gov-forest/50 dark:text-emerald-100/50 capitalize'>
                           {item.item_type.replace('_', ' ')}
                         </p>
                       </div>
@@ -526,10 +526,10 @@ export default function AccountDashboard() {
                 <Loader2 className='w-6 h-6 animate-spin text-gov-sage' />
               </div>
             ) : alerts.length === 0 ? (
-              <div className='text-center py-20 bg-white/60 backdrop-blur-md rounded-2xl border border-gov-sage/15'>
+              <div className='text-center py-20 bg-white/60 dark:bg-surface-elevated backdrop-blur-md rounded-2xl border border-gov-sage/15'>
                 <BellOff className='w-12 h-12 mx-auto text-gov-sage/30 mb-4' />
-                <h3 className='text-lg font-bold text-gov-dark mb-2'>No alerts</h3>
-                <p className='text-gov-forest/50 text-sm max-w-md mx-auto'>
+                <h3 className='text-lg font-bold text-gov-dark dark:text-white mb-2'>No alerts</h3>
+                <p className='text-gov-forest/50 dark:text-emerald-100/50 text-sm max-w-md mx-auto'>
                   When data changes for your watchlist items, you&apos;ll see notifications here.
                 </p>
               </div>
@@ -539,7 +539,7 @@ export default function AccountDashboard() {
                   <div className='flex justify-end mb-4'>
                     <button
                       onClick={handleMarkAllRead}
-                      className='flex items-center gap-1.5 text-xs font-semibold text-gov-sage hover:text-gov-forest transition-colors'>
+                      className='flex items-center gap-1.5 text-xs font-semibold text-gov-sage hover:text-gov-forest dark:text-emerald-100 transition-colors'>
                       <CheckCheck className='w-4 h-4' />
                       Mark all read
                     </button>
@@ -552,8 +552,8 @@ export default function AccountDashboard() {
                       layout
                       className={`p-4 rounded-xl border transition-all cursor-pointer ${
                         alert.read
-                          ? 'bg-white/60 border-gov-sage/10 opacity-70'
-                          : 'bg-white/90 border-gov-sage/20 shadow-sm'
+                          ? 'bg-white/60 dark:bg-surface-elevated border-gov-sage/10 opacity-70'
+                          : 'bg-white/90 dark:bg-surface-elevated border-gov-sage/20 shadow-sm'
                       }`}
                       onClick={() => !alert.read && handleMarkRead(alert.id)}>
                       <div className='flex items-start gap-3'>
@@ -561,13 +561,13 @@ export default function AccountDashboard() {
                           <div className='w-2.5 h-2.5 rounded-full bg-gov-sage mt-1.5 flex-shrink-0' />
                         )}
                         <div className='flex-1 min-w-0'>
-                          <p className='font-semibold text-gov-dark text-sm'>{alert.title}</p>
+                          <p className='font-semibold text-gov-dark dark:text-white text-sm'>{alert.title}</p>
                           {alert.body && (
-                            <p className='text-gov-forest/60 text-xs mt-1 line-clamp-2'>
+                            <p className='text-gov-forest/60 dark:text-emerald-100/60 text-xs mt-1 line-clamp-2'>
                               {alert.body}
                             </p>
                           )}
-                          <p className='text-gov-forest/40 text-xs mt-2'>
+                          <p className='text-gov-forest/40 dark:text-emerald-100/40 text-xs mt-2'>
                             {new Date(alert.created_at).toLocaleDateString('en-KE', {
                               day: 'numeric',
                               month: 'short',
@@ -598,12 +598,12 @@ export default function AccountDashboard() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.85, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-              className='bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl'>
+              className='bg-white dark:bg-surface-base rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl'>
               <div className='w-16 h-16 mx-auto mb-5 rounded-full bg-gov-sage/10 flex items-center justify-center'>
                 <LogOut className='w-8 h-8 text-gov-sage' />
               </div>
-              <h2 className='text-xl font-bold text-gov-dark mb-2'>Sorry to see you go</h2>
-              <p className='text-sm text-gov-forest/60 mb-6'>
+              <h2 className='text-xl font-bold text-gov-dark dark:text-white mb-2'>Sorry to see you go</h2>
+              <p className='text-sm text-gov-forest/60 dark:text-emerald-100/60 mb-6'>
                 Your account has been permanently deleted. Thank you for using Kenya Public Money
                 Tracker.
               </p>
@@ -615,7 +615,7 @@ export default function AccountDashboard() {
                   className='h-full bg-gov-sage rounded-full'
                 />
               </div>
-              <p className='text-xs text-gov-forest/40 mt-3'>Redirecting to home…</p>
+              <p className='text-xs text-gov-forest/40 dark:text-emerald-100/40 mt-3'>Redirecting to home…</p>
             </motion.div>
           </motion.div>
         )}

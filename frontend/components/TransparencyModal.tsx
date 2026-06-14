@@ -144,30 +144,30 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className='fixed inset-x-4 top-4 bottom-4 md:inset-x-8 md:top-8 md:bottom-8 lg:inset-x-16 lg:top-16 lg:bottom-16 bg-white rounded-2xl shadow-2xl z-50 flex flex-col max-w-6xl mx-auto'>
+            className='fixed inset-x-4 top-4 bottom-4 md:inset-x-8 md:top-8 md:bottom-8 lg:inset-x-16 lg:top-16 lg:bottom-16 bg-white dark:bg-surface-base rounded-2xl shadow-2xl z-50 flex flex-col max-w-6xl mx-auto'>
             {/* Header */}
-            <div className='flex items-center justify-between p-6 border-b border-gray-200'>
+            <div className='flex items-center justify-between p-6 border-b border-gray-200 dark:border-neutral-border'>
               <div className='flex items-center gap-3'>
                 {view !== 'main' && (
                   <button
                     onClick={() => setView('main')}
-                    className='p-2 hover:bg-gray-100 rounded-full transition-colors'
+                    className='p-2 hover:bg-gray-100 dark:bg-surface-elevated rounded-full transition-colors'
                     title='Back'>
-                    <ArrowLeft size={22} className='text-gray-600' />
+                    <ArrowLeft size={22} className='text-gray-600 dark:text-neutral-muted' />
                   </button>
                 )}
                 <div>
-                  <h2 className='text-2xl font-bold text-gray-900'>
+                  <h2 className='text-2xl font-bold text-gray-900 dark:text-neutral-text'>
                     <TitleByView />
                   </h2>
-                  <p className='text-lg text-gray-600 mt-1'>{county.name}</p>
+                  <p className='text-lg text-gray-600 dark:text-neutral-muted mt-1'>{county.name}</p>
                 </div>
               </div>
               <button
                 onClick={onClose}
-                className='p-2 hover:bg-gray-100 rounded-full transition-colors'
+                className='p-2 hover:bg-gray-100 dark:bg-surface-elevated rounded-full transition-colors'
                 title='Close'>
-                <X size={24} className='text-gray-500' />
+                <X size={24} className='text-gray-500 dark:text-neutral-muted/80' />
               </button>
             </div>
 
@@ -181,7 +181,7 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
                     <div className={`${getScoreBg(transparencyScore)} border rounded-2xl p-6`}>
                       <div className='flex items-center gap-3 mb-4'>
                         <Eye className={`${getScoreColor(transparencyScore)} h-8 w-8`} />
-                        <h3 className='text-xl font-bold text-gray-900'>Transparency Score</h3>
+                        <h3 className='text-xl font-bold text-gray-900 dark:text-neutral-text'>Transparency Score</h3>
                       </div>
 
                       <div className='text-center mb-6'>
@@ -189,25 +189,25 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
                           className={`text-6xl font-bold ${getScoreColor(transparencyScore)} mb-2`}>
                           {transparencyScore}
                         </div>
-                        <div className='text-gray-600'>out of 100</div>
-                        <div className='text-sm text-gray-500 mt-2'>
+                        <div className='text-gray-600 dark:text-neutral-muted'>out of 100</div>
+                        <div className='text-sm text-gray-500 dark:text-neutral-muted/80 mt-2'>
                           Based on audit rating: {county.audit_rating || 'B'}
                         </div>
                       </div>
 
                       <div className='space-y-3'>
                         <div className='flex justify-between'>
-                          <span className='text-gray-600'>Audit Performance</span>
+                          <span className='text-gray-600 dark:text-neutral-muted'>Audit Performance</span>
                           <span className='font-semibold'>{county.audit_rating || 'B'}</span>
                         </div>
                         <div className='flex justify-between'>
-                          <span className='text-gray-600'>Budget Size</span>
+                          <span className='text-gray-600 dark:text-neutral-muted'>Budget Size</span>
                           <span className='font-semibold'>
                             {formatCurrency(county.budget_2025 || county.totalBudget || 0)}
                           </span>
                         </div>
                         <div className='flex justify-between'>
-                          <span className='text-gray-600'>Citizens Served</span>
+                          <span className='text-gray-600 dark:text-neutral-muted'>Citizens Served</span>
                           <span className='font-semibold'>
                             {county.population?.toLocaleString()}
                           </span>
@@ -219,7 +219,7 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
                     <div className='bg-blue-50 border border-blue-200 rounded-2xl p-6'>
                       <div className='flex items-center gap-3 mb-4'>
                         <Users className='text-blue-600 h-8 w-8' />
-                        <h3 className='text-xl font-bold text-gray-900'>How This Affects You</h3>
+                        <h3 className='text-xl font-bold text-gray-900 dark:text-neutral-text'>How This Affects You</h3>
                       </div>
 
                       <div className='space-y-4'>
@@ -231,7 +231,7 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
                               initial={{ opacity: 0, x: -20 }}
                               animate={{ opacity: 1, x: 0 }}
                               transition={{ delay: index * 0.1 }}
-                              className='bg-white rounded-xl p-4 border border-blue-200'>
+                              className='bg-white dark:bg-surface-base rounded-xl p-4 border border-blue-200'>
                               <div className='flex items-start gap-3'>
                                 <Icon
                                   className={`h-6 w-6 ${
@@ -243,11 +243,11 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
                                   } mt-1`}
                                 />
                                 <div className='flex-1'>
-                                  <h4 className='font-semibold text-gray-900 mb-1'>
+                                  <h4 className='font-semibold text-gray-900 dark:text-neutral-text mb-1'>
                                     {impact.category}
                                   </h4>
-                                  <p className='text-gray-700 text-sm mb-2'>{impact.impact}</p>
-                                  <div className='text-xs text-gray-500'>
+                                  <p className='text-gray-700 dark:text-neutral-muted text-sm mb-2'>{impact.impact}</p>
+                                  <div className='text-xs text-gray-500 dark:text-neutral-muted/80'>
                                     Affects ~{impact.citizens_affected.toLocaleString()} citizens
                                   </div>
                                 </div>
@@ -260,8 +260,8 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
                   </div>
 
                   {/* Accountability Actions */}
-                  <div className='mt-8 bg-gray-50 rounded-2xl p-6'>
-                    <h3 className='text-xl font-bold text-gray-900 mb-4'>
+                  <div className='mt-8 bg-gray-50 dark:bg-surface-elevated rounded-2xl p-6'>
+                    <h3 className='text-xl font-bold text-gray-900 dark:text-neutral-text mb-4'>
                       Take Action for Accountability
                     </h3>
                     <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
@@ -298,22 +298,22 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
                       <span className='font-semibold'>{county.audit_rating}</span>
                     </p>
                     <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-                      <div className='bg-white rounded-xl p-4 border'>
-                        <div className='text-sm text-gray-500'>Budget Size</div>
+                      <div className='bg-white dark:bg-surface-base rounded-xl p-4 border'>
+                        <div className='text-sm text-gray-500 dark:text-neutral-muted/80'>Budget Size</div>
                         <div className='text-lg font-semibold'>
                           {formatCurrency(county.budget_2025 || county.totalBudget || 0)}
                         </div>
                       </div>
-                      <div className='bg-white rounded-xl p-4 border'>
-                        <div className='text-sm text-gray-500'>Budget Utilization</div>
+                      <div className='bg-white dark:bg-surface-base rounded-xl p-4 border'>
+                        <div className='text-sm text-gray-500 dark:text-neutral-muted/80'>Budget Utilization</div>
                         <div className='text-lg font-semibold'>
                           {formatPct(
                             auditsEnriched?.kpis?.budget_execution_rate ?? county.budgetUtilization
                           )}
                         </div>
                       </div>
-                      <div className='bg-white rounded-xl p-4 border'>
-                        <div className='text-sm text-gray-500'>Pending Bills</div>
+                      <div className='bg-white dark:bg-surface-base rounded-xl p-4 border'>
+                        <div className='text-sm text-gray-500 dark:text-neutral-muted/80'>Pending Bills</div>
                         <div className='text-lg font-semibold'>
                           {formatCurrency(
                             (auditsEnriched?.kpis?.pending_bills as number | undefined) ??
@@ -326,22 +326,22 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
 
                     {/* Quick Stats from enriched audits */}
                     <div className='grid grid-cols-1 md:grid-cols-3 gap-4 mt-4'>
-                      <div className='bg-white rounded-xl p-4 border'>
-                        <div className='text-sm text-gray-500'>Audit Queries</div>
+                      <div className='bg-white dark:bg-surface-base rounded-xl p-4 border'>
+                        <div className='text-sm text-gray-500 dark:text-neutral-muted/80'>Audit Queries</div>
                         <div className='text-lg font-semibold'>
                           {auditsEnriched?.summary?.queries_count ?? '—'}
                         </div>
                       </div>
-                      <div className='bg-white rounded-xl p-4 border'>
-                        <div className='text-sm text-gray-500'>Missing Funds (Total)</div>
+                      <div className='bg-white dark:bg-surface-base rounded-xl p-4 border'>
+                        <div className='text-sm text-gray-500 dark:text-neutral-muted/80'>Missing Funds (Total)</div>
                         <div className='text-lg font-semibold'>
                           {auditsEnriched?.missing_funds?.total_amount != null
                             ? formatCurrency(auditsEnriched.missing_funds.total_amount)
                             : '—'}
                         </div>
                       </div>
-                      <div className='bg-white rounded-xl p-4 border'>
-                        <div className='text-sm text-gray-500'>COB Coverage</div>
+                      <div className='bg-white dark:bg-surface-base rounded-xl p-4 border'>
+                        <div className='text-sm text-gray-500 dark:text-neutral-muted/80'>COB Coverage</div>
                         <div className='text-lg font-semibold'>
                           {auditsEnriched?.cob_implementation?.coverage?.analysis_depth || '—'}
                         </div>
@@ -349,8 +349,8 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
                     </div>
                   </div>
 
-                  <div className='bg-white rounded-2xl border p-6'>
-                    <h4 className='font-semibold text-gray-900 mb-3'>Key Findings</h4>
+                  <div className='bg-white dark:bg-surface-base rounded-2xl border p-6'>
+                    <h4 className='font-semibold text-gray-900 dark:text-neutral-text mb-3'>Key Findings</h4>
                     {auditsEnriched?.queries?.length ? (
                       <button
                         onClick={() => setShowAllQueries((v) => !v)}
@@ -408,8 +408,8 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
                             }`}
                           />
                           <div>
-                            <div className='font-medium text-gray-900'>{issue.description}</div>
-                            <div className='text-xs text-gray-500 capitalize'>
+                            <div className='font-medium text-gray-900 dark:text-neutral-text'>{issue.description}</div>
+                            <div className='text-xs text-gray-500 dark:text-neutral-muted/80 capitalize'>
                               {issue.type} • {issue.severity} • {issue.status}
                               {issue.amount != null
                                 ? ` • ${formatCurrency(issue.amount as number)}`
@@ -423,7 +423,7 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
                     </ul>
                     {showAllQueries && auditsEnriched?.queries?.length ? (
                       <div className='mt-6'>
-                        <h5 className='text-sm font-semibold text-gray-800 mb-2'>
+                        <h5 className='text-sm font-semibold text-gray-800 dark:text-neutral-text mb-2'>
                           All audit queries
                         </h5>
                         <ul className='divide-y divide-gray-200 border rounded-xl'>
@@ -431,13 +431,13 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
                             <li key={q.id || idx} className='p-4'>
                               <div className='flex items-start justify-between'>
                                 <div className='pr-4'>
-                                  <div className='font-medium text-gray-900'>{q.description}</div>
-                                  <div className='text-xs text-gray-500 capitalize'>
+                                  <div className='font-medium text-gray-900 dark:text-neutral-text'>{q.description}</div>
+                                  <div className='text-xs text-gray-500 dark:text-neutral-muted/80 capitalize'>
                                     {q.category || 'other'} • {q.severity || 'medium'} •{' '}
                                     {q.status || 'open'} • {q.date_raised || '—'}
                                   </div>
                                 </div>
-                                <div className='text-sm text-gray-700'>
+                                <div className='text-sm text-gray-700 dark:text-neutral-muted'>
                                   {q.amount_involved ? q.amount_involved : ''}
                                 </div>
                               </div>
@@ -448,9 +448,9 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
                     ) : null}
                   </div>
 
-                  <div className='bg-gray-50 rounded-2xl p-6 border'>
-                    <h4 className='font-semibold text-gray-900 mb-2'>What you can do</h4>
-                    <ul className='list-disc pl-5 space-y-1 text-sm text-gray-700'>
+                  <div className='bg-gray-50 dark:bg-surface-elevated rounded-2xl p-6 border'>
+                    <h4 className='font-semibold text-gray-900 dark:text-neutral-text mb-2'>What you can do</h4>
+                    <ul className='list-disc pl-5 space-y-1 text-sm text-gray-700 dark:text-neutral-muted'>
                       <li>Request supporting documents for flagged expenses</li>
                       <li>Ask for timelines on resolving pending issues</li>
                       <li>Report service delivery gaps via official channels</li>
@@ -465,40 +465,40 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
                   <div className='bg-green-50 border border-green-200 rounded-2xl p-6'>
                     <h3 className='text-xl font-bold text-green-900 mb-2'>Budget Overview</h3>
                     <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
-                      <div className='bg-white rounded-xl p-4 border'>
-                        <div className='text-sm text-gray-500'>Total Budget</div>
+                      <div className='bg-white dark:bg-surface-base rounded-xl p-4 border'>
+                        <div className='text-sm text-gray-500 dark:text-neutral-muted/80'>Total Budget</div>
                         <div className='text-lg font-semibold'>
                           {formatCurrency(county.budget_2025 || county.totalBudget || 0)}
                         </div>
                       </div>
-                      <div className='bg-white rounded-xl p-4 border'>
-                        <div className='text-sm text-gray-500'>Development</div>
+                      <div className='bg-white dark:bg-surface-base rounded-xl p-4 border'>
+                        <div className='text-sm text-gray-500 dark:text-neutral-muted/80'>Development</div>
                         <div className='text-lg font-semibold'>
                           {county.developmentBudget
                             ? formatCurrency(county.developmentBudget)
                             : 'Unavailable'}
                         </div>
                         {!county.developmentBudget && (
-                          <div className='text-xs text-gray-400 mt-1'>
+                          <div className='text-xs text-gray-400 dark:text-neutral-muted/80 mt-1'>
                             Not classified in source data
                           </div>
                         )}
                       </div>
-                      <div className='bg-white rounded-xl p-4 border'>
-                        <div className='text-sm text-gray-500'>Recurrent</div>
+                      <div className='bg-white dark:bg-surface-base rounded-xl p-4 border'>
+                        <div className='text-sm text-gray-500 dark:text-neutral-muted/80'>Recurrent</div>
                         <div className='text-lg font-semibold'>
                           {county.recurrentBudget
                             ? formatCurrency(county.recurrentBudget)
                             : 'Unavailable'}
                         </div>
                         {!county.recurrentBudget && (
-                          <div className='text-xs text-gray-400 mt-1'>
+                          <div className='text-xs text-gray-400 dark:text-neutral-muted/80 mt-1'>
                             Not classified in source data
                           </div>
                         )}
                       </div>
-                      <div className='bg-white rounded-xl p-4 border'>
-                        <div className='text-sm text-gray-500'>Utilization</div>
+                      <div className='bg-white dark:bg-surface-base rounded-xl p-4 border'>
+                        <div className='text-sm text-gray-500 dark:text-neutral-muted/80'>Utilization</div>
                         <div className='text-lg font-semibold'>
                           {formatPct(county.budgetUtilization)}
                         </div>
@@ -506,8 +506,8 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
                     </div>
                   </div>
 
-                  <div className='bg-white rounded-2xl border p-6'>
-                    <h4 className='font-semibold text-gray-900 mb-3'>Top Sectors</h4>
+                  <div className='bg-white dark:bg-surface-base rounded-2xl border p-6'>
+                    <h4 className='font-semibold text-gray-900 dark:text-neutral-text mb-3'>Top Sectors</h4>
                     <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
                       {[
                         { label: 'Education', value: county.education },
@@ -515,7 +515,7 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
                         { label: 'Infrastructure', value: county.infrastructure },
                       ].map((s) => (
                         <div key={s.label} className='border rounded-xl p-4'>
-                          <div className='text-sm text-gray-500'>{s.label}</div>
+                          <div className='text-sm text-gray-500 dark:text-neutral-muted/80'>{s.label}</div>
                           <div className='text-lg font-semibold'>
                             {s.value != null ? formatCurrency(s.value) : '—'}
                           </div>
@@ -538,9 +538,9 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
                     </p>
                   </div>
 
-                  <div className='bg-white rounded-2xl border p-6 space-y-4'>
+                  <div className='bg-white dark:bg-surface-base rounded-2xl border p-6 space-y-4'>
                     <div>
-                      <label className='block text-sm font-medium text-gray-700 mb-1'>
+                      <label className='block text-sm font-medium text-gray-700 dark:text-neutral-muted mb-1'>
                         Subject
                       </label>
                       <input
@@ -549,7 +549,7 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
                       />
                     </div>
                     <div>
-                      <label className='block text-sm font-medium text-gray-700 mb-1'>
+                      <label className='block text-sm font-medium text-gray-700 dark:text-neutral-muted mb-1'>
                         Message
                       </label>
                       <textarea
@@ -575,7 +575,7 @@ Thank you.`}
                         className='px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700'>
                         Copy Template
                       </button>
-                      <span className='text-xs text-gray-500'>
+                      <span className='text-xs text-gray-500 dark:text-neutral-muted/80'>
                         Copy and paste into your preferred channel (email, portal, or letter).
                       </span>
                     </div>
@@ -585,9 +585,9 @@ Thank you.`}
             </div>
 
             {/* Footer */}
-            <div className='border-t border-gray-200 p-6'>
+            <div className='border-t border-gray-200 dark:border-neutral-border p-6'>
               <div className='flex items-center justify-between'>
-                <div className='text-sm text-gray-500'>
+                <div className='text-sm text-gray-500 dark:text-neutral-muted/80'>
                   Data from Auditor-General • Updated monthly • Promoting government accountability
                 </div>
                 <button

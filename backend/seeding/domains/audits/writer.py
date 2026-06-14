@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from ...config import SeedingSettings
 from ...types import DomainRunContext
+from ...utils import canonicalize_slug
 from .parser import AuditRecord
 
 logger = logging.getLogger("seeding.audits.writer")
@@ -85,7 +86,11 @@ def _ensure_period(
 def _resolve_entity(
     session: Session, record: AuditRecord
 ) -> Tuple[Optional[Entity], Optional[str]]:
-    stmt = select(Entity).where(Entity.slug == record.entity_slug)
+    # Canonicalise the slug at lookup time so apostrophes in fixture or
+    # OAG-derived data ("murang'a-county") still match the DB row
+    # ("muranga-county"). Idempotent for already-clean slugs.
+    slug = canonicalize_slug(record.entity_slug)
+    stmt = select(Entity).where(Entity.slug == slug)
     entity = session.execute(stmt).scalar_one_or_none()
     if entity is None:
         msg = f"Unknown entity slug '{record.entity_slug}'"
