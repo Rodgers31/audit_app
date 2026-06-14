@@ -26,12 +26,19 @@ from typing import Dict
 # matched against lowercased line text). Order matters: the first head whose
 # anchor matches a money-bearing line claims that figure.
 _TAX_HEADS: tuple[tuple[str, tuple[str, ...]], ...] = (
-    ("PAYE", (r"\bpaye\b", r"pay[\s-]?as[\s-]?you[\s-]?earn")),
+    # ``p\.?a\.?y\.?e`` covers both "PAYE" and the dotted "P.A.Y.E" KRA uses.
+    ("PAYE", (r"\bpaye\b", r"p\.?a\.?y\.?e", r"pay[\s-]?as[\s-]?you[\s-]?earn")),
     ("Corporation Tax", (r"corporat(?:e|ion)\s+tax",)),
     ("VAT", (r"\bvat\b", r"value[\s-]?added\s+tax")),
     ("Excise Duty", (r"\bexcise\b",)),
     ("Customs & Import Duty", (r"customs", r"import\s+duty", r"border\s+control")),
 )
+
+# Sentence boundary: ". " / "! " / "? " before a capital, or a newline. Tuned
+# NOT to fire on "Kshs. 560" (". 5" → digit) or "P.A.Y.E" (no following space),
+# so confining a head's money search to its own sentence keeps the previous
+# head's figure (or a "target of Kshs X" aside) from bleeding in.
+_SENTENCE_BOUNDARY = re.compile(r"[.!?]\s+(?=[A-Z])|\n+")
 
 _MONEY_RE = re.compile(
     r"(?:kshs?|ksh|kes)\.?\s*([\d,]+(?:\.\d+)?)\s*(trillion|billion|tn|bn)\b",
@@ -64,26 +71,53 @@ def _money_to_billion(num_str: str, unit: str) -> Decimal | None:
 
 def extract_kra_revenue_by_type_from_text(text: str) -> Dict[str, Decimal]:
     """Return ``{canonical_revenue_type: amount_billion_kes}`` for the heads
-    confidently found in ``text``. Best-effort: scans each line for a tax-head
-    anchor plus a money figure; the first money figure on the first matching
-    line wins per head. Returns ``{}`` when nothing matches — callers MUST
-    treat ``{}`` / a missing head as "keep the fixture", never as zero.
+    confidently found in ``text``.
+
+    For each head, find its name anchor anywhere in the text, then take the
+    money figure NEAREST that anchor within a window — so it works whether the
+    figure precedes the name ("Kshs X Billion from P.A.Y.E") or follows it
+    ("Domestic VAT ... Kshs X Billion"), and regardless of line breaks (KRA's
+    HTML/PDF collapses sentences). Best-effort: returns ``{}`` / omits a head
+    when nothing matches — callers MUST treat that as "keep the fixture", never
+    as zero. The fetcher re-validates the result (bands + reconciliation) before
+    any value may replace the fixture.
     """
     out: Dict[str, Decimal] = {}
     if not text:
         return out
-    for line in text.splitlines():
-        m = _MONEY_RE.search(line)
-        if not m:
-            continue
-        amount = _money_to_billion(m.group(1), m.group(2))
-        if amount is None or amount <= 0:
-            continue
-        low = line.lower()
-        for canonical, patterns in _TAX_HEADS:
-            if canonical in out:
-                continue
-            if any(re.search(p, low) for p in patterns):
-                out[canonical] = amount
-                break
+    low = text.lower()
+    for canonical, patterns in _TAX_HEADS:
+        best_amount: Decimal | None = None
+        best_dist: int | None = None
+        for pattern in patterns:
+            for anchor in re.finditer(pattern, low):
+                a = anchor.start()
+                lo, hi = _sentence_bounds(text, a)
+                for money in _MONEY_RE.finditer(text[lo:hi]):
+                    amount = _money_to_billion(money.group(1), money.group(2))
+                    if amount is None or amount <= 0:
+                        continue
+                    dist = abs((lo + money.start()) - a)
+                    if best_dist is None or dist < best_dist:
+                        best_dist, best_amount = dist, amount
+        if best_amount is not None:
+            out[canonical] = best_amount
     return out
+
+
+def _sentence_bounds(text: str, pos: int) -> tuple[int, int]:
+    """Return ``(start, end)`` of the sentence containing ``pos`` so a head's
+    money search can't cross into an adjacent sentence (the previous head's
+    figure or a 'target of Kshs X' aside)."""
+    # Scan the FULL text (not endpos=pos): the boundary's trailing lookahead
+    # can't see the capital letter when it sits exactly at endpos, which would
+    # miss the boundary immediately before the anchor.
+    start = 0
+    for m in _SENTENCE_BOUNDARY.finditer(text):
+        if m.end() <= pos:
+            start = m.end()
+        else:
+            break
+    after = _SENTENCE_BOUNDARY.search(text, pos)
+    end = after.start() if after else len(text)
+    return start, end

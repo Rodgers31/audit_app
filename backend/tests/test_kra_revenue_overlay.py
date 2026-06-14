@@ -50,6 +50,30 @@ def test_extractor_handles_trillions_and_no_match():
     assert extract_kra_revenue_by_type_from_text("no figures here") == {}
 
 
+# Real KRA FY2024/25 press-release wording: money BEFORE the head ("Kshs X
+# from P.A.Y.E"), the dotted abbreviation, a "target of Kshs Y" aside that must
+# NOT be grabbed for the next head, and sentences run together (HTML-collapsed).
+REAL_KRA = (
+    "KRA collected Kshs. 2.571 Trillion in the Financial Year 2024/2025. "
+    "KRA collected Kshs. 560.963 Billion from P.A.Y.E, achieving 99.0% performance. "
+    "Domestic VAT collection stood at Kshs. 327.336 Billion. "
+    "On Corporation Tax, KRA collected Kshs. 304.833 Billion against a target of Kshs. 321.080 Billion. "
+    "Domestic Excise Duty registered a collection of Kshs. 69.385 Billion. "
+    "Customs Revenue recorded a performance rate of 105.9% with a collection of Kshs. 879.329 Billion."
+)
+
+
+def test_extracts_real_kra_press_release_format():
+    assert extract_kra_revenue_by_type_from_text(REAL_KRA) == {
+        "PAYE": Decimal("560.963"),
+        "VAT": Decimal("327.336"),
+        "Corporation Tax": Decimal("304.833"),  # not the 321.080 target
+        "Excise Duty": Decimal("69.385"),
+        "Customs & Import Duty": Decimal("879.329"),
+    }
+    assert extract_kra_fiscal_year(REAL_KRA) == "FY 2024/25"
+
+
 def test_extracts_fiscal_year():
     assert extract_kra_fiscal_year(KRA_TEXT) == "FY 2024/25"
     assert extract_kra_fiscal_year("results for 2024/2025 financial year") == "FY 2024/25"
