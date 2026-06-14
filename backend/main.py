@@ -7031,10 +7031,21 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
         for e in econ_rows:
             econ_map[e.indicator_type] = float(e.value) if e.value else None
 
-        # Inflation (CPI): take the LATEST observation by date and surface its
-        # real as-of date, so a stale figure is shown dated rather than implied
-        # current (audit §3.10). Kenyan CPI is published by KNBS, not CBK.
+        # Inflation (CPI): read the CANONICAL ``inflation_rate`` series — the
+        # same maintained series /economic/summary uses (seeded by bootstrap,
+        # the economic_indicators domain, and auto_seeder) — taking the latest
+        # observation by date. The legacy ``inflation_rate_cpi`` key was written
+        # ONLY by the hardcoded MVP seeder and was frozen at Jan-2024 = 6.3%, so
+        # the budget page contradicted the rest of the site with a stale figure
+        # (audit §3.10). Reading the maintained series makes this self-update and
+        # stay consistent; the legacy key is a fallback only if the series is
+        # absent. Kenyan CPI is published by KNBS, not CBK.
         inflation_row = (
+            db.query(EconomicIndicator)
+            .filter(EconomicIndicator.indicator_type == "inflation_rate")
+            .order_by(EconomicIndicator.indicator_date.desc())
+            .first()
+        ) or (
             db.query(EconomicIndicator)
             .filter(EconomicIndicator.indicator_type == "inflation_rate_cpi")
             .order_by(EconomicIndicator.indicator_date.desc())
@@ -7043,7 +7054,7 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
         inflation_pct = (
             float(inflation_row.value)
             if inflation_row and inflation_row.value is not None
-            else econ_map.get("inflation_rate_cpi")
+            else econ_map.get("inflation_rate") or econ_map.get("inflation_rate_cpi")
         )
         inflation_as_of = (
             inflation_row.indicator_date.isoformat()
@@ -7476,10 +7487,22 @@ async def get_fiscal_summary(db: Session = Depends(get_db)):
             "former_ceiling_repealed": True,
         }
 
+        # Surface objective plausibility/reconciliation caveats on the headline
+        # year (same guard that quarantines bad rows at seed time), so an
+        # implausible figure shows a data-quality note rather than passing as
+        # fact. Empty for clean data.
+        from services.trust_guards import check_fiscal_summary
+
+        _fiscal_quality_notes = check_fiscal_summary(latest) if latest else []
+
         return {
             "status": "success",
             "data_source": "database",
-            "_meta": _response_meta(unit="billion_kes", entity_scope="national"),
+            "_meta": _response_meta(
+                unit="billion_kes",
+                entity_scope="national",
+                quality_notes=_fiscal_quality_notes or None,
+            ),
             "last_updated": last_updated,
             "source": source_title,
             "current": latest,
@@ -7490,6 +7513,152 @@ async def get_fiscal_summary(db: Session = Depends(get_db)):
     except Exception as e:
         logging.error(f"Error fetching fiscal summary: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.get("/api/v1/learn/civic-figures")
+@cached(key_prefix="learn:civic_figures", ttl=3600)
+async def get_civic_figures(db: Session = Depends(get_db)):
+    """Live civic figures for the Learn glossary (audit §2.7; design §5.9).
+
+    Every fiscal magnitude the glossary cites — nominal GDP, the national
+    budget, public debt, the county equitable share — is resolved HERE from
+    its one canonical DB source, with the period it refers to and its
+    provenance, so the glossary renders current numbers and self-updates as
+    new data is seeded instead of carrying hardcoded literals that silently
+    go stale (the exact failure mode behind the 14.6T→15.0T→16.2T GDP drift).
+
+    A figure that was never seeded (or has no period) returns
+    ``available=False``; the UI then shows a dated last-known example
+    rather than a fabricated current number (DESIGN §1, decision 1:
+    last-known-good, dated).
+
+    There is intentionally NO hardcoded magnitude in this endpoint.
+    """
+    from provenance import vintage_iso
+
+    def _figure(value, period, source, as_of, data_quality="official"):
+        val = float(value) if value not in (None, 0) else None
+        return {
+            "available": val is not None and val > 0 and bool(period),
+            "value": val,
+            "unit": "kes",
+            "period": period,
+            "source": source,
+            "as_of": as_of,
+            "data_quality": data_quality,
+        }
+
+    def _fs_to_kes(value):
+        """FiscalSummary stores billion-KES (see `_response_meta(unit='billion_kes')`
+        and seeding/real_data/fiscal_summary.json), whereas GDPData and Loan
+        store RAW KES. Normalise the fiscal figures to raw KES so every figure
+        this endpoint emits shares one unit and the UI formats them uniformly.
+        The < 1e7 guard scales the billions convention (~3e3-5e3) but leaves an
+        already-raw value (~1e12) untouched, so a future unit change can't
+        silently 1e9× the budget."""
+        if value in (None, 0):
+            return None
+        v = float(value)
+        if v <= 0:
+            return None
+        return v * 1e9 if v < 1e7 else v
+
+    figures: dict[str, dict] = {}
+
+    try:
+        # ── Nominal GDP — the national series (entity_id NULL) seeded by the
+        #    `national_gdp` domain from World Bank NY.GDP.MKTP.CN; fall back to
+        #    any latest GDP row. The period is the GDP *data* year. ──────────
+        gdp_row = (
+            db.query(DBGDPData)
+            .filter(DBGDPData.entity_id.is_(None))
+            .order_by(DBGDPData.year.desc())
+            .first()
+        ) or db.query(DBGDPData).order_by(DBGDPData.year.desc()).first()
+        figures["nominal_gdp"] = _figure(
+            value=gdp_row.gdp_value if gdp_row else None,
+            period=str(gdp_row.year) if gdp_row else None,
+            source="World Bank / KNBS",
+            as_of=(
+                vintage_iso(db, [getattr(gdp_row, "source_document_id", None)])
+                if gdp_row
+                else None
+            ),
+        )
+
+        # ── National budget + county equitable share — latest FiscalSummary
+        #    row that actually carries each field. Period is the fiscal year. ─
+        from models import FiscalSummary as _FS
+
+        fs_rows = db.query(_FS).order_by(_FS.fiscal_year.asc()).all()
+
+        def _latest_fs(attr):
+            for r in reversed(fs_rows):
+                v = getattr(r, attr, None)
+                if v and float(v) > 0:
+                    return r
+            return None
+
+        budget_row = _latest_fs("appropriated_budget")
+        share_row = _latest_fs("county_allocation")
+        figures["national_budget"] = _figure(
+            value=_fs_to_kes(budget_row.appropriated_budget) if budget_row else None,
+            period=budget_row.fiscal_year if budget_row else None,
+            source="National Treasury / Controller of Budget",
+            as_of=(
+                vintage_iso(db, [getattr(budget_row, "source_document_id", None)])
+                if budget_row
+                else None
+            ),
+        )
+        figures["equitable_share"] = _figure(
+            value=_fs_to_kes(share_row.county_allocation) if share_row else None,
+            period=share_row.fiscal_year if share_row else None,
+            source="Division of Revenue Act / CRA",
+            as_of=(
+                vintage_iso(db, [getattr(share_row, "source_document_id", None)])
+                if share_row
+                else None
+            ),
+        )
+
+        # ── Public debt — outstanding stock of national debt loans, excluding
+        #    pending bills (the `_is_debt_loan` rule used by /debt/national so
+        #    the two never diverge). Period is the source vintage year. ───────
+        from models import EntityType as _ET
+
+        national_entity = (
+            db.query(DBEntity).filter(DBEntity.type == _ET.NATIONAL).first()
+        )
+        debt_value = None
+        debt_as_of = None
+        if national_entity:
+            debt_loans = [
+                ln
+                for ln in db.query(DBLoan)
+                .filter(DBLoan.entity_id == national_entity.id)
+                .all()
+                if _is_debt_loan(ln)
+            ]
+            if debt_loans:
+                debt_value = sum(float(ln.outstanding or 0) for ln in debt_loans)
+                debt_as_of = vintage_iso(
+                    db,
+                    [getattr(ln, "source_document_id", None) for ln in debt_loans],
+                )
+        figures["public_debt"] = _figure(
+            value=debt_value,
+            period=debt_as_of[:4] if debt_as_of else None,
+            source="Central Bank of Kenya / National Treasury",
+            as_of=debt_as_of,
+        )
+    except Exception as e:  # pragma: no cover - defensive
+        logging.error("Error building civic figures: %s", e)
+        # Degrade to "nothing available" rather than 500 — the glossary then
+        # shows its dated fallbacks, never a fabricated number.
+        return {"status": "error", "data_source": "database", "figures": figures}
+
+    return {"status": "success", "data_source": "database", "figures": figures}
 
 
 @app.get("/api/v1/debt/top-loans")

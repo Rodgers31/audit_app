@@ -189,6 +189,42 @@ def run(
                 session.add(existing)
                 updated += 1
 
+        # Reconcile to the World Bank series: prune NULL-entity GDP rows for
+        # any year BEYOND the latest authoritative actual. This removes a
+        # stale/fabricated FUTURE row — e.g. a leftover 2025 = 15.4T from the
+        # old hardcoded series — that would otherwise be the newest year and
+        # out-rank the real latest GDP in `order_by(year.desc())` lookups
+        # (/economic/summary, /learn/civic-figures), re-introducing the very
+        # debt-to-GDP overstatement the GDP fix removed.
+        #
+        # We prune by ``year > latest_source_year`` rather than "not in the
+        # fetched set" on purpose: the live World Bank series spans 1960-2024,
+        # but a degraded fetch may fall back to the smaller in-repo fixture
+        # (2018-2024). A "not in set" rule would then delete decades of
+        # legitimate WB history on a transient outage; "beyond latest actual"
+        # only ever removes fabricated future projections. In-range years are
+        # corrected by the upsert above. Guarded by a non-empty fetch.
+        if gdp_by_year:
+            latest_source_year = max(gdp_by_year)
+            stale_gdp = (
+                session.query(GDPData)
+                .filter(
+                    GDPData.entity_id.is_(None),
+                    GDPData.year > latest_source_year,
+                )
+                .all()
+            )
+            for row in stale_gdp:
+                session.delete(row)
+            if stale_gdp:
+                logger.info(
+                    "Pruned %d stale NULL-entity GDP year(s) beyond latest "
+                    "actual %d: %s",
+                    len(stale_gdp),
+                    latest_source_year,
+                    sorted(r.year for r in stale_gdp),
+                )
+
         # ── Poverty index records with entity_id=NULL ────────────────
         for data in POVERTY_SERIES:
             existing = (

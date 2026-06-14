@@ -798,7 +798,8 @@ def _seed_national_data(
     if orphan_gdp:
         logger.info(f"Deleted {len(orphan_gdp)} orphan GDP rows")
 
-    for year, gdp_val in _load_national_gdp_series():
+    gdp_series = _load_national_gdp_series()
+    for year, gdp_val in gdp_series:
         existing = (
             session.query(GDPData)
             .filter(GDPData.entity_id == national_entity.id, GDPData.year == year)
@@ -820,6 +821,37 @@ def _seed_national_data(
                         "bootstrap": True,
                     },
                 )
+            )
+
+    # Reconcile to the authoritative series: prune national-entity GDP rows for
+    # any year BEYOND the latest fixture year. Without this, a stale/fabricated
+    # FUTURE year left by an earlier seed (e.g. 2025 = 15.4T from the old
+    # hardcoded NATIONAL_GDP_SERIES) survives forever and — being the newest
+    # year — out-ranks the real latest World Bank value in every
+    # `order_by(year.desc())` lookup, re-inflating the debt-to-GDP/GDP headline
+    # the fix was meant to correct. We prune ``year > max`` (not "not in set")
+    # so a shorter fixture can never delete legitimate earlier history. Guarded
+    # by a non-empty series.
+    fixture_years = [year for year, _ in gdp_series]
+    if fixture_years:
+        latest_fixture_year = max(fixture_years)
+        stale_gdp = (
+            session.query(GDPData)
+            .filter(
+                GDPData.entity_id == national_entity.id,
+                GDPData.year > latest_fixture_year,
+            )
+            .all()
+        )
+        for row in stale_gdp:
+            session.delete(row)
+        if stale_gdp:
+            logger.info(
+                "Pruned %d stale national GDP year(s) beyond latest fixture "
+                "year %d: %s",
+                len(stale_gdp),
+                latest_fixture_year,
+                sorted(r.year for r in stale_gdp),
             )
 
     # NOTE: NULL entity_id GDP rows (for /economic/summary) are handled by the

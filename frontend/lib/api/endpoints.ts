@@ -118,6 +118,14 @@ export const FISCAL_ENDPOINTS = {
 } as const;
 
 /**
+ * Learn Endpoints
+ */
+export const LEARN_ENDPOINTS = {
+  /** Live civic figures (GDP, budget, debt, equitable share) for the glossary. */
+  CIVIC_FIGURES: '/learn/civic-figures',
+} as const;
+
+/**
  * Statistics Endpoints
  */
 export const STATISTICS_ENDPOINTS = {

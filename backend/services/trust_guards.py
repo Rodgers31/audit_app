@@ -208,6 +208,103 @@ def check_debt_composition(
     return notes
 
 
+# ── Fiscal-summary plausibility (budget / revenue) ───────────────────
+
+
+# Plausibility bands for Kenya national fiscal aggregates, in BILLION KES,
+# for the mid-2020s. Wide enough to admit real year-on-year revisions,
+# tight enough to catch a parser that grabbed the wrong table row or got
+# the units wrong (raw KES instead of billions → a ~1e9× blow-up; trillions
+# → a ~1e-3 collapse). Revisit the upper bounds as the economy grows.
+_FISCAL_BANDS_BILLION: dict[str, tuple[float, float]] = {
+    "appropriated_budget": (2_000.0, 8_000.0),
+    "total_revenue": (1_000.0, 5_000.0),
+    "tax_revenue": (800.0, 4_500.0),
+    "non_tax_revenue": (30.0, 1_500.0),
+    "total_borrowing": (0.0, 3_000.0),
+    "debt_service_cost": (400.0, 4_000.0),
+    "development_spending": (100.0, 2_000.0),
+    "recurrent_spending": (800.0, 5_000.0),
+    "county_allocation": (150.0, 1_200.0),
+}
+
+
+def check_fiscal_summary(row) -> list[str]:
+    """Objective plausibility + reconciliation checks for ONE fiscal-year
+    summary row (values in billion KES). Returns notes (empty if clean).
+
+    ``row`` may be a dict (the API's ``current`` row) OR an object with the
+    same attributes (the seed-time ``FiscalSummaryRecord`` dataclass) — field
+    access is normalised so the SAME guard runs in both places.
+
+    Every note represents a HARD inconsistency suitable for quarantine: a
+    value outside its plausible band (the classic unit-slip / wrong-row
+    parse), or a component breakdown that does not reconcile to its total.
+    Used both at seed time (quarantine the row, keep last-known-good) and at
+    request time (surface as a data-quality caveat). Pure; never raises.
+    """
+    notes: list[str] = []
+
+    def _get(field: str):
+        if isinstance(row, dict):
+            return row.get(field)
+        return getattr(row, field, None)
+
+    fy = _get("fiscal_year") or "?"
+
+    def _num(field: str) -> Optional[float]:
+        v = _get(field)
+        if v is None:
+            return None
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return None
+
+    # 1. Plausibility bands (unit-safety + wrong-row detection).
+    for field, (lo, hi) in _FISCAL_BANDS_BILLION.items():
+        v = _num(field)
+        if v is None:
+            continue
+        if not (lo <= v <= hi):
+            msg = (
+                f"{fy}: {field}={v:,.0f}B is outside the plausible "
+                f"[{lo:,.0f}, {hi:,.0f}]B band."
+            )
+            notes.append(msg)
+            _warn(msg)
+
+    # 2. Revenue reconciliation: tax + non-tax ≈ total revenue (±5%).
+    tax, nontax, total = _num("tax_revenue"), _num("non_tax_revenue"), _num("total_revenue")
+    if tax is not None and nontax is not None and total and total > 0:
+        if abs((tax + nontax) - total) > 0.05 * total:
+            msg = (
+                f"{fy}: tax ({tax:,.0f}) + non-tax ({nontax:,.0f}) = "
+                f"{tax + nontax:,.0f}B does not reconcile to total_revenue "
+                f"({total:,.0f}B) within 5%."
+            )
+            notes.append(msg)
+            _warn(msg)
+
+    # 3. Spending cannot exceed the budget: recurrent + development ≤ budget.
+    rec, dev, budget = (
+        _num("recurrent_spending"),
+        _num("development_spending"),
+        _num("appropriated_budget"),
+    )
+    if rec is not None and dev is not None and budget and budget > 0:
+        if (rec + dev) > 1.05 * budget:
+            msg = (
+                f"{fy}: recurrent ({rec:,.0f}) + development ({dev:,.0f}) = "
+                f"{rec + dev:,.0f}B exceeds the appropriated budget "
+                f"({budget:,.0f}B)."
+            )
+            notes.append(msg)
+            _warn(msg)
+
+    return notes
+
+
 # ── Coverage / staleness check ───────────────────────────────────────
 
 
