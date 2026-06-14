@@ -56,6 +56,38 @@ def run(
             errors=[f"Parse failed: {exc}"],
         )
 
+    # Validation gate: quarantine any fiscal-year row that fails plausibility
+    # or reconciliation BEFORE it reaches the DB, so a bad live parse (wrong
+    # table row / wrong units) can't overwrite a good last-known value. Clean
+    # rows pass through unchanged; quarantined years keep their existing DB row
+    # and are reported in `errors`. Degrades to "no gate" only if the guard
+    # itself can't run — never blocks seeding outright. See trust_guards.
+    try:
+        from services.trust_guards import check_fiscal_summary
+
+        clean_records = []
+        quarantined = 0
+        for rec in records:
+            issues = check_fiscal_summary(rec)
+            if issues:
+                quarantined += 1
+                errors.append(
+                    f"Quarantined {getattr(rec, 'fiscal_year', '?')}: "
+                    + "; ".join(issues)
+                )
+            else:
+                clean_records.append(rec)
+        if quarantined:
+            logger.warning(
+                "fiscal_summary: quarantined %d/%d implausible row(s); "
+                "keeping last-known-good for those years",
+                quarantined,
+                len(records),
+            )
+        records = clean_records
+    except Exception as exc:  # never let the gate break a seed run
+        logger.warning("fiscal_summary validation gate skipped: %s", exc)
+
     try:
         created, updated = writer.write_fiscal_summary_records(
             session,

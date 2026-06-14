@@ -135,7 +135,7 @@ export default function LearnHero({ onSearchSubmit, onArticleSelect }: LearnHero
             transition={{ duration: 0.5 }}
             className='mb-4 inline-flex max-w-full items-center gap-2 overflow-hidden rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-gov-gold ring-1 ring-white/10 sm:tracking-widest'>
             <Sparkles size={12} className='shrink-0' />
-            <span className='truncate'>Civic learning · built on real data</span>
+            <span className='truncate'>Civic learning · plain-language explainers</span>
           </motion.div>
 
           <motion.h1

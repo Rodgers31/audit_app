@@ -23,6 +23,7 @@
 import DataFreshnessBadge from '@/components/DataFreshnessBadge';
 import DataIntegrityBanner from '@/components/DataIntegrityBanner';
 import PageShell from '@/components/layout/PageShell';
+import { PageSkeleton } from '@/components/ui/Skeleton';
 import PDFExportButton from '@/components/PDFExportButton';
 import BudgetFlowHero, {
   type FlowHeroInput,
@@ -40,7 +41,7 @@ import SpendDonut from '@/components/budget/SpendDonut';
 import { useBudgetEnhanced, useBudgetOverview } from '@/lib/react-query';
 import { useFiscalSummary } from '@/lib/react-query/useFiscal';
 import { motion } from 'framer-motion';
-import { AlertTriangle, ExternalLink, Info, Loader2, X } from 'lucide-react';
+import { AlertTriangle, ExternalLink, Info, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 /* ═══════════════════════════════════════════════════════
@@ -283,13 +284,7 @@ export default function BudgetSpendingPage() {
       <PageShell
         title="Kenya's Budget &amp; Spending"
         subtitle='Understanding how public funds are allocated and spent'>
-        <div
-          className='flex items-center justify-center py-32'
-          role='status'
-          aria-live='polite'>
-          <Loader2 className='animate-spin text-gov-forest dark:text-emerald-100 mr-3' size={28} />
-          <span className='text-gray-500 dark:text-neutral-muted/80 text-lg'>Loading budget data…</span>
-        </div>
+        <PageSkeleton />
       </PageShell>
     );
   }
@@ -371,7 +366,10 @@ export default function BudgetSpendingPage() {
 
       {/* ─── 5. The audit lens: execution by sector ─── */}
       {viewingCurrentFY && (
-        <ExecutionAuditLens rows={executionBySector as any} />
+        <ExecutionAuditLens
+          rows={executionBySector as any}
+          fiscalYear={(enhanced as any)?.execution_fiscal_year ?? undefined}
+        />
       )}
 
       {/* ─── 6. County best/worst absorbers ─── */}

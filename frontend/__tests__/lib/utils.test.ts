@@ -13,6 +13,7 @@
 import {
   cn,
   formatCurrency,
+  formatKesWords,
   formatNumber,
   formatPercentage,
   getDebtRiskColor,
@@ -157,5 +158,20 @@ describe('cn', () => {
   it('filters falsy values', () => {
     const result = cn('base', false, null, undefined, 'extra');
     expect(result).toBe('base extra');
+  });
+});
+
+describe('formatKesWords', () => {
+  it('formats trillions to 2dp (no KES prefix)', () => {
+    expect(formatKesWords(16_224_478_000_000)).toBe('16.22 trillion');
+    expect(formatKesWords(4_190_000_000_000)).toBe('4.19 trillion');
+  });
+
+  it('formats billions as whole numbers', () => {
+    expect(formatKesWords(405_000_000_000)).toBe('405 billion');
+  });
+
+  it('formats millions as whole numbers', () => {
+    expect(formatKesWords(5_000_000)).toBe('5 million');
   });
 });

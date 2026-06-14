@@ -148,24 +148,31 @@ export interface FederalAuditResponse {
   report_date: string;
   opinion_type: string;
   total_findings: number;
-  total_amount_questioned: number;
+  // Authoritative OAG questioned total (parsed from the report), or null
+  // when the report carries no figure. NOT a naive sum of finding amounts.
+  total_amount_questioned: number | null;
   total_amount_questioned_label: string;
+  // Transparency only: raw sum across all finding amounts (not "questioned").
+  total_amount_in_findings?: number;
   by_severity: Record<string, number>;
   basis_for_qualification: string[];
   emphasis_of_matter: string[];
-  key_statistics: {
-    total_ministries_audited: number;
-    total_findings: number;
-    critical_findings: number;
-    significant_findings: number;
-    minor_findings: number;
-    total_amount_flagged_kes: number;
-    response_rate_to_previous_queries: string;
-    recurring_issues_from_prior_year: number;
+  // May be {} when the OAG opinion summary is unavailable, so every field is
+  // optional and the UI must fall back to an honest "—", never a fabricated
+  // number (audit §3.3).
+  key_statistics?: {
+    total_ministries_audited?: number;
+    total_findings?: number;
+    critical_findings?: number;
+    significant_findings?: number;
+    minor_findings?: number;
+    total_amount_flagged_kes?: number;
+    response_rate_to_previous_queries?: string;
+    recurring_issues_from_prior_year?: number;
   };
   findings: FederalAuditFinding[];
   top_ministries: { ministry: string; finding_count: number }[];
-  last_updated: string;
+  last_updated: string | null;
 }
 
 export const getFederalAudits = async (): Promise<FederalAuditResponse> => {

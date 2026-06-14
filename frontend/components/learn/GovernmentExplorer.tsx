@@ -77,12 +77,12 @@ const branches: Branch[] = [
     iconBg: 'bg-sky-100 text-sky-700',
     details: [
       {
-        office: 'National Assembly (349 members)',
+        office: 'National Assembly (350 members, incl. Speaker)',
         description:
           'Enacts legislation, determines taxation & expenditures, and approves or rejects presidential nominees.',
       },
       {
-        office: 'Senate (67 members)',
+        office: 'Senate (68 members, incl. Speaker)',
         description:
           'Protects county interests, participates in law-making affecting counties, and determines allocation of national revenue among counties.',
       },

@@ -3,11 +3,11 @@
  * revenue goes" card. Extracted out of DebtPageClient so the calculation
  * — including the headline rounding — can be unit-tested in isolation.
  *
- * Methodology: Budget Policy Statement framing.
- *   debt-service-per-100-of-revenue = public debt-related costs ÷ ordinary revenue × 100
+ * Methodology: authoritative total-debt-service framing.
+ *   debt-service-per-100-of-revenue = total debt service ÷ tax & non-tax revenue × 100
  *
- * The denominator is ordinary revenue (excludes A-i-A and borrowing).
- * The numerator is the public debt-related charge on the Consolidated Fund.
+ * The denominator is tax & non-tax revenue.
+ * The numerator is total debt service (interest + principal redemptions).
  *
  * We do NOT floor — we round to nearest. 56.65 → 57, not 56. Flooring would
  * silently understate the burden by up to ~1 percentage point and change

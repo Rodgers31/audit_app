@@ -24,7 +24,7 @@ test('national debt page shows key stats and charts', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /Top 5 Largest Loans/i })).toBeVisible();
 });
 
-test('"Where every KES 100" card uses BPS framing (about KES 57, ordinary revenue)', async ({
+test('"Where every KES 100" card uses the fiscal-summary ratio (about KES 65, tax + non-tax revenue)', async ({
   page,
 }) => {
   await page.goto('/debt');
@@ -33,29 +33,29 @@ test('"Where every KES 100" card uses BPS framing (about KES 57, ordinary revenu
     page.getByRole('heading', { name: /Where every KES 100 of revenue goes/i }),
   ).toBeVisible();
 
-  // Headline number: BPS values 1606 / 2835 × 100 ≈ 56.7 → rounds to 57
-  await expect(page.getByTestId('debt-headline-kes')).toHaveText('57');
+  // Headline number: seeded values 1900 / 2910 × 100 ≈ 65.3 → rounds to 65
+  await expect(page.getByTestId('debt-headline-kes')).toHaveText('65');
 
   // Eyebrow includes the "about" honesty hedge
   await expect(page.getByText(/Debt service takes about/i)).toBeVisible();
 
-  // Wording explicitly says "ordinary tax & non-tax revenue"
+  // Wording explicitly says "tax & non-tax revenue"
   await expect(
-    page.getByText(/ordinary tax & non-tax revenue/i),
+    page.getByText(/tax & non-tax revenue/i),
   ).toBeVisible();
 
   // Allocation bar uses the same framing
   await expect(
-    page.getByText(/Full allocation per KES 100 of ordinary revenue/i),
+    page.getByText(/Full allocation per KES 100 of revenue/i),
   ).toBeVisible();
   await expect(
     page.getByText(
-      /Sum exceeds 100 because ordinary revenue doesn['’]t fund the whole budget/i,
+      /Sum exceeds 100 because revenue doesn['’]t fund the whole budget/i,
     ),
   ).toBeVisible();
 });
 
-test('debt page exposes a methodology disclosure with BPS calculation', async ({
+test('debt page exposes a methodology disclosure with the total-debt-service calculation', async ({
   page,
 }) => {
   await page.goto('/debt');
@@ -65,12 +65,12 @@ test('debt page exposes a methodology disclosure with BPS calculation', async ({
   await expect(summary).toBeVisible();
   await summary.click();
 
-  // The BPS calculation text appears once expanded
+  // The calculation text appears once expanded
   await expect(
-    page.getByText(/Budget Policy Statement framing/i),
+    page.getByText(/total debt service of about KSh/i),
   ).toBeVisible();
   await expect(
-    page.getByText(/excludes borrowing and Appropriations-in-Aid/i),
+    page.getByText(/tax & non-tax revenue of about KSh/i),
   ).toBeVisible();
 
   // The transparency caveat is present
@@ -88,19 +88,19 @@ test('debt page does not undermine the headline with discouraging copy', async (
   await expect(page.getByText(/this number is incomplete/i)).toHaveCount(0);
 });
 
-test('debt page source line names the BPS denominator and numerator explicitly', async ({
+test('debt page source line names the ratio inputs explicitly', async ({
   page,
 }) => {
   await page.goto('/debt');
   await expect(
-    page.getByText(/National Treasury Budget Policy Statement/i),
+    page.getByText(/National Treasury fiscal summary/i),
   ).toBeVisible();
   await expect(
-    page.getByText(/ordinary revenue excluding A-i-A and borrowing/i),
+    page.getByText(/tax & non-tax revenue/i),
   ).toBeVisible();
   await expect(
     page.getByText(
-      /public debt-related costs charged on the Consolidated Fund/i,
+      /total debt service \(interest \+ principal redemptions\)/i,
     ),
   ).toBeVisible();
 });

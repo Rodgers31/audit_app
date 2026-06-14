@@ -154,20 +154,51 @@ class TestNoHardcodedFiscalYears:
     literals. Ensure the payload returns the seeded "FY2024/25" label
     (which the test controls), proving the endpoint reads the DB."""
 
-    def test_audits_federal_reports_db_derived_fiscal_year(
+    def test_audits_federal_reports_oag_report_fiscal_year(
         self, client, seed_credibility_data
     ):
-        r = client.get("/api/v1/audits/federal")
-        assert r.status_code == 200
-        body = r.json()
-        # Must NOT be the old hardcoded literal.
-        assert body.get("fiscal_year") != "FY 2023/24", (
-            "/audits/federal returned the old hardcoded fiscal_year. "
-            "Re-check main.py — it must derive from DBFiscalPeriod."
+        """audit §3.8: /audits/federal must report the OAG REPORT's own fiscal
+        year (from the source document's metadata), NOT the global FISCAL_LABEL
+        / DB period the findings happen to be attached to."""
+        import json
+        from pathlib import Path
+
+        oag_path = (
+            Path(__file__).resolve().parent.parent.parent
+            / "apis"
+            / "oag_national_audit_data.json"
         )
-        assert body.get("fiscal_year") == "FY2024/25"
-        assert "FY2024/25" in body.get("fiscal_years_covered", [])
-        assert body.get("_meta", {}).get("fiscal_period") == "FY2024/25"
+        report_fy = json.loads(oag_path.read_text())["metadata"]["fiscal_year"]
+
+        body = client.get("/api/v1/audits/federal").json()
+        # Not a hardcoded code literal (old spacing), and reflects the OAG
+        # report's own FY rather than the seeded DB period.
+        assert body.get("fiscal_year") != "FY 2023/24"
+        assert body.get("fiscal_year") == report_fy
+        assert report_fy in body.get("fiscal_years_covered", [])
+        assert body.get("_meta", {}).get("fiscal_period") == report_fy
+
+    def test_audits_federal_severity_not_inflated_by_high_mapping(
+        self, client, seed_credibility_data
+    ):
+        """audit §3.3: by_severity must reflect the OAG report's own
+        critical/significant/minor counts (key_statistics), not the seed's
+        'high'->CRITICAL inflation, so the severity donut isn't overstated."""
+        import json
+        from pathlib import Path
+
+        oag = json.loads(
+            (
+                Path(__file__).resolve().parent.parent.parent
+                / "apis"
+                / "oag_national_audit_data.json"
+            ).read_text()
+        )
+        ks = oag["audit_opinion_summary"]["key_statistics"]
+        by_sev = client.get("/api/v1/audits/federal").json().get("by_severity", {})
+        assert by_sev.get("CRITICAL") == ks["critical_findings"]
+        assert by_sev.get("WARNING") == ks["significant_findings"]
+        assert by_sev.get("INFO") == ks["minor_findings"]
 
     def test_audits_statistics_reports_db_derived_fiscal_year(
         self, client, seed_credibility_data
@@ -263,11 +294,23 @@ class TestFreshnessMeta:
         }
 
     def test_audits_federal_freshness_fields(self, client, seed_credibility_data):
+        import json
+        from pathlib import Path
+
+        report_fy = json.loads(
+            (
+                Path(__file__).resolve().parent.parent.parent
+                / "apis"
+                / "oag_national_audit_data.json"
+            ).read_text()
+        )["metadata"]["fiscal_year"]
         r = client.get("/api/v1/audits/federal")
         assert r.status_code == 200
         meta = r.json().get("_meta", {})
         assert "generated_at" in meta
-        assert meta.get("covers_through") == "FY2024/25"
+        # covers_through now reflects the OAG report's own FY (audit §3.8),
+        # not the global FISCAL_LABEL / seeded period.
+        assert meta.get("covers_through") == report_fy
         assert meta.get("cache_ttl_seconds") == 3600
 
     def test_debt_timeline_freshness_fields(self, client, seed_credibility_data):

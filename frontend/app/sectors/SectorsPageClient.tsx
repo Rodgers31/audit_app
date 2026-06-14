@@ -8,6 +8,7 @@
  */
 'use client';
 
+import ModelledDataNote from '@/components/ModelledDataNote';
 import PageShell from '@/components/layout/PageShell';
 import api from '@/lib/api/axios';
 import { useLang } from '@/lib/i18n/LangProvider';
@@ -25,6 +26,7 @@ import {
   Users,
   Building2,
   Droplets,
+  Info,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
@@ -57,6 +59,10 @@ interface SectorResponse {
   total_spent: number;
   counties_reporting: number;
   sectors: SectorEntry[];
+  fiscal_year?: string | null;
+  is_partial_year?: boolean;
+  is_projected?: boolean;
+  source?: string;
 }
 
 function fmtKES(n: number): string {
@@ -130,6 +136,20 @@ export default function SectorsPage() {
       subtitle={t('sectors.subtitle')}
       back={{ href: '/', label: t('common.home') }}>
       <div className='space-y-6'>
+        {/* Provenance: county financials are modelled estimates, and an
+            in-progress fiscal year is projected — not final actuals (§2.10). */}
+        <ModelledDataNote />
+        {data?.is_projected && (
+          <div
+            role='note'
+            className='flex items-start gap-2.5 rounded-lg border border-sky-300/70 bg-sky-50 px-4 py-3 text-sm dark:border-sky-700/50 dark:bg-sky-950/30'>
+            <Info className='mt-0.5 h-4 w-4 flex-shrink-0 text-sky-600 dark:text-sky-400' />
+            <p className='leading-snug text-sky-900/90 dark:text-sky-100/90'>
+              {data?.fiscal_year ? `FY ${data.fiscal_year.replace('FY', '').trim()}: ` : ''}
+              {t('sectors.projected_note')}
+            </p>
+          </div>
+        )}
         {/* Top-line strip */}
         <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
           <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-5'>
@@ -251,7 +271,7 @@ export default function SectorsPage() {
                                 <div
                                   className={`h-full bg-gradient-to-r ${color}`}
                                   style={{
-                                    width: `${Math.min((c.spent / s.top_counties[0].spent) * 100, 100)}%`,
+                                    width: `${Math.min(s.top_counties[0]?.spent ? (c.spent / s.top_counties[0].spent) * 100 : 0, 100)}%`,
                                   }}
                                 />
                               </div>
@@ -278,6 +298,12 @@ export default function SectorsPage() {
           <div className='text-sm text-gray-700 dark:text-neutral-muted leading-relaxed'>
             <p className='font-semibold text-gray-900 dark:text-neutral-text mb-1'>{t('sectors.methodology.title')}</p>
             <p>{t('sectors.methodology.body')}</p>
+            {data?.source && (
+              <p className='mt-2 text-xs text-gray-500 dark:text-neutral-muted/80'>
+                {t('sectors.source_label')}: {data.source}
+                {data?.fiscal_year ? ` · FY ${data.fiscal_year.replace('FY', '').trim()}` : ''}
+              </p>
+            )}
           </div>
         </div>
       </div>

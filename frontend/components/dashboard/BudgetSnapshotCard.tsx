@@ -129,15 +129,20 @@ export default function BudgetSnapshotCard() {
         {/* Headline metrics */}
         <div className='flex gap-4 sm:gap-6 mb-4'>
           <div className='flex-1 rounded-xl bg-gov-forest/[0.04] border border-neutral-border/30 px-4 py-3'>
-            <div className='flex items-center gap-1.5 mb-1'>
-              <Banknote className='w-3.5 h-3.5 text-gov-forest dark:text-emerald-100 opacity-70' />
-              <span className='text-[10px] text-neutral-muted font-medium uppercase tracking-wider'>
-                {t('home.budget.total_label')}
+            <div className='flex items-start gap-1.5 mb-1'>
+              <Banknote className='w-3.5 h-3.5 mt-px flex-shrink-0 text-gov-forest dark:text-emerald-100 opacity-70' />
+              <span className='text-[10px] text-neutral-muted font-medium leading-tight'>
+                {budget.total_label || t('home.budget.total_label')}
               </span>
             </div>
             <span className='text-lg font-bold text-gov-forest dark:text-emerald-100 tabular-nums leading-none'>
               {fmtKES(total)}
             </span>
+            {budget.scope_detail && (
+              <p className='mt-1.5 text-[9px] leading-snug text-neutral-muted/75'>
+                {budget.scope_detail}
+              </p>
+            )}
           </div>
           <div className='flex-1 rounded-xl bg-gov-gold/[0.05] border border-neutral-border/30 px-4 py-3'>
             <div className='flex items-center gap-1.5 mb-1'>

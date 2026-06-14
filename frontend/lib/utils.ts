@@ -44,6 +44,20 @@ export function fmtBillionKES(val: number): string {
   return `${val.toFixed(0)}B`;
 }
 
+/**
+ * Format raw KES into glossary-prose words WITHOUT the "KES" prefix:
+ *   16_224_478_000_000 → "16.22 trillion"
+ *   405_000_000_000    → "405 billion"
+ * Callers that want "KES …" supply the prefix in their own copy.
+ */
+export function formatKesWords(value: number): string {
+  const abs = Math.abs(value);
+  if (abs >= 1e12) return `${(value / 1e12).toFixed(2)} trillion`;
+  if (abs >= 1e9) return `${Math.round(value / 1e9)} billion`;
+  if (abs >= 1e6) return `${Math.round(value / 1e6)} million`;
+  return value.toLocaleString();
+}
+
 export function formatPercentage(value: number): string {
   return `${numeral(value).format('0.0')}%`;
 }

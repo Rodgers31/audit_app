@@ -81,7 +81,7 @@ const PRINCIPLES = [
 ];
 
 const FEATURES = [
-  { icon: BarChart3, label: 'National debt tracking in real time' },
+  { icon: BarChart3, label: 'National debt tracking, updated nightly' },
   { icon: Search, label: 'County-level budget explorer for all 47 counties' },
   { icon: BookOpen, label: 'Audit report summaries from the Auditor General' },
   { icon: Database, label: 'Economic indicators (GDP, inflation, population)' },

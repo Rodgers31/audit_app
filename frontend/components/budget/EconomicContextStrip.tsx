@@ -21,6 +21,8 @@ export interface EconomicContext {
   budget_to_gdp_pct?: number;
   revenue_to_gdp_pct?: number;
   inflation_pct?: number;
+  inflation_as_of?: string;
+  inflation_source?: string;
   unemployment_pct?: number;
   per_capita_budget_kes?: number;
   per_capita_revenue_kes?: number;
@@ -45,6 +47,20 @@ function pct(v?: number): string {
 export default function EconomicContextStrip({ ctx }: Props) {
   if (!ctx || !ctx.gdp_billion_kes) return null;
 
+  // Inflation provenance — KNBS (not CBK), shown with its real as-of date so a
+  // stale figure reads as dated rather than current (audit §3.10).
+  const inflationSource = ctx.inflation_source || 'KNBS Consumer Price Index';
+  const inflationAsOf =
+    ctx.inflation_as_of && !Number.isNaN(Date.parse(ctx.inflation_as_of))
+      ? new Date(ctx.inflation_as_of).toLocaleDateString('en-GB', {
+          month: 'short',
+          year: 'numeric',
+        })
+      : null;
+  const inflationSub = inflationAsOf
+    ? `${inflationSource} · as of ${inflationAsOf}`
+    : inflationSource;
+
   const cards = [
     {
       icon: TrendingUp,
@@ -64,7 +80,7 @@ export default function EconomicContextStrip({ ctx }: Props) {
       icon: Activity,
       label: 'Inflation',
       value: pct(ctx.inflation_pct),
-      sub: 'CBK Consumer Price Index',
+      sub: inflationSub,
       accent:
         (ctx.inflation_pct ?? 0) > 7
           ? '#9E3030'

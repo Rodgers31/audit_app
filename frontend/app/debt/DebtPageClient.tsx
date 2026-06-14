@@ -3,6 +3,7 @@
 import DataFreshnessBadge from '@/components/DataFreshnessBadge';
 import DataIntegrityBanner from '@/components/DataIntegrityBanner';
 import InfoTip from '@/components/InfoTip';
+import { PageSkeleton } from '@/components/ui/Skeleton';
 import PageShell from '@/components/layout/PageShell';
 import PDFExportButton from '@/components/PDFExportButton';
 import BroaderDebtCard from '@/components/debt/BroaderDebtCard';
@@ -471,9 +472,9 @@ export default function NationalDebtPage() {
   }, [d.gdpRatio]);
 
   /* ── Revenue allocation (per KES 100 of revenue — authoritative) ──
-     BPS framing: ordinary revenue (excludes A-i-A and borrowing) as
-     denominator, public debt-related costs charged on the Consolidated
-     Fund as numerator. Backend exposes the pre-computed ratio in
+     APDMR-style framing: tax + non-tax revenue as denominator, total
+     debt service (interest + principal redemptions) as numerator.
+     Backend exposes the pre-computed ratio in
      `debt_service_per_shilling`; we fall back to (ds / rev) × 100 only
      if it's missing.
      Framed as "per 100 of revenue" because:
@@ -495,10 +496,7 @@ export default function NationalDebtPage() {
   if (isLoading) {
     return (
       <PageShell title="Kenya's National Debt" subtitle='Pulling the latest numbers from CBK, Treasury and COB…'>
-        <div className='flex flex-col items-center justify-center py-24' role='status' aria-live='polite'>
-          <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-gov-forest mb-4' />
-          <span className='text-sm text-neutral-muted'>Loading comprehensive debt data…</span>
-        </div>
+        <PageSkeleton />
       </PageShell>
     );
   }
@@ -817,7 +815,7 @@ export default function NationalDebtPage() {
                 threshold={55}
                 thresholdLabel='PFM Act'
                 label='Debt-to-GDP'
-                subLabel='Total debt as % of the economy (PFM Act anchor, PV)'
+                subLabel='Public debt as % of GDP (nominal). The PFM Act 55% anchor is measured in present-value terms.'
               />
               <RingGauge
                 value={debtSustainability.debt_service_to_revenue}
@@ -920,7 +918,7 @@ export default function NationalDebtPage() {
                 </div>
                 <div className='text-sm text-gov-dark dark:text-white font-medium mt-2'>
                   out of every <span className='font-bold'>KES 100</span> collected in
-                  ordinary tax &amp; non-tax revenue
+                  tax &amp; non-tax revenue
                 </div>
                 <div className='mt-4 flex items-center gap-2 text-xs text-neutral-muted'>
                   <span className='inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gov-copper/10 text-gov-copper font-semibold'>
@@ -929,11 +927,10 @@ export default function NationalDebtPage() {
                   </span>
                 </div>
                 <p className='text-[11px] text-neutral-muted mt-3 leading-relaxed max-w-sm'>
-                  Source: National Treasury Budget Policy Statement{' '}
-                  {taxAllocation.fiscalYear}. Uses ordinary revenue
-                  excluding A-i-A and borrowing; debt figure includes
-                  public debt-related costs charged on the Consolidated
-                  Fund.
+                  Source: National Treasury fiscal summary{' '}
+                  {taxAllocation.fiscalYear}. Uses tax &amp; non-tax
+                  revenue; debt figure includes total debt service
+                  (interest + principal redemptions).
                 </p>
                 <details className='group mt-3 max-w-sm'>
                   <summary className='flex items-center gap-1.5 cursor-pointer list-none text-[11px] font-semibold text-gov-forest dark:text-emerald-300 hover:underline'>
@@ -945,22 +942,23 @@ export default function NationalDebtPage() {
                   </summary>
                   <div className='mt-2 pl-5 text-[11px] text-neutral-muted leading-relaxed space-y-2'>
                     <p>
-                      Calculated as {taxAllocation.fiscalYear} public
-                      debt-related costs of about KSh{' '}
+                      Calculated as {taxAllocation.fiscalYear} total
+                      debt service of about KSh{' '}
                       {(taxAllocation.ds / 1000).toFixed(3)}T divided by
-                      ordinary revenue of about KSh{' '}
+                      tax &amp; non-tax revenue of about KSh{' '}
                       {(taxAllocation.rev / 1000).toFixed(3)}T (
                       {(taxAllocation.ds / 1000).toFixed(3)} ÷{' '}
                       {(taxAllocation.rev / 1000).toFixed(3)} × 100 ≈{' '}
                       {taxAllocation.debtServicePerRev.toFixed(1)}). This
-                      follows the Budget Policy Statement framing and
-                      excludes borrowing and Appropriations-in-Aid.
+                      keeps the published ratio aligned with the Treasury
+                      APDMR series while FY2025/26 remains budgeted.
                     </p>
                     <p>
                       Different official debt-service measures may give
-                      higher figures depending on what is included, such
-                      as domestic redemptions, external principal
-                      repayments, or other financing items.
+                      lower or higher figures depending on the numerator
+                      or denominator used, but this card sticks to the
+                      seeded fiscal-summary ratio so the page stays
+                      internally consistent.
                     </p>
                   </div>
                 </details>
@@ -1019,10 +1017,10 @@ export default function NationalDebtPage() {
             <div className='px-6 sm:px-8 pb-6 sm:pb-8 pt-4 border-t border-neutral-border/30'>
               <div className='flex items-center justify-between mb-2 gap-3'>
                 <span className='text-xs font-semibold text-gov-dark dark:text-white'>
-                  Full allocation per KES 100 of ordinary revenue
+                  Full allocation per KES 100 of revenue
                 </span>
                 <span className='text-[11px] text-neutral-muted text-right'>
-                  Sum exceeds 100 because ordinary revenue doesn&rsquo;t
+                  Sum exceeds 100 because revenue doesn&rsquo;t
                   fund the whole budget — the shortfall is borrowed.
                 </span>
               </div>

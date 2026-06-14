@@ -159,13 +159,14 @@ export default function SpendDonut({ data }: Props) {
       },
       {
         key: 'other',
-        name: 'Other (CFS)',
+        name: 'Other (residual)',
         value: otherSpend,
         share: budget > 0 ? (otherSpend / budget) * 100 : 0,
         gradStart: INNER.other.start,
         gradEnd: INNER.other.end,
         color: INNER.other.base,
-        note: 'Consolidated Fund Services — constitutional salaries, guaranteed payments.',
+        note: 'Computed residual — the balance after debt service, recurrent, development, and county transfers (largely Consolidated Fund Services: constitutional salaries, pensions, guaranteed payments).',
+        isResidual: true,
       },
     ];
     return items.filter((d) => d.value > 0);
@@ -206,6 +207,11 @@ export default function SpendDonut({ data }: Props) {
     });
   }, [data.sectors]);
 
+  const sectorEnvelopeB = useMemo(
+    () => outerData.reduce((sum, d) => sum + d.value, 0),
+    [outerData]
+  );
+
   /* Center readout — reflects whichever key is hovered */
   const centerInfo = useMemo(() => {
     const def = {
@@ -229,7 +235,7 @@ export default function SpendDonut({ data }: Props) {
       return {
         eyebrow: outer.name,
         value: `KES ${fmtBillions(outer.value)}`,
-        caption: `${outer.share.toFixed(1)}% of sector envelope`,
+        caption: `${outer.share.toFixed(1)}% of county envelope`,
         accent: outer.color,
       };
     }
@@ -254,8 +260,10 @@ export default function SpendDonut({ data }: Props) {
             The {data.fiscal_year ?? 'current'} budget, visualised
           </h3>
           <p className='text-[12.5px] text-neutral-muted mt-1 max-w-lg'>
-            Inner ring: the four macro buckets. Outer ring: sector allocations within.
-            Hover a slice to see the value.
+            The <strong className='font-semibold text-gov-dark dark:text-white'>inner ring</strong> splits the national
+            budget into macro buckets. The <strong className='font-semibold text-gov-dark dark:text-white'>outer ring</strong> is
+            a separate, county-level pool — county-government allocations by sector — so its
+            shares are of the county envelope, not the national budget. Hover a slice for the value.
           </p>
         </div>
       </div>
@@ -415,12 +423,23 @@ export default function SpendDonut({ data }: Props) {
                 );
               })}
             </div>
+            {innerData.some((d: any) => d.isResidual) && (
+              <p className='mt-2 text-[10px] leading-snug text-neutral-muted/75'>
+                “Other (residual)” is a computed balancing item — the budget left after the
+                named buckets — not a separately sourced line.
+              </p>
+            )}
           </div>
 
           {/* Outer ring — sector mini list */}
           <div>
-            <div className='text-[10.5px] uppercase tracking-[0.15em] font-semibold text-neutral-muted mb-2'>
-              Sector envelope
+            <div className='flex items-baseline justify-between gap-2 mb-2'>
+              <div className='text-[10.5px] uppercase tracking-[0.15em] font-semibold text-neutral-muted'>
+                County sector allocations
+              </div>
+              <div className='text-[10px] text-neutral-muted tabular-nums'>
+                KES {fmtBillions(sectorEnvelopeB)} envelope
+              </div>
             </div>
             <div className='grid grid-cols-1 sm:grid-cols-2 gap-1'>
               {outerData.map((d) => {

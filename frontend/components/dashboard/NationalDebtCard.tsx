@@ -145,8 +145,12 @@ export default function NationalDebtCard() {
     apiData?.summary?.external_debt ?? (lastYear ? lastYear.external * 1_000_000_000 : 0);
   const domesticDebt =
     apiData?.summary?.domestic_debt ?? (lastYear ? lastYear.domestic * 1_000_000_000 : 0);
-  const externalPct = totalDebt > 0 ? +((externalDebt / totalDebt) * 100).toFixed(1) : 0;
-  const domesticPct = totalDebt > 0 ? +((domesticDebt / totalDebt) * 100).toFixed(1) : 0;
+  // External vs domestic split — shares of (external + domestic) so the two
+  // always sum to exactly 100%. Rounding each independently off the total
+  // previously produced 100.2% (51.5% + 48.7%).
+  const splitBase = externalDebt + domesticDebt;
+  const externalPct = splitBase > 0 ? +((externalDebt / splitBase) * 100).toFixed(1) : 0;
+  const domesticPct = splitBase > 0 ? +(100 - externalPct).toFixed(1) : 0;
 
   // IMF's "General Government Gross Debt" — the broader figure that
   // includes counties, SOEs, pending bills + arrears. Shown here as a
@@ -184,6 +188,23 @@ export default function NationalDebtCard() {
           ) : null}
         </div>
       </div>
+
+      {/* Reconciliation divergence — surfaced on home too (audit §2.1/§4), not
+          just /debt. Renders only when the two debt sources disagree materially. */}
+      {apiData?.reconciliation?.status === 'divergent' && (
+        <div className='mx-6 sm:mx-8 mt-3 flex items-start gap-2 rounded-lg border border-amber-300/50 bg-amber-50/70 dark:bg-amber-500/10 px-3 py-2'>
+          <AlertTriangle className='w-3.5 h-3.5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0' />
+          <p className='text-[11px] leading-snug text-amber-800 dark:text-amber-200'>
+            Sources differ by{' '}
+            {Math.abs(Number(apiData.reconciliation.percent_diff) || 0).toFixed(1)}% —{' '}
+            {apiData.reconciliation.primary_source} vs {apiData.reconciliation.secondary_source}.{' '}
+            <Link href='/debt' className='font-semibold underline hover:no-underline'>
+              See the audit trail
+            </Link>
+            .
+          </p>
+        </div>
+      )}
 
       {/* Stat cards row */}
       <div className='px-6 sm:px-8 pt-5 pb-2'>

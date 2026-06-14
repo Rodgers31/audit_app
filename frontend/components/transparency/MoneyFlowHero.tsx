@@ -101,14 +101,9 @@ export default function MoneyFlowHero({ data }: Props) {
     v != null && allocated > 0 ? Math.min(100, (v / allocated) * 100) : 0;
 
   const allocatedPct = 100;
-  const releasedPct = pct(released);
   const spentPct = pct(spent);
   const flaggedPct = pct(flagged);
 
-  const withheld =
-    released != null && allocated != null
-      ? Math.max(0, allocated - released)
-      : null;
   const unspent =
     spent != null && (released ?? allocated) != null
       ? Math.max(0, (released ?? allocated)! - spent)
@@ -140,7 +135,7 @@ export default function MoneyFlowHero({ data }: Props) {
             <p className='text-sm text-neutral-muted mt-1 max-w-2xl'>
               {isProjected
                 ? 'This fiscal year is still being executed, so release and spend figures will appear as the Controller of Budget publishes quarterly reports.'
-                : 'The waterfall below traces every shilling from Treasury allocation through exchequer release, execution, and the portion flagged as irregular by the Auditor General.'}
+                : 'The waterfall below traces every shilling from Treasury allocation through execution, and the portion the Auditor General questioned (could not confirm was properly spent).'}
             </p>
           </div>
 
@@ -153,13 +148,13 @@ export default function MoneyFlowHero({ data }: Props) {
                 </div>
                 <div>
                   <div className='text-[10px] uppercase tracking-wider font-semibold text-gov-copper'>
-                    OAG · flagged ratio
+                    OAG · questioned ratio
                   </div>
                   <div className='font-display text-xl text-gov-dark dark:text-white leading-tight tabular-nums'>
                     KES {flaggedPer100.toFixed(2)}
                   </div>
                   <div className='text-[11px] text-neutral-muted leading-tight'>
-                    of every KES 100 allocated is flagged as irregular, unsupported, or wasteful
+                    of every KES 100 allocated was questioned by the Auditor General — could not be confirmed as properly spent (not proven loss)
                   </div>
                 </div>
               </div>
@@ -184,19 +179,6 @@ export default function MoneyFlowHero({ data }: Props) {
             stage='Allocated'
             amount={allocated}
             widthPct={allocatedPct}
-            hover={hover}
-            setHover={setHover}
-          />
-          <StageGap
-            label='Withheld / delayed by National Treasury'
-            amount={withheld}
-            unavailable={released == null}
-            reason={isProjected ? 'Exchequer releases still pending' : 'CoB CBIRR exchequer-release column not yet published'}
-          />
-          <WaterfallStage
-            stage='Released'
-            amount={released}
-            widthPct={releasedPct}
             hover={hover}
             setHover={setHover}
           />
@@ -239,11 +221,12 @@ export default function MoneyFlowHero({ data }: Props) {
             Allocations follow the Commission on Revenue Allocation formula; releases
             and expenditure come from the Controller of Budget&apos;s{' '}
             <em>County Budget Implementation Review Report</em> (CBIRR). Flagged amounts
-            are the aggregate of findings classified as <em>irregular</em>,{' '}
-            <em>unsupported</em>, or <em>wasteful</em> in the Auditor General&apos;s
-            consolidated county audit for the year. Where a stage is blank the source
-            document has not yet been released — it isn&apos;t missing, just not yet
-            published.
+            are the aggregate of findings the Auditor General <em>questioned</em>{' '}
+            (classified as irregular, unsupported, or wasteful) in the consolidated county
+            audit for the year — expenditure that could not be confirmed as properly
+            supported, which is a <strong>query, not proven loss or theft</strong>. Where a
+            stage is blank the source document has not yet been published — it isn&apos;t
+            missing.
           </span>
         </div>
       </div>

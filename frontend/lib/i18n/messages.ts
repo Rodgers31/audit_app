@@ -87,9 +87,9 @@ export const MESSAGES = {
     plain: 'See where Kenya’s money goes',
   },
   'home.hero.subtitle': {
-    en: 'Where your taxes go, in real time',
-    sw: 'Pesa zako za kodi zinakoenda, wakati huu',
-    plain: 'See where your tax money goes right now',
+    en: 'Where your taxes go — updated nightly from official sources',
+    sw: 'Pesa zako za kodi zinakoenda — husasishwa kila usiku kutoka vyanzo rasmi',
+    plain: 'See where your tax money goes — updated every night from official records',
   },
 
   // Hero summary strip
@@ -114,7 +114,7 @@ export const MESSAGES = {
   'home.govcard.borrowed_sub_pct': { en: '% of budget', sw: '% ya bajeti', plain: '% of budget' },
   'home.govcard.debt_service': { en: 'Debt Service', sw: 'Huduma ya Deni', plain: 'Debt Payments' },
   'home.govcard.debt_service_sub': { en: 'Interest + principal', sw: 'Riba + mkopo mkuu', plain: 'Interest + loan payments' },
-  'home.govcard.debt_ceiling': { en: 'Debt Ceiling', sw: 'Kikomo cha Deni', plain: 'Debt Limit' },
+  'home.govcard.debt_ceiling': { en: 'Debt-to-GDP', sw: 'Deni kwa Pato la Taifa', plain: 'Debt vs Economy' },
   'home.govcard.ceiling_usage': { en: 'Usage', sw: 'Matumizi', plain: 'Used' },
   'home.govcard.ceiling_over': { en: 'Over the ceiling', sw: 'Juu ya kikomo', plain: 'Over the limit' },
   'home.govcard.view_full': { en: 'View full debt analysis', sw: 'Tazama uchambuzi kamili wa deni', plain: 'See full debt page' },
@@ -125,7 +125,12 @@ export const MESSAGES = {
   'home.govcard.seg_development': { en: 'Development', sw: 'Maendeleo', plain: 'Projects' },
   'home.govcard.seg_counties': { en: 'Counties', sw: 'Kaunti', plain: 'Counties' },
   'home.govcard.seg_other': { en: 'Other', sw: 'Nyingine', plain: 'Other' },
-  'home.govcard.ceiling_breached': { en: 'Ceiling breached by {pct}%', sw: 'Kikomo kimepitwa kwa {pct}%', plain: 'Over the limit by {pct}%' },
+  'home.govcard.ceiling_breached': { en: 'Above the 55%-of-GDP anchor', sw: 'Juu ya nanga ya 55% ya Pato la Taifa', plain: 'Above the 55% safe limit' },
+  'home.govcard.anchor_caption': {
+    en: 'PFM Act 2023 anchor: 55% of GDP (present value). Former KES 10T ceiling repealed.',
+    sw: 'Nanga ya Sheria ya PFM 2023: 55% ya Pato la Taifa (thamani ya sasa). Kikomo cha awali cha KES trilioni 10 kilifutwa.',
+    plain: 'The safe limit is now 55% of the economy (set in 2023). The old KES 10 trillion limit was scrapped.',
+  },
   'home.govcard.stat_budget': { en: 'Budget', sw: 'Bajeti', plain: 'Budget' },
   'home.govcard.stat_revenue': { en: 'Revenue', sw: 'Mapato', plain: 'Money In' },
   'home.govcard.stat_borrowed': { en: 'Borrowed', sw: 'Iliyokopwa', plain: 'Borrowed' },
@@ -406,6 +411,11 @@ export const MESSAGES = {
   // Counties list page
   // ══════════════════════════════════════════════════
   'counties.title': { en: 'County Explorer', sw: 'Kivinjari cha Kaunti', plain: 'Explore Counties' },
+  'counties.modelled_estimate': {
+    en: 'Modelled estimate — not official Controller of Budget figures. County budget allocations use the Commission on Revenue Allocation (CRA) equitable-share formula; county debt and pending bills are estimated at ~15% and ~8% of budget. These are indicative, not county-reported actuals. Audit findings are from the Office of the Auditor-General.',
+    sw: 'Makadirio ya kielelezo — si takwimu rasmi za Mdhibiti wa Bajeti. Mgao wa bajeti ya kaunti unatumia fomula ya mgao sawa ya Tume ya Ugawaji wa Mapato (CRA); deni la kaunti na bili ambazo hazijalipwa zinakadiriwa kwa ~15% na ~8% ya bajeti. Haya ni makadirio tu, si takwimu halisi zilizoripotiwa na kaunti. Matokeo ya ukaguzi yanatoka Ofisi ya Mkaguzi Mkuu wa Hesabu.',
+    plain: 'These county money numbers are estimates, not official Controller of Budget figures. Budgets use the CRA sharing formula; debt and unpaid bills are rough guesses (about 15% and 8% of the budget). The audit findings are real, from the Auditor-General.',
+  },
   'counties.subtitle': {
     en: 'Compare all 47 Kenyan counties on budget, execution, debt, and audit findings.',
     sw: 'Linganisha kaunti zote 47 za Kenya kwa bajeti, matumizi, deni, na matokeo ya ukaguzi.',
@@ -451,7 +461,8 @@ export const MESSAGES = {
   'counties.kpi.total_budget': { en: 'Total Budget', sw: 'Bajeti Jumla', plain: 'Total Budget' },
   'counties.kpi.across_counties': { en: 'Across {n} counties', sw: 'Kutoka kaunti {n}', plain: 'From {n} counties' },
   'counties.kpi.total_debt': { en: 'Total Debt', sw: 'Deni Jumla', plain: 'Total Debt' },
-  'counties.kpi.pending_bills_loans': { en: 'Pending bills & loans', sw: 'Ankara zilizokwama na mikopo', plain: 'Unpaid bills and loans' },
+  'counties.kpi.pending_bills_loans': { en: 'County debt (excl. pending bills)', sw: 'Deni la kaunti (bila ankara zilizokwama)', plain: 'County loans (not counting unpaid bills)' },
+  'counties.kpi.audit_status_derived': { en: 'Status derived from finding severity — not an official OAG audit opinion.', sw: 'Hali imetokana na uzito wa matokeo — si maoni rasmi ya ukaguzi ya OAG.', plain: 'Based on how serious the findings are — not an official OAG opinion.' },
   'counties.kpi.avg_execution_rate': { en: 'Avg. Execution Rate', sw: 'Wastani wa Matumizi', plain: 'Average spent' },
   'counties.kpi.see_rankings': { en: 'See county rankings below', sw: 'Tazama orodha ya kaunti chini', plain: 'See county rankings below' },
   'counties.kpi.target_70': { en: 'Target: 70%', sw: 'Lengo: 70%', plain: 'Goal: 70%' },
@@ -675,7 +686,13 @@ export const MESSAGES = {
   'sectors.total_allocated': { en: 'Total allocated', sw: 'Iliyotengwa jumla', plain: 'Total planned' },
   'sectors.total_allocated_sub': { en: 'Aggregated across {n} counties', sw: 'Imejumuishwa kutoka kaunti {n}', plain: 'Added from {n} counties' },
   'sectors.total_executed': { en: 'Total executed', sw: 'Iliyotumika jumla', plain: 'Total spent' },
-  'sectors.total_executed_sub': { en: 'Public money actually spent', sw: 'Pesa za umma zilizotumika kweli', plain: 'Money really spent' },
+  'sectors.total_executed_sub': { en: 'Modelled county spending — not final actuals', sw: 'Matumizi ya kaunti ya kielelezo — si takwimu za mwisho', plain: 'County spending (estimate, not final)' },
+  'sectors.projected_note': {
+    en: 'This fiscal year is still in progress — figures are projected/partial (National Treasury BPS), not final Controller of Budget actuals.',
+    sw: 'Mwaka huu wa fedha bado unaendelea — takwimu ni makadirio/sehemu (BPS ya Hazina ya Taifa), si takwimu za mwisho za Mdhibiti wa Bajeti.',
+    plain: 'This year is not finished yet — these numbers are estimates, not the final spending.',
+  },
+  'sectors.source_label': { en: 'Source', sw: 'Chanzo', plain: 'Source' },
   'sectors.execution_rate': { en: 'Overall execution rate', sw: 'Kiwango cha matumizi kwa jumla', plain: 'Overall spend rate' },
   'sectors.execution_rate_sub': { en: 'Of every KES planned', sw: 'Ya kila KES iliyopangwa', plain: 'Of every shilling planned' },
   'sectors.loading': { en: 'Loading sector roll-up…', sw: 'Inapakia muhtasari wa sekta…', plain: 'Loading sectors…' },
@@ -818,6 +835,7 @@ export const MESSAGES = {
   'county.overview.kpi.census': { en: 'Census', sw: 'Sensa', plain: 'Census' },
   'county.overview.kpi.na': { en: 'N/A', sw: 'Haipo', plain: 'None' },
   'county.overview.key_challenges': { en: 'Key Challenges', sw: 'Changamoto Kuu', plain: 'Main Problems' },
+  'county.overview.challenges_generic_note': { en: "Representative challenges common across many counties — not derived from this county's specific records.", sw: 'Changamoto za kawaida katika kaunti nyingi — si kutoka kwa rekodi mahususi za kaunti hii.', plain: 'Common problems in many counties — not specific to this one.' },
 
   // Stalled projects summary (overview)
   'county.overview.stalled_n': { en: 'Stalled Project', sw: 'Mradi Uliokwama', plain: 'Stuck Project' },

@@ -13,14 +13,35 @@ import {
   filterTerms,
   GLOSSARY_CATEGORIES,
   getCategoryCounts,
+  type GlossaryExample,
   glossaryTerms,
   groupByCategory,
   type GlossaryCategoryId,
 } from '@/data/glossaryTerms';
+import { type CivicFigure, type CivicFigureKey, getCivicFigures } from '@/lib/api/civic';
+import { formatKesWords } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, ScrollText, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
+
+type CivicFigures = Partial<Record<CivicFigureKey, CivicFigure>>;
+
+/**
+ * Render a glossary example. Static strings pass through; live examples get
+ * the current figure substituted in. When a figure was never seeded or the
+ * API is unavailable, we fall back to the dated historical sentence — never a
+ * fabricated current number (DESIGN §1: last-known-good, dated).
+ */
+function renderExample(ex: GlossaryExample, figures?: CivicFigures): string {
+  if (typeof ex === 'string') return ex;
+  const fig = figures?.[ex.figure];
+  if (!fig?.available || fig.value == null || !fig.period) return ex.fallback;
+  return ex.template
+    .replace('{value}', formatKesWords(fig.value))
+    .replace('{period}', fig.period);
+}
 
 interface InteractiveGlossaryProps {
   /** Optional externally-controlled search term. */
@@ -33,6 +54,15 @@ export default function InteractiveGlossary({
   const [internalSearch, setInternalSearch] = useState<string>('');
   const [category, setCategory] = useState<GlossaryCategoryId | 'all'>('all');
   const [openId, setOpenId] = useState<string | null>(null);
+
+  // Live civic figures (GDP, budget, debt, equitable share) for examples.
+  // On error/loading we simply render the dated fallbacks baked into each term.
+  const { data: civic } = useQuery({
+    queryKey: ['civic-figures'],
+    queryFn: getCivicFigures,
+    staleTime: 1000 * 60 * 60, // 1h — these change at most a few times a year
+  });
+  const figures = civic?.figures;
 
   const searchValue = searchTerm || internalSearch;
   const counts = useMemo(() => getCategoryCounts(), []);
@@ -205,7 +235,7 @@ export default function InteractiveGlossary({
                                     key={i}
                                     className='flex items-start gap-2 text-[13.5px] leading-relaxed text-neutral-text'>
                                     <span className='mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-gov-gold' />
-                                    <span>{ex}</span>
+                                    <span>{renderExample(ex, figures)}</span>
                                   </li>
                                 ))}
                               </ul>

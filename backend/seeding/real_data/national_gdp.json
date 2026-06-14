@@ -1,0 +1,19 @@
+{
+  "metadata": {
+    "source": "World Bank — GDP (current LCU), indicator NY.GDP.MKTP.CN",
+    "source_url": "https://api.worldbank.org/v2/country/KEN/indicator/NY.GDP.MKTP.CN",
+    "indicator": "NY.GDP.MKTP.CN",
+    "units": "kes",
+    "last_updated": "2026-06-13",
+    "notes": "Kenya nominal GDP, current prices, in Kenyan shillings (raw KES, not billions). Authoritative World Bank actuals; the latest published year is 2024 (World Bank publishes nominal GDP with a ~1-2 year lag). This file is the SINGLE in-repo source of truth for the nominal-GDP denominator and is used (a) by bootstrap on startup and (b) as the fallback when the live World Bank fetch is unavailable, so we never inject a hardcoded estimate. The live national_gdp seeding domain overlays current World Bank values on top of this. NOTE: the HEADLINE debt-to-GDP ratio is sourced from the IMF GGXWDG_NGDP series (vintage-consistent, same-year debt and GDP) rather than computed by dividing current debt by a lagged GDP year."
+  },
+  "gdp": [
+    { "year": 2018, "gdp_kes": 9340307000000 },
+    { "year": 2019, "gdp_kes": 10237727000000 },
+    { "year": 2020, "gdp_kes": 10715070000000 },
+    { "year": 2021, "gdp_kes": 12027662000000 },
+    { "year": 2022, "gdp_kes": 13489642000000 },
+    { "year": 2023, "gdp_kes": 15033610000000 },
+    { "year": 2024, "gdp_kes": 16224478000000 }
+  ]
+}

@@ -20,6 +20,7 @@ from config.settings import settings
 from services.trust_guards import (
     check_budget_sectors,
     check_coverage_staleness,
+    check_debt_composition,
     check_period_nonempty,
     check_plausible_total,
     reconcile_debt_totals,
@@ -3484,6 +3485,16 @@ async def get_audit_statistics():
                 reverse=True,
             )
 
+            # Honest data vintage from the contributing source documents — never
+            # datetime.now() (audit §2.9). Mirrors /audits/federal.
+            from provenance import vintage_iso
+
+            _audit_doc_ids = [
+                row[0]
+                for row in db.query(DBAudit.source_document_id).distinct().all()
+                if row[0]
+            ]
+
             return {
                 "total_findings": total,
                 "counties_audited": counties_audited,
@@ -3518,9 +3529,7 @@ async def get_audit_statistics():
                         or None
                     ),
                 ),
-                "last_updated": datetime.datetime.now(
-                    datetime.timezone.utc
-                ).isoformat(),
+                "last_updated": vintage_iso(db, _audit_doc_ids),
             }
     except HTTPException:
         raise
@@ -3559,6 +3568,30 @@ async def get_available_fiscal_years(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+def _parse_kes_amount_str(value) -> "float | None":
+    """Parse 'KES 981.3B' / '1.2T' / '500M' / '5K' into a number, else None.
+
+    Used for the OAG report's authoritative questioned total so the headline
+    is the report's own figure rather than a naive sum of finding amounts.
+    """
+    if not value:
+        return None
+    cleaned = str(value).upper().replace("KES", "").strip()
+    mult = 1.0
+    if cleaned.endswith("T"):
+        mult, cleaned = 1_000_000_000_000, cleaned[:-1]
+    elif cleaned.endswith("B"):
+        mult, cleaned = 1_000_000_000, cleaned[:-1]
+    elif cleaned.endswith("M"):
+        mult, cleaned = 1_000_000, cleaned[:-1]
+    elif cleaned.endswith("K"):
+        mult, cleaned = 1_000, cleaned[:-1]
+    try:
+        return float(cleaned.replace(",", "").strip()) * mult
+    except (ValueError, TypeError):
+        return None
+
+
 @app.get("/api/v1/audits/federal")
 @cached(key_prefix="audits:federal", ttl=3600)
 async def get_federal_audits():
@@ -3582,6 +3615,8 @@ async def get_federal_audits():
                 .order_by(DBAudit.severity.desc(), DBAudit.created_at.desc())
                 .all()
             )
+
+            from provenance import vintage_iso
 
             findings = []
             total_amount = 0.0
@@ -3649,8 +3684,9 @@ async def get_federal_audits():
                     }
                 )
 
-            # Load the audit opinion summary from the JSON file
+            # Load the audit opinion summary + report metadata from the JSON.
             opinion_summary = {}
+            report_meta = {}
             try:
                 import json
                 from pathlib import Path
@@ -3664,6 +3700,7 @@ async def get_federal_audits():
                     with open(nat_path) as f:
                         nat_data = json.load(f)
                     opinion_summary = nat_data.get("audit_opinion_summary", {})
+                    report_meta = nat_data.get("metadata", {})
             except Exception:
                 pass
 
@@ -3731,16 +3768,24 @@ async def get_federal_audits():
                     .first()
                 )
 
+            # The OAG report's own metadata (from the source JSON) is the
+            # authoritative fiscal year + title + date for the federal report
+            # — NOT the global FISCAL_LABEL the audits happen to be attached
+            # to in the DB (audit §3.8). Fall back to DB-derived values.
+            report_fy = report_meta.get("fiscal_year") or latest_period_label
             derived_report_title = (
-                latest_source.title
-                if latest_source and latest_source.title
-                else opinion_summary.get("report_title")
+                report_meta.get("report_title")
+                or (latest_source.title if latest_source and latest_source.title else None)
+                or opinion_summary.get("report_title")
                 or "Report of the Auditor General on the National Government"
             )
-            derived_report_date = (
+            derived_report_date = report_meta.get("report_date") or (
                 latest_source.fetch_date.date().isoformat()
                 if latest_source and latest_source.fetch_date
                 else None
+            )
+            derived_fiscal_years_covered = (
+                [report_fy] if report_meta.get("fiscal_year") else fiscal_years_covered
             )
             # The sitting Auditor-General is a public officeholder, not a
             # computed figure. Prefer the publisher name from the latest
@@ -3752,20 +3797,41 @@ async def get_federal_audits():
                 if latest_source and latest_source.publisher
                 else "Office of the Auditor General of Kenya"
             )
+            # Severity distribution: prefer the OAG report's own counts so the
+            # donut isn't inflated by the seed's "high"->CRITICAL mapping
+            # (audit §3.3). key_statistics splits critical/significant/minor.
+            ks = opinion_summary.get("key_statistics", {})
+            if ks.get("critical_findings") is not None:
+                by_severity = {
+                    "CRITICAL": ks.get("critical_findings", 0),
+                    "WARNING": ks.get("significant_findings", 0),
+                    "INFO": ks.get("minor_findings", 0),
+                }
+            else:
+                by_severity = severity_counts
 
             return {
                 "report_title": derived_report_title,
                 "auditor_general": derived_auditor_general,
-                "fiscal_year": latest_period_label,
-                "fiscal_years_covered": fiscal_years_covered,
+                "fiscal_year": report_fy,
+                "fiscal_years_covered": derived_fiscal_years_covered,
                 "report_date": derived_report_date,
                 "opinion_type": opinion_summary.get("opinion_type", "Qualified"),
                 "total_findings": len(findings),
-                "total_amount_questioned": total_amount,
+                # Headline "Amount Questioned" = the OAG report's own
+                # authoritative questioned total, NOT a naive sum of every
+                # finding's amount (which conflated debt-service stock, asset
+                # valuations etc. and produced the misleading ~3.3T).
+                "total_amount_questioned": _parse_kes_amount_str(
+                    opinion_summary.get("total_amount_questioned", "")
+                ),
                 "total_amount_questioned_label": opinion_summary.get(
                     "total_amount_questioned", ""
                 ),
-                "by_severity": severity_counts,
+                # Transparency only: the raw sum across all finding amounts.
+                # NOT the questioned headline (see above).
+                "total_amount_in_findings": total_amount,
+                "by_severity": by_severity,
                 "basis_for_qualification": opinion_summary.get(
                     "basis_for_qualification", []
                 ),
@@ -3779,22 +3845,22 @@ async def get_federal_audits():
                 "_meta": _response_meta(
                     unit="kes",
                     entity_scope="national",
-                    fiscal_period=latest_period_label,
-                    covers_through=latest_period_label,
+                    fiscal_period=report_fy,
+                    covers_through=report_fy,
                     cache_ttl_seconds=3600,
-                    data_quality="official" if latest_period_label else "unknown",
+                    data_quality="official" if report_fy else "unknown",
                     quality_notes=(
                         check_period_nonempty(
                             len(findings),
                             endpoint="/audits/federal",
-                            period_label=latest_period_label,
+                            period_label=report_fy,
                         )
                         or None
                     ),
                 ),
-                "last_updated": datetime.datetime.now(
-                    datetime.timezone.utc
-                ).isoformat(),
+                "last_updated": vintage_iso(
+                    db, [a.source_document_id for a, _ in federal_audits]
+                ),
             }
     except HTTPException:
         raise
@@ -5049,6 +5115,45 @@ async def get_sector_spending():
         eids_for_filter = list({p[0] for p in entity_period_pairs})
         pids_for_filter = list({p[1] for p in entity_period_pairs})
         valid_pairs = set(entity_period_pairs)
+
+        # Resolve the dominant fiscal period (for the page label) and whether
+        # that FY is still in progress — if so, the execution figures are
+        # projected/partial, NOT final actuals (audit §2.10).
+        import datetime as _dt_sectors
+
+        _period_meta = {}  # pid -> (label, end_date)
+        if pids_for_filter:
+            for _pid, _lbl, _end in (
+                db.query(
+                    DBFiscalPeriod.id,
+                    DBFiscalPeriod.label,
+                    DBFiscalPeriod.end_date,
+                )
+                .filter(DBFiscalPeriod.id.in_(pids_for_filter))
+                .all()
+            ):
+                _period_meta[_pid] = (_lbl, _end)
+        _label_counts = {}
+        for _eid, _pid in valid_pairs:
+            _lbl = _period_meta.get(_pid, (None, None))[0]
+            if _lbl:
+                _label_counts[_lbl] = _label_counts.get(_lbl, 0) + 1
+        dominant_fy = (
+            max(_label_counts, key=_label_counts.get) if _label_counts else None
+        )
+        _today_sectors = _dt_sectors.date.today()
+
+        def _period_in_progress(_end) -> bool:
+            if _end is None:
+                return False
+            _d = _end.date() if hasattr(_end, "date") else _end
+            return _d >= _today_sectors
+
+        is_partial_year = any(
+            _period_in_progress(_period_meta.get(pid, (None, None))[1])
+            for pid in pids_for_filter
+        )
+
         all_lines = (
             db.query(
                 DBBudgetLine.entity_id,
@@ -5125,6 +5230,14 @@ async def get_sector_spending():
     out.sort(key=lambda x: x["spent"], reverse=True)
 
     return {
+        "fiscal_year": dominant_fy,
+        "is_partial_year": is_partial_year,
+        "is_projected": is_partial_year,
+        "source": (
+            "County budget allocations modelled from CRA equitable-share data; "
+            "figures for an in-progress fiscal year are projected (National "
+            "Treasury BPS), not final Controller-of-Budget actuals"
+        ),
         "total_allocated": round(total_allocated, 2),
         "total_spent": round(total_spent, 2),
         "counties_reporting": counties_seen,
@@ -6122,6 +6235,8 @@ async def get_national_budget_summary(fiscal_year: str = None):
                     .join(DBEntity, DBBudgetLine.entity_id == DBEntity.id)
                     .filter(DBEntity.type == EntityType.NATIONAL)
                 )
+                from provenance import vintage_iso
+
                 if fiscal_year:
                     fp = (
                         db.query(DBFiscalPeriod)
@@ -6221,24 +6336,24 @@ async def get_national_budget_summary(fiscal_year: str = None):
                             .scalar()
                         )
 
+                # Honest scope label — this endpoint sums BudgetLine rows for
+                # EntityType=NATIONAL only (CoB NG-BIRR records). It represents
+                # National-Government execution, NOT the full consolidated
+                # national budget (which additionally includes the county
+                # equitable share transfer, ~400B+ KES for recent years).
+                # Surfaced in BOTH _meta and data so the frontend (which reads
+                # only ``data``) can render it next to the figure.
+                scope_detail = (
+                    "National-Government execution only (CoB NG-BIRR); "
+                    "excludes county equitable share transfers."
+                )
                 return {
                     "status": "success",
                     "_meta": _response_meta(
                         unit="kes",
                         entity_scope="national",
                         fiscal_period=period_label,
-                        # IMPORTANT honesty label — this endpoint sums
-                        # BudgetLine rows for EntityType=NATIONAL only
-                        # (CoB NG-BIRR records). It therefore represents
-                        # National-Government execution, NOT the full
-                        # consolidated national budget, which additionally
-                        # includes the county equitable share transfer
-                        # (~400B+ KES for recent years).
-                        scope_detail=(
-                            "National-Government execution only "
-                            "(CoB NG-BIRR); excludes county equitable "
-                            "share transfers."
-                        ),
+                        scope_detail=scope_detail,
                         covers_through=period_label,
                         cache_ttl_seconds=1800,
                         data_quality="official",
@@ -6254,6 +6369,7 @@ async def get_national_budget_summary(fiscal_year: str = None):
                     "data": {
                         "total": total_allocated,
                         "total_label": "National-Government allocation (CoB NG-BIRR)",
+                        "scope_detail": scope_detail,
                         "total_spent": total_spent,
                         "execution_rate": execution_rate,
                         "development_budget": dev_budget,
@@ -6262,7 +6378,17 @@ async def get_national_budget_summary(fiscal_year: str = None):
                         "currency": "KES",
                     },
                     "data_source": "database",
-                    "last_updated": datetime.datetime.now().isoformat(),
+                    "last_updated": vintage_iso(
+                        db,
+                        [
+                            r[0]
+                            for r in budget_query.with_entities(
+                                DBBudgetLine.source_document_id
+                            )
+                            .distinct()
+                            .all()
+                        ],
+                    ),
                 }
         except Exception as exc:
             logging.error(f"DB national budget failed: {exc}")
@@ -6782,7 +6908,9 @@ async def get_budget_overview():
                 "status": "success",
                 "data_source": "database",
                 "fiscal_period": period_label,
-                "last_updated": datetime.datetime.now().isoformat(),
+                "last_updated": (
+                    src_updated_at.isoformat() if src_updated_at else None
+                ),
                 "_meta": _budget_overview_meta,
                 "summary": {
                     "total_budget": total_allocated,
@@ -6900,6 +7028,37 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
         for e in econ_rows:
             econ_map[e.indicator_type] = float(e.value) if e.value else None
 
+        # Inflation (CPI): read the CANONICAL ``inflation_rate`` series — the
+        # same maintained series /economic/summary uses (seeded by bootstrap,
+        # the economic_indicators domain, and auto_seeder) — taking the latest
+        # observation by date. The legacy ``inflation_rate_cpi`` key was written
+        # ONLY by the hardcoded MVP seeder and was frozen at Jan-2024 = 6.3%, so
+        # the budget page contradicted the rest of the site with a stale figure
+        # (audit §3.10). Reading the maintained series makes this self-update and
+        # stay consistent; the legacy key is a fallback only if the series is
+        # absent. Kenyan CPI is published by KNBS, not CBK.
+        inflation_row = (
+            db.query(EconomicIndicator)
+            .filter(EconomicIndicator.indicator_type == "inflation_rate")
+            .order_by(EconomicIndicator.indicator_date.desc())
+            .first()
+        ) or (
+            db.query(EconomicIndicator)
+            .filter(EconomicIndicator.indicator_type == "inflation_rate_cpi")
+            .order_by(EconomicIndicator.indicator_date.desc())
+            .first()
+        )
+        inflation_pct = (
+            float(inflation_row.value)
+            if inflation_row and inflation_row.value is not None
+            else econ_map.get("inflation_rate") or econ_map.get("inflation_rate_cpi")
+        )
+        inflation_as_of = (
+            inflation_row.indicator_date.isoformat()
+            if inflation_row and inflation_row.indicator_date
+            else None
+        )
+
         # Get total population (sum of all counties)
         total_pop = db.query(func.sum(PopulationData.total_population)).scalar()
         total_pop = int(total_pop) if total_pop else None
@@ -6923,7 +7082,9 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
         economic_context = {
             "gdp_billion_kes": gdp_billion,
             "gdp_growth_pct": econ_map.get("gdp_growth_rate"),
-            "inflation_pct": econ_map.get("inflation_rate_cpi"),
+            "inflation_pct": inflation_pct,
+            "inflation_as_of": inflation_as_of,
+            "inflation_source": "KNBS Consumer Price Index",
             "unemployment_pct": econ_map.get("unemployment_rate"),
             "total_population": total_pop,
             "budget_to_gdp_pct": (
@@ -6961,9 +7122,20 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
             db.query(Entity.id).filter(Entity.slug == "national-government").scalar()
         )
 
+        # The execution pipeline below is scoped to ONE national period; surface
+        # its fiscal-year label so the UI can show which FY the execution figures
+        # cover. CoB NG-BIRR execution lags the page's selected FY (audit §2.3),
+        # so it must be labelled with its own FY, not the page's.
+        execution_fiscal_year = None
         if national_entity:
             # Scope to latest national FY to avoid summing across all periods
             _nat_pid = _latest_national_period(db)
+            if _nat_pid:
+                execution_fiscal_year = (
+                    db.query(DBFiscalPeriod.label)
+                    .filter(DBFiscalPeriod.id == _nat_pid)
+                    .scalar()
+                )
             sector_q = (
                 db.query(
                     BudgetLine.category,
@@ -7024,6 +7196,7 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
             "revenue_by_source": revenue_by_source,
             "economic_context": economic_context,
             "execution_by_sector": execution_by_sector,
+            "execution_fiscal_year": execution_fiscal_year,
         }
 
     except HTTPException:
@@ -7288,19 +7461,201 @@ async def get_fiscal_summary(db: Session = Depends(get_db)):
         if rows[-1].updated_at:
             last_updated = rows[-1].updated_at.isoformat()
 
+        # Fiscal anchor: the KES 10T NUMERIC debt ceiling was REPEALED by the
+        # PFM (Amendment) Act 2023, which replaced it with a debt anchor of
+        # 55% of GDP in present-value terms (target 2028). The debt_ceiling /
+        # debt_ceiling_usage_pct fields are retained only for historical
+        # context — they are no longer the binding fiscal rule.
+        _imf_d2g = _latest_imf_debt_to_gdp(db)
+        debt_anchor = {
+            "anchor_pct_gdp": 55.0,
+            "basis": (
+                "PFM (Amendment) Act 2023 — 55% of GDP in present-value terms "
+                "(target 2028); replaced the repealed KES 10T numeric ceiling"
+            ),
+            "debt_to_gdp_pct": _imf_d2g[0] if _imf_d2g else None,
+            "debt_to_gdp_year": _imf_d2g[1] if _imf_d2g else None,
+            "debt_to_gdp_basis": (
+                "IMF General Government Gross Debt, % of GDP (nominal); compared "
+                "to the 55% present-value anchor this is indicative, not exact"
+            ),
+            "above_anchor": (_imf_d2g[0] > 55.0) if _imf_d2g else None,
+            "former_numeric_ceiling_kes_billion": 10000,
+            "former_ceiling_repealed": True,
+        }
+
+        # Surface objective plausibility/reconciliation caveats on the headline
+        # year (same guard that quarantines bad rows at seed time), so an
+        # implausible figure shows a data-quality note rather than passing as
+        # fact. Empty for clean data.
+        from services.trust_guards import check_fiscal_summary
+
+        _fiscal_quality_notes = check_fiscal_summary(latest) if latest else []
+
         return {
             "status": "success",
             "data_source": "database",
-            "_meta": _response_meta(unit="billion_kes", entity_scope="national"),
+            "_meta": _response_meta(
+                unit="billion_kes",
+                entity_scope="national",
+                quality_notes=_fiscal_quality_notes or None,
+            ),
             "last_updated": last_updated,
             "source": source_title,
             "current": latest,
             "history": fiscal_years,
             "total_fiscal_years": len(fiscal_years),
+            "debt_anchor": debt_anchor,
         }
     except Exception as e:
         logging.error(f"Error fetching fiscal summary: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.get("/api/v1/learn/civic-figures")
+@cached(key_prefix="learn:civic_figures", ttl=3600)
+async def get_civic_figures(db: Session = Depends(get_db)):
+    """Live civic figures for the Learn glossary (audit §2.7; design §5.9).
+
+    Every fiscal magnitude the glossary cites — nominal GDP, the national
+    budget, public debt, the county equitable share — is resolved HERE from
+    its one canonical DB source, with the period it refers to and its
+    provenance, so the glossary renders current numbers and self-updates as
+    new data is seeded instead of carrying hardcoded literals that silently
+    go stale (the exact failure mode behind the 14.6T→15.0T→16.2T GDP drift).
+
+    A figure that was never seeded (or has no period) returns
+    ``available=False``; the UI then shows a dated last-known example
+    rather than a fabricated current number (DESIGN §1, decision 1:
+    last-known-good, dated).
+
+    There is intentionally NO hardcoded magnitude in this endpoint.
+    """
+    from provenance import vintage_iso
+
+    def _figure(value, period, source, as_of, data_quality="official"):
+        val = float(value) if value not in (None, 0) else None
+        return {
+            "available": val is not None and val > 0 and bool(period),
+            "value": val,
+            "unit": "kes",
+            "period": period,
+            "source": source,
+            "as_of": as_of,
+            "data_quality": data_quality,
+        }
+
+    def _fs_to_kes(value):
+        """FiscalSummary stores billion-KES (see `_response_meta(unit='billion_kes')`
+        and seeding/real_data/fiscal_summary.json), whereas GDPData and Loan
+        store RAW KES. Normalise the fiscal figures to raw KES so every figure
+        this endpoint emits shares one unit and the UI formats them uniformly.
+        The < 1e7 guard scales the billions convention (~3e3-5e3) but leaves an
+        already-raw value (~1e12) untouched, so a future unit change can't
+        silently 1e9× the budget."""
+        if value in (None, 0):
+            return None
+        v = float(value)
+        if v <= 0:
+            return None
+        return v * 1e9 if v < 1e7 else v
+
+    figures: dict[str, dict] = {}
+
+    try:
+        # ── Nominal GDP — the national series (entity_id NULL) seeded by the
+        #    `national_gdp` domain from World Bank NY.GDP.MKTP.CN; fall back to
+        #    any latest GDP row. The period is the GDP *data* year. ──────────
+        gdp_row = (
+            db.query(DBGDPData)
+            .filter(DBGDPData.entity_id.is_(None))
+            .order_by(DBGDPData.year.desc())
+            .first()
+        ) or db.query(DBGDPData).order_by(DBGDPData.year.desc()).first()
+        figures["nominal_gdp"] = _figure(
+            value=gdp_row.gdp_value if gdp_row else None,
+            period=str(gdp_row.year) if gdp_row else None,
+            source="World Bank / KNBS",
+            as_of=(
+                vintage_iso(db, [getattr(gdp_row, "source_document_id", None)])
+                if gdp_row
+                else None
+            ),
+        )
+
+        # ── National budget + county equitable share — latest FiscalSummary
+        #    row that actually carries each field. Period is the fiscal year. ─
+        from models import FiscalSummary as _FS
+
+        fs_rows = db.query(_FS).order_by(_FS.fiscal_year.asc()).all()
+
+        def _latest_fs(attr):
+            for r in reversed(fs_rows):
+                v = getattr(r, attr, None)
+                if v and float(v) > 0:
+                    return r
+            return None
+
+        budget_row = _latest_fs("appropriated_budget")
+        share_row = _latest_fs("county_allocation")
+        figures["national_budget"] = _figure(
+            value=_fs_to_kes(budget_row.appropriated_budget) if budget_row else None,
+            period=budget_row.fiscal_year if budget_row else None,
+            source="National Treasury / Controller of Budget",
+            as_of=(
+                vintage_iso(db, [getattr(budget_row, "source_document_id", None)])
+                if budget_row
+                else None
+            ),
+        )
+        figures["equitable_share"] = _figure(
+            value=_fs_to_kes(share_row.county_allocation) if share_row else None,
+            period=share_row.fiscal_year if share_row else None,
+            source="Division of Revenue Act / CRA",
+            as_of=(
+                vintage_iso(db, [getattr(share_row, "source_document_id", None)])
+                if share_row
+                else None
+            ),
+        )
+
+        # ── Public debt — outstanding stock of national debt loans, excluding
+        #    pending bills (the `_is_debt_loan` rule used by /debt/national so
+        #    the two never diverge). Period is the source vintage year. ───────
+        from models import EntityType as _ET
+
+        national_entity = (
+            db.query(DBEntity).filter(DBEntity.type == _ET.NATIONAL).first()
+        )
+        debt_value = None
+        debt_as_of = None
+        if national_entity:
+            debt_loans = [
+                ln
+                for ln in db.query(DBLoan)
+                .filter(DBLoan.entity_id == national_entity.id)
+                .all()
+                if _is_debt_loan(ln)
+            ]
+            if debt_loans:
+                debt_value = sum(float(ln.outstanding or 0) for ln in debt_loans)
+                debt_as_of = vintage_iso(
+                    db,
+                    [getattr(ln, "source_document_id", None) for ln in debt_loans],
+                )
+        figures["public_debt"] = _figure(
+            value=debt_value,
+            period=debt_as_of[:4] if debt_as_of else None,
+            source="Central Bank of Kenya / National Treasury",
+            as_of=debt_as_of,
+        )
+    except Exception as e:  # pragma: no cover - defensive
+        logging.error("Error building civic figures: %s", e)
+        # Degrade to "nothing available" rather than 500 — the glossary then
+        # shows its dated fallbacks, never a fabricated number.
+        return {"status": "error", "data_source": "database", "figures": figures}
+
+    return {"status": "success", "data_source": "database", "figures": figures}
 
 
 @app.get("/api/v1/debt/top-loans")
@@ -7558,6 +7913,47 @@ async def get_national_loans(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+def _latest_imf_debt_to_gdp(db):
+    """Latest IMF GGXWDG_NGDP (general-government gross debt, % of GDP) for Kenya.
+
+    Returns ``(ratio_pct, year, vintage_iso)`` for the most recent ACTUAL
+    (non-projection) year in the newest WEO vintage, or ``None`` if the IMF
+    table is not seeded. This is the vintage-consistent headline
+    debt-to-GDP measure (same-year debt and GDP) and avoids the prior bug
+    of dividing a current debt stock by a stale/low nominal-GDP year.
+    """
+    try:
+        from models import ImfWeoObservation
+        from sqlalchemy import func as _func
+
+        latest_vintage = (
+            db.query(_func.max(ImfWeoObservation.vintage))
+            .filter(ImfWeoObservation.country_code == "KEN")
+            .scalar()
+        )
+        if latest_vintage is None:
+            return None
+        rows = (
+            db.query(ImfWeoObservation)
+            .filter(
+                ImfWeoObservation.country_code == "KEN",
+                ImfWeoObservation.indicator == "GGXWDG_NGDP",
+                ImfWeoObservation.vintage == latest_vintage,
+            )
+            .order_by(ImfWeoObservation.year)
+            .all()
+        )
+        usable = [r for r in rows if r.value is not None]
+        if not usable:
+            return None
+        actuals = [r for r in usable if not r.is_projection]
+        chosen = (actuals or usable)[-1]
+        return (round(float(chosen.value), 1), chosen.year, latest_vintage.isoformat())
+    except Exception as exc:  # pragma: no cover - defensive
+        logging.warning("IMF debt-to-GDP lookup failed: %s", exc)
+        return None
+
+
 @app.get("/api/v1/debt/national")
 @cached(
     key_prefix="debt:national", ttl=43200
@@ -7796,6 +8192,27 @@ async def get_national_debt():
                     latest_timeline_row = (
                         db.query(_DT).order_by(_DT.year.desc()).first()
                     )
+
+                    # Correct the external-vs-domestic DIRECTION using the
+                    # authoritative CBK aggregate (DebtTimeline). The loan register
+                    # individually tracks external loans but under-represents
+                    # domestic instruments (T-bonds/bills), which inverted the split
+                    # (audit §3.3 — domestic has led external since ~2024). Keep the
+                    # loan-register total as the base and apply the CBK split
+                    # proportion, so the parts still sum to the total.
+                    if (
+                        latest_timeline_row
+                        and latest_timeline_row.external
+                        and latest_timeline_row.domestic
+                    ):
+                        _tl_ext = float(latest_timeline_row.external)
+                        _tl_dom = float(latest_timeline_row.domestic)
+                        _tl_split = _tl_ext + _tl_dom
+                        _base = external_debt + domestic_debt
+                        if _tl_split > 0 and _base > 0:
+                            external_debt = _base * (_tl_ext / _tl_split)
+                            domestic_debt = _base * (_tl_dom / _tl_split)
+
                     reconciliation: dict = {
                         "primary_source": "loans_table",
                         "primary_value_kes": total_outstanding,
@@ -7837,21 +8254,71 @@ async def get_national_debt():
                             else:
                                 reconciliation["status"] = "consistent"
 
+                    # Headline debt-to-GDP: prefer the IMF published ratio
+                    # (GGXWDG_NGDP), which is vintage-consistent (same-year
+                    # debt and GDP). Fall back to central-government debt /
+                    # nominal GDP (World Bank) with the GDP year labelled.
+                    # This replaces the old bug of dividing current debt by a
+                    # stale/low hardcoded GDP (which produced 82% vs ~68%).
+                    _computed_ratio = (
+                        round(total_outstanding / gdp_value * 100, 1)
+                        if gdp_value > 0
+                        else 0
+                    )
+                    _imf = _latest_imf_debt_to_gdp(db)
+                    if _imf is not None:
+                        debt_to_gdp_ratio = _imf[0]
+                        debt_to_gdp_year = _imf[1]
+                        debt_to_gdp_basis = (
+                            "IMF General Government Gross Debt, % of GDP "
+                            "(GGXWDG_NGDP) — vintage-consistent"
+                        )
+                        debt_to_gdp_source = "IMF World Economic Outlook"
+                    else:
+                        debt_to_gdp_ratio = _computed_ratio
+                        debt_to_gdp_year = gdp_year
+                        debt_to_gdp_basis = (
+                            "Central government debt (CBK) / nominal GDP "
+                            f"(World Bank, {gdp_year}) — approximate"
+                        )
+                        debt_to_gdp_source = "CBK / World Bank"
+
+                    # Real data vintage from source-document provenance —
+                    # NOT the request time. Stops the card claiming it was
+                    # "updated just now" for data that is months old.
+                    from provenance import resolve_data_vintage
+
+                    _vintage = resolve_data_vintage(
+                        db,
+                        [getattr(loan, "source_document_id", None) for loan in loans]
+                        + [getattr(latest_gdp_row, "source_document_id", None)],
+                    )
+                    _vintage_iso = _vintage.isoformat() if _vintage else None
+
+                    # Surface objective composition plausibility (0.4) so an
+                    # implausible split/ratio is flagged, not shown as fact.
+                    _composition_notes = check_debt_composition(
+                        total=total_outstanding,
+                        external=external_debt,
+                        domestic=domestic_debt,
+                        debt_to_gdp=debt_to_gdp_ratio,
+                    )
+
                     return {
                         "status": "success",
                         "data_source": "database",
-                        "last_updated": datetime.datetime.now().isoformat(),
+                        "last_updated": _vintage_iso,
                         "data": {
                             "total_debt": total_debt,
                             "total_outstanding": total_outstanding,
                             "loan_count": len(loans),
                             "gdp": gdp_value,
                             "gdp_year": gdp_year,
-                            "debt_to_gdp_ratio": (
-                                round(total_outstanding / gdp_value * 100, 1)
-                                if gdp_value > 0
-                                else 0
-                            ),
+                            "debt_to_gdp_ratio": debt_to_gdp_ratio,
+                            "debt_to_gdp_year": debt_to_gdp_year,
+                            "debt_to_gdp_basis": debt_to_gdp_basis,
+                            "debt_to_gdp_source": debt_to_gdp_source,
+                            "debt_to_gdp_computed_central_gov": _computed_ratio,
                             "reconciliation": reconciliation,
                             # High-level breakdown
                             "summary": {
@@ -7891,26 +8358,28 @@ async def get_national_debt():
                             "debt_sustainability": {
                                 "risk_level": (
                                     "High"
-                                    if gdp_value > 0
-                                    and total_outstanding / gdp_value > 0.65
-                                    else ("Moderate" if gdp_value > 0 else "Unknown")
+                                    if debt_to_gdp_ratio > 65
+                                    else (
+                                        "Moderate"
+                                        if debt_to_gdp_ratio > 0
+                                        else "Unknown"
+                                    )
                                 ),
-                                "debt_to_gdp": (
-                                    round(total_outstanding / gdp_value * 100, 1)
-                                    if gdp_value > 0
-                                    else 0
-                                ),
+                                "debt_to_gdp": debt_to_gdp_ratio,
                                 "assessment": (
                                     "Kenya's debt remains elevated. The IMF classifies Kenya at high risk of debt distress."
-                                    if gdp_value > 0
-                                    and total_outstanding / gdp_value > 0.65
+                                    if debt_to_gdp_ratio > 65
                                     else "Seed GDP data for full sustainability assessment."
                                 ),
                             },
                         },
                         "currency": "KES",
                         "source": "Central Bank of Kenya / National Treasury",
-                        "_meta": _response_meta(unit="kes", entity_scope="national"),
+                        "_meta": _response_meta(
+                            unit="kes",
+                            entity_scope="national",
+                            quality_notes=_composition_notes or None,
+                        ),
                     }
         except Exception as e:
             logging.error(f"DB debt query failed: {e}")

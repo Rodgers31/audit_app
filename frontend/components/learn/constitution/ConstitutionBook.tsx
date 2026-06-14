@@ -282,6 +282,18 @@ export default function ConstitutionBook({
           <h3 className='font-display text-xl leading-tight text-white sm:text-2xl'>
             Read the law that shapes every shilling
           </h3>
+          <p className='mt-1 text-[11px] leading-snug text-white/60'>
+            Unofficial reference for civic learning. The authoritative consolidated text is
+            published by{' '}
+            <a
+              href='https://www.kenyalaw.org'
+              target='_blank'
+              rel='noopener noreferrer'
+              className='underline hover:text-white/90'>
+              Kenya Law
+            </a>
+            .
+          </p>
         </div>
         <button
           type='button'

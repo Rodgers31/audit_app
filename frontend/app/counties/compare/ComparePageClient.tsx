@@ -9,6 +9,7 @@
 'use client';
 
 import PageShell from '@/components/layout/PageShell';
+import ModelledDataNote from '@/components/ModelledDataNote';
 import api from '@/lib/api/axios';
 import { useLang } from '@/lib/i18n/LangProvider';
 import type { TranslationKey } from '@/lib/i18n/messages';
@@ -254,6 +255,7 @@ function CompareContent() {
 
   return (
     <div className='space-y-6'>
+      <ModelledDataNote />
       {isLoading && (
         <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-8 flex items-center justify-center gap-3 text-gray-500 dark:text-neutral-muted/80'>
           <Loader2 className='animate-spin' size={18} />

@@ -14,6 +14,7 @@ import type { TranslationKey } from '@/lib/i18n/messages';
 import { CountyComprehensive } from '@/types';
 import { AlertTriangle, ExternalLink, HardHat, Scale, TrendingDown, TrendingUp } from 'lucide-react';
 import React from 'react';
+import ModelledDataNote from '@/components/ModelledDataNote';
 import { fmtKES, fmtLabel, fmtPop, pct, SEVERITY_STYLE } from '../shared';
 import KPI from './KPI';
 
@@ -192,6 +193,7 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
 
   return (
     <div className='space-y-6'>
+      <ModelledDataNote />
       {/* Hero row: Budget execution as a magazine-style feature */}
       <div className='grid grid-cols-1 lg:grid-cols-5 gap-5'>
         {/* Budget execution — large, editorial */}
@@ -379,6 +381,9 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
                 </span>
               ))}
             </div>
+            <p className='mt-2 text-[11px] text-gray-400 dark:text-neutral-muted/80 italic'>
+              {t('county.overview.challenges_generic_note')}
+            </p>
           </div>
         )}
       </div>

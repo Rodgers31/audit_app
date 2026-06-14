@@ -31,6 +31,8 @@ export interface ExecutionRow {
 
 interface Props {
   rows: ExecutionRow[];
+  /** FY the CoB execution figures actually cover (may lag the page's selected FY). */
+  fiscalYear?: string;
 }
 
 const SECTOR_TONE: Record<string, { start: string; end: string; base: string }> = {
@@ -75,7 +77,7 @@ function commentary(rate: number, sector: string): string {
   return `Critical under-execution. This is money Parliament approved that did not reach citizens. Typically indicates chronic procurement failure, litigation-blocked projects, or severe in-year funding cuts by the National Treasury.`;
 }
 
-export default function ExecutionAuditLens({ rows }: Props) {
+export default function ExecutionAuditLens({ rows, fiscalYear }: Props) {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const sorted = useMemo(() => {
@@ -110,7 +112,7 @@ export default function ExecutionAuditLens({ rows }: Props) {
       <div className='flex items-start justify-between gap-4 flex-wrap mb-5'>
         <div>
           <div className='text-[11px] font-semibold uppercase tracking-[0.18em] text-gov-copper/90'>
-            The audit lens · execution
+            The audit lens · execution{fiscalYear ? ` · ${fiscalYear}` : ''}
           </div>
           <h3 className='font-display text-xl sm:text-[22px] text-gov-dark dark:text-white leading-tight mt-0.5'>
             Where approved money went unspent
@@ -119,6 +121,12 @@ export default function ExecutionAuditLens({ rows }: Props) {
             Sectors sorted by the biggest <span className='font-semibold text-gov-dark dark:text-white'>absorption gap</span>{' '}
             first. Unspent money is not savings — it&apos;s approvals by Parliament that failed to reach citizens.
           </p>
+          {fiscalYear && (
+            <p className='text-[11px] text-gov-copper/90 mt-1.5 font-medium'>
+              Execution figures cover {fiscalYear} — the latest published by the Controller of
+              Budget — and may lag the fiscal year selected above.
+            </p>
+          )}
         </div>
         <div className='rounded-lg border border-gov-copper/30 bg-gov-copper/5 px-4 py-2 text-right'>
           <div className='text-[10px] uppercase tracking-wider font-semibold text-gov-copper'>

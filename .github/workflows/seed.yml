@@ -48,6 +48,10 @@ env:
   SEED_AUDITS_DATASET_URL: ${{ secrets.SEED_AUDITS_DATASET_URL }}
   SEED_POPULATION_DATASET_URL: ${{ secrets.SEED_POPULATION_DATASET_URL }}
   SEED_ECONOMIC_INDICATORS_DATASET_URL: ${{ secrets.SEED_ECONOMIC_INDICATORS_DATASET_URL }}
+  # Opt-in: KRA FY-revenue page/PDF. When set (repo Variable), the
+  # revenue_by_source domain overlays the live per-tax-head breakdown onto the
+  # fixture (gated). Unset/empty → breakdown stays on the fixture (default).
+  SEED_KRA_REVENUE_URL: ${{ vars.SEED_KRA_REVENUE_URL }}
   SEED_LOG_LEVEL: INFO
 
 jobs:

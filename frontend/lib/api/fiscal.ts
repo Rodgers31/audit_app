@@ -22,6 +22,23 @@ export interface FiscalYearData {
   county_allocation: number;
 }
 
+/**
+ * Fiscal anchor. The KES 10T NUMERIC debt ceiling was repealed by the PFM
+ * (Amendment) Act 2023, which replaced it with a 55%-of-GDP (present-value)
+ * anchor. The per-year debt_ceiling/debt_ceiling_usage_pct fields are
+ * historical context only — not the binding rule.
+ */
+export interface DebtAnchor {
+  anchor_pct_gdp: number;
+  basis: string;
+  debt_to_gdp_pct: number | null;
+  debt_to_gdp_year: number | null;
+  debt_to_gdp_basis: string;
+  above_anchor: boolean | null;
+  former_numeric_ceiling_kes_billion: number;
+  former_ceiling_repealed: boolean;
+}
+
 export interface FiscalSummaryResponse {
   status: string;
   data_source: string;
@@ -30,6 +47,7 @@ export interface FiscalSummaryResponse {
   current: FiscalYearData;
   history: FiscalYearData[];
   total_fiscal_years: number;
+  debt_anchor?: DebtAnchor;
 }
 
 export const getFiscalSummary = async (): Promise<FiscalSummaryResponse> => {

@@ -1,7 +1,7 @@
 export const metadata = {
   title: 'National Debt',
   description:
-    "Track Kenya's national debt in real time — external vs domestic, loan register, debt-to-GDP ratio, and pending bills.",
+    "Track Kenya's national debt — external vs domestic, loan register, debt-to-GDP ratio, and pending bills.",
 };
 
 export default function DebtLayout({ children }: { children: React.ReactNode }) {

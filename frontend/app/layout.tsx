@@ -16,7 +16,8 @@ export const metadata: Metadata = {
     default: 'AuditGava — Kenya Public Money Tracker',
     template: '%s | AuditGava',
   },
-  description: 'Where your taxes go, in real time — Government Financial Transparency Dashboard',
+  description:
+    'Where your taxes go — Kenya government financial transparency, updated nightly from official sources',
   keywords: [
     'government',
     'transparency',
@@ -31,7 +32,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'AuditGava — Kenya Public Money Tracker',
     description:
-      "Track Kenya's national debt, county budgets, and government spending in real time.",
+      "Track Kenya's national debt, county budgets, and government spending — updated nightly from official sources.",
     url: 'https://auditgava.com',
     siteName: 'AuditGava',
     images: [
@@ -49,7 +50,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'AuditGava — Kenya Public Money Tracker',
     description:
-      "Track Kenya's national debt, county budgets, and government spending in real time.",
+      "Track Kenya's national debt, county budgets, and government spending — updated nightly from official sources.",
     images: ['/og-image.png'],
   },
 };

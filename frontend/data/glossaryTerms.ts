@@ -9,6 +9,7 @@
  * Edit this file directly to add, update, or remove terms.
  */
 
+import type { CivicFigureKey } from '@/lib/api/civic';
 import {
   AlertTriangle,
   BookOpen,
@@ -37,6 +38,27 @@ export interface RelatedArticleLink {
   label: string;
 }
 
+/**
+ * An example whose magnitude is pulled live from the API (`/learn/civic-figures`)
+ * so it never goes stale, instead of being a hardcoded literal.
+ *
+ * The glossary renders `template` with the live figure substituted in:
+ *   `{value}`  → formatted magnitude, e.g. "KES 4.19 trillion"
+ *   `{period}` → the fiscal year or data year it refers to, e.g. "FY2025/26"
+ *
+ * If the figure was never seeded or the API is unavailable, `fallback` is
+ * shown instead — which MUST be an honest, dated historical fact, never a
+ * fabricated current number (DESIGN §1: last-known-good, dated).
+ */
+export interface LiveExample {
+  figure: CivicFigureKey;
+  template: string;
+  fallback: string;
+}
+
+/** A glossary example is either static prose or a live, self-updating figure. */
+export type GlossaryExample = string | LiveExample;
+
 export interface GlossaryTerm {
   id: string;
   term: string;
@@ -46,7 +68,7 @@ export interface GlossaryTerm {
   icon: LucideIcon;
   shortDef: string;
   longDef: string;
-  examples: string[];
+  examples: GlossaryExample[];
   /** Point readers to the constitutional article that anchors this term. */
   relatedArticle?: RelatedArticleLink;
 }
@@ -105,7 +127,12 @@ export const glossaryTerms: GlossaryTerm[] = [
     longDef:
       "A budget is the country's spending plan for the year ahead. It lists how much government expects to collect (from taxes, fees, and loans) and how it plans to spend it on schools, hospitals, roads, security, and everything else.",
     examples: [
-      "Kenya's FY2024/25 national budget was printed at approximately KES 3.9 trillion.",
+      {
+        figure: 'national_budget',
+        template: "Kenya's {period} national budget was set at about KES {value}.",
+        fallback:
+          "Kenya's FY2024/25 national budget was printed at approximately KES 3.9 trillion.",
+      },
       'Your county budget funds local hospitals, markets, and Early Childhood schools.',
       'Budgets must be tabled in Parliament at least two months before the financial year begins.',
     ],
@@ -200,7 +227,11 @@ export const glossaryTerms: GlossaryTerm[] = [
     longDef:
       'National (or public) debt is the running total of money government owes — to domestic lenders (holders of T-bills and bonds) and foreign lenders (World Bank, IMF, China Exim, Eurobond investors). Parliament sets the ceiling and the Auditor-General confirms the figure.',
     examples: [
-      "By mid-2024, Kenya's public debt had surpassed KES 10 trillion.",
+      {
+        figure: 'public_debt',
+        template: "Kenya's public debt stood at about KES {value} (as of {period}).",
+        fallback: "By mid-2024, Kenya's public debt had surpassed KES 10 trillion.",
+      },
       'Loans borrowed to build the Standard Gauge Railway sit inside this total.',
       'Debt-service payments are the first legal charge on the Consolidated Fund.',
     ],
@@ -277,7 +308,13 @@ export const glossaryTerms: GlossaryTerm[] = [
     longDef:
       'The Constitution guarantees counties at least 15% of the most recently audited national revenue. The exact split between counties is decided by a formula from the Commission on Revenue Allocation and enacted through the annual Division of Revenue Act.',
     examples: [
-      'For FY2024/25, counties were allocated around KES 400B as their equitable share.',
+      {
+        figure: 'equitable_share',
+        template:
+          'For {period}, counties were allocated about KES {value} as their equitable share.',
+        fallback:
+          'For FY2024/25, counties were allocated around KES 400B as their equitable share.',
+      },
       'The formula weights population, poverty, health, land area, and fiscal effort.',
       'Equitable-share transfers must reach a county within five days of release.',
     ],
@@ -297,7 +334,13 @@ export const glossaryTerms: GlossaryTerm[] = [
     longDef:
       "GDP adds up the market value of all final goods and services made in Kenya over a year — from tea at Kericho to code in Nairobi. It's the baseline most budget ratios (debt, deficit, tax) are measured against.",
     examples: [
-      "Kenya's nominal GDP was approximately KES 14.6 trillion in 2023 (KNBS).",
+      {
+        figure: 'nominal_gdp',
+        template:
+          "Kenya's nominal GDP was about KES {value} in {period} (World Bank / KNBS).",
+        fallback:
+          "Kenya's nominal GDP was approximately KES 15.0 trillion in 2023 (World Bank / KNBS).",
+      },
       'Agriculture still contributes roughly a fifth of GDP.',
       'A debt-to-GDP ratio of 70% means debt is 70% the size of annual output.',
     ],
@@ -333,6 +376,11 @@ export function getCategoryCounts(): Record<GlossaryCategoryId | 'all', number> 
   return counts;
 }
 
+/** Searchable/plain text for an example (the dated fallback for live ones). */
+export function exampleText(ex: GlossaryExample): string {
+  return typeof ex === 'string' ? ex : ex.fallback;
+}
+
 /** Case-insensitive search across term, abbreviation, short, and long definitions. */
 export function filterTerms(
   terms: GlossaryTerm[],
@@ -348,7 +396,7 @@ export function filterTerms(
       t.abbreviation ?? '',
       t.shortDef,
       t.longDef,
-      t.examples.join(' '),
+      t.examples.map(exampleText).join(' '),
     ]
       .join(' ')
       .toLowerCase();
