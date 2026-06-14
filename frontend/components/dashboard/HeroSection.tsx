@@ -1,12 +1,20 @@
 'use client';
 
+import { KenyaFlag } from '@/components/ui/KenyaFlag';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useDebtTimeline, useNationalDebtOverview } from '@/lib/react-query/useDebt';
 import { useFiscalSummary } from '@/lib/react-query/useFiscal';
 import { useLang } from '@/lib/i18n/LangProvider';
 import { classifyDebtRisk, fmtBillionKES } from '@/lib/utils';
 import { motion } from 'framer-motion';
-import { Loader2 } from 'lucide-react';
+import {
+  Banknote,
+  BarChart3,
+  Loader2,
+  type LucideIcon,
+  Scale,
+  TrendingDown,
+} from 'lucide-react';
 import DebtExplainerModal from './DebtExplainerModal';
 
 /* ── Formatting helpers ── */
@@ -29,16 +37,22 @@ import DebtExplainerModal from './DebtExplainerModal';
 export default function HeroSection() {
   const { t } = useLang();
   return (
-    <div className='max-w-[1340px] mx-auto px-5 lg:px-8 pt-24 pb-6'>
+    <div className='max-w-[1340px] mx-auto px-5 lg:px-8 pt-20 sm:pt-24 pb-6'>
       <motion.div
         initial={{ opacity: 0, y: 28 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
-        className='max-w-2xl'>
+        className='relative max-w-2xl'>
+        {/* Legibility scrim — soft dark halo so the title/subtitle stay
+            readable over the bright photographic hero (esp. light mode). */}
+        <div
+          aria-hidden
+          className='pointer-events-none absolute -inset-x-6 -inset-y-5 -z-10 rounded-[2rem] bg-gradient-to-br from-black/45 via-black/20 to-transparent blur-2xl'
+        />
         <h1 className='font-display text-[1.75rem] sm:text-5xl lg:text-[3.5rem] text-white leading-[1.08] mb-2 drop-shadow-lg sm:whitespace-nowrap'>
           {t('home.hero.title')}
         </h1>
-        <p className='text-base sm:text-lg text-white/70 font-light tracking-wide drop-shadow-md'>
+        <p className='text-base sm:text-lg text-white/90 font-light tracking-wide drop-shadow-md'>
           {t('home.hero.subtitle')}
         </p>
       </motion.div>
@@ -91,9 +105,7 @@ export function SummaryStrip() {
     <div className='flex flex-wrap items-end gap-x-6 gap-y-3 mb-4 px-1'>
       {/* Flag + Total Debt */}
       <div className='flex items-center gap-2.5'>
-        <span className='text-2xl' suppressHydrationWarning>
-          🇰🇪
-        </span>
+        <KenyaFlag className='w-7 h-7 shrink-0' />
         <div>
           <span className='text-4xl sm:text-5xl font-extrabold text-gov-dark dark:text-white tracking-tight leading-none'>
             {totalT}
@@ -127,10 +139,10 @@ export function SummaryStrip() {
         </span>
         <span className='text-xs text-gov-dark/60 dark:text-white/60 font-medium'>
           {t('home.hero.risk_level')}{' '}
-          <span className='inline-flex gap-0.5 ml-1'>
-            <span>👍</span>
-            <span>❓</span>
-            <span className='text-gov-copper'>🔴</span>
+          <span className='inline-flex items-center gap-1 ml-1 align-middle'>
+            <span className='inline-block w-2 h-2 rounded-full bg-emerald-500' title='Low' />
+            <span className='inline-block w-2 h-2 rounded-full bg-gov-gold' title='Moderate' />
+            <span className='inline-block w-2 h-2 rounded-full bg-gov-copper' title='High' />
           </span>
         </span>
       </div>
@@ -204,10 +216,8 @@ export function KenyanGovCard() {
         </div>
 
         <div className='flex items-center gap-3'>
-          <div
-            className='w-10 h-10 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-xl shadow-inner'
-            suppressHydrationWarning>
-            🇰🇪
+          <div className='w-10 h-10 rounded-full bg-white/10 border border-white/20 flex items-center justify-center shadow-inner overflow-hidden'>
+            <KenyaFlag className='w-6 h-6' />
           </div>
           <div className='flex-1 min-w-0'>
             <h3 className='text-[15px] font-bold text-white leading-tight tracking-tight'>
@@ -262,14 +272,14 @@ export function KenyanGovCard() {
                 value={fmtBillionKES(fy.appropriated_budget)}
                 sub={fy.fiscal_year}
                 color='forest'
-                icon='📊'
+                icon={BarChart3}
               />
               <StatMiniCard
                 label={t('home.govcard.stat_revenue')}
                 value={fmtBillionKES(fy.total_revenue)}
                 sub={t('home.govcard.tax_nontax')}
                 color='teal'
-                icon='💰'
+                icon={Banknote}
               />
             </div>
 
@@ -280,7 +290,7 @@ export function KenyanGovCard() {
                 value={fmtBillionKES(fy.total_borrowing)}
                 sub={t('home.govcard.pct_of_budget').replace('{pct}', String(fy.borrowing_pct_of_budget))}
                 color='copper'
-                icon='📉'
+                icon={TrendingDown}
                 alert
               />
               <StatMiniCard
@@ -288,7 +298,7 @@ export function KenyanGovCard() {
                 value={fmtBillionKES(fy.debt_service_cost)}
                 sub={t('home.govcard.cents_per_kes').replace('{cents}', String(fy.debt_service_per_shilling))}
                 color='gold'
-                icon='⚖️'
+                icon={Scale}
               />
             </div>
 
@@ -436,14 +446,14 @@ function StatMiniCard({
   value,
   sub,
   color,
-  icon,
+  icon: Icon,
   alert,
 }: {
   label: string;
   value: string;
   sub: string;
   color: 'forest' | 'copper' | 'gold' | 'teal';
-  icon: string;
+  icon: LucideIcon;
   alert?: boolean;
 }) {
   const colors = {
@@ -463,11 +473,10 @@ function StatMiniCard({
     <div
       className={`rounded-lg border-l-[3px] ${colors[color]} px-2.5 py-2 relative overflow-hidden`}>
       {/* Icon watermark */}
-      <span
-        className='absolute -right-1 -bottom-1 text-lg opacity-[0.08] select-none pointer-events-none'
-        suppressHydrationWarning>
-        {icon}
-      </span>
+      <Icon
+        aria-hidden
+        className='absolute -right-1.5 -bottom-1.5 w-8 h-8 opacity-[0.10] select-none pointer-events-none'
+      />
       <span className='text-[9px] uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-medium leading-none'>
         {label}
       </span>

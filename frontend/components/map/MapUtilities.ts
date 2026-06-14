@@ -41,11 +41,12 @@ const AUDIT_PALETTE: Record<
   string,
   { base: string; hover: string; active: string; muted: string }
 > = {
-  // Greens — gov-sage / gov-forest
-  clean: { base: '#5a946c', hover: '#4A7C5C', active: '#1B3A2A', muted: '#b5d4bf' },
-  'A+': { base: '#3d6a4e', hover: '#2f5940', active: '#1B3A2A', muted: '#a6ccb4' },
-  A: { base: '#4A7C5C', hover: '#3d6a4e', active: '#1B3A2A', muted: '#b5d4bf' },
-  'A-': { base: '#5a946c', hover: '#4A7C5C', active: '#2f5940', muted: '#c4dec9' },
+  // Greens — gov-sage / gov-forest (richer bases so good counties read as a
+  // confident green at a glance, not a washed-out pale wash)
+  clean: { base: '#4A7C5C', hover: '#3d6a4e', active: '#1B3A2A', muted: '#b5d4bf' },
+  'A+': { base: '#2f5940', hover: '#244632', active: '#1B3A2A', muted: '#a6ccb4' },
+  A: { base: '#3d6a4e', hover: '#2f5940', active: '#1B3A2A', muted: '#b5d4bf' },
+  'A-': { base: '#4f8a62', hover: '#427552', active: '#2f5940', muted: '#c4dec9' },
   // Yellows — gov-gold
   qualified: { base: '#D9A441', hover: '#c49338', active: '#a87a24', muted: '#edd5a2' },
   'B+': { base: '#89a851', hover: '#6f8e40', active: '#557430', muted: '#c8daa5' },

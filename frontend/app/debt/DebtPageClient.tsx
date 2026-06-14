@@ -3,6 +3,7 @@
 import DataFreshnessBadge from '@/components/DataFreshnessBadge';
 import DataIntegrityBanner from '@/components/DataIntegrityBanner';
 import InfoTip from '@/components/InfoTip';
+import { PageSkeleton } from '@/components/ui/Skeleton';
 import PageShell from '@/components/layout/PageShell';
 import PDFExportButton from '@/components/PDFExportButton';
 import BroaderDebtCard from '@/components/debt/BroaderDebtCard';
@@ -521,10 +522,7 @@ export default function NationalDebtPage() {
   if (isLoading) {
     return (
       <PageShell title="Kenya's National Debt" subtitle='Pulling the latest numbers from CBK, Treasury and COB…'>
-        <div className='flex flex-col items-center justify-center py-24' role='status' aria-live='polite'>
-          <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-gov-forest mb-4' />
-          <span className='text-sm text-neutral-muted'>Loading comprehensive debt data…</span>
-        </div>
+        <PageSkeleton />
       </PageShell>
     );
   }

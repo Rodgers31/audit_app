@@ -63,6 +63,25 @@ export function SkeletonChart({
   );
 }
 
+/**
+ * Full-page skeleton that mirrors a typical dashboard page (headline chart +
+ * a two-up card row + a table), so loading reads as "the page is assembling"
+ * instead of a lone spinner over a blank void. Render inside a PageShell.
+ */
+export function PageSkeleton() {
+  return (
+    <div className='space-y-6' role='status' aria-live='polite' aria-busy='true'>
+      <span className='sr-only'>Loading…</span>
+      <SkeletonChart height={300} />
+      <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
+        <SkeletonCard />
+        <SkeletonCard />
+      </div>
+      <SkeletonTable rows={6} />
+    </div>
+  );
+}
+
 /** Table-shaped skeleton with header + rows */
 export function SkeletonTable({
   rows = 5,

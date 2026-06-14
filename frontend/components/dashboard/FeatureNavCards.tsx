@@ -6,19 +6,29 @@ import { motion } from 'framer-motion';
 import { BarChart3, Globe, Map, Search } from 'lucide-react';
 import Link from 'next/link';
 
+type Accent = 'forest' | 'gold' | 'teal' | 'copper';
+
 interface Feature {
   titleKey: TranslationKey;
   subKey: TranslationKey;
   icon: typeof Globe;
   href: string;
-  emoji: string;
+  accent: Accent;
 }
 
+/** Per-card accent so the nav strip carries colour + aids recognition. */
+const ACCENTS: Record<Accent, { icon: string; bg: string }> = {
+  forest: { icon: 'text-gov-forest dark:text-emerald-100', bg: 'bg-gov-forest/10 group-hover:bg-gov-forest/20' },
+  gold: { icon: 'text-gov-gold', bg: 'bg-gov-gold/10 group-hover:bg-gov-gold/20' },
+  teal: { icon: 'text-[#0D7377] dark:text-teal-300', bg: 'bg-[#0D7377]/10 group-hover:bg-[#0D7377]/20' },
+  copper: { icon: 'text-gov-copper', bg: 'bg-gov-copper/10 group-hover:bg-gov-copper/20' },
+};
+
 const features: Feature[] = [
-  { titleKey: 'home.features.debt.title', subKey: 'home.features.debt.sub', icon: Globe, href: '/debt', emoji: '🇰🇪' },
-  { titleKey: 'home.features.budget.title', subKey: 'home.features.budget.sub', icon: BarChart3, href: '/budget', emoji: '📊' },
-  { titleKey: 'home.features.explore.title', subKey: 'home.features.explore.sub', icon: Map, href: '/counties', emoji: '🗺️' },
-  { titleKey: 'home.features.audits.title', subKey: 'home.features.audits.sub', icon: Search, href: '/audits', emoji: '🔍' },
+  { titleKey: 'home.features.debt.title', subKey: 'home.features.debt.sub', icon: Globe, href: '/debt', accent: 'forest' },
+  { titleKey: 'home.features.budget.title', subKey: 'home.features.budget.sub', icon: BarChart3, href: '/budget', accent: 'gold' },
+  { titleKey: 'home.features.explore.title', subKey: 'home.features.explore.sub', icon: Map, href: '/counties', accent: 'teal' },
+  { titleKey: 'home.features.audits.title', subKey: 'home.features.audits.sub', icon: Search, href: '/audits', accent: 'copper' },
 ];
 
 /**
@@ -45,11 +55,13 @@ export default function FeatureNavCards() {
                             cursor-pointer'>
               {/* Icon */}
               <div
-                className='w-12 h-12 mx-auto mb-3 rounded-xl bg-gov-sage/8 flex items-center justify-center
-                              group-hover:bg-gov-sage/15 transition-colors duration-300'>
-                <span className='text-2xl' suppressHydrationWarning>
-                  {feat.emoji}
-                </span>
+                className={`w-12 h-12 mx-auto mb-3 rounded-xl flex items-center justify-center
+                              transition-colors duration-300 ${ACCENTS[feat.accent].bg}`}>
+                <feat.icon
+                  className={`w-6 h-6 ${ACCENTS[feat.accent].icon}`}
+                  strokeWidth={1.75}
+                  aria-hidden
+                />
               </div>
 
               <h4 className='text-sm font-semibold text-gov-dark dark:text-white leading-snug mb-1'>

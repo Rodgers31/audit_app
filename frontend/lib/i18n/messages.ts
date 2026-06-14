@@ -87,9 +87,9 @@ export const MESSAGES = {
     plain: 'See where Kenya’s money goes',
   },
   'home.hero.subtitle': {
-    en: 'Where your taxes go, in real time',
-    sw: 'Pesa zako za kodi zinakoenda, wakati huu',
-    plain: 'See where your tax money goes right now',
+    en: 'Where your taxes go — updated nightly from official sources',
+    sw: 'Pesa zako za kodi zinakoenda — husasishwa kila usiku kutoka vyanzo rasmi',
+    plain: 'See where your tax money goes — updated every night from official records',
   },
 
   // Hero summary strip
