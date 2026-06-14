@@ -53,7 +53,193 @@ def fetch_fiscal_summary_payload(
                 "World Bank enrichment failed, using fixture only: %s", exc
             )
 
+    # Live COB NG-BIRR headline overlay (recommendation #3): refine the
+    # latest-year appropriated_budget from the authoritative Controller-of-
+    # Budget report — but only through the plausibility + reconciliation
+    # overlay, so the fixture remains the last-known-good fallback whenever the
+    # parse is missing, implausible, or far from the known value.
+    if settings.live_pdf_fetch_enabled:
+        try:
+            live_budget, live_revenue = _fetch_cob_headlines(client, settings)
+            payload, b_status = _overlay_live_budget_headline(payload, live_budget)
+            payload, r_status = _overlay_live_revenue_headline(payload, live_revenue)
+            logger.info(
+                "fiscal_summary COB overlay: budget=%s revenue=%s",
+                b_status,
+                r_status,
+            )
+        except Exception as exc:
+            logger.warning("COB headline overlay skipped: %s", exc)
+
     return payload
+
+
+def _fetch_cob_headlines(
+    client: SeedingHttpClient, settings: SeedingSettings
+) -> tuple[Optional[float], Optional[float]]:
+    """Discover + download the latest COB NG-BIRR ONCE and extract the headline
+    ``(overall_budget, total_revenue)`` in KSh billion. Returns ``(None, None)``
+    on any failure — callers treat that as 'no live value' and keep the
+    fixture."""
+    import tempfile
+    from pathlib import Path
+
+    from ...cob_discovery import discover_latest_cob_pdf_url
+    from ..national_budget.fetcher import _NG_BIRR_KEYWORDS
+    from ..national_budget.headline import extract_cob_headlines
+
+    resp = client.get(settings.cob_birr_page_url, raise_for_status=True)
+    pdf_url = discover_latest_cob_pdf_url(
+        resp.text, settings.cob_birr_page_url, keywords=_NG_BIRR_KEYWORDS
+    )
+    if not pdf_url:
+        logger.info("No NG-BIRR PDF found for fiscal_summary headline overlay")
+        return None, None
+
+    pdf_resp = client.get(pdf_url, raise_for_status=True)
+    tmp_path: Optional["Path"] = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            suffix=".pdf", delete=False, prefix="cob_fs_headline_"
+        ) as tmp:
+            tmp.write(pdf_resp.content)
+            tmp_path = Path(tmp.name)
+        budget, revenue = extract_cob_headlines(tmp_path)
+        return (
+            float(budget) if budget is not None else None,
+            float(revenue) if revenue is not None else None,
+        )
+    finally:
+        if tmp_path and tmp_path.exists():
+            try:
+                tmp_path.unlink()
+            except OSError:
+                pass
+
+
+def _overlay_live_budget_headline(
+    payload: Dict[str, Any],
+    live_budget_billion: Optional[float],
+    *,
+    tolerance_pct: float = 15.0,
+) -> tuple[Dict[str, Any], str]:
+    """Promote a live-parsed headline budget onto the latest fiscal year ONLY
+    if it (a) passes the plausibility gate and (b) reconciles within
+    ``tolerance_pct`` of the fixture's last-known value. Otherwise the fixture
+    stands. Returns ``(payload, status)`` for logging/tests.
+
+    Safe-by-construction: a missing / implausible / far-off live value is a
+    no-op, so a bad COB parse can never replace good data. ``borrowing_pct_of_
+    budget`` is left to the parser, which derives it from the (possibly
+    overlaid) budget so the share stays consistent.
+    """
+    if live_budget_billion is None:
+        return payload, "no_live_value"
+    fiscal_years = payload.get("fiscal_years") or []
+    if not fiscal_years:
+        return payload, "no_fixture"
+    latest = max(fiscal_years, key=lambda r: str(r.get("fiscal_year", "")))
+    try:
+        live = float(live_budget_billion)
+    except (TypeError, ValueError):
+        return payload, "bad_live_value"
+    if live <= 0:
+        return payload, "bad_live_value"
+
+    # (a) plausibility gate — substitute the live budget; it must stay
+    # internally consistent (in band; spending still ≤ budget).
+    try:
+        from services.trust_guards import check_fiscal_summary
+
+        if check_fiscal_summary({**latest, "appropriated_budget": live}):
+            return payload, "failed_plausibility"
+    except Exception:
+        pass  # if the guard can't run, fall through to the tolerance check
+
+    # (b) reconciliation — must be near the last-known fixture value.
+    fixture_budget = latest.get("appropriated_budget")
+    if fixture_budget:
+        try:
+            fb = float(fixture_budget)
+            if fb > 0 and abs(live - fb) > (tolerance_pct / 100.0) * fb:
+                return payload, "outside_tolerance"
+        except (TypeError, ValueError):
+            pass
+
+    latest["appropriated_budget"] = round(live, 1)
+    latest["_budget_source"] = "cob_ng_birr_live"
+    return payload, "promoted"
+
+
+def _overlay_live_revenue_headline(
+    payload: Dict[str, Any],
+    live_revenue_billion: Optional[float],
+    *,
+    tolerance_pct: float = 15.0,
+) -> tuple[Dict[str, Any], str]:
+    """Promote a live-parsed TOTAL revenue onto the latest fiscal year ONLY if
+    it (a) passes the plausibility gate and (b) reconciles within
+    ``tolerance_pct`` of the fixture's last-known value. ``tax_revenue`` and
+    ``non_tax_revenue`` are scaled proportionally so the components keep summing
+    to the total (otherwise the #1 reconciliation check would reject the row).
+    Otherwise the fixture stands. Safe-by-construction: missing / implausible /
+    far-off → no-op.
+    """
+    if live_revenue_billion is None:
+        return payload, "no_live_value"
+    fiscal_years = payload.get("fiscal_years") or []
+    if not fiscal_years:
+        return payload, "no_fixture"
+    latest = max(fiscal_years, key=lambda r: str(r.get("fiscal_year", "")))
+    try:
+        live = float(live_revenue_billion)
+    except (TypeError, ValueError):
+        return payload, "bad_live_value"
+    if live <= 0:
+        return payload, "bad_live_value"
+
+    fixture_total = latest.get("total_revenue")
+    # Scale the tax/non-tax split proportionally to the new total so components
+    # stay consistent (and the plausibility gate's reconciliation check passes).
+    candidate = dict(latest)
+    candidate["total_revenue"] = live
+    if fixture_total:
+        try:
+            ratio = live / float(fixture_total)
+            if latest.get("tax_revenue") is not None:
+                candidate["tax_revenue"] = round(float(latest["tax_revenue"]) * ratio, 1)
+            if latest.get("non_tax_revenue") is not None:
+                candidate["non_tax_revenue"] = round(
+                    float(latest["non_tax_revenue"]) * ratio, 1
+                )
+        except (TypeError, ValueError, ZeroDivisionError):
+            pass
+
+    # (a) plausibility gate on the scaled candidate.
+    try:
+        from services.trust_guards import check_fiscal_summary
+
+        if check_fiscal_summary(candidate):
+            return payload, "failed_plausibility"
+    except Exception:
+        pass
+
+    # (b) reconciliation — must be near the last-known fixture total.
+    if fixture_total:
+        try:
+            ft = float(fixture_total)
+            if ft > 0 and abs(live - ft) > (tolerance_pct / 100.0) * ft:
+                return payload, "outside_tolerance"
+        except (TypeError, ValueError):
+            pass
+
+    latest["total_revenue"] = round(live, 1)
+    if "tax_revenue" in candidate:
+        latest["tax_revenue"] = candidate["tax_revenue"]
+    if "non_tax_revenue" in candidate:
+        latest["non_tax_revenue"] = candidate["non_tax_revenue"]
+    latest["_revenue_source"] = "cob_ng_birr_live"
+    return payload, "promoted"
 
 
 def _fetch_worldbank_fiscal_data(
