@@ -11,7 +11,7 @@ Strategy:
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from ...config import SeedingSettings
 from ...http_client import SeedingHttpClient
