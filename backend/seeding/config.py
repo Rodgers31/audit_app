@@ -194,6 +194,20 @@ class SeedingSettings(BaseSettings):
             "the latest quarterly budget implementation review PDF."
         ),
     )
+    kra_revenue_url: Optional[str] = Field(
+        default=None,
+        description=(
+            "KRA revenue-performance page or PDF URL (FY revenue results). "
+            "When set, the revenue_by_source domain extracts the per-tax-type "
+            "breakdown (PAYE, VAT, Corporation, Excise, Customs) and overlays "
+            "it onto the fixture for the matched fiscal year — ONLY if the "
+            "parse passes the plausibility/reconciliation gate. When unset "
+            "(the default) or unreachable, the breakdown stays on fixture "
+            "values. Opt-in because KRA's publication URL/format changes each "
+            "release and must be confirmed before trusting the parse. Example: "
+            "https://www.kra.go.ke/news-center/press-release/<slug>"
+        ),
+    )
     treasury_bps_page_url: str = Field(
         default="https://www.treasury.go.ke/budget-policy-statement/",
         description=(

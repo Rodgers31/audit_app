@@ -305,6 +305,68 @@ def check_fiscal_summary(row) -> list[str]:
     return notes
 
 
+# ── Revenue-breakdown plausibility (per tax head) ────────────────────
+
+
+# No single tax head realistically exceeds this (billion KES, mid-2020s).
+# Broad on purpose: the point is catching a parse that grabbed a wrong/huge
+# number, not policing normal variation.
+_REVENUE_HEAD_MAX_BILLION = 3_000.0
+
+
+def check_revenue_breakdown(
+    by_type: dict,
+    expected_total: Optional[float] = None,
+    *,
+    tolerance_pct: float = 10.0,
+) -> list[str]:
+    """Plausibility + reconciliation checks on a parsed per-tax-head revenue
+    breakdown (``{revenue_type: amount_billion}``). Returns notes (empty if
+    clean). Any note means the parse should be QUARANTINED (not promoted),
+    keeping the fixture. Pure; never raises.
+
+    Checks: each head non-negative and under a sane cap; and — when an
+    ``expected_total`` is given (e.g. the fixture's known tax-revenue total) —
+    the heads must sum to it within ``tolerance_pct`` (a garbled/partial parse
+    won't reconcile and is rejected).
+    """
+    notes: list[str] = []
+    if not by_type:
+        notes.append("Revenue breakdown is empty.")
+        return notes
+
+    total = 0.0
+    for rtype, amount in by_type.items():
+        try:
+            v = float(amount)
+        except (TypeError, ValueError):
+            notes.append(f"Revenue '{rtype}' is non-numeric.")
+            _warn(f"revenue breakdown: {rtype} non-numeric ({amount!r})")
+            continue
+        if v < 0:
+            notes.append(f"Revenue '{rtype}' is negative.")
+            _warn(f"revenue breakdown: {rtype} negative ({v})")
+        if v > _REVENUE_HEAD_MAX_BILLION:
+            msg = (
+                f"Revenue '{rtype}'={v:,.0f}B exceeds the "
+                f"{_REVENUE_HEAD_MAX_BILLION:,.0f}B per-head cap."
+            )
+            notes.append(msg)
+            _warn(msg)
+        total += max(v, 0.0)
+
+    if expected_total and expected_total > 0:
+        if abs(total - expected_total) > (tolerance_pct / 100.0) * expected_total:
+            msg = (
+                f"Revenue breakdown sums to {total:,.0f}B — does not reconcile "
+                f"to the expected {expected_total:,.0f}B within {tolerance_pct:.0f}%."
+            )
+            notes.append(msg)
+            _warn(msg)
+
+    return notes
+
+
 # ── Coverage / staleness check ───────────────────────────────────────
 
 
