@@ -49,7 +49,7 @@ export async function DELETE() {
   );
 
   // Remove dependent rows in order
-  await admin.from('watchlist').delete().eq('user_id', user.id);
+  await admin.from('watchlist_items').delete().eq('user_id', user.id);
   await admin.from('data_alerts').delete().eq('user_id', user.id);
   await admin.from('profiles').delete().eq('id', user.id);
 
