@@ -161,7 +161,19 @@ export async function subscribeNewsletter(
 ): Promise<{ status: 'subscribed' | 'resubscribed' | 'already_subscribed'; email: string }> {
   const { apiClient } = await import('@/lib/api/axios');
   const { data } = await apiClient.post('/newsletter/subscribe', { email });
-  const status = data.status as 'subscribed' | 'resubscribed' | 'already_subscribed';
+
+  // Validate at runtime — a 2xx with an unexpected body (proxy/HTML page,
+  // gateway error, contract drift, empty body) must not be laundered into a
+  // "valid" status by a type assertion. Narrowing from `unknown` also drops
+  // the unsafe `as`. Throwing routes to the caller's existing error handling.
+  const status: unknown = data?.status;
+  if (
+    status !== 'subscribed' &&
+    status !== 'resubscribed' &&
+    status !== 'already_subscribed'
+  ) {
+    throw new Error(`Unexpected newsletter subscribe response: ${JSON.stringify(status)}`);
+  }
 
   // Fire-and-forget welcome email for new / returning subscribers
   if (status === 'subscribed' || status === 'resubscribed') {
@@ -184,8 +196,18 @@ async function _sendWelcomeEmail(email: string): Promise<void> {
   }
 }
 
-export async function unsubscribeNewsletter(email: string): Promise<{ status: string }> {
+export async function unsubscribeNewsletter(
+  email: string
+): Promise<{ status: 'unsubscribed' | 'not_found' }> {
   const { apiClient } = await import('@/lib/api/axios');
   const { data } = await apiClient.post('/newsletter/unsubscribe', { email });
-  return { status: data.status ?? 'unsubscribed' };
+
+  // Same guard as subscribe: don't let an unexpected 2xx body masquerade as a
+  // successful unsubscribe (the old `?? 'unsubscribed'` silently claimed success).
+  const status: unknown = data?.status;
+  if (status !== 'unsubscribed' && status !== 'not_found') {
+    throw new Error(`Unexpected newsletter unsubscribe response: ${JSON.stringify(status)}`);
+  }
+
+  return { status };
 }
