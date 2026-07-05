@@ -152,46 +152,35 @@ export async function markAllAlertsRead(): Promise<void> {
 }
 
 /* ───── Newsletter ───── */
+// Routed through the FastAPI backend (POST /api/v1/newsletter/*) rather than
+// hitting Supabase directly. The backend runs as the postgres role, so
+// newsletter_subscribers can keep RLS locked down (no anon table access) —
+// see migration i9d0e1f2a3b4_lock_down_newsletter_subscribers.
 export async function subscribeNewsletter(
   email: string
 ): Promise<{ status: 'subscribed' | 'resubscribed' | 'already_subscribed'; email: string }> {
-  // Check if already subscribed and active first
-  const { data: existing } = await supabase
-    .from('newsletter_subscribers')
-    .select('email, unsubscribed_at')
-    .eq('email', email)
-    .maybeSingle();
+  const { apiClient } = await import('@/lib/api/axios');
+  const { data } = await apiClient.post('/newsletter/subscribe', { email });
 
-  if (existing) {
-    if (existing.unsubscribed_at) {
-      // Previously unsubscribed → re-subscribe
-      const { error } = await supabase
-        .from('newsletter_subscribers')
-        .update({
-          unsubscribed_at: null,
-          subscribed_at: new Date().toISOString(),
-        })
-        .eq('email', email);
-      if (error) throw error;
-      // Fire-and-forget: send welcome-back email via backend
-      _sendWelcomeEmail(email);
-      return { status: 'resubscribed', email };
-    }
-    // Already subscribed and active
-    return { status: 'already_subscribed', email };
+  // Validate at runtime — a 2xx with an unexpected body (proxy/HTML page,
+  // gateway error, contract drift, empty body) must not be laundered into a
+  // "valid" status by a type assertion. Narrowing from `unknown` also drops
+  // the unsafe `as`. Throwing routes to the caller's existing error handling.
+  const status: unknown = data?.status;
+  if (
+    status !== 'subscribed' &&
+    status !== 'resubscribed' &&
+    status !== 'already_subscribed'
+  ) {
+    throw new Error(`Unexpected newsletter subscribe response: ${JSON.stringify(status)}`);
   }
 
-  // New subscriber
-  const { error: insertError } = await supabase
-    .from('newsletter_subscribers')
-    .insert({ email, confirmed: false, subscribed_at: new Date().toISOString() });
+  // Fire-and-forget welcome email for new / returning subscribers
+  if (status === 'subscribed' || status === 'resubscribed') {
+    _sendWelcomeEmail(email);
+  }
 
-  if (insertError) throw insertError;
-
-  // Fire-and-forget: send welcome email via backend
-  _sendWelcomeEmail(email);
-
-  return { status: 'subscribed', email };
+  return { status, email };
 }
 
 /**
@@ -207,12 +196,18 @@ async function _sendWelcomeEmail(email: string): Promise<void> {
   }
 }
 
-export async function unsubscribeNewsletter(email: string): Promise<{ status: string }> {
-  const { error } = await supabase
-    .from('newsletter_subscribers')
-    .update({ unsubscribed_at: new Date().toISOString() })
-    .eq('email', email);
+export async function unsubscribeNewsletter(
+  email: string
+): Promise<{ status: 'unsubscribed' | 'not_found' }> {
+  const { apiClient } = await import('@/lib/api/axios');
+  const { data } = await apiClient.post('/newsletter/unsubscribe', { email });
 
-  if (error) throw error;
-  return { status: 'unsubscribed' };
+  // Same guard as subscribe: don't let an unexpected 2xx body masquerade as a
+  // successful unsubscribe (the old `?? 'unsubscribed'` silently claimed success).
+  const status: unknown = data?.status;
+  if (status !== 'unsubscribed' && status !== 'not_found') {
+    throw new Error(`Unexpected newsletter unsubscribe response: ${JSON.stringify(status)}`);
+  }
+
+  return { status };
 }
