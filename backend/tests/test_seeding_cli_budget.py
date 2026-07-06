@@ -165,3 +165,78 @@ def test_per_domain_timeout_still_fails_and_continues(
     jobs = _jobs_by_domain(sessionmaker_factory)
     assert jobs["a"].status == IngestionStatus.FAILED
     assert jobs["b"].status == IngestionStatus.COMPLETED
+
+
+def _make_swallowing_handler(calls, swallowed, name):
+    """A handler mimicking a real domain fetcher: it wraps the (timing-out)
+    upstream call in ``except Exception`` and falls back to a fixture.
+
+    This is the exact shape that made the SIGALRM budget silently useless in
+    production (issues #105-#113): the alarm fired, the fetcher caught the
+    ``DomainTimeoutError`` here as if a single item had failed, "recovered",
+    and the domain kept running until the CI step SIGKILL. If the timeout is a
+    plain ``Exception`` it is swallowed here; as a ``BaseException`` it must
+    propagate to the CLI.
+    """
+
+    def _handler(*, session, settings, context):
+        calls.append(name)
+        try:
+            raise seed_cli.DomainTimeoutError(
+                "domain exceeded Ns budget; aborted by the CLI"
+            )
+        except Exception:  # noqa: BLE001 - intentionally broad; mirrors fetchers
+            swallowed.append(name)
+            return DomainRunResult(domain=name)  # pretend the fixture fallback won
+
+    return _handler
+
+
+def test_global_budget_timeout_survives_fetcher_except_exception(
+    clock, sessionmaker_factory, monkeypatch
+):
+    """Regression: a globally-capped timeout must not be swallowed by a
+    fetcher's ``except Exception``. It should stop the run cleanly (green)."""
+    calls: list[str] = []
+    swallowed: list[str] = []
+    handlers = {
+        "a": _make_handler(calls, "a", work=60, clock=clock),
+        "b": _make_swallowing_handler(calls, swallowed, "b"),
+        "c": _make_handler(calls, "c"),
+    }
+    monkeypatch.setattr(seed_cli, "REGISTRY", _FakeRegistry(handlers))
+    settings = SeedingSettings(total_timeout_seconds=100, domain_timeout_seconds=600)
+
+    status = seed_cli.run_seed_command(_args(), settings)
+
+    assert swallowed == []  # the fetcher's except Exception did NOT catch it
+    assert status == 0  # clean global-budget stop, not a failure
+    assert calls == ["a", "b"]  # timeout stopped the run at b; c never started
+    jobs = _jobs_by_domain(sessionmaker_factory)
+    assert jobs["b"].status == IngestionStatus.COMPLETED_WITH_ERRORS
+    assert "c" not in jobs
+
+
+def test_own_budget_timeout_survives_fetcher_except_exception(
+    clock, sessionmaker_factory, monkeypatch
+):
+    """Regression: a domain's own-budget timeout must not be swallowed by a
+    fetcher's ``except Exception`` either — it should fail that domain (status
+    1, job FAILED) and continue to the next one."""
+    calls: list[str] = []
+    swallowed: list[str] = []
+    handlers = {
+        "a": _make_swallowing_handler(calls, swallowed, "a"),
+        "b": _make_handler(calls, "b"),
+    }
+    monkeypatch.setattr(seed_cli, "REGISTRY", _FakeRegistry(handlers))
+    settings = SeedingSettings(total_timeout_seconds=0, domain_timeout_seconds=600)
+
+    status = seed_cli.run_seed_command(_args(), settings)
+
+    assert swallowed == []  # not swallowed by the fetcher's except Exception
+    assert status == 1
+    assert calls == ["a", "b"]  # failed domain does not stop the whole run
+    jobs = _jobs_by_domain(sessionmaker_factory)
+    assert jobs["a"].status == IngestionStatus.FAILED
+    assert jobs["b"].status == IngestionStatus.COMPLETED

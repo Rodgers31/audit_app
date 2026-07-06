@@ -54,8 +54,19 @@ def _collect_domains(requested: Iterable[str], include_all: bool) -> Sequence[st
     return domains
 
 
-class DomainTimeoutError(RuntimeError):
-    """Raised when a single domain handler exceeds its time budget."""
+class DomainTimeoutError(BaseException):
+    """Raised when a single domain handler exceeds its time budget.
+
+    Subclasses ``BaseException`` (not ``Exception``) on purpose. Domain
+    fetchers wrap each upstream call in ``except Exception`` to fall back to a
+    fixture; a plain-``Exception`` timeout would be caught there, treated as
+    "this one item failed", and the domain would keep running. Since the
+    SIGALRM is one-shot, the budget would then be silently lost and the run
+    would overrun the CI step timeout (issues #105-#113). As a
+    ``BaseException`` it bypasses those handlers and propagates to
+    ``run_seed_command``'s own handler, which catches it explicitly — the same
+    reason ``KeyboardInterrupt``/``SystemExit`` are not ``Exception``s.
+    """
 
 
 @contextmanager
@@ -287,7 +298,10 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
                         "Committed changes", extra={"domain": domain, "job_id": job_id}
                     )
 
-            except Exception as exc:  # pragma: no cover - requires integration tests
+            # DomainTimeoutError is a BaseException (so fetchers' ``except
+            # Exception`` can't swallow it), so catch it explicitly alongside
+            # Exception here — the handler below already branches on its type.
+            except (DomainTimeoutError, Exception) as exc:
                 session.rollback()
 
                 # A DomainTimeoutError raised because the *global* budget capped
