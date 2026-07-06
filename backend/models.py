@@ -959,9 +959,10 @@ class NationalEntity(Base):
     )
 
     id = Column(Integer, primary_key=True, index=True)
-    entity_id = Column(
-        Integer, ForeignKey("entities.id"), nullable=False, unique=True, index=True
-    )
+    # Uniqueness + the FK-lookup index come from the uq_national_entity
+    # UniqueConstraint above; a column-level unique/index here would be a
+    # duplicate (Supabase "Duplicate Index" advisor). See migration j0e1f2a3b4c5.
+    entity_id = Column(Integer, ForeignKey("entities.id"), nullable=False)
     parent_ministry_entity_id = Column(
         Integer, ForeignKey("entities.id"), nullable=True
     )
@@ -992,8 +993,11 @@ class ParliamentSourceDocument(Base):
     )
 
     id = Column(Integer, primary_key=True, index=True)
+    # Uniqueness + the FK-lookup index come from the uq_parliament_src_doc
+    # UniqueConstraint above; a column-level unique/index here would be a
+    # duplicate (Supabase "Duplicate Index" advisor). See migration j0e1f2a3b4c5.
     source_document_id = Column(
-        Integer, ForeignKey("source_documents.id"), nullable=False, unique=True, index=True
+        Integer, ForeignKey("source_documents.id"), nullable=False
     )
     dspace_uuid = Column(String(64), nullable=True, unique=True, index=True)
     dspace_handle = Column(String(100), nullable=True)

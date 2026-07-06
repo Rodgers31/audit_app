@@ -48,12 +48,21 @@ export async function DELETE() {
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
 
-  // Remove dependent rows in order
-  await admin.from('watchlist').delete().eq('user_id', user.id);
-  await admin.from('data_alerts').delete().eq('user_id', user.id);
-  await admin.from('profiles').delete().eq('id', user.id);
+  // Best-effort explicit cleanup (defense-in-depth). supabase-js returns
+  // { error } instead of throwing, so capture it. deleteUser() below is the
+  // authoritative step and cascades via ON DELETE CASCADE FKs, so we log any
+  // failures here but do NOT abort — a transient cleanup error must not block
+  // the user's deletion request.
+  const cleanup = await Promise.all([
+    admin.from('watchlist_items').delete().eq('user_id', user.id),
+    admin.from('data_alerts').delete().eq('user_id', user.id),
+    admin.from('profiles').delete().eq('id', user.id),
+  ]);
+  for (const { error: cleanupError } of cleanup) {
+    if (cleanupError) console.warn('[delete-account] cleanup:', cleanupError.message);
+  }
 
-  /* ── 3. Delete the auth user ── */
+  /* ── 3. Delete the auth user (authoritative; cascades to dependent rows) ── */
   const { error } = await admin.auth.admin.deleteUser(user.id);
 
   if (error) {
