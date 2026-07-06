@@ -84,14 +84,21 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    # Recreate the (unique) duplicate indexes that were dropped.
-    op.execute(
-        "CREATE UNIQUE INDEX IF NOT EXISTS ix_national_entities_entity_id "
-        "ON public.national_entities (entity_id);"
-    )
-    op.execute(
-        "CREATE UNIQUE INDEX IF NOT EXISTS ix_parliament_source_documents_source_document_id "
-        "ON public.parliament_source_documents (source_document_id);"
-    )
+    # Recreate the (unique) duplicate indexes that were dropped — guarded with
+    # the same to_regclass check as upgrade() so a missing table can't error.
+    for idx, tbl, col in [
+        ("ix_national_entities_entity_id", "national_entities", "entity_id"),
+        ("ix_parliament_source_documents_source_document_id", "parliament_source_documents", "source_document_id"),
+    ]:
+        op.execute(
+            f"""
+            DO $$
+            BEGIN
+                IF to_regclass('public.{tbl}') IS NOT NULL THEN
+                    EXECUTE 'CREATE UNIQUE INDEX IF NOT EXISTS {idx} ON public.{tbl} ({col})';
+                END IF;
+            END $$;
+            """
+        )
     for idx, _tbl, _col in FK_INDEXES:
         op.execute(f"DROP INDEX IF EXISTS public.{idx};")
