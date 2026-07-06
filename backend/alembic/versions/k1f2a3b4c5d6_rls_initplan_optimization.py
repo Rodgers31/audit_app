@@ -15,12 +15,22 @@ identical to ``auth.uid()``, so the access rules (users can only see/modify
 their own rows) are unchanged. The frontend uses all three tables via
 supabase-js and is unaffected.
 
-Recreates the 5 existing policies verbatim except for the wrapped call:
+Recreates the auth.uid()-based policies on these three tables in wrapped form.
+Five such policies exist in the live DB (verified DB-wide) and are always
+recreated:
   * data_alerts     "Users can read own alerts"      SELECT
   * data_alerts     "Users can update own alerts"    UPDATE
   * profiles        "Users can read own profile"     SELECT
   * profiles        "Users can update own profile"   UPDATE
   * watchlist_items "Users can manage own watchlist" ALL
+
+A sixth policy — profiles "Users can insert own profile"
+(supabase/migrations/20260305_fix_profiles_insert_policy.sql) — is applied
+MANUALLY and is ABSENT from the live DB (the advisor flagged profiles only
+twice, confirming this). We wrap it ONLY IF it is present: creating it here
+would change the access model (enabling client-side profile inserts) and would
+make downgrade unable to restore the prior state, so this migration never
+creates a policy that wasn't already there. Where it does exist, it is wrapped.
 
 Guarded with to_regclass so it is safe where a table is absent (these tables are
 created by supabase/migrations, not alembic).
@@ -70,6 +80,16 @@ def upgrade() -> None:
                 EXECUTE 'CREATE POLICY "Users can update own profile" ON public.profiles
                          FOR UPDATE USING ((select auth.uid()) = id)
                          WITH CHECK ((select auth.uid()) = id)';
+                -- Optional INSERT policy (20260305) — applied manually, absent
+                -- from the live DB. Wrap ONLY if present; never create it here
+                -- (that would change the access model + break downgrade fidelity).
+                IF EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public'
+                          AND tablename = 'profiles'
+                          AND policyname = 'Users can insert own profile') THEN
+                    EXECUTE 'DROP POLICY "Users can insert own profile" ON public.profiles';
+                    EXECUTE 'CREATE POLICY "Users can insert own profile" ON public.profiles
+                             FOR INSERT WITH CHECK ((select auth.uid()) = id)';
+                END IF;
             END IF;
         END $$;
         """
@@ -113,6 +133,14 @@ def downgrade() -> None:
                 EXECUTE 'CREATE POLICY "Users can update own profile" ON public.profiles
                          FOR UPDATE USING (auth.uid() = id)
                          WITH CHECK (auth.uid() = id)';
+                -- Restore the un-wrapped INSERT policy ONLY if present (mirror of upgrade).
+                IF EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public'
+                          AND tablename = 'profiles'
+                          AND policyname = 'Users can insert own profile') THEN
+                    EXECUTE 'DROP POLICY "Users can insert own profile" ON public.profiles';
+                    EXECUTE 'CREATE POLICY "Users can insert own profile" ON public.profiles
+                             FOR INSERT WITH CHECK (auth.uid() = id)';
+                END IF;
             END IF;
             IF to_regclass('public.watchlist_items') IS NOT NULL THEN
                 EXECUTE 'DROP POLICY IF EXISTS "Users can manage own watchlist" ON public.watchlist_items';
