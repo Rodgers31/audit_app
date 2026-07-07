@@ -1,5 +1,6 @@
 import asyncio
 import concurrent.futures
+import contextlib
 import datetime
 import functools
 import importlib
@@ -30,7 +31,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.security import HTTPBearer
 from pydantic import BaseModel
-from sqlalchemy import or_
+from sqlalchemy import or_, text
 from sqlalchemy.orm import Session
 from starlette.responses import JSONResponse, Response
 
@@ -979,23 +980,91 @@ class AuditListResponse(BaseModel):
     items: List[AuditListItem]
 
 
+# ── Application lifecycle ─────────────────────────────────────────────
+# Readiness flag: /health/ready reports 503 until reference data exists.
+# /health (used by the uptime pinger) and /health/live answer immediately.
+_app_ready = asyncio.Event()
+
+
+@contextlib.asynccontextmanager
+async def _app_lifespan(app_: "FastAPI"):
+    """Application lifespan — replaces the deprecated @app.on_event hooks.
+
+    The old startup hook awaited initialize_reference_data() BEFORE the
+    server accepted traffic (~3 min on a cold DB), so every deploy /
+    process restart served nothing until bootstrap finished. The whole
+    startup sequence now runs as a background task: the server binds
+    immediately, /health/live answers at once, and /health/ready flips
+    to 200 once reference data is confirmed.
+    """
+    if not DATABASE_AVAILABLE:
+        # Config error — fail fast, nothing can work without a DB.
+        raise RuntimeError("Database is required for backend startup")
+
+    startup_task = asyncio.create_task(_startup_sequence())
+    try:
+        yield
+    finally:
+        startup_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await startup_task
+        try:
+            from services.auto_seeder import stop_auto_seeder
+
+            await stop_auto_seeder()
+        except Exception:
+            pass
+
+
+async def _startup_sequence() -> None:
+    """Ordered background startup: DB pre-warm → reference data →
+    readiness → auto-seeder → cache warmup. Runs off the request path."""
+    logger.info("Main Backend API starting up...")
+    logger.info(f"Working directory: {os.getcwd()}")
+
+    # Pre-warm the connection pool so the first real query isn't slow.
+    try:
+        with next(get_db()) as db:
+            db.execute(text("SELECT 1"))
+        logger.info("Database connection pool warmed up successfully")
+    except Exception as e:
+        logger.warning(f"Database pre-warm failed (non-fatal): {e}")
+
+    # Reference county data. Failure leaves the service NOT-ready —
+    # visible on /health/ready — instead of crash-looping the process.
+    try:
+        await asyncio.to_thread(initialize_reference_data, NAME_TO_ID_MAPPING)
+    except Exception:  # pragma: no cover - surfaced via readiness + logs
+        logger.exception("Failed to initialize reference data")
+        return
+    _app_ready.set()
+    logger.info("Main Backend API startup complete!")
+
+    # Auto-seeder (its initial seed is itself a background task).
+    if AUTO_SEEDER_ENABLED:
+        try:
+            from services.auto_seeder import start_auto_seeder
+
+            await start_auto_seeder()
+            logger.info("[AUTO-SEEDER] Service started - data will refresh automatically")
+        except Exception as exc:
+            logger.warning(f"Auto-seeder not started (non-critical): {exc}")
+    else:
+        logger.info("Auto-seeder disabled via AUTO_SEEDER_ENABLED=false")
+
+    # Response-cache warmup (self-HTTP, concurrency-capped).
+    if _WARMUP_ENABLED:
+        await _warm_cache()
+    else:
+        logger.info("Cache warmup disabled via AUTO_WARMUP_ENABLED=false")
+
+
 app = FastAPI(
     title="Government Financial Transparency API",
     description="API for accessing government budget, spending, and audit data with full provenance",
     version="1.0.0",
+    lifespan=_app_lifespan,
 )
-
-
-@app.on_event("startup")
-async def bootstrap_reference_data() -> None:
-    """Ensure reference county data is present before serving requests."""
-    if not DATABASE_AVAILABLE:
-        raise RuntimeError("Database is required for backend startup")
-    try:
-        await asyncio.to_thread(initialize_reference_data, NAME_TO_ID_MAPPING)
-    except Exception as exc:  # pragma: no cover - bootstrap failures should abort
-        logger.exception("Failed to initialize reference data", exc_info=exc)
-        raise
 
 
 # Auto-seeder for automated data refresh.
@@ -1010,31 +1079,9 @@ AUTO_SEEDER_ENABLED = os.getenv("AUTO_SEEDER_ENABLED", _default_seeder).lower() 
 )
 
 
-@app.on_event("startup")
-async def start_auto_seeder_service() -> None:
-    """Start the auto-seeder service for automated data updates."""
-    if not AUTO_SEEDER_ENABLED:
-        logger.info("Auto-seeder disabled via AUTO_SEEDER_ENABLED=false")
-        return
-
-    try:
-        from services.auto_seeder import start_auto_seeder
-
-        await start_auto_seeder()
-        logger.info("[AUTO-SEEDER] Service started - data will refresh automatically")
-    except Exception as exc:
-        logger.warning(f"Auto-seeder not started (non-critical): {exc}")
-
-
-@app.on_event("shutdown")
-async def stop_auto_seeder_service() -> None:
-    """Stop the auto-seeder service gracefully."""
-    try:
-        from services.auto_seeder import stop_auto_seeder
-
-        await stop_auto_seeder()
-    except Exception:
-        pass
+# NOTE: auto-seeder start/stop and cache warmup are driven from
+# _startup_sequence / _app_lifespan above (the deprecated
+# @app.on_event hooks were consolidated there).
 
 
 # Hot endpoints that are expensive on cold cache — we pre-warm them on
@@ -1083,8 +1130,7 @@ _WARMUP_PATHS: List[str] = [
 ]
 
 
-@app.on_event("startup")
-async def warm_cache_on_startup() -> None:
+async def _warm_cache() -> None:
     """Pre-warm the response cache for high-traffic endpoints.
 
     Without this, the first user after a deploy pays the full cold-path
@@ -1092,39 +1138,34 @@ async def warm_cache_on_startup() -> None:
     semaphore (AUTO_WARMUP_CONCURRENCY, default 3) so the boot never
     pins more than N DB result sets in memory at once — without the
     cap the full list ran the 512 MB container out of memory.
-    """
-    if not _WARMUP_ENABLED:
-        logger.info("Cache warmup disabled via AUTO_WARMUP_ENABLED=false")
-        return
 
+    Awaited at the tail of _startup_sequence, which itself runs as a
+    background task — the server is already serving while this runs.
+    """
     # Delay slightly so the app is fully initialised (routers mounted,
     # DB engine ready) before we self-call.
-    async def _warm() -> None:
-        await asyncio.sleep(2.0)
-        import httpx
+    await asyncio.sleep(2.0)
+    import httpx
 
-        # Use the same port uvicorn is bound to — read from env set by
-        # the launch script, default to 8000.
-        port = int(os.getenv("PORT", "8000"))
-        base = f"http://127.0.0.1:{port}"
-        sem = asyncio.Semaphore(_WARMUP_CONCURRENCY)
+    # Use the same port uvicorn is bound to — read from env set by
+    # the launch script, default to 8000.
+    port = int(os.getenv("PORT", "8000"))
+    base = f"http://127.0.0.1:{port}"
+    sem = asyncio.Semaphore(_WARMUP_CONCURRENCY)
 
-        async def _hit(client: "httpx.AsyncClient", path: str) -> None:
-            async with sem:
-                try:
-                    r = await client.get(f"{base}{path}", timeout=30.0)
-                    logger.info(
-                        f"[WARMUP] {path} → {r.status_code} ({r.elapsed.total_seconds():.2f}s)"
-                    )
-                except Exception as exc:
-                    logger.warning(f"[WARMUP] {path} failed: {exc}")
+    async def _hit(client: "httpx.AsyncClient", path: str) -> None:
+        async with sem:
+            try:
+                r = await client.get(f"{base}{path}", timeout=30.0)
+                logger.info(
+                    f"[WARMUP] {path} → {r.status_code} ({r.elapsed.total_seconds():.2f}s)"
+                )
+            except Exception as exc:
+                logger.warning(f"[WARMUP] {path} failed: {exc}")
 
-        async with httpx.AsyncClient() as client:
-            await asyncio.gather(*[_hit(client, p) for p in _WARMUP_PATHS])
-        logger.info("[WARMUP] Cache pre-warm complete")
-
-    # Don't await — run in the background so startup isn't blocked.
-    asyncio.create_task(_warm())
+    async with httpx.AsyncClient() as client:
+        await asyncio.gather(*[_hit(client, p) for p in _WARMUP_PATHS])
+    logger.info("[WARMUP] Cache pre-warm complete")
 
 
 # Gzip responses ≥1 KB so list/detail JSON payloads ship 3-8× smaller
@@ -1393,23 +1434,7 @@ def cached(key_prefix: str, ttl: int = 3600):
     return decorator
 
 
-# Startup event
-@app.on_event("startup")
-async def startup_event():
-    """Initialize the main backend API."""
-    logger.info("Main Backend API starting up...")
-    logger.info(f"Working directory: {os.getcwd()}")
-    logger.info("Initializing database connections...")
-
-    # Pre-warm the database connection pool so the first user request isn't slow
-    try:
-        with next(get_db()) as db:
-            db.execute("SELECT 1")
-        logger.info("Database connection pool warmed up successfully")
-    except Exception as e:
-        logger.warning(f"Database pre-warm failed (non-fatal): {e}")
-
-    logger.info("Main Backend API startup complete!")
+# Startup logging + DB pool pre-warm live in _startup_sequence (lifespan).
 
 
 @app.api_route("/", methods=["GET", "HEAD"])
@@ -1438,6 +1463,23 @@ async def health() -> JSONResponse:
     return JSONResponse(
         {"status": "ok", "timestamp": datetime.datetime.now().isoformat()}
     )
+
+
+@app.api_route("/health/live", methods=["GET", "HEAD"])
+async def health_live() -> JSONResponse:
+    """Liveness: the process is up and serving. Answers immediately even
+    while the startup sequence (reference-data bootstrap) is running."""
+    return JSONResponse({"status": "alive"})
+
+
+@app.api_route("/health/ready", methods=["GET", "HEAD"])
+async def health_ready() -> JSONResponse:
+    """Readiness: reference data is bootstrapped and endpoints can serve
+    real responses. 503 while the background startup sequence runs (or
+    if bootstrap failed — check logs for 'Failed to initialize')."""
+    if not _app_ready.is_set():
+        return JSONResponse({"status": "starting"}, status_code=503)
+    return JSONResponse({"status": "ready"})
 
 
 @app.get("/api/v1/system/seeder-status")
@@ -8506,8 +8548,19 @@ async def get_pending_bills(
                     }
                 )
 
-            # Determine source info from provenance of first record
-            first_prov = pending_loans[0].provenance or {}
+            # Determine source info from provenance of first record.
+            # provenance is JSONB and can be a dict OR a list of dicts —
+            # the per-loan loop above normalizes it, but this summary
+            # lookup didn't, so a list here raised "'list' object has no
+            # attribute 'get'" and dumped the whole DB strategy into the
+            # (much slower) live-extraction fallback on every request.
+            raw_first = pending_loans[0].provenance
+            if isinstance(raw_first, list):
+                first_prov = raw_first[0] if raw_first and isinstance(raw_first[0], dict) else {}
+            elif isinstance(raw_first, dict):
+                first_prov = raw_first
+            else:
+                first_prov = {}
             source_url = first_prov.get("source_url", "https://cob.go.ke/publications/")
 
             # Get source document if available

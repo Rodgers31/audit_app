@@ -31,11 +31,13 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
     enabled: isOpen, // prefetch on open
   });
 
-  // Calculate transparency metrics from real data
+  // Calculate transparency metrics. Uses the real OAG rating when the
+  // audits pipeline has provided one, otherwise the derived fiscal grade
+  // (budget-utilisation based) — never a fabricated 'B' default.
   const calculateTransparencyScore = () => {
-    const auditGrade = county.audit_rating || 'B';
+    const grade = county.audit_rating || county.fiscal_grade || 'B';
     const budgetUtilization = county.budget_2025 ? 75 : 60; // Mock calculation
-    const baseScore = auditGrade === 'A-' ? 85 : auditGrade.startsWith('B+') ? 80 : 75;
+    const baseScore = grade === 'A-' ? 85 : grade.startsWith('B+') ? 80 : 75;
     return Math.min(95, baseScore + (budgetUtilization > 80 ? 10 : 0));
   };
 
@@ -191,14 +193,19 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
                         </div>
                         <div className='text-gray-600 dark:text-neutral-muted'>out of 100</div>
                         <div className='text-sm text-gray-500 dark:text-neutral-muted/80 mt-2'>
-                          Based on audit rating: {county.audit_rating || 'B'}
+                          Based on {county.audit_rating ? 'audit rating' : 'fiscal grade (est.)'}:{' '}
+                          {county.audit_rating || county.fiscal_grade || '—'}
                         </div>
                       </div>
 
                       <div className='space-y-3'>
                         <div className='flex justify-between'>
-                          <span className='text-gray-600 dark:text-neutral-muted'>Audit Performance</span>
-                          <span className='font-semibold'>{county.audit_rating || 'B'}</span>
+                          <span className='text-gray-600 dark:text-neutral-muted'>
+                            {county.audit_rating ? 'Audit Performance' : 'Fiscal Grade (est.)'}
+                          </span>
+                          <span className='font-semibold'>
+                            {county.audit_rating || county.fiscal_grade || '—'}
+                          </span>
                         </div>
                         <div className='flex justify-between'>
                           <span className='text-gray-600 dark:text-neutral-muted'>Budget Size</span>
@@ -295,7 +302,9 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
                     <h3 className='text-xl font-bold text-purple-900 mb-2'>Audit Report Summary</h3>
                     <p className='text-purple-800 mb-4'>
                       Latest audit rating:{' '}
-                      <span className='font-semibold'>{county.audit_rating}</span>
+                      <span className='font-semibold'>
+                        {county.audit_rating || 'Pending — not yet audited/ingested'}
+                      </span>
                     </p>
                     <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
                       <div className='bg-white dark:bg-surface-base rounded-xl p-4 border'>
@@ -558,7 +567,7 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
 
 I am requesting clarification on the ${new Date().getFullYear()} budget execution and recent audit findings for ${
                           county.name
-                        } County (rating: ${county.audit_rating}). Please share:
+                        } County${county.audit_rating ? ` (audit rating: ${county.audit_rating})` : ''}. Please share:
 • Status of pending audit issues and corrective actions
 • Budget utilization and priority projects
 • Channels for citizen feedback

@@ -59,6 +59,11 @@ const AUDIT_PALETTE: Record<
   D: { base: '#8f2e2e', hover: '#7a2525', active: '#651c1c', muted: '#daa4a4' },
   // Violet
   disclaimer: { base: '#7c5cbf', hover: '#6a4aad', active: '#573d94', muted: '#c4b5e0' },
+  // Cool slate — counties whose OAG audit hasn't been ingested yet.
+  // Production currently has audit_status="pending" for all counties;
+  // without this entry they silently hit FALLBACK_PAL and the map's
+  // audit legend looked like a styling accident instead of a data gap.
+  pending: { base: '#c3cdd5', hover: '#a9b6c0', active: '#7f909d', muted: '#dfe5ea' },
 };
 
 const FALLBACK_PAL = { base: '#b0b6ba', hover: '#979ea3', active: '#6b7280', muted: '#d5d8db' };
@@ -133,4 +138,5 @@ export const LEGEND_ITEMS = [
   { labelKey: 'home.map.legend.qualified' as const, color: '#D9A441' },
   { labelKey: 'home.map.legend.adverse' as const, color: '#C94A4A' },
   { labelKey: 'home.map.legend.disclaimer' as const, color: '#7c5cbf' },
+  { labelKey: 'home.map.legend.pending' as const, color: '#c3cdd5' },
 ] as const;

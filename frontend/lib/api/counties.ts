@@ -57,10 +57,14 @@ const transformCountyData = (bc: BackendCountyResponse): County => {
   const budget = bc.total_budget || bc.budget_2025 || 0;
   const debt = bc.total_debt || bc.debt || 0;
 
-  // Build letter-grade audit_rating from financial_health_score when
-  // the backend returns severity strings ("info"/"warning"/"critical").
+  // Fiscal grade — derived from financial_health_score (which is budget
+  // utilisation), NOT an audit opinion. Kept in its own field so the UI
+  // can never present a modelled number as an OAG audit rating: production
+  // currently has audit_rating="" / audit_status="pending" for all 47
+  // counties (the audits seeding domain hasn't landed county opinions),
+  // and this derived grade used to be displayed as "Audit Rating".
   const score = bc.financial_health_score || 0;
-  const letterGrade =
+  const fiscalGrade =
     score >= 85 ? 'A' : score >= 70 ? 'B+' : score >= 55 ? 'B' : score >= 40 ? 'B-' : 'C';
 
   // The backend already classifies audit_status – use it directly.
@@ -83,7 +87,14 @@ const transformCountyData = (bc: BackendCountyResponse): County => {
     coordinates,
     budget_2025: bc.budget_2025,
     financial_health_score: bc.financial_health_score,
-    audit_rating: letterGrade,
+    // Real OAG rating only — empty until the audits pipeline provides one.
+    // The backend currently mirrors audit SEVERITY ("info"/"warning"/
+    // "critical") into audit_rating; that's a status, not a rating, so
+    // treat it as "no rating" too instead of displaying "Rating: info".
+    audit_rating: ['info', 'warning', 'critical'].includes(bc.audit_rating)
+      ? ''
+      : bc.audit_rating || '',
+    fiscal_grade: fiscalGrade,
     budget,
     debt,
     population: bc.population,

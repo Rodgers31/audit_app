@@ -1,5 +1,6 @@
 'use client';
 
+import ModelledDataNote from '@/components/ModelledDataNote';
 import { useLang } from '@/lib/i18n/LangProvider';
 import type { TranslationKey } from '@/lib/i18n/messages';
 import { County } from '@/types';
@@ -240,10 +241,17 @@ export default function CountyDetailsPanel({ county, className = '' }: CountyDet
                   value={fmtPop(county.population)}
                   iconBg='bg-blue-50 text-blue-500'
                 />
+                {/* Real OAG rating when present; otherwise the derived
+                    fiscal grade, honestly labelled as an estimate — a
+                    modelled number must never read as an audit opinion. */}
                 <StatItem
                   icon={<Landmark className='w-3 h-3' />}
-                  label={t('home.county_panel.audit_rating')}
-                  value={county.audit_rating || '—'}
+                  label={
+                    county.audit_rating
+                      ? t('home.county_panel.audit_rating')
+                      : t('home.county_panel.fiscal_grade')
+                  }
+                  value={county.audit_rating || county.fiscal_grade || '—'}
                   iconBg='bg-gov-forest/10 text-gov-forest dark:text-emerald-100'
                 />
               </div>
@@ -300,8 +308,11 @@ export default function CountyDetailsPanel({ county, className = '' }: CountyDet
                 </span>
               </div>
 
-              {/* Top Spending Sectors */}
+              {/* Top Spending Sectors — modelled estimates (fixed CRA-formula
+                  ratios from the seeder), so carry the same disclaimer the
+                  county detail pages show. */}
               <SectorBreakdown county={county} />
+              <ModelledDataNote className='!px-3 !py-2 text-xs' />
 
               {/* OAG Audit Findings */}
               <AuditFindings county={county} />
