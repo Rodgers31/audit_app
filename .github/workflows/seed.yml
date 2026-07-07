@@ -46,6 +46,11 @@ env:
   SEED_TOTAL_TIMEOUT_SECONDS: ${{ vars.SEED_TOTAL_TIMEOUT_SECONDS || '1320' }}
   SEED_BUDGETS_DATASET_URL: ${{ secrets.SEED_BUDGETS_DATASET_URL }}
   SEED_AUDITS_DATASET_URL: ${{ secrets.SEED_AUDITS_DATASET_URL }}
+  # OCR for scanned OAG audit-report PDFs (tesseract-ocr + poppler-utils
+  # are apt-installed in the seed job). Opt out by setting the repo
+  # Variable SEED_AUDITS_OCR_ENABLED=false.
+  SEED_AUDITS_OCR_ENABLED: ${{ vars.SEED_AUDITS_OCR_ENABLED || 'true' }}
+  SEED_AUDITS_OCR_MAX_PAGES: ${{ vars.SEED_AUDITS_OCR_MAX_PAGES || '30' }}
   SEED_POPULATION_DATASET_URL: ${{ secrets.SEED_POPULATION_DATASET_URL }}
   SEED_ECONOMIC_INDICATORS_DATASET_URL: ${{ secrets.SEED_ECONOMIC_INDICATORS_DATASET_URL }}
   # Opt-in: KRA FY-revenue page/PDF. When set (repo Variable), the
@@ -246,6 +251,8 @@ jobs:
         with:
           python-version: '3.12'
           cache: 'pip'
+      # OCR system deps for scanned OAG audit PDFs (SEED_AUDITS_OCR_ENABLED)
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq tesseract-ocr poppler-utils
       - run: pip install --upgrade pip && pip install -r backend/requirements.txt
 
       - name: Seed all domains

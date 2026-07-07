@@ -4,10 +4,13 @@ import { useLang } from '@/lib/i18n/LangProvider';
 import { Info } from 'lucide-react';
 
 /**
- * Honest disclaimer for county FINANCIAL figures (budget, debt, pending
- * bills, sector breakdown), which are modelled estimates — not official
- * Controller-of-Budget data (audit §2.4). Audit findings shown on the
- * county Audit tab are real OAG data and do NOT carry this caveat.
+ * Honest disclaimer for county FINANCIAL figures (budget sector splits,
+ * debt, pending bills), which are modelled estimates — not official
+ * Controller-of-Budget data (audit §2.4). Exceptions that ARE real
+ * parsed CoB data: county Total/Development/Recurrent aggregates from
+ * the live BIRR parse. County audit findings display only when the
+ * backend marks them display-grade (real ingested OAG data) — the
+ * former fixture findings were fabricated and have been purged.
  */
 export default function ModelledDataNote({ className = '' }: { className?: string }) {
   const { t } = useLang();

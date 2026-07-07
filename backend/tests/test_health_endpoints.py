@@ -73,8 +73,14 @@ class TestDetailedHealthEndpoint:
 
 
 class TestReadinessEndpoint:
-    """Tests for GET /health/ready (if health router is registered)."""
+    """Tests for GET /health/ready (lifespan-gated readiness)."""
 
     def test_readiness_returns_status(self, client):
         response = client.get("/health/ready")
-        assert response.status_code in (200, 404)
+        # 503 is the DESIGNED pre-bootstrap answer: TestClient without a
+        # lifespan context never runs the startup sequence, so the app
+        # correctly reports "starting". 200 = ready, 404 = older builds
+        # without the endpoint.
+        assert response.status_code in (200, 404, 503)
+        if response.status_code == 503:
+            assert response.json().get("status") == "starting"

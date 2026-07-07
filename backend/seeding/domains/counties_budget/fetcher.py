@@ -498,6 +498,20 @@ def _download_and_parse_county_pdf(
                 except ValueError:
                     absorbed = 0
 
+            # CoB BIRR tables publish figures in KSh MILLIONS (every
+            # vintage parsed so far — e.g. Nairobi's total prints as
+            # "44,621"). Stored raw, those landed as KES 44,621 in
+            # budget_lines, which is why development_budget read as ~0
+            # in the API. No county figure is plausibly below KES 10M,
+            # and no millions-denominated figure exceeds 10M, so scale
+            # exactly the suspiciously-small values. Absolute-KES
+            # vintages (if CoB ever publishes them) pass through.
+            def _kes(value: float) -> float:
+                return value * 1_000_000 if 0 < value < 10_000_000 else value
+
+            allocated = _kes(float(allocated))
+            absorbed = _kes(float(absorbed))
+
             budget_records.append({
                 "entity_slug": entity_slug,
                 "entity": f"{county} County",

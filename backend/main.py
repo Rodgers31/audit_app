@@ -1052,6 +1052,12 @@ async def _startup_sequence() -> None:
     else:
         logger.info("Auto-seeder disabled via AUTO_SEEDER_ENABLED=false")
 
+    # ETL scheduler (APScheduler; no-op if the package isn't installed).
+    try:
+        await _setup_etl_scheduler()
+    except Exception as exc:
+        logger.warning(f"ETL scheduler not started (non-critical): {exc}")
+
     # Response-cache warmup (self-HTTP, concurrency-capped).
     if _WARMUP_ENABLED:
         await _warm_cache()
@@ -2012,6 +2018,96 @@ async def get_country_summary(country_id: int):
     )
 
 
+# ── County data-honesty helpers ──────────────────────────────────────
+
+# Dataset-id prefixes of KNOWN-FABRICATED audit fixtures. The legacy
+# generator (removed) produced 512 template findings ("Ghost workers
+# detected - KES …") tagged oag-audit-aq#### and labelled "official".
+# Rows carrying these ids must never surface as audit opinions, even if
+# they are re-seeded from an old fixture.
+_FABRICATED_AUDIT_DATASET_PREFIXES = ("oag-audit-aq",)
+
+# data_quality values that mark a row as modelled/demo rather than real.
+_NON_OFFICIAL_QUALITIES = {"modelled", "modeled", "synthetic", "demo", "fixture"}
+
+
+def _audit_is_display_grade(audit) -> bool:
+    """True when an audit row is real ingested OAG data — safe to display
+    and to derive a county's audit_status from. Fabricated or modelled
+    rows (identified via provenance) are excluded so a transparency site
+    never renders a synthetic finding as an audit opinion."""
+    for entry in audit.provenance or []:
+        if not isinstance(entry, dict):
+            continue
+        dataset_id = str(entry.get("dataset_id") or "")
+        if dataset_id.startswith(_FABRICATED_AUDIT_DATASET_PREFIXES):
+            return False
+        quality = str(entry.get("data_quality") or "").lower()
+        if quality in _NON_OFFICIAL_QUALITIES:
+            return False
+    return True
+
+
+# Categories used by the CoB BIRR live parse as CLASSIFICATION rows
+# (whole-budget economic classification), not additive sectors. They
+# must be excluded from sector/total sums — adding Development +
+# Recurrent + Total to the sector lines would triple-count the budget.
+_CLASSIFICATION_CATEGORIES = {"total", "development", "recurrent"}
+
+
+def _latest_county_actuals_period_ids(db) -> Optional[List[int]]:
+    """Period ids for the newest fiscal period with REAL county execution
+    data. Preference order:
+
+    1. Newest period carrying CoB BIRR classification rows (Total /
+       Development / Recurrent) — those only exist where the live CoB
+       parse landed, i.e. real published implementation-review data.
+    2. Newest period with any county spend recorded. (Weaker: modelled
+       fixture periods — including forward projections — were seeded
+       with estimated spend, so this can't distinguish real from
+       modelled on its own.)
+    3. Newest period outright.
+
+    The original default — newest period by start_date — landed on the
+    FY2025/26 equitable-share projection period, which surfaced
+    formula-split sector data and (via the audit period filter) turned
+    every county's audit status into "pending"."""
+    from sqlalchemy import func as _f
+
+    from models import FiscalPeriod as _FP
+
+    row = (
+        db.query(_FP.id)
+        .join(DBBudgetLine, DBBudgetLine.period_id == _FP.id)
+        .join(DBEntity, DBEntity.id == DBBudgetLine.entity_id)
+        .filter(
+            DBEntity.type == EntityType.COUNTY,
+            _f.lower(DBBudgetLine.category).in_(list(_CLASSIFICATION_CATEGORIES)),
+        )
+        .order_by(_FP.start_date.desc())
+        .first()
+    )
+    if row:
+        return [row[0]]
+
+    row = (
+        db.query(_FP.id)
+        .join(DBBudgetLine, DBBudgetLine.period_id == _FP.id)
+        .join(DBEntity, DBEntity.id == DBBudgetLine.entity_id)
+        .filter(
+            DBEntity.type == EntityType.COUNTY,
+            DBBudgetLine.actual_spent.isnot(None),
+            DBBudgetLine.actual_spent > 0,
+        )
+        .order_by(_FP.start_date.desc())
+        .first()
+    )
+    if row:
+        return [row[0]]
+    latest = db.query(_FP).order_by(_FP.start_date.desc()).first()
+    return [latest.id] if latest else None
+
+
 # Consolidated County Endpoints - Using Enhanced County Analytics API
 @app.get("/api/v1/counties")
 @cached(key_prefix="counties:all", ttl=3600)  # Cache for 1 hour
@@ -2070,10 +2166,10 @@ async def get_counties(fiscal_year: Optional[str] = None):
                 except (ValueError, IndexError):
                     pass  # Ignore bad fiscal_year format, return unfiltered
             else:
-                # Default to latest fiscal period to avoid summing across all years
-                latest_fp = db.query(_FP).order_by(_FP.start_date.desc()).first()
-                if latest_fp:
-                    period_ids = [latest_fp.id]
+                # Default to the latest fiscal period WITH COUNTY ACTUALS
+                # (not merely the newest period — that picked projection
+                # periods with no spend and no audits).
+                period_ids = _latest_county_actuals_period_ids(db)
 
             # ── BATCH LOAD all related data in 5 queries (not 47×6) ──
             entity_ids = [e.id for e in entities]
@@ -2118,15 +2214,22 @@ async def get_counties(fiscal_year: Optional[str] = None):
             for loan in all_loans:
                 loans_by_entity.setdefault(loan.entity_id, []).append(loan)
 
-            # 4. Audits (all at once, optionally filtered by period)
-            audit_q = db.query(DBAudit).filter(DBAudit.entity_id.in_(entity_ids))
-            if period_ids:
-                audit_q = audit_q.filter(DBAudit.period_id.in_(period_ids))
-            all_audits = audit_q.order_by(
-                DBAudit.entity_id, DBAudit.created_at.desc()
-            ).all()
+            # 4. Audits — deliberately NOT filtered by the budget period:
+            # an audit opinion is issued for its own FY and users want the
+            # most recent one regardless of which budget year is shown.
+            # (The old period filter pinned audits to the projections
+            # period, which has none, so every county read as "pending".)
+            # Fabricated/modelled rows are gated out — display-grade only.
+            all_audits = (
+                db.query(DBAudit)
+                .filter(DBAudit.entity_id.in_(entity_ids))
+                .order_by(DBAudit.entity_id, DBAudit.created_at.desc())
+                .all()
+            )
             audits_by_entity: dict = {}
             for a in all_audits:
+                if not _audit_is_display_grade(a):
+                    continue
                 audits_by_entity.setdefault(a.entity_id, []).append(a)
 
             # 5. GDP data: latest per entity
@@ -2161,16 +2264,49 @@ async def get_counties(fiscal_year: Optional[str] = None):
                 audits = audits_by_entity.get(e.id, [])
                 gdp_data = gdp_map.get(e.id)
 
-                total_allocated = sum(
-                    float(b.allocated_amount or 0) for b in budget_lines
-                )
-                total_spent = sum(float(b.actual_spent or 0) for b in budget_lines)
-
-                # Group budget by category for sector breakdown
-                sector_breakdown = {}
-                development_total = 0.0
-                recurrent_total = 0.0
+                # Split lines: CoB BIRR classification rows (Total /
+                # Development / Recurrent — whole-budget economic
+                # classification, REAL parsed data) vs additive sector
+                # lines (currently modelled splits). Summing both would
+                # triple-count the budget.
+                sector_lines = []
+                class_by_cat: dict = {}
                 for bl in budget_lines:
+                    cat_key = (bl.category or "").strip().lower()
+                    if cat_key in _CLASSIFICATION_CATEGORIES:
+                        # Sub-rows (e.g. Personnel Emoluments under
+                        # Recurrent) aren't the aggregate — skip those.
+                        if not bl.subcategory:
+                            agg = class_by_cat.setdefault(
+                                cat_key, {"allocated": 0.0, "spent": 0.0}
+                            )
+                            agg["allocated"] += float(bl.allocated_amount or 0)
+                            agg["spent"] += float(bl.actual_spent or 0)
+                        continue
+                    sector_lines.append(bl)
+
+                # Headline totals: prefer the CoB "Total" aggregate (real
+                # BIRR data) over summing the modelled sector split.
+                if class_by_cat.get("total", {}).get("allocated"):
+                    total_allocated = class_by_cat["total"]["allocated"]
+                    total_spent = class_by_cat["total"]["spent"]
+                else:
+                    total_allocated = sum(
+                        float(b.allocated_amount or 0) for b in sector_lines
+                    )
+                    total_spent = sum(float(b.actual_spent or 0) for b in sector_lines)
+
+                # Sector breakdown from sector lines only
+                sector_breakdown = {}
+                development_total = class_by_cat.get("development", {}).get(
+                    "allocated", 0.0
+                )
+                recurrent_total = class_by_cat.get("recurrent", {}).get(
+                    "allocated", 0.0
+                )
+                keyword_dev = 0.0
+                keyword_rec = 0.0
+                for bl in sector_lines:
                     cat = (bl.category or "Other").strip()
                     amt = float(bl.allocated_amount or 0)
                     spent = float(bl.actual_spent or 0)
@@ -2189,10 +2325,16 @@ async def get_counties(fiscal_year: Optional[str] = None):
                             "project",
                         ]
                     ):
-                        development_total += amt
+                        keyword_dev += amt
                     else:
-                        recurrent_total += amt
+                        keyword_rec += amt
 
+                # Fallback chain when no real CoB classification rows:
+                # sector-keyword heuristic, then entity-meta metrics.
+                if development_total == 0:
+                    development_total = keyword_dev
+                    if recurrent_total == 0:
+                        recurrent_total = keyword_rec
                 if development_total == 0 and total_allocated > 0:
                     meta = e.meta or {}
                     metrics = _resolve_fy_metrics(meta, fiscal_year)
@@ -2348,10 +2490,22 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
         try:
             with next(get_db()) as db:
                 name = _resolve_county_name(county_id, db=db)
-                q = db.query(DBEntity).filter(DBEntity.type == EntityType.COUNTY)
-                if name:
-                    q = q.filter(DBEntity.canonical_name == f"{name} County")
-                e = q.first()
+                # Unknown id → 404. Previously an unresolvable id skipped
+                # the name filter and q.first() served the FIRST county's
+                # data (Mombasa) under any garbage id with a 200.
+                if not name:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"County '{county_id}' not found",
+                    )
+                e = (
+                    db.query(DBEntity)
+                    .filter(
+                        DBEntity.type == EntityType.COUNTY,
+                        DBEntity.canonical_name == f"{name} County",
+                    )
+                    .first()
+                )
                 if e:
                     # Resolve fiscal period — same logic as list endpoint
                     from models import FiscalPeriod as _FP
@@ -2370,11 +2524,10 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                         except (ValueError, IndexError):
                             pass
                     else:
-                        latest_fp = (
-                            db.query(_FP).order_by(_FP.start_date.desc()).first()
-                        )
-                        if latest_fp:
-                            period_ids = [latest_fp.id]
+                        # Latest fiscal period WITH county actuals — same
+                        # honesty rule as the list endpoint (newest-by-
+                        # start-date picked spend-less projection periods).
+                        period_ids = _latest_county_actuals_period_ids(db)
 
                     pop_data = (
                         db.query(DBPopulationData)
@@ -2391,15 +2544,47 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                             DBBudgetLine.period_id.in_(period_ids)
                         )
                     budget_lines = bl_query.all()
-                    total_allocated = sum(
-                        float(b.allocated_amount or 0) for b in budget_lines
-                    )
-                    total_spent = sum(float(b.actual_spent or 0) for b in budget_lines)
+
+                    # Same classification-vs-sector split as the list
+                    # endpoint: CoB BIRR Total/Development/Recurrent rows
+                    # are whole-budget aggregates (real data), sector
+                    # lines are the additive (modelled) split — summing
+                    # both triple-counts the budget.
+                    sector_lines = []
+                    class_by_cat: dict = {}
+                    for bl in budget_lines:
+                        cat_key = (bl.category or "").strip().lower()
+                        if cat_key in _CLASSIFICATION_CATEGORIES:
+                            if not bl.subcategory:
+                                agg = class_by_cat.setdefault(
+                                    cat_key, {"allocated": 0.0, "spent": 0.0}
+                                )
+                                agg["allocated"] += float(bl.allocated_amount or 0)
+                                agg["spent"] += float(bl.actual_spent or 0)
+                            continue
+                        sector_lines.append(bl)
+
+                    if class_by_cat.get("total", {}).get("allocated"):
+                        total_allocated = class_by_cat["total"]["allocated"]
+                        total_spent = class_by_cat["total"]["spent"]
+                    else:
+                        total_allocated = sum(
+                            float(b.allocated_amount or 0) for b in sector_lines
+                        )
+                        total_spent = sum(
+                            float(b.actual_spent or 0) for b in sector_lines
+                        )
 
                     sector_breakdown = {}
-                    development_total = 0.0
-                    recurrent_total = 0.0
-                    for bl in budget_lines:
+                    development_total = class_by_cat.get("development", {}).get(
+                        "allocated", 0.0
+                    )
+                    recurrent_total = class_by_cat.get("recurrent", {}).get(
+                        "allocated", 0.0
+                    )
+                    keyword_dev = 0.0
+                    keyword_rec = 0.0
+                    for bl in sector_lines:
                         cat = (bl.category or "Other").strip()
                         amt = float(bl.allocated_amount or 0)
                         spent = float(bl.actual_spent or 0)
@@ -2419,9 +2604,14 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                                 "project",
                             ]
                         ):
-                            development_total += amt
+                            keyword_dev += amt
                         else:
-                            recurrent_total += amt
+                            keyword_rec += amt
+
+                    if development_total == 0:
+                        development_total = keyword_dev
+                        if recurrent_total == 0:
+                            recurrent_total = keyword_rec
 
                     loans = db.query(DBLoan).filter(DBLoan.entity_id == e.id).all()
                     total_debt = sum(
@@ -2436,12 +2626,20 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                         if bl.category and "pending" in bl.category.lower()
                     )
 
-                    audits = (
-                        db.query(DBAudit)
-                        .filter(DBAudit.entity_id == e.id)
-                        .order_by(DBAudit.created_at.desc())
-                        .all()
-                    )
+                    # Display-grade audits only — this endpoint previously
+                    # served the fabricated fixture findings (template
+                    # text, dataset oag-audit-aq*) as real OAG data on
+                    # county detail pages.
+                    audits = [
+                        a
+                        for a in (
+                            db.query(DBAudit)
+                            .filter(DBAudit.entity_id == e.id)
+                            .order_by(DBAudit.created_at.desc())
+                            .all()
+                        )
+                        if _audit_is_display_grade(a)
+                    ]
                     latest_audit = audits[0] if audits else None
 
                     audit_issues = []
@@ -2561,6 +2759,10 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                         "audit_issues": audit_issues,
                         "audit_findings_count": len(audits),
                     }
+        except HTTPException:
+            # Deliberate 404s (unknown county id) must reach the client,
+            # not be swallowed into the fallback path below.
+            raise
         except Exception as exc:
             logging.error(f"DB county details failed, falling back: {exc}")
 
@@ -2736,13 +2938,18 @@ async def get_county_comprehensive(
                 or float(metrics.get("pending_bills", 0))
             )
 
-            # --- Audits ---
-            audits = (
-                db.query(DBAudit)
-                .filter(DBAudit.entity_id == entity.id)
-                .order_by(DBAudit.created_at.desc())
-                .all()
-            )
+            # --- Audits --- (display-grade only: fabricated/modelled
+            # rows must never render as OAG findings)
+            audits = [
+                a
+                for a in (
+                    db.query(DBAudit)
+                    .filter(DBAudit.entity_id == entity.id)
+                    .order_by(DBAudit.created_at.desc())
+                    .all()
+                )
+                if _audit_is_display_grade(a)
+            ]
 
             audit_findings = []
             by_severity = {"info": 0, "warning": 0, "critical": 0}
@@ -5904,14 +6111,13 @@ async def get_etl_jobs_status(_actor=Depends(_require_admin)):
     return {"jobs": _etl_jobs}
 
 
-@app.on_event("startup")
-async def setup_scheduler():
-    # keep prior startup logs
-    logger.info("Main Backend API starting up...")
-    logger.info(f"Working directory: {os.getcwd()}")
-    logger.info("Initializing database connections...")
-    logger.info("Main Backend API startup complete!")
+async def _setup_etl_scheduler():
+    """Start the APScheduler ETL jobs (called from _startup_sequence).
 
+    Was an @app.on_event("startup") hook — those are silently IGNORED
+    once the app is constructed with a lifespan, so this had stopped
+    running entirely after the lifespan migration.
+    """
     # Start background scheduler if available
     try:
         async_mod = importlib.import_module("apscheduler.schedulers.asyncio")
