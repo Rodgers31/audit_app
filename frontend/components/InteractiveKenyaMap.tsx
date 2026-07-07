@@ -234,8 +234,10 @@ export default function InteractiveKenyaMap({
   /** Convert a DOM MouseEvent to map-container-local coordinates for
    * the tooltip anchor. Using clientX/Y from the live event (rather
    * than the path centroid) means the tooltip appears right where the
-   * cursor is — wherever inside the county the user happened to hover. */
-  const anchorFromEvent = (e?: React.MouseEvent): typeof hoveredAnchor => {
+   * cursor is — wherever inside the county the user happened to hover.
+   * useCallback([]) — reads only a ref, so it is referentially stable
+   * and can sit in dependency lists without breaking memoisation. */
+  const anchorFromEvent = useCallback((e?: React.MouseEvent): typeof hoveredAnchor => {
     if (!e || !mapContainerRef.current) return null;
     const box = mapContainerRef.current.getBoundingClientRect();
     return {
@@ -244,12 +246,14 @@ export default function InteractiveKenyaMap({
       containerWidth: box.width,
       containerHeight: box.height,
     };
-  };
+  }, []);
 
   /* ── hover handlers ──
    * All three geography handlers are useCallback-stable (state is read
    * through refs) so they can be passed to the memoised CountyShape
-   * without invalidating it on every hover change. */
+   * without invalidating it on every hover change. Dependency lists are
+   * complete — every referenced callback is itself useCallback-stable,
+   * so exhaustive deps cost nothing and stale-closure hazards are out. */
   const handleCountyMouseEnter = useCallback(
     (countyName: string, county: County | undefined, e?: React.MouseEvent) => {
       if (hideTimeoutRef.current) {
@@ -262,8 +266,7 @@ export default function InteractiveKenyaMap({
       setShowTooltip(!!county);
       if (county && onCountyHover) onCountyHover(county);
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [onCountyHover]
+    [anchorFromEvent, onCountyHover]
   );
 
   /** True when the component is running on a coarse-pointer device
@@ -297,8 +300,7 @@ export default function InteractiveKenyaMap({
       isProcessingLeaveRef.current = false;
       hideTimeoutRef.current = null;
     }, 800);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onCountyHover]);
+  }, [onCountyHover, promoteHoverIfTouch]);
 
   const handleOverlayMouseEnter = () => {
     isOverlayHoveredRef.current = true;

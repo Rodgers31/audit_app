@@ -2042,7 +2042,16 @@ def _audit_is_display_grade(audit) -> bool:
     and to derive a county's audit_status from. Fabricated or modelled
     rows (identified via provenance) are excluded so a transparency site
     never renders a synthetic finding as an audit opinion."""
-    for entry in audit.provenance or []:
+    provenance = audit.provenance
+    if isinstance(provenance, dict):
+        # JSONB provenance is dict-shaped for some writers/older rows
+        # (the pending-bills loans needed the same normalisation).
+        # Iterating a dict yields its string KEYS, which would skip the
+        # checks below and fail this honesty gate OPEN.
+        provenance = [provenance]
+    elif not isinstance(provenance, list):
+        provenance = []
+    for entry in provenance:
         if not isinstance(entry, dict):
             continue
         dataset_id = str(entry.get("dataset_id") or "")
