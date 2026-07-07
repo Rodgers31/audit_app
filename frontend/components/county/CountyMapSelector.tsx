@@ -82,7 +82,7 @@ export default function CountyMapSelector({
           }}
           className='w-full h-[500px]'>
           {/* Kenya Borders */}
-          <Geographies geography='/kenya-counties.json'>
+          <Geographies geography='/kenya-counties.topo.json'>
             {({ geographies }) =>
               geographies.map((geo) => {
                 const countyName =

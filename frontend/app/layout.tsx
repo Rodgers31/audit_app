@@ -28,12 +28,15 @@ export const metadata: Metadata = {
     'national debt',
     'county finances',
   ],
-  metadataBase: new URL('https://auditgava.com'),
+  // www is the canonical production host (the apex 30x-redirects to it).
+  // Pointing metadata at the apex made every shared/crawled link pay an
+  // extra redirect round-trip before the page could even be requested.
+  metadataBase: new URL('https://www.auditgava.com'),
   openGraph: {
     title: 'AuditGava — Kenya Public Money Tracker',
     description:
       "Track Kenya's national debt, county budgets, and government spending — updated nightly from official sources.",
-    url: 'https://auditgava.com',
+    url: 'https://www.auditgava.com',
     siteName: 'AuditGava',
     images: [
       {

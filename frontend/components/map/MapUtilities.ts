@@ -68,49 +68,48 @@ const UNMATCHED_FILL = '#dce1dd';
 
 /* ────────────────── county fill colour ────────────────── */
 
-export const getCountyColor = (
-  geoCountyName: string,
-  counties: County[],
-  _index: number,
-  selectedCounty: County | null,
-  currentCountyIndex: number,
-  hoveredCounty: string | null,
-  _animationMode: 'slideshow' | 'pulse' | 'wave',
-  visualMode: 'focus' | 'overview' = 'overview'
-): string => {
-  const county = getCountyByName(geoCountyName, counties);
-  if (!county) return UNMATCHED_FILL;
-
+const paletteFor = (county: County) => {
   const key = county.auditStatus ?? county.audit_rating ?? 'B';
-  const pal = AUDIT_PALETTE[key] || FALLBACK_PAL;
+  return AUDIT_PALETTE[key] || FALLBACK_PAL;
+};
 
-  // Selected county — deepest shade
-  if (selectedCounty?.id === county.id) return pal.active;
+/** Visual state a county can be in, resolved by the caller. */
+export interface CountyFillState {
+  isSelected: boolean;
+  /** Auto-rotate target while nothing is selected or hovered. */
+  isAutoActive: boolean;
+  isHovered: boolean;
+  visualMode: 'focus' | 'overview';
+}
 
-  // Auto-rotating county — deepest shade, but ONLY when nothing else is
-  // active. If the user is hovering anywhere, drop the auto-rotate
-  // visual back to base shade so the hovered county is the one that
-  // reads as "active" on the map.
-  const currentCounty = counties[currentCountyIndex] ?? null;
-  if (!selectedCounty && !hoveredCounty && currentCounty?.id === county.id) return pal.active;
+/**
+ * Fill colour for an already-resolved county. Takes the County object
+ * (not the geo name) so callers can resolve name→county once per data
+ * change instead of re-running the regex-normalising linear scan in
+ * getCountyByName for all 47 geographies on every render.
+ */
+export const getCountyFill = (county: County | undefined, state: CountyFillState): string => {
+  if (!county) return UNMATCHED_FILL;
+  const pal = paletteFor(county);
+
+  // Selected or auto-rotating county — deepest shade. Hover anywhere
+  // suppresses the auto-rotate shade (caller clears isAutoActive) so we
+  // never have two counties reading as "active" at once.
+  if (state.isSelected || state.isAutoActive) return pal.active;
 
   // Hovered county — mid shade
-  if (hoveredCounty === geoCountyName) return pal.hover;
+  if (state.isHovered) return pal.hover;
 
   // Focus mode — muted tint for non-active
-  if (visualMode === 'focus') return pal.muted;
+  if (state.visualMode === 'focus') return pal.muted;
 
   // Overview mode — base audit colour
   return pal.base;
 };
 
-/** Get the hover fill for a county (used in Geography hover style) */
-export const getCountyHoverColor = (geoCountyName: string, counties: County[]): string => {
-  const county = getCountyByName(geoCountyName, counties);
-  if (!county) return '#c8cec9';
-  const key = county.auditStatus ?? county.audit_rating ?? 'B';
-  return (AUDIT_PALETTE[key] || FALLBACK_PAL).hover;
-};
+/** Hover fill for an already-resolved county (used in Geography hover style) */
+export const getCountyHoverFill = (county: County | undefined): string =>
+  county ? paletteFor(county).hover : '#c8cec9';
 
 /* ────────────────── helpers ────────────────── */
 
@@ -124,13 +123,6 @@ export const getFinancialTrend = (county: County): 'excellent' | 'good' | 'fair'
   if (utilization > 80 && debtRatio < 50) return 'good';
   if (utilization > 70) return 'fair';
   return 'poor';
-};
-
-export const getNextAnimationMode = (
-  current: 'slideshow' | 'pulse' | 'wave'
-): 'slideshow' | 'pulse' | 'wave' => {
-  const modes = ['slideshow', 'pulse', 'wave'] as const;
-  return modes[(modes.indexOf(current) + 1) % modes.length];
 };
 
 /* ────────────────── legend items (for header bar) ────────────────── */

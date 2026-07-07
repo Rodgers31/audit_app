@@ -25,19 +25,15 @@ import {
 import { ScenicBackgroundLayout } from '@/components/layout';
 import NewsletterBanner from '@/components/NewsletterBanner';
 import { useCounties } from '@/lib/react-query';
-import { County } from '@/types';
 import { motion } from 'framer-motion';
-import { useState } from 'react';
 
 export default function HomeDashboardClient() {
   /* ── Dynamic county data from the database ── */
   const { data: counties = [] } = useCounties();
 
-  // `hoveredCounty` is deliberately NOT stored here — it's owned by
-  // MapWithDetailPanel so mouse-move events don't re-render the entire
+  // ALL map state (hover, selection, auto-rotate index) is owned by
+  // MapWithDetailPanel so map interactions don't re-render the entire
   // dashboard (SummaryStrip, NationalDebtCard, etc.).
-  const [selectedCounty, setSelectedCounty] = useState<County | null>(null);
-  const [countyIndex, setCountyIndex] = useState(0);
 
   return (
     <ScenicBackgroundLayout
@@ -75,13 +71,7 @@ export default function HomeDashboardClient() {
           {/* ── Map + County Details — unified container ──
               hoveredCounty state is local to this subtree so hover
               doesn't re-render the entire homepage. */}
-          <MapWithDetailPanel
-            counties={counties}
-            selectedCounty={selectedCounty}
-            setSelectedCounty={setSelectedCounty}
-            countyIndex={countyIndex}
-            setCountyIndex={setCountyIndex}
-          />
+          <MapWithDetailPanel counties={counties} />
 
           {/* ── Latest Audit Reports ── */}
           <AuditReportsSection />
