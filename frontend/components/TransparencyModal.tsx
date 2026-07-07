@@ -33,9 +33,11 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
 
   // Calculate transparency metrics. Uses the real OAG rating when the
   // audits pipeline has provided one, otherwise the derived fiscal grade
-  // (budget-utilisation based) — never a fabricated 'B' default.
+  // (budget-utilisation based). No letter-grade default: when neither
+  // exists the score falls back to its neutral base rather than
+  // pretending a "B" rating exists.
   const calculateTransparencyScore = () => {
-    const grade = county.audit_rating || county.fiscal_grade || 'B';
+    const grade = county.audit_rating || county.fiscal_grade || '';
     const budgetUtilization = county.budget_2025 ? 75 : 60; // Mock calculation
     const baseScore = grade === 'A-' ? 85 : grade.startsWith('B+') ? 80 : 75;
     return Math.min(95, baseScore + (budgetUtilization > 80 ? 10 : 0));

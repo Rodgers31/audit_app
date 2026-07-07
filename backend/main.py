@@ -1024,7 +1024,13 @@ async def _startup_sequence() -> None:
 
     # Pre-warm the connection pool so the first real query isn't slow.
     try:
-        with next(get_db()) as db:
+        # SessionLocal directly rather than the get_db() FastAPI
+        # dependency: `next(get_db())` outside DI leaves the generator
+        # suspended, so its finally-close never runs promptly. The
+        # Session context manager owns the full lifecycle here.
+        from database import SessionLocal as _SessionLocal
+
+        with _SessionLocal() as db:
             db.execute(text("SELECT 1"))
         logger.info("Database connection pool warmed up successfully")
     except Exception as e:

@@ -77,8 +77,18 @@ function CustomTooltip({ active, payload, label }: any) {
 }
 
 function useIsMobile(breakpoint = 640) {
-  const [mobile, setMobile] = useState(false);
+  // Lazy initializer: this component is next/dynamic'd with ssr:false,
+  // so window exists on first render — reading matchMedia here avoids
+  // an extra render pass that briefly drew desktop tick density on
+  // phones. The matchMedia guard keeps jsdom-based tests happy.
+  const [mobile, setMobile] = useState<boolean>(
+    () =>
+      typeof window !== 'undefined' &&
+      !!window.matchMedia &&
+      window.matchMedia(`(max-width: ${breakpoint}px)`).matches
+  );
   useEffect(() => {
+    if (!window.matchMedia) return;
     const mq = window.matchMedia(`(max-width: ${breakpoint}px)`);
     setMobile(mq.matches);
     const handler = (e: MediaQueryListEvent) => setMobile(e.matches);
