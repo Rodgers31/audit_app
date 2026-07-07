@@ -61,7 +61,7 @@ export default function NationalDebtCard() {
   const sustainability = apiData?.debt_sustainability || {};
   const riskLevel = sustainability.risk_level || 'High';
   const debtServiceRatio =
-    fiscal?.current?.debt_service_per_shilling ?? sustainability.debt_service_ratio ?? 0;
+    fiscal?.current?.debt_service_per_shilling ?? sustainability.debt_service_ratio ?? null;
 
   const firstYear = debtTimeline[0];
   const lastYear = debtTimeline[debtTimeline.length - 1];
@@ -69,18 +69,22 @@ export default function NationalDebtCard() {
   // Derive headline numbers from the authoritative /debt/national endpoint
   // (loans-table sum — same source /debt page uses) so home and the debt
   // detail page agree. Fall back to the last timeline year only if the
-  // authoritative value is missing.
+  // authoritative value is missing — and to NULL (not 0) when both are
+  // missing: a transparency site rendering "KES 0" national debt during
+  // a backend outage is misinformation, so missing values render as "—"
+  // with an explicit unavailable notice instead.
   const totalDebt =
-    apiData?.total_outstanding ?? apiData?.total_debt ?? (lastYear ? lastYear.total * 1_000_000_000 : 0);
-  const gdpRatio = apiData?.debt_to_gdp_ratio ?? lastYear?.gdpRatio ?? 0;
+    apiData?.total_outstanding ?? apiData?.total_debt ?? (lastYear ? lastYear.total * 1_000_000_000 : null);
+  const gdpRatio = apiData?.debt_to_gdp_ratio ?? lastYear?.gdpRatio ?? null;
   const externalDebt =
-    apiData?.summary?.external_debt ?? (lastYear ? lastYear.external * 1_000_000_000 : 0);
+    apiData?.summary?.external_debt ?? (lastYear ? lastYear.external * 1_000_000_000 : null);
   const domesticDebt =
-    apiData?.summary?.domestic_debt ?? (lastYear ? lastYear.domestic * 1_000_000_000 : 0);
+    apiData?.summary?.domestic_debt ?? (lastYear ? lastYear.domestic * 1_000_000_000 : null);
+  const debtDataMissing = !isLoading && !isTimelineLoading && totalDebt == null;
   // External vs domestic split — shares of (external + domestic) so the two
   // always sum to exactly 100%. Rounding each independently off the total
   // previously produced 100.2% (51.5% + 48.7%).
-  const splitBase = externalDebt + domesticDebt;
+  const splitBase = (externalDebt ?? 0) + (domesticDebt ?? 0);
   const externalPct = splitBase > 0 ? +((externalDebt / splitBase) * 100).toFixed(1) : 0;
   const domesticPct = splitBase > 0 ? +(100 - externalPct).toFixed(1) : 0;
 
@@ -121,6 +125,18 @@ export default function NationalDebtCard() {
         </div>
       </div>
 
+      {/* Data unavailable — shown instead of misleading zeros when neither
+          the national-debt endpoint nor the timeline returned data. */}
+      {debtDataMissing && (
+        <div className='mx-6 sm:mx-8 mt-3 flex items-start gap-2 rounded-lg border border-amber-300/50 bg-amber-50/70 dark:bg-amber-500/10 px-3 py-2'>
+          <AlertTriangle className='w-3.5 h-3.5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0' />
+          <p className='text-[11px] leading-snug text-amber-800 dark:text-amber-200'>
+            Live debt figures are temporarily unavailable. Values below show “—” rather than a
+            misleading zero — please refresh in a moment.
+          </p>
+        </div>
+      )}
+
       {/* Reconciliation divergence — surfaced on home too (audit §2.1/§4), not
           just /debt. Renders only when the two debt sources disagree materially. */}
       {apiData?.reconciliation?.status === 'divergent' && (
@@ -144,7 +160,7 @@ export default function NationalDebtCard() {
           <StatCard
             icon={<Landmark className='w-3.5 h-3.5 text-gov-copper opacity-70' />}
             label={t('home.debt.total_public')}
-            value={fmtKES(totalDebt)}
+            value={totalDebt != null ? fmtKES(totalDebt) : '—'}
             sub={t('home.debt.growth_sub')
               .replace('{x}', String(growthMultiple))
               .replace('{year}', String(firstYear?.year || '—'))}
@@ -158,7 +174,7 @@ export default function NationalDebtCard() {
                 <InfoTip term='debt-to-gdp' size={11} />
               </div>
             }
-            value={`${gdpRatio}%`}
+            value={gdpRatio != null ? `${gdpRatio}%` : '—'}
             sub={t('home.debt.from_year_sub')
               .replace('{pct}', String(firstYear?.gdpRatio ?? '—'))
               .replace('{year}', String(firstYear?.year || '—'))}
@@ -176,7 +192,7 @@ export default function NationalDebtCard() {
                 <InfoTip term='external-debt' size={11} />
               </div>
             }
-            value={fmtKES(externalDebt)}
+            value={externalDebt != null ? fmtKES(externalDebt) : '—'}
             sub={t('home.debt.pct_of_total').replace('{pct}', String(externalPct))}
             accent='forest'
           />
@@ -192,7 +208,7 @@ export default function NationalDebtCard() {
                 <InfoTip term='domestic-debt' size={11} />
               </div>
             }
-            value={fmtKES(domesticDebt)}
+            value={domesticDebt != null ? fmtKES(domesticDebt) : '—'}
             sub={t('home.debt.pct_of_total').replace('{pct}', String(domesticPct))}
             accent='sage'
           />
@@ -265,12 +281,12 @@ export default function NationalDebtCard() {
         <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
           <InsightPill
             icon='🇰🇪'
-            title={t('home.debt.cents_of_revenue').replace('{n}', String(debtServiceRatio))}
+            title={t('home.debt.cents_of_revenue').replace('{n}', String(debtServiceRatio ?? '—'))}
             desc={t('home.debt.insight_service')}
           />
           <InsightPill
             icon='📊'
-            title={`${domesticPct}% / ${externalPct}%`}
+            title={splitBase > 0 ? `${domesticPct}% / ${externalPct}%` : '— / —'}
             desc={t('home.debt.insight_split')}
           />
           <InsightPill

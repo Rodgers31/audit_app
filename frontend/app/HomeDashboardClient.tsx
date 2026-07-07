@@ -22,6 +22,7 @@ import {
   NationalLoansCard,
   SummaryStrip,
 } from '@/components/dashboard';
+import DataFreshnessBadge from '@/components/DataFreshnessBadge';
 import { ScenicBackgroundLayout } from '@/components/layout';
 import NewsletterBanner from '@/components/NewsletterBanner';
 import { useCounties } from '@/lib/react-query';
@@ -59,6 +60,11 @@ export default function HomeDashboardClient() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: 0.4 }}
           className='rounded-2xl bg-white/20 dark:bg-surface-base/60 backdrop-blur-xl border border-white/25 dark:border-white/10 shadow-[0_8px_40px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.4)] p-4 sm:p-6 space-y-6'>
+          {/* ── Data freshness — "as of" date + source, same badge the
+              detail pages use. The homepage is ISR-cached, so this tells
+              visitors exactly how current the headline figures are. ── */}
+          <DataFreshnessBadge sources='CBK/Treasury' variant='inline' />
+
           {/* ── Summary strip ── */}
           <SummaryStrip />
 

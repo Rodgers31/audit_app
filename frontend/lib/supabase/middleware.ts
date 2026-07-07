@@ -18,6 +18,24 @@ function matchesPrefix(pathname: string, prefixes: string[]): boolean {
 }
 
 export async function updateSession(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+
+  /* ── Fast path: anonymous visitor on a public route ──
+   * getUser() costs a network round-trip to Supabase on every request.
+   * A visitor with no sb-* auth cookies has no session to refresh, and
+   * on a non-protected route there is nothing to guard — skip the
+   * Supabase client entirely. This was adding ~0.4–1.0s of TTFB to
+   * every public page view. Protected routes still fall through so the
+   * unauthenticated redirect below keeps working. */
+  const hasAuthCookies = request.cookies
+    .getAll()
+    .some((cookie) => cookie.name.startsWith('sb-'));
+  const isProtectedRoute =
+    matchesPrefix(pathname, AUTH_ROUTES) || matchesPrefix(pathname, ADMIN_ROUTES);
+  if (!hasAuthCookies && !isProtectedRoute) {
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -43,8 +61,6 @@ export async function updateSession(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  const pathname = request.nextUrl.pathname;
 
   /* ── Auth-required routes: redirect unauthenticated users ── */
   if (!user && (matchesPrefix(pathname, AUTH_ROUTES) || matchesPrefix(pathname, ADMIN_ROUTES))) {

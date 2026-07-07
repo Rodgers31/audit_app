@@ -38,6 +38,16 @@ import HomeDashboardClient from './HomeDashboardClient';
  */
 const SSR_TIMEOUT_MS = 5000;
 
+/**
+ * ISR: regenerate the page in the background at most once an hour.
+ * Without this the page is prerendered ONCE at deploy time and the
+ * baked data ages until the next deploy — while the hero claims
+ * "updated nightly". Hourly revalidation keeps the static-CDN speed
+ * (visitors always get the cached copy; regeneration is background)
+ * and caps homepage data staleness at ~1h behind the backend.
+ */
+export const revalidate = 3600;
+
 export default async function HomePage() {
   const queryClient = getQueryClient();
 

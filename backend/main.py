@@ -229,9 +229,11 @@ def _response_meta(
     if scope_detail:
         meta["scope_detail"] = scope_detail
     # Always stamp generated_at so the frontend can render a relative
-    # "Updated X ago" badge without guessing.
+    # "Updated X ago" badge without guessing. Naive-UTC (tzinfo stripped)
+    # so the ``isoformat() + "Z"`` below stays correct — utcnow() itself
+    # is deprecated on Python 3.12 and removed in 3.13.
     if generated_at is None:
-        generated_at = datetime.datetime.utcnow()
+        generated_at = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
     if isinstance(generated_at, datetime.datetime):
         meta["generated_at"] = generated_at.isoformat() + "Z"
     else:
@@ -869,14 +871,10 @@ def run_simple_kenya_etl():
     return results
 
 
-try:
-    # Prefer centralized auth dependencies if available
-    from auth import get_current_user as get_current_user  # noqa: F401
-except Exception:
-
-    def get_current_user():  # type: ignore
-        """Mock authentication dependency (fallback)."""
-        return {"id": 1, "username": "admin"}
+# Supabase-verified auth dependency (legacy HS256 auth.py was removed —
+# it validated against a local SECRET_KEY with a hardcoded fallback and
+# could never verify real Supabase tokens).
+from supabase_auth import get_current_db_user as get_current_user  # noqa: F401
 
 
 # Response models using Pydantic
