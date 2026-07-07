@@ -41,7 +41,7 @@ import re
 import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from urllib.parse import urljoin
+from urllib.parse import quote_plus, urljoin
 
 from ...config import SeedingSettings
 from ...http_client import SeedingHttpClient
@@ -188,7 +188,7 @@ def _discover_audit_pdfs_via_wp_api(
     for term in _WP_MEDIA_SEARCHES:
         api_url = (
             "https://www.oagkenya.go.ke/wp-json/wp/v2/media"
-            f"?per_page=100&search={term.replace(' ', '%20')}"
+            f"?per_page=100&search={quote_plus(term)}"
         )
         try:
             response = client.get(api_url, raise_for_status=True)

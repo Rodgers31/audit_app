@@ -83,10 +83,17 @@ export default function NationalDebtCard() {
   const debtDataMissing = !isLoading && !isTimelineLoading && totalDebt == null;
   // External vs domestic split — shares of (external + domestic) so the two
   // always sum to exactly 100%. Rounding each independently off the total
-  // previously produced 100.2% (51.5% + 48.7%).
+  // previously produced 100.2% (51.5% + 48.7%). The split only exists when
+  // BOTH sides are known — with one side missing, "100% / 0%" rendered
+  // beside an em-dash value would be a fabricated statistic, so the pcts
+  // go null and every consumer renders "—" instead.
+  const splitAvailable =
+    externalDebt != null && domesticDebt != null && externalDebt + domesticDebt > 0;
   const splitBase = (externalDebt ?? 0) + (domesticDebt ?? 0);
-  const externalPct = splitBase > 0 ? +((externalDebt / splitBase) * 100).toFixed(1) : 0;
-  const domesticPct = splitBase > 0 ? +(100 - externalPct).toFixed(1) : 0;
+  const externalPct = splitAvailable
+    ? +(((externalDebt ?? 0) / splitBase) * 100).toFixed(1)
+    : null;
+  const domesticPct = externalPct != null ? +(100 - externalPct).toFixed(1) : null;
 
   // IMF's "General Government Gross Debt" — the broader figure that
   // includes counties, SOEs, pending bills + arrears. Shown here as a
@@ -193,7 +200,11 @@ export default function NationalDebtCard() {
               </div>
             }
             value={externalDebt != null ? fmtKES(externalDebt) : '—'}
-            sub={t('home.debt.pct_of_total').replace('{pct}', String(externalPct))}
+            sub={
+              externalPct != null
+                ? t('home.debt.pct_of_total').replace('{pct}', String(externalPct))
+                : '—'
+            }
             accent='forest'
           />
           <StatCard
@@ -209,7 +220,11 @@ export default function NationalDebtCard() {
               </div>
             }
             value={domesticDebt != null ? fmtKES(domesticDebt) : '—'}
-            sub={t('home.debt.pct_of_total').replace('{pct}', String(domesticPct))}
+            sub={
+              domesticPct != null
+                ? t('home.debt.pct_of_total').replace('{pct}', String(domesticPct))
+                : '—'
+            }
             accent='sage'
           />
         </div>
@@ -286,7 +301,11 @@ export default function NationalDebtCard() {
           />
           <InsightPill
             icon='📊'
-            title={splitBase > 0 ? `${domesticPct}% / ${externalPct}%` : '— / —'}
+            title={
+              domesticPct != null && externalPct != null
+                ? `${domesticPct}% / ${externalPct}%`
+                : '— / —'
+            }
             desc={t('home.debt.insight_split')}
           />
           <InsightPill
