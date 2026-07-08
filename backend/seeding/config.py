@@ -85,6 +85,48 @@ class SeedingSettings(BaseSettings):
         default=True,
         description="Whether HTTP client should automatically follow redirects.",
     )
+    # ── Large-PDF streaming download + cross-run PDF cache ─────────────
+    # Government BIRR/audit PDFs are 12-50MB and the COB CDN's throughput
+    # swings wildly night to night (the same 48MB county file measured
+    # ~50s one night and ~556s the next). The two guards below stop a
+    # slow-CDN night from consuming the whole per-domain SIGALRM budget
+    # and aborting the run mid-parse (issue #119).
+    pdf_download_timeout_seconds: float = Field(
+        default=180.0,
+        ge=1.0,
+        description=(
+            "TOTAL wall-clock cap for a single streamed large-PDF download. "
+            "Unlike timeout_seconds (a per-operation httpx timeout — the max "
+            "gap between chunks), this bounds the whole transfer, so a "
+            "slow-but-steady trickle cannot run unbounded. On breach the "
+            "downloader raises a plain Exception and the domain falls back to "
+            "its fixture instead of the per-domain budget aborting mid-parse. "
+            "Kept well under domain_timeout_seconds (600s) minus the ~254s a "
+            "county-PDF parse needs."
+        ),
+    )
+    pdf_download_max_bytes: int = Field(
+        default=120 * 1024 * 1024,
+        ge=1,
+        description=(
+            "Defensive size ceiling for a streamed PDF download. COB county "
+            "BIRR PDFs are ~48MB; 120MB leaves headroom while still catching "
+            "a runaway or wrong-content-type body before it fills the disk."
+        ),
+    )
+    pdf_cache_ttl_seconds: int = Field(
+        default=30 * 86_400,
+        ge=0,
+        description=(
+            "How long a downloaded source PDF stays reusable in the on-disk "
+            "PDF cache. A published BIRR report is immutable for a quarter, so "
+            "30 days lets a slow-CDN night reuse the last good download instead "
+            "of re-pulling ~48MB; when COB publishes the next report its URL "
+            "changes and the stale entry is simply never requested again. "
+            "Persist the cache dir across CI runs (actions/cache) for this to "
+            "help the nightly job. 0 disables the PDF cache."
+        ),
+    )
     population_dataset_url: str = Field(
         default="file://seeding/real_data/population.json",
         description=(

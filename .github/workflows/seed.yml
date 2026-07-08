@@ -255,6 +255,22 @@ jobs:
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq tesseract-ocr poppler-utils
       - run: pip install --upgrade pip && pip install -r backend/requirements.txt
 
+      # Persist downloaded source PDFs across runs. The COB county BIRR PDF is
+      # ~48MB and the CDN's throughput swings wildly (measured 50s → 556s for
+      # the same file); once a report is fetched, later runs reuse the cached
+      # copy and skip the download entirely, so a slow-CDN night can't eat the
+      # per-domain budget and abort the run (issue #119). The run-id key with a
+      # rolling restore-key means every run saves its (possibly newer) snapshot
+      # and always restores the most recent prior one — so a newly published
+      # report is picked up the first night and cached from then on.
+      - name: Cache downloaded source PDFs
+        uses: actions/cache@v4
+        with:
+          path: backend/data/seeding/cache/pdfs
+          key: seed-pdf-cache-${{ github.run_id }}
+          restore-keys: |
+            seed-pdf-cache-
+
       - name: Seed all domains
         if: github.event.inputs.domain == '' || github.event.inputs.domain == null
         # Step-level cap below the job's 30-min timeout so the
