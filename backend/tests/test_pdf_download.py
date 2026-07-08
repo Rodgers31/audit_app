@@ -11,6 +11,7 @@ Locks in the two guards added for issue #119:
 
 from __future__ import annotations
 
+from pathlib import Path
 from unittest.mock import patch
 
 import httpx
@@ -159,6 +160,41 @@ class TestGetOrDownloadPdf:
 
         # No cached .pdf, and no leftover temp files poisoning the dir.
         assert list(cache_dir.glob("*.pdf")) == []
+
+    def test_metadata_write_failure_does_not_discard_download(self, settings):
+        """A failed sidecar write must not turn a successful download into an
+        exception (which the domain would treat as a reason to fall back to the
+        fixture). The PDF stays available; only the cache bookkeeping is lost
+        (Copilot #120)."""
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, content=_PDF_BODY, request=request)
+
+        url = "https://cob.go.ke/download/county-birr?wpdmdl=16378"
+        cache_dir = self._cache_dir(settings)
+        real_write_text = Path.write_text
+
+        def flaky_write_text(self, *args, **kwargs):
+            # Only the JSON sidecar uses write_text; the PDF is streamed to disk
+            # and os.replace-d, so this targets the metadata write alone.
+            if self.suffix == ".json":
+                raise OSError("simulated disk full")
+            return real_write_text(self, *args, **kwargs)
+
+        with _make_client(settings, handler) as client:
+            with patch.object(Path, "write_text", flaky_write_text):
+                pdf_path = get_or_download_pdf(
+                    client,
+                    url,
+                    cache_dir=cache_dir,
+                    ttl_seconds=30 * 86_400,
+                    max_seconds=180,
+                )
+
+        assert pdf_path.exists()
+        assert pdf_path.read_bytes() == _PDF_BODY
+        # No sidecar written → the next run just re-downloads (cache miss).
+        assert list(cache_dir.glob("*.json")) == []
 
     def test_expired_entry_triggers_redownload(self, settings):
         calls = {"n": 0}

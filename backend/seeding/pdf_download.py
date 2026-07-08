@@ -149,10 +149,20 @@ def get_or_download_pdf(
         tmp_path.unlink(missing_ok=True)
         raise
 
-    meta_path.write_text(
-        json.dumps({"url": url, "created_at": time.time(), "bytes": size}),
-        encoding="utf-8",
-    )
+    # Metadata is best-effort. The PDF is already safely in place, so a failed
+    # sidecar write must NOT turn a successful download into an exception (which
+    # the domain would catch and fall back to the fixture for). Without the
+    # sidecar the next run simply treats it as a cache miss and re-downloads.
+    try:
+        meta_path.write_text(
+            json.dumps({"url": url, "created_at": time.time(), "bytes": size}),
+            encoding="utf-8",
+        )
+    except OSError as exc:
+        logger.warning(
+            "PDF cached but metadata sidecar write failed (%s); next run will "
+            "re-download: %s", exc, pdf_path,
+        )
     logger.info("PDF downloaded and cached (%d bytes): %s", size, pdf_path)
     return pdf_path
 
