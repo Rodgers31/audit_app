@@ -12,7 +12,7 @@ quarterly NG-BIRR reports.
 from __future__ import annotations
 
 import logging
-import tempfile
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -86,7 +86,7 @@ def _fetch_from_cob_ng_pdf(
         return None
 
     logger.info("Downloading COB NG-BIRR PDF: %s", pdf_url)
-    return _download_and_parse_ng_pdf(client, pdf_url)
+    return _download_and_parse_ng_pdf(client, pdf_url, settings)
 
 
 _NG_BIRR_KEYWORDS = (
@@ -112,7 +112,7 @@ def _discover_latest_ng_birr_pdf(
 
 
 def _download_and_parse_ng_pdf(
-    client: SeedingHttpClient, pdf_url: str
+    client: SeedingHttpClient, pdf_url: str, settings: SeedingSettings
 ) -> Optional[List[Dict[str, Any]]]:
     """Download a COB NG-BIRR PDF, parse it, return budget execution records.
 
@@ -126,24 +126,34 @@ def _download_and_parse_ng_pdf(
     they include ``start_date``/``end_date`` (the writer keys
     ``BudgetLine`` on entity+period+category+subcategory).
     """
-    tmp_path: Optional[Path] = None
     try:
         from .pdf_parser import NgBirrSectoralParser
+        from ...pdf_download import get_or_download_pdf
 
-        response = client.get(pdf_url, raise_for_status=True)
-
-        with tempfile.NamedTemporaryFile(
-            suffix=".pdf", delete=False, prefix="cob_ng_birr_"
-        ) as tmp:
-            tmp.write(response.content)
-            tmp_path = Path(tmp.name)
+        # get_or_download_pdf enforces a TOTAL wall-clock cap on the transfer
+        # (not httpx's per-chunk timeout, which a slow-but-steady body never
+        # trips) and reuses a cached copy across runs. So a slow-CDN night
+        # either reuses the last good download or bails to the fixture,
+        # instead of eating the 600s domain budget and aborting mid-parse
+        # (issue #119) — same guard the counties_budget domain uses.
+        logger.info("Starting COB NG-BIRR PDF download: %s", pdf_url)
+        download_start = time.monotonic()
+        pdf_path = get_or_download_pdf(
+            client,
+            pdf_url,
+            cache_dir=Path(settings.cache_path) / "pdfs",
+            ttl_seconds=settings.pdf_cache_ttl_seconds,
+            max_seconds=settings.pdf_download_timeout_seconds,
+            max_bytes=settings.pdf_download_max_bytes,
+        )
+        download_elapsed = time.monotonic() - download_start
 
         logger.info(
-            "Downloaded COB NG-BIRR PDF (%d bytes) to %s",
-            len(response.content), tmp_path,
+            "COB NG-BIRR PDF ready (%d bytes, %.1fs) at %s",
+            pdf_path.stat().st_size, download_elapsed, pdf_path,
         )
 
-        parser = NgBirrSectoralParser(tmp_path)
+        parser = NgBirrSectoralParser(pdf_path)
         period, sectoral_records = parser.parse()
 
         if not sectoral_records:
@@ -188,9 +198,5 @@ def _download_and_parse_ng_pdf(
             "pdfplumber not available — install it for live NG-BIRR parsing"
         )
         return None
-    finally:
-        if tmp_path and tmp_path.exists():
-            try:
-                tmp_path.unlink()
-            except OSError:
-                pass
+    # No temp-file cleanup: get_or_download_pdf() returns a path in the
+    # persistent PDF cache (reused across runs), so it must NOT be unlinked.

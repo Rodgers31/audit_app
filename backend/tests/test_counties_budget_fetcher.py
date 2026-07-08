@@ -20,7 +20,7 @@ import httpx
 import pytest
 from seeding.config import SeedingSettings
 from seeding.domains.counties_budget import fetcher as cb_fetcher
-from seeding.http_client import SeedingHttpClient
+from seeding.http_client import PdfDownloadError, SeedingHttpClient
 
 
 @pytest.fixture()
@@ -424,3 +424,35 @@ class TestFetchBudgetPayloadStrategyOrder:
         assert not any(
             "/publications/" in u or "/reports/" in u for u in seen_urls
         )
+
+
+class TestSlowDownloadFallsBackToFixture:
+    """Issue #119: a slow-CDN PDF download must fall back to the fixture, not
+    hard-fail the domain. The download cap raises a plain PdfDownloadError,
+    which fetch_budget_payload's `except Exception` catches — unlike the CLI's
+    DomainTimeoutError (a BaseException) which would abort the whole run."""
+
+    def test_download_timeout_recovers_via_fixture(self, settings):
+        def handler(request: httpx.Request) -> httpx.Response:
+            # Discovery/probe traffic is stubbed out below; nothing should
+            # actually reach the network for the download itself.
+            return httpx.Response(200, json=[], request=request)
+
+        fake_pdf_url = "https://cob.go.ke/download/county-birr?wpdmdl=16378"
+        with _make_client(settings, handler) as client:
+            with patch.object(
+                cb_fetcher,
+                "_discover_latest_county_birr_via_wp_api",
+                return_value=fake_pdf_url,
+            ), patch.object(
+                client,
+                "download_to_file",
+                side_effect=PdfDownloadError(
+                    "download exceeded 180s wall-clock cap after 4096 bytes"
+                ),
+            ):
+                payload = cb_fetcher.fetch_budget_payload(client, settings)
+
+        # Recovered cleanly with real fixture rows — no exception propagated.
+        assert isinstance(payload, list)
+        assert len(payload) > 0

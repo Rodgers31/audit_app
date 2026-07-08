@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import logging
 import re
-import tempfile
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -202,7 +201,7 @@ def _fetch_from_cob_county_pdf(
         return None
 
     logger.info("Downloading COB county BIRR PDF: %s", pdf_url)
-    return _download_and_parse_county_pdf(client, pdf_url)
+    return _download_and_parse_county_pdf(client, pdf_url, settings)
 
 
 def _discover_latest_county_birr_via_wp_api(
@@ -425,57 +424,51 @@ def _discover_latest_county_birr_pdf(
 
 
 def _download_and_parse_county_pdf(
-    client: SeedingHttpClient, pdf_url: str
+    client: SeedingHttpClient, pdf_url: str, settings: SeedingSettings
 ) -> Optional[List[Dict[str, Any]]]:
     """Download a COB county BIRR PDF, parse it, return budget records."""
-    tmp_path: Optional[Path] = None
     try:
         from ...pdf_parsers import CoBQuarterlyReportParser
+        from ...pdf_download import get_or_download_pdf
 
         # Use a browser-shaped UA for the PDF download — the same CDN
         # rule that rejects the HTML landing with 415 can block `*/*`
         # downloads too. `Accept: application/pdf` is what real browsers
         # send on direct-PDF clicks.
-        #
-        # Timeout: COB BIRR PDFs are ~30-50MB and the CDN is slow —
-        # measured ~45s end-to-end in production. The default seeder
-        # timeout (30s) times out here, so extend to 180s for this
-        # single request only.
         pdf_headers = {
             "User-Agent": _BROWSER_UA,
             "Accept": "application/pdf,*/*;q=0.8",
         }
-        # Explicit phase logging — this domain stalled in CI without any
-        # signal between fetch-start and job timeout, so we couldn't tell
-        # whether the CDN was slow or the parser hung. The download and
-        # parse lines below bracket each phase and time them so future
-        # stalls point at the real culprit.
+        # get_or_download_pdf enforces a TOTAL wall-clock cap on the transfer
+        # (not httpx's per-chunk timeout, which a slow-but-steady 48MB body
+        # never trips) and reuses a cached copy across runs. So a slow-CDN
+        # night either reuses the last good download or bails to the fixture,
+        # instead of eating the 600s domain budget and aborting mid-parse
+        # (issue #119). Phase logging brackets each phase so a future stall
+        # still points at the real culprit (CDN vs parser).
         logger.info("Starting COB county BIRR PDF download: %s", pdf_url)
         download_start = time.monotonic()
-        response = client.get(
+        pdf_path = get_or_download_pdf(
+            client,
             pdf_url,
-            raise_for_status=True,
+            cache_dir=Path(settings.cache_path) / "pdfs",
+            ttl_seconds=settings.pdf_cache_ttl_seconds,
+            max_seconds=settings.pdf_download_timeout_seconds,
+            max_bytes=settings.pdf_download_max_bytes,
             headers=pdf_headers,
-            timeout=180.0,
         )
         download_elapsed = time.monotonic() - download_start
 
-        with tempfile.NamedTemporaryFile(
-            suffix=".pdf", delete=False, prefix="cob_county_birr_"
-        ) as tmp:
-            tmp.write(response.content)
-            tmp_path = Path(tmp.name)
-
         logger.info(
-            "Downloaded COB county BIRR PDF (%d bytes, %.1fs) to %s",
-            len(response.content),
+            "COB county BIRR PDF ready (%d bytes, %.1fs) at %s",
+            pdf_path.stat().st_size,
             download_elapsed,
-            tmp_path,
+            pdf_path,
         )
 
-        logger.info("Parsing COB county BIRR PDF: %s", tmp_path)
+        logger.info("Parsing COB county BIRR PDF: %s", pdf_path)
         parse_start = time.monotonic()
-        parser = CoBQuarterlyReportParser(tmp_path)
+        parser = CoBQuarterlyReportParser(pdf_path)
         parsed_records = parser.parse()
         parse_elapsed = time.monotonic() - parse_start
         logger.info(
@@ -563,12 +556,8 @@ def _download_and_parse_county_pdf(
             "install pdfplumber for live PDF parsing"
         )
         return None
-    finally:
-        if tmp_path and tmp_path.exists():
-            try:
-                tmp_path.unlink()
-            except OSError:
-                pass
+    # No temp-file cleanup: get_or_download_pdf() returns a path in the
+    # persistent PDF cache (reused across runs), so it must NOT be unlinked.
 
 
 __all__ = ["fetch_budget_payload"]

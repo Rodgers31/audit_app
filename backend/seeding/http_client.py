@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 import logging
+import os
+import tempfile
+import time
 from contextlib import AbstractContextManager
-from typing import Any, Optional
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 import httpx
 from tenacity import (
@@ -20,6 +24,16 @@ from .rate_limiter import RateLimiter
 from .storage import SimpleHTTPCache
 
 logger = logging.getLogger("seeding.http")
+
+
+class PdfDownloadError(Exception):
+    """A streamed PDF download failed (timeout, oversize, or non-PDF body).
+
+    Deliberately a plain ``Exception`` — unlike the CLI's ``DomainTimeoutError``
+    (a ``BaseException``) — so a domain fetcher's ``except Exception`` fixture
+    fallback catches it and recovers cleanly, instead of the per-domain SIGALRM
+    firing mid-parse and hard-failing the whole run (issue #119).
+    """
 
 
 def _is_retryable(exception: BaseException) -> bool:
@@ -140,6 +154,86 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
 
     def head(self, url: str, **kwargs: Any) -> httpx.Response:
         return self.request("HEAD", url, **kwargs)
+
+    def download_to_file(
+        self,
+        url: str,
+        dest_path: Path,
+        *,
+        max_seconds: float,
+        max_bytes: Optional[int] = None,
+        headers: Optional[Dict[str, str]] = None,
+        raise_for_status: bool = True,
+    ) -> int:
+        """Stream a GET body to ``dest_path`` under a TOTAL wall-clock cap.
+
+        Returns the number of bytes written. Raises :class:`PdfDownloadError`
+        if the full body is not received within ``max_seconds`` or if it
+        exceeds ``max_bytes``.
+
+        Writes atomically: the body streams to a sibling temp file that is
+        ``os.replace``-d into ``dest_path`` only after the full transfer
+        succeeds, and the temp is removed on any failure. So a timeout,
+        byte-cap breach, or transport error never leaves a truncated file at
+        ``dest_path`` for a later run to mistake for a complete download.
+
+        Why not ``request()``: ``request()`` reads the whole body eagerly with
+        httpx's *per-operation* timeout — a read timeout only bounds the gap
+        *between* chunks, so a slow-but-steady 48MB body streams for minutes
+        without ever tripping it. This streams chunk-by-chunk and checks a
+        monotonic deadline each iteration, so total elapsed time is bounded.
+
+        Single attempt, no tenacity retry: re-pulling a large, already-slow
+        body on a transient error would blow the very budget this guards. The
+        per-operation timeout below still fails a fully-stalled socket fast;
+        the loop deadline handles a slow trickle.
+        """
+        dest = Path(dest_path)
+        request_headers = dict(headers or {})
+        # Fail a dead connection fast (no bytes at all / no handshake), but let
+        # a slow steady stream run up to the wall-clock cap the loop enforces.
+        per_op = min(float(max_seconds), 30.0)
+        timeout = httpx.Timeout(per_op, connect=min(float(max_seconds), 15.0))
+        start = time.monotonic()
+        written = 0
+        # Stream to a sibling temp and atomically promote on success so a
+        # partial transfer never lands at dest_path (see docstring).
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        fd, tmp_name = tempfile.mkstemp(
+            prefix=dest.name + ".", suffix=".part", dir=str(dest.parent)
+        )
+        os.close(fd)
+        tmp = Path(tmp_name)
+        try:
+            with self._rate_limiter.context():
+                with self._client.stream(
+                    "GET", url, headers=request_headers, timeout=timeout
+                ) as response:
+                    if raise_for_status:
+                        response.raise_for_status()
+                    with tmp.open("wb") as handle:
+                        for chunk in response.iter_bytes():
+                            if time.monotonic() - start > max_seconds:
+                                raise PdfDownloadError(
+                                    f"download exceeded {max_seconds:.0f}s "
+                                    f"wall-clock cap after {written} bytes: {url}"
+                                )
+                            if (
+                                max_bytes is not None
+                                and written + len(chunk) > max_bytes
+                            ):
+                                raise PdfDownloadError(
+                                    f"download exceeded {max_bytes}-byte cap: {url}"
+                                )
+                            handle.write(chunk)
+                            written += len(chunk)
+            os.replace(tmp, dest)
+        except BaseException:
+            # Clean up the partial temp on ANY failure (incl. a SIGALRM-driven
+            # BaseException) — then re-raise unchanged.
+            tmp.unlink(missing_ok=True)
+            raise
+        return written
 
 
 def create_http_client(settings: SeedingSettings) -> SeedingHttpClient:
