@@ -17,19 +17,21 @@ keyword filter); the per-category listings
 /financial-audit-reports/) are JS-rendered and don't expose PDFs in
 raw HTML.
 
-Two paths to actually solve this, both larger scope than this file:
+Both solutions to that are now implemented here:
 
-* Add an OCR pipeline (pytesseract + pdf2image, plus
-  apt-installed tesseract-ocr + poppler-utils in CI). Heavy on
-  runtime — OCR is ~2-5 sec/page and an OAG report is 100+ pages.
-* JS-render the per-category listing pages with Playwright to find
-  text-based PDFs — assumes any exist; we haven't confirmed.
+* OCR (pytesseract + pdf2image, page-capped via
+  ``audits_ocr_max_pages``) behind ``SEED_AUDITS_OCR_ENABLED`` —
+  the seed workflow apt-installs tesseract-ocr + poppler-utils and
+  enables it; local runs default off.
+* PDF discovery via the OAG WordPress REST API
+  (/wp-json/wp/v2/media — plain JSON, no JS rendering needed),
+  with the homepage href-scrape as fallback.
 
-Until one of those lands, the live path here will keep returning
-None and the fixture is authoritative. The "no extractable text"
-log used to fire as WARNING; it's INFO now because the fallback
-works correctly and a real warning would be misleading on every
-nightly run.
+The fixture fallback is intentionally EMPTY: the previous
+512-record fixture was template-generated ("Ghost workers detected
+- KES …") while labelled official — fabricated findings must never
+seed a transparency site. Until OCR extraction lands real
+opinions, the audits domain seeding nothing is the honest state.
 """
 
 from __future__ import annotations
@@ -39,7 +41,7 @@ import re
 import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from urllib.parse import urljoin
+from urllib.parse import quote_plus, urljoin
 
 from ...config import SeedingSettings
 from ...http_client import SeedingHttpClient
@@ -118,25 +120,34 @@ def _fetch_from_oag(
     The OAG website lists PDF reports. We look for county and national
     audit report PDFs, download, and attempt to extract findings.
     """
-    # Try multiple URLs since OAG restructures their site periodically
-    html = None
-    page_url = _OAG_REPORTS_URLS[0]
-    for url in _OAG_REPORTS_URLS:
-        try:
-            logger.info("Fetching OAG reports page: %s", url)
-            response = client.get(url, raise_for_status=True)
-            html = response.text
-            page_url = url
-            break
-        except Exception as exc:
-            logger.warning("Could not reach OAG at %s: %s", url, exc)
+    # Strategy 1a: the OAG site is WordPress and exposes the WP REST API
+    # (probed 2026-07-07: /wp-json/wp/v2/media answers 200). Unlike the
+    # JS-rendered per-category listing pages, the media API returns
+    # attachment records — including PDFs — in plain JSON, so report
+    # discovery doesn't depend on scraping rendered HTML.
+    pdf_urls = _discover_audit_pdfs_via_wp_api(client)
 
-    if not html:
-        logger.warning("Could not reach OAG website at any known URL")
-        return None
+    # Strategy 1b: fall back to regex-scraping the homepage / legacy
+    # reports page for direct PDF hrefs.
+    if not pdf_urls:
+        html = None
+        page_url = _OAG_REPORTS_URLS[0]
+        for url in _OAG_REPORTS_URLS:
+            try:
+                logger.info("Fetching OAG reports page: %s", url)
+                response = client.get(url, raise_for_status=True)
+                html = response.text
+                page_url = url
+                break
+            except Exception as exc:
+                logger.warning("Could not reach OAG at %s: %s", url, exc)
 
-    # Find audit report PDF links
-    pdf_urls = _discover_audit_pdfs(html, page_url)
+        if not html:
+            logger.warning("Could not reach OAG website at any known URL")
+            return None
+
+        pdf_urls = _discover_audit_pdfs(html, page_url)
+
     if not pdf_urls:
         logger.warning("No audit report PDFs found on OAG website")
         return None
@@ -145,7 +156,7 @@ def _fetch_from_oag(
     all_findings: List[Dict[str, Any]] = []
     for pdf_url in pdf_urls[:3]:  # try up to 3 reports
         try:
-            findings = _download_and_parse_audit_pdf(client, pdf_url)
+            findings = _download_and_parse_audit_pdf(client, pdf_url, settings)
             if findings:
                 all_findings.extend(findings)
         except Exception as exc:
@@ -157,6 +168,59 @@ def _fetch_from_oag(
         return all_findings
 
     return None
+
+
+# WP media search terms tried in order; each targets a naming pattern the
+# OAG uses for uploaded report PDFs. Results are merged + de-duplicated.
+_WP_MEDIA_SEARCHES = ("county", "audit report", "financial statements")
+
+
+def _discover_audit_pdfs_via_wp_api(
+    client: SeedingHttpClient,
+) -> List[str]:
+    """Discover audit-report PDF URLs via the OAG WordPress media API.
+
+    Best-effort: any HTTP/JSON failure returns [] so the caller falls
+    back to homepage scraping.
+    """
+    discovered: List[str] = []
+    seen: set = set()
+    for term in _WP_MEDIA_SEARCHES:
+        api_url = (
+            "https://www.oagkenya.go.ke/wp-json/wp/v2/media"
+            f"?per_page=100&search={quote_plus(term)}"
+        )
+        try:
+            response = client.get(api_url, raise_for_status=True)
+            items = response.json()
+        except Exception as exc:
+            logger.info("OAG WP media API query failed (%s): %s", term, exc)
+            continue
+        if not isinstance(items, list):
+            continue
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            if item.get("mime_type") != "application/pdf":
+                continue
+            url = item.get("source_url") or ""
+            if not url or url in seen:
+                continue
+            seen.add(url)
+            discovered.append(url)
+    if discovered:
+        logger.info(
+            "OAG WP media API discovered %d audit-candidate PDFs",
+            len(discovered),
+        )
+        # Keep the audit-keyword filter consistent with the HTML path.
+        filtered = [
+            u
+            for u in discovered
+            if any(kw in u.lower() for kw in ("audit", "county", "financial"))
+        ]
+        return filtered or discovered
+    return []
 
 
 def _discover_audit_pdfs(html: str, base_url: str) -> List[str]:
@@ -194,9 +258,16 @@ def _discover_audit_pdfs(html: str, base_url: str) -> List[str]:
 
 
 def _download_and_parse_audit_pdf(
-    client: SeedingHttpClient, pdf_url: str
+    client: SeedingHttpClient,
+    pdf_url: str,
+    settings: SeedingSettings,
 ) -> Optional[List[Dict[str, Any]]]:
-    """Download and attempt to parse an OAG audit report PDF."""
+    """Download and attempt to parse an OAG audit report PDF.
+
+    Embedded-text extraction first (pdfplumber); when the PDF is a
+    scanned image (OAG's norm) and ``audits_ocr_enabled`` is on, fall
+    back to OCR via pdf2image + pytesseract.
+    """
     tmp_path: Optional[Path] = None
     try:
         # Try to use pdfplumber for text extraction
@@ -232,19 +303,27 @@ def _download_and_parse_audit_pdf(
                 if text:
                     full_text += text + "\n"
 
-            if not full_text.strip():
-                # OAG publishes scanned-image PDFs — see module docstring
-                # for the full context and the OCR / Playwright paths
-                # required to actually fix this. INFO not WARNING so the
-                # log doesn't suggest a new fault on every nightly run.
+        if not full_text.strip():
+            if settings.audits_ocr_enabled:
+                full_text = _ocr_pdf_text(
+                    tmp_path, max_pages=settings.audits_ocr_max_pages
+                )
+            else:
+                # OAG publishes scanned-image PDFs — enable
+                # SEED_AUDITS_OCR_ENABLED (and install tesseract-ocr +
+                # poppler-utils) to extract them. INFO not WARNING so
+                # the log doesn't suggest a new fault on every run.
                 logger.info(
                     "PDF appears to contain no extractable text "
-                    "(scanned image; OCR not configured)"
+                    "(scanned image; OCR disabled)"
                 )
                 return None
 
-            # Extract audit findings using pattern matching
-            findings = _extract_findings_from_text(full_text, pdf_url)
+        if not full_text.strip():
+            return None
+
+        # Extract audit findings using pattern matching
+        findings = _extract_findings_from_text(full_text, pdf_url)
 
         return findings if findings else None
 
@@ -254,6 +333,59 @@ def _download_and_parse_audit_pdf(
                 tmp_path.unlink()
             except OSError:
                 pass
+
+
+def _ocr_pdf_text(pdf_path: Path, max_pages: int = 30) -> str:
+    """OCR a scanned PDF into text (pdf2image + pytesseract).
+
+    Returns "" when the OCR stack isn't installed or fails — callers
+    treat that identically to a text-less PDF. Pages are rendered one
+    at a time (not the whole document) so a 700-page report doesn't
+    hold hundreds of rasterised pages in memory.
+    """
+    try:
+        import pytesseract
+        from pdf2image import convert_from_path, pdfinfo_from_path
+    except ImportError:
+        logger.warning(
+            "OCR requested but pytesseract/pdf2image not installed — "
+            "pip install pytesseract pdf2image (plus system "
+            "tesseract-ocr and poppler-utils)"
+        )
+        return ""
+
+    try:
+        info = pdfinfo_from_path(pdf_path)
+        total_pages = int(info.get("Pages", 0)) or 1
+    except Exception as exc:
+        logger.warning("OCR: could not read PDF info: %s", exc)
+        return ""
+
+    pages_to_read = min(total_pages, max_pages)
+    logger.info(
+        "OCR: extracting %d/%d pages from %s",
+        pages_to_read,
+        total_pages,
+        pdf_path.name,
+    )
+
+    chunks: List[str] = []
+    for page_no in range(1, pages_to_read + 1):
+        try:
+            images = convert_from_path(
+                pdf_path, dpi=200, first_page=page_no, last_page=page_no
+            )
+            for image in images:
+                text = pytesseract.image_to_string(image)
+                if text.strip():
+                    chunks.append(text)
+        except Exception as exc:
+            logger.warning("OCR failed on page %d: %s", page_no, exc)
+            break
+
+    text = "\n".join(chunks)
+    logger.info("OCR: extracted %d characters", len(text))
+    return text
 
 
 def _extract_findings_from_text(

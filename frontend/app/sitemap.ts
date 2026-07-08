@@ -1,6 +1,6 @@
 import { MetadataRoute } from 'next';
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://auditgava.co.ke';
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.auditgava.com';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();

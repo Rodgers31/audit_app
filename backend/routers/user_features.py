@@ -14,8 +14,8 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from auth import get_current_user
 from database import get_db
+from supabase_auth import get_current_db_user as get_current_user
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from models import DataAlert, NewsletterSubscriber, User, WatchlistItem
 from pydantic import ConfigDict, BaseModel, EmailStr, Field

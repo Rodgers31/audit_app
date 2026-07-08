@@ -1,16 +1,14 @@
 /**
  * MapWithDetailPanel
  *
- * Isolates the InteractiveKenyaMap + CountyDetailsPanel pair so that the
- * high-frequency `hoveredCounty` state stays local to this subtree.
- * Previously this state lived on the homepage root, which meant every
- * mouse-move on the map re-rendered SummaryStrip, NationalDebtCard,
- * AuditReportsSection, and the rest of the dashboard — an expensive cascade
- * for purely cosmetic hover feedback.
- *
- * The parent still owns `selectedCounty` (click) and `countyIndex`
- * (auto-rotate carousel) because those have semantic meaning across the
- * whole page, but `hoveredCounty` is ephemeral to this pair of components.
+ * Isolates the InteractiveKenyaMap + CountyDetailsPanel pair so that ALL
+ * map-driven state (`hoveredCounty`, `selectedCounty`, `countyIndex`)
+ * stays local to this subtree. This state used to live on the homepage
+ * root, which meant every county tap and every 8s auto-rotate tick
+ * re-rendered SummaryStrip, NationalDebtCard, AuditReportsSection, and
+ * the rest of the dashboard — an expensive cascade that showed up as
+ * multi-second INP on low-end mobile devices. Nothing outside this pair
+ * consumes the selection, so the state lives here.
  */
 'use client';
 
@@ -31,20 +29,12 @@ const InteractiveKenyaMap = dynamic(() => import('@/components/InteractiveKenyaM
 
 interface MapWithDetailPanelProps {
   counties: County[];
-  selectedCounty: County | null;
-  setSelectedCounty: (c: County | null) => void;
-  countyIndex: number;
-  setCountyIndex: (i: number) => void;
 }
 
-export default function MapWithDetailPanel({
-  counties,
-  selectedCounty,
-  setSelectedCounty,
-  countyIndex,
-  setCountyIndex,
-}: MapWithDetailPanelProps) {
+export default function MapWithDetailPanel({ counties }: MapWithDetailPanelProps) {
   const [hoveredCounty, setHoveredCounty] = useState<County | null>(null);
+  const [selectedCounty, setSelectedCounty] = useState<County | null>(null);
+  const [countyIndex, setCountyIndex] = useState(0);
 
   const handleCountyHover = useCallback((county: County | null) => {
     setHoveredCounty(county);

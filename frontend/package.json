@@ -37,7 +37,7 @@
     "minisearch": "^7.2.0",
     "next": "^15.5.19",
     "numeral": "^2.0.6",
-    "postcss": "^8.4.0",
+    "postcss": "^8.5.10",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-simple-maps": "^3.0.0",
@@ -68,6 +68,7 @@
     "d3-color": "^3.1.0",
     "fast-uri": "^3.1.2",
     "path-to-regexp": "^8.0.0",
+    "postcss": "^8.5.10",
     "protobufjs": "^7.5.6"
   }
 }

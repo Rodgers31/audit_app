@@ -47,8 +47,12 @@ import httpx
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
 import supabase_admin
+from database import get_db
+from models import User
 
 _security = HTTPBearer(auto_error=True)
 
@@ -232,3 +236,69 @@ def require_admin(current_user: AdminUser = Depends(get_current_user)) -> AdminU
             detail="Admin role required",
         )
     return current_user
+
+
+# Sentinel stored in users.password_hash for rows created from Supabase
+# identities. Never a valid bcrypt hash, so legacy password verification
+# can never succeed against it.
+_SUPABASE_MANAGED_PASSWORD = "!supabase-managed"
+
+
+def get_current_db_user(
+    credentials: HTTPAuthorizationCredentials = Depends(_security),
+    db: Session = Depends(get_db),
+) -> User:
+    """Resolve the calling Supabase user to the local ``users`` row.
+
+    Verifies the Bearer token against Supabase's JWKS (same path as
+    ``get_current_user``), then finds — or JIT-creates — the matching
+    ``users`` row by email so features keyed on the integer ``users.id``
+    (watchlist, alerts) work for Supabase identities.
+
+    Replaces the legacy HS256 dependency from the deleted ``auth.py``,
+    which decoded tokens with a local SECRET_KEY and expected an email
+    in ``sub``. Supabase signs with asymmetric keys and puts the user
+    UUID in ``sub``, so every real token failed — watchlist auth was
+    effectively broken — while the hardcoded fallback secret left the
+    endpoints forgeable if SECRET_KEY was ever unset.
+    """
+    claims = _decode_supabase_jwt(credentials.credentials)
+    email = claims.get("email")
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has no email claim",
+        )
+
+    user = db.query(User).filter(User.email == email).first()
+    if user is None:
+        metadata = claims.get("user_metadata") or {}
+        user = User(
+            email=email,
+            password_hash=_SUPABASE_MANAGED_PASSWORD,
+            display_name=metadata.get("full_name") or metadata.get("name"),
+            roles=[],
+            email_verified=True,  # Supabase verified this email at sign-in
+        )
+        db.add(user)
+        try:
+            db.commit()
+        except IntegrityError:
+            # Concurrent first-request race on the unique email index —
+            # another worker created the row; use theirs.
+            db.rollback()
+            user = db.query(User).filter(User.email == email).first()
+            if user is None:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to resolve user record",
+                )
+        else:
+            db.refresh(user)
+
+    if user.disabled:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Inactive user",
+        )
+    return user

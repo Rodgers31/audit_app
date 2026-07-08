@@ -144,6 +144,11 @@ class AutoSeeder:
             "failed_fetches": 0,
             "last_full_refresh": None,
         }
+        # Consecutive failures per domain — a domain that keeps failing
+        # means its data is silently going stale (this is exactly how the
+        # county audit-status gap went unnoticed), so we alert loudly
+        # after _ALERT_AFTER_FAILURES in a row.
+        self._consecutive_failures: Dict[str, int] = {}
 
     async def start(self):
         """Start the auto-seeder background task."""
@@ -184,6 +189,37 @@ class AutoSeeder:
                 self.last_refresh.setdefault(domain, boot_time)
 
         await self._refresh_loop()
+
+    # Alert after this many consecutive failures of one domain — transient
+    # scrape hiccups are normal; silent multi-day gaps are not.
+    _ALERT_AFTER_FAILURES = 3
+
+    def _record_domain_success(self, domain: str) -> None:
+        self._consecutive_failures.pop(domain, None)
+        self._fetch_stats["successful_fetches"] += 1
+
+    def _record_domain_failure(self, domain: str, exc: Exception) -> None:
+        count = self._consecutive_failures.get(domain, 0) + 1
+        self._consecutive_failures[domain] = count
+        logger.error(f"Failed to refresh {domain} ({count} consecutive): {exc}")
+        self._fetch_stats["failed_fetches"] += 1
+        if count == self._ALERT_AFTER_FAILURES:
+            # One loud alert per failure streak (== not >=, so it doesn't
+            # re-fire every tick). CRITICAL log always lands; Sentry is
+            # best-effort (no-op when the SDK/DSN isn't configured).
+            logger.critical(
+                f"[AUTO-SEEDER] Domain '{domain}' has failed {count} refreshes in a row — "
+                f"its data is going stale silently. Last error: {exc}"
+            )
+            try:
+                import sentry_sdk
+
+                sentry_sdk.capture_message(
+                    f"[AUTO-SEEDER] '{domain}' failed {count} consecutive refreshes: {exc}",
+                    level="error",
+                )
+            except Exception:
+                pass
 
     async def stop(self):
         """Stop the auto-seeder background task."""
@@ -226,10 +262,9 @@ class AutoSeeder:
                 try:
                     await self._seed_domain(domain)
                     self.last_refresh[domain] = now
-                    self._fetch_stats["successful_fetches"] += 1
+                    self._record_domain_success(domain)
                 except Exception as e:
-                    logger.error(f"Failed to refresh {domain}: {e}")
-                    self._fetch_stats["failed_fetches"] += 1
+                    self._record_domain_failure(domain, e)
 
                 self._fetch_stats["total_fetches"] += 1
 
@@ -251,10 +286,9 @@ class AutoSeeder:
                 logger.info(f"[AUTO-SEEDER] Processing domain: {domain}")
                 await self._seed_domain(domain)
                 self.last_refresh[domain] = datetime.now(timezone.utc)
-                self._fetch_stats["successful_fetches"] += 1
+                self._record_domain_success(domain)
             except Exception as e:
-                logger.error(f"Failed to seed {domain}: {e}")
-                self._fetch_stats["failed_fetches"] += 1
+                self._record_domain_failure(domain, e)
 
             self._fetch_stats["total_fetches"] += 1
             await asyncio.sleep(2)  # Rate limiting
@@ -722,6 +756,9 @@ class AutoSeeder:
             "is_running": self.is_running,
             "last_refresh": {k: v.isoformat() for k, v in self.last_refresh.items()},
             "fetch_stats": self._fetch_stats,
+            # Domains currently in a failure streak (cleared on success) —
+            # non-empty means data is going stale; ≥3 has already alerted.
+            "consecutive_failures": dict(self._consecutive_failures),
             "next_refresh": self._get_next_refresh_times(),
         }
 

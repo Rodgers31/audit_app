@@ -10,17 +10,97 @@ import { useLang } from '@/lib/i18n/LangProvider';
 import { County } from '@/types';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Eye, Layers, MapPin } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps';
 import CountyMarker from './map/CountyMarker';
 import MapTooltip from './map/MapTooltip';
 import {
   getCountyByName,
-  getCountyColor,
-  getCountyHoverColor,
-  getNextAnimationMode,
+  getCountyFill,
+  getCountyHoverFill,
   LEGEND_ITEMS,
 } from './map/MapUtilities';
+
+interface CountyShapeProps {
+  geo: any;
+  geoName: string;
+  county: County | undefined;
+  fill: string;
+  hoverFill: string;
+  isActive: boolean;
+  onEnter: (geoName: string, county: County | undefined, e?: React.MouseEvent) => void;
+  onLeave: () => void;
+  onSelect: (county: County) => void;
+}
+
+/**
+ * One county path, memoised so a hover / auto-rotate state change only
+ * re-renders the counties whose props actually changed (typically 2 of
+ * 47) instead of reconciling every path. The previous implementation
+ * wrapped each county in a framer-motion spring (`motion.g`), which ran
+ * 47 JS-driven animations per state change — a multi-second main-thread
+ * block on low-end phones. The scale-up is now a plain CSS transition,
+ * which the browser composites off the main thread.
+ */
+const CountyShape = memo(function CountyShape({
+  geo,
+  geoName,
+  county,
+  fill,
+  hoverFill,
+  isActive,
+  onEnter,
+  onLeave,
+  onSelect,
+}: CountyShapeProps) {
+  return (
+    <g
+      style={{
+        transformBox: 'fill-box',
+        transformOrigin: 'center',
+        transform: isActive ? 'scale(1.02)' : 'scale(1)',
+        transition: 'transform 300ms cubic-bezier(0.34, 1.3, 0.64, 1)',
+      }}>
+      <Geography
+        geography={geo}
+        onMouseEnter={(e) => onEnter(geoName, county, e as any)}
+        // Anchor is pinned at the cursor's ENTRY point to
+        // the county and does not follow mousemove. If we
+        // track mousemove, the tooltip chases the cursor
+        // upward as the user tries to move toward it, and
+        // the user can never reach it. Pinning on enter
+        // lets the user slide straight into the card.
+        onMouseLeave={onLeave}
+        onClick={() => county && onSelect(county)}
+        style={{
+          default: {
+            fill,
+            stroke: isActive ? '#0F1A12' : '#3d5a45',
+            strokeWidth: isActive ? 2.5 : 1.2,
+            outline: 'none',
+            filter: isActive ? 'url(#countyGlow)' : 'url(#innerShadow)',
+            transition: 'fill 300ms ease, stroke-width 200ms ease',
+          },
+          hover: {
+            fill: hoverFill,
+            stroke: '#0F1A12',
+            strokeWidth: 2,
+            outline: 'none',
+            filter: 'url(#countyGlow)',
+            cursor: county ? 'pointer' : 'default',
+            transition: 'fill 200ms ease, stroke-width 150ms ease',
+          },
+          pressed: {
+            fill: '#1B3A2A',
+            stroke: '#0F1A12',
+            strokeWidth: 2.5,
+            outline: 'none',
+          },
+        }}
+      />
+    </g>
+  );
+});
 
 interface InteractiveKenyaMapProps {
   counties: County[];
@@ -56,7 +136,6 @@ export default function InteractiveKenyaMap({
   >(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
-  const [animationMode, setAnimationMode] = useState<'slideshow' | 'pulse' | 'wave'>('slideshow');
   const [visualMode, setVisualMode] = useState<'focus' | 'overview'>('overview');
   const [isMapHovered, setIsMapHovered] = useState(false);
   // Track coarse-pointer / touch state as React state so tooltip re-renders
@@ -93,9 +172,19 @@ export default function InteractiveKenyaMap({
   useEffect(() => {
     countiesRef.current = counties;
   }, [counties]);
+  // Mirror hoveredCounty too, so the leave handler can stay referentially
+  // stable (useCallback with no state deps) — otherwise every hover change
+  // would mint new handlers and defeat CountyShape's memoisation.
+  const hoveredCountyRef = useRef(hoveredCounty);
+  useEffect(() => {
+    hoveredCountyRef.current = hoveredCounty;
+  }, [hoveredCounty]);
 
-  /* ── geo data loading – single local file, inline fallback ── */
-  const geoUrl = '/kenya-counties.json';
+  /* ── geo data loading – single local file, inline fallback ──
+   * .topo.json is the mapshaper-simplified TopoJSON (~48KB vs the
+   * original 347KB GeoJSON) — same 47 counties, same NAME_1 property,
+   * ~7x less main-thread JSON parsing on load. */
+  const geoUrl = '/kenya-counties.topo.json';
 
   const [geoData, setGeoData] = useState<any | null>(null);
 
@@ -127,23 +216,28 @@ export default function InteractiveKenyaMap({
    * Reads the latest selectedCounty and counties via refs so a trailing
    * click that DID land doesn't get clobbered by a stale-closure promote.
    */
-  const promoteHoverIfTouch = (hoveredName: string | null) => {
-    const isTouch =
-      typeof window !== 'undefined' &&
-      window.matchMedia?.('(pointer: coarse)').matches;
-    if (!isTouch || !hoveredName || selectedCountyRef.current) return;
-    const c = getCountyByName(hoveredName, countiesRef.current ?? []);
-    if (!c) return;
-    onCountySelect(c);
-    const idx = (countiesRef.current ?? []).findIndex((cc) => cc.id === c.id);
-    if (idx >= 0) onCountyIndexChange(idx);
-  };
+  const promoteHoverIfTouch = useCallback(
+    (hoveredName: string | null) => {
+      const isTouch =
+        typeof window !== 'undefined' &&
+        window.matchMedia?.('(pointer: coarse)').matches;
+      if (!isTouch || !hoveredName || selectedCountyRef.current) return;
+      const c = getCountyByName(hoveredName, countiesRef.current ?? []);
+      if (!c) return;
+      onCountySelect(c);
+      const idx = (countiesRef.current ?? []).findIndex((cc) => cc.id === c.id);
+      if (idx >= 0) onCountyIndexChange(idx);
+    },
+    [onCountySelect, onCountyIndexChange]
+  );
 
   /** Convert a DOM MouseEvent to map-container-local coordinates for
    * the tooltip anchor. Using clientX/Y from the live event (rather
    * than the path centroid) means the tooltip appears right where the
-   * cursor is — wherever inside the county the user happened to hover. */
-  const anchorFromEvent = (e?: React.MouseEvent): typeof hoveredAnchor => {
+   * cursor is — wherever inside the county the user happened to hover.
+   * useCallback([]) — reads only a ref, so it is referentially stable
+   * and can sit in dependency lists without breaking memoisation. */
+  const anchorFromEvent = useCallback((e?: React.MouseEvent): typeof hoveredAnchor => {
     if (!e || !mapContainerRef.current) return null;
     const box = mapContainerRef.current.getBoundingClientRect();
     return {
@@ -152,20 +246,28 @@ export default function InteractiveKenyaMap({
       containerWidth: box.width,
       containerHeight: box.height,
     };
-  };
+  }, []);
 
-  /* ── hover handlers ── */
-  const handleCountyMouseEnter = (countyName: string, county: any, e?: React.MouseEvent) => {
-    if (hideTimeoutRef.current) {
-      clearTimeout(hideTimeoutRef.current);
-      hideTimeoutRef.current = null;
-    }
-    isProcessingLeaveRef.current = false;
-    setHoveredCounty(countyName);
-    setHoveredAnchor(anchorFromEvent(e));
-    setShowTooltip(!!county);
-    if (county && onCountyHover) onCountyHover(county);
-  };
+  /* ── hover handlers ──
+   * All three geography handlers are useCallback-stable (state is read
+   * through refs) so they can be passed to the memoised CountyShape
+   * without invalidating it on every hover change. Dependency lists are
+   * complete — every referenced callback is itself useCallback-stable,
+   * so exhaustive deps cost nothing and stale-closure hazards are out. */
+  const handleCountyMouseEnter = useCallback(
+    (countyName: string, county: County | undefined, e?: React.MouseEvent) => {
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current);
+        hideTimeoutRef.current = null;
+      }
+      isProcessingLeaveRef.current = false;
+      setHoveredCounty(countyName);
+      setHoveredAnchor(anchorFromEvent(e));
+      setShowTooltip(!!county);
+      if (county && onCountyHover) onCountyHover(county);
+    },
+    [anchorFromEvent, onCountyHover]
+  );
 
   /** True when the component is running on a coarse-pointer device
    * (phone / tablet). Read lazily because SSR doesn't have `window`. */
@@ -173,7 +275,7 @@ export default function InteractiveKenyaMap({
     typeof window !== 'undefined' &&
     !!window.matchMedia?.('(pointer: coarse)').matches;
 
-  const handleCountyMouseLeave = () => {
+  const handleCountyMouseLeave = useCallback(() => {
     // On touch the tooltip is user-dismissed (via the close button or
     // by tapping another county). Skipping the auto-hide linger gives
     // the user time to read the content — previously the tooltip would
@@ -182,13 +284,12 @@ export default function InteractiveKenyaMap({
       // Still promote the hovered county to a selection in case the
       // tap didn't cleanly fire `click` on iOS (same reason as before),
       // so the panel and pill reflect what they just tapped.
-      promoteHoverIfTouch(hoveredCounty);
+      promoteHoverIfTouch(hoveredCountyRef.current);
       return;
     }
     if (isProcessingLeaveRef.current) return;
     isProcessingLeaveRef.current = true;
     if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
-    const hoveredAtLeave = hoveredCounty;
     hideTimeoutRef.current = setTimeout(() => {
       if (!isOverlayHoveredRef.current) {
         setHoveredCounty(null);
@@ -199,7 +300,7 @@ export default function InteractiveKenyaMap({
       isProcessingLeaveRef.current = false;
       hideTimeoutRef.current = null;
     }, 800);
-  };
+  }, [onCountyHover, promoteHoverIfTouch]);
 
   const handleOverlayMouseEnter = () => {
     isOverlayHoveredRef.current = true;
@@ -239,9 +340,15 @@ export default function InteractiveKenyaMap({
     if (onCountyHover) onCountyHover(null);
   };
 
-  /* ── auto-rotate + animation mode cycle ── */
+  /* ── auto-rotate ──
+   * Desktop-only. On coarse-pointer devices the 8s tick re-rendered the
+   * map + details panel forever; a tap landing mid-render on a low-end
+   * phone was a major INP contributor. Touch users drive the panel by
+   * tapping counties instead. Also disabled under prefers-reduced-motion. */
   useEffect(() => {
     if (selectedCounty || isInteractingWithDetails || isMapHovered || !counties?.length) return;
+    if (isTouch) return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
     const id = setInterval(() => {
       onCountyIndexChange(currentCountyIndex === 0 ? counties.length - 1 : currentCountyIndex - 1);
     }, 8000);
@@ -253,12 +360,8 @@ export default function InteractiveKenyaMap({
     currentCountyIndex,
     onCountyIndexChange,
     counties,
+    isTouch,
   ]);
-
-  useEffect(() => {
-    const id = setInterval(() => setAnimationMode(getNextAnimationMode), 15000);
-    return () => clearInterval(id);
-  }, []);
 
   useEffect(
     () => () => {
@@ -268,10 +371,29 @@ export default function InteractiveKenyaMap({
   );
 
   /* ── derived ── */
-  const handleCountyClick = (county: County) => {
-    onCountySelect(county);
-    if (counties) onCountyIndexChange(counties.findIndex((c) => c.id === county.id));
-  };
+  const handleCountyClick = useCallback(
+    (county: County) => {
+      onCountySelect(county);
+      const idx = (countiesRef.current ?? []).findIndex((c) => c.id === county.id);
+      if (idx >= 0) onCountyIndexChange(idx);
+    },
+    [onCountySelect, onCountyIndexChange]
+  );
+
+  /* Resolve geo name → County once per county-data change and cache it.
+   * getCountyByName normalises with regexes and linear-scans the county
+   * list; calling it for every geography on every render (as the colour
+   * helpers used to) burned tens of thousands of regex executions per
+   * hover/tick on the main thread. */
+  const resolveCounty = useMemo(() => {
+    const cache = new Map<string, County | undefined>();
+    return (geoName: string): County | undefined => {
+      if (cache.has(geoName)) return cache.get(geoName);
+      const county = getCountyByName(geoName, counties ?? []);
+      cache.set(geoName, county);
+      return county;
+    };
+  }, [counties]);
 
   const currentAutoCounty =
     !selectedCounty && counties?.length ? counties[currentCountyIndex] : null;
@@ -281,7 +403,7 @@ export default function InteractiveKenyaMap({
   // hovering a different county, so the map felt like it was "fighting"
   // the cursor.
   const activeLabel = hoveredCounty
-    ? getCountyByName(hoveredCounty, counties ?? [])?.name ?? null
+    ? resolveCounty(hoveredCounty)?.name ?? null
     : selectedCounty?.name ?? currentAutoCounty?.name ?? null;
 
   /* ── matched county count for header ── */
@@ -417,7 +539,7 @@ export default function InteractiveKenyaMap({
 
           <Geographies geography={geoData ?? geoUrl}>
             {({ geographies }) =>
-              geographies.map((geo, index) => {
+              geographies.map((geo) => {
                 const geoCountyName =
                   geo.properties?.COUNTY_NAM ||
                   geo.properties?.COUNTY ||
@@ -425,79 +547,41 @@ export default function InteractiveKenyaMap({
                   geo.properties?.NAME ||
                   geo.properties?.name ||
                   '';
-                const county = getCountyByName(geoCountyName, counties || []);
+                const county = resolveCounty(geoCountyName);
                 // The auto-rotate county only counts as "active" (scale-up +
                 // glow + thick stroke) when nothing else is taking focus.
                 // Hovering any county suppresses it so we never have two
-                // counties reading as active at once.
-                const isActive =
-                  selectedCounty?.id === county?.id ||
-                  (!selectedCounty && !hoveredCounty && currentAutoCounty?.id === county?.id);
-                const isHovered = hoveredCounty === geoCountyName;
-
-                const fillColor = getCountyColor(
-                  geoCountyName,
-                  counties || [],
-                  index,
-                  selectedCounty,
-                  currentCountyIndex,
-                  hoveredCounty,
-                  animationMode,
-                  visualMode
-                );
-
-                const hoverFill = county
-                  ? getCountyHoverColor(geoCountyName, counties || [])
-                  : '#c8cec9';
+                // counties reading as active at once. The `!!county` guards
+                // matter: before county data loads every geography resolves
+                // to undefined, and `undefined === undefined` used to mark
+                // ALL 47 counties active — 47 Gaussian-blur glow filters
+                // during the hydration window.
+                const isSelected = !!county && selectedCounty?.id === county.id;
+                const isAutoActive =
+                  !!county &&
+                  !selectedCounty &&
+                  !hoveredCounty &&
+                  currentAutoCounty?.id === county.id;
+                const isActive = isSelected || isAutoActive;
 
                 return (
-                  <motion.g
+                  <CountyShape
                     key={geo.rsmKey}
-                    initial={{ scale: 1 }}
-                    animate={{
-                      scale: isActive ? 1.02 : 1,
-                    }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 25 }}>
-                    <Geography
-                      geography={geo}
-                      onMouseEnter={(e) =>
-                        handleCountyMouseEnter(geoCountyName, county, e as any)
-                      }
-                      // Anchor is pinned at the cursor's ENTRY point to
-                      // the county and does not follow mousemove. If we
-                      // track mousemove, the tooltip chases the cursor
-                      // upward as the user tries to move toward it, and
-                      // the user can never reach it. Pinning on enter
-                      // lets the user slide straight into the card.
-                      onMouseLeave={handleCountyMouseLeave}
-                      onClick={() => county && handleCountyClick(county)}
-                      style={{
-                        default: {
-                          fill: fillColor,
-                          stroke: isActive ? '#0F1A12' : '#3d5a45',
-                          strokeWidth: isActive ? 2.5 : 1.2,
-                          outline: 'none',
-                          filter: isActive ? 'url(#countyGlow)' : 'url(#innerShadow)',
-                          transition: 'fill 300ms ease, stroke-width 200ms ease',
-                        },
-                        hover: {
-                          fill: hoverFill,
-                          stroke: '#0F1A12',
-                          strokeWidth: 2,
-                          outline: 'none',
-                          filter: 'url(#countyGlow)',
-                          cursor: county ? 'pointer' : 'default',
-                          transition: 'fill 200ms ease, stroke-width 150ms ease',
-                        },
-                        pressed: {
-                          fill: '#1B3A2A',
-                          stroke: '#0F1A12',
-                          strokeWidth: 2.5,
-                          outline: 'none',
-                        },
-                      }}
-                    />
-                  </motion.g>
+                    geo={geo}
+                    geoName={geoCountyName}
+                    county={county}
+                    fill={getCountyFill(county, {
+                      isSelected,
+                      isAutoActive,
+                      isHovered: hoveredCounty === geoCountyName,
+                      visualMode,
+                    })}
+                    hoverFill={getCountyHoverFill(county)}
+                    isActive={isActive}
+                    onEnter={handleCountyMouseEnter}
+                    onLeave={handleCountyMouseLeave}
+                    onSelect={handleCountyClick}
+                  />
                 );
               })
             }
@@ -513,7 +597,7 @@ export default function InteractiveKenyaMap({
           {showTooltip &&
             hoveredCounty &&
             (() => {
-              const county = getCountyByName(hoveredCounty, counties || []);
+              const county = resolveCounty(hoveredCounty);
               return county ? (
                 <MapTooltip
                   county={county}

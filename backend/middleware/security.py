@@ -1,6 +1,7 @@
 """Security middleware for rate limiting, CORS, and audit logging."""
 
 import logging
+import os
 import time
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
@@ -12,6 +13,13 @@ from fastapi import HTTPException, Request, status
 from starlette.middleware.base import BaseHTTPMiddleware
 
 logger = logging.getLogger(__name__)
+
+# Per-request audit entries default to DEBUG so production logs aren't
+# flooded with one INFO line per GET (thousands/hour at modest traffic).
+# Set AUDIT_LOG_LEVEL=INFO to surface them, e.g. while investigating abuse.
+_AUDIT_LOG_LEVEL = (
+    logging.INFO if os.getenv("AUDIT_LOG_LEVEL", "DEBUG").upper() == "INFO" else logging.DEBUG
+)
 
 
 class RedisRateLimitMiddleware(BaseHTTPMiddleware):
@@ -262,7 +270,7 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
             "user_agent": user_agent,
         }
 
-        logger.info(f"AUDIT: {audit_entry}")
+        logger.log(_AUDIT_LOG_LEVEL, f"AUDIT: {audit_entry}")
 
         return response
 

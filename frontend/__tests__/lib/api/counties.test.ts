@@ -64,12 +64,25 @@ describe('getCounties', () => {
     expect(counties[0].name).toBe('Nairobi');
   });
 
-  it('transforms financial_health_score to letter grade', async () => {
+  it('derives fiscal_grade from financial_health_score, never audit_rating', async () => {
     mockGet.mockResolvedValue({ data: [sampleBackendCounty] });
 
     const counties = await getCounties();
-    // score 72 → B+
-    expect(counties[0].audit_rating).toBe('B+');
+    // score 72 → B+ — exposed as fiscal_grade (a utilisation-derived
+    // estimate), NOT as audit_rating (reserved for real OAG opinions).
+    expect(counties[0].fiscal_grade).toBe('B+');
+    // Backend mirrors severity ("info") into audit_rating — that's a
+    // status, not a rating, so it must not surface as one.
+    expect(counties[0].audit_rating).toBe('');
+  });
+
+  it('passes through a real letter-grade audit_rating unchanged', async () => {
+    mockGet.mockResolvedValue({
+      data: [{ ...sampleBackendCounty, audit_rating: 'A-' }],
+    });
+
+    const counties = await getCounties();
+    expect(counties[0].audit_rating).toBe('A-');
   });
 
   it('sets auditStatus from backend data', async () => {

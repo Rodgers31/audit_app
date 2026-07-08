@@ -17,6 +17,10 @@ passlib[bcrypt]>=1.7.4
 python-multipart>=0.0.6
 pandas>=2.1.4
 pdfplumber>=0.10.3
+# OCR stack for scanned OAG audit-report PDFs (audits domain; needs
+# system tesseract-ocr + poppler-utils - installed in the seed workflow)
+pytesseract>=0.3.10
+pdf2image>=1.17.0
 tabula-py>=2.8.2
 boto3>=1.34.0
 redis>=5.0.1

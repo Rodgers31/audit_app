@@ -250,6 +250,25 @@ class SeedingSettings(BaseSettings):
             "When False, only fixture/configured URLs are used."
         ),
     )
+    audits_ocr_enabled: bool = Field(
+        default=False,
+        description=(
+            "OCR scanned OAG audit report PDFs (pytesseract + pdf2image). "
+            "OAG publishes county audit reports as scanned images with no "
+            "embedded text, so without OCR the live audit path yields "
+            "nothing. Requires system tesseract-ocr + poppler-utils "
+            "(installed in the seed workflow). Off by default so local "
+            "runs without the binaries stay fast and warning-free."
+        ),
+    )
+    audits_ocr_max_pages: int = Field(
+        default=30,
+        description=(
+            "Page cap per PDF for the OCR path. OCR costs ~2-5s/page; "
+            "the audit-opinion sections OAG reports lead with fit inside "
+            "the first ~30 pages."
+        ),
+    )
     counties_budget_prefer_live_source: bool = Field(
         default=True,
         description=(

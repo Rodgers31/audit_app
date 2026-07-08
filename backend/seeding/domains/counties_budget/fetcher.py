@@ -28,6 +28,29 @@ from ...utils import load_json_resource, slugify_entity
 
 logger = logging.getLogger("seeding.counties_budget.fetcher")
 
+# Upper bound of the plausible KSh-MILLIONS band for county-level BIRR
+# aggregates. Real parses run ~40 (smallest half-year absorption) to
+# ~45,000 (Nairobi's annual total); 200,000 (= KES 200B after scaling)
+# leaves generous headroom. CoB BIRR tables publish these figures in
+# KSh millions — stored raw, Nairobi's "44,621" landed as KES 44,621,
+# which is why development_budget read as ~0 in the API.
+_BIRR_MILLIONS_BAND_MAX = 200_000
+
+
+def _birr_amount_to_kes(value: float) -> float:
+    """Scale a CoB BIRR county-AGGREGATE figure from KSh millions to KES.
+
+    Only values inside the plausible millions band (0, 200,000] are
+    scaled. Anything above is either already absolute KES (real county
+    aggregates start at ~KES 40M, far above the band) or anomalous —
+    both pass through unscaled, so a hypothetical absolute-KES vintage
+    is never inflated and anomalies stay visibly wrong instead of
+    silently becoming trillions. Do NOT reuse for fine-grained line
+    items: the band assumption is aggregate-level only
+    (Total / Recurrent / Development / Personnel Emoluments).
+    """
+    return value * 1_000_000 if 0 < value <= _BIRR_MILLIONS_BAND_MAX else value
+
 # COB migrated from /reports/ to /publications/ paths (2025). Order is
 # significant — the consolidated page publishes the single "all counties"
 # BIRR PDF that covers sectoral + aggregate breakdowns in one artefact,
@@ -497,6 +520,9 @@ def _download_and_parse_county_pdf(
                     absorbed = float(absorbed.replace(",", ""))
                 except ValueError:
                     absorbed = 0
+
+            allocated = _birr_amount_to_kes(float(allocated))
+            absorbed = _birr_amount_to_kes(float(absorbed))
 
             budget_records.append({
                 "entity_slug": entity_slug,

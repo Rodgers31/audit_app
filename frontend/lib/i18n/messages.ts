@@ -284,6 +284,7 @@ export const MESSAGES = {
   'home.county_panel.total_debt': { en: 'Total Debt', sw: 'Deni Jumla', plain: 'Total Debt' },
   'home.county_panel.population_label': { en: 'Population', sw: 'Idadi ya Watu', plain: 'People' },
   'home.county_panel.audit_rating': { en: 'Audit Rating', sw: 'Alama ya Ukaguzi', plain: 'Audit Rating' },
+  'home.county_panel.fiscal_grade': { en: 'Fiscal Grade (est.)', sw: 'Daraja la Fedha (kadirio)', plain: 'Money Score (estimate)' },
   'home.county_panel.utilization': { en: 'Budget Utilisation', sw: 'Matumizi ya Bajeti', plain: 'How much was spent' },
   'home.county_panel.debt_ratio': { en: 'Debt Ratio', sw: 'Uwiano wa Deni', plain: 'Debt vs. Budget' },
   'home.county_panel.per_capita': { en: 'Budget per capita', sw: 'Bajeti kwa kila mtu', plain: 'Budget per person' },
@@ -331,6 +332,7 @@ export const MESSAGES = {
   'home.map.legend.qualified': { en: 'Qualified / B', sw: 'Ya Kuhitimu / B', plain: 'Some Issues / B' },
   'home.map.legend.adverse': { en: 'Adverse / C', sw: 'Mbaya / C', plain: 'Bad / C' },
   'home.map.legend.disclaimer': { en: 'Disclaimer', sw: 'Kanusho', plain: 'Unable to audit' },
+  'home.map.legend.pending': { en: 'Audit pending', sw: 'Ukaguzi unasubiri', plain: 'Audit pending' },
 
   // Feature nav cards
   'home.features.counties.title': { en: 'Browse all 47 counties', sw: 'Vinjari kaunti zote 47', plain: 'See all 47 counties' },
