@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+import os
+import tempfile
 import time
 from contextlib import AbstractContextManager
 from pathlib import Path
@@ -169,6 +171,12 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
         if the full body is not received within ``max_seconds`` or if it
         exceeds ``max_bytes``.
 
+        Writes atomically: the body streams to a sibling temp file that is
+        ``os.replace``-d into ``dest_path`` only after the full transfer
+        succeeds, and the temp is removed on any failure. So a timeout,
+        byte-cap breach, or transport error never leaves a truncated file at
+        ``dest_path`` for a later run to mistake for a complete download.
+
         Why not ``request()``: ``request()`` reads the whole body eagerly with
         httpx's *per-operation* timeout — a read timeout only bounds the gap
         *between* chunks, so a slow-but-steady 48MB body streams for minutes
@@ -188,28 +196,43 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
         timeout = httpx.Timeout(per_op, connect=min(float(max_seconds), 15.0))
         start = time.monotonic()
         written = 0
-        with self._rate_limiter.context():
-            with self._client.stream(
-                "GET", url, headers=request_headers, timeout=timeout
-            ) as response:
-                if raise_for_status:
-                    response.raise_for_status()
-                with dest.open("wb") as handle:
-                    for chunk in response.iter_bytes():
-                        if time.monotonic() - start > max_seconds:
-                            raise PdfDownloadError(
-                                f"download exceeded {max_seconds:.0f}s "
-                                f"wall-clock cap after {written} bytes: {url}"
-                            )
-                        if (
-                            max_bytes is not None
-                            and written + len(chunk) > max_bytes
-                        ):
-                            raise PdfDownloadError(
-                                f"download exceeded {max_bytes}-byte cap: {url}"
-                            )
-                        handle.write(chunk)
-                        written += len(chunk)
+        # Stream to a sibling temp and atomically promote on success so a
+        # partial transfer never lands at dest_path (see docstring).
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        fd, tmp_name = tempfile.mkstemp(
+            prefix=dest.name + ".", suffix=".part", dir=str(dest.parent)
+        )
+        os.close(fd)
+        tmp = Path(tmp_name)
+        try:
+            with self._rate_limiter.context():
+                with self._client.stream(
+                    "GET", url, headers=request_headers, timeout=timeout
+                ) as response:
+                    if raise_for_status:
+                        response.raise_for_status()
+                    with tmp.open("wb") as handle:
+                        for chunk in response.iter_bytes():
+                            if time.monotonic() - start > max_seconds:
+                                raise PdfDownloadError(
+                                    f"download exceeded {max_seconds:.0f}s "
+                                    f"wall-clock cap after {written} bytes: {url}"
+                                )
+                            if (
+                                max_bytes is not None
+                                and written + len(chunk) > max_bytes
+                            ):
+                                raise PdfDownloadError(
+                                    f"download exceeded {max_bytes}-byte cap: {url}"
+                                )
+                            handle.write(chunk)
+                            written += len(chunk)
+            os.replace(tmp, dest)
+        except BaseException:
+            # Clean up the partial temp on ANY failure (incl. a SIGALRM-driven
+            # BaseException) — then re-raise unchanged.
+            tmp.unlink(missing_ok=True)
+            raise
         return written
 
 

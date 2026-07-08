@@ -79,6 +79,11 @@ class TestDownloadToFile:
                         max_seconds=180,
                     )
 
+        # No truncated file at dest, and no leftover temp — a failed download
+        # must not poison a later run that reuses the path (Copilot #120).
+        assert not dest.exists()
+        assert list(tmp_path.glob("*.part")) == []
+
     def test_raises_when_max_bytes_exceeded(self, settings, tmp_path):
         def handler(request: httpx.Request) -> httpx.Response:
             return httpx.Response(200, content=_PDF_BODY, request=request)
@@ -92,6 +97,9 @@ class TestDownloadToFile:
                     max_seconds=180,
                     max_bytes=8,
                 )
+
+        assert not dest.exists()
+        assert list(tmp_path.glob("*.part")) == []
 
 
 class TestGetOrDownloadPdf:
