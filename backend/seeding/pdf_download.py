@@ -56,8 +56,9 @@ def _fresh_cache_hit(
     """Return (size_bytes, age_seconds) if a usable cache entry exists.
 
     A hit requires a non-empty ``.pdf`` and a ``.json`` sidecar whose recorded
-    ``created_at`` is within ``ttl_seconds``. Any missing/corrupt/expired state
-    is treated as a miss (returns ``None``) so the caller re-downloads.
+    ``created_at`` is within ``[now - ttl_seconds, now]``. Any missing, corrupt,
+    expired, or future-dated state is treated as a miss (returns ``None``) so
+    the caller re-downloads.
     """
     if ttl_seconds <= 0 or not pdf_path.exists() or not meta_path.exists():
         return None
@@ -68,7 +69,10 @@ def _fresh_cache_hit(
     except (OSError, ValueError, json.JSONDecodeError):
         return None
     age = time.time() - created_at
-    if size <= 0 or age > ttl_seconds:
+    # A negative age means created_at is in the future — a skewed clock or a
+    # corrupted sidecar. Fail closed and re-download rather than trusting a
+    # future timestamp as "fresh" indefinitely.
+    if size <= 0 or age < 0 or age > ttl_seconds:
         return None
     return size, age
 

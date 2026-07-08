@@ -11,6 +11,8 @@ Locks in the two guards added for issue #119:
 
 from __future__ import annotations
 
+import json
+import time
 from pathlib import Path
 from unittest.mock import patch
 
@@ -195,6 +197,35 @@ class TestGetOrDownloadPdf:
         assert pdf_path.read_bytes() == _PDF_BODY
         # No sidecar written → the next run just re-downloads (cache miss).
         assert list(cache_dir.glob("*.json")) == []
+
+    def test_future_timestamp_forces_redownload(self, settings):
+        """A future created_at (clock skew / corrupted sidecar) must NOT count
+        as fresh, or a stale entry could be reused forever (Copilot #120)."""
+        calls = {"n": 0}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            calls["n"] += 1
+            return httpx.Response(200, content=_PDF_BODY, request=request)
+
+        url = "https://cob.go.ke/download/county-birr?wpdmdl=16378"
+        cache_dir = self._cache_dir(settings)
+        with _make_client(settings, handler) as client:
+            get_or_download_pdf(
+                client, url, cache_dir=cache_dir,
+                ttl_seconds=30 * 86_400, max_seconds=180,
+            )
+            # Corrupt the sidecar with a created_at 10 days in the future.
+            meta = next(cache_dir.glob("*.json"))
+            data = json.loads(meta.read_text(encoding="utf-8"))
+            data["created_at"] = time.time() + 10 * 86_400
+            meta.write_text(json.dumps(data), encoding="utf-8")
+
+            get_or_download_pdf(
+                client, url, cache_dir=cache_dir,
+                ttl_seconds=30 * 86_400, max_seconds=180,
+            )
+
+        assert calls["n"] == 2, "future-dated entry should force a re-download"
 
     def test_expired_entry_triggers_redownload(self, settings):
         calls = {"n": 0}
