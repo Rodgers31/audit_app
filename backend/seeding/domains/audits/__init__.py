@@ -49,15 +49,18 @@ def run(
     if fetched and not records:
         logger.warning(
             "Audit fetch returned %d finding(s) but the parser kept 0 — "
-            "every finding was dropped for missing required fields "
-            "(period_label/start_date/end_date). Persisting nothing; check "
-            "the fetcher↔parser field contract.",
+            "every finding was dropped for a missing required field "
+            "(the parser requires entity_slug/entity/severity/finding_text "
+            "and period_label/start_date/end_date; the fiscal-period fields "
+            "are the usual suspect). Persisting nothing; check the "
+            "fetcher↔parser field contract.",
             fetched,
         )
     elif fetched and len(records) < fetched:
         logger.warning(
-            "Audit parse kept %d of %d fetched finding(s); %d dropped for "
-            "missing required fields.",
+            "Audit parse kept %d of %d fetched finding(s); %d dropped for a "
+            "missing required field (entity/severity/finding_text or "
+            "period_label/start_date/end_date).",
             len(records),
             fetched,
             fetched - len(records),

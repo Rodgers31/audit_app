@@ -125,11 +125,24 @@ jobs:
 
           # $1 = User-Agent, $2 = URL. Follow redirects; 60s timeout (COB's
           # HTML listings legitimately take 30-50s); curl --retry covers
-          # connection resets / timeouts (not 4xx). Prints the HTTP code.
+          # connection resets / timeouts (not 4xx). Prints exactly one
+          # 3-digit HTTP code.
+          #
+          # curl writes the code via -w; on a connection failure it prints
+          # "000" AND exits non-zero. The old `... || echo "000"` appended a
+          # SECOND "000" → "000000", which no longer matches is_transient
+          # ("000" exactly) and wrongly escalated genuine outages to the
+          # critical branch (see Treasury "000000" in issue #124). Capture
+          # stdout, keep the assignment from tripping `set -e` on curl's
+          # non-zero exit (|| true), then normalise anything that isn't a
+          # bare 3-digit code to "000".
           probe() {
-            curl -s -o /dev/null -w "%{http_code}" \
+            local code
+            code=$(curl -s -o /dev/null -w "%{http_code}" \
               -L --max-time 60 --retry 2 --retry-delay 3 \
-              -A "$1" "$2" 2>/dev/null || echo "000"
+              -A "$1" "$2" 2>/dev/null) || true
+            [[ "$code" =~ ^[0-9]{3}$ ]] || code="000"
+            printf '%s' "$code"
           }
 
           # A "transient/blocked" code means the host answered but bot-blocked
@@ -644,7 +657,11 @@ jobs:
             const open = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              labels: 'data-source-down',
+              // Require BOTH labels (comma = AND) so we only auto-close
+              // issues THIS workflow created — every generated outage issue
+              // carries data-source-down + automated. A human-filed
+              // investigative issue using only data-source-down is spared.
+              labels: 'data-source-down,automated',
               state: 'open',
             });
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
