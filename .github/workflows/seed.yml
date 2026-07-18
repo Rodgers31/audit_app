@@ -158,10 +158,17 @@ jobs:
 
             HTTP_CODE=$(probe "$PRIMARY_UA" "$url")
             # On a block-style code, re-probe once with a browser UA before
-            # concluding the source is unhealthy.
+            # concluding the source is unhealthy. Adopt the retry code
+            # whenever it is DEFINITIVE (i.e. not itself transient): a
+            # success (2xx/3xx) means the source is reachable and the block
+            # was just our UA, while a genuine 4xx-gone (404/410) revealed
+            # past the WAF means the URL migrated and must still surface via
+            # the critical-flag branch — not be masked behind the original
+            # transient code. Keep the original code only when the re-probe
+            # is also transient (the block is real/IP-based, not UA-based).
             if is_transient "$HTTP_CODE"; then
               RETRY_CODE=$(probe "$BROWSER_UA" "$url")
-              if [[ "$RETRY_CODE" =~ ^[23] ]]; then
+              if ! is_transient "$RETRY_CODE"; then
                 HTTP_CODE="$RETRY_CODE"
               fi
             fi
