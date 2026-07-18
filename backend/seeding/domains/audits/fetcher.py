@@ -40,7 +40,7 @@ import logging
 import re
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import quote_plus, urljoin
 
 from ...config import SeedingSettings
@@ -388,6 +388,78 @@ def _ocr_pdf_text(pdf_path: Path, max_pages: int = 30) -> str:
     return text
 
 
+# ── Fiscal-period derivation ──────────────────────────────────────────
+# Kenya's fiscal year runs 1 July → 30 June. Every persisted audit
+# finding MUST carry a period_label + start/end dates (the parser drops
+# any finding missing them, and the writer keys a FiscalPeriod off them).
+# The FY the accounts cover is reliably present in the OAG report
+# filename ("...-Homa-Bay-2021-2022.pdf",
+# "...-NATIONAL-GOVERNMENT-2024-2025.pdf") and, failing that, on the
+# cover page ("...for the year ended 30 June 2022"). We derive it from
+# the source URL first, then the report text.
+
+# FY spans as they appear in filenames/URLs and inline text:
+# 2021-2022, 2021_2022, 2021/2022, 2021-22, 2022/23, 2021–2022 (en-dash).
+_FY_SPAN_RE = re.compile(r"(20\d{2})\s*[/_–-]\s*(20\d{2}|\d{2})")
+# Cover-page phrasing: "for the year ended 30 June 2022".
+_YEAR_ENDED_RE = re.compile(
+    r"year\s+ended\s+\d{1,2}(?:st|nd|rd|th)?\s+june\s+(20\d{2})",
+    re.IGNORECASE,
+)
+
+
+def _fy_from_span(
+    y1: int, y2: int
+) -> Optional[Tuple[str, str, str, int]]:
+    """Build (period_label, start_date, end_date, audit_year) for a
+    consecutive-year Kenyan FY (July y1 → June y2).
+
+    Returns None when y1/y2 aren't a consecutive pair — this guards
+    against multi-year ranges (e.g. a "2019-2023" strategic-plan span)
+    being mistaken for a single fiscal year. audit_year is the END year
+    (the "year ended 30 June {y2}" the report audits).
+    """
+    if y2 == y1 + 1:
+        return (f"{y1}/{y2}", f"{y1}-07-01", f"{y2}-06-30", y2)
+    return None
+
+
+def _derive_fiscal_period(
+    source: str, text: str
+) -> Tuple[Optional[str], Optional[str], Optional[str], Optional[int]]:
+    """Best-effort fiscal period for an OAG report.
+
+    Order of preference: source URL/filename (most reliable) → an FY
+    span in the first pages of text → a "year ended 30 June YYYY" cover
+    line. Returns (period_label, start_date, end_date, audit_year); each
+    element is None when the FY cannot be determined, in which case the
+    finding is intentionally left unattributed (and dropped downstream)
+    rather than stamped with a guessed period.
+    """
+    head = text[:4000] if text else ""
+    for candidate in (source or "", head):
+        # Scan ALL spans, not just the first: an OAG upload URL embeds a
+        # publish date ("/wp-content/uploads/2023/11/") that matches the
+        # span shape but isn't a fiscal year — the consecutive-year check
+        # in _fy_from_span rejects it, so we keep looking for the real FY.
+        for match in _FY_SPAN_RE.finditer(candidate):
+            y1 = int(match.group(1))
+            y2_raw = match.group(2)
+            # "2021-22" → 2022; "2021-2022" → 2022.
+            y2 = int(y2_raw) if len(y2_raw) == 4 else (y1 // 100) * 100 + int(y2_raw)
+            fy = _fy_from_span(y1, y2)
+            if fy:
+                return fy
+    if text:
+        match = _YEAR_ENDED_RE.search(text)
+        if match:
+            y2 = int(match.group(1))
+            fy = _fy_from_span(y2 - 1, y2)
+            if fy:
+                return fy
+    return (None, None, None, None)
+
+
 def _extract_findings_from_text(
     text: str, source_url: str
 ) -> List[Dict[str, Any]]:
@@ -400,6 +472,13 @@ def _extract_findings_from_text(
       "pending", "variance", "over-expenditure"
     """
     findings: List[Dict[str, Any]] = []
+
+    # Fiscal period is document-level: derive it once from the source
+    # filename / report text and stamp every finding with it. Without a
+    # period_label + start/end dates the parser drops the finding.
+    period_label, start_date, end_date, audit_year = _derive_fiscal_period(
+        source_url, text
+    )
 
     # Try to find county-specific sections
     county_pattern = re.compile(
@@ -475,7 +554,9 @@ def _extract_findings_from_text(
             findings.append({
                 "entity_slug": entity_slug,
                 "entity": f"{entity} County" if current_county else entity,
-                "period_label": "",  # Will be extracted from context
+                "period_label": period_label or "",
+                "start_date": start_date,
+                "end_date": end_date,
                 "finding_text": finding_text,
                 "severity": severity,
                 "recommended_action": "",
@@ -483,7 +564,7 @@ def _extract_findings_from_text(
                 "query_type": "financial_audit",
                 "amount": amount,
                 "status": "pending",
-                "audit_year": None,
+                "audit_year": audit_year,
                 "source_url": source_url,
                 "source": "Office of the Auditor General",
                 "data_quality": "official",

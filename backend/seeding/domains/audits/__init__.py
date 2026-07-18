@@ -39,6 +39,33 @@ def run(
             )
 
     records = parser.parse_audit_payload(payload)
+
+    # Fetch↔parse contract guard. A live OAG fetch can extract findings
+    # that the parser then drops for missing required fields (period,
+    # dates). That used to fail silently — the domain persisted 0, and
+    # only the nightly validation gate noticed, days later. Surface the
+    # mismatch here so a shape regression is obvious in the seed logs.
+    fetched = fetcher._count_findings(payload)
+    if fetched and not records:
+        logger.warning(
+            "Audit fetch returned %d finding(s) but the parser kept 0 — "
+            "every finding was dropped for a missing required field "
+            "(the parser requires entity_slug/entity/severity/finding_text "
+            "and period_label/start_date/end_date; the fiscal-period fields "
+            "are the usual suspect). Persisting nothing; check the "
+            "fetcher↔parser field contract.",
+            fetched,
+        )
+    elif fetched and len(records) < fetched:
+        logger.warning(
+            "Audit parse kept %d of %d fetched finding(s); %d dropped for a "
+            "missing required field (entity/severity/finding_text or "
+            "period_label/start_date/end_date).",
+            len(records),
+            fetched,
+            fetched - len(records),
+        )
+
     stats = writer.persist_audit_records(session, records, settings, context)
     errors.extend(stats.errors)
 
