@@ -414,9 +414,9 @@ export const MESSAGES = {
   // ══════════════════════════════════════════════════
   'counties.title': { en: 'County Explorer', sw: 'Kivinjari cha Kaunti', plain: 'Explore Counties' },
   'counties.modelled_estimate': {
-    en: 'Modelled estimate — not official Controller of Budget figures. County budget allocations use the Commission on Revenue Allocation (CRA) equitable-share formula; county debt and pending bills are estimated at ~15% and ~8% of budget. These are indicative, not county-reported actuals. Audit findings are from the Office of the Auditor-General.',
-    sw: 'Makadirio ya kielelezo — si takwimu rasmi za Mdhibiti wa Bajeti. Mgao wa bajeti ya kaunti unatumia fomula ya mgao sawa ya Tume ya Ugawaji wa Mapato (CRA); deni la kaunti na bili ambazo hazijalipwa zinakadiriwa kwa ~15% na ~8% ya bajeti. Haya ni makadirio tu, si takwimu halisi zilizoripotiwa na kaunti. Matokeo ya ukaguzi yanatoka Ofisi ya Mkaguzi Mkuu wa Hesabu.',
-    plain: 'These county money numbers are estimates, not official Controller of Budget figures. Budgets use the CRA sharing formula; debt and unpaid bills are rough guesses (about 15% and 8% of the budget). The audit findings are real, from the Auditor-General.',
+    en: 'Modelled estimate — not official Controller of Budget figures. County budget allocations use the Commission on Revenue Allocation (CRA) equitable-share formula. The county debt and pending-bill figures are modelled: they are not county-reported actuals, and they are not yet traced to a page of a Controller of Budget or county publication. Audit findings are from the Office of the Auditor-General.',
+    sw: 'Makadirio ya kielelezo — si takwimu rasmi za Mdhibiti wa Bajeti. Mgao wa bajeti ya kaunti unatumia fomula ya mgao sawa ya Tume ya Ugawaji wa Mapato (CRA). Takwimu za deni la kaunti na bili ambazo hazijalipwa ni za kielelezo: si takwimu halisi zilizoripotiwa na kaunti, na bado hazijafuatiliwa hadi ukurasa wa chapisho la Mdhibiti wa Bajeti au la kaunti. Matokeo ya ukaguzi yanatoka Ofisi ya Mkaguzi Mkuu wa Hesabu.',
+    plain: 'These county money numbers are estimates, not official Controller of Budget figures. Budgets use the CRA sharing formula. The debt and unpaid-bill numbers are modelled — they are not what the county itself reported, and we cannot yet show you the page they came from. The audit findings are real, from the Auditor-General.',
   },
   'counties.subtitle': {
     en: 'Compare all 47 Kenyan counties on budget, execution, debt, and audit findings.',
