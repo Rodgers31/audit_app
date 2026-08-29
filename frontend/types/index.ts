@@ -223,9 +223,11 @@ export interface AccountabilityScorecard {
   total_flagged_amount_reason?: string | null;
   /** Findings held back because their source document has no openable URL. */
   withheld?: { count: number; reason: string | null };
-  /** 'publishable_findings' | 'no_publishable_findings' — whether the grade
-   *  below rests on any evidence at all. */
+  /** 'publishable_findings' | 'no_publishable_findings' | 'no_findings_recorded'
+   *  — whether the grade below rests on any evidence at all. */
   evidence_basis?: string;
+  /** Why there is no grade: awaiting_sourced_data | not_yet_audited_in_this_dataset. */
+  accountability_reason?: string | null;
   /** Total raw findings count (may not equal sum of critical+warning if some have no severity). */
   total_findings?: number;
   critical_findings?: number;

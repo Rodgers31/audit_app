@@ -156,9 +156,11 @@ export default function AuditReportsSection() {
           <h2 className='font-display text-xl sm:text-2xl text-gov-dark dark:text-white leading-tight'>
             {t('home.audits.report_title')}
           </h2>
-          <p className='text-sm text-neutral-muted mt-0.5'>
-            {t('home.audits.national_govt_fy').replace('{fy}', String(data.fiscal_year || ''))}
-          </p>
+          {data.fiscal_year && (
+            <p className='text-sm text-neutral-muted mt-0.5'>
+              {t('home.audits.national_govt_fy').replace('{fy}', String(data.fiscal_year))}
+            </p>
+          )}
         </div>
         <a
           href='https://www.oagkenya.go.ke'
@@ -170,20 +172,52 @@ export default function AuditReportsSection() {
       </div>
 
       {/* ════════ OPINION BANNER ════════ */}
-      <div className='mx-6 sm:mx-8 mb-5 rounded-xl bg-gov-copper/[0.06] border border-gov-copper/15 px-5 py-4'>
-        <div className='flex items-center gap-2 mb-2'>
-          <Scale className='w-4 h-4 text-gov-copper' />
-          <span className='text-xs font-bold uppercase tracking-wider text-gov-copper'>
-            {t('home.audits.opinion_label')} {data.opinion_type}
-          </span>
+      {/* The opinion, its basis and the signature all describe one document.
+          When that document is not traceable, asserting any of them — least of
+          all the hardcoded "Material misstatements identified across multiple
+          ministries" this used to fall back to — attributes a finding to the
+          Auditor-General that no source supports. */}
+      {data.opinion_type || data.basis_for_qualification?.length ? (
+        <div className='mx-6 sm:mx-8 mb-5 rounded-xl bg-gov-copper/[0.06] border border-gov-copper/15 px-5 py-4'>
+          <div className='flex items-center gap-2 mb-2'>
+            <Scale className='w-4 h-4 text-gov-copper' />
+            <span className='text-xs font-bold uppercase tracking-wider text-gov-copper'>
+              {t('home.audits.opinion_label')} {data.opinion_type}
+            </span>
+          </div>
+          {data.basis_for_qualification?.[0] && (
+            <p className='text-sm text-gov-dark/80 dark:text-white/80 leading-relaxed'>
+              {data.basis_for_qualification[0]}
+            </p>
+          )}
+          {data.auditor_general && (
+            <p className='text-[11px] text-neutral-muted mt-2 italic'>
+              {t('home.audits.signed_by').replace('{name}', data.auditor_general)}
+            </p>
+          )}
         </div>
-        <p className='text-sm text-gov-dark/80 dark:text-white/80 leading-relaxed'>
-          {data.basis_for_qualification?.[0] || t('home.audits.default_basis')}
-        </p>
-        <p className='text-[11px] text-neutral-muted mt-2 italic'>
-          {t('home.audits.signed_by').replace('{name}', data.auditor_general || '')}
-        </p>
-      </div>
+      ) : (
+        <div className='mx-6 sm:mx-8 mb-5 rounded-xl bg-neutral-surface/60 dark:bg-surface-elevated border border-neutral-border/40 px-5 py-4'>
+          <div className='flex items-center gap-2 mb-2'>
+            <Scale className='w-4 h-4 text-neutral-muted' />
+            <span className='text-xs font-bold uppercase tracking-wider text-neutral-muted'>
+              Audit opinion not yet published here
+            </span>
+          </div>
+          <p className='text-sm text-gov-dark/70 dark:text-white/70 leading-relaxed'>
+            No Auditor-General opinion is shown because none currently traces to
+            a page of a published report. This is not a finding that the
+            national accounts are clean.
+          </p>
+          {typeof data.withheld_findings === 'number' && data.withheld_findings > 0 && (
+            <p className='text-[11px] text-neutral-muted mt-2'>
+              {data.withheld_findings} finding
+              {data.withheld_findings === 1 ? '' : 's'} held back for lack of a
+              traceable source document.
+            </p>
+          )}
+        </div>
+      )}
 
       {/* ════════ STAT CARDS ════════ */}
       <div className='px-6 sm:px-8 mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3'>

@@ -55,18 +55,18 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, Optional
 
-from sqlalchemy import func, select
+from sqlalchemy import and_ as sa_and
+from sqlalchemy import func
+from sqlalchemy import or_ as sa_or
+from sqlalchemy import select
 
 logger = logging.getLogger(__name__)
 
-try:  # pragma: no cover - exercised implicitly by every import site
-    from models import Audit, SourceDocument
-
-    MODELS_AVAILABLE = True
-except Exception:  # pragma: no cover
-    Audit = None  # type: ignore[assignment]
-    SourceDocument = None  # type: ignore[assignment]
-    MODELS_AVAILABLE = False
+# Imported unguarded on purpose. A try/except here would set a flag nobody
+# reads and let callers build a query against ``None``, turning a missing model
+# into an AttributeError deep inside a request instead of a clear failure at
+# import. The gate must fail closed, and loudly.
+from models import Audit, SourceDocument
 
 
 # --------------------------------------------------------------------------
@@ -91,11 +91,27 @@ def publishable_audit_criterion():
     and *its URL is non-empty*. See the module docstring for what it does not
     imply.
     """
-    return Audit.source_document_id.in_(
-        select(SourceDocument.id).where(
-            SourceDocument.url.isnot(None),
-            func.length(func.trim(SourceDocument.url)) > 0,
-        )
+    return sa_and(
+        Audit.source_document_id.in_(
+            select(SourceDocument.id).where(
+                SourceDocument.url.isnot(None),
+                func.length(func.trim(SourceDocument.url)) > 0,
+            )
+        ),
+        # Text integrity. Audit 902 — the row previously described as "the
+        # single genuine extraction" — is 89.6% ``(cid:NN)`` glyph codes ending
+        # in the report's VISION statement: the PDF's cover page, not a
+        # finding, with an empty ``amount_involved``.
+        #
+        # A.4 quarantines text that is >20% ``(cid:``; expressing a ratio in
+        # SQL is awkward, so this withholds a finding containing ANY such
+        # token. That is deliberately stricter than A.4 and is the safe
+        # direction while the OCR-retry path A.4 assumes does not yet exist
+        # (Stage 2). Revisit when it does.
+        sa_or(
+            Audit.finding_text.is_(None),
+            ~Audit.finding_text.contains("(cid:"),
+        ),
     )
 
 
@@ -167,3 +183,61 @@ def missing_funds_provenance_failure(
     if case.get("page_ref") in (None, "") and case.get("page_number") in (None, ""):
         return "no_page_reference"
     return None
+
+
+# --------------------------------------------------------------------------
+# figures read from a static file rather than a fact table
+# --------------------------------------------------------------------------
+
+# A URL with no path beyond "/" is a publisher's homepage. It tells a reader
+# who published something, never which document or which page, so it cannot
+# support a figure. `apis/oag_national_audit_data.json` cites exactly this.
+_DOCUMENT_EXTENSIONS = (".pdf", ".xlsx", ".xls", ".csv", ".doc", ".docx")
+
+
+def file_source_provenance_failure(meta: Optional[Dict[str, Any]]) -> Optional[str]:
+    """Why a figure read from a static file may not be published, or None.
+
+    Same rule as everywhere else — a figure needs a document and a page — but
+    applied to a JSON file's own ``metadata`` block instead of a database row.
+
+    ``apis/oag_national_audit_data.json`` holds 24 amounts summing to
+    KES 3,313,000,000,000: the *same* fabricated dataset as the 24 quarantined
+    ``audits`` rows (22 of 24 amounts byte-identical), attributed to a named
+    Auditor-General's report. Its only citation is ``https://www.oagkenya.go.ke``.
+    Gating the database while serving this file would leave the window open
+    (``AUDIT_FINDINGS`` F5.3/F5.4; ``kenya-legal``).
+    """
+    if not meta:
+        return "no_source_metadata"
+
+    url = ""
+    for key in ("source_url", "document_url", "url", "source"):
+        value = meta.get(key)
+        if isinstance(value, str) and value.strip().lower().startswith("http"):
+            url = value.strip()
+            break
+    if not url:
+        return "no_source_url"
+
+    # Strip scheme + host; whatever remains is the path to a document.
+    remainder = url.split("://", 1)[-1]
+    path = remainder.split("/", 1)[1] if "/" in remainder else ""
+    path = path.split("?", 1)[0].split("#", 1)[0].strip("/")
+    if not path:
+        return "source_url_is_a_homepage_not_a_document"
+    if not path.lower().endswith(_DOCUMENT_EXTENSIONS):
+        return "source_url_is_not_a_document"
+
+    if all(meta.get(k) in (None, "") for k in ("page_ref", "page_number", "page")):
+        return "no_page_reference"
+    return None
+
+
+def withheld_file_figure(reason: str) -> Dict[str, Any]:
+    """The shape an unpublishable file-sourced figure takes in a response.
+
+    Never ``0`` and never the stale string — a reader must be able to tell
+    "not published" from "published as zero".
+    """
+    return {"value": None, "reason": reason}

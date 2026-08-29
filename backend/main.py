@@ -20,6 +20,7 @@ import uvicorn
 from config.settings import settings
 from services.publication_gate import (
     count_withheld_audits,
+    file_source_provenance_failure,
     log_withheld_audits,
     missing_funds_provenance_failure,
     publishable_audit_criterion,
@@ -2842,7 +2843,6 @@ async def get_county_comprehensive(
             metrics = _resolve_fy_metrics(meta)
             financial_metrics_meta = meta.get("financial_metrics") or {}
             economic_profile = meta.get("economic_profile") or {}
-            audit_summary_meta = meta.get("audit_summary") or {}
 
             # --- Population ---
             pop = (
@@ -2977,7 +2977,10 @@ async def get_county_comprehensive(
 
             audit_findings = []
             by_severity = {"info": 0, "warning": 0, "critical": 0}
+            # `0.0` here reads as "the Auditor-General questioned nothing".
+            # Track whether any published finding actually carried an amount.
             total_audit_amount = 0.0
+            any_audit_amount = False
             for a in audits:
                 sev = a.severity.value if a.severity else "info"
                 by_severity[sev] = by_severity.get(sev, 0) + 1
@@ -3026,6 +3029,8 @@ async def get_county_comprehensive(
                             amount = float(cleaned)
                         except ValueError:
                             pass
+                if amount:
+                    any_audit_amount = True
                 total_audit_amount += amount
 
                 audit_findings.append(
@@ -3306,7 +3311,12 @@ async def get_county_comprehensive(
                     "grade": grade,
                     "health_score": round(health_score, 1),
                     "findings_count": len(audits),
-                    "total_amount_involved": total_audit_amount,
+                    "total_amount_involved": (
+                        total_audit_amount if any_audit_amount else None
+                    ),
+                    "total_amount_involved_reason": (
+                        None if any_audit_amount else "awaiting_sourced_data"
+                    ),
                     "by_severity": by_severity,
                     "findings": audit_findings,
                 },
@@ -4039,7 +4049,26 @@ async def get_federal_audits():
                     opinion_summary = nat_data.get("audit_opinion_summary", {})
                     report_meta = nat_data.get("metadata", {})
             except Exception:
-                pass
+                logging.exception(
+                    "could not read %s; its figures are withheld", nat_path
+                )
+                opinion_summary, report_meta = {}, {}
+
+            # Provenance-or-nothing applies to a file exactly as it does to a
+            # row. This file holds the same 24 amounts as the quarantined
+            # audits rows (sum KES 3,313,000,000,000, 22 of 24 identical) and
+            # cites only "https://www.oagkenya.go.ke" — a homepage, not a
+            # document. Gating the database while serving this would leave the
+            # same fabricated dataset reachable through its second copy.
+            _file_failure = file_source_provenance_failure(report_meta)
+            if _file_failure:
+                logger.warning(
+                    "/audits/federal: withholding every figure from "
+                    "oag_national_audit_data.json — %s",
+                    _file_failure,
+                )
+                opinion_summary = {}
+                report_meta = {}
 
             _withheld_federal = count_withheld_audits(
                 db, entity_types=[EntityType.MINISTRY, EntityType.NATIONAL]
@@ -4119,11 +4148,13 @@ async def get_federal_audits():
             # — NOT the global FISCAL_LABEL the audits happen to be attached
             # to in the DB (audit §3.8). Fall back to DB-derived values.
             report_fy = report_meta.get("fiscal_year") or latest_period_label
+            # No literal fallback: naming a report when nothing resolves to
+            # one asserts a document exists that a reader cannot reach.
             derived_report_title = (
                 report_meta.get("report_title")
                 or (latest_source.title if latest_source and latest_source.title else None)
                 or opinion_summary.get("report_title")
-                or "Report of the Auditor General on the National Government"
+                or None
             )
             derived_report_date = report_meta.get("report_date") or (
                 latest_source.fetch_date.date().isoformat()
@@ -4143,18 +4174,11 @@ async def get_federal_audits():
                 if latest_source and latest_source.publisher
                 else "Office of the Auditor General of Kenya"
             )
-            # Severity distribution: prefer the OAG report's own counts so the
-            # donut isn't inflated by the seed's "high"->CRITICAL mapping
-            # (audit §3.3). key_statistics splits critical/significant/minor.
-            ks = opinion_summary.get("key_statistics", {})
-            if ks.get("critical_findings") is not None:
-                by_severity = {
-                    "CRITICAL": ks.get("critical_findings", 0),
-                    "WARNING": ks.get("significant_findings", 0),
-                    "INFO": ks.get("minor_findings", 0),
-                }
-            else:
-                by_severity = severity_counts
+            # Severity distribution must describe the findings this response
+            # actually publishes. It previously preferred the JSON's own counts,
+            # which summed to 25 beside a total_findings of 1 — a histogram
+            # describing rows the same response said were withheld.
+            by_severity = severity_counts
 
             return {
                 "report_title": derived_report_title,
@@ -4162,7 +4186,10 @@ async def get_federal_audits():
                 "fiscal_year": report_fy,
                 "fiscal_years_covered": derived_fiscal_years_covered,
                 "report_date": derived_report_date,
-                "opinion_type": opinion_summary.get("opinion_type", "Qualified"),
+                # "Qualified" is an audit opinion attributed to the
+                # Auditor-General. Defaulting it made the page assert one even
+                # when the file was unreadable.
+                "opinion_type": opinion_summary.get("opinion_type") or None,
                 "total_findings": len(findings),
                 # Headline "Amount Questioned" = the OAG report's own
                 # authoritative questioned total, NOT a naive sum of every
@@ -4171,9 +4198,13 @@ async def get_federal_audits():
                 "total_amount_questioned": _parse_kes_amount_str(
                     opinion_summary.get("total_amount_questioned", "")
                 ),
-                "total_amount_questioned_label": opinion_summary.get(
-                    "total_amount_questioned", ""
+                # The label is a second copy of the same figure. Nulling only
+                # the number would leave "KES 981.3B" rendering from here —
+                # the frontend falls back to it (AuditReportsSection:205-207).
+                "total_amount_questioned_label": (
+                    opinion_summary.get("total_amount_questioned") or None
                 ),
+                "total_amount_questioned_reason": _file_failure or None,
                 # Transparency only: the raw sum across all finding amounts.
                 # NOT the questioned headline (see above).
                 "total_amount_in_findings": (
@@ -4192,11 +4223,24 @@ async def get_federal_audits():
                 # reader could open. Retained in the database, not served here.
                 "withheld_findings": _withheld_federal,
                 "by_severity": by_severity,
+                # Prose, but it quotes the quarantined figures: "Unexplained
+                # Consolidated Fund balance differences of KES 156.8 billion".
+                # Dropping the numeric fields alone leaves the numbers on the
+                # page.
                 "basis_for_qualification": opinion_summary.get(
-                    "basis_for_qualification", []
+                    "basis_for_qualification"
+                )
+                or [],
+                "emphasis_of_matter": opinion_summary.get("emphasis_of_matter") or [],
+                "key_statistics": opinion_summary.get("key_statistics") or {},
+                "ministries_with_adverse_findings": opinion_summary.get(
+                    "ministries_with_adverse_findings"
                 ),
-                "emphasis_of_matter": opinion_summary.get("emphasis_of_matter", []),
-                "key_statistics": opinion_summary.get("key_statistics", {}),
+                "ministries_with_clean_findings": opinion_summary.get(
+                    "ministries_with_clean_findings"
+                ),
+                # Why the block above is empty, when it is.
+                "opinion_summary_reason": _file_failure or None,
                 "findings": findings,
                 "top_ministries": [
                     {"ministry": name, "finding_count": count}
@@ -4979,22 +5023,41 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
     # absence rendered as a clean bill of health — the exact defect the
     # publication gate exists to prevent, arriving through the back door.
     # With no publishable finding to reason from, there is no grade to give.
-    evidence_basis = (
-        "publishable_findings" if total_findings else "no_findings_recorded"
-    )
-    if total_findings == 0 and withheld_findings:
+    # The score starts at 100 and subtracts penalties, so a county with no
+    # findings triggers nothing and lands on 100/"A" — absence rendered as a
+    # clean bill of health, which is more misleading than a wrong number
+    # because a citizen reads it as their county passing an audit.
+    #
+    # 46 of 47 counties have zero audit rows (only Homa Bay has one), so this
+    # is the normal case, not an edge case. There is no grade to give.
+    evidence_basis = "publishable_findings"
+    accountability_reason = None
+    if total_findings == 0:
         score = None
         grade = None
-        evidence_basis = "no_publishable_findings"
+        if withheld_findings:
+            evidence_basis = "no_publishable_findings"
+            accountability_reason = "awaiting_sourced_data"
+            _detail = (
+                f"{withheld_findings} finding"
+                f"{'s' if withheld_findings != 1 else ''} withheld: the source "
+                "document has no URL a reader could open"
+            )
+        else:
+            # Distinguish "audited and clean" from "never audited here". This
+            # dataset holds no finding for this county either way, so it can
+            # support neither claim.
+            evidence_basis = "no_findings_recorded"
+            accountability_reason = "not_yet_audited_in_this_dataset"
+            _detail = (
+                "No Auditor-General finding for this county has been ingested "
+                "yet. This is not a finding that the county is clean."
+            )
         grade_factors = [
             {
                 "impact": "unknown",
                 "label": "Not enough sourced evidence to grade",
-                "detail": (
-                    f"{withheld_findings} finding"
-                    f"{'s' if withheld_findings != 1 else ''} withheld: the source "
-                    "document has no URL a reader could open"
-                ),
+                "detail": _detail,
                 "points": 0,
             }
         ]
@@ -5189,6 +5252,7 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
         "accountability_grade": grade,
         "accountability_score": round(score, 1) if score is not None else None,
         "evidence_basis": evidence_basis,
+        "accountability_reason": accountability_reason,
         "withheld": {
             "count": withheld_findings,
             "reason": "source_document_has_no_url" if withheld_findings else None,

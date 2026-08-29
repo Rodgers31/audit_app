@@ -201,7 +201,13 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
                   score !== null && score >= 55 ? 'text-gray-800 dark:text-neutral-text' : 'text-gray-800 dark:text-neutral-text'
                 }`}
                 style={{ color: ungraded ? undefined : arcColor }}>
-                {ungraded ? '\u2014' : data.accountability_grade}
+                {ungraded ? (
+                  <span className='text-base font-bold text-gray-500 dark:text-neutral-muted'>
+                    Not yet assessed
+                  </span>
+                ) : (
+                  data.accountability_grade
+                )}
               </span>
               {score !== null ? (
                 <span className='text-[10px] font-semibold text-gray-500 dark:text-neutral-muted/80 tabular-nums mt-0.5'>
@@ -209,7 +215,9 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
                 </span>
               ) : (
                 <span className='text-[9px] font-semibold text-gray-500 dark:text-neutral-muted/80 mt-0.5 text-center px-1 leading-tight'>
-                  no sourced findings
+                  {data.accountability_reason === 'not_yet_audited_in_this_dataset'
+                    ? 'no audit ingested yet'
+                    : 'no sourced findings'}
                 </span>
               )}
             </div>

@@ -15,6 +15,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
+from services.publication_gate import publishable_audit_criterion
+
 from database import get_db
 from models import Audit, BudgetLine, Entity, EntityType, FiscalPeriod
 
@@ -201,6 +203,7 @@ def _money_flow_for_entity(
 
     # --- Audit flagged amounts ---
     audit_q = db.query(func.sum(Audit.amount)).filter(
+        publishable_audit_criterion(),
         Audit.entity_id == entity_id,
         Audit.period_id.in_(period_ids),
     )
@@ -380,6 +383,7 @@ async def national_money_flow(
 
         # --- Aggregated audit flags ---
         audit_q = db.query(func.sum(Audit.amount)).filter(
+            publishable_audit_criterion(),
             Audit.entity_id.in_(entity_ids),
             Audit.period_id.in_(period_ids),
         )
@@ -516,6 +520,7 @@ async def all_counties_money_flow(
             func.sum(Audit.amount),
         )
         .filter(
+            publishable_audit_criterion(),
             Audit.entity_id.in_(entity_ids),
             Audit.period_id.in_(period_ids),
         )

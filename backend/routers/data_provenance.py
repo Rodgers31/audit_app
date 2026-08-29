@@ -20,6 +20,8 @@ from pydantic import BaseModel
 from sqlalchemy import func, desc
 from sqlalchemy.orm import Session
 
+from services.publication_gate import publishable_audit_criterion
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 try:
@@ -217,6 +219,9 @@ class DataPointVerification(BaseModel):
     fetch_date: Optional[str] = None
     provenance_chain: List[Dict[str, Any]] = []
     verification_status: str  # "verified" | "unverified" | "stale"
+    #: Why the status is not "verified". `unverified` means *no evidence*,
+    #: never *fine* — without a reason a reader cannot tell the difference.
+    reason: Optional[str] = None
 
 
 # ── Endpoints ─────────────────────────────────────────────────────
@@ -282,16 +287,23 @@ async def get_data_health(db: Session = Depends(get_db)):
         status="healthy" if budget_count >= 400 else "critical" if budget_count == 0 else "degraded",
     ))
 
-    # Audit records
-    audit_count = db.query(Audit).count()
-    audits_with_year = db.query(Audit).filter(Audit.audit_year.isnot(None)).count()
+    # Audit records. Health must describe what is *publishable*: counting
+    # withheld rows here reported "27 rows" while 26 of them were excluded
+    # from every public read.
+    publishable_audits = db.query(Audit).filter(publishable_audit_criterion())
+    audit_count = publishable_audits.count()
+    withheld_audits = db.query(Audit).filter(~publishable_audit_criterion()).count()
+    audits_with_year = publishable_audits.filter(Audit.audit_year.isnot(None)).count()
     tables.append(TableHealth(
         table="audits",
         label="Audit Findings",
         row_count=audit_count,
         source="OAG Audit Reports",
         status="healthy" if audits_with_year >= 50 else "degraded" if audit_count > 0 else "empty",
-        notes=f"{audits_with_year} with audit_year" if audit_count > 0 else None,
+        notes=(
+            f"{audits_with_year} publishable with audit_year; "
+            f"{withheld_audits} withheld (no resolvable source document)"
+        ),
     ))
 
     # Population
@@ -472,10 +484,15 @@ async def verify_data_point(
                 verification.verification_status = "verified"
 
         elif table_name == "audits":
-            query = db.query(Audit)
+            # Only rows that pass the publication gate. This branch previously
+            # returned the newest audit by id — which is 902, the glyph-code
+            # cover page — and stamped it "verified" without checking anything.
+            query = db.query(Audit).filter(publishable_audit_criterion())
             if entity_id:
                 query = query.filter(Audit.entity_id == entity_id)
             record = query.order_by(desc(Audit.id)).first()
+            if record is None:
+                verification.reason = "no_publishable_row"
             if record:
                 verification.value = record.finding_text[:200] if record.finding_text else None
                 if record.source_document_id:

@@ -142,16 +142,24 @@ export interface FederalAuditFinding {
 }
 
 export interface FederalAuditResponse {
-  report_title: string;
-  auditor_general: string;
-  fiscal_year: string;
-  report_date: string;
-  opinion_type: string;
+  /** All four describe one document. Each is null when nothing resolves to
+   *  a report a reader could open. */
+  report_title: string | null;
+  auditor_general: string | null;
+  fiscal_year: string | null;
+  report_date: string | null;
+  opinion_type: string | null;
   total_findings: number;
   // Authoritative OAG questioned total (parsed from the report), or null
   // when the report carries no figure. NOT a naive sum of finding amounts.
   total_amount_questioned: number | null;
-  total_amount_questioned_label: string;
+  total_amount_questioned_label: string | null;
+  /** Why the questioned total is absent, e.g. source_url_is_a_homepage_not_a_document. */
+  total_amount_questioned_reason?: string | null;
+  /** Set when the whole opinion summary is withheld for lack of provenance. */
+  opinion_summary_reason?: string | null;
+  /** Findings excluded for lack of a resolvable source document. */
+  withheld_findings?: number;
   // Transparency only: raw sum across all finding amounts (not "questioned").
   total_amount_in_findings?: number;
   by_severity: Record<string, number>;

@@ -30,6 +30,8 @@ from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from services.publication_gate import publishable_audit_criterion
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from provenance import resolve_data_vintage
@@ -177,6 +179,7 @@ def _latest_period_label_for_audit(db: Session, publisher_pattern: str) -> Optio
         db.query(FiscalPeriod.label)
         .join(Audit, Audit.period_id == FiscalPeriod.id)
         .join(SourceDocument, Audit.source_document_id == SourceDocument.id)
+        .filter(publishable_audit_criterion())
         .filter(SourceDocument.publisher.ilike(f"%{publisher_pattern}%"))
         .order_by(FiscalPeriod.start_date.desc())
         .limit(1)
