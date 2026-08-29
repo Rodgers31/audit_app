@@ -55,12 +55,26 @@ def _get_or_create_source_document(
     return doc
 
 
+def _raw_kes(value: Any) -> Any:
+    """Normalise a money value to raw KES at the DB boundary.
+
+    Parser records (and fixtures) carry the historical billions convention;
+    the table stores raw KES with a declared ``unit`` column since the
+    stage1 3a migration. No national fiscal aggregate legitimately sits
+    between 1e6 and 1e9, so the scale test is unambiguous and idempotent.
+    """
+    if value is None:
+        return None
+    v = float(value)
+    return v * 1e9 if v < 1_000_000 else v
+
+
 def write_fiscal_summary_records(
     session: Session,
     records: list[FiscalSummaryRecord],
     metadata: dict[str, Any],
 ) -> tuple[int, int]:
-    """Upsert fiscal summary records into the database."""
+    """Upsert fiscal summary records into the database (raw KES)."""
     created = 0
     updated = 0
 
@@ -74,20 +88,22 @@ def write_fiscal_summary_records(
         )
 
         fields = {
-            "appropriated_budget": record.appropriated_budget,
-            "total_revenue": record.total_revenue,
-            "tax_revenue": record.tax_revenue,
-            "non_tax_revenue": record.non_tax_revenue,
-            "total_borrowing": record.total_borrowing,
+            # Money columns: converted to raw KES at this boundary.
+            "appropriated_budget": _raw_kes(record.appropriated_budget),
+            "total_revenue": _raw_kes(record.total_revenue),
+            "tax_revenue": _raw_kes(record.tax_revenue),
+            "non_tax_revenue": _raw_kes(record.non_tax_revenue),
+            "total_borrowing": _raw_kes(record.total_borrowing),
             "borrowing_pct_of_budget": record.borrowing_pct_of_budget,
-            "debt_service_cost": record.debt_service_cost,
+            "debt_service_cost": _raw_kes(record.debt_service_cost),
             "debt_service_per_shilling": record.debt_service_per_shilling,
-            "debt_ceiling": record.debt_ceiling,
-            "actual_debt": record.actual_debt,
+            "debt_ceiling": _raw_kes(record.debt_ceiling),
+            "actual_debt": _raw_kes(record.actual_debt),
             "debt_ceiling_usage_pct": record.debt_ceiling_usage_pct,
-            "development_spending": record.development_spending,
-            "recurrent_spending": record.recurrent_spending,
-            "county_allocation": record.county_allocation,
+            "development_spending": _raw_kes(record.development_spending),
+            "recurrent_spending": _raw_kes(record.recurrent_spending),
+            "county_allocation": _raw_kes(record.county_allocation),
+            "unit": "KES",
         }
 
         if existing:

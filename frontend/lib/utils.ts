@@ -33,6 +33,24 @@ export function fmtKES(val: number): string {
 }
 
 /**
+ * Normalise a money value from /debt/timeline or /fiscal/summary to raw KES.
+ *
+ * Since the stage1 3a migration those endpoints store and serve raw KES and
+ * DECLARE it with a per-row `unit: "KES"` field. A pre-migration backend
+ * serves bare billions with no unit field — the one legacy case this
+ * converts. The decision is made on the declared unit, never by guessing a
+ * value's magnitude (F5.5: undeclared units are how the homepage was once
+ * wrong by 10⁹).
+ */
+export function toRawKES(
+  value: number | null | undefined,
+  unit?: string | null
+): number | null {
+  if (value == null || Number.isNaN(value)) return null;
+  return unit === 'KES' ? value : value * 1e9;
+}
+
+/**
  * Format a **billion KES** value into a short human-readable string.
  * Input: billions (e.g. 3310 meaning KES 3.31 trillion) → "3.31T"
  *

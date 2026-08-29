@@ -257,9 +257,15 @@ def check_fiscal_summary(row) -> list[str]:
         if v is None:
             return None
         try:
-            return float(v)
+            v = float(v)
         except (TypeError, ValueError):
             return None
+        # The guard's bands are in billions. Seed-time records still carry
+        # the parser's billions convention, while DB-backed rows carry raw
+        # KES since the stage1 3a migration — normalise so the SAME guard
+        # runs on both. No national fiscal aggregate is legitimately
+        # between 1e6 and 1e9, so the scale test is unambiguous.
+        return v / 1e9 if v >= 1e9 else v
 
     # 1. Plausibility bands (unit-safety + wrong-row detection).
     for field, (lo, hi) in _FISCAL_BANDS_BILLION.items():

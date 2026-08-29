@@ -180,6 +180,22 @@ export interface FederalAuditResponse {
   };
   findings: FederalAuditFinding[];
   top_ministries: { ministry: string; finding_count: number }[];
+  /** Why `findings` is empty, when it is: "awaiting_sourced_data" (rows
+   *  exist but are withheld for lack of a traceable source) or
+   *  "no_findings_recorded". Null when findings are published. */
+  findings_reason?: 'awaiting_sourced_data' | 'no_findings_recorded' | null;
+  /** When the next OAG publication is expected — computed by the backend
+   *  from the Layer-1 source registry, never hand-written in the UI. */
+  next_expected?: {
+    dataset: string;
+    publisher: string | null;
+    cadence: string | null;
+    lag: string | number | null;
+    lag_unit: 'months' | 'days';
+    window_start: string | null;
+    window_end: string | null;
+    in_window: boolean;
+  } | null;
   last_updated: string | null;
 }
 

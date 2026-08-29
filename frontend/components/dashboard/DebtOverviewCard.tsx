@@ -1,5 +1,6 @@
 'use client';
 
+import { toRawKES } from '@/lib/utils';
 import { useDebtTimeline } from '@/lib/react-query';
 import { motion } from 'framer-motion';
 import { AlertTriangle } from 'lucide-react';
@@ -22,14 +23,18 @@ import {
 export default function DebtOverviewCard() {
   const { data, isLoading } = useDebtTimeline();
 
+  // This card's labels work in billions; convert on each row's declared
+  // unit (raw KES since the stage1 3a migration).
   const chartData =
     data?.timeline?.map((entry) => ({
       year: String(entry.year),
-      debt: entry.total,
+      debt: (toRawKES(entry.total, entry.unit) ?? 0) / 1e9,
     })) ?? [];
 
   const latestEntry = data?.timeline?.[data.timeline.length - 1];
-  const totalDebt = latestEntry?.total ?? 0;
+  const totalDebt = latestEntry
+    ? (toRawKES(latestEntry.total, latestEntry.unit) ?? 0) / 1e9
+    : 0;
   const debtToGdp = latestEntry?.gdp_ratio ?? 0;
   const latestYear = latestEntry?.year ?? '';
 

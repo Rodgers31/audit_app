@@ -452,6 +452,20 @@ jobs:
           # fetch↔parse WARN, not by inflating this floor.)
           total_audits = session.query(Audit).count()
           check('Audit Records', total_audits, 20)
+          # The provenance middle link. This was 0 for the project's whole
+          # history (AUDIT_FINDINGS finding 2); Stage 2's extractor keeps
+          # it populated, and losing every extraction row is a hard fail.
+          from models import Extraction
+          check('Extractions (provenance middle link)',
+                session.query(Extraction).count(),
+                1)
+          check('Publishable audits with extraction provenance',
+                session.query(Audit).filter(
+                    Audit.extraction_id.isnot(None),
+                    Audit.page_ref.isnot(None),
+                    Audit.source_hash.isnot(None),
+                ).count(),
+                1)
           audits_with_year = session.query(Audit).filter(Audit.audit_year.isnot(None)).count()
           check('Audits with audit_year', audits_with_year, 20)
           audits_with_type = session.query(Audit).filter(Audit.query_type.isnot(None)).count()
@@ -538,7 +552,45 @@ jobs:
           "
 
   # ══════════════════════════════════════════════════════════════════
-  # Step 5: Summary and notifications
+  # Step 5: Freshness loop (Layer 8) — tell the frontend data changed
+  # ══════════════════════════════════════════════════════════════════
+  # A new publication must reach the prerendered pages without a deploy.
+  # The request body is HMAC-SHA256-signed with REVALIDATE_SECRET (same
+  # secret the Next.js /api/revalidate route verifies); the route only
+  # accepts allowlisted paths. Runs only after seed AND validate succeed
+  # on a non-dry run — never revalidate pages onto unvalidated data.
+  revalidate:
+    name: Revalidate Frontend Pages
+    needs: [seed, validate]
+    if: success() && github.event.inputs.dry_run != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call the revalidation webhook
+        env:
+          REVALIDATE_URL: ${{ vars.REVALIDATE_URL || 'https://www.auditgava.com/api/revalidate' }}
+          REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
+        run: |
+          if [ -z "$REVALIDATE_SECRET" ]; then
+            echo "::warning::REVALIDATE_SECRET is not configured — prerendered pages will refresh only on their ISR interval. Set the secret here and in Vercel to close the freshness loop."
+            exit 0
+          fi
+          BODY='{"paths":["/","/audits","/budget","/counties","/debt","/sectors","/transparency","/accountability/missing-funds","/sources"]}'
+          SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$REVALIDATE_SECRET" -r | cut -d' ' -f1)
+          HTTP=$(curl -sS -o /tmp/revalidate_response.json -w '%{http_code}' \
+            -X POST "$REVALIDATE_URL" \
+            -H "content-type: application/json" \
+            -H "x-revalidate-signature: $SIG" \
+            -d "$BODY")
+          cat /tmp/revalidate_response.json
+          echo ""
+          if [ "$HTTP" != "200" ]; then
+            echo "::error::Revalidation webhook returned HTTP $HTTP"
+            exit 1
+          fi
+
+  # ══════════════════════════════════════════════════════════════════
+  # Step 6: Summary and notifications
   # ══════════════════════════════════════════════════════════════════
   notify:
     name: Post-Run Summary

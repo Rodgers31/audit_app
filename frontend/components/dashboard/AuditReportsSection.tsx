@@ -48,13 +48,17 @@ const SEV_CFG: Record<
 /* ─── SVG donut ─── */
 function SeverityDonut({ sev }: { sev: Record<string, number> }) {
   const { t } = useLang();
-  const total = Object.values(sev).reduce((a, b) => a + b, 0) || 1;
+  // The rendered count is the real sum. The `|| 1` denominator exists ONLY
+  // to keep the arc arithmetic finite — it must never surface as a count
+  // (it used to: an empty severity map rendered as "1 findings").
+  const total = Object.values(sev).reduce((a, b) => a + b, 0);
+  const denom = total || 1;
   const r = 44;
   const circ = 2 * Math.PI * r;
   let offset = 0;
 
   const arcs = (['CRITICAL', 'WARNING', 'INFO'] as const).map((level) => {
-    const pct = (sev[level] || 0) / total;
+    const pct = (sev[level] || 0) / denom;
     const dash = circ * pct;
     const arc = { level, dash, gap: circ - dash, offset, color: SEV_CFG[level].color };
     offset += dash;
@@ -115,7 +119,8 @@ export default function AuditReportsSection() {
 
     return {
       sev: s,
-      sevTotal: Object.values(s).reduce((a, b) => a + b, 0) || 1,
+      // Real sum — 0 means 0. Guards against division live at use sites.
+      sevTotal: Object.values(s).reduce((a, b) => a + b, 0),
       topFindings: [...data.findings]
         .filter((f) => f.amount_involved !== 'KES 0')
         .sort((a, b) => b.amount_numeric - a.amount_numeric)
@@ -142,6 +147,42 @@ export default function AuditReportsSection() {
   }
 
   const stats = data.key_statistics;
+
+  // Zero publishable findings is a real state that deserves a real empty
+  // state — not an empty donut over a bare button. Everything rendered
+  // below comes from the response (withheld_findings, findings_reason,
+  // next_expected); no schedule fact is hand-written here.
+  const isEmpty = (data.findings?.length ?? 0) === 0;
+  const withheld = data.withheld_findings ?? 0;
+  const nx = data.next_expected;
+  const fmtWindowMonth = (iso: string) =>
+    new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-KE', {
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'UTC',
+    });
+  const cadenceWord = (cadence: string | null | undefined) => {
+    if (cadence === 'annual') return t('home.audits.cadence_annual');
+    if (cadence === 'quarterly') return t('home.audits.cadence_quarterly');
+    if (cadence === 'monthly') return t('home.audits.cadence_monthly');
+    return cadence ?? '';
+  };
+  const lagPhrase =
+    nx?.lag != null
+      ? t(nx.lag_unit === 'days' ? 'home.audits.lag_days' : 'home.audits.lag_months').replace(
+          '{lag}',
+          String(nx.lag)
+        )
+      : '';
+  const windowSentence =
+    nx?.window_start && nx?.window_end
+      ? t('home.audits.empty_window')
+          .replace('{publisher}', nx.publisher ?? 'Office of the Auditor-General')
+          .replace('{cadence}', cadenceWord(nx.cadence))
+          .replace('{lag}', lagPhrase)
+          .replace('{start}', fmtWindowMonth(nx.window_start))
+          .replace('{end}', fmtWindowMonth(nx.window_end))
+      : null;
 
   return (
     <motion.section
@@ -286,6 +327,24 @@ export default function AuditReportsSection() {
         <div className='rounded-xl bg-gov-sand/30 dark:bg-surface-elevated/40 border border-neutral-border/20 p-4'>
           <h3 className='font-display text-base text-gov-dark dark:text-white mb-4'>{t('home.audits.findings_overview')}</h3>
 
+          {isEmpty ? (
+            <div className='flex flex-col items-start gap-2 py-4'>
+              <div className='flex items-center gap-2'>
+                <SearchX className='w-4 h-4 text-neutral-muted/60 flex-shrink-0' />
+                <p className='text-sm font-semibold text-gov-dark dark:text-white'>
+                  {t('home.audits.empty_title')}
+                </p>
+              </div>
+              {withheld > 0 && (
+                <p className='text-xs text-neutral-muted leading-relaxed'>
+                  {t('home.audits.empty_withheld').replace('{n}', String(withheld))}
+                </p>
+              )}
+              {windowSentence && (
+                <p className='text-xs text-neutral-muted leading-relaxed'>{windowSentence}</p>
+              )}
+            </div>
+          ) : (
           <div className='flex gap-5 items-start'>
             {/* Findings list */}
             <div className='flex-1 min-w-0 space-y-1'>
@@ -352,7 +411,7 @@ export default function AuditReportsSection() {
               <SeverityDonut sev={sev} />
               <div className='space-y-1.5'>
                 {(['CRITICAL', 'WARNING', 'INFO'] as const).map((level) => {
-                  const pct = Math.round(((sev[level] || 0) / sevTotal) * 100);
+                  const pct = sevTotal ? Math.round(((sev[level] || 0) / sevTotal) * 100) : 0;
                   return (
                     <div key={level} className='flex items-center gap-2'>
                       <span
@@ -371,6 +430,7 @@ export default function AuditReportsSection() {
               </div>
             </div>
           </div>
+          )}
 
           {/* ── Emphasis of Matter ── */}
           {data.emphasis_of_matter?.[0] && (
@@ -392,6 +452,11 @@ export default function AuditReportsSection() {
         {/* ── Right: Top Ministries Flagged ── */}
         <div className='rounded-xl border border-neutral-border/40 bg-gov-forest/[0.03] dark:bg-surface-elevated/40 p-4'>
           <h4 className='font-display text-sm text-gov-dark dark:text-white mb-4'>{t('home.audits.top_ministries')}</h4>
+          {ministryBars.length === 0 && (
+            <p className='text-xs text-neutral-muted leading-relaxed'>
+              {t('home.audits.empty_ministries')}
+            </p>
+          )}
           <div className='space-y-3'>
             {ministryBars.map((m) => (
               <div key={m.ministry}>

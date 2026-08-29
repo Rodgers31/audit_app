@@ -25,6 +25,7 @@ from services.publication_gate import (
     missing_funds_provenance_failure,
     publishable_audit_criterion,
 )
+from seeding.source_registry import next_expected_window
 from services.trust_guards import (
     check_budget_sectors,
     check_coverage_staleness,
@@ -3932,6 +3933,17 @@ def _parse_kes_amount_str(value) -> "float | None":
         return None
 
 
+# The Blue Book covers ministries, state departments, commissions and
+# independent offices (Article 229). The federal panel must show all of
+# them; "Top Ministries" below stays MINISTRY-only by design.
+FEDERAL_AUDIT_ENTITY_TYPES = [
+    EntityType.MINISTRY,
+    EntityType.NATIONAL,
+    EntityType.COMMISSION,
+    EntityType.AGENCY,
+]
+
+
 @app.get("/api/v1/audits/federal")
 @cached(key_prefix="audits:federal", ttl=3600)
 async def get_federal_audits():
@@ -3952,7 +3964,7 @@ async def get_federal_audits():
                 db.query(DBAudit, DBEntity)
                 .filter(publishable_audit_criterion())
                 .join(DBEntity, DBAudit.entity_id == DBEntity.id)
-                .filter(DBEntity.type.in_([EntityType.MINISTRY, EntityType.NATIONAL]))
+                .filter(DBEntity.type.in_(FEDERAL_AUDIT_ENTITY_TYPES))
                 .order_by(DBAudit.severity.desc(), DBAudit.created_at.desc())
                 .all()
             )
@@ -3977,6 +3989,7 @@ async def get_federal_audits():
                 report_section = ""
                 date_raised = ""
 
+                prov = {}
                 if audit.provenance and isinstance(audit.provenance, list):
                     prov = audit.provenance[0] if audit.provenance else {}
                     amount_str = prov.get("amount_involved", "")
@@ -4004,6 +4017,15 @@ async def get_federal_audits():
                     except (ValueError, TypeError):
                         amount_val = 0.0
 
+                # Extraction-backed rows (Stage 2) carry the figure in the
+                # `amount` column — set only when the paragraph cites exactly
+                # one Kshs figure. Prefer it over the legacy provenance
+                # string; never invent one when both are absent.
+                if audit.amount is not None:
+                    amount_val = float(audit.amount)
+                    if not amount_str:
+                        amount_str = f"KES {amount_val:,.0f}"
+
                 if amount_str and amount_val:
                     any_amount_parsed = True
                 total_amount += amount_val
@@ -4020,6 +4042,11 @@ async def get_federal_audits():
                         "recommended_action": audit.recommended_action,
                         "amount_involved": amount_str,
                         "amount_numeric": amount_val,
+                        # Provenance a reader can follow: the page of the
+                        # source PDF this finding was extracted from.
+                        "title": prov.get("title") or None,
+                        "page_ref": audit.page_ref,
+                        "source_url": prov.get("source_url") or None,
                         "status": status,
                         "category": category,
                         "query_type": query_type,
@@ -4071,7 +4098,7 @@ async def get_federal_audits():
                 report_meta = {}
 
             _withheld_federal = count_withheld_audits(
-                db, entity_types=[EntityType.MINISTRY, EntityType.NATIONAL]
+                db, entity_types=FEDERAL_AUDIT_ENTITY_TYPES
             )
             log_withheld_audits("/audits/federal", _withheld_federal, len(findings))
 
@@ -4098,7 +4125,7 @@ async def get_federal_audits():
                 .join(DBEntity, DBAudit.entity_id == DBEntity.id)
                 .filter(publishable_audit_criterion())
                 .filter(
-                    DBEntity.type.in_([EntityType.MINISTRY, EntityType.NATIONAL])
+                    DBEntity.type.in_(FEDERAL_AUDIT_ENTITY_TYPES)
                 )
                 .order_by(DBFiscalPeriod.start_date.desc())
                 .limit(1)
@@ -4114,7 +4141,7 @@ async def get_federal_audits():
                         .filter(publishable_audit_criterion())
                         .filter(
                             DBEntity.type.in_(
-                                [EntityType.MINISTRY, EntityType.NATIONAL]
+                                FEDERAL_AUDIT_ENTITY_TYPES
                             )
                         )
                         .distinct()
@@ -4136,7 +4163,7 @@ async def get_federal_audits():
                     .filter(publishable_audit_criterion())
                     .filter(
                         DBEntity.type.in_(
-                            [EntityType.MINISTRY, EntityType.NATIONAL]
+                            FEDERAL_AUDIT_ENTITY_TYPES
                         )
                     )
                     .order_by(DBSourceDocument.fetch_date.desc())
@@ -4223,6 +4250,28 @@ async def get_federal_audits():
                 # reader could open. Retained in the database, not served here.
                 "withheld_findings": _withheld_federal,
                 "by_severity": by_severity,
+                # When the gate leaves nothing to publish, say why and when
+                # the next OAG publication is expected — both machine-readable
+                # so the frontend renders a real empty state instead of a
+                # blank panel (or a hand-written schedule that drifts). The
+                # window comes from the Layer-1 source registry.
+                "findings_reason": (
+                    None
+                    if findings
+                    else (
+                        "awaiting_sourced_data"
+                        if _withheld_federal
+                        else "no_findings_recorded"
+                    )
+                ),
+                "next_expected": (
+                    None
+                    if findings
+                    else next_expected_window(
+                        "oag_national_audits",
+                        datetime.datetime.now(datetime.timezone.utc).date(),
+                    )
+                ),
                 # Prose, but it quotes the quarantined figures: "Unexplained
                 # Consolidated Fund balance differences of KES 156.8 billion".
                 # Dropping the numeric fields alone leaves the numbers on the
@@ -7120,19 +7169,26 @@ async def get_budget_overview():
 
             fiscal_rows = db.query(FSModel).order_by(FSModel.fiscal_year.asc()).all()
             fiscal_years = []
+
+            # This response declares fiscal_history_unit = "billion_kes";
+            # the table stores raw KES since the stage1 3a migration, so
+            # convert here to keep the declared unit truthful.
+            def _b(v) -> float:
+                return float(v or 0) / 1e9
+
             for r in fiscal_rows:
                 entry = {
                     "fiscal_year": r.fiscal_year,
-                    "appropriated_budget": float(r.appropriated_budget or 0),
-                    "total_revenue": float(r.total_revenue or 0),
-                    "tax_revenue": float(r.tax_revenue or 0),
-                    "non_tax_revenue": float(r.non_tax_revenue or 0),
-                    "total_borrowing": float(r.total_borrowing or 0),
+                    "appropriated_budget": _b(r.appropriated_budget),
+                    "total_revenue": _b(r.total_revenue),
+                    "tax_revenue": _b(r.tax_revenue),
+                    "non_tax_revenue": _b(r.non_tax_revenue),
+                    "total_borrowing": _b(r.total_borrowing),
                     "borrowing_pct_of_budget": float(r.borrowing_pct_of_budget or 0),
-                    "debt_service_cost": float(r.debt_service_cost or 0),
-                    "development_spending": float(r.development_spending or 0),
-                    "recurrent_spending": float(r.recurrent_spending or 0),
-                    "county_allocation": float(r.county_allocation or 0),
+                    "debt_service_cost": _b(r.debt_service_cost),
+                    "development_spending": _b(r.development_spending),
+                    "recurrent_spending": _b(r.recurrent_spending),
+                    "county_allocation": _b(r.county_allocation),
                 }
                 # Only include years with substantially complete data —
                 # World Bank back-fill years often only have 1-2 fields.
@@ -7604,12 +7660,13 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
             db.query(FiscalSummary).order_by(FiscalSummary.fiscal_year.desc()).first()
         )
 
-        budget_billion = (
+        # fiscal_summaries stores raw KES (stage1 3a migration).
+        budget_raw_kes = (
             float(latest_fiscal.appropriated_budget)
             if latest_fiscal and latest_fiscal.appropriated_budget
             else None
         )
-        revenue_billion = (
+        revenue_raw_kes = (
             float(latest_fiscal.total_revenue)
             if latest_fiscal and latest_fiscal.total_revenue
             else None
@@ -7624,23 +7681,23 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
             "unemployment_pct": econ_map.get("unemployment_rate"),
             "total_population": total_pop,
             "budget_to_gdp_pct": (
-                round((budget_billion / gdp_billion) * 100, 1)
-                if budget_billion and gdp_billion
+                round((budget_raw_kes / (gdp_billion * 1e9)) * 100, 1)
+                if budget_raw_kes and gdp_billion
                 else None
             ),
             "revenue_to_gdp_pct": (
-                round((revenue_billion / gdp_billion) * 100, 1)
-                if revenue_billion and gdp_billion
+                round((revenue_raw_kes / (gdp_billion * 1e9)) * 100, 1)
+                if revenue_raw_kes and gdp_billion
                 else None
             ),
             "per_capita_budget_kes": (
-                round((budget_billion * 1e9) / total_pop)
-                if budget_billion and total_pop
+                round(budget_raw_kes / total_pop)
+                if budget_raw_kes and total_pop
                 else None
             ),
             "per_capita_revenue_kes": (
-                round((revenue_billion * 1e9) / total_pop)
-                if revenue_billion and total_pop
+                round(revenue_raw_kes / total_pop)
+                if revenue_raw_kes and total_pop
                 else None
             ),
             "fiscal_year": latest_fiscal.fiscal_year if latest_fiscal else None,
@@ -7777,6 +7834,10 @@ async def get_debt_timeline(db: Session = Depends(get_db)):
                     "total": float(r.total),
                     "gdp": float(r.gdp) if r.gdp else None,
                     "gdp_ratio": float(r.gdp_ratio) if r.gdp_ratio else None,
+                    # The row's declared unit (stage1 3a): "KES" = raw KES.
+                    # Consumers convert on this field, never by guessing
+                    # magnitude — see F5.5.
+                    "unit": r.unit,
                 }
             )
 
@@ -7799,8 +7860,10 @@ async def get_debt_timeline(db: Session = Depends(get_db)):
         # surface any divergence so callers can display an honest badge.
         reconciliation: dict = {
             "primary_source": "debt_timeline_table",
+            # debt_timeline stores raw KES with a declared unit column
+            # (stage1 3a migration) — no scale factor.
             "primary_value_kes": (
-                float(rows[-1].total) * 1e9 if rows and rows[-1].total else None
+                float(rows[-1].total) if rows and rows[-1].total else None
             ),
             "secondary_source": "loans_table",
             "secondary_value_kes": None,
@@ -7921,6 +7984,8 @@ async def get_fiscal_summary(db: Session = Depends(get_db)):
         def _row_to_dict(r: FSModel) -> dict:
             return {
                 "fiscal_year": r.fiscal_year,
+                # The row's declared unit (stage1 3a): "KES" = raw KES.
+                "unit": r.unit,
                 "appropriated_budget": (
                     float(r.appropriated_budget) if r.appropriated_budget else None
                 ),
@@ -8764,8 +8829,8 @@ async def get_national_debt():
                         "note": "",
                     }
                     if latest_timeline_row and latest_timeline_row.total:
-                        # DebtTimeline.total is in BILLIONS of KES.
-                        secondary_kes = float(latest_timeline_row.total) * 1e9
+                        # DebtTimeline stores raw KES (stage1 3a migration).
+                        secondary_kes = float(latest_timeline_row.total)
                         reconciliation["secondary_value_kes"] = secondary_kes
                         reconciliation["secondary_year"] = latest_timeline_row.year
                         if total_outstanding > 0:
@@ -10798,10 +10863,13 @@ async def dashboard_fiscal_outturns():
                 if rows:
                     series = []
                     for r in rows:
-                        rev = float(r.total_revenue or 0)
+                        # fiscal_summaries stores raw KES (stage1 3a);
+                        # this endpoint's declared unit is billion_kes,
+                        # so convert here to keep the label truthful.
+                        rev = float(r.total_revenue or 0) / 1e9
                         # expenditure = recurrent + development if available
-                        recurrent = float(r.recurrent_spending or 0)
-                        development = float(r.development_spending or 0)
+                        recurrent = float(r.recurrent_spending or 0) / 1e9
+                        development = float(r.development_spending or 0) / 1e9
                         expenditure = (
                             (recurrent + development)
                             if (recurrent + development) > 0

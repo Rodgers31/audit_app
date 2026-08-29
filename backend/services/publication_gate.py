@@ -139,6 +139,65 @@ def count_withheld_audits(db, entity_id=None, entity_types=None) -> int:
     return q.scalar() or 0
 
 
+def backfill_publishable_audits(session) -> Dict[str, int]:
+    """Write the gate's verdict into ``audits.publishable`` — same predicate.
+
+    The Layer-4 loader calls this after inserting rows, and the Stage-1
+    backfill migration calls it once over the existing table, so the column
+    always carries what :func:`publishable_audit_criterion` would compute.
+    One definition, three call sites, zero copies of the rule.
+
+    Withheld rows also get a machine-readable ``quarantine_reason`` derived
+    from *which* clause failed, so an operator can see why a row is held
+    without re-deriving the predicate by hand.
+
+    Returns ``{"published": n, "withheld": n}``.
+    """
+    from sqlalchemy import update
+
+    crit = publishable_audit_criterion()
+    published = session.execute(
+        update(Audit)
+        .where(crit)
+        .values(publishable=True, quarantine_reason=None)
+        .execution_options(synchronize_session=False)
+    ).rowcount
+    # Which clause failed? URL first (the commoner failure), then text
+    # integrity — a row can fail both; the URL reason wins as the more
+    # fundamental defect.
+    no_url = ~Audit.source_document_id.in_(
+        select(SourceDocument.id).where(
+            SourceDocument.url.isnot(None),
+            func.length(func.trim(SourceDocument.url)) > 0,
+        )
+    )
+    session.execute(
+        update(Audit)
+        .where(no_url)
+        .values(publishable=False, quarantine_reason="source_document_has_no_url")
+        .execution_options(synchronize_session=False)
+    )
+    withheld_cid = session.execute(
+        update(Audit)
+        .where(~no_url, ~crit)
+        .values(publishable=False, quarantine_reason="finding_text_unreadable_cid")
+        .execution_options(synchronize_session=False)
+    ).rowcount
+    no_url_count = session.execute(
+        select(func.count(Audit.id)).where(no_url)
+    ).scalar_one()
+    session.flush()
+    stats = {"published": published, "withheld": no_url_count + withheld_cid}
+    logger.info(
+        "publishable backfill: %d published, %d withheld (%d no-url, %d cid)",
+        stats["published"],
+        stats["withheld"],
+        no_url_count,
+        withheld_cid,
+    )
+    return stats
+
+
 def log_withheld_audits(context: str, withheld: int, published: int) -> None:
     """Emit the withholding at WARNING, with enough detail to act on."""
     if withheld:

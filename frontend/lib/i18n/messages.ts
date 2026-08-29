@@ -222,6 +222,34 @@ export const MESSAGES = {
   'home.audits.emphasis': { en: 'Emphasis of Matter', sw: 'Msisitizo wa Suala', plain: 'Also Note' },
   'home.audits.top_ministries': { en: 'Top Ministries Flagged', sw: 'Wizara Zilizoonywa Zaidi', plain: 'Most Problem Ministries' },
   'home.audits.view_all_findings': { en: 'View All Findings', sw: 'Tazama Matokeo Yote', plain: 'See All Findings' },
+  // Empty state when the publication gate withholds every federal finding.
+  // {…} placeholders are filled from the API's machine-readable
+  // findings_reason / next_expected fields — never hand-written facts.
+  'home.audits.empty_title': {
+    en: 'No findings from the Auditor-General can be published yet',
+    sw: 'Hakuna matokeo ya Mkaguzi Mkuu yanayoweza kuchapishwa bado',
+    plain: 'No findings from the Auditor-General can be shown yet',
+  },
+  'home.audits.empty_withheld': {
+    en: '{n} findings are held back because none of them can yet be traced to a page of a published report.',
+    sw: 'Matokeo {n} yamezuiliwa kwa sababu hakuna linaloweza kufuatiliwa hadi ukurasa wa ripoti iliyochapishwa.',
+    plain: '{n} findings are held back because we cannot yet point to the page of an official report they come from.',
+  },
+  'home.audits.empty_window': {
+    en: 'The {publisher} publishes this report {cadence}, {lag} after the fiscal year ends. The next report is expected between {start} and {end}.',
+    sw: '{publisher} huchapisha ripoti hii {cadence}, {lag} baada ya mwaka wa fedha kuisha. Ripoti ijayo inatarajiwa kati ya {start} na {end}.',
+    plain: 'The {publisher} publishes this report {cadence}, {lag} after the money year ends. The next one is expected between {start} and {end}.',
+  },
+  'home.audits.empty_ministries': {
+    en: 'No ministry can be listed until its findings trace to a published report.',
+    sw: 'Hakuna wizara inayoweza kuorodheshwa hadi matokeo yake yafuatilike kwenye ripoti iliyochapishwa.',
+    plain: 'No ministry can be listed until its findings come from a published report.',
+  },
+  'home.audits.cadence_annual': { en: 'annually', sw: 'kila mwaka', plain: 'once a year' },
+  'home.audits.cadence_quarterly': { en: 'quarterly', sw: 'kila robo mwaka', plain: 'every three months' },
+  'home.audits.cadence_monthly': { en: 'monthly', sw: 'kila mwezi', plain: 'every month' },
+  'home.audits.lag_months': { en: '{lag} months', sw: 'miezi {lag}', plain: '{lag} months' },
+  'home.audits.lag_days': { en: '{lag} days', sw: 'siku {lag}', plain: '{lag} days' },
 
   // Budget snapshot
   'home.budget.title': { en: 'National Budget Snapshot', sw: 'Muhtasari wa Bajeti ya Taifa', plain: 'The Budget Right Now' },

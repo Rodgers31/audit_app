@@ -6,6 +6,10 @@ import { FISCAL_ENDPOINTS } from './endpoints';
 
 export interface FiscalYearData {
   fiscal_year: string;
+  /** Declared unit of the money fields. "KES" = raw KES (stage1 3a
+   *  migration). Absent on a pre-migration backend, whose values are
+   *  bare billions — convert with toRawKES(), never by guessing. */
+  unit?: 'KES';
   appropriated_budget: number;
   total_revenue: number;
   tax_revenue: number;

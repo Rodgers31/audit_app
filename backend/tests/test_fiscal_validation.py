@@ -41,9 +41,19 @@ def test_accepts_dataclass_like_object():
     assert check_fiscal_summary(SimpleNamespace(**CLEAN)) == []
 
 
-def test_unit_slip_raw_kes_is_caught():
-    # A parser that wrote raw KES instead of billions → ~1e9× blow-up.
+def test_raw_kes_row_is_normalised_not_flagged():
+    # Since the stage1 3a migration the TABLE stores raw KES, so the guard
+    # normalises >=1e9 values to billions before banding: a correct raw-KES
+    # row must pass. (This test previously asserted the opposite — it
+    # encoded the pre-migration undeclared-billions convention, F5.5.)
     row = {**CLEAN, "appropriated_budget": 4_190_000_000_000}
+    assert check_fiscal_summary(row) == []
+
+
+def test_out_of_band_raw_kes_is_still_caught():
+    # POSITIVE CONTROL: normalisation must not disable the band check —
+    # a 50T budget (raw) is out of band in any unit.
+    row = {**CLEAN, "appropriated_budget": 50_000_000_000_000}
     notes = check_fiscal_summary(row)
     assert any("appropriated_budget" in n and "band" in n for n in notes)
 

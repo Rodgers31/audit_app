@@ -1,5 +1,6 @@
 'use client';
 
+import { toRawKES } from '@/lib/utils';
 import { useDebtTimeline } from '@/lib/react-query';
 import { motion } from 'framer-motion';
 
@@ -7,8 +8,14 @@ export default function DebtBreakdownChart() {
   const { data, isLoading } = useDebtTimeline();
 
   const latestEntry = data?.timeline?.[data.timeline.length - 1];
-  const externalDebt = latestEntry?.external ?? 0;
-  const domesticDebt = latestEntry?.domestic ?? 0;
+  // Labels below print "KES {n}B", so work in billions, converting on the
+  // row's declared unit (raw KES since the stage1 3a migration).
+  const externalDebt = latestEntry
+    ? (toRawKES(latestEntry.external, latestEntry.unit) ?? 0) / 1e9
+    : 0;
+  const domesticDebt = latestEntry
+    ? (toRawKES(latestEntry.domestic, latestEntry.unit) ?? 0) / 1e9
+    : 0;
 
   const DEBT_BREAKDOWN = [
     {
