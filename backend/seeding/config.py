@@ -246,6 +246,27 @@ class SeedingSettings(BaseSettings):
             "follow-up."
         ),
     )
+    cbk_statistical_bulletin_page_url: str = Field(
+        default="https://www.centralbank.go.ke/releases/statistical-bulletin/",
+        description=(
+            "CBK Statistical Bulletin listing page. Scraped each run to "
+            "discover the CURRENT bulletin PDF, because the direct path "
+            "carries a per-release upload hash "
+            "(/uploads/statistical_bulletin/<hash>_December 2025.pdf) that "
+            "cannot be predicted. Discovery replaces the hardcoded "
+            "cbk_statistical_bulletin_url, which was never set — so the "
+            "domestic-debt-by-instrument overlay had simply never run."
+        ),
+    )
+    treasury_brop_page_url: str = Field(
+        default="https://www.treasury.go.ke/budget-review-and-outlook-paper/",
+        description=(
+            "National Treasury BROP listing page. Scraped to discover the "
+            "current Budget Review and Outlook Paper, so a new edition is "
+            "picked up automatically instead of the pipeline silently "
+            "re-reading last year's hardcoded PDF path."
+        ),
+    )
     cob_birr_page_url: str = Field(
         default="https://cob.go.ke/publications/national-government-budget-implementation-review-reports/",
         description=(

@@ -90,6 +90,66 @@ def _enrich_with_wb_gdp(
     return base
 
 
+def _overlay_cbk_public_debt(
+    base: dict[str, Any], client: SeedingHttpClient, settings: SeedingSettings
+) -> tuple[dict[str, Any], int]:
+    """Overlay authoritative external/domestic/total from the CBK bulletin.
+
+    Until now these three columns came from a git-tracked fixture: its 2025
+    total said KES 12.50T where CBK's December 2025 Statistical Bulletin
+    (Table 4.1.3) publishes 12.299T. The series was also the second, and
+    disagreeing, source for a figure the loan register already carries
+    (AUDIT_FINDINGS P3).
+
+    Applied BEFORE the World Bank GDP pass so ``gdp_ratio`` is recomputed
+    from the corrected totals rather than the fixture's.
+
+    Payload values are BILLIONS (the fixture convention this pipeline reads
+    and the writer converts from), while the parser returns raw KES — hence
+    the /1e9. Getting that backwards would be a 10^9 error, so it is done in
+    one place and asserted in tests.
+
+    Returns ``(payload, years_overlaid)``; 0 means nothing live was applied.
+    """
+    try:
+        from ..national_debt.cbk_bulletin import (
+            fetch_public_debt_timeline_from_cbk_bulletin,
+        )
+
+        by_year = fetch_public_debt_timeline_from_cbk_bulletin(client, settings)
+    except Exception as exc:
+        logger.warning("CBK public-debt overlay unavailable: %s", exc)
+        return base, 0
+    if not by_year:
+        return base, 0
+
+    timeline = base.get("timeline", base) if isinstance(base, dict) else base
+    if not isinstance(timeline, list):
+        return base, 0
+
+    applied = 0
+    for entry in timeline:
+        year = entry.get("year")
+        live = by_year.get(year)
+        if not live:
+            continue
+        before = entry.get("total")
+        entry["external"] = float(live["external"]) / 1e9
+        entry["domestic"] = float(live["domestic"]) / 1e9
+        entry["total"] = float(live["total"]) / 1e9
+        entry["source"] = "CBK Statistical Bulletin Table 4.1.3"
+        applied += 1
+        if before and abs(before - entry["total"]) > 1:
+            logger.info(
+                "CBK overlay corrected %d total: %.1fB -> %.1fB",
+                year,
+                before,
+                entry["total"],
+            )
+    logger.info("CBK public-debt overlay applied to %d year(s)", applied)
+    return base, applied
+
+
 def fetch_debt_timeline_payload(
     client: SeedingHttpClient, settings: SeedingSettings
 ) -> dict[str, Any]:
@@ -109,10 +169,32 @@ def fetch_debt_timeline_payload(
         label="debt_timeline",
     )
 
+    # Authoritative debt stocks FIRST, so the GDP pass below recomputes
+    # gdp_ratio from the corrected totals.
+    base, overlaid = _overlay_cbk_public_debt(base, client, settings)
+
     # Enrich with live World Bank GDP (graceful fallback on failure)
     if settings.enrich_with_worldbank:
         base = _enrich_with_wb_gdp(base, client)
     else:
         logger.debug("World Bank enrichment disabled via config")
+
+    # Record provenance: the series is only "live" when the debt figures
+    # themselves came from the publisher. Live GDP over fixture debt is
+    # still fixture debt, and saying otherwise is the false-green this
+    # instrumentation exists to prevent.
+    from ...freshness import mark_fixture, mark_live
+
+    if overlaid:
+        mark_live(
+            "debt_timeline",
+            detail=f"CBK Statistical Bulletin 4.1.3, {overlaid} year(s)",
+        )
+    else:
+        mark_fixture(
+            "debt_timeline",
+            reason="cbk_bulletin_unavailable",
+            detail="debt stocks remain fixture values; only GDP is live",
+        )
 
     return base

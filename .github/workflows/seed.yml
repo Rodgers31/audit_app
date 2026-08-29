@@ -53,10 +53,20 @@ env:
   SEED_AUDITS_OCR_MAX_PAGES: ${{ vars.SEED_AUDITS_OCR_MAX_PAGES || '30' }}
   SEED_POPULATION_DATASET_URL: ${{ secrets.SEED_POPULATION_DATASET_URL }}
   SEED_ECONOMIC_INDICATORS_DATASET_URL: ${{ secrets.SEED_ECONOMIC_INDICATORS_DATASET_URL }}
-  # Opt-in: KRA FY-revenue page/PDF. When set (repo Variable), the
-  # revenue_by_source domain overlays the live per-tax-head breakdown onto the
-  # fixture (gated). Unset/empty → breakdown stays on the fixture (default).
-  SEED_KRA_REVENUE_URL: ${{ vars.SEED_KRA_REVENUE_URL }}
+  # KRA FY-revenue page/PDF. The revenue_by_source domain overlays the live
+  # per-tax-head breakdown onto the fixture (gated by a plausibility check).
+  #
+  # This read `vars.SEED_KRA_REVENUE_URL` while the value was stored as a
+  # repository SECRET (set 2026-06-14) and no repository Variables exist at
+  # all — so it resolved to an empty string on every run and the overlay had
+  # never once executed. `secrets` first, `vars` kept as a fallback so either
+  # storage location works.
+  SEED_KRA_REVENUE_URL: ${{ secrets.SEED_KRA_REVENUE_URL || vars.SEED_KRA_REVENUE_URL }}
+  # Listing pages used to DISCOVER the current edition of each periodically
+  # republished document, so a new release is ingested automatically instead
+  # of the pipeline re-reading a hardcoded path forever.
+  SEED_CBK_STATISTICAL_BULLETIN_PAGE_URL: ${{ vars.SEED_CBK_STATISTICAL_BULLETIN_PAGE_URL || 'https://www.centralbank.go.ke/releases/statistical-bulletin/' }}
+  SEED_TREASURY_BROP_PAGE_URL: ${{ vars.SEED_TREASURY_BROP_PAGE_URL || 'https://www.treasury.go.ke/budget-review-and-outlook-paper/' }}
   SEED_LOG_LEVEL: INFO
 
 jobs:

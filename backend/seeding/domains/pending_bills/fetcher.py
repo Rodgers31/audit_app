@@ -35,6 +35,37 @@ from ...http_client import SeedingHttpClient
 logger = logging.getLogger("seeding.pending_bills.fetcher")
 
 
+def _discover_brop_url(client, settings):
+    """Newest Budget Review and Outlook Paper on Treasury's listing page.
+
+    Returns None on any failure so the caller falls back to the configured
+    URL — discovery is an improvement on the hardcoded path, never a new
+    single point of failure.
+    """
+    from datetime import date, timedelta
+
+    from ...discovery import discover_latest_pdf
+
+    page_url = getattr(
+        settings,
+        "treasury_brop_page_url",
+        "https://www.treasury.go.ke/budget-review-and-outlook-paper/",
+    )
+    try:
+        response = client.get(page_url, raise_for_status=True)
+    except Exception as exc:
+        logger.warning("BROP listing unreachable (%s): %s", page_url, exc)
+        return None
+    # BROP is annual; older than ~2 years means the listing changed shape.
+    found = discover_latest_pdf(
+        response.text,
+        page_url,
+        must_match=("budget-review-and-outlook-paper",),
+        not_before=date.today() - timedelta(days=730),
+    )
+    return found.url if found else None
+
+
 def fetch_pending_bills_payload(
     client: SeedingHttpClient, settings: SeedingSettings
 ) -> dict[str, Any]:
@@ -54,6 +85,21 @@ def fetch_pending_bills_payload(
     # ``None`` is defensive — older settings instances may not have
     # the field if a stale module is imported.
     brop_url = getattr(settings, "treasury_brop_url", None)
+    if settings.live_pdf_fetch_enabled:
+        # Prefer the CURRENT edition off Treasury's listing page. The
+        # configured default is a hardcoded 2025 path: it works until the
+        # next BROP drops, then silently keeps re-parsing last year's
+        # document with nothing to show the data stopped advancing.
+        # Discovery is attempted first and the hardcoded value becomes the
+        # fallback, not the other way round.
+        discovered = _discover_brop_url(client, settings)
+        if discovered and discovered != brop_url:
+            logger.info(
+                "Using DISCOVERED BROP %s (configured default was %s)",
+                discovered,
+                brop_url,
+            )
+        brop_url = discovered or brop_url
     if settings.live_pdf_fetch_enabled and brop_url:
         try:
             payload = _fetch_from_treasury_brop(client, brop_url)
@@ -64,6 +110,15 @@ def fetch_pending_bills_payload(
                     "Successfully fetched pending bills from BROP "
                     "(%d records)",
                     len(payload.get("pending_bills") or []),
+                )
+                from ...freshness import mark_live
+
+                mark_live(
+                    "pending_bills",
+                    detail=(
+                        f"Treasury BROP, "
+                        f"{len(payload.get('pending_bills') or [])} records"
+                    ),
                 )
                 return payload
             logger.warning(
@@ -77,6 +132,11 @@ def fetch_pending_bills_payload(
         logger.info(
             "treasury_brop_url not configured; skipping live BROP fetch"
         )
+    from ...freshness import get as _fresh_get
+    from ...freshness import mark_fixture
+
+    if _fresh_get("pending_bills").get("mode") != "live":
+        mark_fixture("pending_bills", reason="brop_unavailable")
 
     # Strategy 2: Configured fixture / API URL
     dataset_url = getattr(settings, "pending_bills_dataset_url", None)
