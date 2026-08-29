@@ -8,7 +8,7 @@ import tempfile
 import time
 from contextlib import AbstractContextManager
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 import httpx
 from tenacity import (
@@ -34,6 +34,21 @@ class PdfDownloadError(Exception):
     fallback catches it and recovers cleanly, instead of the per-domain SIGALRM
     firing mid-parse and hard-failing the whole run (issue #119).
     """
+
+
+class PdfDownloadIncomplete(PdfDownloadError):
+    """A resumable download ran out of wall-clock before the body ended.
+
+    Carries how far it got so the caller can log real progress, and — unlike
+    a plain failure — signals that the partial file was DELIBERATELY RETAINED
+    for the next run to resume from. This is what makes a 12MB PDF reachable
+    over a 43 KB/s link that no single run's budget can span.
+    """
+
+    def __init__(self, message: str, *, bytes_downloaded: int, resumable: bool = True):
+        super().__init__(message)
+        self.bytes_downloaded = bytes_downloaded
+        self.resumable = resumable
 
 
 def _is_retryable(exception: BaseException) -> bool:
@@ -164,6 +179,8 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
         max_bytes: Optional[int] = None,
         headers: Optional[Dict[str, str]] = None,
         raise_for_status: bool = True,
+        resume_part: Optional[Path] = None,
+        completion_check: Optional[Callable[[Path], bool]] = None,
     ) -> int:
         """Stream a GET body to ``dest_path`` under a TOTAL wall-clock cap.
 
@@ -187,51 +204,198 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
         body on a transient error would blow the very budget this guards. The
         per-operation timeout below still fails a fully-stalled socket fast;
         the loop deadline handles a slow trickle.
+
+        RESUMPTION (``resume_part``)
+        ---------------------------
+        Some publishers serve large PDFs slowly enough that NO single run can
+        finish them: cob.go.ke measured 43 KB/s against a 12,407,501-byte
+        report, i.e. ~290s of transfer against a 180s cap — so every nightly
+        run downloaded ~6MB, timed out, discarded it, and fell back to a
+        git-tracked fixture. Forever.
+
+        Passing ``resume_part`` makes progress durable. The partial body is
+        written there and KEPT on timeout; the next call sends
+        ``Range: bytes=<size>-`` and appends, so the file completes across
+        runs and then lives in the cache.
+
+        Correctness (verified against cob.go.ke on 2026-08-29):
+        * ``206`` + honoured start offset -> append. Byte-exactness was
+          checked by comparing the overlap of a full read and a
+          ``bytes=2000-`` read: identical md5.
+        * ``200`` means the server IGNORED the range and is resending from
+          zero -> the partial is truncated and rewritten, never appended to
+          (appending would splice a duplicate prefix into the file).
+        * A publisher who re-issues the document mid-resume would otherwise
+          splice two different files together; the caller guards that by
+          keying the part file on the URL and validating the assembled PDF's
+          header AND ``%%EOF`` trailer before promoting it.
         """
         dest = Path(dest_path)
-        request_headers = dict(headers or {})
+        base_headers = dict(headers or {})
         # Fail a dead connection fast (no bytes at all / no handshake), but let
         # a slow steady stream run up to the wall-clock cap the loop enforces.
         per_op = min(float(max_seconds), 30.0)
         timeout = httpx.Timeout(per_op, connect=min(float(max_seconds), 15.0))
         start = time.monotonic()
-        written = 0
-        # Stream to a sibling temp and atomically promote on success so a
-        # partial transfer never lands at dest_path (see docstring).
         dest.parent.mkdir(parents=True, exist_ok=True)
-        fd, tmp_name = tempfile.mkstemp(
-            prefix=dest.name + ".", suffix=".part", dir=str(dest.parent)
-        )
-        os.close(fd)
-        tmp = Path(tmp_name)
+
+        resuming = resume_part is not None
+        if resuming:
+            tmp = Path(resume_part)
+            tmp.parent.mkdir(parents=True, exist_ok=True)
+        else:
+            fd, tmp_name = tempfile.mkstemp(
+                prefix=dest.name + ".", suffix=".part", dir=str(dest.parent)
+            )
+            os.close(fd)
+            tmp = Path(tmp_name)
+
+        def _on_disk() -> int:
+            return tmp.stat().st_size if tmp.exists() else 0
+
+        def _already_whole() -> bool:
+            """Is what we have on disk already the complete document?
+
+            These publishers send no ``Content-Length``, so the only
+            authoritative end-of-document signal is the format's own (for
+            PDF, the ``%%EOF`` trailer). Checking it after every pass is what
+            makes a transport error on the FINAL chunk a success rather than
+            an infinite resume loop re-requesting past EOF.
+            """
+            if completion_check is None or not tmp.exists():
+                return False
+            try:
+                return bool(completion_check(tmp))
+            except Exception:  # a malformed partial is simply "not done yet"
+                return False
+
+        started_at = _on_disk()
+        complete = False
+        attempt = 0
         try:
-            with self._rate_limiter.context():
-                with self._client.stream(
-                    "GET", url, headers=request_headers, timeout=timeout
-                ) as response:
-                    if raise_for_status:
-                        response.raise_for_status()
-                    with tmp.open("wb") as handle:
-                        for chunk in response.iter_bytes():
-                            if time.monotonic() - start > max_seconds:
-                                raise PdfDownloadError(
-                                    f"download exceeded {max_seconds:.0f}s "
-                                    f"wall-clock cap after {written} bytes: {url}"
+            # Reconnect loop. A single stream is not enough on these CDNs: the
+            # link both trickles (43 KB/s measured on cob.go.ke) and drops
+            # mid-body. Each pass resumes from whatever is already on disk, so
+            # a flaky-but-fast link finishes within one run, and a merely slow
+            # one keeps its progress for the next (see the class docstring).
+            while True:
+                attempt += 1
+                remaining = max_seconds - (time.monotonic() - start)
+                if remaining <= 0:
+                    break
+
+                if _already_whole():
+                    # Nothing left to fetch — a previous pass (or run) already
+                    # brought down the whole document.
+                    complete = True
+                    break
+
+                offset = _on_disk()
+                request_headers = dict(base_headers)
+                if offset:
+                    request_headers["Range"] = f"bytes={offset}-"
+
+                mode = "ab" if offset else "wb"
+                try:
+                    with self._rate_limiter.context():
+                        with self._client.stream(
+                            "GET", url, headers=request_headers, timeout=timeout
+                        ) as response:
+                            if raise_for_status:
+                                response.raise_for_status()
+                            if offset and response.status_code != 206:
+                                # Server ignored the range and is resending
+                                # from zero. Appending would splice a
+                                # duplicate prefix — restart the file instead.
+                                logger.warning(
+                                    "Resume at byte %d refused (HTTP %s, not "
+                                    "206); restarting from zero: %s",
+                                    offset,
+                                    response.status_code,
+                                    url,
                                 )
-                            if (
-                                max_bytes is not None
-                                and written + len(chunk) > max_bytes
-                            ):
-                                raise PdfDownloadError(
-                                    f"download exceeded {max_bytes}-byte cap: {url}"
-                                )
-                            handle.write(chunk)
-                            written += len(chunk)
+                                mode = "wb"
+                            with tmp.open(mode) as handle:
+                                for chunk in response.iter_bytes():
+                                    if time.monotonic() - start > max_seconds:
+                                        handle.flush()
+                                        os.fsync(handle.fileno())
+                                        raise PdfDownloadIncomplete(
+                                            f"download exceeded "
+                                            f"{max_seconds:.0f}s wall-clock "
+                                            f"cap at {_on_disk()} bytes: {url}",
+                                            bytes_downloaded=_on_disk(),
+                                            resumable=resuming,
+                                        )
+                                    if (
+                                        max_bytes is not None
+                                        and handle.tell() + len(chunk) > max_bytes
+                                    ):
+                                        raise PdfDownloadError(
+                                            f"download exceeded {max_bytes}-byte "
+                                            f"cap: {url}"
+                                        )
+                                    handle.write(chunk)
+                    # iter_bytes() ran to completion => the server closed the
+                    # body normally, so we have the whole document.
+                    complete = True
+                    break
+                except (httpx.TransportError, httpx.StreamError) as exc:
+                    # Bytes already written are valid (append-only, offsets
+                    # server-verified), so this is progress, not corruption.
+                    # Reconnect if there is budget left.
+                    if _already_whole():
+                        # The stream broke on the last chunk but the document
+                        # is whole. Treat as success, not as a failed resume.
+                        logger.info(
+                            "Transfer interrupted at EOF but document is "
+                            "complete (%d bytes): %s", _on_disk(), url,
+                        )
+                        complete = True
+                        break
+                    advanced = _on_disk() - offset
+                    logger.warning(
+                        "Transfer interrupted after +%d bytes (%s: %s); "
+                        "%d bytes on disk, reconnecting: %s",
+                        advanced,
+                        type(exc).__name__,
+                        exc,
+                        _on_disk(),
+                        url,
+                    )
+                    if advanced <= 0 and attempt >= 3:
+                        # Three reconnects with zero progress: the endpoint is
+                        # not going to serve us. Stop burning the budget.
+                        raise PdfDownloadIncomplete(
+                            f"download stalled at {_on_disk()} bytes after "
+                            f"{attempt} attempts: {url}",
+                            bytes_downloaded=_on_disk(),
+                            resumable=resuming,
+                        ) from exc
+
+            if not complete:
+                raise PdfDownloadIncomplete(
+                    f"download exceeded {max_seconds:.0f}s wall-clock cap at "
+                    f"{_on_disk()} bytes: {url}",
+                    bytes_downloaded=_on_disk(),
+                    resumable=resuming,
+                )
+
+            written = _on_disk()
             os.replace(tmp, dest)
+        except PdfDownloadIncomplete:
+            # Deliberately KEEP a resumable partial: it is the progress this
+            # mechanism exists to preserve.
+            if not resuming:
+                tmp.unlink(missing_ok=True)
+            raise
         except BaseException:
-            # Clean up the partial temp on ANY failure (incl. a SIGALRM-driven
-            # BaseException) — then re-raise unchanged.
-            tmp.unlink(missing_ok=True)
+            # Byte-cap breach, HTTP status error, or a SIGALRM-driven abort.
+            # A partial from THIS run may be meaningless, but bytes carried in
+            # from previous runs are still valid, so only discard when nothing
+            # was inherited.
+            if not resuming or started_at == 0:
+                tmp.unlink(missing_ok=True)
             raise
         return written
 

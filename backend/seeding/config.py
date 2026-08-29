@@ -92,7 +92,7 @@ class SeedingSettings(BaseSettings):
     # slow-CDN night from consuming the whole per-domain SIGALRM budget
     # and aborting the run mid-parse (issue #119).
     pdf_download_timeout_seconds: float = Field(
-        default=180.0,
+        default=300.0,
         ge=1.0,
         description=(
             "TOTAL wall-clock cap for a single streamed large-PDF download. "
@@ -101,8 +101,13 @@ class SeedingSettings(BaseSettings):
             "slow-but-steady trickle cannot run unbounded. On breach the "
             "downloader raises a plain Exception and the domain falls back to "
             "its fixture instead of the per-domain budget aborting mid-parse. "
-            "Kept well under domain_timeout_seconds (600s) minus the ~254s a "
-            "county-PDF parse needs."
+            "Since downloads became RESUMABLE (a timeout now keeps its bytes "
+            "and the next attempt continues via HTTP Range), this cap no "
+            "longer decides whether a document is EVER fetched — only how "
+            "much progress one run makes. Raised 180s->300s so the common "
+            "case finishes in a single run while still leaving room inside "
+            "domain_timeout_seconds (600s) for the ~254s a county-PDF parse "
+            "needs."
         ),
     )
     pdf_download_max_bytes: int = Field(
