@@ -250,3 +250,74 @@ __all__ = [
     "slugify_entity",
     "canonicalize_slug",
 ]
+
+
+# ── Tolerant entity resolution (PDF text-extraction artifacts) ─────────
+# COB table cells come straight out of pdfplumber, which sometimes splits a
+# name mid-word depending on glyph spacing: "Taita Taveta" arrived as
+# "Taita Tav eta" and slugified to `taita-tav-eta-county`, which matched no
+# entity, so that county's whole budget row was dropped with only a WARNING.
+# One silently-missing county in 47 is exactly the kind of loss this project
+# exists to prevent, and it is a CLASS of bug — any county can be mangled on
+# any future report — so resolution is made robust rather than aliasing the
+# one name that happened to break.
+def _despaced(value: str) -> str:
+    """Lowercase alphanumerics only — immune to injected/missing spaces."""
+    return "".join(ch for ch in (value or "").lower() if ch.isalnum())
+
+
+def resolve_entity_by_slug(session, slug: str, entity_type=None):
+    """Find an Entity by slug, tolerating PDF spacing artifacts.
+
+    Order: exact slug -> canonicalised slug -> de-spaced comparison against
+    slug, canonical_name and alt_names. The de-spaced pass is the one that
+    rescues "taita-tav-eta-county"; it cannot create a false match between
+    two real Kenyan counties, whose de-spaced names are all distinct.
+
+    Returns ``(entity, matched_by)`` — ``matched_by`` is None when nothing
+    matched, so callers can log HOW a row resolved rather than assuming.
+    """
+    from sqlalchemy import select
+
+    from models import Entity
+
+    if not slug:
+        return None, None
+
+    def _by_slug(value: str):
+        # The type filter must apply to EVERY pass, not just the fuzzy one:
+        # without it a ministry slug satisfies a county lookup and county
+        # budget rows get attached to the wrong entity.
+        stmt = select(Entity).where(Entity.slug == value)
+        if entity_type is not None:
+            stmt = stmt.where(Entity.type == entity_type)
+        return session.execute(stmt).scalar_one_or_none()
+
+    entity = _by_slug(slug)
+    if entity is not None:
+        return entity, "exact"
+
+    canonical = canonicalize_slug(slug)
+    if canonical != slug:
+        entity = _by_slug(canonical)
+        if entity is not None:
+            return entity, "canonicalised"
+
+    target = _despaced(slug)
+    if not target:
+        return None, None
+    # Drop a trailing "county" so "taitatavetacounty" matches "taitataveta".
+    target_bare = target[:-6] if target.endswith("county") else target
+
+    stmt = select(Entity)
+    if entity_type is not None:
+        stmt = stmt.where(Entity.type == entity_type)
+    for candidate in session.execute(stmt).scalars():
+        for name in [candidate.slug, candidate.canonical_name] + list(
+            candidate.alt_names or []
+        ):
+            cand = _despaced(name)
+            cand_bare = cand[:-6] if cand.endswith("county") else cand
+            if cand_bare and cand_bare == target_bare:
+                return candidate, "despaced"
+    return None, None

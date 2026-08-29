@@ -127,12 +127,33 @@ def _ensure_period(
 def _resolve_entity(
     session: Session, record: BudgetRecord
 ) -> Tuple[Optional[Entity], Optional[str]]:
-    stmt = select(Entity).where(Entity.slug == record.entity_slug)
-    entity = session.execute(stmt).scalar_one_or_none()
+    """Resolve a county, tolerating COB PDF text-extraction artifacts.
+
+    A cell reading "Taita Tav eta" slugified to `taita-tav-eta-county` and
+    matched nothing, so that county's budget was dropped with a warning
+    nobody read. See ``utils.resolve_entity_by_slug``.
+    """
+    from models import EntityType
+
+    from ...utils import resolve_entity_by_slug
+
+    entity, matched_by = resolve_entity_by_slug(
+        session, record.entity_slug, entity_type=EntityType.COUNTY
+    )
     if entity is None:
         message = f"Unknown entity slug '{record.entity_slug}'"
         logger.warning(message, extra={"entity_slug": record.entity_slug})
         return None, message
+    if matched_by != "exact":
+        # Never resolve silently: a fuzzy match is a parser defect upstream
+        # that should be visible and fixable, not papered over.
+        logger.warning(
+            "Entity slug '%s' resolved to '%s' via %s match — the source "
+            "PDF text is mangled; row kept, upstream parsing needs a look.",
+            record.entity_slug,
+            entity.slug,
+            matched_by,
+        )
     return entity, None
 
 
