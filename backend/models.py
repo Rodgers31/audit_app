@@ -6,6 +6,7 @@ from sqlalchemy import (
     Column,
     DateTime,
     Enum,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -14,6 +15,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
+from sqlalchemy.sql import false as sa_false
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -61,6 +63,21 @@ class DocumentStatus(enum.Enum):
     AVAILABLE = "available"
     ARCHIVED = "archived"
     FAILED = "failed"
+
+
+class FigureBasis(enum.Enum):
+    """How a published figure was arrived at.
+
+    The audit found modelled, hardcoded and extracted values stored in the
+    same shape, so a missing number, an invented number and a real number
+    rendered identically. This column makes the difference queryable, so a
+    modelled figure can never be summed into a total of actuals or presented
+    as a county-reported number.
+    """
+
+    ACTUAL = "actual"        # read from a source document
+    MODELLED = "modelled"    # derived from a formula (e.g. the CRA share)
+    PROJECTED = "projected"  # a forward estimate from a planning document
 
 
 class Severity(enum.Enum):
@@ -144,6 +161,12 @@ class SourceDocument(Base):
     status = Column(
         Enum(DocumentStatus), nullable=False, default=DocumentStatus.AVAILABLE
     )
+    # Fetch bookkeeping. 48 of the 68 documents behind published figures had
+    # url IS NULL while status was 'AVAILABLE', and 3 of the 20 that had a URL
+    # returned 404 (AUDIT_FINDINGS 5.0c). "Available" must mean "fetched".
+    content_type = Column(String(100), nullable=True)
+    http_status = Column(Integer, nullable=True)
+    last_verified_at = Column(DateTime, nullable=True)
     last_seen_at = Column(
         DateTime, nullable=False, default=lambda: datetime.now(timezone.utc)
     )
@@ -199,11 +222,26 @@ class BudgetLine(Base):
     source_document_id = Column(
         Integer, ForeignKey("source_documents.id"), nullable=False
     )
+    # Aggregate rows ("Total", "Recurrent", "Development") and component rows
+    # (sectors) share this table. Without a discriminator, SUM() over a period
+    # triple-counts: FY2024/25 county budget lines summed to KES 1.36T against
+    # a national county_allocation of KES 400B (AUDIT_FINDINGS F5.6).
+    line_type = Column(String(20), nullable=True, index=True)  # total|aggregate|component
     page_ref = Column(String(50), nullable=True)
     notes = Column(Text, nullable=True)
     provenance = Column(JSONB, default=list)  # List of source references
     source_hash = Column(String(64), nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    # ── Provenance and publication gate (Stage 1) ──────────────────────
+    # `publishable` defaults to FALSE: a row is withheld until something
+    # proves it may be published. The gate is defined once in
+    # services/publication_gate.py and backfilled from there.
+    extraction_id = Column(Integer, ForeignKey("extractions.id"), nullable=True, index=True)
+    confidence_score = Column(Float, nullable=True)
+    basis = Column(Enum(FigureBasis), nullable=True, index=True)
+    publishable = Column(Boolean, nullable=False, server_default=sa_false(), index=True)
+    quarantine_reason = Column(String(120), nullable=True)
 
     # Relationships
     entity = relationship("Entity", back_populates="budget_lines")
@@ -251,6 +289,18 @@ class Loan(Base):
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
+    # ── Provenance and publication gate (Stage 1) ──────────────────────
+    # `publishable` defaults to FALSE: a row is withheld until something
+    # proves it may be published. The gate is defined once in
+    # services/publication_gate.py and backfilled from there.
+    extraction_id = Column(Integer, ForeignKey("extractions.id"), nullable=True, index=True)
+    page_ref = Column(String(50), nullable=True)
+    source_hash = Column(String(64), nullable=True)
+    confidence_score = Column(Float, nullable=True)
+    basis = Column(Enum(FigureBasis), nullable=True, index=True)
+    publishable = Column(Boolean, nullable=False, server_default=sa_false(), index=True)
+    quarantine_reason = Column(String(120), nullable=True)
+
     # Relationships
     entity = relationship("Entity", back_populates="loans")
     source_document = relationship("SourceDocument", back_populates="loans")
@@ -281,6 +331,18 @@ class Audit(Base):
     follow_up_status = Column(String(100), nullable=True)
 
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    # ── Provenance and publication gate (Stage 1) ──────────────────────
+    # `publishable` defaults to FALSE: a row is withheld until something
+    # proves it may be published. The gate is defined once in
+    # services/publication_gate.py and backfilled from there.
+    extraction_id = Column(Integer, ForeignKey("extractions.id"), nullable=True, index=True)
+    page_ref = Column(String(50), nullable=True)
+    source_hash = Column(String(64), nullable=True)
+    confidence_score = Column(Float, nullable=True)
+    basis = Column(Enum(FigureBasis), nullable=True, index=True)
+    publishable = Column(Boolean, nullable=False, server_default=sa_false(), index=True)
+    quarantine_reason = Column(String(120), nullable=True)
 
     # Relationships
     entity = relationship("Entity", back_populates="audits")
@@ -486,6 +548,18 @@ class PopulationData(Base):
     meta = Column("metadata", JSONB, default=dict)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
+    # ── Provenance and publication gate (Stage 1) ──────────────────────
+    # `publishable` defaults to FALSE: a row is withheld until something
+    # proves it may be published. The gate is defined once in
+    # services/publication_gate.py and backfilled from there.
+    extraction_id = Column(Integer, ForeignKey("extractions.id"), nullable=True, index=True)
+    page_ref = Column(String(50), nullable=True)
+    source_hash = Column(String(64), nullable=True)
+    confidence_score = Column(Float, nullable=True)
+    basis = Column(Enum(FigureBasis), nullable=True, index=True)
+    publishable = Column(Boolean, nullable=False, server_default=sa_false(), index=True)
+    quarantine_reason = Column(String(120), nullable=True)
+
     # Relationships
     entity = relationship("Entity")
     source_document = relationship("SourceDocument")
@@ -520,6 +594,18 @@ class GDPData(Base):
     confidence = Column(Numeric(3, 2), nullable=True, default=1.0)
     meta = Column("metadata", JSONB, default=dict)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    # ── Provenance and publication gate (Stage 1) ──────────────────────
+    # `publishable` defaults to FALSE: a row is withheld until something
+    # proves it may be published. The gate is defined once in
+    # services/publication_gate.py and backfilled from there.
+    extraction_id = Column(Integer, ForeignKey("extractions.id"), nullable=True, index=True)
+    page_ref = Column(String(50), nullable=True)
+    source_hash = Column(String(64), nullable=True)
+    confidence_score = Column(Float, nullable=True)
+    basis = Column(Enum(FigureBasis), nullable=True, index=True)
+    publishable = Column(Boolean, nullable=False, server_default=sa_false(), index=True)
+    quarantine_reason = Column(String(120), nullable=True)
 
     # Relationships
     entity = relationship("Entity")
@@ -556,6 +642,18 @@ class EconomicIndicator(Base):
     confidence = Column(Numeric(3, 2), nullable=True, default=1.0)
     meta = Column("metadata", JSONB, default=dict)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    # ── Provenance and publication gate (Stage 1) ──────────────────────
+    # `publishable` defaults to FALSE: a row is withheld until something
+    # proves it may be published. The gate is defined once in
+    # services/publication_gate.py and backfilled from there.
+    extraction_id = Column(Integer, ForeignKey("extractions.id"), nullable=True, index=True)
+    page_ref = Column(String(50), nullable=True)
+    source_hash = Column(String(64), nullable=True)
+    confidence_score = Column(Float, nullable=True)
+    basis = Column(Enum(FigureBasis), nullable=True, index=True)
+    publishable = Column(Boolean, nullable=False, server_default=sa_false(), index=True)
+    quarantine_reason = Column(String(120), nullable=True)
 
     # Relationships
     entity = relationship("Entity")
@@ -680,6 +778,18 @@ class PovertyIndex(Base):
     meta = Column("metadata", JSONB, default=dict)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
+    # ── Provenance and publication gate (Stage 1) ──────────────────────
+    # `publishable` defaults to FALSE: a row is withheld until something
+    # proves it may be published. The gate is defined once in
+    # services/publication_gate.py and backfilled from there.
+    extraction_id = Column(Integer, ForeignKey("extractions.id"), nullable=True, index=True)
+    page_ref = Column(String(50), nullable=True)
+    source_hash = Column(String(64), nullable=True)
+    confidence_score = Column(Float, nullable=True)
+    basis = Column(Enum(FigureBasis), nullable=True, index=True)
+    publishable = Column(Boolean, nullable=False, server_default=sa_false(), index=True)
+    quarantine_reason = Column(String(120), nullable=True)
+
     # Relationships
     entity = relationship("Entity")
     source_document = relationship("SourceDocument")
@@ -710,6 +820,18 @@ class DebtTimeline(Base):
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
+
+    # ── Provenance and publication gate (Stage 1) ──────────────────────
+    # `publishable` defaults to FALSE: a row is withheld until something
+    # proves it may be published. The gate is defined once in
+    # services/publication_gate.py and backfilled from there.
+    extraction_id = Column(Integer, ForeignKey("extractions.id"), nullable=True, index=True)
+    page_ref = Column(String(50), nullable=True)
+    source_hash = Column(String(64), nullable=True)
+    confidence_score = Column(Float, nullable=True)
+    basis = Column(Enum(FigureBasis), nullable=True, index=True)
+    publishable = Column(Boolean, nullable=False, server_default=sa_false(), index=True)
+    quarantine_reason = Column(String(120), nullable=True)
 
     # Relationships
     source_document = relationship("SourceDocument")
@@ -749,6 +871,18 @@ class FiscalSummary(Base):
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
+
+    # ── Provenance and publication gate (Stage 1) ──────────────────────
+    # `publishable` defaults to FALSE: a row is withheld until something
+    # proves it may be published. The gate is defined once in
+    # services/publication_gate.py and backfilled from there.
+    extraction_id = Column(Integer, ForeignKey("extractions.id"), nullable=True, index=True)
+    page_ref = Column(String(50), nullable=True)
+    source_hash = Column(String(64), nullable=True)
+    confidence_score = Column(Float, nullable=True)
+    basis = Column(Enum(FigureBasis), nullable=True, index=True)
+    publishable = Column(Boolean, nullable=False, server_default=sa_false(), index=True)
+    quarantine_reason = Column(String(120), nullable=True)
 
     # Relationships
     source_document = relationship("SourceDocument")
@@ -798,6 +932,18 @@ class PendingBill(Base):
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
+    # ── Provenance and publication gate (Stage 1) ──────────────────────
+    # `publishable` defaults to FALSE: a row is withheld until something
+    # proves it may be published. The gate is defined once in
+    # services/publication_gate.py and backfilled from there.
+    extraction_id = Column(Integer, ForeignKey("extractions.id"), nullable=True, index=True)
+    page_ref = Column(String(50), nullable=True)
+    source_hash = Column(String(64), nullable=True)
+    confidence_score = Column(Float, nullable=True)
+    basis = Column(Enum(FigureBasis), nullable=True, index=True)
+    publishable = Column(Boolean, nullable=False, server_default=sa_false(), index=True)
+    quarantine_reason = Column(String(120), nullable=True)
+
     # Relationships
     entity = relationship("Entity")
     source_document = relationship("SourceDocument")
@@ -840,6 +986,18 @@ class RevenueBySource(Base):
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
+
+    # ── Provenance and publication gate (Stage 1) ──────────────────────
+    # `publishable` defaults to FALSE: a row is withheld until something
+    # proves it may be published. The gate is defined once in
+    # services/publication_gate.py and backfilled from there.
+    extraction_id = Column(Integer, ForeignKey("extractions.id"), nullable=True, index=True)
+    page_ref = Column(String(50), nullable=True)
+    source_hash = Column(String(64), nullable=True)
+    confidence_score = Column(Float, nullable=True)
+    basis = Column(Enum(FigureBasis), nullable=True, index=True)
+    publishable = Column(Boolean, nullable=False, server_default=sa_false(), index=True)
+    quarantine_reason = Column(String(120), nullable=True)
 
     # Relationships
     source_document = relationship("SourceDocument")
