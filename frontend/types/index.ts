@@ -216,7 +216,16 @@ export interface AccountabilityScorecard {
     warning: number;
     critical: number;
   }>;
-  total_flagged_amount: number;
+  /** null when no publishable finding carries an amount — never 0, which
+   *  would read as "the Auditor-General flagged nothing". */
+  total_flagged_amount: number | null;
+  /** Why total_flagged_amount is null: awaiting_sourced_data | no_findings_recorded. */
+  total_flagged_amount_reason?: string | null;
+  /** Findings held back because their source document has no openable URL. */
+  withheld?: { count: number; reason: string | null };
+  /** 'publishable_findings' | 'no_publishable_findings' — whether the grade
+   *  below rests on any evidence at all. */
+  evidence_basis?: string;
   /** Total raw findings count (may not equal sum of critical+warning if some have no severity). */
   total_findings?: number;
   critical_findings?: number;
@@ -225,18 +234,19 @@ export interface AccountabilityScorecard {
   unresolved_findings_count: number;
   absorption_rate: number | null;
   /** Total flagged amount as % of current-FY budget. */
-  flagged_pct_of_budget?: number;
-  accountability_grade: string; // A/B/C/D/F
+  flagged_pct_of_budget?: number | null;
+  /** null when there is no publishable finding to grade — NOT 'F'. */
+  accountability_grade: string | null; // A/B/C/D/F
   /** Derived from a 100-point scale: A≥85, B≥70, C≥55, D≥40, else F. */
-  accountability_score?: number;
+  accountability_score?: number | null;
   /** Ordered list of penalty/positive factors that drove the score. */
   grade_factors?: GradeFactor[];
   peer_comparison: {
     region: string;
-    region_avg_flagged_amount: number;
-    region_avg_grade: string;
+    region_avg_flagged_amount: number | null;
+    region_avg_grade: string | null;
     population_bracket: string;
-    population_bracket_avg: number;
+    population_bracket_avg: number | null;
   };
 }
 

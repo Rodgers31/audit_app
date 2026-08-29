@@ -18,6 +18,12 @@ from typing import Any, Dict, List, Optional, Tuple
 import httpx  # For internal API calls
 import uvicorn
 from config.settings import settings
+from services.publication_gate import (
+    count_withheld_audits,
+    log_withheld_audits,
+    missing_funds_provenance_failure,
+    publishable_audit_criterion,
+)
 from services.trust_guards import (
     check_budget_sectors,
     check_coverage_staleness,
@@ -1939,7 +1945,7 @@ async def get_country_summary(country_id: int):
 
                 # Recent audit findings
                 recent_audits_db = (
-                    db.query(DBAudit).order_by(DBAudit.created_at.desc()).limit(5).all()
+                    db.query(DBAudit).filter(publishable_audit_criterion()).order_by(DBAudit.created_at.desc()).limit(5).all()
                 )
                 recent_audits = []
                 for a in recent_audits_db:
@@ -2237,6 +2243,7 @@ async def get_counties(fiscal_year: Optional[str] = None):
             # Fabricated/modelled rows are gated out — display-grade only.
             all_audits = (
                 db.query(DBAudit)
+                .filter(publishable_audit_criterion())
                 .filter(DBAudit.entity_id.in_(entity_ids))
                 .order_by(DBAudit.entity_id, DBAudit.created_at.desc())
                 .all()
@@ -2649,6 +2656,7 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                         a
                         for a in (
                             db.query(DBAudit)
+                            .filter(publishable_audit_criterion())
                             .filter(DBAudit.entity_id == e.id)
                             .order_by(DBAudit.created_at.desc())
                             .all()
@@ -2959,6 +2967,7 @@ async def get_county_comprehensive(
                 a
                 for a in (
                     db.query(DBAudit)
+                    .filter(publishable_audit_criterion())
                     .filter(DBAudit.entity_id == entity.id)
                     .order_by(DBAudit.created_at.desc())
                     .all()
@@ -3679,11 +3688,12 @@ async def get_audit_statistics():
             from sqlalchemy import case, func
 
             # Total counts
-            total = db.query(func.count(DBAudit.id)).scalar() or 0
+            total = db.query(func.count(DBAudit.id)).filter(publishable_audit_criterion()).scalar() or 0
 
             # By severity
             severity_rows = (
                 db.query(DBAudit.severity, func.count(DBAudit.id))
+                .filter(publishable_audit_criterion())
                 .group_by(DBAudit.severity)
                 .all()
             )
@@ -3696,6 +3706,7 @@ async def get_audit_statistics():
                     func.count(DBAudit.id).label("finding_count"),
                 )
                 .join(DBEntity, DBAudit.entity_id == DBEntity.id)
+                .filter(publishable_audit_criterion())
                 .filter(DBAudit.severity == Severity.CRITICAL)
                 .group_by(DBEntity.canonical_name)
                 .order_by(func.count(DBAudit.id).desc())
@@ -3706,6 +3717,7 @@ async def get_audit_statistics():
             # Recent critical findings (most recent 6)
             recent_critical = (
                 db.query(DBAudit, DBEntity.canonical_name)
+                .filter(publishable_audit_criterion())
                 .join(DBEntity, DBAudit.entity_id == DBEntity.id)
                 .filter(DBAudit.severity == Severity.CRITICAL)
                 .order_by(DBAudit.created_at.desc())
@@ -3744,7 +3756,7 @@ async def get_audit_statistics():
 
             # Counties audited count
             counties_audited = (
-                db.query(func.count(func.distinct(DBAudit.entity_id))).scalar() or 0
+                db.query(func.count(func.distinct(DBAudit.entity_id))).filter(publishable_audit_criterion()).scalar() or 0
             )
 
             # Total amount involved across all findings — prefer the
@@ -3754,6 +3766,7 @@ async def get_audit_statistics():
             # pull the entire text column across the wire when unnecessary.
             amount_from_col = (
                 db.query(func.coalesce(func.sum(DBAudit.amount), 0))
+                .filter(publishable_audit_criterion())
                 .filter(DBAudit.amount.isnot(None))
                 .scalar()
                 or 0.0
@@ -3762,6 +3775,7 @@ async def get_audit_statistics():
             fallback_amount = 0.0
             for (text_val,) in (
                 db.query(DBAudit.finding_text)
+                .filter(publishable_audit_criterion())
                 .filter(DBAudit.amount.is_(None))
                 .all()
             ):
@@ -3774,10 +3788,14 @@ async def get_audit_statistics():
                             pass
             total_amount = float(amount_from_col) + fallback_amount
 
+            _withheld_stats = count_withheld_audits(db)
+            log_withheld_audits("/audits/statistics", _withheld_stats, total)
+
             # Latest fiscal year covered by the Audit table (derived, NOT hardcoded)
             latest_period_label = (
                 db.query(DBFiscalPeriod.label)
                 .join(DBAudit, DBAudit.period_id == DBFiscalPeriod.id)
+                .filter(publishable_audit_criterion())
                 .order_by(DBFiscalPeriod.start_date.desc())
                 .limit(1)
                 .scalar()
@@ -3788,6 +3806,7 @@ async def get_audit_statistics():
                     row[0]
                     for row in db.query(DBFiscalPeriod.label)
                     .join(DBAudit, DBAudit.period_id == DBFiscalPeriod.id)
+                    .filter(publishable_audit_criterion())
                     .distinct()
                     .all()
                     if row[0]
@@ -3801,12 +3820,13 @@ async def get_audit_statistics():
 
             _audit_doc_ids = [
                 row[0]
-                for row in db.query(DBAudit.source_document_id).distinct().all()
+                for row in db.query(DBAudit.source_document_id).filter(publishable_audit_criterion()).distinct().all()
                 if row[0]
             ]
 
             return {
                 "total_findings": total,
+                "withheld_findings": _withheld_stats,
                 "counties_audited": counties_audited,
                 "total_counties": 47,
                 "total_amount_flagged": total_amount,
@@ -3920,6 +3940,7 @@ async def get_federal_audits():
             # Get all federal findings (MINISTRY + NATIONAL entities)
             federal_audits = (
                 db.query(DBAudit, DBEntity)
+                .filter(publishable_audit_criterion())
                 .join(DBEntity, DBAudit.entity_id == DBEntity.id)
                 .filter(DBEntity.type.in_([EntityType.MINISTRY, EntityType.NATIONAL]))
                 .order_by(DBAudit.severity.desc(), DBAudit.created_at.desc())
@@ -3930,6 +3951,10 @@ async def get_federal_audits():
 
             findings = []
             total_amount = 0.0
+            # "no publishable finding carries an amount" is not "the amount is
+            # zero". Track whether anything was actually parsed so the response
+            # can say null instead of 0.0 (AUDIT_FINDINGS P1).
+            any_amount_parsed = False
             severity_counts = {}
 
             for audit, entity in federal_audits:
@@ -3969,6 +3994,8 @@ async def get_federal_audits():
                     except (ValueError, TypeError):
                         amount_val = 0.0
 
+                if amount_str and amount_val:
+                    any_amount_parsed = True
                 total_amount += amount_val
                 sev_key = (audit.severity.value if audit.severity else "INFO").upper()
                 severity_counts[sev_key] = severity_counts.get(sev_key, 0) + 1
@@ -4014,6 +4041,11 @@ async def get_federal_audits():
             except Exception:
                 pass
 
+            _withheld_federal = count_withheld_audits(
+                db, entity_types=[EntityType.MINISTRY, EntityType.NATIONAL]
+            )
+            log_withheld_audits("/audits/federal", _withheld_federal, len(findings))
+
             # Ministries with most findings
             top_ministries = (
                 db.query(
@@ -4021,6 +4053,7 @@ async def get_federal_audits():
                     func.count(DBAudit.id).label("count"),
                 )
                 .join(DBEntity, DBAudit.entity_id == DBEntity.id)
+                .filter(publishable_audit_criterion())
                 .filter(DBEntity.type == EntityType.MINISTRY)
                 .group_by(DBEntity.canonical_name)
                 .order_by(func.count(DBAudit.id).desc())
@@ -4034,6 +4067,7 @@ async def get_federal_audits():
                 db.query(DBFiscalPeriod.label)
                 .join(DBAudit, DBAudit.period_id == DBFiscalPeriod.id)
                 .join(DBEntity, DBAudit.entity_id == DBEntity.id)
+                .filter(publishable_audit_criterion())
                 .filter(
                     DBEntity.type.in_([EntityType.MINISTRY, EntityType.NATIONAL])
                 )
@@ -4048,6 +4082,7 @@ async def get_federal_audits():
                         db.query(DBFiscalPeriod.label)
                         .join(DBAudit, DBAudit.period_id == DBFiscalPeriod.id)
                         .join(DBEntity, DBAudit.entity_id == DBEntity.id)
+                        .filter(publishable_audit_criterion())
                         .filter(
                             DBEntity.type.in_(
                                 [EntityType.MINISTRY, EntityType.NATIONAL]
@@ -4069,6 +4104,7 @@ async def get_federal_audits():
                     db.query(DBSourceDocument)
                     .join(DBAudit, DBAudit.source_document_id == DBSourceDocument.id)
                     .join(DBEntity, DBAudit.entity_id == DBEntity.id)
+                    .filter(publishable_audit_criterion())
                     .filter(
                         DBEntity.type.in_(
                             [EntityType.MINISTRY, EntityType.NATIONAL]
@@ -4140,7 +4176,21 @@ async def get_federal_audits():
                 ),
                 # Transparency only: the raw sum across all finding amounts.
                 # NOT the questioned headline (see above).
-                "total_amount_in_findings": total_amount,
+                "total_amount_in_findings": (
+                    total_amount if any_amount_parsed else None
+                ),
+                "total_amount_in_findings_reason": (
+                    None
+                    if any_amount_parsed
+                    else (
+                        "awaiting_sourced_data"
+                        if _withheld_federal
+                        else "no_amounts_recorded"
+                    )
+                ),
+                # Findings excluded because their source document has no URL a
+                # reader could open. Retained in the database, not served here.
+                "withheld_findings": _withheld_federal,
                 "by_severity": by_severity,
                 "basis_for_qualification": opinion_summary.get(
                     "basis_for_qualification", []
@@ -4208,6 +4258,7 @@ async def get_county_audits(county_id: str):
                     # Query audits from database
                     audits = (
                         db.query(DBAudit)
+                        .filter(publishable_audit_criterion())
                         .filter(DBAudit.entity_id == entity.id)
                         .order_by(DBAudit.created_at.desc())
                         .all()
@@ -4505,7 +4556,7 @@ async def list_county_audits(
                 .all()
             ]
 
-            query = db.query(DBAudit)
+            query = db.query(DBAudit).filter(publishable_audit_criterion())
             if entity_ids:
                 query = query.filter(DBAudit.entity_id.in_(entity_ids))
 
@@ -4657,7 +4708,16 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
     Returns dict with opinion history, flagged amounts, recurring/unresolved
     findings, absorption rate, grade, and peer comparison.
     """
-    audits = db.query(DBAudit).filter(DBAudit.entity_id == entity.id).all()
+    audits = (
+        db.query(DBAudit)
+        .filter(publishable_audit_criterion())
+        .filter(DBAudit.entity_id == entity.id)
+        .all()
+    )
+    # Findings held back for this county because their source document has no
+    # URL a reader could open. Counted so the omission is visible in the
+    # response rather than inferred from a suspiciously clean scorecard.
+    withheld_findings = count_withheld_audits(db, entity_id=entity.id)
 
     # --- audit_opinion_history ---
     opinion_by_year: Dict[int, str] = {}
@@ -4711,7 +4771,16 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
         )
 
     # --- total_flagged_amount ---
-    total_flagged_amount = float(sum(float(a.amount or 0) for a in audits))
+    # `0.0` reads as "the OAG flagged nothing", which is itself a finding. When
+    # no publishable audit carries an amount we do not know the figure, so the
+    # answer is null plus a reason (AUDIT_FINDINGS P1).
+    _amounts = [float(a.amount) for a in audits if a.amount is not None]
+    total_flagged_amount = float(sum(_amounts)) if _amounts else None
+    total_flagged_amount_reason = (
+        None
+        if _amounts
+        else ("awaiting_sourced_data" if withheld_findings else "no_findings_recorded")
+    )
 
     # --- recurring_findings_count ---
     qt_years: Dict[str, set] = {}
@@ -4749,9 +4818,12 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
         round(total_spent / total_allocated, 4) if total_allocated > 0 else None
     )
 
-    # Flagged amount as % of current-FY budget (signal of audit severity)
+    # Flagged amount as % of current-FY budget (signal of audit severity).
+    # None when either side is unknown — never a 0% that reads as "clean".
     flagged_pct_of_budget = (
-        (total_flagged_amount / total_allocated * 100.0) if total_allocated > 0 else 0.0
+        (total_flagged_amount / total_allocated * 100.0)
+        if (total_flagged_amount is not None and total_allocated > 0)
+        else None
     )
 
     # --- accountability_score (0-100 point system) ---
@@ -4850,14 +4922,14 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
         )
 
     # Flagged amount material to budget
-    if flagged_pct_of_budget > 10:
+    if flagged_pct_of_budget is not None and flagged_pct_of_budget > 10:
         _penalise(
             10,
             "moderate",
             f"{flagged_pct_of_budget:.1f}% of budget flagged",
             ">10% of current-FY allocation",
         )
-    elif flagged_pct_of_budget > 5:
+    elif flagged_pct_of_budget is not None and flagged_pct_of_budget > 5:
         _penalise(
             5,
             "minor",
@@ -4901,6 +4973,31 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
         grade = "D"
     else:
         grade = "F"
+
+    # The score starts at 100 and subtracts penalties, so a county whose every
+    # finding was withheld triggers no penalty and lands on 100/"A". That is
+    # absence rendered as a clean bill of health — the exact defect the
+    # publication gate exists to prevent, arriving through the back door.
+    # With no publishable finding to reason from, there is no grade to give.
+    evidence_basis = (
+        "publishable_findings" if total_findings else "no_findings_recorded"
+    )
+    if total_findings == 0 and withheld_findings:
+        score = None
+        grade = None
+        evidence_basis = "no_publishable_findings"
+        grade_factors = [
+            {
+                "impact": "unknown",
+                "label": "Not enough sourced evidence to grade",
+                "detail": (
+                    f"{withheld_findings} finding"
+                    f"{'s' if withheld_findings != 1 else ''} withheld: the source "
+                    "document has no URL a reader could open"
+                ),
+                "points": 0,
+            }
+        ]
 
     # --- peer_comparison ---
     region = COUNTY_REGIONS.get(county_id, "Unknown")
@@ -4968,7 +5065,7 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
     peer_audits_by_entity: Dict[int, List[Any]] = defaultdict(list)
     if peer_entity_ids:
         for pa in (
-            db.query(DBAudit).filter(DBAudit.entity_id.in_(peer_entity_ids)).all()
+            db.query(DBAudit).filter(publishable_audit_criterion()).filter(DBAudit.entity_id.in_(peer_entity_ids)).all()
         ):
             peer_audits_by_entity[pa.entity_id].append(pa)
 
@@ -5045,14 +5142,14 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
         cpop = peer_pop_by_entity.get(ce.id, 0)
         if _bracket_for(cpop) == pop_bracket:
             ca = peer_audits_by_entity.get(ce.id, [])
-            bracket_flagged_amounts.append(
-                float(sum(float(x.amount or 0) for x in ca))
-            )
+            _peer_amounts = [float(x.amount) for x in ca if x.amount is not None]
+            if _peer_amounts:  # a peer with no recorded amount is unknown, not 0
+                bracket_flagged_amounts.append(float(sum(_peer_amounts)))
 
     region_avg_flagged = (
         round(sum(region_flagged_amounts) / len(region_flagged_amounts), 2)
         if region_flagged_amounts
-        else 0.0
+        else None  # no peer data is not "peers flagged nothing"
     )
     region_avg_grade = (
         _num_to_grade(sum(_grade_to_num(g) for g in region_grades) / len(region_grades))
@@ -5062,7 +5159,7 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
     population_bracket_avg = (
         round(sum(bracket_flagged_amounts) / len(bracket_flagged_amounts), 2)
         if bracket_flagged_amounts
-        else 0.0
+        else None  # no peer data is not "peers flagged nothing"
     )
 
     peer_comparison = {
@@ -5079,15 +5176,23 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
         "audit_opinion_history": audit_opinion_history,
         "audit_severity_history": audit_severity_history,
         "total_flagged_amount": total_flagged_amount,
+        "total_flagged_amount_reason": total_flagged_amount_reason,
         "total_findings": total_findings,
         "critical_findings": critical_findings,
         "warning_findings": warning_findings,
         "recurring_findings_count": recurring_findings_count,
         "unresolved_findings_count": unresolved_findings_count,
         "absorption_rate": absorption_rate,
-        "flagged_pct_of_budget": round(flagged_pct_of_budget, 2),
+        "flagged_pct_of_budget": (
+            round(flagged_pct_of_budget, 2) if flagged_pct_of_budget is not None else None
+        ),
         "accountability_grade": grade,
-        "accountability_score": round(score, 1),
+        "accountability_score": round(score, 1) if score is not None else None,
+        "evidence_basis": evidence_basis,
+        "withheld": {
+            "count": withheld_findings,
+            "reason": "source_document_has_no_url" if withheld_findings else None,
+        },
         "grade_factors": grade_factors,
         "peer_comparison": peer_comparison,
     }
@@ -5160,7 +5265,7 @@ async def get_county_summary(county_id: str):
             budget_lines = _entity_period_budget_query(db, entity.id).all()
             total_allocated = sum(float(b.allocated_amount or 0) for b in budget_lines)
             total_spent = sum(float(b.actual_spent or 0) for b in budget_lines)
-            audits = db.query(DBAudit).filter(DBAudit.entity_id == entity.id).all()
+            audits = db.query(DBAudit).filter(publishable_audit_criterion()).filter(DBAudit.entity_id == entity.id).all()
 
             scorecard = _compute_accountability(db, entity, county_id)
 
@@ -5178,31 +5283,6 @@ async def get_county_summary(county_id: str):
     except Exception as e:
         logging.error(f"County summary failed for {county_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
-
-
-def missing_funds_provenance_failure(
-    case: Dict[str, Any], docs: Dict[int, Any]
-) -> Optional[str]:
-    """Why this missing-funds case may not be published, or None if it may.
-
-    Provenance-or-nothing: a case naming a county is publishable only when it
-    resolves to a source document that has a URL a reader can open, plus the
-    page the figure was read from. Anything else is withheld with a reason.
-    """
-    raw_doc_id = case.get("source_document_id")
-    if raw_doc_id in (None, ""):
-        return "no_source_document"
-    try:
-        doc = docs.get(int(raw_doc_id))
-    except (TypeError, ValueError):
-        return "no_source_document"
-    if doc is None:
-        return "source_document_not_found"
-    if not (getattr(doc, "url", None) or "").strip():
-        return "source_document_has_no_url"
-    if case.get("page_ref") in (None, "") and case.get("page_number") in (None, ""):
-        return "no_page_reference"
-    return None
 
 
 @app.get("/api/v1/accountability/missing-funds")
@@ -10080,6 +10160,7 @@ async def get_entities(
 
             audit_count = (
                 db.query(func.count(DBAudit.id))
+                .filter(publishable_audit_criterion())
                 .filter(DBAudit.entity_id == entity.id)
                 .scalar()
                 or 0
@@ -10173,6 +10254,7 @@ async def get_entity(entity_id: int, db: Session = Depends(get_db)):
         # Get audit findings
         audit_findings = (
             db.query(DBAudit)
+            .filter(publishable_audit_criterion())
             .filter(DBAudit.entity_id == entity_id)
             .order_by(DBAudit.created_at.desc())
             .limit(5)

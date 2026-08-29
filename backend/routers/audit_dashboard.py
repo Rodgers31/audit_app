@@ -23,6 +23,10 @@ from sqlalchemy.orm import Session
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from cache.redis_cache import cached
+from services.publication_gate import (
+    count_withheld_audits,
+    publishable_audit_criterion,
+)
 
 try:
     from database import get_db
@@ -125,36 +129,6 @@ class FindingsListResponse(BaseModel):
 def _check_db(db: Session):
     if not DATABASE_AVAILABLE or db is None:
         raise HTTPException(status_code=503, detail="Database not available")
-
-
-def publishable_audit_criterion():
-    """SQL criterion: this finding resolves to a document a reader can open.
-
-    Provenance-or-nothing (AUDIT_FINDINGS F5.4). 25 of the 27 rows in ``audits``
-    hang off source_document 1836 — an OAG title with ``url IS NULL`` and
-    ``md5 IS NULL`` that nobody can check — and they contribute KES 3.313T of
-    the KES 3.91T headline. A finding whose source document has no URL is
-    excluded from public reads; the row is retained, not deleted.
-
-    Stage 1 adds a ``publishable`` column backfilled from this same rule; until
-    then the rule is enforced here so nothing untraceable is served.
-    """
-    return Audit.source_document_id.in_(
-        select(SourceDocument.id).where(
-            SourceDocument.url.isnot(None),
-            func.length(func.trim(SourceDocument.url)) > 0,
-        )
-    )
-
-
-def count_withheld_audits(db: Session) -> int:
-    """How many findings the gate is holding back. Never let this be silent."""
-    return (
-        db.query(func.count(Audit.id))
-        .filter(~publishable_audit_criterion())
-        .scalar()
-        or 0
-    )
 
 
 # ===== Endpoints =====
