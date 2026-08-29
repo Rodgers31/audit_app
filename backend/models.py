@@ -805,11 +805,16 @@ class DebtTimeline(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     year = Column(Integer, nullable=False, unique=True, index=True)
-    external = Column(Numeric(15, 2), nullable=False)  # Billions KES
-    domestic = Column(Numeric(15, 2), nullable=False)  # Billions KES
-    total = Column(Numeric(15, 2), nullable=False)  # Billions KES
-    gdp = Column(Numeric(15, 2), nullable=True)  # Billions KES
+    # Money columns are RAW KES (F5.5: they were bare integers meaning
+    # billions, recorded nowhere). `unit` makes the convention a queryable
+    # fact instead of tribal knowledge; the seeding writer converts at the
+    # DB boundary and every consumer reads the declared unit.
+    external = Column(Numeric(20, 2), nullable=False)  # raw KES
+    domestic = Column(Numeric(20, 2), nullable=False)  # raw KES
+    total = Column(Numeric(20, 2), nullable=False)  # raw KES
+    gdp = Column(Numeric(20, 2), nullable=True)  # raw KES
     gdp_ratio = Column(Numeric(5, 1), nullable=True)  # e.g. 77.6
+    unit = Column(String(10), nullable=False, server_default="KES")
     source_document_id = Column(
         Integer, ForeignKey("source_documents.id"), nullable=True
     )
@@ -847,20 +852,24 @@ class FiscalSummary(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     fiscal_year = Column(String(20), nullable=False, unique=True, index=True)
-    appropriated_budget = Column(Numeric(15, 2), nullable=True)  # Billions KES
-    total_revenue = Column(Numeric(15, 2), nullable=True)
-    tax_revenue = Column(Numeric(15, 2), nullable=True)
-    non_tax_revenue = Column(Numeric(15, 2), nullable=True)
-    total_borrowing = Column(Numeric(15, 2), nullable=True)
+    # Money columns are RAW KES (see DebtTimeline: F5.5). Percentage/ratio
+    # columns (borrowing_pct_of_budget, debt_service_per_shilling,
+    # debt_ceiling_usage_pct) are unit-free and unaffected.
+    appropriated_budget = Column(Numeric(20, 2), nullable=True)  # raw KES
+    total_revenue = Column(Numeric(20, 2), nullable=True)  # raw KES
+    tax_revenue = Column(Numeric(20, 2), nullable=True)  # raw KES
+    non_tax_revenue = Column(Numeric(20, 2), nullable=True)  # raw KES
+    total_borrowing = Column(Numeric(20, 2), nullable=True)  # raw KES
     borrowing_pct_of_budget = Column(Numeric(5, 1), nullable=True)
-    debt_service_cost = Column(Numeric(15, 2), nullable=True)
+    debt_service_cost = Column(Numeric(20, 2), nullable=True)  # raw KES
     debt_service_per_shilling = Column(Numeric(5, 1), nullable=True)
-    debt_ceiling = Column(Numeric(15, 2), nullable=True)
-    actual_debt = Column(Numeric(15, 2), nullable=True)
+    debt_ceiling = Column(Numeric(20, 2), nullable=True)  # raw KES
+    actual_debt = Column(Numeric(20, 2), nullable=True)  # raw KES
     debt_ceiling_usage_pct = Column(Numeric(5, 1), nullable=True)
-    development_spending = Column(Numeric(15, 2), nullable=True)
-    recurrent_spending = Column(Numeric(15, 2), nullable=True)
-    county_allocation = Column(Numeric(15, 2), nullable=True)
+    development_spending = Column(Numeric(20, 2), nullable=True)  # raw KES
+    recurrent_spending = Column(Numeric(20, 2), nullable=True)  # raw KES
+    county_allocation = Column(Numeric(20, 2), nullable=True)  # raw KES
+    unit = Column(String(10), nullable=False, server_default="KES")
     source_document_id = Column(
         Integer, ForeignKey("source_documents.id"), nullable=True
     )
