@@ -76,10 +76,39 @@ def _payload():
 
 
 def test_overlay_promotes_in_tolerance_value():
-    payload, status = _overlay_live_budget_headline(_payload(), 4292.0)
+    """In-tolerance values promote — once the row declares its basis.
+
+    UPDATED 2026-08-29. This previously passed no basis, asserting that a
+    plausible in-tolerance number is promoted on numeric grounds alone.
+    That contract is unsafe: COB's original GROSS budget for FY2025/26 is
+    4.69T while the fixture row holds the Budget Policy Statement figure of
+    4.19T — different measures, 12% apart, i.e. INSIDE the 15% tolerance.
+    Under the old rule the homepage headline would have moved to 4.69T with
+    nobody choosing it. Promotion now also requires the row to declare the
+    same basis; the numeric behaviour it was written to pin is unchanged.
+    """
+    payload = {"fiscal_years": [dict(LATEST, budget_basis="cob_gross")]}
+    payload, status = _overlay_live_budget_headline(payload, 4292.0)
     assert status == "promoted"
     assert payload["fiscal_years"][0]["appropriated_budget"] == 4292.0
     assert payload["fiscal_years"][0]["_budget_source"] == "cob_ng_birr_live"
+
+
+def test_overlay_refuses_a_row_that_declares_no_basis():
+    """POSITIVE CONTROL for the gate above: an in-tolerance, plausible value
+    is still refused when the row does not say which measure it holds."""
+    payload, status = _overlay_live_budget_headline(_payload(), 4292.0)
+    assert status.startswith("basis_undeclared")
+    assert payload["fiscal_years"][0]["appropriated_budget"] == 4190
+    # ...but the live figure is recorded, so the refusal is inspectable.
+    assert payload["fiscal_years"][0]["_cob_live_budget_billion"] == 4292.0
+
+
+def test_overlay_refuses_a_differently_declared_basis():
+    payload = {"fiscal_years": [dict(LATEST, budget_basis="bps")]}
+    payload, status = _overlay_live_budget_headline(payload, 4690.0)
+    assert status == "basis_mismatch(row=bps,live=cob_gross)"
+    assert payload["fiscal_years"][0]["appropriated_budget"] == 4190
 
 
 def test_overlay_rejects_out_of_tolerance_keeps_fixture():

@@ -17,6 +17,13 @@ from ...utils import load_json_resource
 
 logger = logging.getLogger("seeding.fiscal_summary.fetcher")
 
+# Whether a row that declares no ``budget_basis`` may receive the COB gross
+# figure. FALSE: the fixture's FY2025/26 budget is a Budget Policy Statement
+# number (4.19T) and COB's gross is 4.69T — different measures, 12% apart,
+# which the 15% tolerance would wave through. Set a row's ``budget_basis``
+# to "cob_gross" to opt it in deliberately.
+_ALLOW_UNDECLARED_BASIS = False
+
 # World Bank indicator codes for Kenya
 _WB_INDICATORS: Dict[str, str] = {
     "GC.XPN.TOTL.CN": "government_expenditure_lcu",
@@ -38,12 +45,18 @@ def fetch_fiscal_summary_payload(
         label="fiscal_summary",
     )
 
+    wb_applied = False
+    wb_years = 0
+    cob_status = "not_attempted"
+
     # Try World Bank enrichment
     if settings.enrich_with_worldbank and settings.live_pdf_fetch_enabled:
         try:
             wb_data = _fetch_worldbank_fiscal_data(client, settings)
             if wb_data:
                 payload = _merge_worldbank_data(payload, wb_data)
+                wb_applied = True
+                wb_years = len(wb_data)
                 logger.info(
                     "Enriched fiscal summary with World Bank data",
                     extra={"wb_years": list(wb_data.keys())},
@@ -63,6 +76,7 @@ def fetch_fiscal_summary_payload(
             live_budget, live_revenue = _fetch_cob_headlines(client, settings)
             payload, b_status = _overlay_live_budget_headline(payload, live_budget)
             payload, r_status = _overlay_live_revenue_headline(payload, live_revenue)
+            cob_status = f"budget={b_status} revenue={r_status}"
             logger.info(
                 "fiscal_summary COB overlay: budget=%s revenue=%s",
                 b_status,
@@ -70,6 +84,27 @@ def fetch_fiscal_summary_payload(
             )
         except Exception as exc:
             logger.warning("COB headline overlay skipped: %s", exc)
+
+    # Provenance. World Bank enrichment is genuinely live and does move
+    # rows, so a successful WB pass is live data — but the DETAIL says
+    # plainly that the headline budget is still the fixture's, because
+    # "live" on its own would overstate what was refreshed.
+    from ...freshness import mark_fixture, mark_live
+
+    if wb_applied:
+        mark_live(
+            "fiscal_summary",
+            detail=(
+                f"World Bank indicators for {wb_years} year(s); headline "
+                f"budget still fixture (COB overlay: {cob_status})"
+            ),
+        )
+    else:
+        mark_fixture(
+            "fiscal_summary",
+            reason="no_live_overlay_applied",
+            detail=f"COB overlay: {cob_status}",
+        )
 
     return payload
 
@@ -122,6 +157,7 @@ def _overlay_live_budget_headline(
     live_budget_billion: Optional[float],
     *,
     tolerance_pct: float = 15.0,
+    basis: str = "cob_gross",
 ) -> tuple[Dict[str, Any], str]:
     """Promote a live-parsed headline budget onto the latest fiscal year ONLY
     if it (a) passes the plausibility gate and (b) reconciles within
@@ -146,6 +182,7 @@ def _overlay_live_budget_headline(
     if live <= 0:
         return payload, "bad_live_value"
 
+
     # (a) plausibility gate — substitute the live budget; it must stay
     # internally consistent (in band; spending still ≤ budget).
     try:
@@ -165,6 +202,34 @@ def _overlay_live_budget_headline(
                 return payload, "outside_tolerance"
         except (TypeError, ValueError):
             pass
+
+    # ── Basis gate — LAST, so a more specific verdict wins ────────────
+    # Ordering is sanity -> continuity -> identity. An implausible or
+    # far-off figure must be reported as such; masking that behind
+    # "basis_mismatch" would hide the more serious finding.
+    #
+    # "The budget" has three legitimate, DIFFERENT values for FY2025/26:
+    #   COB original gross budget   4.69T  (includes A-I-A and CFS)
+    #   COB original net estimates  4.43T
+    #   Budget Policy Statement     4.19T  <- what this fixture holds
+    # A numeric tolerance cannot separate a revision from a redefinition:
+    # gross sits 12% from the fixture, INSIDE the 15% band, so it would be
+    # promoted silently and the homepage headline would move from 4.19T to
+    # 4.69T with nobody having chosen that.
+    #
+    # Promotion therefore requires the row to DECLARE the same basis. The
+    # live value is recorded either way, so a refusal is inspectable rather
+    # than invisible.
+    incoming_basis = str(basis or "cob_gross")
+    declared_basis = latest.get("budget_basis")
+    latest["_cob_live_budget_billion"] = round(live, 1)
+    latest["_cob_live_budget_basis"] = incoming_basis
+    if declared_basis is not None and declared_basis != incoming_basis:
+        return payload, (
+            f"basis_mismatch(row={declared_basis},live={incoming_basis})"
+        )
+    if declared_basis is None and not _ALLOW_UNDECLARED_BASIS:
+        return payload, f"basis_undeclared(live={incoming_basis})"
 
     latest["appropriated_budget"] = round(live, 1)
     latest["_budget_source"] = "cob_ng_birr_live"
