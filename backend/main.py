@@ -3076,8 +3076,59 @@ async def get_county_comprehensive(
                 grade = "B-"
 
             # --- Missing funds ---
-            missing_funds_cases = meta.get("missing_funds_cases") or []
-            missing_funds_total = float(financial_metrics_meta.get("missing_funds", 0))
+            # Same publication gate as /accountability/missing-funds: a case
+            # that names a county but resolves to no source document is not
+            # served here either (AUDIT_FINDINGS F5.3). The stored rows are
+            # retained; they are withheld from the response with a reason.
+            _raw_missing_cases = meta.get("missing_funds_cases") or []
+            if not isinstance(_raw_missing_cases, list):
+                _raw_missing_cases = []
+            _missing_doc_ids = set()
+            for _c in _raw_missing_cases:
+                if isinstance(_c, dict) and _c.get("source_document_id") not in (None, ""):
+                    try:
+                        _missing_doc_ids.add(int(_c["source_document_id"]))
+                    except (TypeError, ValueError):
+                        continue
+            _missing_docs = {}
+            if _missing_doc_ids:
+                _missing_docs = {
+                    d.id: d
+                    for d in db.query(DBSourceDocument)
+                    .filter(DBSourceDocument.id.in_(_missing_doc_ids))
+                    .all()
+                }
+            missing_funds_cases = []
+            missing_funds_withheld = {}
+            for _c in _raw_missing_cases:
+                if not isinstance(_c, dict):
+                    continue
+                _fail = missing_funds_provenance_failure(_c, _missing_docs)
+                if _fail:
+                    missing_funds_withheld[_fail] = (
+                        missing_funds_withheld.get(_fail, 0) + 1
+                    )
+                    continue
+                missing_funds_cases.append(_c)
+
+            # The stored ``missing_funds`` metric is a modelled figure with no
+            # extraction behind it, and it disagreed with its own case list by
+            # 8.2x. Publish a total only when it is the sum of sourced cases.
+            missing_funds_total = (
+                sum(
+                    _parse_kes_amount_str(_c.get("amount")) or 0.0
+                    for _c in missing_funds_cases
+                )
+                if missing_funds_cases
+                else None
+            )
+            if missing_funds_withheld:
+                logger.warning(
+                    "county %s: withheld %d unsourced missing-funds case(s) (%s)",
+                    county_id,
+                    sum(missing_funds_withheld.values()),
+                    ", ".join(f"{k}={v}" for k, v in sorted(missing_funds_withheld.items())),
+                )
 
             # --- Stalled projects ---
             stalled_projects = meta.get("stalled_projects") or []
@@ -3255,16 +3306,13 @@ async def get_county_comprehensive(
                 # Missing funds
                 "missing_funds": {
                     "total_amount": missing_funds_total,
-                    "cases_count": (
-                        len(missing_funds_cases)
-                        if isinstance(missing_funds_cases, list)
-                        else 0
-                    ),
-                    "cases": (
-                        missing_funds_cases
-                        if isinstance(missing_funds_cases, list)
-                        else []
-                    ),
+                    "cases_count": len(missing_funds_cases),
+                    "cases": missing_funds_cases,
+                    "reason": None if missing_funds_cases else "awaiting_sourced_data",
+                    "withheld": {
+                        "count": sum(missing_funds_withheld.values()),
+                        "by_reason": missing_funds_withheld,
+                    },
                 },
                 # Stalled projects
                 "stalled_projects": {
@@ -5132,49 +5180,98 @@ async def get_county_summary(county_id: str):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+def missing_funds_provenance_failure(
+    case: Dict[str, Any], docs: Dict[int, Any]
+) -> Optional[str]:
+    """Why this missing-funds case may not be published, or None if it may.
+
+    Provenance-or-nothing: a case naming a county is publishable only when it
+    resolves to a source document that has a URL a reader can open, plus the
+    page the figure was read from. Anything else is withheld with a reason.
+    """
+    raw_doc_id = case.get("source_document_id")
+    if raw_doc_id in (None, ""):
+        return "no_source_document"
+    try:
+        doc = docs.get(int(raw_doc_id))
+    except (TypeError, ValueError):
+        return "no_source_document"
+    if doc is None:
+        return "source_document_not_found"
+    if not (getattr(doc, "url", None) or "").strip():
+        return "source_document_has_no_url"
+    if case.get("page_ref") in (None, "") and case.get("page_number") in (None, ""):
+        return "no_page_reference"
+    return None
+
+
 @app.get("/api/v1/accountability/missing-funds")
 @cached(key_prefix="accountability:missing-funds", ttl=600)
 async def get_national_missing_funds():
     """National roll-up of missing-funds cases across all counties.
 
-    Aggregates ``missing_funds_cases`` entries from every county entity's
-    meta JSON. Each case carries an amount, a description of what's
-    unaccounted for, a status (active_investigation / resolved / etc.),
-    and the fiscal period the irregularity belongs to. Powers the
-    /accountability/missing-funds public page.
+    A case is served only if it resolves to a *(source document, page)*
+    pair whose document has a URL a reader can open. A case that names a
+    county but cannot be traced to a published report is withheld — it is
+    counted and reported under ``withheld``, never silently dropped, and
+    never rendered as a zero.
+
+    When nothing qualifies, ``total_amount`` is ``None`` (not ``0``) and
+    ``reason`` says why, so the page can say "not yet published" instead of
+    showing an unaccounted-for total of zero.
     """
     if not DATABASE_AVAILABLE:
         raise HTTPException(status_code=503, detail="Database unavailable")
+
+    def _parse_amount(raw: Any) -> float:
+        if isinstance(raw, (int, float)):
+            return float(raw)
+        if not isinstance(raw, str):
+            return 0.0
+        s = raw.upper().replace("KES", "").replace(",", "").strip()
+        mult = 1.0
+        if s.endswith("B"):
+            mult = 1e9
+            s = s[:-1]
+        elif s.endswith("M"):
+            mult = 1e6
+            s = s[:-1]
+        elif s.endswith("K"):
+            mult = 1e3
+            s = s[:-1]
+        try:
+            return float(s) * mult
+        except ValueError:
+            return 0.0
+
+    published: List[Dict[str, Any]] = []
+    withheld_by_reason: Dict[str, int] = {}
+    county_totals: Dict[str, Dict[str, Any]] = {}
+    status_totals: Dict[str, float] = {}
 
     with next(get_db()) as db:
         counties = (
             db.query(DBEntity).filter(DBEntity.type == EntityType.COUNTY).all()
         )
 
-        def _parse_amount(raw: Any) -> float:
-            if isinstance(raw, (int, float)):
-                return float(raw)
-            if not isinstance(raw, str):
-                return 0.0
-            s = raw.upper().replace("KES", "").replace(",", "").strip()
-            mult = 1.0
-            if s.endswith("B"):
-                mult = 1e9
-                s = s[:-1]
-            elif s.endswith("M"):
-                mult = 1e6
-                s = s[:-1]
-            elif s.endswith("K"):
-                mult = 1e3
-                s = s[:-1]
-            try:
-                return float(s) * mult
-            except ValueError:
-                return 0.0
-
-        all_cases: List[Dict[str, Any]] = []
-        county_totals: Dict[str, Dict[str, Any]] = {}
-        status_totals: Dict[str, float] = {}
+        # Resolve every referenced document once, so the gate checks the real
+        # row rather than trusting an id that may point at nothing.
+        referenced_ids = set()
+        for county in counties:
+            for case in (county.meta or {}).get("missing_funds_cases") or []:
+                if isinstance(case, dict) and case.get("source_document_id") not in (None, ""):
+                    try:
+                        referenced_ids.add(int(case["source_document_id"]))
+                    except (TypeError, ValueError):
+                        continue
+        docs: Dict[int, Any] = {}
+        if referenced_ids:
+            docs = {
+                d.id: d
+                for d in db.query(DBSourceDocument)
+                .filter(DBSourceDocument.id.in_(referenced_ids))
+                .all()
+            }
 
         for county in counties:
             meta = county.meta or {}
@@ -5183,45 +5280,79 @@ async def get_national_missing_funds():
                 continue
             county_name = (county.canonical_name or "").replace(" County", "").strip()
             county_amount = 0.0
+            county_published = 0
+
             for case in cases:
                 if not isinstance(case, dict):
+                    withheld_by_reason["malformed_case"] = (
+                        withheld_by_reason.get("malformed_case", 0) + 1
+                    )
                     continue
+
+                failure = missing_funds_provenance_failure(case, docs)
+                if failure is not None:
+                    withheld_by_reason[failure] = withheld_by_reason.get(failure, 0) + 1
+                    continue
+
+                doc = docs[int(case["source_document_id"])]
                 amount = _parse_amount(case.get("amount"))
                 status = (case.get("status") or "unknown").lower()
-                entry = {
-                    "case_id": case.get("case_id"),
-                    "county": case.get("county") or county_name,
-                    "county_id": county.meta.get("county_code") if county.meta else None,
-                    "amount": amount,
-                    "amount_label": case.get("amount"),
-                    "period": case.get("period"),
-                    "status": status,
-                    "description": case.get("description", ""),
-                }
-                all_cases.append(entry)
+                published.append(
+                    {
+                        "case_id": case.get("case_id"),
+                        "county": case.get("county") or county_name,
+                        "county_id": meta.get("county_code"),
+                        "amount": amount,
+                        "amount_label": case.get("amount"),
+                        "period": case.get("period"),
+                        "status": status,
+                        "description": case.get("description", ""),
+                        "source": {
+                            "document_id": doc.id,
+                            "title": doc.title,
+                            "publisher": doc.publisher,
+                            "url": doc.url,
+                            "page": case.get("page_ref") or case.get("page_number"),
+                        },
+                    }
+                )
                 county_amount += amount
+                county_published += 1
                 status_totals[status] = status_totals.get(status, 0.0) + amount
 
-            if county_amount > 0:
+            if county_published:
                 county_totals[county_name] = {
                     "county": county_name,
-                    "cases": len(cases),
+                    "cases": county_published,
                     "amount": county_amount,
                 }
 
-    all_cases.sort(key=lambda c: c["amount"], reverse=True)
+    withheld_total = sum(withheld_by_reason.values())
+    if withheld_total:
+        # Fail loud: an omission this large must be visible in the log, not
+        # inferred from a page that renders nothing.
+        logger.warning(
+            "missing-funds: withheld %d unsourced case(s) from the public "
+            "response (%s); %d published",
+            withheld_total,
+            ", ".join(f"{k}={v}" for k, v in sorted(withheld_by_reason.items())),
+            len(published),
+        )
+
+    published.sort(key=lambda c: c["amount"], reverse=True)
     top_counties = sorted(
         county_totals.values(), key=lambda c: c["amount"], reverse=True
     )[:10]
 
-    total_amount = sum(c["amount"] for c in all_cases)
     return {
-        "total_amount": total_amount,
-        "total_cases": len(all_cases),
+        "total_amount": (sum(c["amount"] for c in published) if published else None),
+        "total_cases": len(published),
         "affected_counties": len(county_totals),
         "by_status": status_totals,
         "top_counties": top_counties,
-        "cases": all_cases,
+        "cases": published,
+        "reason": None if published else "awaiting_sourced_data",
+        "withheld": {"count": withheld_total, "by_reason": withheld_by_reason},
     }
 
 
