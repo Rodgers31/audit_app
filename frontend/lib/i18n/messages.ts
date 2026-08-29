@@ -245,6 +245,11 @@ export const MESSAGES = {
     sw: 'Hakuna wizara inayoweza kuorodheshwa hadi matokeo yake yafuatilike kwenye ripoti iliyochapishwa.',
     plain: 'No ministry can be listed until its findings come from a published report.',
   },
+  'home.audits.source_page': {
+    en: 'Source: report {page}',
+    sw: 'Chanzo: ripoti {page}',
+    plain: 'Source: report {page}',
+  },
   'home.audits.cadence_annual': { en: 'annually', sw: 'kila mwaka', plain: 'once a year' },
   'home.audits.cadence_quarterly': { en: 'quarterly', sw: 'kila robo mwaka', plain: 'every three months' },
   'home.audits.cadence_monthly': { en: 'monthly', sw: 'kila mwezi', plain: 'every month' },

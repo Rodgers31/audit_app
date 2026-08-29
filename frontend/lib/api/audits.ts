@@ -139,6 +139,12 @@ export interface FederalAuditFinding {
   report_section: string;
   date_raised: string;
   date: string | null;
+  /** Extraction-backed provenance (Stage 2): the report paragraph's title,
+   *  the PDF page the finding was extracted from ("p.106"), and the source
+   *  document URL a reader can open to check it. */
+  title?: string | null;
+  page_ref?: string | null;
+  source_url?: string | null;
 }
 
 export interface FederalAuditResponse {

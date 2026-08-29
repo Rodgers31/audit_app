@@ -121,6 +121,9 @@ describe('AuditReportsSection with published findings', () => {
             report_section: '',
             date_raised: '',
             date: null,
+            title: 'Pending Accounts Payable',
+            page_ref: 'p.14',
+            source_url: 'https://www.oagkenya.go.ke/wp-content/uploads/2026/05/R.pdf',
           },
           {
             id: 2,
@@ -151,5 +154,21 @@ describe('AuditReportsSection with published findings', () => {
     expect(screen.getByText('2')).toBeInTheDocument(); // donut count
     expect(screen.getByText(/Critical \(1\)/)).toBeInTheDocument();
     expect(screen.getByText(/Significant \(1\)/)).toBeInTheDocument();
+  });
+
+  it('links an expanded finding to the source PDF page a citizen can open', async () => {
+    const { fireEvent } = await import('@testing-library/react');
+    render(<AuditReportsSection />);
+    // Expand the Treasury finding (it carries extraction provenance).
+    // shortMinistry() strips the "The " prefix; the name also appears in
+    // the ministries panel, so scope to the findings-list button.
+    fireEvent.click(
+      screen.getByRole('button', { name: /pending accounts payable/i })
+    );
+    const link = screen.getByRole('link', { name: /source.*p\.14/i });
+    expect(link).toHaveAttribute(
+      'href',
+      'https://www.oagkenya.go.ke/wp-content/uploads/2026/05/R.pdf#page=14'
+    );
   });
 });

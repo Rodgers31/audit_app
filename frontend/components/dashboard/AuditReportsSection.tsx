@@ -392,6 +392,19 @@ export default function AuditReportsSection() {
                                 {f.recommended_action}
                               </p>
                             )}
+                            {/* The product's core claim: every finding links
+                                to the page of the report it came from. */}
+                            {f.source_url && f.page_ref && (
+                              <a
+                                href={`${f.source_url}#page=${f.page_ref.replace(/[^0-9]/g, '')}`}
+                                target='_blank'
+                                rel='noopener noreferrer'
+                                onClick={(e) => e.stopPropagation()}
+                                className='inline-flex items-center gap-1 text-xs text-gov-forest dark:text-emerald-100 hover:underline mt-1.5'>
+                                <ExternalLink className='w-3 h-3' />
+                                {t('home.audits.source_page').replace('{page}', f.page_ref)}
+                              </a>
+                            )}
                           </motion.div>
                         )}
                       </div>
