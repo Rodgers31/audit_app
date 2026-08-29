@@ -176,6 +176,32 @@ def run(
                     }
                 metadata["documents"].append(doc_stat)
 
+    # Provenance: the audits domain is "live" only if at least one document
+    # was actually fetched AND extracted this run. Registering a document
+    # without extracting it is not live data.
+    from ...freshness import mark_fixture, mark_live
+
+    extracted_docs = [
+        d for d in metadata["documents"] if d.get("extractions")
+    ]
+    if extracted_docs:
+        mark_live(
+            "audits",
+            detail=(
+                f"{len(extracted_docs)} document(s) extracted; "
+                f"{created} finding(s) created, {updated} updated"
+            ),
+        )
+    else:
+        mark_fixture(
+            "audits",
+            reason="no_document_extracted",
+            detail=(
+                f"{len(metadata['documents'])} document(s) seen, none "
+                f"produced extractions"
+            ),
+        )
+
     return DomainRunResult(
         domain="audits",
         started_at=started_at,

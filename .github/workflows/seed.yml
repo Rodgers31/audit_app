@@ -364,8 +364,23 @@ jobs:
           print('\n--- Ingestion Job Results ---')
           for job in jobs:
               status = job.status.value
-              emoji = 'OK' if status == 'completed' else 'WARN' if status == 'completed_with_errors' else 'FAIL'
-              print(f'[{emoji}] {job.domain}: {status} | created={job.items_created} updated={job.items_updated} processed={job.items_processed}')
+              mode = (job.meta or {}).get('source_mode')
+              # A domain that served a git-tracked fixture is NOT [OK]: it
+              # published nothing from the publisher, and its 0-created count
+              # reflects a static file rather than a confirmed no-op upstream.
+              if mode == 'fixture':
+                  emoji = 'STALE'
+              elif status == 'completed':
+                  emoji = 'OK'
+              elif status == 'completed_with_errors':
+                  emoji = 'WARN'
+              else:
+                  emoji = 'FAIL'
+              src = f" | source={mode or 'unrecorded'}"
+              reason = (job.meta or {}).get('source_fallback_reason')
+              if reason:
+                  src += f' ({reason})'
+              print(f'[{emoji}] {job.domain}: {status} | created={job.items_created} updated={job.items_updated} processed={job.items_processed}{src}')
               if job.errors:
                   for err in job.errors[:3]:
                       print(f'  ERROR: {str(err)[:200]}')
@@ -534,6 +549,23 @@ jobs:
                   print(f'[FAIL] GDP sanity: {gdp_trillions:.1f}T KES')
               else:
                   print(f'[OK] GDP sanity: {gdp_trillions:.1f}T KES (year {latest_gdp.year})')
+
+          # ── Freshness gates ────────────────────────────────────
+          # Row-count floors above ('27 rows >= 20') pass forever and did:
+          # they reported [OK] every night for months while audits had not
+          # gained a row in 6 weeks and budget_lines in 11. These gates ask
+          # the two questions a floor cannot — has the data MOVED, and did
+          # the pipeline actually reach the PUBLISHER? See
+          # backend/seeding/staleness.py.
+          from seeding.staleness import FAIL, WARN, run_all
+
+          print('\n--- Freshness gates ---')
+          for finding in run_all(session):
+              print(f'  {finding}')
+              if finding.level == FAIL:
+                  errors.append(f'{finding.label}: {finding.message}')
+              elif finding.level == WARN:
+                  warnings.append(f'{finding.label}: {finding.message}')
 
           session.close()
 

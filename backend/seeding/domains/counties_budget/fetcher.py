@@ -24,6 +24,7 @@ from ...cob_discovery import discover_latest_cob_pdf_url
 from ...config import SeedingSettings
 from ...http_client import SeedingHttpClient
 from ...utils import load_json_resource, slugify_entity
+from ...freshness import mark_fixture, mark_live
 
 logger = logging.getLogger("seeding.counties_budget.fetcher")
 
@@ -143,20 +144,35 @@ def fetch_budget_payload(
                     "Successfully fetched county budgets from COB PDF (%d records)",
                     len(payload) if isinstance(payload, list) else 0,
                 )
+                mark_live(
+                    "counties_budget",
+                    detail=f"COB county BIRR PDF, {len(payload)} records",
+                )
                 return payload
             else:
                 logger.warning(
                     "COB county PDF fetch returned no budget data, "
                     "falling back to fixture"
                 )
+                mark_fixture(
+                    "counties_budget", reason="parser_returned_nothing"
+                )
         except Exception as exc:
             logger.warning(
                 "COB county PDF fetch failed, falling back to fixture: %s", exc
+            )
+            mark_fixture(
+                "counties_budget",
+                reason="live_fetch_failed",
+                detail=str(exc)[:200],
             )
     elif not prefer_live:
         logger.info(
             "counties_budget_prefer_live_source=False — skipping COB PDF fetch"
         )
+        mark_fixture("counties_budget", reason="live_source_disabled")
+    else:
+        mark_fixture("counties_budget", reason="live_pdf_fetch_disabled")
 
     # Strategy 2: Fixture fallback
     logger.info("Using fixture/configured URL for county budget data")
