@@ -1,0 +1,72 @@
+# Root build context — used by ./Dockerfile and ./etl/Dockerfile (CI: "Build & Push ETL").
+# etl/Dockerfile does `COPY . /app/` in a SINGLE stage, so anything left here
+# ships inside a published image. Secrets first.
+
+# ---- Secrets. Never in a build context. ----
+# gitignore is not dockerignore: these are absent from git yet present on disk.
+**/.env
+**/.env.*
+!**/.env.example
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/secrets.*
+**/service-account*.json
+
+# ---- Version control ----
+.git
+.gitignore
+.github
+**/.gitkeep
+
+# ---- Python virtualenvs (~1.2 GB, and a macOS venv is broken inside Linux anyway) ----
+venv/
+.venv/
+**/venv/
+**/.venv/
+**/.venv313/
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.coverage
+**/htmlcov/
+**/coverage.xml
+
+# ---- Node (~1.9 GB) ----
+**/node_modules/
+**/.next/
+**/.turbo/
+**/npm-debug.log*
+**/yarn-error.log*
+
+# ---- Logs, databases, runtime caches ----
+**/*.log
+**/*.db
+**/*.sqlite
+**/*.sqlite3
+backend/data/seeding/
+backend/data/pending_bills_cache/
+**/downloads/
+**/uploads/
+
+# ---- Test + report artifacts ----
+**/playwright-report/
+**/test-results/
+**/.playwright/
+test_downloads/
+reports/
+extracted_docs/
+
+# ---- Local tooling / editor ----
+.claude/
+.vscode/
+.idea/
+**/.DS_Store
+
+# ---- Docs and audit artifacts (not needed at runtime) ----
+*.md
+!README.md
+*.docx

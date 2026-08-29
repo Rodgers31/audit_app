@@ -1,0 +1,49 @@
+# Backend build context — used by backend/Dockerfile and backend/Dockerfile.prod
+# (CI: "Build & Push Backend", context ./backend).
+# Dockerfile.prod:47 does `COPY --chown=appuser:appuser . .`, so anything left
+# here ships inside the published image.
+
+# ---- Secrets. Never in a build context. ----
+# backend/.env holds SUPABASE_SERVICE_ROLE_KEY, SUPABASE_JWT_SECRET and DB_PASSWORD.
+# It is gitignored (backend/.gitignore:25) but gitignore is not dockerignore.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets.*
+service-account*.json
+
+# ---- Virtualenvs (venv 452 MB + .venv313 410 MB = 862 MB) ----
+venv/
+.venv/
+.venv313/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# ---- Logs and local databases (main_backend.log is 14 MB) ----
+*.log
+*.db
+*.sqlite
+*.sqlite3
+
+# ---- Runtime caches, recreated by the app; Dockerfile.prod mkdirs these ----
+data/seeding/
+data/pending_bills_cache/
+downloads/
+uploads/
+logs/
+
+# ---- VCS / editor ----
+.git
+.gitignore
+.vscode/
+.idea/
+.DS_Store

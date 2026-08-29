@@ -1,0 +1,40 @@
+# Frontend build context — used by frontend/Dockerfile and frontend/Dockerfile.prod
+# (CI: "Build & Push Frontend", context ./frontend).
+# Dockerfile.prod:13 and Dockerfile:14 both do `COPY . .`.
+
+# ---- Secrets. Never in a build context. ----
+# frontend/.env.local holds SUPABASE_SERVICE_ROLE_KEY. Next.js needs only the
+# NEXT_PUBLIC_* values at build time, and CI already passes those as build-args
+# (docker-build-deploy.yml:283-285), so nothing legitimate needs this file here.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ---- Installed by `npm ci` from package*.json, not copied ----
+node_modules/
+.next/
+.turbo/
+out/
+build/
+
+# ---- Test + report artifacts ----
+playwright-report/
+test-results/
+.playwright/
+coverage/
+__tests__/
+e2e/
+
+# ---- Logs ----
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# ---- VCS / editor ----
+.git
+.gitignore
+.vscode/
+.idea/
+.DS_Store
