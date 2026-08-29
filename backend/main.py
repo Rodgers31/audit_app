@@ -8496,6 +8496,10 @@ def _latest_imf_debt_to_gdp(db):
 )  # 12 hours — national debt data changes infrequently
 async def get_national_debt():
     """Get national debt overview with categorized breakdown."""
+    # Distinguish "the database said there is nothing" from "we could not ask
+    # the database". Both used to return zeros, so an outage rendered as
+    # "Kenya owes KES 0.00T, LOW RISK" on the homepage.
+    _db_unreachable = False
     # Try database first
     if DATABASE_AVAILABLE:
         try:
@@ -8919,23 +8923,36 @@ async def get_national_debt():
                     }
         except Exception as e:
             logging.error(f"DB debt query failed: {e}")
+            _db_unreachable = True
 
-    # No hardcoded fallback — data must come from the database.
-    # Guide user to populate via the seeding pipeline.
+    # Absent is not zero. Returning 0 here rendered a database outage as a
+    # headline claim that Kenya has no national debt and is at LOW risk
+    # (classifyDebtRisk(0) -> "Low"). Every money field is null with a
+    # machine-readable reason so no client can turn a failure into a figure.
+    _reason = "source_unavailable" if _db_unreachable else "not_yet_seeded"
+    logging.warning(
+        "/debt/national returning no figures — reason=%s", _reason
+    )
     return {
         "status": "no_data",
-        "data_source": "database_empty",
+        "data_source": (
+            "database_unavailable" if _db_unreachable else "database_empty"
+        ),
+        "reason": _reason,
         "last_updated": None,
         "message": (
-            "No national debt data in database. "
+            "National debt figures are unavailable because the data source "
+            "could not be read. This is not a finding that debt is zero."
+            if _db_unreachable
+            else "No national debt data in database. "
             "Run: python -m seeding.cli seed --domain national_debt"
         ),
         "data": {
-            "total_debt": 0,
-            "total_outstanding": 0,
-            "loan_count": 0,
-            "gdp": 0,
-            "debt_to_gdp_ratio": 0,
+            "total_debt": None,
+            "total_outstanding": None,
+            "loan_count": None,
+            "gdp": None,
+            "debt_to_gdp_ratio": None,
             "summary": {},
             "categories": {},
             "debt_sustainability": {},
@@ -10682,6 +10699,7 @@ def _read_etl_manifest() -> Dict[str, Any]:
 @app.get("/api/v1/dashboards/national/debt-mix")
 async def dashboard_debt_mix():
     """Debt mix snapshot derived from Loan table; falls back to CBK Apr-2025 split."""
+    _db_unreachable = False
     # Try real DB data first
     if DATABASE_AVAILABLE:
         try:
@@ -10730,18 +10748,29 @@ async def dashboard_debt_mix():
                         }
         except Exception as e:
             logging.error(f"DB debt-mix query failed: {e}")
+            _db_unreachable = True
 
-    # No hardcoded fallback — data must come from the database.
+    # Absent is not zero — see /api/v1/debt/national. A 0/0 external/domestic
+    # split is a readable, plausible-looking claim about the composition of
+    # public debt; nulls cannot be mistaken for one.
+    _reason = "source_unavailable" if _db_unreachable else "not_yet_seeded"
+    logging.warning("/dashboards/national/debt-mix returning no figures — reason=%s", _reason)
     return {
-        "external": 0,
-        "domestic": 0,
-        "external_amount": 0,
-        "domestic_amount": 0,
-        "total": 0,
+        "external": None,
+        "domestic": None,
+        "external_amount": None,
+        "domestic_amount": None,
+        "total": None,
         "currency": "KES",
-        "data_source": "database_empty",
+        "data_source": (
+            "database_unavailable" if _db_unreachable else "database_empty"
+        ),
+        "reason": _reason,
         "message": (
-            "No debt data in database. "
+            "Debt composition is unavailable because the data source could "
+            "not be read. This is not a finding that debt is zero."
+            if _db_unreachable
+            else "No debt data in database. "
             "Run: python -m seeding.cli seed --domain national_debt"
         ),
     }
