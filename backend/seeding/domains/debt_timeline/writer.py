@@ -64,7 +64,15 @@ def _raw_kes(value: Any) -> Any:
     """
     if value is None:
         return None
+    # A bool is an int in Python and would silently become 1e9 KES; NaN/inf
+    # would poison the table. Both are parser bugs — fail closed, loudly.
+    if isinstance(value, bool):
+        raise ValueError(f"boolean is not a money value: {value!r}")
     v = float(value)
+    if v != v or v in (float("inf"), float("-inf")):
+        raise ValueError(f"non-finite money value: {value!r}")
+    if v < 0:
+        raise ValueError(f"negative debt-timeline value: {value!r}")
     return v * 1e9 if v < 1_000_000 else v
 
 
