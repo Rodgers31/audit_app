@@ -61,6 +61,23 @@ def _discover_brop_url(client, settings):
         response.text,
         page_url,
         must_match=("budget-review-and-outlook-paper",),
+        # A DRAFT may not back a published figure. Decided 2026-08-29.
+        #
+        # Treasury publishes drafts for public comment beside the finals on
+        # this very page ("Draft-2022-Budget-Review-and-Outlook-Paper.pdf",
+        # "Draft-2023-Budget-Review-and-Outlook-Paper_F.pdf"), and the
+        # "Draft 2026 Budget Review and Outlook Paper" is live right now on
+        # the Treasury home page alongside a "Public Notice on the Draft
+        # 2026 Budget Review and Outlook Paper" inviting comment. Because
+        # discovery ranks by parsed date, a draft dated 2026 would outrank
+        # the FINAL 2025 paper and start backing the published pending-bills
+        # figure — a number the publisher has not yet stood behind, and one
+        # that changes between draft and final.
+        #
+        # Preferring last year's FINAL over this year's DRAFT is the correct
+        # trade: the staleness gate reports an ageing BROP loudly, whereas a
+        # draft-sourced figure looks exactly like a real one.
+        must_not_match=("draft",),
         not_before=date.today() - timedelta(days=730),
     )
     return found.url if found else None

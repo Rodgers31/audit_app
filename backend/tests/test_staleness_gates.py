@@ -148,3 +148,85 @@ class TestIngestionFreshness:
         )
         assert f.level == WARN
         assert "no run recorded" in f.message
+
+
+# ── Every domain must declare where its data came from ────────────────
+class TestEveryDomainRecordsProvenance:
+    """`no-silent-fallbacks`, applied to the whole registry.
+
+    Seven domains recorded nothing until 2026-08-29, so
+    ``check_ingestion_freshness`` reported "provenance unknown — not
+    confirmed healthy" for half the pipeline every night. WARN forever is
+    the same failure shape as OK forever: nobody can act on it, and a domain
+    that genuinely went dark looks identical to one that was never wired up.
+
+    This test walks the ACTUAL registry rather than a hand-written list, so
+    a new domain added without provenance fails here instead of quietly
+    joining the unknown pile.
+    """
+
+    def _registered(self):
+        from seeding.registries import REGISTRY, load_builtin_domains
+
+        load_builtin_domains()
+        return sorted(REGISTRY.domains())
+
+    def test_registry_is_not_empty(self):
+        """Positive control for the walk itself: an empty registry would
+        make every assertion below vacuous."""
+        assert len(self._registered()) >= 14
+
+    def test_every_domain_marks_its_source_mode(self):
+        import pathlib
+
+        root = pathlib.Path(__file__).resolve().parents[1] / "seeding" / "domains"
+        missing = []
+        for domain in self._registered():
+            package = root / domain
+            sources = "".join(
+                path.read_text() for path in package.rglob("*.py")
+            )
+            if "mark_live(" not in sources and "mark_fixture(" not in sources:
+                missing.append(domain)
+        assert missing == [], (
+            f"domains with no provenance instrumentation: {missing}. Every "
+            f"fetch branch must call mark_live() or mark_fixture(); see "
+            f"seeding/freshness.py."
+        )
+
+    def test_a_domain_that_only_marks_live_still_covers_its_fallback(self):
+        """A fetcher that marks live on success but says nothing on failure
+        reports 'unknown' exactly when it matters most. Any domain with a
+        fixture fallback must have BOTH calls."""
+        import pathlib
+
+        root = pathlib.Path(__file__).resolve().parents[1] / "seeding" / "domains"
+        # imf_weo has no fixture; it marks fixture on failure and live on
+        # success, so it is covered by the same rule.
+        one_sided = []
+        for domain in self._registered():
+            sources = "".join(
+                path.read_text()
+                for path in (root / domain).rglob("*.py")
+            )
+            has_live = "mark_live(" in sources
+            has_fixture = "mark_fixture(" in sources
+            if has_live and not has_fixture:
+                one_sided.append(domain)
+        assert one_sided == [], (
+            f"domains that record success but not failure: {one_sided}"
+        )
+
+    def test_the_gate_reads_what_the_fetchers_write(self):
+        """End-to-end on the contract itself: a recorded live mode must be
+        what check_ingestion_freshness reports OK for."""
+        from seeding import freshness
+
+        freshness.reset("national_gdp")
+        freshness.mark_live("national_gdp", detail="World Bank")
+        assert freshness.get("national_gdp")["mode"] == freshness.LIVE
+        assert not freshness.is_stale("national_gdp")
+
+        freshness.reset("national_gdp")
+        freshness.mark_fixture("national_gdp", reason="worldbank_unreachable")
+        assert freshness.is_stale("national_gdp")

@@ -57,6 +57,16 @@ PUBLICATION_SCHEDULE: Dict[str, dict] = {
         "expected_month": "February",
         "check_window": {"start": "01-15", "end": "03-31"},
     },
+    "treasury_budget_estimates": {
+        # Enacted by 30 June under Article 221 of the Constitution; the
+        # approved books land on treasury.go.ke within weeks of assent.
+        # This is the ONLY Tier-1 source for a new fiscal year's budget
+        # between 1 July and COB's first quarterly report in mid-November.
+        "frequency": "annual",
+        "lag_days": 30,
+        "check_window": {"start": "06-01", "end": "10-31"},
+        "check_interval_days": 7,
+    },
     "treasury_qebr": {
         "frequency": "quarterly",
         "lag_days": 60,
@@ -148,6 +158,26 @@ SOURCE_REGISTRY: Dict[str, SourceDataset] = {
             description="Quarterly budget implementation review reports",
             discovery_urls=("https://cob.go.ke/reports/",),
             parser_id=None,
+        ),
+        SourceDataset(
+            dataset_id="treasury_budget_estimates",
+            publisher="National Treasury",
+            publisher_url="https://treasury.go.ke",
+            doc_type="BUDGET",
+            description=(
+                "Approved Budget Estimates (budget books) — the enacted "
+                "gross budget for a fiscal year, published after the "
+                "Appropriations Act is assented"
+            ),
+            discovery_urls=("https://www.treasury.go.ke/budget-books/",),
+            parser_id="treasury_pbb_gross",
+            # The fiscal year lives in the DIRECTORY, not the filename
+            # ("Budget books 2026-2027/Development Volume I (1011-1083)_
+            # Approved.pdf"), which is why discovery needed a fiscal-year
+            # strategy. "programme" selects the Programme Based Budget book,
+            # the one volume carrying BOTH the voted total and the CFS
+            # appendix.
+            match_keywords=("programme",),
         ),
         SourceDataset(
             dataset_id="treasury_qebr",

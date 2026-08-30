@@ -18,6 +18,8 @@ from __future__ import annotations
 from decimal import Decimal
 
 from seeding.domains.fiscal_summary.fetcher import (
+    CANONICAL_BUDGET_BASIS,
+    _apply_budget_estimates,
     _overlay_live_budget_headline,
     _overlay_live_revenue_headline,
 )
@@ -194,3 +196,192 @@ def test_borrowing_pct_tracks_a_corrected_budget():
     p2 = {"fiscal_years": [{"fiscal_year": "FY 2025/26", "appropriated_budget": 4292, "total_borrowing": 910}]}
     assert parse_fiscal_summary_payload(p1)[0].borrowing_pct_of_budget == 21.7
     assert parse_fiscal_summary_payload(p2)[0].borrowing_pct_of_budget == 21.2
+
+
+# ── The basis decision (2026-08-29) ─────────────────────────────────────
+# The user chose COB's "original gross budget" as the canonical basis for
+# past, present and future. The fixture was BACKFILLED with each year's gross
+# from that year's COB report rather than relabelled — stamping "cob_gross"
+# on a row holding a 4.19T Budget Policy Statement figure is precisely the
+# conflation the gate exists to stop.
+class TestBasisDecision:
+    def test_canonical_basis_is_cob_gross(self):
+        assert CANONICAL_BUDGET_BASIS == "cob_gross"
+
+    def test_a_non_canonical_live_basis_is_refused(self):
+        """POSITIVE CONTROL. COB's own net estimates (4.43T for FY2025/26)
+        are a real figure from the same real document, in band, and inside
+        the tolerance — and still must never land in a field defined as
+        gross."""
+        payload = {"fiscal_years": [dict(LATEST, budget_basis="cob_gross",
+                                         appropriated_budget=4690)]}
+        payload, status = _overlay_live_budget_headline(
+            payload, 4430.0, basis="cob_net"
+        )
+        assert status == (
+            "basis_not_canonical(live=cob_net,canonical=cob_gross)"
+        )
+        assert payload["fiscal_years"][0]["appropriated_budget"] == 4690
+
+    def test_gross_promotes_onto_a_gross_row(self):
+        """What the shipped fixture now does: FY2025/26 declares cob_gross
+        and holds COB's published 4,690, so the live COB parse promotes."""
+        payload = {"fiscal_years": [dict(LATEST, budget_basis="cob_gross",
+                                         appropriated_budget=4690)]}
+        payload, status = _overlay_live_budget_headline(payload, 4690.0)
+        assert status == "promoted"
+        assert payload["fiscal_years"][0]["_budget_source"] == "cob_ng_birr_live"
+
+
+class TestOverlayTargetsTheReportsOwnYear:
+    """An overlay must write to the year its SOURCE is about.
+
+    ``max(fiscal_years)`` was safe only while the newest row was always the
+    year COB had just reported on. Once Treasury's enacted FY2026/27
+    estimates can be ingested months before COB's first FY2026/27 report,
+    an unanchored overlay stamps COB's FY2025/26 headline onto FY2026/27.
+    """
+
+    def _two_years(self):
+        return {"fiscal_years": [
+            dict(LATEST, budget_basis="cob_gross", appropriated_budget=4690),
+            {"fiscal_year": "FY 2026/27", "appropriated_budget": 5485.7,
+             "budget_basis": "cob_gross"},
+        ]}
+
+    def test_writes_to_the_named_year_not_the_newest(self):
+        payload, status = _overlay_live_budget_headline(
+            self._two_years(), 4700.0, fiscal_year="FY 2025/26"
+        )
+        assert status == "promoted"
+        rows = {r["fiscal_year"]: r for r in payload["fiscal_years"]}
+        assert rows["FY 2025/26"]["appropriated_budget"] == 4700.0
+        assert rows["FY 2026/27"]["appropriated_budget"] == 5485.7
+
+    def test_positive_control_unanchored_would_hit_the_wrong_year(self):
+        """Shows the defect the parameter prevents: with no fiscal year the
+        FY2025/26 figure lands on the FY2026/27 row (and is then rejected
+        only by the tolerance, which is luck, not a gate)."""
+        payload, status = _overlay_live_budget_headline(
+            self._two_years(), 4700.0
+        )
+        rows = {r["fiscal_year"]: r for r in payload["fiscal_years"]}
+        assert rows["FY 2026/27"]["_cob_live_budget_billion"] == 4700.0
+        assert "FY 2025/26" not in str(
+            rows["FY 2025/26"].get("_cob_live_budget_billion")
+        )
+
+    def test_a_year_the_payload_does_not_have_is_not_invented(self):
+        payload, status = _overlay_live_budget_headline(
+            self._two_years(), 4700.0, fiscal_year="FY 2027/28"
+        )
+        assert status == "report_year_not_in_payload(FY 2027/28)"
+        assert len(payload["fiscal_years"]) == 2
+
+
+# ── Creating a fiscal year (Treasury enacted estimates) ────────────────
+class _Estimates:
+    """Stand-in for BudgetEstimates; only the fields the applier reads."""
+
+    def __init__(self, fy="FY 2026/27", gross_billion=5485.7):
+        self.fiscal_year = fy
+        self.gross_budget_billion = gross_billion
+        self.voted_gross_kes = 2_922_706_913_184
+        self.cfs_kes = 2_562_973_919_672
+        self.page_refs = {"voted_total": 11, "cfs_summary": 1193}
+        self.checks = ["voted current+capital==total"]
+        self.source_url = "https://www.treasury.go.ke/x.pdf"
+
+
+class TestApplyBudgetEstimates:
+    def test_creates_a_fiscal_year_that_did_not_exist(self):
+        """The whole point: no overlay in this domain could CREATE a row, so
+        the site could not move to a new fiscal year until COB published —
+        five months after that year began."""
+        payload = {"fiscal_years": [dict(LATEST, budget_basis="cob_gross")]}
+        payload, status = _apply_budget_estimates(payload, _Estimates())
+        assert status == "created"
+        rows = {r["fiscal_year"]: r for r in payload["fiscal_years"]}
+        assert rows["FY 2026/27"]["appropriated_budget"] == 5485.7
+        assert rows["FY 2026/27"]["budget_basis"] == "cob_gross"
+
+    def test_the_new_row_carries_its_receipt(self):
+        payload, _ = _apply_budget_estimates(
+            {"fiscal_years": []}, _Estimates()
+        )
+        source = payload["fiscal_years"][0]["budget_basis_source"]
+        assert "PDF p.11" in source["page"]
+        assert "PDF p.1193" in source["page"]
+        assert source["url"] == "https://www.treasury.go.ke/x.pdf"
+
+    def test_is_idempotent(self):
+        payload = {"fiscal_years": []}
+        payload, first = _apply_budget_estimates(payload, _Estimates())
+        payload, second = _apply_budget_estimates(payload, _Estimates())
+        assert (first, second) == ("created", "updated")
+        assert len(payload["fiscal_years"]) == 1
+
+    def test_refuses_to_overwrite_a_row_on_another_basis(self):
+        payload = {"fiscal_years": [
+            {"fiscal_year": "FY 2026/27", "appropriated_budget": 4190,
+             "budget_basis": "bps"}
+        ]}
+        payload, status = _apply_budget_estimates(payload, _Estimates())
+        assert status == "basis_mismatch(row=bps,live=cob_gross)"
+        assert payload["fiscal_years"][0]["appropriated_budget"] == 4190
+
+    def test_implausible_figure_is_quarantined_not_inserted(self):
+        """POSITIVE CONTROL for the plausibility gate on the INSERT path —
+        a create must be gated exactly as hard as an overlay."""
+        payload, status = _apply_budget_estimates(
+            {"fiscal_years": []}, _Estimates(gross_billion=99999.0)
+        )
+        assert status == "failed_plausibility"
+        assert payload["fiscal_years"] == []
+
+    def test_rows_stay_in_fiscal_year_order(self):
+        payload = {"fiscal_years": [dict(LATEST, budget_basis="cob_gross")]}
+        payload, _ = _apply_budget_estimates(payload, _Estimates())
+        labels = [r["fiscal_year"] for r in payload["fiscal_years"]]
+        assert labels == sorted(labels)
+
+
+# ── The shipped fixture ────────────────────────────────────────────────
+class TestShippedFixture:
+    """`grep-verify-before-listing`: assert against the file that ships, not
+    a description of it."""
+
+    def _fixture(self):
+        import json
+        from pathlib import Path
+
+        path = (
+            Path(__file__).resolve().parents[1]
+            / "seeding" / "real_data" / "fiscal_summary.json"
+        )
+        return json.loads(path.read_text())
+
+    def test_every_year_declares_a_budget_basis(self):
+        for row in self._fixture()["fiscal_years"]:
+            assert row.get("budget_basis"), row["fiscal_year"]
+
+    def test_every_declared_basis_carries_a_document_and_page(self):
+        """No number without provenance — including the provenance of its
+        DEFINITION."""
+        for row in self._fixture()["fiscal_years"]:
+            source = row.get("budget_basis_source") or {}
+            assert source.get("url"), row["fiscal_year"]
+            assert source.get("page"), row["fiscal_year"]
+            assert source.get("quote"), row["fiscal_year"]
+
+    def test_budgets_are_the_cob_gross_figures_not_the_bps_ones(self):
+        """The values COB actually publishes. Cross-checked against a live
+        parse of each report in tests/test_cob_headline_extraction.py."""
+        rows = {r["fiscal_year"]: r for r in self._fixture()["fiscal_years"]}
+        assert rows["FY 2023/24"]["appropriated_budget"] == 4340
+        assert rows["FY 2024/25"]["appropriated_budget"] == 4490
+        assert rows["FY 2025/26"]["appropriated_budget"] == 4690
+
+    def test_the_superseded_bps_figures_are_kept_for_audit(self):
+        rows = {r["fiscal_year"]: r for r in self._fixture()["fiscal_years"]}
+        assert rows["FY 2025/26"]["_appropriated_budget_bps"] == 4190

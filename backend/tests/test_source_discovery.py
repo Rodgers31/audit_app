@@ -17,6 +17,7 @@ from seeding.discovery import (
     discover_latest_pdf,
     find_pdf_links,
     parse_document_date,
+    parse_fiscal_year,
 )
 
 CBK_PAGE = """
@@ -56,6 +57,111 @@ class TestDateParsing:
 
     def test_empty_input(self):
         assert parse_document_date("") == (None, "none")
+
+
+# Real hrefs from https://www.treasury.go.ke/budget-books/ on 2026-08-29.
+# Note the directory spellings Treasury actually uses in ONE tree: "Budget
+# Books 2025-2026", "Budget books 2026-2027" (lowercase b), "Budget Books
+# 2024 - 2025", "Budget Estimates 2020 -2021".
+BUDGET_BOOKS_PAGE = """
+<a href="/sites/default/files/Budget%20Books/Budget%20Books%202024%20-%202025/FY-2024-25-Program-Based-Budget-Book.pdf">a</a>
+<a href="/sites/default/files/Budget%20Books/Budget%20Books%202025-2026/Budget%20Estimates/Programme-Based-Budget.pdf">b</a>
+<a href="/sites/default/files/Budget%20Books/Budget%20Books%202025-2026/Supplementary-1/FY-2025-26%20PBB%20Supplementary%20I%201011-2151.pdf">c</a>
+<a href="/sites/default/files/Budget%20Books/Budget%20books%202026-2027/Development%20Volume%20III%20(1092-1135)_Approved.pdf">d</a>
+<a href="/sites/default/files/Budget%20Books/Budget%20books%202026-2027/FY%202026%202027%20Programme%20Based%20Budget%20Book_Approved.pdf">e</a>
+<a href="/sites/default/files/Budget%20Books/Budget%20Estimates%202020%20-2021/FY2020-21-Programme-Based-Budget.pdf">f</a>
+"""
+
+
+class TestFiscalYearInThePath:
+    """Treasury dates budget books by DIRECTORY, not filename.
+
+    ``parse_document_date`` was written for filenames, and every FY2026/27
+    budget book is called something like "Development Volume I (1011-1083)_
+    Approved.pdf" — no date at all. Without a fiscal-year strategy the newest
+    budget in the country is undiscoverable.
+    """
+
+    @pytest.mark.parametrize("path,expected", [
+        ("Budget%20Books%202025-2026/Budget%20Estimates/Programme-Based-Budget.pdf", "FY 2025/26"),
+        ("Budget%20books%202026-2027/Development%20Volume%20III%20(1092-1135)_Approved.pdf", "FY 2026/27"),
+        ("Budget%20Books%202024%20-%202025/FY-2024-25-Program-Based-Budget-Book.pdf", "FY 2024/25"),
+        ("Budget%20Estimates%202020%20-2021/FY2020-21-Programme-Based-Budget.pdf", "FY 2020/21"),
+        ("FY%202026%202027%20Programme%20Based%20Budget%20Book_Approved.pdf", "FY 2026/27"),
+        ("Estimates-of-RevenueGrants-and-Loans-for-FY2022-23.pdf", "FY 2022/23"),
+    ])
+    def test_real_treasury_paths(self, path, expected):
+        assert parse_fiscal_year(path) == expected
+
+    @pytest.mark.parametrize("path", [
+        # Vote-code ranges are everywhere in these filenames and are NOT
+        # fiscal years. The consecutive-years rule is what separates them.
+        "FY-2024-25-Development-Budget-Book-1092-2141.pdf",
+        "Development%20Volume%20IV%20(1152-2111)_Approved.pdf",
+        "FY-2025-26%20Recurrent%20Supplementary%20(1011-2151).pdf",
+    ])
+    def test_vote_code_ranges_are_not_fiscal_years(self, path):
+        parsed = parse_fiscal_year(path)
+        assert parsed in (None, "FY 2024/25", "FY 2025/26"), parsed
+        # ...and never a year invented from a vote code.
+        assert parsed not in ("FY 1092/93", "FY 1152/53", "FY 1011/12")
+
+    def test_a_calendar_document_is_still_dated_by_year(self):
+        """Regression guard: adding the fiscal-year strategy must not
+        re-date the BROP, whose filename is a calendar year."""
+        assert parse_fiscal_year("2025-Budget-Review-and-Outlook-Paper-1.pdf") is None
+        assert parse_document_date(
+            "2025-Budget-Review-and-Outlook-Paper-1.pdf"
+        ) == (date(2025, 1, 1), "year")
+
+    def test_fiscal_year_sorts_above_a_bare_year_of_the_same_start(self):
+        """FY2026/27 is dated 1 July 2026 — after a "2026" calendar doc, so
+        the enacted budget wins over a January-dated paper from the same
+        year."""
+        assert parse_document_date("Budget books 2026-2027/x.pdf") == (
+            date(2026, 7, 1), "fiscal_year",
+        )
+
+
+class TestBudgetBookDiscovery:
+    def test_picks_the_newest_fiscal_years_approved_estimates(self):
+        found = discover_latest_pdf(
+            BUDGET_BOOKS_PAGE,
+            "https://www.treasury.go.ke/budget-books/",
+            must_match=("/budget%20books/", "programme"),
+            must_not_match=("supplementary", "supp-", "draft"),
+        )
+        assert found is not None
+        assert parse_fiscal_year(found.url) == "FY 2026/27"
+        assert found.url.endswith(
+            "FY%202026%202027%20Programme%20Based%20Budget%20Book_Approved.pdf"
+        )
+
+    def test_supplementary_estimates_are_excluded(self):
+        """A supplementary revises a budget mid-year. It is a DIFFERENT
+        measure from the original gross budget COB reports on, so it must
+        never be picked up as 'the newest budget'."""
+        found = discover_latest_pdf(
+            BUDGET_BOOKS_PAGE,
+            "https://www.treasury.go.ke/budget-books/",
+            must_match=("/budget%20books/", "programme"),
+            must_not_match=("supplementary", "supp-", "draft"),
+        )
+        assert "Supplementary" not in found.url
+
+    def test_a_listing_that_lost_its_recent_years_fails_loudly(self):
+        """POSITIVE CONTROL: with a floor set, an old-only listing must
+        return None rather than seeding FY2020/21 as 'current'."""
+        old_only = (
+            '<a href="/sites/default/files/Budget%20Books/Budget%20Estimates'
+            '%202020%20-2021/FY2020-21-Programme-Based-Budget.pdf">f</a>'
+        )
+        assert discover_latest_pdf(
+            old_only,
+            "https://www.treasury.go.ke/budget-books/",
+            must_match=("/budget%20books/", "programme"),
+            not_before=date(2025, 1, 1),
+        ) is None
 
 
 class TestDiscovery:
@@ -156,3 +262,49 @@ December 509,230.3 0.0 7,776.6 517,006.9 6,837,510.7 5,461,965.7 12,299,476.4
 December 1.0 0.0 1.0 1.0 1,000.0 1,000.0 9,999,999.0
 """
         assert parse_public_debt_table(bad) == {}
+
+
+class TestDraftDocumentsAreNotPublishable:
+    """A DRAFT may not back a published figure. Decided 2026-08-29.
+
+    Real hrefs from https://www.treasury.go.ke/budget-review-and-outlook-paper/
+    on 2026-08-29: Treasury lists drafts beside finals. A "Draft 2026 Budget
+    Review and Outlook Paper" is live on the Treasury home page right now,
+    next to a "Public Notice on the Draft 2026 Budget Review and Outlook
+    Paper" inviting comment — i.e. its figures are explicitly provisional.
+    """
+
+    PAGE = """
+    <a href="/sites/default/files/2025-Budget-Review-and-Outlook-Paper-1.pdf">final 2025</a>
+    <a href="/sites/default/files/BBB/2024-Budget-Review-and-Outlook-Paper.pdf">final 2024</a>
+    <a href="/sites/default/files/BBB/Draft-2026-Budget-Review-and-Outlook-Paper.pdf">draft 2026</a>
+    """
+
+    def test_a_newer_draft_does_not_displace_an_older_final(self):
+        found = discover_latest_pdf(
+            self.PAGE,
+            "https://www.treasury.go.ke/budget-review-and-outlook-paper/",
+            must_match=("budget-review-and-outlook-paper",),
+            must_not_match=("draft",),
+        )
+        assert found.url.endswith("2025-Budget-Review-and-Outlook-Paper-1.pdf")
+
+    def test_positive_control_without_the_filter_the_draft_wins(self):
+        """Shows the filter is load-bearing, not decoration: discovery ranks
+        by date, so a 2026 draft outranks the 2025 final."""
+        found = discover_latest_pdf(
+            self.PAGE,
+            "https://www.treasury.go.ke/budget-review-and-outlook-paper/",
+            must_match=("budget-review-and-outlook-paper",),
+        )
+        assert "Draft-2026" in found.url
+
+    def test_the_pending_bills_discovery_applies_the_filter(self):
+        """`grep-verify-before-listing`: assert the call site, not the
+        capability."""
+        import inspect
+
+        from seeding.domains.pending_bills import fetcher
+
+        source = inspect.getsource(fetcher._discover_brop_url)
+        assert 'must_not_match=("draft",)' in source

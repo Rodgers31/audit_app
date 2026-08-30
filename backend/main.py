@@ -8026,11 +8026,45 @@ async def get_fiscal_summary(db: Session = Depends(get_db)):
                 "county_allocation": (
                     float(r.county_allocation) if r.county_allocation else None
                 ),
+                # WHICH measure the budget is: "cob_gross" (gross ministerial
+                # + Consolidated Fund Services) vs the Budget Policy Statement
+                # figure the series used to carry. Two legitimate numbers 12%
+                # apart, so the basis travels with the value.
+                "budget_basis": (r.meta or {}).get("budget_basis"),
+                "budget_basis_source": (r.meta or {}).get("budget_basis_source"),
+                "page_ref": r.page_ref,
             }
 
         all_fiscal_years = [_row_to_dict(r) for r in rows]
+
+        def _has_enacted_budget(fy: dict) -> bool:
+            """A budget read from an enacted Budget Estimates document.
+
+            Distinguishes a fiscal year that has genuinely begun and whose
+            budget Parliament has approved from a World Bank back-fill stub.
+            Both may carry a single populated field; only one of them is the
+            most authoritative figure we hold.
+            """
+            source = fy.get("budget_basis_source") or {}
+            return bool(
+                (fy.get("appropriated_budget") or 0) > 0
+                and fy.get("budget_basis")
+                and source.get("url")
+                and fy.get("page_ref")
+            )
+
         # Only include years with substantially complete data —
         # World Bank back-fill years often only have 1-2 fields.
+        #
+        # ...with one exception, added 2026-08-29. A fiscal year that has just
+        # STARTED has an enacted budget and no actuals: no revenue outturn, no
+        # debt-service outturn, no execution. Requiring three populated fields
+        # therefore hid FY2026/27 behind FY2025/26 from 1 July until COB's
+        # first quarterly report in mid-November — every year, by construction.
+        # The exception is deliberately narrow: the row must carry a declared
+        # budget basis, a source URL and a page reference, i.e. it must be
+        # traceable to the Budget Estimates document it came from. A World Bank
+        # stub has none of those and is still excluded.
         fiscal_years = [
             fy
             for fy in all_fiscal_years
@@ -8045,6 +8079,7 @@ async def get_fiscal_summary(db: Session = Depends(get_db)):
                 if (fy.get(k) or 0) > 0
             )
             >= 3
+            or _has_enacted_budget(fy)
         ]
         latest = fiscal_years[-1] if fiscal_years else all_fiscal_years[-1]
 

@@ -288,6 +288,19 @@ class SeedingSettings(BaseSettings):
             "https://www.kra.go.ke/news-center/press-release/<slug>"
         ),
     )
+    treasury_budget_books_page_url: str = Field(
+        default="https://www.treasury.go.ke/budget-books/",
+        description=(
+            "National Treasury Budget Books listing page. Scraped each run "
+            "to discover the CURRENT fiscal year's approved Budget "
+            "Estimates (the Programme Based Budget book), which is where "
+            "the ENACTED budget for a new fiscal year first appears. COB "
+            "cannot supply it: COB publishes at quarter-end + 45 days, so "
+            "an FY that started on 1 July has no COB report until mid "
+            "November. Without this source the site could only ever show "
+            "last year's budget between July and November."
+        ),
+    )
     treasury_bps_page_url: str = Field(
         default="https://www.treasury.go.ke/budget-policy-statement/",
         description=(

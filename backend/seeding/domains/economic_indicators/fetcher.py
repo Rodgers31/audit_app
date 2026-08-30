@@ -249,16 +249,44 @@ def fetch_economic_payload(
         logger.warning("Failed to load economic indicators fixture: %s", exc)
         fixture_data = []
 
-    # Step 3: Merge — live takes precedence
+    # Step 3: Merge — live takes precedence.
+    #
+    # Provenance is recorded at EVERY branch. Until 2026-08-29 this domain
+    # recorded none, so the nightly reported "provenance unknown" — which the
+    # staleness gate correctly refuses to read as healthy, but which also
+    # cannot distinguish a working World Bank pull from a year-old fixture.
+    from ...freshness import mark_fixture, mark_live
+
     if live_indicators:
+        mark_live(
+            "economic_indicators",
+            detail=(
+                f"World Bank Indicators API: {len(live_indicators)} live "
+                f"observation(s) across {len(_WB_INDICATORS)} indicator(s)"
+            ),
+        )
         return _merge_indicators(fixture_data, live_indicators)
     elif fixture_data:
         logger.warning(
             "No live data available — using fixture as fallback "
             "(data may be stale)"
         )
+        mark_fixture(
+            "economic_indicators",
+            reason=(
+                "worldbank_disabled"
+                if not settings.enrich_with_worldbank
+                else "worldbank_returned_nothing"
+            ),
+            detail=f"serving {len(fixture_data)} fixture indicator(s)",
+        )
         return fixture_data
     else:
+        mark_fixture(
+            "economic_indicators",
+            reason="no_source_available",
+            detail="neither the World Bank API nor the fixture yielded data",
+        )
         raise ValueError(
             "No economic indicators available from either live API or fixture"
         )

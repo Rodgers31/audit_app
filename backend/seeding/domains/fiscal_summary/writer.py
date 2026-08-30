@@ -75,6 +75,18 @@ def _raw_kes(value: Any) -> Any:
     return v * 1e9 if v < 1_000_000 else v
 
 
+def _budget_basis_meta(record) -> dict[str, Any]:
+    """``metadata`` payload recording the budget basis and its receipt."""
+    basis = getattr(record, "budget_basis", None)
+    if not basis:
+        return {}
+    out: dict[str, Any] = {"budget_basis": basis}
+    source = getattr(record, "budget_basis_source", None)
+    if isinstance(source, dict):
+        out["budget_basis_source"] = source
+    return out
+
+
 def write_fiscal_summary_records(
     session: Session,
     records: list[FiscalSummaryRecord],
@@ -111,6 +123,16 @@ def write_fiscal_summary_records(
             "county_allocation": _raw_kes(record.county_allocation),
             "unit": "KES",
         }
+
+        # Provenance for the budget figure. Persisted so the API can say
+        # WHICH measure it is publishing — "no number without provenance"
+        # applies to a number's definition, not only its value.
+        basis_meta = _budget_basis_meta(record)
+        if basis_meta:
+            fields["meta"] = basis_meta
+            page_ref = (basis_meta.get("budget_basis_source") or {}).get("page")
+            if page_ref:
+                fields["page_ref"] = str(page_ref)[:50]
 
         if existing:
             for key, val in fields.items():

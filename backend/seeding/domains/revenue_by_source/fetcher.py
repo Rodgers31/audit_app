@@ -106,10 +106,14 @@ def fetch_revenue_payload(
     2. Load fixture for detailed tax-type breakdown.
     3. Merge: live headline data supplements fixture detail.
     """
+    from ...freshness import mark_fixture, mark_live
+
     live_records: List[Dict[str, Any]] = []
+    wb_reason = "worldbank_disabled"
 
     # Step 1: Try World Bank API
     if settings.enrich_with_worldbank:
+        wb_reason = "worldbank_returned_nothing"
         try:
             live_records = _fetch_wb_revenue(client, settings)
             if live_records:
@@ -118,6 +122,7 @@ def fetch_revenue_payload(
                 )
         except Exception as exc:
             logger.warning("World Bank revenue fetch failed: %s", exc)
+            wb_reason = f"worldbank_unreachable({type(exc).__name__})"
 
     # Step 2: Load fixture
     try:
@@ -169,14 +174,37 @@ def fetch_revenue_payload(
     # Refreshes the PAYE/VAT/Corporation/Excise/Customs breakdown from KRA's FY
     # revenue results — but only if the parse passes the plausibility +
     # reconciliation gate; otherwise the fixture breakdown stands.
+    kra_status = "url_not_configured"
     if settings.kra_revenue_url:
         try:
-            final_payload, status = _apply_kra_overlay(
+            final_payload, kra_status = _apply_kra_overlay(
                 final_payload, client, settings
             )
-            logger.info("revenue_by_source KRA overlay: %s", status)
+            logger.info("revenue_by_source KRA overlay: %s", kra_status)
         except Exception as exc:
+            kra_status = f"error({type(exc).__name__})"
             logger.warning("KRA revenue overlay skipped: %s", exc)
+
+    # Provenance. The per-tax-head breakdown (PAYE / VAT / Corporation /
+    # Excise / Customs) is the figure this domain actually publishes, and it
+    # comes ONLY from KRA. World Bank supplies headline totals that do not
+    # touch the breakdown, so a World-Bank-only run is recorded as live with a
+    # detail that says the breakdown is still fixture — the same distinction
+    # fiscal_summary draws for its headline budget. Note the KRA overlay has
+    # never executed in production: SEED_KRA_REVENUE_URL was read from `vars.`
+    # while stored as a *secret*, so it was empty from 2026-06-14 until
+    # c6e9d68. This instrumentation is what will show whether that fix works.
+    kra_promoted = kra_status.startswith("promoted")
+    detail = f"World Bank: {len(live_records)} record(s); KRA overlay: {kra_status}"
+    if kra_promoted:
+        mark_live("revenue_by_source", detail=detail)
+    elif live_records:
+        mark_live(
+            "revenue_by_source",
+            detail=f"World Bank headline totals only; tax-head breakdown still fixture. {detail}",
+        )
+    else:
+        mark_fixture("revenue_by_source", reason=wb_reason, detail=detail)
 
     return final_payload
 

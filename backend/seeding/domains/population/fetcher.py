@@ -189,14 +189,19 @@ def fetch_population_payload(
     3. Merge: live national data takes precedence; county data preserved.
     4. If World Bank fails entirely, fall back to fixture only.
     """
+    from ...freshness import mark_fixture, mark_live
+
     live_national: List[Dict[str, Any]] = []
+    fallback_reason = "worldbank_disabled"
 
     # Step 1: Try live World Bank API
     if settings.enrich_with_worldbank:
+        fallback_reason = "worldbank_returned_nothing"
         try:
             live_national = _fetch_wb_national_population(client)
         except Exception as exc:
             logger.warning("World Bank population fetch failed: %s", exc)
+            fallback_reason = f"worldbank_unreachable({type(exc).__name__})"
 
     # Step 2: Load fixture (always — we need county data from it)
     try:
@@ -210,9 +215,21 @@ def fetch_population_payload(
         logger.warning("Failed to load population fixture: %s", exc)
         fixture = []
 
-    # Step 3: Merge
+    # Step 3: Merge. Provenance is recorded on BOTH branches — the county
+    # breakdown always comes from the KNBS census fixture (the World Bank
+    # publishes no sub-national series for Kenya), so "live" here means the
+    # NATIONAL series was refreshed, and the detail says exactly that rather
+    # than implying all 47 counties were.
     if live_national:
         merged = _merge_population(fixture, live_national)
+        mark_live(
+            "population",
+            detail=(
+                f"World Bank SP.POP.* national series for "
+                f"{len(live_national)} year(s); county breakdown remains the "
+                f"KNBS census fixture (no sub-national World Bank series)"
+            ),
+        )
         # Wrap in the expected format for the parser
         return {"records": merged} if isinstance(fixture, dict) else merged
     else:
@@ -221,6 +238,11 @@ def fetch_population_payload(
                 "No live population data — using fixture as fallback "
                 "(data may be stale)"
             )
+        mark_fixture(
+            "population",
+            reason=fallback_reason,
+            detail="national AND county population served from the fixture",
+        )
         return fixture
 
 

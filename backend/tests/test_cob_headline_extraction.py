@@ -153,3 +153,65 @@ class TestBasisGate:
         payload, status = _overlay_live_budget_headline(self._payload(), None)
         assert status == "no_live_value"
         assert payload["fiscal_years"][0]["appropriated_budget"] == 4190
+
+
+# ── Which fiscal year is this report ABOUT? ──────────────────────────
+# Added 2026-08-29. The overlay used to write onto ``max(fiscal_years)``,
+# which stops being the report's own year the moment a NEWER fiscal year is
+# ingested from Treasury's enacted estimates (months before COB reports on
+# it). Reading the year from the report itself is what keeps a FY2025/26
+# headline off the FY2026/27 row.
+class TestReportFiscalYear:
+    # The running footer, repeated on every page of the real report.
+    FOOTER = (
+        "NATIONAL GOVERNMENT BUDGET IMPLEMENTATION REVIEW REPORT xxii "
+        "FIRST NINE MONTHS FY 2025/26 MAY, 2026"
+    )
+
+    def test_reads_the_year_from_the_running_footer(self):
+        from seeding.domains.national_budget.headline import (
+            extract_report_fiscal_year,
+        )
+
+        text = "\n".join([self.FOOTER] * 20)
+        assert extract_report_fiscal_year(text) == "FY 2025/26"
+
+    def test_prior_year_comparatives_do_not_win(self):
+        """The executive summary is full of "compared to ... FY 2024/25".
+        The report's own year must still come out on top."""
+        from seeding.domains.national_budget.headline import (
+            extract_report_fiscal_year,
+        )
+
+        prose = (
+            "The National Government's original gross budget for FY 2025/26 "
+            "amounts to Kshs. 4.69 trillion, compared to Kshs.4.37 trillion "
+            "in the FY 2024/25 after Supplementary III Estimates."
+        )
+        text = "\n".join([prose] * 3 + [self.FOOTER] * 10)
+        assert extract_report_fiscal_year(text) == "FY 2025/26"
+
+    def test_four_digit_second_year_is_normalised(self):
+        from seeding.domains.national_budget.headline import (
+            extract_report_fiscal_year,
+        )
+
+        text = "REPORT FY 2024/2025 AUGUST, 2025"
+        assert extract_report_fiscal_year(text) == "FY 2024/25"
+
+    def test_a_tie_refuses_to_guess(self):
+        """POSITIVE CONTROL: an ambiguous document must yield None so the
+        caller skips the overlay rather than picking a year by sort order."""
+        from seeding.domains.national_budget.headline import (
+            extract_report_fiscal_year,
+        )
+
+        assert extract_report_fiscal_year("FY 2024/25 FY 2025/26") is None
+
+    def test_no_year_returns_none(self):
+        from seeding.domains.national_budget.headline import (
+            extract_report_fiscal_year,
+        )
+
+        assert extract_report_fiscal_year("no fiscal year here") is None
+        assert extract_report_fiscal_year("") is None

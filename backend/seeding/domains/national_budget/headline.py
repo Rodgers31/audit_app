@@ -182,10 +182,51 @@ def extract_total_revenue_billion_from_text(text: str) -> Optional[Decimal]:
     return _first_figure_after_anchor(text, _REVENUE_ANCHORS)
 
 
-def extract_cob_headlines(pdf_path) -> tuple[Optional[Decimal], Optional[Decimal]]:
-    """Open a COB NG-BIRR PDF once and extract ``(overall_budget, total_revenue)``
-    in KSh billion. Reads only the first pages (the summary lives up front). Any
-    failure degrades to ``(None, None)`` (keep last-known); never raises.
+# "FY 2025/26", "FY2024/2025", "FY 2023/24" — the report's own year, which
+# appears in the running header/footer of every page.
+_REPORT_FY_RE = re.compile(r"FY\s?((?:19|20)\d{2})\s?/\s?((?:19|20)?\d{2})")
+
+
+def extract_report_fiscal_year(text: str) -> Optional[str]:
+    """Which fiscal year this COB report is ABOUT, as "FY 2025/26".
+
+    Read from the most frequent ``FY YYYY/YY`` token, because that is the
+    running header/footer ("NATIONAL GOVERNMENT BUDGET IMPLEMENTATION REVIEW
+    REPORT ... FIRST NINE MONTHS FY 2025/26"), which repeats on every page,
+    whereas the prose is full of prior-year comparatives.
+
+    WHY THIS MATTERS: the overlay used to write the parsed headline onto
+    ``max(fiscal_years)`` — fine while the newest row was always the year COB
+    had just reported on, and silently wrong the moment a NEWER fiscal year
+    exists in the payload. Once Treasury's enacted FY2026/27 estimates are
+    ingested, an unanchored overlay would stamp COB's FY2025/26 figure onto
+    the FY2026/27 row. Returns ``None`` when no year clearly dominates;
+    callers must treat that as "do not overlay".
+    """
+    counts: dict[str, int] = {}
+    for match in _REPORT_FY_RE.finditer(text or ""):
+        start, raw_end = match.group(1), match.group(2)
+        label = f"FY {start}/{raw_end[-2:]}"
+        counts[label] = counts.get(label, 0) + 1
+    if not counts:
+        return None
+    ranked = sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
+    if len(ranked) > 1 and ranked[0][1] == ranked[1][1]:
+        logger.warning(
+            "COB report fiscal year is ambiguous (%s); refusing to guess",
+            ranked[:3],
+        )
+        return None
+    return ranked[0][0]
+
+
+def extract_cob_headlines(
+    pdf_path,
+) -> tuple[Optional[Decimal], Optional[Decimal], Optional[str]]:
+    """Open a COB NG-BIRR PDF once and extract ``(overall_budget,
+    total_revenue, report_fiscal_year)``; budget/revenue in KSh billion.
+    Reads only the first pages (the summary lives up front). Any failure
+    degrades to ``(None, None, None)`` (keep last-known); never raises.
     """
     try:
         import pdfplumber
@@ -206,7 +247,8 @@ def extract_cob_headlines(pdf_path) -> tuple[Optional[Decimal], Optional[Decimal
         return (
             extract_overall_budget_billion_from_text(text),
             extract_total_revenue_billion_from_text(text),
+            extract_report_fiscal_year(text),
         )
     except Exception as exc:  # pragma: no cover - defensive shim
         logger.warning("COB headline extraction failed: %s", exc)
-        return None, None
+        return None, None, None

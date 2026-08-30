@@ -54,6 +54,51 @@ _MONTH_YEAR_RE = re.compile(
 )
 _HREF_RE = re.compile(r"""href\s*=\s*["']([^"']+\.pdf)["']""", re.IGNORECASE)
 
+# A Kenyan fiscal-year RANGE: "2026-2027", "2025 - 2026", "2026/2027",
+# "FY-2025-26", "FY2022-23", "FY 2026 2027". The first year must be a real
+# 19xx/20xx and the second must be its SUCCESSOR; that consecutive-years
+# rule is what makes a bare-space separator safe, because a vote-code pair
+# ("1092-2141", "1011 2151") is neither. Treasury uses every one of these
+# spellings inside the SAME directory tree:
+#
+#   /Budget Books/Budget Books 2025-2026/Budget Estimates/...
+#   /Budget Books/Budget books 2026-2027/FY 2026 2027 Programme Based ...
+#   /Budget Books/Budget Estimates 2020 -2021/...
+#   .../FY-2025-26 PBB Supplementary I 1011-2151.pdf
+_FY_RANGE_RE = re.compile(
+    r"(?<![\d])((?:19|20)\d{2})\s*[-/ ]\s*((?:19|20)?\d{2})(?![\d])"
+)
+
+
+def parse_fiscal_year(text: str) -> Optional[str]:
+    """Kenyan fiscal-year label ("FY 2026/27") from a filename or PATH.
+
+    Returns ``None`` when the text carries no consecutive year pair. The
+    consecutive-years requirement is the whole gate: it is what separates
+    "Budget books 2026-2027" from the vote-code ranges ("1092-2141") that
+    litter the same filenames.
+
+    Exists because ``parse_document_date`` was written for filenames and
+    Treasury puts the fiscal year in a DIRECTORY — every FY2026/27 budget
+    book is called something like "Development Volume I (1011-1083)_
+    Approved.pdf", which carries no date at all.
+    """
+    if not text:
+        return None
+    for m in _FY_RANGE_RE.finditer(text.replace("%20", " ")):
+        start = int(m.group(1))
+        raw_end = m.group(2)
+        end = int(raw_end) if len(raw_end) == 4 else (start // 100) * 100 + int(raw_end)
+        # A two-digit end crossing a century ("1999-00") rolls forward.
+        if len(raw_end) == 2 and end < start:
+            end += 100
+        if end != start + 1:
+            continue  # not a fiscal year — a vote range, a page range, noise
+        if not (1990 <= start <= 2100):
+            continue
+        return f"FY {start}/{str(start + 1)[-2:]}"
+    return None
+
 
 @dataclass(frozen=True)
 class DiscoveredDocument:
@@ -70,11 +115,22 @@ def parse_document_date(text: str) -> tuple[Optional[date], str]:
     """Best-effort publication date from a filename or link text.
 
     Returns ``(date, strategy)``; ``(None, "none")`` when nothing parses.
-    A month+year beats a bare year so "December 2025" sorts above "2025".
+    Most specific first: a fiscal-year range beats a month+year, which beats
+    a bare year — so "Budget books 2026-2027" sorts above "December 2025",
+    which sorts above "2025".
     """
     if not text:
         return None, "none"
     cleaned = text.replace("%20", " ")
+
+    # A fiscal-year range wins over everything else: it is unambiguous, and
+    # it is the ONLY date many Treasury budget books carry (in a directory,
+    # not the filename). Dated to 1 July, the start of Kenya's fiscal year,
+    # so FY2026/27 sorts above FY2025/26 AND above a bare "2026" calendar
+    # document from the same tree.
+    fy = parse_fiscal_year(cleaned)
+    if fy is not None:
+        return date(int(fy[3:7]), 7, 1), "fiscal_year"
 
     m = _MONTH_YEAR_RE.search(cleaned)
     if m:
@@ -188,4 +244,5 @@ __all__ = [
     "discover_latest_pdf",
     "find_pdf_links",
     "parse_document_date",
+    "parse_fiscal_year",
 ]
