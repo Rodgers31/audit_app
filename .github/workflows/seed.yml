@@ -265,6 +265,33 @@ jobs:
       - name: Run alembic migrations
         run: cd backend && alembic upgrade head
 
+      # A migration that "succeeded" is not a schema that matches the models.
+      # `alembic stamp --purge` ASSERTS equivalence to a baseline, it never
+      # verifies it — which is how public.users sat with 6 of its 9 columns
+      # while every nightly reported success, 500ing every authenticated
+      # request with `column users.display_name does not exist`. The unit
+      # tests cannot catch this either: they build their database with
+      # create_all(), so it matches the models by construction.
+      #
+      # This is the only place the real deployed schema is ever compared to
+      # what the ORM will select. It fails the job, which stops seed/validate
+      # on `needs:` — correct: writing into a schema the code disagrees with
+      # is worse than not writing.
+      - name: Verify the deployed schema matches the models
+        run: |
+          cd backend
+          python -c "
+          import sys
+          from database import engine
+          from models import Base
+          from services.schema_parity import check_database, format_report
+
+          missing = check_database(engine, Base.metadata)
+          print(format_report(missing))
+          if missing:
+              sys.exit(1)
+          "
+
   # ══════════════════════════════════════════════════════════════════
   # Step 2: Bootstrap seeding (counties, national GDP, population, etc.)
   # Runs on manual trigger with run_bootstrap=true, or on Sunday schedule
