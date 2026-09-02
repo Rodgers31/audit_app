@@ -143,7 +143,11 @@ export default function AuditTab({ data }: { data: CountyComprehensive }) {
         </div>
         <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-4 text-center'>
           <div className='text-2xl font-bold text-red-700'>
-            {audit.total_amount_involved > 0 ? fmtKES(audit.total_amount_involved) : 'KES 0'}
+            {audit.total_amount_involved != null && audit.total_amount_involved > 0
+              ? fmtKES(audit.total_amount_involved)
+              : audit.total_amount_involved === 0
+                ? fmtKES(0)
+                : '—'}
           </div>
           <div className='text-[11px] text-gray-500 dark:text-neutral-muted/80 mt-0.5'>
             {t('county.audit.kpi_money_questioned')}
@@ -175,8 +179,10 @@ export default function AuditTab({ data }: { data: CountyComprehensive }) {
           <div className='space-y-2'>
             {categoryBreakdown.map(([cat, { count, amount }]) => {
               const cfg = CATEGORY_CONFIG[cat] || CATEGORY_CONFIG.other;
-              const pctOfTotal =
-                audit.total_amount_involved > 0 ? (amount / audit.total_amount_involved) * 100 : 0;
+              // A null total means the figure is unsourced, not zero — a share
+              // of an unknown total is unknown, so show none (PR #135 review).
+              const total = audit.total_amount_involved;
+              const pctOfTotal = total != null && total > 0 ? (amount / total) * 100 : 0;
               return (
                 <button
                   key={cat}
