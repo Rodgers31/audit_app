@@ -98,11 +98,29 @@ jobs:
             "COB Publications|https://cob.go.ke/publications/|false"
             "COB County Reports|https://cob.go.ke/publications/county-reports/|false"
             "COB National Reports|https://cob.go.ke/publications/national-government-budget-implementation-review-reports/|false"
+            # Same shape as COB above: audits/fetcher.py:199-203 queries the
+            # WP media API first and only falls back to scraping the homepage,
+            # so the REST endpoint is the real "can we discover reports?"
+            # signal.
+            "OAG WP REST API|https://www.oagkenya.go.ke/wp-json/wp/v2/media?per_page=1&mime_type=application/pdf|true"
             "OAG Homepage|https://www.oagkenya.go.ke/|true"
             "OAG National Audit Reports|https://www.oagkenya.go.ke/national-government-audit-reports/|false"
             "CBK Homepage|https://www.centralbank.go.ke/|true"
             "CBK Public Debt|https://www.centralbank.go.ke/public-debt/|true"
-            "Treasury|https://newsite.treasury.go.ke/|false"
+            # Treasury: www., NOT newsite. The probe used to point at
+            # https://newsite.treasury.go.ke/, which appears only in the legacy
+            # etl/ pipeline. The nightly runs `seeding.cli seed --all`, and
+            # seeding/config.py fetches www.treasury.go.ke. Both hosts answer
+            # 200, so the old probe was permanently green about a host this
+            # workflow never touches. Kept in sync by
+            # backend/tests/test_healthcheck_probes_the_real_hosts.py.
+            #
+            # budget-books is CRITICAL: it is where the enacted budget for the
+            # fiscal year comes from (FY2026/27 = KSh 5,485.7B), so losing it
+            # is how a fiscal year silently stops arriving on the site.
+            "Treasury Budget Books|https://www.treasury.go.ke/budget-books/|true"
+            "Treasury Budget Policy Statement|https://www.treasury.go.ke/budget-policy-statement/|false"
+            "Treasury BROP|https://www.treasury.go.ke/budget-review-and-outlook-paper/|false"
             "World Bank API|https://api.worldbank.org/v2/country/KE?format=json|true"
             "IMF DataMapper|https://www.imf.org/external/datamapper/api/v1/GGXWDG_NGDP/KEN|false"
           )
