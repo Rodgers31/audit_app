@@ -91,7 +91,11 @@ export interface CountyComprehensive {
     grade: string;
     health_score: number;
     findings_count: number;
-    total_amount_involved: number;
+    /** null when no publishable finding carries an amount. NOT 0 — the API
+     *  distinguishes "nothing was flagged" from "we cannot source a figure",
+     *  and collapsing them here re-creates the manufactured zero the backend
+     *  removed (review, PR #135). */
+    total_amount_involved: number | null;
     by_severity: Record<string, number>;
     findings: AuditFinding[];
   };

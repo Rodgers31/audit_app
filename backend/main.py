@@ -1405,6 +1405,40 @@ def _redis_cache_instances():
         pass
 
 
+def _parse_missing_funds_amount(raw: Any) -> Optional[float]:
+    """KES amount, or None when it cannot be read.
+
+    Returns None — never 0.0 — for a missing or malformed value.
+    Reported by review on PR #135: this used to fall back to 0.0, so a
+    case that passed the provenance gate but carried an unreadable amount
+    was published with ``amount: 0`` and summed into the totals. That is
+    the manufactured zero this endpoint exists to remove, recreated for a
+    SOURCED case, which is the worst version of it — the citation makes
+    the zero look confirmed.
+    """
+    if isinstance(raw, bool):  # a bool is an int; never a money value
+        return None
+    if isinstance(raw, (int, float)):
+        return float(raw)
+    if not isinstance(raw, str):
+        return None
+    s = raw.upper().replace("KES", "").replace(",", "").strip()
+    mult = 1.0
+    if s.endswith("B"):
+        mult = 1e9
+        s = s[:-1]
+    elif s.endswith("M"):
+        mult = 1e6
+        s = s[:-1]
+    elif s.endswith("K"):
+        mult = 1e3
+        s = s[:-1]
+    try:
+        return float(s) * mult
+    except ValueError:
+        return None
+
+
 def cached(key_prefix: str, ttl: int = 3600):
     """Decorator to cache endpoint responses.
 
@@ -5176,8 +5210,15 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
         if not peer_entity:
             continue
         peer_audits = peer_audits_by_entity.get(peer_entity.id, [])
-        peer_flagged = float(sum(float(pa.amount or 0) for pa in peer_audits))
-        region_flagged_amounts.append(peer_flagged)
+        # A peer with no recorded amount is UNKNOWN, not zero — the same rule
+        # the population-bracket path below already applies. Reported by
+        # review on PR #135: this appended 0 for every peer with no
+        # publishable amount (and `pa.amount or 0` coerced None to 0), so
+        # region_avg_flagged_amount was dragged toward zero by peers about
+        # which nothing is known, in the PR that exists to stop exactly that.
+        _peer_amounts = [float(pa.amount) for pa in peer_audits if pa.amount is not None]
+        if _peer_amounts:
+            region_flagged_amounts.append(float(sum(_peer_amounts)))
 
         # Simplified peer grade (opinion-based for efficiency)
         peer_opinions: Dict[int, str] = {}
@@ -5193,7 +5234,12 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
             latest_y = max(peer_opinions.keys())
             if peer_opinions[latest_y].lower() == "qualified" and pg == "A":
                 pg = "C"
-        region_grades.append(pg)
+            # Only a peer with a RECORDED opinion contributes a grade. The
+            # default "A" above is the starting point of the scan, not a
+            # verdict — appending it for a peer with no opinions graded
+            # absence as excellence and pulled region_avg_grade upward
+            # (PR #135 review).
+            region_grades.append(pg)
 
     # Population-bracket peers: iterate every county and keep same-bracket ones.
     for cid, cname in COUNTY_MAPPING.items():
@@ -5367,27 +5413,6 @@ async def get_national_missing_funds():
     if not DATABASE_AVAILABLE:
         raise HTTPException(status_code=503, detail="Database unavailable")
 
-    def _parse_amount(raw: Any) -> float:
-        if isinstance(raw, (int, float)):
-            return float(raw)
-        if not isinstance(raw, str):
-            return 0.0
-        s = raw.upper().replace("KES", "").replace(",", "").strip()
-        mult = 1.0
-        if s.endswith("B"):
-            mult = 1e9
-            s = s[:-1]
-        elif s.endswith("M"):
-            mult = 1e6
-            s = s[:-1]
-        elif s.endswith("K"):
-            mult = 1e3
-            s = s[:-1]
-        try:
-            return float(s) * mult
-        except ValueError:
-            return 0.0
-
     published: List[Dict[str, Any]] = []
     withheld_by_reason: Dict[str, int] = {}
     county_totals: Dict[str, Dict[str, Any]] = {}
@@ -5439,7 +5464,17 @@ async def get_national_missing_funds():
                     continue
 
                 doc = docs[int(case["source_document_id"])]
-                amount = _parse_amount(case.get("amount"))
+                amount = _parse_missing_funds_amount(case.get("amount"))
+                if amount is None:
+                    # Sourced but unreadable. Withheld with its own reason
+                    # rather than published as 0 (PR #135 review): a reader
+                    # cannot tell "we could not read this figure" from "the
+                    # figure is nothing", and the citation makes the second
+                    # reading look authoritative.
+                    withheld_by_reason["amount_unreadable"] = (
+                        withheld_by_reason.get("amount_unreadable", 0) + 1
+                    )
+                    continue
                 status = (case.get("status") or "unknown").lower()
                 published.append(
                     {

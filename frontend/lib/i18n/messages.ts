@@ -956,6 +956,15 @@ export const MESSAGES = {
   'county.acct.grade_fair': { en: 'Fair', sw: 'Wastani', plain: 'OK' },
   'county.acct.grade_needs_improvement': { en: 'Needs Improvement', sw: 'Inahitaji Kuboreshwa', plain: 'Needs Work' },
   'county.acct.grade_poor': { en: 'Poor', sw: 'Mbaya', plain: 'Poor' },
+  // An ungraded county is NOT a C. Added after review on PR #135: the card
+  // fell back to the C style and rendered "Fair" for a county whose findings
+  // were all withheld for lack of a source document.
+  'county.acct.grade_ungraded': { en: 'Not yet assessed', sw: 'Haijatathminiwa bado', plain: 'Not graded yet' },
+  'county.acct.grade_ungraded_description': {
+    en: 'No grade can be given yet: this county has no findings that trace to a source document a reader can open. An absent grade is not a low grade.',
+    sw: 'Hakuna alama bado: kaunti hii haina matokeo yanayothibitishwa na hati chanzo. Kukosa alama si alama mbaya.',
+    plain: 'We cannot grade this county yet — none of its findings link to a document you can open. No grade does not mean a bad grade.',
+  },
   'county.acct.grade_description': {
     en: 'Scored out of 100 across five dimensions: audit opinions, finding volume & severity, recurring issues, unresolved items, flagged spend, and absorption. Grade bands: A ≥ 85, B ≥ 70, C ≥ 55, D ≥ 40, else F.',
     sw: 'Inapimwa kati ya 100 katika vipimo vitano: maoni ya ukaguzi, idadi na uzito wa matokeo, matatizo yanayojirudia, masuala yasiyoshughulikiwa, matumizi yaliyogunduliwa, na utekelezaji. Alama: A ≥ 85, B ≥ 70, C ≥ 55, D ≥ 40, vinginevyo F.',

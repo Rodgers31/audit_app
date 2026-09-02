@@ -301,7 +301,7 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
               })}
             </div>
           </div>
-          {audit.total_amount_involved > 0 && (
+          {audit.total_amount_involved != null && audit.total_amount_involved > 0 && (
             <div className='text-right'>
               <div className='text-xs text-gray-500 dark:text-neutral-muted/80'>
                 {t('county.overview.total_amount_involved')}

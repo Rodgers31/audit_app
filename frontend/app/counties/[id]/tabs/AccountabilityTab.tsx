@@ -25,6 +25,17 @@ import {
 } from 'lucide-react';
 import { fmtKES } from '../shared';
 
+// Neutral styling for a county with no grade. Deliberately grey and
+// deliberately NOT a member of ACCT_GRADE_STYLE, so it can never be reached by
+// a letter-grade lookup or read as a position on the A-F scale.
+const UNGRADED_STYLE = {
+  bg: 'bg-gray-400',
+  text: 'text-gray-600',
+  border: 'border-gray-300',
+  labelKey: 'county.acct.grade_ungraded' as TranslationKey,
+  glow: 'bg-gray-300',
+};
+
 const ACCT_GRADE_STYLE: Record<
   string,
   { bg: string; text: string; border: string; labelKey: TranslationKey; glow: string }
@@ -128,9 +139,15 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
   // withheld for lack of a source document, there is nothing to grade — say so
   // rather than printing the worst grade on the scale.
   const ungraded = data.accountability_grade == null;
+  // An ungraded county gets a NEUTRAL style, never a letter grade's.
+  // Reported by review on PR #135: this fell back to ACCT_GRADE_STYLE.C, so a
+  // county whose every finding was withheld for lack of a source document
+  // still rendered the yellow C glow and the heading "Fair" — directly under a
+  // ring that correctly said "Not yet assessed". Absence is not a middling
+  // grade, and showing one is the same defect this PR removes from the API.
   const gradeStyle =
     (data.accountability_grade ? ACCT_GRADE_STYLE[data.accountability_grade] : null) ||
-    ACCT_GRADE_STYLE.C;
+    UNGRADED_STYLE;
   const peer = data.peer_comparison;
   // Comparisons need both sides; null on either means "unknown", not "better".
   const isBelowRegion =
@@ -228,7 +245,9 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
               {t('county.acct.grade_label')}
             </div>
             <h3 className='text-2xl font-bold text-gray-900 dark:text-neutral-text mb-1'>{t(gradeStyle.labelKey)}</h3>
-            <p className='text-sm text-gray-600 dark:text-neutral-muted max-w-xl'>{t('county.acct.grade_description')}</p>
+            <p className='text-sm text-gray-600 dark:text-neutral-muted max-w-xl'>
+              {t(ungraded ? 'county.acct.grade_ungraded_description' : 'county.acct.grade_description')}
+            </p>
           </div>
         </div>
       </div>

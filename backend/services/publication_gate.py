@@ -74,6 +74,51 @@ from models import Audit, SourceDocument
 # --------------------------------------------------------------------------
 
 
+def _source_document_is_resolvable():
+    """The URL half of the gate, named once so it cannot drift.
+
+    Extracted while fixing the PR #135 reason-breakdown finding: the
+    per-reason count has to ask "did THIS clause fail?", and re-typing the
+    subquery there would have created a second copy of the rule — the exact
+    thing this module exists to prevent.
+    """
+    return Audit.source_document_id.in_(
+        select(SourceDocument.id).where(
+            SourceDocument.url.isnot(None),
+            func.length(func.trim(SourceDocument.url)) > 0,
+        )
+    )
+
+
+def _has_page_locator(*candidates) -> bool:
+    """True only if some candidate names a page a reader could turn to.
+
+    Reported by review on PR #135: the previous test was ``in (None, "")``, so
+    ``page_ref="   "`` and ``page_number=0`` both read as "present" and
+    published a case that cannot be located. Whitespace is stripped, and a
+    numeric locator must be POSITIVE — page 0 of a 400-page report is not a
+    citation. A non-numeric string (``"p. 42"``, ``"Annex VII"``) is accepted
+    on its own terms once it has any non-whitespace content.
+    """
+    for value in candidates:
+        if value is None:
+            continue
+        if isinstance(value, bool):  # a bool is an int; never a page number
+            continue
+        if isinstance(value, (int, float)):
+            if value > 0:
+                return True
+            continue
+        text = str(value).strip()
+        if not text:
+            continue
+        try:
+            return float(text) > 0
+        except ValueError:
+            return True  # a real textual locator, e.g. "p. 42" / "Annex VII"
+    return False
+
+
 def publishable_audit_criterion():
     """SQL criterion: this finding resolves to a document a reader can open.
 
@@ -92,12 +137,7 @@ def publishable_audit_criterion():
     imply.
     """
     return sa_and(
-        Audit.source_document_id.in_(
-            select(SourceDocument.id).where(
-                SourceDocument.url.isnot(None),
-                func.length(func.trim(SourceDocument.url)) > 0,
-            )
-        ),
+        _source_document_is_resolvable(),
         # Text integrity. Audit 902 — the row previously described as "the
         # single genuine extraction" — is 89.6% ``(cid:NN)`` glyph codes ending
         # in the report's VISION statement: the PDF's cover page, not a
@@ -113,6 +153,50 @@ def publishable_audit_criterion():
             ~Audit.finding_text.contains("(cid:"),
         ),
     )
+
+
+def count_withheld_by_reason(db, entity_id=None, entity_types=None) -> dict:
+    """Withheld audit rows grouped by WHY, not just how many.
+
+    Reported by review on PR #135. There are two independent withholding
+    causes — an unresolvable source document, and finding text that is
+    unreadable ``(cid:NN)`` glyph codes — and ``count_withheld_audits``
+    collapsed them into one integer that every caller then labelled "source
+    document has no resolvable URL". A row withheld for unreadable text was
+    reported under a reason that did not apply to it.
+
+    The backfill in this module already tracks the two separately
+    (``no_url_count`` vs ``withheld_cid``), which is what makes the runtime
+    collapse a defect rather than a limitation of the data.
+
+    Keys are the same slugs the backfill writes to ``quarantine_reason``, so a
+    response, a log line and the column all say the same word. Always returns
+    every known reason (0 where none apply) so a caller can render a stable
+    shape, and the values always sum to :func:`count_withheld_audits`.
+    """
+    def _count(criterion):
+        q = db.query(func.count(Audit.id)).filter(criterion)
+        if entity_id is not None:
+            q = q.filter(Audit.entity_id == entity_id)
+        if entity_types is not None:
+            from models import Entity
+
+            q = q.join(Entity, Audit.entity_id == Entity.id).filter(
+                Entity.type.in_(entity_types)
+            )
+        return q.scalar() or 0
+
+    no_url = ~_source_document_is_resolvable()
+    total = _count(~publishable_audit_criterion())
+    no_url_n = _count(no_url)
+    # Anything withheld that DOES have a resolvable document was withheld for
+    # the other reason. Derived by subtraction so the parts always sum to the
+    # total even if a third cause is added without updating this function —
+    # a breakdown that silently loses a category would be the same defect.
+    return {
+        "source_document_has_no_url": no_url_n,
+        "finding_text_unreadable_cid": total - no_url_n,
+    }
 
 
 def count_withheld_audits(db, entity_id=None, entity_types=None) -> int:
@@ -180,7 +264,7 @@ def missing_funds_provenance_failure(
         return "source_document_not_found"
     if not (getattr(doc, "url", None) or "").strip():
         return "source_document_has_no_url"
-    if case.get("page_ref") in (None, "") and case.get("page_number") in (None, ""):
+    if not _has_page_locator(case.get("page_ref"), case.get("page_number")):
         return "no_page_reference"
     return None
 
@@ -229,7 +313,7 @@ def file_source_provenance_failure(meta: Optional[Dict[str, Any]]) -> Optional[s
     if not path.lower().endswith(_DOCUMENT_EXTENSIONS):
         return "source_url_is_not_a_document"
 
-    if all(meta.get(k) in (None, "") for k in ("page_ref", "page_number", "page")):
+    if not _has_page_locator(*(meta.get(k) for k in ("page_ref", "page_number", "page"))):
         return "no_page_reference"
     return None
 
