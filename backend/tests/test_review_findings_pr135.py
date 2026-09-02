@@ -231,3 +231,12 @@ class TestAbsenceIsNotZero:
             "region_grades.append is outside the `if peer_opinions:` guard, so "
             "a peer with no opinion is still graded A"
         )
+
+
+# ── G8: the outage sweep must actually reach a dead database ─────────
+# The regression fixture for G8 lives in
+# tests/test_no_manufactured_zeros_when_source_unavailable.py, because it has
+# to exercise the REAL ``dead_db_client`` fixture. An equivalent test here
+# would have to rebuild the fixture inline, and a replica cannot be fixed by
+# fixing the original — it would pin nothing while looking like it did.
+#     ::TestTheFixtureReachesEveryRoute::test_no_route_reaches_the_real_session_factory
