@@ -1,6 +1,7 @@
 'use client';
 
 import { DebtTimelineEntry } from '@/lib/api/debt';
+import { classifyDebtRisk, toRawKES } from '@/lib/utils';
 import { useLang } from '@/lib/i18n/LangProvider';
 import {
   useBroaderDebt,
@@ -27,12 +28,34 @@ const NationalDebtChart = dynamic(() => import('./NationalDebtChart'), {
 });
 
 /* ── Transform API data to chart format ── */
+/**
+ * ChartEntry money fields are BILLIONS — `NationalDebtChart`'s `fmtT` divides
+ * by 1000 for trillions and its tick formatter renders bare values as `${v}B`.
+ *
+ * The rows arriving here are not. Since the stage1 3a migration /debt/timeline
+ * serves raw KES and declares it per row with `unit: "KES"`; a pre-migration
+ * backend serves bare billions with no unit field. This previously passed both
+ * through with the comment "already in billions from API", which was true
+ * until the migration and 10⁹× wrong after it.
+ *
+ * So: normalise to raw KES on the DECLARED unit — never by guessing a value's
+ * magnitude — then convert once to the billions the chart reads. Doing it here
+ * also fixes the headline fallbacks below, which read `lastYear` and are
+ * correct precisely when this function's output really is billions.
+ *
+ * Reported as F1 on PR #136, and confirmed the hard way: this migration was
+ * applied to production on 2026-08-30 and rolled back within the hour.
+ */
 function toChartData(timeline: DebtTimelineEntry[]): ChartEntry[] {
+  const toBillions = (v: number, unit?: string | null): number => {
+    const raw = toRawKES(v, unit);
+    return raw == null ? 0 : raw / 1e9;
+  };
   return timeline.map((e) => ({
     year: String(e.year),
-    external: e.external, // already in billions from API
-    domestic: e.domestic, // already in billions from API
-    total: e.total, // already in billions from API
+    external: toBillions(e.external, e.unit),
+    domestic: toBillions(e.domestic, e.unit),
+    total: toBillions(e.total, e.unit),
     gdpRatio: e.gdp_ratio,
   }));
 }
@@ -59,7 +82,6 @@ export default function NationalDebtCard() {
   // Extract live values from API, fallback to latest timeline entry
   const apiData = resp?.data || resp;
   const sustainability = apiData?.debt_sustainability || {};
-  const riskLevel = sustainability.risk_level || 'High';
   const debtServiceRatio =
     fiscal?.current?.debt_service_per_shilling ?? sustainability.debt_service_ratio ?? null;
 
@@ -76,6 +98,17 @@ export default function NationalDebtCard() {
   const totalDebt =
     apiData?.total_outstanding ?? apiData?.total_debt ?? (lastYear ? lastYear.total * 1_000_000_000 : null);
   const gdpRatio = apiData?.debt_to_gdp_ratio ?? lastYear?.gdpRatio ?? null;
+
+  // Absence is not a risk band. This was `|| 'High'`, so an API that reported
+  // no assessment rendered the WORST rating — a claim about the public
+  // finances manufactured from a missing field. Reported as G3 on PR #135,
+  // alongside the same defect in `classifyDebtRisk`, which now returns null
+  // rather than a default so callers must handle absence explicitly.
+  //
+  // Order: the publisher's own assessment, else one derived from the
+  // debt-to-GDP ratio, else nothing.
+  const riskLevel: 'Low' | 'Moderate' | 'High' | null =
+    sustainability.risk_level ?? classifyDebtRisk(gdpRatio);
   const externalDebt =
     apiData?.summary?.external_debt ?? (lastYear ? lastYear.external * 1_000_000_000 : null);
   const domesticDebt =
@@ -308,11 +341,28 @@ export default function NationalDebtCard() {
             }
             desc={t('home.debt.insight_split')}
           />
+          {/* A null band renders "not assessed" in neutral styling, and drops
+              the `highlight` emphasis — the alarm treatment is for a stated
+              risk, not for a missing reading. */}
           <InsightPill
-            icon={<AlertTriangle className='w-4 h-4 text-gov-copper' />}
-            title={t('home.debt.insight_risk_label').replace('{level}', riskLevel)}
-            desc={t('home.debt.insight_risk_desc')}
-            highlight
+            icon={
+              <AlertTriangle
+                className={`w-4 h-4 ${
+                  riskLevel ? 'text-gov-copper' : 'text-neutral-muted'
+                }`}
+              />
+            }
+            title={
+              riskLevel
+                ? t('home.debt.insight_risk_label').replace('{level}', riskLevel)
+                : t('home.debt.insight_risk_unassessed')
+            }
+            desc={
+              riskLevel
+                ? t('home.debt.insight_risk_desc')
+                : t('home.debt.insight_risk_unassessed_desc')
+            }
+            highlight={riskLevel != null}
           />
         </div>
       </div>
