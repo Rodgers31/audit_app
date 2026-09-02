@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 from collections import defaultdict
@@ -22,6 +23,8 @@ from models import (
     EntityType,
     FiscalPeriod,
     GDPData,
+    IngestionJob,
+    IngestionStatus,
     Loan,
     PopulationData,
     PovertyIndex,
@@ -39,6 +42,127 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "apis"
 COUNTY_DATA_PATH = DATA_DIR / "enhanced_county_data.json"
 AUDIT_DATA_PATH = DATA_DIR / "oag_audit_data.json"
 NATIONAL_AUDIT_PATH = DATA_DIR / "oag_national_audit_data.json"
+
+
+# ── Provenance for the weekly bootstrap (issue #137 P3) ─────────────
+#
+# seed.yml runs initialize_reference_data() directly (seed.yml:283-284),
+# outside the seeding CLI, so before this it recorded no IngestionJob and
+# emitted no freshness mark — check_ingestion_freshness could not see the job
+# at all. It re-seeds from three git-tracked files every Sunday, one of them
+# nearly a year old.
+#
+# Age is taken from the DATE THE DATA DECLARES, not the file's mtime. In CI
+# `actions/checkout` sets mtime to checkout time, so an mtime-based age would
+# report a year-old fixture as fresh — an observability bug inside the
+# observability fix.
+BOOTSTRAP_DOMAIN = "bootstrap_reference_data"
+STALE_AFTER_DAYS = 180
+
+# Where each file states its own date, and what supersedes it if anything.
+# `live_source` names the seeding domain that fetches the same facts from the
+# publisher; "no_live_source" is a deliberate declaration, not a gap left
+# unfilled.
+_FIXTURE_DECLARATIONS: Dict[str, Dict[str, Any]] = {
+    "oag_audit_data.json": {
+        # This file carries no metadata block of any kind. The date is
+        # declared here instead, and test_bootstrap_is_observable.py asserts
+        # it against `git log` so it cannot drift from the file it describes.
+        "date_field": None,
+        "declared_date": "2025-09-05",
+        "live_source": "audits",
+    },
+    "oag_national_audit_data.json": {
+        "date_field": ("metadata", "report_date"),
+        "declared_date": "2024-12-15",
+        "live_source": "audits",
+    },
+    "enhanced_county_data.json": {
+        # This file's own metadata describes its figures as
+        # "Official government sources + realistic estimates" with a
+        # "Population-based" budget_methodology — i.e. modelled, not
+        # published. The UI already discloses that (messages.ts:450).
+        "date_field": ("metadata", "extraction_date"),
+        "declared_date": "2025-08-24",
+        "live_source": "counties_budget",
+    },
+}
+
+
+def _declared_date(path: Path, spec: Dict[str, Any]) -> str:
+    """The date the DATA claims, preferring the file's own metadata."""
+    field = spec.get("date_field")
+    if field:
+        try:
+            payload = json.loads(path.read_text())
+            for key in field:
+                payload = payload[key]
+            return str(payload)[:10]
+        except Exception:  # noqa: BLE001 - fall back to the declaration
+            logger.warning(
+                "bootstrap: %s declares no %s; using the recorded date",
+                path.name,
+                ".".join(field),
+            )
+    return spec["declared_date"]
+
+
+def bootstrap_provenance() -> Dict[str, Any]:
+    """What the weekly bootstrap read, and how old it was.
+
+    Written into ``IngestionJob.meta`` so the run is visible to the same
+    checks that watch the nightly. Returns plain JSON-serialisable types.
+    """
+    files: List[Dict[str, Any]] = []
+    today = datetime.now(timezone.utc).date()
+
+    for name, spec in _FIXTURE_DECLARATIONS.items():
+        path = DATA_DIR / name
+        if not path.exists():
+            files.append(
+                {
+                    "file": name,
+                    "present": False,
+                    "sha256": None,
+                    "bytes": 0,
+                    "data_date": None,
+                    "age_days": None,
+                    "live_source": spec["live_source"],
+                }
+            )
+            continue
+        raw = path.read_bytes()
+        date_str = _declared_date(path, spec)
+        try:
+            age = (today - datetime.fromisoformat(date_str).date()).days
+        except ValueError:
+            age = None
+        files.append(
+            {
+                "file": name,
+                "present": True,
+                "sha256": hashlib.sha256(raw).hexdigest(),
+                "bytes": len(raw),
+                "data_date": date_str,
+                "age_days": age,
+                "live_source": spec["live_source"],
+            }
+        )
+
+    stale = [
+        f["file"]
+        for f in files
+        if f["age_days"] is not None and f["age_days"] > STALE_AFTER_DAYS
+    ]
+    return {
+        # Declared, not inferred: a run that reads git-tracked JSON must never
+        # be indistinguishable from one that fetched from a publisher.
+        "source_mode": "fixture",
+        "stale_after_days": STALE_AFTER_DAYS,
+        "files": files,
+        "stale_files": stale,
+        "is_stale": bool(stale),
+    }
 
 
 def _parse_decimal(value: Any) -> Decimal:
@@ -1162,6 +1286,7 @@ def initialize_reference_data(
         for entry in audit_payload.get("missing_funds_cases", []) or []:
             missing_by_county[entry.get("county", "")].append(entry)
 
+    started_at = datetime.now(timezone.utc)
     session = SessionLocal()
     try:
         country = _ensure_country(session)
@@ -1329,7 +1454,34 @@ def initialize_reference_data(
         # --- National-government budget execution (CoB NG-BIRR) ---
         _seed_national_budget(session)
 
+        # Record the run so the freshness checks can see it (issue #137 P3).
+        # Before this the weekly job was invisible: no IngestionJob, no
+        # freshness mark, so a fixture could freeze for a year — and one had —
+        # while every gate stayed green because none of them was looking.
+        provenance = bootstrap_provenance()
+        session.add(
+            IngestionJob(
+                domain=BOOTSTRAP_DOMAIN,
+                status=IngestionStatus.COMPLETED,
+                dry_run=False,
+                started_at=started_at,
+                finished_at=datetime.now(timezone.utc),
+                meta=provenance,
+            )
+        )
         session.commit()
+
+        if provenance["is_stale"]:
+            logger.warning(
+                "bootstrap: re-seeded from fixture(s) older than %d days: %s",
+                STALE_AFTER_DAYS,
+                ", ".join(
+                    f"{f['file']} ({f['age_days']}d)"
+                    for f in provenance["files"]
+                    if f["file"] in provenance["stale_files"]
+                ),
+            )
+
         if skip_county_loop:
             logger.info(
                 "National-level data refreshed (GDP, population, "
@@ -1343,6 +1495,24 @@ def initialize_reference_data(
     except Exception as exc:
         session.rollback()
         logger.error("Failed to initialize reference data: %s", exc)
+        # The failure must be visible too — a job row that only appears on
+        # success makes an outage look like a run that never happened.
+        try:
+            session.add(
+                IngestionJob(
+                    domain=BOOTSTRAP_DOMAIN,
+                    status=IngestionStatus.FAILED,
+                    dry_run=False,
+                    started_at=started_at,
+                    finished_at=datetime.now(timezone.utc),
+                    errors=[str(exc)[:2000]],
+                    meta={"source_mode": "fixture"},
+                )
+            )
+            session.commit()
+        except Exception:  # noqa: BLE001 - never mask the original failure
+            session.rollback()
+            logger.exception("bootstrap: could not record the failed job row")
         raise
     finally:
         session.close()
