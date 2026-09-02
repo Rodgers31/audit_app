@@ -34,8 +34,12 @@ performance indexes, and none of them is this bug. Reconciling that surface is
 its own piece of work with its own review; see issue #137.
 """
 
+import logging
+
 from alembic import op
 import sqlalchemy as sa
+
+logger = logging.getLogger("alembic.stage1")
 
 revision = "d1a7c9e40b12"
 down_revision = "cdfb80379a29"
@@ -87,7 +91,27 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    existing = _existing()
-    for name in reversed(list(_COLUMNS)):
-        if name in existing:
-            op.drop_column("users", name)
+    """Deliberately a no-op. Reported by review on PR #136.
+
+    On a CLEAN replay the baseline ``21d0394c1d6b`` creates all three columns
+    (``21d0394c1d6b:160,163``), so this migration's upgrade is a no-op and it
+    owns nothing to drop. On PRODUCTION the baseline never ran and the upgrade
+    did add them. A downgrade cannot tell the two apart — the runs are separate
+    processes and nothing records which side created the column.
+
+    So this takes the direction ``b3d8ab47bf3b`` already settled for
+    ``confidence_score``: never drop. An extra column is harmless; a missing
+    one is a runtime error (``column users.display_name does not exist`` is
+    the bug this migration exists to fix), and a downgrade's job is to leave a
+    WORKING ``cdfb80379a29`` schema on both paths.
+
+    This is the second time this exact defect shipped — once as
+    ``confidence_score``, once here, in the migration written to fix it. The
+    invariant is now pinned by tests/test_review_findings_pr136.py rather than
+    by remembering.
+    """
+    logger.info(
+        "downgrade: leaving users.display_name/email_verified/updated_at in "
+        "place — on a clean replay they are baseline-owned, and this migration "
+        "cannot tell that case from the production one it was written for"
+    )

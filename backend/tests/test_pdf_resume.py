@@ -61,9 +61,16 @@ class _FakeStream:
     """Minimal httpx-like streaming response."""
 
     def __init__(self, body: bytes, status: int = 200, chunk: int = 64,
-                 fail_after: int | None = None):
+                 fail_after: int | None = None, headers: dict | None = None):
         self.body, self.status_code, self._chunk = body, status, chunk
         self._fail_after = fail_after
+        # A real httpx.Response always has .headers. The downloader now reads
+        # Content-Range (to confirm a 206 starts where it asked) and
+        # ETag/Last-Modified (to send If-Range), so the double needs them —
+        # see the F6 finding on PR #136. Empty by default: that is the
+        # non-compliant-206 case, which appends with a warning rather than
+        # restarting.
+        self.headers = {k.lower(): v for k, v in (headers or {}).items()}
 
     def __enter__(self):
         return self

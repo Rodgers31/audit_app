@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import os
 import tempfile
 import time
@@ -218,17 +219,27 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
         ``Range: bytes=<size>-`` and appends, so the file completes across
         runs and then lives in the cache.
 
-        Correctness (verified against cob.go.ke on 2026-08-29):
-        * ``206`` + honoured start offset -> append. Byte-exactness was
-          checked by comparing the overlap of a full read and a
-          ``bytes=2000-`` read: identical md5.
+        Correctness:
+        * ``206`` is not enough on its own — it says "partial content", not
+          "the bytes you asked for". ``Content-Range`` is PARSED and its start
+          offset must equal the offset we requested; anything else restarts
+          from zero. Reported by review on PR #136: the previous code trusted
+          the status alone, so a server answering with a different range would
+          have appended bytes to the wrong position.
         * ``200`` means the server IGNORED the range and is resending from
           zero -> the partial is truncated and rewritten, never appended to
           (appending would splice a duplicate prefix into the file).
-        * A publisher who re-issues the document mid-resume would otherwise
-          splice two different files together; the caller guards that by
-          keying the part file on the URL and validating the assembled PDF's
-          header AND ``%%EOF`` trailer before promoting it.
+        * ``If-Range`` carries the ETag/Last-Modified recorded when the
+          partial was started. If the publisher re-issued the document since,
+          the server MUST send ``200`` with the whole new entity instead of a
+          range — which the branch above already handles by restarting. Without
+          it, a resume across nightly runs could splice an old prefix onto a
+          new suffix, and the result would still pass both the ``%PDF-`` header
+          and ``%%EOF`` trailer checks. Also reported on PR #136.
+
+        The md5-overlap comparison that used to be cited here was a one-off
+        manual check during development, not a runtime guarantee; it has been
+        replaced by the two checks above, which run on every resume.
         """
         dest = Path(dest_path)
         base_headers = dict(headers or {})
@@ -240,6 +251,43 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
         dest.parent.mkdir(parents=True, exist_ok=True)
 
         resuming = resume_part is not None
+        validator_path = (
+            Path(str(resume_part) + ".validator") if resume_part else None
+        )
+
+        def _saved_validator() -> Optional[str]:
+            """ETag/Last-Modified recorded when this partial was started."""
+            if validator_path is None or not validator_path.exists():
+                return None
+            try:
+                return validator_path.read_text(encoding="utf-8").strip() or None
+            except OSError:
+                return None
+
+        def _remember_validator(response) -> None:
+            if validator_path is None:
+                return
+            token = response.headers.get("etag") or response.headers.get(
+                "last-modified"
+            )
+            try:
+                if token:
+                    validator_path.write_text(token, encoding="utf-8")
+                else:
+                    validator_path.unlink(missing_ok=True)
+            except OSError:  # pragma: no cover - best effort, never fatal
+                pass
+
+        def _range_start(response) -> Optional[int]:
+            """First byte index the server actually sent, from Content-Range.
+
+            ``Content-Range: bytes 1024-2047/4096`` -> 1024. Returns None when
+            the header is absent or unparseable, which the caller treats as
+            "cannot confirm" and restarts rather than guessing.
+            """
+            raw = response.headers.get("content-range", "")
+            match = re.match(r"\s*bytes\s+(\d+)-", raw, re.IGNORECASE)
+            return int(match.group(1)) if match else None
         if resuming:
             tmp = Path(resume_part)
             tmp.parent.mkdir(parents=True, exist_ok=True)
@@ -294,6 +342,12 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
                 request_headers = dict(base_headers)
                 if offset:
                     request_headers["Range"] = f"bytes={offset}-"
+                    validator = _saved_validator()
+                    if validator:
+                        # If the entity changed, the server answers 200 with
+                        # the whole new document and the branch below restarts
+                        # — instead of splicing an old prefix to a new suffix.
+                        request_headers["If-Range"] = validator
 
                 mode = "ab" if offset else "wb"
                 try:
@@ -315,6 +369,45 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
                                     url,
                                 )
                                 mode = "wb"
+                            elif offset:
+                                # 206 alone does not say WHICH bytes these are.
+                                # RFC 9110 requires Content-Range on a 206, and
+                                # Treasury sends it ("bytes 1000-1999/1473917").
+                                started_at = _range_start(response)
+                                if started_at is not None and started_at != offset:
+                                    logger.warning(
+                                        "Resume at byte %d got Content-Range "
+                                        "starting at %d (header: %r); "
+                                        "restarting from zero rather than "
+                                        "appending to the wrong offset: %s",
+                                        offset,
+                                        started_at,
+                                        response.headers.get("content-range"),
+                                        url,
+                                    )
+                                    mode = "wb"
+                                elif started_at is None:
+                                    # Non-compliant 206 with no Content-Range.
+                                    # Behave as before (append) rather than
+                                    # restart: cob.go.ke's TLS certificate is
+                                    # expired as of 2026-09-02 so its range
+                                    # behaviour could not be re-probed, and
+                                    # hard-restarting a server that DOES honour
+                                    # the offset would turn a working resume
+                                    # into an endless re-download of 12MB.
+                                    # Loud, because appending on an unverified
+                                    # offset is the risk the check exists for.
+                                    logger.warning(
+                                        "Resume at byte %d got a 206 with NO "
+                                        "Content-Range; appending unverified. "
+                                        "If this server ignores ranges the "
+                                        "result is spliced — the %%%%EOF check "
+                                        "is the only remaining guard: %s",
+                                        offset,
+                                        url,
+                                    )
+                            if mode == "wb":
+                                _remember_validator(response)
                             with tmp.open(mode) as handle:
                                 for chunk in response.iter_bytes():
                                     if time.monotonic() - start > max_seconds:

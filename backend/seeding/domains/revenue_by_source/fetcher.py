@@ -106,7 +106,7 @@ def fetch_revenue_payload(
     2. Load fixture for detailed tax-type breakdown.
     3. Merge: live headline data supplements fixture detail.
     """
-    from ...freshness import mark_fixture, mark_live
+    from ...freshness import mark_fixture, mark_live, mark_partial
 
     live_records: List[Dict[str, Any]] = []
     wb_reason = "worldbank_disabled"
@@ -199,8 +199,14 @@ def fetch_revenue_payload(
     if kra_promoted:
         mark_live("revenue_by_source", detail=detail)
     elif live_records:
-        mark_live(
+        # PARTIAL, not live. Reported by review on PR #136: the World Bank
+        # totals are genuinely fresh, but the per-tax-head breakdown is what
+        # this domain publishes, and it is still the fixture. Recording LIVE
+        # made check_ingestion_freshness report OK, so KRA could stay
+        # unavailable indefinitely behind a green nightly.
+        mark_partial(
             "revenue_by_source",
+            reason=f"kra_overlay_not_promoted({kra_status})",
             detail=f"World Bank headline totals only; tax-head breakdown still fixture. {detail}",
         )
     else:

@@ -78,6 +78,22 @@ def _fresh_cache_hit(
     """
     if ttl_seconds <= 0 or not pdf_path.exists() or not meta_path.exists():
         return None
+    # Validate the BYTES, not just the bookkeeping. Reported by review on
+    # PR #136: this returned on size + TTL alone, so an entry written by the
+    # earlier magic-bytes-only implementation kept serving a truncated PDF for
+    # the whole 30-day TTL — and CI restores this directory across runs with a
+    # rolling key, so such entries genuinely persist. A miss is cheap; a
+    # silently truncated source document is not.
+    if not _looks_like_whole_pdf(pdf_path):
+        logger.warning(
+            "Discarding cached PDF %s — it is truncated (no final %%%%EOF). "
+            "Re-downloading; a cache entry written before the completeness "
+            "check existed can look valid to the size test alone.",
+            pdf_path.name,
+        )
+        pdf_path.unlink(missing_ok=True)
+        meta_path.unlink(missing_ok=True)
+        return None
     try:
         meta = json.loads(meta_path.read_text(encoding="utf-8"))
         created_at = float(meta.get("created_at", 0.0))
@@ -117,8 +133,18 @@ def _verify_pdf_complete(path: Path, url: str) -> None:
     most of the document. Every PDF ends with an ``%%EOF`` marker, so the
     trailer is the completeness signal available to us.
 
-    Scans the last 2KB: the spec allows trailing whitespace/newlines after
-    ``%%EOF``, and incrementally-updated PDFs carry several such markers.
+    Requires the last non-whitespace bytes to BE ``%%EOF`` — not merely to
+    contain it somewhere in the tail. Reported by review on PR #136: an
+    incrementally-updated PDF carries one marker per revision, so a transfer
+    cut shortly after an EARLIER marker still had ``%%EOF`` within the window
+    and was declared complete. That is not a cosmetic difference here: with no
+    Content-Length, this function is the resumable downloader's completion
+    signal, so a false "whole" STOPS the download and caches the truncation.
+
+    Real government PDFs satisfy the stricter rule — verified against the five
+    documents fetched on 2026-08-29, whose tails are ``...startxref\r\n<n>\r\n
+    %%EOF\r\n``. Trailing whitespace after the marker is permitted by the spec
+    and is stripped before the comparison.
     """
     _verify_pdf_magic(path, url)
     try:
@@ -130,10 +156,13 @@ def _verify_pdf_complete(path: Path, url: str) -> None:
         raise PdfDownloadError(
             f"could not read downloaded file for {url}: {exc}"
         ) from exc
-    if b"%%EOF" not in tail:
+    if not tail.rstrip().endswith(b"%%EOF"):
+        where = "no %%EOF trailer" if b"%%EOF" not in tail else (
+            "%%EOF present but not final — this is a truncated incremental "
+            "revision, not a whole document"
+        )
         raise PdfDownloadError(
-            f"downloaded PDF is truncated ({size} bytes, no %%EOF trailer): "
-            f"{url}"
+            f"downloaded PDF is truncated ({size} bytes, {where}): {url}"
         )
 
 

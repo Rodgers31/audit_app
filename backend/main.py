@@ -1406,6 +1406,26 @@ def _redis_cache_instances():
         pass
 
 
+def _declared_row_unit(rows, default: str = "billion_kes") -> str:
+    """Response-level unit DERIVED from the rows, never hardcoded.
+
+    Reported by review on PR #136: ``/fiscal/summary`` and ``/debt/timeline``
+    returned rows carrying ``unit="KES"`` (raw KES, since the stage1 3a
+    migration) inside a response whose ``_meta.unit`` still said
+    ``"billion_kes"``. A client that trusts the response metadata — the field
+    that exists precisely to be trusted — scales by 1e9 the wrong way. That is
+    the same units hazard that forced the 2026-08-30 production migration to be
+    rolled back, in a second place.
+
+    Derived rather than flipped to a new constant, because the same code runs
+    against an un-migrated database (rows with ``unit`` NULL are bare billions)
+    and must keep telling the truth there too. Mixed rows report the
+    conservative default so nothing is silently rescaled mid-series.
+    """
+    units = {getattr(r, "unit", None) for r in rows}
+    return "KES" if units == {"KES"} else default
+
+
 def cached(key_prefix: str, ttl: int = 3600):
     """Decorator to cache endpoint responses.
 
@@ -7935,7 +7955,7 @@ async def get_debt_timeline(db: Session = Depends(get_db)):
             "status": "success",
             "data_source": "database",
             "_meta": _response_meta(
-                unit="billion_kes",
+                unit=_declared_row_unit(rows),
                 entity_scope="national",
                 covers_through=covers_through_label,
                 cache_ttl_seconds=86400,
@@ -8132,7 +8152,7 @@ async def get_fiscal_summary(db: Session = Depends(get_db)):
             "status": "success",
             "data_source": "database",
             "_meta": _response_meta(
-                unit="billion_kes",
+                unit=_declared_row_unit(rows),
                 entity_scope="national",
                 quality_notes=_fiscal_quality_notes or None,
             ),
@@ -8182,9 +8202,9 @@ async def get_civic_figures(db: Session = Depends(get_db)):
         }
 
     def _fs_to_kes(value):
-        """FiscalSummary stores billion-KES (see `_response_meta(unit='billion_kes')`
-        and seeding/real_data/fiscal_summary.json), whereas GDPData and Loan
-        store RAW KES. Normalise the fiscal figures to raw KES so every figure
+        """FiscalSummary rows may be EITHER raw KES (post stage1 3a, where the
+        row declares unit="KES") or the older bare-billions convention, while
+        GDPData and Loan are always RAW KES. Normalise the fiscal figures to raw KES so every figure
         this endpoint emits shares one unit and the UI formats them uniformly.
         The < 1e7 guard scales the billions convention (~3e3-5e3) but leaves an
         already-raw value (~1e12) untouched, so a future unit change can't

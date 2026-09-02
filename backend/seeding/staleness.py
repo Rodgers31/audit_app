@@ -33,11 +33,14 @@ February, which is how gates die.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from typing import Callable, List, Optional
 
 from .source_registry import PUBLICATION_SCHEDULE
+
+logger = logging.getLogger("seeding.staleness")
 
 # Severity levels, mirroring the nightly's existing vocabulary.
 FAIL = "FAIL"
@@ -189,6 +192,37 @@ def check_table_freshness(session, now: Optional[datetime] = None) -> List[Findi
     return findings
 
 
+def _all_registered_domains(seen: dict) -> List[str]:
+    """Every domain that SHOULD run, not just those that did.
+
+    Reported by review on PR #136. The default used to be ``sorted(seen)`` —
+    the domains with a recent job — which made the ``if not jobs`` branch
+    below unreachable on exactly the path the nightly uses (``run_all`` passes
+    no domain list). A domain that stopped running entirely did not report an
+    outage; it silently left the report. A gate that cannot fire is not a gate.
+
+    Falls back to the observed set only if the registry cannot be imported, so
+    a packaging problem degrades to the old behaviour rather than crashing the
+    nightly — and says so, because a silently reduced watch list is the defect
+    being fixed.
+    """
+    try:
+        from .registries import REGISTRY, load_builtin_domains
+
+        load_builtin_domains()
+        registered = set(REGISTRY.domains())
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.warning(
+            "Could not read the domain registry (%s); watching only the %d "
+            "domain(s) that reported a run. A domain that never ran will NOT "
+            "be flagged this cycle.",
+            exc,
+            len(seen),
+        )
+        return sorted(seen)
+    return sorted(registered | set(seen))
+
+
 def check_ingestion_freshness(
     session, now: Optional[datetime] = None, domains: Optional[List[str]] = None
 ) -> List[Finding]:
@@ -213,7 +247,7 @@ def check_ingestion_freshness(
     for job in rows:
         seen.setdefault(job.domain, []).append(job)
 
-    watched = domains if domains is not None else sorted(seen)
+    watched = domains if domains is not None else _all_registered_domains(seen)
     for domain in watched:
         jobs = seen.get(domain, [])
         if not jobs:
@@ -226,7 +260,25 @@ def check_ingestion_freshness(
             )
             continue
         modes = [(j.meta or {}).get("source_mode") for j in jobs]
-        if "live" in modes:
+        if "live" not in modes and "partial" in modes:
+            # Reached the publisher for a secondary series only. Not OK: the
+            # figure this domain publishes did not move. See freshness.PARTIAL.
+            reasons = {
+                (j.meta or {}).get("source_fallback_reason")
+                for j in jobs
+                if (j.meta or {}).get("source_fallback_reason")
+            }
+            findings.append(
+                Finding(
+                    WARN,
+                    f"{domain} ingestion",
+                    f"only a SECONDARY series refreshed in all "
+                    f"{len(modes)} recent run(s); the published figure is "
+                    f"still a fixture "
+                    f"(reasons: {', '.join(sorted(reasons)) or 'unrecorded'})",
+                )
+            )
+        elif "live" in modes:
             findings.append(
                 Finding(
                     OK,

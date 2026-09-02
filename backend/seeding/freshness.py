@@ -45,6 +45,14 @@ _SOURCE_MODE: ContextVar[Dict[str, dict]] = ContextVar("seeding_source_mode")
 
 LIVE = "live"
 FIXTURE = "fixture"
+# Reached the publisher for a SECONDARY series while the figure this domain
+# actually publishes stayed on the fixture. Added after review on PR #136:
+# revenue_by_source recorded LIVE when only the World Bank headline totals
+# refreshed, while the PAYE/VAT/Corporation/Excise/Customs breakdown — the
+# thing the domain exists to publish — was still the git-tracked file. The
+# staleness gate keys on the mode and never reads the detail, so that run
+# reported OK and would have gone on reporting OK indefinitely.
+PARTIAL = "partial"
 UNKNOWN = "unknown"
 
 
@@ -86,23 +94,50 @@ def mark_fixture(domain: str, *, reason: str, detail: Optional[str] = None) -> N
     )
 
 
+def mark_partial(
+    domain: str, *, reason: str, detail: Optional[str] = None
+) -> None:
+    """Record that the publisher was reached, but NOT for the headline figure.
+
+    Use this wherever a run refreshes a supporting series while the domain's
+    published figure stays on a fixture. It is deliberately NOT ``mark_live``:
+    ``is_stale`` returns True and the nightly reports WARN, so a permanently
+    unavailable primary source cannot hide behind a working secondary one.
+    """
+    _store()[domain] = {"mode": PARTIAL, "reason": reason, "detail": detail}
+    logger.warning(
+        "%s: data source = PARTIAL (reason=%s). A secondary series refreshed "
+        "from the publisher, but the figure this domain publishes is still a "
+        "fixture. %s",
+        domain,
+        reason,
+        detail or "",
+    )
+
+
 def get(domain: str) -> dict:
     """Recorded provenance for ``domain``; ``mode='unknown'`` if never set."""
     return _store().get(domain, {"mode": UNKNOWN})
 
 
 def is_stale(domain: str) -> bool:
-    """True when the run did not reach the authoritative publisher."""
+    """True unless the run refreshed the figure this domain publishes.
+
+    PARTIAL counts as stale on purpose: reaching the publisher for something
+    else is not the same as publishing fresh data.
+    """
     return get(domain).get("mode") != LIVE
 
 
 __all__ = [
     "FIXTURE",
     "LIVE",
+    "PARTIAL",
     "UNKNOWN",
     "get",
     "is_stale",
     "mark_fixture",
     "mark_live",
+    "mark_partial",
     "reset",
 ]

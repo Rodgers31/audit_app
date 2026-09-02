@@ -138,15 +138,31 @@ class TestMetaPresence:
         body = r.json()
         meta = body.get("_meta")
         assert meta is not None, "/fiscal/summary missing _meta"
-        assert meta["unit"] == "billion_kes"
+        # See test_debt_timeline_has_meta: assert the AGREEMENT, not a
+        # constant that contradicted the rows (F8, PR #136).
+        current = body.get("current") or {}
+        if current.get("unit"):
+            assert meta["unit"] == ("KES" if current["unit"] == "KES" else "billion_kes")
+        else:
+            assert meta["unit"] == "billion_kes"
         assert meta["entity_scope"] == "national"
 
     def test_debt_timeline_has_meta(self, client, seed_unit_test_data):
         r = client.get("/api/v1/debt/timeline")
         assert r.status_code == 200
-        meta = r.json().get("_meta")
+        body = r.json()
+        meta = body.get("_meta")
         assert meta is not None, "/debt/timeline missing _meta"
-        assert meta["unit"] == "billion_kes"
+        # UPDATED after the F8 finding on PR #136. This asserted the constant
+        # "billion_kes" while the rows in the same response carried
+        # unit="KES" — it pinned the contradiction rather than the property.
+        # The invariant is that the response-level unit AGREES with its rows,
+        # which holds whichever side of the 3a migration the database is on.
+        rows = body.get("timeline") or []
+        if rows and rows[0].get("unit"):
+            assert meta["unit"] == ("KES" if rows[0]["unit"] == "KES" else "billion_kes")
+        else:
+            assert meta["unit"] == "billion_kes"
         assert meta["entity_scope"] == "national"
 
     def test_budget_overview_has_meta(self, client, seed_unit_test_data):

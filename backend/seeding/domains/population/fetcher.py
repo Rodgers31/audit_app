@@ -189,7 +189,7 @@ def fetch_population_payload(
     3. Merge: live national data takes precedence; county data preserved.
     4. If World Bank fails entirely, fall back to fixture only.
     """
-    from ...freshness import mark_fixture, mark_live
+    from ...freshness import mark_fixture, mark_live, mark_partial
 
     live_national: List[Dict[str, Any]] = []
     fallback_reason = "worldbank_disabled"
@@ -222,8 +222,13 @@ def fetch_population_payload(
     # than implying all 47 counties were.
     if live_national:
         merged = _merge_population(fixture, live_national)
-        mark_live(
+        # National series is genuinely refreshed; all 47 counties are still
+        # the KNBS census fixture, and the World Bank publishes no
+        # sub-national series for Kenya. Same shape as revenue_by_source
+        # (review, PR #136): a fresh secondary series is not a fresh domain.
+        mark_partial(
             "population",
+            reason="no_live_county_source",
             detail=(
                 f"World Bank SP.POP.* national series for "
                 f"{len(live_national)} year(s); county breakdown remains the "
