@@ -62,6 +62,9 @@ def fetch_national_gdp_kes(
     the fixture are unavailable — callers treat that as "keep the existing
     DB rows" (last-known-good), never substituting a hardcoded value.
     """
+    from ...freshness import mark_fixture, mark_live
+
+    fallback_reason = "worldbank_disabled"
     if settings.enrich_with_worldbank:
         try:
             resp = client.get(_WB_GDP_URL, raise_for_status=True)
@@ -72,10 +75,19 @@ def fetch_national_gdp_kes(
                     len(gdp),
                     max(gdp),
                 )
+                mark_live(
+                    "national_gdp",
+                    detail=(
+                        f"World Bank NY.GDP.MKTP.CN: {len(gdp)} year(s), "
+                        f"latest {max(gdp)}"
+                    ),
+                )
                 return gdp
             logger.warning("World Bank GDP API returned no values; using fixture")
+            fallback_reason = "worldbank_returned_nothing"
         except Exception as exc:  # network / shape / parse — degrade gracefully
             logger.warning("World Bank GDP API unavailable, using fixture: %s", exc)
+            fallback_reason = f"worldbank_unreachable({type(exc).__name__})"
 
     fixture = load_json_resource(
         url=_FIXTURE_URL, client=client, logger=logger, label="national_gdp"
@@ -87,6 +99,20 @@ def fetch_national_gdp_kes(
         if r.get("gdp_kes") is not None
     }
     if not gdp_by_year:
+        mark_fixture(
+            "national_gdp",
+            reason="no_source_available",
+            detail=f"live path failed ({fallback_reason}) and the fixture is empty",
+        )
         raise ValueError("No GDP data available from World Bank API or fixture")
     logger.info("Loaded %d GDP year(s) from fixture fallback", len(gdp_by_year))
+    mark_fixture(
+        "national_gdp",
+        reason=fallback_reason,
+        detail=(
+            f"serving {len(gdp_by_year)} year(s) from the in-repo World "
+            f"Bank-sourced fixture; the denominator every debt-to-GDP ratio "
+            f"uses is NOT live this run"
+        ),
+    )
     return gdp_by_year

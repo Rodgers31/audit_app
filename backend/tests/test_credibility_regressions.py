@@ -157,48 +157,44 @@ class TestNoHardcodedFiscalYears:
     def test_audits_federal_reports_oag_report_fiscal_year(
         self, client, seed_credibility_data
     ):
-        """audit §3.8: /audits/federal must report the OAG REPORT's own fiscal
-        year (from the source document's metadata), NOT the global FISCAL_LABEL
-        / DB period the findings happen to be attached to."""
-        import json
-        from pathlib import Path
+        """audit §3.8: /audits/federal must never report a hardcoded fiscal year.
 
-        oag_path = (
-            Path(__file__).resolve().parent.parent.parent
-            / "apis"
-            / "oag_national_audit_data.json"
-        )
-        report_fy = json.loads(oag_path.read_text())["metadata"]["fiscal_year"]
-
+        Originally this asserted the FY came from
+        ``apis/oag_national_audit_data.json``, which was an improvement over a
+        code literal. That file is now quarantined — it cites only a bare
+        domain and holds the same fabricated figures as the withheld audits
+        rows — so the FY must be derived from publishable rows, or be null.
+        The original intent (never a literal) is unchanged and still asserted.
+        """
         body = client.get("/api/v1/audits/federal").json()
-        # Not a hardcoded code literal (old spacing), and reflects the OAG
-        # report's own FY rather than the seeded DB period.
-        assert body.get("fiscal_year") != "FY 2023/24"
-        assert body.get("fiscal_year") == report_fy
-        assert report_fy in body.get("fiscal_years_covered", [])
-        assert body.get("_meta", {}).get("fiscal_period") == report_fy
+
+        assert body.get("fiscal_year") != "FY 2023/24", "hardcoded literal"
+        fy = body.get("fiscal_year")
+        meta_fy = body.get("_meta", {}).get("fiscal_period")
+        assert fy == meta_fy, "the FY and its _meta must agree"
+        if body.get("total_findings"):
+            # Derived from the periods of rows that actually published.
+            assert fy in body.get("fiscal_years_covered", [])
+        else:
+            # Nothing published => nothing to date. Never a borrowed label.
+            assert fy is None, f"no publishable finding, yet fiscal_year={fy!r}"
 
     def test_audits_federal_severity_not_inflated_by_high_mapping(
         self, client, seed_credibility_data
     ):
-        """audit §3.3: by_severity must reflect the OAG report's own
-        critical/significant/minor counts (key_statistics), not the seed's
-        'high'->CRITICAL inflation, so the severity donut isn't overstated."""
-        import json
-        from pathlib import Path
+        """audit §3.3: the severity donut must not be overstated.
 
-        oag = json.loads(
-            (
-                Path(__file__).resolve().parent.parent.parent
-                / "apis"
-                / "oag_national_audit_data.json"
-            ).read_text()
+        It previously took the JSON's own counts, which summed to 25 in a
+        response whose total_findings was 1 — a histogram describing rows the
+        same response said were withheld. The counts now come from the
+        published findings, so the donut cannot exceed what it describes.
+        """
+        body = client.get("/api/v1/audits/federal").json()
+        by_sev = body.get("by_severity", {})
+        assert sum(by_sev.values()) == body["total_findings"], (
+            f"by_severity sums to {sum(by_sev.values())} but total_findings is "
+            f"{body['total_findings']}"
         )
-        ks = oag["audit_opinion_summary"]["key_statistics"]
-        by_sev = client.get("/api/v1/audits/federal").json().get("by_severity", {})
-        assert by_sev.get("CRITICAL") == ks["critical_findings"]
-        assert by_sev.get("WARNING") == ks["significant_findings"]
-        assert by_sev.get("INFO") == ks["minor_findings"]
 
     def test_audits_statistics_reports_db_derived_fiscal_year(
         self, client, seed_credibility_data
@@ -297,20 +293,15 @@ class TestFreshnessMeta:
         import json
         from pathlib import Path
 
-        report_fy = json.loads(
-            (
-                Path(__file__).resolve().parent.parent.parent
-                / "apis"
-                / "oag_national_audit_data.json"
-            ).read_text()
-        )["metadata"]["fiscal_year"]
         r = client.get("/api/v1/audits/federal")
         assert r.status_code == 200
-        meta = r.json().get("_meta", {})
+        body = r.json()
+        meta = body.get("_meta", {})
         assert "generated_at" in meta
-        # covers_through now reflects the OAG report's own FY (audit §3.8),
-        # not the global FISCAL_LABEL / seeded period.
-        assert meta.get("covers_through") == report_fy
+        # covers_through tracks the FY the response actually reports — which is
+        # null when nothing publishable dates it (the JSON that used to supply
+        # it is quarantined; see the §3.8 test above).
+        assert meta.get("covers_through") == body.get("fiscal_year")
         assert meta.get("cache_ttl_seconds") == 3600
 
     def test_debt_timeline_freshness_fields(self, client, seed_credibility_data):

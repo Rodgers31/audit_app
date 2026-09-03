@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { useDebtTimeline, useNationalDebtOverview } from '@/lib/react-query/useDebt';
 import { useFiscalSummary } from '@/lib/react-query/useFiscal';
 import { useLang } from '@/lib/i18n/LangProvider';
-import { classifyDebtRisk, fmtBillionKES } from '@/lib/utils';
+import { classifyDebtRisk, fmtBillionKES, toRawKES } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import {
   Banknote,
@@ -83,10 +83,19 @@ export function SummaryStrip() {
     : null;
 
   // Headline total (KES) — prefer the authoritative loans-register sum.
+  //
+  // The timeline fallback normalises on the row's DECLARED unit. Since the
+  // stage1 3a migration /debt/timeline serves raw KES and says so with
+  // `unit: "KES"`; this previously multiplied by 1e9 unconditionally, making
+  // the headline 10⁹× too large after the migration. Reported as F1 on #136,
+  // and the reason that migration was rolled back in production on
+  // 2026-08-30. `latest` is the RAW api row here — unlike NationalDebtCard's
+  // `lastYear`, which has already been normalised for the chart — so the
+  // conversion belongs here.
   const totalKES =
     apiData?.total_outstanding ??
     apiData?.total_debt ??
-    (latest ? latest.total * 1_000_000_000 : null);
+    (latest ? toRawKES(latest.total, latest.unit) : null);
   const totalT = totalKES != null ? (totalKES / 1_000_000_000_000).toFixed(2) : '—';
 
   // Debt-to-GDP — prefer overview's canonical ratio (uses fresher GDP base
@@ -123,11 +132,21 @@ export function SummaryStrip() {
           </span>
         </div>
         <span
-          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/60 dark:bg-surface-elevated border ${isHigh ? 'border-gov-copper/20 text-gov-copper' : 'border-gov-gold/20 text-gov-gold'} mb-0.5`}>
+          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/60 dark:bg-surface-elevated border ${
+            riskLevel == null
+              ? 'border-neutral-muted/20 text-neutral-muted'
+              : isHigh
+                ? 'border-gov-copper/20 text-gov-copper'
+                : 'border-gov-gold/20 text-gov-gold'
+          } mb-0.5`}>
           <span
-            className={`w-1.5 h-1.5 rounded-full ${isHigh ? 'bg-gov-copper' : 'bg-gov-gold'} inline-block`}
+            className={`w-1.5 h-1.5 rounded-full ${
+              riskLevel == null ? 'bg-neutral-muted' : isHigh ? 'bg-gov-copper' : 'bg-gov-gold'
+            } inline-block`}
           />
-          {riskLevel} {t('home.hero.risk_suffix')}
+          {riskLevel
+            ? `${riskLevel} ${t('home.hero.risk_suffix')}`
+            : t('home.hero.risk_unassessed')}
         </span>
       </div>
 
@@ -155,6 +174,32 @@ export function SummaryStrip() {
    Enticing overview of last year's national financials,
    links to the National Debt page for the full picture.
    ═══════════════════════════════════════════════════════════ */
+/**
+ * A fiscal money field, normalised to BILLIONS and formatted — or an em-dash.
+ *
+ * Two defects in one place, because they occur on the same values:
+ *
+ *  F1 (#136) — the stage1 3a migration rescales `fiscal_summaries` as well as
+ *  `debt_timeline`, serving raw KES with a per-row `unit: "KES"`. Formatting
+ *  those with `fmtBillionKES` directly would render a figure 10⁹× too large.
+ *  `toRawKES` decides on the DECLARED unit, so this is a no-op against a
+ *  pre-migration backend (billions -> raw -> billions) and correct after.
+ *
+ *  F2 (#136) — the fields are nullable and null is the NORMAL case: a fiscal
+ *  year carries only an enacted budget until the Controller of Budget
+ *  publishes execution. `fmtBillionKES(null)` would coerce to 0 and publish
+ *  "0.0T" as a figure.
+ */
+function fiscalBillions(value: number | null, unit?: string | null): number | null {
+  const raw = toRawKES(value, unit);
+  return raw == null ? null : raw / 1e9;
+}
+
+function fmtFiscal(value: number | null, unit?: string | null): string {
+  const billions = fiscalBillions(value, unit);
+  return billions == null ? '\u2014' : fmtBillionKES(billions);
+}
+
 export function KenyanGovCard() {
   const { t } = useLang();
   const { data: fiscal, isLoading } = useFiscalSummary();
@@ -269,14 +314,14 @@ export function KenyanGovCard() {
             <div className='grid grid-cols-2 gap-2'>
               <StatMiniCard
                 label={t('home.govcard.stat_budget')}
-                value={fmtBillionKES(fy.appropriated_budget)}
+                value={fmtFiscal(fy.appropriated_budget, fy.unit)}
                 sub={fy.fiscal_year}
                 color='forest'
                 icon={BarChart3}
               />
               <StatMiniCard
                 label={t('home.govcard.stat_revenue')}
-                value={fmtBillionKES(fy.total_revenue)}
+                value={fmtFiscal(fy.total_revenue, fy.unit)}
                 sub={t('home.govcard.tax_nontax')}
                 color='teal'
                 icon={Banknote}
@@ -287,16 +332,30 @@ export function KenyanGovCard() {
             <div className='grid grid-cols-2 gap-2'>
               <StatMiniCard
                 label={t('home.govcard.stat_borrowed')}
-                value={fmtBillionKES(fy.total_borrowing)}
-                sub={t('home.govcard.pct_of_budget').replace('{pct}', String(fy.borrowing_pct_of_budget))}
+                value={fmtFiscal(fy.total_borrowing, fy.unit)}
+                sub={
+                  fy.borrowing_pct_of_budget == null
+                    ? '\u2014'
+                    : t('home.govcard.pct_of_budget').replace(
+                        '{pct}',
+                        String(fy.borrowing_pct_of_budget)
+                      )
+                }
                 color='copper'
                 icon={TrendingDown}
                 alert
               />
               <StatMiniCard
                 label={t('home.govcard.stat_debt_service')}
-                value={fmtBillionKES(fy.debt_service_cost)}
-                sub={t('home.govcard.cents_per_kes').replace('{cents}', String(fy.debt_service_per_shilling))}
+                value={fmtFiscal(fy.debt_service_cost, fy.unit)}
+                sub={
+                  fy.debt_service_per_shilling == null
+                    ? '\u2014'
+                    : t('home.govcard.cents_per_kes').replace(
+                        '{cents}',
+                        String(fy.debt_service_per_shilling)
+                      )
+                }
                 color='gold'
                 icon={Scale}
               />
@@ -350,14 +409,30 @@ export function KenyanGovCard() {
 
             {/* ── Where the Money Goes — budget breakdown bar ── */}
             {(() => {
-              const debtSvc = fy.debt_service_cost;
-              const development = fy.development_spending;
-              const county = fy.county_allocation;
+              // Every part is normalised to billions on the declared unit, and
+              // every part must be PRESENT. A stacked bar drawn from a partial
+              // breakdown is not a partial answer — the missing component is
+              // silently absorbed into "Other", which then reads as real
+              // unallocated slack. That is a fabricated composition, so the
+              // section is withheld instead. This is the ordinary case for a
+              // fiscal year the Controller of Budget has not yet reported on.
+              const debtSvc = fiscalBillions(fy.debt_service_cost, fy.unit);
+              const development = fiscalBillions(fy.development_spending, fy.unit);
+              const county = fiscalBillions(fy.county_allocation, fy.unit);
+              const recurrent = fiscalBillions(fy.recurrent_spending, fy.unit);
+              const total = fiscalBillions(fy.appropriated_budget, fy.unit);
+              if (
+                debtSvc == null ||
+                development == null ||
+                county == null ||
+                recurrent == null ||
+                total == null
+              ) {
+                return null;
+              }
               // Recurrent spending in Kenya's budget INCLUDES debt service
               // (Consolidated Fund Services). Separate it out to avoid double-counting.
-              const recurrentExclDebt = Math.max(fy.recurrent_spending - debtSvc, 0);
-              // Use appropriated budget as denominator (the actual spending envelope)
-              const total = fy.appropriated_budget;
+              const recurrentExclDebt = Math.max(recurrent - debtSvc, 0);
               if (total <= 0) return null;
               // "Other" captures any remaining slice (e.g. contingency, unallocated)
               const accounted = debtSvc + recurrentExclDebt + development + county;

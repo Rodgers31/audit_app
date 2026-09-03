@@ -139,19 +139,33 @@ export interface FederalAuditFinding {
   report_section: string;
   date_raised: string;
   date: string | null;
+  /** Extraction-backed provenance (Stage 2): the report paragraph's title,
+   *  the PDF page the finding was extracted from ("p.106"), and the source
+   *  document URL a reader can open to check it. */
+  title?: string | null;
+  page_ref?: string | null;
+  source_url?: string | null;
 }
 
 export interface FederalAuditResponse {
-  report_title: string;
-  auditor_general: string;
-  fiscal_year: string;
-  report_date: string;
-  opinion_type: string;
+  /** All four describe one document. Each is null when nothing resolves to
+   *  a report a reader could open. */
+  report_title: string | null;
+  auditor_general: string | null;
+  fiscal_year: string | null;
+  report_date: string | null;
+  opinion_type: string | null;
   total_findings: number;
   // Authoritative OAG questioned total (parsed from the report), or null
   // when the report carries no figure. NOT a naive sum of finding amounts.
   total_amount_questioned: number | null;
-  total_amount_questioned_label: string;
+  total_amount_questioned_label: string | null;
+  /** Why the questioned total is absent, e.g. source_url_is_a_homepage_not_a_document. */
+  total_amount_questioned_reason?: string | null;
+  /** Set when the whole opinion summary is withheld for lack of provenance. */
+  opinion_summary_reason?: string | null;
+  /** Findings excluded for lack of a resolvable source document. */
+  withheld_findings?: number;
   // Transparency only: raw sum across all finding amounts (not "questioned").
   total_amount_in_findings?: number;
   by_severity: Record<string, number>;
@@ -172,6 +186,22 @@ export interface FederalAuditResponse {
   };
   findings: FederalAuditFinding[];
   top_ministries: { ministry: string; finding_count: number }[];
+  /** Why `findings` is empty, when it is: "awaiting_sourced_data" (rows
+   *  exist but are withheld for lack of a traceable source) or
+   *  "no_findings_recorded". Null when findings are published. */
+  findings_reason?: 'awaiting_sourced_data' | 'no_findings_recorded' | null;
+  /** When the next OAG publication is expected — computed by the backend
+   *  from the Layer-1 source registry, never hand-written in the UI. */
+  next_expected?: {
+    dataset: string;
+    publisher: string | null;
+    cadence: string | null;
+    lag: string | number | null;
+    lag_unit: 'months' | 'days';
+    window_start: string | null;
+    window_end: string | null;
+    in_window: boolean;
+  } | null;
   last_updated: string | null;
 }
 

@@ -36,6 +36,47 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 target_metadata = Base.metadata
 
+# ── Production drift that migrations do not manage ───────────────────
+# The production database predates the rebaselined chain and contains
+# objects the ORM never owned. `alembic check` (autogenerate) would
+# propose dropping them, which makes its output useless as the
+# "does live schema match the baseline?" gate the baseline docstring
+# prescribes. Each exclusion below was verified against a pg_dump clone
+# of production on 2026-08-29 — see git history for the diff.
+#
+# Tables created directly in Supabase (SQL editor / dashboard), not by
+# models.py:
+_NON_MODEL_TABLES = {
+    "profiles",  # Supabase auth profile mirror (uuid PK)
+    "validation_failures",  # pre-baseline ETL quarantine table
+}
+# Columns that exist in production on model-managed tables but not in
+# models.py. All verified empty or Supabase-managed; retained, not
+# dropped, and excluded from autogenerate comparison:
+_NON_MODEL_COLUMNS = {
+    ("audits", "validation_warnings"),  # jsonb, pre-baseline validator
+    ("budget_lines", "validation_warnings"),  # jsonb, pre-baseline validator
+    ("population_data", "total_population"),  # pre-baseline census shape
+    ("population_data", "male_population"),
+    ("population_data", "female_population"),
+    ("population_data", "urban_population"),
+    ("population_data", "rural_population"),
+}
+
+
+def _include_object(obj, name, type_, reflected, compare_to):
+    """Filter reflected-but-unmanaged objects out of autogenerate/check."""
+    if type_ == "table" and reflected and name in _NON_MODEL_TABLES:
+        return False
+    if (
+        type_ == "column"
+        and reflected
+        and compare_to is None
+        and (obj.table.name, name) in _NON_MODEL_COLUMNS
+    ):
+        return False
+    return True
+
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
@@ -121,7 +162,11 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            include_object=_include_object,
+        )
 
         with context.begin_transaction():
             context.run_migrations()

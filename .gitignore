@@ -34,6 +34,12 @@ env/
 *.swp
 *.swo
 
+# Seeding download cache. get_or_download_pdf() persists source PDFs here
+# (and .json sidecars / .part resumes, which *.pdf below does not cover) so a
+# 12-50MB government report survives between runs. 132MB and growing; never a
+# repository artefact.
+backend/data/seeding/cache/
+
 # Documents (never commit raw files)
 *.pdf
 *.doc

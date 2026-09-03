@@ -31,7 +31,11 @@ import time
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 
-from .http_client import PdfDownloadError, SeedingHttpClient
+from .http_client import (
+    PdfDownloadError,
+    PdfDownloadIncomplete,
+    SeedingHttpClient,
+)
 
 logger = logging.getLogger("seeding.pdf_download")
 
@@ -50,6 +54,18 @@ def _cache_paths(cache_dir: Path, url: str) -> Tuple[Path, Path]:
     return cache_dir / f"{digest}.pdf", cache_dir / f"{digest}.json"
 
 
+def _part_path(cache_dir: Path, url: str) -> Path:
+    """Durable partial-download path for ``url``.
+
+    Keyed on the URL exactly like the cache entry, so a resumed transfer can
+    only ever continue the SAME document. Persisted between runs (and cached
+    by CI via actions/cache) — that is what lets a 12MB PDF on a 43 KB/s link
+    finish across several nightly runs instead of never.
+    """
+    digest = hashlib.sha256(url.encode("utf-8")).hexdigest()
+    return cache_dir / f"{digest}.part"
+
+
 def _fresh_cache_hit(
     pdf_path: Path, meta_path: Path, ttl_seconds: int
 ) -> Optional[Tuple[int, float]]:
@@ -61,6 +77,22 @@ def _fresh_cache_hit(
     the caller re-downloads.
     """
     if ttl_seconds <= 0 or not pdf_path.exists() or not meta_path.exists():
+        return None
+    # Validate the BYTES, not just the bookkeeping. Reported by review on
+    # PR #136: this returned on size + TTL alone, so an entry written by the
+    # earlier magic-bytes-only implementation kept serving a truncated PDF for
+    # the whole 30-day TTL — and CI restores this directory across runs with a
+    # rolling key, so such entries genuinely persist. A miss is cheap; a
+    # silently truncated source document is not.
+    if not _looks_like_whole_pdf(pdf_path):
+        logger.warning(
+            "Discarding cached PDF %s — it is truncated (no final %%%%EOF). "
+            "Re-downloading; a cache entry written before the completeness "
+            "check existed can look valid to the size test alone.",
+            pdf_path.name,
+        )
+        pdf_path.unlink(missing_ok=True)
+        meta_path.unlink(missing_ok=True)
         return None
     try:
         meta = json.loads(meta_path.read_text(encoding="utf-8"))
@@ -90,6 +122,61 @@ def _verify_pdf_magic(path: Path, url: str) -> None:
         raise PdfDownloadError(
             f"downloaded content is not a PDF (starts with {head!r}): {url}"
         )
+
+
+def _verify_pdf_complete(path: Path, url: str) -> None:
+    """Raise unless ``path`` looks like a WHOLE PDF, not a truncated one.
+
+    The header check alone cannot detect truncation, and these publishers
+    send no ``Content-Length`` — so a transfer cut short still starts with
+    ``%PDF-`` and would be cached and parsed as if complete, silently losing
+    most of the document. Every PDF ends with an ``%%EOF`` marker, so the
+    trailer is the completeness signal available to us.
+
+    Requires the last non-whitespace bytes to BE ``%%EOF`` — not merely to
+    contain it somewhere in the tail. Reported by review on PR #136: an
+    incrementally-updated PDF carries one marker per revision, so a transfer
+    cut shortly after an EARLIER marker still had ``%%EOF`` within the window
+    and was declared complete. That is not a cosmetic difference here: with no
+    Content-Length, this function is the resumable downloader's completion
+    signal, so a false "whole" STOPS the download and caches the truncation.
+
+    Real government PDFs satisfy the stricter rule — verified against the five
+    documents fetched on 2026-08-29, whose tails are ``...startxref\r\n<n>\r\n
+    %%EOF\r\n``. Trailing whitespace after the marker is permitted by the spec
+    and is stripped before the comparison.
+    """
+    _verify_pdf_magic(path, url)
+    try:
+        size = path.stat().st_size
+        with path.open("rb") as handle:
+            handle.seek(max(0, size - 2048))
+            tail = handle.read()
+    except OSError as exc:  # pragma: no cover - defensive
+        raise PdfDownloadError(
+            f"could not read downloaded file for {url}: {exc}"
+        ) from exc
+    if not tail.rstrip().endswith(b"%%EOF"):
+        where = "no %%EOF trailer" if b"%%EOF" not in tail else (
+            "%%EOF present but not final — this is a truncated incremental "
+            "revision, not a whole document"
+        )
+        raise PdfDownloadError(
+            f"downloaded PDF is truncated ({size} bytes, {where}): {url}"
+        )
+
+
+def _looks_like_whole_pdf(path: Path) -> bool:
+    """Boolean form of :func:`_verify_pdf_complete`, for the download loop.
+
+    The transport layer has no Content-Length to work with, so it asks this
+    after each pass to decide whether the document is finished.
+    """
+    try:
+        _verify_pdf_complete(path, "<in-progress>")
+        return True
+    except PdfDownloadError:
+        return False
 
 
 def get_or_download_pdf(
@@ -126,32 +213,51 @@ def get_or_download_pdf(
         )
         return pdf_path
 
+    part_path = _part_path(cache_dir, url)
+    resumed_from = part_path.stat().st_size if part_path.exists() else 0
     logger.info(
-        "PDF cache miss; streaming download (cap %.0fs): %s", max_seconds, url
+        "PDF cache miss; streaming download (cap %.0fs, resuming from %d "
+        "bytes): %s",
+        max_seconds,
+        resumed_from,
+        url,
     )
-    # Temp file in the same directory as the cache so os.replace() is atomic
-    # (a rename across filesystems is not).
-    fd, tmp_name = tempfile.mkstemp(
-        suffix=".pdf", prefix="pdf_dl_", dir=str(cache_dir)
-    )
-    os.close(fd)
-    tmp_path = Path(tmp_name)
     try:
         size = client.download_to_file(
             url,
-            tmp_path,
+            pdf_path,
             max_seconds=max_seconds,
             max_bytes=max_bytes,
             headers=headers,
+            # Durable partial: kept on timeout so the next run continues
+            # instead of restarting. Without this a document slower than the
+            # cap can never be fetched at all.
+            resume_part=part_path,
+            completion_check=_looks_like_whole_pdf,
         )
-        _verify_pdf_magic(tmp_path, url)
-        os.replace(tmp_path, pdf_path)
-    except BaseException:
-        # Clean up the partial temp on ANY failure (incl. a SIGALRM-driven
-        # DomainTimeoutError) — then re-raise unchanged so the caller's
-        # fallback / the CLI handler still sees the original exception.
-        tmp_path.unlink(missing_ok=True)
+        # Header AND trailer: these servers send no Content-Length, so a
+        # truncated body is otherwise indistinguishable from a whole one.
+        _verify_pdf_complete(pdf_path, url)
+    except PdfDownloadIncomplete as exc:
+        logger.warning(
+            "PDF download incomplete: %d bytes on disk (advanced %d bytes "
+            "this run). Progress RETAINED — the next run resumes from here. "
+            "%s",
+            exc.bytes_downloaded,
+            exc.bytes_downloaded - resumed_from,
+            url,
+        )
         raise
+    except BaseException:
+        # A completed-but-invalid body (wrong magic, truncated, byte cap) is
+        # not resumable progress — drop the partial so the next run restarts
+        # clean, then re-raise unchanged for the caller's fallback.
+        part_path.unlink(missing_ok=True)
+        pdf_path.unlink(missing_ok=True)
+        raise
+    else:
+        # Whole, validated PDF is now at pdf_path; the partial is spent.
+        part_path.unlink(missing_ok=True)
 
     # Metadata is best-effort. The PDF is already safely in place, so a failed
     # sidecar write must NOT turn a successful download into an exception (which

@@ -23,6 +23,7 @@ from .config import SeedingSettings, get_settings
 from .logging import configure_logging
 from .registries import REGISTRY, load_builtin_domains
 from .types import DomainRunContext, DomainRunResult
+from . import freshness
 
 
 def _parse_since(value: Optional[str]) -> Optional[datetime]:
@@ -178,6 +179,10 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
             status = 1
             continue
 
+        # Clear any provenance recorded by a previous domain so this run's
+        # live-vs-fixture verdict cannot inherit a stale one.
+        freshness.reset(domain)
+
         started_at = datetime.now(timezone.utc)
         result: Optional[DomainRunResult] = None
         job_id: Optional[int] = None
@@ -248,8 +253,31 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
                     job.meta = dict(job.meta or {})
                     job.meta.update(result.metadata)
 
+                # Record WHERE the data came from. A domain that silently
+                # served a git-tracked fixture used to be indistinguishable
+                # from one that reached the publisher and found nothing new —
+                # that is how three domains stayed frozen for months while
+                # the nightly reported [OK] (see seeding/freshness.py).
+                provenance = freshness.get(domain)
+                job.meta = dict(job.meta or {})
+                job.meta["source_mode"] = provenance.get("mode")
+                if provenance.get("reason"):
+                    job.meta["source_fallback_reason"] = provenance["reason"]
+                if provenance.get("detail"):
+                    job.meta["source_detail"] = provenance["detail"]
+
                 if result and result.errors:
                     job.status = IngestionStatus.COMPLETED_WITH_ERRORS
+                elif provenance.get("mode") == freshness.FIXTURE:
+                    # Not an error, but NOT a clean success either: nothing
+                    # authoritative was ingested. Surfacing it as
+                    # completed_with_errors makes the nightly print [WARN]
+                    # instead of [OK] without failing the whole run.
+                    job.status = IngestionStatus.COMPLETED_WITH_ERRORS
+                    job.errors = list(job.errors or []) + [
+                        f"served from fixture, not the publisher "
+                        f"(reason={provenance.get('reason')})"
+                    ]
                 else:
                     job.status = IngestionStatus.COMPLETED
 

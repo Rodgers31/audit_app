@@ -18,6 +18,14 @@ from typing import Any, Dict, List, Optional, Tuple
 import httpx  # For internal API calls
 import uvicorn
 from config.settings import settings
+from services.publication_gate import (
+    count_withheld_audits,
+    file_source_provenance_failure,
+    log_withheld_audits,
+    missing_funds_provenance_failure,
+    publishable_audit_criterion,
+)
+from seeding.source_registry import next_expected_window
 from services.trust_guards import (
     check_budget_sectors,
     check_coverage_staleness,
@@ -1398,6 +1406,60 @@ def _redis_cache_instances():
         pass
 
 
+def _parse_missing_funds_amount(raw: Any) -> Optional[float]:
+    """KES amount, or None when it cannot be read.
+
+    Returns None — never 0.0 — for a missing or malformed value.
+    Reported by review on PR #135: this used to fall back to 0.0, so a
+    case that passed the provenance gate but carried an unreadable amount
+    was published with ``amount: 0`` and summed into the totals. That is
+    the manufactured zero this endpoint exists to remove, recreated for a
+    SOURCED case, which is the worst version of it — the citation makes
+    the zero look confirmed.
+    """
+    if isinstance(raw, bool):  # a bool is an int; never a money value
+        return None
+    if isinstance(raw, (int, float)):
+        return float(raw)
+    if not isinstance(raw, str):
+        return None
+    s = raw.upper().replace("KES", "").replace(",", "").strip()
+    mult = 1.0
+    if s.endswith("B"):
+        mult = 1e9
+        s = s[:-1]
+    elif s.endswith("M"):
+        mult = 1e6
+        s = s[:-1]
+    elif s.endswith("K"):
+        mult = 1e3
+        s = s[:-1]
+    try:
+        return float(s) * mult
+    except ValueError:
+        return None
+
+
+def _declared_row_unit(rows, default: str = "billion_kes") -> str:
+    """Response-level unit DERIVED from the rows, never hardcoded.
+
+    Reported by review on PR #136: ``/fiscal/summary`` and ``/debt/timeline``
+    returned rows carrying ``unit="KES"`` (raw KES, since the stage1 3a
+    migration) inside a response whose ``_meta.unit`` still said
+    ``"billion_kes"``. A client that trusts the response metadata — the field
+    that exists precisely to be trusted — scales by 1e9 the wrong way. That is
+    the same units hazard that forced the 2026-08-30 production migration to be
+    rolled back, in a second place.
+
+    Derived rather than flipped to a new constant, because the same code runs
+    against an un-migrated database (rows with ``unit`` NULL are bare billions)
+    and must keep telling the truth there too. Mixed rows report the
+    conservative default so nothing is silently rescaled mid-series.
+    """
+    units = {getattr(r, "unit", None) for r in rows}
+    return "KES" if units == {"KES"} else default
+
+
 def cached(key_prefix: str, ttl: int = 3600):
     """Decorator to cache endpoint responses.
 
@@ -1939,7 +2001,7 @@ async def get_country_summary(country_id: int):
 
                 # Recent audit findings
                 recent_audits_db = (
-                    db.query(DBAudit).order_by(DBAudit.created_at.desc()).limit(5).all()
+                    db.query(DBAudit).filter(publishable_audit_criterion()).order_by(DBAudit.created_at.desc()).limit(5).all()
                 )
                 recent_audits = []
                 for a in recent_audits_db:
@@ -2237,6 +2299,7 @@ async def get_counties(fiscal_year: Optional[str] = None):
             # Fabricated/modelled rows are gated out — display-grade only.
             all_audits = (
                 db.query(DBAudit)
+                .filter(publishable_audit_criterion())
                 .filter(DBAudit.entity_id.in_(entity_ids))
                 .order_by(DBAudit.entity_id, DBAudit.created_at.desc())
                 .all()
@@ -2649,6 +2712,7 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                         a
                         for a in (
                             db.query(DBAudit)
+                            .filter(publishable_audit_criterion())
                             .filter(DBAudit.entity_id == e.id)
                             .order_by(DBAudit.created_at.desc())
                             .all()
@@ -2834,7 +2898,6 @@ async def get_county_comprehensive(
             metrics = _resolve_fy_metrics(meta)
             financial_metrics_meta = meta.get("financial_metrics") or {}
             economic_profile = meta.get("economic_profile") or {}
-            audit_summary_meta = meta.get("audit_summary") or {}
 
             # --- Population ---
             pop = (
@@ -2959,6 +3022,7 @@ async def get_county_comprehensive(
                 a
                 for a in (
                     db.query(DBAudit)
+                    .filter(publishable_audit_criterion())
                     .filter(DBAudit.entity_id == entity.id)
                     .order_by(DBAudit.created_at.desc())
                     .all()
@@ -2968,7 +3032,10 @@ async def get_county_comprehensive(
 
             audit_findings = []
             by_severity = {"info": 0, "warning": 0, "critical": 0}
+            # `0.0` here reads as "the Auditor-General questioned nothing".
+            # Track whether any published finding actually carried an amount.
             total_audit_amount = 0.0
+            any_audit_amount = False
             for a in audits:
                 sev = a.severity.value if a.severity else "info"
                 by_severity[sev] = by_severity.get(sev, 0) + 1
@@ -3017,6 +3084,8 @@ async def get_county_comprehensive(
                             amount = float(cleaned)
                         except ValueError:
                             pass
+                if amount:
+                    any_audit_amount = True
                 total_audit_amount += amount
 
                 audit_findings.append(
@@ -3076,8 +3145,59 @@ async def get_county_comprehensive(
                 grade = "B-"
 
             # --- Missing funds ---
-            missing_funds_cases = meta.get("missing_funds_cases") or []
-            missing_funds_total = float(financial_metrics_meta.get("missing_funds", 0))
+            # Same publication gate as /accountability/missing-funds: a case
+            # that names a county but resolves to no source document is not
+            # served here either (AUDIT_FINDINGS F5.3). The stored rows are
+            # retained; they are withheld from the response with a reason.
+            _raw_missing_cases = meta.get("missing_funds_cases") or []
+            if not isinstance(_raw_missing_cases, list):
+                _raw_missing_cases = []
+            _missing_doc_ids = set()
+            for _c in _raw_missing_cases:
+                if isinstance(_c, dict) and _c.get("source_document_id") not in (None, ""):
+                    try:
+                        _missing_doc_ids.add(int(_c["source_document_id"]))
+                    except (TypeError, ValueError):
+                        continue
+            _missing_docs = {}
+            if _missing_doc_ids:
+                _missing_docs = {
+                    d.id: d
+                    for d in db.query(DBSourceDocument)
+                    .filter(DBSourceDocument.id.in_(_missing_doc_ids))
+                    .all()
+                }
+            missing_funds_cases = []
+            missing_funds_withheld = {}
+            for _c in _raw_missing_cases:
+                if not isinstance(_c, dict):
+                    continue
+                _fail = missing_funds_provenance_failure(_c, _missing_docs)
+                if _fail:
+                    missing_funds_withheld[_fail] = (
+                        missing_funds_withheld.get(_fail, 0) + 1
+                    )
+                    continue
+                missing_funds_cases.append(_c)
+
+            # The stored ``missing_funds`` metric is a modelled figure with no
+            # extraction behind it, and it disagreed with its own case list by
+            # 8.2x. Publish a total only when it is the sum of sourced cases.
+            missing_funds_total = (
+                sum(
+                    _parse_kes_amount_str(_c.get("amount")) or 0.0
+                    for _c in missing_funds_cases
+                )
+                if missing_funds_cases
+                else None
+            )
+            if missing_funds_withheld:
+                logger.warning(
+                    "county %s: withheld %d unsourced missing-funds case(s) (%s)",
+                    county_id,
+                    sum(missing_funds_withheld.values()),
+                    ", ".join(f"{k}={v}" for k, v in sorted(missing_funds_withheld.items())),
+                )
 
             # --- Stalled projects ---
             stalled_projects = meta.get("stalled_projects") or []
@@ -3246,7 +3366,12 @@ async def get_county_comprehensive(
                     "grade": grade,
                     "health_score": round(health_score, 1),
                     "findings_count": len(audits),
-                    "total_amount_involved": total_audit_amount,
+                    "total_amount_involved": (
+                        total_audit_amount if any_audit_amount else None
+                    ),
+                    "total_amount_involved_reason": (
+                        None if any_audit_amount else "awaiting_sourced_data"
+                    ),
                     "by_severity": by_severity,
                     "findings": audit_findings,
                 },
@@ -3255,16 +3380,13 @@ async def get_county_comprehensive(
                 # Missing funds
                 "missing_funds": {
                     "total_amount": missing_funds_total,
-                    "cases_count": (
-                        len(missing_funds_cases)
-                        if isinstance(missing_funds_cases, list)
-                        else 0
-                    ),
-                    "cases": (
-                        missing_funds_cases
-                        if isinstance(missing_funds_cases, list)
-                        else []
-                    ),
+                    "cases_count": len(missing_funds_cases),
+                    "cases": missing_funds_cases,
+                    "reason": None if missing_funds_cases else "awaiting_sourced_data",
+                    "withheld": {
+                        "count": sum(missing_funds_withheld.values()),
+                        "by_reason": missing_funds_withheld,
+                    },
                 },
                 # Stalled projects
                 "stalled_projects": {
@@ -3631,11 +3753,12 @@ async def get_audit_statistics():
             from sqlalchemy import case, func
 
             # Total counts
-            total = db.query(func.count(DBAudit.id)).scalar() or 0
+            total = db.query(func.count(DBAudit.id)).filter(publishable_audit_criterion()).scalar() or 0
 
             # By severity
             severity_rows = (
                 db.query(DBAudit.severity, func.count(DBAudit.id))
+                .filter(publishable_audit_criterion())
                 .group_by(DBAudit.severity)
                 .all()
             )
@@ -3648,6 +3771,7 @@ async def get_audit_statistics():
                     func.count(DBAudit.id).label("finding_count"),
                 )
                 .join(DBEntity, DBAudit.entity_id == DBEntity.id)
+                .filter(publishable_audit_criterion())
                 .filter(DBAudit.severity == Severity.CRITICAL)
                 .group_by(DBEntity.canonical_name)
                 .order_by(func.count(DBAudit.id).desc())
@@ -3658,6 +3782,7 @@ async def get_audit_statistics():
             # Recent critical findings (most recent 6)
             recent_critical = (
                 db.query(DBAudit, DBEntity.canonical_name)
+                .filter(publishable_audit_criterion())
                 .join(DBEntity, DBAudit.entity_id == DBEntity.id)
                 .filter(DBAudit.severity == Severity.CRITICAL)
                 .order_by(DBAudit.created_at.desc())
@@ -3696,7 +3821,7 @@ async def get_audit_statistics():
 
             # Counties audited count
             counties_audited = (
-                db.query(func.count(func.distinct(DBAudit.entity_id))).scalar() or 0
+                db.query(func.count(func.distinct(DBAudit.entity_id))).filter(publishable_audit_criterion()).scalar() or 0
             )
 
             # Total amount involved across all findings — prefer the
@@ -3706,6 +3831,7 @@ async def get_audit_statistics():
             # pull the entire text column across the wire when unnecessary.
             amount_from_col = (
                 db.query(func.coalesce(func.sum(DBAudit.amount), 0))
+                .filter(publishable_audit_criterion())
                 .filter(DBAudit.amount.isnot(None))
                 .scalar()
                 or 0.0
@@ -3714,6 +3840,7 @@ async def get_audit_statistics():
             fallback_amount = 0.0
             for (text_val,) in (
                 db.query(DBAudit.finding_text)
+                .filter(publishable_audit_criterion())
                 .filter(DBAudit.amount.is_(None))
                 .all()
             ):
@@ -3726,10 +3853,14 @@ async def get_audit_statistics():
                             pass
             total_amount = float(amount_from_col) + fallback_amount
 
+            _withheld_stats = count_withheld_audits(db)
+            log_withheld_audits("/audits/statistics", _withheld_stats, total)
+
             # Latest fiscal year covered by the Audit table (derived, NOT hardcoded)
             latest_period_label = (
                 db.query(DBFiscalPeriod.label)
                 .join(DBAudit, DBAudit.period_id == DBFiscalPeriod.id)
+                .filter(publishable_audit_criterion())
                 .order_by(DBFiscalPeriod.start_date.desc())
                 .limit(1)
                 .scalar()
@@ -3740,6 +3871,7 @@ async def get_audit_statistics():
                     row[0]
                     for row in db.query(DBFiscalPeriod.label)
                     .join(DBAudit, DBAudit.period_id == DBFiscalPeriod.id)
+                    .filter(publishable_audit_criterion())
                     .distinct()
                     .all()
                     if row[0]
@@ -3753,12 +3885,13 @@ async def get_audit_statistics():
 
             _audit_doc_ids = [
                 row[0]
-                for row in db.query(DBAudit.source_document_id).distinct().all()
+                for row in db.query(DBAudit.source_document_id).filter(publishable_audit_criterion()).distinct().all()
                 if row[0]
             ]
 
             return {
                 "total_findings": total,
+                "withheld_findings": _withheld_stats,
                 "counties_audited": counties_audited,
                 "total_counties": 47,
                 "total_amount_flagged": total_amount,
@@ -3854,6 +3987,17 @@ def _parse_kes_amount_str(value) -> "float | None":
         return None
 
 
+# The Blue Book covers ministries, state departments, commissions and
+# independent offices (Article 229). The federal panel must show all of
+# them; "Top Ministries" below stays MINISTRY-only by design.
+FEDERAL_AUDIT_ENTITY_TYPES = [
+    EntityType.MINISTRY,
+    EntityType.NATIONAL,
+    EntityType.COMMISSION,
+    EntityType.AGENCY,
+]
+
+
 @app.get("/api/v1/audits/federal")
 @cached(key_prefix="audits:federal", ttl=3600)
 async def get_federal_audits():
@@ -3872,8 +4016,9 @@ async def get_federal_audits():
             # Get all federal findings (MINISTRY + NATIONAL entities)
             federal_audits = (
                 db.query(DBAudit, DBEntity)
+                .filter(publishable_audit_criterion())
                 .join(DBEntity, DBAudit.entity_id == DBEntity.id)
-                .filter(DBEntity.type.in_([EntityType.MINISTRY, EntityType.NATIONAL]))
+                .filter(DBEntity.type.in_(FEDERAL_AUDIT_ENTITY_TYPES))
                 .order_by(DBAudit.severity.desc(), DBAudit.created_at.desc())
                 .all()
             )
@@ -3882,6 +4027,10 @@ async def get_federal_audits():
 
             findings = []
             total_amount = 0.0
+            # "no publishable finding carries an amount" is not "the amount is
+            # zero". Track whether anything was actually parsed so the response
+            # can say null instead of 0.0 (AUDIT_FINDINGS P1).
+            any_amount_parsed = False
             severity_counts = {}
 
             for audit, entity in federal_audits:
@@ -3894,6 +4043,7 @@ async def get_federal_audits():
                 report_section = ""
                 date_raised = ""
 
+                prov = {}
                 if audit.provenance and isinstance(audit.provenance, list):
                     prov = audit.provenance[0] if audit.provenance else {}
                     amount_str = prov.get("amount_involved", "")
@@ -3921,6 +4071,17 @@ async def get_federal_audits():
                     except (ValueError, TypeError):
                         amount_val = 0.0
 
+                # Extraction-backed rows (Stage 2) carry the figure in the
+                # `amount` column — set only when the paragraph cites exactly
+                # one Kshs figure. Prefer it over the legacy provenance
+                # string; never invent one when both are absent.
+                if audit.amount is not None:
+                    amount_val = float(audit.amount)
+                    if not amount_str:
+                        amount_str = f"KES {amount_val:,.0f}"
+
+                if amount_str and amount_val:
+                    any_amount_parsed = True
                 total_amount += amount_val
                 sev_key = (audit.severity.value if audit.severity else "INFO").upper()
                 severity_counts[sev_key] = severity_counts.get(sev_key, 0) + 1
@@ -3935,6 +4096,11 @@ async def get_federal_audits():
                         "recommended_action": audit.recommended_action,
                         "amount_involved": amount_str,
                         "amount_numeric": amount_val,
+                        # Provenance a reader can follow: the page of the
+                        # source PDF this finding was extracted from.
+                        "title": prov.get("title") or None,
+                        "page_ref": audit.page_ref,
+                        "source_url": prov.get("source_url") or None,
                         "status": status,
                         "category": category,
                         "query_type": query_type,
@@ -3964,7 +4130,31 @@ async def get_federal_audits():
                     opinion_summary = nat_data.get("audit_opinion_summary", {})
                     report_meta = nat_data.get("metadata", {})
             except Exception:
-                pass
+                logging.exception(
+                    "could not read %s; its figures are withheld", nat_path
+                )
+                opinion_summary, report_meta = {}, {}
+
+            # Provenance-or-nothing applies to a file exactly as it does to a
+            # row. This file holds the same 24 amounts as the quarantined
+            # audits rows (sum KES 3,313,000,000,000, 22 of 24 identical) and
+            # cites only "https://www.oagkenya.go.ke" — a homepage, not a
+            # document. Gating the database while serving this would leave the
+            # same fabricated dataset reachable through its second copy.
+            _file_failure = file_source_provenance_failure(report_meta)
+            if _file_failure:
+                logger.warning(
+                    "/audits/federal: withholding every figure from "
+                    "oag_national_audit_data.json — %s",
+                    _file_failure,
+                )
+                opinion_summary = {}
+                report_meta = {}
+
+            _withheld_federal = count_withheld_audits(
+                db, entity_types=FEDERAL_AUDIT_ENTITY_TYPES
+            )
+            log_withheld_audits("/audits/federal", _withheld_federal, len(findings))
 
             # Ministries with most findings
             top_ministries = (
@@ -3973,6 +4163,7 @@ async def get_federal_audits():
                     func.count(DBAudit.id).label("count"),
                 )
                 .join(DBEntity, DBAudit.entity_id == DBEntity.id)
+                .filter(publishable_audit_criterion())
                 .filter(DBEntity.type == EntityType.MINISTRY)
                 .group_by(DBEntity.canonical_name)
                 .order_by(func.count(DBAudit.id).desc())
@@ -3986,8 +4177,9 @@ async def get_federal_audits():
                 db.query(DBFiscalPeriod.label)
                 .join(DBAudit, DBAudit.period_id == DBFiscalPeriod.id)
                 .join(DBEntity, DBAudit.entity_id == DBEntity.id)
+                .filter(publishable_audit_criterion())
                 .filter(
-                    DBEntity.type.in_([EntityType.MINISTRY, EntityType.NATIONAL])
+                    DBEntity.type.in_(FEDERAL_AUDIT_ENTITY_TYPES)
                 )
                 .order_by(DBFiscalPeriod.start_date.desc())
                 .limit(1)
@@ -4000,9 +4192,10 @@ async def get_federal_audits():
                         db.query(DBFiscalPeriod.label)
                         .join(DBAudit, DBAudit.period_id == DBFiscalPeriod.id)
                         .join(DBEntity, DBAudit.entity_id == DBEntity.id)
+                        .filter(publishable_audit_criterion())
                         .filter(
                             DBEntity.type.in_(
-                                [EntityType.MINISTRY, EntityType.NATIONAL]
+                                FEDERAL_AUDIT_ENTITY_TYPES
                             )
                         )
                         .distinct()
@@ -4021,9 +4214,10 @@ async def get_federal_audits():
                     db.query(DBSourceDocument)
                     .join(DBAudit, DBAudit.source_document_id == DBSourceDocument.id)
                     .join(DBEntity, DBAudit.entity_id == DBEntity.id)
+                    .filter(publishable_audit_criterion())
                     .filter(
                         DBEntity.type.in_(
-                            [EntityType.MINISTRY, EntityType.NATIONAL]
+                            FEDERAL_AUDIT_ENTITY_TYPES
                         )
                     )
                     .order_by(DBSourceDocument.fetch_date.desc())
@@ -4035,11 +4229,13 @@ async def get_federal_audits():
             # — NOT the global FISCAL_LABEL the audits happen to be attached
             # to in the DB (audit §3.8). Fall back to DB-derived values.
             report_fy = report_meta.get("fiscal_year") or latest_period_label
+            # No literal fallback: naming a report when nothing resolves to
+            # one asserts a document exists that a reader cannot reach.
             derived_report_title = (
                 report_meta.get("report_title")
                 or (latest_source.title if latest_source and latest_source.title else None)
                 or opinion_summary.get("report_title")
-                or "Report of the Auditor General on the National Government"
+                or None
             )
             derived_report_date = report_meta.get("report_date") or (
                 latest_source.fetch_date.date().isoformat()
@@ -4059,18 +4255,11 @@ async def get_federal_audits():
                 if latest_source and latest_source.publisher
                 else "Office of the Auditor General of Kenya"
             )
-            # Severity distribution: prefer the OAG report's own counts so the
-            # donut isn't inflated by the seed's "high"->CRITICAL mapping
-            # (audit §3.3). key_statistics splits critical/significant/minor.
-            ks = opinion_summary.get("key_statistics", {})
-            if ks.get("critical_findings") is not None:
-                by_severity = {
-                    "CRITICAL": ks.get("critical_findings", 0),
-                    "WARNING": ks.get("significant_findings", 0),
-                    "INFO": ks.get("minor_findings", 0),
-                }
-            else:
-                by_severity = severity_counts
+            # Severity distribution must describe the findings this response
+            # actually publishes. It previously preferred the JSON's own counts,
+            # which summed to 25 beside a total_findings of 1 — a histogram
+            # describing rows the same response said were withheld.
+            by_severity = severity_counts
 
             return {
                 "report_title": derived_report_title,
@@ -4078,7 +4267,10 @@ async def get_federal_audits():
                 "fiscal_year": report_fy,
                 "fiscal_years_covered": derived_fiscal_years_covered,
                 "report_date": derived_report_date,
-                "opinion_type": opinion_summary.get("opinion_type", "Qualified"),
+                # "Qualified" is an audit opinion attributed to the
+                # Auditor-General. Defaulting it made the page assert one even
+                # when the file was unreadable.
+                "opinion_type": opinion_summary.get("opinion_type") or None,
                 "total_findings": len(findings),
                 # Headline "Amount Questioned" = the OAG report's own
                 # authoritative questioned total, NOT a naive sum of every
@@ -4087,18 +4279,71 @@ async def get_federal_audits():
                 "total_amount_questioned": _parse_kes_amount_str(
                     opinion_summary.get("total_amount_questioned", "")
                 ),
-                "total_amount_questioned_label": opinion_summary.get(
-                    "total_amount_questioned", ""
+                # The label is a second copy of the same figure. Nulling only
+                # the number would leave "KES 981.3B" rendering from here —
+                # the frontend falls back to it (AuditReportsSection:205-207).
+                "total_amount_questioned_label": (
+                    opinion_summary.get("total_amount_questioned") or None
                 ),
+                "total_amount_questioned_reason": _file_failure or None,
                 # Transparency only: the raw sum across all finding amounts.
                 # NOT the questioned headline (see above).
-                "total_amount_in_findings": total_amount,
-                "by_severity": by_severity,
-                "basis_for_qualification": opinion_summary.get(
-                    "basis_for_qualification", []
+                "total_amount_in_findings": (
+                    total_amount if any_amount_parsed else None
                 ),
-                "emphasis_of_matter": opinion_summary.get("emphasis_of_matter", []),
-                "key_statistics": opinion_summary.get("key_statistics", {}),
+                "total_amount_in_findings_reason": (
+                    None
+                    if any_amount_parsed
+                    else (
+                        "awaiting_sourced_data"
+                        if _withheld_federal
+                        else "no_amounts_recorded"
+                    )
+                ),
+                # Findings excluded because their source document has no URL a
+                # reader could open. Retained in the database, not served here.
+                "withheld_findings": _withheld_federal,
+                "by_severity": by_severity,
+                # When the gate leaves nothing to publish, say why and when
+                # the next OAG publication is expected — both machine-readable
+                # so the frontend renders a real empty state instead of a
+                # blank panel (or a hand-written schedule that drifts). The
+                # window comes from the Layer-1 source registry.
+                "findings_reason": (
+                    None
+                    if findings
+                    else (
+                        "awaiting_sourced_data"
+                        if _withheld_federal
+                        else "no_findings_recorded"
+                    )
+                ),
+                "next_expected": (
+                    None
+                    if findings
+                    else next_expected_window(
+                        "oag_national_audits",
+                        datetime.datetime.now(datetime.timezone.utc).date(),
+                    )
+                ),
+                # Prose, but it quotes the quarantined figures: "Unexplained
+                # Consolidated Fund balance differences of KES 156.8 billion".
+                # Dropping the numeric fields alone leaves the numbers on the
+                # page.
+                "basis_for_qualification": opinion_summary.get(
+                    "basis_for_qualification"
+                )
+                or [],
+                "emphasis_of_matter": opinion_summary.get("emphasis_of_matter") or [],
+                "key_statistics": opinion_summary.get("key_statistics") or {},
+                "ministries_with_adverse_findings": opinion_summary.get(
+                    "ministries_with_adverse_findings"
+                ),
+                "ministries_with_clean_findings": opinion_summary.get(
+                    "ministries_with_clean_findings"
+                ),
+                # Why the block above is empty, when it is.
+                "opinion_summary_reason": _file_failure or None,
                 "findings": findings,
                 "top_ministries": [
                     {"ministry": name, "finding_count": count}
@@ -4160,6 +4405,7 @@ async def get_county_audits(county_id: str):
                     # Query audits from database
                     audits = (
                         db.query(DBAudit)
+                        .filter(publishable_audit_criterion())
                         .filter(DBAudit.entity_id == entity.id)
                         .order_by(DBAudit.created_at.desc())
                         .all()
@@ -4457,7 +4703,7 @@ async def list_county_audits(
                 .all()
             ]
 
-            query = db.query(DBAudit)
+            query = db.query(DBAudit).filter(publishable_audit_criterion())
             if entity_ids:
                 query = query.filter(DBAudit.entity_id.in_(entity_ids))
 
@@ -4609,7 +4855,16 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
     Returns dict with opinion history, flagged amounts, recurring/unresolved
     findings, absorption rate, grade, and peer comparison.
     """
-    audits = db.query(DBAudit).filter(DBAudit.entity_id == entity.id).all()
+    audits = (
+        db.query(DBAudit)
+        .filter(publishable_audit_criterion())
+        .filter(DBAudit.entity_id == entity.id)
+        .all()
+    )
+    # Findings held back for this county because their source document has no
+    # URL a reader could open. Counted so the omission is visible in the
+    # response rather than inferred from a suspiciously clean scorecard.
+    withheld_findings = count_withheld_audits(db, entity_id=entity.id)
 
     # --- audit_opinion_history ---
     opinion_by_year: Dict[int, str] = {}
@@ -4663,7 +4918,16 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
         )
 
     # --- total_flagged_amount ---
-    total_flagged_amount = float(sum(float(a.amount or 0) for a in audits))
+    # `0.0` reads as "the OAG flagged nothing", which is itself a finding. When
+    # no publishable audit carries an amount we do not know the figure, so the
+    # answer is null plus a reason (AUDIT_FINDINGS P1).
+    _amounts = [float(a.amount) for a in audits if a.amount is not None]
+    total_flagged_amount = float(sum(_amounts)) if _amounts else None
+    total_flagged_amount_reason = (
+        None
+        if _amounts
+        else ("awaiting_sourced_data" if withheld_findings else "no_findings_recorded")
+    )
 
     # --- recurring_findings_count ---
     qt_years: Dict[str, set] = {}
@@ -4701,9 +4965,12 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
         round(total_spent / total_allocated, 4) if total_allocated > 0 else None
     )
 
-    # Flagged amount as % of current-FY budget (signal of audit severity)
+    # Flagged amount as % of current-FY budget (signal of audit severity).
+    # None when either side is unknown — never a 0% that reads as "clean".
     flagged_pct_of_budget = (
-        (total_flagged_amount / total_allocated * 100.0) if total_allocated > 0 else 0.0
+        (total_flagged_amount / total_allocated * 100.0)
+        if (total_flagged_amount is not None and total_allocated > 0)
+        else None
     )
 
     # --- accountability_score (0-100 point system) ---
@@ -4802,14 +5069,14 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
         )
 
     # Flagged amount material to budget
-    if flagged_pct_of_budget > 10:
+    if flagged_pct_of_budget is not None and flagged_pct_of_budget > 10:
         _penalise(
             10,
             "moderate",
             f"{flagged_pct_of_budget:.1f}% of budget flagged",
             ">10% of current-FY allocation",
         )
-    elif flagged_pct_of_budget > 5:
+    elif flagged_pct_of_budget is not None and flagged_pct_of_budget > 5:
         _penalise(
             5,
             "minor",
@@ -4853,6 +5120,50 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
         grade = "D"
     else:
         grade = "F"
+
+    # The score starts at 100 and subtracts penalties, so a county whose every
+    # finding was withheld triggers no penalty and lands on 100/"A". That is
+    # absence rendered as a clean bill of health — the exact defect the
+    # publication gate exists to prevent, arriving through the back door.
+    # With no publishable finding to reason from, there is no grade to give.
+    # The score starts at 100 and subtracts penalties, so a county with no
+    # findings triggers nothing and lands on 100/"A" — absence rendered as a
+    # clean bill of health, which is more misleading than a wrong number
+    # because a citizen reads it as their county passing an audit.
+    #
+    # 46 of 47 counties have zero audit rows (only Homa Bay has one), so this
+    # is the normal case, not an edge case. There is no grade to give.
+    evidence_basis = "publishable_findings"
+    accountability_reason = None
+    if total_findings == 0:
+        score = None
+        grade = None
+        if withheld_findings:
+            evidence_basis = "no_publishable_findings"
+            accountability_reason = "awaiting_sourced_data"
+            _detail = (
+                f"{withheld_findings} finding"
+                f"{'s' if withheld_findings != 1 else ''} withheld: the source "
+                "document has no URL a reader could open"
+            )
+        else:
+            # Distinguish "audited and clean" from "never audited here". This
+            # dataset holds no finding for this county either way, so it can
+            # support neither claim.
+            evidence_basis = "no_findings_recorded"
+            accountability_reason = "not_yet_audited_in_this_dataset"
+            _detail = (
+                "No Auditor-General finding for this county has been ingested "
+                "yet. This is not a finding that the county is clean."
+            )
+        grade_factors = [
+            {
+                "impact": "unknown",
+                "label": "Not enough sourced evidence to grade",
+                "detail": _detail,
+                "points": 0,
+            }
+        ]
 
     # --- peer_comparison ---
     region = COUNTY_REGIONS.get(county_id, "Unknown")
@@ -4920,7 +5231,7 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
     peer_audits_by_entity: Dict[int, List[Any]] = defaultdict(list)
     if peer_entity_ids:
         for pa in (
-            db.query(DBAudit).filter(DBAudit.entity_id.in_(peer_entity_ids)).all()
+            db.query(DBAudit).filter(publishable_audit_criterion()).filter(DBAudit.entity_id.in_(peer_entity_ids)).all()
         ):
             peer_audits_by_entity[pa.entity_id].append(pa)
 
@@ -4968,8 +5279,15 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
         if not peer_entity:
             continue
         peer_audits = peer_audits_by_entity.get(peer_entity.id, [])
-        peer_flagged = float(sum(float(pa.amount or 0) for pa in peer_audits))
-        region_flagged_amounts.append(peer_flagged)
+        # A peer with no recorded amount is UNKNOWN, not zero — the same rule
+        # the population-bracket path below already applies. Reported by
+        # review on PR #135: this appended 0 for every peer with no
+        # publishable amount (and `pa.amount or 0` coerced None to 0), so
+        # region_avg_flagged_amount was dragged toward zero by peers about
+        # which nothing is known, in the PR that exists to stop exactly that.
+        _peer_amounts = [float(pa.amount) for pa in peer_audits if pa.amount is not None]
+        if _peer_amounts:
+            region_flagged_amounts.append(float(sum(_peer_amounts)))
 
         # Simplified peer grade (opinion-based for efficiency)
         peer_opinions: Dict[int, str] = {}
@@ -4985,7 +5303,12 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
             latest_y = max(peer_opinions.keys())
             if peer_opinions[latest_y].lower() == "qualified" and pg == "A":
                 pg = "C"
-        region_grades.append(pg)
+            # Only a peer with a RECORDED opinion contributes a grade. The
+            # default "A" above is the starting point of the scan, not a
+            # verdict — appending it for a peer with no opinions graded
+            # absence as excellence and pulled region_avg_grade upward
+            # (PR #135 review).
+            region_grades.append(pg)
 
     # Population-bracket peers: iterate every county and keep same-bracket ones.
     for cid, cname in COUNTY_MAPPING.items():
@@ -4997,14 +5320,14 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
         cpop = peer_pop_by_entity.get(ce.id, 0)
         if _bracket_for(cpop) == pop_bracket:
             ca = peer_audits_by_entity.get(ce.id, [])
-            bracket_flagged_amounts.append(
-                float(sum(float(x.amount or 0) for x in ca))
-            )
+            _peer_amounts = [float(x.amount) for x in ca if x.amount is not None]
+            if _peer_amounts:  # a peer with no recorded amount is unknown, not 0
+                bracket_flagged_amounts.append(float(sum(_peer_amounts)))
 
     region_avg_flagged = (
         round(sum(region_flagged_amounts) / len(region_flagged_amounts), 2)
         if region_flagged_amounts
-        else 0.0
+        else None  # no peer data is not "peers flagged nothing"
     )
     region_avg_grade = (
         _num_to_grade(sum(_grade_to_num(g) for g in region_grades) / len(region_grades))
@@ -5014,7 +5337,7 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
     population_bracket_avg = (
         round(sum(bracket_flagged_amounts) / len(bracket_flagged_amounts), 2)
         if bracket_flagged_amounts
-        else 0.0
+        else None  # no peer data is not "peers flagged nothing"
     )
 
     peer_comparison = {
@@ -5031,15 +5354,24 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
         "audit_opinion_history": audit_opinion_history,
         "audit_severity_history": audit_severity_history,
         "total_flagged_amount": total_flagged_amount,
+        "total_flagged_amount_reason": total_flagged_amount_reason,
         "total_findings": total_findings,
         "critical_findings": critical_findings,
         "warning_findings": warning_findings,
         "recurring_findings_count": recurring_findings_count,
         "unresolved_findings_count": unresolved_findings_count,
         "absorption_rate": absorption_rate,
-        "flagged_pct_of_budget": round(flagged_pct_of_budget, 2),
+        "flagged_pct_of_budget": (
+            round(flagged_pct_of_budget, 2) if flagged_pct_of_budget is not None else None
+        ),
         "accountability_grade": grade,
-        "accountability_score": round(score, 1),
+        "accountability_score": round(score, 1) if score is not None else None,
+        "evidence_basis": evidence_basis,
+        "accountability_reason": accountability_reason,
+        "withheld": {
+            "count": withheld_findings,
+            "reason": "source_document_has_no_url" if withheld_findings else None,
+        },
         "grade_factors": grade_factors,
         "peer_comparison": peer_comparison,
     }
@@ -5112,7 +5444,7 @@ async def get_county_summary(county_id: str):
             budget_lines = _entity_period_budget_query(db, entity.id).all()
             total_allocated = sum(float(b.allocated_amount or 0) for b in budget_lines)
             total_spent = sum(float(b.actual_spent or 0) for b in budget_lines)
-            audits = db.query(DBAudit).filter(DBAudit.entity_id == entity.id).all()
+            audits = db.query(DBAudit).filter(publishable_audit_criterion()).filter(DBAudit.entity_id == entity.id).all()
 
             scorecard = _compute_accountability(db, entity, county_id)
 
@@ -5137,44 +5469,47 @@ async def get_county_summary(county_id: str):
 async def get_national_missing_funds():
     """National roll-up of missing-funds cases across all counties.
 
-    Aggregates ``missing_funds_cases`` entries from every county entity's
-    meta JSON. Each case carries an amount, a description of what's
-    unaccounted for, a status (active_investigation / resolved / etc.),
-    and the fiscal period the irregularity belongs to. Powers the
-    /accountability/missing-funds public page.
+    A case is served only if it resolves to a *(source document, page)*
+    pair whose document has a URL a reader can open. A case that names a
+    county but cannot be traced to a published report is withheld — it is
+    counted and reported under ``withheld``, never silently dropped, and
+    never rendered as a zero.
+
+    When nothing qualifies, ``total_amount`` is ``None`` (not ``0``) and
+    ``reason`` says why, so the page can say "not yet published" instead of
+    showing an unaccounted-for total of zero.
     """
     if not DATABASE_AVAILABLE:
         raise HTTPException(status_code=503, detail="Database unavailable")
+
+    published: List[Dict[str, Any]] = []
+    withheld_by_reason: Dict[str, int] = {}
+    county_totals: Dict[str, Dict[str, Any]] = {}
+    status_totals: Dict[str, float] = {}
 
     with next(get_db()) as db:
         counties = (
             db.query(DBEntity).filter(DBEntity.type == EntityType.COUNTY).all()
         )
 
-        def _parse_amount(raw: Any) -> float:
-            if isinstance(raw, (int, float)):
-                return float(raw)
-            if not isinstance(raw, str):
-                return 0.0
-            s = raw.upper().replace("KES", "").replace(",", "").strip()
-            mult = 1.0
-            if s.endswith("B"):
-                mult = 1e9
-                s = s[:-1]
-            elif s.endswith("M"):
-                mult = 1e6
-                s = s[:-1]
-            elif s.endswith("K"):
-                mult = 1e3
-                s = s[:-1]
-            try:
-                return float(s) * mult
-            except ValueError:
-                return 0.0
-
-        all_cases: List[Dict[str, Any]] = []
-        county_totals: Dict[str, Dict[str, Any]] = {}
-        status_totals: Dict[str, float] = {}
+        # Resolve every referenced document once, so the gate checks the real
+        # row rather than trusting an id that may point at nothing.
+        referenced_ids = set()
+        for county in counties:
+            for case in (county.meta or {}).get("missing_funds_cases") or []:
+                if isinstance(case, dict) and case.get("source_document_id") not in (None, ""):
+                    try:
+                        referenced_ids.add(int(case["source_document_id"]))
+                    except (TypeError, ValueError):
+                        continue
+        docs: Dict[int, Any] = {}
+        if referenced_ids:
+            docs = {
+                d.id: d
+                for d in db.query(DBSourceDocument)
+                .filter(DBSourceDocument.id.in_(referenced_ids))
+                .all()
+            }
 
         for county in counties:
             meta = county.meta or {}
@@ -5183,45 +5518,89 @@ async def get_national_missing_funds():
                 continue
             county_name = (county.canonical_name or "").replace(" County", "").strip()
             county_amount = 0.0
+            county_published = 0
+
             for case in cases:
                 if not isinstance(case, dict):
+                    withheld_by_reason["malformed_case"] = (
+                        withheld_by_reason.get("malformed_case", 0) + 1
+                    )
                     continue
-                amount = _parse_amount(case.get("amount"))
+
+                failure = missing_funds_provenance_failure(case, docs)
+                if failure is not None:
+                    withheld_by_reason[failure] = withheld_by_reason.get(failure, 0) + 1
+                    continue
+
+                doc = docs[int(case["source_document_id"])]
+                amount = _parse_missing_funds_amount(case.get("amount"))
+                if amount is None:
+                    # Sourced but unreadable. Withheld with its own reason
+                    # rather than published as 0 (PR #135 review): a reader
+                    # cannot tell "we could not read this figure" from "the
+                    # figure is nothing", and the citation makes the second
+                    # reading look authoritative.
+                    withheld_by_reason["amount_unreadable"] = (
+                        withheld_by_reason.get("amount_unreadable", 0) + 1
+                    )
+                    continue
                 status = (case.get("status") or "unknown").lower()
-                entry = {
-                    "case_id": case.get("case_id"),
-                    "county": case.get("county") or county_name,
-                    "county_id": county.meta.get("county_code") if county.meta else None,
-                    "amount": amount,
-                    "amount_label": case.get("amount"),
-                    "period": case.get("period"),
-                    "status": status,
-                    "description": case.get("description", ""),
-                }
-                all_cases.append(entry)
+                published.append(
+                    {
+                        "case_id": case.get("case_id"),
+                        "county": case.get("county") or county_name,
+                        "county_id": meta.get("county_code"),
+                        "amount": amount,
+                        "amount_label": case.get("amount"),
+                        "period": case.get("period"),
+                        "status": status,
+                        "description": case.get("description", ""),
+                        "source": {
+                            "document_id": doc.id,
+                            "title": doc.title,
+                            "publisher": doc.publisher,
+                            "url": doc.url,
+                            "page": case.get("page_ref") or case.get("page_number"),
+                        },
+                    }
+                )
                 county_amount += amount
+                county_published += 1
                 status_totals[status] = status_totals.get(status, 0.0) + amount
 
-            if county_amount > 0:
+            if county_published:
                 county_totals[county_name] = {
                     "county": county_name,
-                    "cases": len(cases),
+                    "cases": county_published,
                     "amount": county_amount,
                 }
 
-    all_cases.sort(key=lambda c: c["amount"], reverse=True)
+    withheld_total = sum(withheld_by_reason.values())
+    if withheld_total:
+        # Fail loud: an omission this large must be visible in the log, not
+        # inferred from a page that renders nothing.
+        logger.warning(
+            "missing-funds: withheld %d unsourced case(s) from the public "
+            "response (%s); %d published",
+            withheld_total,
+            ", ".join(f"{k}={v}" for k, v in sorted(withheld_by_reason.items())),
+            len(published),
+        )
+
+    published.sort(key=lambda c: c["amount"], reverse=True)
     top_counties = sorted(
         county_totals.values(), key=lambda c: c["amount"], reverse=True
     )[:10]
 
-    total_amount = sum(c["amount"] for c in all_cases)
     return {
-        "total_amount": total_amount,
-        "total_cases": len(all_cases),
+        "total_amount": (sum(c["amount"] for c in published) if published else None),
+        "total_cases": len(published),
         "affected_counties": len(county_totals),
         "by_status": status_totals,
         "top_counties": top_counties,
-        "cases": all_cases,
+        "cases": published,
+        "reason": None if published else "awaiting_sourced_data",
+        "withheld": {"count": withheld_total, "by_reason": withheld_by_reason},
     }
 
 
@@ -6845,19 +7224,26 @@ async def get_budget_overview():
 
             fiscal_rows = db.query(FSModel).order_by(FSModel.fiscal_year.asc()).all()
             fiscal_years = []
+
+            # This response declares fiscal_history_unit = "billion_kes";
+            # the table stores raw KES since the stage1 3a migration, so
+            # convert here to keep the declared unit truthful.
+            def _b(v) -> float:
+                return float(v or 0) / 1e9
+
             for r in fiscal_rows:
                 entry = {
                     "fiscal_year": r.fiscal_year,
-                    "appropriated_budget": float(r.appropriated_budget or 0),
-                    "total_revenue": float(r.total_revenue or 0),
-                    "tax_revenue": float(r.tax_revenue or 0),
-                    "non_tax_revenue": float(r.non_tax_revenue or 0),
-                    "total_borrowing": float(r.total_borrowing or 0),
+                    "appropriated_budget": _b(r.appropriated_budget),
+                    "total_revenue": _b(r.total_revenue),
+                    "tax_revenue": _b(r.tax_revenue),
+                    "non_tax_revenue": _b(r.non_tax_revenue),
+                    "total_borrowing": _b(r.total_borrowing),
                     "borrowing_pct_of_budget": float(r.borrowing_pct_of_budget or 0),
-                    "debt_service_cost": float(r.debt_service_cost or 0),
-                    "development_spending": float(r.development_spending or 0),
-                    "recurrent_spending": float(r.recurrent_spending or 0),
-                    "county_allocation": float(r.county_allocation or 0),
+                    "debt_service_cost": _b(r.debt_service_cost),
+                    "development_spending": _b(r.development_spending),
+                    "recurrent_spending": _b(r.recurrent_spending),
+                    "county_allocation": _b(r.county_allocation),
                 }
                 # Only include years with substantially complete data —
                 # World Bank back-fill years often only have 1-2 fields.
@@ -7329,12 +7715,13 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
             db.query(FiscalSummary).order_by(FiscalSummary.fiscal_year.desc()).first()
         )
 
-        budget_billion = (
+        # fiscal_summaries stores raw KES (stage1 3a migration).
+        budget_raw_kes = (
             float(latest_fiscal.appropriated_budget)
             if latest_fiscal and latest_fiscal.appropriated_budget
             else None
         )
-        revenue_billion = (
+        revenue_raw_kes = (
             float(latest_fiscal.total_revenue)
             if latest_fiscal and latest_fiscal.total_revenue
             else None
@@ -7349,23 +7736,23 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
             "unemployment_pct": econ_map.get("unemployment_rate"),
             "total_population": total_pop,
             "budget_to_gdp_pct": (
-                round((budget_billion / gdp_billion) * 100, 1)
-                if budget_billion and gdp_billion
+                round((budget_raw_kes / (gdp_billion * 1e9)) * 100, 1)
+                if budget_raw_kes and gdp_billion
                 else None
             ),
             "revenue_to_gdp_pct": (
-                round((revenue_billion / gdp_billion) * 100, 1)
-                if revenue_billion and gdp_billion
+                round((revenue_raw_kes / (gdp_billion * 1e9)) * 100, 1)
+                if revenue_raw_kes and gdp_billion
                 else None
             ),
             "per_capita_budget_kes": (
-                round((budget_billion * 1e9) / total_pop)
-                if budget_billion and total_pop
+                round(budget_raw_kes / total_pop)
+                if budget_raw_kes and total_pop
                 else None
             ),
             "per_capita_revenue_kes": (
-                round((revenue_billion * 1e9) / total_pop)
-                if revenue_billion and total_pop
+                round(revenue_raw_kes / total_pop)
+                if revenue_raw_kes and total_pop
                 else None
             ),
             "fiscal_year": latest_fiscal.fiscal_year if latest_fiscal else None,
@@ -7502,6 +7889,10 @@ async def get_debt_timeline(db: Session = Depends(get_db)):
                     "total": float(r.total),
                     "gdp": float(r.gdp) if r.gdp else None,
                     "gdp_ratio": float(r.gdp_ratio) if r.gdp_ratio else None,
+                    # The row's declared unit (stage1 3a): "KES" = raw KES.
+                    # Consumers convert on this field, never by guessing
+                    # magnitude — see F5.5.
+                    "unit": r.unit,
                 }
             )
 
@@ -7524,8 +7915,10 @@ async def get_debt_timeline(db: Session = Depends(get_db)):
         # surface any divergence so callers can display an honest badge.
         reconciliation: dict = {
             "primary_source": "debt_timeline_table",
+            # debt_timeline stores raw KES with a declared unit column
+            # (stage1 3a migration) — no scale factor.
             "primary_value_kes": (
-                float(rows[-1].total) * 1e9 if rows and rows[-1].total else None
+                float(rows[-1].total) if rows and rows[-1].total else None
             ),
             "secondary_source": "loans_table",
             "secondary_value_kes": None,
@@ -7597,7 +7990,7 @@ async def get_debt_timeline(db: Session = Depends(get_db)):
             "status": "success",
             "data_source": "database",
             "_meta": _response_meta(
-                unit="billion_kes",
+                unit=_declared_row_unit(rows),
                 entity_scope="national",
                 covers_through=covers_through_label,
                 cache_ttl_seconds=86400,
@@ -7646,6 +8039,8 @@ async def get_fiscal_summary(db: Session = Depends(get_db)):
         def _row_to_dict(r: FSModel) -> dict:
             return {
                 "fiscal_year": r.fiscal_year,
+                # The row's declared unit (stage1 3a): "KES" = raw KES.
+                "unit": r.unit,
                 "appropriated_budget": (
                     float(r.appropriated_budget) if r.appropriated_budget else None
                 ),
@@ -7686,11 +8081,45 @@ async def get_fiscal_summary(db: Session = Depends(get_db)):
                 "county_allocation": (
                     float(r.county_allocation) if r.county_allocation else None
                 ),
+                # WHICH measure the budget is: "cob_gross" (gross ministerial
+                # + Consolidated Fund Services) vs the Budget Policy Statement
+                # figure the series used to carry. Two legitimate numbers 12%
+                # apart, so the basis travels with the value.
+                "budget_basis": (r.meta or {}).get("budget_basis"),
+                "budget_basis_source": (r.meta or {}).get("budget_basis_source"),
+                "page_ref": r.page_ref,
             }
 
         all_fiscal_years = [_row_to_dict(r) for r in rows]
+
+        def _has_enacted_budget(fy: dict) -> bool:
+            """A budget read from an enacted Budget Estimates document.
+
+            Distinguishes a fiscal year that has genuinely begun and whose
+            budget Parliament has approved from a World Bank back-fill stub.
+            Both may carry a single populated field; only one of them is the
+            most authoritative figure we hold.
+            """
+            source = fy.get("budget_basis_source") or {}
+            return bool(
+                (fy.get("appropriated_budget") or 0) > 0
+                and fy.get("budget_basis")
+                and source.get("url")
+                and fy.get("page_ref")
+            )
+
         # Only include years with substantially complete data —
         # World Bank back-fill years often only have 1-2 fields.
+        #
+        # ...with one exception, added 2026-08-29. A fiscal year that has just
+        # STARTED has an enacted budget and no actuals: no revenue outturn, no
+        # debt-service outturn, no execution. Requiring three populated fields
+        # therefore hid FY2026/27 behind FY2025/26 from 1 July until COB's
+        # first quarterly report in mid-November — every year, by construction.
+        # The exception is deliberately narrow: the row must carry a declared
+        # budget basis, a source URL and a page reference, i.e. it must be
+        # traceable to the Budget Estimates document it came from. A World Bank
+        # stub has none of those and is still excluded.
         fiscal_years = [
             fy
             for fy in all_fiscal_years
@@ -7705,6 +8134,7 @@ async def get_fiscal_summary(db: Session = Depends(get_db)):
                 if (fy.get(k) or 0) > 0
             )
             >= 3
+            or _has_enacted_budget(fy)
         ]
         latest = fiscal_years[-1] if fiscal_years else all_fiscal_years[-1]
 
@@ -7757,7 +8187,7 @@ async def get_fiscal_summary(db: Session = Depends(get_db)):
             "status": "success",
             "data_source": "database",
             "_meta": _response_meta(
-                unit="billion_kes",
+                unit=_declared_row_unit(rows),
                 entity_scope="national",
                 quality_notes=_fiscal_quality_notes or None,
             ),
@@ -7807,9 +8237,9 @@ async def get_civic_figures(db: Session = Depends(get_db)):
         }
 
     def _fs_to_kes(value):
-        """FiscalSummary stores billion-KES (see `_response_meta(unit='billion_kes')`
-        and seeding/real_data/fiscal_summary.json), whereas GDPData and Loan
-        store RAW KES. Normalise the fiscal figures to raw KES so every figure
+        """FiscalSummary rows may be EITHER raw KES (post stage1 3a, where the
+        row declares unit="KES") or the older bare-billions convention, while
+        GDPData and Loan are always RAW KES. Normalise the fiscal figures to raw KES so every figure
         this endpoint emits shares one unit and the UI formats them uniformly.
         The < 1e7 guard scales the billions convention (~3e3-5e3) but leaves an
         already-raw value (~1e12) untouched, so a future unit change can't
@@ -8221,6 +8651,10 @@ def _latest_imf_debt_to_gdp(db):
 )  # 12 hours — national debt data changes infrequently
 async def get_national_debt():
     """Get national debt overview with categorized breakdown."""
+    # Distinguish "the database said there is nothing" from "we could not ask
+    # the database". Both used to return zeros, so an outage rendered as
+    # "Kenya owes KES 0.00T, LOW RISK" on the homepage.
+    _db_unreachable = False
     # Try database first
     if DATABASE_AVAILABLE:
         try:
@@ -8485,8 +8919,8 @@ async def get_national_debt():
                         "note": "",
                     }
                     if latest_timeline_row and latest_timeline_row.total:
-                        # DebtTimeline.total is in BILLIONS of KES.
-                        secondary_kes = float(latest_timeline_row.total) * 1e9
+                        # DebtTimeline stores raw KES (stage1 3a migration).
+                        secondary_kes = float(latest_timeline_row.total)
                         reconciliation["secondary_value_kes"] = secondary_kes
                         reconciliation["secondary_year"] = latest_timeline_row.year
                         if total_outstanding > 0:
@@ -8644,23 +9078,36 @@ async def get_national_debt():
                     }
         except Exception as e:
             logging.error(f"DB debt query failed: {e}")
+            _db_unreachable = True
 
-    # No hardcoded fallback — data must come from the database.
-    # Guide user to populate via the seeding pipeline.
+    # Absent is not zero. Returning 0 here rendered a database outage as a
+    # headline claim that Kenya has no national debt and is at LOW risk
+    # (classifyDebtRisk(0) -> "Low"). Every money field is null with a
+    # machine-readable reason so no client can turn a failure into a figure.
+    _reason = "source_unavailable" if _db_unreachable else "not_yet_seeded"
+    logging.warning(
+        "/debt/national returning no figures — reason=%s", _reason
+    )
     return {
         "status": "no_data",
-        "data_source": "database_empty",
+        "data_source": (
+            "database_unavailable" if _db_unreachable else "database_empty"
+        ),
+        "reason": _reason,
         "last_updated": None,
         "message": (
-            "No national debt data in database. "
+            "National debt figures are unavailable because the data source "
+            "could not be read. This is not a finding that debt is zero."
+            if _db_unreachable
+            else "No national debt data in database. "
             "Run: python -m seeding.cli seed --domain national_debt"
         ),
         "data": {
-            "total_debt": 0,
-            "total_outstanding": 0,
-            "loan_count": 0,
-            "gdp": 0,
-            "debt_to_gdp_ratio": 0,
+            "total_debt": None,
+            "total_outstanding": None,
+            "loan_count": None,
+            "gdp": None,
+            "debt_to_gdp_ratio": None,
             "summary": {},
             "categories": {},
             "debt_sustainability": {},
@@ -9949,6 +10396,7 @@ async def get_entities(
 
             audit_count = (
                 db.query(func.count(DBAudit.id))
+                .filter(publishable_audit_criterion())
                 .filter(DBAudit.entity_id == entity.id)
                 .scalar()
                 or 0
@@ -10042,6 +10490,7 @@ async def get_entity(entity_id: int, db: Session = Depends(get_db)):
         # Get audit findings
         audit_findings = (
             db.query(DBAudit)
+            .filter(publishable_audit_criterion())
             .filter(DBAudit.entity_id == entity_id)
             .order_by(DBAudit.created_at.desc())
             .limit(5)
@@ -10405,6 +10854,7 @@ def _read_etl_manifest() -> Dict[str, Any]:
 @app.get("/api/v1/dashboards/national/debt-mix")
 async def dashboard_debt_mix():
     """Debt mix snapshot derived from Loan table; falls back to CBK Apr-2025 split."""
+    _db_unreachable = False
     # Try real DB data first
     if DATABASE_AVAILABLE:
         try:
@@ -10453,18 +10903,29 @@ async def dashboard_debt_mix():
                         }
         except Exception as e:
             logging.error(f"DB debt-mix query failed: {e}")
+            _db_unreachable = True
 
-    # No hardcoded fallback — data must come from the database.
+    # Absent is not zero — see /api/v1/debt/national. A 0/0 external/domestic
+    # split is a readable, plausible-looking claim about the composition of
+    # public debt; nulls cannot be mistaken for one.
+    _reason = "source_unavailable" if _db_unreachable else "not_yet_seeded"
+    logging.warning("/dashboards/national/debt-mix returning no figures — reason=%s", _reason)
     return {
-        "external": 0,
-        "domestic": 0,
-        "external_amount": 0,
-        "domestic_amount": 0,
-        "total": 0,
+        "external": None,
+        "domestic": None,
+        "external_amount": None,
+        "domestic_amount": None,
+        "total": None,
         "currency": "KES",
-        "data_source": "database_empty",
+        "data_source": (
+            "database_unavailable" if _db_unreachable else "database_empty"
+        ),
+        "reason": _reason,
         "message": (
-            "No debt data in database. "
+            "Debt composition is unavailable because the data source could "
+            "not be read. This is not a finding that debt is zero."
+            if _db_unreachable
+            else "No debt data in database. "
             "Run: python -m seeding.cli seed --domain national_debt"
         ),
     }
@@ -10492,10 +10953,13 @@ async def dashboard_fiscal_outturns():
                 if rows:
                     series = []
                     for r in rows:
-                        rev = float(r.total_revenue or 0)
+                        # fiscal_summaries stores raw KES (stage1 3a);
+                        # this endpoint's declared unit is billion_kes,
+                        # so convert here to keep the label truthful.
+                        rev = float(r.total_revenue or 0) / 1e9
                         # expenditure = recurrent + development if available
-                        recurrent = float(r.recurrent_spending or 0)
-                        development = float(r.development_spending or 0)
+                        recurrent = float(r.recurrent_spending or 0) / 1e9
+                        development = float(r.development_spending or 0) / 1e9
                         expenditure = (
                             (recurrent + development)
                             if (recurrent + development) > 0

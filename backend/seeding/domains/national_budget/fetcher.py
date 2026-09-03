@@ -20,6 +20,7 @@ from ...cob_discovery import discover_latest_cob_pdf_url
 from ...config import SeedingSettings
 from ...http_client import SeedingHttpClient
 from ...utils import load_json_resource
+from ...freshness import mark_fixture, mark_live
 
 logger = logging.getLogger("seeding.national_budget.fetcher")
 
@@ -42,6 +43,10 @@ def fetch_national_budget_payload(
                     "Successfully fetched national budget from COB PDF (%d records)",
                     len(payload),
                 )
+                mark_live(
+                    "national_budget",
+                    detail=f"COB NG-BIRR PDF, {len(payload)} records",
+                )
                 # Filter metadata entries
                 return [r for r in payload if "_metadata" not in r]
             else:
@@ -49,10 +54,20 @@ def fetch_national_budget_payload(
                     "COB NG-BIRR PDF fetch returned no data, "
                     "falling back to fixture"
                 )
+                mark_fixture(
+                    "national_budget", reason="parser_returned_nothing"
+                )
         except Exception as exc:
             logger.warning(
                 "COB NG-BIRR PDF fetch failed, falling back to fixture: %s", exc
             )
+            mark_fixture(
+                "national_budget",
+                reason="live_fetch_failed",
+                detail=str(exc)[:200],
+            )
+    else:
+        mark_fixture("national_budget", reason="live_pdf_fetch_disabled")
 
     # Strategy 2: Fixture fallback
     logger.info("Using fixture/configured URL for national budget data")

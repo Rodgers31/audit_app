@@ -48,13 +48,17 @@ const SEV_CFG: Record<
 /* ─── SVG donut ─── */
 function SeverityDonut({ sev }: { sev: Record<string, number> }) {
   const { t } = useLang();
-  const total = Object.values(sev).reduce((a, b) => a + b, 0) || 1;
+  // The rendered count is the real sum. The `|| 1` denominator exists ONLY
+  // to keep the arc arithmetic finite — it must never surface as a count
+  // (it used to: an empty severity map rendered as "1 findings").
+  const total = Object.values(sev).reduce((a, b) => a + b, 0);
+  const denom = total || 1;
   const r = 44;
   const circ = 2 * Math.PI * r;
   let offset = 0;
 
   const arcs = (['CRITICAL', 'WARNING', 'INFO'] as const).map((level) => {
-    const pct = (sev[level] || 0) / total;
+    const pct = (sev[level] || 0) / denom;
     const dash = circ * pct;
     const arc = { level, dash, gap: circ - dash, offset, color: SEV_CFG[level].color };
     offset += dash;
@@ -115,7 +119,8 @@ export default function AuditReportsSection() {
 
     return {
       sev: s,
-      sevTotal: Object.values(s).reduce((a, b) => a + b, 0) || 1,
+      // Real sum — 0 means 0. Guards against division live at use sites.
+      sevTotal: Object.values(s).reduce((a, b) => a + b, 0),
       topFindings: [...data.findings]
         .filter((f) => f.amount_involved !== 'KES 0')
         .sort((a, b) => b.amount_numeric - a.amount_numeric)
@@ -143,6 +148,42 @@ export default function AuditReportsSection() {
 
   const stats = data.key_statistics;
 
+  // Zero publishable findings is a real state that deserves a real empty
+  // state — not an empty donut over a bare button. Everything rendered
+  // below comes from the response (withheld_findings, findings_reason,
+  // next_expected); no schedule fact is hand-written here.
+  const isEmpty = (data.findings?.length ?? 0) === 0;
+  const withheld = data.withheld_findings ?? 0;
+  const nx = data.next_expected;
+  const fmtWindowMonth = (iso: string) =>
+    new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-KE', {
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'UTC',
+    });
+  const cadenceWord = (cadence: string | null | undefined) => {
+    if (cadence === 'annual') return t('home.audits.cadence_annual');
+    if (cadence === 'quarterly') return t('home.audits.cadence_quarterly');
+    if (cadence === 'monthly') return t('home.audits.cadence_monthly');
+    return cadence ?? '';
+  };
+  const lagPhrase =
+    nx?.lag != null
+      ? t(nx.lag_unit === 'days' ? 'home.audits.lag_days' : 'home.audits.lag_months').replace(
+          '{lag}',
+          String(nx.lag)
+        )
+      : '';
+  const windowSentence =
+    nx?.window_start && nx?.window_end
+      ? t('home.audits.empty_window')
+          .replace('{publisher}', nx.publisher ?? 'Office of the Auditor-General')
+          .replace('{cadence}', cadenceWord(nx.cadence))
+          .replace('{lag}', lagPhrase)
+          .replace('{start}', fmtWindowMonth(nx.window_start))
+          .replace('{end}', fmtWindowMonth(nx.window_end))
+      : null;
+
   return (
     <motion.section
       initial={{ opacity: 0, y: 28 }}
@@ -156,9 +197,11 @@ export default function AuditReportsSection() {
           <h2 className='font-display text-xl sm:text-2xl text-gov-dark dark:text-white leading-tight'>
             {t('home.audits.report_title')}
           </h2>
-          <p className='text-sm text-neutral-muted mt-0.5'>
-            {t('home.audits.national_govt_fy').replace('{fy}', String(data.fiscal_year || ''))}
-          </p>
+          {data.fiscal_year && (
+            <p className='text-sm text-neutral-muted mt-0.5'>
+              {t('home.audits.national_govt_fy').replace('{fy}', String(data.fiscal_year))}
+            </p>
+          )}
         </div>
         <a
           href='https://www.oagkenya.go.ke'
@@ -170,20 +213,52 @@ export default function AuditReportsSection() {
       </div>
 
       {/* ════════ OPINION BANNER ════════ */}
-      <div className='mx-6 sm:mx-8 mb-5 rounded-xl bg-gov-copper/[0.06] border border-gov-copper/15 px-5 py-4'>
-        <div className='flex items-center gap-2 mb-2'>
-          <Scale className='w-4 h-4 text-gov-copper' />
-          <span className='text-xs font-bold uppercase tracking-wider text-gov-copper'>
-            {t('home.audits.opinion_label')} {data.opinion_type}
-          </span>
+      {/* The opinion, its basis and the signature all describe one document.
+          When that document is not traceable, asserting any of them — least of
+          all the hardcoded "Material misstatements identified across multiple
+          ministries" this used to fall back to — attributes a finding to the
+          Auditor-General that no source supports. */}
+      {data.opinion_type || data.basis_for_qualification?.length ? (
+        <div className='mx-6 sm:mx-8 mb-5 rounded-xl bg-gov-copper/[0.06] border border-gov-copper/15 px-5 py-4'>
+          <div className='flex items-center gap-2 mb-2'>
+            <Scale className='w-4 h-4 text-gov-copper' />
+            <span className='text-xs font-bold uppercase tracking-wider text-gov-copper'>
+              {t('home.audits.opinion_label')} {data.opinion_type}
+            </span>
+          </div>
+          {data.basis_for_qualification?.[0] && (
+            <p className='text-sm text-gov-dark/80 dark:text-white/80 leading-relaxed'>
+              {data.basis_for_qualification[0]}
+            </p>
+          )}
+          {data.auditor_general && (
+            <p className='text-[11px] text-neutral-muted mt-2 italic'>
+              {t('home.audits.signed_by').replace('{name}', data.auditor_general)}
+            </p>
+          )}
         </div>
-        <p className='text-sm text-gov-dark/80 dark:text-white/80 leading-relaxed'>
-          {data.basis_for_qualification?.[0] || t('home.audits.default_basis')}
-        </p>
-        <p className='text-[11px] text-neutral-muted mt-2 italic'>
-          {t('home.audits.signed_by').replace('{name}', data.auditor_general || '')}
-        </p>
-      </div>
+      ) : (
+        <div className='mx-6 sm:mx-8 mb-5 rounded-xl bg-neutral-surface/60 dark:bg-surface-elevated border border-neutral-border/40 px-5 py-4'>
+          <div className='flex items-center gap-2 mb-2'>
+            <Scale className='w-4 h-4 text-neutral-muted' />
+            <span className='text-xs font-bold uppercase tracking-wider text-neutral-muted'>
+              Audit opinion not yet published here
+            </span>
+          </div>
+          <p className='text-sm text-gov-dark/70 dark:text-white/70 leading-relaxed'>
+            No Auditor-General opinion is shown because none currently traces to
+            a page of a published report. This is not a finding that the
+            national accounts are clean.
+          </p>
+          {typeof data.withheld_findings === 'number' && data.withheld_findings > 0 && (
+            <p className='text-[11px] text-neutral-muted mt-2'>
+              {data.withheld_findings} finding
+              {data.withheld_findings === 1 ? '' : 's'} held back for lack of a
+              traceable source document.
+            </p>
+          )}
+        </div>
+      )}
 
       {/* ════════ STAT CARDS ════════ */}
       <div className='px-6 sm:px-8 mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3'>
@@ -252,6 +327,24 @@ export default function AuditReportsSection() {
         <div className='rounded-xl bg-gov-sand/30 dark:bg-surface-elevated/40 border border-neutral-border/20 p-4'>
           <h3 className='font-display text-base text-gov-dark dark:text-white mb-4'>{t('home.audits.findings_overview')}</h3>
 
+          {isEmpty ? (
+            <div className='flex flex-col items-start gap-2 py-4'>
+              <div className='flex items-center gap-2'>
+                <SearchX className='w-4 h-4 text-neutral-muted/60 flex-shrink-0' />
+                <p className='text-sm font-semibold text-gov-dark dark:text-white'>
+                  {t('home.audits.empty_title')}
+                </p>
+              </div>
+              {withheld > 0 && (
+                <p className='text-xs text-neutral-muted leading-relaxed'>
+                  {t('home.audits.empty_withheld').replace('{n}', String(withheld))}
+                </p>
+              )}
+              {windowSentence && (
+                <p className='text-xs text-neutral-muted leading-relaxed'>{windowSentence}</p>
+              )}
+            </div>
+          ) : (
           <div className='flex gap-5 items-start'>
             {/* Findings list */}
             <div className='flex-1 min-w-0 space-y-1'>
@@ -299,6 +392,19 @@ export default function AuditReportsSection() {
                                 {f.recommended_action}
                               </p>
                             )}
+                            {/* The product's core claim: every finding links
+                                to the page of the report it came from. */}
+                            {f.source_url && f.page_ref && (
+                              <a
+                                href={`${f.source_url}#page=${f.page_ref.replace(/[^0-9]/g, '')}`}
+                                target='_blank'
+                                rel='noopener noreferrer'
+                                onClick={(e) => e.stopPropagation()}
+                                className='inline-flex items-center gap-1 text-xs text-gov-forest dark:text-emerald-100 hover:underline mt-1.5'>
+                                <ExternalLink className='w-3 h-3' />
+                                {t('home.audits.source_page').replace('{page}', f.page_ref)}
+                              </a>
+                            )}
                           </motion.div>
                         )}
                       </div>
@@ -318,7 +424,7 @@ export default function AuditReportsSection() {
               <SeverityDonut sev={sev} />
               <div className='space-y-1.5'>
                 {(['CRITICAL', 'WARNING', 'INFO'] as const).map((level) => {
-                  const pct = Math.round(((sev[level] || 0) / sevTotal) * 100);
+                  const pct = sevTotal ? Math.round(((sev[level] || 0) / sevTotal) * 100) : 0;
                   return (
                     <div key={level} className='flex items-center gap-2'>
                       <span
@@ -337,6 +443,7 @@ export default function AuditReportsSection() {
               </div>
             </div>
           </div>
+          )}
 
           {/* ── Emphasis of Matter ── */}
           {data.emphasis_of_matter?.[0] && (
@@ -358,6 +465,11 @@ export default function AuditReportsSection() {
         {/* ── Right: Top Ministries Flagged ── */}
         <div className='rounded-xl border border-neutral-border/40 bg-gov-forest/[0.03] dark:bg-surface-elevated/40 p-4'>
           <h4 className='font-display text-sm text-gov-dark dark:text-white mb-4'>{t('home.audits.top_ministries')}</h4>
+          {ministryBars.length === 0 && (
+            <p className='text-xs text-neutral-muted leading-relaxed'>
+              {t('home.audits.empty_ministries')}
+            </p>
+          )}
           <div className='space-y-3'>
             {ministryBars.map((m) => (
               <div key={m.ministry}>

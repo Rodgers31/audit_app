@@ -1,5 +1,6 @@
 'use client';
 
+import { toRawKES } from '@/lib/utils';
 import InfoTip from '@/components/InfoTip';
 import { useDebtTimeline } from '@/lib/react-query';
 import { motion } from 'framer-motion';
@@ -14,7 +15,11 @@ export default function MetricsStrip() {
   const { data, isLoading } = useDebtTimeline();
 
   const latestEntry = data?.timeline?.[data.timeline.length - 1];
-  const totalDebt = latestEntry?.total ?? 0;
+  // Billions for display; convert on the row's declared unit (raw KES
+  // since the stage1 3a migration).
+  const totalDebt = latestEntry
+    ? (toRawKES(latestEntry.total, latestEntry.unit) ?? 0) / 1e9
+    : 0;
   const debtToGdp = latestEntry?.gdp_ratio ?? 0;
   const latestYear = latestEntry?.year ?? '';
 

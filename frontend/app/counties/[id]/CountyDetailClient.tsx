@@ -140,7 +140,9 @@ function GradeBadge({
   onClick,
   sparklineValues,
 }: {
-  grade: string;
+  /** null when there is no evidence to grade — rendered as an explicit
+   *  "not assessed" state, never as a letter and never in a rating colour. */
+  grade: string | null;
   score: number | null;
   label: string;
   title: string;
@@ -157,19 +159,33 @@ function GradeBadge({
       }}
       title={title}
       style={{ position: 'relative', zIndex: 100 }}
-      aria-label={`${label} grade: ${grade}${score !== null ? `, score ${score.toFixed(0)} out of 100` : ''}`}
-      className={`inline-flex flex-col items-stretch gap-1 px-3.5 py-2 rounded-xl bg-gradient-to-r ${palette[grade] || palette.C || palette.F || 'from-gray-500 to-gray-600'} text-white shadow-lg cursor-pointer hover:brightness-110 hover:scale-105 transition-all group`}>
+      aria-label={
+        grade == null
+          ? `${label}: not yet assessed — no sourced audit finding for this county`
+          : `${label} grade: ${grade}${score !== null ? `, score ${score.toFixed(0)} out of 100` : ''}`
+      }
+      className={`inline-flex flex-col items-stretch gap-1 px-3.5 py-2 rounded-xl bg-gradient-to-r ${
+        grade == null
+          ? 'from-gray-400 to-gray-500'
+          : palette[grade] || palette.C || palette.F || 'from-gray-500 to-gray-600'
+      } text-white shadow-lg cursor-pointer hover:brightness-110 hover:scale-105 transition-all group`}>
       <div className='flex items-center gap-2'>
-        <span className='text-2xl font-black leading-none' aria-hidden='true'>
-          {grade}
-        </span>
-        <div className='border-l border-white/30 pl-2 text-left'>
+        {grade != null && (
+          <span className='text-2xl font-black leading-none' aria-hidden='true'>
+            {grade}
+          </span>
+        )}
+        <div className={`text-left ${grade != null ? 'border-l border-white/30 pl-2' : ''}`}>
           <div className='text-[9px] uppercase tracking-widest opacity-80 flex items-center gap-1'>
             {label}
             <Info size={9} className='opacity-0 group-hover:opacity-100 transition-opacity' />
           </div>
           <div className='text-sm font-bold leading-tight tabular-nums'>
-            {score !== null ? score.toFixed(0) : '—'}
+            {grade == null
+              ? 'Not assessed'
+              : score !== null
+                ? score.toFixed(0)
+                : '—'}
           </div>
         </div>
       </div>
@@ -650,7 +666,7 @@ export default function CountyDetailClient() {
                   sparklineValues={data.health_history?.map((h) => h.score)}
                 />
                 <GradeBadge
-                  grade={acctData?.accountability_grade || '—'}
+                  grade={acctData?.accountability_grade ?? null}
                   score={
                     typeof acctData?.accountability_score === 'number'
                       ? acctData.accountability_score

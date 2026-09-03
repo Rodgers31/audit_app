@@ -52,7 +52,7 @@ services:
     environment:
       POSTGRES_DB: audit_app
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set (no insecure default)}
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U postgres -d audit_app || exit 1']
       interval: 10s
@@ -82,9 +82,9 @@ services:
     restart: unless-stopped
 
   backend:
-    image: ${BACKEND_IMAGE:-${DOCKERHUB_NAMESPACE:-yourhubname}/audit-app-backend:latest}
+    image: ${BACKEND_IMAGE:-${DOCKERHUB_NAMESPACE:?DOCKERHUB_NAMESPACE must be set (never pull from an unowned namespace)}/audit-app-backend:latest}
     environment:
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-password}@postgres:5432/audit_app
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set (no insecure default)}@postgres:5432/audit_app
       REDIS_URL: redis://redis:6379
       ENVIRONMENT: production
     labels:
@@ -126,7 +126,7 @@ services:
     restart: unless-stopped
 
   frontend:
-    image: ${FRONTEND_IMAGE:-${DOCKERHUB_NAMESPACE:-yourhubname}/audit-app-frontend:latest}
+    image: ${FRONTEND_IMAGE:-${DOCKERHUB_NAMESPACE:?DOCKERHUB_NAMESPACE must be set (never pull from an unowned namespace)}/audit-app-frontend:latest}
     environment:
       NEXT_PUBLIC_API_URL: https://${BACKEND_HOST}
       NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
@@ -157,9 +157,9 @@ services:
     restart: unless-stopped
 
   etl:
-    image: ${ETL_IMAGE:-${DOCKERHUB_NAMESPACE:-yourhubname}/audit-app-etl:latest}
+    image: ${ETL_IMAGE:-${DOCKERHUB_NAMESPACE:?DOCKERHUB_NAMESPACE must be set (never pull from an unowned namespace)}/audit-app-etl:latest}
     environment:
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-password}@postgres:5432/audit_app
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set (no insecure default)}@postgres:5432/audit_app
       ETL_SCHEDULE_CONFIG: /app/config/etl_schedule.yaml
       PLAYWRIGHT_ENABLED: '1'
       TZ: Africa/Nairobi

@@ -1,5 +1,6 @@
 'use client';
 
+import { toRawKES } from '@/lib/utils';
 /**
  * Budget & Spending — redesigned page
  *
@@ -201,7 +202,33 @@ export default function BudgetSpendingPage() {
   /* ── Derived data ── */
   // Prefer the fiscal endpoint's history — it carries debt_service_per_shilling
   // (the Treasury APDMR ratio) which the budget/overview endpoint doesn't surface.
-  const fiscalHistoryRaw = fiscal?.history ?? overview?.fiscal_history ?? [];
+  //
+  // Downstream flow components work in BILLIONS. /fiscal/summary rows declare
+  // unit "KES" (raw, since the stage1 3a migration) and are converted here;
+  // budget/overview fiscal_history rows are billion_kes by contract and pass
+  // through unchanged (toRawKES treats an undeclared unit as billions).
+  const asBillions = (v: number | null | undefined, unit?: string | null) => {
+    const raw = toRawKES(v ?? null, unit);
+    return raw == null ? (v ?? null) : raw / 1e9;
+  };
+  const normaliseFiscalRow = (row: any) =>
+    row && {
+      ...row,
+      appropriated_budget: asBillions(row.appropriated_budget, row.unit),
+      total_revenue: asBillions(row.total_revenue, row.unit),
+      tax_revenue: asBillions(row.tax_revenue, row.unit),
+      non_tax_revenue: asBillions(row.non_tax_revenue, row.unit),
+      total_borrowing: asBillions(row.total_borrowing, row.unit),
+      debt_service_cost: asBillions(row.debt_service_cost, row.unit),
+      development_spending: asBillions(row.development_spending, row.unit),
+      recurrent_spending: asBillions(row.recurrent_spending, row.unit),
+      county_allocation: asBillions(row.county_allocation, row.unit),
+    };
+  const fiscalHistoryRaw = (
+    fiscal?.history?.map(normaliseFiscalRow) ??
+    overview?.fiscal_history ??
+    []
+  ) as any[];
   const fiscalHistory = useMemo(
     () =>
       fiscalHistoryRaw.filter((f: any) =>
@@ -218,7 +245,9 @@ export default function BudgetSpendingPage() {
 
   // Row for the current fiscal year — comes from fiscal.current.
   const currentFiscal: FlowHeroInput | null = useMemo(() => {
-    const cur = fiscal?.current as Record<string, any> | undefined;
+    const cur = normaliseFiscalRow(fiscal?.current) as
+      | Record<string, any>
+      | undefined;
     if (cur && cur.fiscal_year) return cur as FlowHeroInput;
     return fiscalHistory[fiscalHistory.length - 1] ?? null;
   }, [fiscal, fiscalHistory]);

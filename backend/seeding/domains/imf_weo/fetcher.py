@@ -66,14 +66,39 @@ def fetch_imf_weo(
 
     Raises on network failure; caller logs and skips.
     """
+    from ...freshness import mark_fixture, mark_live
+
     results: Dict[str, Dict[str, Any]] = {}
     countries = "/".join(COUNTRIES)
-    for indicator in INDICATORS:
-        url = f"{_BASE_URL}/{indicator}/{countries}?periods={_PERIODS}"
-        logger.info("Fetching IMF WEO %s for %s", indicator, countries)
-        # Override the seeder's default UA only for this call — other
-        # sources might have their own constraints.
-        response = client.get(url, headers={"User-Agent": _IMF_UA})
-        response.raise_for_status()
-        results[indicator] = response.json()
+    try:
+        for indicator in INDICATORS:
+            url = f"{_BASE_URL}/{indicator}/{countries}?periods={_PERIODS}"
+            logger.info("Fetching IMF WEO %s for %s", indicator, countries)
+            # Override the seeder's default UA only for this call — other
+            # sources might have their own constraints.
+            response = client.get(url, headers={"User-Agent": _IMF_UA})
+            response.raise_for_status()
+            results[indicator] = response.json()
+    except Exception as exc:
+        # This domain has NO fixture, so a failure is not a fall back to
+        # stale data — it is a run that ingested nothing. Recorded as
+        # non-live either way, because the staleness gate's question is
+        # "did we reach the publisher", and the answer here is no.
+        mark_fixture(
+            "imf_weo",
+            reason=f"imf_api_unreachable({type(exc).__name__})",
+            detail=(
+                "no fixture exists for this domain — this run ingested "
+                "NOTHING and the existing rows are whatever a previous run "
+                "left behind"
+            ),
+        )
+        raise
+    mark_live(
+        "imf_weo",
+        detail=(
+            f"IMF DataMapper: {len(results)}/{len(INDICATORS)} indicator(s) "
+            f"for {countries}"
+        ),
+    )
     return results

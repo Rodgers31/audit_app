@@ -1,5 +1,6 @@
 'use client';
 
+import { toRawKES } from '@/lib/utils';
 import DataFreshnessBadge from '@/components/DataFreshnessBadge';
 import DataIntegrityBanner from '@/components/DataIntegrityBanner';
 import InfoTip from '@/components/InfoTip';
@@ -408,12 +409,40 @@ export default function NationalDebtPage() {
     return arr;
   }, [loansResp, loanSort]);
 
-  const timeline = useMemo(() => timelineResp?.timeline || [], [timelineResp]);
+  // Normalise both series to RAW KES once, on each row's declared unit
+  // (raw KES since the stage1 3a migration; bare billions from an older
+  // backend). Everything below works in raw KES.
+  const timeline = useMemo(
+    () =>
+      (timelineResp?.timeline || []).map((t) => ({
+        ...t,
+        external: toRawKES(t.external, t.unit) ?? 0,
+        domestic: toRawKES(t.domestic, t.unit) ?? 0,
+        total: toRawKES(t.total, t.unit) ?? 0,
+        gdp: t.gdp != null ? (toRawKES(t.gdp, t.unit) ?? 0) : t.gdp,
+      })),
+    [timelineResp]
+  );
 
   const fiscal = useMemo(() => {
     if (!fiscalResp) return null;
-    const years = fiscalResp.history || [];
-    const current = fiscalResp.current || years[years.length - 1];
+    const normalise = (y: any) =>
+      y && {
+        ...y,
+        appropriated_budget: toRawKES(y.appropriated_budget, y.unit),
+        total_revenue: toRawKES(y.total_revenue, y.unit),
+        tax_revenue: toRawKES(y.tax_revenue, y.unit),
+        non_tax_revenue: toRawKES(y.non_tax_revenue, y.unit),
+        total_borrowing: toRawKES(y.total_borrowing, y.unit),
+        debt_service_cost: toRawKES(y.debt_service_cost, y.unit),
+        debt_ceiling: toRawKES(y.debt_ceiling, y.unit),
+        actual_debt: toRawKES(y.actual_debt, y.unit),
+        development_spending: toRawKES(y.development_spending, y.unit),
+        recurrent_spending: toRawKES(y.recurrent_spending, y.unit),
+        county_allocation: toRawKES(y.county_allocation, y.unit),
+      };
+    const years = (fiscalResp.history || []).map(normalise);
+    const current = normalise(fiscalResp.current) || years[years.length - 1];
     return { current, years };
   }, [fiscalResp]);
 
@@ -586,7 +615,7 @@ export default function NationalDebtPage() {
                   {yoyGrowth.change.toFixed(1)}% YoY
                 </span>
                 <span className='text-white/70'>
-                  Added KES {fmtT(Math.abs(yoyGrowth.amount) * 1_000_000_000)} in {yoyGrowth.year}
+                  Added KES {fmtT(Math.abs(yoyGrowth.amount))} in {yoyGrowth.year}
                 </span>
               </div>
             )}

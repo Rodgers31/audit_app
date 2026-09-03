@@ -215,7 +215,16 @@ test.describe('Keyboard navigation', () => {
 });
 
 test.describe('Form / filter persistence', () => {
-  test('search input on /accountability/missing-funds is reactive', async ({ page }) => {
+  test('search input on /accountability/missing-funds is reactive', async ({ page, request }) => {
+    // The tracker publishes a case only when it traces to a source document
+    // (AUDIT_FINDINGS F5.3), and offers no search box when there is nothing to
+    // search. Skip rather than assert UI that should not exist in that state.
+    const api = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const res = await request.get(`${api}/api/v1/accountability/missing-funds`);
+    if (res.ok() && (await res.json()).total_cases === 0) {
+      test.skip(true, 'no sourced cases published yet — no search UI to exercise');
+    }
+
     await page.goto('/accountability/missing-funds');
     await waitForAppReady(page);
 

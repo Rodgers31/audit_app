@@ -41,9 +41,19 @@ def test_accepts_dataclass_like_object():
     assert check_fiscal_summary(SimpleNamespace(**CLEAN)) == []
 
 
-def test_unit_slip_raw_kes_is_caught():
-    # A parser that wrote raw KES instead of billions → ~1e9× blow-up.
+def test_raw_kes_row_is_normalised_not_flagged():
+    # Since the stage1 3a migration the TABLE stores raw KES, so the guard
+    # normalises >=1e9 values to billions before banding: a correct raw-KES
+    # row must pass. (This test previously asserted the opposite — it
+    # encoded the pre-migration undeclared-billions convention, F5.5.)
     row = {**CLEAN, "appropriated_budget": 4_190_000_000_000}
+    assert check_fiscal_summary(row) == []
+
+
+def test_out_of_band_raw_kes_is_still_caught():
+    # POSITIVE CONTROL: normalisation must not disable the band check —
+    # a 50T budget (raw) is out of band in any unit.
+    row = {**CLEAN, "appropriated_budget": 50_000_000_000_000}
     notes = check_fiscal_summary(row)
     assert any("appropriated_budget" in n and "band" in n for n in notes)
 
@@ -137,3 +147,63 @@ def test_gate_accepts_every_real_fixture_row():
             f"{row.get('fiscal_year')} unexpectedly flagged: "
             f"{check_fiscal_summary(row)}"
         )
+
+
+# ── Historical rows must not drown the guard in false positives ───────
+# The bands encode CURRENT-ERA magnitudes. Kenya's revenue was KES 63B in
+# FY1992/93 against ~2,900B today, so every pre-2010 row was flagged
+# "outside the plausible [1,000, 5,000]B band" on every nightly run. That
+# wall of warnings kept fiscal_summary permanently completed_with_errors —
+# the state in which a REAL warning would have gone unnoticed.
+_HISTORICAL = {
+    "fiscal_year": "FY 1992/93",
+    "appropriated_budget": 71,
+    "total_revenue": 63,
+    "tax_revenue": 55,
+    "non_tax_revenue": 8,
+    "total_borrowing": 12,
+    "debt_service_cost": 20,
+    "development_spending": 14,
+    "recurrent_spending": 50,
+    "county_allocation": 0,
+}
+
+
+def test_historical_row_is_not_flagged_by_current_era_bands():
+    notes = check_fiscal_summary(_HISTORICAL)
+    assert not any("band" in n for n in notes), notes
+
+
+def test_historical_unit_slip_is_still_caught():
+    """POSITIVE CONTROL: relaxing the bands must not disarm the guard —
+    a 1e6 slip on an old row is impossible in any era and must fire."""
+    slipped = {**_HISTORICAL, "total_revenue": 63_000_000}
+    notes = check_fiscal_summary(slipped)
+    assert any("impossible for any era" in n for n in notes), notes
+
+
+def test_transition_era_real_values_are_not_flagged():
+    """Real curated values that sit just under the current floors — these
+    are what the 2010 cutoff still wrongly flagged."""
+    for fy, field, value in (
+        ("FY 2010/11", "total_revenue", 641),
+        ("FY 2017/18", "debt_service_cost", 363),
+        ("FY 2018/19", "appropriated_budget", 1924),
+        ("FY 2020/21", "debt_service_cost", 318),
+    ):
+        notes = check_fiscal_summary({**_HISTORICAL, "fiscal_year": fy, field: value})
+        assert not any("band" in n for n in notes), (fy, field, notes)
+
+
+def test_current_era_row_still_banded():
+    """The era gate must not accidentally exempt modern rows."""
+    notes = check_fiscal_summary({**CLEAN, "total_revenue": 50})
+    assert any("total_revenue" in n and "band" in n for n in notes), notes
+
+
+def test_undated_row_keeps_the_strict_bands():
+    """A row whose fiscal_year cannot be parsed is treated as current —
+    failing open to 'historical' would let any bad row through by omitting
+    a label."""
+    notes = check_fiscal_summary({**CLEAN, "fiscal_year": "?", "total_revenue": 50})
+    assert any("band" in n for n in notes), notes

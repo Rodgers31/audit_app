@@ -17,6 +17,32 @@ from ...utils import load_json_resource
 
 logger = logging.getLogger("seeding.fiscal_summary.fetcher")
 
+# ── The budget basis decision (2026-08-29) ───────────────────────────
+# "The budget" has three legitimate, DIFFERENT values for FY2025/26:
+#
+#   COB original gross budget   4.69T  (gross ministerial + CFS)
+#   COB original net estimates  4.43T  (excludes Appropriations-in-Aid)
+#   Budget Policy Statement     4.19T  (what this fixture used to hold)
+#
+# The user chose GROSS, for current, future and past data. That decision is
+# recorded HERE as the one basis a live figure may be promoted on, and in
+# ``real_data/fiscal_summary.json`` as an explicit ``budget_basis`` on every
+# row, backfilled from each year's COB report rather than relabelled.
+CANONICAL_BUDGET_BASIS = "cob_gross"
+
+# Whether a row that declares NO ``budget_basis`` may receive the live gross
+# figure. Still FALSE after the basis decision, and deliberately so.
+#
+# Choosing gross as the house basis does not make an undeclared row gross;
+# it makes an undeclared row a DEFECT. Every row in the shipped fixture now
+# declares its basis, so "undeclared" can only mean a row arrived from
+# somewhere that did not say what measure it holds — exactly the state in
+# which a 4.19T Budget Policy Statement number sat one 12% tolerance away
+# from being silently overwritten with a 4.69T gross one. Flipping this to
+# True would restore that hazard for every future row while saving nothing:
+# opting a row in costs one JSON key.
+_ALLOW_UNDECLARED_BASIS = False
+
 # World Bank indicator codes for Kenya
 _WB_INDICATORS: Dict[str, str] = {
     "GC.XPN.TOTL.CN": "government_expenditure_lcu",
@@ -38,12 +64,21 @@ def fetch_fiscal_summary_payload(
         label="fiscal_summary",
     )
 
+    wb_applied = False
+    wb_years = 0
+    cob_status = "not_attempted"
+    cob_promoted = False
+    estimates_status = "not_attempted"
+    estimates_applied = False
+
     # Try World Bank enrichment
     if settings.enrich_with_worldbank and settings.live_pdf_fetch_enabled:
         try:
             wb_data = _fetch_worldbank_fiscal_data(client, settings)
             if wb_data:
                 payload = _merge_worldbank_data(payload, wb_data)
+                wb_applied = True
+                wb_years = len(wb_data)
                 logger.info(
                     "Enriched fiscal summary with World Bank data",
                     extra={"wb_years": list(wb_data.keys())},
@@ -60,27 +95,236 @@ def fetch_fiscal_summary_payload(
     # parse is missing, implausible, or far from the known value.
     if settings.live_pdf_fetch_enabled:
         try:
-            live_budget, live_revenue = _fetch_cob_headlines(client, settings)
-            payload, b_status = _overlay_live_budget_headline(payload, live_budget)
-            payload, r_status = _overlay_live_revenue_headline(payload, live_revenue)
+            live_budget, live_revenue, report_fy = _fetch_cob_headlines(
+                client, settings
+            )
+            payload, b_status = _overlay_live_budget_headline(
+                payload, live_budget, fiscal_year=report_fy
+            )
+            payload, r_status = _overlay_live_revenue_headline(
+                payload, live_revenue, fiscal_year=report_fy
+            )
+            cob_promoted = b_status == "promoted"
+            cob_status = f"fy={report_fy} budget={b_status} revenue={r_status}"
             logger.info(
-                "fiscal_summary COB overlay: budget=%s revenue=%s",
+                "fiscal_summary COB overlay (%s): budget=%s revenue=%s",
+                report_fy,
                 b_status,
                 r_status,
             )
         except Exception as exc:
             logger.warning("COB headline overlay skipped: %s", exc)
 
+        # Treasury's approved Budget Estimates: the ONLY source that can put
+        # a NEW fiscal year on the site. COB publishes at quarter-end + 45
+        # days, so between 1 July and mid-November nothing else in this
+        # pipeline knows the new year exists.
+        #
+        # Runs AFTER the COB overlay on purpose. The two never contend: this
+        # step creates FY N in July/August from the enacted estimates, and
+        # COB's first report on FY N does not exist until mid-November, by
+        # which time the row is months old and the overlay writes onto it
+        # normally. Ordering it second keeps the cheap, every-night COB
+        # refresh ahead of a 29MB download that only misses its 30-day cache
+        # once a year. If Treasury were unavailable all along, the COB
+        # overlay's ``report_year_not_in_payload`` refusal is the correct
+        # outcome — a missing row is not a licence to write the figure
+        # somewhere else.
+        try:
+            estimates, estimates_status = _fetch_budget_estimates(client, settings)
+            if estimates is not None:
+                payload, apply_status = _apply_budget_estimates(payload, estimates)
+                estimates_applied = apply_status in ("created", "updated")
+                estimates_status = f"{estimates.fiscal_year}:{apply_status}"
+            logger.info(
+                "fiscal_summary Treasury budget estimates: %s", estimates_status
+            )
+        except Exception as exc:
+            estimates_status = f"error({type(exc).__name__})"
+            logger.warning("Treasury budget estimates step skipped: %s", exc)
+
+    # Provenance, graded by WHAT actually moved. "live" is reserved for a run
+    # in which a publisher replaced the headline budget; a World-Bank-only run
+    # is still live data but says so precisely, because a mode of "live" on
+    # its own would overstate what was refreshed.
+    from ...freshness import mark_fixture, mark_live
+
+    detail = (
+        f"COB overlay: {cob_status}; Treasury estimates: {estimates_status}; "
+        f"World Bank: {wb_years} year(s)"
+    )
+    if estimates_applied or cob_promoted:
+        # A headline budget figure was actually replaced from a publisher.
+        mark_live("fiscal_summary", detail=detail)
+    elif wb_applied:
+        # World Bank enrichment is genuinely live and does move rows, but it
+        # never touches the headline budget — so the DETAIL says plainly that
+        # the budget is still the fixture's. "live" on its own would
+        # overstate what was refreshed.
+        mark_live(
+            "fiscal_summary",
+            detail=f"World Bank indicators only; headline budget unchanged. {detail}",
+        )
+    else:
+        mark_fixture(
+            "fiscal_summary",
+            reason="no_live_overlay_applied",
+            detail=detail,
+        )
+
     return payload
+
+
+def _fetch_budget_estimates(
+    client: SeedingHttpClient, settings: SeedingSettings
+):
+    """Discover, download and parse Treasury's approved Budget Estimates.
+
+    Returns ``(BudgetEstimates | None, status)``. Every failure path returns a
+    SPECIFIC status slug rather than None-and-a-log-line, because "the site
+    still shows last year" is precisely the class of bug that hides behind a
+    generic warning.
+    """
+    import dataclasses
+    from pathlib import Path
+
+    from ...discovery import discover_latest_pdf, parse_fiscal_year
+    from ...pdf_download import get_or_download_pdf
+    from ...source_registry import SOURCE_REGISTRY
+    from .budget_estimates import BudgetEstimatesError, extract_budget_estimates
+
+    dataset = SOURCE_REGISTRY["treasury_budget_estimates"]
+    page_url = settings.treasury_budget_books_page_url
+    try:
+        response = client.get(page_url, raise_for_status=True)
+    except Exception as exc:
+        return None, f"listing_unreachable({type(exc).__name__})"
+
+    found = discover_latest_pdf(
+        response.text,
+        page_url,
+        must_match=("/budget%20books/",) + dataset.match_keywords,
+        # Supplementary estimates revise a budget mid-year and are a
+        # DIFFERENT measure from the original gross budget COB reports on;
+        # "draft" is not a published figure at all (see _is_publishable_doc).
+        must_not_match=("supplementary", "supp-", "draft"),
+    )
+    if found is None:
+        return None, "no_budget_book_discovered"
+
+    fiscal_year = parse_fiscal_year(found.url)
+    if not fiscal_year:
+        return None, "budget_book_has_no_fiscal_year"
+
+    try:
+        pdf_path = get_or_download_pdf(
+            client,
+            found.url,
+            cache_dir=Path(settings.cache_path) / "pdfs",
+            ttl_seconds=settings.pdf_cache_ttl_seconds,
+            max_seconds=settings.pdf_download_timeout_seconds,
+            max_bytes=settings.pdf_download_max_bytes,
+        )
+    except Exception as exc:
+        return None, f"download_failed({type(exc).__name__})"
+
+    try:
+        estimates = dataclasses.replace(
+            extract_budget_estimates(pdf_path, fiscal_year), source_url=found.url
+        )
+    except BudgetEstimatesError as exc:
+        logger.warning(
+            "Treasury budget estimates QUARANTINED for %s: %s",
+            fiscal_year,
+            exc,
+        )
+        return None, f"quarantined:{exc.reason}"
+    logger.info(
+        "Treasury %s enacted gross budget: KSh %.1fB (voted %.1fB + CFS "
+        "%.1fB). Checks: %s",
+        estimates.fiscal_year,
+        estimates.gross_budget_billion,
+        float(estimates.voted_gross_kes) / 1e9,
+        float(estimates.cfs_kes) / 1e9,
+        "; ".join(estimates.checks),
+    )
+    return estimates, "parsed"
+
+
+def _apply_budget_estimates(
+    payload: Dict[str, Any], estimates
+) -> tuple[Dict[str, Any], str]:
+    """INSERT (or refresh) the fiscal year the enacted estimates describe.
+
+    This is the one path in the domain that may CREATE a fiscal year. Every
+    other overlay mutates ``max(fiscal_years)`` and therefore could never
+    move the site onto a new fiscal year, no matter how current its source —
+    which is why the homepage still read FY 2025/26 two months into FY
+    2026/27.
+
+    Pure and idempotent: re-running with the same estimates rewrites the same
+    fields. Returns ``(payload, status)``.
+    """
+    if estimates is None:
+        return payload, "no_estimates"
+    fiscal_years = payload.setdefault("fiscal_years", [])
+    budget = round(estimates.gross_budget_billion, 1)
+
+    # The plausibility guard runs on the row that would be written, not on
+    # the raw figure, so an implausible insert is refused the same way an
+    # implausible overlay is.
+    candidate = {"fiscal_year": estimates.fiscal_year, "appropriated_budget": budget}
+    try:
+        from services.trust_guards import check_fiscal_summary
+
+        if check_fiscal_summary(candidate):
+            return payload, "failed_plausibility"
+    except Exception:  # guard unavailable — the parser's own gates still ran
+        pass
+
+    row = next(
+        (r for r in fiscal_years if r.get("fiscal_year") == estimates.fiscal_year),
+        None,
+    )
+    created = row is None
+    if row is None:
+        row = {"fiscal_year": estimates.fiscal_year}
+        fiscal_years.append(row)
+
+    declared = row.get("budget_basis")
+    if declared is not None and declared != CANONICAL_BUDGET_BASIS:
+        return payload, f"basis_mismatch(row={declared},live={CANONICAL_BUDGET_BASIS})"
+
+    row["appropriated_budget"] = budget
+    row["budget_basis"] = CANONICAL_BUDGET_BASIS
+    row["budget_basis_source"] = {
+        "title": f"Programme Based Budget {estimates.fiscal_year} (Approved)",
+        "publisher": "The National Treasury",
+        "url": getattr(estimates, "source_url", None),
+        "page": (
+            f"voted total PDF p.{estimates.page_refs.get('voted_total')}; "
+            f"CFS summary PDF p.{estimates.page_refs.get('cfs_summary')}"
+        ),
+        "composition": (
+            f"gross voted expenditure "
+            f"{float(estimates.voted_gross_kes) / 1e9:,.1f}B "
+            f"+ Consolidated Fund Services "
+            f"{float(estimates.cfs_kes) / 1e9:,.1f}B"
+        ),
+        "checks": list(estimates.checks),
+    }
+    row["_budget_source"] = "treasury_budget_estimates_live"
+    fiscal_years.sort(key=lambda r: str(r.get("fiscal_year", "")))
+    return payload, ("created" if created else "updated")
 
 
 def _fetch_cob_headlines(
     client: SeedingHttpClient, settings: SeedingSettings
-) -> tuple[Optional[float], Optional[float]]:
+) -> tuple[Optional[float], Optional[float], Optional[str]]:
     """Discover + download the latest COB NG-BIRR ONCE and extract the headline
-    ``(overall_budget, total_revenue)`` in KSh billion. Returns ``(None, None)``
-    on any failure — callers treat that as 'no live value' and keep the
-    fixture."""
+    ``(overall_budget, total_revenue, report_fiscal_year)``; money in KSh
+    billion. Returns ``(None, None, None)`` on any failure — callers treat that
+    as 'no live value' and keep the fixture."""
     import tempfile
     from pathlib import Path
 
@@ -94,7 +338,7 @@ def _fetch_cob_headlines(
     )
     if not pdf_url:
         logger.info("No NG-BIRR PDF found for fiscal_summary headline overlay")
-        return None, None
+        return None, None, None
 
     pdf_resp = client.get(pdf_url, raise_for_status=True)
     tmp_path: Optional["Path"] = None
@@ -104,10 +348,11 @@ def _fetch_cob_headlines(
         ) as tmp:
             tmp.write(pdf_resp.content)
             tmp_path = Path(tmp.name)
-        budget, revenue = extract_cob_headlines(tmp_path)
+        budget, revenue, report_fy = extract_cob_headlines(tmp_path)
         return (
             float(budget) if budget is not None else None,
             float(revenue) if revenue is not None else None,
+            report_fy,
         )
     finally:
         if tmp_path and tmp_path.exists():
@@ -117,11 +362,37 @@ def _fetch_cob_headlines(
                 pass
 
 
+def _target_row(
+    payload: Dict[str, Any], fiscal_year: Optional[str]
+) -> tuple[Optional[Dict[str, Any]], Optional[str]]:
+    """The row an overlay should write to, or ``(None, reason)``.
+
+    When the source document names its own fiscal year, that row is the only
+    legitimate target. ``max(fiscal_years)`` is the fallback and is only safe
+    while the newest row happens to be the year the publisher just reported
+    on — which stopped being true the moment Treasury's enacted FY2026/27
+    estimates could be ingested months before COB's first FY2026/27 report.
+    An unanchored overlay would then stamp COB's FY2025/26 headline onto the
+    FY2026/27 row.
+    """
+    fiscal_years = payload.get("fiscal_years") or []
+    if not fiscal_years:
+        return None, "no_fixture"
+    if fiscal_year:
+        for row in fiscal_years:
+            if str(row.get("fiscal_year")) == fiscal_year:
+                return row, None
+        return None, f"report_year_not_in_payload({fiscal_year})"
+    return max(fiscal_years, key=lambda r: str(r.get("fiscal_year", ""))), None
+
+
 def _overlay_live_budget_headline(
     payload: Dict[str, Any],
     live_budget_billion: Optional[float],
     *,
     tolerance_pct: float = 15.0,
+    basis: str = "cob_gross",
+    fiscal_year: Optional[str] = None,
 ) -> tuple[Dict[str, Any], str]:
     """Promote a live-parsed headline budget onto the latest fiscal year ONLY
     if it (a) passes the plausibility gate and (b) reconciles within
@@ -135,16 +406,16 @@ def _overlay_live_budget_headline(
     """
     if live_budget_billion is None:
         return payload, "no_live_value"
-    fiscal_years = payload.get("fiscal_years") or []
-    if not fiscal_years:
-        return payload, "no_fixture"
-    latest = max(fiscal_years, key=lambda r: str(r.get("fiscal_year", "")))
+    latest, reason = _target_row(payload, fiscal_year)
+    if latest is None:
+        return payload, reason or "no_fixture"
     try:
         live = float(live_budget_billion)
     except (TypeError, ValueError):
         return payload, "bad_live_value"
     if live <= 0:
         return payload, "bad_live_value"
+
 
     # (a) plausibility gate — substitute the live budget; it must stay
     # internally consistent (in band; spending still ≤ budget).
@@ -166,6 +437,41 @@ def _overlay_live_budget_headline(
         except (TypeError, ValueError):
             pass
 
+    # ── Basis gate — LAST, so a more specific verdict wins ────────────
+    # Ordering is sanity -> continuity -> identity. An implausible or
+    # far-off figure must be reported as such; masking that behind
+    # "basis_mismatch" would hide the more serious finding.
+    #
+    # "The budget" has three legitimate, DIFFERENT values for FY2025/26:
+    #   COB original gross budget   4.69T  (includes A-I-A and CFS)
+    #   COB original net estimates  4.43T
+    #   Budget Policy Statement     4.19T  <- what this fixture holds
+    # A numeric tolerance cannot separate a revision from a redefinition:
+    # gross sits 12% from the fixture, INSIDE the 15% band, so it would be
+    # promoted silently and the homepage headline would move from 4.19T to
+    # 4.69T with nobody having chosen that.
+    #
+    # Promotion therefore requires the row to DECLARE the same basis. The
+    # live value is recorded either way, so a refusal is inspectable rather
+    # than invisible.
+    incoming_basis = str(basis or CANONICAL_BUDGET_BASIS)
+    declared_basis = latest.get("budget_basis")
+    latest["_cob_live_budget_billion"] = round(live, 1)
+    latest["_cob_live_budget_basis"] = incoming_basis
+    if incoming_basis != CANONICAL_BUDGET_BASIS:
+        # The house basis is gross. A net or BPS figure is a real number
+        # from a real document and still must not land in this field.
+        return payload, (
+            f"basis_not_canonical(live={incoming_basis},"
+            f"canonical={CANONICAL_BUDGET_BASIS})"
+        )
+    if declared_basis is not None and declared_basis != incoming_basis:
+        return payload, (
+            f"basis_mismatch(row={declared_basis},live={incoming_basis})"
+        )
+    if declared_basis is None and not _ALLOW_UNDECLARED_BASIS:
+        return payload, f"basis_undeclared(live={incoming_basis})"
+
     latest["appropriated_budget"] = round(live, 1)
     latest["_budget_source"] = "cob_ng_birr_live"
     return payload, "promoted"
@@ -176,6 +482,7 @@ def _overlay_live_revenue_headline(
     live_revenue_billion: Optional[float],
     *,
     tolerance_pct: float = 15.0,
+    fiscal_year: Optional[str] = None,
 ) -> tuple[Dict[str, Any], str]:
     """Promote a live-parsed TOTAL revenue onto the latest fiscal year ONLY if
     it (a) passes the plausibility gate and (b) reconciles within
@@ -187,10 +494,9 @@ def _overlay_live_revenue_headline(
     """
     if live_revenue_billion is None:
         return payload, "no_live_value"
-    fiscal_years = payload.get("fiscal_years") or []
-    if not fiscal_years:
-        return payload, "no_fixture"
-    latest = max(fiscal_years, key=lambda r: str(r.get("fiscal_year", "")))
+    latest, reason = _target_row(payload, fiscal_year)
+    if latest is None:
+        return payload, reason or "no_fixture"
     try:
         live = float(live_revenue_billion)
     except (TypeError, ValueError):

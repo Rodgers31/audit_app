@@ -22,7 +22,11 @@ from seeding.config import SeedingSettings
 from seeding.http_client import PdfDownloadError, SeedingHttpClient
 from seeding.pdf_download import get_or_download_pdf
 
-_PDF_BODY = b"%PDF-1.7\n" + b"county budget rows\n" * 64
+# A COMPLETE PDF: header AND %%EOF trailer. The trailer matters — the
+# downloader now rejects a body without one, because these publishers
+# send no Content-Length and a truncated transfer is otherwise
+# indistinguishable from a whole document (see test_pdf_resume.py).
+_PDF_BODY = b"%PDF-1.7\n" + b"county budget rows\n" * 64 + b"%%EOF\n"
 
 
 @pytest.fixture()
