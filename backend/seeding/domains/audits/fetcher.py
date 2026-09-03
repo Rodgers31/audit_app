@@ -46,6 +46,7 @@ from urllib.parse import quote_plus, urljoin
 from ...config import SeedingSettings
 from ...http_client import SeedingHttpClient
 from ...utils import load_json_resource, slugify_entity
+from ...freshness import mark_fixture, mark_live
 
 logger = logging.getLogger("seeding.audits.fetcher")
 
@@ -80,16 +81,26 @@ def fetch_audit_payload(
                     "Successfully fetched audit data from OAG (%d findings)",
                     _count_findings(payload),
                 )
+                mark_live(
+                    "audits",
+                    detail=f"OAG live fetch, {_count_findings(payload)} findings",
+                )
                 return payload
             else:
                 logger.info(
                     "OAG live fetch produced no findings (expected: "
                     "OAG PDFs are scanned images); falling back to fixture"
                 )
+                mark_fixture("audits", reason="parser_returned_nothing")
         except Exception as exc:
             logger.warning(
                 "OAG fetch failed, falling back to fixture: %s", exc
             )
+            mark_fixture(
+                "audits", reason="live_fetch_failed", detail=str(exc)[:200]
+            )
+    else:
+        mark_fixture("audits", reason="live_pdf_fetch_disabled")
 
     # Strategy 2: Fixture fallback
     logger.info("Using fixture/configured URL for audit data")

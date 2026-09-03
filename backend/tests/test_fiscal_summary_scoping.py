@@ -27,31 +27,34 @@ def seed_fiscal_and_budget(db_session, seed_country, seed_source_doc):
     - 1 county entity with BudgetLines in FY2023/24
     """
     # === FiscalSummary rows (national-scope by design) ===
+    # Money columns store RAW KES since the stage1 3a migration.
     fs_complete = FiscalSummary(
         fiscal_year="FY2023/24",
-        appropriated_budget=3600,
-        total_revenue=2400,
-        tax_revenue=1800,
-        non_tax_revenue=600,
-        total_borrowing=700,
+        appropriated_budget=3600e9,
+        total_revenue=2400e9,
+        tax_revenue=1800e9,
+        non_tax_revenue=600e9,
+        total_borrowing=700e9,
         borrowing_pct_of_budget=19.4,
-        debt_service_cost=1100,
-        development_spending=690,
-        recurrent_spending=2400,
-        county_allocation=390,
+        debt_service_cost=1100e9,
+        development_spending=690e9,
+        recurrent_spending=2400e9,
+        county_allocation=390e9,
+        unit="KES",
         source_document_id=seed_source_doc.id,
     )
     fs_incomplete = FiscalSummary(
         fiscal_year="FY2022/23",
-        appropriated_budget=3310,
-        total_revenue=2166,
-        tax_revenue=1600,
-        non_tax_revenue=566,
-        total_borrowing=600,
+        appropriated_budget=3310e9,
+        total_revenue=2166e9,
+        tax_revenue=1600e9,
+        non_tax_revenue=566e9,
+        total_borrowing=600e9,
         # No spending data → should be excluded from fiscal-outturns
         development_spending=None,
         recurrent_spending=None,
-        county_allocation=370,
+        county_allocation=370e9,
+        unit="KES",
         source_document_id=seed_source_doc.id,
     )
     db_session.add_all([fs_complete, fs_incomplete])

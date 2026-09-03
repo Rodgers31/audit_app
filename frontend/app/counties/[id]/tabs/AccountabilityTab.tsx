@@ -25,6 +25,17 @@ import {
 } from 'lucide-react';
 import { fmtKES } from '../shared';
 
+// Neutral styling for a county with no grade. Deliberately grey and
+// deliberately NOT a member of ACCT_GRADE_STYLE, so it can never be reached by
+// a letter-grade lookup or read as a position on the A-F scale.
+const UNGRADED_STYLE = {
+  bg: 'bg-gray-400',
+  text: 'text-gray-600',
+  border: 'border-gray-300',
+  labelKey: 'county.acct.grade_ungraded' as TranslationKey,
+  glow: 'bg-gray-300',
+};
+
 const ACCT_GRADE_STYLE: Record<
   string,
   { bg: string; text: string; border: string; labelKey: TranslationKey; glow: string }
@@ -124,10 +135,29 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
     );
   }
 
-  const gradeStyle = ACCT_GRADE_STYLE[data.accountability_grade] || ACCT_GRADE_STYLE.F;
+  // A missing grade is not an "F". When every finding for this county was
+  // withheld for lack of a source document, there is nothing to grade — say so
+  // rather than printing the worst grade on the scale.
+  const ungraded = data.accountability_grade == null;
+  // An ungraded county gets a NEUTRAL style, never a letter grade's.
+  // Reported by review on PR #135: this fell back to ACCT_GRADE_STYLE.C, so a
+  // county whose every finding was withheld for lack of a source document
+  // still rendered the yellow C glow and the heading "Fair" — directly under a
+  // ring that correctly said "Not yet assessed". Absence is not a middling
+  // grade, and showing one is the same defect this PR removes from the API.
+  const gradeStyle =
+    (data.accountability_grade ? ACCT_GRADE_STYLE[data.accountability_grade] : null) ||
+    UNGRADED_STYLE;
   const peer = data.peer_comparison;
-  const isBelowRegion = data.total_flagged_amount > peer.region_avg_flagged_amount;
-  const isBelowBracket = data.total_flagged_amount > peer.population_bracket_avg;
+  // Comparisons need both sides; null on either means "unknown", not "better".
+  const isBelowRegion =
+    data.total_flagged_amount != null && peer.region_avg_flagged_amount != null
+      ? data.total_flagged_amount > peer.region_avg_flagged_amount
+      : null;
+  const isBelowBracket =
+    data.total_flagged_amount != null && peer.population_bracket_avg != null
+      ? data.total_flagged_amount > peer.population_bracket_avg
+      : null;
   const score =
     typeof data.accountability_score === 'number' ? data.accountability_score : null;
   const factors = data.grade_factors || [];
@@ -187,12 +217,24 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
                 className={`text-4xl font-black leading-none ${
                   score !== null && score >= 55 ? 'text-gray-800 dark:text-neutral-text' : 'text-gray-800 dark:text-neutral-text'
                 }`}
-                style={{ color: arcColor }}>
-                {data.accountability_grade}
+                style={{ color: ungraded ? undefined : arcColor }}>
+                {ungraded ? (
+                  <span className='text-base font-bold text-gray-500 dark:text-neutral-muted'>
+                    Not yet assessed
+                  </span>
+                ) : (
+                  data.accountability_grade
+                )}
               </span>
-              {score !== null && (
+              {score !== null ? (
                 <span className='text-[10px] font-semibold text-gray-500 dark:text-neutral-muted/80 tabular-nums mt-0.5'>
                   {score.toFixed(0)}/100
+                </span>
+              ) : (
+                <span className='text-[9px] font-semibold text-gray-500 dark:text-neutral-muted/80 mt-0.5 text-center px-1 leading-tight'>
+                  {data.accountability_reason === 'not_yet_audited_in_this_dataset'
+                    ? 'no audit ingested yet'
+                    : 'no sourced findings'}
                 </span>
               )}
             </div>
@@ -203,7 +245,9 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
               {t('county.acct.grade_label')}
             </div>
             <h3 className='text-2xl font-bold text-gray-900 dark:text-neutral-text mb-1'>{t(gradeStyle.labelKey)}</h3>
-            <p className='text-sm text-gray-600 dark:text-neutral-muted max-w-xl'>{t('county.acct.grade_description')}</p>
+            <p className='text-sm text-gray-600 dark:text-neutral-muted max-w-xl'>
+              {t(ungraded ? 'county.acct.grade_ungraded_description' : 'county.acct.grade_description')}
+            </p>
           </div>
         </div>
       </div>
@@ -312,12 +356,20 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
         {[
           {
             value:
-              data.total_flagged_amount > 0 ? fmtKES(data.total_flagged_amount) : 'KES 0',
+              data.total_flagged_amount != null
+                ? fmtKES(data.total_flagged_amount)
+                : 'Not yet published',
             label: t('county.acct.kpi.total_flagged'),
             sub:
-              typeof data.flagged_pct_of_budget === 'number' && data.flagged_pct_of_budget > 0
-                ? `${data.flagged_pct_of_budget.toFixed(1)}% ${t('county.acct.kpi.pct_of_budget')}`
-                : undefined,
+              data.total_flagged_amount == null
+                ? data.withheld?.count
+                  ? `${data.withheld.count} finding${
+                      data.withheld.count === 1 ? '' : 's'
+                    } withheld — no source document`
+                  : 'No sourced finding carries an amount'
+                : typeof data.flagged_pct_of_budget === 'number'
+                  ? `${data.flagged_pct_of_budget.toFixed(1)}% ${t('county.acct.kpi.pct_of_budget')}`
+                  : undefined,
             Icon: FileWarning,
             tone: 'rose' as const,
           },
@@ -428,9 +480,11 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
           {/* vs Region */}
           <div
             className={`rounded-2xl border p-5 ${
-              isBelowRegion
-                ? 'bg-gradient-to-br from-rose-50/60 to-white border-rose-100'
-                : 'bg-gradient-to-br from-emerald-50/60 to-white border-emerald-100'
+              isBelowRegion == null
+                ? 'bg-gray-50/60 border-gray-200 dark:bg-surface-elevated dark:border-neutral-border'
+                : isBelowRegion
+                  ? 'bg-gradient-to-br from-rose-50/60 to-white border-rose-100'
+                  : 'bg-gradient-to-br from-emerald-50/60 to-white border-emerald-100'
             }`}>
             <div className='text-[11px] font-semibold text-gray-500 dark:text-neutral-muted/80 uppercase tracking-widest mb-3'>
               {t('county.acct.peer.vs_region').replace(
@@ -441,27 +495,41 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
               )}
             </div>
             <div className='flex items-center gap-2 mb-3'>
-              {isBelowRegion ? (
+              {/* Unknown is not "better than peers": with either side missing
+                  there is no comparison to draw. */}
+              {isBelowRegion == null ? null : isBelowRegion ? (
                 <ArrowUp size={20} className='text-rose-500' />
               ) : (
                 <ArrowDown size={20} className='text-emerald-500' />
               )}
               <span
-                className={`text-lg font-bold ${isBelowRegion ? 'text-rose-700' : 'text-emerald-700'}`}>
-                {isBelowRegion ? t('county.acct.peer.above') : t('county.acct.peer.below')}
+                className={`text-lg font-bold ${
+                  isBelowRegion == null
+                    ? 'text-gray-500 dark:text-neutral-muted'
+                    : isBelowRegion
+                      ? 'text-rose-700'
+                      : 'text-emerald-700'
+                }`}>
+                {isBelowRegion == null
+                  ? 'Not enough sourced data to compare'
+                  : isBelowRegion
+                    ? t('county.acct.peer.above')
+                    : t('county.acct.peer.below')}
               </span>
             </div>
             <div className='space-y-1 text-sm'>
               <div className='flex justify-between'>
                 <span className='text-gray-500 dark:text-neutral-muted/80'>{t('county.acct.peer.this_county')}</span>
                 <span className='font-semibold text-gray-800 dark:text-neutral-text tabular-nums'>
-                  {fmtKES(data.total_flagged_amount)}
+                  {data.total_flagged_amount != null
+                    ? fmtKES(data.total_flagged_amount)
+                    : '—'}
                 </span>
               </div>
               <div className='flex justify-between'>
                 <span className='text-gray-500 dark:text-neutral-muted/80'>{t('county.acct.peer.region_avg')}</span>
                 <span className='font-semibold text-gray-800 dark:text-neutral-text tabular-nums'>
-                  {fmtKES(peer.region_avg_flagged_amount)}
+                  {peer.region_avg_flagged_amount != null ? fmtKES(peer.region_avg_flagged_amount) : '—'}
                 </span>
               </div>
               {peer.region_avg_grade && (
@@ -476,9 +544,11 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
           {/* vs Population Bracket */}
           <div
             className={`rounded-2xl border p-5 ${
-              isBelowBracket
-                ? 'bg-gradient-to-br from-rose-50/60 to-white border-rose-100'
-                : 'bg-gradient-to-br from-emerald-50/60 to-white border-emerald-100'
+              isBelowBracket == null
+                ? 'bg-gray-50/60 border-gray-200 dark:bg-surface-elevated dark:border-neutral-border'
+                : isBelowBracket
+                  ? 'bg-gradient-to-br from-rose-50/60 to-white border-rose-100'
+                  : 'bg-gradient-to-br from-emerald-50/60 to-white border-emerald-100'
             }`}>
             <div className='text-[11px] font-semibold text-gray-500 dark:text-neutral-muted/80 uppercase tracking-widest mb-3'>
               {t('county.acct.peer.vs_bracket').replace(
@@ -487,29 +557,39 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
               )}
             </div>
             <div className='flex items-center gap-2 mb-3'>
-              {isBelowBracket ? (
+              {isBelowBracket == null ? null : isBelowBracket ? (
                 <ArrowUp size={20} className='text-rose-500' />
               ) : (
                 <ArrowDown size={20} className='text-emerald-500' />
               )}
               <span
-                className={`text-lg font-bold ${isBelowBracket ? 'text-rose-700' : 'text-emerald-700'}`}>
-                {isBelowBracket
-                  ? t('county.acct.peer.above_bracket')
-                  : t('county.acct.peer.below_bracket')}
+                className={`text-lg font-bold ${
+                  isBelowBracket == null
+                    ? 'text-gray-500 dark:text-neutral-muted'
+                    : isBelowBracket
+                      ? 'text-rose-700'
+                      : 'text-emerald-700'
+                }`}>
+                {isBelowBracket == null
+                  ? 'Not enough sourced data to compare'
+                  : isBelowBracket
+                    ? t('county.acct.peer.above_bracket')
+                    : t('county.acct.peer.below_bracket')}
               </span>
             </div>
             <div className='space-y-1 text-sm'>
               <div className='flex justify-between'>
                 <span className='text-gray-500 dark:text-neutral-muted/80'>{t('county.acct.peer.this_county')}</span>
                 <span className='font-semibold text-gray-800 dark:text-neutral-text tabular-nums'>
-                  {fmtKES(data.total_flagged_amount)}
+                  {data.total_flagged_amount != null
+                    ? fmtKES(data.total_flagged_amount)
+                    : '—'}
                 </span>
               </div>
               <div className='flex justify-between'>
                 <span className='text-gray-500 dark:text-neutral-muted/80'>{t('county.acct.peer.bracket_avg')}</span>
                 <span className='font-semibold text-gray-800 dark:text-neutral-text tabular-nums'>
-                  {fmtKES(peer.population_bracket_avg)}
+                  {peer.population_bracket_avg != null ? fmtKES(peer.population_bracket_avg) : '—'}
                 </span>
               </div>
             </div>

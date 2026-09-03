@@ -15,6 +15,47 @@ from main import _parse_kes_amount_str
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 
+NAIVE_AMOUNT = 156_800_000_000.0
+
+
+@pytest.fixture()
+def seeded_federal(db_session, seed_country, seed_source_doc):
+    """One federal finding whose source document resolves, so it publishes."""
+    from datetime import datetime
+
+    from models import Audit, Entity, EntityType, FiscalPeriod, Severity
+
+    entity = Entity(
+        id=800,
+        country_id=seed_country.id,
+        type=EntityType.NATIONAL,
+        canonical_name="National Treasury and Economic Planning",
+        slug="treasury-questioned",
+    )
+    period = FiscalPeriod(
+        id=800,
+        country_id=seed_country.id,
+        label="FY2023/24",
+        start_date=datetime(2023, 7, 1),
+        end_date=datetime(2024, 6, 30),
+    )
+    db_session.add_all([entity, period])
+    db_session.flush()
+    db_session.add(
+        Audit(
+            entity_id=entity.id,
+            period_id=period.id,
+            finding_text="Consolidated Fund Reconciliation",
+            severity=Severity.CRITICAL,
+            source_document_id=seed_source_doc.id,
+            amount=NAIVE_AMOUNT,
+            audit_year=2023,
+            provenance=[{"amount_involved": "KES 156.8B", "status": "pending"}],
+        )
+    )
+    db_session.commit()
+    return {"naive_sum": NAIVE_AMOUNT}
+
 
 @pytest.mark.parametrize(
     "value,expected",
@@ -35,13 +76,31 @@ def test_parse_kes_amount_str(value, expected):
     assert _parse_kes_amount_str(value) == expected
 
 
-def test_federal_headline_uses_authoritative_not_naive_sum():
-    src = (BACKEND_DIR / "main.py").read_text(encoding="utf-8")
-    # Headline parses the OAG report's own questioned total...
-    assert (
-        '"total_amount_questioned": _parse_kes_amount_str(' in src
-    ), "headline should use the authoritative parsed figure"
-    # ...the naive sum is no longer the questioned headline...
-    assert '"total_amount_questioned": total_amount,' not in src
-    # ...and is exposed honestly for transparency instead.
-    assert '"total_amount_in_findings": total_amount,' in src
+def test_federal_headline_is_not_the_naive_sum_of_findings(client, seeded_federal):
+    """The two figures must be distinct, and the headline must not be the sum.
+
+    Previously asserted by grepping main.py for a literal source string, which
+    passes or fails on how the line is spelled rather than on what the endpoint
+    returns — the pattern AUDIT_FINDINGS §P6 calls "testing the guard rails and
+    not the thing being guarded". It broke when the field became a conditional
+    expression while the behaviour was unchanged. Assert the response instead.
+    """
+    d = client.get("/api/v1/audits/federal").json()
+
+    naive_sum = seeded_federal["naive_sum"]
+    assert d["total_amount_in_findings"] == pytest.approx(naive_sum), (
+        "the raw sum should still be exposed for transparency"
+    )
+    # The headline is the OAG report's own questioned total, not the sum.
+    assert d["total_amount_questioned"] != d["total_amount_in_findings"]
+    assert d["total_amount_questioned"] == _parse_kes_amount_str(
+        d["total_amount_questioned_label"]
+    )
+
+
+def test_federal_headline_still_parses_the_authoritative_label(client, seeded_federal):
+    """Whatever the label says, the numeric headline must agree with it."""
+    d = client.get("/api/v1/audits/federal").json()
+    label = d["total_amount_questioned_label"]
+    if label:
+        assert d["total_amount_questioned"] == _parse_kes_amount_str(label)

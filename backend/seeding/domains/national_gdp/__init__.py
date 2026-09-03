@@ -40,31 +40,13 @@ logger = logging.getLogger("seeding.national_gdp")
 # the headline debt-to-GDP ratio to 82%. See national_gdp/fetcher.py and
 # seeding/real_data/national_gdp.json.
 
-# Source: World Bank, KNBS KIHBS
-POVERTY_SERIES = [
-    {
-        "year": 2024,
-        "headcount": Decimal("33.4"),
-        "extreme": Decimal("8.6"),
-        "gini": Decimal("0.408"),
-        "source": "World Bank Kenya Economic Update 2024",
-    },
-    {
-        "year": 2021,
-        "headcount": Decimal("36.1"),
-        "extreme": Decimal("10.2"),
-        "gini": Decimal("0.410"),
-        "source": "KNBS KIHBS 2021",
-    },
-    {
-        "year": 2019,
-        "headcount": Decimal("36.1"),
-        "extreme": Decimal("8.5"),
-        "gini": Decimal("0.408"),
-        "source": "KNBS KIHBS 2015/16 (adjusted for 2019 Census)",
-    },
-]
-
+# POVERTY_SERIES was removed here (issue #137 P7). It held nine figures as a
+# Python constant, inserted at confidence 0.85. The 2019 row was the World
+# Bank's 2015 observation exactly (36.1 / 0.408) relabelled; the 2021 row
+# republished that same 36.1 under a label naming "KNBS KIHBS 2021", whose
+# actual observation is 38.6; and the World Bank reports nothing at all for
+# 2019 or 2024. Poverty now comes from fetcher.fetch_kenya_poverty(), which
+# writes only years the World Bank actually observes.
 
 def _ensure_gdp_source_document(session: Session) -> SourceDocument:
     """Get or create the World Bank source document for national GDP."""
@@ -85,6 +67,50 @@ def _ensure_gdp_source_document(session: Session) -> SourceDocument:
             doc_type=DocumentType.REPORT,
             md5=None,
             meta={"seeding_domain": "national_gdp", "indicator": "NY.GDP.MKTP.CN"},
+        )
+        session.add(doc)
+        session.flush()
+    return doc
+
+
+def _ensure_poverty_source_document(session: Session) -> SourceDocument:
+    """The document poverty rows cite.
+
+    Previously every row cited one generic document —
+    ``https://www.knbs.or.ke/economic-survey-2025/``, titled "KNBS Economic
+    Survey 2025 & World Bank Poverty Data" — while the rows' own metadata
+    named three DIFFERENT publications: "KNBS KIHBS 2021", "KNBS KIHBS
+    2015/16 (adjusted for 2019 Census)" and "World Bank Kenya Economic Update
+    2024". A citation that resolves to a document the figure did not come from
+    is worse than a missing one: it looks checkable.
+
+    This document names the two indicators the figures are actually read from,
+    so following the citation reaches the numbers.
+    """
+    url = "https://api.worldbank.org/v2/country/KEN/indicator/SI.POV.NAHC"
+    doc = session.execute(
+        select(SourceDocument).where(SourceDocument.url == url)
+    ).scalar_one_or_none()
+    if doc is None:
+        country = session.execute(
+            select(Country).order_by(Country.id.asc())
+        ).scalar_one_or_none()
+        doc = SourceDocument(
+            country_id=country.id if country else None,
+            publisher="World Bank",
+            title=(
+                "World Bank — Kenya poverty headcount at national poverty "
+                "lines (SI.POV.NAHC) and Gini index (SI.POV.GINI)"
+            ),
+            url=url,
+            file_path=None,
+            fetch_date=datetime.now(timezone.utc),
+            doc_type=DocumentType.REPORT,
+            md5=None,
+            meta={
+                "seeding_domain": "national_gdp",
+                "indicators": ["SI.POV.NAHC", "SI.POV.GINI"],
+            },
         )
         session.add(doc)
         session.flush()
@@ -126,6 +152,7 @@ def run(
     errors: list[str] = []
 
     gdp_years = 0
+    poverty_by_year: dict = {}
     try:
         doc = _ensure_source_document(session)
         gdp_doc = _ensure_gdp_source_document(session)
@@ -226,56 +253,101 @@ def run(
                 )
 
         # ── Poverty index records with entity_id=NULL ────────────────
-        for data in POVERTY_SERIES:
+        # Live World Bank, replacing the POVERTY_SERIES constant. A failed
+        # fetch keeps existing rows and prunes nothing — the same
+        # last-known-good rule the GDP path above follows.
+        try:
+            with create_http_client(settings) as client:
+                poverty_by_year = fetcher.fetch_kenya_poverty(client, settings)
+        except Exception as exc:
+            logger.warning(
+                "national_gdp: poverty fetch failed (%s); keeping existing rows",
+                exc,
+            )
+            poverty_by_year = {}
+
+        poverty_doc = _ensure_poverty_source_document(session) if poverty_by_year else None
+
+        for year, values in poverty_by_year.items():
             existing = (
                 session.query(PovertyIndex)
                 .filter(
                     PovertyIndex.entity_id.is_(None),
-                    PovertyIndex.year == data["year"],
+                    PovertyIndex.year == year,
                 )
                 .first()
             )
+            # extreme_poverty_rate is deliberately NULL — see
+            # fetcher.EXTREME_POVERTY_OMITTED_REASON.
+            meta = {
+                "source": "World Bank (SI.POV.NAHC, SI.POV.GINI)",
+                "seeding_domain": "national_gdp",
+                "extreme_poverty_rate_absent_reason": (
+                    fetcher.EXTREME_POVERTY_OMITTED_REASON
+                ),
+                "gini_scale": "0-1 (World Bank reports 0-100; divided by 100)",
+            }
             if existing is None:
                 session.execute(
                     PovertyIndex.__table__.insert().values(
                         entity_id=None,
-                        year=data["year"],
-                        poverty_headcount_rate=data["headcount"],
-                        extreme_poverty_rate=data["extreme"],
-                        gini_coefficient=data["gini"],
-                        source_document_id=doc.id,
-                        confidence=Decimal("0.85"),
-                        metadata={
-                            "source": data["source"],
-                            "seeding_domain": "national_gdp",
-                        },
+                        year=year,
+                        poverty_headcount_rate=values.get("headcount"),
+                        extreme_poverty_rate=None,
+                        gini_coefficient=values.get("gini"),
+                        source_document_id=poverty_doc.id,
+                        confidence=Decimal("0.95"),
+                        metadata=meta,
                     )
                 )
                 created += 1
-                logger.info(
-                    "Created poverty index row for %d", data["year"]
-                )
+                logger.info("Created poverty index row for %d", year)
             else:
                 changed = False
-                if existing.poverty_headcount_rate != data["headcount"]:
-                    existing.poverty_headcount_rate = data["headcount"]
+                if existing.poverty_headcount_rate != values.get("headcount"):
+                    existing.poverty_headcount_rate = values.get("headcount")
                     changed = True
-                if existing.extreme_poverty_rate != data["extreme"]:
-                    existing.extreme_poverty_rate = data["extreme"]
+                if existing.extreme_poverty_rate is not None:
+                    existing.extreme_poverty_rate = None
                     changed = True
-                if existing.gini_coefficient != data["gini"]:
-                    existing.gini_coefficient = data["gini"]
+                if existing.gini_coefficient != values.get("gini"):
+                    existing.gini_coefficient = values.get("gini")
                     changed = True
                 if changed:
-                    existing.source_document_id = doc.id
+                    existing.source_document_id = poverty_doc.id
+                    existing.confidence = Decimal("0.95")
+                    existing.meta = meta
                     session.add(existing)
                     updated += 1
+
+        # Prune NULL-entity poverty years the source does not report. This is
+        # the half that matters: 2019 and 2024 exist in production with no
+        # World Bank observation behind them, and an upsert alone would leave
+        # them there forever. Guarded by a non-empty fetch so a failed request
+        # never deletes real rows — the exact guard the GDP prune above uses.
+        if poverty_by_year:
+            unsourced = (
+                session.query(PovertyIndex)
+                .filter(
+                    PovertyIndex.entity_id.is_(None),
+                    PovertyIndex.year.notin_(list(poverty_by_year)),
+                )
+                .all()
+            )
+            for row in unsourced:
+                session.delete(row)
+            if unsourced:
+                logger.info(
+                    "Pruned %d poverty year(s) with no World Bank observation: %s",
+                    len(unsourced),
+                    sorted(r.year for r in unsourced),
+                )
 
     except Exception as exc:
         logger.exception("national_gdp seeding failed: %s", exc)
         errors.append(str(exc))
 
-    processed = gdp_years + len(POVERTY_SERIES)
+    processed = gdp_years + len(poverty_by_year)
     logger.info(
         "national_gdp complete: %d created, %d updated, %d processed",
         created,

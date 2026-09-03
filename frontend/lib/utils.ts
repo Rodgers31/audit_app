@@ -33,6 +33,24 @@ export function fmtKES(val: number): string {
 }
 
 /**
+ * Normalise a money value from /debt/timeline or /fiscal/summary to raw KES.
+ *
+ * Since the stage1 3a migration those endpoints store and serve raw KES and
+ * DECLARE it with a per-row `unit: "KES"` field. A pre-migration backend
+ * serves bare billions with no unit field — the one legacy case this
+ * converts. The decision is made on the declared unit, never by guessing a
+ * value's magnitude (F5.5: undeclared units are how the homepage was once
+ * wrong by 10⁹).
+ */
+export function toRawKES(
+  value: number | null | undefined,
+  unit?: string | null
+): number | null {
+  if (value == null || Number.isNaN(value)) return null;
+  return unit === 'KES' ? value : value * 1e9;
+}
+
+/**
  * Format a **billion KES** value into a short human-readable string.
  * Input: billions (e.g. 3310 meaning KES 3.31 trillion) → "3.31T"
  *
@@ -87,28 +105,42 @@ export const DEBT_RISK_THRESHOLDS = {
 } as const;
 
 /**
- * Return a short risk label ('Low' | 'Moderate' | 'High') for a given
- * debt-to-GDP ratio. Undefined / null / NaN inputs fall through to
- * 'Moderate' so the UI has a sensible default before data loads.
+ * Return a short risk label for a given debt-to-GDP ratio, or ``null`` when
+ * the ratio cannot be assessed.
+ *
+ * Absence is not a risk band. This previously returned 'Moderate' for
+ * null/NaN so the UI "had a sensible default before data loads" — but a
+ * default is a claim. Worse, a ratio of ``0`` (which is what a failed API
+ * call used to produce) fell into the ``< LOW_MAX`` branch and rendered as
+ * **'Low' risk**, so a database outage displayed as a reassuring rating on
+ * the homepage. A non-positive debt-to-GDP reading is not a real
+ * observation for a sovereign, so it is treated as unassessable.
+ *
+ * Callers must render ``null`` as "not assessed" — never as a band.
  */
 export function classifyDebtRisk(
   debtToGdpRatio: number | null | undefined,
-): 'Low' | 'Moderate' | 'High' {
-  if (debtToGdpRatio == null || Number.isNaN(debtToGdpRatio)) return 'Moderate';
+): 'Low' | 'Moderate' | 'High' | null {
+  if (debtToGdpRatio == null || Number.isNaN(debtToGdpRatio)) return null;
+  if (debtToGdpRatio <= 0) return null;
   if (debtToGdpRatio < DEBT_RISK_THRESHOLDS.LOW_MAX) return 'Low';
   if (debtToGdpRatio < DEBT_RISK_THRESHOLDS.MODERATE_MAX) return 'Moderate';
   return 'High';
 }
 
-export function getDebtRiskColor(debtToGdpRatio: number): string {
+/** Colour for a risk band; neutral when the ratio cannot be assessed. */
+export function getDebtRiskColor(debtToGdpRatio: number | null | undefined): string {
   const band = classifyDebtRisk(debtToGdpRatio);
+  if (band === null) return 'text-neutral-muted';
   if (band === 'Low') return 'text-brand-500';
   if (band === 'Moderate') return 'text-caution';
   return 'text-risk';
 }
 
-export function getDebtRiskLevel(debtToGdpRatio: number): string {
-  return `${classifyDebtRisk(debtToGdpRatio)} Risk`;
+/** Human label for a risk band; "Not assessed" when the ratio is unusable. */
+export function getDebtRiskLevel(debtToGdpRatio: number | null | undefined): string {
+  const band = classifyDebtRisk(debtToGdpRatio);
+  return band === null ? 'Not assessed' : `${band} Risk`;
 }
 
 /**

@@ -27,12 +27,15 @@ interface MissingCase {
 }
 
 interface MissingFundsResponse {
-  total_amount: number;
+  /** null when nothing traces to a source document — never 0. */
+  total_amount: number | null;
   total_cases: number;
   affected_counties: number;
   by_status: Record<string, number>;
   top_counties: Array<{ county: string; cases: number; amount: number }>;
   cases: MissingCase[];
+  reason?: string | null;
+  withheld?: { count: number; by_reason: Record<string, number> };
 }
 
 function fmtKES(n: number): string {
@@ -115,6 +118,14 @@ export default function MissingFundsPage() {
 
   const statuses = Object.keys(data?.by_status || {});
 
+  // A figure with no traceable source is not zero — it is absent. Keep the
+  // two states visually distinct so an empty tracker never reads as a
+  // finding that no public money is unaccounted for.
+  const nothingPublishable =
+    !isLoading && !error && (!data || data.total_amount === null || data.total_cases === 0);
+  /** Neither a real value nor a settled absence — the fetch has not finished. */
+  const unsettled = isLoading || !!error;
+
   return (
     <PageShell
       title='Missing Funds Tracker'
@@ -127,11 +138,26 @@ export default function MissingFundsPage() {
             <div className='text-xs uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-semibold mb-1'>
               Total flagged
             </div>
-            <div className='text-3xl font-bold text-rose-700 tabular-nums'>
-              {fmtKES(data?.total_amount || 0)}
+            <div
+              className={
+                data?.total_amount == null
+                  ? 'text-2xl font-semibold text-gray-400 dark:text-neutral-muted/80'
+                  : 'text-3xl font-bold text-rose-700 tabular-nums'
+              }>
+              {isLoading || error
+                ? '\u2014'
+                : data?.total_amount == null
+                  ? 'Not yet published'
+                  : fmtKES(data.total_amount)}
             </div>
             <div className='text-xs text-gray-500 dark:text-neutral-muted/80 mt-1'>
-              Across {data?.total_cases || 0} documented cases
+              {isLoading
+                ? 'Loading\u2026'
+                : error
+                  ? 'Could not load the tracker'
+                  : data?.total_amount == null
+                    ? 'No case currently traces to a published report'
+                    : `Across ${data.total_cases} documented cases`}
             </div>
           </div>
           <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-5'>
@@ -139,8 +165,16 @@ export default function MissingFundsPage() {
               Counties affected
             </div>
             <div className='text-3xl font-bold text-gray-900 dark:text-neutral-text tabular-nums'>
-              {data?.affected_counties || 0}
-              <span className='text-base text-gray-400 dark:text-neutral-muted/80 font-normal'> / 47</span>
+              {unsettled || nothingPublishable ? (
+                <span className='text-2xl font-semibold text-gray-400 dark:text-neutral-muted/80'>
+                  &mdash;
+                </span>
+              ) : (
+                <>
+                  {data?.affected_counties ?? 0}
+                  <span className='text-base text-gray-400 dark:text-neutral-muted/80 font-normal'> / 47</span>
+                </>
+              )}
             </div>
             <div className='text-xs text-gray-500 dark:text-neutral-muted/80 mt-1'>With at least one flagged case</div>
           </div>
@@ -149,6 +183,9 @@ export default function MissingFundsPage() {
               Recovery status
             </div>
             <div className='flex flex-wrap gap-2 mt-2'>
+              {(unsettled || nothingPublishable) && (
+                <span className='text-sm text-gray-400 dark:text-neutral-muted/80'>&mdash;</span>
+              )}
               {Object.entries(data?.by_status || {}).map(([status, amount]) => (
                 <div key={status} className='text-xs'>
                   <StatusBadge status={status} />
@@ -200,7 +237,33 @@ export default function MissingFundsPage() {
           </div>
         )}
 
+        {/* Nothing traces to a source document yet */}
+        {nothingPublishable && (
+          <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-200 dark:border-neutral-border p-8 text-center'>
+            <AlertTriangle className='mx-auto text-gray-400 dark:text-neutral-muted/80 mb-3' size={24} />
+            <h2 className='text-base font-semibold text-gray-900 dark:text-neutral-text mb-2'>
+              No cases are published here yet
+            </h2>
+            <p className='text-sm text-gray-600 dark:text-neutral-muted max-w-xl mx-auto leading-relaxed'>
+              This tracker lists a case only once it can be traced to a named page of
+              a published Office of the Auditor-General report. Nothing currently
+              meets that standard, so nothing is shown.
+            </p>
+            <p className='text-sm text-gray-600 dark:text-neutral-muted max-w-xl mx-auto leading-relaxed mt-3'>
+              An empty tracker is not a finding that public money is fully accounted
+              for. It means this page has no sourced case to show you.
+            </p>
+            {data?.withheld && data.withheld.count > 0 && (
+              <p className='text-xs text-gray-500 dark:text-neutral-muted/80 mt-4'>
+                {data.withheld.count} case{data.withheld.count === 1 ? '' : 's'} held back
+                for lack of a traceable source document.
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Search + filters */}
+        {!nothingPublishable && (
         <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-4 flex flex-wrap items-center gap-3'>
           <div className='flex-1 min-w-[220px] relative'>
             <Search
@@ -227,6 +290,7 @@ export default function MissingFundsPage() {
             ))}
           </select>
         </div>
+        )}
 
         {/* Case list */}
         {isLoading && (
@@ -240,7 +304,7 @@ export default function MissingFundsPage() {
             Failed to load missing funds. Please refresh.
           </div>
         )}
-        {!isLoading && !error && (
+        {!isLoading && !error && !nothingPublishable && (
           <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border divide-y divide-gray-100'>
             {filtered.length === 0 ? (
               <div className='p-8 text-center text-sm text-gray-500 dark:text-neutral-muted/80'>
@@ -286,14 +350,17 @@ export default function MissingFundsPage() {
           <div className='flex items-start gap-3'>
             <AlertTriangle className='text-amber-700 mt-0.5 shrink-0' size={18} />
             <div className='text-sm text-gray-700 dark:text-neutral-muted leading-relaxed'>
-              <p className='font-semibold text-gray-900 dark:text-neutral-text mb-1'>What counts as &ldquo;missing&rdquo;</p>
+              <p className='font-semibold text-gray-900 dark:text-neutral-text mb-1'>What has to be true before a case appears here</p>
               <p>
-                Only cases the Office of the Auditor-General has formally flagged as
-                unaccounted-for, ineligible expenditure, or unsupported payments are
-                listed here. Status labels reflect the most recent public update —
-                &ldquo;active investigation&rdquo; means OAG or EACC has an open file.
-                Nothing here is an allegation from us; every case traces back to
-                a published audit report.
+                A case is listed here only if it can be traced to a named page of a
+                published Office of the Auditor-General report. Where that trace does
+                not exist, the case is not shown &mdash; the figure is not estimated,
+                averaged, carried over from a previous year, or shown as zero.
+              </p>
+              <p className='mt-2'>
+                This page reports what an audit document says. It does not
+                characterise any county, office or official beyond the wording of the
+                cited report, and it does not describe the status of any investigation.
               </p>
             </div>
           </div>

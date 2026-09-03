@@ -30,7 +30,7 @@ from __future__ import annotations
 import logging
 import re
 from datetime import date
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -85,6 +85,42 @@ _COLUMN_MAPPINGS: Tuple[Tuple[int, str, str], ...] = (
 _KES_MILLIONS_SCALE = Decimal("1000000")
 
 
+def _discover_bulletin_url(
+    client: SeedingHttpClient, settings: SeedingSettings
+) -> Optional[str]:
+    """Locate the current Statistical Bulletin PDF on CBK's listing page.
+
+    The listing interleaves editions back to 2003 and is not sorted, so the
+    newest is chosen by the date parsed from each filename, not page order.
+    A ``not_before`` floor means a listing that has lost its recent entries
+    fails loudly instead of silently seeding a decade-old bulletin.
+    """
+    from datetime import date, timedelta
+
+    from ...discovery import discover_latest_pdf
+
+    page_url = settings.cbk_statistical_bulletin_page_url
+    try:
+        response = client.get(page_url, raise_for_status=True)
+    except Exception as exc:
+        logger.warning("CBK bulletin listing unreachable (%s): %s", page_url, exc)
+        return None
+
+    # CBK publishes twice a year; anything older than ~2 years means the
+    # listing changed shape and we should not trust what we picked.
+    floor = date.today() - timedelta(days=730)
+    found = discover_latest_pdf(
+        response.text,
+        page_url,
+        must_match=("/uploads/statistical_bulletin/",),
+        not_before=floor,
+    )
+    if found is None:
+        return None
+    logger.info("Discovered CBK Statistical Bulletin: %s", found)
+    return found.url
+
+
 def fetch_domestic_debt_from_cbk_bulletin(
     client: SeedingHttpClient, settings: SeedingSettings
 ) -> List[Dict[str, Any]]:
@@ -97,7 +133,17 @@ def fetch_domestic_debt_from_cbk_bulletin(
     """
     url = settings.cbk_statistical_bulletin_url
     if not url:
-        logger.info("CBK Statistical Bulletin URL not configured; skipping.")
+        # Discover the current edition rather than skipping. The direct path
+        # embeds a per-release upload hash, so it can never be hardcoded
+        # durably — which is why this overlay had never run in production.
+        url = _discover_bulletin_url(client, settings)
+    if not url:
+        logger.warning(
+            "No CBK Statistical Bulletin could be resolved (neither "
+            "SEED_CBK_STATISTICAL_BULLETIN_URL nor discovery from %s); "
+            "domestic debt stays on fixture values.",
+            settings.cbk_statistical_bulletin_page_url,
+        )
         return []
 
     try:
@@ -240,3 +286,150 @@ def _format_decimal(value: Decimal) -> str:
 
 
 __all__ = ["fetch_domestic_debt_from_cbk_bulletin"]
+
+
+# ── Table 4.1.3: Deficit Financing and Public Debt ────────────────────
+# The authoritative live source for the debt_timeline series (external /
+# domestic / total). Previously those three columns came from a fixture
+# whose 2025 total (12.5T) overstated the published figure (12.30T).
+#
+# Row shape, values in SHILLINGS MILLION:
+#   <Month> <fin1> <fin2> <fin3> <fin4> <domestic> <external> <total>
+# grouped under a fiscal-year header line ("2025/2026"). Kenya's FY runs
+# July->June, so July-December belong to the FIRST calendar year of the
+# label and January-June to the second.
+_TABLE_413_ANCHOR = "4.1.3"
+_FY413_HEADER_RE = re.compile(r"^(20\d{2})\s*/\s*(20\d{2})")
+_MONTH413_ROW_RE = re.compile(
+    r"^(January|February|March|April|May|June|July|August|September|"
+    r"October|November|December)\s+(.+)$",
+    re.IGNORECASE,
+)
+_MONTH_NUMBER = {
+    "january": 1, "february": 2, "march": 3, "april": 4, "may": 5,
+    "june": 6, "july": 7, "august": 8, "september": 9, "october": 10,
+    "november": 11, "december": 12,
+}
+# Shillings million -> raw KES. The debt_timeline table stores raw KES
+# (stage1 3a); passing millions through would understate by 1e6.
+_MILLION = Decimal("1000000")
+
+
+def _find_public_debt_page_text(pdf_bytes: bytes) -> Optional[str]:
+    """First page that actually YIELDS Table 4.1.3 rows.
+
+    Keyword matching alone selected the table of CONTENTS, which lists
+    "4.1.3 ... Deficit Financing and Public Debt" and contains every anchor
+    word while holding no data. The page is therefore validated by parsing
+    it: a page counts only if it produces at least one row that satisfies
+    the domestic+external==total identity. That is self-checking and
+    survives pagination changes between editions.
+    """
+    with pdfplumber.open(BytesIO(pdf_bytes)) as pdf:
+        for page in pdf.pages:
+            text = page.extract_text() or ""
+            if "4.1.3" not in text:
+                continue
+            if parse_public_debt_table(text):
+                return text
+    return None
+
+
+def parse_public_debt_table(page_text: str) -> Dict[int, Dict[str, Decimal]]:
+    """``{calendar_year: {external, domestic, total}}`` in raw KES.
+
+    For each calendar year the LATEST available month is kept, so a year
+    is represented by its most recent published stock rather than an
+    arbitrary row. Rows failing the ``domestic + external == total``
+    identity (±0.5%) are DROPPED: that identity is independent of our own
+    arithmetic, so a mismatch means the row was mis-parsed and must not
+    become a published figure.
+    """
+    out: Dict[int, Dict[str, Decimal]] = {}
+    best_month: Dict[int, int] = {}
+    fy_start: Optional[int] = None
+
+    for raw_line in (page_text or "").split("\n"):
+        line = raw_line.strip()
+        fy = _FY413_HEADER_RE.match(line)
+        if fy:
+            fy_start = int(fy.group(1))
+            continue
+        m = _MONTH413_ROW_RE.match(line)
+        if not m or fy_start is None:
+            continue
+        month_name = m.group(1).lower()
+        numbers = re.findall(r"-?[\d,]+\.?\d*", m.group(2))
+        if len(numbers) < 3:
+            continue
+        try:
+            domestic, external, total = (
+                Decimal(n.replace(",", "")) for n in numbers[-3:]
+            )
+        except (InvalidOperation, ValueError):
+            continue
+        if total <= 0:
+            continue
+        # Independent cross-check (see docstring).
+        if abs((domestic + external) - total) > (total * Decimal("0.005")):
+            logger.warning(
+                "CBK 4.1.3 row '%s' fails domestic+external==total "
+                "(%s + %s != %s); dropping rather than publishing it",
+                month_name,
+                domestic,
+                external,
+                total,
+            )
+            continue
+
+        month = _MONTH_NUMBER[month_name]
+        # FY label "2025/2026": Jul-Dec -> 2025, Jan-Jun -> 2026.
+        year = fy_start if month >= 7 else fy_start + 1
+        if year in best_month and best_month[year] >= month:
+            continue
+        best_month[year] = month
+        out[year] = {
+            "external": external * _MILLION,
+            "domestic": domestic * _MILLION,
+            "total": total * _MILLION,
+            "as_of_month": Decimal(month),
+        }
+    return out
+
+
+def fetch_public_debt_timeline_from_cbk_bulletin(
+    client: SeedingHttpClient, settings: SeedingSettings
+) -> Dict[int, Dict[str, Decimal]]:
+    """Live external/domestic/total public debt by calendar year, raw KES.
+
+    Returns ``{}`` on any failure so the caller keeps fixture values.
+    """
+    url = settings.cbk_statistical_bulletin_url or _discover_bulletin_url(
+        client, settings
+    )
+    if not url:
+        logger.warning(
+            "No CBK Statistical Bulletin resolved; debt timeline stays on "
+            "fixture values."
+        )
+        return {}
+    try:
+        pdf_bytes = _download_pdf(client, url)
+        page_text = _find_public_debt_page_text(pdf_bytes)
+    except Exception as exc:
+        logger.warning("CBK bulletin fetch/parse failed for 4.1.3: %s", exc)
+        return {}
+    if page_text is None:
+        logger.warning("CBK bulletin had no Table 4.1.3 page.")
+        return {}
+
+    parsed = parse_public_debt_table(page_text)
+    if parsed:
+        newest = max(parsed)
+        logger.info(
+            "CBK 4.1.3 parsed %d year(s); newest %d total=KES %.2fT",
+            len(parsed),
+            newest,
+            float(parsed[newest]["total"]) / 1e12,
+        )
+    return parsed

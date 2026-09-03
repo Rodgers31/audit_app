@@ -92,7 +92,7 @@ class SeedingSettings(BaseSettings):
     # slow-CDN night from consuming the whole per-domain SIGALRM budget
     # and aborting the run mid-parse (issue #119).
     pdf_download_timeout_seconds: float = Field(
-        default=180.0,
+        default=300.0,
         ge=1.0,
         description=(
             "TOTAL wall-clock cap for a single streamed large-PDF download. "
@@ -101,8 +101,13 @@ class SeedingSettings(BaseSettings):
             "slow-but-steady trickle cannot run unbounded. On breach the "
             "downloader raises a plain Exception and the domain falls back to "
             "its fixture instead of the per-domain budget aborting mid-parse. "
-            "Kept well under domain_timeout_seconds (600s) minus the ~254s a "
-            "county-PDF parse needs."
+            "Since downloads became RESUMABLE (a timeout now keeps its bytes "
+            "and the next attempt continues via HTTP Range), this cap no "
+            "longer decides whether a document is EVER fetched — only how "
+            "much progress one run makes. Raised 180s->300s so the common "
+            "case finishes in a single run while still leaving room inside "
+            "domain_timeout_seconds (600s) for the ~254s a county-PDF parse "
+            "needs."
         ),
     )
     pdf_download_max_bytes: int = Field(
@@ -241,6 +246,27 @@ class SeedingSettings(BaseSettings):
             "follow-up."
         ),
     )
+    cbk_statistical_bulletin_page_url: str = Field(
+        default="https://www.centralbank.go.ke/releases/statistical-bulletin/",
+        description=(
+            "CBK Statistical Bulletin listing page. Scraped each run to "
+            "discover the CURRENT bulletin PDF, because the direct path "
+            "carries a per-release upload hash "
+            "(/uploads/statistical_bulletin/<hash>_December 2025.pdf) that "
+            "cannot be predicted. Discovery replaces the hardcoded "
+            "cbk_statistical_bulletin_url, which was never set — so the "
+            "domestic-debt-by-instrument overlay had simply never run."
+        ),
+    )
+    treasury_brop_page_url: str = Field(
+        default="https://www.treasury.go.ke/budget-review-and-outlook-paper/",
+        description=(
+            "National Treasury BROP listing page. Scraped to discover the "
+            "current Budget Review and Outlook Paper, so a new edition is "
+            "picked up automatically instead of the pipeline silently "
+            "re-reading last year's hardcoded PDF path."
+        ),
+    )
     cob_birr_page_url: str = Field(
         default="https://cob.go.ke/publications/national-government-budget-implementation-review-reports/",
         description=(
@@ -260,6 +286,19 @@ class SeedingSettings(BaseSettings):
             "values. Opt-in because KRA's publication URL/format changes each "
             "release and must be confirmed before trusting the parse. Example: "
             "https://www.kra.go.ke/news-center/press-release/<slug>"
+        ),
+    )
+    treasury_budget_books_page_url: str = Field(
+        default="https://www.treasury.go.ke/budget-books/",
+        description=(
+            "National Treasury Budget Books listing page. Scraped each run "
+            "to discover the CURRENT fiscal year's approved Budget "
+            "Estimates (the Programme Based Budget book), which is where "
+            "the ENACTED budget for a new fiscal year first appears. COB "
+            "cannot supply it: COB publishes at quarter-end + 45 days, so "
+            "an FY that started on 1 July has no COB report until mid "
+            "November. Without this source the site could only ever show "
+            "last year's budget between July and November."
         ),
     )
     treasury_bps_page_url: str = Field(

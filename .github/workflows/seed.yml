@@ -53,10 +53,20 @@ env:
   SEED_AUDITS_OCR_MAX_PAGES: ${{ vars.SEED_AUDITS_OCR_MAX_PAGES || '30' }}
   SEED_POPULATION_DATASET_URL: ${{ secrets.SEED_POPULATION_DATASET_URL }}
   SEED_ECONOMIC_INDICATORS_DATASET_URL: ${{ secrets.SEED_ECONOMIC_INDICATORS_DATASET_URL }}
-  # Opt-in: KRA FY-revenue page/PDF. When set (repo Variable), the
-  # revenue_by_source domain overlays the live per-tax-head breakdown onto the
-  # fixture (gated). Unset/empty → breakdown stays on the fixture (default).
-  SEED_KRA_REVENUE_URL: ${{ vars.SEED_KRA_REVENUE_URL }}
+  # KRA FY-revenue page/PDF. The revenue_by_source domain overlays the live
+  # per-tax-head breakdown onto the fixture (gated by a plausibility check).
+  #
+  # This read `vars.SEED_KRA_REVENUE_URL` while the value was stored as a
+  # repository SECRET (set 2026-06-14) and no repository Variables exist at
+  # all — so it resolved to an empty string on every run and the overlay had
+  # never once executed. `secrets` first, `vars` kept as a fallback so either
+  # storage location works.
+  SEED_KRA_REVENUE_URL: ${{ secrets.SEED_KRA_REVENUE_URL || vars.SEED_KRA_REVENUE_URL }}
+  # Listing pages used to DISCOVER the current edition of each periodically
+  # republished document, so a new release is ingested automatically instead
+  # of the pipeline re-reading a hardcoded path forever.
+  SEED_CBK_STATISTICAL_BULLETIN_PAGE_URL: ${{ vars.SEED_CBK_STATISTICAL_BULLETIN_PAGE_URL || 'https://www.centralbank.go.ke/releases/statistical-bulletin/' }}
+  SEED_TREASURY_BROP_PAGE_URL: ${{ vars.SEED_TREASURY_BROP_PAGE_URL || 'https://www.treasury.go.ke/budget-review-and-outlook-paper/' }}
   SEED_LOG_LEVEL: INFO
 
 jobs:
@@ -98,11 +108,29 @@ jobs:
             "COB Publications|https://cob.go.ke/publications/|false"
             "COB County Reports|https://cob.go.ke/publications/county-reports/|false"
             "COB National Reports|https://cob.go.ke/publications/national-government-budget-implementation-review-reports/|false"
+            # Same shape as COB above: audits/fetcher.py:199-203 queries the
+            # WP media API first and only falls back to scraping the homepage,
+            # so the REST endpoint is the real "can we discover reports?"
+            # signal.
+            "OAG WP REST API|https://www.oagkenya.go.ke/wp-json/wp/v2/media?per_page=1&mime_type=application/pdf|true"
             "OAG Homepage|https://www.oagkenya.go.ke/|true"
             "OAG National Audit Reports|https://www.oagkenya.go.ke/national-government-audit-reports/|false"
             "CBK Homepage|https://www.centralbank.go.ke/|true"
             "CBK Public Debt|https://www.centralbank.go.ke/public-debt/|true"
-            "Treasury|https://newsite.treasury.go.ke/|false"
+            # Treasury: www., NOT newsite. The probe used to point at
+            # https://newsite.treasury.go.ke/, which appears only in the legacy
+            # etl/ pipeline. The nightly runs `seeding.cli seed --all`, and
+            # seeding/config.py fetches www.treasury.go.ke. Both hosts answer
+            # 200, so the old probe was permanently green about a host this
+            # workflow never touches. Kept in sync by
+            # backend/tests/test_healthcheck_probes_the_real_hosts.py.
+            #
+            # budget-books is CRITICAL: it is where the enacted budget for the
+            # fiscal year comes from (FY2026/27 = KSh 5,485.7B), so losing it
+            # is how a fiscal year silently stops arriving on the site.
+            "Treasury Budget Books|https://www.treasury.go.ke/budget-books/|true"
+            "Treasury Budget Policy Statement|https://www.treasury.go.ke/budget-policy-statement/|false"
+            "Treasury BROP|https://www.treasury.go.ke/budget-review-and-outlook-paper/|false"
             "World Bank API|https://api.worldbank.org/v2/country/KE?format=json|true"
             "IMF DataMapper|https://www.imf.org/external/datamapper/api/v1/GGXWDG_NGDP/KEN|false"
           )
@@ -255,6 +283,33 @@ jobs:
       - name: Run alembic migrations
         run: cd backend && alembic upgrade head
 
+      # A migration that "succeeded" is not a schema that matches the models.
+      # `alembic stamp --purge` ASSERTS equivalence to a baseline, it never
+      # verifies it — which is how public.users sat with 6 of its 9 columns
+      # while every nightly reported success, 500ing every authenticated
+      # request with `column users.display_name does not exist`. The unit
+      # tests cannot catch this either: they build their database with
+      # create_all(), so it matches the models by construction.
+      #
+      # This is the only place the real deployed schema is ever compared to
+      # what the ORM will select. It fails the job, which stops seed/validate
+      # on `needs:` — correct: writing into a schema the code disagrees with
+      # is worse than not writing.
+      - name: Verify the deployed schema matches the models
+        run: |
+          cd backend
+          python -c "
+          import sys
+          from database import engine
+          from models import Base
+          from services.schema_parity import check_database, format_report
+
+          missing = check_database(engine, Base.metadata)
+          print(format_report(missing))
+          if missing:
+              sys.exit(1)
+          "
+
   # ══════════════════════════════════════════════════════════════════
   # Step 2: Bootstrap seeding (counties, national GDP, population, etc.)
   # Runs on manual trigger with run_bootstrap=true, or on Sunday schedule
@@ -364,8 +419,23 @@ jobs:
           print('\n--- Ingestion Job Results ---')
           for job in jobs:
               status = job.status.value
-              emoji = 'OK' if status == 'completed' else 'WARN' if status == 'completed_with_errors' else 'FAIL'
-              print(f'[{emoji}] {job.domain}: {status} | created={job.items_created} updated={job.items_updated} processed={job.items_processed}')
+              mode = (job.meta or {}).get('source_mode')
+              # A domain that served a git-tracked fixture is NOT [OK]: it
+              # published nothing from the publisher, and its 0-created count
+              # reflects a static file rather than a confirmed no-op upstream.
+              if mode == 'fixture':
+                  emoji = 'STALE'
+              elif status == 'completed':
+                  emoji = 'OK'
+              elif status == 'completed_with_errors':
+                  emoji = 'WARN'
+              else:
+                  emoji = 'FAIL'
+              src = f" | source={mode or 'unrecorded'}"
+              reason = (job.meta or {}).get('source_fallback_reason')
+              if reason:
+                  src += f' ({reason})'
+              print(f'[{emoji}] {job.domain}: {status} | created={job.items_created} updated={job.items_updated} processed={job.items_processed}{src}')
               if job.errors:
                   for err in job.errors[:3]:
                       print(f'  ERROR: {str(err)[:200]}')
@@ -452,6 +522,20 @@ jobs:
           # fetch↔parse WARN, not by inflating this floor.)
           total_audits = session.query(Audit).count()
           check('Audit Records', total_audits, 20)
+          # The provenance middle link. This was 0 for the project's whole
+          # history (AUDIT_FINDINGS finding 2); Stage 2's extractor keeps
+          # it populated, and losing every extraction row is a hard fail.
+          from models import Extraction
+          check('Extractions (provenance middle link)',
+                session.query(Extraction).count(),
+                1)
+          check('Publishable audits with extraction provenance',
+                session.query(Audit).filter(
+                    Audit.extraction_id.isnot(None),
+                    Audit.page_ref.isnot(None),
+                    Audit.source_hash.isnot(None),
+                ).count(),
+                1)
           audits_with_year = session.query(Audit).filter(Audit.audit_year.isnot(None)).count()
           check('Audits with audit_year', audits_with_year, 20)
           audits_with_type = session.query(Audit).filter(Audit.query_type.isnot(None)).count()
@@ -521,6 +605,23 @@ jobs:
               else:
                   print(f'[OK] GDP sanity: {gdp_trillions:.1f}T KES (year {latest_gdp.year})')
 
+          # ── Freshness gates ────────────────────────────────────
+          # Row-count floors above ('27 rows >= 20') pass forever and did:
+          # they reported [OK] every night for months while audits had not
+          # gained a row in 6 weeks and budget_lines in 11. These gates ask
+          # the two questions a floor cannot — has the data MOVED, and did
+          # the pipeline actually reach the PUBLISHER? See
+          # backend/seeding/staleness.py.
+          from seeding.staleness import FAIL, WARN, run_all
+
+          print('\n--- Freshness gates ---')
+          for finding in run_all(session):
+              print(f'  {finding}')
+              if finding.level == FAIL:
+                  errors.append(f'{finding.label}: {finding.message}')
+              elif finding.level == WARN:
+                  warnings.append(f'{finding.label}: {finding.message}')
+
           session.close()
 
           print(f'\n--- Summary ---')
@@ -538,7 +639,45 @@ jobs:
           "
 
   # ══════════════════════════════════════════════════════════════════
-  # Step 5: Summary and notifications
+  # Step 5: Freshness loop (Layer 8) — tell the frontend data changed
+  # ══════════════════════════════════════════════════════════════════
+  # A new publication must reach the prerendered pages without a deploy.
+  # The request body is HMAC-SHA256-signed with REVALIDATE_SECRET (same
+  # secret the Next.js /api/revalidate route verifies); the route only
+  # accepts allowlisted paths. Runs only after seed AND validate succeed
+  # on a non-dry run — never revalidate pages onto unvalidated data.
+  revalidate:
+    name: Revalidate Frontend Pages
+    needs: [seed, validate]
+    if: success() && github.event.inputs.dry_run != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call the revalidation webhook
+        env:
+          REVALIDATE_URL: ${{ vars.REVALIDATE_URL || 'https://www.auditgava.com/api/revalidate' }}
+          REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
+        run: |
+          if [ -z "$REVALIDATE_SECRET" ]; then
+            echo "::warning::REVALIDATE_SECRET is not configured — prerendered pages will refresh only on their ISR interval. Set the secret here and in Vercel to close the freshness loop."
+            exit 0
+          fi
+          BODY='{"paths":["/","/audits","/budget","/counties","/debt","/sectors","/transparency","/accountability/missing-funds","/sources"]}'
+          SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$REVALIDATE_SECRET" -r | cut -d' ' -f1)
+          HTTP=$(curl -sS -o /tmp/revalidate_response.json -w '%{http_code}' \
+            -X POST "$REVALIDATE_URL" \
+            -H "content-type: application/json" \
+            -H "x-revalidate-signature: $SIG" \
+            -d "$BODY")
+          cat /tmp/revalidate_response.json
+          echo ""
+          if [ "$HTTP" != "200" ]; then
+            echo "::error::Revalidation webhook returned HTTP $HTTP"
+            exit 1
+          fi
+
+  # ══════════════════════════════════════════════════════════════════
+  # Step 6: Summary and notifications
   # ══════════════════════════════════════════════════════════════════
   notify:
     name: Post-Run Summary

@@ -3,8 +3,8 @@
     "source": "National Treasury Annual Public Debt Management Report (APDMR); Budget Policy Statement; Controller of Budget National Government Budget Implementation Review Report (NG-BIRR); CBK Statistical Bulletin.",
     "description": "Kenya national fiscal summary — budget, revenue, borrowing, total debt service, and debt ceiling. Debt service follows the Treasury APDMR definition: interest payments PLUS principal redemptions (domestic + external). This matches the Treasury's own headline 'debt service to revenue' ratio.",
     "units": "billions_kes unless noted",
-    "last_updated": "2026-04-19",
-    "notes": "Debt service and revenue for FY22/23, FY23/24, FY24/25 are TOTAL debt service (interest + principal redemptions) from the relevant Annual Public Debt Management Report, to match the Treasury-published 'debt service to revenue' ratio. FY25/26 figures are budgeted from the 2025 Budget Policy Statement (BPS) and will be revised to actuals once the 2025/26 APDMR is published (typically Nov 2026).",
+    "last_updated": "2026-08-29",
+    "notes": "Debt service and revenue for FY22/23, FY23/24, FY24/25 are TOTAL debt service (interest + principal redemptions) from the relevant Annual Public Debt Management Report, to match the Treasury-published 'debt service to revenue' ratio. FY25/26 revenue, spending and debt-service figures are budgeted from the 2025 Budget Policy Statement (BPS) and will be revised to actuals once the 2025/26 APDMR is published (typically Nov 2026). appropriated_budget is the ONE field that no longer comes from the BPS: since 2026-08-29 it is the Controller of Budget's original gross budget for every year — see canonical_budget_basis and each row's budget_basis_source.",
     "source_references": {
       "FY 2022/23": {
         "title": "Annual Public Debt Report 2022/2023",
@@ -40,13 +40,17 @@
     "definitions": {
       "debt_service_cost": "FY22/23–FY24/25: TOTAL debt service per APDMR (interest + principal redemptions, domestic + external). FY25/26: budgeted total debt service using the same broad definition until the APDMR actual is published.",
       "debt_service_per_shilling": "Shillings of total debt service paid per KSh 100 of revenue. The ratio is derived from debt_service_cost / total_revenue at seed time.",
-      "total_revenue": "FY22/23–FY24/25: tax + non-tax revenue including ministerial A-i-A (APDMR denominator). FY25/26: budgeted tax + non-tax revenue to preserve series comparability until the APDMR actual publishes."
-    }
+      "total_revenue": "FY22/23–FY24/25: tax + non-tax revenue including ministerial A-i-A (APDMR denominator). FY25/26: budgeted tax + non-tax revenue to preserve series comparability until the APDMR actual publishes.",
+      "appropriated_budget": "COB original gross budget (National Government): gross ministerial recurrent + gross ministerial development + Consolidated Fund Services. Excludes the county equitable share. See budget_basis_source on each row for the document, page and quoted sentence.",
+      "recurrent_spending / development_spending / county_allocation": "NOT on the cob_gross basis. These remain the Budget Policy Statement / APDMR series they have always been, and were deliberately left unchanged when appropriated_budget moved to cob_gross on 2026-08-29 so that a budget-basis decision did not silently move four other published series. COB publishes its own composition for each year (quoted in budget_basis_source.composition where available); moving these fields onto it is a separate, deliberate change."
+    },
+    "canonical_budget_basis": "cob_gross",
+    "canonical_budget_basis_note": "appropriated_budget is the Controller of Budget's ORIGINAL GROSS BUDGET for the National Government: gross ministerial (recurrent + development) expenditure PLUS Consolidated Fund Services. It EXCLUDES the county equitable share, which COB reports separately. This basis was chosen deliberately on 2026-08-29 over the Budget Policy Statement figures the file previously carried; every row now declares which basis its budget is on in budget_basis, and a live overlay may only replace a value that declares the SAME basis."
   },
   "fiscal_years": [
     {
       "fiscal_year": "FY 2022/23",
-      "appropriated_budget": 3310,
+      "appropriated_budget": 3675,
       "total_revenue": 2042,
       "tax_revenue": 1780,
       "non_tax_revenue": 262,
@@ -59,11 +63,23 @@
       "debt_ceiling_usage_pct": 91.0,
       "development_spending": 548,
       "recurrent_spending": 2280,
-      "county_allocation": 370
+      "county_allocation": 370,
+      "_appropriated_budget_bps": 3310,
+      "budget_basis": "cob_gross",
+      "budget_basis_source": {
+        "title": "National Government Budget Implementation Review Report FY 2022/23",
+        "publisher": "Office of the Controller of Budget",
+        "url": "https://cob.go.ke/download/national-government-budget-implementation-review-report-fy-2022-23/?wpdmdl=15956",
+        "published": "2023-08",
+        "page": "s.3.2, report p.16 (PDF p.37)",
+        "quote": "The approved gross budget for both National and County Governments for the FY 2022/23 amounted to Kshs.4.19 trillion ... and Kshs.515.18 billion cumulative County Governments Budget",
+        "derivation": "COB states the FY2022/23 original gross budget only for National + County combined (4.19T). The National-Government figure is 4.19T less the 515.18B county budget stated in the same sentence = 3,674.8B, rounded to 3,675B. Cross-checked against the components COB lists on the same page (715.35B development + 2.97T recurrent = 3,685.4B, 0.3% apart — COB's own rounding).",
+        "composition": "development 715.35B; recurrent 2.97T (MDA recurrent 1.40T + CFS 1.57T); county budget 515.18B (excluded)"
+      }
     },
     {
       "fiscal_year": "FY 2023/24",
-      "appropriated_budget": 3600,
+      "appropriated_budget": 4340,
       "total_revenue": 2406,
       "tax_revenue": 2080,
       "non_tax_revenue": 326,
@@ -76,11 +92,22 @@
       "debt_ceiling_usage_pct": 102.0,
       "development_spending": 590,
       "recurrent_spending": 2500,
-      "county_allocation": 385
+      "county_allocation": 385,
+      "_appropriated_budget_bps": 3600,
+      "budget_basis": "cob_gross",
+      "budget_basis_source": {
+        "title": "National Government Budget Implementation Review Report FY 2023/24",
+        "publisher": "Office of the Controller of Budget",
+        "url": "https://cob.go.ke/download/national-government-budget-implementation-review-report-fy-2023-24/?wpdmdl=16100",
+        "published": "2024-08",
+        "page": "s.3.2, report p.17 (PDF p.39)",
+        "quote": "The National Government's original gross budget for FY 2023/24 amounted to Kshs.4.34 trillion, revised to Kshs.4.54 trillion in Supplementary Estimates I and Kshs.4.43 trillion in Supplementary Estimates II",
+        "composition": "development 807.64B; ministerial recurrent 1.56T; CFS 1.96T"
+      }
     },
     {
       "fiscal_year": "FY 2024/25",
-      "appropriated_budget": 3900,
+      "appropriated_budget": 4490,
       "total_revenue": 2917,
       "tax_revenue": 2550,
       "non_tax_revenue": 367,
@@ -93,11 +120,22 @@
       "debt_ceiling_usage_pct": 114.9,
       "development_spending": 628,
       "recurrent_spending": 2680,
-      "county_allocation": 400
+      "county_allocation": 400,
+      "_appropriated_budget_bps": 3900,
+      "budget_basis": "cob_gross",
+      "budget_basis_source": {
+        "title": "National Government Budget Implementation Review Report FY 2024/25",
+        "publisher": "Office of the Controller of Budget",
+        "url": "https://cob.go.ke/download/national-government-budget-implementation-review-report-fy-2024-2025/?wpdmdl=16252",
+        "published": "2025-08",
+        "page": "Executive Summary, report p.xxviii (PDF p.29)",
+        "quote": "For the financial year, the National Government's original gross budget was Kshs.4.49 trillion, revised to Kshs.4.37 trillion in Supplementary Budget I, Kshs.4.64 trillion in Supplementary Budget II, and Kshs.4.37 trillion in Supplementary Budget III",
+        "composition": "COB states the composition for the REVISED budget only: development 612.98B; ministerial recurrent 1.77T; CFS 1.99T (sums to the 4.37T revised, not the 4.49T original)"
+      }
     },
     {
       "fiscal_year": "FY 2025/26",
-      "appropriated_budget": 4190,
+      "appropriated_budget": 4690,
       "total_revenue": 2910,
       "tax_revenue": 2560,
       "non_tax_revenue": 350,
@@ -111,7 +149,18 @@
       "development_spending": 672,
       "recurrent_spending": 2850,
       "county_allocation": 415,
-      "methodology": "APDMR-style budget estimate"
+      "methodology": "APDMR-style budget estimate",
+      "_appropriated_budget_bps": 4190,
+      "budget_basis": "cob_gross",
+      "budget_basis_source": {
+        "title": "National Government Budget Implementation Review Report for First Nine Months FY 2025/26",
+        "publisher": "Office of the Controller of Budget",
+        "url": "https://cob.go.ke/download/national-government-budget-implementation-review-report-for-first-nine-months-fy-2025-26/?wpdmdl=16376",
+        "published": "2026-05",
+        "page": "Executive Summary, report p.xxii (PDF p.23)",
+        "quote": "The National Government's original gross budget for FY 2025/26 amounts to Kshs. 4.69 trillion, compared to Kshs.4.37 trillion in the FY 2024/25 after Supplementary III Estimates.",
+        "composition": "ministerial development 744.84B; ministerial recurrent 1.80T; CFS 2.14T; ministerial gross 2.55T"
+      }
     }
   ]
 }

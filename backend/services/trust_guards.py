@@ -229,6 +229,38 @@ _FISCAL_BANDS_BILLION: dict[str, tuple[float, float]] = {
 }
 
 
+
+# The bands describe CURRENT-era magnitudes only. Kenya's revenue was KES
+# 63B in FY1992/93 against ~2,900B today, and the growth runs right up to
+# recent years — these are real, curated values that the band FLOORS reject:
+#
+#   FY2010/11 total_revenue        641B   (floor 1,000B)
+#   FY2017/18 debt_service_cost    363B   (floor   400B)
+#   FY2018/19 appropriated_budget 1,924B  (floor 2,000B)
+#   FY2020/21 debt_service_cost    318B   (floor   400B)
+#
+# The cutoff is therefore set where the current floors actually hold, not
+# where the warnings happen to stop: FY2021/22 is the first year every
+# series sits inside its band. Flagging correct historical data is not a
+# stricter gate, it is a louder one — and the noise is what let a real
+# warning pass unnoticed for months.
+_BAND_ERA_START = 2021
+# No Kenyan national fiscal aggregate has ever been this large; a value above
+# it is a unit slip in ANY era.
+_ABSOLUTE_CEILING_BILLION = 100_000.0
+
+_FY_START_RE = re.compile(r"(\d{4})")
+
+
+def _fiscal_year_start(label: str) -> Optional[int]:
+    """First 4-digit year in a label like 'FY 2025/26' or 'FY1992/93'."""
+    match = _FY_START_RE.search(str(label or ""))
+    if not match:
+        return None
+    year = int(match.group(1))
+    return year if 1900 <= year <= 2200 else None
+
+
 def check_fiscal_summary(row) -> list[str]:
     """Objective plausibility + reconciliation checks for ONE fiscal-year
     summary row (values in billion KES). Returns notes (empty if clean).
@@ -257,14 +289,48 @@ def check_fiscal_summary(row) -> list[str]:
         if v is None:
             return None
         try:
-            return float(v)
+            v = float(v)
         except (TypeError, ValueError):
             return None
+        # The guard's bands are in billions. Seed-time records still carry
+        # the parser's billions convention, while DB-backed rows carry raw
+        # KES since the stage1 3a migration — normalise so the SAME guard
+        # runs on both. No national fiscal aggregate is legitimately
+        # between 1e6 and 1e9, so the scale test is unambiguous.
+        return v / 1e9 if v >= 1e9 else v
 
     # 1. Plausibility bands (unit-safety + wrong-row detection).
+    #
+    # The bands encode CURRENT-ERA magnitudes. Kenya's national revenue was
+    # KES 63B in FY1992/93 and is ~2,900B today — a ~46x growth — so applying
+    # a [1,000, 5,000]B band to the historical series flagged every year
+    # before ~2010 as implausible. That produced a wall of TRUST warnings on
+    # every nightly run and kept the domain permanently
+    # 'completed_with_errors', which is how a real warning would have been
+    # missed. The bands exist to catch a unit slip or a wrong-row parse in
+    # data being ingested NOW; historical rows are static reference data.
+    #
+    # Rows older than the band era are checked for sign and gross magnitude
+    # only. A genuine unit slip on an old row (63B -> 63,000,000B) is still
+    # caught by the absolute ceiling below.
+    fy_start_year = _fiscal_year_start(fy)
+    historical = fy_start_year is not None and fy_start_year < _BAND_ERA_START
+
     for field, (lo, hi) in _FISCAL_BANDS_BILLION.items():
         v = _num(field)
         if v is None:
+            continue
+        if historical:
+            # Sign + gross magnitude only. A genuine unit slip on an old row
+            # (63B -> 63,000,000B) still trips the absolute ceiling; a
+            # legitimately small 1990s figure no longer does.
+            if v < 0 or v > _ABSOLUTE_CEILING_BILLION:
+                msg = (
+                    f"{fy}: {field}={v:,.0f}B is impossible for any era "
+                    f"(expected 0-{_ABSOLUTE_CEILING_BILLION:,.0f}B)."
+                )
+                notes.append(msg)
+                _warn(msg)
             continue
         if not (lo <= v <= hi):
             msg = (

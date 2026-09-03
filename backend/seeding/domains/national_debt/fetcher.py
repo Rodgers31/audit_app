@@ -117,6 +117,26 @@ def fetch_debt_payload(
         meta["cbk_bulletin_overlay_count"] = len(cbk_loans)
         payload["metadata"] = meta
 
+    # Provenance: "live" requires that an authoritative overlay actually
+    # landed. A fixture baseline with no overlay is fixture data, however
+    # many creditors it lists.
+    from ...freshness import mark_fixture, mark_live
+
+    if cbk_loans or wb_loans:
+        mark_live(
+            "national_debt",
+            detail=(
+                f"CBK bulletin rows={len(cbk_loans)}, "
+                f"WB IDS rows={len(wb_loans)}"
+            ),
+        )
+    else:
+        mark_fixture(
+            "national_debt",
+            reason="no_live_overlay_applied",
+            detail="neither the CBK bulletin nor World Bank IDS returned rows",
+        )
+
     return payload
 
 

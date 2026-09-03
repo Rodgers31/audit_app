@@ -99,6 +99,7 @@ export const MESSAGES = {
   'home.hero.risk_moderate': { en: 'Moderate Risk', sw: 'Hatari ya Wastani', plain: 'Medium Risk' },
   'home.hero.risk_low': { en: 'Low Risk', sw: 'Hatari Ndogo', plain: 'Low Risk' },
   'home.hero.risk_suffix': { en: 'Risk', sw: 'Hatari', plain: 'Risk' },
+  'home.hero.risk_unassessed': { en: 'Risk not assessed', sw: 'Hatari haijatathminiwa', plain: 'Risk not rated yet' },
 
   // KenyanGovCard
   'home.govcard.title': { en: 'Kenyan Government', sw: 'Serikali ya Kenya', plain: 'Kenya Government' },
@@ -182,6 +183,8 @@ export const MESSAGES = {
     plain: 'Ranked by the IMF',
   },
   'home.debt.insight_risk_label': { en: 'Risk: {level}', sw: 'Hatari: {level}', plain: 'Risk: {level}' },
+  'home.debt.insight_risk_unassessed': { en: 'Risk: not assessed', sw: 'Hatari: haijatathminiwa', plain: 'Risk: we can\u2019t say yet' },
+  'home.debt.insight_risk_unassessed_desc': { en: 'No debt-to-GDP reading is available, so no risk band can be stated. This is not a finding that the debt position is safe.', sw: 'Hakuna kipimo cha deni-kwa-Pato, hivyo hakuna kiwango cha hatari kinachoweza kutajwa. Hii si dalili kwamba hali ya deni ni salama.', plain: 'We don\u2019t have the debt-to-GDP number, so we can\u2019t rate the risk. That does not mean it is fine.' },
   'home.debt.cents_of_revenue': { en: 'KES {n} cents', sw: 'Senti {n} za KES', plain: 'KES {n} cents' },
 
   // Audit Reports Section
@@ -222,6 +225,39 @@ export const MESSAGES = {
   'home.audits.emphasis': { en: 'Emphasis of Matter', sw: 'Msisitizo wa Suala', plain: 'Also Note' },
   'home.audits.top_ministries': { en: 'Top Ministries Flagged', sw: 'Wizara Zilizoonywa Zaidi', plain: 'Most Problem Ministries' },
   'home.audits.view_all_findings': { en: 'View All Findings', sw: 'Tazama Matokeo Yote', plain: 'See All Findings' },
+  // Empty state when the publication gate withholds every federal finding.
+  // {…} placeholders are filled from the API's machine-readable
+  // findings_reason / next_expected fields — never hand-written facts.
+  'home.audits.empty_title': {
+    en: 'No findings from the Auditor-General can be published yet',
+    sw: 'Hakuna matokeo ya Mkaguzi Mkuu yanayoweza kuchapishwa bado',
+    plain: 'No findings from the Auditor-General can be shown yet',
+  },
+  'home.audits.empty_withheld': {
+    en: '{n} findings are held back because none of them can yet be traced to a page of a published report.',
+    sw: 'Matokeo {n} yamezuiliwa kwa sababu hakuna linaloweza kufuatiliwa hadi ukurasa wa ripoti iliyochapishwa.',
+    plain: '{n} findings are held back because we cannot yet point to the page of an official report they come from.',
+  },
+  'home.audits.empty_window': {
+    en: 'The {publisher} publishes this report {cadence}, {lag} after the fiscal year ends. The next report is expected between {start} and {end}.',
+    sw: '{publisher} huchapisha ripoti hii {cadence}, {lag} baada ya mwaka wa fedha kuisha. Ripoti ijayo inatarajiwa kati ya {start} na {end}.',
+    plain: 'The {publisher} publishes this report {cadence}, {lag} after the money year ends. The next one is expected between {start} and {end}.',
+  },
+  'home.audits.empty_ministries': {
+    en: 'No ministry can be listed until its findings trace to a published report.',
+    sw: 'Hakuna wizara inayoweza kuorodheshwa hadi matokeo yake yafuatilike kwenye ripoti iliyochapishwa.',
+    plain: 'No ministry can be listed until its findings come from a published report.',
+  },
+  'home.audits.source_page': {
+    en: 'Source: report {page}',
+    sw: 'Chanzo: ripoti {page}',
+    plain: 'Source: report {page}',
+  },
+  'home.audits.cadence_annual': { en: 'annually', sw: 'kila mwaka', plain: 'once a year' },
+  'home.audits.cadence_quarterly': { en: 'quarterly', sw: 'kila robo mwaka', plain: 'every three months' },
+  'home.audits.cadence_monthly': { en: 'monthly', sw: 'kila mwezi', plain: 'every month' },
+  'home.audits.lag_months': { en: '{lag} months', sw: 'miezi {lag}', plain: '{lag} months' },
+  'home.audits.lag_days': { en: '{lag} days', sw: 'siku {lag}', plain: '{lag} days' },
 
   // Budget snapshot
   'home.budget.title': { en: 'National Budget Snapshot', sw: 'Muhtasari wa Bajeti ya Taifa', plain: 'The Budget Right Now' },
@@ -414,9 +450,9 @@ export const MESSAGES = {
   // ══════════════════════════════════════════════════
   'counties.title': { en: 'County Explorer', sw: 'Kivinjari cha Kaunti', plain: 'Explore Counties' },
   'counties.modelled_estimate': {
-    en: 'Modelled estimate — not official Controller of Budget figures. County budget allocations use the Commission on Revenue Allocation (CRA) equitable-share formula; county debt and pending bills are estimated at ~15% and ~8% of budget. These are indicative, not county-reported actuals. Audit findings are from the Office of the Auditor-General.',
-    sw: 'Makadirio ya kielelezo — si takwimu rasmi za Mdhibiti wa Bajeti. Mgao wa bajeti ya kaunti unatumia fomula ya mgao sawa ya Tume ya Ugawaji wa Mapato (CRA); deni la kaunti na bili ambazo hazijalipwa zinakadiriwa kwa ~15% na ~8% ya bajeti. Haya ni makadirio tu, si takwimu halisi zilizoripotiwa na kaunti. Matokeo ya ukaguzi yanatoka Ofisi ya Mkaguzi Mkuu wa Hesabu.',
-    plain: 'These county money numbers are estimates, not official Controller of Budget figures. Budgets use the CRA sharing formula; debt and unpaid bills are rough guesses (about 15% and 8% of the budget). The audit findings are real, from the Auditor-General.',
+    en: 'Modelled estimate — not official Controller of Budget figures. County budget allocations use the Commission on Revenue Allocation (CRA) equitable-share formula. The county debt and pending-bill figures are modelled: they are not county-reported actuals, and they are not yet traced to a page of a Controller of Budget or county publication. Audit findings are from the Office of the Auditor-General.',
+    sw: 'Makadirio ya kielelezo — si takwimu rasmi za Mdhibiti wa Bajeti. Mgao wa bajeti ya kaunti unatumia fomula ya mgao sawa ya Tume ya Ugawaji wa Mapato (CRA). Takwimu za deni la kaunti na bili ambazo hazijalipwa ni za kielelezo: si takwimu halisi zilizoripotiwa na kaunti, na bado hazijafuatiliwa hadi ukurasa wa chapisho la Mdhibiti wa Bajeti au la kaunti. Matokeo ya ukaguzi yanatoka Ofisi ya Mkaguzi Mkuu wa Hesabu.',
+    plain: 'These county money numbers are estimates, not official Controller of Budget figures. Budgets use the CRA sharing formula. The debt and unpaid-bill numbers are modelled — they are not what the county itself reported, and we cannot yet show you the page they came from. The audit findings are real, from the Auditor-General.',
   },
   'counties.subtitle': {
     en: 'Compare all 47 Kenyan counties on budget, execution, debt, and audit findings.',
@@ -956,6 +992,15 @@ export const MESSAGES = {
   'county.acct.grade_fair': { en: 'Fair', sw: 'Wastani', plain: 'OK' },
   'county.acct.grade_needs_improvement': { en: 'Needs Improvement', sw: 'Inahitaji Kuboreshwa', plain: 'Needs Work' },
   'county.acct.grade_poor': { en: 'Poor', sw: 'Mbaya', plain: 'Poor' },
+  // An ungraded county is NOT a C. Added after review on PR #135: the card
+  // fell back to the C style and rendered "Fair" for a county whose findings
+  // were all withheld for lack of a source document.
+  'county.acct.grade_ungraded': { en: 'Not yet assessed', sw: 'Haijatathminiwa bado', plain: 'Not graded yet' },
+  'county.acct.grade_ungraded_description': {
+    en: 'No grade can be given yet: this county has no findings that trace to a source document a reader can open. An absent grade is not a low grade.',
+    sw: 'Hakuna alama bado: kaunti hii haina matokeo yanayothibitishwa na hati chanzo. Kukosa alama si alama mbaya.',
+    plain: 'We cannot grade this county yet — none of its findings link to a document you can open. No grade does not mean a bad grade.',
+  },
   'county.acct.grade_description': {
     en: 'Scored out of 100 across five dimensions: audit opinions, finding volume & severity, recurring issues, unresolved items, flagged spend, and absorption. Grade bands: A ≥ 85, B ≥ 70, C ≥ 55, D ≥ 40, else F.',
     sw: 'Inapimwa kati ya 100 katika vipimo vitano: maoni ya ukaguzi, idadi na uzito wa matokeo, matatizo yanayojirudia, masuala yasiyoshughulikiwa, matumizi yaliyogunduliwa, na utekelezaji. Alama: A ≥ 85, B ≥ 70, C ≥ 55, D ≥ 40, vinginevyo F.',

@@ -20,6 +20,8 @@ from pydantic import BaseModel
 from sqlalchemy import func, desc
 from sqlalchemy.orm import Session
 
+from services.publication_gate import publishable_audit_criterion
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 try:
@@ -216,10 +218,52 @@ class DataPointVerification(BaseModel):
     publisher: Optional[str] = None
     fetch_date: Optional[str] = None
     provenance_chain: List[Dict[str, Any]] = []
-    verification_status: str  # "verified" | "unverified" | "stale"
+    #: "verified"    — the source was actually checked
+    #: "publishable"  — resolves to a document a reader can open, but the
+    #:                  document itself was NOT fetched or validated. Added
+    #:                  after review on PR #135: the audits branch was calling
+    #:                  gate-only evidence "verified".
+    #: "unverified"   — no evidence
+    #: "stale"        — evidence exists but is out of date
+    verification_status: str
+    #: Why the status is not "verified". `unverified` means *no evidence*,
+    #: never *fine* — without a reason a reader cannot tell the difference.
+    reason: Optional[str] = None
 
 
 # ── Endpoints ─────────────────────────────────────────────────────
+
+
+def _grade_verification(verification) -> None:
+    """Set an honest status for a row this endpoint has only READ.
+
+    Reported by review on PR #135 against the audits branch, and it recurs:
+    ``population_data``, ``gdp_data`` and ``loans`` do the same thing, and are
+    weaker still — they apply no publication gate at all, they simply select
+    the newest row and stamp it "verified".
+
+    Nothing in this endpoint fetches a source document, compares an md5, or
+    confirms a page locator. So "verified" is a claim the code cannot support,
+    on the one endpoint whose entire purpose is answering "was this checked?".
+
+    * ``publishable``  — the figure resolves to a document with a URL a reader
+      can open. That is what actually holds today.
+    * ``unverified``   — no resolvable source.
+
+    It becomes "verified" when this endpoint really fetches and validates the
+    document; tracked as P1 in #137.
+    """
+    if getattr(verification, "source_url", None):
+        verification.verification_status = "publishable"
+        if not getattr(verification, "reason", None):
+            verification.reason = (
+                "resolves to a source document; the document itself has not "
+                "been fetched or validated by this endpoint"
+            )
+    else:
+        verification.verification_status = "unverified"
+        if not getattr(verification, "reason", None):
+            verification.reason = "no resolvable source document"
 
 
 @router.get(
@@ -282,16 +326,23 @@ async def get_data_health(db: Session = Depends(get_db)):
         status="healthy" if budget_count >= 400 else "critical" if budget_count == 0 else "degraded",
     ))
 
-    # Audit records
-    audit_count = db.query(Audit).count()
-    audits_with_year = db.query(Audit).filter(Audit.audit_year.isnot(None)).count()
+    # Audit records. Health must describe what is *publishable*: counting
+    # withheld rows here reported "27 rows" while 26 of them were excluded
+    # from every public read.
+    publishable_audits = db.query(Audit).filter(publishable_audit_criterion())
+    audit_count = publishable_audits.count()
+    withheld_audits = db.query(Audit).filter(~publishable_audit_criterion()).count()
+    audits_with_year = publishable_audits.filter(Audit.audit_year.isnot(None)).count()
     tables.append(TableHealth(
         table="audits",
         label="Audit Findings",
         row_count=audit_count,
         source="OAG Audit Reports",
         status="healthy" if audits_with_year >= 50 else "degraded" if audit_count > 0 else "empty",
-        notes=f"{audits_with_year} with audit_year" if audit_count > 0 else None,
+        notes=(
+            f"{audits_with_year} publishable with audit_year; "
+            f"{withheld_audits} withheld (no resolvable source document)"
+        ),
     ))
 
     # Population
@@ -445,7 +496,7 @@ async def verify_data_point(
                     {"source": "Kenya National Bureau of Statistics", "dataset": "Census 2019",
                      "url": "https://www.knbs.or.ke/2019-kenya-population-and-housing-census-results/"},
                 ]
-                verification.verification_status = "verified"
+                _grade_verification(verification)
 
         elif table_name == "gdp_data":
             query = db.query(GDPData)
@@ -469,13 +520,18 @@ async def verify_data_point(
                     {"source": "KNBS", "dataset": "Economic Survey", "url": "https://www.knbs.or.ke/economic-survey/"},
                     {"cross_check": "World Bank", "url": "https://data.worldbank.org/indicator/NY.GDP.MKTP.CN?locations=KE"},
                 ]
-                verification.verification_status = "verified"
+                _grade_verification(verification)
 
         elif table_name == "audits":
-            query = db.query(Audit)
+            # Only rows that pass the publication gate. This branch previously
+            # returned the newest audit by id — which is 902, the glyph-code
+            # cover page — and stamped it "verified" without checking anything.
+            query = db.query(Audit).filter(publishable_audit_criterion())
             if entity_id:
                 query = query.filter(Audit.entity_id == entity_id)
             record = query.order_by(desc(Audit.id)).first()
+            if record is None:
+                verification.reason = "no_publishable_row"
             if record:
                 verification.value = record.finding_text[:200] if record.finding_text else None
                 if record.source_document_id:
@@ -486,7 +542,25 @@ async def verify_data_point(
                         verification.publisher = doc.publisher
                 if record.provenance:
                     verification.provenance_chain = record.provenance
-                verification.verification_status = "verified"
+                # NOT "verified". Reported by review on PR #135.
+                #
+                # This row passed publishable_audit_criterion(), and that gate
+                # says plainly what it does not do — it never fetches the URL,
+                # never checks md5, and never requires a page locator (see the
+                # "WHAT THIS GATE DOES NOT CHECK" section in
+                # services/publication_gate.py). Stamping "verified" tells a
+                # reader the evidence was checked when nothing was, on the one
+                # endpoint whose entire job is answering "was this checked?".
+                #
+                # "publishable" is the honest word for what actually holds: the
+                # figure resolves to a document a reader can open. It becomes
+                # "verified" when this endpoint fetches that document and
+                # confirms the locator — tracked as P1 in #137.
+                verification.verification_status = "publishable"
+                verification.reason = (
+                    "resolves to a source document; the URL has not been "
+                    "fetched, md5 not checked, page locator not required"
+                )
 
         elif table_name == "loans":
             query = db.query(Loan)
@@ -503,7 +577,7 @@ async def verify_data_point(
                         verification.publisher = doc.publisher
                 if record.provenance:
                     verification.provenance_chain = record.provenance
-                verification.verification_status = "verified"
+                _grade_verification(verification)
 
         else:
             raise HTTPException(status_code=400, detail=f"Unknown table: {table_name}. Supported: population_data, gdp_data, audits, loans")

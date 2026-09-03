@@ -53,12 +53,35 @@ def _get_or_create_source_document(
     return doc
 
 
+def _raw_kes(value: Any) -> Any:
+    """Normalise a money value to raw KES at the DB boundary.
+
+    Fetchers/parsers (and their fixtures) carry the historical billions
+    convention; the table stores raw KES with a declared ``unit`` column
+    since the stage1 3a migration. No national debt aggregate legitimately
+    sits between 1e6 and 1e9, so the scale test is unambiguous and this
+    is idempotent for already-raw inputs.
+    """
+    if value is None:
+        return None
+    # A bool is an int in Python and would silently become 1e9 KES; NaN/inf
+    # would poison the table. Both are parser bugs — fail closed, loudly.
+    if isinstance(value, bool):
+        raise ValueError(f"boolean is not a money value: {value!r}")
+    v = float(value)
+    if v != v or v in (float("inf"), float("-inf")):
+        raise ValueError(f"non-finite money value: {value!r}")
+    if v < 0:
+        raise ValueError(f"negative debt-timeline value: {value!r}")
+    return v * 1e9 if v < 1_000_000 else v
+
+
 def write_debt_timeline_records(
     session: Session,
     records: list[DebtTimelineRecord],
     metadata: dict[str, Any],
 ) -> tuple[int, int]:
-    """Upsert debt timeline records into the database."""
+    """Upsert debt timeline records into the database (raw KES)."""
     created = 0
     updated = 0
 
@@ -70,22 +93,24 @@ def write_debt_timeline_records(
         )
 
         if existing:
-            existing.external = record.external
-            existing.domestic = record.domestic
-            existing.total = record.total
-            existing.gdp = record.gdp
+            existing.external = _raw_kes(record.external)
+            existing.domestic = _raw_kes(record.domestic)
+            existing.total = _raw_kes(record.total)
+            existing.gdp = _raw_kes(record.gdp)
             existing.gdp_ratio = record.gdp_ratio
+            existing.unit = "KES"
             existing.source_document_id = source_doc.id
             existing.updated_at = datetime.now(timezone.utc)
             updated += 1
         else:
             row = DebtTimeline(
                 year=record.year,
-                external=record.external,
-                domestic=record.domestic,
-                total=record.total,
-                gdp=record.gdp,
+                external=_raw_kes(record.external),
+                domestic=_raw_kes(record.domestic),
+                total=_raw_kes(record.total),
+                gdp=_raw_kes(record.gdp),
                 gdp_ratio=record.gdp_ratio,
+                unit="KES",
                 source_document_id=source_doc.id,
             )
             session.add(row)

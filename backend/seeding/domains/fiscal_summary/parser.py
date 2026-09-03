@@ -28,6 +28,13 @@ class FiscalSummaryRecord:
     development_spending: float | None
     recurrent_spending: float | None
     county_allocation: float | None
+    # Which measure ``appropriated_budget`` is on ("cob_gross"), and the
+    # document/page it was read from. Carried to the DB so the published
+    # figure can never be re-interpreted as a different measure later: the
+    # 4.19T Budget Policy Statement number and the 4.69T COB gross one are
+    # both "the budget" and are 12% apart.
+    budget_basis: str | None = None
+    budget_basis_source: dict[str, Any] | None = None
 
 
 def _safe_float(val: Any) -> float | None:
@@ -150,6 +157,8 @@ def parse_fiscal_summary_payload(payload: dict[str, Any]) -> list[FiscalSummaryR
                 development_spending=_safe_float(fy.get("development_spending")),
                 recurrent_spending=_safe_float(fy.get("recurrent_spending")),
                 county_allocation=_safe_float(fy.get("county_allocation")),
+                budget_basis=fy.get("budget_basis"),
+                budget_basis_source=fy.get("budget_basis_source"),
             )
         )
 

@@ -94,11 +94,26 @@ class SimpleHTTPCache:
         meta_path = base.with_suffix(".json")
         body_path = base.with_suffix(".bin")
 
+        # ``response.content`` is the DECODED body — httpx has already
+        # gunzipped it. Persisting the original Content-Encoding alongside
+        # decoded bytes makes every cache HIT fail with
+        # "Error -3 while decompressing data: incorrect header check",
+        # because httpx dutifully tries to gunzip plain text. That silently
+        # broke live fetches for every gzip-serving publisher (World Bank,
+        # CBK, the OAG media API) on the second run inside the TTL, and each
+        # one fell back to a fixture. Content-Length is dropped for the same
+        # reason: it describes the COMPRESSED body and no longer matches.
+        _DROP = {"content-encoding", "content-length", "transfer-encoding"}
+        stored_headers = [
+            (k, v)
+            for k, v in response.headers.multi_items()
+            if k.lower() not in _DROP
+        ]
         metadata = {
             "method": method,
             "url": full_url,
             "status_code": response.status_code,
-            "headers": list(response.headers.multi_items()),
+            "headers": stored_headers,
             "created_at": time.time(),
         }
 

@@ -16,13 +16,17 @@ from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
-from sqlalchemy import and_, case, desc, func, or_
+from sqlalchemy import and_, case, desc, func, or_, select
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from cache.redis_cache import cached
+from services.publication_gate import (
+    count_withheld_audits,
+    publishable_audit_criterion,
+)
 
 try:
     from database import get_db
@@ -63,6 +67,13 @@ class AuditSummaryResponse(BaseModel):
     findings_by_opinion: Dict[str, int]
     worst_counties: List[WorstCounty]
     year_range: YearRange
+    withheld_findings: int = Field(
+        0,
+        description=(
+            "Findings excluded from these totals because their source document "
+            "has no URL a reader could open. Retained in the database, not served."
+        ),
+    )
 
 
 class AuditTrendsResponse(BaseModel):
@@ -152,7 +163,7 @@ async def get_audit_summary(db: Session = Depends(get_db)):
             ),
             func.min(Audit.audit_year),
             func.max(Audit.audit_year),
-        ).first()
+        ).filter(publishable_audit_criterion()).first()
 
         total_findings = totals[0] or 0
         total_irregular = totals[1]
@@ -164,6 +175,7 @@ async def get_audit_summary(db: Session = Depends(get_db)):
         # INDEX hint: CREATE INDEX ix_audits_query_type ON audits(query_type)
         type_rows = (
             db.query(Audit.query_type, func.count(Audit.id))
+            .filter(publishable_audit_criterion())
             .filter(Audit.query_type.isnot(None))
             .group_by(Audit.query_type)
             .all()
@@ -174,6 +186,7 @@ async def get_audit_summary(db: Session = Depends(get_db)):
         # INDEX hint: CREATE INDEX ix_audits_opinion ON audits(audit_opinion)
         opinion_rows = (
             db.query(Audit.audit_opinion, func.count(Audit.id))
+            .filter(publishable_audit_criterion())
             .filter(Audit.audit_opinion.isnot(None))
             .group_by(Audit.audit_opinion)
             .all()
@@ -190,6 +203,7 @@ async def get_audit_summary(db: Session = Depends(get_db)):
                 func.count(Audit.id).label("finding_count"),
             )
             .join(Entity, Audit.entity_id == Entity.id)
+            .filter(publishable_audit_criterion())
             .filter(Audit.amount.isnot(None))
             .group_by(Entity.id, Entity.canonical_name)
             .order_by(desc("total_amount"))
@@ -206,6 +220,15 @@ async def get_audit_summary(db: Session = Depends(get_db)):
             for r in worst_rows
         ]
 
+        withheld = count_withheld_audits(db)
+        if withheld:
+            logger.warning(
+                "audit summary: %d finding(s) withheld — source document has no "
+                "resolvable URL; %d published",
+                withheld,
+                total_findings,
+            )
+
         return AuditSummaryResponse(
             total_irregular_expenditure=float(total_irregular),
             total_unsupported_expenditure=float(total_unsupported),
@@ -214,6 +237,7 @@ async def get_audit_summary(db: Session = Depends(get_db)):
             findings_by_opinion=findings_by_opinion,
             worst_counties=worst_counties,
             year_range=YearRange(min_year=min_year, max_year=max_year),
+            withheld_findings=withheld,
         )
 
     except OperationalError as e:
@@ -245,6 +269,7 @@ async def get_audit_trends(
         # INDEX hint: CREATE INDEX ix_audits_year ON audits(audit_year)
         findings_rows = (
             db.query(Audit.audit_year, func.count(Audit.id))
+            .filter(publishable_audit_criterion())
             .filter(*filters)
             .group_by(Audit.audit_year)
             .all()
@@ -254,6 +279,7 @@ async def get_audit_trends(
         # Amount per year — single SQL GROUP BY
         amount_rows = (
             db.query(Audit.audit_year, func.coalesce(func.sum(Audit.amount), 0))
+            .filter(publishable_audit_criterion())
             .filter(*filters)
             .group_by(Audit.audit_year)
             .all()
@@ -264,6 +290,7 @@ async def get_audit_trends(
         # INDEX hint: CREATE INDEX ix_audits_year_opinion ON audits(audit_year, audit_opinion)
         opinion_rows = (
             db.query(Audit.audit_year, Audit.audit_opinion, func.count(Audit.id))
+            .filter(publishable_audit_criterion())
             .filter(*filters, Audit.audit_opinion.isnot(None))
             .group_by(Audit.audit_year, Audit.audit_opinion)
             .all()
@@ -308,6 +335,7 @@ async def get_recurring_findings(db: Session = Depends(get_db)):
         # 1a. Groups with at least one "Recurring" flag
         flagged_keys = (
             db.query(Audit.entity_id, Audit.query_type)
+            .filter(publishable_audit_criterion())
             .filter(Audit.follow_up_status == "Recurring")
             .group_by(Audit.entity_id, Audit.query_type)
             .all()
@@ -317,6 +345,7 @@ async def get_recurring_findings(db: Session = Depends(get_db)):
         multi_year_keys = (
             db.query(Audit.entity_id, Audit.query_type)
             .filter(
+                publishable_audit_criterion(),
                 Audit.audit_year.isnot(None),
                 Audit.query_type.isnot(None),
             )
@@ -350,6 +379,7 @@ async def get_recurring_findings(db: Session = Depends(get_db)):
             qt_filter = Audit.query_type == qt if qt != "Unknown" else Audit.query_type.is_(None)
             findings = (
                 db.query(Audit.id, Audit.audit_year, Audit.amount)
+                .filter(publishable_audit_criterion())
                 .filter(Audit.entity_id == entity_id, qt_filter)
                 .all()
             )
@@ -432,6 +462,7 @@ async def get_audit_findings(
                 confidence_sub,
                 Audit.source_document_id == confidence_sub.c.source_document_id,
             )
+            .filter(publishable_audit_criterion())
         )
 
         if county_id is not None:
