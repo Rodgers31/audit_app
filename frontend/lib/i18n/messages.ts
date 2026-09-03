@@ -214,6 +214,8 @@ export const MESSAGES = {
   'home.audits.signed_by': { en: 'Signed by {name}', sw: 'Imetiwa saini na {name}', plain: 'Signed by {name}' },
   'home.audits.stat_ministries': { en: 'Ministries Audited', sw: 'Wizara Zilizokaguliwa', plain: 'Ministries Checked' },
   'home.audits.stat_amount': { en: 'Amount Questioned', sw: 'Kiasi Kilichohojiwa', plain: 'Money in Question' },
+  'home.audits.amount_partial': { en: 'KES {amount} stated across {n} of {total} findings', sw: 'KES {amount} imetajwa katika matokeo {n} kati ya {total}', plain: 'KES {amount} is named in {n} of the {total} findings' },
+  'home.audits.amount_partial_note': { en: 'The Auditor-General\u2019s own questioned total is not stated in the machine-readable part of this report, so this is what the findings themselves add up to \u2014 not the report\u2019s headline figure.', sw: 'Jumla ya Mdhibiti na Mkaguzi Mkuu haijatajwa katika sehemu inayosomeka kwa mashine ya ripoti hii; hii ni jumla ya matokeo yenyewe, si kiasi kikuu cha ripoti.', plain: 'The Auditor-General\u2019s own total isn\u2019t in the part of the report we can read automatically. This is just what the listed findings add up to.' },
   'home.audits.stat_critical': { en: 'Critical Findings', sw: 'Matokeo Muhimu', plain: 'Serious Problems' },
   'home.audits.stat_recurring': { en: 'Recurring Issues', sw: 'Masuala Yanayojirudia', plain: 'Repeat Problems' },
   'home.audits.findings_overview': { en: 'Audit Findings Overview', sw: 'Muhtasari wa Matokeo ya Ukaguzi', plain: 'Audit Findings' },

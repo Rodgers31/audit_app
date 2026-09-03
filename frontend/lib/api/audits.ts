@@ -132,7 +132,11 @@ export interface FederalAuditFinding {
   severity: string;
   recommended_action: string;
   amount_involved: string;
-  amount_numeric: number;
+  /** The figure this finding states, or null when the report states none —
+   *  which is the ordinary case (764 of 813 in FY2024/25). It was 0 before,
+   *  which made "no figure stated" indistinguishable from "nothing
+   *  questioned" for anything summing or sorting this array. */
+  amount_numeric: number | null;
   status: string;
   category: string;
   query_type: string;
@@ -168,6 +172,9 @@ export interface FederalAuditResponse {
   withheld_findings?: number;
   // Transparency only: raw sum across all finding amounts (not "questioned").
   total_amount_in_findings?: number;
+  /** How many findings the `total_amount_in_findings` sum covers. A
+   *  partial sum with no denominator cannot be told apart from a total. */
+  findings_with_amount: number;
   by_severity: Record<string, number>;
   basis_for_qualification: string[];
   emphasis_of_matter: string[];
