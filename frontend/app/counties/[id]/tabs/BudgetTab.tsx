@@ -3,61 +3,22 @@
 /**
  * BudgetTab — deep-dive on a county's budget execution and debt position.
  *
- * Shows top-level allocation/spend KPIs, a sector donut + ranked list,
- * debt breakdown by lender, and pending-bill aging buckets. Extracted
- * into its own chunk so the recharts + debt-breakdown weight only
- * downloads when a user actually clicks the tab.
+ * Shows top-level allocation/spend KPIs, debt breakdown by lender, and
+ * pending-bill aging buckets. The sector donut that used to sit between them
+ * was withdrawn — see the note further down.
  */
 import { useLang } from '@/lib/i18n/LangProvider';
 import { useCountyPendingBills } from '@/lib/react-query/useDebt';
 import { CountyComprehensive } from '@/types';
 import { FileWarning } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
 import ModelledDataNote from '@/components/ModelledDataNote';
-import { fmtKES, PALETTE, pct } from '../shared';
+import { fmtKES, pct } from '../shared';
 import KPI from './KPI';
 
 export default function BudgetTab({ data }: { data: CountyComprehensive }) {
   const { t } = useLang();
   const { budget, debt } = data;
   const { data: countyPendingBills } = useCountyPendingBills(data.id.toString());
-  const [activeSector, setActiveSector] = useState<string | null>(null);
-
-  const sectors = useMemo(
-    () =>
-      Object.entries(budget.sector_breakdown)
-        .map(([name, vals], i) => ({
-          name: name.length > 22 ? name.slice(0, 20) + '...' : name,
-          fullName: name,
-          allocated: vals.allocated,
-          spent: vals.spent,
-          fill: PALETTE[i % PALETTE.length],
-        }))
-        .sort((a, b) => b.allocated - a.allocated)
-        .slice(0, 10),
-    [budget.sector_breakdown]
-  );
-
-  const totalSectorAlloc = sectors.reduce((sum, s) => sum + s.allocated, 0);
-  const totalSectorSpent = sectors.reduce((sum, s) => sum + s.spent, 0);
-  const topSector = sectors[0];
-  const active = activeSector
-    ? sectors.find((s) => s.fullName === activeSector) || null
-    : null;
-  const displayed = active || topSector || null;
-  const displayedPct = displayed && totalSectorAlloc > 0
-    ? (displayed.allocated / totalSectorAlloc) * 100
-    : 0;
-  const displayedUtil = displayed && displayed.allocated > 0
-    ? (displayed.spent / displayed.allocated) * 100
-    : 0;
-  const pieData = sectors.map((s) => ({
-    name: s.name,
-    fullName: s.fullName,
-    value: s.allocated,
-    fill: s.fill,
-  }));
 
   return (
     <div className='space-y-5'>
@@ -100,205 +61,16 @@ export default function BudgetTab({ data }: { data: CountyComprehensive }) {
         </div>
       </div>
 
-      {/* Sector spending — editorial donut + ranked list */}
-      {sectors.length > 0 && (
-        <div className='relative overflow-hidden rounded-2xl border border-gray-100 dark:border-neutral-border bg-gradient-to-br from-white via-white to-gov-sage/5 dark:from-surface-elevated dark:via-surface-base dark:to-surface-elevated'>
-          {/* Ambient color wash from top sector */}
-          <div
-            aria-hidden
-            className='absolute -top-20 -right-20 w-64 h-64 rounded-full blur-3xl opacity-20'
-            style={{ backgroundColor: displayed?.fill || '#3b82f6' }}
-          />
-
-          {/* Header */}
-          <div className='relative flex items-start justify-between gap-4 px-5 pt-5 pb-2'>
-            <div>
-              <div className='flex items-center gap-2 mb-1'>
-                <div className='h-5 w-1 rounded-full bg-gov-forest' />
-                <h3 className='text-base font-semibold text-gray-900 dark:text-neutral-text'>
-                  {t('county.budget.sector_spending')}
-                </h3>
-              </div>
-              <p className='text-xs text-gray-500 dark:text-neutral-muted/80 ml-3'>
-                {t('county.budget.sector_explore_hint').replace('{n}', String(sectors.length))}
-              </p>
-            </div>
-            <div className='hidden sm:flex items-center gap-3 text-[11px] text-gray-500 dark:text-neutral-muted/80'>
-              <div className='flex items-center gap-1.5'>
-                <div className='w-2.5 h-2.5 rounded-sm bg-gray-200 dark:bg-surface-sunken' />
-                <span>{t('county.budget.legend_allocated')}</span>
-              </div>
-              <div className='flex items-center gap-1.5'>
-                <div className='w-2.5 h-2.5 rounded-sm bg-emerald-500' />
-                <span>{t('county.budget.legend_spent')}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className='relative grid grid-cols-1 lg:grid-cols-12 gap-4 px-5 pb-5 pt-2'>
-            {/* LEFT: interactive donut with live center label (5/12) */}
-            <div className='lg:col-span-5'>
-              <div className='relative h-[320px]'>
-                <ResponsiveContainer width='100%' height='100%'>
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      dataKey='value'
-                      nameKey='fullName'
-                      cx='50%'
-                      cy='50%'
-                      outerRadius='90%'
-                      innerRadius='62%'
-                      paddingAngle={1.5}
-                      strokeWidth={0}
-                      onMouseEnter={(e) => setActiveSector(e?.fullName || null)}
-                      onMouseLeave={() => setActiveSector(null)}>
-                      {pieData.map((e, i) => (
-                        <Cell
-                          key={i}
-                          fill={e.fill}
-                          opacity={
-                            activeSector && activeSector !== e.fullName ? 0.35 : 1
-                          }
-                          style={{ transition: 'opacity 200ms ease-out', cursor: 'pointer' }}
-                        />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-
-                {/* Center label — swaps between total + hovered sector */}
-                <div className='absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center'>
-                  {active ? (
-                    <>
-                      <div
-                        className='w-2 h-2 rounded-full mb-2'
-                        style={{ backgroundColor: active.fill }}
-                      />
-                      <div className='text-[11px] uppercase tracking-widest font-semibold text-gray-400 dark:text-neutral-muted/80 px-4 leading-tight'>
-                        {active.fullName}
-                      </div>
-                      <div className='text-lg font-bold tabular-nums text-gray-900 dark:text-neutral-text mt-1'>
-                        {fmtKES(active.allocated)}
-                      </div>
-                      <div className='text-[11px] text-gray-500 dark:text-neutral-muted/80 tabular-nums mt-0.5'>
-                        {displayedPct.toFixed(1)}% {t('county.budget.of_top_10')}
-                      </div>
-                      <div className='mt-2 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-100'>
-                        <span className='text-[11px] font-semibold text-emerald-700 tabular-nums'>
-                          {displayedUtil.toFixed(0)}% {t('county.budget.executed_suffix')}
-                        </span>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className='text-[11px] uppercase tracking-widest font-semibold text-gray-400 dark:text-neutral-muted/80'>
-                        {t('county.budget.top_10_sectors')}
-                      </div>
-                      <div className='text-2xl font-bold tabular-nums text-gray-900 dark:text-neutral-text mt-1'>
-                        {fmtKES(totalSectorAlloc)}
-                      </div>
-                      <div className='text-[11px] text-gray-500 dark:text-neutral-muted/80 mt-0.5'>
-                        {t('county.budget.allocated_lower')}
-                      </div>
-                      <div className='mt-2 flex items-baseline gap-1'>
-                        <span className='text-sm font-bold text-emerald-700 tabular-nums'>
-                          {fmtKES(totalSectorSpent)}
-                        </span>
-                        <span className='text-[11px] text-gray-400 dark:text-neutral-muted/80'>
-                          {t('county.budget.spent_lower')}
-                        </span>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* RIGHT: ranked sector cards with allocation + utilization (7/12) */}
-            <div className='lg:col-span-7 space-y-1.5'>
-              {sectors.map((s, idx) => {
-                const pctOfTotal =
-                  totalSectorAlloc > 0 ? (s.allocated / totalSectorAlloc) * 100 : 0;
-                const utilization = s.allocated > 0 ? (s.spent / s.allocated) * 100 : 0;
-                const isActive = activeSector === s.fullName;
-                const utilColor =
-                  utilization >= 85
-                    ? 'text-emerald-700'
-                    : utilization >= 60
-                      ? 'text-teal-700'
-                      : utilization >= 30
-                        ? 'text-amber-700'
-                        : 'text-rose-700';
-                return (
-                  <button
-                    key={s.fullName}
-                    type='button'
-                    onMouseEnter={() => setActiveSector(s.fullName)}
-                    onMouseLeave={() => setActiveSector(null)}
-                    className={`w-full text-left rounded-xl px-3 py-2.5 transition-all border ${
-                      isActive
-                        ? 'border-gray-200 dark:border-neutral-border bg-white dark:bg-surface-base shadow-sm'
-                        : 'border-transparent hover:bg-white/60 dark:bg-surface-elevated'
-                    }`}>
-                    <div className='flex items-center gap-3'>
-                      {/* Rank */}
-                      <div className='text-[11px] font-bold text-gray-400 dark:text-neutral-muted/80 tabular-nums w-4 flex-shrink-0'>
-                        {(idx + 1).toString().padStart(2, '0')}
-                      </div>
-                      {/* Color dot */}
-                      <div
-                        className='w-2.5 h-2.5 rounded-full flex-shrink-0'
-                        style={{ backgroundColor: s.fill }}
-                      />
-                      {/* Name */}
-                      <div className='flex-1 min-w-0'>
-                        <div className='text-sm font-semibold text-gray-800 dark:text-neutral-text truncate'>
-                          {s.fullName}
-                        </div>
-                      </div>
-                      {/* Allocation */}
-                      <div className='text-right flex-shrink-0'>
-                        <div className='text-sm font-bold text-gray-900 dark:text-neutral-text tabular-nums'>
-                          {fmtKES(s.allocated)}
-                        </div>
-                        <div className='text-[11px] text-gray-400 dark:text-neutral-muted/80 tabular-nums'>
-                          {pctOfTotal.toFixed(1)}%
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Layered progress bar: allocated track + spent fill */}
-                    <div className='mt-2 ml-11'>
-                      <div className='relative h-1.5 bg-gray-100 dark:bg-surface-elevated rounded-full overflow-hidden'>
-                        <div
-                          className='absolute inset-y-0 left-0 rounded-full'
-                          style={{
-                            width: `${Math.min(utilization, 100)}%`,
-                            backgroundColor: s.fill,
-                            transition: 'width 400ms ease-out',
-                          }}
-                        />
-                      </div>
-                      <div className='flex items-center justify-between mt-1'>
-                        <span className='text-[11px] text-gray-500 dark:text-neutral-muted/80 tabular-nums'>
-                          <span className={`font-semibold ${utilColor}`}>
-                            {utilization.toFixed(0)}%
-                          </span>{' '}
-                          {t('county.budget.executed_suffix')}
-                        </span>
-                        <span className='text-[11px] text-gray-400 dark:text-neutral-muted/80 tabular-nums'>
-                          {fmtKES(s.spent)} {t('county.budget.spent_lower')}
-                        </span>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* The county "Sector Spending" donut and ranked list were withdrawn
+          (credibility audit F11). `sector_breakdown` is not extracted from any
+          county publication: across all 47 counties there is exactly ONE
+          distinct set of sector shares — Health 25%, Education 20%, Roads 15%,
+          Water 10%, Agriculture 8%, Administration 7%, Trade 5%, Environment
+          4%, Social 3%, Other 3% — a fixed template applied to each county's
+          headline budget. Two counties opened side by side falsify it. The
+          per-sector "spent" figures are also mutually inconsistent with the
+          county's own total_spent (Baringo's sum is 154% of it). Restore only
+          when county sector lines are extracted from CoB CBIRR tables. */}
 
       {/* Debt breakdown */}
       {debt.breakdown.length > 0 && (

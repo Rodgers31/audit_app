@@ -4,7 +4,6 @@ import { DebtTimelineEntry } from '@/lib/api/debt';
 import { classifyDebtRisk, toRawKES } from '@/lib/utils';
 import { useLang } from '@/lib/i18n/LangProvider';
 import {
-  useBroaderDebt,
   useDebtTimeline,
   useNationalDebtOverview,
 } from '@/lib/react-query/useDebt';
@@ -200,14 +199,6 @@ export default function NationalDebtCard() {
     : null;
   const domesticPct = externalPct != null ? +(100 - externalPct).toFixed(1) : null;
 
-  // IMF's "General Government Gross Debt" — the broader figure that
-  // includes counties, SOEs, pending bills + arrears. Shown here as a
-  // one-line callout so the homepage acknowledges the gap; the full
-  // dual-card + explainer lives on /debt.
-  const { data: broader } = useBroaderDebt();
-  const imfKes = broader?.status === 'success' ? broader.latest?.value_kes ?? null : null;
-  const imfPct = broader?.status === 'success' ? broader.latest?.debt_to_gdp ?? null : null;
-
   const growthMultiple =
     firstYear && lastYear ? (lastYear.total / firstYear.total).toFixed(1) : '—';
   const yearRange = firstYear && lastYear ? `${firstYear.year}–${lastYear.year}` : '—';
@@ -242,12 +233,16 @@ export default function NationalDebtCard() {
       {apiData?.reconciliation?.status === 'divergent' && (
         <div className='mx-6 sm:mx-8 mt-3 flex items-start gap-2 rounded-sm border border-amber-400/50 bg-amber-50/70 dark:bg-amber-500/10 px-3 py-2'>
           <AlertTriangle className='w-3.5 h-3.5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0' />
+          {/* `primary_source` / `secondary_source` are internal table names
+              (`loans_table`, `debt_timeline_table`). They were being printed to
+              the public. The divergence is worth telling the reader about; the
+              schema is not. */}
           <p className='text-[11px] leading-snug text-amber-800 dark:text-amber-200'>
-            Sources differ by{' '}
-            {Math.abs(Number(apiData.reconciliation.percent_diff) || 0).toFixed(1)}% —{' '}
-            {apiData.reconciliation.primary_source} vs {apiData.reconciliation.secondary_source}.{' '}
+            Two official figures for this total differ by{' '}
+            {Math.abs(Number(apiData.reconciliation.percent_diff) || 0).toFixed(1)}%
+            and we cannot yet say which is right.{' '}
             <Link href='/debt' className='font-semibold underline hover:no-underline'>
-              See the audit trail
+              See both figures
             </Link>
             .
           </p>
@@ -314,21 +309,13 @@ export default function NationalDebtCard() {
           />
         </div>
 
-        {/* Broader measure (IMF) callout — one-line, subtle, with a
-            link to the full dual-card + explainer on /debt. Hidden when
-            the seeder has not produced data yet so we never show a
-            misleading zero. */}
-        {imfKes != null && (
-          <Link
-            href='/debt#broader'
-            className='mt-3 block rounded-sm bg-gov-gold/[0.08] border border-gov-gold/25 px-3 py-2 text-[12px] text-gov-dark/85 dark:text-white/85 hover:bg-gov-gold/[0.14]'>
-            <span className='font-semibold text-gov-dark dark:text-white'>IMF broader measure:</span>{' '}
-            KES {(imfKes / 1e12).toFixed(2)}T
-            {imfPct != null && ` (${imfPct.toFixed(1)}% GDP)`} — includes counties,
-            SOEs, pending bills
-            <span className='text-gov-forest dark:text-emerald-100 ml-1 font-medium'>→ why the gap</span>
-          </Link>
-        )}
+        {/* The "IMF broader measure … includes counties, SOEs, pending bills"
+            callout was withdrawn (credibility audit F8). It described the IMF
+            General-Government figure as BROADER than the headline while
+            rendering it 1.26T SMALLER — a claim that refutes itself in the
+            same sentence. The IMF series is still ingested and is a legitimate
+            second measure; it needs a presentation that states which is larger
+            and why, not one that asserts a composition the numbers contradict. */}
       </div>
 
       {/* Chart */}

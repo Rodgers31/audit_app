@@ -3,7 +3,7 @@
 /**
  * BudgetSourceReconciliation
  *
- * Mirrors the Debt page's DebtSourceReconciliation: surfaces the data
+ * Surfaces the data
  * provenance and known caveats about where the numbers come from so a
  * citizen can trust what they're reading or follow the chain back to the
  * primary documents.

@@ -40,13 +40,7 @@ const SECTOR_LABEL_TO_KEY: Array<[string, TranslationKey]> = [
   ['admin', 'sectors.admin'],
   ['governance', 'sectors.admin'],
 ];
-function sectorKey(raw: string): TranslationKey | null {
-  const l = raw.toLowerCase();
-  for (const [needle, key] of SECTOR_LABEL_TO_KEY) {
-    if (l.includes(needle)) return key;
-  }
-  return null;
-}
+
 
 interface CountySummary {
   id: string;
@@ -244,15 +238,6 @@ function CompareContent() {
   const onAdd = () => updateSelected([...selected, '']);
   const onRemove = (i: number) =>
     updateSelected(selected.filter((_, idx) => idx !== i));
-
-  // Union of sectors present in any picked county (so the table rows align).
-  const sectorNames = useMemo(() => {
-    const s = new Set<string>();
-    picked.forEach((c) => {
-      Object.keys(c.sector_breakdown || {}).forEach((k) => s.add(k));
-    });
-    return Array.from(s).sort();
-  }, [picked]);
 
   return (
     <div className='space-y-6'>
@@ -513,46 +498,12 @@ function CompareContent() {
                       ))}
                     </tr>
 
-                    {/* Section: Sector breakdown */}
-                    {sectorNames.length > 0 && (
-                      <>
-                        <tr>
-                          <td
-                            colSpan={picked.length + 1}
-                            className='bg-gray-50/50 dark:bg-surface-elevated/70 px-5 py-2 text-[11px] uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-bold border-t border-b border-gray-100 dark:border-neutral-border'>
-                            {t('compare.section.sectors')}
-                          </td>
-                        </tr>
-                        {sectorNames.map((sector) => {
-                          const sk = sectorKey(sector);
-                          const label = sk ? t(sk) : sector;
-                          return (
-                          <tr key={sector} className='border-b border-gray-100 dark:border-neutral-border'>
-                            <td className='py-3 pr-4 pl-5 text-sm font-semibold text-gray-700 dark:text-neutral-muted'>
-                              {label}
-                            </td>
-                            {picked.map((c) => {
-                              const spent = c.sector_breakdown?.[sector]?.spent || 0;
-                              return (
-                                <td
-                                  key={c.id}
-                                  className={`py-3 px-4 text-right tabular-nums text-sm ${rankStyle(
-                                    spent || null,
-                                    picked.map(
-                                      (p) =>
-                                        p.sector_breakdown?.[sector]?.spent || null
-                                    ),
-                                    true
-                                  )}`}>
-                                  {spent > 0 ? fmtKES(spent) : '—'}
-                                </td>
-                              );
-                            })}
-                          </tr>
-                          );
-                        })}
-                      </>
-                    )}
+                    {/* The "Sector spending (actual)" rows were withdrawn
+                        (credibility audit F11) — `sector_breakdown` is one
+                        fixed template (25/20/15/10/8/7/5/4/3/3) applied to
+                        every county's headline budget, so comparing two
+                        counties' sector rows compared the same percentages
+                        twice. */}
                   </tbody>
                 </table>
               </ResponsiveTable>

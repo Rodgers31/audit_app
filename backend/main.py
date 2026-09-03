@@ -3009,6 +3009,31 @@ async def get_county_comprehensive(
             # blocks below both iterate it. Only the total filters out
             # PENDING_BILLS (see ``_is_debt_loan`` for why).
             loans = db.query(DBLoan).filter(DBLoan.entity_id == entity.id).all()
+
+            # Publication gate. A county row naming a creditor that only lends
+            # to sovereigns, with no source document behind it, is withheld —
+            # from the breakdown AND from the total, so the parts still sum to
+            # the whole. See publication_gate.county_debt_instrument_failure.
+            from services.publication_gate import county_debt_instrument_failure
+
+            _withheld_debt: dict = {}
+            _publishable_loans = []
+            for _l in loans:
+                _reason = county_debt_instrument_failure(_l)
+                if _reason:
+                    _withheld_debt[_reason] = _withheld_debt.get(_reason, 0) + 1
+                    logging.warning(
+                        "county debt row withheld (%s): entity=%s lender=%r "
+                        "outstanding=%s",
+                        _reason,
+                        entity.id,
+                        _l.lender,
+                        _l.outstanding,
+                    )
+                    continue
+                _publishable_loans.append(_l)
+            loans = _publishable_loans
+
             total_debt = sum(
                 float(l.outstanding or l.principal or 0)
                 for l in loans
@@ -3381,6 +3406,11 @@ async def get_county_comprehensive(
                     ),
                     "per_capita_debt": per_capita_debt,
                     "breakdown": debt_breakdown,
+                    # How many instrument rows the publication gate held back,
+                    # and why. Never silently dropped: a reader (or a caller)
+                    # can tell "this county has no external debt" from "we are
+                    # not willing to publish the row we hold".
+                    "withheld": _withheld_debt or None,
                 },
                 # Audit — findings array is always included so downstream
                 # tab components can iterate safely. An earlier experiment

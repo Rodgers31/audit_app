@@ -26,7 +26,6 @@ import {
   Clock,
   ExternalLink,
   Grid3x3,
-  HardHat,
   Info,
   Landmark,
   ShieldAlert,
@@ -72,10 +71,7 @@ const AccountabilityTab = dynamic(() => import('./tabs/AccountabilityTab'), {
   ssr: false,
   loading: () => <TabSkeleton />,
 });
-const ProjectsTab = dynamic(() => import('./tabs/ProjectsTab'), {
-  ssr: false,
-  loading: () => <TabSkeleton />,
-});
+// ProjectsTab withdrawn — see the note on the TABS array below.
 
 const TABS: { id: Tab; labelKey: TranslationKey; icon: React.ElementType }[] = [
   { id: 'overview', labelKey: 'county.tab.overview', icon: Landmark },
@@ -83,7 +79,16 @@ const TABS: { id: Tab; labelKey: TranslationKey; icon: React.ElementType }[] = [
   { id: 'budget', labelKey: 'county.tab.budget_debt', icon: CircleDollarSign },
   { id: 'audit', labelKey: 'county.tab.audit_findings', icon: ShieldAlert },
   { id: 'accountability', labelKey: 'county.tab.accountability', icon: Award },
-  { id: 'projects', labelKey: 'county.tab.projects', icon: HardHat },
+  // The "Projects" tab was withdrawn (credibility audit F6). It rendered 25
+  // hand-written records from backend/seeding/real_data/stalled_projects.json
+  // against 21 named counties, each carrying an Auditor-General case reference
+  // (e.g. "OAG/MSA/2023/HLT-004"), a contract value, a completion percentage
+  // and a narrative cause. No OAG report was ever read for any of them: the
+  // domain's own fetcher records mark_fixture(reason="no_live_source", "...
+  // source is OAG audit reports, for which no extractor exists yet"), and all
+  // 25 records have amount_paid/contracted_amount equal to an exact whole
+  // percent drawn only from {20,30,40,50,60}. Publishing a case number asserts
+  // that a document exists. Restore this tab only behind a real OAG extractor.
 ];
 
 /** Tiny inline SVG sparkline — renders a trend without pulling in a chart lib.
@@ -244,7 +249,7 @@ function HealthScoreModal({
 
   if (!open) return null;
 
-  const { financial_summary, budget, debt, audit, stalled_projects } = data;
+  const { financial_summary, budget, debt, audit } = data;
   const utilization = budget.utilization_rate;
   const healthScore = financial_summary.health_score;
   const grade = financial_summary.grade;
@@ -351,10 +356,6 @@ function HealthScoreModal({
                 {
                   label: t('county.healthmodal.row.audit_issues'),
                   value: String(audit.findings_count),
-                },
-                {
-                  label: t('county.healthmodal.row.stalled_projects'),
-                  value: String(stalled_projects.count),
                 },
               ].map((row) => (
                 <div
@@ -473,7 +474,7 @@ export default function CountyDetailClient() {
   const { data: acctData } = useCountyAccountability(countyId);
 
   const initialTab = (searchParams.get('tab') as Tab) || 'overview';
-  const validTabs: Tab[] = ['overview', 'money', 'budget', 'audit', 'accountability', 'projects'];
+  const validTabs: Tab[] = ['overview', 'money', 'budget', 'audit', 'accountability'];
   const [tab, setTab] = useState<Tab>(validTabs.includes(initialTab) ? initialTab : 'overview');
   const [showHealthModal, setShowHealthModal] = useState(false);
 
@@ -548,7 +549,6 @@ export default function CountyDetailClient() {
     budget: BudgetTab,
     audit: AuditTab,
     accountability: AccountabilityTab,
-    projects: ProjectsTab,
   }[tab];
 
   const fromParam = searchParams.get('from');
@@ -714,11 +714,6 @@ export default function CountyDetailClient() {
                 label: t('county.hero.kpi.audit_issues'),
                 value: String(data.audit.findings_count),
                 accent: data.audit.findings_count > 0 ? 'text-rose-300' : 'text-white',
-              },
-              {
-                label: t('county.hero.kpi.stalled'),
-                value: String(data.stalled_projects.count),
-                accent: data.stalled_projects.count > 0 ? 'text-amber-300' : 'text-white',
               },
             ].map((kpi, i, arr) => (
               <div

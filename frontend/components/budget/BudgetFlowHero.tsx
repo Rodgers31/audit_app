@@ -77,24 +77,44 @@ export default function BudgetFlowHero({ data }: Props) {
 
   const fy = data?.fiscal_year ?? '—';
   const budget = data?.appropriated_budget ?? 0;
-  const revenue = data?.total_revenue ?? 0;
-  const tax = data?.tax_revenue ?? 0;
-  const nonTax = data?.non_tax_revenue ?? 0;
-  const borrowing = data?.total_borrowing ?? 0;
-  const debtService = data?.debt_service_cost ?? 0;
-  const dev = data?.development_spending ?? 0;
-  const recurrent = data?.recurrent_spending ?? 0;
-  const counties = data?.county_allocation ?? 0;
 
-  // Derived
-  const otherFinancing = Math.max(0, budget - tax - nonTax - borrowing);
-  const recurrentNonDebt = Math.max(0, recurrent - debtService);
-  const otherSpend = Math.max(0, budget - recurrent - dev - counties);
+  // NOTHING here falls back to 0. A `null` from /fiscal/summary means the
+  // Treasury/CoB series for that year has not been published on this basis
+  // yet — rendering it as `KES 0B · 0.0%` told readers that Kenya collects no
+  // tax and spends nothing on debt service (credibility audit F2). The
+  // decomposition is all-or-nothing: the two residual segments below are only
+  // meaningful when every named input they are subtracted from is known.
+  const revenue = data?.total_revenue ?? null;
+  const tax = data?.tax_revenue ?? null;
+  const nonTax = data?.non_tax_revenue ?? null;
+  const borrowing = data?.total_borrowing ?? null;
+  const debtService = data?.debt_service_cost ?? null;
+  const dev = data?.development_spending ?? null;
+  const recurrent = data?.recurrent_spending ?? null;
+  const counties = data?.county_allocation ?? null;
+
+  const hasSources = tax != null && nonTax != null && borrowing != null;
+  const hasUses =
+    debtService != null && recurrent != null && dev != null && counties != null;
+  const hasFlow = budget > 0 && hasSources && hasUses;
+
+  // Derived — only computed when their inputs are all present.
+  const otherFinancing = hasSources
+    ? Math.max(0, budget - tax! - nonTax! - borrowing!)
+    : null;
+  const recurrentNonDebt = hasUses ? Math.max(0, recurrent! - debtService!) : null;
+  const otherSpend = hasUses
+    ? Math.max(0, budget - recurrent! - dev! - counties!)
+    : null;
 
   // "shillings-per-shilling-of-revenue" metric: debt service vs total revenue
-  const debtServicePct = revenue > 0 ? (debtService / revenue) * 100 : 0;
+  const debtServicePct =
+    revenue != null && revenue > 0 && debtService != null
+      ? (debtService / revenue) * 100
+      : null;
   const debtServiceCents =
-    data?.debt_service_per_shilling ?? Math.round(debtServicePct);
+    data?.debt_service_per_shilling ??
+    (debtServicePct != null ? Math.round(debtServicePct) : null);
 
   /* ── Sources (money in) ── */
   const sources: Segment[] = useMemo(
@@ -102,8 +122,8 @@ export default function BudgetFlowHero({ data }: Props) {
       {
         key: 'tax',
         label: 'Tax revenue',
-        valueB: tax,
-        share: pct(tax, budget),
+        valueB: tax ?? 0,
+        share: pct(tax ?? 0, budget),
         gradStart: '#2F6343',
         gradEnd: '#1F4A30',
         accent: '#1B3A2A',
@@ -112,8 +132,8 @@ export default function BudgetFlowHero({ data }: Props) {
       {
         key: 'nonTax',
         label: 'Non-tax revenue',
-        valueB: nonTax,
-        share: pct(nonTax, budget),
+        valueB: nonTax ?? 0,
+        share: pct(nonTax ?? 0, budget),
         gradStart: '#4B8564',
         gradEnd: '#2F6343',
         accent: '#2F6343',
@@ -122,8 +142,8 @@ export default function BudgetFlowHero({ data }: Props) {
       {
         key: 'borrowing',
         label: 'New borrowing',
-        valueB: borrowing,
-        share: pct(borrowing, budget),
+        valueB: borrowing ?? 0,
+        share: pct(borrowing ?? 0, budget),
         gradStart: '#B83E3E',
         gradEnd: '#7E2424',
         accent: '#9E3030',
@@ -132,8 +152,8 @@ export default function BudgetFlowHero({ data }: Props) {
       {
         key: 'otherFin',
         label: 'Other financing',
-        valueB: otherFinancing,
-        share: pct(otherFinancing, budget),
+        valueB: otherFinancing ?? 0,
+        share: pct(otherFinancing ?? 0, budget),
         gradStart: '#B38628',
         gradEnd: '#7D591A',
         accent: '#A6781F',
@@ -149,8 +169,8 @@ export default function BudgetFlowHero({ data }: Props) {
       {
         key: 'debtService',
         label: 'Debt service',
-        valueB: debtService,
-        share: pct(debtService, budget),
+        valueB: debtService ?? 0,
+        share: pct(debtService ?? 0, budget),
         gradStart: '#9E3030',
         gradEnd: '#4C1616',
         accent: '#7E2424',
@@ -160,8 +180,8 @@ export default function BudgetFlowHero({ data }: Props) {
       {
         key: 'recurrentNonDebt',
         label: 'Recurrent (ex-debt)',
-        valueB: recurrentNonDebt,
-        share: pct(recurrentNonDebt, budget),
+        valueB: recurrentNonDebt ?? 0,
+        share: pct(recurrentNonDebt ?? 0, budget),
         gradStart: '#6B7280',
         gradEnd: '#3F4754',
         accent: '#4B5563',
@@ -171,8 +191,8 @@ export default function BudgetFlowHero({ data }: Props) {
       {
         key: 'development',
         label: 'Development',
-        valueB: dev,
-        share: pct(dev, budget),
+        valueB: dev ?? 0,
+        share: pct(dev ?? 0, budget),
         gradStart: '#3B7251',
         gradEnd: '#1F4A30',
         accent: '#2F6343',
@@ -182,8 +202,8 @@ export default function BudgetFlowHero({ data }: Props) {
       {
         key: 'counties',
         label: 'Counties',
-        valueB: counties,
-        share: pct(counties, budget),
+        valueB: counties ?? 0,
+        share: pct(counties ?? 0, budget),
         gradStart: '#4B8564',
         gradEnd: '#295B3E',
         accent: '#3E7655',
@@ -193,8 +213,8 @@ export default function BudgetFlowHero({ data }: Props) {
       {
         key: 'otherSpend',
         label: 'Other (CFS etc.)',
-        valueB: otherSpend,
-        share: pct(otherSpend, budget),
+        valueB: otherSpend ?? 0,
+        share: pct(otherSpend ?? 0, budget),
         gradStart: '#B38628',
         gradEnd: '#7D591A',
         accent: '#A6781F',
@@ -224,12 +244,14 @@ export default function BudgetFlowHero({ data }: Props) {
               National Budget · {fy}
             </div>
             <h2 className='font-display text-[26px] sm:text-3xl text-gov-dark dark:text-white leading-tight mt-1'>
-              KES {fmtT(budget)} in, KES {fmtT(budget)} out
+              {hasFlow
+                ? `KES ${fmtT(budget)} in, KES ${fmtT(budget)} out`
+                : `KES ${fmtT(budget)} approved for ${fy}`}
             </h2>
             <p className='text-sm text-neutral-muted mt-1 max-w-2xl'>
-              Every shilling the national government plans to spend this fiscal year must
-              first be raised. Here&apos;s how the plumbing works — sources on top,
-              uses on the bottom.
+              {hasFlow
+                ? "Every shilling the national government plans to spend this fiscal year must first be raised. Here's how the plumbing works — sources on top, uses on the bottom."
+                : 'The approved gross budget, on the Controller of Budget basis.'}
             </p>
           </div>
           {/* Debt-service callout */}
@@ -243,10 +265,12 @@ export default function BudgetFlowHero({ data }: Props) {
                   Treasury APDMR · {fy}
                 </div>
                 <div className='font-display text-xl text-gov-dark dark:text-white leading-tight tabular-nums'>
-                  KES {debtServiceCents.toFixed(1)}
+                  {debtServiceCents == null ? '—' : `KES ${debtServiceCents.toFixed(1)}`}
                 </div>
                 <div className='text-[11px] text-neutral-muted leading-tight'>
-                  of every KES 100 of revenue services the debt (interest + principal)
+                  {debtServiceCents == null
+                    ? 'of every KES 100 of revenue — not yet published for this year'
+                    : 'of every KES 100 of revenue services the debt (interest + principal)'}
                 </div>
               </div>
             </div>
@@ -254,7 +278,37 @@ export default function BudgetFlowHero({ data }: Props) {
         </div>
       </div>
 
+      {/* Composition withheld — the budget total is sourced (COB gross basis)
+          but the revenue/spending decomposition for this year is not published
+          on that basis yet. Say so rather than drawing bars of zeros. */}
+      {!hasFlow && (
+        <div className='px-5 sm:px-8 pb-7 pt-2'>
+          <div className='rounded-xl border border-neutral-border/60 bg-surface-sunken/40 px-4 py-4'>
+            <div className='flex items-start gap-2.5'>
+              <Info
+                size={14}
+                className='mt-0.5 flex-shrink-0 text-gov-forest/70 dark:text-emerald-100/70'
+              />
+              <div className='text-[12px] leading-relaxed text-neutral-muted'>
+                <span className='font-semibold text-gov-dark dark:text-white'>
+                  How {fy} breaks down is not published yet.
+                </span>{' '}
+                The approved total above comes from the Controller of Budget gross
+                basis. The revenue, borrowing and debt-service series for this year
+                have not been published on that same basis, so the sources-and-uses
+                breakdown is withheld rather than estimated. Pick an earlier fiscal
+                year above to see the full flow.
+                <span className='block mt-1.5 text-neutral-muted/80'>
+                  A blank breakdown is not a finding that these amounts are zero.
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Sources bar */}
+      {hasFlow && (
       <div className='px-5 sm:px-8 pb-1 pt-2'>
         <div className='flex items-baseline justify-between gap-2 mb-2'>
           <h3 className='text-[13px] font-semibold text-gov-dark dark:text-white tracking-tight'>
@@ -267,8 +321,10 @@ export default function BudgetFlowHero({ data }: Props) {
         <FlowBar segments={sources} total={budget} hover={hover} setHover={setHover} />
         <SegmentLegend segments={sources} hover={hover} setHover={setHover} />
       </div>
+      )}
 
       {/* Connector */}
+      {hasFlow && (
       <div className='flex items-center justify-center py-2'>
         <div className='flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-neutral-muted/80 font-semibold'>
           <span className='h-px w-8 bg-neutral-border' />
@@ -276,20 +332,25 @@ export default function BudgetFlowHero({ data }: Props) {
           <span className='h-px w-8 bg-neutral-border' />
         </div>
       </div>
+      )}
 
       {/* Uses bar */}
+      {hasFlow && (
       <div className='px-5 sm:px-8 pb-7 pt-1'>
         <div className='flex items-baseline justify-between gap-2 mb-2'>
           <h3 className='text-[13px] font-semibold text-gov-dark dark:text-white tracking-tight'>
             Where it actually goes
           </h3>
           <span className='text-[11px] text-neutral-muted'>
-            Debt service alone: KES {fmtT(debtService)} ({debtServicePct.toFixed(0)}% of revenue)
+            {debtService == null || debtServicePct == null
+              ? 'Debt service: not yet published for this year'
+              : `Debt service alone: KES ${fmtT(debtService)} (${debtServicePct.toFixed(0)}% of revenue)`}
           </span>
         </div>
         <FlowBar segments={uses} total={budget} hover={hover} setHover={setHover} />
         <SegmentLegend segments={uses} hover={hover} setHover={setHover} />
       </div>
+      )}
 
       {/* Footer note */}
       <div className='px-5 sm:px-8 pb-5 pt-0'>

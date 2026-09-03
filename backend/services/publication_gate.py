@@ -384,3 +384,55 @@ def withheld_file_figure(reason: str) -> Dict[str, Any]:
     "not published" from "published as zero".
     """
     return {"value": None, "reason": reason}
+
+
+# --------------------------------------------------------------------------
+# county-level debt instruments
+# --------------------------------------------------------------------------
+
+# Creditors that lend to sovereigns, not to county governments. Article 212 of
+# the Constitution and s.58 of the PFM Act 2012 let a county borrow only where
+# the national government guarantees the loan and the county assembly approves
+# it; a county cannot contract external debt directly. So a county-level row
+# naming one of these is either (a) a national loan misattributed to a county,
+# or (b) invented. Production carries rows reading
+# "World Bank (County Infrastructure)" — KES 13.1B against Nairobi, 6.3B
+# against Mombasa, rendered as "81.2% of total debt" on the county page — and
+# that lender string appears NOWHERE in this repository: no fixture, no seeder,
+# no migration. It is an orphaned row asserting that a named county owes a
+# named multilateral. Credibility audit F15.
+_SOVEREIGN_ONLY_CREDITORS = (
+    "world bank",
+    "ida",
+    "ibrd",
+    "african development bank",
+    "afdb",
+    "international monetary fund",
+    "imf",
+    "eurobond",
+    "exim",
+    "jica",
+    "afd",
+    "kfw",
+    "syndicated",
+    "bilateral",
+    "multilateral",
+)
+
+
+def county_debt_instrument_failure(loan) -> Optional[str]:
+    """Why this county-level debt row may not be published, or None if it may.
+
+    Deliberately NOT a string blocklist: the test is "does this row name a
+    creditor that only lends to sovereigns, and does it fail to show its
+    working?". A row that names the World Bank AND resolves to a source
+    document — a gazetted national guarantee, a county loan register entry —
+    passes. Nothing in production does today, which is the finding; the gate
+    can still go green, which is what makes it a gate rather than a filter.
+    """
+    lender = (getattr(loan, "lender", "") or "").lower()
+    if not any(name in lender for name in _SOVEREIGN_ONLY_CREDITORS):
+        return None
+    if getattr(loan, "source_document_id", None) in (None, ""):
+        return "external_creditor_no_source_document"
+    return None

@@ -7,13 +7,8 @@ import InfoTip from '@/components/InfoTip';
 import { PageSkeleton } from '@/components/ui/Skeleton';
 import PageShell from '@/components/layout/PageShell';
 import PDFExportButton from '@/components/PDFExportButton';
-import BroaderDebtCard from '@/components/debt/BroaderDebtCard';
-import DebtSourceReconciliation from '@/components/debt/DebtSourceReconciliation';
 import LenderTreemap from '@/components/debt/LenderTreemap';
-import MaturityLadder from '@/components/debt/MaturityLadder';
-import PeerStrip from '@/components/debt/PeerStrip';
 import {
-  useDebtSustainability,
   useDebtTimeline,
   useNationalDebtOverview,
   useNationalLoans,
@@ -54,8 +49,6 @@ import {
   Cell,
   ComposedChart,
   Line,
-  LineChart,
-  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -112,89 +105,7 @@ function AnimatedCurrency({
   return <motion.span className={`tabular-nums ${className}`}>{display}</motion.span>;
 }
 
-/* ═══════════════════════════════════════════════════════
-   Small inline atoms
-   ═══════════════════════════════════════════════════════ */
-
-function RingGauge({
-  value,
-  max = 100,
-  size = 120,
-  strokeWidth = 10,
-  color = '#C94A4A',
-  track = 'rgba(31,58,42,0.10)',
-  threshold,
-  thresholdLabel = 'IMF',
-  label,
-  subLabel,
-}: {
-  value: number;
-  max?: number;
-  size?: number;
-  strokeWidth?: number;
-  color?: string;
-  track?: string;
-  threshold?: number;
-  thresholdLabel?: string;
-  label: string;
-  subLabel?: string;
-}) {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const clamped = Math.max(0, Math.min(value, max));
-  const offset = circumference - (clamped / max) * circumference;
-  const thresholdAngle = threshold != null ? (threshold / max) * 360 : null;
-
-  return (
-    <div className='flex flex-col items-center'>
-      <div className='relative inline-flex items-center justify-center' style={{ width: size, height: size }}>
-        <svg width={size} height={size} className='-rotate-90'>
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill='none'
-            stroke={track}
-            strokeWidth={strokeWidth}
-          />
-          <motion.circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill='none'
-            stroke={color}
-            strokeWidth={strokeWidth}
-            strokeLinecap='round'
-            strokeDasharray={circumference}
-            initial={{ strokeDashoffset: circumference }}
-            animate={{ strokeDashoffset: offset }}
-            transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-          />
-          {thresholdAngle != null && (
-            <line
-              x1={size / 2}
-              y1={strokeWidth / 2}
-              x2={size / 2}
-              y2={strokeWidth + 8}
-              stroke='#1B3A2A'
-              strokeWidth={2}
-              strokeLinecap='round'
-              transform={`rotate(${thresholdAngle - 90}, ${size / 2}, ${size / 2})`}
-            />
-          )}
-        </svg>
-        <div className='absolute inset-0 flex flex-col items-center justify-center'>
-          <span className='text-2xl font-bold text-gov-dark dark:text-white tabular-nums'>{value.toFixed(1)}%</span>
-          {threshold != null && (
-            <span className='text-[11px] text-neutral-muted'>{thresholdLabel} {threshold}%</span>
-          )}
-        </div>
-      </div>
-      <div className='text-xs font-semibold text-gov-dark dark:text-white text-center mt-2'>{label}</div>
-      {subLabel && <div className='text-[11px] text-neutral-muted mt-0.5 text-center max-w-[160px]'>{subLabel}</div>}
-    </div>
-  );
-}
+/* RingGauge was removed with the sustainability gauges (F5/F10). */
 
 function Sparkline({
   data,
@@ -261,7 +172,6 @@ export default function NationalDebtPage() {
   const { data: fiscalResp } = useFiscalSummary({ enabled: backendReady });
   const { data: pendingBillsData } = usePendingBills({ enabled: backendReady });
   const { data: rawPendingBillsSummary } = usePendingBillsSummary({ enabled: backendReady });
-  const { data: rawDebtSustainability } = useDebtSustainability({ enabled: backendReady });
 
   /* ── Normalize pending bills summary (API returns dicts) ── */
   const pendingBillsSummary = useMemo(() => {
@@ -302,45 +212,9 @@ export default function NationalDebtPage() {
     };
   }, [rawPendingBillsSummary]);
 
-  /* ── Normalize sustainability indicators ──
-     The /debt/sustainability endpoint returns two different sets of
-     figures for Kenya (top-level Treasury-based vs. regional_peers
-     IMF-WEO-based). For a coherent on-page comparison, we override
-     the Kenya peer row with the top-level authoritative values so the
-     EAC panel doesn't contradict the sustainability ring gauges. */
-  const debtSustainability = useMemo(() => {
-    if (!rawDebtSustainability) return null;
-    const raw = rawDebtSustainability as any;
-    const extractNum = (field: any): number | null => {
-      if (field == null) return null;
-      if (typeof field === 'number') return field;
-      if (typeof field === 'object' && field.value != null) return Number(field.value);
-      return null;
-    };
-    const topDebtToGdp = extractNum(raw.debt_to_gdp) ?? 0;
-    const topServiceToRev = extractNum(raw.debt_service_to_revenue) ?? 0;
-    const topExternalShare = extractNum(raw.external_debt_share) ?? 0;
-    return {
-      ...raw,
-      debt_to_gdp: topDebtToGdp,
-      debt_service_to_revenue: topServiceToRev,
-      external_debt_share: topExternalShare,
-      projections: raw.projections || [],
-      regional_peers: (raw.regional_peers || []).map((p: any) => {
-        const isKenya = p.country === 'Kenya';
-        return {
-          ...p,
-          debt_to_gdp: isKenya ? topDebtToGdp : extractNum(p.debt_to_gdp) ?? 0,
-          debt_service_to_revenue: isKenya
-            ? topServiceToRev
-            : extractNum(p.debt_service_to_revenue) ?? 0,
-          external_debt_share: isKenya
-            ? topExternalShare
-            : extractNum(p.external_debt_share) ?? 0,
-        };
-      }),
-    };
-  }, [rawDebtSustainability]);
+  /* The sustainability normaliser was removed with the gauges and the peer
+     strip (F5/F10). It contained the `?? 0` that turned Kenya's null
+     debt-service-to-revenue into a published 0.0%. */
 
   const [loanSort, setLoanSort] = useState<'outstanding' | 'rate' | 'service'>('outstanding');
   const [fetchedPopulation, setFetchedPopulation] = useState<number | null>(null);
@@ -691,86 +565,53 @@ export default function NationalDebtPage() {
         </div>
       </motion.section>
 
-      {/* ═══════════ SECTION 1B — SOURCES & RECONCILIATION ═══════════
-          Two totals exist for Kenya's public debt:
-            • 11.85T — sum of every line item in CBK's Public Debt Bulletin
-              (live-fetched, used as the headline everywhere on this site)
-            • 12.5T — CBK/Treasury's published annual aggregate stock
-          They disagree by ~5% because of consolidation adjustments.
+      {/* ═══════════ SECTION 1B — SOURCE DIVERGENCE ═══════════
+          What used to sit here was withdrawn (credibility audit F8/F9):
 
-          Hidden behind a disclosure because it's a methodology-audit story,
-          not a headline one — most readers don't need the provenance dive.
-          The *real* "how big is Kenya's debt?" question is CBK-vs-IMF (next
-          section), so we lead with that and keep this available for anyone
-          who spotted 11.85 vs 12.5 in the press and wants to square them. */}
+          • A "Two measures of public debt" dual card that labelled the IMF
+            General-Government figure the BROADER measure — "includes counties,
+            SOE debt, pension arrears, and pending bills" — while rendering it
+            1.26T SMALLER than the Treasury/CBK figure beside it. A broader
+            measure that is smaller refutes itself on sight.
 
-      {/* ═══════════ SECTION 1B — BROADER (IMF) MEASURE ═══════════
-          Leads the "what does public debt actually mean?" story: Treasury's
-          narrow Central-Government number vs IMF's General-Government
-          measure (adds counties, SOE guarantees, arrears, pending bills).
-          For Kenya the gap is modest — the component's copy acknowledges
-          that rather than overselling it. */}
-      <BroaderDebtCard
-        cbkTotalKes={d.totalDebt}
-        cbkAsOf={d.lastUpdated}
-      />
+          • An "Audit trail" strip claiming our headline came from the CBK
+            Statistical Bulletin "June 2025 issue" (a static string the code's
+            own TODO admitted was hardcoded; the seeded source is the December
+            2025 issue), and describing the gap as "typical for line-level vs.
+            roll-up data" — then, on expand, attributing it to forex
+            revaluation, T-bills in transit and unbooked pending bills. None of
+            that is supported: the backend's own note says the two tables are
+            seeded from different source documents, and every mechanism listed
+            would make the aggregate LARGER, not smaller.
 
-      {/* ═══════════ SECTION 1C — AUDIT TRAIL (collapsed by default) ═══════════
-          Compact disclosure: live primary/secondary debt totals from the
-          reconciliation block — click to expand the full Sources &
-          Reconciliation card. Uses native <details> so it works without
-          client state and is keyboard-accessible by default.
-
-          Gate on BOTH primary_value_kes AND secondary_value_kes — pre-fix
-          the headline + comparator were hardcoded "11.85T" / "12.50T"
-          strings, which silently went stale every time the live data
-          moved (CBK overlay, WB IDS overlay, fixture refresh…). The
-          ``percent_diff`` slot was already dynamic so the rest of the
-          line was internally inconsistent: "headline 11.85T … 1.3% gap"
-          was actually a ~6% gap on the live numbers. */}
+          The divergence itself is real and worth telling the reader about, so
+          the warning stays — stripped back to what can actually be shown: two
+          numbers, the gap between them, and the fact that we cannot yet say
+          which is right. No internal table names (the old copy printed
+          `loans_table` and `debt_timeline_table` to the public). */}
       {d.reconciliation &&
         d.reconciliation.primary_value_kes != null &&
-        d.reconciliation.secondary_value_kes != null && (
-          <details className='group rounded-xl border border-neutral-border/40 bg-white/60 dark:bg-surface-elevated overflow-hidden'>
-            <summary className='flex items-center justify-between gap-3 px-5 py-3.5 cursor-pointer list-none hover:bg-neutral-50/50 transition-colors'>
-              <div className='flex items-center gap-2.5 min-w-0'>
-                <span className='text-[11px] uppercase tracking-widest font-semibold text-neutral-muted shrink-0'>
-                  Audit trail
-                </span>
-                {/* Data vintage note: CBK publishes the Statistical
-                    Bulletin biannually (June + December issues, ~6-month
-                    publication lag). Surfacing the issue date in this
-                    one-liner tells citizens our headline isn't stale per
-                    se — it's the latest CBK has published — which is the
-                    question they actually asked when they saw the number
-                    move. The "June 2025 issue" string is currently
-                    static; it'll need updating when the December 2025
-                    issue ships (typically ~July 2026). TODO: plumb the
-                    measurement_date the cbk_bulletin parser already
-                    captures (in the loan record's ``notes`` field)
-                    through the /debt/national API so this can be
-                    rendered dynamically. */}
-                <span className='text-sm text-gov-dark/85 dark:text-white/85 truncate'>
-                  Our {fmtT(d.reconciliation.primary_value_kes)} figure is the
-                  loan-level sum from CBK&apos;s Statistical Bulletin (June 2025
-                  issue, the most recent published). The CBK/Treasury annual
-                  aggregate reports {fmtT(d.reconciliation.secondary_value_kes)}{' '}
-                  — a {(d.reconciliation.percent_diff ?? 0).toFixed(1)}% gap
-                  typical for line-level vs. roll-up data. Click for details.
-                </span>
+        d.reconciliation.secondary_value_kes != null &&
+        d.reconciliation.status === 'divergent' && (
+          <section className='rounded-xl border border-amber-400/50 bg-amber-50/70 dark:bg-amber-500/10 px-5 py-4'>
+            <div className='flex items-start gap-2.5'>
+              <AlertTriangle className='w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0' />
+              <div className='text-[12.5px] leading-relaxed text-amber-900 dark:text-amber-200'>
+                <span className='font-semibold'>
+                  Two official figures for this number disagree, and we cannot
+                  yet say which is right.
+                </span>{' '}
+                Summing the individual instruments we hold gives{' '}
+                {fmtT(d.reconciliation.primary_value_kes)}. The published
+                aggregate for the same period is{' '}
+                {fmtT(d.reconciliation.secondary_value_kes)} — a gap of{' '}
+                {(d.reconciliation.percent_diff ?? 0).toFixed(1)}%. The larger
+                figure is used as the headline on this page. Treat both as
+                provisional until the instrument register is reconciled against
+                the published aggregate.
               </div>
-              <ChevronDown
-                size={16}
-                className='text-neutral-muted group-open:rotate-180 transition-transform shrink-0'
-              />
-            </summary>
-            <div className='border-t border-neutral-border/40'>
-              <DebtSourceReconciliation
-                reconciliation={d.reconciliation}
-                lastUpdated={d.lastUpdated}
-              />
             </div>
-          </details>
+          </section>
         )}
 
       {/* ═══════════ SECTION 2 — WHO KENYA OWES ═══════════ */}
@@ -796,117 +637,46 @@ export default function NationalDebtPage() {
         />
       </motion.section>
 
-      {/* ═══════════ SECTION 3 — MATURITY LADDER ═══════════ */}
-      {loans.length > 0 && (
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-80px' }}
-          transition={{ duration: 0.5 }}>
-          <MaturityLadder loans={loans} />
-        </motion.section>
-      )}
+      {/* ═══════════ SECTION 3 — MATURITY LADDER (withdrawn) ═══════════
+          "When the bills come due" was withdrawn (credibility audit F24). Of
+          the 28 rows in the register only 3 carry a maturity date, so the
+          refinancing "walls" were drawn from three points — with five separate
+          Eurobond issues collapsed onto a single 2034 date. Everything else
+          fell into a "Revolving & pooled instruments — continuously rolled
+          over" list that included World Bank IDA, AfDB, JICA, AFD and KfW
+          credits, which are amortising term loans with fixed maturities, not
+          revolving facilities. Restore when the register carries real
+          instrument-level maturity dates. */}
 
-      {/* ═══════════ SECTION 4 — REGIONAL PEERS ═══════════ */}
-      {debtSustainability?.regional_peers?.length > 0 && (
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-80px' }}
-          transition={{ duration: 0.5 }}>
-          <PeerStrip peers={debtSustainability.regional_peers} />
-        </motion.section>
-      )}
+      {/* ═══════════ SECTIONS 4 & 5 — PEERS + SUSTAINABILITY (withdrawn) ═══════════
+          Both were withdrawn (credibility audit F5/F10/F26).
 
-      {/* ═══════════ SECTION 5 — SUSTAINABILITY GAUGES + PROJECTION ═══════════ */}
-      {debtSustainability && (
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-80px' }}
-          transition={{ duration: 0.5 }}
-          className='space-y-4'>
-          <div>
-            <h2 className='font-display text-2xl sm:text-3xl text-gov-dark dark:text-white flex items-center gap-2'>
-              <Gauge className='text-gov-forest dark:text-emerald-100' size={24} />
-              Can Kenya keep paying?
-            </h2>
-            <p className='text-sm text-neutral-muted mt-1'>
-              Three sustainability ratios compared against internationally-agreed thresholds.
-              Crossing them signals fiscal stress.
-            </p>
-          </div>
-          <div className='rounded-xl bg-white/70 dark:bg-surface-elevated border border-white/70 shadow-surface p-5 sm:p-6'>
-            <div className='grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6'>
-              <RingGauge
-                value={debtSustainability.debt_to_gdp}
-                color={debtSustainability.debt_to_gdp >= 55 ? '#C94A4A' : '#4A7C5C'}
-                threshold={55}
-                thresholdLabel='PFM Act'
-                label='Debt-to-GDP'
-                subLabel='Public debt as % of GDP (nominal). The PFM Act 55% anchor is measured in present-value terms.'
-              />
-              <RingGauge
-                value={debtSustainability.debt_service_to_revenue}
-                color={debtSustainability.debt_service_to_revenue >= 30 ? '#C94A4A' : '#D9A441'}
-                threshold={30}
-                label='Service / Revenue'
-                subLabel='% of tax revenue going to debt repayment'
-              />
-              <RingGauge
-                value={debtSustainability.external_debt_share}
-                color='#8b5cf6'
-                label='External share'
-                subLabel='% of debt held by foreign lenders (FX-exposed)'
-              />
-            </div>
+          The peer strip and the "Service / Revenue" gauge shared one root
+          cause: the backend fills them from World Bank indicators that measure
+          something else. GC.XPN.INTP.RV.ZS is titled by the World Bank
+          "Interest payments (% of revenue)" — interest only, no principal —
+          and was rendered as "% of tax revenue going to debt repayment"
+          against an IMF 30% DEBT-SERVICE threshold. DT.DOD.DECT.GN.ZS is
+          "External debt stocks (% of GNI)" and was rendered as "% of debt held
+          by foreign lenders", so Rwanda's 94%-of-GNI read as 94%-of-its-debt.
+          Kenya's own service ratio arrives null and was rendered 0.0%, placing
+          Kenya below every peer on the metric where it is worst.
 
-            {debtSustainability.projections?.length > 0 && (
-              <div>
-                <div className='flex items-center gap-2 mb-2'>
-                  <TrendingUp size={16} className='text-gov-forest dark:text-emerald-100' />
-                  <h3 className='text-sm font-semibold text-gov-dark dark:text-white'>5-year projection</h3>
-                </div>
-                <ResponsiveContainer width='100%' height={220}>
-                  <LineChart data={debtSustainability.projections} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
-                    <CartesianGrid strokeDasharray='3 3' stroke='#E2DDD5' vertical={false} />
-                    <XAxis dataKey='year' tick={{ fill: '#6B7280', fontSize: 11 }} tickLine={false} />
-                    <YAxis
-                      tick={{ fill: '#6B7280', fontSize: 11 }}
-                      tickLine={false}
-                      tickFormatter={(v) => `${v}%`}
-                      width={45}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        background: 'rgba(255,255,255,0.95)',
-                        border: '1px solid rgba(226,221,213,0.4)',
-                        borderRadius: 12,
-                        fontSize: 12,
-                      }}
-                      formatter={(v: any) => `${Number(v).toFixed(1)}%`}
-                    />
-                    <ReferenceLine y={55} stroke='#C94A4A' strokeDasharray='4 4'>
-                      <text x='90%' y={-4} fill='#C94A4A' fontSize={11} fontWeight={600}>
-                        PFM Act 55%
-                      </text>
-                    </ReferenceLine>
-                    <Line
-                      type='monotone'
-                      dataKey='projected_debt_to_gdp'
-                      name='Debt-to-GDP'
-                      stroke='#C94A4A'
-                      strokeWidth={2.5}
-                      dot={{ r: 4, fill: '#C94A4A' }}
-                      activeDot={{ r: 6 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </div>
-        </motion.section>
-      )}
+          The debt-to-GDP column mixed five bases in one chart: Ethiopia's 31%
+          is World Bank central-government debt from 2019 (IMF WEO 2025 says
+          43.1, and Ethiopia has been in default since Dec 2023, yet it was
+          labelled "Within sustainable band"); Uganda's is World Bank 2024;
+          Tanzania's and Rwanda's are hardcoded fallback constants in
+          backend/main.py; Kenya's is our own CBK-derived ratio. The panel was
+          titled "EAC peer average" while including Ethiopia, which is not an
+          EAC member, and omitting Burundi, South Sudan, DRC and Somalia, which
+          are.
+
+          The 5-year projection was a straight-line least-squares extrapolation
+          of our own series (+0.3pp/yr), published beside an IMF WEO projection
+          we already ingest and which says something different.
+
+          Restore per-metric, each against the indicator it actually names. */}
 
       {/* ═══════════ SECTION 6 — REVENUE ALLOCATION ═══════════ */}
       {taxAllocation && (

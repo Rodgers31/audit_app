@@ -6,12 +6,9 @@ import type { TranslationKey } from '@/lib/i18n/messages';
 import { County } from '@/types';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  BarChart3,
   BookOpen,
   Building2,
   FileWarning,
-  GraduationCap,
-  Heart,
   Landmark,
   MapPin,
   Receipt,
@@ -144,19 +141,6 @@ function severityConfig(sev: string): {
         labelKey: 'home.county_panel.sev_info',
       };
   }
-}
-
-/* ── Sector icon mapping ── */
-function sectorIcon(name: string) {
-  const lower = name.toLowerCase();
-  if (lower.includes('health')) return <Heart className='w-3 h-3' />;
-  if (lower.includes('education') || lower.includes('training'))
-    return <GraduationCap className='w-3 h-3' />;
-  if (lower.includes('road') || lower.includes('transport'))
-    return <Building2 className='w-3 h-3' />;
-  if (lower.includes('admin') || lower.includes('assembly'))
-    return <Building2 className='w-3 h-3' />;
-  return <BarChart3 className='w-3 h-3' />;
 }
 
 /* ══════════════════════════════════════════════════════════ */
@@ -308,10 +292,12 @@ export default function CountyDetailsPanel({ county, className = '' }: CountyDet
                 </span>
               </div>
 
-              {/* Top Spending Sectors — modelled estimates (fixed CRA-formula
-                  ratios from the seeder), so carry the same disclaimer the
-                  county detail pages show. */}
-              <SectorBreakdown county={county} />
+              {/* "Top Spending Sectors" was withdrawn (credibility audit F11).
+                  The health/education/infrastructure figures it charted are
+                  slices of one fixed template — 25/20/15/10/8/7/5/4/3/3 — that
+                  is identical for all 47 counties, so the bars said the same
+                  thing about every county in Kenya. A disclaimer under them was
+                  not enough: they were rendered as this county's spending mix. */}
               <ModelledDataNote className='!px-3 !py-2 text-xs' />
 
               {/* OAG Audit Findings */}
@@ -412,69 +398,6 @@ function MiniMetric({
 }
 
 /* Top spending sectors mini horizontal bars */
-function SectorBreakdown({ county }: { county: County }) {
-  const { t } = useLang();
-  // Build sector list from the available data
-  const sectors: { name: string; amount: number }[] = [];
-  if (county.health) sectors.push({ name: t('home.county_panel.sector.health'), amount: county.health });
-  if (county.education) sectors.push({ name: t('home.county_panel.sector.education'), amount: county.education });
-  if (county.infrastructure)
-    sectors.push({ name: t('home.county_panel.sector.roads'), amount: county.infrastructure });
-
-  // If no explicit sector data, try dev/recurrent split
-  if (sectors.length === 0) {
-    if (county.developmentBudget)
-      sectors.push({ name: t('home.county_panel.sector.development'), amount: county.developmentBudget });
-    if (county.recurrentBudget) sectors.push({ name: t('home.county_panel.sector.recurrent'), amount: county.recurrentBudget });
-  }
-
-  if (sectors.length === 0) return null;
-
-  const maxAmount = Math.max(...sectors.map((s) => s.amount));
-  const total = county.budget_2025 || county.budget || 1;
-
-  const barColors = ['bg-gov-forest', 'bg-gov-sage', 'bg-gov-gold', 'bg-gov-copper', 'bg-teal-500'];
-
-  return (
-    <div>
-      <div className='flex items-center gap-1.5 mb-2'>
-        <BarChart3 className='w-3 h-3 text-gray-400 dark:text-neutral-muted/80' />
-        <span className='text-[11px] font-semibold text-gray-600 dark:text-neutral-muted'>{t('home.county_panel.top_sectors')}</span>
-      </div>
-      <div className='space-y-1.5'>
-        {sectors.slice(0, 4).map((sector, i) => {
-          const pct = (sector.amount / total) * 100;
-          const barWidth = maxAmount > 0 ? (sector.amount / maxAmount) * 100 : 0;
-          return (
-            <div key={sector.name} className='flex items-center gap-2'>
-              <div className='w-4 flex-shrink-0 flex items-center justify-center text-gray-400 dark:text-neutral-muted/80'>
-                {sectorIcon(sector.name)}
-              </div>
-              <div className='flex-1 min-w-0'>
-                <div className='flex items-center justify-between mb-0.5'>
-                  <span className='text-[11px] text-gray-500 dark:text-neutral-muted/80 truncate'>{sector.name}</span>
-                  <span className='text-[11px] font-semibold text-gray-600 dark:text-neutral-muted tabular-nums'>
-                    {pct.toFixed(1)}%
-                  </span>
-                </div>
-                <div className='h-1 rounded-full bg-gray-100 dark:bg-surface-elevated overflow-hidden'>
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${barWidth}%` }}
-                    transition={{ duration: 0.4, delay: 0.1 + i * 0.05 }}
-                    className={`h-full rounded-full ${barColors[i] || barColors[0]}`}
-                  />
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-/* OAG Audit Findings list */
 function AuditFindings({ county }: { county: County }) {
   const { t } = useLang();
   const issues = county.auditIssues || [];

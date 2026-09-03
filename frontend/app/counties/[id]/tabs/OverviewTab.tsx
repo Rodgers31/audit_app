@@ -12,7 +12,7 @@ import { getCountyOfficials } from '@/lib/data/county-officials';
 import { useLang } from '@/lib/i18n/LangProvider';
 import type { TranslationKey } from '@/lib/i18n/messages';
 import { CountyComprehensive } from '@/types';
-import { AlertTriangle, ExternalLink, HardHat, Scale, TrendingDown, TrendingUp } from 'lucide-react';
+import { AlertTriangle, ExternalLink, Scale, TrendingDown, TrendingUp } from 'lucide-react';
 import React from 'react';
 import ModelledDataNote from '@/components/ModelledDataNote';
 import { fmtKES, fmtLabel, fmtPop, pct, SEVERITY_STYLE } from '../shared';
@@ -163,7 +163,6 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
     budget,
     debt,
     audit,
-    stalled_projects,
     financial_summary,
     missing_funds,
     revenue,
@@ -391,31 +390,10 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
       {/* Who Runs This County — named officials */}
       <OfficialsCard countyId={data.id} fallbackGovernor={data.governor} />
 
-      {/* Stalled projects summary */}
-      {stalled_projects.count > 0 && (
-        <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-5'>
-          <div className='flex items-center gap-2 mb-2'>
-            <HardHat size={16} className='text-red-600' />
-            <h3 className='text-sm font-semibold text-gray-800 dark:text-neutral-text'>
-              {stalled_projects.count}{' '}
-              {stalled_projects.count !== 1
-                ? t('county.overview.stalled_n_plural')
-                : t('county.overview.stalled_n')}
-            </h3>
-          </div>
-          <div className='text-xs text-gray-500 dark:text-neutral-muted/80 mb-1'>
-            {t('county.overview.contracted_total')}: {fmtKES(stalled_projects.total_contracted_value)}{' '}
-            &middot; {t('county.overview.paid')}: {fmtKES(stalled_projects.total_amount_paid)} (
-            {pct(
-              (stalled_projects.total_amount_paid /
-                (stalled_projects.total_contracted_value || 1)) *
-                100
-            )}{' '}
-            {t('county.overview.disbursed')})
-          </div>
-          <p className='text-xs text-gray-400 dark:text-neutral-muted/80'>{t('county.overview.see_projects_tab')}</p>
-        </div>
-      )}
+      {/* The stalled-projects summary card was withdrawn along with the
+          Projects tab (credibility audit F6) — it summarised a hand-written
+          fixture whose Auditor-General case references were never read from any
+          OAG report. See the note on TABS in CountyDetailClient.tsx. */}
     </div>
   );
 }

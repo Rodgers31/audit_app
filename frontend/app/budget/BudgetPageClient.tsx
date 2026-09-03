@@ -9,7 +9,7 @@ import { toRawKES } from '@/lib/utils';
  *
  *   1. BudgetFlowHero              — "where money comes from / where it goes"
  *   2. FiscalTrendStrip            — multi-year sparklines (is the gap widening?)
- *   3. SpendDonut                  — concentric donut: macro × sectors
+ *   3. SpendDonut                  — macro-bucket donut
  *   4. RevenueMix                  — KRA revenue streams with YoY deltas
  *   5. ExecutionAuditLens          — sectors ranked by unspent (the audit lens)
  *   6. CountyUtilizationStrip      — best / worst absorbers + link to /counties
@@ -273,13 +273,40 @@ export default function BudgetSpendingPage() {
     );
   }, [fiscalHistory, currentFiscal]);
 
-  // User-selected fiscal year — defaults to the current FY once data arrives.
+  // The newest fiscal year whose revenue/spending decomposition is actually
+  // published. `fiscal.current` runs ahead of it: the FY2026/27 row carries an
+  // approved budget total but null revenue, borrowing and debt-service, because
+  // those series have not been re-sourced onto the COB gross basis yet
+  // (DATA_CORRECTIONS_2026-08-29 §4). Landing on it made the flow hero the
+  // first thing a reader saw and it was entirely zeros (credibility audit F2).
+  // Derived from the data, so the page moves itself forward the moment the
+  // FY2026/27 series lands — no date to remember to change.
+  const newestFYWithFlow = useMemo(() => {
+    const complete = (r: any) =>
+      r &&
+      r.appropriated_budget != null &&
+      r.tax_revenue != null &&
+      r.non_tax_revenue != null &&
+      r.total_borrowing != null &&
+      r.debt_service_cost != null &&
+      r.recurrent_spending != null &&
+      r.development_spending != null &&
+      r.county_allocation != null;
+    if (complete(currentFiscal)) return currentFiscal!.fiscal_year;
+    for (let i = fiscalHistory.length - 1; i >= 0; i--) {
+      if (complete(fiscalHistory[i])) return fiscalHistory[i].fiscal_year;
+    }
+    return currentFiscal?.fiscal_year ?? null;
+  }, [fiscalHistory, currentFiscal]);
+
+  // User-selected fiscal year — defaults to the newest year we can render in
+  // full, not to the newest year that exists.
   const [selectedFY, setSelectedFY] = useState<string | null>(null);
   useEffect(() => {
-    if (!selectedFY && currentFiscal?.fiscal_year) {
-      setSelectedFY(currentFiscal.fiscal_year);
+    if (!selectedFY && newestFYWithFlow) {
+      setSelectedFY(newestFYWithFlow);
     }
-  }, [selectedFY, currentFiscal]);
+  }, [selectedFY, newestFYWithFlow]);
 
   // Row matching the user's selection — falls back to current.
   const selectedFiscal: FlowHeroInput | null = useMemo(() => {
@@ -291,13 +318,17 @@ export default function BudgetSpendingPage() {
   }, [selectedFY, fiscalHistory, currentFiscal]);
 
   // The selected year controls hero + donut. Sector-level execution +
-  // county utilisation come from the overview endpoint which is pinned to
-  // the current fiscal period, so those chapters always reflect the most
-  // recent available data.
+  // county utilisation come from the overview endpoint, which is pinned to
+  // ONE fiscal period of its own (`_meta.fiscal_period`, e.g. "FY2025/26 9M").
+  // Compare against that period rather than against `fiscal.current` — those
+  // two drifted apart once the fiscal_summary gained an FY2026/27 row, so the
+  // COB execution panels were rendering under an FY2026/27 heading.
+  const fyKey = (v?: string | null) => (v ?? '').replace(/\D/g, '').slice(0, 6);
+  const overviewFY =
+    (overview as any)?._meta?.fiscal_period ?? (overview as any)?.fiscal_period ?? null;
   const viewingCurrentFY =
-    !selectedFY || selectedFY === currentFiscal?.fiscal_year;
+    !selectedFY || !overviewFY || fyKey(selectedFY) === fyKey(overviewFY);
 
-  const sectors = overview?.sectors ?? [];
   const countyUtil = overview?.county_utilization ?? {};
   const executionBySector = enhanced?.execution_by_sector ?? [];
   const revenueBySource = enhanced?.revenue_by_source ?? [];
@@ -386,7 +417,7 @@ export default function BudgetSpendingPage() {
           debt_service_cost: selectedFiscal?.debt_service_cost ?? null,
           development_spending: selectedFiscal?.development_spending ?? null,
           county_allocation: selectedFiscal?.county_allocation ?? null,
-          sectors: (viewingCurrentFY ? sectors : []) as any,
+          // `sectors` (the county-sector outer ring) was withdrawn — F11.
         }}
       />
 
@@ -419,9 +450,9 @@ export default function BudgetSpendingPage() {
             the current fiscal period by the Controller of Budget. Switch back
             to{' '}
             <button
-              onClick={() => currentFiscal?.fiscal_year && setSelectedFY(currentFiscal.fiscal_year)}
+              onClick={() => newestFYWithFlow && setSelectedFY(newestFYWithFlow)}
               className='font-semibold text-gov-forest dark:text-emerald-100 hover:underline'>
-              {currentFiscal?.fiscal_year ?? 'the current FY'}
+              {newestFYWithFlow ?? 'the reported FY'}
             </button>{' '}
             to see those panels.
           </span>

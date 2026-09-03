@@ -50,7 +50,7 @@ export const PALETTE = [
   '#94a3b8',
 ];
 
-export type Tab = 'overview' | 'budget' | 'audit' | 'accountability' | 'projects' | 'money';
+export type Tab = 'overview' | 'budget' | 'audit' | 'accountability' | 'money';
 
 export const SEVERITY_STYLE: Record<
   string,
