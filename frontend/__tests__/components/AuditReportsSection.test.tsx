@@ -171,4 +171,51 @@ describe('AuditReportsSection with published findings', () => {
       'https://www.oagkenya.go.ke/wp-content/uploads/2026/05/R.pdf#page=14'
     );
   });
+
+  describe('the partial questioned amount', () => {
+    // Production FY2024/25: the Auditor-General's own questioned total is not
+    // in the report's machine-readable section, so the "Amount Questioned"
+    // tile shows an em-dash. 49 of 813 findings do state a figure, summing to
+    // KES 73.4B. Hiding that publishes less than we know; showing it bare
+    // would imply it is the report's headline. It is shown WITH its coverage.
+    const withPartial = {
+      ...GATED_EMPTY_RESPONSE,
+      total_findings: 813,
+      findings: [],
+      total_amount_questioned: null,
+      total_amount_questioned_label: null,
+      total_amount_in_findings: 73_382_064_434,
+      findings_with_amount: 49,
+    };
+
+    it('states the sum together with how many findings it covers', () => {
+      mockUseFederalAudits.mockReturnValue({
+        data: withPartial, isLoading: false, error: null,
+      });
+      render(<AuditReportsSection />);
+      expect(screen.getByText(/across 49 of 813 findings/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/not the report.s headline figure/i)
+      ).toBeInTheDocument();
+    });
+
+    it('stays hidden when the Auditor-General\'s own total IS available', () => {
+      // Two competing money figures side by side would be worse than one.
+      mockUseFederalAudits.mockReturnValue({
+        data: { ...withPartial, total_amount_questioned: 981_300_000_000 },
+        isLoading: false, error: null,
+      });
+      render(<AuditReportsSection />);
+      expect(screen.queryByText(/across 49 of 813 findings/i)).toBeNull();
+    });
+
+    it('stays hidden when no finding states a figure', () => {
+      mockUseFederalAudits.mockReturnValue({
+        data: { ...withPartial, total_amount_in_findings: null, findings_with_amount: 0 },
+        isLoading: false, error: null,
+      });
+      render(<AuditReportsSection />);
+      expect(screen.queryByText(/across .* findings/i)).toBeNull();
+    });
+  });
 });

@@ -121,9 +121,12 @@ export default function AuditReportsSection() {
       sev: s,
       // Real sum — 0 means 0. Guards against division live at use sites.
       sevTotal: Object.values(s).reduce((a, b) => a + b, 0),
+      // "Largest findings" means largest STATED figure. Findings that state
+      // none are excluded rather than sorted as 0 — with the honest null they
+      // would otherwise compare as NaN and scramble the order.
       topFindings: [...data.findings]
-        .filter((f) => f.amount_involved !== 'KES 0')
-        .sort((a, b) => b.amount_numeric - a.amount_numeric)
+        .filter((f) => f.amount_involved !== 'KES 0' && f.amount_numeric != null)
+        .sort((a, b) => (b.amount_numeric ?? 0) - (a.amount_numeric ?? 0))
         .slice(0, 4),
       ministryBars: (data.top_ministries || []).slice(0, 5).map((m) => ({
         ...m,
@@ -320,6 +323,32 @@ export default function AuditReportsSection() {
           </div>
         ))}
       </div>
+
+      {/* The partial, stated as a partial.
+          `total_amount_questioned` is the Auditor-General's OWN questioned
+          total and is null whenever the report's machine-readable section
+          omits it — true for FY2024/25 — so the tile above shows an em-dash,
+          correctly. But the findings themselves do state figures, and hiding
+          that sum publishes less than we know.
+          It is only shown when the authoritative total is absent (otherwise
+          two competing money figures sit side by side), and always with its
+          coverage, so it cannot be read as the headline. */}
+      {data.total_amount_questioned == null &&
+        data.total_amount_in_findings != null &&
+        data.findings_with_amount != null &&
+        data.findings_with_amount > 0 && (
+          <div className='mt-3 rounded-xl border border-neutral-border/40 bg-gov-gold/[0.05] px-4 py-3'>
+            <p className='text-sm font-semibold text-gov-dark dark:text-white tabular-nums'>
+              {t('home.audits.amount_partial')
+                .replace('{amount}', fmtKES(data.total_amount_in_findings))
+                .replace('{n}', String(data.findings_with_amount))
+                .replace('{total}', String(data.total_findings))}
+            </p>
+            <p className='mt-1 text-[11px] leading-relaxed text-neutral-muted'>
+              {t('home.audits.amount_partial_note')}
+            </p>
+          </div>
+        )}
 
       {/* ════════ TWO-COL: Findings + Ministries ════════ */}
       <div className='px-6 sm:px-8 pb-5 grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-5'>

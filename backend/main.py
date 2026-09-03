@@ -4031,12 +4031,21 @@ async def get_federal_audits():
             # zero". Track whether anything was actually parsed so the response
             # can say null instead of 0.0 (AUDIT_FINDINGS P1).
             any_amount_parsed = False
+            findings_with_amount = 0
             severity_counts = {}
 
             for audit, entity in federal_audits:
-                # Parse amount from provenance or finding_text
+                # Parse amount from provenance or finding_text.
+                #
+                # amount_val starts as None, not 0.0. Most findings state no
+                # figure at all — 764 of production's 813 — and publishing 0.0
+                # for those made "the report states no amount here"
+                # indistinguishable from "nothing was questioned here", on a
+                # SOURCED finding. That is the manufactured zero PR #135
+                # existed to remove, in the one field a client is most likely
+                # to sum.
                 amount_str = ""
-                amount_val = 0.0
+                amount_val: Optional[float] = None
                 status = ""
                 category = ""
                 query_type = ""
@@ -4069,7 +4078,7 @@ async def get_federal_audits():
                             cleaned = cleaned[:-1]
                         amount_val = float(cleaned.replace(",", "").strip()) * mult
                     except (ValueError, TypeError):
-                        amount_val = 0.0
+                        amount_val = None
 
                 # Extraction-backed rows (Stage 2) carry the figure in the
                 # `amount` column — set only when the paragraph cites exactly
@@ -4082,7 +4091,9 @@ async def get_federal_audits():
 
                 if amount_str and amount_val:
                     any_amount_parsed = True
-                total_amount += amount_val
+                if amount_val is not None:
+                    total_amount += amount_val
+                    findings_with_amount += 1
                 sev_key = (audit.severity.value if audit.severity else "INFO").upper()
                 severity_counts[sev_key] = severity_counts.get(sev_key, 0) + 1
 
@@ -4291,6 +4302,15 @@ async def get_federal_audits():
                 "total_amount_in_findings": (
                     total_amount if any_amount_parsed else None
                 ),
+                # The denominator that makes the partial safe to render. The
+                # OAG's own questioned total is not extracted for FY2024/25,
+                # so `total_amount_in_findings` is the only money figure this
+                # response can offer — and a sum with no coverage cannot be
+                # told apart from a total. Publishing both lets the page say
+                # "KES 73.4B across 49 of 813 findings" instead of either an
+                # em-dash (hiding a real sourced number) or a bare figure
+                # (implying it is the total).
+                "findings_with_amount": findings_with_amount,
                 "total_amount_in_findings_reason": (
                     None
                     if any_amount_parsed
