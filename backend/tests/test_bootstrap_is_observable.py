@@ -141,37 +141,56 @@ class TestTheDeclarationIsHonest:
 
 class TestTheDeclaredDateCannotDrift:
     """``oag_audit_data.json`` carries no metadata, so its date is declared in
-    code. A declaration nothing checks is how the original defect happened."""
+    code. A declaration nothing checks is how the original defect happened.
 
-    def test_the_declared_date_matches_git(self):
-        import subprocess
+    The check is against the file's CONTENT, not ``git log``. The first
+    version compared with ``git log -1 --format=%ad -- <file>``, passed
+    locally, and failed in CI: ``actions/checkout`` defaults to
+    ``fetch-depth: 1``, and in a shallow clone ``git log -1`` on a path
+    returns the TIP commit rather than the one that last touched the file — so
+    it read the CI run's own date (2026-09-02) and reported a year-old fixture
+    as same-day fresh. Precisely the trap ``bootstrap_provenance`` avoids by
+    refusing to trust mtime, reintroduced in the test written to guard it.
 
+    A content digest has no such dependency: it is identical in a shallow
+    clone, a full clone, a tarball, or a container with no git at all.
+    """
+
+    def test_the_declared_date_still_describes_this_file(self):
         from bootstrap import _FIXTURE_DECLARATIONS
 
-        repo = Path(__file__).resolve().parents[2]
-        try:
-            subprocess.run(
-                ["git", "rev-parse", "--git-dir"], cwd=repo,
-                capture_output=True, check=True,
+        pinned = {
+            name: spec
+            for name, spec in _FIXTURE_DECLARATIONS.items()
+            if spec.get("content_sha256")
+        }
+        assert pinned, "no fixture is content-pinned — this check is vacuous"
+
+        for name, spec in pinned.items():
+            actual = hashlib.sha256((_APIS / name).read_bytes()).hexdigest()
+            assert actual == spec["content_sha256"], (
+                f"{name} has changed on disk but its declaration still says "
+                f"{spec['declared_date']}. Update declared_date AND "
+                f"content_sha256 together in the commit that refreshes it "
+                f"(new digest: {actual})."
             )
-        except Exception:
-            pytest.skip("not a git checkout")
+
+    def test_only_files_without_their_own_date_need_pinning(self):
+        """A file that states its own date needs no pin — the date travels
+        with the content. Pinning those too would mean a digest to update on
+        every refresh for no added guarantee."""
+        from bootstrap import _FIXTURE_DECLARATIONS
 
         for name, spec in _FIXTURE_DECLARATIONS.items():
             if spec.get("date_field"):
-                continue  # the file states its own date; nothing to drift
-            out = subprocess.run(
-                ["git", "log", "-1", "--format=%ad", "--date=short",
-                 "--", f"apis/{name}"],
-                cwd=repo, capture_output=True, text=True,
-            ).stdout.strip()
-            if not out:
-                pytest.skip(f"no git history for {name}")
-            assert spec["declared_date"] == out, (
-                f"{name}: declared {spec['declared_date']}, last committed "
-                f"{out}. Update the declaration in the commit that refreshes "
-                "the file."
-            )
+                assert "content_sha256" not in spec, (
+                    f"{name} declares its own date; the pin is redundant"
+                )
+            else:
+                assert spec.get("content_sha256"), (
+                    f"{name} states no date of its own and is not pinned, so "
+                    "its declared_date can drift silently"
+                )
 
 
 class TestTheRunIsRecorded:

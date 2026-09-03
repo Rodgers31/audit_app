@@ -65,11 +65,23 @@ STALE_AFTER_DAYS = 180
 # unfilled.
 _FIXTURE_DECLARATIONS: Dict[str, Dict[str, Any]] = {
     "oag_audit_data.json": {
-        # This file carries no metadata block of any kind. The date is
-        # declared here instead, and test_bootstrap_is_observable.py asserts
-        # it against `git log` so it cannot drift from the file it describes.
+        # This file carries no metadata block of any kind, so its date is
+        # declared here. The declaration is pinned to the file's CONTENT
+        # rather than to `git log`: refresh the file and the digest stops
+        # matching, which fails the test until the date is updated with it.
+        #
+        # The first version of this check compared against
+        # `git log -1 -- <file>` and passed locally while failing in CI —
+        # actions/checkout defaults to fetch-depth 1, so in a shallow clone
+        # `git log -1` on a path returns the TIP commit, not the commit that
+        # last touched the file. It read today's date and called the fixture
+        # fresh. That is the same failure the age calculation avoids by not
+        # trusting mtime, one layer up, in the test meant to guard it.
         "date_field": None,
         "declared_date": "2025-09-05",
+        "content_sha256": (
+            "bba74732d5959b1f39e63757c6f3337409db706693529d58654255969a5790f3"
+        ),
         "live_source": "audits",
     },
     "oag_national_audit_data.json": {
