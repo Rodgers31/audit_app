@@ -79,7 +79,12 @@ function fmtT(val: number): string {
   return `${val}B`;
 }
 
-function fmtKES(val: number): string {
+/** `val` is typed nullable on purpose: the values flowing in derive from an
+ *  `any`-typed API response, so TypeScript cannot catch an unguarded call —
+ *  and did not. The CI production build did, prerendering `/` with no backend:
+ *  `Cannot read properties of null (reading 'toLocaleString')`. */
+function fmtKES(val: number | null | undefined): string {
+  if (val == null) return '—';
   if (val >= 1_000_000_000_000)
     return `KES ${(val / 1_000_000_000_000).toFixed(2)}T`;
   if (val >= 1_000_000_000) return `KES ${(val / 1_000_000_000).toFixed(0)}B`;
@@ -255,7 +260,7 @@ export default function NationalDebtCard() {
           <StatCard
             icon={<Landmark className='w-3.5 h-3.5 text-gov-copper opacity-70' />}
             label={t('home.debt.total_public')}
-            value={fmtKES(totalDebt)}
+            value={totalDebt != null ? fmtKES(totalDebt) : '—'}
             sub={t('home.debt.growth_sub')
               .replace('{x}', String(growthMultiple))
               .replace('{year}', String(firstYear?.year || '—'))}
@@ -299,7 +304,7 @@ export default function NationalDebtCard() {
                 <InfoTip term='domestic-debt' size={11} />
               </div>
             }
-            value={domesticDebt != null ? fmtKES(domesticDebt) : '\u2014'}
+            value={domesticDebt != null ? fmtKES(domesticDebt) : '—'}
             sub={
               domesticPct != null
                 ? t('home.debt.pct_of_total').replace('{pct}', String(domesticPct))
