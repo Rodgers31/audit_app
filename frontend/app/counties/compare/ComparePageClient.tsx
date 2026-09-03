@@ -18,6 +18,7 @@ import { Loader2, Plus, X } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useMemo, useState, Suspense } from 'react';
+import ResponsiveTable from '@/components/ui/ResponsiveTable';
 
 /**
  * Raw backend sector label → translation key. Some counties publish
@@ -284,7 +285,7 @@ function CompareContent() {
             </div>
           ) : (
             <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border overflow-hidden'>
-              <div className='overflow-x-auto'>
+              <ResponsiveTable>
                 <table className='w-full'>
                   <thead>
                     <tr className='bg-gray-50 dark:bg-surface-elevated border-b border-gray-200 dark:border-neutral-border'>
@@ -554,7 +555,7 @@ function CompareContent() {
                     )}
                   </tbody>
                 </table>
-              </div>
+              </ResponsiveTable>
             </div>
           )}
 
