@@ -362,7 +362,7 @@ export default function NationalDebtCard() {
                     dataKey='year'
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fontSize: isMobile ? 9 : 11, fill: '#6B7280' }}
+                    tick={{ fontSize: 11, fill: '#6B7280' }}
                     interval={isMobile ? 1 : 0}
                   />
                   <YAxis
