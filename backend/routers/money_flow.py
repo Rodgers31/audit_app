@@ -30,6 +30,15 @@ except Exception:
     _redis_cache = None
 
 
+def _effective_ttl(result: object, ttl: int) -> int:
+    """Cache lifetime for ``result`` — shortened when it reports an unreadable
+    source, so a recovered source is visible in seconds rather than hours.
+    See cache/redis_cache.py::is_transient_failure and issue #141."""
+    from cache.redis_cache import TRANSIENT_FAILURE_TTL, is_transient_failure
+
+    return min(ttl, TRANSIENT_FAILURE_TTL) if is_transient_failure(result) else ttl
+
+
 def _cached(key_prefix: str, ttl: int = 1800):
     """Cache decorator with Redis + in-memory fallback."""
     def decorator(fn):
@@ -48,14 +57,19 @@ def _cached(key_prefix: str, ttl: int = 1800):
                 if hit is not None:
                     return hit
                 result = await fn(*args, **kwargs)
-                _redis_cache.set(cache_key, result, ttl=ttl)
+                _redis_cache.set(cache_key, result, ttl=_effective_ttl(result, ttl))
                 return result
 
             rec = _mem.get(cache_key)
-            if rec and (time.time() - rec["ts"]) < ttl:
+            # Honour the TTL the entry was stored with (see main.py).
+            if rec and (time.time() - rec["ts"]) < rec.get("ttl", ttl):
                 return rec["value"]
             result = await fn(*args, **kwargs)
-            _mem[cache_key] = {"value": result, "ts": time.time()}
+            _mem[cache_key] = {
+                "value": result,
+                "ts": time.time(),
+                "ttl": _effective_ttl(result, ttl),
+            }
             return result
 
         wrapper._cache = _mem  # expose for test teardown
