@@ -56,28 +56,28 @@ export default function AccountabilityPulseCard() {
             <span className='block text-lg font-bold text-gov-copper tabular-nums leading-none'>
               {critical}
             </span>
-            <span className='text-[10px] text-neutral-muted mt-1 block'>Critical</span>
+            <span className='text-[11px] text-neutral-muted mt-1 block'>Critical</span>
           </div>
           <div className='rounded-xl bg-gov-gold/[0.06] border border-neutral-border/30 px-3 py-3 text-center'>
             <AlertTriangle className='w-4 h-4 text-gov-gold mx-auto mb-1.5 opacity-70' />
             <span className='block text-lg font-bold text-gov-gold tabular-nums leading-none'>
               {warning}
             </span>
-            <span className='text-[10px] text-neutral-muted mt-1 block'>Significant</span>
+            <span className='text-[11px] text-neutral-muted mt-1 block'>Significant</span>
           </div>
           <div className='rounded-xl bg-gov-sage/[0.05] border border-neutral-border/30 px-3 py-3 text-center'>
             <ShieldCheck className='w-4 h-4 text-gov-sage mx-auto mb-1.5 opacity-70' />
             <span className='block text-lg font-bold text-gov-sage tabular-nums leading-none'>
               {info}
             </span>
-            <span className='text-[10px] text-neutral-muted mt-1 block'>Minor</span>
+            <span className='text-[11px] text-neutral-muted mt-1 block'>Minor</span>
           </div>
         </div>
 
         {/* Stacked severity bar */}
         <div className='mb-5'>
           <div className='flex items-center justify-between mb-1.5'>
-            <span className='text-[10px] text-neutral-muted font-medium uppercase tracking-wider'>
+            <span className='text-[11px] text-neutral-muted font-medium uppercase tracking-wider'>
               Finding Distribution
             </span>
             <span className='text-xs font-semibold text-gov-dark dark:text-white tabular-nums'>
@@ -128,7 +128,7 @@ export default function AccountabilityPulseCard() {
 
         {/* Top flagged counties */}
         <div className='mb-5'>
-          <p className='text-[10px] text-neutral-muted font-medium uppercase tracking-wider mb-3'>
+          <p className='text-[11px] text-neutral-muted font-medium uppercase tracking-wider mb-3'>
             Most Flagged Counties
           </p>
           <div className='space-y-2'>
@@ -153,14 +153,14 @@ export default function AccountabilityPulseCard() {
         {/* Recent critical - just a teaser */}
         {recentCritical.length > 0 && (
           <div className='mb-5'>
-            <p className='text-[10px] text-neutral-muted font-medium uppercase tracking-wider mb-2'>
+            <p className='text-[11px] text-neutral-muted font-medium uppercase tracking-wider mb-2'>
               Latest Critical Finding
             </p>
             <div className='rounded-lg border-l-[3px] border-l-gov-copper bg-gov-copper/[0.04] px-4 py-2.5'>
               <p className='text-xs text-gov-dark dark:text-white leading-relaxed line-clamp-2'>
                 {recentCritical[0].finding}
               </p>
-              <p className='text-[10px] text-neutral-muted mt-1'>
+              <p className='text-[11px] text-neutral-muted mt-1'>
                 {recentCritical[0].county} · {recentCritical[0].fiscal_year}
               </p>
             </div>

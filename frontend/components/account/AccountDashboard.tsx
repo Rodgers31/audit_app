@@ -205,7 +205,7 @@ export default function AccountDashboard() {
             {tab.icon}
             {tab.label}
             {tab.id === 'alerts' && unreadCount > 0 && (
-              <span className='absolute -top-1 -right-1 w-5 h-5 bg-gov-copper text-white text-[10px] font-bold rounded-full flex items-center justify-center'>
+              <span className='absolute -top-1 -right-1 w-5 h-5 bg-gov-copper text-white text-[11px] font-bold rounded-full flex items-center justify-center'>
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}

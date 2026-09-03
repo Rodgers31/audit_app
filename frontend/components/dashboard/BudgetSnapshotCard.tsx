@@ -131,7 +131,7 @@ export default function BudgetSnapshotCard() {
           <div className='flex-1 rounded-xl bg-gov-forest/[0.04] border border-neutral-border/30 px-4 py-3'>
             <div className='flex items-start gap-1.5 mb-1'>
               <Banknote className='w-3.5 h-3.5 mt-px flex-shrink-0 text-gov-forest dark:text-emerald-100 opacity-70' />
-              <span className='text-[10px] text-neutral-muted font-medium leading-tight'>
+              <span className='text-[11px] text-neutral-muted font-medium leading-tight'>
                 {budget.total_label || t('home.budget.total_label')}
               </span>
             </div>
@@ -139,7 +139,7 @@ export default function BudgetSnapshotCard() {
               {fmtKES(total)}
             </span>
             {budget.scope_detail && (
-              <p className='mt-1.5 text-[9px] leading-snug text-neutral-muted/75'>
+              <p className='mt-1.5 text-[11px] leading-snug text-neutral-muted/75'>
                 {budget.scope_detail}
               </p>
             )}
@@ -147,7 +147,7 @@ export default function BudgetSnapshotCard() {
           <div className='flex-1 rounded-xl bg-gov-gold/[0.05] border border-neutral-border/30 px-4 py-3'>
             <div className='flex items-center gap-1.5 mb-1'>
               <TrendingUp className='w-3.5 h-3.5 text-gov-gold opacity-70' />
-              <span className='text-[10px] text-neutral-muted font-medium uppercase tracking-wider'>
+              <span className='text-[11px] text-neutral-muted font-medium uppercase tracking-wider'>
                 {t('home.budget.execution_label')}
               </span>
               <InfoTip term='budget-execution' size={11} />
@@ -182,7 +182,7 @@ export default function BudgetSnapshotCard() {
                     <span className='text-xs font-bold text-gov-dark dark:text-white tabular-nums'>
                       {fmtKES(s.amount)}
                     </span>
-                    <span className='text-[10px] text-neutral-muted tabular-nums w-8 text-right'>
+                    <span className='text-[11px] text-neutral-muted tabular-nums w-8 text-right'>
                       {Math.round(s.percentage * 10) / 10}%
                     </span>
                   </div>
@@ -199,7 +199,7 @@ export default function BudgetSnapshotCard() {
                 {utilization > 0 && (
                   <div className='flex justify-end mt-0.5'>
                     <span
-                      className={`text-[10px] tabular-nums ${
+                      className={`text-[11px] tabular-nums ${
                         utilization >= 70
                           ? 'text-gov-sage'
                           : utilization >= 40
@@ -216,7 +216,7 @@ export default function BudgetSnapshotCard() {
         </div>
 
         {allSectors.length > VISIBLE_ROWS && (
-          <p className='text-[10px] text-neutral-muted text-center pt-2'>
+          <p className='text-[11px] text-neutral-muted text-center pt-2'>
             {t('home.budget.more_sectors').replace('{n}', String(allSectors.length - VISIBLE_ROWS))}
           </p>
         )}

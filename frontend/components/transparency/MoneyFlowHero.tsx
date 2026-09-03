@@ -147,7 +147,7 @@ export default function MoneyFlowHero({ data }: Props) {
                   <AlertTriangle size={18} className='text-gov-copper' />
                 </div>
                 <div>
-                  <div className='text-[10px] uppercase tracking-wider font-semibold text-gov-copper'>
+                  <div className='text-[11px] uppercase tracking-wider font-semibold text-gov-copper'>
                     OAG · questioned ratio
                   </div>
                   <div className='font-display text-xl text-gov-dark dark:text-white leading-tight tabular-nums'>
@@ -357,7 +357,7 @@ function StageGap({
       </span>
       <span className='font-mono text-[11px] tabular-nums ml-auto'>
         {unavailable ? (
-          <em className='text-neutral-muted/70 not-italic text-[10.5px]'>{reason}</em>
+          <em className='text-neutral-muted/70 not-italic text-[11px]'>{reason}</em>
         ) : amount != null && amount > 0 ? (
           <span className={isCritical ? 'text-gov-copper font-semibold' : 'text-gov-dark/60 dark:text-white/60'}>
             − KES {fmtT(amount)}

@@ -85,7 +85,7 @@ export default function BroaderDebtCard({ cbkTotalKes, cbkAsOf }: Props) {
       <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
         {/* CBK card (Treasury's number) */}
         <div className='rounded-2xl border border-neutral-border/50 bg-white dark:bg-surface-base p-5 shadow-surface'>
-          <div className='flex items-center gap-2 text-[10px] uppercase tracking-widest text-gov-forest/70 dark:text-emerald-100/70 font-semibold'>
+          <div className='flex items-center gap-2 text-[11px] uppercase tracking-widest text-gov-forest/70 dark:text-emerald-100/70 font-semibold'>
             <Landmark size={12} />
             Treasury / CBK
           </div>
@@ -115,10 +115,10 @@ export default function BroaderDebtCard({ cbkTotalKes, cbkAsOf }: Props) {
 
         {/* IMF card (broader measure) */}
         <div className='rounded-2xl border border-gov-gold/40 dark:border-gov-gold/30 bg-gradient-to-br from-gov-gold/5 via-white to-gov-sand dark:from-gov-gold/[0.08] dark:via-surface-base dark:to-surface-elevated p-5 shadow-surface relative overflow-hidden'>
-          <div className='absolute top-0 right-0 bg-gov-gold/15 text-gov-dark/80 dark:text-white/80 text-[9.5px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-bl-lg'>
+          <div className='absolute top-0 right-0 bg-gov-gold/15 text-gov-dark/80 dark:text-white/80 text-[11px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-bl-lg'>
             Broader measure
           </div>
-          <div className='flex items-center gap-2 text-[10px] uppercase tracking-widest text-gov-forest/70 dark:text-emerald-100/70 font-semibold'>
+          <div className='flex items-center gap-2 text-[11px] uppercase tracking-widest text-gov-forest/70 dark:text-emerald-100/70 font-semibold'>
             <TrendingUp size={12} />
             IMF general government
           </div>

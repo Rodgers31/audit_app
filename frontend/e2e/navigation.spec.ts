@@ -50,7 +50,7 @@ test.describe('Navigation — desktop header', () => {
 
     const logo = page
       .getByRole('link')
-      .filter({ hasText: /Kenya Public Money|Kenya Government/i })
+      .filter({ hasText: /AuditGava|Kenya Public Money/i })
       .first();
     await logo.click();
     await expect(page).toHaveURL(/\/$/);
@@ -62,7 +62,8 @@ test.describe('Navigation — mobile menu', () => {
 
   test('mobile menu toggle opens + reveals all routes', async ({ page }) => {
     await page.goto('/');
-    await waitForAppReady(page);
+    await page.waitForLoadState('domcontentloaded');
+    await expect(nav.mobileMenuToggle(page)).toBeVisible();
 
     await nav.mobileMenuToggle(page).click();
 

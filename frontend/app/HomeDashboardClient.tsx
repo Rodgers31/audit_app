@@ -18,89 +18,46 @@ import {
   KenyanGovCard,
   LearningHubCTA,
   MapWithDetailPanel,
+  MoneyTraceRibbon,
   NationalDebtCard,
   NationalLoansCard,
   SummaryStrip,
 } from '@/components/dashboard';
-import DataFreshnessBadge from '@/components/DataFreshnessBadge';
-import { ScenicBackgroundLayout } from '@/components/layout';
 import NewsletterBanner from '@/components/NewsletterBanner';
 import { useCounties } from '@/lib/react-query';
-import { motion } from 'framer-motion';
 
 export default function HomeDashboardClient() {
   /* ── Dynamic county data from the database ── */
   const { data: counties = [] } = useCounties();
 
-  // ALL map state (hover, selection, auto-rotate index) is owned by
-  // MapWithDetailPanel so map interactions don't re-render the entire
-  // dashboard (SummaryStrip, NationalDebtCard, etc.).
-
   return (
-    <ScenicBackgroundLayout
-      topImage='/kenya_bg_top.jpg'
-      bottomImage='/kenya_bg_bottom.jpg'
-      topImageDark='/kenya_bg_top_dk.jpg'
-      bottomImageDark='/kenya_bg_bottom_dk.jpg'
-      topHeight='50vh'
-      bottomHeight='50vh'
-      readabilityMode='light'
-      intensity={0.94}>
-      {/* Hero title — scenic image visible behind */}
+    <div className='min-h-screen bg-gov-sand dark:bg-[#0d1711]'>
       <HeroSection />
 
-      {/* ══════════════════════════════════════════════════
-          ONE GLASS CONTAINER — wraps ALL dashboard content.
-          Background transitions (scenic → neutral → scenic)
-          show through the translucent glass as you scroll.
-          ══════════════════════════════════════════════════ */}
-      <div className='max-w-[1340px] mx-auto px-5 lg:px-8 pb-12'>
-        <motion.div
-          initial={{ opacity: 0, y: 36 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: 0.4 }}
-          className='rounded-2xl bg-white/20 dark:bg-surface-base/60 backdrop-blur-xl border border-white/25 dark:border-white/10 shadow-[0_8px_40px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.4)] p-4 sm:p-6 space-y-6'>
-          {/* ── Data freshness — "as of" date + source, same badge the
-              detail pages use. The homepage is ISR-cached, so this tells
-              visitors exactly how current the headline figures are. ── */}
-          <DataFreshnessBadge sources='CBK/Treasury' variant='inline' />
+      <div className='mx-auto max-w-[1400px] space-y-6 px-5 py-7 sm:px-6 sm:py-9 lg:px-8 lg:py-11'>
+        <SummaryStrip />
+        <MoneyTraceRibbon />
 
-          {/* ── Summary strip ── */}
-          <SummaryStrip />
+        <div className='grid grid-cols-1 items-stretch gap-5 lg:grid-cols-[minmax(0,1fr)_300px]'>
+          <NationalDebtCard />
+          <KenyanGovCard />
+        </div>
 
-          {/* ── Debt chart + Kenyan Government card ── */}
-          <div className='grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4 items-stretch'>
-            <NationalDebtCard />
-            <KenyanGovCard />
-          </div>
+        <MapWithDetailPanel counties={counties} />
 
-          {/* ── Map + County Details — unified container ──
-              hoveredCounty state is local to this subtree so hover
-              doesn't re-render the entire homepage. */}
-          <MapWithDetailPanel counties={counties} />
+        <AuditReportsSection />
 
-          {/* ── Latest Audit Reports ── */}
-          <AuditReportsSection />
+        <div className='grid grid-cols-1 gap-5 lg:grid-cols-2'>
+          <BudgetSnapshotCard />
+          <NationalLoansCard />
+        </div>
 
-          {/* ── Budget Snapshot + National Loans ── */}
-          <div className='grid grid-cols-1 lg:grid-cols-2 gap-5'>
-            <BudgetSnapshotCard />
-            <NationalLoansCard />
-          </div>
+        <FeatureNavCards />
 
-          {/* ── Feature Navigation Cards ── */}
-          <FeatureNavCards />
+        <LearningHubCTA />
 
-          {/* ── Learning Hub CTA ── */}
-          <LearningHubCTA />
-
-          {/* ── Newsletter ── */}
-          <NewsletterBanner />
-        </motion.div>
+        <NewsletterBanner />
       </div>
-
-      {/* Spacer for bottom scenic image to show below glass */}
-      <div className='h-20' />
-    </ScenicBackgroundLayout>
+    </div>
   );
 }

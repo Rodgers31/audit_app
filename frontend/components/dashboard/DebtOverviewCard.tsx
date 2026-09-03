@@ -134,7 +134,7 @@ export default function DebtOverviewCard() {
             <span className='text-2xl font-bold text-gov-copper'>{Math.round(debtToGdp)}%</span>
           </div>
           <p className='text-xs text-neutral-muted'>{riskLevel}</p>
-          <p className='text-[10px] text-neutral-muted/60'>Debt Level</p>
+          <p className='text-[11px] text-neutral-muted/60'>Debt Level</p>
         </div>
       </div>
 

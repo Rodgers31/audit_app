@@ -223,7 +223,7 @@ export default function LearnHero({ onSearchSubmit, onArticleSelect }: LearnHero
                   className='absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-2xl border border-neutral-border bg-white dark:bg-surface-base text-gov-dark dark:text-white shadow-elevated'>
                   {showHits && (
                     <>
-                      <div className='border-b border-neutral-border/60 px-3 py-1.5 text-[10.5px] font-semibold uppercase tracking-wider text-neutral-muted'>
+                      <div className='border-b border-neutral-border/60 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-neutral-muted'>
                         Matching articles
                       </div>
                       <ul className='max-h-[320px] overflow-y-auto py-1'>
@@ -237,7 +237,7 @@ export default function LearnHero({ onSearchSubmit, onArticleSelect }: LearnHero
                                 {h.article.number}
                               </span>
                               <div className='min-w-0 flex-1'>
-                                <div className='flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-wider text-gov-forest/70 dark:text-emerald-100/70'>
+                                <div className='flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-gov-forest/70 dark:text-emerald-100/70'>
                                   <span>Ch {h.chapter.number}</span>
                                   <span>·</span>
                                   <span className='truncate text-neutral-muted normal-case tracking-normal'>

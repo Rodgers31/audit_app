@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Serif+Display&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 
 /* ── CSS variables for light/dark theme ──
    These power both inline ``rgba(...)`` gradients (PageShell etc.)
@@ -15,20 +15,29 @@
 :root {
   /* Comma-separated (legacy ``rgba(var, alpha)`` consumers like
      PageShell's gradients). */
-  --page-bg-rgb: 245, 240, 232; /* gov-sand */
+  --page-bg-rgb: 243, 238, 228; /* ledger paper */
   /* Space-separated triplets for the Tailwind colour palette,
      which generates ``rgb(var(--c-neutral-text) / <alpha-value>)``.
      Modern ``rgb(R G B / A)`` syntax requires spaces, not commas. */
-  --c-neutral-text: 28 28 28;
-  --c-neutral-muted: 107 114 128;
-  --c-neutral-border: 226 221 213;
+  --c-accent-sage: 23 107 73;
+  --c-accent-copper: 201 71 61;
+  --c-focus-ring: 23 107 73;
+  --c-neutral-text: 16 27 20;
+  /* Was 101 116 123 (#65747B), which measured 4.24-4.41:1 against the
+     cream card surfaces — just under the 4.5:1 AA needs, and it is the
+     single most-used text colour on the site. 92 107 114 clears it at
+     5.02:1 and is visually near-identical. */
+  --c-neutral-muted: 92 107 114;
+  --c-neutral-border: 216 208 193;
   /* Surface tokens — used for cards & elevated surfaces. In light
      mode the cards are white, so all three resolve to the same
      value. In dark mode they fan out into three distinct elevations
      so depth reads visually instead of flat-on-flat. */
-  --c-surface-base: 255 255 255; /* card body */
-  --c-surface-elevated: 255 255 255; /* hover / floating */
-  --c-surface-sunken: 250 247 240; /* nested input, list rows */
+  --c-surface-base: 251 250 246; /* card body */
+  --c-surface-elevated: 255 254 250; /* hover / floating */
+  --c-surface-sunken: 235 230 220; /* nested input, list rows */
+  --c-trace: 201 71 61;
+  --c-source: 23 107 73;
 }
 
 /* Dark theme triggers when ``<html>`` carries the ``dark`` class
@@ -51,19 +60,38 @@
      pages share the same cream-with-floating-slate-cards structure
      instead of a flat near-black page. The cards themselves still go
      full slate-warm via the surface-* tokens below. */
-  --page-bg-rgb: 245, 240, 232; /* gov-sand — kept cream in dark mode */
+  --page-bg-rgb: 13, 23, 17;
   --c-neutral-text: 240 234 222; /* #F0EADE — warm cream-white (inverted cream) */
   --c-neutral-muted: 168 162 148; /* #A8A294 — warm taupe-gray */
   --c-neutral-border: 50 56 50; /* #323832 — visible but subtle warm dark */
-  --c-surface-base: 28 34 30; /* #1C221E — slate-warm card surface */
-  --c-surface-elevated: 38 46 40; /* #262E28 — hover / floating */
-  --c-surface-sunken: 22 26 24; /* #161A18 — nested input bg */
+  --c-surface-base: 22 35 27;
+  --c-surface-elevated: 29 45 35;
+  --c-surface-sunken: 13 23 17;
+
+  /* Accent tones for TEXT on dark surfaces.
+     The brand sage (#176B49) and copper (#C9473D) are tuned for cream
+     backgrounds; against the dark surfaces they measure 2.4-2.8:1 and
+     3.45:1, so every label drawn in them failed WCAG AA (19% of all
+     small text on the home page). These lighter tones clear 4.5:1 while
+     staying recognisably the same hues:
+
+       sage   #3FA76F  5.41:1 on surface-base, 6.07:1 on surface-sunken
+       copper #E0695D  4.93:1 on surface-base, 5.53:1 on surface-sunken
+
+     They are applied ONLY where the brand colours are used as text
+     (see the overrides below). Backgrounds keep the deeper brand values,
+     because lightening `bg-gov-sage` would drop the white button label
+     on it from 6.5:1 to 3.0:1 — fixing one contrast failure by creating
+     another. */
+  --c-accent-sage: 63 167 111;
+  --c-accent-copper: 224 105 93;
+  --c-focus-ring: 63 167 111;
 }
 
 /* ── Base ── */
 @layer base {
   html {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Public Sans', system-ui, sans-serif;
     scroll-behavior: smooth;
     /* Tells the browser which native form widget / scrollbar palette
        to use. Pairs with Tailwind ``darkMode: 'media'`` so the user
@@ -73,28 +101,35 @@
 
   body {
     @apply bg-gov-sand text-neutral-text;
-    /* Body keeps its cream bg in dark mode (matches the home page's
-       hybrid scenic layout). Cards, glass bodies and surface-* tokens
-       provide the dark slate floating on top. */
-    /* Body-level fallback so text doesn't snap. Per-element
-       transitions are applied below to cards, borders, etc. */
-    transition:
-      background-color 300ms ease,
-      color 300ms ease,
-      border-color 300ms ease;
+    min-width: 320px;
+    background-color: rgb(var(--page-bg-rgb));
+    background-image: url("data:image/svg+xml,%3Csvg width='44' height='44' viewBox='0 0 44 44' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 43.5H44' stroke='%23101B14' stroke-opacity='.025'/%3E%3C/svg%3E");
+    font-feature-settings: 'kern' 1, 'liga' 1;
+    transition: background-color 180ms ease-out, color 180ms ease-out;
   }
 
-  /* Crossfade colour and stroke values everywhere when the OS theme
-     flips. Without this, dark-mode flicks instantly which feels
-     jarring. ``transition-property`` is scoped — opacity, transform
-     etc. are intentionally untouched so existing animations behave
-     identically. */
-  *,
-  *::before,
-  *::after {
-    transition-property: background-color, border-color, color, fill, stroke;
-    transition-duration: 300ms;
-    transition-timing-function: ease;
+  ::selection {
+    background: rgb(var(--c-source) / 0.2);
+    color: rgb(var(--c-neutral-text));
+  }
+
+  /* The focus ring was #176b49 in both themes — 2.85:1 against the dark
+     ground, under the 3:1 WCAG requires of a focus indicator, so keyboard
+     users in dark mode got a ring they could barely see. Driven by a
+     variable so it tracks the theme. */
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid rgb(var(--c-focus-ring));
+    outline-offset: 3px;
+  }
+
+  :where(button, a, input, select, textarea) {
+    transition-property: background-color, border-color, color, opacity, transform;
+    transition-duration: 160ms;
+    transition-timing-function: ease-out;
+  }
+
+  :where(.tabular-nums, [data-figure]) {
+    font-variant-numeric: tabular-nums;
   }
 }
 
@@ -104,17 +139,16 @@
      the layered surface tokens so cards read as warm-slate (not flat
      green-on-green) and shadows deepen for proper depth. */
   .glass-surface {
-    @apply bg-white/60 backdrop-blur-xl border border-white/30 shadow-surface
-           dark:bg-surface-base/60 dark:border-white/10;
+    @apply bg-surface-base border border-neutral-border shadow-surface
+           dark:bg-surface-base dark:border-neutral-border;
   }
   .glass-surface-dark {
-    @apply bg-gov-dark/40 backdrop-blur-xl border border-white/10
-           dark:bg-surface-base/60;
+    @apply bg-gov-dark border border-gov-dark dark:bg-surface-base;
   }
   .glass-card {
-    @apply bg-white/70 backdrop-blur-lg border border-white/40 shadow-surface rounded-2xl
-           dark:bg-surface-base/80 dark:border-white/10
-           dark:shadow-[0_8px_40px_rgba(0,0,0,0.35)];
+    @apply bg-surface-base border border-neutral-border shadow-surface rounded-md
+           dark:bg-surface-base dark:border-neutral-border;
+    isolation: isolate;
   }
 
   /* Editorial metric type */
@@ -130,12 +164,15 @@
 
   /* Buttons */
   .btn {
-    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200
+    @apply px-4 py-2 rounded-sm font-semibold
            focus:outline-none focus:ring-2 focus:ring-offset-2;
+    transition-property: background-color, border-color, color, transform;
+    transition-duration: 160ms;
+    transition-timing-function: ease-out;
   }
   .btn-primary {
     @apply btn bg-gov-copper text-white hover:bg-gov-copper/90
-           focus:ring-gov-copper shadow-md hover:shadow-elevated
+           focus:ring-gov-copper
            active:scale-[0.97];
   }
   .btn-secondary {
@@ -150,11 +187,11 @@
 
   /* Risk badges */
   .pill-risk {
-    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-sm
            text-xs font-semibold bg-gov-copper/15 text-gov-copper;
   }
   .pill-safe {
-    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-sm
            text-xs font-semibold bg-gov-sage/15 text-gov-sage;
   }
 
@@ -162,11 +199,115 @@
      cards stand a step above the page bg, with a subtle warm-dark
      border instead of the harsh light-mode gray-200. */
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6
+    @apply bg-surface-base rounded-md shadow-sm border border-neutral-border p-6
            dark:bg-surface-base dark:border-neutral-border;
   }
   .metric-card {
-    @apply card hover:shadow-md transition-shadow duration-200;
+    @apply card;
+    transition-property: border-color, transform;
+    transition-duration: 160ms;
+    transition-timing-function: ease-out;
+  }
+
+  .ledger-panel {
+    @apply border border-neutral-border bg-surface-base rounded-md;
+    isolation: isolate;
+  }
+
+  .ledger-panel-interactive {
+    @apply ledger-panel;
+    transition-property: border-color, transform, background-color;
+    transition-duration: 180ms;
+    transition-timing-function: ease-out;
+  }
+
+  .ledger-panel-interactive:hover {
+    border-color: rgb(var(--c-source) / 0.55);
+    transform: translateY(-2px);
+  }
+
+  .source-label {
+    @apply font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-neutral-muted;
+  }
+
+  .figure-label {
+    @apply font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-neutral-muted;
+  }
+
+  .figure-value {
+    @apply font-mono font-semibold tracking-tight tabular-nums text-gov-dark dark:text-white;
+  }
+
+  .ledger-rule {
+    border-top: 1px solid rgb(var(--c-neutral-border));
+  }
+
+  .ledger-enter {
+    animation: ledger-enter 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .ledger-enter-delayed {
+    animation-delay: 80ms;
+  }
+
+  .ledger-nav-enter {
+    animation: ledger-nav-enter 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .trace-draw-x {
+    animation: trace-draw-x 700ms ease-out 160ms both;
+  }
+
+  .trace-draw-y {
+    animation: trace-draw-y 650ms ease-out 160ms both;
+  }
+
+  .trace-step {
+    animation: trace-step 240ms ease-out both;
+  }
+
+  .trace-step:nth-child(1) { animation-delay: 120ms; }
+  .trace-step:nth-child(2) { animation-delay: 200ms; }
+  .trace-step:nth-child(3) { animation-delay: 280ms; }
+  .trace-step:nth-child(4) { animation-delay: 360ms; }
+
+  .page-shell-content > :where(* + *) {
+    margin-top: 1.5rem;
+  }
+
+  .page-shell-content .rounded-3xl,
+  .page-shell-content .rounded-2xl {
+    border-radius: 0.5rem;
+  }
+
+  .page-shell-content .backdrop-blur-xl,
+  .page-shell-content .backdrop-blur-lg,
+  .page-shell-content .backdrop-blur-md {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .county-explorer .backdrop-blur-xl,
+  .county-explorer .backdrop-blur-lg,
+  .county-explorer .backdrop-blur-md {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .county-explorer [class*='bg-white/40'] {
+    background-color: rgb(var(--c-surface-base) / 0.96);
+  }
+
+  .county-explorer .rounded-2xl {
+    border-radius: 0.5rem;
+  }
+
+  .auditgava-ui .text-white {
+    color: #f8f4ea;
+  }
+
+  .auditgava-ui #main-content .bg-white {
+    background-color: rgb(var(--c-surface-base));
   }
 
   /* Spatial depth helpers */
@@ -207,6 +348,65 @@
   }
   .scroll-thin::-webkit-scrollbar-thumb {
     @apply bg-gov-sage/30 rounded-full;
+  }
+}
+
+@keyframes ledger-enter {
+  from {
+    opacity: 0.01;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ledger-nav-enter {
+  from {
+    opacity: 0.01;
+    transform: translateY(-18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes trace-draw-x {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes trace-draw-y {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+@keyframes trace-step {
+  from {
+    opacity: 0.01;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-delay: 0ms !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
   }
 }
 
@@ -265,3 +465,100 @@
     display: none;
   }
 }
+
+
+/* ── Brand accents as TEXT on dark surfaces ──────────────────────────
+   `text-gov-sage` / `text-gov-copper` compile to the cream-tuned brand
+   hexes, which fail WCAG AA against every dark surface (2.41-3.48:1).
+   These remap only the TEXT utilities to the lighter accent variables;
+   `bg-gov-*`, `border-gov-*` and `ring-gov-*` are untouched, so buttons
+   keep their deeper brand fill and the white label on them stays at
+   6.5:1.
+
+   Written as explicit selectors rather than `[class*='text-gov-sage']`
+   on purpose: the wildcard would also match `hover:text-gov-sage` and
+   paint the hover colour permanently. The hover variants are remapped
+   below, still scoped to :hover.
+
+   The opacity variants are listed individually because Tailwind emits a
+   literal `rgb(23 107 73 / .5)` for a hex token rather than routing it
+   through --tw-text-opacity, so there is no single hook to override. */
+:root.dark .text-gov-sage { color: rgb(var(--c-accent-sage)); }
+:root.dark .text-gov-copper { color: rgb(var(--c-accent-copper)); }
+:root.dark .text-gov-sage\/30 { color: rgb(var(--c-accent-sage) / 0.30); }
+:root.dark .text-gov-sage\/40 { color: rgb(var(--c-accent-sage) / 0.40); }
+:root.dark .text-gov-sage\/50 { color: rgb(var(--c-accent-sage) / 0.50); }
+:root.dark .text-gov-sage\/60 { color: rgb(var(--c-accent-sage) / 0.60); }
+:root.dark .text-gov-sage\/70 { color: rgb(var(--c-accent-sage) / 0.70); }
+:root.dark .text-gov-sage\/80 { color: rgb(var(--c-accent-sage) / 0.80); }
+:root.dark .text-gov-sage\/90 { color: rgb(var(--c-accent-sage) / 0.90); }
+:root.dark .text-gov-copper\/30 { color: rgb(var(--c-accent-copper) / 0.30); }
+:root.dark .text-gov-copper\/40 { color: rgb(var(--c-accent-copper) / 0.40); }
+:root.dark .text-gov-copper\/50 { color: rgb(var(--c-accent-copper) / 0.50); }
+:root.dark .text-gov-copper\/60 { color: rgb(var(--c-accent-copper) / 0.60); }
+:root.dark .text-gov-copper\/70 { color: rgb(var(--c-accent-copper) / 0.70); }
+:root.dark .text-gov-copper\/80 { color: rgb(var(--c-accent-copper) / 0.80); }
+:root.dark .text-gov-copper\/90 { color: rgb(var(--c-accent-copper) / 0.90); }
+
+/* Hover + group-hover variants, kept scoped to the interaction. */
+:root.dark .hover\:text-gov-sage:hover { color: rgb(var(--c-accent-sage)); }
+:root.dark .hover\:text-gov-copper:hover { color: rgb(var(--c-accent-copper)); }
+:root.dark .hover\:text-gov-copper\/80:hover { color: rgb(var(--c-accent-copper) / 0.8); }
+:root.dark .group:hover .group-hover\:text-gov-sage { color: rgb(var(--c-accent-sage)); }
+:root.dark .group:hover .group-hover\:text-gov-copper { color: rgb(var(--c-accent-copper)); }
+
+/* Cream text on a solid copper fill measured 4.29:1 in BOTH themes, just
+   under AA. Darkening the fill to #C24039 clears it at 4.71:1 and is
+   visually indistinguishable from the brand copper. Not scoped to a
+   theme, because the failing pair occurs in both. */
+.bg-gov-copper { background-color: #C24039; }
+
+/* Copper as TEXT on the cream surfaces measures 4.07:1 — the light-mode
+   twin of the dark-mode problem above. #BB3C33 clears it at 4.76:1. */
+:root:not(.dark) .text-gov-copper { color: #BB3C33; }
+:root:not(.dark) .text-gov-copper\/60 { color: rgb(187 60 51 / 0.6); }
+:root:not(.dark) .text-gov-copper\/70 { color: rgb(187 60 51 / 0.7); }
+:root:not(.dark) .text-gov-copper\/80 { color: rgb(187 60 51 / 0.8); }
+:root:not(.dark) .text-gov-copper\/90 { color: rgb(187 60 51 / 0.9); }
+:root:not(.dark) .hover\:text-gov-copper:hover { color: #BB3C33; }
+:root:not(.dark) .group:hover .group-hover\:text-gov-copper { color: #BB3C33; }
+
+/* ── Pointer target sizing ────────────────────────────────────────────
+   WCAG 2.2 SC 2.5.8 (AA) asks for a 24x24 CSS-px target. The InfoTip
+   triggers render a 12px glyph in a 15x15 box, which fails it; the
+   header's icon buttons are 36x36, which passes AA but sits under the
+   44x44 that Apple's HIG and WCAG's AAA target size ask for.
+
+   These expand the HIT AREA with a centred pseudo-element instead of
+   resizing the control, so the visual rhythm of the header and the
+   inline icons is unchanged. */
+.tap-24 { position: relative; }
+.tap-24::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  transform: translate(-50%, -50%);
+}
+
+.tap-44 { position: relative; }
+.tap-44::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+}
+
+/* ── Brand gold as TEXT on light surfaces ────────────────────────────
+   The mirror of the sage/copper problem, in the other theme: #B8872D is
+   tuned for dark grounds (5.08:1 there) and measures 2.93:1 on cream, so
+   gold labels failed AA in LIGHT mode. Remapped to a deeper gold for
+   text only; `bg-gov-gold` keeps the brand value. */
+:root:not(.dark) .text-gov-gold { color: #8A6320; }
+:root:not(.dark) .hover\:text-gov-gold:hover { color: #8A6320; }
+:root:not(.dark) .group:hover .group-hover\:text-gov-gold { color: #8A6320; }

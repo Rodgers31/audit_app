@@ -233,7 +233,7 @@ export default function MapTooltip({
             </div>
             <div className='flex items-center gap-1.5 shrink-0'>
               <span
-                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ring-1 ${cfg.bg} ${cfg.text} ${cfg.ring}`}>
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ring-1 ${cfg.bg} ${cfg.text} ${cfg.ring}`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
                 {status}
               </span>
@@ -262,13 +262,13 @@ export default function MapTooltip({
             <div className='rounded-lg border border-neutral-border/40 bg-white/70 dark:bg-surface-elevated p-2.5'>
               <div className='flex items-center gap-1 mb-1.5'>
                 <Coins className='w-3 h-3 text-gov-forest/70 dark:text-emerald-100/70' />
-                <span className='text-[10px] font-medium text-neutral-muted'>Utilisation</span>
+                <span className='text-[11px] font-medium text-neutral-muted'>Utilisation</span>
               </div>
               <div className='flex items-baseline gap-1 mb-1.5'>
                 <span className='text-[15px] font-bold text-gov-dark dark:text-white tabular-nums leading-none'>
                   {utilization.toFixed(0)}
                 </span>
-                <span className='text-[10px] font-medium text-neutral-muted'>%</span>
+                <span className='text-[11px] font-medium text-neutral-muted'>%</span>
               </div>
               <div className='w-full h-1 rounded-full bg-gray-200/70'>
                 <div
@@ -282,15 +282,15 @@ export default function MapTooltip({
             <div className='rounded-lg border border-neutral-border/40 bg-white/70 dark:bg-surface-elevated p-2.5'>
               <div className='flex items-center gap-1 mb-1.5'>
                 <TrendingUp className='w-3 h-3 text-gov-gold/80' />
-                <span className='text-[10px] font-medium text-neutral-muted'>Debt Ratio</span>
+                <span className='text-[11px] font-medium text-neutral-muted'>Debt Ratio</span>
               </div>
               <div className='flex items-baseline gap-1 mb-0.5'>
                 <span className='text-[15px] font-bold text-gov-dark dark:text-white tabular-nums leading-none'>
                   {debtRatio.toFixed(1)}
                 </span>
-                <span className='text-[10px] font-medium text-neutral-muted'>%</span>
+                <span className='text-[11px] font-medium text-neutral-muted'>%</span>
               </div>
-              <div className='text-[10px] text-neutral-muted truncate'>{fmtKES(county.debt)}</div>
+              <div className='text-[11px] text-neutral-muted truncate'>{fmtKES(county.debt)}</div>
             </div>
           </div>
 
@@ -375,9 +375,9 @@ function AlertRow({
       className={`flex items-center justify-between rounded-md px-2 py-1.5 border ${t.bg} ${t.border}`}>
       <div className='flex items-center gap-1.5'>
         {icon}
-        <span className='text-[10px] font-medium text-gray-700 dark:text-neutral-muted'>{label}</span>
+        <span className='text-[11px] font-medium text-gray-700 dark:text-neutral-muted'>{label}</span>
       </div>
-      <span className={`text-[10px] font-bold tabular-nums ${t.value}`}>{value}</span>
+      <span className={`text-[11px] font-bold tabular-nums ${t.value}`}>{value}</span>
     </div>
   );
 }

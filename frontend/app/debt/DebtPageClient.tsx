@@ -186,7 +186,7 @@ function RingGauge({
         <div className='absolute inset-0 flex flex-col items-center justify-center'>
           <span className='text-2xl font-bold text-gov-dark dark:text-white tabular-nums'>{value.toFixed(1)}%</span>
           {threshold != null && (
-            <span className='text-[10px] text-neutral-muted'>{thresholdLabel} {threshold}%</span>
+            <span className='text-[11px] text-neutral-muted'>{thresholdLabel} {threshold}%</span>
           )}
         </div>
       </div>
@@ -621,7 +621,7 @@ export default function NationalDebtPage() {
             )}
             {timeline.length > 1 && (
               <div className='mt-4'>
-                <p className='text-[10px] uppercase tracking-wider text-white/50 mb-1'>
+                <p className='text-[11px] uppercase tracking-wider text-white/50 mb-1'>
                   10-year trajectory
                 </p>
                 <Sparkline data={timeline.map((t) => t.total)} color='#D9A441' height={48} />
@@ -631,7 +631,7 @@ export default function NationalDebtPage() {
 
           <div className='grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-3'>
             <div className='rounded-xl bg-white/8 backdrop-blur border border-white/15 p-4'>
-              <div className='flex items-center gap-2 text-[10px] uppercase tracking-wider text-white/60 mb-1.5'>
+              <div className='flex items-center gap-2 text-[11px] uppercase tracking-wider text-white/60 mb-1.5'>
                 <Users size={12} />
                 Per citizen
               </div>
@@ -643,7 +643,7 @@ export default function NationalDebtPage() {
               </p>
             </div>
             <div className='rounded-xl bg-white/8 backdrop-blur border border-white/15 p-4'>
-              <div className='flex items-center gap-2 text-[10px] uppercase tracking-wider text-white/60 mb-1.5'>
+              <div className='flex items-center gap-2 text-[11px] uppercase tracking-wider text-white/60 mb-1.5'>
                 <Scale size={12} />
                 Debt-to-GDP
                 <InfoTip term='debt-to-gdp' size={11} />
@@ -674,7 +674,7 @@ export default function NationalDebtPage() {
               )}
             </div>
             <div className='rounded-xl bg-white/8 backdrop-blur border border-white/15 p-4'>
-              <div className='flex items-center gap-2 text-[10px] uppercase tracking-wider text-white/60 mb-1.5'>
+              <div className='flex items-center gap-2 text-[11px] uppercase tracking-wider text-white/60 mb-1.5'>
                 <ShieldAlert size={12} />
                 Risk level
               </div>
@@ -734,7 +734,7 @@ export default function NationalDebtPage() {
           <details className='group rounded-xl border border-neutral-border/40 bg-white/60 dark:bg-surface-elevated overflow-hidden'>
             <summary className='flex items-center justify-between gap-3 px-5 py-3.5 cursor-pointer list-none hover:bg-neutral-50/50 transition-colors'>
               <div className='flex items-center gap-2.5 min-w-0'>
-                <span className='text-[10px] uppercase tracking-widest font-semibold text-neutral-muted shrink-0'>
+                <span className='text-[11px] uppercase tracking-widest font-semibold text-neutral-muted shrink-0'>
                   Audit trail
                 </span>
                 {/* Data vintage note: CBK publishes the Statistical
@@ -1023,7 +1023,7 @@ export default function NationalDebtPage() {
                           }}
                         />
                         <span
-                          className={`relative text-[10px] sm:text-xs font-bold ${
+                          className={`relative text-[11px] sm:text-xs font-bold ${
                             partial > 0.5 ? 'text-white' : 'text-gov-copper'
                           }`}>
                           {i * 10 + 10}
@@ -1239,7 +1239,7 @@ export default function NationalDebtPage() {
                     <div className='flex items-start gap-2.5'>
                       <span className='w-2.5 h-2.5 rounded-sm bg-gov-copper mt-1.5 flex-shrink-0' />
                       <div>
-                        <div className='text-[10px] uppercase tracking-wider text-neutral-muted font-semibold'>
+                        <div className='text-[11px] uppercase tracking-wider text-neutral-muted font-semibold'>
                           National
                         </div>
                         <div className='text-xl font-bold text-gov-dark dark:text-white tabular-nums'>
@@ -1250,7 +1250,7 @@ export default function NationalDebtPage() {
                     <div className='flex items-start gap-2.5'>
                       <span className='w-2.5 h-2.5 rounded-sm bg-gov-gold mt-1.5 flex-shrink-0' />
                       <div>
-                        <div className='text-[10px] uppercase tracking-wider text-neutral-muted font-semibold'>
+                        <div className='text-[11px] uppercase tracking-wider text-neutral-muted font-semibold'>
                           Counties
                         </div>
                         <div className='text-xl font-bold text-gov-dark dark:text-white tabular-nums'>
@@ -1556,25 +1556,25 @@ export default function NationalDebtPage() {
                   </div>
                   <div className='grid grid-cols-2 gap-2 text-xs'>
                     <div>
-                      <span className='text-neutral-muted block text-[10px] uppercase'>Outstanding</span>
+                      <span className='text-neutral-muted block text-[11px] uppercase'>Outstanding</span>
                       <span className='font-semibold text-gov-dark dark:text-white tabular-nums'>
                         {fmtKES(l.outstanding_numeric)}
                       </span>
                     </div>
                     <div>
-                      <span className='text-neutral-muted block text-[10px] uppercase'>Rate</span>
+                      <span className='text-neutral-muted block text-[11px] uppercase'>Rate</span>
                       <span className='font-semibold text-gov-copper tabular-nums'>
                         {l.interest_rate || '—'}
                       </span>
                     </div>
                     <div>
-                      <span className='text-neutral-muted block text-[10px] uppercase'>Annual cost</span>
+                      <span className='text-neutral-muted block text-[11px] uppercase'>Annual cost</span>
                       <span className='font-semibold text-gov-dark dark:text-white tabular-nums'>
                         {fmtKES(l.annual_service_cost)}
                       </span>
                     </div>
                     <div>
-                      <span className='text-neutral-muted block text-[10px] uppercase'>Maturity</span>
+                      <span className='text-neutral-muted block text-[11px] uppercase'>Maturity</span>
                       <span className='text-gov-dark dark:text-white'>{l.maturity_date || 'Revolving'}</span>
                     </div>
                   </div>

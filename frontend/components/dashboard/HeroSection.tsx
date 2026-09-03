@@ -5,8 +5,8 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { useDebtTimeline, useNationalDebtOverview } from '@/lib/react-query/useDebt';
 import { useFiscalSummary } from '@/lib/react-query/useFiscal';
 import { useLang } from '@/lib/i18n/LangProvider';
-import { classifyDebtRisk, fmtBillionKES } from '@/lib/utils';
-import { motion } from 'framer-motion';
+import { classifyDebtRisk, fmtBillionKES, toRawKES } from '@/lib/utils';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   Banknote,
   BarChart3,
@@ -36,27 +36,46 @@ import DebtExplainerModal from './DebtExplainerModal';
  */
 export default function HeroSection() {
   const { t } = useLang();
+  const reduceMotion = useReducedMotion();
   return (
-    <div className='max-w-[1340px] mx-auto px-5 lg:px-8 pt-20 sm:pt-24 pb-6'>
-      <motion.div
-        initial={{ opacity: 0, y: 28 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
-        className='relative max-w-2xl'>
-        {/* Legibility scrim — soft dark halo so the title/subtitle stay
-            readable over the bright photographic hero (esp. light mode). */}
-        <div
-          aria-hidden
-          className='pointer-events-none absolute -inset-x-6 -inset-y-5 -z-10 rounded-[2rem] bg-gradient-to-br from-black/45 via-black/20 to-transparent blur-2xl'
-        />
-        <h1 className='font-display text-[1.75rem] sm:text-5xl lg:text-[3.5rem] text-white leading-[1.08] mb-2 drop-shadow-lg sm:whitespace-nowrap'>
-          {t('home.hero.title')}
-        </h1>
-        <p className='text-base sm:text-lg text-white/90 font-light tracking-wide drop-shadow-md'>
-          {t('home.hero.subtitle')}
-        </p>
-      </motion.div>
-    </div>
+    <section className='border-b border-neutral-border bg-gov-cream pt-16 dark:bg-[#0d1711]'>
+      <div className='mx-auto grid max-w-[1400px] gap-6 px-5 py-9 sm:px-6 sm:py-12 lg:grid-cols-[minmax(0,1fr)_280px] lg:px-8 lg:py-14'>
+        <motion.div
+          initial={false}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{
+            duration: reduceMotion ? 0 : 0.42,
+            ease: [0.22, 1, 0.36, 1],
+            delay: reduceMotion ? 0 : 0.05,
+          }}
+          className='ledger-enter relative border-l-[5px] border-gov-copper pl-5 sm:pl-7'>
+          <p className='source-label text-gov-sage'>National public-finance evidence desk</p>
+          <h1 className='mt-3 max-w-[18ch] font-display text-[3.15rem] font-semibold uppercase leading-[0.88] tracking-[0.01em] text-gov-dark dark:text-white sm:text-7xl lg:text-[5rem]'>
+            {t('home.hero.title')}
+          </h1>
+          <p className='mt-5 max-w-2xl text-base leading-7 text-neutral-muted sm:text-lg'>
+            {t('home.hero.subtitle')}. Public money, traced to evidence.
+          </p>
+        </motion.div>
+
+        <aside className='border-t border-neutral-border pt-5 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-2'>
+          <p className='source-label'>Primary source index</p>
+          <div className='mt-4 space-y-3 font-mono text-[11px] uppercase tracking-[0.08em] text-gov-dark dark:text-white'>
+            {[
+              ['CBK', 'Debt & monetary data'],
+              ['Treasury', 'Budget & fiscal data'],
+              ['OAG', 'Audit findings'],
+              ['CoB', 'Budget execution'],
+            ].map(([source, scope]) => (
+              <div key={source} className='grid grid-cols-[70px_1fr] gap-3 border-b border-neutral-border pb-2'>
+                <span className='font-semibold text-gov-sage'>{source}</span>
+                <span className='text-neutral-muted'>{scope}</span>
+              </div>
+            ))}
+          </div>
+        </aside>
+      </div>
+    </section>
   );
 }
 
@@ -83,11 +102,13 @@ export function SummaryStrip() {
     : null;
 
   // Headline total (KES) — prefer the authoritative loans-register sum.
+  // The timeline fallback converts on the row's DECLARED unit (raw KES
+  // since the stage1 3a migration; bare billions from an older backend).
   const totalKES =
     apiData?.total_outstanding ??
     apiData?.total_debt ??
-    (latest ? latest.total * 1_000_000_000 : null);
-  const totalT = totalKES != null ? (totalKES / 1_000_000_000_000).toFixed(2) : '—';
+    (latest ? toRawKES(latest.total, latest.unit) : null);
+  const totalT = totalKES != null ? (totalKES / 1_000_000_000_000).toFixed(2) : null;
 
   // Debt-to-GDP — prefer overview's canonical ratio (uses fresher GDP base
   // than the timeline row, which can carry stale nominal-GDP figures).
@@ -96,57 +117,50 @@ export function SummaryStrip() {
 
   // Trust the backend's risk_level when present (canonical source); fall back
   // to the centralized classifier so thresholds stay consistent across the UI.
-  const riskLevel =
+  const riskLevel: string | null =
     apiData?.debt_sustainability?.risk_level ||
-    classifyDebtRisk(typeof gdpPct === 'number' ? gdpPct : undefined);
+    (typeof gdpPct === 'number' ? classifyDebtRisk(gdpPct) : null);
   const isHigh = riskLevel === 'High';
 
   return (
-    <div className='flex flex-wrap items-end gap-x-6 gap-y-3 mb-4 px-1'>
-      {/* Flag + Total Debt */}
-      <div className='flex items-center gap-2.5'>
-        <KenyaFlag className='w-7 h-7 shrink-0' />
-        <div>
-          <span className='text-4xl sm:text-5xl font-extrabold text-gov-dark dark:text-white tracking-tight leading-none'>
-            {totalT}
-            <span className='text-3xl sm:text-4xl ml-0.5'>T</span>
-          </span>
+    <section aria-label='Headline public finance figures' className='ledger-panel overflow-hidden'>
+      <div className='grid sm:grid-cols-3'>
+        <div className='border-b border-neutral-border p-5 sm:border-b-0 sm:border-r sm:p-6'>
+          <div className='flex items-center justify-between gap-3'>
+            <span className='figure-label'>{t('home.hero.total_debt_as_of')} {year}</span>
+            <KenyaFlag className='h-5 w-5 shrink-0' />
+          </div>
+          <p className='figure-value mt-4 text-[2.35rem] leading-none sm:text-5xl' data-figure>
+            <span className='mr-2 text-sm tracking-[0.08em] text-neutral-muted'>KES</span>
+            {totalT == null ? '—' : `${totalT}T`}
+          </p>
+          <div className='mt-3 inline-flex items-center gap-1 text-xs text-neutral-muted'>
+            Source: CBK / National Treasury
+            <DebtExplainerModal context='hero' />
+          </div>
+        </div>
+
+        <div className='border-b border-neutral-border p-5 sm:border-b-0 sm:border-r sm:p-6'>
+          <p className='figure-label'>Debt-to-GDP</p>
+          <p className='figure-value mt-4 text-[2.35rem] leading-none sm:text-5xl' data-figure>
+            {typeof gdpPct === 'number' ? `${gdpPct.toFixed(1)}%` : '—'}
+          </p>
+          <p className='mt-3 text-xs text-neutral-muted'>Source: CBK / IMF methodology</p>
+        </div>
+
+        <div className='p-5 sm:p-6'>
+          <p className='figure-label'>{t('home.hero.risk_level')}</p>
+          <p className={`mt-4 font-mono text-3xl font-semibold uppercase leading-none tracking-[0.04em] ${isHigh ? 'text-gov-copper' : riskLevel ? 'text-gov-gold' : 'text-neutral-muted'}`}>
+            {riskLevel ? `${riskLevel} ${t('home.hero.risk_suffix')}` : 'Not assessed'}
+          </p>
+          <div className='mt-4 flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.08em] text-neutral-muted'>
+            <span className='inline-flex items-center gap-1'><span className='h-2 w-2 bg-emerald-600' />Low</span>
+            <span className='inline-flex items-center gap-1'><span className='h-2 w-2 bg-gov-gold' />Moderate</span>
+            <span className='inline-flex items-center gap-1'><span className='h-2 w-2 bg-gov-copper' />High</span>
+          </div>
         </div>
       </div>
-
-      {/* Risk Level */}
-      <div className='flex items-end gap-3'>
-        <div>
-          <span className='text-3xl sm:text-4xl font-bold text-gov-dark dark:text-white tracking-tight leading-none'>
-            {typeof gdpPct === 'number' ? Math.round(gdpPct) : gdpPct}
-            <span className='text-xl'>%</span>
-          </span>
-        </div>
-        <span
-          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/60 dark:bg-surface-elevated border ${isHigh ? 'border-gov-copper/20 text-gov-copper' : 'border-gov-gold/20 text-gov-gold'} mb-0.5`}>
-          <span
-            className={`w-1.5 h-1.5 rounded-full ${isHigh ? 'bg-gov-copper' : 'bg-gov-gold'} inline-block`}
-          />
-          {riskLevel} {t('home.hero.risk_suffix')}
-        </span>
-      </div>
-
-      {/* Labels row */}
-      <div className='w-full flex gap-8 mt-0.5'>
-        <span className='text-xs text-gov-dark/60 dark:text-white/60 font-medium inline-flex items-center gap-1'>
-          {t('home.hero.total_debt_as_of')} {year}
-          <DebtExplainerModal context='hero' />
-        </span>
-        <span className='text-xs text-gov-dark/60 dark:text-white/60 font-medium'>
-          {t('home.hero.risk_level')}{' '}
-          <span className='inline-flex items-center gap-1 ml-1 align-middle'>
-            <span className='inline-block w-2 h-2 rounded-full bg-emerald-500' title='Low' />
-            <span className='inline-block w-2 h-2 rounded-full bg-gov-gold' title='Moderate' />
-            <span className='inline-block w-2 h-2 rounded-full bg-gov-copper' title='High' />
-          </span>
-        </span>
-      </div>
-    </div>
+    </section>
   );
 }
 
@@ -159,6 +173,10 @@ export function KenyanGovCard() {
   const { t } = useLang();
   const { data: fiscal, isLoading } = useFiscalSummary();
   const fy = fiscal?.current;
+  // fmtBillionKES expects billions; the API declares its unit per row
+  // (raw KES since the stage1 3a migration, bare billions before it).
+  const asBillions = (v: number | null | undefined): number =>
+    v == null ? 0 : (toRawKES(v, fy?.unit) ?? 0) / 1e9;
 
   // Debt vs the PFM Act 2023 anchor (55% of GDP). The former KES 10T numeric
   // ceiling was repealed in 2023, so debt is no longer framed as "% of 10T".
@@ -205,9 +223,9 @@ export function KenyanGovCard() {
   const tier = tierColors[healthTier];
 
   return (
-    <div className='rounded-xl overflow-hidden flex flex-col h-full shadow-lg border border-white/15'>
+    <div className='ledger-panel overflow-hidden flex flex-col h-full'>
       {/* ── Header ── */}
-      <div className='relative flex-shrink-0 bg-gradient-to-br from-gov-forest via-gov-dark to-[#0a1a10] px-4 pt-4 pb-5'>
+      <div className='relative flex-shrink-0 bg-gov-dark px-4 pt-4 pb-5'>
         {/* Subtle flag stripe accents */}
         <div className='absolute top-0 left-0 right-0 h-[3px] flex'>
           <div className='flex-1 bg-black/60' />
@@ -233,20 +251,17 @@ export function KenyanGovCard() {
         {/* Health status pill */}
         <div className='mt-3 flex items-center gap-2'>
           <span className={`relative flex h-2 w-2`}>
-            <span
-              className={`animate-ping absolute inline-flex h-full w-full rounded-full ${tier.dot} opacity-60`}
-            />
             <span className={`relative inline-flex rounded-full h-2 w-2 ${tier.dot}`} />
           </span>
           <span
-            className={`text-[10px] font-semibold uppercase tracking-widest ${healthTier === 'loading' ? 'text-white/40' : 'text-white/70'}`}>
+            className={`text-[11px] font-semibold uppercase tracking-widest ${healthTier === 'loading' ? 'text-white/40' : 'text-white/70'}`}>
             {t('home.govcard.fiscal_health')}: {tier.label}
           </span>
         </div>
       </div>
 
       {/* ── Fiscal stats ── */}
-      <div className='flex-1 flex flex-col bg-gradient-to-b from-white/60 to-white/40 dark:from-surface-base/95 dark:to-surface-base/85 backdrop-blur-md'>
+      <div className='flex-1 flex flex-col bg-surface-base'>
         {isLoading ? (
           <div className='flex-1 p-3 space-y-3'>
             <div className='grid grid-cols-2 gap-2'>
@@ -269,14 +284,14 @@ export function KenyanGovCard() {
             <div className='grid grid-cols-2 gap-2'>
               <StatMiniCard
                 label={t('home.govcard.stat_budget')}
-                value={fmtBillionKES(fy.appropriated_budget)}
+                value={fmtBillionKES(asBillions(fy.appropriated_budget))}
                 sub={fy.fiscal_year}
                 color='forest'
                 icon={BarChart3}
               />
               <StatMiniCard
                 label={t('home.govcard.stat_revenue')}
-                value={fmtBillionKES(fy.total_revenue)}
+                value={fmtBillionKES(asBillions(fy.total_revenue))}
                 sub={t('home.govcard.tax_nontax')}
                 color='teal'
                 icon={Banknote}
@@ -287,7 +302,7 @@ export function KenyanGovCard() {
             <div className='grid grid-cols-2 gap-2'>
               <StatMiniCard
                 label={t('home.govcard.stat_borrowed')}
-                value={fmtBillionKES(fy.total_borrowing)}
+                value={fmtBillionKES(asBillions(fy.total_borrowing))}
                 sub={t('home.govcard.pct_of_budget').replace('{pct}', String(fy.borrowing_pct_of_budget))}
                 color='copper'
                 icon={TrendingDown}
@@ -295,7 +310,7 @@ export function KenyanGovCard() {
               />
               <StatMiniCard
                 label={t('home.govcard.stat_debt_service')}
-                value={fmtBillionKES(fy.debt_service_cost)}
+                value={fmtBillionKES(asBillions(fy.debt_service_cost))}
                 sub={t('home.govcard.cents_per_kes').replace('{cents}', String(fy.debt_service_per_shilling))}
                 color='gold'
                 icon={Scale}
@@ -305,7 +320,7 @@ export function KenyanGovCard() {
             {/* Debt-to-GDP vs the PFM Act 2023 anchor (55% of GDP) */}
             <div className='mt-1 px-2 py-3 rounded-lg bg-white/50 dark:bg-surface-elevated border border-gray-100 dark:border-neutral-border'>
               <div className='flex items-center justify-between mb-2'>
-                <span className='text-[10px] uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-semibold'>
+                <span className='text-[11px] uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-semibold'>
                   {t('home.govcard.debt_ceiling')}
                 </span>
                 <span
@@ -316,13 +331,8 @@ export function KenyanGovCard() {
               {/* Bar: debt as % of GDP (0–100), with the 55% anchor marked */}
               <div className='relative h-2.5 rounded-full bg-gray-100 dark:bg-surface-elevated overflow-hidden'>
                 <div
-                  className='absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out'
-                  style={{
-                    width: `${gaugePct}%`,
-                    background: aboveAnchor
-                      ? 'linear-gradient(90deg, #D9A441 0%, #C94A4A 100%)'
-                      : 'linear-gradient(90deg, #4A7C5C 0%, #D9A441 100%)',
-                  }}
+                  className='absolute inset-y-0 left-0 rounded-full transition-[width] duration-700 ease-out'
+                  style={{ width: `${gaugePct}%`, backgroundColor: aboveAnchor ? '#C9473D' : '#176B49' }}
                 />
                 {/* 55% PFM Act anchor marker */}
                 <div
@@ -332,16 +342,16 @@ export function KenyanGovCard() {
               </div>
               {/* Scale markers */}
               <div className='flex justify-between mt-1'>
-                <span className='text-[8px] text-gray-400 dark:text-neutral-muted/80'>0%</span>
-                <span className='text-[8px] text-gray-500 dark:text-neutral-muted font-semibold'>
+                <span className='text-[11px] text-gray-400 dark:text-neutral-muted/80'>0%</span>
+                <span className='text-[11px] text-gray-500 dark:text-neutral-muted font-semibold'>
                   {anchorLine.toFixed(0)}% anchor
                 </span>
-                <span className='text-[8px] text-gray-400 dark:text-neutral-muted/80'>100%</span>
+                <span className='text-[11px] text-gray-400 dark:text-neutral-muted/80'>100%</span>
               </div>
-              <p className='text-[9px] text-neutral-muted mt-1.5 text-center leading-snug'>
+              <p className='text-[11px] text-neutral-muted mt-1.5 text-center leading-snug'>
                 {aboveAnchor && (
                   <span className='text-gov-copper font-medium'>
-                    ⚠ {t('home.govcard.ceiling_breached')} ·{' '}
+                    {t('home.govcard.ceiling_breached')} ·{' '}
                   </span>
                 )}
                 {t('home.govcard.anchor_caption')}
@@ -390,7 +400,7 @@ export function KenyanGovCard() {
 
               return (
                 <div className='px-2 py-2.5 rounded-lg bg-white/50 dark:bg-surface-elevated border border-gray-100 dark:border-neutral-border'>
-                  <span className='text-[10px] uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-semibold block mb-2'>
+                  <span className='text-[11px] uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-semibold block mb-2'>
                     {t('home.govcard.where_money_goes')}
                   </span>
                   {/* Stacked horizontal bar */}
@@ -398,7 +408,7 @@ export function KenyanGovCard() {
                     {segments.map((seg) => (
                       <div
                         key={seg.label}
-                        className={`${seg.color} transition-all duration-500 first:rounded-l-full last:rounded-r-full`}
+                        className={`${seg.color} transition-[width] duration-500 first:rounded-l-full last:rounded-r-full`}
                         style={{ width: `${((seg.value / total) * 100).toFixed(1)}%` }}
                         title={`${seg.label}: KES ${(seg.value / 1000).toFixed(1)}T (${((seg.value / total) * 100).toFixed(0)}%)`}
                       />
@@ -409,8 +419,8 @@ export function KenyanGovCard() {
                     {segments.map((seg) => (
                       <div key={seg.label} className='flex items-center gap-1.5 min-w-0'>
                         <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${seg.dot}`} />
-                        <span className='text-[9px] text-gray-500 dark:text-neutral-muted/80 truncate'>{seg.label}</span>
-                        <span className='text-[9px] font-semibold text-gov-dark dark:text-white tabular-nums ml-auto'>
+                        <span className='text-[11px] text-gray-500 dark:text-neutral-muted/80 truncate'>{seg.label}</span>
+                        <span className='text-[11px] font-semibold text-gov-dark dark:text-white tabular-nums ml-auto'>
                           {((seg.value / total) * 100).toFixed(0)}%
                         </span>
                       </div>
@@ -426,8 +436,8 @@ export function KenyanGovCard() {
         <div className='px-3 pb-3 mt-auto'>
           <a
             href='/debt'
-            className='group w-full py-2.5 rounded-xl bg-gov-forest text-white text-sm font-semibold
-                       hover:bg-gov-dark transition-all duration-300 shadow-md hover:shadow-lg
+            className='group w-full py-2.5 rounded-sm bg-gov-forest text-white text-sm font-semibold
+                       hover:bg-gov-dark
                        text-center flex items-center justify-center gap-2'>
             {t('home.govcard.explore_debt')}
             <span className='inline-block transition-transform duration-300 group-hover:translate-x-1'>
@@ -477,13 +487,12 @@ function StatMiniCard({
         aria-hidden
         className='absolute -right-1.5 -bottom-1.5 w-8 h-8 opacity-[0.10] select-none pointer-events-none'
       />
-      <span className='text-[9px] uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-medium leading-none'>
+      <span className='text-[11px] uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-medium leading-none'>
         {label}
       </span>
       <div className='flex items-baseline gap-1 mt-0.5'>
         {alert && (
           <span className='relative flex h-1.5 w-1.5 shrink-0'>
-            <span className='animate-ping absolute inline-flex h-full w-full rounded-full bg-gov-copper opacity-50' />
             <span className='relative inline-flex rounded-full h-1.5 w-1.5 bg-gov-copper' />
           </span>
         )}
@@ -491,7 +500,7 @@ function StatMiniCard({
           {value}
         </span>
       </div>
-      <span className='text-[9px] text-gray-400 dark:text-neutral-muted/80 leading-none mt-0.5 block'>{sub}</span>
+      <span className='text-[11px] text-gray-400 dark:text-neutral-muted/80 leading-none mt-0.5 block'>{sub}</span>
     </div>
   );
 }

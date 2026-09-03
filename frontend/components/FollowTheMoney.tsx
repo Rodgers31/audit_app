@@ -179,7 +179,7 @@ function GapIndicator({
           </span>
         </div>
         {sublabel && (
-          <p className='text-[10.5px] text-gray-500 dark:text-neutral-muted/80 leading-snug max-w-xs pl-5'>
+          <p className='text-[11px] text-gray-500 dark:text-neutral-muted/80 leading-snug max-w-xs pl-5'>
             {sublabel}
           </p>
         )}

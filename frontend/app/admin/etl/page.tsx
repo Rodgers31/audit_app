@@ -251,7 +251,7 @@ function SummaryCard({
         <div className='w-7 h-7 rounded-lg bg-gov-sage/15 border border-gov-sage/20 flex items-center justify-center'>
           <Icon className='w-3.5 h-3.5 text-gov-sage' />
         </div>
-        <p className='text-[10px] uppercase tracking-wider text-neutral-muted font-semibold'>
+        <p className='text-[11px] uppercase tracking-wider text-neutral-muted font-semibold'>
           {label}
         </p>
       </div>
@@ -294,7 +294,7 @@ function SourceRow({
         <div>
           <p className='font-mono text-sm font-semibold text-neutral-text'>{source}</p>
           {decision.current_period && (
-            <p className='text-[10px] uppercase tracking-wider text-neutral-muted mt-0.5'>
+            <p className='text-[11px] uppercase tracking-wider text-neutral-muted mt-0.5'>
               {decision.current_period}
             </p>
           )}

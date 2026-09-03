@@ -87,7 +87,7 @@ export default function PopularQuestions({ onOpenArticle }: Props) {
                   <Icon size={14} />
                 </span>
                 <span className='min-w-0 flex-1'>
-                  <span className='flex flex-wrap items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-gov-forest/70 dark:text-emerald-100/70'>
+                  <span className='flex flex-wrap items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-gov-forest/70 dark:text-emerald-100/70'>
                     <span>{q.category}</span>
                     {q.articleNumber && (
                       <>

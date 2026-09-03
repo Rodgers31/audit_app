@@ -129,13 +129,13 @@ export default function ExecutionAuditLens({ rows, fiscalYear }: Props) {
           )}
         </div>
         <div className='rounded-lg border border-gov-copper/30 bg-gov-copper/5 px-4 py-2 text-right'>
-          <div className='text-[10px] uppercase tracking-wider font-semibold text-gov-copper'>
+          <div className='text-[11px] uppercase tracking-wider font-semibold text-gov-copper'>
             Total unspent
           </div>
           <div className='font-display text-xl text-gov-dark dark:text-white leading-tight tabular-nums'>
             KES {fmtB(totals.unspent)}
           </div>
-          <div className='text-[10.5px] text-neutral-muted leading-tight tabular-nums'>
+          <div className='text-[11px] text-neutral-muted leading-tight tabular-nums'>
             across {sorted.length} sectors · {totals.rate.toFixed(1)}% overall execution
           </div>
         </div>
@@ -188,7 +188,7 @@ export default function ExecutionAuditLens({ rows, fiscalYear }: Props) {
                         background: `linear-gradient(90deg, ${tone.start}, ${tone.end})`,
                       }}
                     />
-                    <span className='absolute inset-0 flex items-center justify-center text-[10.5px] font-bold text-white/95 mix-blend-luminosity tabular-nums'>
+                    <span className='absolute inset-0 flex items-center justify-center text-[11px] font-bold text-white/95 mix-blend-luminosity tabular-nums'>
                       {execPct.toFixed(0)}% spent
                     </span>
                   </div>
@@ -198,14 +198,14 @@ export default function ExecutionAuditLens({ rows, fiscalYear }: Props) {
                   <div className='text-[12px] font-semibold text-gov-dark dark:text-white tabular-nums'>
                     KES {fmtB(r.spent)}
                   </div>
-                  <div className='text-[10.5px] text-neutral-muted tabular-nums'>
+                  <div className='text-[11px] text-neutral-muted tabular-nums'>
                     of {fmtB(r.allocated)}
                   </div>
                 </div>
                 {/* Gap chip */}
                 <div className='flex-shrink-0 w-20 text-right'>
                   <span
-                    className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-full tabular-nums ${
+                    className={`inline-flex items-center gap-0.5 text-[11px] font-semibold px-2 py-0.5 rounded-full tabular-nums ${
                       severity === 'ok'
                         ? 'bg-green-50 text-green-700'
                         : severity === 'warn'
@@ -215,7 +215,7 @@ export default function ExecutionAuditLens({ rows, fiscalYear }: Props) {
                     {severity !== 'ok' && <AlertTriangle size={10} />}
                     {fmtB(r.unspent)}
                   </span>
-                  <div className='text-[9.5px] text-neutral-muted tabular-nums mt-0.5'>
+                  <div className='text-[11px] text-neutral-muted tabular-nums mt-0.5'>
                     unspent
                   </div>
                 </div>
@@ -241,7 +241,7 @@ export default function ExecutionAuditLens({ rows, fiscalYear }: Props) {
         })}
       </div>
 
-      <div className='mt-4 pt-3 border-t border-neutral-border/30 flex items-center justify-between text-[10.5px] text-neutral-muted'>
+      <div className='mt-4 pt-3 border-t border-neutral-border/30 flex items-center justify-between text-[11px] text-neutral-muted'>
         <span>Source: Controller of Budget · Quarterly Budget Implementation Review</span>
         <div className='flex items-center gap-3'>
           <span className='inline-flex items-center gap-1'>

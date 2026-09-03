@@ -20,11 +20,13 @@ jest.mock('next/navigation', () => ({
 // Mock framer-motion to render simple elements
 jest.mock('framer-motion', () => ({
   motion: {
-    header: ({ children, ...props }: any) => <header {...props}>{children}</header>,
-    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-    button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+    header: ({ children, initial: _initial, animate: _animate, transition: _transition, ...props }: any) => <header {...props}>{children}</header>,
+    div: ({ children, initial: _initial, animate: _animate, exit: _exit, transition: _transition, ...props }: any) => <div {...props}>{children}</div>,
+    span: ({ children, layoutId: _layoutId, transition: _transition, ...props }: any) => <span {...props}>{children}</span>,
+    button: ({ children, initial: _initial, animate: _animate, ...props }: any) => <button {...props}>{children}</button>,
   },
   AnimatePresence: ({ children }: any) => <>{children}</>,
+  useReducedMotion: () => false,
 }));
 
 // Mock auth hook
@@ -49,7 +51,7 @@ describe('Navigation', () => {
 
   it('renders the brand name', () => {
     render(<Navigation />);
-    expect(screen.getByText('Kenya Public Money')).toBeInTheDocument();
+    expect(screen.getByText('AuditGava')).toBeInTheDocument();
   });
 
   it('renders all nav items', () => {
@@ -87,8 +89,8 @@ describe('Navigation', () => {
     expect(countyLink).toBeDefined();
   });
 
-  it('renders Kenya flag emoji', () => {
+  it('renders the evidence-first brand line', () => {
     render(<Navigation />);
-    expect(screen.getByText('🇰🇪')).toBeInTheDocument();
+    expect(screen.getByText(/Public money · evidence first/i)).toBeInTheDocument();
   });
 });

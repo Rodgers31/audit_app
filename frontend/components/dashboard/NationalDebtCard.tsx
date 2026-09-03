@@ -1,5 +1,6 @@
 'use client';
 
+import { toRawKES } from '@/lib/utils';
 import { DebtTimelineEntry } from '@/lib/api/debt';
 import { useLang } from '@/lib/i18n/LangProvider';
 import {
@@ -10,31 +11,53 @@ import {
 import Link from 'next/link';
 import { useFiscalSummary } from '@/lib/react-query/useFiscal';
 import { motion } from 'framer-motion';
-import { Skeleton } from '@/components/ui/Skeleton';
-import { AlertTriangle, Landmark, Loader2, TrendingUp } from 'lucide-react';
-import dynamic from 'next/dynamic';
-import { useMemo } from 'react';
+import { Skeleton, SkeletonChart } from '@/components/ui/Skeleton';
+import { AlertTriangle, BarChart3, Globe2, Landmark, Loader2, MapPinned, TrendingUp } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import InfoTip from '@/components/InfoTip';
-import type { ChartEntry } from './NationalDebtChart';
-
-// The recharts timeline loads as its own async chunk so ~180KB of chart
-// library stays out of the homepage's hydration bundle (recharts was a
-// measurable INP/FID contributor on low-end mobile). The fallback keeps
-// the exact chart-box height so the swap causes no layout shift.
-const NationalDebtChart = dynamic(() => import('./NationalDebtChart'), {
-  ssr: false,
-  loading: () => <Skeleton className='w-full h-full rounded-xl' />,
-});
+import {
+  Area,
+  CartesianGrid,
+  ComposedChart,
+  Line,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 
 /* ── Transform API data to chart format ── */
+interface ChartEntry {
+  year: string;
+  external: number;
+  domestic: number;
+  total: number;
+  gdpRatio: number;
+}
+
 function toChartData(timeline: DebtTimelineEntry[]): ChartEntry[] {
   return timeline.map((e) => ({
     year: String(e.year),
-    external: e.external, // already in billions from API
-    domestic: e.domestic, // already in billions from API
-    total: e.total, // already in billions from API
+    // The chart works in billions. Convert on the row's DECLARED unit —
+    // raw KES since the stage1 3a migration, bare billions from an older
+    // backend. Never assume; assuming is how F5.5 happened.
+    external: (toRawKES(e.external, e.unit) ?? 0) / 1e9,
+    domestic: (toRawKES(e.domestic, e.unit) ?? 0) / 1e9,
+    total: (toRawKES(e.total, e.unit) ?? 0) / 1e9,
     gdpRatio: e.gdp_ratio,
   }));
+}
+
+// 2-decimal precision for trillion-scale values. Matches both
+// ``HeroSection.tsx`` (the page-top "Total Debt as of YYYY" KPI) and
+// ``DebtPageClient.tsx``'s shared formatter — pre-fix this card was
+// the lone outlier at ``toFixed(1)``, so a value of 12.66T on the
+// hero displayed as "12.7T" here, plus the External + Domestic
+// breakdown ("6.5T + 6.2T") didn't add back up to the displayed
+// "12.7T" total. 2 decimals reconciles all three.
+function fmtT(val: number): string {
+  if (val >= 1000) return `${(val / 1000).toFixed(2)}T`;
+  return `${val}B`;
 }
 
 function fmtKES(val: number): string {
@@ -44,8 +67,57 @@ function fmtKES(val: number): string {
   return `KES ${val.toLocaleString()}`;
 }
 
+function CustomTooltip({ active, payload, label }: any) {
+  const { t } = useLang();
+  if (!active || !payload?.length) return null;
+  const d = payload[0]?.payload;
+  if (!d) return null;
+  return (
+    <div className='rounded-sm bg-surface-elevated border border-neutral-border shadow-elevated px-4 py-3 text-xs'>
+      <p className='font-display text-sm text-gov-dark dark:text-white mb-2'>{label}</p>
+      <div className='space-y-1.5'>
+        <div className='flex justify-between gap-6'>
+          <span className='text-neutral-muted'>{t('home.debt.tooltip_total')}</span>
+          <span className='font-bold text-gov-dark dark:text-white tabular-nums'>{fmtT(d.total)}</span>
+        </div>
+        <div className='flex justify-between gap-6'>
+          <span className='flex items-center gap-1.5'>
+            <span className='w-2.5 h-2.5 rounded-full bg-gov-copper/80' />
+            {t('home.debt.external')}
+          </span>
+          <span className='font-semibold text-gov-dark dark:text-white tabular-nums'>{fmtT(d.external)}</span>
+        </div>
+        <div className='flex justify-between gap-6'>
+          <span className='flex items-center gap-1.5'>
+            <span className='w-2.5 h-2.5 rounded-full' style={{ background: '#0D7377' }} />
+            {t('home.debt.domestic')}
+          </span>
+          <span className='font-semibold text-gov-dark dark:text-white tabular-nums'>{fmtT(d.domestic)}</span>
+        </div>
+        <div className='flex justify-between gap-6 pt-1 border-t border-neutral-border/30'>
+          <span className='text-neutral-muted'>{t('home.debt.tooltip_gdp')}</span>
+          <span className='font-bold text-gov-gold tabular-nums'>{d.gdpRatio}%</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function useIsMobile(breakpoint = 640) {
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${breakpoint}px)`);
+    setMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, [breakpoint]);
+  return mobile;
+}
+
 export default function NationalDebtCard() {
   const { t } = useLang();
+  const isMobile = useIsMobile();
   const { data: resp, isLoading } = useNationalDebtOverview();
   const { data: timelineResp, isLoading: isTimelineLoading } = useDebtTimeline();
   const { data: fiscal } = useFiscalSummary();
@@ -61,7 +133,7 @@ export default function NationalDebtCard() {
   const sustainability = apiData?.debt_sustainability || {};
   const riskLevel = sustainability.risk_level || 'High';
   const debtServiceRatio =
-    fiscal?.current?.debt_service_per_shilling ?? sustainability.debt_service_ratio ?? null;
+    fiscal?.current?.debt_service_per_shilling ?? sustainability.debt_service_ratio ?? 0;
 
   const firstYear = debtTimeline[0];
   const lastYear = debtTimeline[debtTimeline.length - 1];
@@ -69,31 +141,20 @@ export default function NationalDebtCard() {
   // Derive headline numbers from the authoritative /debt/national endpoint
   // (loans-table sum — same source /debt page uses) so home and the debt
   // detail page agree. Fall back to the last timeline year only if the
-  // authoritative value is missing — and to NULL (not 0) when both are
-  // missing: a transparency site rendering "KES 0" national debt during
-  // a backend outage is misinformation, so missing values render as "—"
-  // with an explicit unavailable notice instead.
+  // authoritative value is missing.
   const totalDebt =
-    apiData?.total_outstanding ?? apiData?.total_debt ?? (lastYear ? lastYear.total * 1_000_000_000 : null);
-  const gdpRatio = apiData?.debt_to_gdp_ratio ?? lastYear?.gdpRatio ?? null;
+    apiData?.total_outstanding ?? apiData?.total_debt ?? (lastYear ? lastYear.total * 1_000_000_000 : 0);
+  const gdpRatio = apiData?.debt_to_gdp_ratio ?? lastYear?.gdpRatio ?? 0;
   const externalDebt =
-    apiData?.summary?.external_debt ?? (lastYear ? lastYear.external * 1_000_000_000 : null);
+    apiData?.summary?.external_debt ?? (lastYear ? lastYear.external * 1_000_000_000 : 0);
   const domesticDebt =
-    apiData?.summary?.domestic_debt ?? (lastYear ? lastYear.domestic * 1_000_000_000 : null);
-  const debtDataMissing = !isLoading && !isTimelineLoading && totalDebt == null;
+    apiData?.summary?.domestic_debt ?? (lastYear ? lastYear.domestic * 1_000_000_000 : 0);
   // External vs domestic split — shares of (external + domestic) so the two
   // always sum to exactly 100%. Rounding each independently off the total
-  // previously produced 100.2% (51.5% + 48.7%). The split only exists when
-  // BOTH sides are known — with one side missing, "100% / 0%" rendered
-  // beside an em-dash value would be a fabricated statistic, so the pcts
-  // go null and every consumer renders "—" instead.
-  const splitAvailable =
-    externalDebt != null && domesticDebt != null && externalDebt + domesticDebt > 0;
-  const splitBase = (externalDebt ?? 0) + (domesticDebt ?? 0);
-  const externalPct = splitAvailable
-    ? +(((externalDebt ?? 0) / splitBase) * 100).toFixed(1)
-    : null;
-  const domesticPct = externalPct != null ? +(100 - externalPct).toFixed(1) : null;
+  // previously produced 100.2% (51.5% + 48.7%).
+  const splitBase = externalDebt + domesticDebt;
+  const externalPct = splitBase > 0 ? +((externalDebt / splitBase) * 100).toFixed(1) : 0;
+  const domesticPct = splitBase > 0 ? +(100 - externalPct).toFixed(1) : 0;
 
   // IMF's "General Government Gross Debt" — the broader figure that
   // includes counties, SOEs, pending bills + arrears. Shown here as a
@@ -116,7 +177,7 @@ export default function NationalDebtCard() {
       transition={{ duration: 0.6, delay: 0.1 }}
       className='glass-card overflow-hidden h-full flex flex-col'>
       {/* Header */}
-      <div className='bg-gradient-to-r from-gov-copper/[0.06] via-gov-sand/30 to-transparent dark:from-surface-elevated/40 dark:via-surface-base/20 dark:to-transparent px-6 sm:px-8 pt-5 pb-4 border-b border-neutral-border/20'>
+      <div className='bg-surface-sunken/45 px-6 sm:px-8 pt-5 pb-4 border-b border-neutral-border'>
         <div className='flex items-start justify-between'>
           <div>
             <h2 className='font-display text-xl sm:text-2xl text-gov-dark dark:text-white mb-1'>
@@ -132,22 +193,10 @@ export default function NationalDebtCard() {
         </div>
       </div>
 
-      {/* Data unavailable — shown instead of misleading zeros when neither
-          the national-debt endpoint nor the timeline returned data. */}
-      {debtDataMissing && (
-        <div className='mx-6 sm:mx-8 mt-3 flex items-start gap-2 rounded-lg border border-amber-300/50 bg-amber-50/70 dark:bg-amber-500/10 px-3 py-2'>
-          <AlertTriangle className='w-3.5 h-3.5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0' />
-          <p className='text-[11px] leading-snug text-amber-800 dark:text-amber-200'>
-            Live debt figures are temporarily unavailable. Values below show “—” rather than a
-            misleading zero — please refresh in a moment.
-          </p>
-        </div>
-      )}
-
       {/* Reconciliation divergence — surfaced on home too (audit §2.1/§4), not
           just /debt. Renders only when the two debt sources disagree materially. */}
       {apiData?.reconciliation?.status === 'divergent' && (
-        <div className='mx-6 sm:mx-8 mt-3 flex items-start gap-2 rounded-lg border border-amber-300/50 bg-amber-50/70 dark:bg-amber-500/10 px-3 py-2'>
+        <div className='mx-6 sm:mx-8 mt-3 flex items-start gap-2 rounded-sm border border-amber-400/50 bg-amber-50/70 dark:bg-amber-500/10 px-3 py-2'>
           <AlertTriangle className='w-3.5 h-3.5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0' />
           <p className='text-[11px] leading-snug text-amber-800 dark:text-amber-200'>
             Sources differ by{' '}
@@ -167,7 +216,7 @@ export default function NationalDebtCard() {
           <StatCard
             icon={<Landmark className='w-3.5 h-3.5 text-gov-copper opacity-70' />}
             label={t('home.debt.total_public')}
-            value={totalDebt != null ? fmtKES(totalDebt) : '—'}
+            value={fmtKES(totalDebt)}
             sub={t('home.debt.growth_sub')
               .replace('{x}', String(growthMultiple))
               .replace('{year}', String(firstYear?.year || '—'))}
@@ -181,50 +230,34 @@ export default function NationalDebtCard() {
                 <InfoTip term='debt-to-gdp' size={11} />
               </div>
             }
-            value={gdpRatio != null ? `${gdpRatio}%` : '—'}
+            value={`${gdpRatio}%`}
             sub={t('home.debt.from_year_sub')
               .replace('{pct}', String(firstYear?.gdpRatio ?? '—'))
               .replace('{year}', String(firstYear?.year || '—'))}
             accent='gold'
           />
           <StatCard
-            icon={
-              <span className='text-xs' suppressHydrationWarning>
-                🏦
-              </span>
-            }
+            icon={<Globe2 className='w-3.5 h-3.5 text-gov-forest dark:text-emerald-100' />}
             label={
               <div className='flex items-center gap-1'>
                 <span>{t('home.debt.external_label')}</span>
                 <InfoTip term='external-debt' size={11} />
               </div>
             }
-            value={externalDebt != null ? fmtKES(externalDebt) : '—'}
-            sub={
-              externalPct != null
-                ? t('home.debt.pct_of_total').replace('{pct}', String(externalPct))
-                : '—'
-            }
+            value={fmtKES(externalDebt)}
+            sub={t('home.debt.pct_of_total').replace('{pct}', String(externalPct))}
             accent='forest'
           />
           <StatCard
-            icon={
-              <span className='text-xs' suppressHydrationWarning>
-                🇰🇪
-              </span>
-            }
+            icon={<MapPinned className='w-3.5 h-3.5 text-gov-sage' />}
             label={
               <div className='flex items-center gap-1'>
                 <span>{t('home.debt.domestic_label')}</span>
                 <InfoTip term='domestic-debt' size={11} />
               </div>
             }
-            value={domesticDebt != null ? fmtKES(domesticDebt) : '—'}
-            sub={
-              domesticPct != null
-                ? t('home.debt.pct_of_total').replace('{pct}', String(domesticPct))
-                : '—'
-            }
+            value={fmtKES(domesticDebt)}
+            sub={t('home.debt.pct_of_total').replace('{pct}', String(domesticPct))}
             accent='sage'
           />
         </div>
@@ -236,7 +269,7 @@ export default function NationalDebtCard() {
         {imfKes != null && (
           <Link
             href='/debt#broader'
-            className='mt-3 block rounded-lg bg-gov-gold/[0.08] border border-gov-gold/25 px-3 py-2 text-[12px] text-gov-dark/85 dark:text-white/85 hover:bg-gov-gold/[0.14] transition-colors'>
+            className='mt-3 block rounded-sm bg-gov-gold/[0.08] border border-gov-gold/25 px-3 py-2 text-[12px] text-gov-dark/85 dark:text-white/85 hover:bg-gov-gold/[0.14]'>
             <span className='font-semibold text-gov-dark dark:text-white'>IMF broader measure:</span>{' '}
             KES {(imfKes / 1e12).toFixed(2)}T
             {imfPct != null && ` (${imfPct.toFixed(1)}% GDP)`} — includes counties,
@@ -268,22 +301,91 @@ export default function NationalDebtCard() {
         ) : (
           <>
             <div className='h-64 sm:h-72'>
-              <NationalDebtChart data={debtTimeline} />
+              <ResponsiveContainer width='100%' height='100%'>
+                <ComposedChart
+                  data={debtTimeline}
+                  margin={{ top: 8, right: 8, bottom: 0, left: -8 }}>
+                  <CartesianGrid strokeDasharray='3 3' stroke='#E2DDD5' vertical={false} />
+                  <XAxis
+                    dataKey='year'
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: isMobile ? 9 : 11, fill: '#6B7280' }}
+                    interval={isMobile ? 1 : 0}
+                  />
+                  <YAxis
+                    yAxisId='debt'
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 10, fill: '#9CA3AF' }}
+                    tickFormatter={(v: number) =>
+                      v >= 1000 ? `${(v / 1000).toFixed(0)}T` : `${v}B`
+                    }
+                    width={40}
+                  />
+                  <YAxis
+                    yAxisId='ratio'
+                    orientation='right'
+                    domain={[30, 85]}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 10, fill: '#D9A441' }}
+                    tickFormatter={(v: number) => `${v}%`}
+                    width={36}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  {/* Stacked areas: domestic on bottom, external on top */}
+                  <Area
+                    yAxisId='debt'
+                    type='monotone'
+                    dataKey='domestic'
+                    stackId='stack'
+                    stroke='#0D7377'
+                    strokeWidth={1.5}
+                    fill='#176B49'
+                    fillOpacity={0.14}
+                    name='Domestic'
+                  />
+                  <Area
+                    yAxisId='debt'
+                    type='monotone'
+                    dataKey='external'
+                    stackId='stack'
+                    stroke='#C94A4A'
+                    strokeWidth={1.5}
+                    fill='#C9473D'
+                    fillOpacity={0.12}
+                    name='External'
+                  />
+                  {/* GDP ratio dashed line on right axis */}
+                  <Line
+                    yAxisId='ratio'
+                    type='monotone'
+                    dataKey='gdpRatio'
+                    stroke='#D9A441'
+                    strokeWidth={2.5}
+                    strokeDasharray='6 3'
+                    dot={{ r: 3.5, fill: '#D9A441', stroke: '#fff', strokeWidth: 2 }}
+                    activeDot={{ r: 5, fill: '#D9A441', stroke: '#fff', strokeWidth: 2 }}
+                    name='Debt-to-GDP'
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
             </div>
 
             {/* Legend */}
             <div className='flex items-center justify-center gap-5 mt-2'>
-              <span className='flex items-center gap-1.5 text-[10px] text-neutral-muted'>
+              <span className='flex items-center gap-1.5 text-[11px] text-neutral-muted'>
                 <span
                   className='w-3 h-2 rounded-sm'
                   style={{ background: '#0D7377', opacity: 0.5 }}
                 />{' '}
                 {t('home.debt.legend_domestic')}
               </span>
-              <span className='flex items-center gap-1.5 text-[10px] text-neutral-muted'>
+              <span className='flex items-center gap-1.5 text-[11px] text-neutral-muted'>
                 <span className='w-3 h-2 rounded-sm bg-gov-copper/50' /> {t('home.debt.legend_external')}
               </span>
-              <span className='flex items-center gap-1.5 text-[10px] text-neutral-muted'>
+              <span className='flex items-center gap-1.5 text-[11px] text-neutral-muted'>
                 <span className='w-5 h-0 border-t-2 border-dashed border-gov-gold' /> {t('home.debt.legend_gdp')}
               </span>
             </div>
@@ -292,20 +394,16 @@ export default function NationalDebtCard() {
       </div>
 
       {/* Bottom insights bar */}
-      <div className='px-6 sm:px-8 py-4 mt-auto border-t border-neutral-border/30 bg-gradient-to-r from-gov-sand/20 via-transparent to-transparent'>
+      <div className='px-6 sm:px-8 py-4 mt-auto border-t border-neutral-border bg-surface-sunken/30'>
         <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
           <InsightPill
-            icon='🇰🇪'
-            title={t('home.debt.cents_of_revenue').replace('{n}', String(debtServiceRatio ?? '—'))}
+            icon={<Landmark className='w-4 h-4 text-gov-sage' />}
+            title={t('home.debt.cents_of_revenue').replace('{n}', String(debtServiceRatio))}
             desc={t('home.debt.insight_service')}
           />
           <InsightPill
-            icon='📊'
-            title={
-              domesticPct != null && externalPct != null
-                ? `${domesticPct}% / ${externalPct}%`
-                : '— / —'
-            }
+            icon={<BarChart3 className='w-4 h-4 text-gov-gold' />}
+            title={`${domesticPct}% / ${externalPct}%`}
             desc={t('home.debt.insight_split')}
           />
           <InsightPill
@@ -349,10 +447,10 @@ function StatCard({
   };
   return (
     <div
-      className={`rounded-xl ${bgMap[accent] || bgMap.copper} border border-neutral-border/30 px-3 py-2.5`}>
+      className={`rounded-sm ${bgMap[accent] || bgMap.copper} border border-neutral-border/30 px-3 py-2.5`}>
       <div className='flex items-center gap-1.5 mb-1'>
         {icon}
-        <span className='text-[9px] text-neutral-muted font-medium uppercase tracking-wider leading-none'>
+        <span className='text-[11px] text-neutral-muted font-medium uppercase tracking-wider leading-none'>
           {label}
         </span>
       </div>
@@ -360,7 +458,7 @@ function StatCard({
         className={`text-sm font-bold ${textMap[accent] || textMap.copper} tabular-nums leading-none block`}>
         {value}
       </span>
-      <span className='text-[10px] text-neutral-muted mt-0.5 block'>{sub}</span>
+      <span className='text-[11px] text-neutral-muted mt-0.5 block'>{sub}</span>
     </div>
   );
 }
@@ -378,7 +476,7 @@ function InsightPill({
 }) {
   return (
     <div
-      className={`flex items-start gap-2.5 ${highlight ? 'bg-gov-copper/[0.04] rounded-lg px-2.5 py-1.5 -mx-1' : ''}`}>
+      className={`flex items-start gap-2.5 ${highlight ? 'bg-gov-copper/[0.04] rounded-sm px-2.5 py-1.5 -mx-1' : ''}`}>
       <span className='text-base mt-0.5 flex-shrink-0' suppressHydrationWarning>
         {typeof icon === 'string' ? icon : icon}
       </span>
@@ -387,7 +485,7 @@ function InsightPill({
           className={`text-xs font-semibold block ${highlight ? 'text-gov-copper' : 'text-gov-dark dark:text-white'}`}>
           {title}
         </span>
-        <span className='text-[10px] text-neutral-muted leading-tight'>{desc}</span>
+        <span className='text-[11px] text-neutral-muted leading-tight'>{desc}</span>
       </div>
     </div>
   );

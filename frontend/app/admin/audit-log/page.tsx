@@ -258,7 +258,7 @@ function AuditRow({ entry, index }: { entry: AuditEntry; index: number }) {
       </button>
       {expanded && hasPayload && (
         <div className='px-4 pb-4 border-t border-neutral-border'>
-          <p className='text-[10px] uppercase tracking-wider text-neutral-muted font-semibold mt-3 mb-1.5'>
+          <p className='text-[11px] uppercase tracking-wider text-neutral-muted font-semibold mt-3 mb-1.5'>
             Payload
           </p>
           <pre className='text-xs font-mono bg-gov-cream dark:bg-surface-sunken border border-neutral-border rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all text-neutral-text'>
@@ -273,7 +273,7 @@ function AuditRow({ entry, index }: { entry: AuditEntry; index: number }) {
 function FilterField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className='flex flex-col'>
-      <label className='text-[10px] uppercase tracking-wider text-neutral-muted font-semibold mb-1'>
+      <label className='text-[11px] uppercase tracking-wider text-neutral-muted font-semibold mb-1'>
         {label}
       </label>
       {children}

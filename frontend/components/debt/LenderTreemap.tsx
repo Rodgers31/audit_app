@@ -440,14 +440,14 @@ export default function LenderTreemap({ categories, totalOutstanding }: LenderTr
                   className='text-center'
                   style={{ maxWidth: '130px' }}>
                   <div
-                    className='text-[9px] uppercase tracking-[0.18em] font-semibold truncate'
+                    className='text-[11px] uppercase tracking-[0.18em] font-semibold truncate'
                     style={{ color: centerInfo.accent, opacity: 0.85 }}>
                     {centerInfo.eyebrow}
                   </div>
                   <div className='text-[17px] sm:text-[19px] font-extrabold text-gov-dark dark:text-white tabular-nums tracking-tight mt-0.5 leading-none'>
                     {centerInfo.value}
                   </div>
-                  <div className='text-[9.5px] text-neutral-muted mt-1.5 leading-tight'>
+                  <div className='text-[11px] text-neutral-muted mt-1.5 leading-tight'>
                     {centerInfo.caption}
                   </div>
                 </motion.div>
@@ -493,7 +493,7 @@ export default function LenderTreemap({ categories, totalOutstanding }: LenderTr
                       }}
                       className='h-full relative group cursor-default'>
                       {pct > 8 && (
-                        <span className='absolute inset-0 flex items-center justify-center px-2 text-[10px] font-bold text-white/95 drop-shadow-sm tabular-nums'>
+                        <span className='absolute inset-0 flex items-center justify-center px-2 text-[11px] font-bold text-white/95 drop-shadow-sm tabular-nums'>
                           {pct.toFixed(1)}%
                         </span>
                       )}
@@ -532,7 +532,7 @@ export default function LenderTreemap({ categories, totalOutstanding }: LenderTr
                           {d.share.toFixed(1)}%
                         </span>
                       </div>
-                      <div className='text-[10px] text-neutral-muted tabular-nums leading-tight'>
+                      <div className='text-[11px] text-neutral-muted tabular-nums leading-tight'>
                         KES {fmtT(d.value)}
                       </div>
                     </div>
@@ -611,7 +611,7 @@ export default function LenderTreemap({ categories, totalOutstanding }: LenderTr
                       />
                     </div>
                     {topLender && !isOpen && (
-                      <div className='mt-2 text-[10px] text-neutral-muted truncate'>
+                      <div className='mt-2 text-[11px] text-neutral-muted truncate'>
                         Top: <span className='font-medium text-gov-dark dark:text-white'>{topLender.lender}</span>
                       </div>
                     )}

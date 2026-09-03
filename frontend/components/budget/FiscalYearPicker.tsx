@@ -39,7 +39,7 @@ export default function FiscalYearPicker({ years, selected, onSelect }: Props) {
           <CalendarRange size={16} />
         </div>
         <div className='hidden sm:block'>
-          <div className='text-[10px] uppercase tracking-wider font-semibold text-gov-forest/80 dark:text-emerald-100/80'>
+          <div className='text-[11px] uppercase tracking-wider font-semibold text-gov-forest/80 dark:text-emerald-100/80'>
             Fiscal year
           </div>
           <div className='text-[11px] text-neutral-muted leading-tight'>
@@ -82,7 +82,7 @@ export default function FiscalYearPicker({ years, selected, onSelect }: Props) {
               FY{y.fiscal_year.replace(/^FY\s*/i, '')}
               {isCurrent && (
                 <span
-                  className={`hidden sm:inline text-[9.5px] uppercase tracking-wider font-medium ${
+                  className={`hidden sm:inline text-[11px] uppercase tracking-wider font-medium ${
                     isActive ? 'text-white/80' : 'text-gov-forest/80 dark:text-emerald-100/80'
                   }`}>
                   current

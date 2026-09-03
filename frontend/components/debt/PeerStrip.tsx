@@ -154,7 +154,7 @@ export default function PeerStrip({ peers, kenyaCountryName = 'Kenya' }: PeerStr
                   : band.border
               }`}>
               {isKenya && (
-                <span className='absolute -top-2 right-3 rounded-full bg-gov-copper text-white text-[10px] font-bold px-2 py-0.5 shadow-sm uppercase tracking-wider'>
+                <span className='absolute -top-2 right-3 rounded-full bg-gov-copper text-white text-[11px] font-bold px-2 py-0.5 shadow-sm uppercase tracking-wider'>
                   You
                 </span>
               )}
@@ -164,7 +164,7 @@ export default function PeerStrip({ peers, kenyaCountryName = 'Kenya' }: PeerStr
                   <div className='text-sm font-semibold text-gov-dark dark:text-white truncate'>
                     {peer.country}
                   </div>
-                  <div className={`text-[10px] font-medium ${band.tone}`}>{band.label}</div>
+                  <div className={`text-[11px] font-medium ${band.tone}`}>{band.label}</div>
                 </div>
               </div>
               <div className='flex items-center gap-3'>
@@ -177,7 +177,7 @@ export default function PeerStrip({ peers, kenyaCountryName = 'Kenya' }: PeerStr
                 />
                 <div className='flex-1 min-w-0 space-y-1.5'>
                   <div>
-                    <div className='text-[10px] uppercase tracking-wider text-neutral-muted'>
+                    <div className='text-[11px] uppercase tracking-wider text-neutral-muted'>
                       Service / Rev
                     </div>
                     <div className='text-sm font-bold text-gov-dark dark:text-white tabular-nums'>
@@ -185,7 +185,7 @@ export default function PeerStrip({ peers, kenyaCountryName = 'Kenya' }: PeerStr
                     </div>
                   </div>
                   <div>
-                    <div className='text-[10px] uppercase tracking-wider text-neutral-muted'>
+                    <div className='text-[11px] uppercase tracking-wider text-neutral-muted'>
                       External
                     </div>
                     <div className='text-sm font-bold text-gov-dark dark:text-white tabular-nums'>

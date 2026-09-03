@@ -328,7 +328,7 @@ export default function MissingFundsPage() {
                       </div>
                       <p className='text-sm text-gray-700 dark:text-neutral-muted leading-relaxed'>{c.description}</p>
                       {c.case_id && (
-                        <div className='text-[10px] text-gray-400 dark:text-neutral-muted/80 mt-1.5 font-mono'>
+                        <div className='text-[11px] text-gray-400 dark:text-neutral-muted/80 mt-1.5 font-mono'>
                           Case ID: {c.case_id}
                         </div>
                       )}

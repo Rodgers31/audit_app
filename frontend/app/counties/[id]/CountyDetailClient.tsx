@@ -176,7 +176,7 @@ function GradeBadge({
           </span>
         )}
         <div className={`text-left ${grade != null ? 'border-l border-white/30 pl-2' : ''}`}>
-          <div className='text-[9px] uppercase tracking-widest opacity-80 flex items-center gap-1'>
+          <div className='text-[11px] uppercase tracking-widest opacity-80 flex items-center gap-1'>
             {label}
             <Info size={9} className='opacity-0 group-hover:opacity-100 transition-opacity' />
           </div>
@@ -437,7 +437,7 @@ function SourcesFooter() {
 
   return (
     <div className='flex flex-wrap items-center gap-x-4 gap-y-1 pt-3 border-t border-gray-100 dark:border-neutral-border'>
-      <span className='text-[10px] text-gray-400 dark:text-neutral-muted/80 uppercase tracking-wider font-semibold'>
+      <span className='text-[11px] text-gray-400 dark:text-neutral-muted/80 uppercase tracking-wider font-semibold'>
         {t('county.sources.prefix')}
       </span>
       {sources.map((s) => (
@@ -725,7 +725,7 @@ export default function CountyDetailClient() {
                 key={kpi.label}
                 className={`px-4 py-3.5 ${i < arr.length - 1 ? 'border-r border-white/10' : ''} text-center`}>
                 <div className={`text-sm font-bold tabular-nums ${kpi.accent}`}>{kpi.value}</div>
-                <div className='text-[10px] uppercase tracking-wider text-white/55 mt-0.5'>
+                <div className='text-[11px] uppercase tracking-wider text-white/55 mt-0.5'>
                   {kpi.label}
                 </div>
               </div>

@@ -239,7 +239,7 @@ export default function BudgetFlowHero({ data }: Props) {
                 <ArrowDownRight size={18} className='text-gov-copper' />
               </div>
               <div>
-                <div className='text-[10px] uppercase tracking-wider font-semibold text-gov-copper'>
+                <div className='text-[11px] uppercase tracking-wider font-semibold text-gov-copper'>
                   Treasury APDMR · {fy}
                 </div>
                 <div className='font-display text-xl text-gov-dark dark:text-white leading-tight tabular-nums'>
@@ -270,7 +270,7 @@ export default function BudgetFlowHero({ data }: Props) {
 
       {/* Connector */}
       <div className='flex items-center justify-center py-2'>
-        <div className='flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-neutral-muted/80 font-semibold'>
+        <div className='flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-neutral-muted/80 font-semibold'>
           <span className='h-px w-8 bg-neutral-border' />
           Flows into
           <span className='h-px w-8 bg-neutral-border' />
@@ -356,13 +356,13 @@ function FlowBar({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.15 }}
                 className='absolute left-1/2 -translate-x-1/2 -top-2 -translate-y-full z-10 bg-white dark:bg-surface-base border border-neutral-border/60 shadow-elevated rounded-lg px-3 py-2 w-56 pointer-events-none'>
-                <div className='text-[10px] font-semibold uppercase tracking-wider' style={{ color: seg.accent }}>
+                <div className='text-[11px] font-semibold uppercase tracking-wider' style={{ color: seg.accent }}>
                   {seg.label}
                 </div>
                 <div className='text-sm font-bold text-gov-dark dark:text-white tabular-nums leading-tight'>
                   KES {fmtT(seg.valueB)} · {seg.share.toFixed(1)}%
                 </div>
-                <div className='text-[10.5px] text-neutral-muted leading-snug mt-1'>
+                <div className='text-[11px] text-neutral-muted leading-snug mt-1'>
                   {seg.note}
                 </div>
               </motion.div>
@@ -405,10 +405,10 @@ function SegmentLegend({
               style={{ background: `linear-gradient(180deg, ${seg.gradStart}, ${seg.gradEnd})` }}
             />
             <span className='flex-1 min-w-0'>
-              <span className='block text-[10.5px] font-semibold text-gov-dark dark:text-white truncate'>
+              <span className='block text-[11px] font-semibold text-gov-dark dark:text-white truncate'>
                 {seg.label}
               </span>
-              <span className='block text-[10px] text-neutral-muted tabular-nums'>
+              <span className='block text-[11px] text-neutral-muted tabular-nums'>
                 KES {fmtT(seg.valueB)} · {seg.share.toFixed(1)}%
               </span>
             </span>

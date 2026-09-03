@@ -150,12 +150,12 @@ export default function UserDetailPage({
               )}
             </div>
             <div className='flex-1 min-w-0'>
-              <p className='text-[10px] uppercase tracking-wider text-neutral-muted font-semibold'>
+              <p className='text-[11px] uppercase tracking-wider text-neutral-muted font-semibold'>
                 User ID
               </p>
               <p className='text-xs font-mono text-neutral-text break-all mt-0.5'>{data.id}</p>
               {isSelf && (
-                <span className='inline-flex items-center gap-1 mt-3 text-[10px] uppercase tracking-wider font-semibold bg-gov-gold/20 text-gov-forest dark:text-emerald-200 ring-1 ring-inset ring-gov-gold/40 px-2 py-0.5 rounded-full'>
+                <span className='inline-flex items-center gap-1 mt-3 text-[11px] uppercase tracking-wider font-semibold bg-gov-gold/20 text-gov-forest dark:text-emerald-200 ring-1 ring-inset ring-gov-gold/40 px-2 py-0.5 rounded-full'>
                   This is you
                 </span>
               )}
@@ -310,7 +310,7 @@ export default function UserDetailPage({
           </summary>
           <div className='px-6 pb-5 grid grid-cols-1 md:grid-cols-2 gap-4'>
             <div>
-              <p className='text-[10px] uppercase tracking-wider text-neutral-muted font-semibold mb-1'>
+              <p className='text-[11px] uppercase tracking-wider text-neutral-muted font-semibold mb-1'>
                 app_metadata
               </p>
               <pre className='text-xs font-mono bg-gov-cream dark:bg-surface-sunken border border-neutral-border rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all text-neutral-text'>
@@ -318,7 +318,7 @@ export default function UserDetailPage({
               </pre>
             </div>
             <div>
-              <p className='text-[10px] uppercase tracking-wider text-neutral-muted font-semibold mb-1'>
+              <p className='text-[11px] uppercase tracking-wider text-neutral-muted font-semibold mb-1'>
                 user_metadata
               </p>
               <pre className='text-xs font-mono bg-gov-cream dark:bg-surface-sunken border border-neutral-border rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all text-neutral-text'>
@@ -350,7 +350,7 @@ function Field({
   }[tone];
   return (
     <div>
-      <p className='text-[10px] uppercase tracking-wider text-neutral-muted font-semibold'>
+      <p className='text-[11px] uppercase tracking-wider text-neutral-muted font-semibold'>
         {label}
       </p>
       <p className={`text-sm font-medium mt-0.5 ${colour}`}>{value}</p>

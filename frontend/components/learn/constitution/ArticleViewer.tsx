@@ -248,7 +248,7 @@ export default function ArticleViewer({
                 {article.tags.map((t) => (
                   <span
                     key={t}
-                    className='rounded-full bg-gov-forest/5 px-2 py-0.5 text-[10.5px] font-medium text-gov-forest/70 dark:text-emerald-100/70'>
+                    className='rounded-full bg-gov-forest/5 px-2 py-0.5 text-[11px] font-medium text-gov-forest/70 dark:text-emerald-100/70'>
                     #{t}
                   </span>
                 ))}

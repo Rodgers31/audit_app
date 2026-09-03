@@ -158,7 +158,7 @@ function MilestoneChip({ icon, label, sub }: { icon: React.ReactNode; label: str
     <div className='rounded-xl bg-white/70 dark:bg-surface-elevated border border-amber-200/50 px-3 py-2 flex items-start gap-2'>
       <div className='flex-shrink-0 mt-0.5 text-amber-700'>{icon}</div>
       <div className='min-w-0'>
-        <p className='text-[10px] font-semibold text-amber-900/60 uppercase tracking-wider'>
+        <p className='text-[11px] font-semibold text-amber-900/60 uppercase tracking-wider'>
           {label}
         </p>
         <p className='text-xs text-amber-900 font-medium mt-0.5 truncate'>{sub}</p>

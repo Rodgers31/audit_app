@@ -144,7 +144,7 @@ export default function FiscalTrendStrip({ history }: Props) {
                   <span className='text-[11px] font-semibold text-gov-dark dark:text-white'>{c.label}</span>
                   {delta != null && (
                     <span
-                      className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full tabular-nums ${
+                      className={`inline-flex items-center gap-0.5 text-[11px] font-semibold px-1.5 py-0.5 rounded-full tabular-nums ${
                         isUp
                           ? c.key === 'total_borrowing' || c.key === 'debt_service_cost'
                             ? 'bg-red-50 text-red-600'
@@ -163,7 +163,7 @@ export default function FiscalTrendStrip({ history }: Props) {
                 <div className='font-display text-lg sm:text-xl text-gov-dark dark:text-white tabular-nums leading-none'>
                   KES {fmtB(latest.value)}
                 </div>
-                <p className='text-[10.5px] text-neutral-muted mt-1 leading-snug'>{c.tagline}</p>
+                <p className='text-[11px] text-neutral-muted mt-1 leading-snug'>{c.tagline}</p>
                 {/* Sparkbars */}
                 <div className='mt-3 flex items-end gap-1 h-10'>
                   {values.map((v, i) => {
@@ -180,7 +180,7 @@ export default function FiscalTrendStrip({ history }: Props) {
                               : '#E2DDD5',
                           }}
                         />
-                        <span className='text-[9px] text-neutral-muted tabular-nums'>{v.year}</span>
+                        <span className='text-[11px] text-neutral-muted tabular-nums'>{v.year}</span>
                       </div>
                     );
                   })}
