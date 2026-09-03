@@ -158,6 +158,44 @@ def _is_cacheable_param(value: Any) -> bool:
     return not isinstance(value, _SKIP_CACHE_KEY_TYPES)
 
 
+
+# ── Transient-failure detection (issue #141) ────────────────────────
+# How long a body describing an UNREADABLE source may be cached. Short
+# enough that a recovered source is picked up promptly, long enough that a
+# database in trouble is not hammered by every request.
+TRANSIENT_FAILURE_TTL = 30
+
+# Markers the API already emits to say "the source could not be READ".
+#
+# Deliberately narrow. A body saying the source was read and holds nothing
+# (`database_empty`, `not_yet_seeded`) is a DURABLE answer and keeps the
+# normal TTL — an empty table does not fill in the next thirty seconds, and
+# re-querying it on every request would be load for no new information.
+# Treating every degraded body as transient would trade a stale-cache bug
+# for a thundering herd.
+_TRANSIENT_MARKERS = {
+    "data_source": {"database_unavailable"},
+    "reason": {"source_unavailable", "database_not_configured"},
+    "status": {"error", "unavailable"},
+}
+
+
+def is_transient_failure(result: object) -> bool:
+    """True when ``result`` says the data source could not be read.
+
+    The signal already exists in every degraded response the API builds, so
+    this reads it rather than inventing a new convention for handlers to
+    remember to set.
+    """
+    if not isinstance(result, dict):
+        return False
+    for field, bad_values in _TRANSIENT_MARKERS.items():
+        value = result.get(field)
+        if isinstance(value, str) and value in bad_values:
+            return True
+    return False
+
+
 def cached(ttl: int = 3600, key_prefix: str = ""):
     """Decorator for caching function results.
 
@@ -194,7 +232,25 @@ def cached(ttl: int = 3600, key_prefix: str = ""):
             result = await func(*args, **kwargs)
 
             if result is not None:
-                cache.set(cache_key, result, ttl)
+                # A body describing an unreadable source gets a short TTL, so
+                # a recovered source is visible in seconds rather than hours.
+                # Observed in production 2026-09-03: /debt/national served
+                # `database_unavailable` from cache long after the database
+                # recovered, because the failure had been stored with the
+                # endpoint's full 12-hour TTL (issue #141).
+                effective_ttl = (
+                    min(ttl, TRANSIENT_FAILURE_TTL)
+                    if is_transient_failure(result)
+                    else ttl
+                )
+                if effective_ttl != ttl:
+                    logger.info(
+                        "Caching transient failure briefly (%ss instead of %ss): %s",
+                        effective_ttl,
+                        ttl,
+                        cache_key,
+                    )
+                cache.set(cache_key, result, effective_ttl)
 
             return result
 

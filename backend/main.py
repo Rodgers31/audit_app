@@ -1460,6 +1460,15 @@ def _declared_row_unit(rows, default: str = "billion_kes") -> str:
     return "KES" if units == {"KES"} else default
 
 
+def _effective_ttl(result: object, ttl: int) -> int:
+    """Cache lifetime for ``result`` — shortened when it reports an unreadable
+    source, so a recovered source is visible in seconds rather than hours.
+    See cache/redis_cache.py::is_transient_failure and issue #141."""
+    from cache.redis_cache import TRANSIENT_FAILURE_TTL, is_transient_failure
+
+    return min(ttl, TRANSIENT_FAILURE_TTL) if is_transient_failure(result) else ttl
+
+
 def cached(key_prefix: str, ttl: int = 3600):
     """Decorator to cache endpoint responses.
 
@@ -1490,17 +1499,24 @@ def cached(key_prefix: str, ttl: int = 3600):
                     return cached_data
 
                 result = await func(*args, **kwargs)
-                redis_cache.set(cache_key, result, ttl=ttl)
+                redis_cache.set(cache_key, result, ttl=_effective_ttl(result, ttl))
                 return result
 
             # --- In-memory fallback path ---
             rec = _mem_cache.get(cache_key)
-            if rec and (time.time() - rec["ts"]) < ttl:
+            # Honour the TTL the entry was STORED with, not the decorator's.
+            # A transient failure is kept for seconds; reading it back against
+            # the full TTL would defeat that.
+            if rec and (time.time() - rec["ts"]) < rec.get("ttl", ttl):
                 logger.debug(f"Memory cache HIT: {cache_key}")
                 return rec["value"]
 
             result = await func(*args, **kwargs)
-            _mem_cache[cache_key] = {"value": result, "ts": time.time()}
+            _mem_cache[cache_key] = {
+                "value": result,
+                "ts": time.time(),
+                "ttl": _effective_ttl(result, ttl),
+            }
             return result
 
         return wrapper
