@@ -572,7 +572,7 @@ export default function TransparencyPage() {
               <span className='ml-3 text-gov-dark/60 dark:text-white/60 font-medium'>Loading county data…</span>
             </div>
           ) : isProjectedFY ? (
-            <ResponsiveTable>
+            <ResponsiveTable bleed>
               <div className='rounded-xl border border-gray-200/60 dark:border-neutral-border/60 bg-white/60 dark:bg-surface-elevated'>
                 <table className='w-full text-sm'>
                   <thead>
@@ -653,7 +653,7 @@ export default function TransparencyPage() {
               </div>
             </ResponsiveTable>
           ) : (
-            <ResponsiveTable>
+            <ResponsiveTable bleed>
               <div className='rounded-xl border border-gray-200/60 dark:border-neutral-border/60 bg-white/60 dark:bg-surface-elevated'>
                 <table className='w-full text-sm'>
                   <thead>

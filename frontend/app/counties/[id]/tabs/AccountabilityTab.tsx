@@ -24,6 +24,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { fmtKES } from '../shared';
+import ResponsiveTable from '@/components/ui/ResponsiveTable';
 
 // Neutral styling for a county with no grade. Deliberately grey and
 // deliberately NOT a member of ACCT_GRADE_STYLE, so it can never be reached by
@@ -431,7 +432,7 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
           <h3 className='text-sm font-semibold text-gray-800 dark:text-neutral-text mb-4'>
             {t('county.acct.opinion_history')}
           </h3>
-          <div className='overflow-x-auto'>
+          <ResponsiveTable>
             <table className='w-full border-collapse'>
               <thead>
                 <tr className='border-b border-gray-100 dark:border-neutral-border'>
@@ -466,7 +467,7 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
                   })}
               </tbody>
             </table>
-          </div>
+          </ResponsiveTable>
         </div>
       )}
 

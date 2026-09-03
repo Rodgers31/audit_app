@@ -40,6 +40,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import ResponsiveTable from '@/components/ui/ResponsiveTable';
 
 /* ═══════════════════════════════════════════════════════
    Helpers
@@ -280,7 +281,7 @@ export default function AuditFindingsPage() {
             </div>
           </div>
 
-          <div className='overflow-x-auto'>
+          <ResponsiveTable>
             <table className='w-full text-sm'>
               <thead>
                 <tr className='border-b border-gov-dark/10 text-left'>
@@ -311,7 +312,7 @@ export default function AuditFindingsPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ResponsiveTable>
         </div>
       </Section>
 
@@ -458,7 +459,7 @@ export default function AuditFindingsPage() {
               <Loader2 className='w-6 h-6 animate-spin text-gov-sage' />
             </div>
           ) : recurring && recurring.recurring_findings.length > 0 ? (
-            <div className='overflow-x-auto'>
+            <ResponsiveTable>
               <table className='w-full text-sm'>
                 <thead>
                   <tr className='border-b border-gov-dark/10 text-left'>
@@ -503,7 +504,7 @@ export default function AuditFindingsPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </ResponsiveTable>
           ) : (
             <div className='text-center py-8 text-gov-dark/40 dark:text-white/40'>No recurring findings detected</div>
           )}
@@ -593,7 +594,7 @@ export default function AuditFindingsPage() {
               {findings.total.toLocaleString()} findings
             </div>
 
-            <div className='overflow-x-auto'>
+            <ResponsiveTable>
               <table className='w-full text-sm'>
                 <thead>
                   <tr className='border-b border-gov-dark/10 text-left'>
@@ -674,7 +675,7 @@ export default function AuditFindingsPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </ResponsiveTable>
 
             {/* Pagination */}
             {totalPages > 1 && (

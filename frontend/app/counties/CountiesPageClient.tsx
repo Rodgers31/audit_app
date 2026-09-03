@@ -23,6 +23,7 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
+import ResponsiveTable from '@/components/ui/ResponsiveTable';
 
 /* ══════════════════════════════════════════════════════════════════════════════
    HELPERS
@@ -1250,7 +1251,7 @@ function CountyRankingsTable({
         </div>
       </div>
 
-      <div className='overflow-x-auto'>
+      <ResponsiveTable>
         <table className='w-full border-collapse min-w-[820px]'>
           <thead>
             <tr className='border-b border-gray-100 dark:border-neutral-border bg-gray-50/60 dark:bg-surface-elevated/70'>
@@ -1362,7 +1363,7 @@ function CountyRankingsTable({
             })}
           </tbody>
         </table>
-      </div>
+      </ResponsiveTable>
 
       {counties.length === 0 && (
         <div className='text-center py-12 px-4'>
