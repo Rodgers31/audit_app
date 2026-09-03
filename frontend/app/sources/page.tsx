@@ -79,7 +79,7 @@ function DocTypeBadge({ type, count }: { type: string; count: number }) {
   };
   const cls = palette[type] || palette.other;
   return (
-    <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full border ${cls}`}>
+    <span className={`text-[11px] font-semibold uppercase px-2 py-0.5 rounded-full border ${cls}`}>
       {type} · {count.toLocaleString()}
     </span>
   );
@@ -226,7 +226,7 @@ export default function SourcesPage() {
                   <div className='min-w-0'>
                     <div className='flex items-center gap-2 mb-1'>
                       {s.short && (
-                        <span className='text-[10px] font-bold uppercase tracking-wider bg-gov-forest/10 text-gov-forest dark:text-emerald-100 px-2 py-0.5 rounded'>
+                        <span className='text-[11px] font-bold uppercase tracking-wider bg-gov-forest/10 text-gov-forest dark:text-emerald-100 px-2 py-0.5 rounded'>
                           {s.short}
                         </span>
                       )}
@@ -252,7 +252,7 @@ export default function SourcesPage() {
 
                 <div className='flex flex-wrap items-center gap-4 pt-3 border-t border-gray-100 dark:border-neutral-border'>
                   <div>
-                    <div className='text-[10px] uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-semibold'>
+                    <div className='text-[11px] uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-semibold'>
                       Documents
                     </div>
                     <div className='text-lg font-bold text-gray-900 dark:text-neutral-text tabular-nums'>
@@ -260,7 +260,7 @@ export default function SourcesPage() {
                     </div>
                   </div>
                   <div>
-                    <div className='text-[10px] uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-semibold'>
+                    <div className='text-[11px] uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-semibold'>
                       Last fetched
                     </div>
                     <div

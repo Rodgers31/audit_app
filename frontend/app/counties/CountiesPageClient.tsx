@@ -19,7 +19,6 @@ import {
   Search,
   TrendingUp,
 } from 'lucide-react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -29,7 +28,7 @@ import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
    HELPERS
    ══════════════════════════════════════════════════════════════════════════════ */
 
-const COUNTIES_NEUTRAL_RGB = '245,240,232';
+const COUNTIES_NEUTRAL_RGB = '243,238,228';
 
 /** Scenic flag image pinned to the bottom of the page. Extracted into a
  * component so all three page states (loading, error, loaded) can render
@@ -37,56 +36,7 @@ const COUNTIES_NEUTRAL_RGB = '245,240,232';
  * markup, which makes it "appear" after data arrives and scores a
  * 0.5+ CLS hit the first time the user lands here. */
 function CountiesScenicBottom() {
-  return (
-    <div
-      className='absolute bottom-0 left-0 right-0'
-      aria-hidden='true'
-      style={{ height: '45vh', zIndex: 0 }}>
-      <Image
-        src='/kenya_bg_bottom.jpg'
-        alt=''
-        fill
-        sizes='100vw'
-        className='object-cover opacity-100 dark:opacity-0 transition-opacity duration-500'
-        style={{ objectPosition: 'center 75%' }}
-      />
-      <Image
-        src='/kenya_bg_bottom_dk.jpg'
-        alt=''
-        fill
-        sizes='100vw'
-        className='object-cover opacity-0 dark:opacity-100 transition-opacity duration-500'
-        style={{ objectPosition: 'center 75%' }}
-      />
-      <div
-        className='absolute inset-0'
-        style={{
-          background: `linear-gradient(180deg,
-            rgba(15,26,18,0.60) 0%,
-            rgba(15,26,18,0.18) 40%,
-            rgba(15,26,18,0.32) 100%
-          )`,
-        }}
-      />
-      <div className='absolute top-0 left-0 right-0' style={{ height: '50%' }}>
-        <div
-          className='absolute inset-0'
-          style={{
-            background: `linear-gradient(to top,
-              transparent 0%,
-              rgba(${COUNTIES_NEUTRAL_RGB},0.07) 15%,
-              rgba(${COUNTIES_NEUTRAL_RGB},0.21) 30%,
-              rgba(${COUNTIES_NEUTRAL_RGB},0.39) 45%,
-              rgba(${COUNTIES_NEUTRAL_RGB},0.61) 60%,
-              rgba(${COUNTIES_NEUTRAL_RGB},0.77) 75%,
-              rgba(${COUNTIES_NEUTRAL_RGB},0.88) 88%,
-              rgba(${COUNTIES_NEUTRAL_RGB},0.94) 100%
-            )`,
-          }}
-        />
-      </div>
-    </div>
-  );
+  return <div aria-hidden='true' className='absolute inset-x-0 bottom-0 h-1 bg-gov-copper' />;
 }
 
 function fmtKES(n: number): string {
@@ -337,7 +287,7 @@ function KPICards({ counties }: { counties: County[] }) {
       {/* Card 1: Total Budget */}
       <Link
         href='/budget'
-        className='bg-white/40 dark:bg-surface-elevated backdrop-blur-xl rounded-2xl p-5 shadow-[0_8px_40px_rgba(0,0,0,0.08)] border border-white/50 flex items-center justify-between gap-3 hover:shadow-lg hover:scale-[1.02] transition-all'>
+        className='ledger-panel-interactive flex items-center justify-between gap-3 p-5'>
         <div className='min-w-0'>
           <div className='text-xs font-medium text-gray-500 dark:text-neutral-muted/80 mb-1'>{t('counties.kpi.total_budget')}</div>
           <div className='text-2xl font-bold text-gray-900 dark:text-neutral-text tracking-tight'>
@@ -353,7 +303,7 @@ function KPICards({ counties }: { counties: County[] }) {
       {/* Card 2: Total Debt */}
       <Link
         href='/budget?tab=debt'
-        className='bg-white/40 dark:bg-surface-elevated backdrop-blur-xl rounded-2xl p-5 shadow-[0_8px_40px_rgba(0,0,0,0.08)] border border-white/50 flex items-center justify-between gap-3 hover:shadow-lg hover:scale-[1.02] transition-all'>
+        className='ledger-panel-interactive flex items-center justify-between gap-3 p-5'>
         <div className='min-w-0'>
           <div className='text-xs font-medium text-gray-500 dark:text-neutral-muted/80 mb-1'>{t('counties.kpi.total_debt')}</div>
           <div className='text-2xl font-bold text-gray-900 dark:text-neutral-text tracking-tight'>
@@ -367,9 +317,7 @@ function KPICards({ counties }: { counties: County[] }) {
       </Link>
 
       {/* Card 3: Avg. Execution Rate */}
-      <div
-        className='bg-white/40 dark:bg-surface-elevated backdrop-blur-xl rounded-2xl p-5 shadow-[0_8px_40px_rgba(0,0,0,0.08)] border border-white/50 flex items-center justify-between gap-3 hover:shadow-lg hover:scale-[1.02] transition-all cursor-pointer'
-        title={t('counties.kpi.see_rankings')}>
+      <div className='ledger-panel flex items-center justify-between gap-3 p-5'>
         <div className='min-w-0'>
           <div className='text-xs font-medium text-gray-500 dark:text-neutral-muted/80 mb-1'>
             {t('counties.kpi.avg_execution_rate')} <InfoTip term='budget-execution' size={11} />
@@ -392,7 +340,7 @@ function KPICards({ counties }: { counties: County[] }) {
       </div>
 
       {/* Card 4: Audit Summary */}
-      <div className='bg-white/40 dark:bg-surface-elevated backdrop-blur-xl rounded-2xl p-5 shadow-[0_8px_40px_rgba(0,0,0,0.08)] border border-white/50'>
+      <div className='ledger-panel p-5'>
         <div className='text-xs font-medium text-gray-500 dark:text-neutral-muted/80 mb-2'>{t('counties.kpi.audit_summary')}</div>
         {stats.totalAudits > 0 ? (
           <div className='flex items-center gap-3'>
@@ -429,13 +377,13 @@ function KPICards({ counties }: { counties: County[] }) {
             {t('counties.kpi.no_audits_year')}
           </div>
         )}
-        <p className='mt-2 text-[10px] leading-snug text-gray-400 dark:text-neutral-muted/80 italic'>
+        <p className='mt-2 text-[11px] leading-snug text-gray-400 dark:text-neutral-muted/80 italic'>
           {t('counties.kpi.audit_status_derived')}
         </p>
       </div>
 
       {/* Card 5: High Debt Counties */}
-      <div className='bg-white/40 dark:bg-surface-elevated backdrop-blur-xl rounded-2xl p-4 shadow-[0_8px_40px_rgba(0,0,0,0.08)] border border-white/50'>
+      <div className='ledger-panel p-4'>
         <div className='text-xs font-medium text-gray-500 dark:text-neutral-muted/80 mb-2'>{t('counties.kpi.high_debt_counties')}</div>
         <div className='space-y-2'>
           {stats.byDebt.map((c, i) => {
@@ -447,18 +395,18 @@ function KPICards({ counties }: { counties: County[] }) {
                 key={c.id}
                 href={`/counties/${c.id}?tab=budget`}
                 className='flex items-center gap-2 hover:bg-white/40 dark:bg-surface-elevated -mx-1 px-1 py-0.5 rounded-lg transition-colors'>
-                <span className='text-[10px] font-bold text-gray-400 dark:text-neutral-muted/80 w-3'>{i + 1}</span>
+                <span className='text-[11px] font-bold text-gray-400 dark:text-neutral-muted/80 w-3'>{i + 1}</span>
                 <div className='flex-1 min-w-0'>
                   <div className='flex items-center justify-between'>
                     <span className='text-xs font-semibold text-gray-800 dark:text-neutral-text truncate'>{c.name}</span>
                     <span
-                      className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${auditCfg.chipBg} ${auditCfg.chipText}`}>
+                      className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-full ${auditCfg.chipBg} ${auditCfg.chipText}`}>
                       {t(auditCfg.labelKey)}
                     </span>
                   </div>
                   <div className='flex items-center gap-2 mt-0.5'>
-                    <span className='text-[10px] text-gray-600 dark:text-neutral-muted tabular-nums'>{fmtKES(debt)}</span>
-                    <span className='text-[10px] text-gray-400 dark:text-neutral-muted/80 tabular-nums'>{fmtKES(budget)}</span>
+                    <span className='text-[11px] text-gray-600 dark:text-neutral-muted tabular-nums'>{fmtKES(debt)}</span>
+                    <span className='text-[11px] text-gray-400 dark:text-neutral-muted/80 tabular-nums'>{fmtKES(budget)}</span>
                   </div>
                   <div className='h-1 bg-gray-100 dark:bg-surface-elevated rounded-full mt-1 overflow-hidden'>
                     <div
@@ -537,14 +485,14 @@ function FiltersSidebar({
     return (
       <button
         onClick={() => setCollapsed(false)}
-        className='bg-white/40 dark:bg-surface-elevated backdrop-blur-xl rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.08)] border border-white/50 p-3 flex items-center justify-center hover:bg-white/50 dark:bg-surface-elevated transition-colors'>
+        className='ledger-panel-interactive flex items-center justify-center p-3'>
         <Filter size={18} className='text-gray-500 dark:text-neutral-muted/80' />
       </button>
     );
   }
 
   return (
-    <div className='bg-white/40 dark:bg-surface-elevated backdrop-blur-xl rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.08)] border border-white/50 overflow-hidden'>
+    <div className='ledger-panel overflow-hidden'>
       {/* Header */}
       <div className='flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-neutral-border'>
         <h3 className='text-sm font-bold text-gray-900 dark:text-neutral-text'>{t('counties.filters.title')}</h3>
@@ -612,7 +560,7 @@ function FiltersSidebar({
                 <button
                   key={g}
                   onClick={() => toggleGrade(g)}
-                  className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${
+                  className={`w-8 h-8 rounded-lg text-xs font-bold transition-[background-color,border-color,color,box-shadow] ${
                     active
                       ? GRADE_COLORS[g] + ' shadow-sm ring-2 ring-offset-1 ring-gray-300'
                       : 'bg-gray-100 dark:bg-surface-elevated text-gray-500 dark:text-neutral-muted/80 hover:bg-gray-200 dark:bg-surface-sunken'
@@ -680,7 +628,7 @@ function FiltersSidebar({
             }
             className='w-full h-1.5 bg-gray-200 dark:bg-surface-sunken rounded-full appearance-none cursor-pointer accent-gov-forest'
           />
-          <div className='flex justify-between text-[10px] text-gray-400 dark:text-neutral-muted/80 mt-1 tabular-nums'>
+          <div className='flex justify-between text-[11px] text-gray-400 dark:text-neutral-muted/80 mt-1 tabular-nums'>
             <span>KES 0B</span>
             <span>—</span>
             <span>{filters.spendingRange[1]}B+</span>
@@ -824,13 +772,13 @@ function CountyPerformanceMap({
   }, [selectedRegion, allLookup]);
 
   return (
-    <div className='bg-white/40 dark:bg-surface-elevated backdrop-blur-xl rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.08)] border border-white/50 p-5 h-full'>
+    <div className='ledger-panel h-full p-5'>
       <h3 className='text-sm font-bold text-gray-900 dark:text-neutral-text mb-3'>{t('counties.map.title')}</h3>
       <div
         ref={containerRef}
         className='relative bg-gov-forest/5 rounded-xl overflow-hidden flex items-center justify-center'
         style={{ height: 280 }}>
-        <svg viewBox={regionViewBox} className='w-auto h-full p-1 transition-all duration-500'>
+        <svg viewBox={regionViewBox} className='w-auto h-full p-1 transition-[width,height,transform] duration-500'>
           <defs>
             <filter id='mapShadow'>
               <feDropShadow dx='0' dy='1' stdDeviation='2' floodOpacity='0.12' />
@@ -923,7 +871,7 @@ function CountyPerformanceMap({
             <button
               key={g}
               onClick={() => onToggleGrade(g)}
-              className={`w-7 h-6 rounded text-[10px] font-bold flex items-center justify-center border-2 transition-all ${
+              className={`w-7 h-6 rounded text-[11px] font-bold flex items-center justify-center border-2 transition-[background-color,border-color,color,opacity,box-shadow] ${
                 isActive
                   ? `${GRADE_COLORS[g]} border-transparent shadow-sm`
                   : 'bg-gray-100 dark:bg-surface-elevated text-gray-400 dark:text-neutral-muted/80 border-gray-200 dark:border-neutral-border opacity-50'
@@ -935,7 +883,7 @@ function CountyPerformanceMap({
         {activeGrades.length > 0 && (
           <button
             onClick={() => activeGrades.forEach((g) => onToggleGrade(g))}
-            className='text-[10px] text-gray-400 dark:text-neutral-muted/80 hover:text-gray-600 dark:text-neutral-muted ml-1 underline'>
+            className='text-[11px] text-gray-400 dark:text-neutral-muted/80 hover:text-gray-600 dark:text-neutral-muted ml-1 underline'>
             {t('counties.map.clear')}
           </button>
         )}
@@ -977,14 +925,14 @@ function CountyInsightsPanel({ counties }: { counties: County[] }) {
 
   if (counties.length === 0) {
     return (
-      <div className='bg-white/40 dark:bg-surface-elevated backdrop-blur-xl rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.08)] border border-white/50 p-5 md:col-span-2 flex items-center justify-center text-sm text-gray-400 dark:text-neutral-muted/80'>
+      <div className='ledger-panel flex items-center justify-center p-5 text-sm text-gray-400 dark:text-neutral-muted/80 md:col-span-2'>
         {t('counties.insights.no_match')}
       </div>
     );
   }
 
   return (
-    <div className='bg-white/40 dark:bg-surface-elevated backdrop-blur-xl rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.08)] border border-white/50 p-5 md:col-span-2'>
+    <div className='ledger-panel p-5 md:col-span-2'>
       {/* Region summary bar */}
       <div className='flex items-center gap-4 mb-4 pb-3 border-b border-gray-200/60 dark:border-neutral-border/60 flex-wrap'>
         <span className='text-sm font-bold text-gray-900 dark:text-neutral-text'>
@@ -1005,7 +953,7 @@ function CountyInsightsPanel({ counties }: { counties: County[] }) {
         <div className='flex items-center gap-1.5 text-xs'>
           <span className='font-semibold text-gray-700 dark:text-neutral-muted'>{t('counties.insights.avg_health')}:</span>
           <span
-            className={`px-1.5 py-0.5 rounded font-bold text-[10px] ${GRADE_COLORS[gradeCategory(stats.avgHealth)]}`}>
+            className={`px-1.5 py-0.5 rounded font-bold text-[11px] ${GRADE_COLORS[gradeCategory(stats.avgHealth)]}`}>
             {gradeCategory(stats.avgHealth)} ({stats.avgHealth.toFixed(0)})
           </span>
         </div>
@@ -1066,11 +1014,11 @@ function InsightRow({
       <div className='flex-1 min-w-0'>
         <div className='flex items-center gap-2 mb-0.5'>
           <span className='text-sm font-semibold text-gray-800 dark:text-neutral-text truncate'>{c.name}</span>
-          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${grade.cls}`}>
+          <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded ${grade.cls}`}>
             {grade.letter}
           </span>
           <span
-            className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ml-auto flex items-center gap-1 ${auditCfg.chipBg} ${auditCfg.chipText}`}>
+            className={`text-[11px] font-medium px-1.5 py-0.5 rounded-full ml-auto flex items-center gap-1 ${auditCfg.chipBg} ${auditCfg.chipText}`}>
             <span className={`w-1.5 h-1.5 rounded-full ${auditCfg.dot}`} />
             {t(auditCfg.labelKey)}
           </span>
@@ -1078,27 +1026,27 @@ function InsightRow({
         <div className='flex items-center gap-3'>
           {/* Utilization bar */}
           <div className='flex items-center gap-1.5 flex-1'>
-            <span className='text-[10px] text-gray-500 dark:text-neutral-muted/80 w-7'>{t('counties.insights.exec_short')}</span>
+            <span className='text-[11px] text-gray-500 dark:text-neutral-muted/80 w-7'>{t('counties.insights.exec_short')}</span>
             <div className='flex-1 h-1.5 bg-gray-100 dark:bg-surface-elevated rounded-full overflow-hidden'>
               <div
                 className={`h-full rounded-full ${util >= 70 ? 'bg-emerald-500' : util >= 50 ? 'bg-amber-500' : 'bg-red-400'}`}
                 style={{ width: `${Math.min(util, 100)}%` }}
               />
             </div>
-            <span className='text-[10px] font-semibold text-gray-700 dark:text-neutral-muted w-7 tabular-nums'>
+            <span className='text-[11px] font-semibold text-gray-700 dark:text-neutral-muted w-7 tabular-nums'>
               {util.toFixed(0)}%
             </span>
           </div>
           {/* Debt ratio */}
           <div className='flex items-center gap-1.5'>
-            <span className='text-[10px] text-gray-500 dark:text-neutral-muted/80'>{t('counties.insights.debt_short')}</span>
+            <span className='text-[11px] text-gray-500 dark:text-neutral-muted/80'>{t('counties.insights.debt_short')}</span>
             <span
-              className={`text-[10px] font-bold tabular-nums ${
+              className={`text-[11px] font-bold tabular-nums ${
                 Number(debtRatio) > 50 ? 'text-red-600' : 'text-gray-600 dark:text-neutral-muted'
               }`}>
               {debtRatio}%
             </span>
-            <span className='text-[10px] text-gray-400 dark:text-neutral-muted/80 tabular-nums'>{fmtKES(budget)}</span>
+            <span className='text-[11px] text-gray-400 dark:text-neutral-muted/80 tabular-nums'>{fmtKES(budget)}</span>
           </div>
         </div>
       </div>
@@ -1152,13 +1100,13 @@ function Th({
       <span className='inline-flex items-center gap-1'>
         {children}
         {suffix && (
-          <span className='text-[9px] text-gray-400 dark:text-neutral-muted/80 font-normal normal-case tracking-normal'>
+          <span className='text-[11px] text-gray-400 dark:text-neutral-muted/80 font-normal normal-case tracking-normal'>
             {suffix}
           </span>
         )}
         <ArrowUpDown size={11} className={active ? 'text-gov-forest dark:text-emerald-100' : 'text-gray-300 dark:text-neutral-muted/60'} />
         {active && (
-          <span className='text-[9px] text-gov-forest dark:text-emerald-100 font-normal'>
+          <span className='text-[11px] text-gov-forest dark:text-emerald-100 font-normal'>
             {dir === 'asc' ? '↑' : '↓'}
           </span>
         )}
@@ -1289,7 +1237,7 @@ function CountyRankingsTable({
   }, [page, totalPages]);
 
   return (
-    <div className='bg-white/40 dark:bg-surface-elevated backdrop-blur-xl rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.08)] border border-white/50 overflow-hidden'>
+    <div className='ledger-panel overflow-hidden'>
       <div className='flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-neutral-border'>
         <div className='flex items-center gap-2'>
           <h3 className='text-sm font-bold text-gray-900 dark:text-neutral-text'>{t('counties.rankings.title')}</h3>
@@ -1351,7 +1299,7 @@ function CountyRankingsTable({
                   <td className='py-3 px-3'>
                     <Link href={base} className='flex items-center gap-2'>
                       <div className='w-6 h-6 rounded-md bg-gov-forest/10 flex items-center justify-center flex-shrink-0'>
-                        <span className='text-[10px]'>🏛️</span>
+                        <span className='text-[11px]'>🏛️</span>
                       </div>
                       <span className='font-semibold text-sm text-gray-900 dark:text-neutral-text group-hover:text-gov-forest dark:text-emerald-100 transition-colors'>
                         {county.name}
@@ -1396,7 +1344,7 @@ function CountyRankingsTable({
                   <td className='py-3 px-3'>
                     <Link href={`${base}&tab=audit`} className='flex items-center gap-1.5'>
                       <span
-                        className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-full ${auditCfg.chipBg} ${auditCfg.chipText}`}>
+                        className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full ${auditCfg.chipBg} ${auditCfg.chipText}`}>
                         {auditCfg.label === 'Adverse'
                           ? '🔺'
                           : auditCfg.label === 'Clean'
@@ -1405,7 +1353,7 @@ function CountyRankingsTable({
                         {t(auditCfg.labelKey)}
                       </span>
                       {issues > 0 && (
-                        <span className='text-[10px] text-gray-500 dark:text-neutral-muted/80 font-medium'>({issues})</span>
+                        <span className='text-[11px] text-gray-500 dark:text-neutral-muted/80 font-medium'>({issues})</span>
                       )}
                     </Link>
                   </td>
@@ -1631,14 +1579,16 @@ export default function CountyExplorerPage() {
 
   if (isLoading) {
     return (
-      <div className='relative min-h-screen' style={{ backgroundColor: 'rgb(245,240,232)' }}>
+      <div className='county-explorer relative min-h-screen' style={{ backgroundColor: `rgb(${COUNTIES_NEUTRAL_RGB})` }}>
         <CountiesScenicBottom />
         <div className='relative z-[1]'>
           <div className='bg-gov-dark'>
-            <div className='h-[72px]' />
-            <div className='max-w-[1340px] mx-auto px-5 lg:px-8 pt-8 pb-10'>
-              <div className='h-10 w-64 bg-white/10 rounded animate-pulse' />
-              <div className='h-4 w-96 bg-white/5 rounded mt-3 animate-pulse' />
+            <div className='h-16' />
+            <div className='max-w-[1400px] mx-auto px-5 lg:px-8 pt-8 pb-10'>
+              <h1 className='font-display text-4xl font-semibold uppercase leading-[0.95] text-white sm:text-5xl lg:text-[4.25rem]'>
+                {t('counties.title')}
+              </h1>
+              <p className='mt-3 max-w-xl text-sm text-white/60'>Loading the latest county evidence…</p>
             </div>
           </div>
           {/* Reserve roughly the height of the loaded rankings + sidebar
@@ -1647,7 +1597,7 @@ export default function CountyExplorerPage() {
               typical viewport runs ~1100px; pad to 1200 to account for
               KPI row + pagination. */}
           <div
-            className='max-w-[1340px] mx-auto px-5 lg:px-8 py-8'
+            className='max-w-[1400px] mx-auto px-5 lg:px-8 py-8'
             style={{ minHeight: 1200 }}>
             <div className='flex items-center justify-center py-24'>
               <div className='animate-spin rounded-full h-14 w-14 border-b-2 border-gov-forest' />
@@ -1660,23 +1610,23 @@ export default function CountyExplorerPage() {
 
   if (error || !counties) {
     return (
-      <div className='relative min-h-screen' style={{ backgroundColor: 'rgb(245,240,232)' }}>
+      <div className='county-explorer relative min-h-screen' style={{ backgroundColor: `rgb(${COUNTIES_NEUTRAL_RGB})` }}>
         <CountiesScenicBottom />
         <div className='relative z-[1]'>
           <div className='bg-gov-dark'>
-            <div className='h-[72px]' />
-            <div className='max-w-[1340px] mx-auto px-5 lg:px-8 pt-8 pb-10'>
-              <h1 className='font-display text-3xl sm:text-4xl lg:text-[2.75rem] text-white leading-[1.12] drop-shadow-lg'>
+            <div className='h-16' />
+            <div className='max-w-[1400px] mx-auto px-5 lg:px-8 pt-8 pb-10'>
+              <h1 className='font-display text-4xl font-semibold uppercase sm:text-5xl lg:text-[4.25rem] text-white leading-[0.95]'>
                 {t('counties.title')}
               </h1>
             </div>
           </div>
-          <div className='max-w-[1340px] mx-auto px-5 lg:px-8 py-8 text-center'>
+          <div className='max-w-[1400px] mx-auto px-5 lg:px-8 py-8 text-center'>
             <AlertTriangle size={40} className='mx-auto text-red-400 mb-3' />
             <p className='text-red-600 mb-4'>{t('counties.error.title')}</p>
             <button
               onClick={() => refetch()}
-              className='px-4 py-2 bg-gov-dark text-white rounded-lg text-sm'>
+              className='btn-primary text-sm'>
               {t('counties.header.retry')}
             </button>
           </div>
@@ -1687,26 +1637,28 @@ export default function CountyExplorerPage() {
 
   return (
     <div
-      className='relative min-h-screen'
+      className='county-explorer relative min-h-screen dark:bg-[#0d1711]'
       style={{ backgroundColor: `rgb(${COUNTIES_NEUTRAL_RGB})` }}>
       <CountiesScenicBottom />
 
       {/* ═══ Content layer ═══ */}
       <div className='relative z-[1]'>
         {/* ══ Dark-green header band ══ */}
-        <div className='bg-gov-dark'>
-          <div className='h-[72px]' />
-          <div className='max-w-[1340px] mx-auto px-5 lg:px-8 pt-8 pb-10'>
+        <div className='relative border-b border-white/10 bg-gov-dark'>
+          <div aria-hidden='true' className='absolute inset-y-0 left-0 w-1.5 bg-gov-copper' />
+          <div className='h-16' />
+          <div className='max-w-[1400px] mx-auto px-5 lg:px-8 pt-8 pb-10'>
             <div className='flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4'>
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, ease: 'easeOut' }}
                 className='max-w-3xl'>
-                <h1 className='font-display text-3xl sm:text-4xl lg:text-[2.75rem] text-white leading-[1.12] mb-2 drop-shadow-lg'>
+                <p className='mb-2 font-mono text-[11px] uppercase tracking-[0.18em] text-gov-gold'>AuditGava / county evidence</p>
+                <h1 className='font-display text-4xl font-semibold uppercase sm:text-5xl lg:text-[4.25rem] text-white leading-[0.95] mb-3'>
                   {t('counties.title')}
                 </h1>
-                <p className='text-base sm:text-lg text-white/70 font-light tracking-wide drop-shadow-md'>
+                <p className='max-w-3xl text-[15px] leading-6 text-white/68 sm:text-base'>
                   {(() => {
                     const tpl = t('counties.header.subtitle_rich');
                     const strong = t('counties.header.subtitle_strong');
@@ -1725,7 +1677,7 @@ export default function CountyExplorerPage() {
                 <div className='relative'>
                   <button
                     onClick={() => setYearOpen((v) => !v)}
-                    className='inline-flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white text-sm font-medium px-4 py-2 rounded-lg border border-white/20 transition-colors'>
+                    className='inline-flex min-h-10 items-center gap-2 border border-white/25 bg-transparent px-4 py-2 text-sm font-semibold text-white hover:border-gov-gold'>
                     {t('counties.header.year')}: {selectedYear}
                     <ChevronDown
                       size={14}
@@ -1733,7 +1685,7 @@ export default function CountyExplorerPage() {
                     />
                   </button>
                   {yearOpen && (
-                    <div className='absolute right-0 mt-1 bg-white dark:bg-surface-base rounded-lg shadow-xl border border-gray-200 dark:border-neutral-border py-1 z-50 min-w-[140px]'>
+                    <div className='absolute right-0 z-50 mt-1 min-w-[140px] rounded-sm border border-neutral-border bg-surface-elevated py-1 shadow-elevated'>
                       {YEARS.map((y) => (
                         <button
                           key={y}
@@ -1754,7 +1706,7 @@ export default function CountyExplorerPage() {
                 </div>
                 <button
                   onClick={handleExport}
-                  className='inline-flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white text-sm font-medium px-4 py-2 rounded-lg border border-white/20 transition-colors'>
+                  className='inline-flex min-h-10 items-center gap-2 border border-white/25 bg-transparent px-4 py-2 text-sm font-semibold text-white hover:border-gov-gold'>
                   <Download size={14} />
                   {t('counties.header.export')}
                 </button>
@@ -1764,7 +1716,7 @@ export default function CountyExplorerPage() {
         </div>
 
         {/* ═══ Main content ═══ */}
-        <div className='max-w-[1340px] mx-auto px-5 lg:px-8 py-8'>
+        <div className='max-w-[1400px] mx-auto px-5 lg:px-8 py-8'>
           {/* Data freshness banner */}
           <DataFreshnessBadge sources='COB' variant='banner' className='mb-2' />
           {/* County financials are modelled estimates, not official COB data */}
@@ -1785,7 +1737,7 @@ export default function CountyExplorerPage() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4, delay: 0.2 }}
-              className={`flex-shrink-0 ${sidebarCollapsed ? 'w-12' : 'w-[280px]'} hidden lg:block transition-all`}>
+              className={`flex-shrink-0 ${sidebarCollapsed ? 'w-12' : 'w-[280px]'} hidden transition-[width] lg:block`}>
               <div className='sticky top-[88px]'>
                 <FiltersSidebar
                   filters={filters}

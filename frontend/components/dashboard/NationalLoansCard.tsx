@@ -109,7 +109,7 @@ export default function NationalLoansCard() {
               href={data.source_url}
               target='_blank'
               rel='noopener noreferrer'
-              className='flex items-center gap-1 text-[10px] text-neutral-muted hover:text-gov-forest dark:text-emerald-100 transition-colors mt-1'>
+              className='flex items-center gap-1 text-[11px] text-neutral-muted hover:text-gov-forest dark:text-emerald-100 transition-colors mt-1'>
               Treasury <ExternalLink className='w-3 h-3' />
             </a>
           )}
@@ -122,7 +122,7 @@ export default function NationalLoansCard() {
           <div className='rounded-xl bg-gov-copper/[0.05] border border-neutral-border/30 px-4 py-3'>
             <div className='flex items-center gap-1.5 mb-1'>
               <Landmark className='w-3.5 h-3.5 text-gov-copper opacity-70' />
-              <span className='text-[10px] text-neutral-muted font-medium uppercase tracking-wider'>
+              <span className='text-[11px] text-neutral-muted font-medium uppercase tracking-wider'>
                 {t('home.loans.outstanding')}
               </span>
               <InfoTip term='outstanding' size={11} />
@@ -135,7 +135,7 @@ export default function NationalLoansCard() {
           <div className='rounded-xl bg-gov-gold/[0.06] border border-neutral-border/30 px-4 py-3'>
             <div className='flex items-center gap-1.5 mb-1'>
               <TrendingUp className='w-3.5 h-3.5 text-gov-gold opacity-70' />
-              <span className='text-[10px] text-neutral-muted font-medium uppercase tracking-wider'>
+              <span className='text-[11px] text-neutral-muted font-medium uppercase tracking-wider'>
                 {t('home.loans.annual_service')}
               </span>
             </div>
@@ -165,7 +165,7 @@ export default function NationalLoansCard() {
                 </span>
                 <div className='flex items-center gap-1 flex-shrink-0'>
                   <span
-                    className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${typeInfo.color}`}>
+                    className={`text-[11px] font-medium px-1.5 py-0.5 rounded-full ${typeInfo.color}`}>
                     {t(typeInfo.key)}
                   </span>
                   {(typeInfo.key === 'home.loans.type.multilateral' ||
@@ -186,7 +186,7 @@ export default function NationalLoansCard() {
                 <span className='text-xs font-bold text-gov-dark dark:text-white tabular-nums flex-shrink-0'>
                   {fmtKES(loan.outstanding_numeric)}
                 </span>
-                <span className='text-[10px] text-neutral-muted tabular-nums flex-shrink-0'>
+                <span className='text-[11px] text-neutral-muted tabular-nums flex-shrink-0'>
                   {loan.interest_rate}
                 </span>
                 <span className='text-[11px] font-semibold text-gov-copper tabular-nums flex-shrink-0 w-12 text-right'>

@@ -34,10 +34,10 @@ export default function DebtExplainerModal({ context, className = '' }: Props) {
         type='button'
         onClick={() => setOpen(true)}
         aria-label='Why do the debt figures differ?'
-        className={`inline-flex items-center justify-center rounded-full transition-colors
+        className={`tap-24 inline-flex items-center justify-center rounded-full transition-colors
           ${
             context === 'hero'
-              ? 'w-5 h-5 bg-gov-dark/10 hover:bg-gov-dark/20 text-gov-dark/50 dark:text-white/50 hover:text-gov-dark/80 dark:text-white/80'
+              ? 'w-5 h-5 bg-gov-dark/10 hover:bg-gov-dark/20 text-gov-dark/50 hover:text-gov-dark/80 dark:text-white/50 dark:hover:text-white/80'
               : 'w-4 h-4 bg-gov-copper/10 hover:bg-gov-copper/20 text-gov-copper/60 hover:text-gov-copper'
           } ${className}`}>
         <Info className={context === 'hero' ? 'w-3 h-3' : 'w-2.5 h-2.5'} />

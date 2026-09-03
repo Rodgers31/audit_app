@@ -767,7 +767,7 @@ function FilterSelect({
 }) {
   return (
     <div className='flex flex-col gap-1'>
-      <label className='text-[10px] font-semibold text-gov-dark/50 dark:text-white/50 uppercase tracking-wider'>
+      <label className='text-[11px] font-semibold text-gov-dark/50 dark:text-white/50 uppercase tracking-wider'>
         {label}
       </label>
       <select

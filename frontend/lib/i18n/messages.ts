@@ -100,6 +100,7 @@ export const MESSAGES = {
   'home.hero.risk_low': { en: 'Low Risk', sw: 'Hatari Ndogo', plain: 'Low Risk' },
   'home.hero.risk_suffix': { en: 'Risk', sw: 'Hatari', plain: 'Risk' },
   'home.hero.risk_unassessed': { en: 'Risk not assessed', sw: 'Hatari haijatathminiwa', plain: 'Risk not rated yet' },
+  'home.hero.risk_unassessed_value': { en: 'Not assessed', sw: 'Haijatathminiwa', plain: 'Not rated yet' },
 
   // KenyanGovCard
   'home.govcard.title': { en: 'Kenyan Government', sw: 'Serikali ya Kenya', plain: 'Kenya Government' },

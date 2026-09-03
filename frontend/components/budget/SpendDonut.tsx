@@ -365,14 +365,14 @@ export default function SpendDonut({ data }: Props) {
                 className='text-center'
                 style={{ maxWidth: '130px' }}>
                 <div
-                  className='text-[9px] uppercase tracking-[0.18em] font-semibold truncate dark:brightness-150 dark:contrast-125'
+                  className='text-[11px] uppercase tracking-[0.18em] font-semibold truncate dark:brightness-150 dark:contrast-125'
                   style={{ color: centerInfo.accent, opacity: 0.85 }}>
                   {centerInfo.eyebrow}
                 </div>
                 <div className='text-[17px] sm:text-[19px] font-extrabold text-gov-dark dark:text-white tabular-nums tracking-tight mt-0.5 leading-none'>
                   {centerInfo.value}
                 </div>
-                <div className='text-[9.5px] text-gov-dark/70 dark:text-white/70 mt-1.5 leading-tight'>
+                <div className='text-[11px] text-gov-dark/70 dark:text-white/70 mt-1.5 leading-tight'>
                   {centerInfo.caption}
                 </div>
               </motion.div>
@@ -384,7 +384,7 @@ export default function SpendDonut({ data }: Props) {
         <div className='lg:col-span-3 space-y-5'>
           {/* Inner ring chips */}
           <div>
-            <div className='text-[10.5px] uppercase tracking-[0.15em] font-semibold text-neutral-muted mb-2'>
+            <div className='text-[11px] uppercase tracking-[0.15em] font-semibold text-neutral-muted mb-2'>
               Macro buckets
             </div>
             <div className='grid grid-cols-1 sm:grid-cols-2 gap-1.5'>
@@ -415,7 +415,7 @@ export default function SpendDonut({ data }: Props) {
                           {d.share.toFixed(1)}%
                         </span>
                       </div>
-                      <div className='text-[10px] text-neutral-muted tabular-nums leading-tight'>
+                      <div className='text-[11px] text-neutral-muted tabular-nums leading-tight'>
                         KES {fmtBillions(d.value)}
                       </div>
                     </div>
@@ -424,7 +424,7 @@ export default function SpendDonut({ data }: Props) {
               })}
             </div>
             {innerData.some((d: any) => d.isResidual) && (
-              <p className='mt-2 text-[10px] leading-snug text-neutral-muted/75'>
+              <p className='mt-2 text-[11px] leading-snug text-neutral-muted/75'>
                 “Other (residual)” is a computed balancing item — the budget left after the
                 named buckets — not a separately sourced line.
               </p>
@@ -434,10 +434,10 @@ export default function SpendDonut({ data }: Props) {
           {/* Outer ring — sector mini list */}
           <div>
             <div className='flex items-baseline justify-between gap-2 mb-2'>
-              <div className='text-[10.5px] uppercase tracking-[0.15em] font-semibold text-neutral-muted'>
+              <div className='text-[11px] uppercase tracking-[0.15em] font-semibold text-neutral-muted'>
                 County sector allocations
               </div>
-              <div className='text-[10px] text-neutral-muted tabular-nums'>
+              <div className='text-[11px] text-neutral-muted tabular-nums'>
                 KES {fmtBillions(sectorEnvelopeB)} envelope
               </div>
             </div>
@@ -459,15 +459,15 @@ export default function SpendDonut({ data }: Props) {
                         background: `linear-gradient(180deg, ${d.gradStart}, ${d.gradEnd})`,
                       }}
                     />
-                    <span className='text-[10.5px] font-medium text-gov-dark dark:text-white flex-1 min-w-0 truncate'>
+                    <span className='text-[11px] font-medium text-gov-dark dark:text-white flex-1 min-w-0 truncate'>
                       {d.name}
                     </span>
-                    <span className='text-[10px] text-neutral-muted tabular-nums'>
+                    <span className='text-[11px] text-neutral-muted tabular-nums'>
                       {d.share.toFixed(1)}%
                     </span>
                     {util != null && (
                       <span
-                        className={`text-[9.5px] font-semibold tabular-nums px-1.5 py-[1px] rounded-full ${
+                        className={`text-[11px] font-semibold tabular-nums px-1.5 py-[1px] rounded-full ${
                           util >= 80
                             ? 'bg-green-50 text-green-700'
                             : util >= 60
@@ -481,7 +481,7 @@ export default function SpendDonut({ data }: Props) {
                 );
               })}
             </div>
-            <div className='mt-2 flex items-center gap-3 text-[10px] text-neutral-muted'>
+            <div className='mt-2 flex items-center gap-3 text-[11px] text-neutral-muted'>
               <span className='inline-flex items-center gap-1'>
                 <span className='w-2 h-2 rounded-sm bg-green-500' /> ≥80% used
               </span>

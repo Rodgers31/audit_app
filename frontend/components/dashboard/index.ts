@@ -10,5 +10,6 @@ export { default as HeroSection, KenyanGovCard, SummaryStrip } from './HeroSecti
 export { default as LearningHubCTA } from './LearningHubCTA';
 export { default as MapWithDetailPanel } from './MapWithDetailPanel';
 export { default as MetricsStrip } from './MetricsStrip';
+export { default as MoneyTraceRibbon } from './MoneyTraceRibbon';
 export { default as NationalDebtCard } from './NationalDebtCard';
 export { default as NationalLoansCard } from './NationalLoansCard';

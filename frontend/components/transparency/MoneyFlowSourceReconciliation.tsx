@@ -182,7 +182,7 @@ export default function MoneyFlowSourceReconciliation({ fiscalYear }: Props) {
                     {s.publisher}
                   </span>
                   <span
-                    className={`text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border ${st.className}`}>
+                    className={`text-[11px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border ${st.className}`}>
                     {st.label}
                   </span>
                 </div>

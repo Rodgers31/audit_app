@@ -59,7 +59,7 @@ export default function ProjectsTab({ data }: { data: CountyComprehensive }) {
               <div className='flex items-center gap-2 mt-0.5 flex-wrap'>
                 <span className='text-xs text-gray-500 dark:text-neutral-muted/80'>{p.sector}</span>
                 {p.oag_reference && (
-                  <span className='text-[10px] text-gray-400 dark:text-neutral-muted/80 border border-gray-200 dark:border-neutral-border rounded px-1.5 py-0.5'>
+                  <span className='text-[11px] text-gray-400 dark:text-neutral-muted/80 border border-gray-200 dark:border-neutral-border rounded px-1.5 py-0.5'>
                     {p.oag_reference}
                   </span>
                 )}

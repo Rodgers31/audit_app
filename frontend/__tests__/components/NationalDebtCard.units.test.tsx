@@ -76,18 +76,34 @@ jest.mock('framer-motion', () => ({
   useInView: () => true,
 }));
 
-// Capture what the chart is actually handed. `NationalDebtChart` reads
-// BILLIONS — its `fmtT` divides by 1000 for trillions and its tick formatter
-// renders bare values as `${v}B` — so the units it receives are part of the
-// contract, not an implementation detail.
+// Capture what the chart is actually handed. `NationalDebtChart`'s `fmtT`
+// divides by 1000 for trillions and its tick formatter renders bare values as
+// `${v}B`, so the UNITS the chart receives are part of the contract, not an
+// implementation detail.
+//
+// The editorial redesign renders recharts inline rather than through
+// next/dynamic, so the capture hangs off ComposedChart's `data` prop. The
+// assertion below is unchanged — only where the value is read from moved.
 const chartProps: any[] = [];
-jest.mock('next/dynamic', () => () => {
-  const Stub = (props: any) => {
-    chartProps.push(props);
-    return <div data-testid='chart' />;
+jest.mock('recharts', () => {
+  const Pass = ({ children }: any) => <div>{children}</div>;
+  return {
+    __esModule: true,
+    ResponsiveContainer: Pass,
+    ComposedChart: (props: any) => {
+      chartProps.push(props);
+      return <div data-testid='chart'>{props.children}</div>;
+    },
+    CartesianGrid: () => null,
+    XAxis: () => null,
+    YAxis: () => null,
+    Tooltip: () => null,
+    Legend: () => null,
+    Area: () => null,
+    Line: () => null,
+    Bar: () => null,
+    ReferenceLine: () => null,
   };
-  Stub.displayName = 'ChartStub';
-  return Stub;
 });
 
 import NationalDebtCard from '@/components/dashboard/NationalDebtCard';

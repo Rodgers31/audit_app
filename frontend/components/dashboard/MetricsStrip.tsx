@@ -102,7 +102,7 @@ export default function MetricsStrip() {
                 <circle cx='90' cy='65' r='2.5' fill='#4A7C5C' opacity='0.6' />
                 <circle cx='125' cy='72' r='2.5' fill='#D9A441' opacity='0.6' />
               </svg>
-              <div className='absolute bottom-2 right-2 text-[10px] text-gov-forest/40 dark:text-emerald-100/40 font-medium'>
+              <div className='absolute bottom-2 right-2 text-[11px] text-gov-forest/40 dark:text-emerald-100/40 font-medium'>
                 47 Counties
               </div>
             </div>

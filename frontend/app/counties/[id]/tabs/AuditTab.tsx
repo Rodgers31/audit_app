@@ -353,19 +353,19 @@ export default function AuditTab({ data }: { data: CountyComprehensive }) {
                 {/* Top row: category tag + status + amount */}
                 <div className='flex items-center gap-2 flex-wrap mb-2'>
                   <span
-                    className={`inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${catCfg.bg} ${catCfg.color}`}>
+                    className={`inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${catCfg.bg} ${catCfg.color}`}>
                     {catCfg.icon} {t(catCfg.labelKey)}
                   </span>
                   <span
-                    className={`inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border ${stCfg.color}`}>
+                    className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border ${stCfg.color}`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${stCfg.dot}`} />
                     {t(stCfg.labelKey)}
                   </span>
-                  <span className={`text-[10px] font-bold uppercase tracking-wider ${s.text}`}>
+                  <span className={`text-[11px] font-bold uppercase tracking-wider ${s.text}`}>
                     {t(s.labelKey)}
                   </span>
                   {f.audit_year && (
-                    <span className='text-[10px] text-gray-400 dark:text-neutral-muted/80 ml-auto'>
+                    <span className='text-[11px] text-gray-400 dark:text-neutral-muted/80 ml-auto'>
                       {t('county.audit.fy_prefix')} {f.audit_year}
                     </span>
                   )}
@@ -382,7 +382,7 @@ export default function AuditTab({ data }: { data: CountyComprehensive }) {
                     </span>
                   )}
                   {f.reference && (
-                    <span className='text-[10px] text-gray-400 dark:text-neutral-muted/80 font-mono'>
+                    <span className='text-[11px] text-gray-400 dark:text-neutral-muted/80 font-mono'>
                       {t('county.audit.ref_prefix')} {f.reference}
                     </span>
                   )}

@@ -87,7 +87,7 @@ function SeverityDonut({ sev }: { sev: Record<string, number> }) {
       </svg>
       <div className='absolute inset-0 flex flex-col items-center justify-center'>
         <span className='text-2xl font-bold text-gov-dark dark:text-white tabular-nums leading-none'>{total}</span>
-        <span className='text-[10px] text-neutral-muted mt-0.5'>{t('home.audits.findings_label')}</span>
+        <span className='text-[11px] text-neutral-muted mt-0.5'>{t('home.audits.findings_label')}</span>
       </div>
     </div>
   );
@@ -313,7 +313,7 @@ export default function AuditReportsSection() {
             }`}>
             <div className='flex items-center gap-1.5 mb-2'>
               <s.icon className={`w-3.5 h-3.5 ${s.accent} opacity-70`} />
-              <span className='text-[10px] text-neutral-muted font-medium uppercase tracking-wider'>
+              <span className='text-[11px] text-neutral-muted font-medium uppercase tracking-wider'>
                 {t(s.labelKey)}
               </span>
             </div>
@@ -512,7 +512,7 @@ export default function AuditReportsSection() {
                     style={{
                       backgroundColor:
                         m.finding_count >= 3
-                          ? '#C94A4A'
+                          ? '#BE4040'
                           : m.finding_count >= 2
                             ? '#D9A441'
                             : '#4A7C5C',

@@ -110,7 +110,7 @@ export default function IngestionJobDetailPage({
           <div className='flex items-center gap-2 mb-4'>
             <StatusBadge status={data.status} hasErrors={data.errors.length > 0} />
             {data.dry_run && (
-              <span className='text-[10px] uppercase tracking-wider bg-gov-warning/15 text-gov-warning dark:text-amber-300 px-1.5 py-0.5 rounded font-semibold'>
+              <span className='text-[11px] uppercase tracking-wider bg-gov-warning/15 text-gov-warning dark:text-amber-300 px-1.5 py-0.5 rounded font-semibold'>
                 dry-run
               </span>
             )}
@@ -220,7 +220,7 @@ function Field({
   }[tone];
   return (
     <div>
-      <p className='text-[10px] uppercase tracking-wider text-neutral-muted font-semibold'>
+      <p className='text-[11px] uppercase tracking-wider text-neutral-muted font-semibold'>
         {label}
       </p>
       <p

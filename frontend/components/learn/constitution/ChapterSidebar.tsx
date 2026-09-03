@@ -61,7 +61,7 @@ function ChapterSidebarInner({
                     : 'text-gov-dark dark:text-white hover:bg-gov-forest/10'
                 }`}>
                 <span
-                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded text-[10px] font-bold ${
+                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded text-[11px] font-bold ${
                     isActive ? 'bg-gov-gold text-gov-dark dark:text-white' : 'bg-gov-forest/10 text-gov-forest dark:text-emerald-100'
                   }`}>
                   {chapter.number}

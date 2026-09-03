@@ -96,7 +96,7 @@ export default function DebtSourceReconciliation({ reconciliation, lastUpdated }
       <div className='grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-neutral-border/40'>
         {/* ── Primary: live loans register ── */}
         <div className='p-5 sm:p-6 relative'>
-          <div className='absolute top-4 right-4 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-gov-forest dark:text-emerald-100 bg-gov-forest/10 px-2 py-0.5 rounded-full'>
+          <div className='absolute top-4 right-4 inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-gov-forest dark:text-emerald-100 bg-gov-forest/10 px-2 py-0.5 rounded-full'>
             <span className='relative flex h-1.5 w-1.5'>
               <span className='animate-ping absolute inline-flex h-full w-full rounded-full bg-gov-forest opacity-60' />
               <span className='relative inline-flex rounded-full h-1.5 w-1.5 bg-gov-forest' />
@@ -135,14 +135,14 @@ export default function DebtSourceReconciliation({ reconciliation, lastUpdated }
               <dd className='text-gov-dark dark:text-white font-medium text-right'>{fmtDate(lastUpdated)}</dd>
             </div>
           </dl>
-          <p className='mt-3 text-[10px] uppercase tracking-wider text-gov-forest dark:text-emerald-100 font-semibold'>
+          <p className='mt-3 text-[11px] uppercase tracking-wider text-gov-forest dark:text-emerald-100 font-semibold'>
             ← Used as the headline figure on this site
           </p>
         </div>
 
         {/* ── Reference: Treasury aggregate ── */}
         <div className='p-5 sm:p-6 relative'>
-          <div className='absolute top-4 right-4 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-gov-gold bg-gov-gold/15 px-2 py-0.5 rounded-full'>
+          <div className='absolute top-4 right-4 inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-gov-gold bg-gov-gold/15 px-2 py-0.5 rounded-full'>
             <BookOpen size={10} />
             Reference
           </div>

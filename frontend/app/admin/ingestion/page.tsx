@@ -244,7 +244,7 @@ function IngestionJobsInner() {
                             {job.domain}
                           </span>
                           {job.dry_run && (
-                            <span className='text-[9px] uppercase tracking-wider bg-gov-warning/15 text-gov-warning dark:text-amber-300 px-1.5 py-0.5 rounded font-semibold'>
+                            <span className='text-[11px] uppercase tracking-wider bg-gov-warning/15 text-gov-warning dark:text-amber-300 px-1.5 py-0.5 rounded font-semibold'>
                               dry-run
                             </span>
                           )}
@@ -403,7 +403,7 @@ function StatusBadge({ status, hasErrors }: { status: string; hasErrors: boolean
 function FilterField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className='flex flex-col'>
-      <label className='text-[10px] uppercase tracking-wider text-neutral-muted font-semibold mb-1'>
+      <label className='text-[11px] uppercase tracking-wider text-neutral-muted font-semibold mb-1'>
         {label}
       </label>
       {children}

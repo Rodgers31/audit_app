@@ -19,14 +19,14 @@ module.exports = {
       colors: {
         /* ── Government editorial palette ── */
         gov: {
-          dark: '#0F1A12',
-          forest: '#1B3A2A',
-          sage: '#4A7C5C',
-          gold: '#D9A441',
-          sand: '#F5F0E8',
-          cream: '#FAF7F0',
-          copper: '#C94A4A',
-          warning: '#D97706',
+          dark: '#101B14',
+          forest: '#174A34',
+          sage: '#176B49',
+          gold: '#B8872D',
+          sand: '#F3EEE4',
+          cream: '#FBFAF6',
+          copper: '#C9473D',
+          warning: '#A86816',
         },
         neutral: {
           // Theme-aware via CSS variables defined in globals.css.
@@ -73,9 +73,9 @@ module.exports = {
         danger: { 50: '#fef2f2', 100: '#fee2e2', 500: '#ef4444', 600: '#dc2626', 700: '#b91c1c' },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        display: ['"DM Serif Display"', 'Georgia', 'serif'],
-        mono: ['Fira Code', 'monospace'],
+        sans: ['"Public Sans"', 'system-ui', 'sans-serif'],
+        display: ['"Barlow Condensed"', 'Arial Narrow', 'sans-serif'],
+        mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
       },
       maxWidth: {
         dashboard: '1400px',
@@ -101,9 +101,9 @@ module.exports = {
         },
       },
       boxShadow: {
-        surface: '0 2px 20px rgba(15,26,18,0.06)',
-        elevated: '0 8px 40px rgba(15,26,18,0.10)',
-        deep: '0 16px 64px rgba(15,26,18,0.14)',
+        surface: '0 1px 2px rgba(16,27,20,0.05)',
+        elevated: '0 12px 28px rgba(16,27,20,0.12)',
+        deep: '0 22px 56px rgba(16,27,20,0.18)',
       },
       backdropBlur: {
         xs: '2px',

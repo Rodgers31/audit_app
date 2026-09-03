@@ -20,3 +20,17 @@ if (typeof window !== 'undefined' && !window.matchMedia) {
     };
   };
 }
+
+// Polyfill ResizeObserver — jsdom doesn't ship it, and the editorial
+// redesign's chart/responsive components construct one on mount. Without
+// this, any test that renders NationalDebtCard or SummaryStrip dies with
+// "ReferenceError: ResizeObserver is not defined" before it can assert
+// anything, which would silently disable the units and risk-band
+// regression fixtures rather than failing them honestly.
+if (typeof global.ResizeObserver === 'undefined') {
+  global.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}

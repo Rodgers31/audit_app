@@ -125,7 +125,7 @@ export default function NationalDebtChart({ data }: { data: ChartEntry[] }) {
           yAxisId='debt'
           axisLine={false}
           tickLine={false}
-          tick={{ fontSize: 10, fill: '#9CA3AF' }}
+          tick={{ fontSize: 11, fill: '#9CA3AF' }}
           tickFormatter={(v: number) => (v >= 1000 ? `${(v / 1000).toFixed(0)}T` : `${v}B`)}
           width={40}
         />
@@ -135,7 +135,7 @@ export default function NationalDebtChart({ data }: { data: ChartEntry[] }) {
           domain={[30, 85]}
           axisLine={false}
           tickLine={false}
-          tick={{ fontSize: 10, fill: '#D9A441' }}
+          tick={{ fontSize: 11, fill: '#D9A441' }}
           tickFormatter={(v: number) => `${v}%`}
           width={36}
         />

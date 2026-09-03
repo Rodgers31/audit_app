@@ -116,7 +116,7 @@ export default function BudgetSourceReconciliation({
       <div className='grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-neutral-border/40'>
         {/* Execution / actuals */}
         <div className='p-5 sm:p-6 relative'>
-          <div className='absolute top-4 right-4 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-gov-forest dark:text-emerald-100 bg-gov-forest/10 px-2 py-0.5 rounded-full'>
+          <div className='absolute top-4 right-4 inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-gov-forest dark:text-emerald-100 bg-gov-forest/10 px-2 py-0.5 rounded-full'>
             <span className='relative flex h-1.5 w-1.5'>
               <span className='animate-ping absolute inline-flex h-full w-full rounded-full bg-gov-forest opacity-60' />
               <span className='relative inline-flex rounded-full h-1.5 w-1.5 bg-gov-forest' />
@@ -155,7 +155,7 @@ export default function BudgetSourceReconciliation({
 
         {/* Plan / appropriations */}
         <div className='p-5 sm:p-6 relative'>
-          <div className='absolute top-4 right-4 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-gov-gold bg-gov-gold/15 px-2 py-0.5 rounded-full'>
+          <div className='absolute top-4 right-4 inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-gov-gold bg-gov-gold/15 px-2 py-0.5 rounded-full'>
             <BookOpen size={10} />
             Plan
           </div>
@@ -205,7 +205,7 @@ export default function BudgetSourceReconciliation({
               <span className='text-sm font-semibold text-gov-dark dark:text-white'>
                 Debt-service headline: source by fiscal year
               </span>
-              <span className='text-[10px] uppercase tracking-wider text-gov-copper/80 font-semibold'>
+              <span className='text-[11px] uppercase tracking-wider text-gov-copper/80 font-semibold'>
                 Treasury APDMR
               </span>
             </div>

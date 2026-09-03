@@ -202,7 +202,7 @@ export default function AdminOverviewPage() {
                   <h2 className='text-base font-bold text-gov-copper dark:text-red-200'>
                     System needs attention
                   </h2>
-                  <span className='inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-gov-copper/20 dark:bg-red-500/30 text-gov-copper dark:text-red-100'>
+                  <span className='inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-gov-copper/20 dark:bg-red-500/30 text-gov-copper dark:text-red-100'>
                     {alerts.length} {alerts.length === 1 ? 'alert' : 'alerts'}
                   </span>
                 </div>
@@ -403,11 +403,11 @@ export default function AdminOverviewPage() {
                           <span className='text-xs font-mono font-semibold text-gov-copper dark:text-red-200'>
                             {job.domain}
                           </span>
-                          <span className='text-[10px] text-neutral-muted'>
+                          <span className='text-[11px] text-neutral-muted'>
                             #{job.id} · {timeAgo(job.started_at || job.created_at)}
                           </span>
                           {job.duration_seconds != null && (
-                            <span className='text-[10px] text-neutral-muted'>
+                            <span className='text-[11px] text-neutral-muted'>
                               · ran {job.duration_seconds.toFixed(1)}s
                             </span>
                           )}
@@ -455,7 +455,7 @@ export default function AdminOverviewPage() {
 
             {Object.keys(ingestion.data.domains).length > 0 && (
               <>
-                <p className='text-[10px] text-neutral-muted mt-6 mb-2 uppercase tracking-wider font-semibold'>
+                <p className='text-[11px] text-neutral-muted mt-6 mb-2 uppercase tracking-wider font-semibold'>
                   Jobs by domain
                 </p>
                 <div className='flex flex-wrap gap-2'>
@@ -676,7 +676,7 @@ function Metric({
   }[tone];
   return (
     <div>
-      <p className='text-[10px] uppercase tracking-wider text-neutral-muted font-semibold'>
+      <p className='text-[11px] uppercase tracking-wider text-neutral-muted font-semibold'>
         {label}
       </p>
       <p className={`text-2xl font-bold mt-1 font-display ${colour}`}>

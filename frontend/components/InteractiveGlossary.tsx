@@ -111,7 +111,7 @@ export default function InteractiveGlossary({
                 }`}>
                 {cat.label}
                 <span
-                  className={`rounded-full px-1.5 text-[10px] ${
+                  className={`rounded-full px-1.5 text-[11px] ${
                     isActive ? 'bg-white/20 text-white' : 'bg-white dark:bg-surface-base text-gov-forest/70 dark:text-emerald-100/70'
                   }`}>
                   {count}
@@ -196,7 +196,7 @@ export default function InteractiveGlossary({
                             {term.term}
                           </span>
                           {term.abbreviation && (
-                            <span className='rounded-md bg-gov-forest/10 px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wider text-gov-forest dark:text-emerald-100'>
+                            <span className='rounded-md bg-gov-forest/10 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-gov-forest dark:text-emerald-100'>
                               {term.abbreviation}
                             </span>
                           )}

@@ -74,15 +74,18 @@ describe('F1 — the headline must respect the declared unit', () => {
   it('does not multiply an already-raw KES total by 1e9', () => {
     mockTimeline.mockReturnValue({ data: { timeline: [RAW_KES_ROW] } });
     render(<SummaryStrip />);
-    // 10.7T. Pre-fix this produced 10700000000.00.
-    expect(screen.getByText('10.70')).toBeInTheDocument();
+    // 10.7T. Pre-fix this produced 10700000000.00T.
+    // The figure and its "T" suffix render in one text node beside a
+    // separate "KES" span, so match the node rather than a bare number.
+    expect(screen.getByText(/^10\.70T$/)).toBeInTheDocument();
+    expect(screen.queryByText(/\d{7,}\.\d\dT/)).toBeNull();
   });
 
   it('still scales a pre-migration billions total', () => {
     // POSITIVE CONTROL — the deploy precedes the migration.
     mockTimeline.mockReturnValue({ data: { timeline: [BILLIONS_ROW] } });
     render(<SummaryStrip />);
-    expect(screen.getByText('10.70')).toBeInTheDocument();
+    expect(screen.getByText(/^10\.70T$/)).toBeInTheDocument();
   });
 });
 
@@ -98,6 +101,8 @@ describe('G3 — a blank risk badge is not an assessment', () => {
   it('still renders a band that can be established', () => {
     mockTimeline.mockReturnValue({ data: { timeline: [RAW_KES_ROW] } });
     render(<SummaryStrip />);
-    expect(screen.getByText(/High/)).toBeInTheDocument();
+    // Match the risk VALUE node exactly. The redesigned cell also renders a
+    // Low/Moderate/High legend beneath it, so a loose /High/ matches twice.
+    expect(screen.getByText(/^High Risk$/i)).toBeInTheDocument();
   });
 });

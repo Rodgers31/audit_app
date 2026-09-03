@@ -106,7 +106,7 @@ export default function EconomicContextStrip({ ctx }: Props) {
             How the budget sits against the wider economy
           </h3>
         </div>
-        <div className='text-[10.5px] text-neutral-muted'>
+        <div className='text-[11px] text-neutral-muted'>
           {ctx.fiscal_year ?? ''}
         </div>
       </div>
@@ -122,13 +122,13 @@ export default function EconomicContextStrip({ ctx }: Props) {
               <Icon size={18} style={{ color: accent }} />
             </div>
             <div className='min-w-0'>
-              <div className='text-[10.5px] uppercase tracking-wider font-semibold text-neutral-muted'>
+              <div className='text-[11px] uppercase tracking-wider font-semibold text-neutral-muted'>
                 {label}
               </div>
               <div className='font-display text-xl text-gov-dark dark:text-white tabular-nums leading-tight mt-0.5'>
                 {value}
               </div>
-              <div className='text-[10.5px] text-neutral-muted leading-tight mt-0.5'>
+              <div className='text-[11px] text-neutral-muted leading-tight mt-0.5'>
                 {sub}
               </div>
             </div>

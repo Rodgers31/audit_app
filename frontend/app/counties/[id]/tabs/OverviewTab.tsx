@@ -134,14 +134,14 @@ function OfficialsCard({
             key={r.role}
             title={r.tip}
             className='rounded-lg border border-gray-100 dark:border-neutral-border bg-gray-50/60 dark:bg-surface-elevated/70 px-3 py-2.5 hover:border-gov-sage/50 transition-colors'>
-            <div className='text-[10px] uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-semibold'>
+            <div className='text-[11px] uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-semibold'>
               {r.title}
             </div>
             <div
               className={`text-sm font-semibold mt-0.5 ${r.name ? 'text-gray-900 dark:text-neutral-text' : 'text-gray-400 dark:text-neutral-muted/80 italic'}`}>
               {r.name || t('county.officials.not_published')}
             </div>
-            {r.meta && <div className='text-[10px] text-gray-500 dark:text-neutral-muted/80 mt-0.5'>{r.meta}</div>}
+            {r.meta && <div className='text-[11px] text-gray-500 dark:text-neutral-muted/80 mt-0.5'>{r.meta}</div>}
           </div>
         ))}
       </div>

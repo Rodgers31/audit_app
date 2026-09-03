@@ -71,7 +71,7 @@ export default function CountyUtilizationStrip({ top, bottom, average }: Props) 
             <div className='bg-gradient-to-r from-gov-sage/15 via-white to-transparent border-b border-neutral-border/30 px-5 py-3 flex items-center gap-2'>
               <TrendingUp size={16} className='text-gov-sage' />
               <h4 className='text-[13px] font-semibold text-gov-dark dark:text-white'>Best absorbed</h4>
-              <span className='text-[10.5px] text-neutral-muted ml-auto'>
+              <span className='text-[11px] text-neutral-muted ml-auto'>
                 Money reaches citizens
               </span>
             </div>
@@ -101,7 +101,7 @@ export default function CountyUtilizationStrip({ top, bottom, average }: Props) 
                       />
                     </div>
                     {c.allocated != null && c.spent != null && (
-                      <div className='flex items-center justify-between mt-1 text-[10px] text-neutral-muted tabular-nums'>
+                      <div className='flex items-center justify-between mt-1 text-[11px] text-neutral-muted tabular-nums'>
                         <span>Spent KES {fmtB(c.spent)}</span>
                         <span>of {fmtB(c.allocated)}</span>
                       </div>
@@ -119,7 +119,7 @@ export default function CountyUtilizationStrip({ top, bottom, average }: Props) 
             <div className='bg-gradient-to-r from-gov-copper/12 via-white to-transparent dark:from-surface-elevated/40 dark:via-surface-base/20 dark:to-transparent border-b border-neutral-border/30 px-5 py-3 flex items-center gap-2'>
               <TrendingDown size={16} className='text-gov-copper' />
               <h4 className='text-[13px] font-semibold text-gov-dark dark:text-white'>Biggest underspend</h4>
-              <span className='text-[10.5px] text-neutral-muted ml-auto'>
+              <span className='text-[11px] text-neutral-muted ml-auto'>
                 Unreleased to citizens
               </span>
             </div>
@@ -149,7 +149,7 @@ export default function CountyUtilizationStrip({ top, bottom, average }: Props) 
                       />
                     </div>
                     {c.allocated != null && c.spent != null && (
-                      <div className='flex items-center justify-between mt-1 text-[10px] text-neutral-muted tabular-nums'>
+                      <div className='flex items-center justify-between mt-1 text-[11px] text-neutral-muted tabular-nums'>
                         <span>Spent KES {fmtB(c.spent)}</span>
                         <span>of {fmtB(c.allocated)}</span>
                       </div>

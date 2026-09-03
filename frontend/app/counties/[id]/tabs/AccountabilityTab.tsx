@@ -227,11 +227,11 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
                 )}
               </span>
               {score !== null ? (
-                <span className='text-[10px] font-semibold text-gray-500 dark:text-neutral-muted/80 tabular-nums mt-0.5'>
+                <span className='text-[11px] font-semibold text-gray-500 dark:text-neutral-muted/80 tabular-nums mt-0.5'>
                   {score.toFixed(0)}/100
                 </span>
               ) : (
-                <span className='text-[9px] font-semibold text-gray-500 dark:text-neutral-muted/80 mt-0.5 text-center px-1 leading-tight'>
+                <span className='text-[11px] font-semibold text-gray-500 dark:text-neutral-muted/80 mt-0.5 text-center px-1 leading-tight'>
                   {data.accountability_reason === 'not_yet_audited_in_this_dataset'
                     ? 'no audit ingested yet'
                     : 'no sourced findings'}
@@ -293,7 +293,7 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
                   />
                 ))}
               </div>
-              <div className='flex justify-between text-[9px] text-gray-400 dark:text-neutral-muted/80 mt-1 tabular-nums'>
+              <div className='flex justify-between text-[11px] text-gray-400 dark:text-neutral-muted/80 mt-1 tabular-nums'>
                 <span>F</span>
                 <span className='ml-[28%]'>D</span>
                 <span className='ml-[10%]'>C</span>
@@ -329,7 +329,7 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
                     </div>
                     <div className='flex items-center gap-2'>
                       <span
-                        className={`inline-block text-[10px] uppercase tracking-widest font-semibold px-1.5 py-0.5 rounded border ${style.chip}`}>
+                        className={`inline-block text-[11px] uppercase tracking-widest font-semibold px-1.5 py-0.5 rounded border ${style.chip}`}>
                         {t(style.labelKey)}
                       </span>
                       <span className='text-xs text-gray-500 dark:text-neutral-muted/80'>{f.detail}</span>
@@ -414,12 +414,12 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
               className={`bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border border-l-4 ${toneCls} p-4`}>
               <div className='flex items-center gap-2 mb-1'>
                 <m.Icon size={14} />
-                <div className='text-[10px] uppercase tracking-widest font-semibold text-gray-400 dark:text-neutral-muted/80'>
+                <div className='text-[11px] uppercase tracking-widest font-semibold text-gray-400 dark:text-neutral-muted/80'>
                   {m.label}
                 </div>
               </div>
               <div className='text-xl font-bold tabular-nums text-gray-900 dark:text-neutral-text'>{m.value}</div>
-              {m.sub && <div className='text-[10px] text-gray-500 dark:text-neutral-muted/80 mt-0.5'>{m.sub}</div>}
+              {m.sub && <div className='text-[11px] text-gray-500 dark:text-neutral-muted/80 mt-0.5'>{m.sub}</div>}
             </div>
           );
         })}

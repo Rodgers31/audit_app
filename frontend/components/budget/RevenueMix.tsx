@@ -164,11 +164,11 @@ export default function RevenueMix({ revenueBySource }: Props) {
           </p>
         </div>
         <div className='text-right'>
-          <div className='text-[10.5px] uppercase tracking-wider font-semibold text-neutral-muted'>
+          <div className='text-[11px] uppercase tracking-wider font-semibold text-neutral-muted'>
             Source
           </div>
           <div className='text-[12px] font-semibold text-gov-dark dark:text-white'>KRA Annual Performance</div>
-          <div className='text-[10.5px] text-neutral-muted'>FY {latest.fiscal_year}</div>
+          <div className='text-[11px] text-neutral-muted'>FY {latest.fiscal_year}</div>
         </div>
       </div>
 
@@ -242,7 +242,7 @@ export default function RevenueMix({ revenueBySource }: Props) {
                   </div>
                   {r.yoy != null && (
                     <span
-                      className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full tabular-nums ${
+                      className={`inline-flex items-center gap-0.5 text-[11px] font-semibold px-1.5 py-0.5 rounded-full tabular-nums ${
                         yoyUp
                           ? 'bg-green-50 text-green-700'
                           : yoyDown
@@ -274,7 +274,7 @@ export default function RevenueMix({ revenueBySource }: Props) {
                                 : '#E2DDD5',
                             }}
                           />
-                          <span className='text-[8px] text-neutral-muted tabular-nums'>
+                          <span className='text-[11px] text-neutral-muted tabular-nums'>
                             {p.year}
                           </span>
                         </div>
@@ -283,7 +283,7 @@ export default function RevenueMix({ revenueBySource }: Props) {
                   </div>
                 )}
                 {r.desc && (
-                  <p className='mt-2 text-[10.5px] text-neutral-muted leading-snug'>
+                  <p className='mt-2 text-[11px] text-neutral-muted leading-snug'>
                     {r.desc}
                   </p>
                 )}

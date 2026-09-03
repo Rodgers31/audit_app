@@ -151,7 +151,7 @@ export default function MaturityLadder({ loans }: MaturityLadderProps) {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
             className='rounded-lg bg-gov-copper/10 border border-gov-copper/30 px-3 py-2'>
-            <div className='text-[10px] uppercase tracking-wider text-gov-copper font-semibold'>
+            <div className='text-[11px] uppercase tracking-wider text-gov-copper font-semibold'>
               Biggest wall
             </div>
             <div className='text-lg font-bold text-gov-dark dark:text-white tabular-nums'>

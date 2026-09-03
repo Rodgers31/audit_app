@@ -28,15 +28,12 @@ export const metadata: Metadata = {
     'national debt',
     'county finances',
   ],
-  // www is the canonical production host (the apex 30x-redirects to it).
-  // Pointing metadata at the apex made every shared/crawled link pay an
-  // extra redirect round-trip before the page could even be requested.
-  metadataBase: new URL('https://www.auditgava.com'),
+  metadataBase: new URL('https://auditgava.com'),
   openGraph: {
     title: 'AuditGava — Kenya Public Money Tracker',
     description:
       "Track Kenya's national debt, county budgets, and government spending — updated nightly from official sources.",
-    url: 'https://www.auditgava.com',
+    url: 'https://auditgava.com',
     siteName: 'AuditGava',
     images: [
       {
@@ -91,25 +88,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <link rel='dns-prefetch' href={apiOrigin} />
           </>
         )}
-        {/* Above-the-fold LCP image — preload so it begins downloading
-            in parallel with the CSS / JS chunks. The ``media`` attribute
-            ensures only the variant matching the user's current colour
-            scheme is downloaded — no double-fetch on dark-mode systems. */}
-        <link
-          rel='preload'
-          as='image'
-          href='/kenya_bg_top.jpg'
-          media='(prefers-color-scheme: light)'
-        />
-        <link
-          rel='preload'
-          as='image'
-          href='/kenya_bg_top_dk.jpg'
-          media='(prefers-color-scheme: dark)'
-        />
       </head>
       <body
-        className='bg-gov-sand antialiased'
+        className='auditgava-ui bg-gov-sand antialiased'
         suppressHydrationWarning>
         {/* Skip-to-main link. Sighted users never see this (sr-only
             until focused); keyboard users can jump past the fixed
@@ -131,9 +112,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <NavTrailTracker />
                 </Suspense>
                 <Navigation />
-                <div id='main-content' className='relative z-[1]'>
+                <main id='main-content' className='relative z-[1]'>
                   {children}
-                </div>
+                </main>
                 <Footer />
               </WatchlistProvider>
             </AuthProvider>

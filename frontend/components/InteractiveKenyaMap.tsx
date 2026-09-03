@@ -436,7 +436,7 @@ export default function InteractiveKenyaMap({
           {LEGEND_ITEMS.map((item) => (
             <span
               key={item.labelKey}
-              className='inline-flex items-center gap-1 text-[10px] font-medium text-gray-600 dark:text-neutral-muted bg-white/70 dark:bg-surface-elevated rounded-full px-2 py-0.5 border border-gray-200/60 dark:border-neutral-border/60'>
+              className='inline-flex items-center gap-1 text-[11px] font-medium text-gray-600 dark:text-neutral-muted bg-white/70 dark:bg-surface-elevated rounded-full px-2 py-0.5 border border-gray-200/60 dark:border-neutral-border/60'>
               <span
                 className='w-2 h-2 rounded-full ring-1 ring-black/10'
                 style={{ backgroundColor: item.color }}
@@ -621,7 +621,7 @@ export default function InteractiveKenyaMap({
         </AnimatePresence>
 
         {/* Bottom-right hint */}
-        <div className='absolute bottom-3 right-3 z-20 text-[10px] text-gray-400 dark:text-neutral-muted/80 bg-white/60 dark:bg-surface-elevated backdrop-blur-sm rounded-md px-2 py-1 border border-gray-200/40 dark:border-neutral-border/40'>
+        <div className='absolute bottom-3 right-3 z-20 text-[11px] text-gray-400 dark:text-neutral-muted/80 bg-white/60 dark:bg-surface-elevated backdrop-blur-sm rounded-md px-2 py-1 border border-gray-200/40 dark:border-neutral-border/40'>
           Hover to explore &middot; Click to select
         </div>
       </div>

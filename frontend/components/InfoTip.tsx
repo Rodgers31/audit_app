@@ -280,7 +280,7 @@ export default function InfoTip({ term, size = 14, className = '' }: InfoTipProp
         onMouseLeave={scheduleClose}
         onFocus={show}
         onBlur={scheduleClose}
-        className='ml-1 p-0.5 text-gray-400 dark:text-neutral-muted/80 hover:text-blue-500 transition-colors focus:outline-none focus:ring-1 focus:ring-blue-300 rounded-full cursor-pointer'
+        className='tap-24 ml-1 p-0.5 text-gray-400 dark:text-neutral-muted/80 hover:text-blue-500 transition-colors rounded-full cursor-pointer'
       >
         <Info size={size} />
       </button>

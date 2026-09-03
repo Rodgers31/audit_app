@@ -2,8 +2,8 @@
 
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useLang } from '@/lib/i18n/LangProvider';
-import { AnimatePresence, motion } from 'framer-motion';
-import { Bell, Bookmark, Grid, LogIn, LogOut, Menu, Settings, X } from 'lucide-react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { Bell, Bookmark, LogIn, LogOut, Menu, Settings, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -11,29 +11,34 @@ import AuthModal from './AuthModal';
 import LangSwitcher from './LangSwitcher';
 import ThemeToggle from './ThemeToggle';
 
+function BrandMark() {
+  return (
+    <span
+      aria-hidden='true'
+      className='relative grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-sm bg-gov-dark ring-1 ring-gov-dark'>
+      <span className='absolute inset-y-0 left-0 w-1 bg-gov-copper' />
+      <span className='absolute left-2 right-1.5 top-[11px] h-px bg-gov-cream/75' />
+      <span className='absolute left-2 right-1.5 top-[17px] h-px bg-gov-cream/75' />
+      <span className='absolute left-2 right-1.5 top-[23px] h-px bg-gov-gold' />
+    </span>
+  );
+}
+
 export default function Navigation() {
   const pathname = usePathname();
+  const reduceMotion = useReducedMotion();
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const { t } = useLang();
-  const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const mobileToggleRef = useRef<HTMLButtonElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
-  // Handle scroll effect for glassmorphism intensity
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  // Close user menu on outside click
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+    const handleClick = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setUserMenuOpen(false);
       }
     };
@@ -41,41 +46,58 @@ export default function Navigation() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [userMenuOpen]);
 
-  // Listen for global "open-auth-modal" events (dispatched by WatchButton etc.)
   useEffect(() => {
     const openModal = () => setAuthModalOpen(true);
     window.addEventListener('open-auth-modal', openModal);
     return () => window.removeEventListener('open-auth-modal', openModal);
   }, []);
 
-  // Mobile menu modality: close on ESC, restore focus to the toggle
-  // button when dismissed, and lock background scroll while open.
-  const mobileToggleRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (!mobileMenuOpen) return;
 
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMobileMenuOpen(false);
-    };
-    document.addEventListener('keydown', onKey);
+    const panel = mobileMenuRef.current;
+    const getFocusable = () =>
+      panel
+        ? Array.from(
+            panel.querySelectorAll<HTMLElement>(
+              'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+            ),
+          )
+        : [];
 
-    const prevOverflow = document.body.style.overflow;
+    const focusTimer = window.setTimeout(() => getFocusable()[0]?.focus(), 0);
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMobileMenuOpen(false);
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const focusable = getFocusable();
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', onKey);
+    const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
     return () => {
+      window.clearTimeout(focusTimer);
       document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prevOverflow;
-      // Restore focus to the toggle button once the overlay closes,
-      // so keyboard users aren't dumped back at the top of <body>.
+      document.body.style.overflow = previousOverflow;
       mobileToggleRef.current?.focus();
     };
   }, [mobileMenuOpen]);
 
-  // Close mobile menu whenever the pathname changes — e.g. user taps
-  // a nav link and navigates away.
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [pathname]);
+  useEffect(() => setMobileMenuOpen(false), [pathname]);
 
   const navItems = [
     { href: '/', label: t('nav.dashboard') },
@@ -85,150 +107,123 @@ export default function Navigation() {
     { href: '/transparency', label: t('nav.transparency') },
     { href: '/learn', label: t('nav.learn') },
   ];
+  const isActive = (href: string) =>
+    href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(`${href}/`);
 
   return (
     <>
       <motion.header
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-          scrolled
-            ? 'bg-gov-dark/90 backdrop-blur-xl shadow-[0_1px_24px_rgba(0,0,0,0.35)] py-3'
-            : 'bg-gradient-to-b from-black/30 via-black/10 to-transparent backdrop-blur-[2px] py-5'
-        }`}>
-        {/* Subtle gold hairline at the bottom — only when scrolled, matches PageShell */}
-        {scrolled && (
-          <div
-            aria-hidden
-            className='pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-gov-gold/40 to-transparent'
-          />
-        )}
-        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3 md:gap-4 xl:gap-8'>
-          {/* Left: Brand */}
+        initial={false}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+        className='ledger-nav-enter fixed inset-x-0 top-0 z-50 isolate border-b border-neutral-border bg-gov-cream/95 dark:bg-gov-dark/95'>
+        <div className='mx-auto flex h-16 max-w-[1480px] items-stretch px-4 sm:px-6 lg:px-8'>
           <Link
             href='/'
-            className='flex items-center gap-3 group relative z-50 shrink-0'>
-            <div className='w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/20 backdrop-blur-sm group-hover:bg-white/20 transition-colors relative overflow-hidden shadow-lg'>
-              <span className='text-xl relative z-10' suppressHydrationWarning>
-                🇰🇪
+            aria-label='AuditGava dashboard'
+            className='group flex shrink-0 items-center gap-3 border-r border-neutral-border pr-4 sm:pr-6'>
+            <BrandMark />
+            <span className='hidden sm:block'>
+              <span className='block font-display text-[22px] font-semibold uppercase leading-none tracking-[0.02em] text-gov-dark dark:text-white'>
+                AuditGava
               </span>
-              {/* Shine effect */}
-              <div className='absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent translate-y-full group-hover:translate-y-0 transition-transform duration-500' />
-            </div>
-            <span className='text-white font-bold tracking-tight text-[15px] lg:text-base drop-shadow-md hidden sm:block whitespace-nowrap'>
-              Kenya Public Money
+              <span className='mt-1 block font-mono text-[11px] font-medium uppercase tracking-[0.15em] text-neutral-muted'>
+                Public money · evidence first
+              </span>
             </span>
           </Link>
 
-          {/* Center: Desktop Navigation */}
-          {/* The desktop nav has 6 items + padding that don't fit under ~1024px
-              (at md=768px the Sign In button on the right was rendering at
-              x=972 — clipped off the viewport). Switched the breakpoint from
-              md to lg so tablets get the hamburger menu instead. */}
-          <nav className='hidden lg:flex items-center gap-0.5 bg-white/[0.07] backdrop-blur-md px-1.5 py-1.5 rounded-full ring-1 ring-inset ring-white/15 shadow-[0_4px_20px_rgba(0,0,0,0.25)]'>
+          <nav aria-label='Primary navigation' className='hidden min-w-0 flex-1 items-stretch xl:flex'>
             {navItems.map((item) => {
-              const isActive = pathname === item.href;
+              const active = isActive(item.href);
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`relative px-2.5 xl:px-4 py-1.5 rounded-full text-[12px] xl:text-sm font-medium transition-all duration-300 whitespace-nowrap ${
-                    isActive ? 'text-gov-dark dark:text-white' : 'text-white/80 hover:text-white hover:bg-white/10'
+                  aria-current={active ? 'page' : undefined}
+                  className={`relative flex items-center whitespace-nowrap px-3 text-[12px] font-semibold min-[1440px]:px-4 min-[1440px]:text-[13px] ${
+                    active
+                      ? 'text-gov-dark dark:text-white'
+                      : 'text-neutral-muted hover:bg-surface-sunken/55 hover:text-gov-dark dark:hover:text-white'
                   }`}>
-                  {isActive && (
-                    <motion.div
-                      layoutId='nav-pill'
-                      className='absolute inset-0 bg-gov-sage shadow-sm rounded-full'
-                      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                  {item.label}
+                  {active && (
+                    <motion.span
+                      layoutId='nav-underline'
+                      className='absolute inset-x-3 bottom-0 h-[3px] origin-left bg-gov-sage min-[1440px]:inset-x-4'
+                      transition={{ duration: reduceMotion ? 0 : 0.2, ease: 'easeOut' }}
                     />
                   )}
-                  <span className='relative z-10'>{item.label}</span>
                 </Link>
               );
             })}
           </nav>
 
-          {/* Right: Auth / Profile & Menu */}
-          <div className='flex items-center gap-2 md:gap-3 relative z-50 shrink-0'>
-            <div className='hidden lg:block'>
+          <div className='ml-auto flex shrink-0 items-center gap-2 border-l border-neutral-border pl-3 sm:pl-4'>
+            <div className='hidden xl:block'>
               <LangSwitcher />
             </div>
             <ThemeToggle />
-            <button className='p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/80 hover:text-white transition-colors border border-white/10 backdrop-blur-sm hidden xl:flex items-center justify-center group'>
-              <Grid className='w-5 h-5 group-hover:rotate-90 transition-transform duration-300' />
-            </button>
 
-            {/* Auth-aware user button */}
             {isLoading ? (
-              <div className='w-10 h-10 rounded-full bg-white/10 animate-pulse' />
+              <div className='h-9 w-20 animate-pulse rounded-sm bg-surface-sunken' aria-hidden='true' />
             ) : isAuthenticated && user ? (
               <div className='relative' ref={userMenuRef}>
                 <button
-                  onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  aria-haspopup='true'
+                  type='button'
+                  onClick={() => setUserMenuOpen((open) => !open)}
+                  aria-haspopup='menu'
                   aria-expanded={userMenuOpen}
                   aria-label='User menu'
-                  className='w-10 h-10 rounded-full bg-gradient-to-br from-gov-sage to-gov-forest border-2 border-white/20 flex items-center justify-center shadow-lg overflow-hidden relative transition-transform hover:scale-105 active:scale-95'>
-                  <span className='text-white font-bold text-sm'>
-                    {(user.display_name || user.email)[0].toUpperCase()}
-                  </span>
+                  className='relative grid h-9 min-w-9 place-items-center rounded-sm border border-gov-sage bg-gov-sage px-2 font-mono text-sm font-semibold text-white hover:bg-gov-forest'>
+                  {(user.display_name || user.email)[0].toUpperCase()}
                 </button>
-                {/* green active dot */}
-                <div className='absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-gov-dark' />
-
-                {/* Dropdown */}
                 <AnimatePresence>
                   {userMenuOpen && (
                     <motion.div
-                      initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                      transition={{ duration: 0.15 }}
-                      className='absolute right-0 top-14 w-64 bg-gov-dark/95 backdrop-blur-xl border border-white/15 rounded-2xl shadow-2xl overflow-hidden'
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 6 }}
+                      transition={{ duration: reduceMotion ? 0 : 0.14, ease: 'easeOut' }}
+                      className='absolute right-0 top-12 w-64 overflow-hidden rounded-sm border border-neutral-border bg-surface-elevated shadow-elevated'
                       role='menu'
                       aria-label='User menu'>
-                      {/* User info */}
-                      <div className='p-4 border-b border-white/10'>
-                        <p className='text-white font-semibold text-sm truncate'>
+                      <div className='border-b border-neutral-border p-4'>
+                        <p className='truncate text-sm font-semibold text-gov-dark dark:text-white'>
                           {user.display_name || 'Citizen'}
                         </p>
-                        <p className='text-white/50 text-xs truncate'>{user.email}</p>
+                        <p className='mt-1 truncate font-mono text-[11px] text-neutral-muted'>
+                          {user.email}
+                        </p>
                       </div>
-                      {/* Links */}
                       <div className='py-1'>
-                        <Link
-                          href='/account'
-                          onClick={() => setUserMenuOpen(false)}
-                          className='flex items-center gap-3 px-4 py-2.5 text-sm text-white/80 hover:text-white hover:bg-white/10 transition-colors'>
-                          <Settings className='w-4 h-4' />
-                          Account & Settings
-                        </Link>
-                        <Link
-                          href='/account?tab=watchlist'
-                          onClick={() => setUserMenuOpen(false)}
-                          className='flex items-center gap-3 px-4 py-2.5 text-sm text-white/80 hover:text-white hover:bg-white/10 transition-colors'>
-                          <Bookmark className='w-4 h-4' />
-                          My Watchlist
-                        </Link>
-                        <Link
-                          href='/account?tab=alerts'
-                          onClick={() => setUserMenuOpen(false)}
-                          className='flex items-center gap-3 px-4 py-2.5 text-sm text-white/80 hover:text-white hover:bg-white/10 transition-colors'>
-                          <Bell className='w-4 h-4' />
-                          Alerts
-                        </Link>
+                        {[
+                          { href: '/account', label: 'Account & settings', Icon: Settings },
+                          { href: '/account?tab=watchlist', label: 'My watchlist', Icon: Bookmark },
+                          { href: '/account?tab=alerts', label: 'Alerts', Icon: Bell },
+                        ].map(({ href, label, Icon }) => (
+                          <Link
+                            key={href}
+                            href={href}
+                            role='menuitem'
+                            onClick={() => setUserMenuOpen(false)}
+                            className='flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-muted hover:bg-surface-sunken hover:text-gov-dark dark:hover:text-white'>
+                            <Icon className='h-4 w-4' aria-hidden='true' />
+                            {label}
+                          </Link>
+                        ))}
                       </div>
-                      {/* Logout */}
-                      <div className='p-2 border-t border-white/10'>
+                      <div className='border-t border-neutral-border p-2'>
                         <button
+                          type='button'
+                          role='menuitem'
                           onClick={() => {
                             logout();
                             setUserMenuOpen(false);
                           }}
-                          className='flex items-center gap-3 w-full px-3 py-2.5 text-sm text-gov-copper hover:bg-gov-copper/10 rounded-xl transition-colors'>
-                          <LogOut className='w-4 h-4' />
-                          Sign Out
+                          className='flex w-full items-center gap-3 rounded-[2px] px-3 py-2.5 text-sm font-semibold text-gov-copper hover:bg-gov-copper/10'>
+                          <LogOut className='h-4 w-4' aria-hidden='true' />
+                          Sign out
                         </button>
                       </div>
                     </motion.div>
@@ -237,27 +232,28 @@ export default function Navigation() {
               </div>
             ) : (
               <button
+                type='button'
                 onClick={() => setAuthModalOpen(true)}
-                className='flex items-center gap-2 px-4 py-2 rounded-full bg-gov-sage/80 hover:bg-gov-sage text-white text-sm font-medium transition-all border border-gov-sage/40 shadow-md hover:shadow-lg active:scale-95'>
-                <LogIn className='w-4 h-4' />
+                className='flex h-9 items-center gap-2 rounded-sm bg-gov-sage px-3 text-sm font-semibold text-white hover:bg-gov-forest active:translate-y-px'>
+                <LogIn className='h-4 w-4' aria-hidden='true' />
                 <span className='hidden sm:inline'>{t('nav.sign_in')}</span>
               </button>
             )}
 
             <button
               ref={mobileToggleRef}
-              className='lg:hidden p-2 text-white/90 hover:text-white bg-white/10 rounded-full backdrop-blur-md'
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              type='button'
+              className='tap-44 grid h-9 w-9 place-items-center rounded-sm border border-neutral-border bg-surface-base text-gov-dark hover:border-gov-sage hover:text-gov-sage dark:text-white xl:hidden'
+              onClick={() => setMobileMenuOpen((open) => !open)}
               aria-expanded={mobileMenuOpen}
               aria-controls='mobile-menu'
               aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}>
-              {mobileMenuOpen ? <X className='w-6 h-6' /> : <Menu className='w-6 h-6' />}
+              {mobileMenuOpen ? <X className='h-5 w-5' /> : <Menu className='h-5 w-5' />}
             </button>
           </div>
         </div>
       </motion.header>
 
-      {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
@@ -265,70 +261,83 @@ export default function Navigation() {
             role='dialog'
             aria-modal='true'
             aria-label='Mobile navigation'
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className='fixed inset-0 z-40 pt-24 px-6 lg:hidden flex flex-col items-center space-y-8'
-            style={{ backgroundColor: '#0F1A12' }}
-            onClick={(e) => {
-              // Click outside any nav item → close. Inner buttons/links
-              // stop propagation via their own handlers.
-              if (e.target === e.currentTarget) setMobileMenuOpen(false);
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reduceMotion ? 0 : 0.16 }}
+            className='fixed inset-0 z-40 bg-gov-dark/60 pt-16 xl:hidden'
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) setMobileMenuOpen(false);
             }}>
-            {navItems.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`text-2xl font-bold transition-colors ${
-                    isActive ? 'text-gov-gold' : 'text-gov-sage hover:text-gov-gold'
-                  }`}
-                  onClick={() => setMobileMenuOpen(false)}>
-                  {item.label}
-                </Link>
-              );
-            })}
-            <div className='w-16 h-1 bg-gov-sage/30 rounded-full mt-8' />
-            <LangSwitcher />
-
-            {/* Mobile auth links */}
-            {isAuthenticated ? (
-              <>
-                <Link
-                  href='/account'
-                  className='text-lg font-semibold text-gov-gold hover:text-gov-warning transition-colors'
-                  onClick={() => setMobileMenuOpen(false)}>
-                  My Account
-                </Link>
-                <button
-                  onClick={() => {
-                    logout();
-                    setMobileMenuOpen(false);
-                  }}
-                  className='text-lg font-semibold text-gov-copper hover:text-gov-copper/80 transition-colors'>
-                  Sign Out
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  setAuthModalOpen(true);
-                }}
-                className='text-lg font-semibold text-gov-gold hover:text-gov-warning transition-colors'>
-                Sign In / Register
-              </button>
-            )}
-
-            <div className='text-gov-sage/60 text-sm font-medium uppercase tracking-widest'>
-              Republic of Kenya
-            </div>
+            <motion.div
+              ref={mobileMenuRef}
+              initial={reduceMotion ? false : { x: 28 }}
+              animate={{ x: 0 }}
+              exit={{ x: 28 }}
+              transition={{ duration: reduceMotion ? 0 : 0.2, ease: 'easeOut' }}
+              className='ml-auto flex h-full w-[min(88vw,390px)] flex-col border-l border-neutral-border bg-gov-cream p-6 dark:bg-gov-dark'>
+              <p className='source-label mb-5'>Navigate the public record</p>
+              <nav aria-label='Mobile primary navigation' className='border-t border-neutral-border'>
+                {navItems.map((item, index) => {
+                  const active = isActive(item.href);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      aria-current={active ? 'page' : undefined}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`group flex min-h-14 items-center justify-between border-b border-neutral-border py-3 ${
+                        active ? 'text-gov-sage' : 'text-gov-dark dark:text-white'
+                      }`}>
+                      <span className='font-display text-2xl font-semibold uppercase tracking-[0.02em]'>
+                        {item.label}
+                      </span>
+                      <span className='font-mono text-[11px] text-neutral-muted'>
+                        {String(index + 1).padStart(2, '0')}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </nav>
+              <div className='mt-6'>
+                <LangSwitcher />
+              </div>
+              <div className='mt-auto border-t border-neutral-border pt-5'>
+                {isAuthenticated ? (
+                  <div className='flex gap-3'>
+                    <Link href='/account' className='btn-secondary flex-1 text-center' onClick={() => setMobileMenuOpen(false)}>
+                      My account
+                    </Link>
+                    <button
+                      type='button'
+                      onClick={() => {
+                        logout();
+                        setMobileMenuOpen(false);
+                      }}
+                      className='btn border border-gov-copper/35 text-gov-copper'>
+                      Sign out
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type='button'
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      setAuthModalOpen(true);
+                    }}
+                    className='btn-primary w-full'>
+                    Sign in or register
+                  </button>
+                )}
+                <p className='mt-4 font-mono text-[11px] uppercase tracking-[0.13em] text-neutral-muted'>
+                  Republic of Kenya · independent civic technology
+                </p>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Auth Modal */}
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
     </>
   );

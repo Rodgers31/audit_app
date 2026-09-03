@@ -186,11 +186,11 @@ export default function CountyDetailsPanel({ county, className = '' }: CountyDet
                     <h3 className='text-base font-bold text-gov-dark dark:text-white leading-tight'>
                       {county.name}
                     </h3>
-                    <p className='text-[10px] text-gray-400 dark:text-neutral-muted/80 font-medium'>{t('home.county_panel.county_govt')}</p>
+                    <p className='text-[11px] text-gray-400 dark:text-neutral-muted/80 font-medium'>{t('home.county_panel.county_govt')}</p>
                   </div>
                 </div>
                 <span
-                  className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${auditColor(county.auditStatus)}`}>
+                  className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full border ${auditColor(county.auditStatus)}`}>
                   <Shield className='w-2.5 h-2.5' />
                   {t(auditLabelKey(county.auditStatus))}
                 </span>
@@ -206,7 +206,7 @@ export default function CountyDetailsPanel({ county, className = '' }: CountyDet
                   <span
                     className={`text-base font-bold tabular-nums ${healthColor(county.financial_health_score)}`}>
                     {county.financial_health_score}
-                    <span className='text-[10px] font-normal text-gray-400 dark:text-neutral-muted/80'>/100</span>
+                    <span className='text-[11px] font-normal text-gray-400 dark:text-neutral-muted/80'>/100</span>
                   </span>
                 </div>
                 <div className='h-1.5 rounded-full bg-gray-100 dark:bg-surface-elevated overflow-hidden'>
@@ -260,7 +260,7 @@ export default function CountyDetailsPanel({ county, className = '' }: CountyDet
               {(county.budgetUtilization ?? 0) > 0 && (
                 <div className='rounded-lg bg-gray-50 dark:bg-surface-elevated border border-gray-100 dark:border-neutral-border p-2.5'>
                   <div className='flex items-center justify-between mb-1'>
-                    <span className='text-[10px] text-gray-500 dark:text-neutral-muted/80 font-medium'>
+                    <span className='text-[11px] text-gray-500 dark:text-neutral-muted/80 font-medium'>
                       {t('home.county_panel.utilization')}
                     </span>
                     <span className='text-xs font-bold text-gov-dark dark:text-white tabular-nums'>
@@ -372,7 +372,7 @@ function StatItem({
         {icon}
       </div>
       <div className='min-w-0'>
-        <span className='text-[9px] text-gray-400 dark:text-neutral-muted/80 font-medium block leading-tight'>{label}</span>
+        <span className='text-[11px] text-gray-400 dark:text-neutral-muted/80 font-medium block leading-tight'>{label}</span>
         <span
           className={`text-[13px] font-bold tabular-nums leading-tight ${alert ? 'text-gov-copper' : 'text-gov-dark dark:text-white'}`}>
           {value}
@@ -400,13 +400,13 @@ function MiniMetric({
     <div className='rounded-lg bg-gray-50 dark:bg-surface-elevated border border-gray-100 dark:border-neutral-border p-2'>
       <div className='flex items-center gap-1 mb-0.5'>
         {icon}
-        <span className='text-[10px] text-gray-500 dark:text-neutral-muted/80 font-medium'>{label}</span>
+        <span className='text-[11px] text-gray-500 dark:text-neutral-muted/80 font-medium'>{label}</span>
       </div>
       <span
         className={`text-xs font-bold tabular-nums ${alert ? 'text-gov-copper' : 'text-gov-dark dark:text-white'}`}>
         {value}
       </span>
-      {sub && <span className='block text-[9px] text-gray-400 dark:text-neutral-muted/80 mt-0.5'>{sub}</span>}
+      {sub && <span className='block text-[11px] text-gray-400 dark:text-neutral-muted/80 mt-0.5'>{sub}</span>}
     </div>
   );
 }
@@ -452,8 +452,8 @@ function SectorBreakdown({ county }: { county: County }) {
               </div>
               <div className='flex-1 min-w-0'>
                 <div className='flex items-center justify-between mb-0.5'>
-                  <span className='text-[9px] text-gray-500 dark:text-neutral-muted/80 truncate'>{sector.name}</span>
-                  <span className='text-[9px] font-semibold text-gray-600 dark:text-neutral-muted tabular-nums'>
+                  <span className='text-[11px] text-gray-500 dark:text-neutral-muted/80 truncate'>{sector.name}</span>
+                  <span className='text-[11px] font-semibold text-gray-600 dark:text-neutral-muted tabular-nums'>
                     {pct.toFixed(1)}%
                   </span>
                 </div>
@@ -487,7 +487,7 @@ function AuditFindings({ county }: { county: County }) {
           <FileWarning className='w-3 h-3 text-gray-400 dark:text-neutral-muted/80' />
           <span className='text-[11px] font-semibold text-gray-600 dark:text-neutral-muted'>{t('home.county_panel.oag_findings')}</span>
         </div>
-        <span className='text-[9px] font-bold text-gray-400 dark:text-neutral-muted/80 bg-gray-100 dark:bg-surface-elevated rounded-full px-1.5 py-0.5'>
+        <span className='text-[11px] font-bold text-gray-400 dark:text-neutral-muted/80 bg-gray-100 dark:bg-surface-elevated rounded-full px-1.5 py-0.5'>
           {issues.length}
         </span>
       </div>
@@ -505,16 +505,16 @@ function AuditFindings({ county }: { county: County }) {
                 <div className={`w-1.5 h-1.5 rounded-full mt-1 flex-shrink-0 ${cfg.dot}`} />
                 <div className='min-w-0 flex-1'>
                   <div className='flex items-center gap-1.5 mb-0.5'>
-                    <span className={`text-[9px] font-bold uppercase tracking-wider ${cfg.text}`}>
+                    <span className={`text-[11px] font-bold uppercase tracking-wider ${cfg.text}`}>
                       {t(cfg.labelKey)}
                     </span>
                     {issue.amount && (
-                      <span className='text-[9px] text-gray-500 dark:text-neutral-muted/80 tabular-nums'>
+                      <span className='text-[11px] text-gray-500 dark:text-neutral-muted/80 tabular-nums'>
                         {fmtKES(issue.amount)}
                       </span>
                     )}
                   </div>
-                  <p className='text-[10px] text-gray-600 dark:text-neutral-muted leading-relaxed line-clamp-2'>
+                  <p className='text-[11px] text-gray-600 dark:text-neutral-muted leading-relaxed line-clamp-2'>
                     {issue.description}
                   </p>
                 </div>
@@ -527,7 +527,7 @@ function AuditFindings({ county }: { county: County }) {
         <div className='flex items-center justify-center mt-1.5'>
           <Link
             href={`/counties/${county.name.toLowerCase().replace(/\s+/g, '-')}`}
-            className='text-[10px] font-medium text-gov-forest dark:text-emerald-100 hover:text-gov-forest/80 dark:text-emerald-100/80 flex items-center gap-1'>
+            className='text-[11px] font-medium text-gov-forest dark:text-emerald-100 hover:text-gov-forest/80 dark:text-emerald-100/80 flex items-center gap-1'>
             <BookOpen className='w-3 h-3' />
             {t('home.county_panel.view_all_findings').replace('{n}', String(issues.length))}
           </Link>

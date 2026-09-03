@@ -21,8 +21,8 @@ export default function LangSwitcher({ compact = false }: { compact?: boolean })
     <div
       role='radiogroup'
       aria-label={t('lang.label')}
-      className={`inline-flex items-center rounded-full bg-white/[0.07] ring-1 ring-inset ring-white/15 p-0.5 ${
-        compact ? 'text-[10px]' : 'text-[11px]'
+      className={`inline-flex items-center rounded-sm border border-neutral-border bg-surface-base p-0.5 dark:bg-surface-base ${
+        compact ? 'text-[11px]' : 'text-[11px]'
       }`}>
       {OPTIONS.map((opt) => {
         const active = lang === opt.value;
@@ -34,10 +34,10 @@ export default function LangSwitcher({ compact = false }: { compact?: boolean })
             aria-checked={active}
             title={opt.title}
             onClick={() => setLang(opt.value)}
-            className={`px-2 py-1 rounded-full font-semibold tracking-wide transition-colors ${
+            className={`min-h-7 px-2 py-1 rounded-[2px] font-mono font-semibold tracking-wide ${
               active
-                ? 'bg-gov-sage text-gov-dark dark:text-white shadow-sm'
-                : 'text-white/70 hover:text-white hover:bg-white/5'
+                ? 'bg-gov-sage text-white'
+                : 'text-neutral-muted hover:bg-surface-sunken hover:text-gov-dark dark:hover:text-white'
             }`}>
             {opt.short}
           </button>
