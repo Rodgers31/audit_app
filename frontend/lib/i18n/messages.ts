@@ -99,6 +99,8 @@ export const MESSAGES = {
   'home.hero.risk_moderate': { en: 'Moderate Risk', sw: 'Hatari ya Wastani', plain: 'Medium Risk' },
   'home.hero.risk_low': { en: 'Low Risk', sw: 'Hatari Ndogo', plain: 'Low Risk' },
   'home.hero.risk_suffix': { en: 'Risk', sw: 'Hatari', plain: 'Risk' },
+  'home.hero.risk_unassessed': { en: 'Risk not assessed', sw: 'Hatari haijatathminiwa', plain: 'Risk not rated yet' },
+  'home.hero.risk_unassessed_value': { en: 'Not assessed', sw: 'Haijatathminiwa', plain: 'Not rated yet' },
 
   // KenyanGovCard
   'home.govcard.title': { en: 'Kenyan Government', sw: 'Serikali ya Kenya', plain: 'Kenya Government' },
@@ -182,6 +184,8 @@ export const MESSAGES = {
     plain: 'Ranked by the IMF',
   },
   'home.debt.insight_risk_label': { en: 'Risk: {level}', sw: 'Hatari: {level}', plain: 'Risk: {level}' },
+  'home.debt.insight_risk_unassessed': { en: 'Risk: not assessed', sw: 'Hatari: haijatathminiwa', plain: 'Risk: we can\u2019t say yet' },
+  'home.debt.insight_risk_unassessed_desc': { en: 'No debt-to-GDP reading is available, so no risk band can be stated. This is not a finding that the debt position is safe.', sw: 'Hakuna kipimo cha deni-kwa-Pato, hivyo hakuna kiwango cha hatari kinachoweza kutajwa. Hii si dalili kwamba hali ya deni ni salama.', plain: 'We don\u2019t have the debt-to-GDP number, so we can\u2019t rate the risk. That does not mean it is fine.' },
   'home.debt.cents_of_revenue': { en: 'KES {n} cents', sw: 'Senti {n} za KES', plain: 'KES {n} cents' },
 
   // Audit Reports Section

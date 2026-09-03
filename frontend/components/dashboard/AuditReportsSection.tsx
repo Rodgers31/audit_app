@@ -483,7 +483,7 @@ export default function AuditReportsSection() {
                     style={{
                       backgroundColor:
                         m.finding_count >= 3
-                          ? '#C94A4A'
+                          ? '#BE4040'
                           : m.finding_count >= 2
                             ? '#D9A441'
                             : '#4A7C5C',

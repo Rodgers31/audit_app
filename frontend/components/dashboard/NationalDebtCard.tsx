@@ -1,7 +1,7 @@
 'use client';
 
-import { toRawKES } from '@/lib/utils';
 import { DebtTimelineEntry } from '@/lib/api/debt';
+import { classifyDebtRisk, toRawKES } from '@/lib/utils';
 import { useLang } from '@/lib/i18n/LangProvider';
 import {
   useBroaderDebt,
@@ -35,15 +35,34 @@ interface ChartEntry {
   gdpRatio: number;
 }
 
+/**
+ * ChartEntry money fields are BILLIONS — `NationalDebtChart`'s `fmtT` divides
+ * by 1000 for trillions and its tick formatter renders bare values as `${v}B`.
+ *
+ * The rows arriving here are not. Since the stage1 3a migration /debt/timeline
+ * serves raw KES and declares it per row with `unit: "KES"`; a pre-migration
+ * backend serves bare billions with no unit field. This previously passed both
+ * through with the comment "already in billions from API", which was true
+ * until the migration and 10⁹× wrong after it.
+ *
+ * So: normalise to raw KES on the DECLARED unit — never by guessing a value's
+ * magnitude — then convert once to the billions the chart reads. Doing it here
+ * also fixes the headline fallbacks below, which read `lastYear` and are
+ * correct precisely when this function's output really is billions.
+ *
+ * Reported as F1 on PR #136, and confirmed the hard way: this migration was
+ * applied to production on 2026-08-30 and rolled back within the hour.
+ */
 function toChartData(timeline: DebtTimelineEntry[]): ChartEntry[] {
+  const toBillions = (v: number, unit?: string | null): number => {
+    const raw = toRawKES(v, unit);
+    return raw == null ? 0 : raw / 1e9;
+  };
   return timeline.map((e) => ({
     year: String(e.year),
-    // The chart works in billions. Convert on the row's DECLARED unit —
-    // raw KES since the stage1 3a migration, bare billions from an older
-    // backend. Never assume; assuming is how F5.5 happened.
-    external: (toRawKES(e.external, e.unit) ?? 0) / 1e9,
-    domestic: (toRawKES(e.domestic, e.unit) ?? 0) / 1e9,
-    total: (toRawKES(e.total, e.unit) ?? 0) / 1e9,
+    external: toBillions(e.external, e.unit),
+    domestic: toBillions(e.domestic, e.unit),
+    total: toBillions(e.total, e.unit),
     gdpRatio: e.gdp_ratio,
   }));
 }
@@ -131,9 +150,8 @@ export default function NationalDebtCard() {
   // Extract live values from API, fallback to latest timeline entry
   const apiData = resp?.data || resp;
   const sustainability = apiData?.debt_sustainability || {};
-  const riskLevel = sustainability.risk_level || 'High';
   const debtServiceRatio =
-    fiscal?.current?.debt_service_per_shilling ?? sustainability.debt_service_ratio ?? 0;
+    fiscal?.current?.debt_service_per_shilling ?? sustainability.debt_service_ratio ?? null;
 
   const firstYear = debtTimeline[0];
   const lastYear = debtTimeline[debtTimeline.length - 1];
@@ -143,18 +161,39 @@ export default function NationalDebtCard() {
   // detail page agree. Fall back to the last timeline year only if the
   // authoritative value is missing.
   const totalDebt =
-    apiData?.total_outstanding ?? apiData?.total_debt ?? (lastYear ? lastYear.total * 1_000_000_000 : 0);
-  const gdpRatio = apiData?.debt_to_gdp_ratio ?? lastYear?.gdpRatio ?? 0;
+    apiData?.total_outstanding ?? apiData?.total_debt ?? (lastYear ? lastYear.total * 1_000_000_000 : null);
+  const gdpRatio = apiData?.debt_to_gdp_ratio ?? lastYear?.gdpRatio ?? null;
+
+  // Absence is not a risk band. This was `|| 'High'`, so an API that reported
+  // no assessment rendered the WORST rating — a claim about the public
+  // finances manufactured from a missing field. Reported as G3 on PR #135,
+  // alongside the same defect in `classifyDebtRisk`, which now returns null
+  // rather than a default so callers must handle absence explicitly.
+  //
+  // Order: the publisher's own assessment, else one derived from the
+  // debt-to-GDP ratio, else nothing.
+  const riskLevel: 'Low' | 'Moderate' | 'High' | null =
+    sustainability.risk_level ?? classifyDebtRisk(gdpRatio);
   const externalDebt =
-    apiData?.summary?.external_debt ?? (lastYear ? lastYear.external * 1_000_000_000 : 0);
+    apiData?.summary?.external_debt ?? (lastYear ? lastYear.external * 1_000_000_000 : null);
   const domesticDebt =
-    apiData?.summary?.domestic_debt ?? (lastYear ? lastYear.domestic * 1_000_000_000 : 0);
+    apiData?.summary?.domestic_debt ?? (lastYear ? lastYear.domestic * 1_000_000_000 : null);
   // External vs domestic split — shares of (external + domestic) so the two
   // always sum to exactly 100%. Rounding each independently off the total
   // previously produced 100.2% (51.5% + 48.7%).
-  const splitBase = externalDebt + domesticDebt;
-  const externalPct = splitBase > 0 ? +((externalDebt / splitBase) * 100).toFixed(1) : 0;
-  const domesticPct = splitBase > 0 ? +(100 - externalPct).toFixed(1) : 0;
+  //
+  // The split only exists when BOTH sides are known. With one side missing it
+  // used to fall back to 0, which rendered "0% of total" and a "0% / 0%"
+  // split beside an em-dash value — a fabricated statistic presented with the
+  // same confidence as a real one. Absent inputs now yield null and every
+  // consumer renders "—".
+  const splitAvailable =
+    externalDebt != null && domesticDebt != null && externalDebt + domesticDebt > 0;
+  const splitBase = (externalDebt ?? 0) + (domesticDebt ?? 0);
+  const externalPct = splitAvailable
+    ? +(((externalDebt ?? 0) / splitBase) * 100).toFixed(1)
+    : null;
+  const domesticPct = externalPct != null ? +(100 - externalPct).toFixed(1) : null;
 
   // IMF's "General Government Gross Debt" — the broader figure that
   // includes counties, SOEs, pending bills + arrears. Shown here as a
@@ -244,8 +283,12 @@ export default function NationalDebtCard() {
                 <InfoTip term='external-debt' size={11} />
               </div>
             }
-            value={fmtKES(externalDebt)}
-            sub={t('home.debt.pct_of_total').replace('{pct}', String(externalPct))}
+            value={externalDebt != null ? fmtKES(externalDebt) : '—'}
+            sub={
+              externalPct != null
+                ? t('home.debt.pct_of_total').replace('{pct}', String(externalPct))
+                : '—'
+            }
             accent='forest'
           />
           <StatCard
@@ -256,8 +299,12 @@ export default function NationalDebtCard() {
                 <InfoTip term='domestic-debt' size={11} />
               </div>
             }
-            value={fmtKES(domesticDebt)}
-            sub={t('home.debt.pct_of_total').replace('{pct}', String(domesticPct))}
+            value={domesticDebt != null ? fmtKES(domesticDebt) : '\u2014'}
+            sub={
+              domesticPct != null
+                ? t('home.debt.pct_of_total').replace('{pct}', String(domesticPct))
+                : '\u2014'
+            }
             accent='sage'
           />
         </div>
@@ -317,7 +364,7 @@ export default function NationalDebtCard() {
                     yAxisId='debt'
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fontSize: 10, fill: '#9CA3AF' }}
+                    tick={{ fontSize: 11, fill: '#9CA3AF' }}
                     tickFormatter={(v: number) =>
                       v >= 1000 ? `${(v / 1000).toFixed(0)}T` : `${v}B`
                     }
@@ -329,7 +376,7 @@ export default function NationalDebtCard() {
                     domain={[30, 85]}
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fontSize: 10, fill: '#D9A441' }}
+                    tick={{ fontSize: 11, fill: '#D9A441' }}
                     tickFormatter={(v: number) => `${v}%`}
                     width={36}
                   />
@@ -398,19 +445,40 @@ export default function NationalDebtCard() {
         <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
           <InsightPill
             icon={<Landmark className='w-4 h-4 text-gov-sage' />}
-            title={t('home.debt.cents_of_revenue').replace('{n}', String(debtServiceRatio))}
+            title={t('home.debt.cents_of_revenue').replace('{n}', String(debtServiceRatio ?? '\u2014'))}
             desc={t('home.debt.insight_service')}
           />
           <InsightPill
             icon={<BarChart3 className='w-4 h-4 text-gov-gold' />}
-            title={`${domesticPct}% / ${externalPct}%`}
+            title={
+              domesticPct != null && externalPct != null
+                ? `${domesticPct}% / ${externalPct}%`
+                : '—'
+            }
             desc={t('home.debt.insight_split')}
           />
+          {/* A null band renders "not assessed" in neutral styling, and drops
+              the `highlight` emphasis — the alarm treatment is for a stated
+              risk, not for a missing reading. */}
           <InsightPill
-            icon={<AlertTriangle className='w-4 h-4 text-gov-copper' />}
-            title={t('home.debt.insight_risk_label').replace('{level}', riskLevel)}
-            desc={t('home.debt.insight_risk_desc')}
-            highlight
+            icon={
+              <AlertTriangle
+                className={`w-4 h-4 ${
+                  riskLevel ? 'text-gov-copper' : 'text-neutral-muted'
+                }`}
+              />
+            }
+            title={
+              riskLevel
+                ? t('home.debt.insight_risk_label').replace('{level}', riskLevel)
+                : t('home.debt.insight_risk_unassessed')
+            }
+            desc={
+              riskLevel
+                ? t('home.debt.insight_risk_desc')
+                : t('home.debt.insight_risk_unassessed_desc')
+            }
+            highlight={riskLevel != null}
           />
         </div>
       </div>

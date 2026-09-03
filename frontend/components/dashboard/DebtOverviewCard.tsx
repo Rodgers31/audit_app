@@ -87,7 +87,7 @@ export default function DebtOverviewCard() {
             <YAxis
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 10, fill: '#6B7280' }}
+              tick={{ fontSize: 11, fill: '#6B7280' }}
               tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}T`}
             />
             <Tooltip

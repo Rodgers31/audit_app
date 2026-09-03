@@ -76,7 +76,12 @@
      staying recognisably the same hues:
 
        sage   #3FA76F  5.41:1 on surface-base, 6.07:1 on surface-sunken
-       copper #E0695D  4.93:1 on surface-base, 5.53:1 on surface-sunken
+       copper #E8776B  5.65:1 on surface-base, 5.02:1 on surface-elevated
+
+     Copper was first set to #E0695D, tuned against surface-base. Cards use
+     surface-ELEVATED (#1D2D23), which is lighter, and there it measured
+     4.37:1 — under AA. Tune accent tones against the LIGHTEST surface they
+     can land on, not the darkest.
 
      They are applied ONLY where the brand colours are used as text
      (see the overrides below). Backgrounds keep the deeper brand values,
@@ -84,7 +89,7 @@
      on it from 6.5:1 to 3.0:1 — fixing one contrast failure by creating
      another. */
   --c-accent-sage: 63 167 111;
-  --c-accent-copper: 224 105 93;
+  --c-accent-copper: 232 119 107;
   --c-focus-ring: 63 167 111;
 }
 
@@ -562,3 +567,42 @@
 :root:not(.dark) .text-gov-gold { color: #8A6320; }
 :root:not(.dark) .hover\:text-gov-gold:hover { color: #8A6320; }
 :root:not(.dark) .group:hover .group-hover\:text-gov-gold { color: #8A6320; }
+
+/* ── Chart axis labels ───────────────────────────────────────────────
+   Recharts takes `tick={{ fill }}` and writes it as an SVG presentation
+   attribute. Those fills are hardcoded greys (#6B7280, #9CA3AF) chosen
+   against the dark chart surface; on the cream light theme they measure
+   2.24-4.26:1, so axis labels were unreadable in light mode.
+
+   A CSS `fill` declaration outranks a presentation attribute, so this
+   remaps them to the theme-aware muted token in both themes. Scoped by
+   attribute value on purpose: the gold ticks (#D9A441) mark the
+   debt-to-GDP axis and must keep their colour cue. */
+.recharts-text[fill='#6B7280'],
+.recharts-text[fill='#9CA3AF'] {
+  fill: rgb(var(--c-neutral-muted));
+}
+
+/* Gold axis ticks. Excluded from the grey remap above because the colour
+   carries meaning — it marks the debt-to-GDP axis — but #D9A441 measures
+   2.15:1 on the cream theme. Deepened for light mode only, so the cue
+   survives and the label becomes readable. */
+:root:not(.dark) .recharts-text[fill='#D9A441'] {
+  fill: #8A6320;
+}
+
+/* ── Hardcoded Tailwind greys ────────────────────────────────────────
+   99 uses of text-gray-400 and 217 of text-gray-500, each paired with a
+   dark: variant, so these values only ever paint on the LIGHT theme —
+   where gray-400 measures 2.43:1 and gray-500 4.26:1 against the cream
+   surfaces. Both are remapped to the muted token (5.02:1).
+
+   This collapses two grey tiers into one. That is a deliberate trade: the
+   visual difference between them was already slight, and one readable tone
+   beats two where the lighter is unreadable. Components that need a
+   genuine second tier should use opacity on the token rather than
+   reaching for another hardcoded grey. */
+:root:not(.dark) .text-gray-400,
+:root:not(.dark) .text-gray-500 {
+  color: rgb(var(--c-neutral-muted));
+}
