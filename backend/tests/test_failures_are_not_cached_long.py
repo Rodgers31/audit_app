@@ -217,6 +217,23 @@ class TestRecoveryIsVisible:
 
         import main
 
+        # Pin the in-memory path. Not a convenience: production logs
+        # "Redis not configured — using in-memory cache", so this IS the code
+        # path that ran during the incident, and its expiry is computed in
+        # process from time.time() — which the clock jump below can move.
+        #
+        # CI, unlike production, runs a real Redis service. There `setex` sets
+        # a SERVER-side TTL that no patched clock can reach, so an earlier
+        # version of this test passed locally and failed in CI while asserting
+        # nothing about the defect.
+        if getattr(main.redis_cache, "client", None) is not None:
+            monkeypatch.setattr(main.redis_cache, "client", None)
+        monkeypatch.setattr(main.redis_cache, "_memory_cache", {}, raising=False)
+        assert getattr(main.redis_cache, "client", None) is None, (
+            "the in-memory path is not pinned; this test would assert nothing "
+            "about expiry, because a real Redis owns its own TTL"
+        )
+
         state = {"healthy": False}
         calls = {"n": 0}
 
