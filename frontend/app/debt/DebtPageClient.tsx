@@ -887,7 +887,7 @@ export default function NationalDebtPage() {
                       formatter={(v: any) => `${Number(v).toFixed(1)}%`}
                     />
                     <ReferenceLine y={55} stroke='#C94A4A' strokeDasharray='4 4'>
-                      <text x='90%' y={-4} fill='#C94A4A' fontSize={10} fontWeight={600}>
+                      <text x='90%' y={-4} fill='#C94A4A' fontSize={11} fontWeight={600}>
                         PFM Act 55%
                       </text>
                     </ReferenceLine>
