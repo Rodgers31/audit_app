@@ -81,3 +81,53 @@ def test_a_row_without_its_own_source_falls_back_to_the_payload_document(
     row = db_session.query(DebtTimeline).filter(DebtTimeline.year == 2019).one()
     doc = db_session.query(SourceDocument).get(row.source_document_id)
     assert doc.title == "Generic payload-level title"
+
+
+# ── The series must be able to move past its newest fixture year ───────────
+
+def test_the_cbk_overlay_can_add_a_year_the_fixture_does_not_have():
+    """Otherwise the chart freezes at whatever year someone last hand-added.
+
+    The overlay iterated the existing rows and looked each one up, so a year
+    CBK publishes but the fixture lacks was fetched and silently dropped. That
+    is exactly how the fiscal summary stuck at FY2025/26. It has not bitten
+    here only because CBK's Table 4.1.3 currently ends at 2025 — the last
+    completed calendar year — and so does the fixture.
+    """
+    import pytest
+
+    from seeding.domains.debt_timeline import fetcher as dt
+
+    base = {
+        "timeline": [
+            {"year": 2024, "external": 5057.0, "domestic": 5868.3, "total": 10925.3,
+             "gdp": 17542, "gdp_ratio": 62.3, "source": "fixture"},
+            {"year": 2025, "external": 5462.0, "domestic": 6837.5, "total": 12299.5,
+             "gdp": 18382, "gdp_ratio": 66.9, "source": "fixture"},
+        ]
+    }
+    # CBK now publishes 2026 as well.
+    live = {
+        2025: {"external": 5.462e12, "domestic": 6.8375e12, "total": 12.2995e12},
+        2026: {"external": 5.9e12, "domestic": 7.4e12, "total": 13.3e12},
+    }
+
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(
+            "seeding.domains.national_debt.cbk_bulletin."
+            "fetch_public_debt_timeline_from_cbk_bulletin",
+            lambda client, settings: live,
+        )
+        payload, applied = dt._overlay_cbk_public_debt(base, object(), None)
+
+    years = [e["year"] for e in payload["timeline"]]
+    assert 2026 in years, (
+        f"CBK published 2026 and the overlay dropped it; series still {years}"
+    )
+    assert years == sorted(years), "inserted year left the series out of order"
+
+    row_2026 = next(e for e in payload["timeline"] if e["year"] == 2026)
+    assert row_2026["total"] == pytest.approx(13_300.0)
+    assert "Statistical Bulletin" in row_2026["source"]
+    # GDP is filled by the World Bank pass that runs after this one.
+    assert row_2026["gdp"] is None and row_2026["gdp_ratio"] is None

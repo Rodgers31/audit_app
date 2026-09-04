@@ -146,8 +146,45 @@ def _overlay_cbk_public_debt(
                 before,
                 entry["total"],
             )
-    logger.info("CBK public-debt overlay applied to %d year(s)", applied)
-    return base, applied
+    # INSERT years CBK publishes that the fixture does not carry.
+    #
+    # The loop above only ever mutates rows that already exist, so the series
+    # could never move past the newest year someone had hand-added to the
+    # fixture: when CBK publishes an annual figure for a new year, the overlay
+    # would fetch it and silently drop it. That is exactly how the fiscal
+    # summary froze at FY2025/26 until 6940446 taught it to insert.
+    #
+    # It has not bitten yet only because CBK's Table 4.1.3 currently ends at
+    # 2025, the last completed calendar year, and so does the fixture.
+    known = {e.get("year") for e in timeline}
+    created = 0
+    for year in sorted(y for y in by_year if y not in known):
+        live = by_year[year]
+        timeline.append(
+            {
+                "year": year,
+                "external": float(live["external"]) / 1e9,
+                "domestic": float(live["domestic"]) / 1e9,
+                "total": float(live["total"]) / 1e9,
+                # gdp/gdp_ratio are filled by the World Bank pass that runs
+                # after this one; leaving them absent is correct until then.
+                "gdp": None,
+                "gdp_ratio": None,
+                "source": "CBK Statistical Bulletin Table 4.1.3",
+            }
+        )
+        created += 1
+        logger.info(
+            "CBK overlay ADDED %d: total %.1fB (not previously in the series)",
+            year, float(live["total"]) / 1e9,
+        )
+    if created:
+        timeline.sort(key=lambda e: e.get("year") or 0)
+
+    logger.info(
+        "CBK public-debt overlay: %d year(s) updated, %d added", applied, created
+    )
+    return base, applied + created
 
 
 def fetch_debt_timeline_payload(

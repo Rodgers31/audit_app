@@ -377,6 +377,21 @@ def _category_items_with_remainder(data: dict) -> dict:
     }
 
 
+#: Response-cache TTL for endpoints whose data is refreshed by the nightly
+#: seed.
+#:
+#: These were 12-24 hours. The seeder writes the database in one process and
+#: the API reads it in another, so nothing invalidates the response cache when
+#: a seed lands: a nightly run that corrected every fiscal year stayed
+#: invisible for a further day. The site's own header says "updated nightly
+#: from official sources", and a TTL longer than the refresh cadence makes that
+#: false for most of the day.
+#:
+#: One hour still absorbs the traffic these queries are cached for, while
+#: bounding how long a corrected figure can remain hidden.
+NIGHTLY_REFRESH_TTL = 3600
+
+
 def _is_debt_loan(loan) -> bool:
     """True when a Loan row counts as DEBT for total-debt aggregations.
 
@@ -4179,7 +4194,7 @@ async def get_audit_statistics():
 
 
 @app.get("/api/v1/audits/fiscal-years")
-@cached(key_prefix="audits:fiscal_years", ttl=86400)
+@cached(key_prefix="audits:fiscal_years", ttl=NIGHTLY_REFRESH_TTL)
 async def get_available_fiscal_years(db: Session = Depends(get_db)):
     """Return a sorted list of fiscal-year strings available in the database.
 
@@ -8149,7 +8164,7 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
 
 
 @app.get("/api/v1/debt/timeline")
-@cached(key_prefix="debt:timeline", ttl=86400)
+@cached(key_prefix="debt:timeline", ttl=NIGHTLY_REFRESH_TTL)
 async def get_debt_timeline(db: Session = Depends(get_db)):
     """Get historical debt timeline (yearly external/domestic breakdown).
 
@@ -8307,7 +8322,7 @@ async def get_debt_timeline(db: Session = Depends(get_db)):
 
 
 @app.get("/api/v1/fiscal/summary")
-@cached(key_prefix="fiscal:summary", ttl=86400)
+@cached(key_prefix="fiscal:summary", ttl=NIGHTLY_REFRESH_TTL)
 async def get_fiscal_summary(db: Session = Depends(get_db)):
     """Get national fiscal summary — budget, revenue, borrowing, debt service, debt ceiling.
 
@@ -9066,7 +9081,7 @@ async def get_debt_instruments(db: Session = Depends(get_db)):
 
 @app.get("/api/v1/debt/national")
 @cached(
-    key_prefix="debt:national", ttl=43200
+    key_prefix="debt:national", ttl=NIGHTLY_REFRESH_TTL
 )  # 12 hours — national debt data changes infrequently
 async def get_national_debt():
     """Get national debt overview with categorized breakdown."""
@@ -9544,7 +9559,7 @@ async def get_national_debt():
 
 
 @app.get("/api/v1/pending-bills")
-@cached(key_prefix="pending_bills:summary", ttl=43200)
+@cached(key_prefix="pending_bills:summary", ttl=NIGHTLY_REFRESH_TTL)
 async def get_pending_bills(
     db: Session = Depends(get_db),
 ):
@@ -9777,7 +9792,7 @@ async def get_pending_bills(
 
 
 @app.get("/api/v1/pending-bills/summary")
-@cached(key_prefix="pending_bills:summary_enhanced", ttl=43200)
+@cached(key_prefix="pending_bills:summary_enhanced", ttl=NIGHTLY_REFRESH_TTL)
 async def get_pending_bills_summary(db: Session = Depends(get_db)):
     """Get pending bills summary with breakdown by type, aging, and county.
 
@@ -10004,7 +10019,7 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
 
 
 @app.get("/api/v1/pending-bills/counties/{county_id}")
-@cached(key_prefix="pending_bills:county", ttl=43200)
+@cached(key_prefix="pending_bills:county", ttl=NIGHTLY_REFRESH_TTL)
 async def get_pending_bills_by_county(county_id: str, db: Session = Depends(get_db)):
     """Get pending bills breakdown for a specific county by type and aging."""
     from models import BillType, PendingBill
@@ -10390,7 +10405,7 @@ async def _get_debt_broader_cached(db: Session, vintage: str):
 
 
 @app.get("/api/v1/debt/sustainability")
-@cached(key_prefix="debt:sustainability", ttl=86400)
+@cached(key_prefix="debt:sustainability", ttl=NIGHTLY_REFRESH_TTL)
 async def get_debt_sustainability(db: Session = Depends(get_db)):
     """Get debt sustainability indicators, projections, and regional comparison.
 

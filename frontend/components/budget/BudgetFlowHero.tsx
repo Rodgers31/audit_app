@@ -342,8 +342,19 @@ export default function BudgetFlowHero({ data }: Props) {
           <h3 className='text-[13px] font-semibold text-gov-dark dark:text-white tracking-tight'>
             Where the money comes from
           </h3>
+          {/*
+            This said "Total budget", which reads as though the government
+            expects to RECEIVE that much. It does not: the inflow side is the
+            whole financing envelope — what is raised plus what is borrowed —
+            and only the revenue part is money the state expects to collect.
+            Naming both makes the gap between them visible, which is the point
+            of the bar.
+          */}
           <span className='text-[11px] text-neutral-muted'>
-            Total budget KES {fmtT(budget)}
+            Total financing KES {fmtT(budget)}
+            {tax != null && nonTax != null && (
+              <> · revenue KES {fmtT(tax + nonTax)}</>
+            )}
           </span>
         </div>
         <FlowBar segments={sources} total={budget} hover={hover} setHover={setHover} />
