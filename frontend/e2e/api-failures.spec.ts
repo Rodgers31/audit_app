@@ -12,7 +12,6 @@ import { registerFailingApiMocks } from './utils/apiMocks';
 const PAGES_WITH_DATA = [
   '/counties',
   '/counties/001',
-  '/sectors',
   '/sources',
   '/accountability/missing-funds',
   '/debt',

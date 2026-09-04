@@ -40,7 +40,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.security import HTTPBearer
 from pydantic import BaseModel
 from sqlalchemy import or_, text
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from starlette.responses import JSONResponse, Response
 
 # Initialize logger early (before Redis cache import).
@@ -3008,7 +3008,14 @@ async def get_county_comprehensive(
             # ``debt_breakdown`` and ``pending_bills_from_loans``
             # blocks below both iterate it. Only the total filters out
             # PENDING_BILLS (see ``_is_debt_loan`` for why).
-            loans = db.query(DBLoan).filter(DBLoan.entity_id == entity.id).all()
+            # joinedload: the publication gate below reads each loan's source
+            # document, so resolve them in one query rather than N+1.
+            loans = (
+                db.query(DBLoan)
+                .options(joinedload(DBLoan.source_document))
+                .filter(DBLoan.entity_id == entity.id)
+                .all()
+            )
 
             # Publication gate. A county row naming a creditor that only lends
             # to sovereigns, with no source document behind it, is withheld —
@@ -3040,8 +3047,14 @@ async def get_county_comprehensive(
                 if _is_debt_loan(l)
             )
 
+            # Same filter as total_debt above: pending bills are an arrears
+            # balance, not borrowing, and they already have their own panel via
+            # ``pending_bills``. Including them here made the breakdown sum to
+            # more than the total the page prints beside it.
             debt_breakdown = []
             for loan in loans:
+                if not _is_debt_loan(loan):
+                    continue
                 debt_breakdown.append(
                     {
                         "lender": loan.lender,

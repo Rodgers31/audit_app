@@ -24,13 +24,38 @@ from __future__ import annotations
 from services.publication_gate import county_debt_instrument_failure
 
 
-class _Loan:
-    """The two fields the gate reads. Not the ORM model on purpose: the gate
-    must not need a database to be exercised."""
+class _Doc:
+    """The three document fields the gate reads."""
 
-    def __init__(self, lender, source_document_id=None):
+    def __init__(self, title="", publisher="", url=""):
+        self.title = title
+        self.publisher = publisher
+        self.url = url
+
+
+#: What production rows actually point at: a national debt bulletin. It names
+#: the creditor but authorises no county to borrow from it.
+CBK_BULLETIN = _Doc(
+    title="Public Debt — Monthly Statistical Bulletin",
+    publisher="Central Bank of Kenya",
+    url="https://www.centralbank.go.ke/public-debt/",
+)
+
+#: What would actually authorise the borrowing (Article 212).
+NATIONAL_GUARANTEE = _Doc(
+    title="Kenya Gazette Notice — National Government Guarantee, Mombasa County",
+    publisher="Government Printer",
+    url="https://gazette.go.ke/2024/guarantee-047",
+)
+
+
+class _Loan:
+    """The fields the gate reads. Not the ORM model on purpose: the gate must
+    not need a database to be exercised."""
+
+    def __init__(self, lender, source_document=None):
         self.lender = lender
-        self.source_document_id = source_document_id
+        self.source_document = source_document
 
 
 # ── The rows production actually serves ────────────────────────────────────
@@ -87,21 +112,35 @@ def test_publishes_a_domestic_county_instrument():
 
 def test_publishes_an_external_row_that_shows_its_working():
     # THE test that makes this a gate. Same lender, same everything, except the
-    # row resolves to a source document — a gazetted national guarantee, a
-    # county loan register entry. It publishes.
+    # row resolves to a gazetted national guarantee. It publishes.
     assert (
         county_debt_instrument_failure(
-            _Loan("World Bank (County Infrastructure)", source_document_id=2311)
+            _Loan("World Bank (County Infrastructure)", NATIONAL_GUARANTEE)
         )
         is None
     )
 
 
-def test_empty_string_source_document_id_does_not_count_as_working():
+def test_a_source_document_that_is_not_an_authorisation_does_not_count():
+    """The production condition, and the reason an FK check would be useless.
+
+    ``Loan.source_document_id`` is ``nullable=False`` (models.py:281-283), so
+    every persisted row HAS a document — checking only that the FK is set is a
+    check that cannot fail.  What production rows point at is a CBK debt
+    bulletin, which lists the World Bank as a creditor of the Republic but
+    authorises no county to borrow from it.
+    """
     assert (
         county_debt_instrument_failure(
-            _Loan("World Bank (County Infrastructure)", source_document_id="")
+            _Loan("World Bank (County Infrastructure)", CBK_BULLETIN)
         )
+        == "external_creditor_document_is_not_a_borrowing_authorisation"
+    )
+
+
+def test_a_row_with_no_resolvable_document_is_withheld():
+    assert (
+        county_debt_instrument_failure(_Loan("World Bank (County Infrastructure)"))
         == "external_creditor_no_source_document"
     )
 
@@ -115,25 +154,27 @@ def test_missing_lender_is_not_treated_as_external():
 
 def _mombasa_production_rows():
     """The four rows GET /api/v1/counties/047/comprehensive served on
-    2026-09-03, verbatim. `category` is what the endpoint reports; only the
-    World Bank row lacks any source document."""
+    2026-09-03, verbatim. `category` is what the endpoint reports. Every row
+    carries the CBK bulletin it was seeded from — which is exactly why an
+    FK-presence check would pass all four."""
     from models import DebtCategory
 
     return [
         _LoanRow("World Bank (County Infrastructure)", 8_000_000_000, 6_334_420_131.22,
-                 DebtCategory.OTHER, None),
+                 DebtCategory.OTHER, CBK_BULLETIN),
         _LoanRow("County Government Debt", 1_468_124_595, 1_468_124_595,
-                 DebtCategory.OTHER, None),
+                 DebtCategory.OTHER, CBK_BULLETIN),
         _LoanRow("Pending Bills", 782_999_784, 782_999_784,
-                 DebtCategory.PENDING_BILLS, None),
+                 DebtCategory.PENDING_BILLS, CBK_BULLETIN),
         _LoanRow("Pending Bills — County Governments (Mombasa County)",
-                 3_867_700_000, 3_867_700_000, DebtCategory.PENDING_BILLS, None),
+                 3_867_700_000, 3_867_700_000, DebtCategory.PENDING_BILLS,
+                 CBK_BULLETIN),
     ]
 
 
 class _LoanRow(_Loan):
-    def __init__(self, lender, principal, outstanding, category, source_document_id):
-        super().__init__(lender, source_document_id)
+    def __init__(self, lender, principal, outstanding, category, source_document):
+        super().__init__(lender, source_document)
         self.principal = principal
         self.outstanding = outstanding
         self.debt_category = category
@@ -165,7 +206,7 @@ def test_mombasa_world_bank_row_is_withheld_and_the_total_drops():
 
     kept, withheld = _apply_gate(rows)
 
-    assert withheld == {"external_creditor_no_source_document": 1}
+    assert withheld == {"external_creditor_document_is_not_a_borrowing_authorisation": 1}
     assert [r.lender for r in kept] == [
         "County Government Debt",
         "Pending Bills",
@@ -175,10 +216,92 @@ def test_mombasa_world_bank_row_is_withheld_and_the_total_drops():
     after_total = sum(float(r.outstanding) for r in kept if _is_debt_loan(r))
     assert round(after_total) == 1_468_124_595
 
-    # The point of filtering the total as well as the breakdown: what is left
-    # in the list still adds up to what the page prints. Before this change the
-    # breakdown showed a row worth 81.2% of a total that included it.
-    assert round(after_total) == round(
-        sum(float(r.outstanding) for r in kept if _is_debt_loan(r))
-    )
     assert all(county_debt_instrument_failure(r) is None for r in kept)
+
+
+# ── The shipped path: breakdown and total must agree in the real response ───
+
+def test_serialized_breakdown_sums_to_the_serialized_total(client, db_session):
+    """Assert against what the endpoint actually returns, not a local mirror.
+
+    The previous version of this test recomputed the filtered sum and compared
+    it to itself, so it could not fail.  It also missed a real defect: the
+    handler put every kept row into ``debt_breakdown`` while ``total_debt``
+    excluded pending bills, so the breakdown summed to KES 6.119B beside a
+    printed total of KES 1.468B.
+    """
+    from datetime import datetime, timezone
+
+    from models import (
+        Country,
+        DebtCategory,
+        DocumentStatus,
+        DocumentType,
+        Entity,
+        EntityType,
+        Loan,
+        SourceDocument,
+    )
+
+    country = Country(
+        id=1, iso_code="KEN", name="Kenya", currency="KES",
+        timezone="Africa/Nairobi", default_locale="en_KE",
+    )
+    db_session.add(country)
+    db_session.flush()
+
+    bulletin = SourceDocument(
+        country_id=country.id,
+        publisher="Central Bank of Kenya",
+        title="Public Debt - Monthly Statistical Bulletin",
+        url="https://www.centralbank.go.ke/public-debt/",
+        fetch_date=datetime(2026, 8, 1, tzinfo=timezone.utc),
+        doc_type=DocumentType.OTHER,
+        status=DocumentStatus.AVAILABLE,
+    )
+    db_session.add(bulletin)
+    db_session.flush()
+
+    entity = Entity(
+        country_id=country.id, type=EntityType.COUNTY,
+        canonical_name="Mombasa County", slug="mombasa-county",
+    )
+    db_session.add(entity)
+    db_session.flush()
+
+    for lender, principal, outstanding, category in (
+        # Withheld: sovereign-only creditor, document is a bulletin not a guarantee.
+        ("World Bank (County Infrastructure)", 8_000_000_000, 6_334_420_131, DebtCategory.OTHER),
+        # Published, and counted in total_debt.
+        ("County Government Debt", 1_468_124_595, 1_468_124_595, DebtCategory.OTHER),
+        # Published elsewhere, but NOT part of total_debt - arrears, not borrowing.
+        ("Pending Bills", 782_999_784, 782_999_784, DebtCategory.PENDING_BILLS),
+    ):
+        db_session.add(
+            Loan(
+                entity_id=entity.id, lender=lender, debt_category=category,
+                principal=principal, outstanding=outstanding, currency="KES",
+                source_document_id=bulletin.id,
+                issue_date=datetime(2020, 1, 1),
+            )
+        )
+    db_session.commit()
+
+    debt = client.get("/api/v1/counties/047/comprehensive").json()["debt"]
+
+    breakdown = debt["breakdown"]
+    total = debt.get("total_debt")
+    assert total is not None, f"endpoint returned no total_debt: {list(debt)[:20]}"
+
+    lenders = [r["lender"] for r in breakdown]
+    assert "World Bank (County Infrastructure)" not in lenders, (
+        "the withheld sovereign-creditor row is still being published"
+    )
+    assert "Pending Bills" not in lenders, (
+        "pending bills are in the breakdown but excluded from total_debt, so "
+        "the parts no longer sum to the whole"
+    )
+    assert round(sum(r["outstanding"] for r in breakdown)) == round(total), (
+        f"breakdown sums to {sum(r['outstanding'] for r in breakdown)} but the "
+        f"page prints {total}"
+    )

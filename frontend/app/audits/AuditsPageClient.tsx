@@ -418,8 +418,7 @@ export default function AuditFindingsPage() {
                   <tr className='border-b border-gov-dark/10 text-left'>
                     <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>County</th>
                     <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>Finding Type</th>
-                    <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>Years</th>
-                    <th className='py-2 font-semibold text-gov-dark/70 dark:text-white/70 text-right'>Total Amount</th>
+                    <th className='py-2 font-semibold text-gov-dark/70 dark:text-white/70'>Years</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -439,7 +438,7 @@ export default function AuditFindingsPage() {
                           {r.query_type}
                         </span>
                       </td>
-                      <td className='py-2.5 pr-3'>
+                      <td className='py-2.5'>
                         <div className='flex flex-wrap gap-1'>
                           {r.years_appeared.map((y) => (
                             <span
@@ -449,9 +448,6 @@ export default function AuditFindingsPage() {
                             </span>
                           ))}
                         </div>
-                      </td>
-                      <td className='py-2.5 text-right font-mono text-red-600'>
-                        {r.total_amount > 0 ? fmtKES(r.total_amount) : '—'}
                       </td>
                     </tr>
                   ))}

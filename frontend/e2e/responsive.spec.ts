@@ -48,17 +48,20 @@ test.describe('Mobile — 390×844', () => {
 
     // Tabs container has `overflow-x-auto` at mobile width
     await expect(page.getByRole('button', { name: /Overview|Muhtasari/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Projects|Miradi/i })).toBeVisible();
+    // Budget & Debt is the last tab now that Projects has been withdrawn —
+    // reaching it is what proves the row still scrolls horizontally.
+    await expect(page.getByRole('button', { name: /Budget|Bajeti/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^(Projects|Miradi)$/i })).toHaveCount(0);
   });
 });
 
 test.describe('Tablet — 768×1024', () => {
   test.use(TABLET);
 
-  test('/sectors donut / hero renders', async ({ page }) => {
-    await page.goto('/sectors');
-    await waitForAppReady(page);
-
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  // /sectors was withdrawn: its figures could not be traced to a published
+  // document. Guard that it stays gone rather than silently returning.
+  test('/sectors is withdrawn and returns 404', async ({ page }) => {
+    const response = await page.goto('/sectors');
+    expect(response?.status()).toBe(404);
   });
 });

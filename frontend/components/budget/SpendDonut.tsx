@@ -84,6 +84,18 @@ interface Props {
 export default function SpendDonut({ data }: Props) {
   const [hoverKey, setHoverKey] = useState<string | null>(null);
 
+  // Every use has to be present before this decomposition means anything.
+  // Coercing absent uses to zero made `otherSpend` collapse to the whole
+  // budget, so an incomplete fiscal year rendered a 100% "Other (residual)"
+  // ring directly below a hero that correctly said the split was withheld.
+  // Same rule as BudgetFlowHero: withhold rather than fabricate.
+  const hasFullDecomposition =
+    data.appropriated_budget != null &&
+    data.debt_service_cost != null &&
+    data.recurrent_spending != null &&
+    data.development_spending != null &&
+    data.county_allocation != null;
+
   const budget = data.appropriated_budget ?? 0;
   const debtService = data.debt_service_cost ?? 0;
   const recurrent = data.recurrent_spending ?? 0;
@@ -173,7 +185,7 @@ export default function SpendDonut({ data }: Props) {
     return def;
   }, [hoverKey, innerData, budget, data.fiscal_year]);
 
-  if (innerData.length === 0) return null;
+  if (!hasFullDecomposition || innerData.length === 0) return null;
 
   return (
     <motion.section
