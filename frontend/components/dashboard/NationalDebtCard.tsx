@@ -13,6 +13,7 @@ import { motion } from 'framer-motion';
 import { Skeleton, SkeletonChart } from '@/components/ui/Skeleton';
 import { AlertTriangle, BarChart3, Globe2, Landmark, Loader2, MapPinned, TrendingUp } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { gdpRatioComparison } from '@/lib/debt/debtCardBasis';
 import InfoTip from '@/components/InfoTip';
 import {
   Area,
@@ -237,6 +238,9 @@ export default function NationalDebtCard() {
   // 2013" to a round-number estimate published a growth story built on an
   // invented base — and it understated the real rise (F13).
   const firstSourced = debtTimeline.find((e) => !e.modelled) ?? null;
+  // A "from X% in YEAR" comparison is only defensible when the base and the
+  // displayed value are on the SAME basis — see lib/debt/debtCardBasis.
+  const gdpComparison = gdpRatioComparison(apiData?.debt_to_gdp_ratio, firstSourced);
   const modelledYears = debtTimeline.filter((e) => e.modelled);
   const growthMultiple =
     firstSourced && lastYear && firstSourced.total > 0
@@ -323,9 +327,13 @@ export default function NationalDebtCard() {
               </div>
             }
             value={`${gdpRatio}%`}
-            sub={t('home.debt.from_year_sub')
-              .replace('{pct}', String(firstSourced?.gdpRatio ?? '—'))
-              .replace('{year}', String(growthBaseYear))}
+            sub={
+              gdpComparison
+                ? t('home.debt.from_year_sub')
+                    .replace('{pct}', String(gdpComparison.pct))
+                    .replace('{year}', String(gdpComparison.year))
+                : t('home.debt.gdp_basis_imf')
+            }
             accent='gold'
           />
           <StatCard

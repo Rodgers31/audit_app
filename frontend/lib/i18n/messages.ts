@@ -164,7 +164,23 @@ export const MESSAGES = {
   'home.debt.total_public': { en: 'Total Public Debt', sw: 'Deni Jumla la Umma', plain: 'Total Kenya Owes' },
   'home.debt.external_label': { en: 'External Debt', sw: 'Deni la Nje', plain: 'Money owed abroad' },
   'home.debt.domestic_label': { en: 'Domestic Debt', sw: 'Deni la Ndani', plain: 'Money owed at home' },
-  'home.debt.growth_sub': { en: '{x}× since {year}', sw: 'mara {x} tangu {year}', plain: '{x}× since {year}' },
+  // The multiple is computed on the CBK debt timeline, while the headline
+  // value beside it is the instrument-register sum. They are different series
+  // and their ratio is not the headline's growth, so the label names the
+  // series rather than implying the number above it grew by this much.
+  'home.debt.growth_sub': {
+    en: 'CBK timeline: {x}× since {year}',
+    sw: 'Ratiba ya CBK: mara {x} tangu {year}',
+    plain: 'On the CBK series: {x}× bigger than in {year}',
+  },
+  // Shown instead of a year-on-year comparison when the displayed ratio is the
+  // IMF general-government figure: the timeline's own ratio is central
+  // government over World Bank GDP, so the two are not points on one series.
+  'home.debt.gdp_basis_imf': {
+    en: 'IMF general government basis',
+    sw: 'Msingi wa serikali kwa ujumla (IMF)',
+    plain: 'Measured the IMF way (all of government)',
+  },
   'home.debt.from_year_sub': { en: 'From {pct}% in {year}', sw: 'Kutoka {pct}% mwaka {year}', plain: 'From {pct}% in {year}' },
   'home.debt.pct_of_total': { en: '{pct}% of total', sw: '{pct}% ya jumla', plain: '{pct}% of total' },
   'home.debt.no_timeline': { en: 'No timeline data available', sw: 'Hakuna data ya ratiba', plain: 'No history available' },
@@ -855,9 +871,10 @@ export const MESSAGES = {
   'county.overview.allocated_suffix': { en: 'allocated', sw: 'iliyotengwa', plain: 'planned' },
   // This label sat ~200px below the page's own disclaimer saying these figures
   // are "Modelled estimate — NOT official Controller of Budget figures", and
-  // the same contradiction is baked into the API's data_sources.budget. Until
-  // county budget lines are extracted from CoB CBIRR tables, name the method,
-  // not a publisher who did not publish this (credibility audit F7).
+  // Fallback only. The API now returns data_sources.budget describing the rows
+  // it actually selected — CoB BIRR aggregates where the parse landed, CRA
+  // model where it did not — and OverviewTab renders that. This string is used
+  // only when the API omits the field, so it states the weaker case.
   'county.overview.source_cob': {
     en: 'Modelled from the CRA equitable-share formula',
     sw: 'Imekadiriwa kwa fomula ya mgao sawa ya CRA',

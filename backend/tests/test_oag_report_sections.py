@@ -105,3 +105,72 @@ def test_an_exact_raw_heading_still_matches_itself():
     known = list(LIVE_VARIANTS)
     raw = "REPORT ON THE FINANCIAL STATEMENTS"
     assert raw in raw_variants_for(raw, known)
+
+
+# ── Recurrence must be decided on the folded section, not the raw heading ──
+
+def test_variants_of_one_section_merge_into_a_single_recurring_row(
+    client, db_session, seed_country, seed_source_doc
+):
+    """Two heading variants of one standing section, in two different years.
+
+    Grouping on the raw query_type produced two rows carrying the same
+    canonical label with the years split between them — and, because neither
+    raw variant spanned 2 years on its own, the recurrence was missed
+    altogether.
+    """
+    from datetime import datetime
+
+    from models import Audit, Entity, EntityType, FiscalPeriod, Severity
+
+    entity = Entity(
+        id=610, country_id=seed_country.id, type=EntityType.COUNTY,
+        canonical_name="Mombasa County", slug="mombasa-county",
+    )
+    period = FiscalPeriod(
+        id=6100, country_id=seed_country.id, label="FY2022/23",
+        start_date=datetime(2022, 7, 1), end_date=datetime(2023, 6, 30),
+    )
+    db_session.add_all([entity, period])
+    db_session.flush()
+
+    # Two real variants of one standing section: differing case, a trailing
+    # full stop, and truncated at different points.
+    variants = [
+        ("Report on Lawfulness and Effectiveness in the Use of Public Resources", 2022, 1_000_000),
+        ("REPORT ON LAWFULNESS AND EFFECTIVENESS IN USE OF PUBLIC RESOURCES.", 2023, 2_000_000),
+    ]
+    assert (
+        canonical_section(variants[0][0]) == canonical_section(variants[1][0])
+    ), "fixture is only meaningful if these two headings fold together"
+
+    for qt, year, amount in variants:
+        db_session.add(
+            Audit(
+                entity_id=entity.id, period_id=period.id, query_type=qt,
+                audit_year=year, amount=amount, severity=Severity.CRITICAL,
+                finding_text=f"Finding recorded under {qt!r} for {year}.",
+                source_document_id=seed_source_doc.id,
+                created_at=datetime(year, 7, 1),
+            )
+        )
+    db_session.commit()
+
+    resp = client.get("/api/v1/audit/recurring")
+    assert resp.status_code == 200, resp.text[:400]
+    body = resp.json()
+    rows = [
+        r for r in body["recurring_findings"]
+        if r["county_name"] == "Mombasa County"
+    ]
+
+    assert len(rows) == 1, (
+        f"expected one merged row for the folded section, got {len(rows)}: "
+        f"{[(r['query_type'], r['years_appeared']) for r in rows]}"
+    )
+    assert rows[0]["years_appeared"] == [2022, 2023], (
+        "the recurrence spans two years only once the heading variants are "
+        f"folded; got {rows[0]['years_appeared']}"
+    )
+    assert rows[0]["total_amount"] == 3_000_000
+    assert len(rows[0]["finding_ids"]) == 2

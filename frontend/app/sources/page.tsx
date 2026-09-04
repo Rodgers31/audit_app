@@ -344,9 +344,12 @@ export default function SourcesPage() {
                 document and, for audit findings, a page reference — and can be
                 checked through the verification endpoint. County budget lines and
                 the historical debt timeline cannot yet: they are not wired into
-                that endpoint, and county budget figures are modelled from the CRA
-                equitable-share formula rather than read from a Controller of
-                Budget table. Pages carrying modelled figures say so on the page.
+                that endpoint. County figures come from two different places, and
+                each page says which: the headline budget, spend and execution
+                rate are read from the Controller of Budget&apos;s implementation
+                review where that parse landed, while the per-sector split and any
+                future-year period are modelled from the CRA equitable-share
+                formula. Pages carrying modelled figures say so on the page.
               </p>
             </div>
           </div>

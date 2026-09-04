@@ -253,3 +253,179 @@ def test_both_endpoints_agree_on_the_cob_total_shape(
     detail = _comprehensive(client, eid)["budget"]
     assert row["total_budget"] == pytest.approx(detail["total_allocated"])
     assert row["total_spent"] == pytest.approx(detail["total_spent"])
+
+
+# ── Partial ingest: the same defect through a different door ───────────────
+
+@pytest.fixture()
+def two_counties_one_ingested(db_session, seed_country, seed_source_doc):
+    """A half-ingested CoB report: the newest period covers only one county.
+
+    The list endpoint resolves ONE period globally, so it pins every county to
+    the newest period carrying CoB rows anywhere. If the detail endpoint
+    resolves per-county instead, the county missing from that report falls back
+    to its own older period and publishes a budget the list does not show —
+    two budgets again.
+    """
+    old = FiscalPeriod(
+        id=4800, country_id=seed_country.id, label="FY2024/25",
+        start_date=datetime(2024, 7, 1), end_date=datetime(2025, 6, 30),
+    )
+    new = FiscalPeriod(
+        id=4801, country_id=seed_country.id, label="FY2025/26",
+        start_date=datetime(2025, 7, 1), end_date=datetime(2026, 6, 30),
+    )
+    db_session.add_all([old, new])
+    db_session.flush()
+
+    ingested = Entity(
+        id=480, country_id=seed_country.id, type=EntityType.COUNTY,
+        canonical_name="Nairobi County", slug="nairobi-county",
+    )
+    missing = Entity(
+        id=481, country_id=seed_country.id, type=EntityType.COUNTY,
+        canonical_name="Mombasa County", slug="mombasa-county",
+    )
+    db_session.add_all([ingested, missing])
+    db_session.flush()
+
+    def _cob(entity_id, period_id, dev, rec):
+        return [
+            BudgetLine(
+                entity_id=entity_id, period_id=period_id, category="Development",
+                allocated_amount=dev, actual_spent=dev / 2, currency="KES",
+                source_document_id=seed_source_doc.id,
+            ),
+            BudgetLine(
+                entity_id=entity_id, period_id=period_id, category="Recurrent",
+                allocated_amount=rec, actual_spent=rec / 2, currency="KES",
+                source_document_id=seed_source_doc.id,
+            ),
+        ]
+
+    # Nairobi made it into the newest report; Mombasa did not.
+    db_session.add_all(_cob(ingested.id, new.id, 5_000_000_000, 11_000_000_000))
+    db_session.add_all(_cob(missing.id, old.id, 4_000_000_000, 10_000_000_000))
+    db_session.commit()
+    return missing
+
+
+def test_a_county_missing_from_the_newest_report_does_not_get_its_own_period(
+    client, two_counties_one_ingested
+):
+    eid = two_counties_one_ingested.id
+
+    row = _list_row_by_name(client, "mombasa")
+    detail = _comprehensive(client, eid)["budget"]
+
+    assert row["total_budget"] == pytest.approx(detail["total_allocated"]), (
+        "Mombasa is absent from the newest CoB report. The list pins it to that "
+        "period; the detail page must not fall back to Mombasa's own older "
+        f"period and publish a different budget "
+        f"(list={row['total_budget']}, detail={detail['total_allocated']})"
+    )
+
+
+# ── The economic split must come from the CoB aggregates, not a re-derivation ──
+
+@pytest.fixture()
+def county_with_full_cob_shape(db_session, seed_country, seed_source_doc):
+    """The shape a real CoB BIRR period has: a Total row, the two economic
+    classification rows, a sub-row under Recurrent, and modelled sector rows
+    that restate the same money."""
+    period = FiscalPeriod(
+        id=4900, country_id=seed_country.id, label="FY2024/25",
+        start_date=datetime(2024, 7, 1), end_date=datetime(2025, 6, 30),
+    )
+    db_session.add(period)
+    db_session.flush()
+
+    entity = Entity(
+        id=490, country_id=seed_country.id, type=EntityType.COUNTY,
+        canonical_name="Mombasa County", slug="mombasa-county",
+    )
+    db_session.add(entity)
+    db_session.flush()
+
+    def _bl(category, allocated, spent, subcategory=None):
+        return BudgetLine(
+            entity_id=entity.id, period_id=period.id, category=category,
+            subcategory=subcategory, allocated_amount=allocated,
+            actual_spent=spent, currency="KES",
+            source_document_id=seed_source_doc.id,
+        )
+
+    db_session.add_all([
+        _bl("Total", 20_000_000_000, 12_000_000_000),
+        _bl("Development", 6_000_000_000, 3_000_000_000),
+        _bl("Recurrent", 14_000_000_000, 9_000_000_000),
+        # Sub-row under Recurrent — part of it, not additional to it.
+        _bl("Recurrent", 8_000_000_000, 5_000_000_000, subcategory="Personnel Emoluments"),
+        # Modelled sector rows restating the same envelope a second way.
+        _bl("Health", 5_000_000_000, 3_000_000_000),
+        _bl("Infrastructure", 4_000_000_000, 2_000_000_000),
+        _bl("Education", 3_000_000_000, 2_000_000_000),
+    ])
+    db_session.commit()
+    return entity
+
+
+def test_development_and_recurrent_come_from_the_cob_classification(
+    client, county_with_full_cob_shape
+):
+    """dev + recurrent must equal the CoB Total, not exceed it.
+
+    Re-deriving the split by keyword over every row counted the aggregates,
+    their sub-rows and the sector rows that restate them, and dropped the CoB
+    "Total" row into recurrent (the old guard tested for "total budget", but
+    the BIRR row is labelled "Total").
+    """
+    budget = _comprehensive(client, county_with_full_cob_shape.id)["budget"]
+
+    total = budget["total_allocated"]
+    dev = budget["development_budget"]
+    rec = budget["recurrent_budget"]
+
+    assert total == pytest.approx(20_000_000_000)
+    assert dev == pytest.approx(6_000_000_000), f"expected the CoB Development row, got {dev}"
+    assert rec == pytest.approx(14_000_000_000), f"expected the CoB Recurrent row, got {rec}"
+    assert dev + rec == pytest.approx(total), (
+        f"the economic split must sum to the published total: "
+        f"{dev} + {rec} != {total}"
+    )
+
+
+def test_provenance_names_cob_when_the_headline_came_from_cob(
+    client, county_with_full_cob_shape
+):
+    """The provenance string must track the rows actually used.
+
+    It used to hardcode "Modelled from the CRA equitable-share formula — NOT
+    read from Controller of Budget CBIRR tables", which denied the provenance
+    of a headline this endpoint reads straight out of a published BIRR.
+    """
+    body = _comprehensive(client, county_with_full_cob_shape.id)
+    label = body["data_sources"]["budget"]
+
+    assert "Controller of Budget" in label, label
+    assert "NOT\nread from Controller of Budget" not in label
+    # The modelled part must still be declared, not quietly dropped.
+    assert "modelled" in label.lower() and "sector" in label.lower(), label
+
+
+def test_provenance_still_says_modelled_when_there_are_no_cob_rows(
+    client, county_with_projection_and_reported, db_session
+):
+    """Positive control: the label must be able to say "modelled" too."""
+    from models import BudgetLine
+
+    # Strip the CoB classification rows, leaving only the modelled sector row.
+    for bl in db_session.query(BudgetLine).filter(
+        BudgetLine.category.in_(["Development", "Recurrent", "Total"])
+    ):
+        db_session.delete(bl)
+    db_session.commit()
+
+    body = _comprehensive(client, county_with_projection_and_reported.id)
+    label = body["data_sources"]["budget"]
+    assert "Modelled from the CRA equitable-share formula" in label, label

@@ -103,9 +103,16 @@ export default function BudgetFlowHero({ data }: Props) {
     ? Math.max(0, budget - tax! - nonTax! - borrowing!)
     : null;
   const recurrentNonDebt = hasUses ? Math.max(0, recurrent! - debtService!) : null;
-  const otherSpend = hasUses
-    ? Math.max(0, budget - recurrent! - dev! - counties!)
-    : null;
+  // The residual is what is left INSIDE the envelope `budget` measures.  That
+  // envelope is the Controller of Budget's National-Government gross figure,
+  // which excludes the county equitable share (CoB reports counties in a
+  // separate BIRR) — so `counties` must NOT be subtracted from it.  Doing so
+  // understated the residual by the whole county allocation while the bar's
+  // own note said counties sits beside, not inside, this total.
+  //
+  // The consequence is deliberate: the displayed shares sum to more than 100%
+  // by exactly the county share, which is what the note describes.
+  const otherSpend = hasUses ? Math.max(0, budget - recurrent! - dev!) : null;
 
   // "shillings-per-shilling-of-revenue" metric: debt service vs total revenue
   const debtServicePct =
@@ -217,7 +224,8 @@ export default function BudgetFlowHero({ data }: Props) {
           "Controller of Budget's National-Government gross figure, which " +
           'EXCLUDES the county equitable share — CoB reports it separately. ' +
           'So this bar shows the county share beside, not inside, that ' +
-          'envelope, and the shares below do not sum to a single total.',
+          'envelope: it is not subtracted from the residual, and the shares ' +
+          'therefore add up to more than 100% by exactly this amount.',
       },
       {
         key: 'otherSpend',

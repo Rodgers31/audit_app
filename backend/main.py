@@ -428,19 +428,32 @@ def _entity_period_budget_query(db, entity_id: int, period_id: Optional[int] = N
         # KES 9.42B here against KES 14.63B there, utilisation 32.0% against
         # 49.8%, and Nairobi's pending bills differing 23-fold
         # (credibility audit F7). The two now use the same preference order.
-        latest_cob = (
-            db.query(DBBudgetLine.period_id)
-            .join(DBFiscalPeriod, DBBudgetLine.period_id == DBFiscalPeriod.id)
-            .filter(
-                DBBudgetLine.entity_id == entity_id,
-                _sqlfunc.lower(DBBudgetLine.category).in_(
-                    list(_CLASSIFICATION_CATEGORIES)
-                ),
+        # Resolve the GLOBAL newest CoB period — the same one GET /counties
+        # pins every county to — not this entity's own newest.
+        #
+        # Picking per-entity reopened the same two-budgets defect through a
+        # different door: when a CoB report is only partially ingested, the list
+        # filters every county to the global period (so a county missing from
+        # that report shows no budget) while the detail page silently fell back
+        # to that county's older period and printed one. Same county, same site,
+        # two budgets again. If the newest report has no rows for this county,
+        # this endpoint now reports nothing for it too.
+        _global_cob = _latest_county_actuals_period_ids(db)
+        latest_cob = _global_cob[0] if _global_cob else None
+        if latest_cob is None:
+            latest_cob = (
+                db.query(DBBudgetLine.period_id)
+                .join(DBFiscalPeriod, DBBudgetLine.period_id == DBFiscalPeriod.id)
+                .filter(
+                    DBBudgetLine.entity_id == entity_id,
+                    _sqlfunc.lower(DBBudgetLine.category).in_(
+                        list(_CLASSIFICATION_CATEGORIES)
+                    ),
+                )
+                .order_by(DBFiscalPeriod.start_date.desc())
+                .limit(1)
+                .scalar()
             )
-            .order_by(DBFiscalPeriod.start_date.desc())
-            .limit(1)
-            .scalar()
-        )
 
         latest_executed = latest_cob or (
             db.query(DBBudgetLine.period_id)
@@ -3019,6 +3032,26 @@ async def get_county_comprehensive(
                 _class_by_cat,
             ) = _split_classification_and_sector_lines(budget_lines)
 
+
+            # Provenance for the headline budget: does it come from parsed CoB
+            # BIRR classification rows, or from the modelled sector/projection
+            # split? The frontend renders this string, so it must track the
+            # rows this response actually used.
+            _has_cob_rows = bool(
+                _class_by_cat.get("total", {}).get("allocated")
+                or _class_by_cat.get("development", {}).get("allocated")
+                or _class_by_cat.get("recurrent", {}).get("allocated")
+            )
+            _budget_provenance_label = (
+                "Controller of Budget — County Budget Implementation Review "
+                "Report (Total / Development / Recurrent aggregates). The "
+                "per-sector split below is modelled from the CRA "
+                "equitable-share formula, not read from the CBIRR."
+                if _has_cob_rows
+                else "Modelled from the CRA equitable-share formula — NOT "
+                "read from Controller of Budget CBIRR tables"
+            )
+
             # Resolve the fiscal year label so the frontend can display
             # "Budget FY2024/25" (e.g. if we selected the latest executed FY
             # because the current one has no spending yet).
@@ -3042,25 +3075,44 @@ async def get_county_comprehensive(
                 sector_breakdown[cat]["allocated"] += amt
                 sector_breakdown[cat]["spent"] += spent
 
-            # Compute development vs recurrent split
-            development_total = 0.0
-            recurrent_total = 0.0
-            for bl in budget_lines:
-                cat_lower = (bl.category or "").lower()
-                amt = float(bl.allocated_amount or 0)
-                if any(
-                    kw in cat_lower
-                    for kw in [
-                        "development",
-                        "capital",
-                        "infrastructure",
-                        "construction",
-                        "project",
-                    ]
-                ):
-                    development_total += amt
-                elif cat_lower != "total budget":
-                    recurrent_total += amt
+            # Development vs recurrent — same rule as GET /counties.
+            #
+            # This used to re-derive the split by keyword over EVERY row, which
+            # counted the CoB aggregates and the sector rows that restate them,
+            # and dropped the CoB "Total" row into recurrent (the guard tested
+            # for "total budget", but the BIRR row is labelled "Total"). On a
+            # KES 20B county that produced development 6B + recurrent 51B.
+            #
+            # Prefer the authoritative classification aggregates the helper
+            # already extracted; fall back to the sector-keyword heuristic only
+            # when a period carries no classification rows at all.
+            development_total = _class_by_cat.get("development", {}).get(
+                "allocated", 0.0
+            )
+            recurrent_total = _class_by_cat.get("recurrent", {}).get("allocated", 0.0)
+
+            if development_total == 0 and recurrent_total == 0:
+                keyword_dev = 0.0
+                keyword_rec = 0.0
+                for bl in _sector_lines:
+                    cat_lower = (bl.category or "").lower()
+                    amt = float(bl.allocated_amount or 0)
+                    if any(
+                        kw in cat_lower
+                        for kw in [
+                            "development",
+                            "capital",
+                            "infrastructure",
+                            "construction",
+                            "project",
+                        ]
+                    ):
+                        keyword_dev += amt
+                    else:
+                        keyword_rec += amt
+                development_total = keyword_dev
+                recurrent_total = keyword_rec
+
             if development_total == 0 and recurrent_total == 0 and total_allocated > 0:
                 development_total = float(metrics.get("development_budget", 0))
                 recurrent_total = float(metrics.get("recurrent_budget", 0))
@@ -3581,10 +3633,13 @@ async def get_county_comprehensive(
                 # report — that domain has been withdrawn from the UI
                 # entirely. Credibility audit F7/F15/F6.
                 "data_sources": {
-                    "budget": (
-                        "Modelled from the CRA equitable-share formula — NOT "
-                        "read from Controller of Budget CBIRR tables"
-                    ),
+                    # Derived from the rows actually selected, not asserted.
+                    # This field used to hardcode "modelled from CRA", which
+                    # became wrong once the endpoint started preferring real CoB
+                    # classification rows for the headline: it denied the
+                    # provenance of figures that DO come from a published BIRR.
+                    # Only the sector split and projection periods are modelled.
+                    "budget": _budget_provenance_label,
                     "audit": "Office of the Auditor General - County Government Audit Reports",
                     "debt": (
                         "Modelled — county debt and pending-bill rows are not "

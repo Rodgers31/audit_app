@@ -168,6 +168,14 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
     revenue,
   } = data;
 
+  // Provenance comes from the API, which knows whether this period's headline
+  // was read from a CoB BIRR table or modelled from the CRA formula. The
+  // static string this replaced asserted "modelled" for every county and every
+  // period, which denied the provenance of figures that ARE published.
+  // Falls back to the translated string only when the API omits it.
+  const budgetSourceLabel =
+    data.data_sources?.budget || t('county.overview.source_cob');
+
   const sustainLabel: Record<
     string,
     { textKey: TranslationKey; color: string; Icon: React.ElementType }
@@ -221,7 +229,7 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
               </div>
               {budget.fiscal_year && (
                 <div className='mt-2 text-[11px] text-gray-400 dark:text-neutral-muted/80'>
-                  {t('county.overview.source_cob')} · {budget.fiscal_year}
+                  {budgetSourceLabel} · {budget.fiscal_year}
                 </div>
               )}
             </div>
