@@ -372,13 +372,27 @@ class TestShippedFixture:
         return json.loads(path.read_text())
 
     def test_every_year_declares_a_budget_basis(self):
+        """A row that carries a budget must say which measure it is on.
+
+        Scoped to rows that actually carry one. A row may exist to carry a
+        different figure — FY 2026/27 ships the revenue estimate, and its
+        gross budget is overlaid live from the Programme Based Budget book by
+        budget_estimates.py rather than duplicated here. Such a row must still
+        say WHY the budget is absent, so an omission can never pass as a
+        deliberate deferral.
+        """
         for row in self._fixture()["fiscal_years"]:
+            if row.get("appropriated_budget") is None:
+                assert row.get("appropriated_budget_absent_reason"), row["fiscal_year"]
+                continue
             assert row.get("budget_basis"), row["fiscal_year"]
 
     def test_every_declared_basis_carries_a_document_and_page(self):
         """No number without provenance — including the provenance of its
         DEFINITION."""
         for row in self._fixture()["fiscal_years"]:
+            if row.get("appropriated_budget") is None:
+                continue  # no budget figure, so no definition to source
             source = row.get("budget_basis_source") or {}
             assert source.get("url"), row["fiscal_year"]
             assert source.get("page"), row["fiscal_year"]
