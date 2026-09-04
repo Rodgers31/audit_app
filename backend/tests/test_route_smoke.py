@@ -55,8 +55,11 @@ def _get_routes_parametrized():
 def test_get_route_does_not_crash(client, path):
     """Every GET route should respond without a 500 Internal Server Error.
 
-    We accept 200, 404, 422, 429, 503 as valid — the important thing is
-    that the server doesn't crash.
+    We accept 200, 404, 422, 503 as valid — the important thing is that the
+    server doesn't crash.  429 is deliberately NOT on that list: the rate
+    limiter is bypassed for the whole test session (conftest.pytest_configure),
+    so a 429 here would mean the bypass has regressed, not that the route is
+    healthy.
     """
     response = client.get(path)
     assert (

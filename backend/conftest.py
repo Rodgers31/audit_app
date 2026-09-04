@@ -34,6 +34,118 @@ def _compile_jsonb_sqlite(element, compiler, **kw):  # noqa: ARG001
     return "TEXT"
 
 
+# ── rate-limiter bypass (session-wide) ──────────────────────────────────
+# Every request a TestClient makes reports the same client IP ("testclient"),
+# so the whole suite shares ONE 120-request/60-second window in the mounted
+# RateLimitMiddleware.  A full run makes >1000 requests, so the limiter trips
+# and turns ~200 arbitrary tests red — and *which* tests, because the window
+# is wall-clock, differs on every run.
+#
+# Patching ``RateLimitMiddleware.dispatch`` from inside a per-test fixture
+# does NOT work: Starlette's BaseHTTPMiddleware binds
+# ``self.dispatch_func = self.dispatch`` in ``__init__``, and the middleware
+# stack is built lazily on the session's first request — so the instance
+# captures the real dispatch before any per-test patch is active and keeps it
+# for the rest of the process.  The bypass therefore has to be installed in
+# ``pytest_configure``, before the stack is ever built.
+#
+# The production limiter itself is still covered — see
+# tests/test_rate_limiter_bypass.py, which mounts it directly and proves it
+# still refuses traffic over the limit.
+def pytest_configure(config):  # noqa: ARG001
+    from middleware.security import RateLimitMiddleware, RedisRateLimitMiddleware
+
+    async def _passthrough(self, request, call_next):
+        return await call_next(request)
+
+    for cls in (RateLimitMiddleware, RedisRateLimitMiddleware):
+        # Keep the real implementation reachable so a test can mount the
+        # limiter directly and prove it still refuses over-limit traffic.
+        cls._original_dispatch = cls.dispatch
+        cls.dispatch = _passthrough
+
+    # Defensive: if anything already built the stack during import, rebind the
+    # live instances too (dispatch_func was captured at construction).
+    def _rebind(mw):
+        seen = set()
+        while mw is not None and id(mw) not in seen:
+            seen.add(id(mw))
+            if isinstance(mw, (RateLimitMiddleware, RedisRateLimitMiddleware)):
+                mw.dispatch_func = _passthrough.__get__(mw, type(mw))
+            mw = getattr(mw, "app", None)
+
+    _rebind(getattr(app, "middleware_stack", None))
+
+
+# ── outbound network guard ──────────────────────────────────────────────
+# Eight tests were reaching real government/IFI hosts (api.worldbank.org,
+# treasury.go.ke, cob.go.ke, centralbank.go.ke, knbs.or.ke, oagkenya.go.ke,
+# imf.org).  Whether those calls succeeded, timed out or returned a WAF error
+# varied per run, so the suite's result depended on the network.  Block them by
+# default; a test that genuinely needs the internet opts in with
+# ``@pytest.mark.network``.
+#
+# We block at the httpx/requests *transport* layer rather than at
+# socket.connect: patching the socket corrupts machinery Starlette's TestClient
+# shares, so one blocked call cascades into unrelated failures later.  At the
+# transport layer the exception raised is exactly the one the seeders' own
+# try/except blocks are written to handle.
+_LOCAL_HOSTS = frozenset({"127.0.0.1", "::1", "localhost", "testserver", "testclient"})
+
+
+@pytest.fixture(autouse=True)
+def _no_outbound_network(request):
+    """Fail any real outbound HTTP unless the test is marked ``network``."""
+    if request.node.get_closest_marker("network"):
+        yield
+        return
+
+    import httpx
+
+    real_sync = httpx.HTTPTransport.handle_request
+    real_async = httpx.AsyncHTTPTransport.handle_async_request
+
+    def _refuse(host):
+        return httpx.ConnectError(
+            f"outbound network is disabled in tests (host {host!r}). Stub the "
+            f"fetcher, or mark the test @pytest.mark.network if it must call out."
+        )
+
+    def _sync(self, req, *a, **k):
+        if req.url.host not in _LOCAL_HOSTS:
+            raise _refuse(req.url.host)
+        return real_sync(self, req, *a, **k)
+
+    async def _async(self, req, *a, **k):
+        if req.url.host not in _LOCAL_HOSTS:
+            raise _refuse(req.url.host)
+        return await real_async(self, req, *a, **k)
+
+    import requests.adapters as _ra
+    import requests.exceptions as _re
+    from urllib.parse import urlparse
+
+    real_send = _ra.HTTPAdapter.send
+
+    def _send(self, req, *a, **k):
+        host = urlparse(req.url).hostname or ""
+        if host not in _LOCAL_HOSTS:
+            raise _re.ConnectionError(
+                f"outbound network is disabled in tests (host {host!r})"
+            )
+        return real_send(self, req, *a, **k)
+
+    httpx.HTTPTransport.handle_request = _sync
+    httpx.AsyncHTTPTransport.handle_async_request = _async
+    _ra.HTTPAdapter.send = _send
+    try:
+        yield
+    finally:
+        httpx.HTTPTransport.handle_request = real_sync
+        httpx.AsyncHTTPTransport.handle_async_request = real_async
+        _ra.HTTPAdapter.send = real_send
+
+
 # ── imports ─────────────────────────────────────────────────────────────
 try:
     from database import get_db
@@ -116,16 +228,10 @@ def client(db_session):
     # module-level `get_db` in **main** so those code paths also use the
     # test SQLite session.
     #
-    # Also bypass the rate-limiter middleware so the 120 req/60 s window
-    # doesn't trip during the full test suite.
-    async def _passthrough_dispatch(self, request, call_next):
-        return await call_next(request)
-
-    with patch("main.get_db", _override_get_db), patch(
-        "middleware.security.RateLimitMiddleware.dispatch", _passthrough_dispatch
-    ), patch(
-        "middleware.security.RedisRateLimitMiddleware.dispatch", _passthrough_dispatch
-    ):
+    # The rate limiter is bypassed session-wide in pytest_configure above —
+    # patching it here would be a no-op (the middleware instance binds
+    # dispatch_func at construction, before this fixture ever runs).
+    with patch("main.get_db", _override_get_db):
         yield TestClient(app, raise_server_exceptions=False)
 
     # Restore handlers so subsequent test parametrisations still work
