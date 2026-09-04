@@ -106,3 +106,85 @@ describe('G3 — a blank risk badge is not an assessment', () => {
     expect(screen.getByText(/^High Risk$/i)).toBeInTheDocument();
   });
 });
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   The alarm treatment is data-driven, not decorative.
+
+   The headline turns copper only while a published figure exceeds a published
+   threshold, and it names the threshold when it does. These pin both
+   directions, because a warning that cannot switch off is not a warning.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/** /api/v1/fiscal/summary → debt_anchor, as served on 2026-09-04. */
+const ANCHOR_BREACHED = {
+  data: { debt_anchor: { anchor_pct_gdp: 55, debt_to_gdp_pct: 69.3, above_anchor: true } },
+};
+
+const OVERVIEW_HIGH_RISK = {
+  data: {
+    total_outstanding: 13_552_833_964_464,
+    debt_to_gdp_ratio: 69.3,
+    debt_sustainability: {
+      risk_level: 'High',
+      assessment: 'Kenya\u2019s debt remains elevated. The IMF classifies Kenya at high risk of debt distress.',
+    },
+  },
+};
+
+describe('the headline states why it is alarmed', () => {
+  it('names the anchor and the size of the breach', () => {
+    mockFiscal.mockReturnValue(ANCHOR_BREACHED);
+    mockOverview.mockReturnValue(OVERVIEW_HIGH_RISK);
+    render(<SummaryStrip />);
+    // 69.3 - 55 = 14.3 points. Stated, so the reader does not have to subtract.
+    expect(screen.getByText(/14\.3 pts above the 55% anchor/i)).toBeInTheDocument();
+  });
+
+  it('attributes the distress rating to the IMF rather than asserting it', () => {
+    mockFiscal.mockReturnValue(ANCHOR_BREACHED);
+    mockOverview.mockReturnValue(OVERVIEW_HIGH_RISK);
+    render(<SummaryStrip />);
+    expect(screen.getByText(/high risk of debt distress · imf/i)).toBeInTheDocument();
+  });
+
+  it('colours the two debt figures only while the threshold is exceeded', () => {
+    mockFiscal.mockReturnValue(ANCHOR_BREACHED);
+    mockOverview.mockReturnValue(OVERVIEW_HIGH_RISK);
+    const { container } = render(<SummaryStrip />);
+    const figures = Array.from(container.querySelectorAll('[data-figure]'));
+    expect(figures).toHaveLength(2);
+    figures.forEach((f) => expect(f.className).toMatch(/text-gov-copper/));
+  });
+
+  it('drops the alarm entirely when debt is inside the anchor', () => {
+    // NEGATIVE CONTROL. A warning that is always on carries no information.
+    mockFiscal.mockReturnValue({
+      data: { debt_anchor: { anchor_pct_gdp: 55, debt_to_gdp_pct: 41.2, above_anchor: false } },
+    });
+    mockOverview.mockReturnValue({
+      data: {
+        total_outstanding: 5_000_000_000_000,
+        debt_to_gdp_ratio: 41.2,
+        debt_sustainability: { risk_level: 'Low', assessment: 'Comfortable.' },
+      },
+    });
+    const { container } = render(<SummaryStrip />);
+    expect(screen.queryByText(/above the .* anchor/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/debt distress/i)).not.toBeInTheDocument();
+    Array.from(container.querySelectorAll('[data-figure]')).forEach((f) =>
+      expect(f.className).not.toMatch(/text-gov-copper/)
+    );
+  });
+
+  it('does not raise the anchor alarm on a zero from a failed request', () => {
+    // The outage shape: HTTP 200 with a 0 ratio. Neither alarm nor
+    // reassurance — the strip already says "Not assessed".
+    mockFiscal.mockReturnValue(ANCHOR_BREACHED);
+    mockOverview.mockReturnValue({
+      data: { total_outstanding: 0, debt_to_gdp_ratio: 0, debt_sustainability: null },
+    });
+    render(<SummaryStrip />);
+    expect(screen.queryByText(/above the .* anchor/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/not assessed/i)).toBeInTheDocument();
+  });
+});

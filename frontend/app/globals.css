@@ -243,6 +243,38 @@
     @apply font-mono font-semibold tracking-tight tabular-nums text-gov-dark dark:text-white;
   }
 
+  /* A headline figure sized in viewport breakpoints overflows whenever its
+     COLUMN is narrower than the breakpoint implies. In the three-up headline
+     strip that happened between 640px — where the cards go side by side and
+     the type jumped to 3rem — and ~800px, where the column finally became
+     wide enough: "KES 13.55T" needed 203px in a 168px column and ran into the
+     Debt-to-GDP figure beside it. The strip now goes three-up at 768px rather
+     than 640px, which is the root cause; this rule is the guarantee.
+
+     `figure-cell` makes each card its own containment context so the figure
+     can be sized against the space it actually has (`cqi` = 1% of the
+     container's content box) instead of against the viewport. Any future
+     layout change — a sidebar, a fourth card — is then self-correcting. */
+  .figure-cell {
+    container-type: inline-size;
+  }
+
+  .figure-fluid {
+    font-size: 2.35rem;
+  }
+
+  @media (min-width: 768px) {
+    /* Coefficient is empirical: the mono numeral runs ~3.35em wide at six
+       glyphs ("13.55T"), and the "KES" prefix adds a fixed ~42px that does
+       not scale with it — hence the subtraction rather than a plain
+       percentage. Sized for SEVEN glyphs so the strip still holds if the
+       total crosses into three digits of trillions, and capped at 3rem so
+       wide columns keep the intended display size. */
+    .figure-fluid {
+      font-size: clamp(1.75rem, calc(23cqi - 8px), 3rem);
+    }
+  }
+
   .ledger-rule {
     border-top: 1px solid rgb(var(--c-neutral-border));
   }

@@ -6,9 +6,11 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { useDebtTimeline, useNationalDebtOverview } from '@/lib/react-query/useDebt';
 import { useFiscalSummary } from '@/lib/react-query/useFiscal';
 import { useLang } from '@/lib/i18n/LangProvider';
+import { assessDebtAnchor } from '@/lib/debt/debtAnchor';
 import { classifyDebtRisk, fmtBillionKES, toRawKES } from '@/lib/utils';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
+  AlertTriangle,
   Banknote,
   BarChart3,
   Loader2,
@@ -96,6 +98,10 @@ export function SummaryStrip() {
   const { t } = useLang();
   const { data: timelineResp } = useDebtTimeline();
   const { data: overviewResp } = useNationalDebtOverview();
+  // Same query KenyanGovCard below already runs, so React Query serves this
+  // from cache rather than issuing a second request. Needed here for the
+  // statutory debt anchor the headline is judged against.
+  const { data: fiscal } = useFiscalSummary();
 
   const apiData = overviewResp?.data ?? overviewResp;
   const latest = timelineResp?.timeline?.length
@@ -151,10 +157,32 @@ export function SummaryStrip() {
     (typeof gdpPct === 'number' ? classifyDebtRisk(gdpPct) : null);
   const isHigh = riskLevel === 'High';
 
+  // Debt against the one published threshold it is formally measured by. The
+  // anchor comes from the API so a change in the law needs no frontend
+  // release. This — not a styling choice — is what turns the headline red:
+  // the figures are only ever marked as alarming while a published figure
+  // exceeds a published threshold, and the card says which and by how much.
+  const anchorPct: number | null = fiscal?.debt_anchor?.anchor_pct_gdp ?? null;
+  const anchor = assessDebtAnchor(typeof gdpPct === 'number' ? gdpPct : null, anchorPct);
+  const breached = anchor.state === 'above';
+  // The IMF's own words for the debt position, used verbatim rather than
+  // paraphrased into something more dramatic than the source supports.
+  const imfAssessment: string | null = apiData?.debt_sustainability?.assessment ?? null;
+  const alarm = breached || isHigh;
+  // `.text-gov-copper` is re-pointed at the lighter accent token under
+  // `:root.dark` (globals.css), so this needs no dark: variant to stay legible.
+  const figureTone = alarm ? 'text-gov-copper' : '';
+
   return (
-    <section aria-label='Headline public finance figures' className='ledger-panel overflow-hidden'>
-      <div className='grid sm:grid-cols-3'>
-        <div className='border-b border-neutral-border p-5 sm:border-b-0 sm:border-r sm:p-6'>
+    <section
+      aria-label='Headline public finance figures'
+      className='ledger-panel overflow-hidden'>
+      {/* Alert rule — a pre-attentive cue that the figures below are outside
+          their statutory bounds. Never decorative: it is bound to the same
+          `alarm` condition the copper figures and the chips are. */}
+      {alarm && <div aria-hidden='true' className='h-1 w-full bg-gov-copper' />}
+      <div className='grid md:grid-cols-3'>
+        <div className='figure-cell border-b border-neutral-border p-5 md:border-b-0 md:border-r md:p-6'>
           <div className='flex items-center justify-between gap-3'>
             {/* The year here used to be `gdp_year` — the GDP observation year,
                 not the debt vintage — so the card dated the debt figure by
@@ -163,10 +191,20 @@ export function SummaryStrip() {
             <span className='figure-label'>{t('home.hero.total_debt')}</span>
             <KenyaFlag className='h-5 w-5 shrink-0' />
           </div>
-          <p className='figure-value mt-4 text-[2.35rem] leading-none sm:text-5xl' data-figure>
+          <p className={`figure-value figure-fluid mt-4 leading-none ${figureTone}`} data-figure>
             <span className='mr-2 text-sm tracking-[0.08em] text-neutral-muted'>KES</span>
             {totalT == null ? '—' : `${totalT}T`}
           </p>
+          {/* The alarm is the IMF's classification of this debt position, in
+              the IMF's own words — not an adjective of ours. Carries a text
+              cue as well as the colour, so the warning does not depend on
+              seeing red (WCAG 1.4.1). */}
+          {isHigh && imfAssessment && (
+            <p className='mt-2 inline-flex items-start gap-1.5 font-mono text-[11px] font-semibold uppercase leading-snug tracking-[0.06em] text-gov-copper'>
+              <AlertTriangle aria-hidden='true' className='mt-px h-3 w-3 shrink-0' />
+              <span>High risk of debt distress · IMF</span>
+            </p>
+          )}
           <div className='mt-3 text-xs leading-snug text-neutral-muted'>
             <span>
               {loanCount != null
@@ -188,11 +226,38 @@ export function SummaryStrip() {
           </div>
         </div>
 
-        <div className='border-b border-neutral-border p-5 sm:border-b-0 sm:border-r sm:p-6'>
+        <div className='figure-cell border-b border-neutral-border p-5 md:border-b-0 md:border-r md:p-6'>
           <p className='figure-label'>Debt-to-GDP</p>
-          <p className='figure-value mt-4 text-[2.35rem] leading-none sm:text-5xl' data-figure>
+          <p className={`figure-value figure-fluid mt-4 leading-none ${figureTone}`} data-figure>
             {typeof gdpPct === 'number' ? `${gdpPct.toFixed(1)}%` : '—'}
           </p>
+          {anchor.state === 'above' && (
+            <>
+              {/* States the breach in points rather than leaving the reader to
+                  subtract 55 from 69.3 themselves. */}
+              <p className='mt-2 inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.06em] text-gov-copper'>
+                <AlertTriangle aria-hidden='true' className='h-3 w-3 shrink-0' />
+                <span>
+                  {anchor.pointsAbove.toFixed(1)} pts above the{' '}
+                  {anchor.anchorPct.toFixed(0)}% anchor
+                </span>
+              </p>
+              {/* Shows the overshoot rather than asserting it. Same vocabulary
+                  as the anchor gauge in the fiscal snapshot card below. */}
+              <div
+                aria-hidden='true'
+                className='relative mt-2 h-1.5 overflow-hidden rounded-full bg-surface-sunken'>
+                <div
+                  className='absolute inset-y-0 left-0 rounded-full bg-gov-copper'
+                  style={{ width: `${Math.min(anchor.ratioPct, 100)}%` }}
+                />
+                <div
+                  className='absolute inset-y-0 w-px bg-gov-dark/60 dark:bg-white/60'
+                  style={{ left: `${anchor.anchorPct}%` }}
+                />
+              </div>
+            </>
+          )}
           <p className='mt-3 text-xs leading-snug text-neutral-muted'>
             {gdpBasis ?? 'Basis not declared by the source'}
             {gdpSource && <span className='block mt-0.5'>Source: {gdpSource}</span>}
@@ -203,7 +268,7 @@ export function SummaryStrip() {
           </p>
         </div>
 
-        <div className='p-5 sm:p-6'>
+        <div className='figure-cell p-5 md:p-6'>
           <p className='figure-label'>{t('home.hero.risk_level')}</p>
           <p className={`mt-4 font-mono text-3xl font-semibold uppercase leading-none tracking-[0.04em] ${isHigh ? 'text-gov-copper' : riskLevel ? 'text-gov-gold' : 'text-neutral-muted'}`}>
             {riskLevel
