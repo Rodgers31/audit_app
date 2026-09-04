@@ -50,12 +50,39 @@ interface BackendCountyResponse {
   };
 }
 
+/**
+ * First figure the API actually published, or `undefined` when it published
+ * none. Never 0 — this is the whole point.
+ *
+ * "The API did not publish this figure" and "the figure is zero" are different
+ * claims, and collapsing the first into the second here made them
+ * indistinguishable to every component downstream: an absent `money_received`
+ * became a funding-gap alert for the county's entire budget, an absent debt
+ * became a confident "0.0% debt ratio", and an absent budget became a county
+ * allocated nothing.
+ *
+ * A zero arriving FROM the API is treated as absence too, deliberately. Every
+ * field this is used on is a SUM over rows on the backend — budget lines for
+ * `total_budget`, loan rows for `total_debt` — so 0.0 is an empty aggregate,
+ * not a measured zero. No county is allocated nothing (all 47 receive an
+ * equitable share by constitutional formula) and none has been shown to owe
+ * exactly nothing, so treating 0 as absence loses no real figure while
+ * stopping the UI from stating one the source never made. Non-finite values
+ * are rejected for the same reason: NaN is not a figure either.
+ */
+const publishedAmount = (...candidates: Array<number | null | undefined>): number | undefined => {
+  for (const v of candidates) {
+    if (typeof v === 'number' && Number.isFinite(v) && v !== 0) return v;
+  }
+  return undefined;
+};
+
 // Transform backend county data to frontend County type
-const transformCountyData = (bc: BackendCountyResponse): County => {
+export const transformCountyData = (bc: BackendCountyResponse): County => {
   // Use real coordinates from backend; undefined if not provided (do not default to Nairobi)
   const coordinates: [number, number] | undefined = bc.coordinates || undefined;
-  const budget = bc.total_budget || bc.budget_2025 || 0;
-  const debt = bc.total_debt || bc.debt || 0;
+  const budget = publishedAmount(bc.total_budget, bc.budget_2025);
+  const debt = publishedAmount(bc.total_debt, bc.debt);
 
   // Fiscal grade — derived from financial_health_score (which is budget
   // utilisation), NOT an audit opinion. Kept in its own field so the UI
@@ -103,7 +130,7 @@ const transformCountyData = (bc: BackendCountyResponse): County => {
     // The API genuinely returns gdp: null for every county — no county GDP
     // series is ingested. Rendering 0 said each county produces nothing (F2).
     gdp: bc.gdp ?? undefined,
-    moneyReceived: bc.money_received ?? bc.total_spent ?? 0,
+    moneyReceived: publishedAmount(bc.money_received, bc.total_spent),
     budgetUtilization: bc.budget_utilization ?? undefined,
     revenueCollection: bc.revenue_collection ?? undefined,
     pendingBills: bc.pending_bills ?? 0,

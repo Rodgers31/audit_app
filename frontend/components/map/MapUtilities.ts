@@ -3,6 +3,7 @@
  * Uses the gov-* design-token palette for visual consistency.
  */
 
+import { countyBudget, countyDebt } from '@/lib/countyFigures';
 import { County } from '@/types';
 
 /* ────────────────── name matching ────────────────── */
@@ -118,13 +119,51 @@ export const getCountyHoverFill = (county: County | undefined): string =>
 
 /* ────────────────── helpers ────────────────── */
 
-export const getFinancialTrend = (county: County): 'excellent' | 'good' | 'fair' | 'poor' => {
-  // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- picks a map colour bucket, never rendered as a figure. Known limitation: a county that reported no execution lands in the lowest bucket.
-  const utilization = county.budgetUtilization || 0;
-  // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- modelled county debt used to pick a map colour bucket, not rendered as a figure
-  const debt = county.debt ?? 0;
-  const budget = county.budget && county.budget > 0 ? county.budget : 1;
-  const debtRatio = (debt / budget) * 100;
+/**
+ * Debt as a percentage of budget, or `null` when either figure is absent.
+ *
+ * Withholding is the point. `(county.debt || 0) / county.budget` reported a
+ * confident "0.0%" for a county whose debt the API never published, which
+ * reads as "this county owes nothing" — a claim the source never made. A
+ * caller that cannot render "—" should not call this at all.
+ *
+ * A genuine 0 debt against a published budget still returns 0: that is a
+ * figure, not an absence.
+ */
+export const countyDebtRatio = (county: County): number | null => {
+  const debt = countyDebt(county);
+  const budget = countyBudget(county);
+  if (debt == null || budget == null || budget <= 0) return null;
+  return (debt / budget) * 100;
+};
+
+/**
+ * Budget minus what the county received, or `null` when either is absent.
+ *
+ * The tooltip renders a "Funding gap" alert whenever this is positive, so an
+ * absent `moneyReceived` treated as 0 accused every such county of having
+ * received none of its entire budget. The subtraction is only meaningful when
+ * both sides were actually published.
+ */
+export const countyFundingGap = (county: County): number | null => {
+  const budget = countyBudget(county);
+  const received = county.moneyReceived;
+  if (budget == null || received == null) return null;
+  return budget - received;
+};
+
+export const getFinancialTrend = (
+  county: County
+): 'excellent' | 'good' | 'fair' | 'poor' | 'unknown' => {
+  const utilization = county.budgetUtilization;
+  const debtRatio = countyDebtRatio(county);
+
+  // A trend is a judgement about a county, so it needs both inputs to have
+  // been published. Grading on figures nobody reported put counties in a
+  // bucket they had not earned in either direction: an absent execution rate
+  // read as 0% and sank the county to "poor", while an absent debt figure
+  // read as debt-free and lifted it to "excellent".
+  if (utilization == null || debtRatio == null) return 'unknown';
 
   if (utilization > 90 && debtRatio < 30) return 'excellent';
   if (utilization > 80 && debtRatio < 50) return 'good';

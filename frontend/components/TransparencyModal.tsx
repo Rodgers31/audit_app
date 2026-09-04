@@ -1,5 +1,6 @@
 'use client';
 
+import { countyBudget } from '@/lib/countyFigures';
 import { useCountyAuditsEnriched } from '@/lib/react-query';
 import { County } from '@/types';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -24,6 +25,8 @@ interface TransparencyModalProps {
 
 export default function TransparencyModal({ isOpen, onClose, county }: TransparencyModalProps) {
   const [view, setView] = React.useState<'main' | 'contact' | 'budget' | 'report'>('main');
+  // undefined when the API published no budget — every render site shows "—".
+  const budgetFigure = countyBudget(county) ?? county.budget_2025 ?? undefined;
   const [showAllQueries, setShowAllQueries] = React.useState(false);
 
   // Fetch enriched audits when modal is open and on report view
@@ -212,7 +215,7 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
                         <div className='flex justify-between'>
                           <span className='text-gray-600 dark:text-neutral-muted'>Budget Size</span>
                           <span className='font-semibold'>
-                            {formatCurrency(county.budget_2025 || county.totalBudget || 0)}
+                            {budgetFigure != null ? formatCurrency(budgetFigure) : '—'}
                           </span>
                         </div>
                         <div className='flex justify-between'>
@@ -312,7 +315,7 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
                       <div className='bg-white dark:bg-surface-base rounded-xl p-4 border'>
                         <div className='text-sm text-gray-500 dark:text-neutral-muted/80'>Budget Size</div>
                         <div className='text-lg font-semibold'>
-                          {formatCurrency(county.budget_2025 || county.totalBudget || 0)}
+                          {budgetFigure != null ? formatCurrency(budgetFigure) : '—'}
                         </div>
                       </div>
                       <div className='bg-white dark:bg-surface-base rounded-xl p-4 border'>
@@ -479,7 +482,7 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
                       <div className='bg-white dark:bg-surface-base rounded-xl p-4 border'>
                         <div className='text-sm text-gray-500 dark:text-neutral-muted/80'>Total Budget</div>
                         <div className='text-lg font-semibold'>
-                          {formatCurrency(county.budget_2025 || county.totalBudget || 0)}
+                          {budgetFigure != null ? formatCurrency(budgetFigure) : '—'}
                         </div>
                       </div>
                       <div className='bg-white dark:bg-surface-base rounded-xl p-4 border'>

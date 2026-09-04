@@ -128,6 +128,10 @@ export interface County {
   name: string;
   code?: string;
   coordinates?: [number, number]; // [longitude, latitude]
+  // Money figures are absent-or-published, never zero-filled. `undefined`
+  // means the API withheld the figure — render "—" and withhold any claim
+  // derived from it rather than substituting 0, which states that a county
+  // was allocated nothing / owes nothing / received nothing.
   budget?: number;
   debt?: number;
   population: number;
@@ -141,7 +145,7 @@ export interface County {
   lastAuditDate?: string;
   gdp?: number;
   // Enhanced financial data
-  moneyReceived?: number; // Total grants/transfers received
+  moneyReceived?: number; // Total grants/transfers received — undefined when withheld
   budgetUtilization?: number; // Percentage of budget used
   auditIssues?: AuditIssue[];
   revenueCollection?: number; // Local revenue collected

@@ -1,5 +1,6 @@
 'use client';
 
+import { countyBudget, countyDebt } from '@/lib/countyFigures';
 import { County } from '@/types';
 import { motion } from 'framer-motion';
 
@@ -11,7 +12,9 @@ interface CountySliderProps {
   className?: string;
 }
 
-const formatKES = (amount: number): string => {
+/** Em dash for a figure the API withheld; "KES 0" only for a real zero. */
+const formatKES = (amount: number | null | undefined): string => {
+  if (amount == null) return '—';
   if (amount >= 1e9) return `KES ${(amount / 1e9).toFixed(1)}B`;
   if (amount >= 1e6) return `KES ${(amount / 1e6).toFixed(1)}M`;
   if (amount >= 1e3) return `KES ${(amount / 1e3).toFixed(0)}K`;
@@ -112,7 +115,7 @@ export default function CountySlider({
             <div className='text-xs'>
               <span className='text-gray-500 dark:text-neutral-muted/80'>Budget: </span>
               <span className='font-medium text-green-600'>
-                {formatKES(county.budget ?? county.totalBudget ?? 0)}
+                {formatKES(countyBudget(county))}
               </span>
             </div>
 
@@ -120,7 +123,7 @@ export default function CountySlider({
             <div className='text-xs'>
               <span className='text-gray-500 dark:text-neutral-muted/80'>Debt: </span>
               <span className='font-medium text-red-600'>
-                {formatKES(county.debt ?? county.totalDebt ?? 0)}
+                {formatKES(countyDebt(county))}
               </span>
             </div>
           </div>

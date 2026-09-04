@@ -16,6 +16,7 @@ import {
   X,
 } from 'lucide-react';
 import Link from 'next/link';
+import { countyDebtRatio, countyFundingGap } from './MapUtilities';
 
 interface MapTooltipProps {
   county: County;
@@ -70,8 +71,10 @@ function placeAnchored(a: NonNullable<MapTooltipProps['anchor']>) {
 
 /* ── helpers ── */
 
-const fmtKES = (n: number | undefined): string => {
-  if (!n || n === 0) return 'KES 0';
+/** Em dash for a figure the API withheld; "KES 0" only for a real zero. */
+const fmtKES = (n: number | null | undefined): string => {
+  if (n == null) return '—';
+  if (n === 0) return 'KES 0';
   if (n >= 1e9) return `KES ${(n / 1e9).toFixed(1)}B`;
   if (n >= 1e6) return `KES ${(n / 1e6).toFixed(1)}M`;
   if (n >= 1e3) return `KES ${(n / 1e3).toFixed(0)}K`;
@@ -143,11 +146,11 @@ export default function MapTooltip({
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
 
   const utilization = county.budgetUtilization ?? null;
-  const debtRatio =
-    // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- county debt is a modelled figure the map disclaims sitewide; the ratio is guarded on budget > 0
-    county.budget && county.budget > 0 ? ((county.debt || 0) / county.budget) * 100 : 0;
-  // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- modelled county figures, disclaimed sitewide
-  const fundingGap = (county.budget || 0) - (county.moneyReceived || 0);
+  // Both null when the API withheld an input. Rendering a derived figure the
+  // source never supported is the defect these helpers exist to prevent —
+  // see components/map/MapUtilities.ts.
+  const debtRatio = countyDebtRatio(county);
+  const fundingGap = countyFundingGap(county);
   const auditIssuesCount = county.auditIssues?.length || 0;
 
   // Two positioning modes:
@@ -292,17 +295,21 @@ export default function MapTooltip({
               </div>
               <div className='flex items-baseline gap-1 mb-0.5'>
                 <span className='text-[15px] font-bold text-gov-dark dark:text-white tabular-nums leading-none'>
-                  {debtRatio.toFixed(1)}
+                  {debtRatio != null ? debtRatio.toFixed(1) : '—'}
                 </span>
-                <span className='text-[11px] font-medium text-neutral-muted'>%</span>
+                {debtRatio != null && (
+                  <span className='text-[11px] font-medium text-neutral-muted'>%</span>
+                )}
               </div>
-              <div className='text-[11px] text-neutral-muted truncate'>{fmtKES(county.debt)}</div>
+              <div className='text-[11px] text-neutral-muted truncate'>
+                {county.debt != null ? fmtKES(county.debt) : 'Not reported'}
+              </div>
             </div>
           </div>
 
           {/* ── Alerts (compact) ── */}
           <div className='space-y-1'>
-            {fundingGap > 0 && (
+            {fundingGap != null && fundingGap > 0 && (
               <AlertRow
                 icon={<Scale className='w-3 h-3 text-amber-600' />}
                 label='Funding gap'

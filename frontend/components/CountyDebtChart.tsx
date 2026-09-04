@@ -1,5 +1,7 @@
 'use client';
 
+import { countyDebtRatio } from '@/components/map/MapUtilities';
+import { countyDebt } from '@/lib/countyFigures';
 import { County } from '@/types';
 import { motion } from 'framer-motion';
 
@@ -8,8 +10,7 @@ interface CountyDebtChartProps {
 }
 
 export default function CountyDebtChart({ county }: CountyDebtChartProps) {
-  const totalDebt = county.debt ?? county.totalDebt ?? 0;
-  const budget = county.budget ?? county.totalBudget ?? 0;
+  const totalDebt = countyDebt(county);
 
   // Use actual pending bills data when available
   const debtComposition = [
@@ -23,7 +24,7 @@ export default function CountyDebtChart({ county }: CountyDebtChartProps) {
           },
         ]
       : []),
-    ...(totalDebt > (county.pendingBills ?? 0)
+    ...(totalDebt != null && totalDebt > (county.pendingBills ?? 0)
       ? [
           {
             type: 'Other Debt',
@@ -35,14 +36,16 @@ export default function CountyDebtChart({ county }: CountyDebtChartProps) {
       : []),
   ];
 
-  const formatAmount = (amount: number) => {
-    return `KES ${(amount / 1e9).toFixed(1)}B`;
-  };
+  const formatAmount = (amount: number | null | undefined) =>
+    amount == null ? '—' : `KES ${(amount / 1e9).toFixed(1)}B`;
 
-  const formatPercentage = (amount: number) => {
-    if (!totalDebt || totalDebt === 0) return '0%';
-    return `${((amount / totalDebt) * 100).toFixed(1)}%`;
-  };
+  // A share of an unpublished total is not a share of anything.
+  const formatPercentage = (amount: number) =>
+    totalDebt != null && totalDebt > 0 ? `${((amount / totalDebt) * 100).toFixed(1)}%` : '—';
+
+  const debtRatio = countyDebtRatio(county);
+  const perCapitaDebt =
+    totalDebt != null && county.population > 0 ? Math.round(totalDebt / county.population) : null;
 
   // Calculate pie chart segments
   const createPieSlice = (startAngle: number, endAngle: number, color: string) => {
@@ -87,7 +90,7 @@ export default function CountyDebtChart({ county }: CountyDebtChartProps) {
         <div className='relative'>
           <svg width='200' height='200' className='drop-shadow-lg'>
             {debtComposition.map((segment, index) => {
-              const percentage = (segment.amount / totalDebt) * 100;
+              const percentage = ((segment.amount / (totalDebt as number)) * 100) || 0;
               const angle = (percentage / 100) * 360;
               const startAngle = currentAngle;
               const endAngle = currentAngle + angle;
@@ -153,17 +156,13 @@ export default function CountyDebtChart({ county }: CountyDebtChartProps) {
         <div className='bg-red-50 rounded-xl p-4 border border-red-200'>
           <h5 className='font-semibold text-red-900 mb-1'>Debt-to-Budget Ratio</h5>
           <div className='text-2xl font-bold text-red-700'>
-            {budget > 0 ? ((totalDebt / budget) * 100).toFixed(1) : '0.0'}%
+            {debtRatio != null ? `${debtRatio.toFixed(1)}%` : '—'}
           </div>
         </div>
         <div className='bg-blue-50 rounded-xl p-4 border border-blue-200'>
           <h5 className='font-semibold text-blue-900 mb-1'>Per Capita Debt</h5>
           <div className='text-2xl font-bold text-blue-700'>
-            KES{' '}
-            {(county.population > 0
-              ? Math.round(totalDebt / county.population)
-              : 0
-            ).toLocaleString()}
+            {perCapitaDebt != null ? `KES ${perCapitaDebt.toLocaleString()}` : '—'}
           </div>
         </div>
       </div>
@@ -173,17 +172,18 @@ export default function CountyDebtChart({ county }: CountyDebtChartProps) {
         <h5 className='font-semibold text-yellow-900 mb-2'>Debt Analysis</h5>
         <ul className='text-sm text-yellow-800 space-y-1'>
           <li>
-            • Debt represents {budget > 0 ? ((totalDebt / budget) * 100).toFixed(1) : '0.0'}% of
-            annual budget
+            {debtRatio != null
+              ? `• Debt represents ${debtRatio.toFixed(1)}% of annual budget`
+              : '• Debt as a share of budget is not reported for this county'}
           </li>
           <li>
-            • Each resident owes approximately KES{' '}
-            {(county.population > 0
-              ? Math.round(totalDebt / county.population)
-              : 0
-            ).toLocaleString()}
+            {perCapitaDebt != null
+              ? `• Each resident owes approximately KES ${perCapitaDebt.toLocaleString()}`
+              : '• Per-resident debt is not reported for this county'}
           </li>
-          <li>• Largest debt source: {debtComposition[0].type}</li>
+          {debtComposition.length > 0 && (
+            <li>• Largest debt source: {debtComposition[0].type}</li>
+          )}
         </ul>
       </div>
     </div>

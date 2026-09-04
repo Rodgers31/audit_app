@@ -4,6 +4,8 @@
  * Extracted from CountyDetails component for better maintainability
  */
 
+import { countyDebtRatio } from '@/components/map/MapUtilities';
+import { countyBudget, countyDebt } from '@/lib/countyFigures';
 import { County } from '@/types';
 
 /**
@@ -140,17 +142,21 @@ export const getAuditDescription = (status: string) => {
  */
 export const calculateCountyMetrics = (county: County) => {
   const budgetUtilization = county.budgetUtilization ?? null;
-  const budget = county.budget ?? county.totalBudget ?? 0;
-  const debt = county.debt ?? county.totalDebt ?? 0;
-  const debtRatio = budget > 0 ? (debt / budget) * 100 : 0;
-  const perCapitaDebt = county.population > 0 ? debt / county.population : 0;
+  // Absent figures stay absent: a county whose budget or debt the API never
+  // published must not be reported as one allocated nothing or owing nothing.
+  const budget = countyBudget(county) ?? null;
+  const debt = countyDebt(county) ?? null;
+  const debtRatio = countyDebtRatio(county);
+  const perCapitaDebt = debt != null && county.population > 0 ? debt / county.population : null;
   const revenue = county.revenueCollection ?? null;
   const expenditure =
-    budgetUtilization != null ? budget * (budgetUtilization / 100) : null;
+    budgetUtilization != null && budget != null ? budget * (budgetUtilization / 100) : null;
   const balance =
     revenue != null && expenditure != null ? revenue - expenditure : null;
 
   return {
+    budget,
+    debt,
     budgetUtilization,
     debtRatio,
     perCapitaDebt,

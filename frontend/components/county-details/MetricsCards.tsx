@@ -4,6 +4,7 @@
  */
 'use client';
 
+import { countyBudget, countyDebt } from '@/lib/countyFigures';
 import { County } from '@/types';
 import AuditCard from './AuditCard';
 import BudgetCard from './BudgetCard';
@@ -12,17 +13,15 @@ import DebtCard from './DebtCard';
 interface MetricsCardsProps {
   county: County;
   budgetUtilization: number | null;
-  debtRatio: number;
+  /** null when the API published no debt or no budget to divide it by. */
+  debtRatio: number | null;
 }
 
 export default function MetricsCards({ county, budgetUtilization, debtRatio }: MetricsCardsProps) {
   return (
     <div className='grid grid-cols-1 md:grid-cols-3 gap-5 mb-6'>
-      <BudgetCard
-        budget={county.budget ?? county.totalBudget ?? 0}
-        budgetUtilization={budgetUtilization}
-      />
-      <DebtCard debt={county.debt ?? county.totalDebt ?? 0} debtRatio={debtRatio} />
+      <BudgetCard budget={countyBudget(county) ?? null} budgetUtilization={budgetUtilization} />
+      <DebtCard debt={countyDebt(county) ?? null} debtRatio={debtRatio} />
       <AuditCard county={county} />
     </div>
   );

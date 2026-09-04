@@ -8,8 +8,10 @@ import { formatPercentage } from '@/lib/utils';
 import { TrendingDown } from 'lucide-react';
 
 interface DebtCardProps {
-  debt: number;
-  debtRatio: number;
+  /** null when the API published no debt — render "—", never "KES 0.00B". */
+  debt: number | null;
+  /** null when either debt or the budget it divides by is absent. */
+  debtRatio: number | null;
 }
 
 export default function DebtCard({ debt, debtRatio }: DebtCardProps) {
@@ -29,12 +31,16 @@ export default function DebtCard({ debt, debtRatio }: DebtCardProps) {
       </div>
 
       {/* Debt Amount */}
-      <div className='text-3xl font-bold text-orange-800 mb-2'>KES {(debt / 1e9).toFixed(2)}B</div>
-      <div className='text-orange-600 font-medium mb-1'>Outstanding obligations</div>
+      <div className='text-3xl font-bold text-orange-800 mb-2'>
+        {debt != null ? `KES ${(debt / 1e9).toFixed(2)}B` : '—'}
+      </div>
+      <div className='text-orange-600 font-medium mb-1'>
+        {debt != null ? 'Outstanding obligations' : 'Obligations not reported'}
+      </div>
 
       {/* Debt Ratio */}
       <div className='text-sm text-orange-700 font-medium'>
-        {formatPercentage(debtRatio)} of annual revenue
+        {debtRatio != null ? `${formatPercentage(debtRatio)} of annual revenue` : '—'}
       </div>
     </div>
   );

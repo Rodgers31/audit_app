@@ -7,7 +7,8 @@
 import { DollarSign } from 'lucide-react';
 
 interface BudgetCardProps {
-  budget: number;
+  /** null when the API published no budget — render "—", never "KES 0.00B". */
+  budget: number | null;
   budgetUtilization: number | null;
 }
 
@@ -28,8 +29,12 @@ export default function BudgetCard({ budget, budgetUtilization }: BudgetCardProp
       </div>
 
       {/* Budget Amount */}
-      <div className='text-2xl font-bold text-green-800 mb-1'>KES {(budget / 1e9).toFixed(2)}B</div>
-      <div className='text-green-600 mb-3 font-medium text-sm'>Annual allocation</div>
+      <div className='text-2xl font-bold text-green-800 mb-1'>
+        {budget != null ? `KES ${(budget / 1e9).toFixed(2)}B` : '—'}
+      </div>
+      <div className='text-green-600 mb-3 font-medium text-sm'>
+        {budget != null ? 'Annual allocation' : 'Allocation not reported'}
+      </div>
 
       {/* Utilization Progress Bar */}
       <div className='w-full bg-green-200 rounded-full h-2'>

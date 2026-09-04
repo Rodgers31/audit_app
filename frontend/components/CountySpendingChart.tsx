@@ -1,5 +1,6 @@
 'use client';
 
+import { countyBudget } from '@/lib/countyFigures';
 import { County } from '@/types';
 import { motion } from 'framer-motion';
 import { BookOpen, Hammer, Heart } from 'lucide-react';
@@ -9,7 +10,7 @@ interface CountySpendingChartProps {
 }
 
 export default function CountySpendingChart({ county }: CountySpendingChartProps) {
-  const totalBudget = county.budget ?? county.totalBudget ?? 0;
+  const totalBudget = countyBudget(county);
 
   // Build spending categories from actual county sector data
   const rawCategories = [
@@ -23,13 +24,12 @@ export default function CountySpendingChart({ county }: CountySpendingChartProps
 
   const maxAmount = Math.max(...spendingCategories.map((cat) => cat.amount), 1);
 
-  const formatAmount = (amount: number) => {
-    return `KES ${(amount / 1e9).toFixed(1)}B`;
-  };
+  const formatAmount = (amount: number | null | undefined) =>
+    amount == null ? '—' : `KES ${(amount / 1e9).toFixed(1)}B`;
 
-  const formatPercentage = (amount: number) => {
-    return totalBudget > 0 ? `${((amount / totalBudget) * 100).toFixed(1)}%` : '0%';
-  };
+  // A share of an unpublished budget is not a share of anything.
+  const formatPercentage = (amount: number) =>
+    totalBudget != null && totalBudget > 0 ? `${((amount / totalBudget) * 100).toFixed(1)}%` : '—';
 
   return (
     <div className='space-y-6'>

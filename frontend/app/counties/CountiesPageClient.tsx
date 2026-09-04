@@ -5,6 +5,13 @@ import ModelledDataNote from '@/components/ModelledDataNote';
 import InfoTip from '@/components/InfoTip';
 import { useLang } from '@/lib/i18n/LangProvider';
 import type { TranslationKey } from '@/lib/i18n/messages';
+import {
+  compareByPublishedFigure,
+  countyBudget,
+  countyDebt,
+  sumPublished,
+} from '@/lib/countyFigures';
+import { countyDebtRatio } from '@/components/map/MapUtilities';
 import { useCounties } from '@/lib/react-query';
 import { generateFiscalYears, getLatestReportedFiscalYear } from '@/lib/utils';
 import { County } from '@/types';
@@ -45,6 +52,18 @@ function fmtKES(n: number): string {
   if (n >= 1e6) return `${(n / 1e6).toFixed(0)}M`;
   if (n >= 1e3) return `${(n / 1e3).toFixed(0)}K`;
   return n.toLocaleString();
+}
+/**
+ * Figures whose absence must not be ranked. Ordering only — publishes nothing.
+ */
+const RANKED_FIGURE: Partial<Record<SortField, (c: County) => number | undefined>> = {
+  budget: countyBudget,
+  debt: countyDebt,
+};
+
+/** Em dash for a figure the API withheld. A real 0 still renders as "0". */
+function fmtKESorDash(n: number | null | undefined): string {
+  return n == null ? '—' : fmtKES(n);
 }
 function fmtPop(n: number): string {
   if (n >= 1e6) return `${(n / 1e6).toFixed(1)}M`;
@@ -256,8 +275,11 @@ function GaugeMini({ value, target }: { value: number; target: number }) {
 function KPICards({ counties }: { counties: County[] }) {
   const { t } = useLang();
   const stats = useMemo(() => {
-    const totalBudget = counties.reduce((s, c) => s + (c.totalBudget ?? c.budget ?? 0), 0);
-    const totalDebt = counties.reduce((s, c) => s + (c.totalDebt ?? c.debt ?? 0), 0);
+    // Totals cover only the counties that published a figure. Summing an
+    // absent one as 0 yields a total that looks complete and is silently
+    // short — see lib/countyFigures.ts.
+    const totalBudget = sumPublished(counties, countyBudget);
+    const totalDebt = sumPublished(counties, countyDebt);
     // Average only across counties that actually reported execution — otherwise
     // the mean gets diluted by zeros and makes every year look underperforming.
     // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- comparison, not a published figure: this predicate SELECTS the reporters
@@ -273,8 +295,11 @@ function KPICards({ counties }: { counties: County[] }) {
       if (st in auditCounts) auditCounts[st as keyof typeof auditCounts]++;
     });
     const totalAudits = auditCounts.clean + auditCounts.qualified + auditCounts.adverse;
-    const byDebt = [...counties]
-      .sort((a, b) => (b.totalDebt ?? b.debt ?? 0) - (a.totalDebt ?? a.debt ?? 0))
+    // Only counties that published a debt figure can be ranked by it; an
+    // absent figure is not a small one.
+    const byDebt = counties
+      .filter((c) => countyDebt(c) != null)
+      .sort((a, b) => (countyDebt(b) as number) - (countyDebt(a) as number))
       .slice(0, 3);
     return { totalBudget, totalDebt, avgExec, auditCounts, totalAudits, byDebt };
   }, [counties]);
@@ -294,10 +319,13 @@ function KPICards({ counties }: { counties: County[] }) {
         <div className='min-w-0'>
           <div className='text-xs font-medium text-gray-500 dark:text-neutral-muted/80 mb-1'>{t('counties.kpi.total_budget')}</div>
           <div className='text-2xl font-bold text-gray-900 dark:text-neutral-text tracking-tight'>
-            {fmtKES(stats.totalBudget)}
+            {fmtKESorDash(stats.totalBudget.total)}
           </div>
           <div className='text-[11px] text-gray-500 dark:text-neutral-muted/80 font-medium mt-0.5'>
-            {t('counties.kpi.across_counties').replace('{n}', String(counties.length))}
+            {t('counties.kpi.across_counties').replace(
+              '{n}',
+              String(stats.totalBudget.reported)
+            )}
           </div>
         </div>
         <KpiIcon tone='positive' />
@@ -310,7 +338,7 @@ function KPICards({ counties }: { counties: County[] }) {
         <div className='min-w-0'>
           <div className='text-xs font-medium text-gray-500 dark:text-neutral-muted/80 mb-1'>{t('counties.kpi.total_debt')}</div>
           <div className='text-2xl font-bold text-gray-900 dark:text-neutral-text tracking-tight'>
-            {fmtKES(stats.totalDebt)}
+            {fmtKESorDash(stats.totalDebt.total)}
           </div>
           <div className='text-[11px] text-gray-500 dark:text-neutral-muted/80 font-medium mt-0.5'>
             {t('counties.kpi.pending_bills_loans')}
@@ -390,8 +418,9 @@ function KPICards({ counties }: { counties: County[] }) {
         <div className='text-xs font-medium text-gray-500 dark:text-neutral-muted/80 mb-2'>{t('counties.kpi.high_debt_counties')}</div>
         <div className='space-y-2'>
           {stats.byDebt.map((c, i) => {
-            const debt = c.totalDebt ?? c.debt ?? 0;
-            const budget = c.totalBudget ?? c.budget ?? 0;
+            const debt = countyDebt(c);
+            const budget = countyBudget(c);
+            const topDebt = countyDebt(stats.byDebt[0]);
             const auditCfg = AUDIT_STATUS_CFG[c.auditStatus ?? 'pending'];
             return (
               <Link
@@ -408,14 +437,17 @@ function KPICards({ counties }: { counties: County[] }) {
                     </span>
                   </div>
                   <div className='flex items-center gap-2 mt-0.5'>
-                    <span className='text-[11px] text-gray-600 dark:text-neutral-muted tabular-nums'>{fmtKES(debt)}</span>
-                    <span className='text-[11px] text-gray-400 dark:text-neutral-muted/80 tabular-nums'>{fmtKES(budget)}</span>
+                    <span className='text-[11px] text-gray-600 dark:text-neutral-muted tabular-nums'>{fmtKESorDash(debt)}</span>
+                    <span className='text-[11px] text-gray-400 dark:text-neutral-muted/80 tabular-nums'>{fmtKESorDash(budget)}</span>
                   </div>
                   <div className='h-1 bg-gray-100 dark:bg-surface-elevated rounded-full mt-1 overflow-hidden'>
                     <div
                       className='h-full bg-red-400 rounded-full'
                       style={{
-                        width: `${Math.min((debt / (stats.byDebt[0]?.totalDebt ?? stats.byDebt[0]?.debt ?? 1)) * 100, 100)}%`,
+                        width:
+                          debt != null && topDebt != null && topDebt > 0
+                            ? `${Math.min((debt / topDebt) * 100, 100)}%`
+                            : '0%',
                       }}
                     />
                   </div>
@@ -862,7 +894,10 @@ function CountyPerformanceMap({
                 : '—'}
             </div>
             <div className='text-white/60'>
-              {t('counties.map.tooltip_budget')}: KES {fmtKES(hoveredCounty.totalBudget ?? hoveredCounty.budget ?? 0)}
+              {t('counties.map.tooltip_budget')}:{' '}
+              {countyBudget(hoveredCounty) != null
+                ? `KES ${fmtKES(countyBudget(hoveredCounty) as number)}`
+                : '—'}
             </div>
           </div>
         )}
@@ -916,8 +951,8 @@ function CountyInsightsPanel({ counties }: { counties: County[] }) {
     const bestList = sorted.slice(0, takeTop);
     const worstList = sorted.slice(count - takeBottom).reverse(); // worst first
 
-    const totalBudget = counties.reduce((s, c) => s + (c.totalBudget ?? c.budget ?? 0), 0);
-    const totalDebt = counties.reduce((s, c) => s + (c.totalDebt ?? c.debt ?? 0), 0);
+    const totalBudget = sumPublished(counties, countyBudget);
+    const totalDebt = sumPublished(counties, countyDebt);
     // Average only across counties that actually reported execution — a
     // non-reporter is not a county that executed 0% of its budget.
     const utilReporters = counties.filter((c) => c.budgetUtilization != null);
@@ -952,11 +987,11 @@ function CountyInsightsPanel({ counties }: { counties: County[] }) {
         </span>
         <div className='flex items-center gap-1.5 text-xs text-gray-500 dark:text-neutral-muted/80'>
           <span className='font-semibold text-gray-700 dark:text-neutral-muted'>{t('counties.insights.budget')}:</span>
-          <span className='tabular-nums'>{fmtKES(stats.totalBudget)}</span>
+          <span className='tabular-nums'>{fmtKESorDash(stats.totalBudget.total)}</span>
         </div>
         <div className='flex items-center gap-1.5 text-xs text-gray-500 dark:text-neutral-muted/80'>
           <span className='font-semibold text-gray-700 dark:text-neutral-muted'>{t('counties.insights.debt')}:</span>
-          <span className='tabular-nums text-red-600'>{fmtKES(stats.totalDebt)}</span>
+          <span className='tabular-nums text-red-600'>{fmtKESorDash(stats.totalDebt.total)}</span>
         </div>
         <div className='flex items-center gap-1.5 text-xs text-gray-500 dark:text-neutral-muted/80'>
           <span className='font-semibold text-gray-700 dark:text-neutral-muted'>{t('counties.insights.avg_exec')}:</span>
@@ -1013,11 +1048,12 @@ function InsightRow({
 }) {
   const { t } = useLang();
   const util = c.budgetUtilization;
-  const debt = c.totalDebt ?? c.debt ?? 0;
-  const budget = c.totalBudget ?? c.budget ?? 0;
+  const debt = countyDebt(c);
+  const budget = countyBudget(c);
   const health = c.financial_health_score;
   const grade = getGrade(health);
-  const debtRatio = budget > 0 ? ((debt / budget) * 100).toFixed(0) : '0';
+  const ratio = countyDebtRatio(c);
+  const debtRatio = ratio != null ? ratio.toFixed(0) : null;
   const auditCfg = AUDIT_STATUS_CFG[c.auditStatus ?? 'pending'];
 
   return (
@@ -1064,11 +1100,11 @@ function InsightRow({
             <span className='text-[11px] text-gray-500 dark:text-neutral-muted/80'>{t('counties.insights.debt_short')}</span>
             <span
               className={`text-[11px] font-bold tabular-nums ${
-                Number(debtRatio) > 50 ? 'text-red-600' : 'text-gray-600 dark:text-neutral-muted'
+                ratio != null && ratio > 50 ? 'text-red-600' : 'text-gray-600 dark:text-neutral-muted'
               }`}>
-              {debtRatio}%
+              {debtRatio != null ? `${debtRatio}%` : '—'}
             </span>
-            <span className='text-[11px] text-gray-400 dark:text-neutral-muted/80 tabular-nums'>{fmtKES(budget)}</span>
+            <span className='text-[11px] text-gray-400 dark:text-neutral-muted/80 tabular-nums'>{fmtKESorDash(budget)}</span>
           </div>
         </div>
       </div>
@@ -1308,8 +1344,8 @@ function CountyRankingsTable({
           </thead>
           <tbody>
             {paged.map((county, i) => {
-              const budget = county.totalBudget ?? county.budget ?? 0;
-              const debt = county.totalDebt ?? county.debt ?? 0;
+              const budget = countyBudget(county);
+              const debt = countyDebt(county);
               const util = county.budgetUtilization;
               const grade = getGrade(county.financial_health_score);
               const issues = county.auditIssues?.length ?? 0;
@@ -1349,7 +1385,7 @@ function CountyRankingsTable({
                     <Link
                       href={`${base}&tab=budget`}
                       className='block text-sm text-gray-700 dark:text-neutral-muted tabular-nums font-medium hover:text-gov-forest dark:text-emerald-100 transition-colors'>
-                      {fmtKES(budget)}
+                      {fmtKESorDash(budget)}
                     </Link>
                   </td>
                   <td className='py-3 px-3'>
@@ -1362,9 +1398,17 @@ function CountyRankingsTable({
                       href={`${base}&tab=budget`}
                       className='flex items-center gap-1.5 text-sm text-gray-700 dark:text-neutral-muted tabular-nums hover:text-gov-forest dark:text-emerald-100 transition-colors'>
                       <span
-                        className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${debt > 50e9 ? 'bg-red-500' : debt > 15e9 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                        className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                          debt == null
+                            ? 'bg-gray-300'
+                            : debt > 50e9
+                              ? 'bg-red-500'
+                              : debt > 15e9
+                                ? 'bg-amber-500'
+                                : 'bg-emerald-500'
+                        }`}
                       />
-                      {fmtKES(debt)}
+                      {fmtKESorDash(debt)}
                     </Link>
                   </td>
                   <td className='py-3 px-3'>
@@ -1539,24 +1583,30 @@ export default function CountyExplorerPage() {
 
     if (filters.spendingRange[1] < 150) {
       const maxB = filters.spendingRange[1] * 1e9;
-      list = list.filter((c) => (c.totalBudget ?? c.budget ?? 0) <= maxB);
+      // A county whose budget was never published is kept rather than judged
+      // against a figure it does not have.
+      list = list.filter((c) => {
+        const b = countyBudget(c);
+        return b == null || b <= maxB;
+      });
     }
 
     list.sort((a, b) => {
+      // Handled whole rather than through the direction flip below, so a
+      // county with no published figure sinks in BOTH directions.
+      const pick = RANKED_FIGURE[sortField];
+      if (pick) return compareByPublishedFigure(a, b, pick, sortDir);
+
       let cmp = 0;
       switch (sortField) {
         case 'name':
           cmp = a.name.localeCompare(b.name);
           break;
-        case 'budget':
-          cmp = (a.totalBudget ?? a.budget ?? 0) - (b.totalBudget ?? b.budget ?? 0);
-          break;
+
         case 'health':
           cmp = a.financial_health_score - b.financial_health_score;
           break;
-        case 'debt':
-          cmp = (a.totalDebt ?? a.debt ?? 0) - (b.totalDebt ?? b.debt ?? 0);
-          break;
+
         case 'population':
           cmp = a.population - b.population;
           break;
@@ -1589,9 +1639,9 @@ export default function CountyExplorerPage() {
       c.name,
       c.population,
       getGrade(c.financial_health_score).letter,
-      c.totalBudget ?? c.budget ?? 0,
+      countyBudget(c) ?? '',
       c.budgetUtilization != null ? c.budgetUtilization.toFixed(1) : '',
-      c.totalDebt ?? c.debt ?? 0,
+      countyDebt(c) ?? '',
       c.auditStatus ?? 'pending',
     ]);
     const csv = [headers, ...rows].map((r) => r.map((v) => `"${v}"`).join(',')).join('\n');
