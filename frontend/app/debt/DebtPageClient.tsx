@@ -348,29 +348,49 @@ export default function NationalDebtPage() {
   }, [pendingBillsData]);
 
   /* ── Treemap data adapter ── */
+  //
+  // Two things this fixes.
+  //
+  // 1. The slices used to sum to 106.9%. `percentage_of_total` comes from the
+  //    backend divided by a total that EXCLUDES pending bills, while pending
+  //    bills were rendered as one of the parts (credibility audit F25). Shares
+  //    are now computed here, over the categories actually drawn, so the parts
+  //    make the whole by construction.
+  //
+  // 2. Pending bills are not in the chart at all. They are unpaid obligations,
+  //    not borrowed money — the backend's own `_is_debt_loan` says exactly
+  //    that and keeps them out of every debt total. Charting them beside
+  //    Treasury bonds double-counted them against the page's own "Stalled
+  //    payments" section, which is where they belong.
   const lenderCategories = useMemo(() => {
-    return Object.entries(d.categories)
-      .map(([key, val]: [string, any]) => {
-        const outstanding = val.total_outstanding || val.total_principal || 0;
-        const label = key
-          .replace(/_/g, ' ')
-          .replace(/\b\w/g, (c) => c.toUpperCase());
-        return {
-          category: key,
-          label,
-          outstanding,
-          // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- treemap slice share; a slice with no percentage is dropped by the filter below
-          share: val.percentage_of_total || 0,
-          lenders: (val.items || []).map((it: any) => ({
-            lender: it.lender,
-            outstanding: Number(it.outstanding) || 0,
-            rate: it.interest_rate,
-            annual_service_cost: it.annual_service_cost,
-          })),
-        };
-      })
-      .filter((c) => c.outstanding > 0);
+    const drawn = Object.entries(d.categories)
+      .map(([key, val]: [string, any]) => ({
+        category: key,
+        label: key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+        outstanding: Number(val.total_outstanding ?? val.total_principal ?? 0),
+        lenders: (val.items || []).map((it: any) => ({
+          lender: it.lender,
+          outstanding: Number(it.outstanding) || 0,
+          rate: it.interest_rate,
+          annual_service_cost: it.annual_service_cost,
+        })),
+      }))
+      .filter((c) => c.outstanding > 0 && !c.category.includes('pending'));
+
+    const drawnTotal = drawn.reduce((sum, c) => sum + c.outstanding, 0);
+    return drawn.map((c) => ({
+      ...c,
+      share: drawnTotal > 0 ? (c.outstanding / drawnTotal) * 100 : 0,
+    }));
   }, [d.categories]);
+
+  // The denominator the treemap actually divides by, so the component can
+  // print the number its percentages are of rather than inheriting a total
+  // that includes something it does not draw.
+  const treemapTotal = useMemo(
+    () => lenderCategories.reduce((sum, c) => sum + c.outstanding, 0),
+    [lenderCategories]
+  );
 
   /* ── Risk band from debt-to-GDP ── */
   // `?? 0` here rendered an ABSENT debt-to-GDP ratio as "Low" risk — a claim
@@ -649,7 +669,7 @@ export default function NationalDebtPage() {
         </div>
         <LenderTreemap
           categories={lenderCategories}
-          totalOutstanding={d.totalDebt ?? null}
+          totalOutstanding={treemapTotal}
         />
       </motion.section>
 

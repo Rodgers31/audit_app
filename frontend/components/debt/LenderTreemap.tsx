@@ -544,6 +544,29 @@ export default function LenderTreemap({ categories, totalOutstanding }: LenderTr
         </div>
       </div>
 
+      {/* What these slices are, said where they are read.
+          The chart draws borrowed money only: pending bills are unpaid
+          obligations, not debt, and the page reports them separately under
+          "Stalled payments" — charting them here counted them twice and made
+          the slices sum to 106.9% (credibility audit F25). The external
+          creditors come from World Bank IDS, which publishes public and
+          publicly-guaranteed debt in US dollars, so the split between named
+          creditors is firmer than the shilling amounts. */}
+      <div className='rounded-xl border border-neutral-border/60 bg-surface-sunken/40 px-4 py-3'>
+        <p className='text-[11.5px] leading-relaxed text-neutral-muted'>
+          <span className='font-semibold text-gov-dark dark:text-white'>
+            What is in this chart.
+          </span>{' '}
+          Borrowed money only, totalling {fmtT(totalOutstanding)}. Pending bills
+          — money owed to suppliers rather than lenders — are not debt and are
+          reported separately below. External creditors are named from World
+          Bank International Debt Statistics, which covers{' '}
+          <em>public and publicly guaranteed</em> external debt and reports in
+          US dollars: the split between creditors is firmer than the shilling
+          amounts, which depend on the exchange rate used.
+        </p>
+      </div>
+
       {/* ── Lender drill-down grid ── */}
       <div>
         <h4 className='text-sm font-semibold text-gov-dark dark:text-white mb-2'>
@@ -553,9 +576,23 @@ export default function LenderTreemap({ categories, totalOutstanding }: LenderTr
           {filtered.map((cat) => {
             const pal = paletteFor(cat.category);
             const isOpen = expanded === cat.category;
-            const lenders = cat.lenders || [];
+            // Sorted, and the long tail folded rather than truncated.
+            //
+            // This list used to `.slice(0, 8)` with nothing to say the rest
+            // existed. That was survivable when a category held four fixture
+            // buckets; external debt is now 42 named creditors from World Bank
+            // IDS, so silently dropping everything past the eighth would hide
+            // most of them. Anything below the threshold is summed into one
+            // honest "N smaller creditors" row that still adds up.
+            const lenders = [...(cat.lenders || [])].sort(
+              (a, b) => b.outstanding - a.outstanding
+            );
             const hasLenders = lenders.length > 0;
             const topLender = lenders[0];
+            const NAMED = 8;
+            const named = lenders.slice(0, NAMED);
+            const tail = lenders.slice(NAMED);
+            const tailTotal = tail.reduce((sum, l) => sum + l.outstanding, 0);
             return (
               <motion.div
                 key={cat.category}
@@ -631,7 +668,7 @@ export default function LenderTreemap({ categories, totalOutstanding }: LenderTr
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
                     className='px-4 pb-3 pl-4 border-t border-neutral-border/20 space-y-1.5 pt-2.5'>
-                    {lenders.slice(0, 8).map((l) => {
+                    {named.map((l) => {
                       const pct =
                         cat.outstanding > 0 ? (l.outstanding / cat.outstanding) * 100 : 0;
                       return (
@@ -654,6 +691,36 @@ export default function LenderTreemap({ categories, totalOutstanding }: LenderTr
                         </div>
                       );
                     })}
+                    {tail.length > 0 && (
+                      <div>
+                        <div className='flex justify-between items-baseline gap-2 text-[11px]'>
+                          <span className='text-neutral-muted/80 italic truncate'>
+                            {tail.length} smaller{' '}
+                            {tail.length === 1 ? 'creditor' : 'creditors'}
+                          </span>
+                          <span className='text-neutral-muted tabular-nums flex-shrink-0'>
+                            {fmtT(tailTotal)}
+                          </span>
+                        </div>
+                        <div className='mt-1 h-[3px] w-full rounded-full bg-neutral-border/20 overflow-hidden'>
+                          <div
+                            className='h-full rounded-full opacity-50'
+                            style={{
+                              width: `${Math.max(
+                                2,
+                                Math.min(
+                                  100,
+                                  cat.outstanding > 0
+                                    ? (tailTotal / cat.outstanding) * 100
+                                    : 0
+                                )
+                              )}%`,
+                              background: `linear-gradient(90deg, ${pal.start}, ${pal.end})`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </motion.div>
                 )}
               </motion.div>
