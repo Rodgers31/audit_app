@@ -10,35 +10,29 @@
  * borrowed money — the backend's own `_is_debt_loan` says so and keeps them
  * out of every debt total) and computes shares over what it actually draws.
  *
- * This replicates the adapter in DebtPageClient so the invariant is pinned
- * without mounting the page. If the adapter changes, this must change with it
- * — and the numbers below are the real ones from GET /debt/national.
+ * These tests import the production adapter (lib/debt/lenderTreemapAdapter),
+ * which DebtPageClient also uses, so they exercise the shipped path rather than
+ * a copy of it. The numbers below are the real ones from GET /debt/national.
  */
 
-interface ApiCategory {
-  total_outstanding: number;
-  percentage_of_total: number;
-  items?: Array<{ lender: string; outstanding: number }>;
-}
+import {
+  toTreemapCategories as adaptCategories,
+  treemapTotal,
+  type ApiCategory as AdapterApiCategory,
+} from '@/lib/debt/lenderTreemapAdapter';
 
-/** Mirrors the adapter in app/debt/DebtPageClient.tsx. */
+/** The API shape these fixtures use, plus the backend's own share field. */
+type ApiCategory = AdapterApiCategory & { percentage_of_total?: number };
+
+/**
+ * Thin wrapper so the existing assertions keep their `{ categories, total }`
+ * shape. The transform itself is the SHIPPED one — this file used to
+ * reimplement it, so a regression in the page could leave every assertion here
+ * green.
+ */
 function toTreemapCategories(categories: Record<string, ApiCategory>) {
-  const drawn = Object.entries(categories)
-    .map(([key, val]) => ({
-      category: key,
-      outstanding: Number(val.total_outstanding ?? 0),
-      lenders: (val.items ?? []).map((it) => ({
-        lender: it.lender,
-        outstanding: Number(it.outstanding) || 0,
-      })),
-    }))
-    .filter((c) => c.outstanding > 0 && !c.category.includes('pending'));
-
-  const total = drawn.reduce((s, c) => s + c.outstanding, 0);
-  return {
-    categories: drawn.map((c) => ({ ...c, share: total > 0 ? (c.outstanding / total) * 100 : 0 })),
-    total,
-  };
+  const adapted = adaptCategories(categories);
+  return { categories: adapted, total: treemapTotal(adapted) };
 }
 
 // GET /api/v1/debt/national, 2026-09-03.
@@ -55,7 +49,7 @@ const LIVE: Record<string, ApiCategory> = {
 describe('treemap slice arithmetic', () => {
   it('reproduces the defect from the API figures', () => {
     // What the page did: render every category, using the backend's share.
-    const sum = Object.values(LIVE).reduce((s, c) => s + c.percentage_of_total, 0);
+    const sum = Object.values(LIVE).reduce((s, c) => s + (c.percentage_of_total as number), 0);
     expect(sum).toBeCloseTo(106.86, 2);
     expect(sum).toBeGreaterThan(100);
   });
@@ -82,7 +76,7 @@ describe('treemap slice arithmetic', () => {
     expect(total).toBe(
       Object.entries(LIVE)
         .filter(([k]) => !k.includes('pending'))
-        .reduce((s, [, c]) => s + c.total_outstanding, 0)
+        .reduce((s, [, c]) => s + Number(c.total_outstanding), 0)
     );
   });
 
@@ -145,5 +139,61 @@ describe('treemap slice arithmetic', () => {
     expect(
       named.reduce((s, l) => s + l.outstanding, 0) + tailTotal
     ).toBeCloseTo(lenders.reduce((s, l) => s + l.outstanding, 0), 6);
+  });
+});
+
+describe('the API response the treemap actually receives', () => {
+  /**
+   * /api/v1/debt/national returns the largest 8 lenders per category plus an
+   * explicit remainder — it does not return all 42. Earlier fixtures here
+   * listed every creditor, so the long-tail cases passed against a response
+   * shape the backend cannot produce.
+   */
+  const TRUNCATED: Record<string, ApiCategory> = {
+    external_multilateral: {
+      total_outstanding: 2_599_000_000_000,
+      // 8 named, 5 folded away by the API.
+      items: Array.from({ length: 8 }, (_, i) => ({
+        lender: `Multilateral ${i}`,
+        outstanding: 250_000_000_000,
+      })),
+      items_truncated: true,
+      other_lender_count: 5,
+      other_outstanding: 599_000_000_000,
+    },
+    domestic_bonds: { total_outstanding: 5_878_982_400_000 },
+  };
+
+  it('keeps the remainder so a category can still account for itself', () => {
+    const { categories } = toTreemapCategories(TRUNCATED);
+    const multilateral = categories.find((c) => c.category === 'external_multilateral')!;
+
+    expect(multilateral.lenders).toHaveLength(8);
+    expect(multilateral.otherLenderCount).toBe(5);
+
+    const named = multilateral.lenders.reduce((s, l) => s + l.outstanding, 0);
+    expect(named).toBeLessThan(multilateral.outstanding);
+    // Named + folded remainder must reconstruct the category total, or the
+    // drill-down disagrees with the header printed above it.
+    expect(named + multilateral.otherOutstanding).toBeCloseTo(
+      multilateral.outstanding,
+      0
+    );
+  });
+
+  it('shares still sum to 100% on a truncated response', () => {
+    const { categories } = toTreemapCategories(TRUNCATED);
+    expect(categories.reduce((s, c) => s + c.share, 0)).toBeCloseTo(100, 6);
+  });
+
+  it('a category with no remainder reports none', () => {
+    const { categories } = toTreemapCategories({
+      domestic_bonds: {
+        total_outstanding: 300,
+        items: [{ lender: 'A', outstanding: 200 }, { lender: 'B', outstanding: 100 }],
+      },
+    });
+    expect(categories[0].otherLenderCount).toBe(0);
+    expect(categories[0].otherOutstanding).toBe(0);
   });
 });

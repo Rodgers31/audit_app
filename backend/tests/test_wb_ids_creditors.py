@@ -300,20 +300,39 @@ def test_external_fixture_rows_are_replaced_not_joined():
     assert len(external) == len(new_rows)
 
 
-def test_the_external_denominator_ignores_domestic_rows():
-    from seeding.domains.national_debt.fetcher import _published_external_kes
+def test_the_coverage_denominator_is_cbks_own_total_not_the_payload():
+    """Gate 3 must check IDS against something independent of IDS.
 
-    assert _published_external_kes({"loans": []}) is None
-    assert _published_external_kes(
-        {"loans": [{"debt_category": "domestic_bonds", "outstanding": 5e12}]}
-    ) is None
-    assert _published_external_kes(
-        {"loans": [
-            {"debt_category": "external_commercial", "outstanding": 1e12},
-            {"debt_category": "external_bilateral", "outstanding": 1e12},
-            {"debt_category": "pending_bills", "outstanding": 9e11},
-        ]}
-    ) == pytest.approx(2e12)
+    It used to sum the loans payload — whose own baseline says its external
+    rows are not re-sourced and its total is not published, and which the IDS
+    overlay earlier in the same function has already mutated. That compared the
+    pull against the fixture it was replacing. It now reads CBK's monthly
+    /public-debt/ external figure, and returns None (which quarantines the
+    pull) when that is unavailable.
+    """
+    from seeding.domains.national_debt import fetcher as fx
+    from seeding.domains.national_debt.cbk_web_tables import PublicDebtMonth
+
+    rows = [
+        PublicDebtMonth(2025, 6, domestic_kes=6.0e12, external_kes=5.0e12, total_kes=11.0e12),
+        PublicDebtMonth(2025, 12, domestic_kes=6.8e12, external_kes=5.4e12, total_kes=12.2e12),
+        # Fails CBK's own identity: must not be selected even though newest.
+        PublicDebtMonth(2026, 1, domestic_kes=1.0e12, external_kes=1.0e12, total_kes=9.9e12),
+    ]
+
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(fx, "fetch_public_debt_monthly", lambda c, s: {"rows": rows})
+        assert fx._cbk_published_external_kes(object(), None) == pytest.approx(5.4e12)
+
+        # Unavailable -> None -> the caller quarantines rather than guessing.
+        def _boom(c, s):
+            raise RuntimeError("CBK unreachable")
+
+        mp.setattr(fx, "fetch_public_debt_monthly", _boom)
+        assert fx._cbk_published_external_kes(object(), None) is None
+
+        mp.setattr(fx, "fetch_public_debt_monthly", lambda c, s: {"rows": []})
+        assert fx._cbk_published_external_kes(object(), None) is None
 
 
 def test_a_failed_pull_leaves_the_fixture_alone(monkeypatch):
@@ -339,3 +358,85 @@ def test_an_out_of_band_pull_is_quarantined():
     )
     assert ok is not None and ok["year"] == 2024
     assert len(ok["creditors"]) == 21
+
+
+# ── Both gates must be able to fire on the shapes that matter ──────────────
+
+def test_a_dropped_creditor_is_caught_even_though_it_is_under_half_a_percent():
+    """The identity gate exists to catch omitted rows.
+
+    At 0.5% of the portfolio it tolerated ~USD 100m of missing detail on a
+    USD 20bn total, so real creditors could vanish while it still reported
+    "identity: ok". IDS publishes at currency precision; the only slack the
+    gate needs is rounding.
+    """
+    import pytest
+
+    from seeding.domains.national_debt.wb_ids_creditors import (
+        IdsCreditorError,
+        fetch_creditors,
+    )
+
+    world_total = 20_000_000_000
+    # BADEA-sized: 0.4% of the portfolio, comfortably inside the old tolerance.
+    dropped = 80_000_000
+
+    class _Client:
+        def get(self, url, **kw):
+            raise AssertionError("network must not be reached")
+
+    def _rows(series, year):
+        return {
+            "World": ("WLD", world_total),
+            "International Development Association": ("IDA", world_total - dropped),
+        }
+
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(
+            "seeding.domains.national_debt.wb_ids_creditors._fetch_series",
+            lambda client, series, year: dict(_rows(series, year)),
+        )
+        with pytest.raises(IdsCreditorError, match="rows are missing"):
+            fetch_creditors(_Client(), 2024)
+
+
+def test_an_unchecked_coverage_result_quarantines_the_pull():
+    """A missing denominator must not silently disable gate 3.
+
+    Quarantining only `out_of_band` let `unchecked` through, so a malformed or
+    absent baseline turned a mandatory gate into no gate at all. Asserted on
+    the CALLER's decision, not on the helper's return value — the helper always
+    reported the right status; it was the caller that ignored it.
+    """
+    import pytest
+
+    from seeding.domains.national_debt import wb_ids_creditors as mod
+
+    creditors = [
+        mod.Creditor(
+            name="International Development Association",
+            counterpart_id="IDA",
+            series="DT.DOD.MLAT.CD",
+            debt_category="external_multilateral",
+            usd=1_000_000_000.0,
+        )
+    ]
+
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(mod, "latest_year_with_data", lambda client: 2024)
+        mp.setattr(
+            mod, "fetch_creditors", lambda client, year: (creditors, {"series": {}})
+        )
+
+        # Denominator absent -> coverage is "unchecked" -> nothing may publish.
+        assert mod.check_external_coverage(creditors, None)["status"] != "within_band"
+        assert (
+            mod.fetch_external_creditors(object(), published_external_kes=None) is None
+        ), "gate 3 was skipped when there was no independent total to check against"
+
+        # Positive control: with a denominator in band, the pull proceeds.
+        in_band = float(creditors[0].kes) / 0.9
+        assert (
+            mod.fetch_external_creditors(object(), published_external_kes=in_band)
+            is not None
+        )

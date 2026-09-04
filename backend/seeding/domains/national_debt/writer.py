@@ -7,7 +7,14 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from models import DocumentType, Entity, EntityType, Loan, SourceDocument
+from models import (
+    DebtCategory,
+    DocumentType,
+    Entity,
+    EntityType,
+    Loan,
+    SourceDocument,
+)
 from sqlalchemy.orm import Session
 
 if TYPE_CHECKING:
@@ -81,7 +88,7 @@ def _get_or_create_source_document(
     logger.info(f"Creating source document: {record.source_title}")
     doc = SourceDocument(
         country_id=kenya.id,
-        publisher="National Treasury of Kenya",
+        publisher=getattr(record, "publisher", None) or "National Treasury of Kenya",
         title=record.source_title or "National Treasury Debt Bulletin",
         doc_type=DocumentType.LOAN,
         url=record.source_url,
@@ -110,6 +117,85 @@ def _resolve_debt_category(value: str | None):
         "pending_bills": _DC.PENDING_BILLS,
         "county_guaranteed": _DC.COUNTY_GUARANTEED,
     }.get(value, _DC.OTHER)
+
+
+#: Categories a successful World Bank IDS creditor pull owns outright. Mirrors
+#: fetcher._EXTERNAL_CATEGORIES. Records carry the string form; Loan rows carry
+#: the DebtCategory enum, so both spellings are needed.
+EXTERNAL_CATEGORIES = {
+    "external_multilateral",
+    "external_bilateral",
+    "external_commercial",
+}
+EXTERNAL_CATEGORY_ENUMS = [
+    DebtCategory.EXTERNAL_MULTILATERAL,
+    DebtCategory.EXTERNAL_BILATERAL,
+    DebtCategory.EXTERNAL_COMMERCIAL,
+]
+
+
+def _category_name(value) -> str:
+    """The string form of a debt category, whether enum or plain string."""
+    return getattr(value, "value", value) or ""
+
+
+def reconcile_external_creditors(
+    session: Session, records: list[DebtRecord]
+) -> int:
+    """Delete external loans this run no longer names, and return the count.
+
+    ``_replace_external_loans`` only rebuilds the in-memory payload. The upsert
+    below matches on ``(entity_id, lender)`` and removes duplicates of the SAME
+    lender, never lenders that have gone away — so an existing database kept
+    every old external row ("Eurobonds (2014, 2018, 2019, 2021, 2024 issues)",
+    "Multilateral (World Bank / IDA / IBRD)", ...) and inserted the
+    differently-named IDS rows beside them. The headline and the lender treemap
+    then double-counted external debt.
+
+    Runs in the caller's transaction, before the upsert, so either the whole
+    replacement lands or none of it does.
+    """
+    incoming = {
+        (r.entity_name, r.lender)
+        for r in records
+        if _category_name(r.debt_category) in EXTERNAL_CATEGORIES
+    }
+    if not incoming:
+        # Nothing external in this run: not a replacement, so delete nothing.
+        return 0
+
+    entity_names = {name for name, _ in incoming}
+    deleted = 0
+    for entity_name in entity_names:
+        entity = (
+            session.query(Entity)
+            .filter(Entity.canonical_name == entity_name)
+            .first()
+        )
+        if entity is None:
+            continue
+        stale = (
+            session.query(Loan)
+            .filter(
+                Loan.entity_id == entity.id,
+                Loan.debt_category.in_(EXTERNAL_CATEGORY_ENUMS),
+            )
+            .all()
+        )
+        for loan in stale:
+            if (entity_name, loan.lender) in incoming:
+                continue
+            logger.info(
+                "Removing external loan no longer reported by the creditor "
+                "pull: %s (%s)",
+                loan.lender,
+                loan.debt_category,
+            )
+            session.delete(loan)
+            deleted += 1
+    if deleted:
+        session.flush()
+    return deleted
 
 
 def write_debt_records(
@@ -141,6 +227,10 @@ def write_debt_records(
     """
     created = 0
     updated = 0
+
+    # Reconcile BEFORE the upsert: external rows the creditor pull no longer
+    # names must go, or the replacement silently becomes an append.
+    reconcile_external_creditors(session, records)
 
     for record in records:
         entity = _get_or_create_entity(session, record.entity_name, record.entity_type)

@@ -348,6 +348,35 @@ def _is_undefined_table(exc: Exception) -> bool:
     return "no such table" in text or "does not exist" in text
 
 
+#: How many individual lenders each debt category returns before the rest are
+#: folded into an explicit remainder. Matches the treemap's own fold (NAMED).
+_CATEGORY_NAMED_LENDERS = 8
+
+
+def _category_items_with_remainder(data: dict) -> dict:
+    """The largest lenders in a category, plus an explicit remainder.
+
+    Returning an arbitrary five of them left the caller unable to tell a
+    complete list from a truncated one, so shares computed over `items` did not
+    sum to `total_outstanding`. The remainder makes the gap explicit and
+    quantified instead.
+    """
+    items = sorted(
+        data.get("items") or [],
+        key=lambda i: float(i.get("outstanding") or i.get("principal") or 0),
+        reverse=True,
+    )
+    named = items[: _CATEGORY_NAMED_LENDERS]
+    rest = items[_CATEGORY_NAMED_LENDERS :]
+    return {
+        "items": named,
+        "items_truncated": bool(rest),
+        "other_lender_count": len(rest),
+        "other_principal": sum(float(i.get("principal") or 0) for i in rest),
+        "other_outstanding": sum(float(i.get("outstanding") or 0) for i in rest),
+    }
+
+
 def _is_debt_loan(loan) -> bool:
     """True when a Loan row counts as DEBT for total-debt aggregations.
 
@@ -9433,9 +9462,16 @@ async def get_national_debt():
                                         if total_debt > 0
                                         else 0
                                     ),
-                                    "items": data["items"][
-                                        :5
-                                    ],  # Top 5 items per category
+                                    # The named lenders the treemap draws,
+                                    # plus what is left over.
+                                    #
+                                    # This used to be `items[:5]` in query
+                                    # order: not the largest five, and no way
+                                    # to know anything had been dropped. The
+                                    # treemap's long-tail fold could therefore
+                                    # never fire, and its drill-down did not
+                                    # add up to the category total beside it.
+                                    **_category_items_with_remainder(data),
                                 }
                                 for cat, data in categories.items()
                                 if data["count"] > 0

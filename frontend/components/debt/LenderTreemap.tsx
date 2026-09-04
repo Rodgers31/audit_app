@@ -16,6 +16,13 @@ interface CategoryBreakdown {
     rate?: number | string | null;
     annual_service_cost?: number | null;
   }>;
+  /**
+   * Lenders the API folded away beyond the named ones it returns. The drill-
+   * down needs these to account for its category total: without them the named
+   * lenders silently failed to add up to the figure printed beside them.
+   */
+  otherLenderCount?: number;
+  otherOutstanding?: number;
 }
 
 interface LenderTreemapProps {
@@ -589,10 +596,20 @@ export default function LenderTreemap({ categories, totalOutstanding }: LenderTr
             );
             const hasLenders = lenders.length > 0;
             const topLender = lenders[0];
+            // The API returns the largest NAMED lenders per category plus an
+            // explicit remainder. Fold both: the ones this component trims,
+            // and the ones the API already folded away. Counting only the
+            // former left the drill-down short of its own category total,
+            // because the API's truncation was invisible here.
             const NAMED = 8;
             const named = lenders.slice(0, NAMED);
-            const tail = lenders.slice(NAMED);
-            const tailTotal = tail.reduce((sum, l) => sum + l.outstanding, 0);
+            const localTail = lenders.slice(NAMED);
+            // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- not a published figure: zero means "no tail row", and the block below only renders when tailCount > 0
+            const tailCount = localTail.length + (cat.otherLenderCount ?? 0);
+            const tailTotal =
+              localTail.reduce((sum, l) => sum + l.outstanding, 0) +
+              // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- same: only added to a total that is itself only shown when a tail exists
+              (cat.otherOutstanding ?? 0);
             return (
               <motion.div
                 key={cat.category}
@@ -691,12 +708,12 @@ export default function LenderTreemap({ categories, totalOutstanding }: LenderTr
                         </div>
                       );
                     })}
-                    {tail.length > 0 && (
+                    {tailCount > 0 && (
                       <div>
                         <div className='flex justify-between items-baseline gap-2 text-[11px]'>
                           <span className='text-neutral-muted/80 italic truncate'>
-                            {tail.length} smaller{' '}
-                            {tail.length === 1 ? 'creditor' : 'creditors'}
+                            {tailCount} smaller{' '}
+                            {tailCount === 1 ? 'creditor' : 'creditors'}
                           </span>
                           <span className='text-neutral-muted tabular-nums flex-shrink-0'>
                             {fmtT(tailTotal)}

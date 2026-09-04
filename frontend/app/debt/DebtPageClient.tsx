@@ -40,6 +40,10 @@ import {
   TrendingUp,
   Users,
 } from 'lucide-react';
+import {
+  toTreemapCategories,
+  treemapTotal,
+} from '@/lib/debt/lenderTreemapAdapter';
 import { useEffect, useMemo, useState } from 'react';
 import {
   Area,
@@ -362,33 +366,18 @@ export default function NationalDebtPage() {
   //    that and keeps them out of every debt total. Charting them beside
   //    Treasury bonds double-counted them against the page's own "Stalled
   //    payments" section, which is where they belong.
-  const lenderCategories = useMemo(() => {
-    const drawn = Object.entries(d.categories)
-      .map(([key, val]: [string, any]) => ({
-        category: key,
-        label: key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
-        outstanding: Number(val.total_outstanding ?? val.total_principal ?? 0),
-        lenders: (val.items || []).map((it: any) => ({
-          lender: it.lender,
-          outstanding: Number(it.outstanding) || 0,
-          rate: it.interest_rate,
-          annual_service_cost: it.annual_service_cost,
-        })),
-      }))
-      .filter((c) => c.outstanding > 0 && !c.category.includes('pending'));
-
-    const drawnTotal = drawn.reduce((sum, c) => sum + c.outstanding, 0);
-    return drawn.map((c) => ({
-      ...c,
-      share: drawnTotal > 0 ? (c.outstanding / drawnTotal) * 100 : 0,
-    }));
-  }, [d.categories]);
+  // Adapter lives in lib/debt/lenderTreemapAdapter so its rules are unit-
+  // tested against the shipped code rather than a copy of it.
+  const lenderCategories = useMemo(
+    () => toTreemapCategories(d.categories),
+    [d.categories]
+  );
 
   // The denominator the treemap actually divides by, so the component can
   // print the number its percentages are of rather than inheriting a total
   // that includes something it does not draw.
-  const treemapTotal = useMemo(
-    () => lenderCategories.reduce((sum, c) => sum + c.outstanding, 0),
+  const treemapTotalValue = useMemo(
+    () => treemapTotal(lenderCategories),
     [lenderCategories]
   );
 
@@ -669,7 +658,7 @@ export default function NationalDebtPage() {
         </div>
         <LenderTreemap
           categories={lenderCategories}
-          totalOutstanding={treemapTotal}
+          totalOutstanding={treemapTotalValue}
         />
       </motion.section>
 

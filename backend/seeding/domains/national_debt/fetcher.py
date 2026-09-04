@@ -44,6 +44,7 @@ from ...http_client import SeedingHttpClient
 from ...utils import load_json_resource
 from .cbk_bulletin import fetch_domestic_debt_from_cbk_bulletin
 from .cbk_web_tables import check_bond_coverage, fetch_bond_register, partition_ambiguous
+from .cbk_web_tables import fetch_public_debt_monthly
 from .wb_ids_creditors import fetch_external_creditors
 from .wb_ids import fetch_external_debt_from_wb_ids
 
@@ -76,17 +77,46 @@ _EXTERNAL_CATEGORIES = {
 }
 
 
-def _published_external_kes(payload: Dict[str, Any]) -> float | None:
-    """The external total the payload currently carries, as the denominator
-    for the IDS coverage gate. Read off the data rather than hardcoded."""
-    total = 0.0
-    for loan in payload.get("loans", []):
-        if (loan.get("debt_category") or "") in _EXTERNAL_CATEGORIES:
-            try:
-                total += float(loan.get("outstanding") or loan.get("principal") or 0)
-            except (TypeError, ValueError):
-                continue
-    return total or None
+def _cbk_published_external_kes(client, settings) -> float | None:
+    """CBK's OWN external-debt total, for the IDS coverage gate.
+
+    The denominator has to be independent of the thing it checks. Summing the
+    loans payload was not: the payload's own baseline says its external rows
+    are not re-sourced and its total is not published, and the IDS overlay
+    earlier in this function has already mutated them — so gate 3 was comparing
+    the IDS pull against the fixture it is replacing.
+
+    CBK publishes domestic/external/total monthly at /public-debt/, and every
+    row there has to satisfy CBK's own ``domestic + external = total`` before
+    the parser will emit it. That is a real, independent, dated aggregate.
+
+    Returns ``None`` when it cannot be fetched, which leaves the coverage check
+    "unchecked" and quarantines the pull — the gate refuses rather than
+    silently measuring the data against itself.
+    """
+    try:
+        series = fetch_public_debt_monthly(client, settings)
+    except Exception as exc:
+        logger.warning(
+            "CBK public-debt series unavailable, so the IDS coverage gate has "
+            "no independent denominator: %s",
+            exc,
+        )
+        return None
+
+    rows = [r for r in (series.get("rows") or []) if r.identity_holds()]
+    if not rows:
+        logger.warning("CBK public-debt series returned no rows passing its identity")
+        return None
+
+    newest = max(rows, key=lambda r: (r.year, r.month))
+    logger.info(
+        "IDS coverage denominator: CBK external debt KES %.2fT as of %04d-%02d",
+        newest.external_kes / 1e12,
+        newest.year,
+        newest.month,
+    )
+    return newest.external_kes or None
 
 
 def _replace_external_loans(
@@ -180,7 +210,7 @@ def fetch_debt_payload(
         external_creditors = fetch_external_creditors(
             client,
             settings,
-            published_external_kes=_published_external_kes(payload),
+            published_external_kes=_cbk_published_external_kes(client, settings),
         )
     except Exception as exc:
         logger.warning("IDS creditor fetch failed entirely: %s", exc)

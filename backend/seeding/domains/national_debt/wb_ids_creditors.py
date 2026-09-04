@@ -170,14 +170,30 @@ def fetch_creditors(
                 "creditor rows sum to anything"
             )
         world_usd = world[1]
-        detail = sum(v for _cid, v in rows.values())
 
         # Gate 1: the parts are the whole.
-        if abs(detail - world_usd) > max(1.0, world_usd * 0.005):
+        #
+        # Decimal, and a ROUNDING-sized tolerance — not a percentage of the
+        # portfolio. At 0.5% of a USD 20bn multilateral total this gate
+        # tolerated ~USD 100m of missing detail, so real creditors (EEC, the
+        # Nordic funds, BADEA) could be dropped while it still reported
+        # "identity: ok". The whole point of the gate is to catch omitted rows,
+        # and IDS publishes at currency precision, so the only slack it needs
+        # is one unit of rounding per row.
+        detail_d = sum(
+            (Decimal(str(v)) for _cid, v in rows.values()), Decimal(0)
+        )
+        world_d = Decimal(str(world_usd))
+        tolerance = Decimal(len(rows) + 1)
+        if abs(detail_d - world_d) > tolerance:
             raise IdsCreditorError(
-                f"{series}: creditor rows sum to {detail:,.0f} against IDS's "
-                f"own World total {world_usd:,.0f}"
+                f"{series}: creditor rows sum to {detail_d:,.0f} against IDS's "
+                f"own World total {world_d:,.0f} "
+                f"(difference {abs(detail_d - world_d):,.0f}, tolerance "
+                f"{tolerance:,.0f} = one rounding unit per creditor row). "
+                "A gap this size means rows are missing, not rounding."
             )
+        detail = float(detail_d)
 
         checks["series"][series] = {
             "world_usd": world_usd,
@@ -250,7 +266,18 @@ def check_external_coverage(
 
 
 def to_loan_rows(creditors: List[Creditor], year: int) -> List[Dict[str, Any]]:
-    """Creditors as loan dicts, in the shape ``national_debt.json`` uses."""
+    """Creditors as loan dicts, in the shape ``national_debt.json`` uses.
+
+    Each row carries its OWN source. The payload these rows are merged into is
+    sourced to the CBK/National Treasury bulletin, and the parser reads source
+    at payload level, so without this every IDS creditor persisted as though a
+    CBK publication had reported it — free text in ``notes`` is not provenance.
+    """
+    row_source_url = f"{_IDS_BASE}/{TOTAL_SERIES}/counterpart-area/all/time/YR{year}"
+    row_source_title = (
+        f"World Bank International Debt Statistics {year} — Kenya external "
+        "debt by creditor"
+    )
     rows: List[Dict[str, Any]] = []
     for c in creditors:
         _category, label = SERIES[c.series]
@@ -266,6 +293,9 @@ def to_loan_rows(creditors: List[Creditor], year: int) -> List[Dict[str, Any]]:
                 "entity_name": "National Government",
                 "entity_type": "national",
                 "lender": display,
+                "source_url": row_source_url,
+                "source_title": row_source_title,
+                "publisher": "World Bank",
                 "debt_category": c.debt_category,
                 "principal": str(c.kes),
                 "outstanding": str(c.kes),
@@ -302,8 +332,16 @@ def fetch_external_creditors(
         return None
 
     coverage = check_external_coverage(creditors, published_external_kes)
-    if coverage["status"] == "out_of_band":
-        logger.warning("IDS creditor pull quarantined: %s", coverage["reason"])
+    # Require a POSITIVE result, don't merely reject the negative one.
+    # Quarantining only "out_of_band" let "unchecked" — which is what a missing
+    # or malformed denominator returns — sail straight through, silently
+    # disabling a gate this pull describes as mandatory.
+    if coverage["status"] != "within_band":
+        logger.warning(
+            "IDS creditor pull quarantined (%s): %s",
+            coverage["status"],
+            coverage.get("reason") or "no independent total to check against",
+        )
         return None
 
     logger.info(
