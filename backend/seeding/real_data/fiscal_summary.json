@@ -4,7 +4,7 @@
     "description": "Kenya national fiscal summary — budget, revenue, borrowing, total debt service, and debt ceiling. Debt service follows the Treasury APDMR definition: interest payments PLUS principal redemptions (domestic + external). This matches the Treasury's own headline 'debt service to revenue' ratio.",
     "units": "billions_kes unless noted",
     "last_updated": "2026-09-04",
-    "notes": "Debt service and revenue for FY22/23, FY23/24, FY24/25 are TOTAL debt service (interest + principal redemptions) from the relevant Annual Public Debt Management Report, to match the Treasury-published 'debt service to revenue' ratio. FY25/26 revenue, spending and debt-service figures are budgeted from the 2025 Budget Policy Statement (BPS) and will be revised to actuals once the 2025/26 APDMR is published (typically Nov 2026). appropriated_budget is the ONE field that no longer comes from the BPS: since 2026-08-29 it is the Controller of Budget's original gross budget for every year — see canonical_budget_basis and each row's budget_basis_source. REVENUE REBASE 2026-09-04: total_revenue for FY23/24, FY24/25 and FY25/26 was moved onto a single basis — 'Ordinary Revenue' (tax + non-tax, EXCLUDING A-i-A and grants) from Table 2 of the FY2026/27 Budget Summary — and FY26/27 was added on that same basis. The series was previously a mix: FY24/25's 2,917 tracked TOTAL revenue including A-i-A (Table 2: 2,923.6) while FY23/24's 2,406 matched neither measure. That mix made 'debt service as a share of revenue' a comparison across bases. Column convention per year is the latest available: actual -> preliminary -> supplementary -> approved budget. FY22/23 predates Table 2 and was NOT rebased. Where a tax/non-tax split could not be sourced on the same basis it is null rather than carried over from the old one.",
+    "notes": "Fiscal summary baselines. REVENUE IS NOT STORED HERE: FY23/24 onward are derived on every run from Treasury's Budget Summary (Table 2, Ordinary Revenue = tax + non-tax excluding A-i-A and grants) by revenue_estimates.py, and appropriated_budget is derived from the Programme Based Budget book by budget_estimates.py. FY22/23 predates the fiscal-framework table in the current Budget Summary and is the one revenue figure still stored — see its total_revenue_stored_reason. Debt service follows the Treasury APDMR definition: interest payments PLUS principal redemptions.",
     "source_references": {
       "FY 2022/23": {
         "title": "Annual Public Debt Report 2022/2023",
@@ -82,18 +82,18 @@
       "debt_ceiling_absent_reason": "repealed_pfm_amendment_act_2023",
       "actual_debt_absent_reason": "superseded_by_debt_timeline",
       "revenue_basis": "apdmr_not_rebased",
-      "revenue_rebase_absent_reason": "Table 2 of the FY2026/27 Budget Summary and Annex Table 2 of the 2026 BPS both start at FY 2023/24, so this year could not be rebased from either. Its 2,042 is APDMR ordinary revenue and is believed to be on the same basis, but that is not proven from a document in hand."
+      "total_revenue_stored_reason": "The Budget Summary's Table 2 and the 2026 BPS Annex Table 2 both start at FY 2023/24, so no document currently in the pipeline carries FY 2022/23 revenue. This 2,042 is APDMR ordinary revenue. It is the last stored revenue figure in this file; deriving it needs an older Budget Summary (the listing page still carries FY2022/23 and FY2023/24 editions) to be discovered by fiscal year rather than by recency."
     },
     {
       "fiscal_year": "FY 2023/24",
       "appropriated_budget": 4340,
-      "total_revenue": 2288.9,
-      "tax_revenue": 2167.8,
-      "non_tax_revenue": 121.1,
+      "total_revenue": null,
+      "tax_revenue": null,
+      "non_tax_revenue": null,
       "total_borrowing": 918,
       "borrowing_pct_of_budget": 25.5,
       "debt_service_cost": 1640,
-      "debt_service_per_shilling": 71.7,
+      "debt_service_per_shilling": null,
       "debt_ceiling": null,
       "actual_debt": null,
       "debt_ceiling_usage_pct": null,
@@ -113,33 +113,19 @@
       },
       "debt_ceiling_absent_reason": "repealed_pfm_amendment_act_2023",
       "actual_debt_absent_reason": "superseded_by_debt_timeline",
-      "_total_revenue_pre_rebase": 2406,
       "revenue_basis": "ordinary_revenue_excl_aia",
-      "revenue_source": {
-        "title": "Budget Summary for the FY 2026/27 Budget",
-        "publisher": "The National Treasury",
-        "url": "https://www.treasury.go.ke/sites/default/files/Budget%20summary/Budget%20Summary%20for%20the%20FY%202026_27%20Budget.pdf",
-        "table": "Table 2: Medium-Term Fiscal Framework (PDF p.14), row '2.1 Ordinary Revenue'",
-        "column": "FY2023/24 'Act.'"
-      },
-      "revenue_split_source": {
-        "title": "2026 Budget Policy Statement",
-        "publisher": "The National Treasury",
-        "url": "https://www.treasury.go.ke/sites/default/files/Latest%20updates/2026%20Budget%20Policy%20Statement.pdf",
-        "table": "Annex Table 2: Government Fiscal Operations, KSh Billion (PDF p.121)",
-        "column": "FY2023/24 'Act.' — Tax Revenue 2,167.8 + Non-Tax Revenue 121.1 = 2,288.9"
-      }
+      "total_revenue_absent_reason": "Derived live, not stored. seeding/domains/fiscal_summary/revenue_estimates.py discovers and parses the Treasury Budget Summary's Table 2 on every run and overlays the whole ordinary-revenue series onto these rows, gating each year on a column identity (ordinary + A-i-A == total), a cross-document check against the Budget Policy Statement, and a plausibility band. A year that fails is quarantined individually. Storing the figure here would freeze a number that Treasury republishes and revises annually."
     },
     {
       "fiscal_year": "FY 2024/25",
       "appropriated_budget": 4490,
-      "total_revenue": 2420.2,
-      "tax_revenue": 2272.4,
-      "non_tax_revenue": 147.8,
+      "total_revenue": null,
+      "tax_revenue": null,
+      "non_tax_revenue": null,
       "total_borrowing": 846,
       "borrowing_pct_of_budget": 21.7,
       "debt_service_cost": 1854,
-      "debt_service_per_shilling": 76.6,
+      "debt_service_per_shilling": null,
       "debt_ceiling": null,
       "actual_debt": null,
       "debt_ceiling_usage_pct": null,
@@ -159,33 +145,19 @@
       },
       "debt_ceiling_absent_reason": "repealed_pfm_amendment_act_2023",
       "actual_debt_absent_reason": "superseded_by_debt_timeline",
-      "_total_revenue_pre_rebase": 2917,
       "revenue_basis": "ordinary_revenue_excl_aia",
-      "revenue_source": {
-        "title": "Budget Summary for the FY 2026/27 Budget",
-        "publisher": "The National Treasury",
-        "url": "https://www.treasury.go.ke/sites/default/files/Budget%20summary/Budget%20Summary%20for%20the%20FY%202026_27%20Budget.pdf",
-        "table": "Table 2: Medium-Term Fiscal Framework (PDF p.14), row '2.1 Ordinary Revenue'",
-        "column": "FY2024/25 'Prel.'"
-      },
-      "revenue_split_source": {
-        "title": "2026 Budget Policy Statement",
-        "publisher": "The National Treasury",
-        "url": "https://www.treasury.go.ke/sites/default/files/Latest%20updates/2026%20Budget%20Policy%20Statement.pdf",
-        "table": "Annex Table 2: Government Fiscal Operations, KSh Billion (PDF p.121)",
-        "column": "FY2024/25 'Prel.' — Tax Revenue 2,272.4 + Non-Tax Revenue 147.8 = 2,420.2"
-      }
+      "total_revenue_absent_reason": "Derived live, not stored. seeding/domains/fiscal_summary/revenue_estimates.py discovers and parses the Treasury Budget Summary's Table 2 on every run and overlays the whole ordinary-revenue series onto these rows, gating each year on a column identity (ordinary + A-i-A == total), a cross-document check against the Budget Policy Statement, and a plausibility band. A year that fails is quarantined individually. Storing the figure here would freeze a number that Treasury republishes and revises annually."
     },
     {
       "fiscal_year": "FY 2025/26",
       "appropriated_budget": 4690,
-      "total_revenue": 2784.4,
+      "total_revenue": null,
       "tax_revenue": null,
       "non_tax_revenue": null,
       "total_borrowing": 910,
       "borrowing_pct_of_budget": 21.7,
       "debt_service_cost": 1900,
-      "debt_service_per_shilling": 68.2,
+      "debt_service_per_shilling": null,
       "debt_ceiling": null,
       "actual_debt": null,
       "debt_ceiling_usage_pct": null,
@@ -206,16 +178,8 @@
       },
       "debt_ceiling_absent_reason": "repealed_pfm_amendment_act_2023",
       "actual_debt_absent_reason": "superseded_by_debt_timeline",
-      "_total_revenue_pre_rebase": 2910,
       "revenue_basis": "ordinary_revenue_excl_aia",
-      "revenue_source": {
-        "title": "Budget Summary for the FY 2026/27 Budget",
-        "publisher": "The National Treasury",
-        "url": "https://www.treasury.go.ke/sites/default/files/Budget%20summary/Budget%20Summary%20for%20the%20FY%202026_27%20Budget.pdf",
-        "table": "Table 2: Medium-Term Fiscal Framework (PDF p.14), row '2.1 Ordinary Revenue'",
-        "column": "FY2025/26 'Sup I'"
-      },
-      "revenue_split_absent_reason": "The Budget Summary prints no tax/non-tax split for this column, and the 2026 BPS split (2,600.8 + 143.6 = 2,744.4) is a different column ('Proj.') that does not reconcile to 2,784.4. Withheld rather than mixed."
+      "total_revenue_absent_reason": "Derived live, not stored. seeding/domains/fiscal_summary/revenue_estimates.py discovers and parses the Treasury Budget Summary's Table 2 on every run and overlays the whole ordinary-revenue series onto these rows, gating each year on a column identity (ordinary + A-i-A == total), a cross-document check against the Budget Policy Statement, and a plausibility band. A year that fails is quarantined individually. Storing the figure here would freeze a number that Treasury republishes and revises annually."
     },
     {
       "fiscal_year": "FY 2026/27",
@@ -243,7 +207,7 @@
         "note": "Interest & redemption, the APDMR debt-service definition used by every other year in this file. Reconciles inside CFS 2,563.0B. Repeated here because the seeder's writer overwrites every column unconditionally, so omitting it would null the value the PBB overlay already established."
       },
       "appropriated_budget_absent_reason": "This row exists to carry the FY2026/27 REVENUE estimate. The gross budget for the year is read live from the Programme Based Budget book by seeding/domains/fiscal_summary/budget_estimates.py, which gates it on three reconciliation identities and overlays it (with its own page-and-quote provenance) onto this row at seed time. Duplicating that figure here would create a second copy that can go stale against the book.",
-      "total_revenue_absent_reason": "Derived live, not stored. seeding/domains/fiscal_summary/revenue_estimates.py discovers and parses the Treasury Budget Summary's Table 2 on every run and overlays the approved ordinary-revenue figure onto this row, under four gates (column identity, BPS cross-document column identification, prior-year cross-vintage check, plausibility band). Typing the figure here would freeze a number that Treasury republishes annually — the same reason appropriated_budget is not stored either."
+      "total_revenue_absent_reason": "Derived live, not stored. seeding/domains/fiscal_summary/revenue_estimates.py discovers and parses the Treasury Budget Summary's Table 2 on every run and overlays the whole ordinary-revenue series onto these rows, gating each year on a column identity (ordinary + A-i-A == total), a cross-document check against the Budget Policy Statement, and a plausibility band. A year that fails is quarantined individually. Storing the figure here would freeze a number that Treasury republishes and revises annually."
     }
   ]
 }

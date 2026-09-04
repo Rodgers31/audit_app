@@ -22,6 +22,7 @@ from seeding.domains.fiscal_summary.revenue_estimates import (
     FiscalFrameworkTable,
     RevenueEstimatesError,
     build_revenue_estimates,
+    build_revenue_series,
     parse_fiscal_framework,
 )
 
@@ -72,7 +73,7 @@ class TestHappyPath:
             known_prior_ordinary_billion=2784.4,
         )
         joined = " | ".join(est.checks)
-        assert "matches published 2901.9" in joined
+        assert "2901.9B matches a non-chosen column" in joined
         assert "ordinary+AiA==total revenues" in joined
         assert "FY 2025/26 ordinary revenue 2784.4B matches" in joined
 
@@ -111,8 +112,12 @@ class TestGatesFire:
             build_revenue_estimates(fiscal_year="FY 2026/27", table=drifted)
         assert e.value.reason == "bps_column_not_identified"
 
-    def test_gate2_refuses_when_both_columns_match_the_bps_figure(self):
-        """Ambiguity is not resolved by picking one."""
+    def test_gate2_refuses_when_the_chosen_column_is_the_bps_one(self):
+        """If the column we would publish IS the BPS projection, refuse.
+
+        The approved estimate is what gets published; publishing the BPS
+        figure under its name would be a different claim.
+        """
         ambiguous = table(
             ordinary_revenue={
                 "FY2025/26": [D("2754.7"), D("2784.4")],
@@ -121,7 +126,7 @@ class TestGatesFire:
         )
         with pytest.raises(RevenueEstimatesError) as e:
             build_revenue_estimates(fiscal_year="FY 2026/27", table=ambiguous)
-        assert e.value.reason == "bps_column_not_identified"
+        assert e.value.reason == "chosen_column_is_the_bps_one"
 
     def test_gate2_refuses_a_year_with_no_bps_figure_on_file(self):
         """Without the cross-document anchor there is no way to choose."""
@@ -244,3 +249,101 @@ class TestColumnGrid:
             known_prior_ordinary_billion=2784.4,
         )
         assert est.ordinary_revenue_billion == D("2985.7")
+
+
+class TestSeries:
+    """The whole revenue series comes from ONE document.
+
+    Table 2 carries settled actuals, the current year's supplementary and the
+    budget year, so nothing in the series needs to be stored. A year that
+    fails a gate is quarantined on its own — one bad column must not withhold
+    the other five, and must never be published.
+    """
+
+    def _full(self, **over):
+        base = dict(
+            ordinary_revenue={
+                "FY2023/24": [D("2288.9")],
+                "FY2024/25": [D("2420.2")],
+                "FY2025/26": [D("2754.7"), D("2784.4")],
+                "FY2026/27": [D("2901.9"), D("2985.7")],
+                "FY2027/28": [D("3390.0")],
+            },
+            total_revenues={
+                "FY2023/24": [D("2702.7")],
+                "FY2024/25": [D("2923.6")],
+                "FY2025/26": [D("3321.7"), D("3399.1")],
+                "FY2026/27": [D("3534.2"), D("3629.7")],
+                "FY2027/28": [D("4038.9")],
+            },
+            ministerial_aia={
+                "FY2023/24": [D("413.7")],
+                "FY2024/25": [D("503.4")],
+                "FY2025/26": [D("566.9"), D("614.6")],
+                "FY2026/27": [D("632.4"), D("644.0")],
+                "FY2027/28": [D("648.9")],
+            },
+            page=14,
+        )
+        base.update(over)
+        return FiscalFrameworkTable(**base)
+
+    def test_derives_every_year_through_the_budget_year(self):
+        pub, _ = build_revenue_series(self._full(), through_fiscal_year="FY 2026/27")
+        assert {fy: float(e.ordinary_revenue_billion) for fy, e in pub.items()} == {
+            "FY 2023/24": 2288.9,
+            "FY 2024/25": 2420.2,
+            "FY 2025/26": 2784.4,  # Sup I, not the original Budget column
+            "FY 2026/27": 2985.7,  # Approved, not the BPS column
+        }
+
+    def test_forward_projections_are_not_published(self):
+        """A projection is a different claim from an actual or an estimate."""
+        pub, quar = build_revenue_series(self._full(), through_fiscal_year="FY 2026/27")
+        assert "FY 2027/28" not in pub
+        assert quar["FY 2027/28"] == "forward_projection_not_published"
+
+    def test_one_bad_year_does_not_withhold_the_others(self):
+        broken = self._full(
+            ministerial_aia={
+                "FY2023/24": [D("413.7")],
+                "FY2024/25": [D("999.9")],  # breaks that year's identity only
+                "FY2025/26": [D("566.9"), D("614.6")],
+                "FY2026/27": [D("632.4"), D("644.0")],
+                "FY2027/28": [D("648.9")],
+            }
+        )
+        pub, quar = build_revenue_series(broken, through_fiscal_year="FY 2026/27")
+        assert quar["FY 2024/25"] == "revenue_does_not_reconcile"
+        assert "FY 2024/25" not in pub
+        assert set(pub) == {"FY 2023/24", "FY 2025/26", "FY 2026/27"}
+
+    def test_a_settled_year_the_bps_contradicts_is_quarantined(self):
+        """Cross-document disagreement is a parse error until proven otherwise."""
+        drifted = self._full(
+            ordinary_revenue={
+                "FY2023/24": [D("2000.0")],  # BPS publishes 2,288.9
+                "FY2024/25": [D("2420.2")],
+                "FY2025/26": [D("2754.7"), D("2784.4")],
+                "FY2026/27": [D("2901.9"), D("2985.7")],
+                "FY2027/28": [D("3390.0")],
+            }
+        )
+        pub, quar = build_revenue_series(drifted, through_fiscal_year="FY 2026/27")
+        assert quar["FY 2023/24"] == "bps_disagrees_on_settled_year"
+        assert "FY 2023/24" not in pub
+
+    def test_a_multi_column_year_with_no_anchor_is_refused(self):
+        """Without an anchor the column ORDER is an assumption, not a fact.
+
+        Publishing the rightmost anyway is how a BPS projection would get
+        published as the approved estimate.
+        """
+        unanchored = FiscalFrameworkTable(
+            ordinary_revenue={"FY2029/30": [D("4200.0"), D("4300.0")]},
+            total_revenues={"FY2029/30": [D("4900.0"), D("5000.0")]},
+            ministerial_aia={"FY2029/30": [D("700.0"), D("700.0")]},
+        )
+        pub, quar = build_revenue_series(unanchored, through_fiscal_year="FY 2029/30")
+        assert quar["FY 2029/30"] == "no_bps_figure_on_file"
+        assert pub == {}

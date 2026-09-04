@@ -173,10 +173,10 @@ def fetch_fiscal_summary_payload(
                     target_fy,
                     known_prior_ordinary_billion=(prior_row or {}).get("total_revenue"),
                 )
-                if revenue_est is not None:
+                if revenue_est:
                     payload, rev_apply = _apply_revenue_estimates(payload, revenue_est)
-                    revenue_applied = rev_apply == "applied"
-                    revenue_status = f"{revenue_est.fiscal_year}:{rev_apply}"
+                    revenue_applied = rev_apply.startswith("applied=")
+                    revenue_status = rev_apply
             else:
                 revenue_status = "no_target_fiscal_year"
             logger.info(
@@ -316,7 +316,12 @@ def _fetch_revenue_estimates(
     """
     from ...discovery import discover_latest_pdf
     from ...pdf_download import get_or_download_pdf
-    from .revenue_estimates import RevenueEstimatesError, extract_revenue_estimates
+    from .revenue_estimates import (
+        build_revenue_series,
+        parse_fiscal_framework,
+        _TABLE_MARKER,
+        _squash,
+    )
 
     page_url = settings.treasury_budget_summary_page_url
     try:
@@ -346,66 +351,83 @@ def _fetch_revenue_estimates(
         return None, f"download_failed({type(exc).__name__})"
 
     try:
-        return (
-            extract_revenue_estimates(
-                pdf_path,
-                fiscal_year,
-                known_prior_ordinary_billion=known_prior_ordinary_billion,
-                source_url=found.url,
-            ),
-            "ok",
-        )
-    except RevenueEstimatesError as exc:
-        # Quarantine: the reason is recorded, the figure is not published.
-        return None, f"quarantined({exc.reason})"
+        import pdfplumber
+
+        with pdfplumber.open(pdf_path) as pdf:
+            for n, page in enumerate(pdf.pages):
+                if _squash(_TABLE_MARKER) not in _squash(page.extract_text() or ""):
+                    continue
+                table = parse_fiscal_framework(page.extract_words(), page=n + 1)
+                published, quarantined = build_revenue_series(
+                    table, through_fiscal_year=fiscal_year, source_url=found.url
+                )
+                if not published:
+                    return None, f"all_quarantined({sorted(quarantined.values())})"
+                return published, f"{len(published)} year(s); quarantined={quarantined}"
+        return None, "fiscal_framework_table_not_found"
+    except Exception as exc:
+        return None, f"parse_failed({type(exc).__name__})"
 
 
-def _apply_revenue_estimates(payload, estimates):
-    """Write a gated revenue estimate onto its fiscal year.
+def _apply_revenue_estimates(payload, series):
+    """Write every gated revenue estimate onto its fiscal year.
 
-    Unlike ``_overlay_live_revenue_headline`` this may CREATE the year, which
-    is the whole reason it exists: an overlay can only mutate a row that is
+    Unlike ``_overlay_live_revenue_headline`` this may CREATE a year, which is
+    the whole reason it exists: an overlay can only mutate a row that is
     already there, so a budget year that has never been seeded gets no revenue
     from the COB path no matter how healthy that path is.
 
+    One Budget Summary carries the whole series, so this re-derives the settled
+    years too rather than leaving them as stored literals that nothing checks.
+
     Pure and idempotent. Returns ``(payload, status)``.
     """
-    if estimates is None:
+    if not series:
         return payload, "no_estimates"
     fiscal_years = payload.setdefault("fiscal_years", [])
-    row = next(
-        (r for r in fiscal_years if r.get("fiscal_year") == estimates.fiscal_year), None
-    )
-    if row is None:
-        row = {"fiscal_year": estimates.fiscal_year}
-        fiscal_years.append(row)
+    applied, refused = [], {}
 
-    declared = row.get("revenue_basis")
-    if declared is not None and declared != "ordinary_revenue_excl_aia":
-        return payload, f"basis_mismatch(row={declared})"
+    for fiscal_year, estimates in sorted(series.items()):
+        row = next(
+            (r for r in fiscal_years if r.get("fiscal_year") == fiscal_year), None
+        )
+        if row is None:
+            row = {"fiscal_year": fiscal_year}
+            fiscal_years.append(row)
 
-    row["total_revenue"] = float(estimates.ordinary_revenue_billion)
-    row["revenue_basis"] = "ordinary_revenue_excl_aia"
-    # The split is NOT derivable from this table — it prints only the
-    # ordinary/AiA/total triple — so it stays absent rather than being
-    # back-filled from a different column that would contradict the total.
-    row["tax_revenue"] = None
-    row["non_tax_revenue"] = None
-    row["revenue_source"] = {
-        "title": "Budget Summary",
-        "publisher": "The National Treasury",
-        "url": estimates.source_url,
-        "page": f"Table 2: Medium-Term Fiscal Framework, PDF p.{estimates.page_refs.get('fiscal_framework')}",
-        "column": "Approved Budget",
-        "measure": "Ordinary Revenue (tax + non-tax, excluding A-i-A and grants)",
-        "total_revenue_incl_aia_billion": float(
-            estimates.total_revenue_incl_aia_billion
-        ),
-        "ministerial_aia_billion": float(estimates.ministerial_aia_billion),
-        "checks": list(estimates.checks),
-    }
-    row["_revenue_source"] = "treasury_budget_summary_live"
-    return payload, "applied"
+        declared = row.get("revenue_basis")
+        if declared is not None and declared != "ordinary_revenue_excl_aia":
+            refused[fiscal_year] = f"basis_mismatch({declared})"
+            continue
+
+        row["total_revenue"] = float(estimates.ordinary_revenue_billion)
+        row["revenue_basis"] = "ordinary_revenue_excl_aia"
+        # The split is NOT derivable from this table — it prints only the
+        # ordinary/AiA/total triple — so it stays absent rather than being
+        # back-filled from a different column that would contradict the total.
+        row["tax_revenue"] = None
+        row["non_tax_revenue"] = None
+        row["revenue_source"] = {
+            "title": "Budget Summary",
+            "publisher": "The National Treasury",
+            "url": estimates.source_url,
+            "page": (
+                "Table 2: Medium-Term Fiscal Framework, PDF p."
+                f"{estimates.page_refs.get('fiscal_framework')}"
+            ),
+            "measure": "Ordinary Revenue (tax + non-tax, excluding A-i-A and grants)",
+            "total_revenue_incl_aia_billion": float(
+                estimates.total_revenue_incl_aia_billion
+            ),
+            "ministerial_aia_billion": float(estimates.ministerial_aia_billion),
+            "checks": list(estimates.checks),
+        }
+        row["_revenue_source"] = "treasury_budget_summary_live"
+        applied.append(fiscal_year)
+
+    if not applied:
+        return payload, f"none_applied({refused})"
+    return payload, f"applied={applied}" + (f" refused={refused}" if refused else "")
 
 
 def _apply_budget_estimates(

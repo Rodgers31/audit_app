@@ -78,11 +78,16 @@ logger = logging.getLogger("seeding.fiscal_summary.revenue_estimates")
 #: columns apart (gate 2) — never published as the figure itself, because the
 #: BPS number is a policy projection and the approved budget supersedes it.
 BPS_PUBLISHED_ORDINARY_REVENUE_BILLION: Dict[str, Tuple[float, str]] = {
+    # All four read from Annex Table 2 "Government Fiscal Operations, KSh
+    # Billion", 2026 Budget Policy Statement (The National Treasury), PDF
+    # p.121, row "Ordinary Revenue (Tax+Non-Tax Revenue)".
+    "FY 2023/24": (2288.9, "2026 BPS Annex Table 2 p.121, 'Act.' column"),
+    "FY 2024/25": (2420.2, "2026 BPS Annex Table 2 p.121, 'Prel.' column"),
+    "FY 2025/26": (2754.7, "2026 BPS Annex Table 2 p.121, 'Budget' column"),
     "FY 2026/27": (
         2901.9,
-        "2026 Budget Policy Statement (The National Treasury), para 340 p.89 "
-        "and Annex Table 2 p.121; also 'ORDINARY REVENUE (EXCLUDING AIA) "
-        "2,901,875' (thousand) on p.91",
+        "2026 BPS Annex Table 2 p.121 'BPS 2026' column; also para 340 p.89 "
+        "and 'ORDINARY REVENUE (EXCLUDING AIA) 2,901,875' (thousand) p.91",
     ),
 }
 
@@ -318,6 +323,167 @@ def _previous_fiscal_year(label: str) -> Optional[str]:
     return f"FY {start}/{str(start + 1)[-2:]}"
 
 
+def _build_year(
+    *,
+    fiscal_year: str,
+    key: str,
+    table: FiscalFrameworkTable,
+    source_url: Optional[str] = None,
+) -> RevenueEstimates:
+    """Gate one fiscal year's column and return it, or raise.
+
+    COLUMN CHOICE. Where a year prints more than one column they run oldest to
+    newest left-to-right — FY2025/26 is "Budget" then "Sup I", FY2026/27 is
+    "2026 BPS" then "Approved Budget" — so the RIGHTMOST is the current
+    vintage. That ordering is an assumption about the table's layout, so
+    wherever the Budget Policy Statement independently publishes the same
+    year it is used to check it: the BPS figure must appear among the columns
+    NOT chosen. If the rightmost column were the older one, that check fails
+    and the year is quarantined rather than published.
+    """
+    ordinary_cols = table.ordinary_revenue.get(key) or []
+    if not ordinary_cols:
+        raise RevenueEstimatesError("fiscal_year_not_in_table", f"{fiscal_year} has no column")
+
+    index = len(ordinary_cols) - 1  # rightmost == latest vintage
+    ordinary = ordinary_cols[index]
+    checks: List[str] = []
+
+    # ── Cross-document check on the column ordering ───────────────────────
+    expected = BPS_PUBLISHED_ORDINARY_REVENUE_BILLION.get(fiscal_year)
+    if expected is not None:
+        bps_value, receipt = expected
+
+        def near(v: Decimal) -> bool:
+            return abs(float(v) - bps_value) / bps_value * 100.0 <= BPS_CROSS_CHECK_TOLERANCE_PCT
+
+        if len(ordinary_cols) == 1:
+            # Settled year: the single column IS the figure both publish.
+            if not near(ordinary):
+                raise RevenueEstimatesError(
+                    "bps_disagrees_on_settled_year",
+                    f"{fiscal_year} reads {float(ordinary)}B here but the BPS "
+                    f"publishes {bps_value}B. Source: {receipt}",
+                )
+            checks.append(
+                f"{fiscal_year} {float(ordinary)}B matches the BPS's {bps_value}B "
+                f"(cross-document). Source: {receipt}"
+            )
+        else:
+            others = [c for n, c in enumerate(ordinary_cols) if n != index]
+            if not any(near(c) for c in others):
+                raise RevenueEstimatesError(
+                    "bps_column_not_identified",
+                    f"{fiscal_year}: none of the non-chosen columns "
+                    f"{[float(c) for c in others]} match the BPS figure "
+                    f"{bps_value}, so the rightmost column cannot be shown to "
+                    f"be the later vintage. Source: {receipt}",
+                )
+            if near(ordinary):
+                raise RevenueEstimatesError(
+                    "chosen_column_is_the_bps_one",
+                    f"{fiscal_year}: the chosen column {float(ordinary)}B is "
+                    f"itself the BPS figure {bps_value}B — the approved "
+                    f"estimate is not what would be published",
+                )
+            checks.append(
+                f"{fiscal_year}: BPS figure {bps_value}B matches a non-chosen "
+                f"column, confirming {float(ordinary)}B is the later vintage. "
+                f"Source: {receipt}"
+            )
+    elif len(ordinary_cols) > 1:
+        # Multi-column year with no anchor: the "rightmost is latest" ordering
+        # cannot be shown, and guessing it is how the BPS projection would get
+        # published as the approved estimate. Refuse.
+        raise RevenueEstimatesError(
+            "no_bps_figure_on_file",
+            f"{fiscal_year} prints {len(ordinary_cols)} columns but no BPS "
+            f"ordinary-revenue figure is recorded to establish their order",
+        )
+    else:
+        checks.append(
+            f"{fiscal_year}: single column, no BPS figure on file — "
+            f"cross-document check SKIPPED"
+        )
+
+    # ── Identity: the chosen column's own components must add up ──────────
+    def column(row: Dict[str, List[Decimal]]) -> Optional[Decimal]:
+        cols = row.get(key) or []
+        return cols[index] if index < len(cols) else None
+
+    total = column(table.total_revenues)
+    aia = column(table.ministerial_aia)
+    if total is None or aia is None:
+        raise RevenueEstimatesError(
+            "column_incomplete",
+            f"{fiscal_year} has "
+            f"{'no total revenues' if total is None else 'no ministerial AiA'}",
+        )
+    if abs((ordinary + aia) - total) > total * Decimal("0.001"):
+        raise RevenueEstimatesError(
+            "revenue_does_not_reconcile",
+            f"{fiscal_year}: ordinary ({ordinary}) + ministerial AiA ({aia}) "
+            f"!= total revenues ({total})",
+        )
+    checks.append(f"ordinary+AiA==total revenues ({total})")
+
+    # ── Plausibility ──────────────────────────────────────────────────────
+    lo, hi = _PLAUSIBLE_ORDINARY_REVENUE_BILLION
+    if not (lo <= float(ordinary) <= hi):
+        raise RevenueEstimatesError(
+            "revenue_outside_plausible_band",
+            f"{fiscal_year}: {float(ordinary)}B is outside the [{lo}B, {hi}B] band",
+        )
+
+    return RevenueEstimates(
+        fiscal_year=fiscal_year,
+        ordinary_revenue_billion=ordinary,
+        total_revenue_incl_aia_billion=total,
+        ministerial_aia_billion=aia,
+        bps_column_billion=(
+            ordinary_cols[0] if len(ordinary_cols) > 1 else None
+        ),
+        source_url=source_url,
+        page_refs={"fiscal_framework": table.page} if table.page else {},
+        checks=checks,
+    )
+
+
+def build_revenue_series(
+    table: FiscalFrameworkTable,
+    *,
+    through_fiscal_year: Optional[str] = None,
+    source_url: Optional[str] = None,
+) -> Tuple[Dict[str, RevenueEstimates], Dict[str, str]]:
+    """Gate EVERY year the table carries. Returns ``(published, quarantined)``.
+
+    One Budget Summary carries the whole series — settled actuals, the current
+    year's supplementary, and the budget year — so the entire revenue series is
+    re-derived from one document on every run. A year that fails a gate is
+    quarantined individually: one bad column must not withhold the other five,
+    and must never be published.
+
+    ``through_fiscal_year`` drops the forward projections the table also
+    prints. They are a different claim from an actual or an approved estimate,
+    and the site does not publish them.
+    """
+    published: Dict[str, RevenueEstimates] = {}
+    quarantined: Dict[str, str] = {}
+    for key in sorted(table.ordinary_revenue):
+        fy = _normalise_fy(key)
+        if through_fiscal_year and fy > through_fiscal_year:
+            quarantined[fy] = "forward_projection_not_published"
+            continue
+        try:
+            published[fy] = _build_year(
+                fiscal_year=fy, key=key, table=table, source_url=source_url
+            )
+        except RevenueEstimatesError as exc:
+            quarantined[fy] = exc.reason
+            logger.warning("revenue %s quarantined: %s", fy, exc)
+    return published, quarantined
+
+
 def build_revenue_estimates(
     *,
     fiscal_year: str,
@@ -325,10 +491,11 @@ def build_revenue_estimates(
     known_prior_ordinary_billion: Optional[float] = None,
     source_url: Optional[str] = None,
 ) -> RevenueEstimates:
-    """Apply every gate and return the publishable figure, or raise.
+    """One year, for callers that want exactly one. Gates as ``_build_year``.
 
-    Pure: takes what the page parser found and decides. Kept separate from the
-    PDF walk so each gate has a test that makes it FIRE.
+    ``known_prior_ordinary_billion`` additionally cross-checks the previous
+    year's column against a figure already on file, catching a parse that
+    slipped a whole column.
     """
     key = next(
         (k for k in table.ordinary_revenue if _normalise_fy(k) == fiscal_year), None
@@ -339,79 +506,25 @@ def build_revenue_estimates(
             f"{fiscal_year} has no column; found "
             f"{[_normalise_fy(k) for k in table.years()] or 'nothing'}",
         )
-
-    ordinary_cols = table.ordinary_revenue.get(key) or []
-    if len(ordinary_cols) < 2:
+    if len(table.ordinary_revenue.get(key) or []) < 2:
         raise RevenueEstimatesError(
             "budget_year_not_two_columns",
-            f"{fiscal_year} printed {len(ordinary_cols)} ordinary-revenue "
+            f"{fiscal_year} printed "
+            f"{len(table.ordinary_revenue.get(key) or [])} ordinary-revenue "
             f"column(s); the approved column cannot be identified from one",
         )
 
-    # ── Gate 2 (run first: it decides WHICH column the others check) ───────
-    expected = BPS_PUBLISHED_ORDINARY_REVENUE_BILLION.get(fiscal_year)
-    if expected is None:
-        raise RevenueEstimatesError(
-            "no_bps_figure_on_file",
-            f"{fiscal_year} prints two columns but no BPS ordinary-revenue "
-            f"figure is recorded to tell them apart",
-        )
-    bps_value, receipt = expected
-    matches = [
-        c
-        for c in ordinary_cols
-        if abs(float(c) - bps_value) / bps_value * 100.0 <= BPS_CROSS_CHECK_TOLERANCE_PCT
-    ]
-    if len(matches) != 1:
-        raise RevenueEstimatesError(
-            "bps_column_not_identified",
-            f"{len(matches)} of {len(ordinary_cols)} columns "
-            f"({[float(c) for c in ordinary_cols]}) match the BPS figure "
-            f"{bps_value}. Source: {receipt}",
-        )
-    bps_col = matches[0]
-    approved_cols = [c for c in ordinary_cols if c is not bps_col]
-    if len(approved_cols) != 1:
-        raise RevenueEstimatesError(
-            "approved_column_ambiguous",
-            f"{len(approved_cols)} columns remain after removing the BPS one",
-        )
-    ordinary = approved_cols[0]
-    index = ordinary_cols.index(ordinary)
+    est = _build_year(
+        fiscal_year=fiscal_year, key=key, table=table, source_url=source_url
+    )
 
-    checks = [
-        f"BPS column {float(bps_col)} matches published {bps_value} "
-        f"(identifies the other column as approved). Source: {receipt}"
-    ]
-
-    # ── Gate 1: the chosen column's own components must add up ────────────
-    def column(row: Dict[str, List[Decimal]]) -> Optional[Decimal]:
-        cols = row.get(key) or []
-        return cols[index] if index < len(cols) else None
-
-    total = column(table.total_revenues)
-    aia = column(table.ministerial_aia)
-    if total is None or aia is None:
-        raise RevenueEstimatesError(
-            "column_incomplete",
-            f"the approved column has "
-            f"{'no total revenues' if total is None else 'no ministerial AiA'}",
-        )
-    if abs((ordinary + aia) - total) > total * Decimal("0.001"):
-        raise RevenueEstimatesError(
-            "revenue_does_not_reconcile",
-            f"ordinary ({ordinary}) + ministerial AiA ({aia}) != "
-            f"total revenues ({total})",
-        )
-    checks.append(f"ordinary+AiA==total revenues ({total})")
-
-    # ── Gate 3: prior year must match the figure we already hold ──────────
     prior = _previous_fiscal_year(fiscal_year)
     prior_key = next(
         (k for k in table.ordinary_revenue if _normalise_fy(k) == prior), None
     )
     prior_cols = table.ordinary_revenue.get(prior_key or "") or []
     prior_value = prior_cols[-1] if prior_cols else None
+    checks = list(est.checks)
     if prior_value is not None and known_prior_ordinary_billion:
         drift = (
             abs(float(prior_value) - known_prior_ordinary_billion)
@@ -430,31 +543,16 @@ def build_revenue_estimates(
             f"{known_prior_ordinary_billion}B on file ({drift:.2f}% apart)"
         )
     else:
-        # Say so; do not let a skipped check read as a passed one.
         checks.append(
             f"prior-year cross-check SKIPPED — "
             f"{'no prior column in the book' if prior_value is None else 'nothing on file'}"
             f" for {prior}"
         )
 
-    # ── Gate 4: plausibility ──────────────────────────────────────────────
-    lo, hi = _PLAUSIBLE_ORDINARY_REVENUE_BILLION
-    if not (lo <= float(ordinary) <= hi):
-        raise RevenueEstimatesError(
-            "revenue_outside_plausible_band",
-            f"{float(ordinary)}B is outside the [{lo}B, {hi}B] band",
-        )
+    from dataclasses import replace
 
-    return RevenueEstimates(
-        fiscal_year=fiscal_year,
-        ordinary_revenue_billion=ordinary,
-        total_revenue_incl_aia_billion=total,
-        ministerial_aia_billion=aia,
-        bps_column_billion=bps_col,
-        prior_fiscal_year=prior,
-        prior_ordinary_revenue_billion=prior_value,
-        source_url=source_url,
-        page_refs={"fiscal_framework": table.page} if table.page else {},
+    return replace(
+        est, prior_fiscal_year=prior, prior_ordinary_revenue_billion=prior_value,
         checks=checks,
     )
 
