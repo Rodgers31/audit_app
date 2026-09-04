@@ -220,13 +220,13 @@
     {
       "fiscal_year": "FY 2026/27",
       "appropriated_budget": null,
-      "total_revenue": 2985.7,
+      "total_revenue": null,
       "tax_revenue": null,
       "non_tax_revenue": null,
       "total_borrowing": null,
       "borrowing_pct_of_budget": null,
       "debt_service_cost": 2315.9,
-      "debt_service_per_shilling": 77.6,
+      "debt_service_per_shilling": null,
       "debt_ceiling": null,
       "actual_debt": null,
       "debt_ceiling_usage_pct": null,
@@ -235,22 +235,6 @@
       "county_allocation": 420.0,
       "methodology": "Approved budget estimate — to be replaced by actuals when the FY2026/27 APDMR is published (typically Nov 2027)",
       "revenue_basis": "ordinary_revenue_excl_aia",
-      "revenue_source": {
-        "title": "Budget Summary for the FY 2026/27 Budget",
-        "publisher": "The National Treasury",
-        "url": "https://www.treasury.go.ke/sites/default/files/Budget%20summary/Budget%20Summary%20for%20the%20FY%202026_27%20Budget.pdf",
-        "table": "Table 2: Medium-Term Fiscal Framework (PDF p.14), row '2.1 Ordinary Revenue'",
-        "column": "FY2026/27 'Approved Budget'",
-        "page": "Table 2, PDF p.14; stated in narrative at para 29, PDF p.12",
-        "quote": "In the FY 2026/27 budget, total revenues including Appropriation-in-Aid (A-i-A) are projected at KSh 3,629.7 billion (17.4 percent of GDP) from KSh 3,399.1 billion (18.2 percent of GDP) in the FY 2025/26 (Table 2). Of this, ordinary revenue is projected at KSh 2,985.7 billion (14.3 percent of GDP) from KSh 2,784.4 billion (14.9 percent of GDP) in the FY 2025/26.",
-        "column_identification": "Table 2 prints two FY2026/27 columns whose header order is ambiguous in the PDF text layer. They are told apart by cross-document identity: the 2026 BPS states ordinary revenue of KSh 2,901.9bn (p.65, p.89, p.91, and 'ORDINARY REVENUE (EXCLUDING AIA) 2,901,875' thousand on p.91), and grants of 54.4. Those match the FIRST column exactly, so the first is 'BPS 2026' and the second (2,985.7, grants 43.6) is 'Approved Budget' — which is also the figure the Budget Summary's own narrative quotes at para 29.",
-        "checks": [
-          "ordinary 2,985.7 + ministerial AiA 644.0 == total revenues incl. A-i-A 3,629.7",
-          "BPS-column grants 54.4 matches 2026 BPS Annex Table 2 grants 54.4 (column id)",
-          "BPS-column ordinary 2,901.9 matches 2026 BPS narrative 2,901.9 (column id)"
-        ]
-      },
-      "revenue_split_absent_reason": "The Budget Summary prints no tax/non-tax split for the Approved Budget column. The 2026 BPS split (2,767.4 + 134.5) sums to 2,901.9, which is the BPS column, not this one. Withheld rather than mixed.",
       "debt_service_source": {
         "title": "Programme Based Budget FY 2026/27 (Approved)",
         "publisher": "The National Treasury",
@@ -258,7 +242,8 @@
         "page": "CFS summary PDF p.1193",
         "note": "Interest & redemption, the APDMR debt-service definition used by every other year in this file. Reconciles inside CFS 2,563.0B. Repeated here because the seeder's writer overwrites every column unconditionally, so omitting it would null the value the PBB overlay already established."
       },
-      "appropriated_budget_absent_reason": "This row exists to carry the FY2026/27 REVENUE estimate. The gross budget for the year is read live from the Programme Based Budget book by seeding/domains/fiscal_summary/budget_estimates.py, which gates it on three reconciliation identities and overlays it (with its own page-and-quote provenance) onto this row at seed time. Duplicating that figure here would create a second copy that can go stale against the book."
+      "appropriated_budget_absent_reason": "This row exists to carry the FY2026/27 REVENUE estimate. The gross budget for the year is read live from the Programme Based Budget book by seeding/domains/fiscal_summary/budget_estimates.py, which gates it on three reconciliation identities and overlays it (with its own page-and-quote provenance) onto this row at seed time. Duplicating that figure here would create a second copy that can go stale against the book.",
+      "total_revenue_absent_reason": "Derived live, not stored. seeding/domains/fiscal_summary/revenue_estimates.py discovers and parses the Treasury Budget Summary's Table 2 on every run and overlays the approved ordinary-revenue figure onto this row, under four gates (column identity, BPS cross-document column identification, prior-year cross-vintage check, plausibility band). Typing the figure here would freeze a number that Treasury republishes annually — the same reason appropriated_budget is not stored either."
     }
   ]
 }

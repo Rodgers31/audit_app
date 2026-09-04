@@ -301,6 +301,19 @@ class SeedingSettings(BaseSettings):
             "last year's budget between July and November."
         ),
     )
+    treasury_budget_summary_page_url: str = Field(
+        default="https://www.treasury.go.ke/budget-summary-revenue-expenditure",
+        description=(
+            "National Treasury Budget Summary listing page. Scraped each run "
+            "to discover the CURRENT fiscal year's Budget Summary, whose "
+            "medium-term fiscal framework table carries the APPROVED revenue "
+            "estimate. Same gap as the budget books fill for expenditure: an "
+            "FY that started on 1 July has no COB revenue figure until mid "
+            "November, and the COB overlay cannot create a fiscal year in any "
+            "case — so without this source the debt-service-to-revenue line "
+            "has no point for the budget year."
+        ),
+    )
     treasury_bps_page_url: str = Field(
         default="https://www.treasury.go.ke/budget-policy-statement/",
         description=(

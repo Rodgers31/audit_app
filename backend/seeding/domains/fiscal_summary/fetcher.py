@@ -70,6 +70,8 @@ def fetch_fiscal_summary_payload(
     cob_promoted = False
     estimates_status = "not_attempted"
     estimates_applied = False
+    revenue_status = "not_attempted"
+    revenue_applied = False
 
     # Try World Bank enrichment
     if settings.enrich_with_worldbank and settings.live_pdf_fetch_enabled:
@@ -143,6 +145,47 @@ def fetch_fiscal_summary_payload(
             estimates_status = f"error({type(exc).__name__})"
             logger.warning("Treasury budget estimates step skipped: %s", exc)
 
+        # Revenue for the SAME year, from the Budget Summary. Runs after the
+        # budget books so the fiscal year already exists when it lands, and is
+        # given the prior year's ordinary revenue off the payload as gate 3's
+        # cross-vintage check.
+        try:
+            target_fy = None
+            if estimates is not None:
+                target_fy = estimates.fiscal_year
+            else:
+                rows = payload.get("fiscal_years") or []
+                if rows:
+                    target_fy = max(r.get("fiscal_year", "") for r in rows) or None
+            if target_fy:
+                prior_label = _previous_fy(target_fy)
+                prior_row = next(
+                    (
+                        r
+                        for r in payload.get("fiscal_years") or []
+                        if r.get("fiscal_year") == prior_label
+                    ),
+                    None,
+                )
+                revenue_est, revenue_status = _fetch_revenue_estimates(
+                    client,
+                    settings,
+                    target_fy,
+                    known_prior_ordinary_billion=(prior_row or {}).get("total_revenue"),
+                )
+                if revenue_est is not None:
+                    payload, rev_apply = _apply_revenue_estimates(payload, revenue_est)
+                    revenue_applied = rev_apply == "applied"
+                    revenue_status = f"{revenue_est.fiscal_year}:{rev_apply}"
+            else:
+                revenue_status = "no_target_fiscal_year"
+            logger.info(
+                "fiscal_summary Treasury revenue estimates: %s", revenue_status
+            )
+        except Exception as exc:
+            revenue_status = f"error({type(exc).__name__})"
+            logger.warning("Treasury revenue estimates step skipped: %s", exc)
+
     # Provenance, graded by WHAT actually moved. "live" is reserved for a run
     # in which a publisher replaced the headline budget; a World-Bank-only run
     # is still live data but says so precisely, because a mode of "live" on
@@ -151,9 +194,9 @@ def fetch_fiscal_summary_payload(
 
     detail = (
         f"COB overlay: {cob_status}; Treasury estimates: {estimates_status}; "
-        f"World Bank: {wb_years} year(s)"
+        f"Treasury revenue: {revenue_status}; World Bank: {wb_years} year(s)"
     )
-    if estimates_applied or cob_promoted:
+    if estimates_applied or cob_promoted or revenue_applied:
         # A headline budget figure was actually replaced from a publisher.
         mark_live("fiscal_summary", detail=detail)
     elif wb_applied:
@@ -249,6 +292,120 @@ def _fetch_budget_estimates(
         "; ".join(estimates.checks),
     )
     return estimates, "parsed"
+
+
+def _previous_fy(label: str):
+    """``'FY 2026/27'`` -> ``'FY 2025/26'``; None when unparseable."""
+    import re as _re
+
+    m = _re.search(r"(\d{4})/(\d{2})", label or "")
+    if not m:
+        return None
+    start = int(m.group(1)) - 1
+    return f"FY {start}/{str(start + 1)[-2:]}"
+
+
+def _fetch_revenue_estimates(
+    client, settings, fiscal_year: str, known_prior_ordinary_billion=None
+):
+    """Discover, download and parse Treasury's Budget Summary for revenue.
+
+    Returns ``(RevenueEstimates | None, status)``. Every failure path returns a
+    reason rather than raising, so a bad run leaves the year's revenue absent
+    instead of publishing a figure nothing verified.
+    """
+    from ...discovery import discover_latest_pdf
+    from ...pdf_download import get_or_download_pdf
+    from .revenue_estimates import RevenueEstimatesError, extract_revenue_estimates
+
+    page_url = settings.treasury_budget_summary_page_url
+    try:
+        response = client.get(page_url, raise_for_status=True)
+    except Exception as exc:
+        return None, f"listing_unreachable({type(exc).__name__})"
+
+    found = discover_latest_pdf(
+        response.text,
+        page_url,
+        must_match=("budget", "summary"),
+        # A draft is not a published figure, and a supplementary revises the
+        # year mid-flight — neither is the approved estimate.
+        must_not_match=("draft", "supplementary", "supp-"),
+    )
+    if found is None:
+        return None, "no_budget_summary_discovered"
+
+    try:
+        pdf_path = get_or_download_pdf(
+            client,
+            found.url,
+            max_seconds=settings.pdf_download_timeout_seconds,
+            max_bytes=settings.pdf_download_max_bytes,
+        )
+    except Exception as exc:
+        return None, f"download_failed({type(exc).__name__})"
+
+    try:
+        return (
+            extract_revenue_estimates(
+                pdf_path,
+                fiscal_year,
+                known_prior_ordinary_billion=known_prior_ordinary_billion,
+                source_url=found.url,
+            ),
+            "ok",
+        )
+    except RevenueEstimatesError as exc:
+        # Quarantine: the reason is recorded, the figure is not published.
+        return None, f"quarantined({exc.reason})"
+
+
+def _apply_revenue_estimates(payload, estimates):
+    """Write a gated revenue estimate onto its fiscal year.
+
+    Unlike ``_overlay_live_revenue_headline`` this may CREATE the year, which
+    is the whole reason it exists: an overlay can only mutate a row that is
+    already there, so a budget year that has never been seeded gets no revenue
+    from the COB path no matter how healthy that path is.
+
+    Pure and idempotent. Returns ``(payload, status)``.
+    """
+    if estimates is None:
+        return payload, "no_estimates"
+    fiscal_years = payload.setdefault("fiscal_years", [])
+    row = next(
+        (r for r in fiscal_years if r.get("fiscal_year") == estimates.fiscal_year), None
+    )
+    if row is None:
+        row = {"fiscal_year": estimates.fiscal_year}
+        fiscal_years.append(row)
+
+    declared = row.get("revenue_basis")
+    if declared is not None and declared != "ordinary_revenue_excl_aia":
+        return payload, f"basis_mismatch(row={declared})"
+
+    row["total_revenue"] = float(estimates.ordinary_revenue_billion)
+    row["revenue_basis"] = "ordinary_revenue_excl_aia"
+    # The split is NOT derivable from this table — it prints only the
+    # ordinary/AiA/total triple — so it stays absent rather than being
+    # back-filled from a different column that would contradict the total.
+    row["tax_revenue"] = None
+    row["non_tax_revenue"] = None
+    row["revenue_source"] = {
+        "title": "Budget Summary",
+        "publisher": "The National Treasury",
+        "url": estimates.source_url,
+        "page": f"Table 2: Medium-Term Fiscal Framework, PDF p.{estimates.page_refs.get('fiscal_framework')}",
+        "column": "Approved Budget",
+        "measure": "Ordinary Revenue (tax + non-tax, excluding A-i-A and grants)",
+        "total_revenue_incl_aia_billion": float(
+            estimates.total_revenue_incl_aia_billion
+        ),
+        "ministerial_aia_billion": float(estimates.ministerial_aia_billion),
+        "checks": list(estimates.checks),
+    }
+    row["_revenue_source"] = "treasury_budget_summary_live"
+    return payload, "applied"
 
 
 def _apply_budget_estimates(
