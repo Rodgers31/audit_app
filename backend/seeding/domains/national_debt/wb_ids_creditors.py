@@ -55,7 +55,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from ...config import SeedingSettings
 from ...http_client import SeedingHttpClient
@@ -318,13 +318,26 @@ def to_loan_rows(creditors: List[Creditor], year: int) -> List[Dict[str, Any]]:
 def fetch_external_creditors(
     client: SeedingHttpClient,
     settings: Optional[SeedingSettings] = None,
-    published_external_kes: Optional[float] = None,
+    published_external_kes_for_year: Optional[Callable[[int], Optional[float]]] = None,
 ) -> Optional[Dict[str, Any]]:
-    """The whole pull, gated. ``None`` means nothing may be published."""
+    """The whole pull, gated. ``None`` means nothing may be published.
+
+    ``published_external_kes_for_year`` is resolved AFTER the IDS year is known,
+    and must return a figure for that same year. A denominator of a different
+    vintage is not a check: CBK's /public-debt/ page is frozen at 2021-12, so
+    measuring a 2024 IDS pull against it gives a 1.20x ratio and quarantines
+    every pull for a reason that has nothing to do with the data.
+    """
     year = latest_year_with_data(client)
     if year is None:
         logger.warning("IDS has no PPG total for any recent year; skipping")
         return None
+
+    published_external_kes = (
+        published_external_kes_for_year(year)
+        if published_external_kes_for_year is not None
+        else None
+    )
     try:
         creditors, checks = fetch_creditors(client, year)
     except IdsCreditorError as exc:

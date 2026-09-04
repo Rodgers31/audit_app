@@ -321,18 +321,29 @@ def test_the_coverage_denominator_is_cbks_own_total_not_the_payload():
     ]
 
     with pytest.MonkeyPatch.context() as mp:
-        mp.setattr(fx, "fetch_public_debt_monthly", lambda c, s: {"rows": rows})
-        assert fx._cbk_published_external_kes(object(), None) == pytest.approx(5.4e12)
+        mp.setattr(fx, "fetch_public_debt_monthly", lambda c, s: {"rows": rows, "covers": []})
 
-        # Unavailable -> None -> the caller quarantines rather than guessing.
+        # Same year as asked for -> the December figure for that year.
+        assert fx._cbk_published_external_kes(object(), None, 2025) == pytest.approx(5.4e12)
+
+        # A year the monthly table does not carry must NOT fall back to its
+        # newest row: /public-debt/ is frozen at 2021-12, so a 2024 pull
+        # measured against it reads 1.20x and quarantines for a reason that is
+        # about CBK's website, not the data. It falls through to the CBK
+        # Statistical Bulletin series instead, which does publish 2024.
+        v2024 = fx._cbk_published_external_kes(object(), None, 2024)
+        assert v2024 is not None and v2024 != pytest.approx(5.4e12), v2024
+
+        # Nothing published for the year at all -> None -> quarantine.
+        assert fx._cbk_published_external_kes(object(), None, 1975) is None
+
         def _boom(c, s):
             raise RuntimeError("CBK unreachable")
 
         mp.setattr(fx, "fetch_public_debt_monthly", _boom)
-        assert fx._cbk_published_external_kes(object(), None) is None
-
-        mp.setattr(fx, "fetch_public_debt_monthly", lambda c, s: {"rows": []})
-        assert fx._cbk_published_external_kes(object(), None) is None
+        # Still resolvable from the Bulletin series for a year it covers.
+        assert fx._cbk_published_external_kes(object(), None, 2024) is not None
+        assert fx._cbk_published_external_kes(object(), None, 1975) is None
 
 
 def test_a_failed_pull_leaves_the_fixture_alone(monkeypatch):
@@ -350,11 +361,11 @@ def test_an_out_of_band_pull_is_quarantined():
 
     # A plausible-looking pull measured against an implausible denominator.
     assert mod.fetch_external_creditors(
-        FakeIds(), published_external_kes=5_462_000_000
+        FakeIds(), published_external_kes_for_year=lambda _yr: 5_462_000_000
     ) is None
     # And the same pull against the real one publishes.
     ok = mod.fetch_external_creditors(
-        FakeIds(), published_external_kes=5_462_000_000_000
+        FakeIds(), published_external_kes_for_year=lambda _yr: 5_462_000_000_000
     )
     assert ok is not None and ok["year"] == 2024
     assert len(ok["creditors"]) == 21
@@ -431,12 +442,42 @@ def test_an_unchecked_coverage_result_quarantines_the_pull():
         # Denominator absent -> coverage is "unchecked" -> nothing may publish.
         assert mod.check_external_coverage(creditors, None)["status"] != "within_band"
         assert (
-            mod.fetch_external_creditors(object(), published_external_kes=None) is None
+            mod.fetch_external_creditors(object(), published_external_kes_for_year=lambda _yr: None) is None
         ), "gate 3 was skipped when there was no independent total to check against"
 
         # Positive control: with a denominator in band, the pull proceeds.
         in_band = float(creditors[0].kes) / 0.9
         assert (
-            mod.fetch_external_creditors(object(), published_external_kes=in_band)
+            mod.fetch_external_creditors(object(), published_external_kes_for_year=lambda _yr: in_band)
             is not None
         )
+
+
+def test_a_denominator_of_the_wrong_vintage_is_refused():
+    """The gate must compare like with like.
+
+    CBK's /public-debt/ page is frozen at 2021-12. Taking its newest row as the
+    denominator for a 2024 IDS pull gives a ratio of ~1.20 and quarantines
+    every pull — a gate that always fires is as useless as one that never does,
+    and it fails for a reason about CBK's website rather than the data.
+    """
+    from seeding.domains.national_debt import fetcher as fx
+    from seeding.domains.national_debt.cbk_web_tables import PublicDebtMonth
+
+    frozen = [
+        PublicDebtMonth(2021, 11, domestic_kes=4.008e12, external_kes=4.109e12, total_kes=8.117e12),
+        PublicDebtMonth(2021, 12, domestic_kes=4.032e12, external_kes=4.174e12, total_kes=8.207e12),
+    ]
+
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(
+            fx, "fetch_public_debt_monthly",
+            lambda c, s: {"rows": frozen, "covers": ["1999-09", "2021-12"]},
+        )
+        denom = fx._cbk_published_external_kes(object(), None, 2024)
+
+    assert denom != pytest.approx(4.174e12), (
+        "the 2021 figure was used as the denominator for a 2024 pull"
+    )
+    # It resolves the vintage-matched Statistical Bulletin figure instead.
+    assert denom == pytest.approx(5.057e12, rel=0.01), denom

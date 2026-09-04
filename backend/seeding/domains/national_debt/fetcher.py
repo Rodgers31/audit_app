@@ -77,46 +77,71 @@ _EXTERNAL_CATEGORIES = {
 }
 
 
-def _cbk_published_external_kes(client, settings) -> float | None:
-    """CBK's OWN external-debt total, for the IDS coverage gate.
+def _cbk_published_external_kes(client, settings, year: int) -> float | None:
+    """CBK's own external-debt total FOR ``year``, for the IDS coverage gate.
 
-    The denominator has to be independent of the thing it checks. Summing the
-    loans payload was not: the payload's own baseline says its external rows
-    are not re-sourced and its total is not published, and the IDS overlay
-    earlier in this function has already mutated them — so gate 3 was comparing
-    the IDS pull against the fixture it is replacing.
+    The denominator must be independent of the thing it checks AND of the same
+    vintage. Two sources, in order:
 
-    CBK publishes domestic/external/total monthly at /public-debt/, and every
-    row there has to satisfy CBK's own ``domestic + external = total`` before
-    the parser will emit it. That is a real, independent, dated aggregate.
+      1. CBK's monthly /public-debt/ table, if it carries that year. Every row
+         there must satisfy CBK's own domestic + external = total before the
+         parser will emit it.
+      2. The CBK Statistical Bulletin series (Table 4.1.3) carried in
+         debt_timeline.json, which is where 2022 onwards comes from and which
+         cites its table and page per row.
 
-    Returns ``None`` when it cannot be fetched, which leaves the coverage check
-    "unchecked" and quarantines the pull — the gate refuses rather than
-    silently measuring the data against itself.
+    Returns ``None`` — which quarantines the pull — when neither publishes that
+    year. That matters in practice: /public-debt/ is currently frozen at
+    2021-12, so measuring a 2024 IDS pull against its newest row gives a 1.20x
+    ratio and quarantines every pull for a reason that is about CBK's website,
+    not about the data.
     """
     try:
         series = fetch_public_debt_monthly(client, settings)
-    except Exception as exc:
-        logger.warning(
-            "CBK public-debt series unavailable, so the IDS coverage gate has "
-            "no independent denominator: %s",
-            exc,
+        rows = [
+            r
+            for r in (series.get("rows") or [])
+            if r.identity_holds() and r.year == year
+        ]
+        if rows:
+            newest = max(rows, key=lambda r: r.month)
+            logger.info(
+                "IDS coverage denominator: CBK /public-debt/ external "
+                "KES %.3fT as of %04d-%02d",
+                newest.external_kes / 1e12, newest.year, newest.month,
+            )
+            return newest.external_kes or None
+        logger.info(
+            "CBK /public-debt/ does not publish %d (it covers %s); trying the "
+            "Statistical Bulletin series",
+            year, series.get("covers"),
         )
-        return None
+    except Exception as exc:
+        logger.warning("CBK /public-debt/ unavailable: %s", exc)
 
-    rows = [r for r in (series.get("rows") or []) if r.identity_holds()]
-    if not rows:
-        logger.warning("CBK public-debt series returned no rows passing its identity")
-        return None
+    try:
+        from pathlib import Path
+        import json as _json
 
-    newest = max(rows, key=lambda r: (r.year, r.month))
-    logger.info(
-        "IDS coverage denominator: CBK external debt KES %.2fT as of %04d-%02d",
-        newest.external_kes / 1e12,
-        newest.year,
-        newest.month,
+        path = Path(__file__).resolve().parents[2] / "real_data" / "debt_timeline.json"
+        rows = _json.loads(path.read_text(encoding="utf-8")).get("timeline", [])
+        match = next((r for r in rows if r.get("year") == year), None)
+        if match and match.get("external") and "cbk" in str(match.get("source", "")).lower():
+            # The fixture carries billions.
+            external = float(match["external"]) * 1e9
+            logger.info(
+                "IDS coverage denominator: %s — external KES %.3fT for %d",
+                match.get("source"), external / 1e12, year,
+            )
+            return external
+    except Exception as exc:
+        logger.warning("debt-timeline denominator unavailable: %s", exc)
+
+    logger.warning(
+        "No CBK external total published for %d, so the IDS pull has nothing "
+        "independent of the same vintage to check against; quarantining", year
     )
-    return newest.external_kes or None
+    return None
 
 
 def _replace_external_loans(
@@ -210,7 +235,9 @@ def fetch_debt_payload(
         external_creditors = fetch_external_creditors(
             client,
             settings,
-            published_external_kes=_cbk_published_external_kes(client, settings),
+            published_external_kes_for_year=lambda yr: _cbk_published_external_kes(
+                client, settings, yr
+            ),
         )
     except Exception as exc:
         logger.warning("IDS creditor fetch failed entirely: %s", exc)
