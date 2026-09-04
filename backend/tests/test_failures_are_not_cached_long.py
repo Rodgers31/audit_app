@@ -45,7 +45,20 @@ def _clear_cache():
 
 
 def _run(coro):
-    return asyncio.get_event_loop().run_until_complete(coro)
+    """Run a coroutine on a loop of our own.
+
+    NOT ``asyncio.get_event_loop()``: on Python 3.12+ that raises
+    "There is no current event loop in thread 'MainThread'" unless something
+    earlier in the process happened to set one. Whether anything did depends on
+    which tests ran before this file, so these five tests passed in the default
+    collection order and failed in any order that put them first — the last
+    order-dependence left in the suite.
+    """
+    loop = asyncio.new_event_loop()
+    try:
+        return loop.run_until_complete(coro)
+    finally:
+        loop.close()
 
 
 class TestTransientFailuresGetAShortTtl:

@@ -72,7 +72,12 @@ def _cached(key_prefix: str, ttl: int = 1800):
             }
             return result
 
-        wrapper._cache = _mem  # expose for test teardown
+        # NB: _mem is the no-Redis-object fallback and is only reached if
+        # RedisCache() itself failed to construct — an instance is truthy even
+        # when it has no server, so the branch above normally wins and the real
+        # cache is _redis_cache._memory_cache.  That instance is cleared
+        # between tests via RedisCache._instances (see main.clear_all_caches).
+        wrapper._cache = _mem
         return wrapper
     return decorator
 

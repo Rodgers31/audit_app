@@ -1383,7 +1383,10 @@ def clear_all_caches():
     """Clear every in-memory endpoint cache.  Called between tests."""
     for c in _all_mem_caches:
         c.clear()
-    # Clear both RedisCache instances (main.redis_cache and cache.redis_cache.cache)
+    # 12-hour TTL — one warm-up would otherwise freeze peers for the whole run.
+    _peers_cache["ts"] = 0.0
+    _peers_cache["data"] = None
+    # Clear every RedisCache instance's in-memory fallback (and Redis if live).
     for rc in _redis_cache_instances():
         rc._memory_cache.clear()
         if rc.client is not None:
@@ -1394,16 +1397,24 @@ def clear_all_caches():
 
 
 def _redis_cache_instances():
-    """Yield all known RedisCache singletons."""
-    if redis_cache is not None:
-        yield redis_cache
-    try:
-        from cache.redis_cache import cache as _router_cache
+    """Yield every RedisCache ever constructed.
 
-        if _router_cache is not None and _router_cache is not redis_cache:
-            yield _router_cache
+    Enumerating them by name missed routers/money_flow.py's private instance,
+    whose 1800 s entries then survived between tests.  RedisCache registers
+    each instance at construction, so this can no longer fall behind.
+    """
+    try:
+        from cache.redis_cache import RedisCache
+
+        seen = set()
+        for rc in RedisCache._instances:
+            if id(rc) not in seen:
+                seen.add(id(rc))
+                yield rc
     except Exception:
-        pass
+        # Fall back to the named singletons rather than clearing nothing.
+        if redis_cache is not None:
+            yield redis_cache
 
 
 def _parse_missing_funds_amount(raw: Any) -> Optional[float]:

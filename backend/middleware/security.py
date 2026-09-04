@@ -9,8 +9,9 @@ from typing import Callable, Dict, Optional
 
 import redis.asyncio as aioredis
 from config.settings import settings
-from fastapi import HTTPException, Request, status
+from fastapi import Request, status
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
 
@@ -88,9 +89,15 @@ class RedisRateLimitMiddleware(BaseHTTPMiddleware):
 
         if not allowed:
             logger.warning(f"Rate limit exceeded for IP: {client_ip}")
-            raise HTTPException(
+            # NB: return, don't raise. BaseHTTPMiddleware.dispatch runs outside
+            # Starlette's ExceptionMiddleware, so a raised HTTPException never
+            # becomes a response — the caller would get a bare 500 with no
+            # Retry-After instead of the 429 this branch intends.
+            return JSONResponse(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=f"Rate limit exceeded. Max {self.calls} requests per {self.period} seconds.",
+                content={
+                    "detail": f"Rate limit exceeded. Max {self.calls} requests per {self.period} seconds."
+                },
                 headers={"Retry-After": str(self.period)},
             )
 
@@ -214,9 +221,15 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # Check rate limit
         if len(self.clients[client_ip]) >= self.calls:
             logger.warning(f"Rate limit exceeded for IP: {client_ip}")
-            raise HTTPException(
+            # NB: return, don't raise. BaseHTTPMiddleware.dispatch runs outside
+            # Starlette's ExceptionMiddleware, so a raised HTTPException never
+            # becomes a response — the caller would get a bare 500 with no
+            # Retry-After instead of the 429 this branch intends.
+            return JSONResponse(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=f"Rate limit exceeded. Max {self.calls} requests per {self.period} seconds.",
+                content={
+                    "detail": f"Rate limit exceeded. Max {self.calls} requests per {self.period} seconds."
+                },
                 headers={"Retry-After": str(self.period)},
             )
 

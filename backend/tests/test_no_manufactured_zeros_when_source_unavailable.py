@@ -152,9 +152,6 @@ def dead_db_client():
     app.router.on_startup.clear()
     app.router.on_shutdown.clear()
 
-    async def _passthrough(self, request, call_next):  # noqa: ANN001
-        return await call_next(request)
-
     # BOTH mechanisms are required; they cover different route styles.
     #
     #   patch("main.get_db")        -> handlers that call next(get_db()) directly
@@ -184,9 +181,10 @@ def dead_db_client():
     _saved_override = app.dependency_overrides.get(get_db)
     app.dependency_overrides[get_db] = _dead_get_db
 
-    with patch("main.get_db", _raise), patch(
-        "middleware.security.RateLimitMiddleware.dispatch", _passthrough
-    ), patch("middleware.security.RedisRateLimitMiddleware.dispatch", _passthrough):
+    # The rate limiter is bypassed session-wide in conftest.pytest_configure;
+    # patching it here would be a no-op (the middleware instance binds
+    # dispatch_func at construction, long before this fixture runs).
+    with patch("main.get_db", _raise):
         yield TestClient(app, raise_server_exceptions=False)
 
     if _saved_override is None:

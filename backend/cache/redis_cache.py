@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import time
+import weakref
 from functools import wraps
 from typing import Any, Callable, Optional
 
@@ -15,11 +16,22 @@ logger = logging.getLogger(__name__)
 class RedisCache:
     """Redis cache manager with fallback to in-memory cache."""
 
+    #: Every instance ever built, so test teardown can clear all of them.
+    #: There are three module-level singletons (cache.redis_cache.cache,
+    #: main.redis_cache, routers.money_flow._redis_cache) and
+    #: main.clear_all_caches() used to know about only the first two — the
+    #: money-flow one kept 30-minute entries alive across tests, so a test's
+    #: result depended on whether an earlier test had warmed that endpoint.
+    #: Registering here means a new instance can never be forgotten again.
+    #: Weak refs so the registry can never itself become a leak.
+    _instances: "weakref.WeakSet[RedisCache]" = weakref.WeakSet()
+
     def __init__(self, redis_url: str = None):
         self.redis_url = redis_url or os.getenv("REDIS_URL", "redis://localhost:6379")
         self.client: Optional[redis.Redis] = None
         self._memory_cache = {}  # {key: (value, expiry_timestamp)}
         self._memory_cache_max_size = 1024
+        RedisCache._instances.add(self)
         self._initialize()
 
     def _initialize(self):
