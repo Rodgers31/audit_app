@@ -1,16 +1,29 @@
 'use client';
 
 import { usePendingBillsSummary } from '@/lib/react-query';
+import { toRawKES } from '@/lib/utils';
+import { useDebtTimeline, useNationalDebtOverview } from '@/lib/react-query/useDebt';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Info, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 /**
  * Info button + modal explaining why the hero total-debt figure
  * differs from the loans-card outstanding figure.
  *
- * Hero:  uses /api/v1/debt/timeline  → National Treasury projection (includes pending bills, county-guaranteed, etc.)
- * Loans: uses /api/v1/debt/loans     → CBK per-lender actuals (granular, auditable breakdown)
+ * Both figures are read from the API here rather than described from memory.
+ * The previous copy had them the wrong way round: it said the hero was a
+ * Treasury "aggregate projection" INCLUDING pending bills, when the hero is
+ * `/api/v1/debt/national` -> `total_outstanding`, the sum of our own
+ * instrument register, which EXCLUDES pending bills (`_is_debt_loan`). It also
+ * explained the gap as pending bills and FX rounding — a confident account of
+ * a discrepancy the site's own audit banner calls unreconciled.
+ *
+ * Rendered through a portal: this modal mounts inside HeroSection, whose
+ * ancestors are framer-motion elements. A transformed ancestor creates a
+ * stacking context, so `position: fixed; z-50` was scoped inside it and later
+ * sections painted over the panel.
  */
 
 interface Props {
@@ -21,11 +34,44 @@ interface Props {
 
 export default function DebtExplainerModal({ context, className = '' }: Props) {
   const [open, setOpen] = useState(false);
-  const { data: pendingData } = usePendingBillsSummary();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
+  const { data: pendingData } = usePendingBillsSummary();
+  const { data: overview } = useNationalDebtOverview();
+  const { data: timelineResp } = useDebtTimeline();
+
+  // The API returns raw KES. Appending " B" to it printed
+  // "≈ 1128944197956 B" on screen — a number in no unit at all.
   const pendingBillsLabel = pendingData?.total_pending_amount
-    ? `≈ ${Math.round(pendingData.total_pending_amount)} B`
+    ? `≈ KES ${(pendingData.total_pending_amount / 1e12).toFixed(2)}T`
     : '—';
+
+  // Read both figures from the API rather than describing them from memory,
+  // so this explanation cannot drift away from what the page is showing.
+  const fmtT = (kes?: number | null) =>
+    kes != null ? `KES ${(kes / 1e12).toFixed(2)}T` : '—';
+
+  // The query returns the raw envelope; the payload is under `data`. Same
+  // unwrapping HeroSection does — without it every figure here rendered as an
+  // em dash while the hero beside it showed the number.
+  const apiData = (overview as any)?.data ?? overview;
+  const registerTotal = apiData?.total_outstanding ?? apiData?.total_debt ?? null;
+  const registerRows: number | null = apiData?.loan_count ?? null;
+
+  const timeline = (timelineResp as any)?.timeline ?? timelineResp ?? [];
+  const newest = Array.isArray(timeline) && timeline.length
+    ? [...timeline].sort((a: any, b: any) => (a.year ?? 0) - (b.year ?? 0)).slice(-1)[0]
+    : null;
+  const publishedTotal = newest ? toRawKES(newest.total, newest.unit) : null;
+  const publishedYear = newest?.year ?? null;
+
+  const gapKes =
+    registerTotal != null && publishedTotal != null
+      ? Math.abs(registerTotal - publishedTotal)
+      : null;
+  const gapPct =
+    gapKes != null && registerTotal ? (gapKes / registerTotal) * 100 : null;
 
   return (
     <>
@@ -43,16 +89,22 @@ export default function DebtExplainerModal({ context, className = '' }: Props) {
         <Info className={context === 'hero' ? 'w-3 h-3' : 'w-2.5 h-2.5'} />
       </button>
 
-      {/* Modal */}
-      <AnimatePresence>
-        {open && (
-          <>
+      {/* Modal — portalled to <body>.
+          Mounted inside HeroSection, whose ancestors include framer-motion
+          elements; a transformed ancestor creates a stacking context, which
+          scoped `position: fixed; z-50` inside it and let later sections paint
+          over the panel. A portal escapes that entirely. */}
+      {mounted &&
+        createPortal(
+          <AnimatePresence>
+            {open && (
+              <>
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className='fixed inset-0 bg-black/40 backdrop-blur-sm z-50'
+              className='fixed inset-0 z-[99] bg-black/40 backdrop-blur-sm'
               onClick={() => setOpen(false)}
             />
 
@@ -62,9 +114,9 @@ export default function DebtExplainerModal({ context, className = '' }: Props) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 12 }}
               transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-              className='fixed inset-x-4 top-[15vh] z-50 mx-auto max-w-lg bg-white dark:bg-surface-base rounded-2xl shadow-2xl ring-1 ring-neutral-border/30 overflow-hidden'>
+              className='fixed inset-0 z-[100] m-auto flex h-fit max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-neutral-border/30 dark:bg-surface-base'>
               {/* Header */}
-              <div className='flex items-center justify-between px-6 pt-5 pb-3 border-b border-neutral-border/20'>
+              <div className='flex shrink-0 items-center justify-between border-b border-neutral-border/20 px-6 pb-3 pt-5'>
                 <div className='flex items-center gap-2'>
                   <span className='flex items-center justify-center w-7 h-7 rounded-full bg-gov-gold/15'>
                     <Info className='w-4 h-4 text-gov-gold' />
@@ -82,78 +134,66 @@ export default function DebtExplainerModal({ context, className = '' }: Props) {
               </div>
 
               {/* Body */}
-              <div className='px-6 py-5 space-y-4 text-sm text-gov-dark/80 dark:text-white/80 leading-relaxed max-h-[60vh] overflow-y-auto'>
+              <div className='min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5 text-sm leading-relaxed text-gov-dark/80 dark:text-white/80'>
                 <p>
                   You may notice two different debt totals on this page. They come from
                   <strong> two official but distinct datasets</strong>, each measuring Kenya's
                   public debt in a slightly different way:
                 </p>
 
-                {/* Card 1 — Timeline / Hero */}
+                {/* Card 1 — the hero figure: OUR register */}
                 <div className='rounded-xl border border-gov-dark/10 bg-gov-sand/30 px-4 py-3'>
                   <p className='text-xs font-semibold uppercase tracking-wider text-gov-dark/50 dark:text-white/50 mb-1'>
-                    🇰🇪 Hero banner — "Total Debt"
+                    🇰🇪 Hero banner — &quot;Total Debt&quot; · {fmtT(registerTotal)}
                   </p>
                   <p className='font-semibold text-gov-dark dark:text-white mb-1'>
-                    Source: National Treasury Budget Policy Statement &amp; CBK Annual Bulletin
+                    Our own sum of individual instruments
+                    {registerRows != null ? ` (${registerRows} rows)` : ''}
                   </p>
                   <p>
-                    This figure is the government's <strong>aggregate projection</strong> for the
-                    fiscal year. It includes all public debt instruments plus items that aren't
-                    broken out as individual loans — such as <em>pending bills</em>,{' '}
-                    <em>county-guaranteed debt</em>, and rounding adjustments from currency
-                    conversion of external debt.
+                    Every debt instrument we hold — each lender, principal and outstanding
+                    balance — added up. The rows trace to the CBK Public Debt Statistical
+                    Bulletin of <strong>April 2025</strong>, so this is a figure for that date,
+                    not for the end of the year. It <strong>excludes</strong> pending bills:
+                    those are unpaid invoices, not borrowing, and they have their own panel.
                   </p>
                 </div>
 
-                {/* Card 2 — Loans card */}
+                {/* Card 2 — what CBK itself publishes */}
                 <div className='rounded-xl border border-gov-copper/15 bg-gov-copper/[0.04] px-4 py-3'>
                   <p className='text-xs font-semibold uppercase tracking-wider text-gov-copper/60 mb-1'>
-                    🏛️ Loans card — "Outstanding Debt"
+                    🏛️ CBK&apos;s own published total · {fmtT(publishedTotal)}
                   </p>
-                  {/* The vintage was hardcoded "April 2025" while the domestic
-                      instruments carry the December 2025 CBK figures applied by
-                      the 2026-08-29 correction. A static date on a figure that
-                      moves is worse than no date (credibility audit F19), so
-                      the label now describes what the number IS rather than
-                      naming an issue it may not come from. */}
                   <p className='font-semibold text-gov-dark dark:text-white mb-1'>
-                    Sum of our instrument register — not a published total
+                    CBK Statistical Bulletin, Table 4.1.3
+                    {publishedYear ? ` — December ${publishedYear}` : ''}
                   </p>
                   <p>
-                    This figure adds up the <strong>individual loan balances we hold</strong> —
-                    each lender, principal, outstanding amount and interest rate — drawn from
-                    the Central Bank&apos;s public debt statistics. It is not a figure CBK
-                    publishes: CBK&apos;s own aggregate for the same period is about 9% lower,
-                    and the two have not been reconciled. It also excludes off-balance-sheet
-                    items like pending bills and county-guaranteed obligations. The rows are
-                    aggregate categories, not individual instruments, so the register is
-                    coarser than Kenya&apos;s real portfolio of several hundred securities.
+                    A single aggregate the Central Bank publishes for the whole stock of public
+                    debt. We do not build it; we read it. It also excludes pending bills.
                   </p>
                 </div>
 
-                {/* Gap explanation */}
-                <div className='rounded-xl border border-neutral-border/40 bg-white dark:bg-surface-base px-4 py-3'>
-                  <p className='text-xs font-semibold uppercase tracking-wider text-neutral-muted mb-1'>
-                    📊 The ~1 T gap is explained by
+                {/* The gap — stated, not explained away */}
+                <div className='rounded-xl border border-gov-gold/40 bg-gov-gold/[0.07] px-4 py-3'>
+                  <p className='text-xs font-semibold uppercase tracking-wider text-gov-gold mb-1'>
+                    ⚠️ The gap is unreconciled
                   </p>
-                  <ul className='list-disc list-inside space-y-0.5 text-sm'>
-                    <li>
-                      <strong>Pending bills</strong> ({pendingBillsLabel}) — unpaid government
-                      invoices
-                    </li>
-                    <li>
-                      <strong>County-guaranteed debt</strong>
-                    </li>
-                    <li>
-                      <strong>Projection vs. actuals</strong> — the headline figure projects to
-                      end-of-FY; the loans card is a point-in-time CBK snapshot
-                    </li>
-                    <li>
-                      <strong>FX rounding</strong> — external debt converted at different exchange
-                      rate snapshots
-                    </li>
-                  </ul>
+                  <p>
+                    The two differ by{' '}
+                    <strong>
+                      {gapKes != null ? fmtT(gapKes) : '—'}
+                      {gapPct != null ? ` (${gapPct.toFixed(1)}%)` : ''}
+                    </strong>
+                    , and <strong>we cannot yet say which is right</strong>. Pending bills do not
+                    explain it — both figures exclude them ({pendingBillsLabel}).
+                  </p>
+                  <p className='mt-2'>
+                    Two things make the gap harder to explain, not easier. Our register is dated
+                    April 2025 yet exceeds CBK&apos;s figure for the following December, and debt
+                    does not fall over a year of continued borrowing. Until that is resolved we
+                    report the difference rather than account for it.
+                  </p>
                 </div>
 
                 <p className='text-xs text-neutral-muted'>
@@ -179,7 +219,7 @@ export default function DebtExplainerModal({ context, className = '' }: Props) {
               </div>
 
               {/* Footer */}
-              <div className='px-6 py-3 border-t border-neutral-border/20 bg-neutral-border/5 flex justify-end'>
+              <div className='flex shrink-0 justify-end border-t border-neutral-border/20 bg-neutral-border/5 px-6 py-3'>
                 <button
                   type='button'
                   onClick={() => setOpen(false)}
@@ -188,9 +228,11 @@ export default function DebtExplainerModal({ context, className = '' }: Props) {
                 </button>
               </div>
             </motion.div>
-          </>
+              </>
+            )}
+          </AnimatePresence>,
+          document.body
         )}
-      </AnimatePresence>
     </>
   );
 }
