@@ -87,6 +87,12 @@ def _baseline_payload() -> Dict[str, Any]:
     }
 
 
+#: The USD/KES the fake World Bank publishes. Assertions derive from it
+#: rather than hardcoding a product, so a change of rate cannot quietly
+#: re-freeze the constant this replaced.
+FAKE_USD_KES = Decimal("134.822483279332")
+
+
 def _wb_response(value_usd: float, year: str = "2024") -> List[Any]:
     """Minimal WB API response with a single observation."""
     return [
@@ -127,6 +133,10 @@ class TestWbIdsFetcher:
                     body = _wb_response(2_000_000_000)  # IDA combined into the row
                 elif "DIMF" in url:
                     body = _wb_response(3_300_000_000)  # IMF
+                elif "PA.NUS.FCRF" in url:
+                    # USD/KES for the observation year. Conversion refuses
+                    # without it, so the fake has to publish one.
+                    body = _wb_response(float(FAKE_USD_KES))
                 else:
                     raise AssertionError(f"unexpected URL: {url}")
 
@@ -142,7 +152,10 @@ class TestWbIdsFetcher:
         # World Bank is IBRD + IDA = 10B USD → 1300B KES
         wb = by_lender["Multilateral (World Bank / IDA / IBRD)"]
         assert wb["debt_category"] == "external_multilateral"
-        assert Decimal(wb["outstanding"]) == Decimal("1300000000000.00")
+        # 8bn IBRD + 2bn IDA, converted at the year's published rate.
+        # Stored to whole shillings; sub-shilling precision on trillions is noise.
+        expected = (Decimal("10000000000") * FAKE_USD_KES).quantize(Decimal("1"))
+        assert Decimal(wb["outstanding"]).quantize(Decimal("1")) == expected
         assert wb["currency"] == "KES"
         # Notes record the WB IDS provenance.
         assert "MIBR" in wb["notes"] and "MIDA" in wb["notes"] and "2024" in wb["notes"]
@@ -155,10 +168,11 @@ class TestWbIdsFetcher:
             def get(self, url, **_kwargs):
                 if "DIMF" in url:
                     raise RuntimeError("simulated 502")
+                value = float(FAKE_USD_KES) if "PA.NUS.FCRF" in url else 1.0
                 # All others return 1 USD so we can count them.
                 class R:
                     def json(self_):
-                        return _wb_response(1.0)
+                        return _wb_response(value)
                 return R()
 
         loans = wb_ids.fetch_external_debt_from_wb_ids(FakeClient(), settings)
@@ -201,10 +215,13 @@ class TestWbIdsFetcher:
             def get(self, url, **_kwargs):
                 if "MIDA" in url:  # the combine_with secondary
                     raise RuntimeError("simulated WB API 400")
+                value = (
+                    float(FAKE_USD_KES) if "PA.NUS.FCRF" in url else 1_000_000_000
+                )
                 # Both MIBR (IBRD primary) and DIMF (IMF) succeed.
                 class R:
                     def json(self_):
-                        return _wb_response(1_000_000_000)
+                        return _wb_response(value)
                 return R()
 
         loans = wb_ids.fetch_external_debt_from_wb_ids(FakeClient(), settings)

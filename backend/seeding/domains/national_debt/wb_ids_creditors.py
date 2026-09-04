@@ -58,15 +58,17 @@ from decimal import Decimal
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from ...config import SeedingSettings
+from .fx import rate_provenance, usd_kes_rate_for_year
 from ...http_client import SeedingHttpClient
 
 logger = logging.getLogger("seeding.national_debt.wb_ids_creditors")
 
 _IDS_BASE = "https://api.worldbank.org/v2/sources/6/country/KEN/series"
 
-# IDS reports USD. Same rate wb_ids.py and fiscal_summary use; kept in one
-# place here so a future market rate replaces one constant.
-USD_KES_RATE = Decimal("130.0")
+# IDS reports USD; the rate to convert it is fetched per IDS year from the
+# World Bank's own PA.NUS.FCRF series — see fx.py. There is deliberately no
+# module-level constant any more: a frozen rate multiplied every creditor and
+# was 3.7% out against 2024 while looking like a checked number.
 
 # IDS's aggregate row. Used as the identity check, never as a creditor.
 WORLD_ROW = "World"
@@ -98,10 +100,18 @@ class Creditor:
     series: str
     debt_category: str
     usd: float
+    #: KES per USD for this creditor's IDS year. Required — there is no
+    #: default, so a conversion cannot happen without a rate somebody fetched.
+    usd_kes_rate: Decimal = None  # type: ignore[assignment]
 
     @property
     def kes(self) -> Decimal:
-        return Decimal(str(self.usd)) * USD_KES_RATE
+        if self.usd_kes_rate is None:
+            raise IdsCreditorError(
+                f"no_usd_kes_rate: {self.name} — refusing to convert USD to "
+                f"KES without a rate for its year"
+            )
+        return Decimal(str(self.usd)) * self.usd_kes_rate
 
 
 def _fetch_series(
@@ -154,7 +164,7 @@ def latest_year_with_data(
 
 
 def fetch_creditors(
-    client: SeedingHttpClient, year: int
+    client: SeedingHttpClient, year: int, usd_kes_rate: Decimal = None
 ) -> Tuple[List[Creditor], Dict[str, Any]]:
     """Every external creditor IDS publishes for Kenya, with its identity checks."""
     creditors: List[Creditor] = []
@@ -209,6 +219,7 @@ def fetch_creditors(
                     series=series,
                     debt_category=category,
                     usd=usd,
+                    usd_kes_rate=usd_kes_rate,
                 )
             )
 
@@ -306,8 +317,9 @@ def to_loan_rows(creditors: List[Creditor], year: int) -> List[Dict[str, Any]]:
                 "notes": (
                     f"World Bank International Debt Statistics {year}, "
                     f"{c.series}, counterpart area {c.counterpart_id} "
-                    f"({c.name}). USD {c.usd:,.0f} converted at "
-                    f"{USD_KES_RATE} KES/USD. Public and publicly guaranteed "
+                    f"({c.name}). USD {c.usd:,.0f} "
+                    f"{rate_provenance(year, c.usd_kes_rate)}. "
+                    f"Public and publicly guaranteed "
                     "external debt only."
                 ),
             }
@@ -333,13 +345,25 @@ def fetch_external_creditors(
         logger.warning("IDS has no PPG total for any recent year; skipping")
         return None
 
+    # The rate is resolved for the IDS year BEFORE any conversion happens, and
+    # its absence quarantines the pull. Falling back to a constant here is the
+    # exact defect this replaced: it would be invisible, and wrong on every row.
+    usd_kes_rate = usd_kes_rate_for_year(client, year)
+    if usd_kes_rate is None:
+        logger.warning(
+            "IDS creditor pull quarantined: no USD/KES rate for %s, so the "
+            "USD figures cannot be converted to shillings",
+            year,
+        )
+        return None
+
     published_external_kes = (
         published_external_kes_for_year(year)
         if published_external_kes_for_year is not None
         else None
     )
     try:
-        creditors, checks = fetch_creditors(client, year)
+        creditors, checks = fetch_creditors(client, year, usd_kes_rate)
     except IdsCreditorError as exc:
         logger.warning("IDS creditor pull failed its identity checks: %s", exc)
         return None

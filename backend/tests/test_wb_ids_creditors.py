@@ -20,7 +20,6 @@ import pytest
 from seeding.domains.national_debt.wb_ids_creditors import (
     EXTERNAL_COVERAGE_BAND,
     IdsCreditorError,
-    USD_KES_RATE,
     check_external_coverage,
     fetch_creditors,
     latest_year_with_data,
@@ -185,7 +184,7 @@ def test_gate_3_flags_a_units_or_fx_error():
     """IDS is PPG-only and a year behind, so it should read somewhat LOW
     against a current CBK figure. A ratio far outside that is arithmetic, not
     vintage."""
-    creditors, _ = fetch_creditors(FakeIds(), 2024)
+    creditors, _ = fetch_creditors(FakeIds(), 2024, Decimal("134.822483279332"))
     good = check_external_coverage(creditors, 5_462_000_000_000)
     assert good["status"] == "within_band"
     assert 0.60 <= good["coverage_ratio"] <= 1.15
@@ -245,9 +244,24 @@ def test_the_eurobond_figure_contradicts_what_the_site_publishes():
 
 
 def test_usd_is_converted_once_and_the_rate_is_declared():
+    """The rate is now passed in per IDS year rather than being a constant.
+
+    It used to be a frozen module-level 130.0, which was 3.7% out against the
+    official 2024 rate on every external row at once.
+    """
+    rate = Decimal("134.822483279332")
+    creditors, _ = fetch_creditors(FakeIds(), 2024, rate)
+    china = next(c for c in creditors if c.name == "China")
+    assert china.usd_kes_rate == rate
+    assert china.kes == Decimal(str(china.usd)) * rate
+
+
+def test_conversion_refuses_when_no_rate_was_supplied():
+    """A creditor built without a rate must not silently convert at a guess."""
     creditors, _ = fetch_creditors(FakeIds(), 2024)
     china = next(c for c in creditors if c.name == "China")
-    assert china.kes == Decimal(str(china.usd)) * USD_KES_RATE
+    with pytest.raises(IdsCreditorError, match="no_usd_kes_rate"):
+        _ = china.kes
 
 
 # ── Replace, never append ────────────────────────────────────────────────

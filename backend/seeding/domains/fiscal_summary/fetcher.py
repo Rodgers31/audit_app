@@ -848,21 +848,32 @@ def _merge_worldbank_data(
             if rev_lcu:
                 new_entry["total_revenue"] = round(rev_lcu / 1e9, 1)
 
-            # Debt service in USD — convert at approximate rate
-            ds_usd = indicators.get("total_debt_service_usd")
-            if ds_usd:
-                # Approximate KES/USD (use rough average)
-                kes_rate = 130.0  # conservative average for 2018-2025
-                new_entry["debt_service_cost"] = round(
-                    ds_usd * kes_rate / 1e9, 1
-                )
+            # USD figures are converted at the official rate FOR THIS YEAR,
+            # fetched from the World Bank's own PA.NUS.FCRF series. A frozen
+            # 130.0 used to stand in here; it was 3.7% out against 2024 and
+            # drifted further every year while reading as a checked number.
+            # Without a rate the field is omitted rather than guessed.
+            from ..national_debt.fx import usd_kes_rate_for_year
 
-            ext_debt_usd = indicators.get("external_debt_stocks_usd")
-            if ext_debt_usd:
-                kes_rate = 130.0
-                new_entry["actual_debt"] = round(
-                    ext_debt_usd * kes_rate / 1e9, 1
+            kes_rate = usd_kes_rate_for_year(client, cal_year)
+            if kes_rate is None:
+                logger.warning(
+                    "No USD/KES rate for %s; omitting the USD-derived fiscal "
+                    "fields rather than converting at a guess",
+                    cal_year,
                 )
+            else:
+                ds_usd = indicators.get("total_debt_service_usd")
+                if ds_usd:
+                    new_entry["debt_service_cost"] = round(
+                        ds_usd * float(kes_rate) / 1e9, 1
+                    )
+
+                ext_debt_usd = indicators.get("external_debt_stocks_usd")
+                if ext_debt_usd:
+                    new_entry["actual_debt"] = round(
+                        ext_debt_usd * float(kes_rate) / 1e9, 1
+                    )
 
             if len(new_entry) > 1:  # has at least one data field
                 new_entry["_source"] = "world_bank_api"

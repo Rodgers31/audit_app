@@ -36,14 +36,17 @@ from typing import Any, Dict, List, Optional
 
 from ...config import SeedingSettings
 from ...http_client import SeedingHttpClient
+from .fx import rate_provenance, usd_kes_rate_for_year
 
 logger = logging.getLogger("seeding.national_debt.wb_ids")
 
 # Same approximate USD→KES rate the fiscal_summary fetcher uses
+# Superseded: the rate is now fetched per observation year from the World
+# Bank's PA.NUS.FCRF series (fx.py). The old note read:
 # (130.0). Conservative average for 2018-2025; close enough for
 # headline cards. Centralise in SeedingSettings if/when we need
 # a market-tracking rate.
-_USD_KES_RATE = Decimal("130.0")
+# _USD_KES_RATE removed — see fx.usd_kes_rate_for_year.
 
 _WB_BASE = "https://api.worldbank.org/v2/country/KEN/indicator"
 
@@ -95,6 +98,17 @@ WB_IDS_CREDITORS: List[Dict[str, Optional[str]]] = [
 ]
 
 
+def _rate_for(client, year: Any, cache: Dict[str, Optional[Decimal]]):
+    """USD/KES for ``year``, fetched once per year per run."""
+    key = str(year)
+    if key not in cache:
+        try:
+            cache[key] = usd_kes_rate_for_year(client, int(year))
+        except (TypeError, ValueError):
+            cache[key] = None
+    return cache[key]
+
+
 def fetch_external_debt_from_wb_ids(
     client: SeedingHttpClient, settings: SeedingSettings
 ) -> List[Dict[str, Any]]:
@@ -106,13 +120,24 @@ def fetch_external_debt_from_wb_ids(
     INFO/WARNING and that creditor's fixture entry stays in place.
     """
     out: List[Dict[str, Any]] = []
+    _rate_cache: Dict[str, Optional[Decimal]] = {}
     for creditor in WB_IDS_CREDITORS:
         code = creditor["code"]
         primary = _fetch_latest(client, code)
         if primary is None:
             continue
-        kes_value = Decimal(str(primary["value"])) * _USD_KES_RATE
         latest_year = primary["date"]
+        # Vintage-matched: each creditor's observation is converted at the
+        # rate for ITS year, not one constant for all of them.
+        rate = _rate_for(client, latest_year, _rate_cache)
+        if rate is None:
+            logger.warning(
+                "Skipping %s: no USD/KES rate for %s, so its USD figure "
+                "cannot be converted",
+                code, latest_year,
+            )
+            continue
+        kes_value = Decimal(str(primary["value"])) * rate
         if creditor["combine_with"]:
             secondary = _fetch_latest(
                 client, creditor["combine_with"], at_year=latest_year
@@ -131,7 +156,7 @@ def fetch_external_debt_from_wb_ids(
                     creditor["lender"], creditor["combine_with"],
                 )
                 continue
-            kes_value += Decimal(str(secondary["value"])) * _USD_KES_RATE
+            kes_value += Decimal(str(secondary["value"])) * rate
         out.append(
             {
                 "entity_name": "National Government",
@@ -160,7 +185,7 @@ def fetch_external_debt_from_wb_ids(
                         else ""
                     )
                     + f" (year {latest_year}); "
-                    f"converted at KES {_USD_KES_RATE}/USD."
+                    f"{rate_provenance(int(latest_year), rate)}."
                 ),
             }
         )
