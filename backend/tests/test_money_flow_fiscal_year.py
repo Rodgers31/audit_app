@@ -124,3 +124,37 @@ def test_a_valid_but_absent_period_says_which_problem_it_is(client, one_county):
     body = resp.json()
     assert body["unavailable_reason"] == "fiscal_period_not_found"
     assert all(s["amount"] is None for s in body["stages"])
+
+
+# ── The qualifier must be a real sub-period marker, not any trailing text ──
+
+@pytest.mark.parametrize(
+    "label",
+    [
+        "FY2025/26 garbage",
+        "FY2025/26 H3",
+        "FY2025/26 Q5",
+        "FY2025/26 nonsense 9M",
+        "FY2025/26 9",
+        "2024/25 -- drop table",
+    ],
+)
+def test_junk_after_the_year_is_rejected_not_treated_as_a_qualifier(label):
+    """A trailing `(.*)` made every suffix a valid qualifier.
+
+    Such input then reported `fiscal_period_not_found` — indistinguishable from
+    a period that genuinely has nothing published — instead of the 400 this
+    parser exists to raise.
+    """
+    with pytest.raises(UnparseableFiscalYear):
+        _normalize_fiscal_year(label)
+
+
+@pytest.mark.parametrize(
+    "label,expected_qualifier",
+    [("FY2025/26 H1", "H1"), ("FY2024/25 Q3", "Q3"), ("FY2025/26 9M", "9M")],
+)
+def test_canonical_qualifiers_still_parse(label, expected_qualifier):
+    """Positive control: the markers seeding/utils.py emits must still work."""
+    candidates = _normalize_fiscal_year(label)
+    assert any(expected_qualifier in c for c in candidates), candidates

@@ -89,16 +89,6 @@ export default function SpendDonut({ data }: Props) {
   // budget, so an incomplete fiscal year rendered a 100% "Other (residual)"
   // ring directly below a hero that correctly said the split was withheld.
   // Same rule as BudgetFlowHero: withhold rather than fabricate.
-  const hasFullDecomposition =
-    data.appropriated_budget != null &&
-    data.debt_service_cost != null &&
-    data.recurrent_spending != null &&
-    data.development_spending != null &&
-    data.county_allocation != null;
-
-  // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- guarded: hasFullDecomposition above returns null before any of these zeros can render
-  const budget = data.appropriated_budget ?? 0;
-
   // An absent component is not a zero-sized bucket: every shilling it should
   // have held is silently absorbed into the "Other (residual)" slice, which
   // then reads as real unallocated slack. The bar/hero on this page already
@@ -107,13 +97,27 @@ export default function SpendDonut({ data }: Props) {
   const recurrent = data.recurrent_spending;
   const dev = data.development_spending;
   const counties = data.county_allocation;
+
+  // The budget is part of the decomposition, not a separate concern: with it
+  // absent every share below divides by zero, and with the uses absent the
+  // residual becomes the whole budget. One predicate covers both.
   const hasMacroSplit =
-    debtService != null && recurrent != null && dev != null && counties != null;
+    data.appropriated_budget != null &&
+    debtService != null &&
+    recurrent != null &&
+    dev != null &&
+    counties != null;
+
+  // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- guarded: hasMacroSplit gates the early return below, so this zero never renders
+  const budget = data.appropriated_budget ?? 0;
 
   const recurrentNonDebt = hasMacroSplit ? Math.max(0, recurrent! - debtService!) : 0;
+  // Zero, NOT `budget`: falling back to the whole budget put a 100% "Other
+  // (residual)" slice into innerData, so the guard below never fired and the
+  // donut rendered fabricated slack instead of withholding.
   const otherSpend = hasMacroSplit
     ? Math.max(0, budget - recurrent! - dev! - counties!)
-    : budget;
+    : 0;
 
   /* Inner ring — macro buckets */
   const innerData = useMemo(() => {
@@ -195,7 +199,7 @@ export default function SpendDonut({ data }: Props) {
     return def;
   }, [hoverKey, innerData, budget, data.fiscal_year]);
 
-  if (!hasFullDecomposition || innerData.length === 0) return null;
+  if (!hasMacroSplit || innerData.length === 0) return null;
 
   return (
     <motion.section

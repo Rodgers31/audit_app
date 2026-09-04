@@ -150,13 +150,20 @@ def _normalize_fiscal_year(fiscal_year: str) -> List[str]:
     if not fiscal_year or not fiscal_year.strip():
         raise UnparseableFiscalYear("empty fiscal year")
     raw = fiscal_year.strip().upper().replace("FY", "").strip()
-    m = re.match(r"^\s*(\d{2,4})\s*[/\-]\s*(\d{2,4})\s*(.*)$", raw)
+    # The qualifier is restricted to the canonical sub-period markers
+    # seeding/utils.py::_FY_PATTERN emits — H1/H2, Q1-Q4, or an nM period.
+    # A trailing `(.*)` accepted anything, so "FY2025/26 garbage" parsed as a
+    # valid qualified year and came back as "period not found" instead of the
+    # 400 this function exists to raise.
+    m = re.match(
+        r"^\s*(\d{2,4})\s*[/\-]\s*(\d{2,4})\s*(H[12]|Q[1-4]|\d+M)?\s*$", raw
+    )
     if not m:
         raise UnparseableFiscalYear(
             f"{fiscal_year!r} is not a fiscal-year label; expected e.g. "
             "'FY2024/25' or 'FY2025/26 9M'"
         )
-    y1, y2, qualifier = m.group(1), m.group(2), m.group(3).strip()
+    y1, y2, qualifier = m.group(1), m.group(2), (m.group(3) or "").strip()
     y1_full = y1 if len(y1) == 4 else f"20{y1}"
     y2_short = y2[-2:] if len(y2) >= 2 else y2.zfill(2)
     y2_full = f"{y1_full[:2]}{y2_short}"

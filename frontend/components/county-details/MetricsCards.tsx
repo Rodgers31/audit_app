@@ -11,7 +11,7 @@ import DebtCard from './DebtCard';
 
 interface MetricsCardsProps {
   county: County;
-  budgetUtilization: number;
+  budgetUtilization: number | null;
   debtRatio: number;
 }
 

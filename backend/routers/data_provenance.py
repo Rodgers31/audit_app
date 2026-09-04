@@ -33,6 +33,7 @@ try:
         EconomicIndicator,
         Entity,
         EntityType,
+        FiscalPeriod,
         FiscalSummary,
         GDPData,
         IngestionJob,
@@ -314,13 +315,41 @@ _STALE_AFTER_DAYS = {
 
 
 def _table_age_days(db, model) -> Optional[int]:
-    """Days since the newest row in ``model`` was written, or None if unknown."""
+    """Days since this table's newest PUBLISHED observation, or None.
+
+    Database write timestamps do not measure publisher freshness, in both
+    directions:
+
+      * ``BudgetLine`` carries only ``created_at``, and its writers update
+        values in place without touching it — so a table refreshed last night
+        from a new CoB report reads as a year stale;
+      * the debt and fiscal-summary writers reset ``updated_at`` on every
+        reseed even when the source values are unchanged — so a series frozen
+        at the publisher reads as current indefinitely.
+
+    What this panel is actually asking is "how recently did the publisher
+    publish something we ingested here?", so measure the ``fetch_date`` of the
+    source documents this table references. Row write time is the fallback for
+    tables with no document link at all.
+    """
     from datetime import datetime, timezone
 
-    column = getattr(model, "updated_at", None) or getattr(model, "created_at", None)
-    if column is None:
-        return None
-    newest = db.query(func.max(column)).scalar()
+    newest = None
+    if hasattr(model, "source_document_id"):
+        newest = (
+            db.query(func.max(SourceDocument.fetch_date))
+            .join(model, model.source_document_id == SourceDocument.id)
+            .scalar()
+        )
+
+    if newest is None:
+        column = getattr(model, "updated_at", None) or getattr(
+            model, "created_at", None
+        )
+        if column is None:
+            return None
+        newest = db.query(func.max(column)).scalar()
+
     if newest is None:
         return None
     if newest.tzinfo is None:
@@ -667,17 +696,56 @@ async def verify_data_point(
             # holds those numbers (credibility audit F16). It answers now — and
             # what it mostly answers is that the figure is modelled, which is
             # the truth the promise was hiding.
-            query = db.query(BudgetLine)
+            # Honour the caller's `year`, and say WHICH line was verified.
+            # Ordering by id alone answered a different fiscal period than the
+            # one asked about, so a verification could not identify the data
+            # point it claimed to verify.
+            query = db.query(BudgetLine).join(
+                FiscalPeriod, BudgetLine.period_id == FiscalPeriod.id
+            )
             if entity_id:
                 query = query.filter(BudgetLine.entity_id == entity_id)
-            record = query.order_by(desc(BudgetLine.id)).first()
-            if record is None:
-                verification.reason = "no_rows"
-            else:
-                verification.value = (
-                    f"KES {float(record.allocated_amount or 0):,.0f} allocated "
-                    f"({record.category or 'uncategorised'})"
+            if year:
+                query = query.filter(
+                    FiscalPeriod.start_date >= datetime(year, 1, 1),
+                    FiscalPeriod.start_date < datetime(year + 1, 1, 1),
                 )
+            record = (
+                query.order_by(desc(FiscalPeriod.start_date), desc(BudgetLine.id))
+                .first()
+            )
+            if record is None:
+                verification.reason = (
+                    "no_rows_for_year" if year else "no_rows"
+                )
+            else:
+                _period = (
+                    db.query(FiscalPeriod)
+                    .filter(FiscalPeriod.id == record.period_id)
+                    .first()
+                )
+                _line_id = " · ".join(
+                    part
+                    for part in (
+                        record.category or "uncategorised",
+                        record.subcategory,
+                        _period.label if _period else None,
+                    )
+                    if part
+                )
+                # allocated_amount is nullable. Reporting absence as
+                # "KES 0 allocated" would manufacture the exact zero-as-a-claim
+                # this endpoint exists to expose.
+                if record.allocated_amount is None:
+                    verification.value = None
+                    verification.reason = (
+                        f"no allocation recorded for {_line_id}"
+                    )
+                else:
+                    verification.value = (
+                        f"KES {float(record.allocated_amount):,.0f} allocated "
+                        f"({_line_id})"
+                    )
                 if record.source_document_id:
                     doc = (
                         db.query(SourceDocument)
@@ -698,18 +766,30 @@ async def verify_data_point(
                 # than let the grade imply otherwise.
                 if not record.provenance:
                     verification.verification_status = "modelled"
-                    verification.reason = (
+                    _modelled_reason = (
                         "county budget lines are modelled from the CRA "
                         "equitable-share formula; this figure is not read from "
                         "a Controller of Budget implementation table"
                     )
+                    # Don't clobber a more specific reason (e.g. the row has no
+                    # allocation at all) — both facts matter to the reader.
+                    verification.reason = (
+                        f"{verification.reason}; {_modelled_reason}"
+                        if verification.reason
+                        else _modelled_reason
+                    )
 
         elif table_name == "debt_timeline":
-            record = (
-                db.query(DebtTimeline).order_by(desc(DebtTimeline.year)).first()
-            )
+            # Honour `year`: without it, asking about an older modelled year
+            # always returned the newest row instead.
+            _dt_query = db.query(DebtTimeline)
+            if year:
+                _dt_query = _dt_query.filter(DebtTimeline.year == year)
+            record = _dt_query.order_by(desc(DebtTimeline.year)).first()
             if record is None:
-                verification.reason = "no_rows"
+                verification.reason = (
+                    "no_rows_for_year" if year else "no_rows"
+                )
             else:
                 verification.value = (
                     f"KES {float(record.total or 0):,.0f} total (year {record.year})"

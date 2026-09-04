@@ -178,13 +178,17 @@ export default function BudgetFlowHero({ data }: Props) {
   );
 
   /* ── Uses (money out) ── */
+  // `hasUses` (above) proves every member of this array is non-null, and the
+  // component renders the withheld panel when it is false. Non-null assertions
+  // rather than `?? 0` so the file carries no zero-fallback at all: a future
+  // edit that drops the guard becomes a type error, not a silent "KES 0B".
   const uses: Segment[] = useMemo(
     () => [
       {
         key: 'debtService',
         label: 'Debt service',
-        valueB: debtService ?? 0,
-        share: pct(debtService ?? 0, budget),
+        valueB: debtService!,
+        share: pct(debtService!, budget),
         gradStart: '#9E3030',
         gradEnd: '#4C1616',
         accent: '#7E2424',
@@ -194,8 +198,8 @@ export default function BudgetFlowHero({ data }: Props) {
       {
         key: 'recurrentNonDebt',
         label: 'Recurrent (ex-debt)',
-        valueB: recurrentNonDebt ?? 0,
-        share: pct(recurrentNonDebt ?? 0, budget),
+        valueB: recurrentNonDebt!,
+        share: pct(recurrentNonDebt!, budget),
         gradStart: '#6B7280',
         gradEnd: '#3F4754',
         accent: '#4B5563',
@@ -205,8 +209,8 @@ export default function BudgetFlowHero({ data }: Props) {
       {
         key: 'development',
         label: 'Development',
-        valueB: dev ?? 0,
-        share: pct(dev ?? 0, budget),
+        valueB: dev!,
+        share: pct(dev!, budget),
         gradStart: '#3B7251',
         gradEnd: '#1F4A30',
         accent: '#2F6343',
@@ -216,8 +220,8 @@ export default function BudgetFlowHero({ data }: Props) {
       {
         key: 'counties',
         label: 'Counties',
-        valueB: counties ?? 0,
-        share: pct(counties ?? 0, budget),
+        valueB: counties!,
+        share: pct(counties!, budget),
         gradStart: '#4B8564',
         gradEnd: '#295B3E',
         accent: '#3E7655',
@@ -233,8 +237,8 @@ export default function BudgetFlowHero({ data }: Props) {
       {
         key: 'otherSpend',
         label: 'Unallocated residual',
-        valueB: otherSpend ?? 0,
-        share: pct(otherSpend ?? 0, budget),
+        valueB: otherSpend!,
+        share: pct(otherSpend!, budget),
         gradStart: '#B38628',
         gradEnd: '#7D591A',
         accent: '#A6781F',

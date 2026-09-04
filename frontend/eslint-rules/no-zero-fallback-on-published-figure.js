@@ -28,6 +28,25 @@ const PUBLISHED_FIELD = /(^|_)(amount|amounts|budget|revenue|spending|spend|spen
 // Names that are plainly aggregations or comparisons rather than a figure.
 const ALLOWED_CONTEXT = /^(sum|acc|accumulator|prev|idx|index|len|length|i|n)$/i;
 
+// Private internals (`__retryCount`, `_cache`) are machinery, not something a
+// reader ever sees. Widening the matcher to camelCase pulled these in.
+const PRIVATE_INTERNAL = /^_/;
+
+/**
+ * camelCase -> snake_case, so one pattern covers both naming conventions.
+ *
+ * The matcher keys on `_`-delimited word boundaries, which meant it saw the
+ * API's snake_case fields but not the frontend model's camelCase ones:
+ * `county.budgetUtilization ?? 0` and `totalDebt ?? 0` are the same defect and
+ * were passing the gate.
+ */
+function normaliseFieldName(name) {
+  return name
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2')
+    .toLowerCase();
+}
+
 function fieldNameOf(node) {
   // a?.b?.c  ->  "c";  a.b  ->  "b";  bare identifier -> its name
   let n = node;
@@ -70,7 +89,8 @@ module.exports = {
         const name = fieldNameOf(node.left);
         if (!name) return;
         if (ALLOWED_CONTEXT.test(name)) return;
-        if (!PUBLISHED_FIELD.test(name)) return;
+        if (PRIVATE_INTERNAL.test(name)) return;
+        if (!PUBLISHED_FIELD.test(normaliseFieldName(name))) return;
         context.report({
           node,
           messageId: 'zeroFallback',

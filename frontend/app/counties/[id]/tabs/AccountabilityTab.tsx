@@ -376,8 +376,19 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
           },
           {
             // Absent audit -> em dash, matching this tab's own copy: "An absent
-      // grade is not a low grade" (F23).
-      value: data.total_findings != null ? String(data.total_findings) : '—',
+            // grade is not a low grade" (F23).
+            //
+            // NOT `total_findings != null`: the endpoint computes it as
+            // len(audits) and always serialises an integer, so that check was
+            // always true and the em dash could never render — a county with no
+            // ingested OAG report read as "0 findings", which is a claim that
+            // it was audited and clean. `evidence_basis` is the field that
+            // distinguishes a real empty finding set from an absent one.
+            value:
+              data.evidence_basis === 'publishable_findings' &&
+              data.total_findings != null
+                ? String(data.total_findings)
+                : '—',
             label: t('county.acct.kpi.audit_findings'),
             sub:
               typeof data.critical_findings === 'number' &&

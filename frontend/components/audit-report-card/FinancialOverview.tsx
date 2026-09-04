@@ -26,18 +26,22 @@ export default function FinancialOverview({ county }: FinancialOverviewProps) {
         </div>
         <div className='p-4 bg-green-50 rounded-xl border border-green-200'>
           <div className='text-sm text-green-600 font-medium mb-1'>Budget Used</div>
-          <div className='text-xl font-bold text-green-700'>{county.budgetUtilization ?? 0}%</div>
+          <div className='text-xl font-bold text-green-700'>
+            {county.budgetUtilization != null ? `${county.budgetUtilization}%` : '—'}
+          </div>
         </div>
         <div className='p-4 bg-purple-50 rounded-xl border border-purple-200'>
           <div className='text-sm text-purple-600 font-medium mb-1'>Revenue Collected</div>
           <div className='text-xl font-bold text-purple-700'>
-            {formatCurrency(county.revenueCollection ?? 0)}
+            {county.revenueCollection != null
+              ? formatCurrency(county.revenueCollection)
+              : '—'}
           </div>
         </div>
         <div className='p-4 bg-red-50 rounded-xl border border-red-200'>
           <div className='text-sm text-red-600 font-medium mb-1'>Pending Bills</div>
           <div className='text-xl font-bold text-red-700'>
-            {formatCurrency(county.pendingBills ?? 0)}
+            {county.pendingBills != null ? formatCurrency(county.pendingBills) : '—'}
           </div>
         </div>
       </div>

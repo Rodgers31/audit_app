@@ -648,7 +648,7 @@ export default function NationalDebtPage() {
         </div>
         <LenderTreemap
           categories={lenderCategories}
-          totalOutstanding={d.totalDebt || 0}
+          totalOutstanding={d.totalDebt ?? null}
         />
       </motion.section>
 

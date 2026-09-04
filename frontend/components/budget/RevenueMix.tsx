@@ -142,6 +142,7 @@ export default function RevenueMix({ revenueBySource }: Props) {
 
   if (!latest || rows.length === 0) return null;
 
+  // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- guarded: `rows.length === 0` returns null on the line above, so rows[0] exists
   const totalB = rows[0]?.totalB ?? 0;
   const topSource = rows[0];
 

@@ -227,9 +227,10 @@ export default function NationalDebtCard() {
   // consumer renders "—".
   const splitAvailable =
     externalDebt != null && domesticDebt != null && externalDebt + domesticDebt > 0;
+  // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- guarded: splitAvailable above requires both to be non-null before any of these are read
   const splitBase = (externalDebt ?? 0) + (domesticDebt ?? 0);
   const externalPct = splitAvailable
-    ? +(((externalDebt ?? 0) / splitBase) * 100).toFixed(1)
+    ? +((externalDebt! / splitBase) * 100).toFixed(1)
     : null;
   const domesticPct = externalPct != null ? +(100 - externalPct).toFixed(1) : null;
 

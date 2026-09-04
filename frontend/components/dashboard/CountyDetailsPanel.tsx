@@ -241,23 +241,23 @@ export default function CountyDetailsPanel({ county, className = '' }: CountyDet
               </div>
 
               {/* Budget Utilisation */}
-              {(county.budgetUtilization ?? 0) > 0 && (
+              {county.budgetUtilization != null && (
                 <div className='rounded-lg bg-gray-50 dark:bg-surface-elevated border border-gray-100 dark:border-neutral-border p-2.5'>
                   <div className='flex items-center justify-between mb-1'>
                     <span className='text-[11px] text-gray-500 dark:text-neutral-muted/80 font-medium'>
                       {t('home.county_panel.utilization')}
                     </span>
                     <span className='text-xs font-bold text-gov-dark dark:text-white tabular-nums'>
-                      {(county.budgetUtilization ?? 0).toFixed(1)}%
+                      {county.budgetUtilization.toFixed(1)}%
                     </span>
                   </div>
                   <div className='h-1.5 rounded-full bg-gray-200 dark:bg-surface-sunken overflow-hidden'>
                     <motion.div
                       key={`util-${county.id}`}
                       initial={{ width: 0 }}
-                      animate={{ width: `${Math.min(county.budgetUtilization ?? 0, 100)}%` }}
+                      animate={{ width: `${Math.min(county.budgetUtilization, 100)}%` }}
                       transition={{ duration: 0.4, delay: 0.15 }}
-                      className={`h-full rounded-full ${utilizationBarColor(county.budgetUtilization ?? 0)}`}
+                      className={`h-full rounded-full ${utilizationBarColor(county.budgetUtilization)}`}
                     />
                   </div>
                 </div>
