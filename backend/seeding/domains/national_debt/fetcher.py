@@ -231,6 +231,7 @@ def fetch_debt_payload(
     # for creditors like the Eastern & Southern African Trade & Development
     # Bank, which lends Kenya USD 1.43bn.
     external_creditors = None
+    ids_skip_reason: str | None = None
     try:
         external_creditors = fetch_external_creditors(
             client,
@@ -239,7 +240,15 @@ def fetch_debt_payload(
                 client, settings, yr
             ),
         )
+        if not external_creditors:
+            # fetch_external_creditors logs its own reason, but only inside
+            # itself. Record one HERE too: on the 2026-09-04 nightly this
+            # replacement did not run and left no trace at all in the log or
+            # the payload, so there was no way to tell a quarantine from a
+            # block that never executed.
+            ids_skip_reason = "returned_no_creditors"
     except Exception as exc:
+        ids_skip_reason = f"{type(exc).__name__}: {exc}"[:200]
         logger.warning("IDS creditor fetch failed entirely: %s", exc)
 
     if external_creditors:
@@ -254,6 +263,20 @@ def fetch_debt_payload(
             "Replaced the external fixture rows with %d IDS creditors (%s)",
             len(external_creditors["creditors"]),
             external_creditors["year"],
+        )
+    else:
+        # A silent skip publishes the fixture's external rows, which this
+        # module's own comment records as overstating the book (+165% on
+        # Eurobonds against IDS). Say so, in the log AND in the payload, so a
+        # run that quietly fell back is visible rather than looking healthy.
+        meta = dict(payload.get("metadata", {}))
+        meta["ids_creditor_replacement_applied"] = False
+        meta["ids_creditor_skip_reason"] = ids_skip_reason or "not_attempted"
+        payload["metadata"] = meta
+        logger.warning(
+            "IDS creditor replacement did NOT apply (%s) — external debt is "
+            "being served from the fixture, which overstates it",
+            ids_skip_reason or "not_attempted",
         )
 
     # ── Overlay: CBK Statistical Bulletin domestic debt ────────────
