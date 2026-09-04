@@ -43,9 +43,39 @@ from ...config import SeedingSettings
 from ...http_client import SeedingHttpClient
 from ...utils import load_json_resource
 from .cbk_bulletin import fetch_domestic_debt_from_cbk_bulletin
+from .cbk_web_tables import check_bond_coverage, fetch_bond_register, partition_ambiguous
 from .wb_ids import fetch_external_debt_from_wb_ids
 
 logger = logging.getLogger("seeding.national_debt.fetcher")
+
+
+# Domestic bond rows in the loans payload. Infrastructure and green bonds are
+# Treasury bonds in CBK's own classification — they sit inside the Table 4.1.4
+# "Treasury Bonds" line, which is why carrying them as a separate KES 300B row
+# double-counted them (credibility audit F4). They belong in this denominator.
+# Eurobonds are external commercial debt and must not.
+_DOMESTIC_BOND_MARKERS = ("treasury bond", "domestic bond", "infrastructure", "green bond")
+_NOT_A_DOMESTIC_BOND = ("eurobond", "external", "syndicated", "commercial bank")
+
+
+def _published_bond_stock_kes(payload: Dict[str, Any]) -> float | None:
+    """CBK's own domestic Treasury-bond total from the loans payload.
+
+    The denominator for the register's coverage gate. Read off the payload
+    rather than hardcoded, so republishing the bond stock moves it instead of
+    silently pushing the gate out of band.
+    """
+    total = 0.0
+    for loan in payload.get("loans", []):
+        lender = (loan.get("lender") or "").lower()
+        if any(bad in lender for bad in _NOT_A_DOMESTIC_BOND):
+            continue
+        if any(marker in lender for marker in _DOMESTIC_BOND_MARKERS):
+            try:
+                total += float(loan.get("outstanding") or loan.get("principal") or 0)
+            except (TypeError, ValueError):
+                continue
+    return total or None
 
 
 def fetch_debt_payload(
@@ -116,6 +146,68 @@ def fetch_debt_payload(
         meta["cbk_bulletin_overlay_applied"] = True
         meta["cbk_bulletin_overlay_count"] = len(cbk_loans)
         payload["metadata"] = meta
+
+    # ── Attach: instrument-level Treasury bond register ────────────
+    # NOT an overlay. The register is a list of individual securities with
+    # real maturities and coupons; it covers ~74% of CBK's published bond
+    # stock, so summing it into the debt total would trade a correct total for
+    # a lower wrong one. It rides alongside the loans payload as a maturity
+    # and coupon profile, gated on coverage, and carries the ratio so no
+    # consumer can mistake it for a stock measure.
+    #
+    # This is what the withdrawn maturity ladder needed: the loans payload has
+    # three rows with a maturity date, and applied one assumed 14.5% coupon to
+    # the entire bond book (credibility audit F24/F42).
+    bond_register: Dict[str, Any] | None = None
+    try:
+        register = fetch_bond_register(client, settings)
+        # Withhold the ISINs whose maturity this table cannot settle before
+        # anything is measured or published. See partition_ambiguous.
+        publishable, withheld = partition_ambiguous(register["securities"])
+        published_bond_stock = _published_bond_stock_kes(payload)
+        coverage = check_bond_coverage(publishable, published_bond_stock)
+        if coverage["status"] == "out_of_band":
+            logger.warning(
+                "Treasury bond register quarantined: %s", coverage["reason"]
+            )
+        else:
+            bond_register = {
+                "source_url": register["source_url"],
+                "source_title": register["source_title"],
+                "retrieved_at": register["retrieved_at"],
+                "as_of": register["as_of"],
+                "tranche_rows": register["tranche_rows"],
+                "coverage": coverage,
+                "withheld_isins": withheld,
+                "securities": [
+                    {
+                        "isin": s.isin,
+                        "issue_no": s.issue_no,
+                        "instrument_type": s.instrument_type,
+                        "maturity_date": s.maturity_date.isoformat(),
+                        "first_issued": s.first_issued.isoformat(),
+                        "coupon_rate": s.coupon_rate,
+                        "tenor_years": s.tenor_years,
+                        "face_value_kes": s.face_value_kes,
+                        "tranches": s.tranches,
+                    }
+                    for s in publishable
+                ],
+            }
+            logger.info(
+                "Treasury bond register: %d redemption lines from %d tranches "
+                "(%d ISIN(s) withheld as ambiguous), %.0f%% of the published "
+                "bond stock",
+                len(bond_register["securities"]),
+                register["tranche_rows"],
+                len(withheld),
+                (coverage["coverage_ratio"] or 0) * 100,
+            )
+    except Exception as exc:
+        logger.warning("Treasury bond register fetch failed: %s", exc)
+
+    if bond_register:
+        payload = {**payload, "bond_register": bond_register}
 
     # Provenance: "live" requires that an authoritative overlay actually
     # landed. A fixture baseline with no overlay is fixture data, however
