@@ -44,6 +44,7 @@ from ...http_client import SeedingHttpClient
 from ...utils import load_json_resource
 from .cbk_bulletin import fetch_domestic_debt_from_cbk_bulletin
 from .cbk_web_tables import check_bond_coverage, fetch_bond_register, partition_ambiguous
+from .wb_ids_creditors import fetch_external_creditors
 from .wb_ids import fetch_external_debt_from_wb_ids
 
 logger = logging.getLogger("seeding.national_debt.fetcher")
@@ -63,6 +64,42 @@ logger = logging.getLogger("seeding.national_debt.fetcher")
 # commercial debt and must not appear here either.
 _DOMESTIC_BOND_MARKERS = ("treasury bond", "domestic bond")
 _NOT_A_DOMESTIC_BOND = ("eurobond", "external", "syndicated", "commercial bank")
+
+
+# Categories the IDS creditor pull owns outright. When it succeeds, every
+# fixture row in these categories is dropped: keeping them beside the real
+# creditors would count the same debt twice.
+_EXTERNAL_CATEGORIES = {
+    "external_multilateral",
+    "external_bilateral",
+    "external_commercial",
+}
+
+
+def _published_external_kes(payload: Dict[str, Any]) -> float | None:
+    """The external total the payload currently carries, as the denominator
+    for the IDS coverage gate. Read off the data rather than hardcoded."""
+    total = 0.0
+    for loan in payload.get("loans", []):
+        if (loan.get("debt_category") or "") in _EXTERNAL_CATEGORIES:
+            try:
+                total += float(loan.get("outstanding") or loan.get("principal") or 0)
+            except (TypeError, ValueError):
+                continue
+    return total or None
+
+
+def _replace_external_loans(
+    payload: Dict[str, Any], creditor_rows: List[Dict[str, Any]]
+) -> Dict[str, Any]:
+    """Swap every external row for the IDS creditor rows, leaving domestic
+    and pending-bill rows untouched."""
+    kept = [
+        loan
+        for loan in payload.get("loans", [])
+        if (loan.get("debt_category") or "") not in _EXTERNAL_CATEGORIES
+    ]
+    return {**payload, "loans": kept + list(creditor_rows)}
 
 
 def _published_bond_stock_kes(payload: Dict[str, Any]) -> float | None:
@@ -126,6 +163,41 @@ def fetch_debt_payload(
         meta["wb_ids_overlay_applied"] = True
         meta["wb_ids_overlay_count"] = len(wb_loans)
         payload["metadata"] = meta
+
+    # ── REPLACE: external debt, by individual creditor ─────────────
+    # Not an overlay. A successful, gated IDS pull replaces every external
+    # fixture row, because the two describe the same debt under different
+    # names and appending would double-count it — which is what the lender
+    # treemap was withdrawn over.
+    #
+    # The fixture's external rows are round numbers that overstate the book.
+    # Against IDS 2024: Eurobonds 2,276Bn where IDS reports 858Bn (+165%),
+    # syndicated banks 400Bn against 120Bn (+234%). It also has no row at all
+    # for creditors like the Eastern & Southern African Trade & Development
+    # Bank, which lends Kenya USD 1.43bn.
+    external_creditors = None
+    try:
+        external_creditors = fetch_external_creditors(
+            client,
+            settings,
+            published_external_kes=_published_external_kes(payload),
+        )
+    except Exception as exc:
+        logger.warning("IDS creditor fetch failed entirely: %s", exc)
+
+    if external_creditors:
+        payload = _replace_external_loans(payload, external_creditors["loans"])
+        meta = dict(payload.get("metadata", {}))
+        meta["ids_creditor_replacement_applied"] = True
+        meta["ids_creditor_year"] = external_creditors["year"]
+        meta["ids_creditor_count"] = len(external_creditors["creditors"])
+        meta["ids_creditor_coverage"] = external_creditors["coverage"]
+        payload["metadata"] = meta
+        logger.info(
+            "Replaced the external fixture rows with %d IDS creditors (%s)",
+            len(external_creditors["creditors"]),
+            external_creditors["year"],
+        )
 
     # ── Overlay: CBK Statistical Bulletin domestic debt ────────────
     # Disjoint from WB IDS — CBK covers the domestic instruments
