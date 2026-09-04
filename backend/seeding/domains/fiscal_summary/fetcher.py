@@ -297,6 +297,15 @@ def _apply_budget_estimates(
 
     row["appropriated_budget"] = budget
     row["budget_basis"] = CANONICAL_BUDGET_BASIS
+    # How much of the gross figure is rolling over maturing debt rather than
+    # funding new spending. Published only when the book's own interest and
+    # redemption sub-totals reconciled to their combined line, so an unproven
+    # split never reaches the site. This is what lets the page explain why the
+    # gross budget and the enacted headline differ.
+    if estimates.debt_redemption_kes is not None:
+        row["debt_redemption"] = round(
+            float(estimates.debt_redemption_kes) / 1e9, 1
+        )
     row["budget_basis_source"] = {
         "title": f"Programme Based Budget {estimates.fiscal_year} (Approved)",
         "publisher": "The National Treasury",
@@ -310,6 +319,12 @@ def _apply_budget_estimates(
             f"{float(estimates.voted_gross_kes) / 1e9:,.1f}B "
             f"+ Consolidated Fund Services "
             f"{float(estimates.cfs_kes) / 1e9:,.1f}B"
+            + (
+                f" (of which debt redemption "
+                f"{float(estimates.debt_redemption_kes) / 1e9:,.1f}B)"
+                if estimates.debt_redemption_kes is not None
+                else ""
+            )
         ),
         "checks": list(estimates.checks),
     }

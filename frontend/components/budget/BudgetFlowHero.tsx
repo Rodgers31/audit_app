@@ -28,6 +28,10 @@ import { ArrowDownRight, Info } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 export interface FlowHeroInput {
+  /** Billions KES of the gross budget that is redemption of maturing debt. */
+  debt_redemption_billion?: number | null;
+  /** The enacted headline, once sourced for this year. Absent until then. */
+  enacted_budget?: number | null;
   fiscal_year?: string | null;
   appropriated_budget?: number | null; // KES B
   total_revenue?: number | null;
@@ -93,6 +97,7 @@ export default function BudgetFlowHero({ data }: Props) {
   const dev = data?.development_spending ?? null;
   const recurrent = data?.recurrent_spending ?? null;
   const counties = data?.county_allocation ?? null;
+  const redemptionB = data?.debt_redemption_billion ?? null;
 
   const hasSources = tax != null && nonTax != null && borrowing != null;
   const hasUses =
@@ -281,6 +286,47 @@ export default function BudgetFlowHero({ data }: Props) {
                 ? "Every shilling the national government plans to spend this fiscal year must first be raised. Here's how the plumbing works — sources on top, uses on the bottom."
                 : 'The approved gross budget, on the Controller of Budget basis.'}
             </p>
+
+            {/*
+              Which budget is this? There are several real answers, and the
+              commonly quoted one is not this one. Rather than pick silently,
+              show the basis and reconcile to the figure a reader is more
+              likely to have seen. `<details>` so it is an affordance, not a
+              wall of text, and native so it needs no modal machinery.
+            */}
+            <details className='group mt-2 max-w-2xl'>
+              <summary className='inline-flex cursor-pointer list-none items-center gap-1.5 text-[12px] font-medium text-gov-forest hover:underline dark:text-emerald-100'>
+                <Info size={13} />
+                Why this figure, and why you may have seen a different one
+              </summary>
+              <div className='mt-2 space-y-2 rounded-xl border border-neutral-border/40 bg-gov-sand/25 px-4 py-3 text-[12.5px] leading-relaxed text-neutral-muted'>
+                <p>
+                  This is the <strong>gross</strong> budget: everything Parliament
+                  votes for ministries, plus Consolidated Fund Services — debt
+                  service, pensions and constitutional salaries, which are charged
+                  directly on the Consolidated Fund rather than voted each year.
+                </p>
+                {/* fmtT takes BILLIONS, and both values are already in
+                    billions here — no scaling. */}
+                {redemptionB != null && budget > 0 && (
+                  <p>
+                    It <strong>includes</strong> KES {fmtT(redemptionB)} of debt{' '}
+                    <em>redemption</em> — repaying maturing debt, not new spending —
+                    and <strong>excludes</strong> the county equitable share, which
+                    counties receive directly. Take redemption out and the national
+                    figure is about KES {fmtT(budget - redemptionB)}; add the county
+                    share back and you reach the ~KES 4.8T total that is usually
+                    quoted in budget coverage.
+                  </p>
+                )}
+                <p>
+                  We publish the gross figure because every year on this page is
+                  sourced on that one basis, so the years can be compared. A number
+                  on a different basis is not wrong — it answers a different
+                  question.
+                </p>
+              </div>
+            </details>
           </div>
           {/* Debt-service callout */}
           <div className='relative flex-shrink-0'>

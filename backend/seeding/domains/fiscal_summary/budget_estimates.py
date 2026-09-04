@@ -155,6 +155,11 @@ class BudgetEstimates:
     voted_current_kes: Decimal
     voted_capital_kes: Decimal
     cfs_kes: Decimal
+    #: How much of ``cfs_kes`` is redemption of maturing debt rather than new
+    #: spending. ``None`` when the book's own sub-totals did not reconcile, so
+    #: an unproven split is never published. This is the single largest reason
+    #: the gross figure differs from the enacted headline.
+    debt_redemption_kes: Optional[Decimal] = None
     prior_fiscal_year: Optional[str] = None
     prior_cfs_kes: Optional[Decimal] = None
     source_url: Optional[str] = None
@@ -284,8 +289,62 @@ def parse_fy_columns(text: str) -> List[Tuple[str, bool]]:
     return []
 
 
-def parse_cfs_summary_from_text(text: str) -> Dict[str, Decimal]:
-    """``{fiscal_year: cfs_total_kes}`` from a CFS summary page.
+@dataclass
+class CfsSummary:
+    """Consolidated Fund Services totals from one summary page.
+
+    ``redemption`` is populated only when the page's interest and redemption
+    sub-totals reconcile to their own combined line (identity 4). It is what
+    lets the site say how much of the gross budget is rolling over maturing
+    debt rather than funding new spending — the single largest reason the
+    gross figure and the enacted headline differ.
+
+    Behaves like the plain ``{fiscal_year: total}`` mapping this used to
+    return, so existing callers read unchanged.
+    """
+
+    totals: Dict[str, Decimal] = field(default_factory=dict)
+    redemption: Dict[str, Decimal] = field(default_factory=dict)
+
+    def __bool__(self) -> bool:
+        return bool(self.totals)
+
+    def __len__(self) -> int:
+        return len(self.totals)
+
+    def __iter__(self):
+        return iter(self.totals)
+
+    def __contains__(self, key) -> bool:
+        return key in self.totals
+
+    def __getitem__(self, key):
+        return self.totals[key]
+
+    def get(self, key, default=None):
+        return self.totals.get(key, default)
+
+    def items(self):
+        return self.totals.items()
+
+    def keys(self):
+        # With __getitem__, this completes the mapping protocol, so dict(x)
+        # and {**x} keep working for callers that treat it as the plain
+        # {fiscal_year: total} mapping it replaced.
+        return self.totals.keys()
+
+    def values(self):
+        return self.totals.values()
+
+    def __eq__(self, other) -> bool:
+        if isinstance(other, CfsSummary):
+            return (self.totals, self.redemption) == (other.totals, other.redemption)
+        # Compared against a plain mapping, only the totals are in scope.
+        return self.totals == other
+
+
+def parse_cfs_summary_from_text(text: str) -> CfsSummary:
+    """CFS totals (and, where provable, the redemption split) from a page.
 
     Only ORIGINAL (printed) estimate columns are returned; supplementary
     columns are dropped so a revised figure can never be served as an
@@ -294,15 +353,20 @@ def parse_cfs_summary_from_text(text: str) -> Dict[str, Decimal]:
     """
     low = (text or "").lower()
     if _CFS_PAGE_ANCHOR not in low or _CFS_GRAND_TOTAL_ANCHOR not in low:
-        return {}
+        return CfsSummary()
 
     columns = parse_fy_columns(text)
     if not columns:
-        return {}
+        return CfsSummary()
 
     grand: List[Decimal] = []
     interest: List[Decimal] = []
     subtotal: List[Decimal] = []
+    # Sub-totals printed BEFORE the "Total: INTEREST & REDEMPTION" line. The
+    # last two are the interest block and the redemption block; identity 4
+    # below proves it, so a mis-selected row quarantines rather than
+    # publishing a wrong redemption figure.
+    pre_anchor_subtotals: List[List[Decimal]] = []
     seen_interest = False
     for line in text.splitlines():
         # "Sub - Total Kshs" and "Sub-Total Kshs" both occur on this page;
@@ -313,6 +377,8 @@ def parse_cfs_summary_from_text(text: str) -> Dict[str, Decimal]:
         elif _CFS_INTEREST_REDEMPTION_ANCHOR in lowered:
             interest = numbers_in_line(line)
             seen_interest = True
+        elif not seen_interest and lowered.startswith(_CFS_SUBTOTAL_ANCHOR):
+            pre_anchor_subtotals.append(numbers_in_line(line))
         elif seen_interest and lowered.startswith(_CFS_SUBTOTAL_ANCHOR):
             # THREE "Sub-Total" rows exist: interest, redemption, and the
             # pensions/salaries/miscellaneous block. Only the third completes
@@ -344,11 +410,36 @@ def parse_cfs_summary_from_text(text: str) -> Dict[str, Decimal]:
             "total cannot be cross-checked against its own parts",
         )
 
-    out: Dict[str, Decimal] = {}
+    # Identity 4: interest + redemption == the combined interest&redemption
+    # line. Splitting them is what lets the site say how much of the gross
+    # budget is rolling over maturing debt rather than new spending — and the
+    # identity is what makes the split trustworthy rather than positional luck.
+    redemption: List[Decimal] = []
+    if len(pre_anchor_subtotals) >= 2:
+        cand_interest, cand_redemption = pre_anchor_subtotals[-2:]
+        if (
+            len(cand_interest) == len(interest)
+            and len(cand_redemption) == len(interest)
+            and all(
+                abs((cand_interest[i] + cand_redemption[i]) - interest[i])
+                <= interest[i] * Decimal("0.001")
+                for i in range(len(interest))
+            )
+        ):
+            redemption = cand_redemption
+        else:
+            logger.info(
+                "CFS interest/redemption sub-totals did not reconcile to their "
+                "own combined line; publishing the combined figure only"
+            )
+
+    out: CfsSummary = CfsSummary()
     for idx, (label, is_supp) in enumerate(columns):
-        if is_supp or label in out:
+        if is_supp or label in out.totals:
             continue
-        out[label] = grand[idx]
+        out.totals[label] = grand[idx]
+        if redemption:
+            out.redemption[label] = redemption[idx]
     return out
 
 
@@ -442,6 +533,9 @@ def build_estimates(
         voted_current_kes=current,
         voted_capital_kes=capital,
         cfs_kes=cfs,
+        debt_redemption_kes=(
+            getattr(cfs_by_year, "redemption", {}) or {}
+        ).get(fiscal_year),
         prior_fiscal_year=prior,
         prior_cfs_kes=prior_cfs,
         page_refs=dict(page_refs or {}),
@@ -547,6 +641,7 @@ __all__ = [
     "extract_budget_estimates",
     "extract_voted_gross_from_text",
     "numbers_in_line",
+    "CfsSummary",
     "parse_cfs_summary_from_text",
     "parse_fy_columns",
 ]

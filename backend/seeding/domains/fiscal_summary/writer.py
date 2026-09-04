@@ -84,6 +84,11 @@ def _budget_basis_meta(record) -> dict[str, Any]:
     source = getattr(record, "budget_basis_source", None)
     if isinstance(source, dict):
         out["budget_basis_source"] = source
+    # Stored in the existing JSONB column rather than a new one: this needs no
+    # migration, so it cannot add to the production schema drift.
+    redemption = getattr(record, "debt_redemption", None)
+    if redemption is not None:
+        out["debt_redemption_billion"] = redemption
     return out
 
 

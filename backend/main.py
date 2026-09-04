@@ -8396,6 +8396,10 @@ async def get_fiscal_summary(db: Session = Depends(get_db)):
                 # apart, so the basis travels with the value.
                 "budget_basis": (r.meta or {}).get("budget_basis"),
                 "budget_basis_source": (r.meta or {}).get("budget_basis_source"),
+                # Billions KES of the gross budget that is redemption of
+                # maturing debt. Lets the page say why the gross figure and the
+                # enacted headline differ, instead of just asserting they do.
+                "debt_redemption_billion": (r.meta or {}).get("debt_redemption_billion"),
                 "page_ref": r.page_ref,
             }
 

@@ -286,3 +286,43 @@ class TestGate:
             cfs_by_year=_cfs(),
         )
         assert any("SKIPPED" in c for c in est.checks)
+
+
+class TestRedemptionSplit:
+    """The redemption sub-total, gated by its own identity.
+
+    Kenya's FY2026/27 gross budget is 5,485.7B; most budget coverage quotes
+    ~4.82T. The difference is redemption of maturing debt coming out and the
+    county equitable share going in. Publishing the redemption figure is what
+    turns "these measures differ" into "here is by how much and why" — so it
+    has to be right, and it is only trusted when the page's own interest and
+    redemption sub-totals add up to their combined line.
+    """
+
+    def test_the_redemption_subtotal_is_read(self):
+        cfs = parse_cfs_summary_from_text(CFS_PAGE)
+        # "Sub - Total Kshs" under REDEMPTION, 2026/2027 column.
+        assert cfs.redemption["FY 2026/27"] == Decimal("1061646782413")
+
+    def test_it_reconciles_to_the_combined_line(self):
+        """1,254,237,609,793 interest + 1,061,646,782,413 redemption
+        = 2,315,884,392,206, the 'Total: INTEREST & REDEMPTION' figure."""
+        cfs = parse_cfs_summary_from_text(CFS_PAGE)
+        assert cfs.redemption["FY 2026/27"] + Decimal("1254237609793") == Decimal(
+            "2315884392206"
+        )
+
+    def test_a_split_that_does_not_reconcile_is_withheld(self):
+        """THE gate. If the sub-totals do not add up to their own combined
+        line, the rows were mis-selected and no redemption figure is
+        published — the CFS total still is, so the page keeps its headline.
+        """
+        broken = CFS_PAGE.replace(
+            "Sub - Total Kshs 803,700,336,713 1,218,018,275,069 1 ,061,646,782,413",
+            "Sub - Total Kshs 803,700,336,713 1,218,018,275,069 9 99,999,999,999",
+        )
+        assert broken != CFS_PAGE, "fixture text did not change — test is vacuous"
+
+        cfs = parse_cfs_summary_from_text(broken)
+        assert cfs.totals["FY 2026/27"] == Decimal("2562973919672")
+        assert "FY 2026/27" not in cfs.redemption

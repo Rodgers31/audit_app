@@ -35,6 +35,10 @@ class FiscalSummaryRecord:
     # both "the budget" and are 12% apart.
     budget_basis: str | None = None
     budget_basis_source: dict[str, Any] | None = None
+    #: Billions KES of the gross budget that is redemption of maturing debt
+    #: rather than new spending — the largest single reason the gross figure
+    #: and the enacted headline differ. Absent where it could not be proved.
+    debt_redemption: float | None = None
 
 
 def _safe_float(val: Any) -> float | None:
@@ -158,6 +162,7 @@ def parse_fiscal_summary_payload(payload: dict[str, Any]) -> list[FiscalSummaryR
                 recurrent_spending=_safe_float(fy.get("recurrent_spending")),
                 county_allocation=_safe_float(fy.get("county_allocation")),
                 budget_basis=fy.get("budget_basis"),
+                debt_redemption=_safe_float(fy.get("debt_redemption")),
                 budget_basis_source=fy.get("budget_basis_source"),
             )
         )
