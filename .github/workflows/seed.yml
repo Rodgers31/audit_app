@@ -405,7 +405,14 @@ jobs:
         if: always()
         run: |
           cd backend
-          python -c "
+          # Quoted heredoc, NOT `python -c "..."`. With python -c the script
+          # lives inside a double-quoted shell string, so a single double quote
+          # anywhere in the Python terminates it: the shell then parsed the
+          # rest as a pipeline ("or: command not found") and Python received a
+          # truncated line ("NameError: name 'f' is not defined"). That killed
+          # every nightly from 2026-09-03, freezing production data, because
+          # the offending line was a routine f-string. <<'PY' quotes nothing.
+          python <<'PY'
           import sys
           from database import SessionLocal
           from models import IngestionJob, IngestionStatus
@@ -447,7 +454,7 @@ jobs:
               print(f'\n{failed} domain(s) failed!')
               sys.exit(1)
           print('\nAll domains completed successfully.')
-          "
+          PY
 
   # ══════════════════════════════════════════════════════════════════
   # Step 4: Data validation — verify tables have data and key metrics are sane
