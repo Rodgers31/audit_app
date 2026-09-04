@@ -16,6 +16,7 @@ import {
   usePendingBills,
   usePendingBillsSummary,
 } from '@/lib/react-query/useDebt';
+import { buildDebtServiceSeries, yearMissingRevenue } from '@/lib/debt/debtServiceSeries';
 import { useFiscalSummary } from '@/lib/react-query/useFiscal';
 import { apiClient } from '@/lib/api/axios';
 import {
@@ -1194,19 +1195,18 @@ export default function NationalDebtPage() {
               Annual debt service (interest + principal repayments) and what share of revenue it
               consumes.
             </p>
+            {yearMissingRevenue(fiscal.years) && (
+              <p className='text-xs text-neutral-muted mt-1.5'>
+                The share stops at {yearMissingRevenue(fiscal.years)}: that year has an enacted
+                debt-service figure but no revenue figure in our data yet, and a share cannot be
+                computed from one of the two.
+              </p>
+            )}
           </div>
           <div className='rounded-xl bg-white/70 dark:bg-surface-elevated border border-white/70 shadow-surface p-5'>
             <ResponsiveContainer width='100%' height={260}>
               <ComposedChart
-                data={fiscal.years.map((y: any) => ({
-                  year: y.fiscal_year,
-                  // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- chart series: a year with no debt-service figure plots as a gap, and the axis label says so
-                  service: y.debt_service_cost || 0,
-                  ratio:
-                    y.debt_service_cost && y.total_revenue
-                      ? (y.debt_service_cost / y.total_revenue) * 100
-                      : 0,
-                }))}
+                data={buildDebtServiceSeries(fiscal.years)}
                 margin={{ top: 8, right: 40, left: 0, bottom: 8 }}>
                 <defs>
                   <linearGradient id='serviceFill' x1='0' y1='0' x2='0' y2='1'>
@@ -1239,6 +1239,7 @@ export default function NationalDebtPage() {
                     fontSize: 12,
                   }}
                   formatter={(v: any, name: any) => {
+                    if (v == null) return ['Not published', name === 'ratio' ? 'Service / Revenue' : 'Debt service'];
                     if (name === 'ratio') return [`${Number(v).toFixed(1)}%`, 'Service / Revenue'];
                     return [fmtKES(Number(v)), 'Debt service'];
                   }}
