@@ -40,6 +40,7 @@ import {
   fmtKES,
   fmtLabel,
   fmtPop,
+  hasIngestedAudit,
   HEALTH_GRADE_BG,
   pct,
   Tab,
@@ -354,7 +355,9 @@ function HealthScoreModal({
                 { label: t('county.healthmodal.row.total_debt'), value: fmtKES(debt.total_debt) },
                 {
                   label: t('county.healthmodal.row.audit_issues'),
-                  value: String(audit.findings_count),
+                  value: hasIngestedAudit(audit)
+                    ? String(audit.findings_count)
+                    : 'Not yet ingested',
                 },
               ].map((row) => (
                 <div
@@ -719,8 +722,12 @@ export default function CountyDetailClient() {
                 accent: 'text-white',
               },
               {
+                // "0" here read as "this county has no audit problems". It
+                // means no OAG report has been ingested (F23).
                 label: t('county.hero.kpi.audit_issues'),
-                value: String(data.audit.findings_count),
+                value: hasIngestedAudit(data.audit)
+                  ? String(data.audit.findings_count)
+                  : '—',
                 accent: data.audit.findings_count > 0 ? 'text-rose-300' : 'text-white',
               },
             ].map((kpi, i, arr) => (

@@ -34,8 +34,12 @@ interface TableHealth {
   label: string;
   row_count: number;
   source: string;
-  status: string; // healthy | degraded | critical | empty
+  status: string; // healthy | stale | degraded | critical | empty
   notes?: string | null;
+  /** Days since the newest row changed, and the threshold it is judged
+   *  against. The panel could previously only answer "is it empty?". */
+  age_days?: number | null;
+  stale_after_days?: number | null;
 }
 
 interface HealthResponse {
@@ -43,7 +47,8 @@ interface HealthResponse {
 }
 
 const HEALTH_STYLE: Record<string, { dot: string; text: string; label: string }> = {
-  healthy: { dot: 'bg-emerald-500', text: 'text-emerald-700', label: 'Healthy' },
+  healthy: { dot: 'bg-emerald-500', text: 'text-emerald-700', label: 'Current' },
+  stale: { dot: 'bg-amber-500', text: 'text-amber-700', label: 'Stale' },
   degraded: { dot: 'bg-amber-500', text: 'text-amber-700', label: 'Partial' },
   critical: { dot: 'bg-rose-500', text: 'text-rose-700', label: 'Critical' },
   empty: { dot: 'bg-gray-400 dark:bg-neutral-muted/60', text: 'text-gray-500 dark:text-neutral-muted/80', label: 'Empty' },
@@ -94,6 +99,7 @@ export default function SourcesPage() {
   });
 
   const sources = data?.sources || [];
+  // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- document count; zero documents is a real state and has its own empty state below
   const total = data?.total_documents || 0;
 
   /**
@@ -186,11 +192,13 @@ export default function SourcesPage() {
               <h2 className='text-base font-bold text-gray-900 dark:text-neutral-text'>Data health</h2>
             </div>
             <p className='text-xs text-gray-500 dark:text-neutral-muted/80 mb-4 max-w-2xl'>
-              How much data each table holds. Green means the table has passed a
-              minimum row count — it is a check for <em>empty</em>, not a check
-              for <em>current</em> or <em>correct</em>, so a table frozen for a
-              year still reads green. Use the &ldquo;last fetched&rdquo; ages below to
-              judge freshness.
+              Each dataset behind the site: how many rows it holds, and how long
+              since any of them changed. <strong>Current</strong> means the table
+              has enough rows AND has moved within its publisher&apos;s own
+              reporting cycle. <strong>Stale</strong> means it has stopped moving
+              — the rows are still there, but nothing new has arrived when
+              something should have. Neither status checks whether a figure is
+              <em> correct</em>; that is what the source links are for.
             </p>
             <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'>
               {healthTables.map((tb) => {
@@ -218,6 +226,12 @@ export default function SourcesPage() {
                     <div className='text-[11px] text-gray-500 dark:text-neutral-muted/80 truncate'>
                       {tb.source}
                     </div>
+                    {tb.age_days != null && (
+                      <div className='text-[11px] text-gray-400 dark:text-neutral-muted/70'>
+                        last changed {tb.age_days === 0 ? 'today' : `${tb.age_days}d ago`}
+                        {tb.stale_after_days != null && ` · stale after ${tb.stale_after_days}d`}
+                      </div>
+                    )}
                   </div>
                 );
               })}

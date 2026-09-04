@@ -76,6 +76,7 @@ export default function BudgetFlowHero({ data }: Props) {
   const [hover, setHover] = useState<string | null>(null);
 
   const fy = data?.fiscal_year ?? '—';
+  // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- guarded: the component returns null when budget is falsy, three lines below
   const budget = data?.appropriated_budget ?? 0;
 
   // NOTHING here falls back to 0. A `null` from /fiscal/summary means the
@@ -149,7 +150,9 @@ export default function BudgetFlowHero({ data }: Props) {
       {
         key: 'borrowing',
         label: 'New borrowing',
+        // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- unreachable when rendered — the bars only draw under hasSources, which requires this to be non-null
         valueB: borrowing ?? 0,
+        // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- unreachable when rendered — see hasSources
         share: pct(borrowing ?? 0, budget),
         gradStart: '#B83E3E',
         gradEnd: '#7E2424',

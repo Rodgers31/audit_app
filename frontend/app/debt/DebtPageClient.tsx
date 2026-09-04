@@ -177,6 +177,7 @@ export default function NationalDebtPage() {
   const pendingBillsSummary = useMemo(() => {
     if (!rawPendingBillsSummary) return null;
     const raw = rawPendingBillsSummary as any;
+    // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- a pending-bills total of 0 is the aggregate of zero rows, and the panel below renders its own empty state
     const totalPending = raw.total_pending_amount || 0;
 
     let breakdownByType = raw.breakdown_by_type;
@@ -276,8 +277,10 @@ export default function NationalDebtPage() {
         return rB - rA;
       });
     } else if (loanSort === 'service') {
+      // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- sort comparator
       arr.sort((a, b) => (b.annual_service_cost || 0) - (a.annual_service_cost || 0));
     } else {
+      // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- sort comparator
       arr.sort((a, b) => (b.outstanding_numeric || 0) - (a.outstanding_numeric || 0));
     }
     return arr;
@@ -309,8 +312,9 @@ export default function NationalDebtPage() {
         non_tax_revenue: toRawKES(y.non_tax_revenue, y.unit),
         total_borrowing: toRawKES(y.total_borrowing, y.unit),
         debt_service_cost: toRawKES(y.debt_service_cost, y.unit),
-        debt_ceiling: toRawKES(y.debt_ceiling, y.unit),
-        actual_debt: toRawKES(y.actual_debt, y.unit),
+        // debt_ceiling / actual_debt are no longer published: the KES 10T
+        // ceiling was repealed in 2023, and actual_debt duplicated
+        // debt_timeline with the superseded pre-correction values (F31).
         development_spending: toRawKES(y.development_spending, y.unit),
         recurrent_spending: toRawKES(y.recurrent_spending, y.unit),
         county_allocation: toRawKES(y.county_allocation, y.unit),
@@ -354,6 +358,7 @@ export default function NationalDebtPage() {
           category: key,
           label,
           outstanding,
+          // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- treemap slice share; a slice with no percentage is dropped by the filter below
           share: val.percentage_of_total || 0,
           lenders: (val.items || []).map((it: any) => ({
             lender: it.lender,
@@ -367,8 +372,13 @@ export default function NationalDebtPage() {
   }, [d.categories]);
 
   /* ── Risk band from debt-to-GDP ── */
+  // `?? 0` here rendered an ABSENT debt-to-GDP ratio as "Low" risk — a claim
+  // about Kenya's public finances manufactured from a missing field, and the
+  // mirror image of the `|| 'High'` defect already fixed in NationalDebtCard.
+  // Absence is not a risk band.
   const riskBand = useMemo(() => {
-    const r = d.gdpRatio ?? 0;
+    const r = d.gdpRatio;
+    if (r == null) return null;
     if (r >= 60) return { level: 'High', tone: 'text-gov-copper', bg: 'bg-gov-copper/15', pill: 'pill-risk' };
     if (r >= 40) return { level: 'Moderate', tone: 'text-gov-gold', bg: 'bg-gov-gold/15', pill: 'pill-risk' };
     return { level: 'Low', tone: 'text-gov-sage', bg: 'bg-gov-sage/15', pill: 'pill-safe' };
@@ -553,12 +563,17 @@ export default function NationalDebtPage() {
                 Risk level
               </div>
               <div className='flex items-center gap-2'>
-                <span className={`text-2xl sm:text-3xl font-bold ${riskBand.tone.replace('text-', 'text-')}`}>
-                  {riskBand.level}
+                <span
+                  className={`text-2xl sm:text-3xl font-bold ${
+                    riskBand ? riskBand.tone : 'text-white/50'
+                  }`}>
+                  {riskBand ? riskBand.level : 'Not assessed'}
                 </span>
               </div>
               <p className='text-[11px] text-white/50 mt-1'>
-                Based on IMF debt-sustainability thresholds
+                {riskBand
+                  ? 'Based on IMF debt-sustainability thresholds'
+                  : 'No debt-to-GDP ratio available to classify against'}
               </p>
             </div>
           </div>
@@ -923,6 +938,7 @@ export default function NationalDebtPage() {
         const nationalPct = pb.total > 0 ? (pb.national / pb.total) * 100 : 0;
         const countyPct = pb.total > 0 ? (pb.county / pb.total) * 100 : 0;
         const buckets = pendingBillsSummary?.aging_buckets || [];
+        // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- filter predicate — selects buckets that HAVE data
         const bucketsWithData = buckets.filter((b: any) => (b.amount || 0) > 0);
         const agingIsDegenerate =
           bucketsWithData.length === 1 && bucketsWithData[0].bucket?.includes('180');
@@ -1175,6 +1191,7 @@ export default function NationalDebtPage() {
               <ComposedChart
                 data={fiscal.years.map((y: any) => ({
                   year: y.fiscal_year,
+                  // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- chart series: a year with no debt-service figure plots as a gap, and the axis label says so
                   service: y.debt_service_cost || 0,
                   ratio:
                     y.debt_service_cost && y.total_revenue

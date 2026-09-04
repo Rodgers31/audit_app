@@ -20,7 +20,8 @@ export default function FinancialOverview({ county }: FinancialOverviewProps) {
         <div className='p-4 bg-blue-50 rounded-xl border border-blue-200'>
           <div className='text-sm text-blue-600 font-medium mb-1'>Total Budget</div>
           <div className='text-xl font-bold text-blue-700'>
-            {formatCurrency(county.budget ?? 0)}
+            {/* A county with no budget figure is not a KES 0 county. */}
+            {county.budget != null ? formatCurrency(county.budget) : '—'}
           </div>
         </div>
         <div className='p-4 bg-green-50 rounded-xl border border-green-200'>

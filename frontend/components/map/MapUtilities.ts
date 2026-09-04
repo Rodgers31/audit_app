@@ -120,6 +120,7 @@ export const getCountyHoverFill = (county: County | undefined): string =>
 
 export const getFinancialTrend = (county: County): 'excellent' | 'good' | 'fair' | 'poor' => {
   const utilization = county.budgetUtilization || 0;
+  // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- modelled county debt used to pick a map colour bucket, not rendered as a figure
   const debt = county.debt ?? 0;
   const budget = county.budget && county.budget > 0 ? county.budget : 1;
   const debtRatio = (debt / budget) * 100;

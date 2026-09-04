@@ -375,7 +375,9 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
             tone: 'rose' as const,
           },
           {
-            value: String(data.total_findings ?? 0),
+            // Absent audit -> em dash, matching this tab's own copy: "An absent
+      // grade is not a low grade" (F23).
+      value: data.total_findings != null ? String(data.total_findings) : '—',
             label: t('county.acct.kpi.audit_findings'),
             sub:
               typeof data.critical_findings === 'number' &&

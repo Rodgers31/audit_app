@@ -214,17 +214,16 @@ async def get_population_latest(db: Session = Depends(get_db)):
             .first()
         )
 
-        # Fallback: aggregate county populations if no national record exists
+        # Fallback: aggregate county populations if no national record exists.
+        # Scoped to ONE year — the previous version summed county rows across
+        # every seeded year while separately taking max(year), so the year it
+        # reported and the population it reported came from different sets of
+        # rows (credibility audit F29).
         if not row:
-            from sqlalchemy import func as sqlfunc
-            agg = (
-                db.query(
-                    sqlfunc.sum(PopulationData.total_population),
-                    sqlfunc.max(PopulationData.year),
-                )
-                .filter(PopulationData.entity_id.isnot(None))
-                .first()
-            )
+            from services.population import latest_national_population
+
+            _total, _year = latest_national_population(db)
+            agg = (_total, _year)
             if agg and agg[0]:
                 # Create a synthetic response (don't save to DB)
                 class _SyntheticPop:

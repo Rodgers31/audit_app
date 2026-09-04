@@ -126,6 +126,7 @@ export default function AuditReportsSection() {
       // would otherwise compare as NaN and scramble the order.
       topFindings: [...data.findings]
         .filter((f) => f.amount_involved !== 'KES 0' && f.amount_numeric != null)
+        // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- sort comparator
         .sort((a, b) => (b.amount_numeric ?? 0) - (a.amount_numeric ?? 0))
         .slice(0, 4),
       ministryBars: (data.top_ministries || []).slice(0, 5).map((m) => ({
@@ -156,6 +157,7 @@ export default function AuditReportsSection() {
   // below comes from the response (withheld_findings, findings_reason,
   // next_expected); no schedule fact is hand-written here.
   const isEmpty = (data.findings?.length ?? 0) === 0;
+  // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- count of WITHHELD findings; zero withheld is a true statement
   const withheld = data.withheld_findings ?? 0;
   const nx = data.next_expected;
   const fmtWindowMonth = (iso: string) =>

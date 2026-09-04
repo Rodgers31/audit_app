@@ -7168,13 +7168,33 @@ async def get_national_budget_summary(fiscal_year: str = None):
                 # Sort by amount descending
                 allocations.sort(key=lambda x: x["amount"], reverse=True)
 
-                # Development vs recurrent split
-                dev_budget = sum(
-                    float(b.allocated_amount or 0)
+                # Development vs recurrent split — WITHHELD, not guessed.
+                #
+                # The rows this endpoint sums are SECTOR allocations (Education,
+                # Health, National Security ...). They carry no economic
+                # classification, so a development/recurrent split cannot be
+                # derived from them. The previous rule was
+                # `"development" in category.lower()`, which matched exactly one
+                # sector — "Agriculture, Rural and Urban DEVELOPMENT" — and
+                # published its 59.13B as the national development budget, with
+                # everything else counted as recurrent. The Controller of Budget
+                # states 744.84B of ministerial development spending for
+                # FY2025/26: the substring match was out by a factor of 12.6
+                # (credibility audit F30).
+                #
+                # Publish the split only where the rows actually classify it.
+                _class_rows = {
+                    (b.category or "").strip().lower(): float(b.allocated_amount or 0)
                     for b in budget_query.all()
-                    if b.category and "development" in str(b.category).lower()
+                    if (b.category or "").strip().lower() in _CLASSIFICATION_CATEGORIES
+                }
+                dev_budget = _class_rows.get("development")
+                recurrent_budget = _class_rows.get("recurrent")
+                budget_split_absent_reason = (
+                    None
+                    if dev_budget is not None or recurrent_budget is not None
+                    else "sector_rows_carry_no_economic_classification"
                 )
-                recurrent_budget = total_allocated - dev_budget
 
                 # Resolve fiscal-period label for the response
                 period_label = None
@@ -7234,6 +7254,7 @@ async def get_national_budget_summary(fiscal_year: str = None):
                         "execution_rate": execution_rate,
                         "development_budget": dev_budget,
                         "recurrent_budget": recurrent_budget,
+                        "budget_split_absent_reason": budget_split_absent_reason,
                         "allocations": allocations,
                         "currency": "KES",
                     },
@@ -7926,9 +7947,14 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
             else None
         )
 
-        # Get total population (sum of all counties)
-        total_pop = db.query(func.sum(PopulationData.total_population)).scalar()
-        total_pop = int(total_pop) if total_pop else None
+        # Kenya's population, not the sum of every row in the table. This was
+        # `func.sum(PopulationData.total_population)` over the whole table —
+        # 47 counties across every seeded year plus the national rows — which
+        # reported 907,025,674 and dragged per_capita_budget_kes down to
+        # KES 6,048 (credibility audit F29).
+        from services.population import latest_national_population
+
+        total_pop, total_pop_year = latest_national_population(db)
 
         # Get latest fiscal summary for budget context
         latest_fiscal = (
@@ -7955,6 +7981,9 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
             "inflation_source": "KNBS Consumer Price Index",
             "unemployment_pct": econ_map.get("unemployment_rate"),
             "total_population": total_pop,
+            # Say which year the population describes, so a per-capita figure
+            # can be checked rather than assumed current.
+            "total_population_year": total_pop_year,
             "budget_to_gdp_pct": (
                 round((budget_raw_kes / (gdp_billion * 1e9)) * 100, 1)
                 if budget_raw_kes and gdp_billion

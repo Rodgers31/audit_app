@@ -13,7 +13,7 @@ import { CountyComprehensive } from '@/types';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertTriangle, CheckCircle2, ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { fmtKES, SEVERITY_STYLE } from '../shared';
+import { fmtKES, hasIngestedAudit, SEVERITY_STYLE } from '../shared';
 
 const CATEGORY_CONFIG: Record<
   string,
@@ -104,6 +104,7 @@ export default function AuditTab({ data }: { data: CountyComprehensive }) {
       const cat = f.category || 'other';
       if (!map[cat]) map[cat] = { count: 0, amount: 0 };
       map[cat].count++;
+      // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- accumulator seed, not a published figure
       map[cat].amount += f.amount_involved || 0;
     }
     return Object.entries(map).sort((a, b) => b[1].amount - a[1].amount);
@@ -113,6 +114,8 @@ export default function AuditTab({ data }: { data: CountyComprehensive }) {
     if (filterCategory === 'all') return audit.findings;
     return audit.findings.filter((f) => (f.category || 'other') === filterCategory);
   }, [audit.findings, filterCategory]);
+
+  const ingested = hasIngestedAudit(audit);
 
   const statusCounts = useMemo(() => {
     const map: Record<string, number> = {};
@@ -133,10 +136,27 @@ export default function AuditTab({ data }: { data: CountyComprehensive }) {
         <p className='text-xs text-gray-600 dark:text-neutral-muted leading-relaxed'>{t('county.audit.intro_body')}</p>
       </div>
 
+      {!ingested && (
+        <div className='rounded-xl border border-neutral-border/60 bg-surface-sunken/40 px-4 py-3'>
+          <p className='text-[12.5px] leading-relaxed text-neutral-muted'>
+            <span className='font-semibold text-gov-dark dark:text-white'>
+              No Auditor-General report for this county has been ingested yet.
+            </span>{' '}
+            The counters below read &ldquo;—&rdquo; rather than zero because a
+            zero would say the Auditor-General examined this county and
+            questioned nothing. That is not what an absent report means.
+          </p>
+        </div>
+      )}
+
       {/* ── Top-level stats ── */}
       <div className='grid grid-cols-2 sm:grid-cols-4 gap-3'>
         <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-4 text-center'>
-          <div className='text-2xl font-bold text-gray-900 dark:text-neutral-text'>{audit.findings_count}</div>
+          {/* "0 Total Findings" read as a clean bill of health. It means no
+              OAG report for this county has been ingested (F23). */}
+          <div className='text-2xl font-bold text-gray-900 dark:text-neutral-text'>
+            {ingested ? audit.findings_count : '—'}
+          </div>
           <div className='text-[11px] text-gray-500 dark:text-neutral-muted/80 mt-0.5'>
             {t('county.audit.kpi_total_findings')}
           </div>
@@ -157,7 +177,7 @@ export default function AuditTab({ data }: { data: CountyComprehensive }) {
           <div className='flex items-center justify-center gap-1.5'>
             <div className='w-2 h-2 rounded-full bg-red-500' />
             <span className='text-2xl font-bold text-gray-900 dark:text-neutral-text'>
-              {audit.by_severity.critical || 0}
+              {ingested ? audit.by_severity.critical || 0 : '—'}
             </span>
           </div>
           <div className='text-[11px] text-gray-500 dark:text-neutral-muted/80 mt-0.5'>
@@ -165,7 +185,9 @@ export default function AuditTab({ data }: { data: CountyComprehensive }) {
           </div>
         </div>
         <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-4 text-center'>
-          <div className='text-2xl font-bold text-green-700'>{statusCounts['Resolved'] || 0}</div>
+          <div className='text-2xl font-bold text-green-700'>
+            {ingested ? statusCounts['Resolved'] || 0 : '—'}
+          </div>
           <div className='text-[11px] text-gray-500 dark:text-neutral-muted/80 mt-0.5'>{t('county.audit.kpi_resolved')}</div>
         </div>
       </div>

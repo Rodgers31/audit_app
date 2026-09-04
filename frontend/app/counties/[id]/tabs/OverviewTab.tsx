@@ -15,7 +15,7 @@ import { CountyComprehensive } from '@/types';
 import { AlertTriangle, ExternalLink, Scale, TrendingDown, TrendingUp } from 'lucide-react';
 import React from 'react';
 import ModelledDataNote from '@/components/ModelledDataNote';
-import { fmtKES, fmtLabel, fmtPop, pct, SEVERITY_STYLE } from '../shared';
+import { hasIngestedAudit, fmtKES, fmtLabel, fmtPop, pct, SEVERITY_STYLE } from '../shared';
 import KPI from './KPI';
 
 /* ═══════════ Circular progress ═══════════ */
@@ -280,11 +280,15 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
         <div
           aria-hidden
           className={`absolute inset-y-0 left-0 w-1 ${
-            audit.findings_count === 0
-              ? 'bg-emerald-400'
-              : (audit.by_severity.critical || 0) > 0
-                ? 'bg-rose-500'
-                : 'bg-amber-400'
+            // Green for "0 findings" told the reader this county came back
+            // clean. Absent is grey, not green (credibility audit F23).
+            !hasIngestedAudit(audit)
+              ? 'bg-neutral-border'
+              : audit.findings_count === 0
+                ? 'bg-emerald-400'
+                : (audit.by_severity.critical || 0) > 0
+                  ? 'bg-rose-500'
+                  : 'bg-amber-400'
           }`}
         />
         <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-3 pl-2'>
@@ -294,13 +298,15 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
             </div>
             <div className='flex items-center gap-4 flex-wrap'>
               {(['critical', 'warning', 'info'] as const).map((sev) => {
-                const count = audit.by_severity[sev] || 0;
+                const count = hasIngestedAudit(audit)
+                  ? audit.by_severity[sev] || 0
+                  : null;
                 const s = SEVERITY_STYLE[sev];
                 return (
                   <div key={sev} className='flex items-center gap-1.5'>
                     <div className={`w-2 h-2 rounded-full ${s.dot}`} />
                     <span className='text-sm text-gray-700 dark:text-neutral-muted'>
-                      <span className='font-semibold tabular-nums'>{count}</span>{' '}
+                      <span className='font-semibold tabular-nums'>{count ?? '—'}</span>{' '}
                       {t(s.lowerKey)}
                     </span>
                   </div>

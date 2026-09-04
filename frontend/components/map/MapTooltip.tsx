@@ -144,7 +144,9 @@ export default function MapTooltip({
 
   const utilization = county.budgetUtilization || 0;
   const debtRatio =
+    // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- county debt is a modelled figure the map disclaims sitewide; the ratio is guarded on budget > 0
     county.budget && county.budget > 0 ? ((county.debt || 0) / county.budget) * 100 : 0;
+  // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- modelled county figures, disclaimed sitewide
   const fundingGap = (county.budget || 0) - (county.moneyReceived || 0);
   const auditIssuesCount = county.auditIssues?.length || 0;
 

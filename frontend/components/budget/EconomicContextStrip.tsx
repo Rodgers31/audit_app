@@ -82,8 +82,10 @@ export default function EconomicContextStrip({ ctx }: Props) {
       value: pct(ctx.inflation_pct),
       sub: inflationSub,
       accent:
+        // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- colour band threshold only — the figure itself renders from ctx.inflation_pct and shows an em dash when absent
         (ctx.inflation_pct ?? 0) > 7
           ? '#9E3030'
+          // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- colour band threshold only
           : (ctx.inflation_pct ?? 0) > 5
             ? '#A6781F'
             : '#2F6343',

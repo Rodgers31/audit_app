@@ -103,7 +103,9 @@ export default function RevenueMix({ revenueBySource }: Props) {
           s.amount > 0 &&
           !/^total /i.test(s.revenue_type ?? '')
       )
+      // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- sort comparator
       .sort((a, b) => (b.amount ?? 0) - (a.amount ?? 0));
+    // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- reducer accumulator
     const totalB = list.reduce((s, r) => s + (r.amount ?? 0), 0);
 
     // 3-year series per source for the sparkline
@@ -125,7 +127,9 @@ export default function RevenueMix({ revenueBySource }: Props) {
       return {
         key: r.revenue_type,
         label: r.revenue_type,
+        // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- the caller filters to fiscal years whose streams all carry amounts, so a null here is unreachable
         amount: r.amount ?? 0,
+        // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- see above — share is computed from the same filtered set
         share: totalB > 0 ? ((r.amount ?? 0) / totalB) * 100 : 0,
         yoy,
         pal,

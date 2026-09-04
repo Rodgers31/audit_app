@@ -96,14 +96,24 @@ export default function SpendDonut({ data }: Props) {
     data.development_spending != null &&
     data.county_allocation != null;
 
+  // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- guarded: hasFullDecomposition above returns null before any of these zeros can render
   const budget = data.appropriated_budget ?? 0;
-  const debtService = data.debt_service_cost ?? 0;
-  const recurrent = data.recurrent_spending ?? 0;
-  const dev = data.development_spending ?? 0;
-  const counties = data.county_allocation ?? 0;
 
-  const recurrentNonDebt = Math.max(0, recurrent - debtService);
-  const otherSpend = Math.max(0, budget - recurrent - dev - counties);
+  // An absent component is not a zero-sized bucket: every shilling it should
+  // have held is silently absorbed into the "Other (residual)" slice, which
+  // then reads as real unallocated slack. The bar/hero on this page already
+  // withholds in that case; the donut has to as well. Credibility audit F2.
+  const debtService = data.debt_service_cost;
+  const recurrent = data.recurrent_spending;
+  const dev = data.development_spending;
+  const counties = data.county_allocation;
+  const hasMacroSplit =
+    debtService != null && recurrent != null && dev != null && counties != null;
+
+  const recurrentNonDebt = hasMacroSplit ? Math.max(0, recurrent! - debtService!) : 0;
+  const otherSpend = hasMacroSplit
+    ? Math.max(0, budget - recurrent! - dev! - counties!)
+    : budget;
 
   /* Inner ring — macro buckets */
   const innerData = useMemo(() => {
@@ -111,8 +121,8 @@ export default function SpendDonut({ data }: Props) {
       {
         key: 'debtService',
         name: 'Debt service',
-        value: debtService,
-        share: budget > 0 ? (debtService / budget) * 100 : 0,
+        value: hasMacroSplit ? debtService! : 0,
+        share: hasMacroSplit && budget > 0 ? (debtService! / budget) * 100 : 0,
         gradStart: INNER.debtService.start,
         gradEnd: INNER.debtService.end,
         color: INNER.debtService.base,
@@ -123,7 +133,7 @@ export default function SpendDonut({ data }: Props) {
         key: 'recurrent',
         name: 'Recurrent (ex-debt)',
         value: recurrentNonDebt,
-        share: budget > 0 ? (recurrentNonDebt / budget) * 100 : 0,
+        share: hasMacroSplit && budget > 0 ? (recurrentNonDebt / budget) * 100 : 0,
         gradStart: INNER.recurrent.start,
         gradEnd: INNER.recurrent.end,
         color: INNER.recurrent.base,
@@ -132,8 +142,8 @@ export default function SpendDonut({ data }: Props) {
       {
         key: 'development',
         name: 'Development',
-        value: dev,
-        share: budget > 0 ? (dev / budget) * 100 : 0,
+        value: hasMacroSplit ? dev! : 0,
+        share: hasMacroSplit && budget > 0 ? (dev! / budget) * 100 : 0,
         gradStart: INNER.development.start,
         gradEnd: INNER.development.end,
         color: INNER.development.base,
@@ -142,8 +152,8 @@ export default function SpendDonut({ data }: Props) {
       {
         key: 'counties',
         name: 'Counties',
-        value: counties,
-        share: budget > 0 ? (counties / budget) * 100 : 0,
+        value: hasMacroSplit ? counties! : 0,
+        share: hasMacroSplit && budget > 0 ? (counties! / budget) * 100 : 0,
         gradStart: INNER.counties.start,
         gradEnd: INNER.counties.end,
         color: INNER.counties.base,

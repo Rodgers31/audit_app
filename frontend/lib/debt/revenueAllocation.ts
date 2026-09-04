@@ -41,13 +41,28 @@ export function computeRevenueAllocation(
   c: FiscalCurrent | null | undefined,
 ): RevenueAllocation | null {
   if (!c) return null;
-  const rev = c.total_revenue || 0;
-  if (!rev) return null;
 
-  const ds = c.debt_service_cost || 0;
-  const rec = Math.max((c.recurrent_spending || 0) - ds, 0);
-  const dev = c.development_spending || 0;
-  const counties = c.county_allocation || 0;
+  // Every component must be present. A missing one used to become 0, and the
+  // "per KES 100 of revenue" breakdown then attributed that shilling to
+  // borrowing instead — inventing a composition out of an absent series
+  // rather than declining to draw one (credibility audit F2).
+  const rev = c.total_revenue;
+  const ds = c.debt_service_cost;
+  const recTotal = c.recurrent_spending;
+  const dev = c.development_spending;
+  const counties = c.county_allocation;
+  if (
+    rev == null ||
+    rev <= 0 ||
+    ds == null ||
+    recTotal == null ||
+    dev == null ||
+    counties == null
+  ) {
+    return null;
+  }
+
+  const rec = Math.max(recTotal - ds, 0);
   const budget = c.appropriated_budget || ds + rec + dev + counties;
   const borrowing = Math.max(budget - rev, 0);
 
