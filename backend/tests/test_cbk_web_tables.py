@@ -382,7 +382,15 @@ def test_the_register_is_never_summed_into_the_debt_total(bonds_html):
         ]
     }
     stock = _published_bond_stock_kes(payload)
-    assert stock == pytest.approx(5_878_982_400_000), "external bonds must not count"
+    # 5.579T, NOT 5.879T. CBK's "Domestic Treasury Bonds" line already includes
+    # infrastructure and green bonds — the payload's own note on that row says
+    # so — while the payload also carries them as a separate KES 300B row.
+    # Summing both counted them twice and inflated the coverage denominator.
+    assert stock == pytest.approx(5_578_982_400_000), (
+        "the inclusive Treasury-bond aggregate only: adding the separate "
+        "infrastructure/green row double-counts bonds already inside it"
+    )
+    assert stock != pytest.approx(5_878_982_400_000), "the 300B double count is back"
 
     coverage = check_bond_coverage(securities, stock)
     assert coverage["status"] == "within_band"
@@ -408,10 +416,23 @@ def test_the_published_stock_denominator_moves_with_the_data():
     assert _published_bond_stock_kes(
         {"loans": [{"lender": "Eurobonds (2014, 2018)", "outstanding": 2_276_000_000_000}]}
     ) is None
-    # Infrastructure bonds ARE Treasury bonds in CBK's classification.
+    # Infrastructure bonds ARE Treasury bonds in CBK's classification — which
+    # is exactly why the separate row must NOT be added: the aggregate
+    # "Domestic Treasury Bonds" line already contains them (see that row's own
+    # note in national_debt.json). Counting the standalone row as well
+    # double-counts KES 300B of the same bonds.
     assert _published_bond_stock_kes(
         {"loans": [{"lender": "Domestic Infrastructure & Green Bonds", "outstanding": 300}]}
-    ) == 300
+    ) is None
+    # And it must not add to the aggregate that already includes it.
+    assert _published_bond_stock_kes(
+        {
+            "loans": [
+                {"lender": "Domestic Treasury Bonds", "outstanding": 1_000},
+                {"lender": "Domestic Infrastructure & Green Bonds", "outstanding": 300},
+            ]
+        }
+    ) == 1_000
 
 
 # ── Ambiguous ISINs: withheld, with the reason ───────────────────────────
@@ -475,3 +496,63 @@ def test_partition_keeps_an_unambiguous_register_whole():
     ]
     publishable, withheld = partition_ambiguous(clean)
     assert len(publishable) == 4 and withheld == {}
+
+
+def test_an_unknown_paging_configuration_is_quarantined_not_assumed_complete():
+    """The guard must require the invariant, not just reject its negation.
+
+    Rejecting only an explicit `"serverSide": true` fails OPEN: if CBK renames
+    the setting, drops it, or switches table plugin, the page parses as though
+    it embedded every row and a partial register publishes silently — looking
+    exactly like a smaller bond book.
+    """
+    import pytest
+
+    from seeding.domains.national_debt.cbk_web_tables import (
+        CbkTableError,
+        _assert_table_complete,
+    )
+
+    # Setting absent entirely.
+    with pytest.raises(CbkTableError, match="serverSide"):
+        _assert_table_complete("<table><tr><td>1</td></tr></table>", "https://x")
+
+    # Setting renamed by a plugin change.
+    with pytest.raises(CbkTableError, match="serverSide"):
+        _assert_table_complete('<script>{"server_side":false}</script>', "https://x")
+
+    # Positive control: an explicit false still passes.
+    _assert_table_complete('<script>{"serverSide":false}</script>', "https://x")
+
+
+def test_every_debt_timeline_ratio_matches_its_own_total_and_gdp():
+    """The fixture must not contradict itself.
+
+    Correcting the totals left the old ratios behind — 2,111.6 / 7,381 is 28.6%,
+    not the 42.0% the row claimed. Those ratios matched the REMOVED totals, and
+    when World Bank enrichment is disabled or fails the fixture values persist
+    unchanged, so the API published internally inconsistent debt-to-GDP.
+    """
+    import json
+    from pathlib import Path
+
+    doc = json.loads(
+        (Path(__file__).resolve().parents[1] / "seeding/real_data/debt_timeline.json")
+        .read_text(encoding="utf-8")
+    )
+    rows = doc["timeline"]
+    assert rows, "fixture is empty"
+
+    bad = []
+    for r in rows:
+        total, gdp, stated = r.get("total"), r.get("gdp"), r.get("gdp_ratio")
+        if not total or not gdp or stated is None:
+            continue
+        computed = round(total / gdp * 100, 1)
+        # Allow one decimal of rounding slack, nothing more.
+        if abs(computed - stated) > 0.1:
+            bad.append((r["year"], stated, computed))
+
+    assert not bad, "rows whose gdp_ratio disagrees with their own total/gdp: " + ", ".join(
+        f"{y}: says {s}%, computes {c}%" for y, s, c in bad
+    )

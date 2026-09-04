@@ -50,7 +50,7 @@ function fmtKES(v: number): string {
 }
 
 export default function MaturityLadder() {
-  const { data, isLoading } = useQuery<InstrumentsResponse>({
+  const { data, isLoading, isError, refetch } = useQuery<InstrumentsResponse>({
     queryKey: ['debt', 'instruments'],
     queryFn: async () => (await api.get<InstrumentsResponse>('/debt/instruments')).data,
     staleTime: 60 * 60 * 1000,
@@ -59,6 +59,32 @@ export default function MaturityLadder() {
   if (isLoading) {
     return (
       <div className='rounded-2xl border border-neutral-border/40 bg-white/60 dark:bg-surface-elevated h-64 animate-pulse' />
+    );
+  }
+
+  // A failed request also leaves `data` undefined, so folding it in here
+  // reported a backend outage as "no bond register has been ingested" — a
+  // different claim, and the one this component exists to keep distinct.
+  if (isError) {
+    return (
+      <section className='rounded-2xl border border-neutral-border/60 bg-surface-sunken/40 px-5 py-5'>
+        <div className='flex items-start gap-2.5'>
+          <Info className='w-4 h-4 mt-0.5 flex-shrink-0 text-amber-600' />
+          <div className='text-[12.5px] leading-relaxed text-neutral-muted'>
+            <span className='font-semibold text-gov-dark dark:text-white'>
+              The maturity profile could not be loaded.
+            </span>{' '}
+            This is a problem reaching the server, not a statement about the
+            bond register.
+            <button
+              type='button'
+              onClick={() => refetch()}
+              className='ml-2 underline underline-offset-2 hover:text-gov-forest dark:hover:text-emerald-100'>
+              Try again
+            </button>
+          </div>
+        </div>
+      </section>
     );
   }
 

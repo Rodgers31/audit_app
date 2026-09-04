@@ -333,6 +333,21 @@ def _latest_national_period(db) -> Optional[int]:
     return row[0] if row else None
 
 
+def _is_undefined_table(exc: Exception) -> bool:
+    """True only for "relation/table does not exist".
+
+    Postgres raises SQLSTATE 42P01 (psycopg2 exposes it as ``pgcode``); SQLite
+    raises ``OperationalError: no such table: ...``. Anything else — a dropped
+    connection, a timeout, a permission error — is a real failure and must not
+    be reported to the caller as "run the migration".
+    """
+    orig = getattr(exc, "orig", None)
+    if getattr(orig, "pgcode", None) == "42P01":
+        return True
+    text = str(orig or exc).lower()
+    return "no such table" in text or "does not exist" in text
+
+
 def _is_debt_loan(loan) -> bool:
     """True when a Loan row counts as DEBT for total-debt aggregations.
 
@@ -8929,6 +8944,16 @@ async def get_debt_instruments(db: Session = Depends(get_db)):
         )
     except SQLAlchemyError as exc:
         db.rollback()
+        # ONLY the missing-table case. Catching every SQLAlchemyError turned
+        # connection loss, timeouts, permission errors and unrelated query
+        # failures into an HTTP 200 carrying a false remediation message, which
+        # also hid them from 5xx monitoring.
+        if not _is_undefined_table(exc):
+            logging.error("debt_instruments query failed: %s", exc)
+            raise HTTPException(
+                status_code=503,
+                detail="debt instrument register is temporarily unavailable",
+            )
         logging.warning("debt_instruments unavailable: %s", exc)
         return {
             "status": "unavailable",

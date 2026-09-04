@@ -16,10 +16,19 @@ logger = logging.getLogger("seeding.debt_timeline.writer")
 
 
 def _get_or_create_source_document(
-    session: Session, metadata: dict[str, Any]
+    session: Session, metadata: dict[str, Any], title: str | None = None
 ) -> SourceDocument:
-    """Get or create source document for debt timeline data."""
-    title = metadata.get("source", "CBK Annual Reports & National Treasury BPS")
+    """Get or create the source document a debt-timeline row traces to.
+
+    ``title`` is the row's own source when it declares one. The series spans
+    two different CBK publications — the /public-debt/ table for 2013-2021 and
+    the Statistical Bulletin for 2022-2025 — so assigning one payload-level
+    document to every year made half the series cite a document that does not
+    contain it.
+    """
+    title = title or metadata.get(
+        "source", "CBK Annual Reports & National Treasury BPS"
+    )
 
     doc = (
         session.query(SourceDocument)
@@ -85,9 +94,20 @@ def write_debt_timeline_records(
     created = 0
     updated = 0
 
-    source_doc = _get_or_create_source_document(session, metadata)
+    default_doc = _get_or_create_source_document(session, metadata)
+    doc_cache: dict[str, SourceDocument] = {}
+
+    def _doc_for(record) -> SourceDocument:
+        if not record.source:
+            return default_doc
+        if record.source not in doc_cache:
+            doc_cache[record.source] = _get_or_create_source_document(
+                session, metadata, title=record.source
+            )
+        return doc_cache[record.source]
 
     for record in records:
+        source_doc = _doc_for(record)
         existing = (
             session.query(DebtTimeline).filter(DebtTimeline.year == record.year).first()
         )

@@ -97,7 +97,15 @@ def run(
     register = payload.get("bond_register")
     if register:
         try:
-            counts = instrument_writer.write_bond_register(session, register)
+            # SAVEPOINT, not a bare try/except. The register write shares the
+            # caller's transaction: querying a table that does not exist yet
+            # (pre-migration) leaves the whole transaction aborted, so the CLI's
+            # later commit fails and rolls back the loan updates that DID
+            # succeed. A non-database failure part-way through would otherwise
+            # commit a partial register. Rolling back to the savepoint confines
+            # the damage to the register and leaves the session usable.
+            with session.begin_nested():
+                counts = instrument_writer.write_bond_register(session, register)
             logger.info(
                 "Bond register: %d created, %d updated, %d removed "
                 "(%d ISIN(s) withheld as ambiguous)",
@@ -107,6 +115,10 @@ def run(
         except Exception as exc:
             logger.exception("Failed to write bond register")
             errors.append(f"Bond register write failed: {exc}")
+            # begin_nested() has already rolled back to the savepoint; make
+            # sure the outer transaction is usable for the caller's commit.
+            if not session.is_active:
+                session.rollback()
     else:
         # Says which of the two it is: the fetch failed, or the coverage gate
         # quarantined the register. Both leave the ladder empty, and a reader

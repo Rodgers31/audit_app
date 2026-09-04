@@ -19,6 +19,11 @@ class DebtTimelineRecord:
     total: float  # Billions KES
     gdp: float | None  # Billions KES
     gdp_ratio: float | None  # e.g. 77.6
+    #: The row's OWN source. 2013-2021 come from CBK's /public-debt/ table and
+    #: 2022-2025 from the Statistical Bulletin; the payload-level source names
+    #: only one of them, so dropping this made every year trace to the wrong
+    #: document.
+    source: str | None = None
 
 
 def parse_debt_timeline_payload(payload: dict[str, Any]) -> list[DebtTimelineRecord]:
@@ -41,6 +46,7 @@ def parse_debt_timeline_payload(payload: dict[str, Any]) -> list[DebtTimelineRec
                     gdp_ratio=(
                         float(entry["gdp_ratio"]) if entry.get("gdp_ratio") else None
                     ),
+                    source=(entry.get("source") or None),
                 )
             )
         except (KeyError, ValueError, TypeError) as exc:

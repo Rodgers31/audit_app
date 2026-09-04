@@ -49,12 +49,19 @@ from .wb_ids import fetch_external_debt_from_wb_ids
 logger = logging.getLogger("seeding.national_debt.fetcher")
 
 
-# Domestic bond rows in the loans payload. Infrastructure and green bonds are
-# Treasury bonds in CBK's own classification — they sit inside the Table 4.1.4
-# "Treasury Bonds" line, which is why carrying them as a separate KES 300B row
-# double-counted them (credibility audit F4). They belong in this denominator.
-# Eurobonds are external commercial debt and must not.
-_DOMESTIC_BOND_MARKERS = ("treasury bond", "domestic bond", "infrastructure", "green bond")
+# Domestic bond rows in the loans payload.
+#
+# Infrastructure and green bonds are Treasury bonds in CBK's own
+# classification: they sit INSIDE the Table 4.1.4 "Treasury Bonds" line, and
+# the fixture's own note on that row says so ("Includes infrastructure bonds",
+# national_debt.json). The payload nonetheless carries a separate KES 300B
+# "Domestic Infrastructure & Green Bonds" row, so matching it here added those
+# bonds to the denominator a second time — inflating the published bond stock
+# by 300B and able to flip the coverage gate's verdict.
+#
+# Match the inclusive Treasury-bonds aggregate only. Eurobonds are external
+# commercial debt and must not appear here either.
+_DOMESTIC_BOND_MARKERS = ("treasury bond", "domestic bond")
 _NOT_A_DOMESTIC_BOND = ("eurobond", "external", "syndicated", "commercial bank")
 
 

@@ -132,6 +132,17 @@ def _assert_table_complete(page_html: str, url: str) -> None:
             "of rows. Parsing it would publish a partial register that looks "
             "like a complete one."
         )
+    # Require the invariant to be stated, don't just reject its negation.
+    # Rejecting only an explicit `true` fails OPEN: if CBK renames the setting,
+    # drops it, or switches plugin, an unknown paging configuration parses as
+    # though the page embedded every row — which is the exact silent-partial
+    # failure this guard exists to prevent.
+    if not re.search(r'"serverSide"\s*:\s*false', page_html):
+        raise CbkTableError(
+            f"{url} does not declare \"serverSide\": false. The guard needs the "
+            "page to state that it embeds all rows; an unknown paging "
+            "configuration is quarantined rather than assumed complete."
+        )
 
 
 def _iter_tables(page_html: str):
