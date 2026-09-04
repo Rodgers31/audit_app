@@ -94,6 +94,7 @@ export const MESSAGES = {
 
   // Hero summary strip
   'home.hero.total_debt_as_of': { en: 'Total Debt as of', sw: 'Jumla ya Deni kufikia', plain: 'Total money owed as of' },
+  'home.hero.total_debt': { en: 'Total public debt', sw: 'Jumla ya deni la umma', plain: 'Total money the government owes' },
   'home.hero.risk_level': { en: 'Risk Level', sw: 'Kiwango cha Hatari', plain: 'How risky' },
   'home.hero.risk_high': { en: 'High Risk', sw: 'Hatari Kubwa', plain: 'High Risk' },
   'home.hero.risk_moderate': { en: 'Moderate Risk', sw: 'Hatari ya Wastani', plain: 'Medium Risk' },
@@ -127,11 +128,15 @@ export const MESSAGES = {
   'home.govcard.seg_development': { en: 'Development', sw: 'Maendeleo', plain: 'Projects' },
   'home.govcard.seg_counties': { en: 'Counties', sw: 'Kaunti', plain: 'Counties' },
   'home.govcard.seg_other': { en: 'Other', sw: 'Nyingine', plain: 'Other' },
-  'home.govcard.ceiling_breached': { en: 'Above the 55%-of-GDP anchor', sw: 'Juu ya nanga ya 55% ya Pato la Taifa', plain: 'Above the 55% safe limit' },
+  'home.govcard.ceiling_breached': { en: 'Above the 55%-of-GDP anchor on a nominal basis', sw: 'Juu ya nanga ya 55% ya Pato la Taifa kwa msingi wa kawaida', plain: 'Above the 55% safe limit, measured the simple way' },
+  // The anchor is set in PRESENT-VALUE terms; the ratio charted against it is
+  // nominal. Present value is lower than nominal for a portfolio with
+  // concessional external debt, so a nominal reading overstates the breach.
+  // /debt already carried this caveat; the homepage did not (audit F3).
   'home.govcard.anchor_caption': {
-    en: 'PFM Act 2023 anchor: 55% of GDP (present value). Former KES 10T ceiling repealed.',
-    sw: 'Nanga ya Sheria ya PFM 2023: 55% ya Pato la Taifa (thamani ya sasa). Kikomo cha awali cha KES trilioni 10 kilifutwa.',
-    plain: 'The safe limit is now 55% of the economy (set in 2023). The old KES 10 trillion limit was scrapped.',
+    en: 'PFM Act 2023 anchor: 55% of GDP measured in PRESENT-VALUE terms. The ratio shown is nominal, so it is not a like-for-like comparison. Former KES 10T ceiling repealed.',
+    sw: 'Nanga ya Sheria ya PFM 2023: 55% ya Pato la Taifa kwa THAMANI YA SASA. Uwiano ulioonyeshwa ni wa kawaida (nominal), hivyo si ulinganisho wa moja kwa moja. Kikomo cha awali cha KES trilioni 10 kilifutwa.',
+    plain: 'The safe limit is 55% of the economy, but it is measured a different way from the number shown here, so the two do not compare exactly. The old KES 10 trillion limit was scrapped.',
   },
   'home.govcard.stat_budget': { en: 'Budget', sw: 'Bajeti', plain: 'Budget' },
   'home.govcard.stat_revenue': { en: 'Revenue', sw: 'Mapato', plain: 'Money In' },
@@ -848,7 +853,16 @@ export const MESSAGES = {
   'county.overview.utilized_suffix': { en: 'utilized', sw: 'imetumika', plain: 'spent' },
   'county.overview.spent_of': { en: 'spent of', sw: 'imetumika kati ya', plain: 'spent of' },
   'county.overview.allocated_suffix': { en: 'allocated', sw: 'iliyotengwa', plain: 'planned' },
-  'county.overview.source_cob': { en: 'Source: Controller of Budget', sw: 'Chanzo: Mkurugenzi wa Bajeti', plain: 'Source: Controller of Budget' },
+  // This label sat ~200px below the page's own disclaimer saying these figures
+  // are "Modelled estimate — NOT official Controller of Budget figures", and
+  // the same contradiction is baked into the API's data_sources.budget. Until
+  // county budget lines are extracted from CoB CBIRR tables, name the method,
+  // not a publisher who did not publish this (credibility audit F7).
+  'county.overview.source_cob': {
+    en: 'Modelled from the CRA equitable-share formula',
+    sw: 'Imekadiriwa kwa fomula ya mgao sawa ya CRA',
+    plain: 'Worked out using the CRA sharing formula, not read from a report',
+  },
 
   // Debt position card
   'county.overview.debt_position': { en: 'Debt Position', sw: 'Hali ya Deni', plain: 'What the County Owes' },

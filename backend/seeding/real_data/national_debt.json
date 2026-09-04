@@ -1,13 +1,13 @@
 {
   "metadata": {
-    "source": "Central Bank of Kenya Public Debt Statistics & National Treasury",
+    "source": "Central Bank of Kenya public debt statistics (mixed vintage — see notes)",
     "description": "Kenya national government debt breakdown by lender category, sourced from CBK quarterly public debt bulletins",
     "units": "kes",
     "last_updated": "2025-04-30",
-    "notes": "CBK Public Debt Report April 2025. Total public debt KES 11.49 trillion. External 5.33T (46.4%), Domestic 6.16T (53.6%). Eurobond data from CBK external debt schedule. Treasury bond/bill split from CBK domestic debt register."
+    "notes": "MIXED VINTAGE — say so wherever this is cited. The domestic instrument rows (Treasury Bonds, Treasury Bills, CBK Overdraft, Advances from Commercial Banks) were re-sourced from the CBK Statistical Bulletin of December 2025, Tables 4.1.3 and 4.1.4, by the 2026-08-29 correction. The external rows (multilateral, bilateral, commercial) still carry the April 2025 baseline and have NOT been re-sourced. The rows are aggregate categories, not individual instruments, so this register is coarser than Kenya's actual portfolio. Its sum is not a figure any publisher states: CBK's own aggregate for December 2025 is KES 12.299T against this register's ~13.55T, and the two are unreconciled. Do not label this register with a single bulletin issue date."
   },
-  "source_url": "https://www.centralbank.go.ke/public-debt/",
-  "source_title": "CBK Public Debt Statistical Bulletin — April 2025",
+  "source_url": "https://www.centralbank.go.ke/uploads/statistical_bulletin/107371226_Statistical%20Bulletin%20-%20December%202025.pdf",
+  "source_title": "Instrument register — CBK public debt statistics (domestic instruments: Statistical Bulletin, December 2025, Tables 4.1.3/4.1.4; external rows: April 2025 baseline, not yet re-sourced)",
   "loans": [
     {
       "entity_name": "National Government",

@@ -72,6 +72,12 @@ const TYPE_COLORS: Record<string, string> = {
   'Internal Controls': '#14b8a6',
   'Pending Bills': '#f97316',
   'Human Resource': '#6366f1',
+  // The three OAG report sections the backend now folds headings onto.
+  // Without these every bar fell through to the same grey.
+  'Report on the Financial Statements': '#3b82f6',
+  'Report on Lawfulness and Effectiveness in the Use of Public Resources': '#f59e0b',
+  'Report on Effectiveness of Internal Controls, Risk Management and Governance':
+    '#14b8a6',
 };
 
 const OPINION_COLORS: Record<string, string> = {
@@ -416,7 +422,7 @@ export default function AuditFindingsPage() {
               <table className='w-full text-sm'>
                 <thead>
                   <tr className='border-b border-gov-dark/10 text-left'>
-                    <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>County</th>
+                    <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>Entity audited</th>
                     <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>Finding Type</th>
                     <th className='py-2 font-semibold text-gov-dark/70 dark:text-white/70'>Years</th>
                   </tr>
@@ -547,7 +553,7 @@ export default function AuditFindingsPage() {
               <table className='w-full text-sm'>
                 <thead>
                   <tr className='border-b border-gov-dark/10 text-left'>
-                    <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>County</th>
+                    <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>Entity audited</th>
                     <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>Year</th>
                     <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>Type</th>
                     <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70 text-right'>Amount</th>

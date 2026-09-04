@@ -15,7 +15,6 @@ import WatchButton from '@/components/WatchButton';
 import { useLang } from '@/lib/i18n/LangProvider';
 import type { TranslationKey } from '@/lib/i18n/messages';
 import { useCountyAccountability, useCountyComprehensive } from '@/lib/react-query/useCounties';
-import { getLatestReportedFiscalYear } from '@/lib/utils';
 import { CountyComprehensive } from '@/types';
 import { motion } from 'framer-motion';
 import {
@@ -468,7 +467,16 @@ export default function CountyDetailClient() {
   const countyId = params.id as string;
   // Respect ?fy=... from the listing so the Health badge matches the column
   // the user clicked from. Fall back to the last reported FY.
-  const fiscalYear = searchParams.get('fy') || getLatestReportedFiscalYear();
+  // Only an EXPLICIT ?fy= pins the period. Without one we send nothing and
+  // let the backend choose, which it does from the data
+  // (_latest_county_actuals_period_ids: newest period carrying real CoB BIRR
+  // classification rows). This page used to default to
+  // getLatestReportedFiscalYear() — a label computed from `new Date()` with no
+  // reference to what exists — which overrode that choice and landed on the
+  // equitable-share projection period. That is why /counties said Mombasa's
+  // budget was KES 14.63B and this page said KES 9.42B, and why Nairobi's
+  // pending bills differed 23-fold between the two (credibility audit F7).
+  const fiscalYear = searchParams.get('fy') || undefined;
   const { data, isLoading, error } = useCountyComprehensive(countyId, fiscalYear);
   // Prefetch accountability so the hero can show the grade immediately
   const { data: acctData } = useCountyAccountability(countyId);

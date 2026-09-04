@@ -32,6 +32,36 @@ interface ChartEntry {
   domestic: number;
   total: number;
   gdpRatio: number;
+  /** True when this year's figures are round-number estimates rather than a
+   *  reading off a published table. See `isRoundNumberEstimate`. */
+  modelled: boolean;
+}
+
+/**
+ * Is this year's debt row a round-number estimate rather than a published
+ * reading?
+ *
+ * The 2013–2021 rows in `debt_timeline` are round hundreds of billions — 3,100
+ * / 3,600 / 4,300 / 5,000 / 5,400 / 5,800 / 6,500 / 7,200 / 8,200 — across
+ * external, domestic and total simultaneously. No CBK table produces that.
+ * Only 2022 onward carry real precision, from the CBK Statistical Bulletin
+ * figures applied by the 2026-08-29 correction. The homepage was deriving
+ * "4.0× since 2013" and "From 58.4% in 2013" off the invented 2013 base
+ * (credibility audit F13).
+ *
+ * Detected from the data rather than hardcoding a cutoff year, so a row stops
+ * being flagged the moment it is re-sourced with real digits — and so nobody
+ * has to remember to move a constant. Requiring ALL THREE components to land
+ * exactly on 100B makes a false positive on genuine data vanishingly unlikely.
+ */
+export function isRoundNumberEstimate(e: {
+  external: number;
+  domestic: number;
+  total: number;
+}): boolean {
+  const STEP_B = 100; // values here are billions
+  const exact = (v: number) => v > 0 && Math.abs(v % STEP_B) < 1e-6;
+  return exact(e.external) && exact(e.domestic) && exact(e.total);
 }
 
 /**
@@ -57,13 +87,16 @@ function toChartData(timeline: DebtTimelineEntry[]): ChartEntry[] {
     const raw = toRawKES(v, unit);
     return raw == null ? 0 : raw / 1e9;
   };
-  return timeline.map((e) => ({
-    year: String(e.year),
-    external: toBillions(e.external, e.unit),
-    domestic: toBillions(e.domestic, e.unit),
-    total: toBillions(e.total, e.unit),
-    gdpRatio: e.gdp_ratio,
-  }));
+  return timeline.map((e) => {
+    const row = {
+      year: String(e.year),
+      external: toBillions(e.external, e.unit),
+      domestic: toBillions(e.domestic, e.unit),
+      total: toBillions(e.total, e.unit),
+      gdpRatio: e.gdp_ratio,
+    };
+    return { ...row, modelled: isRoundNumberEstimate(row) };
+  });
 }
 
 // 2-decimal precision for trillion-scale values. Matches both
@@ -199,8 +232,17 @@ export default function NationalDebtCard() {
     : null;
   const domesticPct = externalPct != null ? +(100 - externalPct).toFixed(1) : null;
 
+  // Both derived claims must start from the earliest SOURCED year, not the
+  // earliest year on the chart. Anchoring "4.0× since 2013" and "From 58.4% in
+  // 2013" to a round-number estimate published a growth story built on an
+  // invented base — and it understated the real rise (F13).
+  const firstSourced = debtTimeline.find((e) => !e.modelled) ?? null;
+  const modelledYears = debtTimeline.filter((e) => e.modelled);
   const growthMultiple =
-    firstYear && lastYear ? (lastYear.total / firstYear.total).toFixed(1) : '—';
+    firstSourced && lastYear && firstSourced.total > 0
+      ? (lastYear.total / firstSourced.total).toFixed(1)
+      : '—';
+  const growthBaseYear = firstSourced?.year ?? '—';
   const yearRange = firstYear && lastYear ? `${firstYear.year}–${lastYear.year}` : '—';
   const hasTimeline = debtTimeline.length > 0;
 
@@ -221,6 +263,17 @@ export default function NationalDebtCard() {
             <p className='text-xs text-neutral-muted'>
               {t('home.debt.source_note').replace('{range}', yearRange)}
             </p>
+            {/* Say which years on this chart are not readings. Derived from the
+                data, so the sentence shrinks and then disappears as years get
+                re-sourced. */}
+            {modelledYears.length > 0 && (
+              <p className='mt-1 text-[11px] leading-snug text-neutral-muted/80'>
+                {modelledYears[0].year}–{modelledYears[modelledYears.length - 1].year}{' '}
+                are round-number estimates, not figures read off a published
+                table. {firstSourced?.year ?? 'Later years'} onward come from the
+                CBK Statistical Bulletin.
+              </p>
+            )}
           </div>
           {isLoading || isTimelineLoading ? (
             <Loader2 className='w-4 h-4 animate-spin text-neutral-muted/40 mt-1' />
@@ -258,7 +311,7 @@ export default function NationalDebtCard() {
             value={totalDebt != null ? fmtKES(totalDebt) : '—'}
             sub={t('home.debt.growth_sub')
               .replace('{x}', String(growthMultiple))
-              .replace('{year}', String(firstYear?.year || '—'))}
+              .replace('{year}', String(growthBaseYear))}
             accent='copper'
           />
           <StatCard
@@ -271,8 +324,8 @@ export default function NationalDebtCard() {
             }
             value={`${gdpRatio}%`}
             sub={t('home.debt.from_year_sub')
-              .replace('{pct}', String(firstYear?.gdpRatio ?? '—'))
-              .replace('{year}', String(firstYear?.year || '—'))}
+              .replace('{pct}', String(firstSourced?.gdpRatio ?? '—'))
+              .replace('{year}', String(growthBaseYear))}
             accent='gold'
           />
           <StatCard

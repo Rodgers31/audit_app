@@ -413,7 +413,36 @@ def _entity_period_budget_query(db, entity_id: int, period_id: Optional[int] = N
         # Prefer the latest period that actually has spending (an executed FY)
         from sqlalchemy import func as _sqlfunc
 
-        latest_executed = (
+        # FIRST preference: a period carrying CoB BIRR classification rows
+        # (Total / Development / Recurrent). Those exist only where the live
+        # Controller of Budget parse landed — i.e. real published
+        # implementation data.
+        #
+        # This selector previously started at "any period with actual_spent > 0",
+        # which cannot tell real execution from a modelled one: the
+        # equitable-share PROJECTION periods were seeded with estimated spend
+        # too. So this endpoint resolved to the FY2025/26 projection while
+        # GET /counties — which already applies the preference below via
+        # _latest_county_actuals_period_ids — resolved to the newest period with
+        # real CoB rows. Same county, same site, two budgets: Mombasa
+        # KES 9.42B here against KES 14.63B there, utilisation 32.0% against
+        # 49.8%, and Nairobi's pending bills differing 23-fold
+        # (credibility audit F7). The two now use the same preference order.
+        latest_cob = (
+            db.query(DBBudgetLine.period_id)
+            .join(DBFiscalPeriod, DBBudgetLine.period_id == DBFiscalPeriod.id)
+            .filter(
+                DBBudgetLine.entity_id == entity_id,
+                _sqlfunc.lower(DBBudgetLine.category).in_(
+                    list(_CLASSIFICATION_CATEGORIES)
+                ),
+            )
+            .order_by(DBFiscalPeriod.start_date.desc())
+            .limit(1)
+            .scalar()
+        )
+
+        latest_executed = latest_cob or (
             db.query(DBBudgetLine.period_id)
             .join(DBFiscalPeriod, DBBudgetLine.period_id == DBFiscalPeriod.id)
             .filter(
@@ -2159,6 +2188,54 @@ def _audit_is_display_grade(audit) -> bool:
 _CLASSIFICATION_CATEGORIES = {"total", "development", "recurrent"}
 
 
+def _split_classification_and_sector_lines(budget_lines):
+    """Split CoB BIRR classification rows from additive sector rows.
+
+    The Controller of Budget's implementation reports carry whole-budget
+    ECONOMIC classification rows — Total / Development / Recurrent — alongside
+    (modelled) per-sector rows. They describe the same money two ways, so
+    summing both double- or triple-counts a county's budget.
+
+    ``GET /counties`` already applied this split; ``/counties/{id}/comprehensive``
+    summed every row naively. That did not show up while the two endpoints
+    resolved to DIFFERENT fiscal periods — the detail page happened to land on
+    a projection period holding only sector rows. Aligning the period selection
+    (credibility audit F7) would have exposed it as a tripled county budget, so
+    both now go through one rule and cannot drift apart again.
+
+    Returns ``(total_allocated, total_spent, sector_lines, class_by_cat)``.
+    """
+    sector_lines = []
+    class_by_cat: Dict[str, Dict[str, float]] = {}
+    for bl in budget_lines:
+        cat_key = (bl.category or "").strip().lower()
+        if cat_key in _CLASSIFICATION_CATEGORIES:
+            # Sub-rows (e.g. Personnel Emoluments under Recurrent) are not the
+            # aggregate — they would double-count inside the classification.
+            if not bl.subcategory:
+                agg = class_by_cat.setdefault(cat_key, {"allocated": 0.0, "spent": 0.0})
+                agg["allocated"] += float(bl.allocated_amount or 0)
+                agg["spent"] += float(bl.actual_spent or 0)
+            continue
+        if (bl.category or "").strip() == "Total Budget":
+            continue
+        sector_lines.append(bl)
+
+    # Prefer the CoB "Total" aggregate (real BIRR data). Then the sum of the
+    # economic classification. Only then the modelled sector split.
+    if class_by_cat.get("total", {}).get("allocated"):
+        total_allocated = class_by_cat["total"]["allocated"]
+        total_spent = class_by_cat["total"]["spent"]
+    elif class_by_cat:
+        total_allocated = sum(v["allocated"] for v in class_by_cat.values())
+        total_spent = sum(v["spent"] for v in class_by_cat.values())
+    else:
+        total_allocated = sum(float(b.allocated_amount or 0) for b in sector_lines)
+        total_spent = sum(float(b.actual_spent or 0) for b in sector_lines)
+
+    return total_allocated, total_spent, sector_lines, class_by_cat
+
+
 def _latest_county_actuals_period_ids(db) -> Optional[List[int]]:
     """Period ids for the newest fiscal period with REAL county execution
     data. Preference order:
@@ -2374,32 +2451,15 @@ async def get_counties(fiscal_year: Optional[str] = None):
                 # classification, REAL parsed data) vs additive sector
                 # lines (currently modelled splits). Summing both would
                 # triple-count the budget.
-                sector_lines = []
-                class_by_cat: dict = {}
-                for bl in budget_lines:
-                    cat_key = (bl.category or "").strip().lower()
-                    if cat_key in _CLASSIFICATION_CATEGORIES:
-                        # Sub-rows (e.g. Personnel Emoluments under
-                        # Recurrent) aren't the aggregate — skip those.
-                        if not bl.subcategory:
-                            agg = class_by_cat.setdefault(
-                                cat_key, {"allocated": 0.0, "spent": 0.0}
-                            )
-                            agg["allocated"] += float(bl.allocated_amount or 0)
-                            agg["spent"] += float(bl.actual_spent or 0)
-                        continue
-                    sector_lines.append(bl)
-
-                # Headline totals: prefer the CoB "Total" aggregate (real
-                # BIRR data) over summing the modelled sector split.
-                if class_by_cat.get("total", {}).get("allocated"):
-                    total_allocated = class_by_cat["total"]["allocated"]
-                    total_spent = class_by_cat["total"]["spent"]
-                else:
-                    total_allocated = sum(
-                        float(b.allocated_amount or 0) for b in sector_lines
-                    )
-                    total_spent = sum(float(b.actual_spent or 0) for b in sector_lines)
+                # One rule, shared with /counties/{id}/comprehensive, so the
+                # two endpoints cannot publish different budgets for the same
+                # county again (credibility audit F7).
+                (
+                    total_allocated,
+                    total_spent,
+                    sector_lines,
+                    class_by_cat,
+                ) = _split_classification_and_sector_lines(budget_lines)
 
                 # Sector breakdown from sector lines only
                 sector_breakdown = {}
@@ -2952,8 +3012,12 @@ async def get_county_comprehensive(
             budget_lines = _entity_period_budget_query(
                 db, entity.id, period_id=requested_period_id
             ).all()
-            total_allocated = sum(float(b.allocated_amount or 0) for b in budget_lines)
-            total_spent = sum(float(b.actual_spent or 0) for b in budget_lines)
+            (
+                total_allocated,
+                total_spent,
+                _sector_lines,
+                _class_by_cat,
+            ) = _split_classification_and_sector_lines(budget_lines)
 
             # Resolve the fiscal year label so the frontend can display
             # "Budget FY2024/25" (e.g. if we selected the latest executed FY
@@ -2970,10 +3034,8 @@ async def get_county_comprehensive(
 
             # Sector breakdown from real budget line categories
             sector_breakdown = {}
-            for bl in budget_lines:
+            for bl in _sector_lines:
                 cat = (bl.category or "Other").strip()
-                if cat == "Total Budget":
-                    continue
                 amt = float(bl.allocated_amount or 0)
                 spent = float(bl.actual_spent or 0)
                 sector_breakdown.setdefault(cat, {"allocated": 0.0, "spent": 0.0})
@@ -3510,11 +3572,24 @@ async def get_county_comprehensive(
                     ),
                 },
                 # Data provenance
+                # Provenance labels, not aspirations. Three of these named a
+                # publisher who did not publish the figure underneath: county
+                # budget lines are modelled from the CRA equitable-share
+                # formula (the page's own disclaimer says so, while this field
+                # said CoB); county debt rows carry no source document at all;
+                # and the stalled-projects fixture was never read from an OAG
+                # report — that domain has been withdrawn from the UI
+                # entirely. Credibility audit F7/F15/F6.
                 "data_sources": {
-                    "budget": "Controller of Budget - County Budget Implementation Review Reports",
+                    "budget": (
+                        "Modelled from the CRA equitable-share formula — NOT "
+                        "read from Controller of Budget CBIRR tables"
+                    ),
                     "audit": "Office of the Auditor General - County Government Audit Reports",
-                    "debt": "National Treasury - County Debt Register",
-                    "stalled_projects": "OAG Audit Reports & County Assembly Committees",
+                    "debt": (
+                        "Modelled — county debt and pending-bill rows are not "
+                        "traced to a county or National Treasury publication"
+                    ),
                     "population": "Kenya National Bureau of Statistics (KNBS) Census 2019",
                 },
             }

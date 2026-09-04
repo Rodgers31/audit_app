@@ -111,14 +111,24 @@ export default function DebtExplainerModal({ context, className = '' }: Props) {
                   <p className='text-xs font-semibold uppercase tracking-wider text-gov-copper/60 mb-1'>
                     🏛️ Loans card — "Outstanding Debt"
                   </p>
+                  {/* The vintage was hardcoded "April 2025" while the domestic
+                      instruments carry the December 2025 CBK figures applied by
+                      the 2026-08-29 correction. A static date on a figure that
+                      moves is worse than no date (credibility audit F19), so
+                      the label now describes what the number IS rather than
+                      naming an issue it may not come from. */}
                   <p className='font-semibold text-gov-dark dark:text-white mb-1'>
-                    Source: CBK Public Debt Statistical Bulletin (April 2025)
+                    Sum of our instrument register — not a published total
                   </p>
                   <p>
-                    This figure is the <strong>sum of individual, auditable loan balances</strong>{' '}
-                    reported by the Central Bank of Kenya — each lender, principal, outstanding
-                    amount, and interest rate. It doesn't include off-balance-sheet items like
-                    pending bills or county-guaranteed obligations.
+                    This figure adds up the <strong>individual loan balances we hold</strong> —
+                    each lender, principal, outstanding amount and interest rate — drawn from
+                    the Central Bank&apos;s public debt statistics. It is not a figure CBK
+                    publishes: CBK&apos;s own aggregate for the same period is about 9% lower,
+                    and the two have not been reconciled. It also excludes off-balance-sheet
+                    items like pending bills and county-guaranteed obligations. The rows are
+                    aggregate categories, not individual instruments, so the register is
+                    coarser than Kenya&apos;s real portfolio of several hundred securities.
                   </p>
                 </div>
 

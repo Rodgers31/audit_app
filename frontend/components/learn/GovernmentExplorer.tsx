@@ -302,8 +302,24 @@ export default function GovernmentExplorer() {
         <div className='flex items-center justify-center gap-3 mt-5'>
           <Users size={16} className='text-gov-sage' />
           <span className='text-xs text-neutral-muted text-center'>
-            The Commission on Revenue Allocation (CRA) ensures fair sharing of revenue between the
-            two levels. Counties receive at least <strong>15 %</strong> of national revenue.
+            {/* Two errors corrected here (credibility audit F20).
+                (a) Article 216 makes the CRA a RECOMMENDING body — Parliament
+                decides, through the Division of Revenue Act and the County
+                Allocation of Revenue Act. Saying CRA "ensures" misstates a
+                constitutional body's powers.
+                (b) Article 203(2)-(3): the floor is 15% of revenue raised
+                nationally, calculated on the MOST RECENTLY AUDITED accounts
+                approved by the National Assembly — typically two to three years
+                behind. Omitting that is why the equitable share (~KES 400B)
+                looks like a breach against current revenue (~KES 2.9T): it is
+                measured against a much older, smaller base. */}
+            The Commission on Revenue Allocation (CRA) <strong>recommends</strong> how revenue
+            should be shared between the two levels; Parliament decides, through the Division of
+            Revenue Act and the County Allocation of Revenue Act each year. The Constitution sets
+            a floor: counties receive at least <strong>15 %</strong> of revenue raised nationally,
+            calculated on the <strong>most recently audited</strong> national accounts approved by
+            the National Assembly — usually two to three years old, so the share looks small
+            against the current year&apos;s revenue.
           </span>
         </div>
       </div>

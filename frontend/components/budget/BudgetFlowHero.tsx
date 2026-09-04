@@ -151,13 +151,17 @@ export default function BudgetFlowHero({ data }: Props) {
       },
       {
         key: 'otherFin',
-        label: 'Other financing',
+        label: 'Financing residual',
         valueB: otherFinancing ?? 0,
         share: pct(otherFinancing ?? 0, budget),
         gradStart: '#B38628',
         gradEnd: '#7D591A',
         accent: '#A6781F',
-        note: 'Grants, drawdowns, carryover balances, one-off receipts.',
+        note:
+          'A COMPUTED RESIDUAL, not a sourced line: the approved budget less ' +
+          'tax, non-tax and new borrowing. It is whatever is needed to make ' +
+          'the two sides balance, and it absorbs any basis mismatch between ' +
+          'the budget total (CoB gross) and the revenue series (BPS).',
       },
     ],
     [tax, nonTax, borrowing, otherFinancing, budget]
@@ -208,18 +212,27 @@ export default function BudgetFlowHero({ data }: Props) {
         gradEnd: '#295B3E',
         accent: '#3E7655',
         note:
-          "Equitable share transferred to 47 county governments under the Constitution.",
+          'Equitable share transferred to 47 county governments under the ' +
+          'Constitution. NOTE: the budget total this is drawn against is the ' +
+          "Controller of Budget's National-Government gross figure, which " +
+          'EXCLUDES the county equitable share — CoB reports it separately. ' +
+          'So this bar shows the county share beside, not inside, that ' +
+          'envelope, and the shares below do not sum to a single total.',
       },
       {
         key: 'otherSpend',
-        label: 'Other (CFS etc.)',
+        label: 'Unallocated residual',
         valueB: otherSpend ?? 0,
         share: pct(otherSpend ?? 0, budget),
         gradStart: '#B38628',
         gradEnd: '#7D591A',
         accent: '#A6781F',
         note:
-          'Consolidated Fund Services: constitutional salaries, pensions, guaranteed payments.',
+          'A COMPUTED RESIDUAL, not a sourced line: the approved budget less ' +
+          'the named buckets. It was previously labelled "Other (CFS etc.)", ' +
+          'which read as the Consolidated Fund Services total — it is not. ' +
+          'CFS for FY2025/26 is about KES 2.14T, several times this figure, ' +
+          'and most of CFS is already counted under Debt service above.',
       },
     ],
     [debtService, recurrentNonDebt, dev, counties, otherSpend, budget]
@@ -357,6 +370,14 @@ export default function BudgetFlowHero({ data }: Props) {
         <div className='flex items-start gap-2 text-[11px] text-neutral-muted/90 leading-relaxed border-t border-neutral-border/40 pt-3'>
           <Info size={13} className='mt-0.5 flex-shrink-0 text-gov-forest/70 dark:text-emerald-100/70' />
           <span>
+            <strong className='text-gov-dark dark:text-white'>Basis:</strong> the
+            budget total is the Controller of Budget&apos;s National-Government
+            <em> original gross</em> figure, which excludes the county equitable
+            share. The revenue, borrowing and spending components come from the
+            Budget Policy Statement and the Annual Public Debt Management Report,
+            which are measured differently — so the two segments marked{' '}
+            <em>residual</em> are computed balancing items, not published lines,
+            and they absorb that mismatch.{' '}
             Debt-service figure follows the National Treasury <em>Annual Public Debt
             Management Report</em> definition — interest payments{' '}
             <strong>plus</strong> principal redemptions, domestic + external — as a share

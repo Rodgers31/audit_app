@@ -23,6 +23,7 @@ from sqlalchemy.orm import Session
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from cache.redis_cache import cached
+from services.oag_report_sections import canonical_section
 from services.publication_gate import (
     count_withheld_audits,
     publishable_audit_criterion,
@@ -180,7 +181,14 @@ async def get_audit_summary(db: Session = Depends(get_db)):
             .group_by(Audit.query_type)
             .all()
         )
-        findings_by_type = {t: c for t, c in type_rows}
+        # Fold the twelve stored heading variants onto the three OAG report
+        # sections they actually belong to. The facet drove both a bar chart
+        # and a filter dropdown, so a reader saw twelve near-identical options
+        # ("...and Governance," vs "...and Governance.") plus a raw
+        # `financial_audit` enum (credibility audit F39).
+        from services.oag_report_sections import group_counts
+
+        findings_by_type = group_counts({t: c for t, c in type_rows})
 
         # Findings by opinion
         # INDEX hint: CREATE INDEX ix_audits_opinion ON audits(audit_opinion)
@@ -248,6 +256,32 @@ async def get_audit_summary(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Database query failed")
 
 
+def _query_type_filter(db, query_type: str):
+    """SQL condition matching every stored heading in a canonical section.
+
+    The facet now offers canonical section names, so the value coming back on
+    the query string is a section, not one of the raw headings in the column.
+    Expand it to the set of raw values that belong to that section. An exact
+    raw heading still matches itself, so any link made before this change keeps
+    working.
+    """
+    from services.oag_report_sections import raw_variants_for
+
+    known = [
+        row[0]
+        for row in db.query(Audit.query_type)
+        .filter(Audit.query_type.isnot(None))
+        .distinct()
+        .all()
+    ]
+    variants = raw_variants_for(query_type, known)
+    if not variants:
+        # Unknown value: match it literally so the filter returns nothing
+        # rather than silently returning everything.
+        return Audit.query_type == query_type
+    return Audit.query_type.in_(variants)
+
+
 @router.get("/trends", response_model=AuditTrendsResponse)
 @cached(ttl=300, key_prefix="audit_trends")
 async def get_audit_trends(
@@ -263,7 +297,7 @@ async def get_audit_trends(
         if county_id is not None:
             filters.append(Audit.entity_id == county_id)
         if query_type is not None:
-            filters.append(Audit.query_type == query_type)
+            filters.append(_query_type_filter(db, query_type))
 
         # Findings count per year — single SQL GROUP BY
         # INDEX hint: CREATE INDEX ix_audits_year ON audits(audit_year)
@@ -395,7 +429,7 @@ async def get_recurring_findings(db: Session = Depends(get_db)):
 
             result_map[(entity_id, qt)] = {
                 "county_name": entity_name_map.get(entity_id, "Unknown"),
-                "query_type": qt,
+                "query_type": canonical_section(qt) or qt,
                 "years": years_set,
                 "amount": total_amt,
                 "ids": ids_list,
@@ -470,7 +504,7 @@ async def get_audit_findings(
         if year is not None:
             query = query.filter(Audit.audit_year == year)
         if query_type is not None:
-            query = query.filter(Audit.query_type == query_type)
+            query = query.filter(_query_type_filter(db, query_type))
         if severity is not None:
             query = query.filter(Audit.severity == severity)
         if audit_opinion is not None:
@@ -504,7 +538,10 @@ async def get_audit_findings(
                     finding_text=a.finding_text,
                     severity=a.severity.value if hasattr(a.severity, "value") else str(a.severity),
                     recommended_action=a.recommended_action,
-                    query_type=a.query_type,
+                    # The row's own label must match the facet the reader
+                    # filtered on, otherwise selecting a section shows rows
+                    # apparently of a different type.
+                    query_type=canonical_section(a.query_type) or a.query_type,
                     amount=float(a.amount) if a.amount is not None else None,
                     status=a.status,
                     audit_opinion=a.audit_opinion,
