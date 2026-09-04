@@ -40,7 +40,8 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.security import HTTPBearer
 from pydantic import BaseModel
 from sqlalchemy import or_, text
-from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session, joinedload
 from starlette.responses import JSONResponse, Response
 
 # Initialize logger early (before Redis cache import).
@@ -332,6 +333,65 @@ def _latest_national_period(db) -> Optional[int]:
     return row[0] if row else None
 
 
+def _is_undefined_table(exc: Exception) -> bool:
+    """True only for "relation/table does not exist".
+
+    Postgres raises SQLSTATE 42P01 (psycopg2 exposes it as ``pgcode``); SQLite
+    raises ``OperationalError: no such table: ...``. Anything else — a dropped
+    connection, a timeout, a permission error — is a real failure and must not
+    be reported to the caller as "run the migration".
+    """
+    orig = getattr(exc, "orig", None)
+    if getattr(orig, "pgcode", None) == "42P01":
+        return True
+    text = str(orig or exc).lower()
+    return "no such table" in text or "does not exist" in text
+
+
+#: How many individual lenders each debt category returns before the rest are
+#: folded into an explicit remainder. Matches the treemap's own fold (NAMED).
+_CATEGORY_NAMED_LENDERS = 8
+
+
+def _category_items_with_remainder(data: dict) -> dict:
+    """The largest lenders in a category, plus an explicit remainder.
+
+    Returning an arbitrary five of them left the caller unable to tell a
+    complete list from a truncated one, so shares computed over `items` did not
+    sum to `total_outstanding`. The remainder makes the gap explicit and
+    quantified instead.
+    """
+    items = sorted(
+        data.get("items") or [],
+        key=lambda i: float(i.get("outstanding") or i.get("principal") or 0),
+        reverse=True,
+    )
+    named = items[: _CATEGORY_NAMED_LENDERS]
+    rest = items[_CATEGORY_NAMED_LENDERS :]
+    return {
+        "items": named,
+        "items_truncated": bool(rest),
+        "other_lender_count": len(rest),
+        "other_principal": sum(float(i.get("principal") or 0) for i in rest),
+        "other_outstanding": sum(float(i.get("outstanding") or 0) for i in rest),
+    }
+
+
+#: Response-cache TTL for endpoints whose data is refreshed by the nightly
+#: seed.
+#:
+#: These were 12-24 hours. The seeder writes the database in one process and
+#: the API reads it in another, so nothing invalidates the response cache when
+#: a seed lands: a nightly run that corrected every fiscal year stayed
+#: invisible for a further day. The site's own header says "updated nightly
+#: from official sources", and a TTL longer than the refresh cadence makes that
+#: false for most of the day.
+#:
+#: One hour still absorbs the traffic these queries are cached for, while
+#: bounding how long a corrected figure can remain hidden.
+NIGHTLY_REFRESH_TTL = 3600
+
+
 def _is_debt_loan(loan) -> bool:
     """True when a Loan row counts as DEBT for total-debt aggregations.
 
@@ -413,7 +473,49 @@ def _entity_period_budget_query(db, entity_id: int, period_id: Optional[int] = N
         # Prefer the latest period that actually has spending (an executed FY)
         from sqlalchemy import func as _sqlfunc
 
-        latest_executed = (
+        # FIRST preference: a period carrying CoB BIRR classification rows
+        # (Total / Development / Recurrent). Those exist only where the live
+        # Controller of Budget parse landed — i.e. real published
+        # implementation data.
+        #
+        # This selector previously started at "any period with actual_spent > 0",
+        # which cannot tell real execution from a modelled one: the
+        # equitable-share PROJECTION periods were seeded with estimated spend
+        # too. So this endpoint resolved to the FY2025/26 projection while
+        # GET /counties — which already applies the preference below via
+        # _latest_county_actuals_period_ids — resolved to the newest period with
+        # real CoB rows. Same county, same site, two budgets: Mombasa
+        # KES 9.42B here against KES 14.63B there, utilisation 32.0% against
+        # 49.8%, and Nairobi's pending bills differing 23-fold
+        # (credibility audit F7). The two now use the same preference order.
+        # Resolve the GLOBAL newest CoB period — the same one GET /counties
+        # pins every county to — not this entity's own newest.
+        #
+        # Picking per-entity reopened the same two-budgets defect through a
+        # different door: when a CoB report is only partially ingested, the list
+        # filters every county to the global period (so a county missing from
+        # that report shows no budget) while the detail page silently fell back
+        # to that county's older period and printed one. Same county, same site,
+        # two budgets again. If the newest report has no rows for this county,
+        # this endpoint now reports nothing for it too.
+        _global_cob = _latest_county_actuals_period_ids(db)
+        latest_cob = _global_cob[0] if _global_cob else None
+        if latest_cob is None:
+            latest_cob = (
+                db.query(DBBudgetLine.period_id)
+                .join(DBFiscalPeriod, DBBudgetLine.period_id == DBFiscalPeriod.id)
+                .filter(
+                    DBBudgetLine.entity_id == entity_id,
+                    _sqlfunc.lower(DBBudgetLine.category).in_(
+                        list(_CLASSIFICATION_CATEGORIES)
+                    ),
+                )
+                .order_by(DBFiscalPeriod.start_date.desc())
+                .limit(1)
+                .scalar()
+            )
+
+        latest_executed = latest_cob or (
             db.query(DBBudgetLine.period_id)
             .join(DBFiscalPeriod, DBBudgetLine.period_id == DBFiscalPeriod.id)
             .filter(
@@ -2159,6 +2261,54 @@ def _audit_is_display_grade(audit) -> bool:
 _CLASSIFICATION_CATEGORIES = {"total", "development", "recurrent"}
 
 
+def _split_classification_and_sector_lines(budget_lines):
+    """Split CoB BIRR classification rows from additive sector rows.
+
+    The Controller of Budget's implementation reports carry whole-budget
+    ECONOMIC classification rows — Total / Development / Recurrent — alongside
+    (modelled) per-sector rows. They describe the same money two ways, so
+    summing both double- or triple-counts a county's budget.
+
+    ``GET /counties`` already applied this split; ``/counties/{id}/comprehensive``
+    summed every row naively. That did not show up while the two endpoints
+    resolved to DIFFERENT fiscal periods — the detail page happened to land on
+    a projection period holding only sector rows. Aligning the period selection
+    (credibility audit F7) would have exposed it as a tripled county budget, so
+    both now go through one rule and cannot drift apart again.
+
+    Returns ``(total_allocated, total_spent, sector_lines, class_by_cat)``.
+    """
+    sector_lines = []
+    class_by_cat: Dict[str, Dict[str, float]] = {}
+    for bl in budget_lines:
+        cat_key = (bl.category or "").strip().lower()
+        if cat_key in _CLASSIFICATION_CATEGORIES:
+            # Sub-rows (e.g. Personnel Emoluments under Recurrent) are not the
+            # aggregate — they would double-count inside the classification.
+            if not bl.subcategory:
+                agg = class_by_cat.setdefault(cat_key, {"allocated": 0.0, "spent": 0.0})
+                agg["allocated"] += float(bl.allocated_amount or 0)
+                agg["spent"] += float(bl.actual_spent or 0)
+            continue
+        if (bl.category or "").strip() == "Total Budget":
+            continue
+        sector_lines.append(bl)
+
+    # Prefer the CoB "Total" aggregate (real BIRR data). Then the sum of the
+    # economic classification. Only then the modelled sector split.
+    if class_by_cat.get("total", {}).get("allocated"):
+        total_allocated = class_by_cat["total"]["allocated"]
+        total_spent = class_by_cat["total"]["spent"]
+    elif class_by_cat:
+        total_allocated = sum(v["allocated"] for v in class_by_cat.values())
+        total_spent = sum(v["spent"] for v in class_by_cat.values())
+    else:
+        total_allocated = sum(float(b.allocated_amount or 0) for b in sector_lines)
+        total_spent = sum(float(b.actual_spent or 0) for b in sector_lines)
+
+    return total_allocated, total_spent, sector_lines, class_by_cat
+
+
 def _latest_county_actuals_period_ids(db) -> Optional[List[int]]:
     """Period ids for the newest fiscal period with REAL county execution
     data. Preference order:
@@ -2374,32 +2524,15 @@ async def get_counties(fiscal_year: Optional[str] = None):
                 # classification, REAL parsed data) vs additive sector
                 # lines (currently modelled splits). Summing both would
                 # triple-count the budget.
-                sector_lines = []
-                class_by_cat: dict = {}
-                for bl in budget_lines:
-                    cat_key = (bl.category or "").strip().lower()
-                    if cat_key in _CLASSIFICATION_CATEGORIES:
-                        # Sub-rows (e.g. Personnel Emoluments under
-                        # Recurrent) aren't the aggregate — skip those.
-                        if not bl.subcategory:
-                            agg = class_by_cat.setdefault(
-                                cat_key, {"allocated": 0.0, "spent": 0.0}
-                            )
-                            agg["allocated"] += float(bl.allocated_amount or 0)
-                            agg["spent"] += float(bl.actual_spent or 0)
-                        continue
-                    sector_lines.append(bl)
-
-                # Headline totals: prefer the CoB "Total" aggregate (real
-                # BIRR data) over summing the modelled sector split.
-                if class_by_cat.get("total", {}).get("allocated"):
-                    total_allocated = class_by_cat["total"]["allocated"]
-                    total_spent = class_by_cat["total"]["spent"]
-                else:
-                    total_allocated = sum(
-                        float(b.allocated_amount or 0) for b in sector_lines
-                    )
-                    total_spent = sum(float(b.actual_spent or 0) for b in sector_lines)
+                # One rule, shared with /counties/{id}/comprehensive, so the
+                # two endpoints cannot publish different budgets for the same
+                # county again (credibility audit F7).
+                (
+                    total_allocated,
+                    total_spent,
+                    sector_lines,
+                    class_by_cat,
+                ) = _split_classification_and_sector_lines(budget_lines)
 
                 # Sector breakdown from sector lines only
                 sector_breakdown = {}
@@ -2952,8 +3085,32 @@ async def get_county_comprehensive(
             budget_lines = _entity_period_budget_query(
                 db, entity.id, period_id=requested_period_id
             ).all()
-            total_allocated = sum(float(b.allocated_amount or 0) for b in budget_lines)
-            total_spent = sum(float(b.actual_spent or 0) for b in budget_lines)
+            (
+                total_allocated,
+                total_spent,
+                _sector_lines,
+                _class_by_cat,
+            ) = _split_classification_and_sector_lines(budget_lines)
+
+
+            # Provenance for the headline budget: does it come from parsed CoB
+            # BIRR classification rows, or from the modelled sector/projection
+            # split? The frontend renders this string, so it must track the
+            # rows this response actually used.
+            _has_cob_rows = bool(
+                _class_by_cat.get("total", {}).get("allocated")
+                or _class_by_cat.get("development", {}).get("allocated")
+                or _class_by_cat.get("recurrent", {}).get("allocated")
+            )
+            _budget_provenance_label = (
+                "Controller of Budget — County Budget Implementation Review "
+                "Report (Total / Development / Recurrent aggregates). The "
+                "per-sector split below is modelled from the CRA "
+                "equitable-share formula, not read from the CBIRR."
+                if _has_cob_rows
+                else "Modelled from the CRA equitable-share formula — NOT "
+                "read from Controller of Budget CBIRR tables"
+            )
 
             # Resolve the fiscal year label so the frontend can display
             # "Budget FY2024/25" (e.g. if we selected the latest executed FY
@@ -2970,35 +3127,52 @@ async def get_county_comprehensive(
 
             # Sector breakdown from real budget line categories
             sector_breakdown = {}
-            for bl in budget_lines:
+            for bl in _sector_lines:
                 cat = (bl.category or "Other").strip()
-                if cat == "Total Budget":
-                    continue
                 amt = float(bl.allocated_amount or 0)
                 spent = float(bl.actual_spent or 0)
                 sector_breakdown.setdefault(cat, {"allocated": 0.0, "spent": 0.0})
                 sector_breakdown[cat]["allocated"] += amt
                 sector_breakdown[cat]["spent"] += spent
 
-            # Compute development vs recurrent split
-            development_total = 0.0
-            recurrent_total = 0.0
-            for bl in budget_lines:
-                cat_lower = (bl.category or "").lower()
-                amt = float(bl.allocated_amount or 0)
-                if any(
-                    kw in cat_lower
-                    for kw in [
-                        "development",
-                        "capital",
-                        "infrastructure",
-                        "construction",
-                        "project",
-                    ]
-                ):
-                    development_total += amt
-                elif cat_lower != "total budget":
-                    recurrent_total += amt
+            # Development vs recurrent — same rule as GET /counties.
+            #
+            # This used to re-derive the split by keyword over EVERY row, which
+            # counted the CoB aggregates and the sector rows that restate them,
+            # and dropped the CoB "Total" row into recurrent (the guard tested
+            # for "total budget", but the BIRR row is labelled "Total"). On a
+            # KES 20B county that produced development 6B + recurrent 51B.
+            #
+            # Prefer the authoritative classification aggregates the helper
+            # already extracted; fall back to the sector-keyword heuristic only
+            # when a period carries no classification rows at all.
+            development_total = _class_by_cat.get("development", {}).get(
+                "allocated", 0.0
+            )
+            recurrent_total = _class_by_cat.get("recurrent", {}).get("allocated", 0.0)
+
+            if development_total == 0 and recurrent_total == 0:
+                keyword_dev = 0.0
+                keyword_rec = 0.0
+                for bl in _sector_lines:
+                    cat_lower = (bl.category or "").lower()
+                    amt = float(bl.allocated_amount or 0)
+                    if any(
+                        kw in cat_lower
+                        for kw in [
+                            "development",
+                            "capital",
+                            "infrastructure",
+                            "construction",
+                            "project",
+                        ]
+                    ):
+                        keyword_dev += amt
+                    else:
+                        keyword_rec += amt
+                development_total = keyword_dev
+                recurrent_total = keyword_rec
+
             if development_total == 0 and recurrent_total == 0 and total_allocated > 0:
                 development_total = float(metrics.get("development_budget", 0))
                 recurrent_total = float(metrics.get("recurrent_budget", 0))
@@ -3008,15 +3182,53 @@ async def get_county_comprehensive(
             # ``debt_breakdown`` and ``pending_bills_from_loans``
             # blocks below both iterate it. Only the total filters out
             # PENDING_BILLS (see ``_is_debt_loan`` for why).
-            loans = db.query(DBLoan).filter(DBLoan.entity_id == entity.id).all()
+            # joinedload: the publication gate below reads each loan's source
+            # document, so resolve them in one query rather than N+1.
+            loans = (
+                db.query(DBLoan)
+                .options(joinedload(DBLoan.source_document))
+                .filter(DBLoan.entity_id == entity.id)
+                .all()
+            )
+
+            # Publication gate. A county row naming a creditor that only lends
+            # to sovereigns, with no source document behind it, is withheld —
+            # from the breakdown AND from the total, so the parts still sum to
+            # the whole. See publication_gate.county_debt_instrument_failure.
+            from services.publication_gate import county_debt_instrument_failure
+
+            _withheld_debt: dict = {}
+            _publishable_loans = []
+            for _l in loans:
+                _reason = county_debt_instrument_failure(_l)
+                if _reason:
+                    _withheld_debt[_reason] = _withheld_debt.get(_reason, 0) + 1
+                    logging.warning(
+                        "county debt row withheld (%s): entity=%s lender=%r "
+                        "outstanding=%s",
+                        _reason,
+                        entity.id,
+                        _l.lender,
+                        _l.outstanding,
+                    )
+                    continue
+                _publishable_loans.append(_l)
+            loans = _publishable_loans
+
             total_debt = sum(
                 float(l.outstanding or l.principal or 0)
                 for l in loans
                 if _is_debt_loan(l)
             )
 
+            # Same filter as total_debt above: pending bills are an arrears
+            # balance, not borrowing, and they already have their own panel via
+            # ``pending_bills``. Including them here made the breakdown sum to
+            # more than the total the page prints beside it.
             debt_breakdown = []
             for loan in loans:
+                if not _is_debt_loan(loan):
+                    continue
                 debt_breakdown.append(
                     {
                         "lender": loan.lender,
@@ -3381,6 +3593,11 @@ async def get_county_comprehensive(
                     ),
                     "per_capita_debt": per_capita_debt,
                     "breakdown": debt_breakdown,
+                    # How many instrument rows the publication gate held back,
+                    # and why. Never silently dropped: a reader (or a caller)
+                    # can tell "this county has no external debt" from "we are
+                    # not willing to publish the row we hold".
+                    "withheld": _withheld_debt or None,
                 },
                 # Audit — findings array is always included so downstream
                 # tab components can iterate safely. An earlier experiment
@@ -3467,11 +3684,27 @@ async def get_county_comprehensive(
                     ),
                 },
                 # Data provenance
+                # Provenance labels, not aspirations. Three of these named a
+                # publisher who did not publish the figure underneath: county
+                # budget lines are modelled from the CRA equitable-share
+                # formula (the page's own disclaimer says so, while this field
+                # said CoB); county debt rows carry no source document at all;
+                # and the stalled-projects fixture was never read from an OAG
+                # report — that domain has been withdrawn from the UI
+                # entirely. Credibility audit F7/F15/F6.
                 "data_sources": {
-                    "budget": "Controller of Budget - County Budget Implementation Review Reports",
+                    # Derived from the rows actually selected, not asserted.
+                    # This field used to hardcode "modelled from CRA", which
+                    # became wrong once the endpoint started preferring real CoB
+                    # classification rows for the headline: it denied the
+                    # provenance of figures that DO come from a published BIRR.
+                    # Only the sector split and projection periods are modelled.
+                    "budget": _budget_provenance_label,
                     "audit": "Office of the Auditor General - County Government Audit Reports",
-                    "debt": "National Treasury - County Debt Register",
-                    "stalled_projects": "OAG Audit Reports & County Assembly Committees",
+                    "debt": (
+                        "Modelled — county debt and pending-bill rows are not "
+                        "traced to a county or National Treasury publication"
+                    ),
                     "population": "Kenya National Bureau of Statistics (KNBS) Census 2019",
                 },
             }
@@ -3961,7 +4194,7 @@ async def get_audit_statistics():
 
 
 @app.get("/api/v1/audits/fiscal-years")
-@cached(key_prefix="audits:fiscal_years", ttl=86400)
+@cached(key_prefix="audits:fiscal_years", ttl=NIGHTLY_REFRESH_TTL)
 async def get_available_fiscal_years(db: Session = Depends(get_db)):
     """Return a sorted list of fiscal-year strings available in the database.
 
@@ -6995,13 +7228,33 @@ async def get_national_budget_summary(fiscal_year: str = None):
                 # Sort by amount descending
                 allocations.sort(key=lambda x: x["amount"], reverse=True)
 
-                # Development vs recurrent split
-                dev_budget = sum(
-                    float(b.allocated_amount or 0)
+                # Development vs recurrent split — WITHHELD, not guessed.
+                #
+                # The rows this endpoint sums are SECTOR allocations (Education,
+                # Health, National Security ...). They carry no economic
+                # classification, so a development/recurrent split cannot be
+                # derived from them. The previous rule was
+                # `"development" in category.lower()`, which matched exactly one
+                # sector — "Agriculture, Rural and Urban DEVELOPMENT" — and
+                # published its 59.13B as the national development budget, with
+                # everything else counted as recurrent. The Controller of Budget
+                # states 744.84B of ministerial development spending for
+                # FY2025/26: the substring match was out by a factor of 12.6
+                # (credibility audit F30).
+                #
+                # Publish the split only where the rows actually classify it.
+                _class_rows = {
+                    (b.category or "").strip().lower(): float(b.allocated_amount or 0)
                     for b in budget_query.all()
-                    if b.category and "development" in str(b.category).lower()
+                    if (b.category or "").strip().lower() in _CLASSIFICATION_CATEGORIES
+                }
+                dev_budget = _class_rows.get("development")
+                recurrent_budget = _class_rows.get("recurrent")
+                budget_split_absent_reason = (
+                    None
+                    if dev_budget is not None or recurrent_budget is not None
+                    else "sector_rows_carry_no_economic_classification"
                 )
-                recurrent_budget = total_allocated - dev_budget
 
                 # Resolve fiscal-period label for the response
                 period_label = None
@@ -7061,6 +7314,7 @@ async def get_national_budget_summary(fiscal_year: str = None):
                         "execution_rate": execution_rate,
                         "development_budget": dev_budget,
                         "recurrent_budget": recurrent_budget,
+                        "budget_split_absent_reason": budget_split_absent_reason,
                         "allocations": allocations,
                         "currency": "KES",
                     },
@@ -7753,9 +8007,14 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
             else None
         )
 
-        # Get total population (sum of all counties)
-        total_pop = db.query(func.sum(PopulationData.total_population)).scalar()
-        total_pop = int(total_pop) if total_pop else None
+        # Kenya's population, not the sum of every row in the table. This was
+        # `func.sum(PopulationData.total_population)` over the whole table —
+        # 47 counties across every seeded year plus the national rows — which
+        # reported 907,025,674 and dragged per_capita_budget_kes down to
+        # KES 6,048 (credibility audit F29).
+        from services.population import latest_national_population
+
+        total_pop, total_pop_year = latest_national_population(db)
 
         # Get latest fiscal summary for budget context
         latest_fiscal = (
@@ -7782,6 +8041,9 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
             "inflation_source": "KNBS Consumer Price Index",
             "unemployment_pct": econ_map.get("unemployment_rate"),
             "total_population": total_pop,
+            # Say which year the population describes, so a per-capita figure
+            # can be checked rather than assumed current.
+            "total_population_year": total_pop_year,
             "budget_to_gdp_pct": (
                 round((budget_raw_kes / (gdp_billion * 1e9)) * 100, 1)
                 if budget_raw_kes and gdp_billion
@@ -7902,7 +8164,7 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
 
 
 @app.get("/api/v1/debt/timeline")
-@cached(key_prefix="debt:timeline", ttl=86400)
+@cached(key_prefix="debt:timeline", ttl=NIGHTLY_REFRESH_TTL)
 async def get_debt_timeline(db: Session = Depends(get_db)):
     """Get historical debt timeline (yearly external/domestic breakdown).
 
@@ -8060,7 +8322,7 @@ async def get_debt_timeline(db: Session = Depends(get_db)):
 
 
 @app.get("/api/v1/fiscal/summary")
-@cached(key_prefix="fiscal:summary", ttl=86400)
+@cached(key_prefix="fiscal:summary", ttl=NIGHTLY_REFRESH_TTL)
 async def get_fiscal_summary(db: Session = Depends(get_db)):
     """Get national fiscal summary — budget, revenue, borrowing, debt service, debt ceiling.
 
@@ -8134,6 +8396,10 @@ async def get_fiscal_summary(db: Session = Depends(get_db)):
                 # apart, so the basis travels with the value.
                 "budget_basis": (r.meta or {}).get("budget_basis"),
                 "budget_basis_source": (r.meta or {}).get("budget_basis_source"),
+                # Billions KES of the gross budget that is redemption of
+                # maturing debt. Lets the page say why the gross figure and the
+                # enacted headline differ, instead of just asserting they do.
+                "debt_redemption_billion": (r.meta or {}).get("debt_redemption_billion"),
                 "page_ref": r.page_ref,
             }
 
@@ -8692,9 +8958,134 @@ def _latest_imf_debt_to_gdp(db):
         return None
 
 
+@app.get("/api/v1/debt/instruments")
+async def get_debt_instruments(db: Session = Depends(get_db)):
+    """The Treasury bond register: when debt falls due, and at what coupon.
+
+    NOT a debt total, and the response says so in three places rather than
+    trusting a reader to know. The register covers roughly 60% of CBK's
+    published Treasury-bond stock — it sees bonds sold at auction since 2007
+    and cannot see pre-2007 paper, non-auction issuance or amortisation.
+
+    This exists because the maturity ladder was withdrawn before launch: the
+    site had 3 of 28 debt rows carrying a maturity date, five separate Eurobond
+    issues collapsed onto one 2034 date, and a single assumed 14.5% coupon
+    applied to the whole bond book (credibility audit F24/F42). Every figure
+    here is read off CBK's own table.
+    """
+    if not DATABASE_AVAILABLE or db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    from models import DebtInstrument as _DI
+
+    # The table may not exist yet. Production is still on the orphaned
+    # `k1f2a3b4c5d6` revision, so this code will deploy ahead of its own
+    # migration — and a route-smoke test caught this endpoint 500ing with
+    # `relation "debt_instruments" does not exist` rather than reporting that
+    # it has nothing. Deploy order must not decide whether a page renders.
+    try:
+        rows = (
+            db.query(_DI)
+            .filter(_DI.publishable.is_(True))
+            .order_by(_DI.maturity_date.asc())
+            .all()
+        )
+    except SQLAlchemyError as exc:
+        db.rollback()
+        # ONLY the missing-table case. Catching every SQLAlchemyError turned
+        # connection loss, timeouts, permission errors and unrelated query
+        # failures into an HTTP 200 carrying a false remediation message, which
+        # also hid them from 5xx monitoring.
+        if not _is_undefined_table(exc):
+            logging.error("debt_instruments query failed: %s", exc)
+            raise HTTPException(
+                status_code=503,
+                detail="debt instrument register is temporarily unavailable",
+            )
+        logging.warning("debt_instruments unavailable: %s", exc)
+        return {
+            "status": "unavailable",
+            "reason": "table_not_migrated",
+            "message": (
+                "The instrument register table has not been created in this "
+                "database yet. This is not a finding that no government debt "
+                "falls due."
+            ),
+            "instruments": [],
+            "ladder": [],
+        }
+
+    if not rows:
+        # Absent, with the reason — never an empty ladder that reads as
+        # "no debt falls due".
+        return {
+            "status": "unavailable",
+            "reason": "no_instrument_register_ingested",
+            "message": (
+                "No Treasury bond register has been ingested. This is not a "
+                "finding that no government debt falls due."
+            ),
+            "instruments": [],
+            "ladder": [],
+        }
+
+    doc = rows[0].source_document
+    doc_meta = (doc.meta if doc is not None else None) or {}
+    coverage = doc_meta.get("coverage") or {}
+    withheld = doc_meta.get("withheld_isins") or {}
+
+    instruments = [
+        {
+            "isin": r.isin,
+            "issue_no": r.issue_no,
+            "instrument_type": r.instrument_type,
+            "face_value": float(r.face_value),
+            "unit": r.unit,
+            "coupon_rate": float(r.coupon_rate) if r.coupon_rate is not None else None,
+            "tenor_years": float(r.tenor_years) if r.tenor_years is not None else None,
+            "first_issued": r.first_issued.date().isoformat() if r.first_issued else None,
+            "maturity_date": r.maturity_date.date().isoformat(),
+            "tranches": r.tranches,
+        }
+        for r in rows
+    ]
+
+    # The maturity ladder, aggregated server-side so every consumer draws the
+    # same bars from the same rule.
+    ladder: Dict[int, Dict[str, Any]] = {}
+    for r in rows:
+        year = r.maturity_date.year
+        bucket = ladder.setdefault(
+            year, {"year": year, "face_value": 0.0, "instruments": 0}
+        )
+        bucket["face_value"] += float(r.face_value)
+        bucket["instruments"] += 1
+
+    return {
+        "status": "success",
+        "_meta": _response_meta(unit="kes", entity_scope="national"),
+        "source": {
+            "publisher": "Central Bank of Kenya",
+            "title": doc.title if doc is not None else None,
+            "url": doc.url if doc is not None else None,
+            "as_of": doc_meta.get("as_of"),
+        },
+        # Said plainly, at the top level, because the sum of `instruments` is
+        # the number a careless consumer would reach for.
+        "is_debt_total": False,
+        "not_a_stock_measure": doc_meta.get("not_a_stock_measure"),
+        "coverage": coverage,
+        "withheld_isins": withheld,
+        "withheld_count": len(withheld),
+        "instrument_count": len(instruments),
+        "instruments": instruments,
+        "ladder": [ladder[y] for y in sorted(ladder)],
+    }
+
+
 @app.get("/api/v1/debt/national")
 @cached(
-    key_prefix="debt:national", ttl=43200
+    key_prefix="debt:national", ttl=NIGHTLY_REFRESH_TTL
 )  # 12 hours — national debt data changes infrequently
 async def get_national_debt():
     """Get national debt overview with categorized breakdown."""
@@ -9090,9 +9481,16 @@ async def get_national_debt():
                                         if total_debt > 0
                                         else 0
                                     ),
-                                    "items": data["items"][
-                                        :5
-                                    ],  # Top 5 items per category
+                                    # The named lenders the treemap draws,
+                                    # plus what is left over.
+                                    #
+                                    # This used to be `items[:5]` in query
+                                    # order: not the largest five, and no way
+                                    # to know anything had been dropped. The
+                                    # treemap's long-tail fold could therefore
+                                    # never fire, and its drill-down did not
+                                    # add up to the category total beside it.
+                                    **_category_items_with_remainder(data),
                                 }
                                 for cat, data in categories.items()
                                 if data["count"] > 0
@@ -9165,7 +9563,7 @@ async def get_national_debt():
 
 
 @app.get("/api/v1/pending-bills")
-@cached(key_prefix="pending_bills:summary", ttl=43200)
+@cached(key_prefix="pending_bills:summary", ttl=NIGHTLY_REFRESH_TTL)
 async def get_pending_bills(
     db: Session = Depends(get_db),
 ):
@@ -9398,7 +9796,7 @@ async def get_pending_bills(
 
 
 @app.get("/api/v1/pending-bills/summary")
-@cached(key_prefix="pending_bills:summary_enhanced", ttl=43200)
+@cached(key_prefix="pending_bills:summary_enhanced", ttl=NIGHTLY_REFRESH_TTL)
 async def get_pending_bills_summary(db: Session = Depends(get_db)):
     """Get pending bills summary with breakdown by type, aging, and county.
 
@@ -9625,7 +10023,7 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
 
 
 @app.get("/api/v1/pending-bills/counties/{county_id}")
-@cached(key_prefix="pending_bills:county", ttl=43200)
+@cached(key_prefix="pending_bills:county", ttl=NIGHTLY_REFRESH_TTL)
 async def get_pending_bills_by_county(county_id: str, db: Session = Depends(get_db)):
     """Get pending bills breakdown for a specific county by type and aging."""
     from models import BillType, PendingBill
@@ -10011,7 +10409,7 @@ async def _get_debt_broader_cached(db: Session, vintage: str):
 
 
 @app.get("/api/v1/debt/sustainability")
-@cached(key_prefix="debt:sustainability", ttl=86400)
+@cached(key_prefix="debt:sustainability", ttl=NIGHTLY_REFRESH_TTL)
 async def get_debt_sustainability(db: Session = Depends(get_db)):
     """Get debt sustainability indicators, projections, and regional comparison.
 

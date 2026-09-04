@@ -8,7 +8,7 @@ import { DollarSign } from 'lucide-react';
 
 interface BudgetCardProps {
   budget: number;
-  budgetUtilization: number;
+  budgetUtilization: number | null;
 }
 
 export default function BudgetCard({ budget, budgetUtilization }: BudgetCardProps) {
@@ -35,10 +35,12 @@ export default function BudgetCard({ budget, budgetUtilization }: BudgetCardProp
       <div className='w-full bg-green-200 rounded-full h-2'>
         <div
           className='bg-green-500 h-2 rounded-full transition-all duration-500'
-          style={{ width: `${budgetUtilization}%` }}
+          style={{ width: budgetUtilization != null ? `${budgetUtilization}%` : '0%' }}
         />
       </div>
-      <div className='text-xs text-green-700 mt-1 font-medium'>{budgetUtilization}% used</div>
+      <div className='text-xs text-green-700 mt-1 font-medium'>
+        {budgetUtilization != null ? `${budgetUtilization}% used` : 'Not reported'}
+      </div>
     </div>
   );
 }

@@ -260,11 +260,13 @@ function KPICards({ counties }: { counties: County[] }) {
     const totalDebt = counties.reduce((s, c) => s + (c.totalDebt ?? c.debt ?? 0), 0);
     // Average only across counties that actually reported execution — otherwise
     // the mean gets diluted by zeros and makes every year look underperforming.
+    // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- comparison, not a published figure: this predicate SELECTS the reporters
     const execReporters = counties.filter((c) => (c.budgetUtilization ?? 0) > 0);
     const avgExec =
       execReporters.length > 0
+        // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- guarded: execReporters is filtered to > 0 above, so no zero is summed
         ? execReporters.reduce((s, c) => s + (c.budgetUtilization ?? 0), 0) / execReporters.length
-        : 0;
+        : null;
     const auditCounts = { clean: 0, qualified: 0, adverse: 0 };
     counties.forEach((c) => {
       const st = c.auditStatus ?? 'pending';
@@ -323,7 +325,7 @@ function KPICards({ counties }: { counties: County[] }) {
           <div className='text-xs font-medium text-gray-500 dark:text-neutral-muted/80 mb-1'>
             {t('counties.kpi.avg_execution_rate')} <InfoTip term='budget-execution' size={11} />
           </div>
-          {stats.avgExec > 0 ? (
+          {stats.avgExec != null ? (
             <>
               <div className='text-2xl font-bold text-gray-900 dark:text-neutral-text tracking-tight'>
                 {stats.avgExec.toFixed(0)}%
@@ -337,7 +339,7 @@ function KPICards({ counties }: { counties: County[] }) {
             </>
           )}
         </div>
-        <GaugeMini value={stats.avgExec} target={70} />
+        <GaugeMini value={stats.avgExec ?? 0} target={70} />
       </div>
 
       {/* Card 4: Audit Summary */}
@@ -855,7 +857,9 @@ function CountyPerformanceMap({
             <div className='font-semibold'>{hoveredCounty.name}</div>
             <div className='text-white/70 mt-0.5'>
               {t('counties.map.tooltip_grade')}: {getGrade(hoveredCounty.financial_health_score).letter} · {t('counties.map.tooltip_exec')}:{' '}
-              {(hoveredCounty.budgetUtilization ?? 0).toFixed(0)}%
+              {hoveredCounty.budgetUtilization != null
+                ? `${hoveredCounty.budgetUtilization.toFixed(0)}%`
+                : '—'}
             </div>
             <div className='text-white/60'>
               {t('counties.map.tooltip_budget')}: KES {fmtKES(hoveredCounty.totalBudget ?? hoveredCounty.budget ?? 0)}
@@ -914,7 +918,14 @@ function CountyInsightsPanel({ counties }: { counties: County[] }) {
 
     const totalBudget = counties.reduce((s, c) => s + (c.totalBudget ?? c.budget ?? 0), 0);
     const totalDebt = counties.reduce((s, c) => s + (c.totalDebt ?? c.debt ?? 0), 0);
-    const avgUtil = counties.reduce((s, c) => s + (c.budgetUtilization ?? 0), 0) / (count || 1);
+    // Average only across counties that actually reported execution — a
+    // non-reporter is not a county that executed 0% of its budget.
+    const utilReporters = counties.filter((c) => c.budgetUtilization != null);
+    const avgUtil =
+      utilReporters.length > 0
+        ? utilReporters.reduce((s, c) => s + (c.budgetUtilization as number), 0) /
+          utilReporters.length
+        : null;
     const avgHealth = counties.reduce((s, c) => s + c.financial_health_score, 0) / (count || 1);
 
     return {
@@ -949,7 +960,9 @@ function CountyInsightsPanel({ counties }: { counties: County[] }) {
         </div>
         <div className='flex items-center gap-1.5 text-xs text-gray-500 dark:text-neutral-muted/80'>
           <span className='font-semibold text-gray-700 dark:text-neutral-muted'>{t('counties.insights.avg_exec')}:</span>
-          <span className='tabular-nums'>{stats.avgUtil.toFixed(0)}%</span>
+          <span className='tabular-nums'>
+            {stats.avgUtil != null ? `${stats.avgUtil.toFixed(0)}%` : '—'}
+          </span>
         </div>
         <div className='flex items-center gap-1.5 text-xs'>
           <span className='font-semibold text-gray-700 dark:text-neutral-muted'>{t('counties.insights.avg_health')}:</span>
@@ -999,7 +1012,7 @@ function InsightRow({
   variant: 'best' | 'worst';
 }) {
   const { t } = useLang();
-  const util = c.budgetUtilization ?? 0;
+  const util = c.budgetUtilization;
   const debt = c.totalDebt ?? c.debt ?? 0;
   const budget = c.totalBudget ?? c.budget ?? 0;
   const health = c.financial_health_score;
@@ -1030,12 +1043,20 @@ function InsightRow({
             <span className='text-[11px] text-gray-500 dark:text-neutral-muted/80 w-7'>{t('counties.insights.exec_short')}</span>
             <div className='flex-1 h-1.5 bg-gray-100 dark:bg-surface-elevated rounded-full overflow-hidden'>
               <div
-                className={`h-full rounded-full ${util >= 70 ? 'bg-emerald-500' : util >= 50 ? 'bg-amber-500' : 'bg-red-400'}`}
-                style={{ width: `${Math.min(util, 100)}%` }}
+                className={`h-full rounded-full ${
+                  util == null
+                    ? 'bg-gray-200 dark:bg-neutral-700'
+                    : util >= 70
+                      ? 'bg-emerald-500'
+                      : util >= 50
+                        ? 'bg-amber-500'
+                        : 'bg-red-400'
+                }`}
+                style={{ width: util == null ? '100%' : `${Math.min(util, 100)}%` }}
               />
             </div>
             <span className='text-[11px] font-semibold text-gray-700 dark:text-neutral-muted w-7 tabular-nums'>
-              {util.toFixed(0)}%
+              {util != null ? `${util.toFixed(0)}%` : '—'}
             </span>
           </div>
           {/* Debt ratio */}
@@ -1059,7 +1080,11 @@ function InsightRow({
    EXECUTION BAR
    ══════════════════════════════════════════════════════════════════════════════ */
 
-function ExecBar({ pct }: { pct: number }) {
+function ExecBar({ pct }: { pct: number | null | undefined }) {
+  // A county that reported no execution is not a county that executed 0%.
+  if (pct == null) {
+    return <span className='text-xs text-gray-400 dark:text-neutral-muted/80'>—</span>;
+  }
   const clamped = Math.min(pct, 100);
   const clr = pct >= 70 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-500';
   return (
@@ -1285,7 +1310,7 @@ function CountyRankingsTable({
             {paged.map((county, i) => {
               const budget = county.totalBudget ?? county.budget ?? 0;
               const debt = county.totalDebt ?? county.debt ?? 0;
-              const util = county.budgetUtilization ?? 0;
+              const util = county.budgetUtilization;
               const grade = getGrade(county.financial_health_score);
               const issues = county.auditIssues?.length ?? 0;
               const auditCfg = AUDIT_STATUS_CFG[county.auditStatus ?? 'pending'];
@@ -1536,6 +1561,7 @@ export default function CountyExplorerPage() {
           cmp = a.population - b.population;
           break;
         case 'utilization':
+          // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- ordering only: sorts unreported counties last, publishes nothing
           cmp = (a.budgetUtilization ?? 0) - (b.budgetUtilization ?? 0);
           break;
       }
@@ -1564,7 +1590,7 @@ export default function CountyExplorerPage() {
       c.population,
       getGrade(c.financial_health_score).letter,
       c.totalBudget ?? c.budget ?? 0,
-      (c.budgetUtilization ?? 0).toFixed(1),
+      c.budgetUtilization != null ? c.budgetUtilization.toFixed(1) : '',
       c.totalDebt ?? c.debt ?? 0,
       c.auditStatus ?? 'pending',
     ]);

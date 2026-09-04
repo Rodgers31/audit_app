@@ -10,6 +10,7 @@
 import PageShell from '@/components/layout/PageShell';
 import api from '@/lib/api/axios';
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { Activity, Clock, Database, ExternalLink, FileText, Globe, Loader2 } from 'lucide-react';
 
 interface SourceSummary {
@@ -33,8 +34,12 @@ interface TableHealth {
   label: string;
   row_count: number;
   source: string;
-  status: string; // healthy | degraded | critical | empty
+  status: string; // healthy | stale | degraded | critical | empty
   notes?: string | null;
+  /** Days since the newest row changed, and the threshold it is judged
+   *  against. The panel could previously only answer "is it empty?". */
+  age_days?: number | null;
+  stale_after_days?: number | null;
 }
 
 interface HealthResponse {
@@ -42,7 +47,8 @@ interface HealthResponse {
 }
 
 const HEALTH_STYLE: Record<string, { dot: string; text: string; label: string }> = {
-  healthy: { dot: 'bg-emerald-500', text: 'text-emerald-700', label: 'Healthy' },
+  healthy: { dot: 'bg-emerald-500', text: 'text-emerald-700', label: 'Current' },
+  stale: { dot: 'bg-amber-500', text: 'text-amber-700', label: 'Stale' },
   degraded: { dot: 'bg-amber-500', text: 'text-amber-700', label: 'Partial' },
   critical: { dot: 'bg-rose-500', text: 'text-rose-700', label: 'Critical' },
   empty: { dot: 'bg-gray-400 dark:bg-neutral-muted/60', text: 'text-gray-500 dark:text-neutral-muted/80', label: 'Empty' },
@@ -93,7 +99,41 @@ export default function SourcesPage() {
   });
 
   const sources = data?.sources || [];
+  // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- document count; zero documents is a real state and has its own empty state below
   const total = data?.total_documents || 0;
+
+  /**
+   * Distinct publishing BODIES, not distinct manifest rows.
+   *
+   * The manifest carries the same agency under several names — "Office of the
+   * Auditor General" and "Office of the Auditor-General"; "National Treasury
+   * Kenya", "National Treasury of Kenya" and "National Treasury"; "Controller
+   * of Budget", "National Treasury & Controller of Budget" and "Office of the
+   * Controller of Budget (OCOB)". Counting rows reported 17 agencies where
+   * there are about nine (credibility audit F38).
+   *
+   * Normalising instead of hardcoding a number, so the count stays right as
+   * the manifest changes.
+   */
+  const distinctAgencyCount = useMemo(() => {
+    if (sources.length === 0) return null;
+    const norm = (name: string) =>
+      name
+        .toLowerCase()
+        // Any dash, ASCII or typographic, becomes a space so "Auditor-General"
+        // and "Auditor General" collapse to the same body.
+        .replace(/[-\u2010-\u2015]/g, ' ')
+        .replace(/\(.*?\)/g, '') // drop parenthetical acronyms: "(OCOB)"
+        // A row naming two bodies ("Central Bank of Kenya / National Treasury")
+        // is filed under the first rather than counted as a third agency.
+        .split(/[&/]/)[0]
+        .replace(/\bknbs\b/g, 'national bureau statistics')
+        .replace(/\b(the|of|kenya|kenyan|office|republic)\b/g, '')
+        .replace(/[^a-z ]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    return new Set(sources.map((src) => norm(src.publisher)).filter(Boolean)).size;
+  }, [sources]);
 
   // Data-health grid — surfaces the /provenance/health endpoint (previously
   // unused by any page; audit §2.9). Shows live completeness of each dataset.
@@ -107,7 +147,7 @@ export default function SourcesPage() {
   return (
     <PageShell
       title='Where the data comes from'
-      subtitle='Every figure on AuditGava traces back to a document published by a Kenyan government agency. No scraping private sources, no opinion — just what the state already publishes, aggregated in one place.'>
+      subtitle='AuditGava aggregates what Kenyan government agencies already publish. Most figures here trace to a named document; where one does not, the page carrying it says so and names the method instead. No private sources, no opinion.'>
       <div className='space-y-6'>
         {/* Hero stat strip */}
         <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border px-5 py-4 flex flex-wrap items-center gap-6'>
@@ -133,14 +173,14 @@ export default function SourcesPage() {
                 Publishing agencies
               </div>
               <div className='text-2xl font-bold text-gray-900 dark:text-neutral-text tabular-nums'>
-                {sources.length}
+                {distinctAgencyCount ?? sources.length}
               </div>
             </div>
           </div>
           <div className='flex-1 min-w-[220px] text-sm text-gray-600 dark:text-neutral-muted leading-relaxed sm:pl-6 sm:border-l border-gray-100 dark:border-neutral-border'>
-            The freshness dot below shows how recently we last fetched each
-            agency. If a feed goes stale, we flag it so you know the numbers
-            may not reflect the latest publication.
+            The freshness age below shows how recently we last reached each
+            agency. Several are months behind; the site does not currently update
+            every source nightly, whatever a headline elsewhere may suggest.
           </div>
         </div>
 
@@ -152,9 +192,13 @@ export default function SourcesPage() {
               <h2 className='text-base font-bold text-gray-900 dark:text-neutral-text'>Data health</h2>
             </div>
             <p className='text-xs text-gray-500 dark:text-neutral-muted/80 mb-4 max-w-2xl'>
-              Live completeness of each dataset behind the site. Green means the table is fully
-              populated from its source; amber or red means it&apos;s thin or empty, so some
-              figures may be limited.
+              Each dataset behind the site: how many rows it holds, and how long
+              since any of them changed. <strong>Current</strong> means the table
+              has enough rows AND has moved within its publisher&apos;s own
+              reporting cycle. <strong>Stale</strong> means it has stopped moving
+              — the rows are still there, but nothing new has arrived when
+              something should have. Neither status checks whether a figure is
+              <em> correct</em>; that is what the source links are for.
             </p>
             <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'>
               {healthTables.map((tb) => {
@@ -182,6 +226,12 @@ export default function SourcesPage() {
                     <div className='text-[11px] text-gray-500 dark:text-neutral-muted/80 truncate'>
                       {tb.source}
                     </div>
+                    {tb.age_days != null && (
+                      <div className='text-[11px] text-gray-400 dark:text-neutral-muted/70'>
+                        last changed {tb.age_days === 0 ? 'today' : `${tb.age_days}d ago`}
+                        {tb.stale_after_days != null && ` · stale after ${tb.stale_after_days}d`}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -290,14 +340,30 @@ export default function SourcesPage() {
             <FileText className='text-gov-forest dark:text-emerald-100 mt-0.5 shrink-0' size={18} />
             <div className='text-sm text-gray-700 dark:text-neutral-muted leading-relaxed'>
               <p className='font-semibold text-gray-900 dark:text-neutral-text mb-1'>How this works</p>
+              {/* The old copy promised that "every extracted value retains a
+                  provenance pointer … so you can trace any county's budget
+                  execution number back to the original COB quarterly report".
+                  GET /provenance/verify/budget_lines answers "Unknown table"
+                  — the one trace the sentence promised is the one the verifier
+                  cannot do (credibility audit F16). Describe the actual state. */}
               <p>
                 Our ETL pipeline fetches PDFs and spreadsheets from each agency&apos;s
-                official portal, extracts line-items using a combination of
-                table-extraction tools and rule-based parsers, and writes them to
-                a canonical schema. Every extracted value retains a{' '}
-                <strong>provenance pointer</strong> — the source document ID and
-                page reference — so you can trace any county&apos;s budget execution
-                number back to the original COB quarterly report or OAG audit.
+                official portal, extracts line-items using table-extraction tools
+                and rule-based parsers, and writes them to a canonical schema.
+              </p>
+              <p className='mt-2'>
+                Coverage of the evidence trail is uneven, and we would rather say
+                so than imply otherwise. Audit findings and national debt
+                instruments carry a <strong>provenance pointer</strong> — a source
+                document and, for audit findings, a page reference — and can be
+                checked through the verification endpoint. County budget lines and
+                the historical debt timeline cannot yet: they are not wired into
+                that endpoint. County figures come from two different places, and
+                each page says which: the headline budget, spend and execution
+                rate are read from the Controller of Budget&apos;s implementation
+                review where that parse landed, while the per-sector split and any
+                future-year period are modelled from the CRA equitable-share
+                formula. Pages carrying modelled figures say so on the page.
               </p>
             </div>
           </div>

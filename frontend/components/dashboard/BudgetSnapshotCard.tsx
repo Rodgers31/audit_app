@@ -78,9 +78,22 @@ export default function BudgetSnapshotCard() {
   }
 
   const budget = resp?.data || resp;
-  const total = budget.total || 0;
-  const spent = budget.total_spent || 0;
-  const executionRate = budget.execution_rate || 0;
+  // A withheld budget total is not a KES 0 budget, and a withheld execution
+  // rate is not 0% spent. The card returns its unavailable state below rather
+  // than render either as a figure (F2).
+  const total = budget.total;
+  const spent = budget.total_spent;
+  const executionRate = budget.execution_rate;
+
+  // Reuse the card's own unavailable state rather than draw a KES 0 budget.
+  if (total == null) {
+    return (
+      <div className='glass-card p-8 flex flex-col items-center justify-center min-h-[340px] gap-2'>
+        <Banknote className='w-6 h-6 text-neutral-muted/25' />
+        <p className='text-xs text-neutral-muted'>{t('home.budget.unavailable')}</p>
+      </div>
+    );
+  }
 
   // Consolidate duplicate/variant sector names into canonical buckets
   const merged = new Map<
@@ -92,13 +105,17 @@ export default function BudgetSnapshotCard() {
     const canonical = SECTOR_MERGE[a.sector.toLowerCase()] || a.sector;
     const existing = merged.get(canonical);
     if (existing) {
+      // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- accumulator seed
       existing.amount += a.amount || 0;
+      // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- accumulator seed
       existing.percentage += a.percentage || 0;
       if (!existing.utilization && a.utilization) existing.utilization = a.utilization;
     } else {
       merged.set(canonical, {
         sector: canonical,
+        // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- sector rows come from CoB allocations that always carry an amount; a sector with none is not published
         amount: a.amount || 0,
+        // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- see above
         percentage: a.percentage || 0,
         utilization: a.utilization || 0,
       });
@@ -119,8 +136,16 @@ export default function BudgetSnapshotCard() {
       {/* Header */}
       <div className='bg-gradient-to-r from-gov-sand/60 via-gov-cream/40 to-transparent dark:from-surface-elevated/40 dark:via-surface-base/20 dark:to-transparent px-6 sm:px-8 pt-5 pb-4 border-b border-neutral-border/20'>
         <h3 className='font-display text-lg text-gov-dark dark:text-white mb-0.5'>{t('home.budget.where_taxes_go')}</h3>
+        {/* The denominator belongs in the heading, not under the number.
+            These shares are of the CoB National-Government ministerial
+            allocation (~KES 1.88T), not of Kenya's gross budget (~KES 4.69T)
+            or of total public expenditure. Read against the wrong denominator,
+            "Education 33.3%" says a third of Kenya's budget goes to education
+            (credibility audit F14). */}
         <p className='text-xs text-neutral-muted'>
-          {t('home.budget.allocation_by_sector')}
+          {budget?.total_label
+            ? `Sector shares of the ${budget.total_label}`
+            : t('home.budget.allocation_by_sector')}
           {budget?.fiscal_year ? ` — ${budget.fiscal_year}` : ''}
         </p>
       </div>
@@ -153,7 +178,7 @@ export default function BudgetSnapshotCard() {
               <InfoTip term='budget-execution' size={11} />
             </div>
             <span className='text-lg font-bold text-gov-gold tabular-nums leading-none'>
-              {executionRate}%
+              {executionRate != null ? `${executionRate}%` : '—'}
             </span>
           </div>
         </div>
@@ -218,6 +243,16 @@ export default function BudgetSnapshotCard() {
         {allSectors.length > VISIBLE_ROWS && (
           <p className='text-[11px] text-neutral-muted text-center pt-2'>
             {t('home.budget.more_sectors').replace('{n}', String(allSectors.length - VISIBLE_ROWS))}
+          </p>
+        )}
+
+        {/* Restate the denominator at the point of use, because the
+            percentages above are the part a reader quotes. */}
+        {budget?.total_label && (
+          <p className='text-[11px] leading-snug text-neutral-muted/80 pt-2'>
+            Percentages are shares of the {budget.total_label} ({fmtKES(total)}) —
+            not of Kenya&apos;s gross budget or of total public spending, both of
+            which are larger.
           </p>
         )}
 

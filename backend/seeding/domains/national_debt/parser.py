@@ -25,6 +25,7 @@ class DebtRecord:
         currency: str,
         source_url: str | None = None,
         source_title: str | None = None,
+        publisher: str | None = None,
         debt_category: str | None = None,
         interest_rate: Decimal | None = None,
         notes: str | None = None,
@@ -39,6 +40,10 @@ class DebtRecord:
         self.currency = currency
         self.source_url = source_url
         self.source_title = source_title
+        #: Who published THIS row. The national-debt payload is a CBK/Treasury
+        #: bulletin, but the IDS creditor rows merged into it are World Bank
+        #: data — attributing them to the Treasury would be a false citation.
+        self.publisher = publisher
         self.debt_category = debt_category
         self.interest_rate = interest_rate
         self.notes = notes
@@ -105,8 +110,12 @@ def parse_debt_payload(payload: dict[str, Any]) -> list[DebtRecord]:
                 issue_date=issue_date,
                 maturity_date=maturity_date,
                 currency=loan_data.get("currency", "KES"),
-                source_url=source_url,
-                source_title=source_title,
+                # A row's own source wins over the payload's. The IDS creditor
+                # rows are World Bank data merged into a CBK-sourced payload;
+                # without this they persisted as if CBK had published them.
+                source_url=loan_data.get("source_url") or source_url,
+                source_title=loan_data.get("source_title") or source_title,
+                publisher=loan_data.get("publisher"),
                 debt_category=loan_data.get("debt_category"),
                 interest_rate=interest_rate,
                 notes=loan_data.get("notes"),

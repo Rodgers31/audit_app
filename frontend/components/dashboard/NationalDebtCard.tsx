@@ -4,7 +4,6 @@ import { DebtTimelineEntry } from '@/lib/api/debt';
 import { classifyDebtRisk, toRawKES } from '@/lib/utils';
 import { useLang } from '@/lib/i18n/LangProvider';
 import {
-  useBroaderDebt,
   useDebtTimeline,
   useNationalDebtOverview,
 } from '@/lib/react-query/useDebt';
@@ -14,6 +13,7 @@ import { motion } from 'framer-motion';
 import { Skeleton, SkeletonChart } from '@/components/ui/Skeleton';
 import { AlertTriangle, BarChart3, Globe2, Landmark, Loader2, MapPinned, TrendingUp } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { gdpRatioComparison } from '@/lib/debt/debtCardBasis';
 import InfoTip from '@/components/InfoTip';
 import {
   Area,
@@ -33,6 +33,36 @@ interface ChartEntry {
   domestic: number;
   total: number;
   gdpRatio: number;
+  /** True when this year's figures are round-number estimates rather than a
+   *  reading off a published table. See `isRoundNumberEstimate`. */
+  modelled: boolean;
+}
+
+/**
+ * Is this year's debt row a round-number estimate rather than a published
+ * reading?
+ *
+ * The 2013–2021 rows in `debt_timeline` are round hundreds of billions — 3,100
+ * / 3,600 / 4,300 / 5,000 / 5,400 / 5,800 / 6,500 / 7,200 / 8,200 — across
+ * external, domestic and total simultaneously. No CBK table produces that.
+ * Only 2022 onward carry real precision, from the CBK Statistical Bulletin
+ * figures applied by the 2026-08-29 correction. The homepage was deriving
+ * "4.0× since 2013" and "From 58.4% in 2013" off the invented 2013 base
+ * (credibility audit F13).
+ *
+ * Detected from the data rather than hardcoding a cutoff year, so a row stops
+ * being flagged the moment it is re-sourced with real digits — and so nobody
+ * has to remember to move a constant. Requiring ALL THREE components to land
+ * exactly on 100B makes a false positive on genuine data vanishingly unlikely.
+ */
+export function isRoundNumberEstimate(e: {
+  external: number;
+  domestic: number;
+  total: number;
+}): boolean {
+  const STEP_B = 100; // values here are billions
+  const exact = (v: number) => v > 0 && Math.abs(v % STEP_B) < 1e-6;
+  return exact(e.external) && exact(e.domestic) && exact(e.total);
 }
 
 /**
@@ -58,13 +88,16 @@ function toChartData(timeline: DebtTimelineEntry[]): ChartEntry[] {
     const raw = toRawKES(v, unit);
     return raw == null ? 0 : raw / 1e9;
   };
-  return timeline.map((e) => ({
-    year: String(e.year),
-    external: toBillions(e.external, e.unit),
-    domestic: toBillions(e.domestic, e.unit),
-    total: toBillions(e.total, e.unit),
-    gdpRatio: e.gdp_ratio,
-  }));
+  return timeline.map((e) => {
+    const row = {
+      year: String(e.year),
+      external: toBillions(e.external, e.unit),
+      domestic: toBillions(e.domestic, e.unit),
+      total: toBillions(e.total, e.unit),
+      gdpRatio: e.gdp_ratio,
+    };
+    return { ...row, modelled: isRoundNumberEstimate(row) };
+  });
 }
 
 // 2-decimal precision for trillion-scale values. Matches both
@@ -194,22 +227,27 @@ export default function NationalDebtCard() {
   // consumer renders "—".
   const splitAvailable =
     externalDebt != null && domesticDebt != null && externalDebt + domesticDebt > 0;
+  // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- guarded: splitAvailable above requires both to be non-null before any of these are read
   const splitBase = (externalDebt ?? 0) + (domesticDebt ?? 0);
   const externalPct = splitAvailable
-    ? +(((externalDebt ?? 0) / splitBase) * 100).toFixed(1)
+    ? +((externalDebt! / splitBase) * 100).toFixed(1)
     : null;
   const domesticPct = externalPct != null ? +(100 - externalPct).toFixed(1) : null;
 
-  // IMF's "General Government Gross Debt" — the broader figure that
-  // includes counties, SOEs, pending bills + arrears. Shown here as a
-  // one-line callout so the homepage acknowledges the gap; the full
-  // dual-card + explainer lives on /debt.
-  const { data: broader } = useBroaderDebt();
-  const imfKes = broader?.status === 'success' ? broader.latest?.value_kes ?? null : null;
-  const imfPct = broader?.status === 'success' ? broader.latest?.debt_to_gdp ?? null : null;
-
+  // Both derived claims must start from the earliest SOURCED year, not the
+  // earliest year on the chart. Anchoring "4.0× since 2013" and "From 58.4% in
+  // 2013" to a round-number estimate published a growth story built on an
+  // invented base — and it understated the real rise (F13).
+  const firstSourced = debtTimeline.find((e) => !e.modelled) ?? null;
+  // A "from X% in YEAR" comparison is only defensible when the base and the
+  // displayed value are on the SAME basis — see lib/debt/debtCardBasis.
+  const gdpComparison = gdpRatioComparison(apiData?.debt_to_gdp_ratio, firstSourced);
+  const modelledYears = debtTimeline.filter((e) => e.modelled);
   const growthMultiple =
-    firstYear && lastYear ? (lastYear.total / firstYear.total).toFixed(1) : '—';
+    firstSourced && lastYear && firstSourced.total > 0
+      ? (lastYear.total / firstSourced.total).toFixed(1)
+      : '—';
+  const growthBaseYear = firstSourced?.year ?? '—';
   const yearRange = firstYear && lastYear ? `${firstYear.year}–${lastYear.year}` : '—';
   const hasTimeline = debtTimeline.length > 0;
 
@@ -230,6 +268,17 @@ export default function NationalDebtCard() {
             <p className='text-xs text-neutral-muted'>
               {t('home.debt.source_note').replace('{range}', yearRange)}
             </p>
+            {/* Say which years on this chart are not readings. Derived from the
+                data, so the sentence shrinks and then disappears as years get
+                re-sourced. */}
+            {modelledYears.length > 0 && (
+              <p className='mt-1 text-[11px] leading-snug text-neutral-muted/80'>
+                {modelledYears[0].year}–{modelledYears[modelledYears.length - 1].year}{' '}
+                are round-number estimates, not figures read off a published
+                table. {firstSourced?.year ?? 'Later years'} onward come from the
+                CBK Statistical Bulletin.
+              </p>
+            )}
           </div>
           {isLoading || isTimelineLoading ? (
             <Loader2 className='w-4 h-4 animate-spin text-neutral-muted/40 mt-1' />
@@ -242,12 +291,16 @@ export default function NationalDebtCard() {
       {apiData?.reconciliation?.status === 'divergent' && (
         <div className='mx-6 sm:mx-8 mt-3 flex items-start gap-2 rounded-sm border border-amber-400/50 bg-amber-50/70 dark:bg-amber-500/10 px-3 py-2'>
           <AlertTriangle className='w-3.5 h-3.5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0' />
+          {/* `primary_source` / `secondary_source` are internal table names
+              (`loans_table`, `debt_timeline_table`). They were being printed to
+              the public. The divergence is worth telling the reader about; the
+              schema is not. */}
           <p className='text-[11px] leading-snug text-amber-800 dark:text-amber-200'>
-            Sources differ by{' '}
-            {Math.abs(Number(apiData.reconciliation.percent_diff) || 0).toFixed(1)}% —{' '}
-            {apiData.reconciliation.primary_source} vs {apiData.reconciliation.secondary_source}.{' '}
+            Two official figures for this total differ by{' '}
+            {Math.abs(Number(apiData.reconciliation.percent_diff) || 0).toFixed(1)}%
+            and we cannot yet say which is right.{' '}
             <Link href='/debt' className='font-semibold underline hover:no-underline'>
-              See the audit trail
+              See both figures
             </Link>
             .
           </p>
@@ -263,7 +316,7 @@ export default function NationalDebtCard() {
             value={totalDebt != null ? fmtKES(totalDebt) : '—'}
             sub={t('home.debt.growth_sub')
               .replace('{x}', String(growthMultiple))
-              .replace('{year}', String(firstYear?.year || '—'))}
+              .replace('{year}', String(growthBaseYear))}
             accent='copper'
           />
           <StatCard
@@ -275,9 +328,13 @@ export default function NationalDebtCard() {
               </div>
             }
             value={`${gdpRatio}%`}
-            sub={t('home.debt.from_year_sub')
-              .replace('{pct}', String(firstYear?.gdpRatio ?? '—'))
-              .replace('{year}', String(firstYear?.year || '—'))}
+            sub={
+              gdpComparison
+                ? t('home.debt.from_year_sub')
+                    .replace('{pct}', String(gdpComparison.pct))
+                    .replace('{year}', String(gdpComparison.year))
+                : t('home.debt.gdp_basis_imf')
+            }
             accent='gold'
           />
           <StatCard
@@ -314,21 +371,13 @@ export default function NationalDebtCard() {
           />
         </div>
 
-        {/* Broader measure (IMF) callout — one-line, subtle, with a
-            link to the full dual-card + explainer on /debt. Hidden when
-            the seeder has not produced data yet so we never show a
-            misleading zero. */}
-        {imfKes != null && (
-          <Link
-            href='/debt#broader'
-            className='mt-3 block rounded-sm bg-gov-gold/[0.08] border border-gov-gold/25 px-3 py-2 text-[12px] text-gov-dark/85 dark:text-white/85 hover:bg-gov-gold/[0.14]'>
-            <span className='font-semibold text-gov-dark dark:text-white'>IMF broader measure:</span>{' '}
-            KES {(imfKes / 1e12).toFixed(2)}T
-            {imfPct != null && ` (${imfPct.toFixed(1)}% GDP)`} — includes counties,
-            SOEs, pending bills
-            <span className='text-gov-forest dark:text-emerald-100 ml-1 font-medium'>→ why the gap</span>
-          </Link>
-        )}
+        {/* The "IMF broader measure … includes counties, SOEs, pending bills"
+            callout was withdrawn (credibility audit F8). It described the IMF
+            General-Government figure as BROADER than the headline while
+            rendering it 1.26T SMALLER — a claim that refutes itself in the
+            same sentence. The IMF series is still ingested and is a legitimate
+            second measure; it needs a presentation that states which is larger
+            and why, not one that asserts a composition the numbers contradict. */}
       </div>
 
       {/* Chart */}

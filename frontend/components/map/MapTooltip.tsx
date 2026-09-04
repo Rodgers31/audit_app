@@ -142,9 +142,11 @@ export default function MapTooltip({
   const status = county.auditStatus || 'pending';
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
 
-  const utilization = county.budgetUtilization || 0;
+  const utilization = county.budgetUtilization ?? null;
   const debtRatio =
+    // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- county debt is a modelled figure the map disclaims sitewide; the ratio is guarded on budget > 0
     county.budget && county.budget > 0 ? ((county.debt || 0) / county.budget) * 100 : 0;
+  // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- modelled county figures, disclaimed sitewide
   const fundingGap = (county.budget || 0) - (county.moneyReceived || 0);
   const auditIssuesCount = county.auditIssues?.length || 0;
 
@@ -266,15 +268,19 @@ export default function MapTooltip({
               </div>
               <div className='flex items-baseline gap-1 mb-1.5'>
                 <span className='text-[15px] font-bold text-gov-dark dark:text-white tabular-nums leading-none'>
-                  {utilization.toFixed(0)}
+                  {utilization != null ? utilization.toFixed(0) : '—'}
                 </span>
-                <span className='text-[11px] font-medium text-neutral-muted'>%</span>
+                {utilization != null && (
+                  <span className='text-[11px] font-medium text-neutral-muted'>%</span>
+                )}
               </div>
               <div className='w-full h-1 rounded-full bg-gray-200/70'>
-                <div
-                  className={`h-1 rounded-full ${utilizationClass(utilization)} transition-all`}
-                  style={{ width: `${Math.min(utilization, 100)}%` }}
-                />
+                {utilization != null && (
+                  <div
+                    className={`h-1 rounded-full ${utilizationClass(utilization)} transition-all`}
+                    style={{ width: `${Math.min(utilization, 100)}%` }}
+                  />
+                )}
               </div>
             </div>
 

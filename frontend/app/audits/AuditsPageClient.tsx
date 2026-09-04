@@ -2,7 +2,7 @@
 
 import DataFreshnessBadge from '@/components/DataFreshnessBadge';
 import PageShell from '@/components/layout/PageShell';
-import type { FindingsFilters, WorstCounty } from '@/lib/api/audits';
+import type { FindingsFilters } from '@/lib/api/audits';
 import {
   useAuditDashboardSummary,
   useAuditFindings,
@@ -12,7 +12,6 @@ import {
 import { motion } from 'framer-motion';
 import {
   AlertTriangle,
-  ArrowUpDown,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -73,6 +72,12 @@ const TYPE_COLORS: Record<string, string> = {
   'Internal Controls': '#14b8a6',
   'Pending Bills': '#f97316',
   'Human Resource': '#6366f1',
+  // The three OAG report sections the backend now folds headings onto.
+  // Without these every bar fell through to the same grey.
+  'Report on the Financial Statements': '#3b82f6',
+  'Report on Lawfulness and Effectiveness in the Use of Public Resources': '#f59e0b',
+  'Report on Effectiveness of Internal Controls, Risk Management and Governance':
+    '#14b8a6',
 };
 
 const OPINION_COLORS: Record<string, string> = {
@@ -118,7 +123,6 @@ function Section({
 export default function AuditFindingsPage() {
   // --- Filters state ---
   const [filters, setFilters] = useState<FindingsFilters>({ page: 1, limit: 20 });
-  const [worstSort, setWorstSort] = useState<'amount' | 'count'>('amount');
 
   // --- Data hooks ---
   const { data: summary, isLoading: summaryLoading } = useAuditDashboardSummary();
@@ -139,22 +143,23 @@ export default function AuditFindingsPage() {
     return trends.years.map((year) => ({
       year: String(year),
       findings: trends.findings_per_year[String(year)] || 0,
-      amount: (trends.amount_per_year[String(year)] || 0) / 1e9,
+      // `amount_per_year` aggregates the same amount_involved field the hero
+      // tiles were withdrawn over — omitted rather than plotted (F1).
     }));
   }, [trends]);
 
-  const worstCounties = useMemo(() => {
-    if (!summary?.worst_counties) return [];
-    const sorted = [...summary.worst_counties];
-    if (worstSort === 'count') {
-      sorted.sort((a, b) => b.finding_count - a.finding_count);
-    }
-    return sorted;
-  }, [summary, worstSort]);
-
-  const adverseCount = useMemo(() => {
-    if (!summary?.findings_by_opinion) return 0;
-    return (summary.findings_by_opinion['Adverse'] || 0) + (summary.findings_by_opinion['Disclaimer'] || 0);
+  // `0` here would mean "the Auditor-General issued no adverse or disclaimer
+  // opinion", which is a strong claim. What it actually means today is that
+  // the extraction produced only one opinion value ("Unmodified Opinion"), so
+  // neither key exists in the facet. Absent key -> null (renders "—"); present
+  // key with value 0 -> a real zero we can stand behind. Credibility audit F21.
+  const adverseCount = useMemo<number | null>(() => {
+    const byOpinion = summary?.findings_by_opinion;
+    if (!byOpinion) return null;
+    const hasAdverse = 'Adverse' in byOpinion;
+    const hasDisclaimer = 'Disclaimer' in byOpinion;
+    if (!hasAdverse && !hasDisclaimer) return null;
+    return (byOpinion['Adverse'] || 0) + (byOpinion['Disclaimer'] || 0);
   }, [summary]);
 
   // --- Filter options ---
@@ -212,32 +217,66 @@ export default function AuditFindingsPage() {
       subtitle='Tracking how public money is spent and where it goes missing'>
       {/* ═══ A. HERO STATS ═══ */}
       <Section>
-        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
-          <StatCard
-            label='Irregular Expenditure'
-            value={fmtKES(summary?.total_irregular_expenditure || 0)}
-            icon={<AlertTriangle className='w-5 h-5' />}
-            color='red'
-          />
-          <StatCard
-            label='Unsupported Expenditure'
-            value={fmtKES(summary?.total_unsupported_expenditure || 0)}
-            icon={<FileWarning className='w-5 h-5' />}
-            color='amber'
-          />
+        <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
           <StatCard
             label='Total Findings'
-            value={(summary?.total_findings || 0).toLocaleString()}
+            value={
+              summary?.total_findings != null
+                ? summary.total_findings.toLocaleString()
+                : '—'
+            }
             icon={<Search className='w-5 h-5' />}
             color='blue'
+            subtitle='Published in the Auditor-General&rsquo;s report'
           />
           <StatCard
-            label='Adverse/Disclaimer Opinions'
-            value={adverseCount.toLocaleString()}
+            label='Adverse / Disclaimer Opinions'
+            value={adverseCount != null ? adverseCount.toLocaleString() : '—'}
             icon={<Shield className='w-5 h-5' />}
             color='red'
-            subtitle='Counties with worst opinions'
+            subtitle={
+              adverseCount != null
+                ? 'Entities whose accounts drew a modified opinion'
+                : 'Opinion type not captured for this report'
+            }
           />
+        </div>
+      </Section>
+
+      {/* Why there is no money total here.
+          The two expenditure tiles that used to sit above summed
+          `amount_involved`, which the loader fills from any finding paragraph
+          containing exactly one `Kshs.` figure
+          (backend/seeding/domains/audits/loader.py:165). That rule has no test
+          of what the figure MEANS, so the total was dominated by account
+          balances quoted as context — trade-payables balances, a procurement
+          value against which a 0.03% levy went unremitted, one payroll balance
+          counted twice — and the largest single contributor carried the
+          Auditor-General's own words "My opinion is not modified in respect of
+          this matter". Publishing that sum as "Unsupported Expenditure" was
+          credibility-audit finding F1. Withheld until the extraction can
+          separate an amount QUESTIONED from an amount DISCUSSED. */}
+      <Section delay={0.04}>
+        <div className='rounded-xl border border-neutral-border/60 bg-surface-sunken/40 px-4 py-3.5'>
+          <div className='flex items-start gap-2.5'>
+            <FileWarning className='w-4 h-4 mt-0.5 flex-shrink-0 text-gov-forest/70 dark:text-emerald-100/70' />
+            <p className='text-[12.5px] leading-relaxed text-neutral-muted'>
+              <span className='font-semibold text-gov-dark dark:text-white'>
+                No total money figure is shown.
+              </span>{' '}
+              The Auditor-General&rsquo;s report does not state a headline
+              questioned amount in the machine-readable part of the document, and
+              the amounts written inside individual findings are usually the
+              account balance under discussion rather than a sum being queried.
+              Adding them up would produce a number the report does not support,
+              so none is published here.
+              <span className='block mt-1.5 text-neutral-muted/80'>
+                An absent total is not a finding that no public money is at
+                issue. Individual findings below carry their own amounts and
+                page references where the report states them.
+              </span>
+            </p>
+          </div>
         </div>
       </Section>
 
@@ -253,68 +292,14 @@ export default function AuditFindingsPage() {
         </div>
       </Section>
 
-      {/* ═══ B. WORST OFFENDERS ═══ */}
-      <Section delay={0.1}>
-        <div className='space-y-3'>
-          <div className='flex items-center justify-between'>
-            <h2 className='font-display text-xl text-gov-dark dark:text-white'>Top 10 Worst Offenders</h2>
-            <div className='flex items-center gap-2'>
-              <span className='text-xs text-gov-dark/50 dark:text-white/50'>Sort by:</span>
-              <button
-                onClick={() => setWorstSort('amount')}
-                className={`text-xs px-3 py-1 rounded-full transition-colors ${
-                  worstSort === 'amount'
-                    ? 'bg-gov-forest text-white'
-                    : 'bg-gov-dark/5 text-gov-dark/60 dark:text-white/60 hover:bg-gov-dark/10'
-                }`}>
-                Amount
-              </button>
-              <button
-                onClick={() => setWorstSort('count')}
-                className={`text-xs px-3 py-1 rounded-full transition-colors ${
-                  worstSort === 'count'
-                    ? 'bg-gov-forest text-white'
-                    : 'bg-gov-dark/5 text-gov-dark/60 dark:text-white/60 hover:bg-gov-dark/10'
-                }`}>
-                Findings
-              </button>
-            </div>
-          </div>
-
-          <ResponsiveTable>
-            <table className='w-full text-sm'>
-              <thead>
-                <tr className='border-b border-gov-dark/10 text-left'>
-                  <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70 w-8'>#</th>
-                  <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>County</th>
-                  <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70 text-right'>Flagged Amount</th>
-                  <th className='py-2 font-semibold text-gov-dark/70 dark:text-white/70 text-right'>Findings</th>
-                </tr>
-              </thead>
-              <tbody>
-                {worstCounties.map((c, i) => (
-                  <tr
-                    key={c.county_id}
-                    className='border-b border-gov-dark/5 hover:bg-gov-forest/[0.03] transition-colors group'>
-                    <td className='py-2.5 pr-3 text-gov-dark/40 dark:text-white/40 font-mono text-xs'>{i + 1}</td>
-                    <td className='py-2.5 pr-3'>
-                      <Link
-                        href={`/counties/${c.county_id}`}
-                        className='text-gov-forest dark:text-emerald-100 font-medium hover:underline group-hover:text-gov-sage transition-colors'>
-                        {c.county_name}
-                      </Link>
-                    </td>
-                    <td className='py-2.5 pr-3 text-right font-mono text-red-600'>
-                      {fmtKES(c.total_amount)}
-                    </td>
-                    <td className='py-2.5 text-right font-mono'>{c.finding_count}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </ResponsiveTable>
-        </div>
-      </Section>
+      {/* The "Top 10 Worst Offenders" ranking was withdrawn (credibility audit
+          F1/F34). It ordered named State Departments and the Executive Office of
+          the President by a "Flagged Amount" built from the same
+          amount_involved extraction described above, under a heading that
+          called them offenders — while the disclaimer immediately below it says
+          these are queries, not proven loss. A ranking by finding COUNT is
+          defensible and is what the homepage "Top Ministries Flagged" card
+          shows; a ranking by an amount the report never stated is not. */}
 
       {/* ═══ C. FINDINGS BY TYPE + D. TRENDS — side by side ═══ */}
       <Section delay={0.15}>
@@ -381,18 +366,6 @@ export default function AuditFindingsPage() {
                         style: { fontSize: 11, fill: '#6b7280' },
                       }}
                     />
-                    <YAxis
-                      yAxisId='right'
-                      orientation='right'
-                      tick={{ fontSize: 11 }}
-                      tickFormatter={(v) => `${v}B`}
-                      label={{
-                        value: 'Amount (KES B)',
-                        angle: 90,
-                        position: 'insideRight',
-                        style: { fontSize: 11, fill: '#6b7280' },
-                      }}
-                    />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: '#fff',
@@ -400,10 +373,7 @@ export default function AuditFindingsPage() {
                         borderRadius: 8,
                         fontSize: 12,
                       }}
-                      formatter={(val: number, name: string) => {
-                        if (name === 'amount') return [`KES ${val.toFixed(1)}B`, 'Total Amount'];
-                        return [val.toLocaleString(), 'Findings Count'];
-                      }}
+                      formatter={(val: number) => [val.toLocaleString(), 'Findings Count']}
                     />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
                     <Line
@@ -415,17 +385,6 @@ export default function AuditFindingsPage() {
                       strokeWidth={2}
                       dot={{ r: 4 }}
                       activeDot={{ r: 6 }}
-                    />
-                    <Line
-                      yAxisId='right'
-                      type='monotone'
-                      dataKey='amount'
-                      name='Total Amount'
-                      stroke='#ef4444'
-                      strokeWidth={2}
-                      dot={{ r: 4 }}
-                      activeDot={{ r: 6 }}
-                      strokeDasharray='5 5'
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -463,10 +422,9 @@ export default function AuditFindingsPage() {
               <table className='w-full text-sm'>
                 <thead>
                   <tr className='border-b border-gov-dark/10 text-left'>
-                    <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>County</th>
+                    <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>Entity audited</th>
                     <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>Finding Type</th>
-                    <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>Years</th>
-                    <th className='py-2 font-semibold text-gov-dark/70 dark:text-white/70 text-right'>Total Amount</th>
+                    <th className='py-2 font-semibold text-gov-dark/70 dark:text-white/70'>Years</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -486,7 +444,7 @@ export default function AuditFindingsPage() {
                           {r.query_type}
                         </span>
                       </td>
-                      <td className='py-2.5 pr-3'>
+                      <td className='py-2.5'>
                         <div className='flex flex-wrap gap-1'>
                           {r.years_appeared.map((y) => (
                             <span
@@ -496,9 +454,6 @@ export default function AuditFindingsPage() {
                             </span>
                           ))}
                         </div>
-                      </td>
-                      <td className='py-2.5 text-right font-mono text-red-600'>
-                        {r.total_amount > 0 ? fmtKES(r.total_amount) : '—'}
                       </td>
                     </tr>
                   ))}
@@ -598,7 +553,7 @@ export default function AuditFindingsPage() {
               <table className='w-full text-sm'>
                 <thead>
                   <tr className='border-b border-gov-dark/10 text-left'>
-                    <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>County</th>
+                    <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>Entity audited</th>
                     <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>Year</th>
                     <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>Type</th>
                     <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70 text-right'>Amount</th>

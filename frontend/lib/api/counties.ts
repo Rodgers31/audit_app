@@ -100,10 +100,12 @@ const transformCountyData = (bc: BackendCountyResponse): County => {
     population: bc.population,
     auditStatus,
     lastAuditDate: bc.last_audit_date || undefined,
-    gdp: bc.gdp ?? 0,
+    // The API genuinely returns gdp: null for every county — no county GDP
+    // series is ingested. Rendering 0 said each county produces nothing (F2).
+    gdp: bc.gdp ?? undefined,
     moneyReceived: bc.money_received ?? bc.total_spent ?? 0,
-    budgetUtilization: bc.budget_utilization ?? 0,
-    revenueCollection: bc.revenue_collection ?? 0,
+    budgetUtilization: bc.budget_utilization ?? undefined,
+    revenueCollection: bc.revenue_collection ?? undefined,
     pendingBills: bc.pending_bills ?? 0,
     developmentBudget: bc.development_budget || undefined,
     recurrentBudget: bc.recurrent_budget || undefined,

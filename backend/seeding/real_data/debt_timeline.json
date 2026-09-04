@@ -1,115 +1,128 @@
 {
   "metadata": {
-    "source": "Central Bank of Kenya Annual Reports & National Treasury Budget Policy Statements",
+    "source": "Central Bank of Kenya \u2014 public debt table (1999-2021) and Statistical Bulletin Table 4.1.3 (2022-2025)",
     "description": "Kenya's public debt composition by year (external vs domestic), with GDP and debt-to-GDP ratio",
     "units": "billions_kes",
     "last_updated": "2026-02-20",
-    "notes": "2024 figures from CBK Q4 2024 bulletin. 2025 figures from CBK Q3 2025 bulletin & National Treasury FY2025/26 BPS. GDP figures from KNBS National Accounts. Earlier years from CBK annual statistical bulletins."
+    "notes": "2013-2021 were round hundreds of billions attributed to CBK; no CBK table produces that. They are now CBK's own December readings from https://www.centralbank.go.ke/public-debt/ (monthly domestic/external/total, 1999-2021), parsed by seeding/domains/national_debt/cbk_web_tables.py and accepted only where CBK's identity domestic + external = total holds. The replaced 2013 figure was 3,100Bn against CBK's 2,111.6Bn \u2014 46.8% too high, with the error shrinking toward the present: a series extrapolated backwards. 2022-2025 keep the CBK Statistical Bulletin values applied by the 2026-08-29 correction; CBK's HTML table stops at 2021."
   },
   "timeline": [
     {
       "year": 2013,
-      "external": 1500,
-      "domestic": 1600,
-      "total": 3100,
+      "external": 922.4,
+      "domestic": 1189.2,
+      "total": 2111.6,
       "gdp": 7381,
-      "gdp_ratio": 42.0
+      "gdp_ratio": 28.6,
+      "source": "CBK public debt table, December 2013"
     },
     {
       "year": 2014,
-      "external": 1700,
-      "domestic": 1900,
-      "total": 3600,
+      "external": 1170.7,
+      "domestic": 1307.7,
+      "total": 2478.4,
       "gdp": 8145,
-      "gdp_ratio": 44.2
+      "gdp_ratio": 30.4,
+      "source": "CBK public debt table, December 2014"
     },
     {
       "year": 2015,
-      "external": 2100,
-      "domestic": 2200,
-      "total": 4300,
+      "external": 1615.2,
+      "domestic": 1540.6,
+      "total": 3155.8,
       "gdp": 8866,
-      "gdp_ratio": 48.5
+      "gdp_ratio": 35.6,
+      "source": "CBK public debt table, December 2015"
     },
     {
       "year": 2016,
-      "external": 2500,
-      "domestic": 2500,
-      "total": 5000,
+      "external": 1896.4,
+      "domestic": 1930.9,
+      "total": 3827.3,
       "gdp": 9940,
-      "gdp_ratio": 50.3
+      "gdp_ratio": 38.5,
+      "source": "CBK public debt table, December 2016"
     },
     {
       "year": 2017,
-      "external": 2700,
-      "domestic": 2700,
-      "total": 5400,
+      "external": 2349.3,
+      "domestic": 2220.3,
+      "total": 4569.6,
       "gdp": 10385,
-      "gdp_ratio": 52.0
+      "gdp_ratio": 44.0,
+      "source": "CBK public debt table, December 2017"
     },
     {
       "year": 2018,
-      "external": 2900,
-      "domestic": 2900,
-      "total": 5800,
+      "external": 2723.7,
+      "domestic": 2548.8,
+      "total": 5272.5,
       "gdp": 10781,
-      "gdp_ratio": 53.8
+      "gdp_ratio": 48.9,
+      "source": "CBK public debt table, December 2018"
     },
     {
       "year": 2019,
-      "external": 3200,
-      "domestic": 3300,
-      "total": 6500,
+      "external": 3106.8,
+      "domestic": 2942.1,
+      "total": 6048.9,
       "gdp": 11566,
-      "gdp_ratio": 56.2
+      "gdp_ratio": 52.3,
+      "source": "CBK public debt table, December 2019"
     },
     {
       "year": 2020,
-      "external": 3600,
-      "domestic": 3600,
-      "total": 7200,
+      "external": 3793.3,
+      "domestic": 3488.5,
+      "total": 7281.8,
       "gdp": 11538,
-      "gdp_ratio": 62.4
+      "gdp_ratio": 63.1,
+      "source": "CBK public debt table, December 2020"
     },
     {
       "year": 2021,
-      "external": 3900,
-      "domestic": 4300,
-      "total": 8200,
+      "external": 4174.4,
+      "domestic": 4032.4,
+      "total": 8206.7,
       "gdp": 12094,
-      "gdp_ratio": 67.8
+      "gdp_ratio": 67.9,
+      "source": "CBK public debt table, December 2021"
     },
     {
       "year": 2022,
-      "external": 4300,
-      "domestic": 4800,
-      "total": 9100,
+      "external": 4673.1,
+      "domestic": 4472.8,
+      "total": 9146.0,
       "gdp": 14444,
-      "gdp_ratio": 63.0
+      "gdp_ratio": 63.3,
+      "source": "CBK Statistical Bulletin Dec 2025, Table 4.1.3 (PDF p.56)"
     },
     {
       "year": 2023,
-      "external": 4800,
-      "domestic": 5400,
-      "total": 10200,
+      "external": 6089.6,
+      "domestic": 5050.1,
+      "total": 11139.7,
       "gdp": 14509,
-      "gdp_ratio": 70.3
+      "gdp_ratio": 76.8,
+      "source": "CBK Statistical Bulletin Dec 2025, Table 4.1.3 (PDF p.56)"
     },
     {
       "year": 2024,
-      "external": 5326,
-      "domestic": 6164,
-      "total": 11490,
+      "external": 5057.0,
+      "domestic": 5868.3,
+      "total": 10925.3,
       "gdp": 17542,
-      "gdp_ratio": 65.5
+      "gdp_ratio": 62.3,
+      "source": "CBK Statistical Bulletin Dec 2025, Table 4.1.3 (PDF p.56)"
     },
     {
       "year": 2025,
-      "external": 5680,
-      "domestic": 6820,
-      "total": 12500,
+      "external": 5462.0,
+      "domestic": 6837.5,
+      "total": 12299.5,
       "gdp": 18382,
-      "gdp_ratio": 68.0
+      "gdp_ratio": 66.9,
+      "source": "CBK Statistical Bulletin Dec 2025, Table 4.1.3 (PDF p.56)"
     }
   ],
   "source": "CBK Annual Reports, National Treasury BPS, KNBS rebased GDP"

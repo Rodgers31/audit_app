@@ -283,11 +283,21 @@ class TestOverlayTargetsTheReportsOwnYear:
 class _Estimates:
     """Stand-in for BudgetEstimates; only the fields the applier reads."""
 
-    def __init__(self, fy="FY 2026/27", gross_billion=5485.7):
+    def __init__(
+        self,
+        fy="FY 2026/27",
+        gross_billion=5485.7,
+        # Mirrors BudgetEstimates.debt_redemption_kes, which is None whenever
+        # the book's interest and redemption sub-totals did not reconcile.
+        # Kept on the stub rather than letting the applier use getattr, so
+        # removing the real field fails here instead of passing silently.
+        debt_redemption_kes=1_061_600_000_000,
+    ):
         self.fiscal_year = fy
         self.gross_budget_billion = gross_billion
         self.voted_gross_kes = 2_922_706_913_184
         self.cfs_kes = 2_562_973_919_672
+        self.debt_redemption_kes = debt_redemption_kes
         self.page_refs = {"voted_total": 11, "cfs_summary": 1193}
         self.checks = ["voted current+capital==total"]
         self.source_url = "https://www.treasury.go.ke/x.pdf"
@@ -385,3 +395,46 @@ class TestShippedFixture:
     def test_the_superseded_bps_figures_are_kept_for_audit(self):
         rows = {r["fiscal_year"]: r for r in self._fixture()["fiscal_years"]}
         assert rows["FY 2025/26"]["_appropriated_budget_bps"] == 4190
+
+
+class TestDebtRedemptionIsPublished:
+    """The gross budget and the enacted headline differ mostly by redemption.
+
+    Kenya's FY2026/27 gross budget is KSh 5,485.7B; the figure quoted in most
+    budget coverage is ~4.82T. The difference is redemption of maturing debt
+    (1,061.6B) coming out and the county equitable share going in. Without the
+    redemption figure the page can assert that the two measures differ but not
+    show why, which is the difference between an explanation and a claim.
+    """
+
+    def test_the_redemption_figure_reaches_the_row(self):
+        payload = {"fiscal_years": []}
+        out, status = _apply_budget_estimates(payload, _Estimates())
+        row = out["fiscal_years"][0]
+        assert status == "created"
+        assert row["debt_redemption"] == 1061.6
+
+    def test_it_reconciles_the_gross_figure_to_the_quoted_one(self):
+        """5,485.7 − 1,061.6 = 4,424.1, and + ~400B county share ≈ 4.82T."""
+        payload = {"fiscal_years": []}
+        out, _ = _apply_budget_estimates(payload, _Estimates())
+        row = out["fiscal_years"][0]
+        national_excl_redemption = row["appropriated_budget"] - row["debt_redemption"]
+        assert round(national_excl_redemption, 1) == 4424.1
+
+    def test_an_unproved_split_is_not_published(self):
+        """The parser returns None when the book's own sub-totals do not
+        reconcile. A guessed redemption figure must never reach the page."""
+        payload = {"fiscal_years": []}
+        out, _ = _apply_budget_estimates(
+            payload, _Estimates(debt_redemption_kes=None)
+        )
+        row = out["fiscal_years"][0]
+        assert "debt_redemption" not in row
+        assert row["appropriated_budget"] == 5485.7  # the gross figure still publishes
+
+    def test_the_receipt_names_the_redemption_component(self):
+        payload = {"fiscal_years": []}
+        out, _ = _apply_budget_estimates(payload, _Estimates())
+        composition = out["fiscal_years"][0]["budget_basis_source"]["composition"]
+        assert "debt redemption 1,061.6B" in composition

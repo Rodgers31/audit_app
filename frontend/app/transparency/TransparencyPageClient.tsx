@@ -38,7 +38,7 @@ import {
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useCallback, useMemo, useState } from 'react';
+import { useEffect, useCallback, useMemo, useState } from 'react';
 
 /* ═══════════ Helpers ═══════════ */
 
@@ -254,8 +254,30 @@ export default function TransparencyPage() {
   }, [fiscalYearsRaw]);
   const pickerYears = useMemo(() => toPickerOptions(years), [years]);
 
-  const defaultYear = pickerYears.find((y) => y.is_current)?.fiscal_year ?? years[0];
-  const [selectedYear, setSelectedYear] = useState(defaultYear);
+  // Land on a year the picker actually offers.
+  //
+  // `selectedYear` was seeded from DEFAULT_FISCAL_YEARS — generateFiscalYears(),
+  // a wall-clock guess — and useState only takes its initial value, so once
+  // /audits/fiscal-years resolved the page was still sitting on FY2026/27: a
+  // year absent from its own picker, showing "No data yet" as the landing
+  // state (credibility audit F37). Now the choice waits for the real list and
+  // is applied when it arrives.
+  const defaultYear =
+    pickerYears.find((y) => y.is_current)?.fiscal_year ?? years[0] ?? null;
+  const [selectedYear, setSelectedYear] = useState<string>('');
+  useEffect(() => {
+    // Correct the selection whenever it is not one of the years the picker
+    // actually offers — which covers both "nothing chosen yet" and the case
+    // that kept breaking this page: the first render uses
+    // DEFAULT_FISCAL_YEARS, a wall-clock guess, and once
+    // /audits/fiscal-years resolves that guess is no longer in the list.
+    // Seeding state on first render alone left the page parked on FY2026/27
+    // with no pill highlighted and a "No data yet" body (F37).
+    if (!defaultYear) return;
+    if (!selectedYear || !years.includes(selectedYear)) {
+      setSelectedYear(defaultYear);
+    }
+  }, [selectedYear, defaultYear, years]);
   const [sortKey, setSortKey] = useState<SortKey>('efficiency');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [searchQuery, setSearchQuery] = useState('');
@@ -265,20 +287,29 @@ export default function TransparencyPage() {
     useAllCountiesMoneyFlow(selectedYear);
 
   /* ── Derived national insights ── */
+  //
+  // Nothing here falls back to 0. The Flagged stage in particular: the
+  // waterfall correctly said "OAG audit report not yet published for this
+  // year — data unavailable", and the KPI beside it turned the same null into
+  // "KES 0 — No flagged findings", exonerating 47 county governments on the
+  // strength of a report nobody has read (credibility audit F22).
   const insights = useMemo(() => {
     if (!nationalFlow?.stages) return null;
-    const allocated = nationalFlow.stages.find((s) => s.stage === 'Allocated')?.amount ?? 0;
-    const spent = nationalFlow.stages.find((s) => s.stage === 'Spent')?.amount ?? 0;
-    const flagged = nationalFlow.stages.find((s) => s.stage === 'Flagged')?.amount ?? 0;
-    const gap = (allocated ?? 0) - (spent ?? 0);
-    const unspentPct = allocated > 0 ? (gap / allocated) * 100 : 0;
+    const amountOf = (stage: string) =>
+      nationalFlow.stages.find((s) => s.stage === stage)?.amount ?? null;
+    const allocated = amountOf('Allocated');
+    const spent = amountOf('Spent');
+    const flagged = amountOf('Flagged');
+    const gap = allocated != null && spent != null ? allocated - spent : null;
+    const unspentPct =
+      gap != null && allocated != null && allocated > 0 ? (gap / allocated) * 100 : null;
     return {
-      allocated: allocated ?? 0,
-      spent: spent ?? 0,
-      flagged: flagged ?? 0,
+      allocated,
+      spent,
+      flagged,
       gap,
       unspentPct,
-      efficiency: nationalFlow.efficiency_score,
+      efficiency: nationalFlow.efficiency_score ?? null,
     };
   }, [nationalFlow]);
 
@@ -347,12 +378,14 @@ export default function TransparencyPage() {
           cmp = (a.efficiency_score ?? 999) - (b.efficiency_score ?? 999);
           break;
         case 'flagged':
+          // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- sort comparator
           cmp = (b.flagged_amount ?? 0) - (a.flagged_amount ?? 0);
           break;
         case 'gap':
           cmp = b.total_gap - a.total_gap;
           break;
         case 'allocated':
+          // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- sort comparator
           cmp = (b.allocated ?? 0) - (a.allocated ?? 0);
           break;
       }
@@ -433,7 +466,7 @@ export default function TransparencyPage() {
       </Section>
 
       {/* ═══ 4. KPI cards ═══ */}
-      {insights && insights.allocated > 0 && (
+      {insights && insights.allocated != null && insights.allocated > 0 && (
         <Section delay={0.12}>
           <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
             <InsightCard
@@ -444,23 +477,39 @@ export default function TransparencyPage() {
             />
             <InsightCard
               label={isProjectedFY ? 'Spent so far' : 'Gap to spend'}
-              value={isProjectedFY ? 'Pending' : fmtKES(insights.gap)}
+              value={
+                isProjectedFY
+                  ? 'Pending'
+                  : insights.gap != null
+                    ? fmtKES(insights.gap)
+                    : '—'
+              }
               sublabel={
                 isProjectedFY
                   ? 'Execution figures publish as the CoB releases quarterly CBIRRs'
-                  : `${insights.unspentPct.toFixed(1)}% of allocation unspent at report time`
+                  : insights.unspentPct != null
+                    ? `${insights.unspentPct.toFixed(1)}% of allocation unspent at report time`
+                    : 'Execution not yet published for this period'
               }
               accent={isProjectedFY ? 'gray' : 'amber'}
             />
             <InsightCard
               label='Questioned by Auditor General'
-              value={isProjectedFY ? 'Not yet audited' : fmtKES(insights.flagged)}
+              value={
+                isProjectedFY
+                  ? 'Not yet audited'
+                  : insights.flagged != null
+                    ? fmtKES(insights.flagged)
+                    : 'Not yet published'
+              }
               sublabel={
                 isProjectedFY
                   ? 'OAG audits close ~18 months after year-end'
-                  : insights.flagged > 0
-                    ? `≈ ${fundingImpact(insights.flagged) || 'irregular expenditure'}`
-                    : 'No flagged findings'
+                  : insights.flagged == null
+                    ? 'No Auditor-General report for this year traces to a source document yet. This is not a finding that nothing was questioned.'
+                    : insights.flagged > 0
+                      ? `≈ ${fundingImpact(insights.flagged) || 'irregular expenditure'}`
+                      : 'The published report questioned no amount for this period'
               }
               accent={isProjectedFY ? 'gray' : 'red'}
             />
@@ -593,6 +642,7 @@ export default function TransparencyPage() {
                   <tbody>
                     {(() => {
                       const nationalAllocated =
+                        // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- reducer accumulator
                         countyRows.reduce((s, r) => s + (r.allocated ?? 0), 0) || 0;
                       return sortedRows.map((row, i) => {
                         const share =

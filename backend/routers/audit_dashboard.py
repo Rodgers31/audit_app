@@ -23,6 +23,7 @@ from sqlalchemy.orm import Session
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from cache.redis_cache import cached
+from services.oag_report_sections import canonical_section
 from services.publication_gate import (
     count_withheld_audits,
     publishable_audit_criterion,
@@ -180,7 +181,14 @@ async def get_audit_summary(db: Session = Depends(get_db)):
             .group_by(Audit.query_type)
             .all()
         )
-        findings_by_type = {t: c for t, c in type_rows}
+        # Fold the twelve stored heading variants onto the three OAG report
+        # sections they actually belong to. The facet drove both a bar chart
+        # and a filter dropdown, so a reader saw twelve near-identical options
+        # ("...and Governance," vs "...and Governance.") plus a raw
+        # `financial_audit` enum (credibility audit F39).
+        from services.oag_report_sections import group_counts
+
+        findings_by_type = group_counts({t: c for t, c in type_rows})
 
         # Findings by opinion
         # INDEX hint: CREATE INDEX ix_audits_opinion ON audits(audit_opinion)
@@ -248,6 +256,32 @@ async def get_audit_summary(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Database query failed")
 
 
+def _query_type_filter(db, query_type: str):
+    """SQL condition matching every stored heading in a canonical section.
+
+    The facet now offers canonical section names, so the value coming back on
+    the query string is a section, not one of the raw headings in the column.
+    Expand it to the set of raw values that belong to that section. An exact
+    raw heading still matches itself, so any link made before this change keeps
+    working.
+    """
+    from services.oag_report_sections import raw_variants_for
+
+    known = [
+        row[0]
+        for row in db.query(Audit.query_type)
+        .filter(Audit.query_type.isnot(None))
+        .distinct()
+        .all()
+    ]
+    variants = raw_variants_for(query_type, known)
+    if not variants:
+        # Unknown value: match it literally so the filter returns nothing
+        # rather than silently returning everything.
+        return Audit.query_type == query_type
+    return Audit.query_type.in_(variants)
+
+
 @router.get("/trends", response_model=AuditTrendsResponse)
 @cached(ttl=300, key_prefix="audit_trends")
 async def get_audit_trends(
@@ -263,7 +297,7 @@ async def get_audit_trends(
         if county_id is not None:
             filters.append(Audit.entity_id == county_id)
         if query_type is not None:
-            filters.append(Audit.query_type == query_type)
+            filters.append(_query_type_filter(db, query_type))
 
         # Findings count per year — single SQL GROUP BY
         # INDEX hint: CREATE INDEX ix_audits_year ON audits(audit_year)
@@ -329,77 +363,73 @@ async def get_recurring_findings(db: Session = Depends(get_db)):
         # INDEX hint: CREATE INDEX ix_audits_entity_qtype_year
         #   ON audits(entity_id, query_type, audit_year)
 
-        # --- Step 1: identify recurring (entity_id, query_type) groups ---
-        # A group is recurring if explicitly flagged OR spans 2+ years.
-
-        # 1a. Groups with at least one "Recurring" flag
-        flagged_keys = (
-            db.query(Audit.entity_id, Audit.query_type)
-            .filter(publishable_audit_criterion())
-            .filter(Audit.follow_up_status == "Recurring")
-            .group_by(Audit.entity_id, Audit.query_type)
-            .all()
-        )
-
-        # 1b. Groups spanning 2+ distinct years
-        multi_year_keys = (
-            db.query(Audit.entity_id, Audit.query_type)
-            .filter(
-                publishable_audit_criterion(),
-                Audit.audit_year.isnot(None),
-                Audit.query_type.isnot(None),
+        # --- Identify recurring groups, folding heading variants FIRST ---
+        #
+        # The OAG writes the same standing section under several headings, and
+        # canonical_section() folds them. Grouping by the RAW query_type and
+        # canonicalising only the emitted label produced two defects:
+        #
+        #   * two variants for one county came back as duplicate rows carrying
+        #     the same canonical label, with the years and amounts split
+        #     between them, inflating the pattern count; and
+        #   * worse, a finding recorded as variant A in 2022 and variant B in
+        #     2023 never reached the "spans 2+ years" threshold, so a genuine
+        #     recurrence was missed entirely.
+        #
+        # So fold to the canonical section BEFORE deciding recurrence, and
+        # merge years, amounts and ids across the variants. One query rather
+        # than the previous 2 + N.
+        rows = (
+            db.query(
+                Audit.id,
+                Audit.entity_id,
+                Audit.query_type,
+                Audit.audit_year,
+                Audit.amount,
+                Audit.follow_up_status,
             )
-            .group_by(Audit.entity_id, Audit.query_type)
-            .having(func.count(func.distinct(Audit.audit_year)) >= 2)
+            .filter(publishable_audit_criterion())
             .all()
         )
 
-        # Union the two sets of keys
-        all_keys = {(eid, qt or "Unknown") for eid, qt in flagged_keys} | \
-                   {(eid, qt) for eid, qt in multi_year_keys}
+        groups: Dict[tuple, dict] = {}
+        for fid, eid, qt, yr, amt, follow_up in rows:
+            label = canonical_section(qt) or qt or "Unknown"
+            g = groups.setdefault(
+                (eid, label),
+                {"years": set(), "amount": 0.0, "ids": [], "flagged": False},
+            )
+            if yr is not None:
+                g["years"].add(yr)
+            if amt is not None:
+                g["amount"] += float(amt)
+            g["ids"].append(fid)
+            if follow_up == "Recurring":
+                g["flagged"] = True
 
-        if not all_keys:
+        # A group is recurring if explicitly flagged OR it spans 2+ years.
+        result_map = {
+            key: value
+            for key, value in groups.items()
+            if value["flagged"] or len(value["years"]) >= 2
+        }
+
+        if not result_map:
             return RecurringFindingsResponse(recurring_findings=[], total=0)
 
-        # --- Step 2: fetch all findings for these groups with JOIN ---
-        # Batch-load entity names to avoid N+1
-        all_entity_ids = list({eid for eid, _ in all_keys})
         entity_name_map: Dict[int, str] = {}
-        if all_entity_ids:
+        _entity_ids = list({eid for eid, _ in result_map})
+        if _entity_ids:
             for eid, name in (
                 db.query(Entity.id, Entity.canonical_name)
-                .filter(Entity.id.in_(all_entity_ids))
+                .filter(Entity.id.in_(_entity_ids))
                 .all()
             ):
                 entity_name_map[eid] = name
 
-        # Build result by querying findings per group (compatible with SQLite + Postgres)
-        result_map: Dict[tuple, dict] = {}
-        for entity_id, qt in all_keys:
-            qt_filter = Audit.query_type == qt if qt != "Unknown" else Audit.query_type.is_(None)
-            findings = (
-                db.query(Audit.id, Audit.audit_year, Audit.amount)
-                .filter(publishable_audit_criterion())
-                .filter(Audit.entity_id == entity_id, qt_filter)
-                .all()
-            )
-            years_set: set = set()
-            total_amt = 0.0
-            ids_list: list = []
-            for fid, yr, amt in findings:
-                if yr is not None:
-                    years_set.add(yr)
-                if amt is not None:
-                    total_amt += float(amt)
-                ids_list.append(fid)
-
-            result_map[(entity_id, qt)] = {
-                "county_name": entity_name_map.get(entity_id, "Unknown"),
-                "query_type": qt,
-                "years": years_set,
-                "amount": total_amt,
-                "ids": ids_list,
-            }
+        for (eid, label), value in result_map.items():
+            value["county_name"] = entity_name_map.get(eid, "Unknown")
+            value["query_type"] = label
 
         recurring = []
         for v in result_map.values():
@@ -470,7 +500,7 @@ async def get_audit_findings(
         if year is not None:
             query = query.filter(Audit.audit_year == year)
         if query_type is not None:
-            query = query.filter(Audit.query_type == query_type)
+            query = query.filter(_query_type_filter(db, query_type))
         if severity is not None:
             query = query.filter(Audit.severity == severity)
         if audit_opinion is not None:
@@ -504,7 +534,10 @@ async def get_audit_findings(
                     finding_text=a.finding_text,
                     severity=a.severity.value if hasattr(a.severity, "value") else str(a.severity),
                     recommended_action=a.recommended_action,
-                    query_type=a.query_type,
+                    # The row's own label must match the facet the reader
+                    # filtered on, otherwise selecting a section shows rows
+                    # apparently of a different type.
+                    query_type=canonical_section(a.query_type) or a.query_type,
                     amount=float(a.amount) if a.amount is not None else None,
                     status=a.status,
                     audit_opinion=a.audit_opinion,

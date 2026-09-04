@@ -12,10 +12,10 @@ import { getCountyOfficials } from '@/lib/data/county-officials';
 import { useLang } from '@/lib/i18n/LangProvider';
 import type { TranslationKey } from '@/lib/i18n/messages';
 import { CountyComprehensive } from '@/types';
-import { AlertTriangle, ExternalLink, HardHat, Scale, TrendingDown, TrendingUp } from 'lucide-react';
+import { AlertTriangle, ExternalLink, Scale, TrendingDown, TrendingUp } from 'lucide-react';
 import React from 'react';
 import ModelledDataNote from '@/components/ModelledDataNote';
-import { fmtKES, fmtLabel, fmtPop, pct, SEVERITY_STYLE } from '../shared';
+import { hasIngestedAudit, fmtKES, fmtLabel, fmtPop, pct, SEVERITY_STYLE } from '../shared';
 import KPI from './KPI';
 
 /* ═══════════ Circular progress ═══════════ */
@@ -163,11 +163,18 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
     budget,
     debt,
     audit,
-    stalled_projects,
     financial_summary,
     missing_funds,
     revenue,
   } = data;
+
+  // Provenance comes from the API, which knows whether this period's headline
+  // was read from a CoB BIRR table or modelled from the CRA formula. The
+  // static string this replaced asserted "modelled" for every county and every
+  // period, which denied the provenance of figures that ARE published.
+  // Falls back to the translated string only when the API omits it.
+  const budgetSourceLabel =
+    data.data_sources?.budget || t('county.overview.source_cob');
 
   const sustainLabel: Record<
     string,
@@ -222,7 +229,7 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
               </div>
               {budget.fiscal_year && (
                 <div className='mt-2 text-[11px] text-gray-400 dark:text-neutral-muted/80'>
-                  {t('county.overview.source_cob')} · {budget.fiscal_year}
+                  {budgetSourceLabel} · {budget.fiscal_year}
                 </div>
               )}
             </div>
@@ -273,11 +280,15 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
         <div
           aria-hidden
           className={`absolute inset-y-0 left-0 w-1 ${
-            audit.findings_count === 0
-              ? 'bg-emerald-400'
-              : (audit.by_severity.critical || 0) > 0
-                ? 'bg-rose-500'
-                : 'bg-amber-400'
+            // Green for "0 findings" told the reader this county came back
+            // clean. Absent is grey, not green (credibility audit F23).
+            !hasIngestedAudit(audit)
+              ? 'bg-neutral-border'
+              : audit.findings_count === 0
+                ? 'bg-emerald-400'
+                : (audit.by_severity.critical || 0) > 0
+                  ? 'bg-rose-500'
+                  : 'bg-amber-400'
           }`}
         />
         <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-3 pl-2'>
@@ -287,13 +298,15 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
             </div>
             <div className='flex items-center gap-4 flex-wrap'>
               {(['critical', 'warning', 'info'] as const).map((sev) => {
-                const count = audit.by_severity[sev] || 0;
+                const count = hasIngestedAudit(audit)
+                  ? audit.by_severity[sev] || 0
+                  : null;
                 const s = SEVERITY_STYLE[sev];
                 return (
                   <div key={sev} className='flex items-center gap-1.5'>
                     <div className={`w-2 h-2 rounded-full ${s.dot}`} />
                     <span className='text-sm text-gray-700 dark:text-neutral-muted'>
-                      <span className='font-semibold tabular-nums'>{count}</span>{' '}
+                      <span className='font-semibold tabular-nums'>{count ?? '—'}</span>{' '}
                       {t(s.lowerKey)}
                     </span>
                   </div>
@@ -391,31 +404,10 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
       {/* Who Runs This County — named officials */}
       <OfficialsCard countyId={data.id} fallbackGovernor={data.governor} />
 
-      {/* Stalled projects summary */}
-      {stalled_projects.count > 0 && (
-        <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-5'>
-          <div className='flex items-center gap-2 mb-2'>
-            <HardHat size={16} className='text-red-600' />
-            <h3 className='text-sm font-semibold text-gray-800 dark:text-neutral-text'>
-              {stalled_projects.count}{' '}
-              {stalled_projects.count !== 1
-                ? t('county.overview.stalled_n_plural')
-                : t('county.overview.stalled_n')}
-            </h3>
-          </div>
-          <div className='text-xs text-gray-500 dark:text-neutral-muted/80 mb-1'>
-            {t('county.overview.contracted_total')}: {fmtKES(stalled_projects.total_contracted_value)}{' '}
-            &middot; {t('county.overview.paid')}: {fmtKES(stalled_projects.total_amount_paid)} (
-            {pct(
-              (stalled_projects.total_amount_paid /
-                (stalled_projects.total_contracted_value || 1)) *
-                100
-            )}{' '}
-            {t('county.overview.disbursed')})
-          </div>
-          <p className='text-xs text-gray-400 dark:text-neutral-muted/80'>{t('county.overview.see_projects_tab')}</p>
-        </div>
-      )}
+      {/* The stalled-projects summary card was withdrawn along with the
+          Projects tab (credibility audit F6) — it summarised a hand-written
+          fixture whose Auditor-General case references were never read from any
+          OAG report. See the note on TABS in CountyDetailClient.tsx. */}
     </div>
   );
 }

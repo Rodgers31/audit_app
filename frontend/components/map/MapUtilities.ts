@@ -119,7 +119,9 @@ export const getCountyHoverFill = (county: County | undefined): string =>
 /* ────────────────── helpers ────────────────── */
 
 export const getFinancialTrend = (county: County): 'excellent' | 'good' | 'fair' | 'poor' => {
+  // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- picks a map colour bucket, never rendered as a figure. Known limitation: a county that reported no execution lands in the lowest bucket.
   const utilization = county.budgetUtilization || 0;
+  // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- modelled county debt used to pick a map colour bucket, not rendered as a figure
   const debt = county.debt ?? 0;
   const budget = county.budget && county.budget > 0 ? county.budget : 1;
   const debtRatio = (debt / budget) * 100;

@@ -384,3 +384,97 @@ def withheld_file_figure(reason: str) -> Dict[str, Any]:
     "not published" from "published as zero".
     """
     return {"value": None, "reason": reason}
+
+
+# --------------------------------------------------------------------------
+# county-level debt instruments
+# --------------------------------------------------------------------------
+
+# Creditors that lend to sovereigns, not to county governments. Article 212 of
+# the Constitution and s.58 of the PFM Act 2012 let a county borrow only where
+# the national government guarantees the loan and the county assembly approves
+# it; a county cannot contract external debt directly. So a county-level row
+# naming one of these is either (a) a national loan misattributed to a county,
+# or (b) invented. Production carries rows reading
+# "World Bank (County Infrastructure)" — KES 13.1B against Nairobi, 6.3B
+# against Mombasa, rendered as "81.2% of total debt" on the county page — and
+# that lender string appears NOWHERE in this repository: no fixture, no seeder,
+# no migration. It is an orphaned row asserting that a named county owes a
+# named multilateral. Credibility audit F15.
+_SOVEREIGN_ONLY_CREDITORS = (
+    "world bank",
+    "ida",
+    "ibrd",
+    "african development bank",
+    "afdb",
+    "international monetary fund",
+    "imf",
+    "eurobond",
+    "exim",
+    "jica",
+    "afd",
+    "kfw",
+    "syndicated",
+    "bilateral",
+    "multilateral",
+)
+
+
+#: Words that would appear in a document actually authorising a county to
+#: borrow from a sovereign-only creditor.  Article 212 of the Constitution
+#: allows county borrowing only where the national government guarantees the
+#: loan and the county assembly approves it, so the evidence is a guarantee
+#: instrument, a gazette notice, or a county loan register — not a national
+#: debt bulletin that happens to list the creditor.
+_BORROWING_AUTHORISATION_EVIDENCE = (
+    "guarantee",
+    "guaranteed",
+    "loan register",
+    "borrowing approval",
+    "county assembly approval",
+    "gazette",
+    "on-lending",
+    "onlending",
+    "subsidiary loan agreement",
+)
+
+
+def county_debt_instrument_failure(loan, source_document=None) -> Optional[str]:
+    """Why this county-level debt row may not be published, or None if it may.
+
+    Deliberately NOT a string blocklist: the test is "does this row name a
+    creditor that only lends to sovereigns, and can it show the instrument that
+    let a county borrow from one?".
+
+    Checking only that ``source_document_id`` is set would be a check that
+    cannot fail — the column is ``nullable=False`` (models.py:281-283) and the
+    baseline migration enforces it, so every persisted row has one.  The FK
+    alone also proves nothing about *what* the document is: production rows
+    carry a CBK national debt bulletin, which lists the creditor but does not
+    authorise any county to borrow from it.
+
+    So the document is resolved and read.  A row passes only when the document
+    it points at reads like a borrowing authorisation.  Nothing in production
+    does today, which is the finding — and the gate can still go green, which
+    is what makes it a gate rather than a filter.
+
+    ``source_document`` may be passed explicitly by callers that already have
+    it loaded; otherwise the ORM relationship is used.
+    """
+    lender = (getattr(loan, "lender", "") or "").lower()
+    if not any(name in lender for name in _SOVEREIGN_ONLY_CREDITORS):
+        return None
+
+    doc = source_document
+    if doc is None:
+        doc = getattr(loan, "source_document", None)
+    if doc is None:
+        return "external_creditor_no_source_document"
+
+    haystack = " ".join(
+        str(getattr(doc, field, "") or "")
+        for field in ("title", "publisher", "url")
+    ).lower()
+    if not any(word in haystack for word in _BORROWING_AUTHORISATION_EVIDENCE):
+        return "external_creditor_document_is_not_a_borrowing_authorisation"
+    return None

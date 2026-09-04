@@ -94,6 +94,7 @@ export const MESSAGES = {
 
   // Hero summary strip
   'home.hero.total_debt_as_of': { en: 'Total Debt as of', sw: 'Jumla ya Deni kufikia', plain: 'Total money owed as of' },
+  'home.hero.total_debt': { en: 'Total public debt', sw: 'Jumla ya deni la umma', plain: 'Total money the government owes' },
   'home.hero.risk_level': { en: 'Risk Level', sw: 'Kiwango cha Hatari', plain: 'How risky' },
   'home.hero.risk_high': { en: 'High Risk', sw: 'Hatari Kubwa', plain: 'High Risk' },
   'home.hero.risk_moderate': { en: 'Moderate Risk', sw: 'Hatari ya Wastani', plain: 'Medium Risk' },
@@ -127,11 +128,15 @@ export const MESSAGES = {
   'home.govcard.seg_development': { en: 'Development', sw: 'Maendeleo', plain: 'Projects' },
   'home.govcard.seg_counties': { en: 'Counties', sw: 'Kaunti', plain: 'Counties' },
   'home.govcard.seg_other': { en: 'Other', sw: 'Nyingine', plain: 'Other' },
-  'home.govcard.ceiling_breached': { en: 'Above the 55%-of-GDP anchor', sw: 'Juu ya nanga ya 55% ya Pato la Taifa', plain: 'Above the 55% safe limit' },
+  'home.govcard.ceiling_breached': { en: 'Above the 55%-of-GDP anchor on a nominal basis', sw: 'Juu ya nanga ya 55% ya Pato la Taifa kwa msingi wa kawaida', plain: 'Above the 55% safe limit, measured the simple way' },
+  // The anchor is set in PRESENT-VALUE terms; the ratio charted against it is
+  // nominal. Present value is lower than nominal for a portfolio with
+  // concessional external debt, so a nominal reading overstates the breach.
+  // /debt already carried this caveat; the homepage did not (audit F3).
   'home.govcard.anchor_caption': {
-    en: 'PFM Act 2023 anchor: 55% of GDP (present value). Former KES 10T ceiling repealed.',
-    sw: 'Nanga ya Sheria ya PFM 2023: 55% ya Pato la Taifa (thamani ya sasa). Kikomo cha awali cha KES trilioni 10 kilifutwa.',
-    plain: 'The safe limit is now 55% of the economy (set in 2023). The old KES 10 trillion limit was scrapped.',
+    en: 'PFM Act 2023 anchor: 55% of GDP measured in PRESENT-VALUE terms. The ratio shown is nominal, so it is not a like-for-like comparison. Former KES 10T ceiling repealed.',
+    sw: 'Nanga ya Sheria ya PFM 2023: 55% ya Pato la Taifa kwa THAMANI YA SASA. Uwiano ulioonyeshwa ni wa kawaida (nominal), hivyo si ulinganisho wa moja kwa moja. Kikomo cha awali cha KES trilioni 10 kilifutwa.',
+    plain: 'The safe limit is 55% of the economy, but it is measured a different way from the number shown here, so the two do not compare exactly. The old KES 10 trillion limit was scrapped.',
   },
   'home.govcard.stat_budget': { en: 'Budget', sw: 'Bajeti', plain: 'Budget' },
   'home.govcard.stat_revenue': { en: 'Revenue', sw: 'Mapato', plain: 'Money In' },
@@ -159,7 +164,23 @@ export const MESSAGES = {
   'home.debt.total_public': { en: 'Total Public Debt', sw: 'Deni Jumla la Umma', plain: 'Total Kenya Owes' },
   'home.debt.external_label': { en: 'External Debt', sw: 'Deni la Nje', plain: 'Money owed abroad' },
   'home.debt.domestic_label': { en: 'Domestic Debt', sw: 'Deni la Ndani', plain: 'Money owed at home' },
-  'home.debt.growth_sub': { en: '{x}× since {year}', sw: 'mara {x} tangu {year}', plain: '{x}× since {year}' },
+  // The multiple is computed on the CBK debt timeline, while the headline
+  // value beside it is the instrument-register sum. They are different series
+  // and their ratio is not the headline's growth, so the label names the
+  // series rather than implying the number above it grew by this much.
+  'home.debt.growth_sub': {
+    en: 'CBK timeline: {x}× since {year}',
+    sw: 'Ratiba ya CBK: mara {x} tangu {year}',
+    plain: 'On the CBK series: {x}× bigger than in {year}',
+  },
+  // Shown instead of a year-on-year comparison when the displayed ratio is the
+  // IMF general-government figure: the timeline's own ratio is central
+  // government over World Bank GDP, so the two are not points on one series.
+  'home.debt.gdp_basis_imf': {
+    en: 'IMF general government basis',
+    sw: 'Msingi wa serikali kwa ujumla (IMF)',
+    plain: 'Measured the IMF way (all of government)',
+  },
   'home.debt.from_year_sub': { en: 'From {pct}% in {year}', sw: 'Kutoka {pct}% mwaka {year}', plain: 'From {pct}% in {year}' },
   'home.debt.pct_of_total': { en: '{pct}% of total', sw: '{pct}% ya jumla', plain: '{pct}% of total' },
   'home.debt.no_timeline': { en: 'No timeline data available', sw: 'Hakuna data ya ratiba', plain: 'No history available' },
@@ -848,7 +869,17 @@ export const MESSAGES = {
   'county.overview.utilized_suffix': { en: 'utilized', sw: 'imetumika', plain: 'spent' },
   'county.overview.spent_of': { en: 'spent of', sw: 'imetumika kati ya', plain: 'spent of' },
   'county.overview.allocated_suffix': { en: 'allocated', sw: 'iliyotengwa', plain: 'planned' },
-  'county.overview.source_cob': { en: 'Source: Controller of Budget', sw: 'Chanzo: Mkurugenzi wa Bajeti', plain: 'Source: Controller of Budget' },
+  // This label sat ~200px below the page's own disclaimer saying these figures
+  // are "Modelled estimate — NOT official Controller of Budget figures", and
+  // Fallback only. The API now returns data_sources.budget describing the rows
+  // it actually selected — CoB BIRR aggregates where the parse landed, CRA
+  // model where it did not — and OverviewTab renders that. This string is used
+  // only when the API omits the field, so it states the weaker case.
+  'county.overview.source_cob': {
+    en: 'Modelled from the CRA equitable-share formula',
+    sw: 'Imekadiriwa kwa fomula ya mgao sawa ya CRA',
+    plain: 'Worked out using the CRA sharing formula, not read from a report',
+  },
 
   // Debt position card
   'county.overview.debt_position': { en: 'Debt Position', sw: 'Hali ya Deni', plain: 'What the County Owes' },

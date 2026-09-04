@@ -7,10 +7,11 @@
 import { getBalanceColor } from './countyUtils';
 
 interface FinancialSummaryProps {
-  revenue: number;
-  expenditure: number;
-  balance: number;
-  perCapitaDebt: number;
+  // Nullable: a county that reported nothing is not a county with KES 0.
+  revenue: number | null;
+  expenditure: number | null;
+  balance: number | null;
+  perCapitaDebt: number | null;
 }
 
 export default function FinancialSummary({
@@ -27,22 +28,27 @@ export default function FinancialSummary({
         {/* Revenue */}
         <div>
           <div className='text-xs text-gray-600 dark:text-neutral-muted mb-1 font-medium'>Revenue</div>
-          <div className='text-lg font-bold text-green-600'>KES {(revenue / 1e9).toFixed(1)}B</div>
+          <div className='text-lg font-bold text-green-600'>
+            {revenue != null ? `KES ${(revenue / 1e9).toFixed(1)}B` : '—'}
+          </div>
         </div>
 
         {/* Expenditure */}
         <div>
           <div className='text-xs text-gray-600 dark:text-neutral-muted mb-1 font-medium'>Expenditure</div>
           <div className='text-lg font-bold text-blue-600'>
-            KES {(expenditure / 1e9).toFixed(1)}B
+            {expenditure != null ? `KES ${(expenditure / 1e9).toFixed(1)}B` : '—'}
           </div>
         </div>
 
         {/* Balance */}
         <div>
           <div className='text-xs text-gray-600 dark:text-neutral-muted mb-1 font-medium'>Balance</div>
-          <div className={`text-lg font-bold ${getBalanceColor(balance)}`}>
-            KES {(Math.abs(balance) / 1e6).toFixed(0)}M
+          <div
+            className={`text-lg font-bold ${
+              balance != null ? getBalanceColor(balance) : 'text-gray-400'
+            }`}>
+            {balance != null ? `KES ${(Math.abs(balance) / 1e6).toFixed(0)}M` : '—'}
           </div>
         </div>
 
@@ -50,7 +56,9 @@ export default function FinancialSummary({
         <div>
           <div className='text-xs text-gray-600 dark:text-neutral-muted mb-1 font-medium'>Per Capita Debt</div>
           <div className='text-lg font-bold text-orange-600'>
-            KES {Math.round(perCapitaDebt).toLocaleString()}
+            {perCapitaDebt != null
+              ? `KES ${Math.round(perCapitaDebt).toLocaleString()}`
+              : '—'}
           </div>
         </div>
       </div>

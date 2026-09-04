@@ -117,45 +117,117 @@ def _build_stage(
     return d
 
 
+class UnparseableFiscalYear(ValueError):
+    """The caller sent something that is not a fiscal-year label at all."""
+
+
 def _normalize_fiscal_year(fiscal_year: str) -> List[str]:
     """Return candidate DB label forms for a fiscal year input.
 
-    Accepts "2023/24", "2023/2024", "FY2023/24", "FY 2023/24",
-    "2023-24", "2023-2024", "23/24" etc. and emits the canonical
-    "FY2023/24" label plus a couple of common variants so ``_resolve_periods``
-    can match regardless of how the caller formatted it.
+    Accepts "2023/24", "2023/2024", "FY2023/24", "FY 2023/24", "2023-24",
+    "2023-2024", "23/24", and the same forms carrying a PERIOD QUALIFIER —
+    "FY2025/26 9M", "FY2025/26 H1" — which is how the Controller of Budget
+    labels its part-year implementation reports.
+
+    Two defects lived here (credibility audit F3/F36):
+
+    * The pattern was anchored to end-of-string right after the second year
+      group, so every qualified label failed to parse. `/audits/fiscal-years`
+      offers "FY2025/26 9M" and "FY2025/26 H1" and the Follow the Money picker
+      renders both, but the money-flow endpoints could never resolve them — the
+      page showed "no data yet" for periods that exist in the database.
+
+    * A value that is not a fiscal year at all (a bare calendar year, "2024")
+      also returned [], and the caller could not tell that from "this period
+      has nothing published". That is what sent the audit that commissioned
+      this work looking for a missing ETL join that was really a wrong
+      parameter format. Unparseable input now raises.
+
+    A qualified input matches ONLY qualified labels, and an unqualified input
+    matches only the unqualified label — asking for the full year must not
+    silently return the 9-month report.
     """
-    if not fiscal_year:
-        return []
+    if not fiscal_year or not fiscal_year.strip():
+        raise UnparseableFiscalYear("empty fiscal year")
     raw = fiscal_year.strip().upper().replace("FY", "").strip()
-    m = re.match(r"^\s*(\d{2,4})\s*[/\-]\s*(\d{2,4})\s*$", raw)
+    # The qualifier is restricted to the canonical sub-period markers
+    # seeding/utils.py::_FY_PATTERN emits — H1/H2, Q1-Q4, or an nM period.
+    # A trailing `(.*)` accepted anything, so "FY2025/26 garbage" parsed as a
+    # valid qualified year and came back as "period not found" instead of the
+    # 400 this function exists to raise.
+    m = re.match(
+        r"^\s*(\d{2,4})\s*[/\-]\s*(\d{2,4})\s*(H[12]|Q[1-4]|\d+M)?\s*$", raw
+    )
     if not m:
-        return []
-    y1, y2 = m.group(1), m.group(2)
+        raise UnparseableFiscalYear(
+            f"{fiscal_year!r} is not a fiscal-year label; expected e.g. "
+            "'FY2024/25' or 'FY2025/26 9M'"
+        )
+    y1, y2, qualifier = m.group(1), m.group(2), (m.group(3) or "").strip()
     y1_full = y1 if len(y1) == 4 else f"20{y1}"
     y2_short = y2[-2:] if len(y2) >= 2 else y2.zfill(2)
     y2_full = f"{y1_full[:2]}{y2_short}"
-    # Emit canonical + a few tolerated legacy variants
-    return [
+
+    bases = [
         f"FY{y1_full}/{y2_short}",        # canonical: FY2023/24
         f"FY{y1_full}/{y2_full}",         # FY2023/2024
         f"{y1_full}/{y2_short}",          # 2023/24
         f"{y1_full}/{y2_full}",           # 2023/2024
         f"FY{y1_full}-{y2_short}",        # FY2023-24
     ]
+    if not qualifier:
+        return bases
+    # "FY2025/26 9M" — keep the qualifier attached, and try the couple of
+    # spacings the labels are written with.
+    return [f"{b} {qualifier}" for b in bases] + [f"{b}{qualifier}" for b in bases]
 
 
 def _resolve_periods(db: Session, fiscal_year: str) -> List[int]:
-    """Return period IDs matching the given fiscal year (tolerant of format)."""
+    """Period IDs for a fiscal year label. Raises on unparseable input.
+
+    An empty list now means exactly one thing — the label parsed but no such
+    period exists in the database — so callers can report that separately from
+    "you sent us something we could not read".
+    """
     candidates = _normalize_fiscal_year(fiscal_year)
-    if not candidates:
-        return []
     periods = (
         db.query(FiscalPeriod.id)
         .filter(FiscalPeriod.label.in_(candidates))
         .all()
     )
     return [p.id for p in periods]
+
+
+def _period_exists(db: Session, fiscal_year: str) -> bool:
+    """Does any fiscal period carry this label? Used to tell 'unknown period'
+    from 'known period with nothing published in it'."""
+    return bool(_resolve_periods(db, fiscal_year))
+
+
+def _resolve_periods_or_400(db: Session, year: str) -> List[int]:
+    """Resolve a fiscal-year parameter, refusing input that is not one.
+
+    Silently answering an unreadable parameter with a well-formed "no data"
+    object is how a wrong request format reads as a missing dataset
+    (credibility audit F36).
+    """
+    try:
+        return _resolve_periods(db, year)
+    except UnparseableFiscalYear as exc:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "invalid_fiscal_year",
+                "message": str(exc),
+                "hint": (
+                    "Use a fiscal-year label, e.g. 'FY2024/25'. Part-year "
+                    "Controller of Budget periods carry a qualifier: "
+                    "'FY2025/26 H1', 'FY2025/26 9M'. A bare calendar year is "
+                    "not a fiscal year."
+                ),
+            },
+        ) from exc
+
 
 
 def _money_flow_for_entity(
@@ -343,7 +415,7 @@ async def county_money_flow(
     if not entity:
         raise HTTPException(status_code=404, detail="County not found")
 
-    period_ids = _resolve_periods(db, year)
+    period_ids = _resolve_periods_or_400(db, year)
 
     result = _money_flow_for_entity(db, entity.id, period_ids)
 
@@ -362,7 +434,7 @@ async def national_money_flow(
     db: Session = Depends(get_db),
 ):
     """Aggregate money flow across all counties for a fiscal year."""
-    period_ids = _resolve_periods(db, year)
+    period_ids = _resolve_periods_or_400(db, year)
 
     county_entities = (
         db.query(Entity).filter(Entity.type == EntityType.COUNTY).all()
@@ -460,6 +532,15 @@ async def national_money_flow(
         "total_waste_estimate": flagged,
         "efficiency_score": efficiency,
         "source_document_url": source_doc_url,
+        # Why the stages are empty, when they are. A caller could previously
+        # not tell "this fiscal period is not in the database" from "the
+        # period is there but nothing has been published for it yet"
+        # (credibility audit F36).
+        "unavailable_reason": (
+            None
+            if period_ids
+            else "fiscal_period_not_found"
+        ),
     }
 
 
@@ -473,7 +554,7 @@ async def all_counties_money_flow(
 
     Replaces N individual /counties/{id}/money-flow calls with 3 SQL queries.
     """
-    period_ids = _resolve_periods(db, year)
+    period_ids = _resolve_periods_or_400(db, year)
 
     # 1. All county entities in ONE query
     county_entities = (

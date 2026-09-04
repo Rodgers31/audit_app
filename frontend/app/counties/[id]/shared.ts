@@ -50,7 +50,7 @@ export const PALETTE = [
   '#94a3b8',
 ];
 
-export type Tab = 'overview' | 'budget' | 'audit' | 'accountability' | 'projects' | 'money';
+export type Tab = 'overview' | 'budget' | 'audit' | 'accountability' | 'money';
 
 export const SEVERITY_STYLE: Record<
   string,
@@ -95,3 +95,32 @@ export const ACCT_GRADE_BG: Record<string, string> = {
   D: 'from-orange-500 to-orange-600',
   F: 'from-rose-500 to-red-600',
 };
+
+
+/**
+ * Has ANY Auditor-General finding been ingested for this county?
+ *
+ * `findings_count: 0` does not mean the county was found clean — it means no
+ * OAG report for it has been read into this site yet. The Accountability tab
+ * already says exactly that ("An absent grade is not a low grade… This is not
+ * a finding that the county is clean"), while the hero KPI, the health modal
+ * and the Audit Findings tab rendered the same null as a bold "0" beside a
+ * green bar (credibility audit F23). Same data, opposite messages, one click
+ * apart.
+ *
+ * `status: "pending"` with no findings is the shape the API returns when
+ * nothing has been ingested; a real audit that found nothing would carry a
+ * status and an opinion.
+ */
+export function hasIngestedAudit(audit: {
+  findings_count?: number | null;
+  status?: string | null;
+  findings?: unknown[] | null;
+}): boolean {
+  if (audit?.findings_count && audit.findings_count > 0) return true;
+  if (audit?.findings && audit.findings.length > 0) return true;
+  // An explicit non-pending status means the report was read and reported
+  // nothing — a real zero we can stand behind.
+  const status = (audit?.status || '').toLowerCase();
+  return status !== '' && status !== 'pending' && status !== 'unknown';
+}

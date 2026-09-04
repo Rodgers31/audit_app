@@ -6,16 +6,10 @@
 'use client';
 
 import { Heart } from 'lucide-react';
-import { realLifeStories } from '../data/realLifeStories';
 import ActionSteps from './why-this-matters/ActionSteps';
 import ImpactCategories from './why-this-matters/ImpactCategories';
-import StoriesGrid from './why-this-matters/StoriesGrid';
 
-interface WhyThisMattersProps {
-  searchTerm: string;
-}
-
-export default function WhyThisMatters({ searchTerm }: WhyThisMattersProps) {
+export default function WhyThisMatters() {
   return (
     <div className='bg-white dark:bg-surface-base rounded-3xl p-8 shadow-xl border border-gray-200 dark:border-neutral-border'>
       {/* Page Header */}
@@ -35,12 +29,17 @@ export default function WhyThisMatters({ searchTerm }: WhyThisMattersProps) {
         </p>
       </div>
 
-      {/* Real Life Stories Section */}
-      <p className='text-xs text-neutral-muted italic mb-2'>
-        These stories are composites inspired by real Auditor-General findings across multiple
-        counties. Names and locations are illustrative.
-      </p>
-      <StoriesGrid stories={realLifeStories} searchTerm={searchTerm} />
+      {/* The "Real Stories, Real Impact" grid was withdrawn (credibility audit
+          F33). The four narratives carried invented figures — KES 50m of
+          medical equipment, KES 80m for a school for 800 children, KES 200m of
+          road, KES 300m of youth-employment money "diverted to fund political
+          campaigns" — under a heading that said "Real". A composite disclaimer
+          above them was not enough on a site whose whole promise is that every
+          figure traces to a published document, and the youth-fund story
+          attaches a specific sum and a specific motive to a real, named class
+          of public fund. The civic guidance below carries no invented data and
+          stays. Restore only with stories built from findings this site can
+          actually cite. */}
 
       {/* Impact Categories Section */}
       <ImpactCategories />

@@ -1,0 +1,7 @@
+{
+  "name": "eslint-plugin-local",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "description": "Project-local ESLint rules. See no-zero-fallback-on-published-figure.js."
+}

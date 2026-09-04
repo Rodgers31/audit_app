@@ -19,7 +19,6 @@
 import { Metadata } from 'next';
 import { getCountyComprehensive } from '@/lib/api/counties';
 import { getQueryClient } from '@/lib/react-query/getQueryClient';
-import { getLatestReportedFiscalYear } from '@/lib/utils';
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import CountyDetailClient from './CountyDetailClient';
 
@@ -50,7 +49,10 @@ export default async function CountyDetailPage({
 }) {
   const { id } = await params;
   const resolvedSearchParams = await searchParams;
-  const fiscalYear = resolvedSearchParams.fy || getLatestReportedFiscalYear();
+  // Must match CountyDetailClient exactly, or the SSR prefetch populates a
+  // different query key than the client reads and the page refetches with
+  // different numbers. See the note there.
+  const fiscalYear = resolvedSearchParams.fy || undefined;
   const queryClient = getQueryClient();
 
   // Only prefetch the comprehensive payload on SSR — that's what the

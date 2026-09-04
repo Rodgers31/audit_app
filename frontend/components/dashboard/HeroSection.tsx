@@ -1,6 +1,7 @@
 'use client';
 
 import { KenyaFlag } from '@/components/ui/KenyaFlag';
+import Link from 'next/link';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useDebtTimeline, useNationalDebtOverview } from '@/lib/react-query/useDebt';
 import { useFiscalSummary } from '@/lib/react-query/useFiscal';
@@ -120,7 +121,28 @@ export function SummaryStrip() {
   // Debt-to-GDP — prefer overview's canonical ratio (uses fresher GDP base
   // than the timeline row, which can carry stale nominal-GDP figures).
   const gdpPct = apiData?.debt_to_gdp_ratio ?? latest?.gdp_ratio ?? '—';
-  const year = apiData?.gdp_year ?? latest?.year ?? '—';
+
+  // The debt-to-GDP ratio and the debt total beside it are on DIFFERENT
+  // bases and are not two views of one number: `debt_to_gdp_ratio` is IMF
+  // General-Government gross debt over GDP (69.3%), while `total_outstanding`
+  // is our central-government instrument register (13.55T). Dividing the two
+  // figures on screen gives 77%, not 69.3%. Name the basis rather than
+  // letting a reader assume they divide (credibility audit F4/F8).
+  const gdpBasis: string | null = apiData?.debt_to_gdp_basis ?? null;
+  const gdpSource: string | null = apiData?.debt_to_gdp_source ?? null;
+
+  // What the headline total actually is. `total_outstanding` is the sum of the
+  // rows in our instrument register; `reconciliation.secondary_value_kes` is
+  // the aggregate the publisher states for the same period. They disagree by
+  // ~9%, so the card names both rather than attributing our sum to CBK, which
+  // publishes a different number (credibility audit F3).
+  const loanCount: number | null = apiData?.loan_count ?? null;
+  const publishedTotalKES: number | null =
+    apiData?.reconciliation?.secondary_value_kes ?? null;
+  const publishedTotalT =
+    publishedTotalKES != null
+      ? (publishedTotalKES / 1_000_000_000_000).toFixed(2)
+      : null;
 
   // Trust the backend's risk_level when present (canonical source); fall back
   // to the centralized classifier so thresholds stay consistent across the UI.
@@ -134,16 +156,35 @@ export function SummaryStrip() {
       <div className='grid sm:grid-cols-3'>
         <div className='border-b border-neutral-border p-5 sm:border-b-0 sm:border-r sm:p-6'>
           <div className='flex items-center justify-between gap-3'>
-            <span className='figure-label'>{t('home.hero.total_debt_as_of')} {year}</span>
+            {/* The year here used to be `gdp_year` — the GDP observation year,
+                not the debt vintage — so the card dated the debt figure by
+                something else entirely (credibility audit F4). The basis now
+                sits in the source line below, where it can be stated exactly. */}
+            <span className='figure-label'>{t('home.hero.total_debt')}</span>
             <KenyaFlag className='h-5 w-5 shrink-0' />
           </div>
           <p className='figure-value mt-4 text-[2.35rem] leading-none sm:text-5xl' data-figure>
             <span className='mr-2 text-sm tracking-[0.08em] text-neutral-muted'>KES</span>
             {totalT == null ? '—' : `${totalT}T`}
           </p>
-          <div className='mt-3 inline-flex items-center gap-1 text-xs text-neutral-muted'>
-            Source: CBK / National Treasury
-            <DebtExplainerModal context='hero' />
+          <div className='mt-3 text-xs leading-snug text-neutral-muted'>
+            <span>
+              {loanCount != null
+                ? `Sum of our instrument register (${loanCount} rows)`
+                : 'Sum of our instrument register'}
+            </span>
+            {publishedTotalT && (
+              <span className='block mt-0.5'>
+                CBK publishes KES {publishedTotalT}T for the same period —{' '}
+                <Link href='/debt' className='underline hover:no-underline'>
+                  the gap is unreconciled
+                </Link>
+                .
+              </span>
+            )}
+            <span className='mt-0.5 inline-flex items-center gap-1'>
+              <DebtExplainerModal context='hero' />
+            </span>
           </div>
         </div>
 
@@ -152,7 +193,14 @@ export function SummaryStrip() {
           <p className='figure-value mt-4 text-[2.35rem] leading-none sm:text-5xl' data-figure>
             {typeof gdpPct === 'number' ? `${gdpPct.toFixed(1)}%` : '—'}
           </p>
-          <p className='mt-3 text-xs text-neutral-muted'>Source: CBK / IMF methodology</p>
+          <p className='mt-3 text-xs leading-snug text-neutral-muted'>
+            {gdpBasis ?? 'Basis not declared by the source'}
+            {gdpSource && <span className='block mt-0.5'>Source: {gdpSource}</span>}
+            <span className='block mt-0.5'>
+              A broader measure than the total on the left, so the two do not
+              divide into each other.
+            </span>
+          </p>
         </div>
 
         <div className='p-5 sm:p-6'>

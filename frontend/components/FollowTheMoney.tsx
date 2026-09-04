@@ -249,6 +249,7 @@ interface FollowTheMoneyProps {
 export default function FollowTheMoney({ data, isLoading, compact }: FollowTheMoneyProps) {
   const maxAmount = useMemo(() => {
     if (!data?.stages) return 0;
+    // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- Math.max over stage amounts to scale the chart axis
     return Math.max(...data.stages.map((s) => s.amount || 0));
   }, [data]);
 

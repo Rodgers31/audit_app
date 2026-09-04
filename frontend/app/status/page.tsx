@@ -274,6 +274,7 @@ function StatusDashboard() {
             />
             <Stat
               label='Total Fetches'
+              // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- internal ops counter on an auth-gated page, not a published figure
               value={String(auto_seeder.fetch_stats?.total_fetches ?? 0)}
             />
             <Stat
