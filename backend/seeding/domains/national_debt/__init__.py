@@ -11,7 +11,7 @@ from ...config import SeedingSettings
 from ...http_client import create_http_client
 from ...registries import register_domain
 from ...types import DomainRunContext, DomainRunResult
-from . import fetcher, parser, writer
+from . import fetcher, instrument_writer, parser, writer
 
 logger = logging.getLogger("seeding.national_debt")
 
@@ -83,6 +83,37 @@ def run(
             items_created=0,
             items_updated=0,
             errors=[f"Write failed: {exc}"],
+        )
+
+    # ── Instrument register ───────────────────────────────────────
+    # Written to its own table, never merged into `loans`. It is a maturity
+    # and coupon profile covering ~60% of the published bond stock, so a row
+    # here must not reach any code that sums a debt total.
+    #
+    # A failure to write it is NOT a failure of this domain: the loans and
+    # timeline figures above stand on their own. It is recorded as an error on
+    # the run so the absence is visible, and the maturity ladder renders its
+    # own empty state rather than a partial one.
+    register = payload.get("bond_register")
+    if register:
+        try:
+            counts = instrument_writer.write_bond_register(session, register)
+            logger.info(
+                "Bond register: %d created, %d updated, %d removed "
+                "(%d ISIN(s) withheld as ambiguous)",
+                counts["created"], counts["updated"], counts["deleted"],
+                len(register.get("withheld_isins") or {}),
+            )
+        except Exception as exc:
+            logger.exception("Failed to write bond register")
+            errors.append(f"Bond register write failed: {exc}")
+    else:
+        # Says which of the two it is: the fetch failed, or the coverage gate
+        # quarantined the register. Both leave the ladder empty, and a reader
+        # of the logs should not have to guess which.
+        errors.append(
+            "Bond register absent: CBK table fetch failed or coverage gate "
+            "quarantined it (see earlier warnings)"
         )
 
     finished_at = datetime.now(timezone.utc)

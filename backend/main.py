@@ -40,6 +40,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.security import HTTPBearer
 from pydantic import BaseModel
 from sqlalchemy import or_, text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
 from starlette.responses import JSONResponse, Response
 
@@ -8892,6 +8893,121 @@ def _latest_imf_debt_to_gdp(db):
     except Exception as exc:  # pragma: no cover - defensive
         logging.warning("IMF debt-to-GDP lookup failed: %s", exc)
         return None
+
+
+@app.get("/api/v1/debt/instruments")
+async def get_debt_instruments(db: Session = Depends(get_db)):
+    """The Treasury bond register: when debt falls due, and at what coupon.
+
+    NOT a debt total, and the response says so in three places rather than
+    trusting a reader to know. The register covers roughly 60% of CBK's
+    published Treasury-bond stock — it sees bonds sold at auction since 2007
+    and cannot see pre-2007 paper, non-auction issuance or amortisation.
+
+    This exists because the maturity ladder was withdrawn before launch: the
+    site had 3 of 28 debt rows carrying a maturity date, five separate Eurobond
+    issues collapsed onto one 2034 date, and a single assumed 14.5% coupon
+    applied to the whole bond book (credibility audit F24/F42). Every figure
+    here is read off CBK's own table.
+    """
+    if not DATABASE_AVAILABLE or db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    from models import DebtInstrument as _DI
+
+    # The table may not exist yet. Production is still on the orphaned
+    # `k1f2a3b4c5d6` revision, so this code will deploy ahead of its own
+    # migration — and a route-smoke test caught this endpoint 500ing with
+    # `relation "debt_instruments" does not exist` rather than reporting that
+    # it has nothing. Deploy order must not decide whether a page renders.
+    try:
+        rows = (
+            db.query(_DI)
+            .filter(_DI.publishable.is_(True))
+            .order_by(_DI.maturity_date.asc())
+            .all()
+        )
+    except SQLAlchemyError as exc:
+        db.rollback()
+        logging.warning("debt_instruments unavailable: %s", exc)
+        return {
+            "status": "unavailable",
+            "reason": "table_not_migrated",
+            "message": (
+                "The instrument register table has not been created in this "
+                "database yet. This is not a finding that no government debt "
+                "falls due."
+            ),
+            "instruments": [],
+            "ladder": [],
+        }
+
+    if not rows:
+        # Absent, with the reason — never an empty ladder that reads as
+        # "no debt falls due".
+        return {
+            "status": "unavailable",
+            "reason": "no_instrument_register_ingested",
+            "message": (
+                "No Treasury bond register has been ingested. This is not a "
+                "finding that no government debt falls due."
+            ),
+            "instruments": [],
+            "ladder": [],
+        }
+
+    doc = rows[0].source_document
+    doc_meta = (doc.meta if doc is not None else None) or {}
+    coverage = doc_meta.get("coverage") or {}
+    withheld = doc_meta.get("withheld_isins") or {}
+
+    instruments = [
+        {
+            "isin": r.isin,
+            "issue_no": r.issue_no,
+            "instrument_type": r.instrument_type,
+            "face_value": float(r.face_value),
+            "unit": r.unit,
+            "coupon_rate": float(r.coupon_rate) if r.coupon_rate is not None else None,
+            "tenor_years": float(r.tenor_years) if r.tenor_years is not None else None,
+            "first_issued": r.first_issued.date().isoformat() if r.first_issued else None,
+            "maturity_date": r.maturity_date.date().isoformat(),
+            "tranches": r.tranches,
+        }
+        for r in rows
+    ]
+
+    # The maturity ladder, aggregated server-side so every consumer draws the
+    # same bars from the same rule.
+    ladder: Dict[int, Dict[str, Any]] = {}
+    for r in rows:
+        year = r.maturity_date.year
+        bucket = ladder.setdefault(
+            year, {"year": year, "face_value": 0.0, "instruments": 0}
+        )
+        bucket["face_value"] += float(r.face_value)
+        bucket["instruments"] += 1
+
+    return {
+        "status": "success",
+        "_meta": _response_meta(unit="kes", entity_scope="national"),
+        "source": {
+            "publisher": "Central Bank of Kenya",
+            "title": doc.title if doc is not None else None,
+            "url": doc.url if doc is not None else None,
+            "as_of": doc_meta.get("as_of"),
+        },
+        # Said plainly, at the top level, because the sum of `instruments` is
+        # the number a careless consumer would reach for.
+        "is_debt_total": False,
+        "not_a_stock_measure": doc_meta.get("not_a_stock_measure"),
+        "coverage": coverage,
+        "withheld_isins": withheld,
+        "withheld_count": len(withheld),
+        "instrument_count": len(instruments),
+        "instruments": instruments,
+        "ladder": [ladder[y] for y in sorted(ladder)],
+    }
 
 
 @app.get("/api/v1/debt/national")

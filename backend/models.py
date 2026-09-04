@@ -842,6 +842,92 @@ class DebtTimeline(Base):
     source_document = relationship("SourceDocument")
 
 
+class DebtInstrument(Base):
+    """One redemption line of one government security.
+
+    Source: CBK's "Issues of Treasury Bonds" table
+    (https://www.centralbank.go.ke/bills-bonds/treasury-bonds/), extracted by
+    seeding/domains/national_debt/cbk_web_tables.py.
+
+    WHAT A ROW IS, AND IS NOT
+    -------------------------
+    A row is *this much face value redeems on this date*, which is what the CBK
+    table asserts. It is keyed on (isin, maturity_date) rather than on ISIN,
+    because reading the real table found three reasons one ISIN carries several
+    maturities: amortising infrastructure bonds, an ISIN reused across two
+    securities, and apparent CBK typos. Keying on ISIN put a bond's whole face
+    value on its earliest date and inflated 2027 by more than double.
+
+    These rows are NOT a debt total and must never be summed into one. The
+    register covers ~60% of CBK's published Treasury-bond stock — it is drawn
+    from bonds sold at auction since 2007 and cannot see pre-2007 paper,
+    non-auction issuance or amortisation. It is authoritative on DATES and
+    COUPONS, which is what the maturity ladder and any interest calculation
+    need, and silent on stock. ``debt_timeline`` and the ``loans`` aggregate
+    remain the sources for totals.
+
+    Rows the source cannot settle are not written at all: see
+    ``partition_ambiguous``. The count and reason are recorded on the ingestion
+    job instead, so an absence is visible rather than inferred.
+    """
+
+    __tablename__ = "debt_instruments"
+    __table_args__ = (
+        UniqueConstraint(
+            "isin",
+            "maturity_date",
+            name="uq_debt_instruments_isin_maturity",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    isin = Column(String(20), nullable=False, index=True)
+    issue_no = Column(String(60), nullable=False)
+    # fixed_coupon_bond | infrastructure_bond | savings_development_bond | other_bond
+    instrument_type = Column(String(40), nullable=False, index=True)
+
+    # Face value redeeming on this date, RAW KES. CBK publishes the table in
+    # millions; the writer converts at the DB boundary and `unit` records the
+    # convention rather than leaving it to be remembered (same rule as
+    # debt_timeline, F5.5).
+    face_value = Column(Numeric(20, 2), nullable=False)
+    unit = Column(String(10), nullable=False, server_default="KES")
+
+    coupon_rate = Column(Numeric(6, 3), nullable=True)  # annual %, e.g. 14.399
+    tenor_years = Column(Numeric(5, 1), nullable=True)
+    first_issued = Column(DateTime, nullable=True)
+    maturity_date = Column(DateTime, nullable=False, index=True)
+
+    # How many auction tranches were summed into this line. >1 means
+    # reopenings of the same security at the same maturity.
+    tranches = Column(Integer, nullable=False, server_default="1")
+
+    source_document_id = Column(
+        Integer, ForeignKey("source_documents.id"), nullable=True
+    )
+    meta = Column("metadata", JSONB, default=dict)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    # ── Provenance and publication gate (Stage 1) ──────────────────────
+    extraction_id = Column(
+        Integer, ForeignKey("extractions.id"), nullable=True, index=True
+    )
+    page_ref = Column(String(50), nullable=True)
+    source_hash = Column(String(64), nullable=True)
+    confidence_score = Column(Float, nullable=True)
+    publishable = Column(Boolean, nullable=False, server_default=sa_false(), index=True)
+    quarantine_reason = Column(String(120), nullable=True)
+
+    # Relationships
+    source_document = relationship("SourceDocument")
+
+
 class FiscalSummary(Base):
     """National fiscal summary per fiscal year.
 

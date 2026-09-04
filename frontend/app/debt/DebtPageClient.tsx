@@ -8,6 +8,7 @@ import { PageSkeleton } from '@/components/ui/Skeleton';
 import PageShell from '@/components/layout/PageShell';
 import PDFExportButton from '@/components/PDFExportButton';
 import LenderTreemap from '@/components/debt/LenderTreemap';
+import MaturityLadder from '@/components/debt/MaturityLadder';
 import {
   useDebtTimeline,
   useNationalDebtOverview,
@@ -652,16 +653,15 @@ export default function NationalDebtPage() {
         />
       </motion.section>
 
-      {/* ═══════════ SECTION 3 — MATURITY LADDER (withdrawn) ═══════════
-          "When the bills come due" was withdrawn (credibility audit F24). Of
-          the 28 rows in the register only 3 carry a maturity date, so the
-          refinancing "walls" were drawn from three points — with five separate
-          Eurobond issues collapsed onto a single 2034 date. Everything else
-          fell into a "Revolving & pooled instruments — continuously rolled
-          over" list that included World Bank IDA, AfDB, JICA, AFD and KfW
-          credits, which are amortising term loans with fixed maturities, not
-          revolving facilities. Restore when the register carries real
-          instrument-level maturity dates. */}
+      {/* ═══════════ SECTION 3 — MATURITY LADDER ═══════════
+          Restored on real instrument data. The withdrawn version drew its
+          walls from 3 of 28 register rows and filed amortising multilateral
+          credits as "revolving" (credibility audit F24). This reads the CBK
+          bond register: individual securities with their own maturity dates
+          and coupons. The component renders its own absent state and its own
+          scope caveat — the bars are ~60% of the domestic bond book and no
+          part of the external one. */}
+      <MaturityLadder />
 
       {/* ═══════════ SECTIONS 4 & 5 — PEERS + SUSTAINABILITY (withdrawn) ═══════════
           Both were withdrawn (credibility audit F5/F10/F26).
