@@ -683,6 +683,49 @@ def _upsert_audit_records(
     if not audit_entries:
         return
 
+    # DERIVED FINDINGS WIN.
+    #
+    # These entries come from apis/oag_audit_data.json, a hand-maintained
+    # fixture whose age is why bootstrap_reference_data fails the staleness
+    # gate (365 days as of 2026-09-05). Since 49a6e75 the audits domain
+    # extracts county findings from the OAG reports themselves — 1,499 rows
+    # across all 47 counties, each carrying the source document and page it
+    # came from.
+    #
+    # Where a county has those, the fixture must not also write its own: the
+    # two describe the same audit, so seeding both double-counts findings and
+    # reintroduces rows with no traceable source next to rows that have one.
+    # A county the extractor has not reached yet still gets the fixture, so
+    # this loses nothing while the extractor's coverage grows.
+    #
+    # The discriminator is ``extraction_id``, NOT ``source_document_id``.
+    # ``source_document_id`` is NOT NULL on this table and the block below
+    # gives every fixture row one of its own ("<County> County OAG Findings
+    # <FY>"), so testing it would be a test that is true of all audit rows —
+    # the guard would skip any county that had ever been seeded, including
+    # one whose only findings ARE the fixture's. ``extraction_id`` is the FK
+    # to the Layer-3 extractions row, which only the audits loader sets
+    # (seeding/domains/audits/loader.py keys its upsert on it), so it is
+    # exactly the "this came out of a published report" test.
+    derived = (
+        session.query(Audit)
+        .filter(
+            Audit.entity_id == entity_id,
+            Audit.extraction_id.isnot(None),
+        )
+        .count()
+    )
+    if derived:
+        logger.info(
+            "%s: %d extracted finding(s) already present — skipping the %d "
+            "fixture finding(s) from %s",
+            county_name,
+            derived,
+            len(audit_entries),
+            AUDIT_DATA_PATH.name,
+        )
+        return
+
     audit_doc = _ensure_source_document(
         session,
         country_id=country_id,
