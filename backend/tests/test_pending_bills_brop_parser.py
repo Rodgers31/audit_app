@@ -317,7 +317,9 @@ class TestParseBropPdfIntegration:
         fake_pdf.__exit__ = lambda *a: None
 
         with patch.object(bp.pdfplumber, "open", return_value=fake_pdf):
-            result = bp.parse_brop_pdf(tmp_path / "fake.pdf")
+            # A deliberately partial table: these tests are about title
+            # anchoring and the national paragraph, not completeness.
+            result = bp.parse_brop_pdf(tmp_path / "fake.pdf", strict=False)
 
         assert result.fiscal_year_label == "FY 2024/25"
         assert result.national is not None
@@ -360,7 +362,9 @@ class TestParseBropPdfIntegration:
         fake_pdf.__exit__ = lambda *a: None
 
         with patch.object(bp.pdfplumber, "open", return_value=fake_pdf):
-            result = bp.parse_brop_pdf(tmp_path / "fake.pdf")
+            # A deliberately partial table: these tests are about title
+            # anchoring and the national paragraph, not completeness.
+            result = bp.parse_brop_pdf(tmp_path / "fake.pdf", strict=False)
 
         # Decoy Nairobi (total=410M) ignored; real Nairobi (total=86,769.2M) kept.
         assert len(result.counties) == 1
@@ -382,3 +386,239 @@ class TestParseBropPdfIntegration:
         with patch.object(bp.pdfplumber, "open", return_value=fake_pdf):
             with pytest.raises(ValueError, match="No pending-bills data"):
                 bp.parse_brop_pdf(tmp_path / "fake.pdf")
+
+
+# ==========================================================================
+# Narok: the county that vanished
+# ==========================================================================
+
+
+class TestNilCellIsNotAWordBreak:
+    """Table 10 uses a bare "-" for a nil cell, and a trailing hyphen for a
+    county name broken across lines. Treating the first as the second glued
+    two rows together and lost both.
+    """
+
+    def test_a_name_broken_across_lines_is_still_stitched(self):
+        """The behaviour that must survive the fix."""
+        from seeding.domains.pending_bills.brop_parser import _dehyphenate_text
+
+        text = "30. Tharaka-\nNithi 468.6 176.2 644.7 82.9 13.9 96.8 741.6"
+
+        assert "Tharaka-Nithi" in _dehyphenate_text(text)
+
+    def test_a_row_ending_in_a_nil_cell_is_not_joined_to_the_next(self):
+        """The bug, exactly as it appeared in the FY 2024/25 BROP.
+
+        "47. Narok 17,567.52 -" ends with a nil marker, not a word break.
+        Joining it swallowed Narok AND the Total row beneath it — and the
+        Total row is the only thing that could have revealed the loss.
+        """
+        from seeding.domains.pending_bills.brop_parser import _dehyphenate_text
+
+        text = (
+            "47. Narok 17,567.52 -\n"
+            "Total 122,625.9 49,121.0 171,746.9 4,232.7 924.5 5,157.3 "
+            "176,904.2 601,689.14 29"
+        )
+
+        lines = _dehyphenate_text(text).split("\n")
+        assert len(lines) == 2, f"the two rows were joined: {lines}"
+        assert lines[0].endswith("-")
+        assert lines[1].startswith("Total")
+
+
+class TestCountiesThatDidNotSubmit:
+    """The table's own footnote: "Cells highlighted in yellow indicate that
+    the respective entities did not submit pending bills data".
+
+    That is absence, not zero. Narok's pending bills are unknown, and a
+    county whose row was lost looks identical to one that reported nothing —
+    so the ones that reported nothing are named.
+    """
+
+    def test_a_blank_row_is_recognised_as_not_reporting(self):
+        from seeding.domains.pending_bills.brop_parser import (
+            _COUNTY_NO_DATA_ROW_RE,
+            _COUNTY_ROW_RE,
+        )
+
+        line = "47. Narok 17,567.52 -"
+
+        assert not _COUNTY_ROW_RE.match(line), "it is not a reporting row"
+        m = _COUNTY_NO_DATA_ROW_RE.match(line)
+        assert m and m.group("county").strip() == "Narok"
+
+    def test_a_full_row_is_not_mistaken_for_a_blank_one(self):
+        from seeding.domains.pending_bills.brop_parser import _COUNTY_NO_DATA_ROW_RE
+
+        line = "21. Nakuru 2,850.4 668.7 3,519.2 158.0 158.0 3,677.2 23,980.40 15.3"
+
+        assert not _COUNTY_NO_DATA_ROW_RE.match(line)
+
+    def test_no_figure_is_invented_for_a_county_that_did_not_submit(self):
+        """It must not become a zero.
+
+        A zero says Narok owes nothing. The table says Narok did not answer.
+        Publishing the first from the second is the whole failure this
+        project's rules exist to prevent.
+        """
+        from seeding.domains.pending_bills.brop_parser import BropParseResult
+
+        result = BropParseResult(
+            fiscal_year_label="FY 2024/25",
+            national=None,
+            counties=[],
+            counties_not_reporting=["Narok"],
+        )
+
+        assert "Narok" not in {c.county for c in result.counties}
+        assert result.counties_not_reporting == ["Narok"]
+
+
+class TestTheTableMustAddUp:
+    """The checks that would have caught the loss the day it happened."""
+
+    @staticmethod
+    def _row(county, total):
+        from seeding.domains.pending_bills.brop_parser import CountyPendingBill
+
+        return CountyPendingBill(
+            county=county, executive_recurrent=None, executive_development=None,
+            executive_subtotal=None, assembly_recurrent=None,
+            assembly_development=None, assembly_subtotal=None,
+            total=Decimal(total), fy_budget=None, pct_of_budget=None,
+        )
+
+    def _all_47(self, each="1000000"):
+        from seeding.domains.pending_bills.brop_parser import KENYAN_COUNTIES
+
+        return [self._row(c, each) for c in KENYAN_COUNTIES]
+
+    def test_a_complete_table_passes(self):
+        from seeding.domains.pending_bills.brop_parser import _check_county_table
+
+        rows = self._all_47()
+        checks = _check_county_table(rows, [], Decimal("47000000"))
+
+        assert any("47 counties accounted for" in c for c in checks)
+        assert any("printed total" in c for c in checks)
+
+    def test_a_missing_county_is_refused(self):
+        """46 rows look exactly like 47 unless something counts them."""
+        from seeding.domains.pending_bills.brop_parser import (
+            BropTableIncomplete,
+            KENYAN_COUNTIES,
+            _check_county_table,
+        )
+
+        rows = [r for r in self._all_47() if r.county != "Narok"]
+
+        with pytest.raises(BropTableIncomplete) as e:
+            _check_county_table(rows, [], Decimal("46000000"))
+        assert "Narok" in str(e.value)
+
+    def test_naming_it_as_not_reporting_satisfies_the_count(self):
+        from seeding.domains.pending_bills.brop_parser import _check_county_table
+
+        rows = [r for r in self._all_47() if r.county != "Narok"]
+
+        checks = _check_county_table(rows, ["Narok"], Decimal("46000000"))
+
+        assert any("did not submit: Narok" in c for c in checks)
+
+    def test_rows_that_do_not_sum_to_the_printed_total_are_refused(self):
+        """Catches a row read from the wrong column, which the count cannot."""
+        from seeding.domains.pending_bills.brop_parser import (
+            BropTableIncomplete,
+            _check_county_table,
+        )
+
+        with pytest.raises(BropTableIncomplete) as e:
+            _check_county_table(self._all_47(), [], Decimal("52000000"))
+        assert "prints" in str(e.value)
+
+    def test_rounding_across_47_rows_is_allowed(self):
+        """Each row is printed to 0.1m, so the sum legitimately drifts."""
+        from seeding.domains.pending_bills.brop_parser import _check_county_table
+
+        _check_county_table(self._all_47(), [], Decimal("47000000") - Decimal("2000000"))
+
+    def test_a_drift_the_size_of_the_smallest_county_is_not_allowed(self):
+        """The tolerance has to sit below a real row, or it hides one.
+
+        Elgeyo Marakwet reported KSh 12.1m in FY 2024/25 — the smallest row
+        in the table. A tolerance above that would let it disappear.
+        """
+        from seeding.domains.pending_bills.brop_parser import (
+            BropTableIncomplete,
+            _check_county_table,
+        )
+
+        with pytest.raises(BropTableIncomplete):
+            _check_county_table(
+                self._all_47(), [], Decimal("47000000") - Decimal("12100000")
+            )
+
+    def test_a_table_with_no_total_row_is_refused(self):
+        from seeding.domains.pending_bills.brop_parser import (
+            BropTableIncomplete,
+            _check_county_table,
+        )
+
+        with pytest.raises(BropTableIncomplete) as e:
+            _check_county_table(self._all_47(), [], None)
+        assert "Total row" in str(e.value)
+
+
+class TestNarokSurvivesTheWholeParse:
+    """End to end on the rows as the FY 2024/25 BROP actually prints them.
+
+    The regex tests above check the pattern; this checks that the pattern is
+    wired into the parse. Those are different failures — the original bug was
+    a row that matched nothing and was skipped by a bare `continue`.
+    """
+
+    def _parse(self, tmp_path, table_text):
+        cover_page = MagicMock()
+        cover_page.extract_text.return_value = (
+            "REPUBLIC OF KENYA\n2025 BUDGET REVIEW AND OUTLOOK PAPER\nSEPTEMBER 2025"
+        )
+        table_page = MagicMock()
+        table_page.extract_text.return_value = table_text
+        fake_pdf = MagicMock()
+        fake_pdf.pages = [cover_page] * 3 + [table_page]
+        fake_pdf.__enter__ = lambda s: fake_pdf
+        fake_pdf.__exit__ = lambda *a: None
+        with patch.object(bp.pdfplumber, "open", return_value=fake_pdf):
+            return bp.parse_brop_pdf(tmp_path / "fake.pdf", strict=False)
+
+    TABLE = (
+        "Table 10: County Governments Pending Bills as at 30th June 2025\n"
+        "21. Nakuru 2,850.4 668.7 3,519.2 158.0 158.0 3,677.2 23,980.40 15.3\n"
+        "47. Narok 17,567.52 -\n"
+        "Total 122,625.9 49,121.0 171,746.9 4,232.7 924.5 5,157.3 "
+        "176,904.2 601,689.14 29\n"
+    )
+
+    def test_narok_is_reported_as_not_submitting(self, tmp_path):
+        result = self._parse(tmp_path, self.TABLE)
+
+        assert result.counties_not_reporting == ["Narok"]
+
+    def test_narok_gets_no_pending_bills_figure(self, tmp_path):
+        """Named, but not given a number — least of all a zero."""
+        result = self._parse(tmp_path, self.TABLE)
+
+        assert "Narok" not in {c.county for c in result.counties}
+
+    def test_the_row_below_narok_is_still_read_as_the_total(self, tmp_path):
+        """The join took the Total row with it, which is why nothing noticed."""
+        result = self._parse(tmp_path, self.TABLE)
+
+        assert result.printed_total == Decimal("176904200000")
+
+    def test_the_reporting_county_is_unaffected(self, tmp_path):
+        result = self._parse(tmp_path, self.TABLE)
+
+        assert {c.county for c in result.counties} == {"Nakuru"}

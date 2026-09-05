@@ -43,7 +43,7 @@ from __future__ import annotations
 
 import logging
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
@@ -145,6 +145,19 @@ class BropParseResult:
     fiscal_year_label: str   # e.g. "FY 2024/25"
     national: Optional[NationalPendingBills]
     counties: List[CountyPendingBill]
+    #: Counties whose row IS in Table 10 but whose pending-bills cells are
+    #: blank. The table says what that means in its own footnote: "Cells
+    #: highlighted in yellow indicate that the respective entities did not
+    #: submit pending bills data". That is ABSENCE, not zero — Narok's row in
+    #: the FY 2024/25 BROP reads "47. Narok 17,567.52 -", carrying only its
+    #: budget and a dash where the ratio would be.
+    #:
+    #: They are listed rather than dropped because a county that reported
+    #: nothing and a county the parser failed to read look identical from the
+    #: outside, and only one of them is a bug. Nothing is written for them.
+    counties_not_reporting: List[str] = field(default_factory=list)
+    #: The Total row's own figure, in whole KSh, for the reconciliation check.
+    printed_total: Optional[Decimal] = None
 
 
 def _parse_kes_billion(token: str) -> Optional[Decimal]:
@@ -250,11 +263,30 @@ def _infer_fy_end_date(fy_label: str) -> date:
     return date(today.year - 1, 6, 30)
 
 
+#: A hyphen that broke a word across lines: attached to a letter, at the end
+#: of the line. NOT a bare "-", which in this table means a nil cell.
+_WORD_BREAK_HYPHEN_RE = re.compile(r"[A-Za-z]-$")
+
+
 def _dehyphenate_text(text: str) -> str:
     """Stitch back county names that pdfplumber broke across lines:
     "Tharaka- / Nithi" → "Tharaka-Nithi". Also fixes "Elgeyo- /
     Marakwet". We only join when the hyphen is the LAST character of
-    a line and the next line starts with an uppercase letter."""
+    a line, is attached to a LETTER, and the next line starts with an
+    uppercase letter.
+
+    The "attached to a letter" part is load-bearing. Table 10 also uses a
+    bare "-" for a nil cell, and Narok's row ends with one::
+
+        47. Narok 17,567.52 -
+        Total 122,625.9 49,121.0 ... 601,689.14 29
+
+    Joining on any trailing hyphen glued those two lines into one, which
+    matched neither the county-row pattern nor the total-row pattern. Narok
+    and the Total row both vanished silently — the county for the whole run,
+    and with it the only figure that could have shown a county was missing.
+    A word-break hyphen always follows a letter ("Elgeyo-"); a nil marker
+    never does."""
     lines = text.split("\n")
     out: List[str] = []
     skip = False
@@ -265,7 +297,7 @@ def _dehyphenate_text(text: str) -> str:
         stripped = line.rstrip()
         if (
             i + 1 < len(lines)
-            and stripped.endswith("-")
+            and _WORD_BREAK_HYPHEN_RE.search(stripped)
             and lines[i + 1].strip()
             and lines[i + 1].strip()[0].isupper()
         ):
@@ -321,6 +353,23 @@ _COUNTY_TABLE_TITLE_RE = re.compile(
     r"Table\s+\d+:\s*County\s+Governments\s+Pending\s+Bills",
     re.IGNORECASE,
 )
+#: A county row whose pending-bills cells are empty. It still carries the row
+#: number and the name, and usually the FY budget and a "-" for the ratio, but
+#: nowhere near the 5-10 numeric columns a reporting row has. Matched
+#: separately so it is recorded as "did not submit" instead of falling through
+#: the main pattern into silence.
+_COUNTY_NO_DATA_ROW_RE = re.compile(
+    r"^\s*(?P<no>\d{1,2})\.\s+"
+    r"(?P<county>[A-Za-z][A-Za-z\s\-']+?)"
+    r"(?:\s+(?:" + _NUM + r"|-)){0,3}\s*$"
+)
+
+#: The Total row, which the county rows must add up to.
+_COUNTY_TOTAL_ROW_RE = re.compile(
+    r"^\s*Total\s+(?P<rest>(?:" + _NUM + r"\s+){4,9}" + _NUM + r")\s*$",
+    re.IGNORECASE,
+)
+
 _END_OF_COUNTY_TABLE_RE = re.compile(
     # Row of "Total ... Source: Controller of Budget" / next section
     # heading marks end of the table.
@@ -330,7 +379,9 @@ _END_OF_COUNTY_TABLE_RE = re.compile(
 )
 
 
-def _parse_county_table(pdf: pdfplumber.PDF) -> List[CountyPendingBill]:
+def _parse_county_table(
+    pdf: pdfplumber.PDF,
+) -> Tuple[List[CountyPendingBill], List[str], Optional[Decimal]]:
     """Extract Table 10 ("County Governments Pending Bills as at
     YYYY-mm-dd") by walking pages from the first one whose text
     contains the table title; stop at the Total/N.B./Source row.
@@ -343,6 +394,8 @@ def _parse_county_table(pdf: pdfplumber.PDF) -> List[CountyPendingBill]:
     noise on this layout, so we use ``extract_text`` line-by-line.
     """
     out: List[CountyPendingBill] = []
+    not_reporting: List[str] = []
+    printed_total: Optional[Decimal] = None
     seen: set = set()
     in_table = False
     # Section D of BROP is well within the front 40 pages — the
@@ -361,9 +414,25 @@ def _parse_county_table(pdf: pdfplumber.PDF) -> List[CountyPendingBill]:
                 # The table can be split across pages, but the actual
                 # END marker (Total / N/B / Source) only appears once.
                 # After we hit it, we're permanently done.
-                return out
+                total_match = _COUNTY_TOTAL_ROW_RE.match(line)
+                if total_match:
+                    total_row = _parse_county_row_numbers(
+                        total_match.group("rest").split()
+                    )
+                    if total_row:
+                        printed_total = total_row.get("total")
+                return out, not_reporting, printed_total
             m = _COUNTY_ROW_RE.match(line)
             if not m:
+                # A county whose cells are blank still has a row. The table's
+                # own footnote says what blank means — the entity did not
+                # submit — so it is recorded, not skipped.
+                blank = _COUNTY_NO_DATA_ROW_RE.match(line)
+                if blank:
+                    name = _normalise_county(blank.group("county"))
+                    if name and name not in seen:
+                        seen.add(name)
+                        not_reporting.append(name)
                 continue
             county = _normalise_county(m.group("county"))
             if not county or county in seen:
@@ -387,7 +456,7 @@ def _parse_county_table(pdf: pdfplumber.PDF) -> List[CountyPendingBill]:
                     pct_of_budget=row.get("pct"),
                 )
             )
-    return out
+    return out, not_reporting, printed_total
 
 
 def _parse_county_row_numbers(tokens: List[str]) -> Optional[dict]:
@@ -449,31 +518,113 @@ def _parse_county_row_numbers(tokens: List[str]) -> Optional[dict]:
     return out
 
 
-def parse_brop_pdf(pdf_path: Path) -> BropParseResult:
-    """Parse a BROP PDF and return the structured pending-bills data."""
+class BropTableIncomplete(ValueError):
+    """Table 10 did not add up, so none of it may be published.
+
+    Raised rather than returned because a partial county table is the failure
+    mode that hides: 46 rows look exactly like 47 rows unless something
+    counts them, and the run that dropped Narok reported success for weeks.
+    """
+
+
+#: Row totals are printed to one decimal of a million, so each can be out by
+#: up to KSh 50,000 and 47 of them by KSh 2.35m. Three million allows that and
+#: still catches a dropped county — the smallest row in the FY 2024/25 table
+#: is Elgeyo Marakwet at KSh 12.1m, four times the tolerance.
+_TOTAL_TOLERANCE_KES = Decimal("3000000")
+
+
+def _check_county_table(
+    counties: List[CountyPendingBill],
+    not_reporting: List[str],
+    printed_total: Optional[Decimal],
+) -> List[str]:
+    """Prove the county table is whole, or refuse it.
+
+    Two checks, both of which the table supplies the answer to itself:
+
+    1. Every county is accounted for — with a figure, or named as one that
+       did not submit. A county that is simply absent means the parse lost a
+       row, which is what happened to Narok.
+    2. The rows add up to the Total the table prints.
+    """
+    checks: List[str] = []
+
+    accounted = {c.county for c in counties} | set(not_reporting)
+    missing = sorted(set(KENYAN_COUNTIES) - accounted)
+    if missing:
+        raise BropTableIncomplete(
+            f"{len(missing)} of {len(KENYAN_COUNTIES)} counties are in neither "
+            f"the reported nor the not-reported list, so Table 10 was not read "
+            f"whole: {', '.join(missing)}"
+        )
+    checks.append(
+        f"all {len(KENYAN_COUNTIES)} counties accounted for "
+        f"({len(counties)} reported, {len(not_reporting)} did not submit"
+        + (f": {', '.join(not_reporting)}" if not_reporting else "")
+        + ")"
+    )
+
+    if printed_total is None:
+        raise BropTableIncomplete(
+            "Table 10's Total row was not read, so there is nothing to check "
+            "the county rows against"
+        )
+    parsed = sum((c.total for c in counties if c.total is not None), Decimal("0"))
+    drift = abs(parsed - printed_total)
+    if drift > _TOTAL_TOLERANCE_KES:
+        raise BropTableIncomplete(
+            f"county rows sum to {parsed:,} but Table 10 prints "
+            f"{printed_total:,} (out by {parsed - printed_total:+,}, tolerance "
+            f"{_TOTAL_TOLERANCE_KES:,})"
+        )
+    checks.append(
+        f"rows sum to the printed total within {drift:,} "
+        f"(rounding allowance {_TOTAL_TOLERANCE_KES:,})"
+    )
+    return checks
+
+
+def parse_brop_pdf(pdf_path: Path, *, strict: bool = True) -> BropParseResult:
+    """Parse a BROP PDF and return the structured pending-bills data.
+
+    ``strict`` runs the Table 10 completeness and reconciliation checks and
+    raises :class:`BropTableIncomplete` if either fails. It defaults to on,
+    because a real BROP that does not add up must not be published. Tests
+    that exercise parsing mechanics on a deliberately partial table pass
+    ``strict=False``; the checks themselves are tested directly against
+    ``_check_county_table``.
+    """
     with pdfplumber.open(pdf_path) as pdf:
         fy_label = _detect_brop_fiscal_year(pdf)
         national = _detect_national_paragraph(pdf, fy_label)
-        counties = _parse_county_table(pdf)
+        counties, not_reporting, printed_total = _parse_county_table(pdf)
     if national is None and not counties:
         raise ValueError(
             f"No pending-bills data found in {pdf_path.name} — "
             "neither the para-18 anchor nor the county table matched"
         )
+    if strict and (counties or not_reporting):
+        for check in _check_county_table(counties, not_reporting, printed_total):
+            logger.info("BROP Table 10 check: %s", check)
     logger.info(
-        "BROP parser extracted national=%s + %d counties (FY %s) from %s",
-        "yes" if national else "no", len(counties),
+        "BROP parser extracted national=%s + %d counties (%d did not submit) "
+        "(FY %s) from %s",
+        "yes" if national else "no", len(counties), len(not_reporting),
         fy_label, pdf_path.name,
     )
     return BropParseResult(
         fiscal_year_label=fy_label,
         national=national,
         counties=counties,
+        counties_not_reporting=not_reporting,
+        printed_total=printed_total,
     )
 
 
 __all__ = [
     "BropParseResult",
+    "BropTableIncomplete",
     "CountyPendingBill",
     "NationalPendingBills",
     "parse_brop_pdf",
