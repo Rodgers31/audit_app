@@ -14,9 +14,11 @@ from __future__ import annotations
 from typing import Callable, Dict, Optional
 
 from .oag_blue_book import extract_blue_book
+from .oag_county_audit import extract_county_audit
 
 PARSERS: Dict[str, Callable] = {
     "oag_blue_book": extract_blue_book,
+    "oag_county_audit": extract_county_audit,
 }
 
 

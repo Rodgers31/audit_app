@@ -147,7 +147,7 @@ SOURCE_REGISTRY: Dict[str, SourceDataset] = {
                 "https://www.oagkenya.go.ke/wp-json/wp/v2/media"
                 "?per_page=100&search=county",
             ),
-            parser_id=None,  # county report parser not yet implemented
+            parser_id="oag_county_audit",
             match_keywords=("county",),
         ),
         SourceDataset(
