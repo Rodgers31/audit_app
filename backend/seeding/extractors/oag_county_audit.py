@@ -424,7 +424,13 @@ def finding_to_extracted_json(
 
 
 def source_hash_of(extracted_json: dict) -> str:
-    """sha256 over the canonical JSON — lets anyone re-check the row."""
+    """sha256 over the canonical JSON — lets anyone re-check the row.
+
+    Recorded INSIDE ``extracted_json`` rather than as a column: the
+    ``extractions`` table has no ``source_hash`` field, and passing one to the
+    model raises TypeError. Found by running the write path — the extraction
+    itself had been verified without it.
+    """
     canonical = json.dumps(extracted_json, sort_keys=True, ensure_ascii=False)
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
@@ -527,6 +533,7 @@ def extract_county_audit(session, doc, settings) -> dict:
     created = 0
     for f in result.findings:
         payload = finding_to_extracted_json(f, result)
+        payload["source_hash"] = source_hash_of(payload)
         session.add(
             Extraction(
                 source_document_id=doc.id,
@@ -534,7 +541,6 @@ def extract_county_audit(session, doc, settings) -> dict:
                 extracted_json=payload,
                 extractor=EXTRACTOR_ID,
                 confidence=0.90 if f.method == "pdfplumber" else 0.60,
-                source_hash=source_hash_of(payload),
             )
         )
         created += 1

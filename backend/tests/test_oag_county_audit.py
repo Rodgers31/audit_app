@@ -315,3 +315,97 @@ class TestShapeDispatch:
 
         assert is_consolidated([(1, "REPORT\nOF\nTHE AUDITOR - GENERAL\nFOR\n"
                                     "THE COUNTY GOVERNMENTS\nFOR\n2020/2021\n")])
+
+
+class TestWritePath:
+    """Exercise the write, not just the parse.
+
+    The extraction was verified thoroughly while the WRITE was broken:
+    ``Extraction`` has no ``source_hash`` column, and passing one raises
+    TypeError — copied from the Blue Book extractor, which records it
+    elsewhere. Every parse test above passed against that code. Only calling
+    extract_county_audit found it, which is the same lesson as the revenue
+    fetch path: a test that enters below the break proves nothing about it.
+
+    ``read_pages`` is stubbed rather than a PDF being synthesised, so this
+    test is about the write and cannot fail for PDF-construction reasons.
+    """
+
+    def test_findings_become_extraction_rows(self, db_session, monkeypatch):
+        from datetime import datetime, timezone
+
+        from models import Country, DocumentType, Extraction, SourceDocument
+        from seeding.config import SeedingSettings
+        from seeding.extractors import oag_county_audit as mod
+
+        monkeypatch.setattr(mod, "read_pages", lambda _p: pages())
+        monkeypatch.setattr(mod, "_known_counties", lambda _s: KNOWN)
+
+        country = Country(
+            name="Kenya", iso_code="KEN", currency="KES",
+            timezone="Africa/Nairobi", default_locale="en-KE",
+        )
+        db_session.add(country)
+        db_session.flush()
+        doc = SourceDocument(
+            title="County Assembly of Homa Bay 2021-2022",
+            url="https://www.oagkenya.go.ke/x.pdf",
+            publisher="Office of the Auditor-General",
+            fetch_date=datetime.now(timezone.utc),
+            doc_type=DocumentType.AUDIT,
+            country_id=country.id,
+            file_path=__file__,  # exists; content is stubbed above
+        )
+        db_session.add(doc)
+        db_session.flush()
+
+        before = db_session.query(Extraction).count()
+        stats = mod.extract_county_audit(db_session, doc, SeedingSettings())
+        db_session.flush()
+
+        assert stats["created"] == 4
+        assert stats["shape"] == "single_entity"
+        assert stats["county"] == "Homa Bay"
+        assert db_session.query(Extraction).count() == before + 4
+
+        row = db_session.query(Extraction).order_by(Extraction.id.desc()).first()
+        assert row.extractor == "oag_county_audit"
+        assert row.extracted_json["schema"] == "oag_county_audit/v1"
+        # The hash lives in the payload, because there is no column for it.
+        assert row.extracted_json["source_hash"]
+
+    def test_a_second_run_does_not_duplicate_rows(self, db_session, monkeypatch):
+        """Idempotent: the nightly re-reads the same documents every night."""
+        from datetime import datetime, timezone
+
+        from models import Country, DocumentType, Extraction, SourceDocument
+        from seeding.config import SeedingSettings
+        from seeding.extractors import oag_county_audit as mod
+
+        monkeypatch.setattr(mod, "read_pages", lambda _p: pages())
+        monkeypatch.setattr(mod, "_known_counties", lambda _s: KNOWN)
+
+        country = Country(
+            name="Kenya", iso_code="KEN", currency="KES",
+            timezone="Africa/Nairobi", default_locale="en-KE",
+        )
+        db_session.add(country)
+        db_session.flush()
+        doc = SourceDocument(
+            title="x", url="https://www.oagkenya.go.ke/y.pdf",
+            publisher="Office of the Auditor-General",
+            fetch_date=datetime.now(timezone.utc),
+            doc_type=DocumentType.AUDIT, country_id=country.id, file_path=__file__,
+        )
+        db_session.add(doc)
+        db_session.flush()
+
+        mod.extract_county_audit(db_session, doc, SeedingSettings())
+        db_session.flush()
+        count = db_session.query(Extraction).count()
+
+        again = mod.extract_county_audit(db_session, doc, SeedingSettings())
+        db_session.flush()
+        assert again["created"] == 0
+        assert again["skipped"] == 4
+        assert db_session.query(Extraction).count() == count
