@@ -195,8 +195,18 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
       color: 'text-red-700',
       Icon: TrendingDown,
     },
+    unknown: {
+      textKey: 'county.overview.sustain.unknown',
+      color: 'text-gray-500',
+      Icon: AlertTriangle,
+    },
   };
-  const sust = sustainLabel[financial_summary.debt_sustainability] ?? sustainLabel.moderate;
+  // `?? moderate` labelled a county nobody has measured. The API now returns
+  // null where no source published a debt figure — 43 of the 47 — and an
+  // absent assessment has to read as absent, not as the middle of three
+  // verdicts.
+  const sust =
+    sustainLabel[financial_summary.debt_sustainability as string] ?? sustainLabel.unknown;
 
   return (
     <div className='space-y-6'>
@@ -243,7 +253,9 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
               ? 'bg-gradient-to-br from-emerald-50/70 to-white border-emerald-100'
               : financial_summary.debt_sustainability === 'at_risk'
                 ? 'bg-gradient-to-br from-rose-50/70 to-white border-rose-100'
-                : 'bg-gradient-to-br from-amber-50/70 to-white border-amber-100'
+                : financial_summary.debt_sustainability === 'moderate'
+                  ? 'bg-gradient-to-br from-amber-50/70 to-white border-amber-100'
+                  : 'bg-white border-gray-200'
           }`}>
           <div className='flex items-center gap-2 mb-3'>
             <sust.Icon size={18} className={sust.color} />

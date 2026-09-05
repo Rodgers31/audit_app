@@ -6,7 +6,15 @@
 import type { TranslationKey } from '@/lib/i18n/messages';
 
 /* ═══════════ Formatters ═══════════ */
-export function fmtKES(n: number): string {
+/** An em dash, for a figure nobody has published. */
+export const ABSENT = '\u2014';
+
+export function fmtKES(n: number | null | undefined): string {
+  // The API returns null where no source published a figure — 43 of the 47
+  // counties have no sourced debt, for instance. Formatting that as "KES 0"
+  // states the county owes nothing; `n.toLocaleString()` on null throws
+  // outright. Both are wrong answers to "we don't know".
+  if (typeof n !== 'number' || !Number.isFinite(n)) return ABSENT;
   if (n >= 1e9) return `KES ${(n / 1e9).toFixed(2)}B`;
   if (n >= 1e6) return `KES ${(n / 1e6).toFixed(1)}M`;
   if (n >= 1e3) return `KES ${(n / 1e3).toFixed(0)}K`;
@@ -27,7 +35,8 @@ export function fmtLabel(s: string): string {
     .join(' ');
 }
 
-export function pct(n: number): string {
+export function pct(n: number | null | undefined): string {
+  if (typeof n !== 'number' || !Number.isFinite(n)) return ABSENT;
   return `${n.toFixed(1)}%`;
 }
 

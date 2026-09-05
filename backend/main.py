@@ -20,8 +20,10 @@ import uvicorn
 from config.settings import settings
 from services.publication_gate import (
     count_withheld_audits,
+    county_debt_instrument_failure,
     county_pending_bills,
     file_source_provenance_failure,
+    loan_is_modelled_fixture,
     log_withheld_audits,
     missing_funds_provenance_failure,
     publishable_audit_criterion,
@@ -416,6 +418,66 @@ def _is_debt_loan(loan) -> bool:
     if loan.debt_category is None:
         return True
     return loan.debt_category != _DC.PENDING_BILLS
+
+
+def county_debt_total(loans) -> Optional[float]:
+    """A county's debt from SOURCED rows, or None when it has none.
+
+    ``None`` is "nobody has published this county's debt" and must render as
+    absence. Zero would say the county owes nothing, which is a different
+    claim — and for 43 of the 47 it would be a claim made on no evidence at
+    all.
+
+    Until the modelled rows were removed, every county carried a
+    "County Government Debt" figure equal to a flat 15% of a budget that was
+    itself population x KSh 4,500 — the same ratio for the whole country. What
+    remains is genuinely sourced debt only.
+
+    Uses :func:`_is_debt_loan` rather than re-deriving the pending-bills rule,
+    which is what that function's docstring asks callers to do, and applies
+    :func:`county_debt_instrument_failure` so the LIST and DETAIL endpoints
+    cannot disagree. They did: the detail endpoint gated each row and the list
+    endpoint did not, so Nairobi read "13.1B" on /counties and "—" on its own
+    page. All four surviving county debt rows name the World Bank and cite
+    treasury.go.ke/public-debt/ — a section index, not a borrowing
+    authorisation — and the gate withholds them as
+    ``external_creditor_document_is_not_a_borrowing_authorisation``. That
+    verdict is the same on both pages now.
+    """
+    total = 0.0
+    found = False
+    for loan in loans or []:
+        if not _is_debt_loan(loan):
+            continue
+        if loan_is_modelled_fixture(loan):
+            continue
+        if county_debt_instrument_failure(loan):
+            continue
+        amount = getattr(loan, "outstanding", None) or getattr(loan, "principal", None)
+        if amount is None:
+            continue
+        total += float(amount)
+        found = True
+    return total if found else None
+
+
+def _debt_sustainability(
+    total_debt: Optional[float], total_allocated: float
+) -> Optional[str]:
+    """"sustainable" / "moderate" / "at_risk", or None when unknown.
+
+    None where either input is missing. The label is a judgement about a
+    county's finances, and one made from an absent numerator is not a
+    cautious judgement — it is a confident wrong one.
+    """
+    if total_debt is None or not total_allocated or total_allocated <= 0:
+        return None
+    ratio = total_debt / total_allocated * 100
+    if ratio < 20:
+        return "sustainable"
+    if ratio < 40:
+        return "moderate"
+    return "at_risk"
 
 
 def _debt_loans_query(db, entity_filter):
@@ -2586,11 +2648,7 @@ async def get_counties(fiscal_year: Optional[str] = None):
                             )
                         )
 
-                total_debt = sum(
-                    float(loan.outstanding or loan.principal or 0)
-                    for loan in loans
-                    if _is_debt_loan(loan)
-                )
+                total_debt = county_debt_total(loans)
 
                 # Sourced rows only. The meta fallback that used to sit here
                 # served bootstrap's modelled figure — 8% of a modelled budget
@@ -2855,11 +2913,7 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                             recurrent_total = keyword_rec
 
                     loans = db.query(DBLoan).filter(DBLoan.entity_id == e.id).all()
-                    total_debt = sum(
-                        float(loan.outstanding or loan.principal or 0)
-                        for loan in loans
-                        if _is_debt_loan(loan)
-                    )
+                    total_debt = county_debt_total(loans)
 
                     pending_bills = sum(
                         float(bl.allocated_amount or 0)
@@ -3219,11 +3273,7 @@ async def get_county_comprehensive(
                 _publishable_loans.append(_l)
             loans = _publishable_loans
 
-            total_debt = sum(
-                float(l.outstanding or l.principal or 0)
-                for l in loans
-                if _is_debt_loan(l)
-            )
+            total_debt = county_debt_total(loans)
 
             # Same filter as total_debt above: pending bills are an arrears
             # balance, not borrowing, and they already have their own panel via
@@ -3455,7 +3505,11 @@ async def get_county_comprehensive(
             per_capita_budget = (
                 round(total_allocated / population, 2) if population > 0 else 0
             )
-            per_capita_debt = round(total_debt / population, 2) if population > 0 else 0
+            per_capita_debt = (
+                round(total_debt / population, 2)
+                if total_debt is not None and population > 0
+                else None
+            )
 
             # --- Health history (last ~6 completed FYs, oldest → newest) ---
             # Aggregates allocated + spent per fiscal period and applies the same
@@ -3581,13 +3635,10 @@ async def get_county_comprehensive(
                 "debt": {
                     "total_debt": total_debt,
                     "pending_bills": pending_bills,
-                    "debt_to_budget_ratio": round(
-                        (
-                            (total_debt / total_allocated * 100)
-                            if total_allocated > 0
-                            else 0
-                        ),
-                        1,
+                    "debt_to_budget_ratio": (
+                        round(total_debt / total_allocated * 100, 1)
+                        if total_debt is not None and total_allocated > 0
+                        else None
                     ),
                     "per_capita_debt": per_capita_debt,
                     "breakdown": debt_breakdown,
@@ -3662,24 +3713,12 @@ async def get_county_comprehensive(
                         if pending_bills is not None and total_allocated > 0
                         else None
                     ),
-                    "debt_sustainability": (
-                        "sustainable"
-                        if (
-                            total_debt / total_allocated * 100
-                            if total_allocated > 0
-                            else 0
-                        )
-                        < 20
-                        else (
-                            "moderate"
-                            if (
-                                total_debt / total_allocated * 100
-                                if total_allocated > 0
-                                else 0
-                            )
-                            < 40
-                            else "at_risk"
-                        )
+                    # An assessment needs a debt figure. With no published
+                    # one this used to read the absent value as 0 and return
+                    # "sustainable" — the most reassuring of the three labels,
+                    # asserted about a county nobody has measured.
+                    "debt_sustainability": _debt_sustainability(
+                        total_debt, total_allocated
                     ),
                 },
                 # Data provenance

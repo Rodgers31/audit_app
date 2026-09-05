@@ -184,3 +184,155 @@ class TestTheApiGate:
         ]
 
         assert county_pending_bills(loans) == 1_500_000
+
+
+class TestCountyDebtGate:
+    """``county_debt_total`` and ``_debt_sustainability``.
+
+    The modelled "County Government Debt" row was a flat 15% of a budget that
+    was itself population x KSh 4,500 — the same ratio for all 47 counties.
+    With it gone, 43 counties have no sourced debt at all, and what they get
+    told about themselves has to reflect that.
+    """
+
+    @staticmethod
+    def _loan(amount, *, modelled: bool, category=None):
+        """A stand-in carrying the REAL DebtCategory enum.
+
+        ``_is_debt_loan`` compares against the enum member, so a namespace
+        with a matching ``.value`` sails past it and a pending-bills row would
+        be counted as debt — which is what this fixture did at first.
+        """
+        from types import SimpleNamespace
+
+        from models import DebtCategory
+
+        return SimpleNamespace(
+            debt_category=category if category is not None else DebtCategory.OTHER,
+            outstanding=amount,
+            principal=amount,
+            provenance=(
+                [{"source": "bootstrap", "dataset": "enhanced_county_data.json"}]
+                if modelled
+                else [{"dataset_id": "national-debt"}]
+            ),
+        )
+
+    def test_a_sourced_debt_row_is_published(self):
+        import main
+
+        assert main.county_debt_total([self._loan(13_114_825_391, modelled=False)]) == 13_114_825_391
+
+    def test_a_modelled_debt_row_is_not(self):
+        import main
+
+        assert main.county_debt_total([self._loan(450_065_025, modelled=True)]) is None
+
+    def test_a_county_with_no_debt_rows_is_absent_not_zero(self):
+        import main
+
+        result = main.county_debt_total([])
+
+        assert result is None
+        assert result != 0
+
+    def test_pending_bills_are_not_counted_as_debt(self):
+        """The rule _is_debt_loan exists to enforce, still enforced here."""
+        import main
+
+        from models import DebtCategory
+
+        loans = [
+            self._loan(2_345_000, modelled=False, category=DebtCategory.PENDING_BILLS)
+        ]
+
+        assert main.county_debt_total(loans) is None
+
+    def test_no_assessment_is_made_without_a_debt_figure(self):
+        """The reassuring answer was the wrong one.
+
+        Reading an absent numerator as 0 made the ratio 0%, which is below
+        the 20% threshold, which returned "sustainable" — the most confident
+        of the three labels, about a county nobody had measured.
+        """
+        import main
+
+        assert main._debt_sustainability(None, 8_983_760_000) is None
+
+    def test_no_assessment_without_a_budget_either(self):
+        import main
+
+        assert main._debt_sustainability(346_300_000, 0) is None
+
+    @pytest.mark.parametrize(
+        "debt,expected",
+        [(1_000_000, "sustainable"), (3_000_000, "moderate"), (5_000_000, "at_risk")],
+    )
+    def test_the_thresholds_still_work(self, debt, expected):
+        import main
+
+        assert main._debt_sustainability(debt, 10_000_000) == expected
+
+
+class TestListAndDetailAgreeOnDebt:
+    """A figure one page withholds must not appear on the other.
+
+    The detail endpoint gated each county debt row; the list endpoint did not.
+    So Nairobi read "13.1B" on /counties and "—" on /counties/nairobi, for the
+    same row, on the same data. Both now ask the same question.
+    """
+
+    @staticmethod
+    def _wb_loan(amount, doc):
+        from types import SimpleNamespace
+
+        from models import DebtCategory
+
+        return SimpleNamespace(
+            debt_category=DebtCategory.OTHER,
+            lender="World Bank (County Infrastructure)",
+            outstanding=amount,
+            principal=amount,
+            provenance=[{"dataset_id": "national-debt"}],
+            source_document=doc,
+        )
+
+    def test_a_sovereign_creditor_with_no_authorisation_is_withheld(self):
+        """The four surviving rows, exactly.
+
+        They name the World Bank and cite treasury.go.ke/public-debt/ — a
+        section index. A county cannot borrow from the World Bank without an
+        instrument, and a landing page is not one.
+        """
+        import main
+        from types import SimpleNamespace
+
+        doc = SimpleNamespace(
+            title="National Treasury Public Debt Bulletin Q3 2024",
+            url="https://www.treasury.go.ke/public-debt/",
+            doc_type=None,
+        )
+
+        assert main.county_debt_total([self._wb_loan(13_114_825_391, doc)]) is None
+
+    def test_a_domestic_lender_is_not_gated_on_an_instrument(self):
+        """The gate targets creditors that only lend to sovereigns.
+
+        Without this the check would be a filter that nothing can pass, which
+        is not a gate.
+        """
+        import main
+        from types import SimpleNamespace
+
+        from models import DebtCategory
+
+        loan = SimpleNamespace(
+            debt_category=DebtCategory.OTHER,
+            lender="Equity Bank",
+            outstanding=500_000_000,
+            principal=500_000_000,
+            provenance=[{"dataset_id": "county-debt"}],
+            source_document=None,
+        )
+
+        assert main.county_debt_total([loan]) == 500_000_000
