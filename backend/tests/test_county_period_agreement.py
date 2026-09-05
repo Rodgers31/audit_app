@@ -429,3 +429,145 @@ def test_provenance_still_says_modelled_when_there_are_no_cob_rows(
     body = _comprehensive(client, county_with_projection_and_reported.id)
     label = body["data_sources"]["budget"]
     assert "Modelled from the CRA equitable-share formula" in label, label
+
+
+# ==========================================================================
+# Own-source revenue is revenue, not a spending sector
+# ==========================================================================
+
+
+@pytest.fixture()
+def county_with_own_source_revenue(db_session, seed_country, seed_source_doc):
+    """The CoB shape plus the Own Source Revenue row the CBIRR now supplies.
+
+    It lives in the budget_lines table because it has the same target/actual
+    shape (target in allocated_amount, realised in actual_spent), but it is
+    money the county RAISED — counting it as expenditure would add a county's
+    revenue to its own spending.
+    """
+    entity = Entity(
+        id=472,
+        country_id=seed_country.id,
+        type=EntityType.COUNTY,
+        canonical_name="Kericho County",
+        slug="kericho-county",
+    )
+    db_session.add(entity)
+    db_session.flush()
+    fp = FiscalPeriod(
+        id=4720,
+        country_id=seed_country.id,
+        label="FY2024/25",
+        start_date=datetime(2024, 7, 1),
+        end_date=datetime(2025, 6, 30),
+    )
+    db_session.add(fp)
+    db_session.flush()
+
+    def bl(category, allocated, spent):
+        return BudgetLine(
+            entity_id=entity.id,
+            period_id=fp.id,
+            category=category,
+            allocated_amount=allocated,
+            actual_spent=spent,
+            currency="KES",
+            source_document_id=seed_source_doc.id,
+        )
+
+    db_session.add_all(
+        [
+            bl("Total", 10_000_000_000, 5_000_000_000),
+            bl("Development", 4_000_000_000, 1_500_000_000),
+            bl("Recurrent", 6_000_000_000, 3_500_000_000),
+            bl("Health Services", 2_000_000_000, 1_000_000_000),
+            # Target 1B, realised 400M.
+            bl("Own Source Revenue", 1_000_000_000, 400_000_000),
+        ]
+    )
+    db_session.commit()
+    return entity
+
+
+def test_own_source_revenue_is_not_counted_as_a_spending_sector(
+    client, county_with_own_source_revenue
+):
+    """A county's revenue must never appear among the things it spent on."""
+    eid = county_with_own_source_revenue.id
+    detail = _comprehensive(client, eid)
+
+    # sector_breakdown is the key that actually carries them — the same one
+    # test_classification_rows_do_not_appear_as_spending_sectors asserts on.
+    # An earlier version of this test checked expenditure_breakdown, which is
+    # empty on this endpoint whatever the data, so it proved nothing.
+    sectors = detail["budget"]["sector_breakdown"]
+    assert "Health Services" in sectors
+    labels = {str(k).lower() for k in sectors}
+    assert not any("own source" in label for label in labels), sectors
+
+    # And it does not inflate the budget: the CoB Total row still wins.
+    assert detail["budget"]["total_allocated"] == pytest.approx(10_000_000_000)
+
+
+def test_the_budget_endpoint_agrees_with_the_list_and_the_detail(
+    client, county_with_own_source_revenue
+):
+    """Three endpoints, one county, one budget.
+
+    /counties/{id}/budget used to sum EVERY line — Total plus Recurrent plus
+    Development plus each sector, three descriptions of the same money — then
+    discard that in favour of the fixture's modelled budget_2025. Baringo read
+    KSh 3.0B there and KSh 9.54B on /counties.
+    """
+    eid = county_with_own_source_revenue.id
+    budget = client.get(f"/api/v1/counties/{eid}/budget").json()
+    detail = _comprehensive(client, eid)
+    row = _list_row_by_name(client, "Kericho")  # _list_row hardcodes "mombasa"
+
+    assert budget["budget_2025"] == pytest.approx(10_000_000_000)
+    assert budget["budget_2025"] == pytest.approx(detail["budget"]["total_allocated"])
+    assert budget["budget_2025"] == pytest.approx(row["total_budget"])
+
+
+def test_the_budget_endpoint_reports_the_real_execution_rate(
+    client, county_with_own_source_revenue
+):
+    """It read metrics["financial_health_score"] — a different field, and for
+    40 of the 47 counties the constant 75.0."""
+    eid = county_with_own_source_revenue.id
+    budget = client.get(f"/api/v1/counties/{eid}/budget").json()
+
+    # 5.0B spent of 10.0B allocated.
+    assert budget["budget_execution_rate"] == pytest.approx(50.0)
+    assert budget["budget_execution_rate"] != 75.0
+
+
+def test_the_budget_endpoint_serves_the_realised_own_source_revenue(
+    client, county_with_own_source_revenue
+):
+    """It returned a hardcoded 0."""
+    eid = county_with_own_source_revenue.id
+    budget = client.get(f"/api/v1/counties/{eid}/budget").json()
+
+    assert budget["revenue_2024"] == pytest.approx(400_000_000)
+
+
+def test_a_county_with_no_budget_lines_reports_absence_not_zero(
+    client, db_session, seed_country
+):
+    """Absent, not 0% executed and not a 75.0 constant."""
+    entity = Entity(
+        id=473,
+        country_id=seed_country.id,
+        type=EntityType.COUNTY,
+        canonical_name="Lamu County",
+        slug="lamu-county",
+    )
+    db_session.add(entity)
+    db_session.commit()
+
+    budget = client.get(f"/api/v1/counties/{entity.id}/budget").json()
+
+    assert budget["budget_2025"] is None
+    assert budget["budget_execution_rate"] is None
+    assert budget["revenue_2024"] is None

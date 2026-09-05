@@ -2355,6 +2355,13 @@ def _audit_is_display_grade(audit) -> bool:
 # Recurrent + Total to the sector lines would triple-count the budget.
 _CLASSIFICATION_CATEGORIES = {"total", "development", "recurrent"}
 
+#: Categories that are neither an economic classification NOR a spending
+#: sector, and so belong in neither aggregate. "Own Source Revenue" is money
+#: the county RAISED, stored in the same table because it has the same
+#: target/actual shape; counting it as expenditure would add a county's
+#: revenue to its own spending.
+_NON_SECTOR_CATEGORIES = {"total budget", "own source revenue"}
+
 
 def _split_classification_and_sector_lines(budget_lines):
     """Split CoB BIRR classification rows from additive sector rows.
@@ -2385,7 +2392,7 @@ def _split_classification_and_sector_lines(budget_lines):
                 agg["allocated"] += float(bl.allocated_amount or 0)
                 agg["spent"] += float(bl.actual_spent or 0)
             continue
-        if (bl.category or "").strip() == "Total Budget":
+        if cat_key in _NON_SECTOR_CATEGORIES:
             continue
         sector_lines.append(bl)
 
@@ -3837,25 +3844,37 @@ async def get_county_budget(county_id: str):
                     .first()
                 )
                 if e:
-                    # Simple aggregate from budget lines (latest FY); fallback to metrics
-                    bl_sum = (
-                        _entity_period_budget_query(db, e.id)
-                        .with_entities(DBBudgetLine.allocated_amount)
-                        .all()
-                    )
-                    allocated_total = (
-                        float(sum((x[0] or 0) for x in bl_sum)) if bl_sum else 0.0
-                    )
-                    meta = e.meta or {}
-                    metrics = _resolve_fy_metrics(meta)
+                    # Through the same rule /counties and
+                    # /counties/{id}/comprehensive use, so the three cannot
+                    # disagree about one county. This endpoint used to:
+                    #
+                    #  * sum EVERY budget line's allocated amount — Total plus
+                    #    Recurrent plus Development plus each sector row —
+                    #    which counts the same money three times over;
+                    #  * then discard that anyway in favour of the fixture's
+                    #    modelled budget_2025, so Baringo read KSh 3.0B here
+                    #    and KSh 9.54B on /counties;
+                    #  * read budget_execution_rate from
+                    #    metrics["financial_health_score"], a different field,
+                    #    which for 40 of the 47 counties was the constant 75.0;
+                    #  * return a hardcoded revenue_2024 of 0.
+                    budget_lines = _entity_period_budget_query(db, e.id).all()
+                    (
+                        total_allocated,
+                        total_spent,
+                        _sector_lines,
+                        _class_by_cat,
+                    ) = _split_classification_and_sector_lines(budget_lines)
                     return {
                         "county_id": county_id,
                         "county_name": name,
-                        "budget_2025": metrics.get("budget_2025", allocated_total),
-                        "budget_execution_rate": metrics.get(
-                            "financial_health_score", 0
+                        "budget_2025": total_allocated or None,
+                        "budget_execution_rate": (
+                            round(total_spent / total_allocated * 100, 1)
+                            if total_allocated
+                            else None
                         ),
-                        "revenue_2024": 0,
+                        "revenue_2024": county_own_source_revenue(budget_lines),
                         "expenditure_breakdown": {},
                         "budget_allocation": {},
                     }
