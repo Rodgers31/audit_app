@@ -26,6 +26,10 @@ from seeding.domains.national_debt.wb_ids_creditors import (
     to_loan_rows,
 )
 
+#: The USD/KES the tests convert at. Passed explicitly because the rate is
+#: no longer a module constant — it is fetched per IDS year (fx.py).
+IDS_TEST_RATE = Decimal("134.822483279332")
+
 
 def _record(area_name, area_id, series, value):
     return {
@@ -99,6 +103,13 @@ class FakeIds:
 
     def get(self, url, **kwargs):
         self.requested.append(url)
+        if "PA.NUS.FCRF" in url:
+            # USD/KES for the IDS year. fetch_external_creditors resolves this
+            # before converting and quarantines without it, so the fake has to
+            # publish one — that refusal is deliberate (see fx.py).
+            return _Resp(
+                [{"page": 1}, [{"date": "2024", "value": float(IDS_TEST_RATE)}]]
+            )
         series = url.split("/series/")[1].split("/")[0]
         year = int(url.split("/time/YR")[1].split("?")[0])
         rows = self.data.get(series, []) if year in self.years else []
@@ -122,7 +133,7 @@ def test_returns_none_when_ids_has_no_year_at_all():
 
 
 def test_pulls_every_creditor_across_the_four_series():
-    creditors, checks = fetch_creditors(FakeIds(), 2024)
+    creditors, checks = fetch_creditors(FakeIds(), 2024, IDS_TEST_RATE)
     # 13 multilateral + 4 bilateral + 1 bondholders + 3 banks
     assert len(creditors) == 21
     assert checks["components_identity"] == "ok"
@@ -137,14 +148,14 @@ def test_pulls_every_creditor_across_the_four_series():
 def test_the_world_aggregate_is_never_a_creditor():
     """IDS's World row is the identity check. Publishing it as a creditor
     would double the external book."""
-    creditors, _ = fetch_creditors(FakeIds(), 2024)
+    creditors, _ = fetch_creditors(FakeIds(), 2024, IDS_TEST_RATE)
     assert not any(c.name == "World" for c in creditors)
 
 
 def test_creditors_the_fixture_never_had():
     """The Trade & Development Bank lends Kenya USD 1.43bn and appears nowhere
     in the fixture's four bilateral and three multilateral buckets."""
-    creditors, _ = fetch_creditors(FakeIds(), 2024)
+    creditors, _ = fetch_creditors(FakeIds(), 2024, IDS_TEST_RATE)
     names = {c.name for c in creditors}
     assert "Eastern & Southern African Trade & Dev. Bank" in names
     assert "African Export-Import Bank" in names
@@ -196,7 +207,7 @@ def test_gate_3_flags_a_units_or_fx_error():
 
 
 def test_coverage_is_unchecked_rather_than_assumed():
-    creditors, _ = fetch_creditors(FakeIds(), 2024)
+    creditors, _ = fetch_creditors(FakeIds(), 2024, IDS_TEST_RATE)
     result = check_external_coverage(creditors, None)
     assert result["status"] == "unchecked"
     assert result["coverage_ratio"] is None
@@ -210,19 +221,19 @@ def test_the_band_is_a_band():
 # ── What gets written ────────────────────────────────────────────────────
 
 def test_loan_rows_carry_their_own_provenance():
-    creditors, _ = fetch_creditors(FakeIds(), 2024)
+    creditors, _ = fetch_creditors(FakeIds(), 2024, IDS_TEST_RATE)
     rows = to_loan_rows(creditors, 2024)
     assert len(rows) == len(creditors)
     for row in rows:
         assert row["debt_category"].startswith("external_")
         assert "International Debt Statistics 2024" in row["notes"]
         assert "counterpart area" in row["notes"]
-        assert "130" in row["notes"], "the FX rate used must be on the row"
+        assert str(IDS_TEST_RATE) in row["notes"], "the FX rate used must be on the row"
         assert "publicly guaranteed" in row["notes"], "PPG scope must be stated"
 
 
 def test_bondholders_are_named_for_what_kenya_issued():
-    creditors, _ = fetch_creditors(FakeIds(), 2024)
+    creditors, _ = fetch_creditors(FakeIds(), 2024, IDS_TEST_RATE)
     rows = to_loan_rows(creditors, 2024)
     bonds = [r for r in rows if r["debt_category"] == "external_commercial"
              and "Eurobond" in r["lender"]]
@@ -232,12 +243,19 @@ def test_bondholders_are_named_for_what_kenya_issued():
 
 def test_the_eurobond_figure_contradicts_what_the_site_publishes():
     """The finding this work exists to fix. The site's Eurobond row is
-    KES 2,276Bn; IDS reports USD 6.6bn, which is KES 858Bn."""
-    creditors, _ = fetch_creditors(FakeIds(), 2024)
+    KES 2,276Bn; IDS reports USD 6.6bn.
+
+    The KES figure moves with the exchange rate, so it is derived rather than
+    pinned — it was 858Bn at the retired flat 130, and is ~890Bn at the
+    official 2024 rate. What the test asserts is the CONTRADICTION, which is
+    the finding; the exact shilling total is a function of the rate.
+    """
+    creditors, _ = fetch_creditors(FakeIds(), 2024, IDS_TEST_RATE)
     bonds = [c for c in creditors if c.series == "DT.DOD.PBND.CD"]
     assert len(bonds) == 1
     kes_bn = float(bonds[0].kes) / 1e9
-    assert kes_bn == pytest.approx(858.0, abs=1.0)
+    expected_bn = float(Decimal("6.6e9") * IDS_TEST_RATE) / 1e9
+    assert kes_bn == pytest.approx(expected_bn, rel=0.02)
 
     site_figure_bn = 2276.0
     assert site_figure_bn > kes_bn * 2.5
@@ -258,7 +276,7 @@ def test_usd_is_converted_once_and_the_rate_is_declared():
 
 def test_conversion_refuses_when_no_rate_was_supplied():
     """A creditor built without a rate must not silently convert at a guess."""
-    creditors, _ = fetch_creditors(FakeIds(), 2024)
+    creditors, _ = fetch_creditors(FakeIds(), 2024)  # deliberately no rate
     china = next(c for c in creditors if c.name == "China")
     with pytest.raises(IdsCreditorError, match="no_usd_kes_rate"):
         _ = china.kes
@@ -291,7 +309,7 @@ def test_external_fixture_rows_are_replaced_not_joined():
              "outstanding": 15_800_000_000},
         ]
     }
-    creditors, _ = fetch_creditors(FakeIds(), 2024)
+    creditors, _ = fetch_creditors(FakeIds(), 2024, IDS_TEST_RATE)
     new_rows = to_loan_rows(creditors, 2024)
 
     result = _replace_external_loans(payload, new_rows)
@@ -444,13 +462,19 @@ def test_an_unchecked_coverage_result_quarantines_the_pull():
             series="DT.DOD.MLAT.CD",
             debt_category="external_multilateral",
             usd=1_000_000_000.0,
+            usd_kes_rate=IDS_TEST_RATE,
         )
     ]
 
     with pytest.MonkeyPatch.context() as mp:
         mp.setattr(mod, "latest_year_with_data", lambda client: 2024)
+        # The rate is resolved before any conversion; stubbed here so this
+        # test stays about the COVERAGE gate rather than about the network.
+        mp.setattr(mod, "usd_kes_rate_for_year", lambda client, year: IDS_TEST_RATE)
         mp.setattr(
-            mod, "fetch_creditors", lambda client, year: (creditors, {"series": {}})
+            mod,
+            "fetch_creditors",
+            lambda client, year, rate=None: (creditors, {"series": {}}),
         )
 
         # Denominator absent -> coverage is "unchecked" -> nothing may publish.

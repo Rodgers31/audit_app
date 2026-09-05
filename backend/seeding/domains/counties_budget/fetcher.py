@@ -119,6 +119,16 @@ def _derive_fiscal_year_dates(fy: str) -> Tuple[Optional[str], Optional[str]]:
     return f"{start_year}-07-01", f"{end_year}-06-30"
 
 
+class CobSourceUnreachable(RuntimeError):
+    """No COB URL could be reached at all.
+
+    Distinct from "the page loaded and the parser found nothing": the first is
+    the publisher being down (an expired certificate, DNS, a 5xx), the second
+    is our extraction being wrong about a document we hold. Recording them
+    under one reason cost a day of reading a parser that was fine.
+    """
+
+
 def fetch_budget_payload(
     client: SeedingHttpClient, settings: SeedingSettings
 ) -> Any:
@@ -157,6 +167,19 @@ def fetch_budget_payload(
                 mark_fixture(
                     "counties_budget", reason="parser_returned_nothing"
                 )
+        except CobSourceUnreachable as exc:
+            # The publisher was down, not our parser. Naming it separately is
+            # the whole point: `parser_returned_nothing` sends the reader to
+            # the extraction code, and on 2026-09-04 that was a day spent on a
+            # parser that produces 75 records perfectly well.
+            logger.warning(
+                "COB county source unreachable, falling back to fixture: %s", exc
+            )
+            mark_fixture(
+                "counties_budget",
+                reason="source_unreachable",
+                detail=str(exc)[:200],
+            )
         except Exception as exc:
             logger.warning(
                 "COB county PDF fetch failed, falling back to fixture: %s", exc
@@ -384,6 +407,7 @@ def _discover_latest_county_birr_via_html(
     configured = getattr(settings, "counties_budget_cob_reports_url", None)
     if configured:
         candidate_urls.append(configured)
+    reach_errors: List[Tuple[str, str]] = []
     for url in _COB_COUNTY_BIRR_URLS:
         if url not in candidate_urls:
             candidate_urls.append(url)
@@ -405,11 +429,20 @@ def _discover_latest_county_birr_via_html(
             page_url = url
             break
         except Exception as exc:
+            reach_errors.append((url, f"{type(exc).__name__}: {exc}"))
             logger.warning("COB county page unavailable at %s: %s", url, exc)
 
     if not html:
-        logger.warning("Could not reach COB county reports at any known URL")
-        return None
+        # NOT a parser problem. On the 2026-09-04 nightly every COB URL failed
+        # with "[SSL: CERTIFICATE_VERIFY_FAILED] certificate has expired", the
+        # parser never ran, and the run still recorded
+        # `parser_returned_nothing` — which is what sent the next person
+        # reading the parser. Raise so the caller can name the transport.
+        detail = "; ".join(f"{u}: {e}" for u, e in reach_errors) or "no URL tried"
+        logger.warning(
+            "Could not reach COB county reports at any known URL — %s", detail
+        )
+        raise CobSourceUnreachable(detail)
 
     pdf_url = _discover_latest_county_birr_pdf(html, page_url)
     if not pdf_url:

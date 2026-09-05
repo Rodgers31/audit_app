@@ -19,6 +19,7 @@ import pytest
 from models import Entity, Loan
 from seeding.domains.national_debt.parser import DebtRecord
 from seeding.domains.national_debt.writer import write_debt_records
+from decimal import Decimal
 
 NATIONAL = "Republic of Kenya"
 
@@ -153,6 +154,9 @@ def test_ids_creditor_rows_persist_with_world_bank_provenance(db_session, seed_c
             series="DT.DOD.MLAT.CD",
             debt_category="external_multilateral",
             usd=1_000_000_000.0,
+            # The rate is no longer a module constant; a Creditor without one
+            # refuses to convert (see fx.py).
+            usd_kes_rate=Decimal("134.822483279332"),
         )
     ]
     payload = {

@@ -302,20 +302,22 @@ class TestHtmlFallback:
             for r in html_probes
         )
 
-    def test_html_fallback_returns_none_when_all_pages_unreachable(
-        self, settings
-    ):
-        """If every landing URL 415s or 5xxs, return None rather than
-        raising — the outer fetcher then falls through to the fixture."""
+    def test_html_fallback_raises_when_all_pages_unreachable(self, settings):
+        """If every landing URL 415s or 5xxs, raise CobSourceUnreachable.
+
+        This used to return None, and the outer fetcher recorded that as
+        `parser_returned_nothing` — so the 2026-09-04 expired-certificate
+        outage was filed as a parser bug and the gate reported it that way for
+        18 runs. The fallback to the fixture still happens; it is now recorded
+        as `source_unreachable`, which names whose problem it is.
+        """
 
         def handler(request: httpx.Request) -> httpx.Response:
             return httpx.Response(415, request=request)
 
         with _make_client(settings, handler) as client:
-            url = cb_fetcher._discover_latest_county_birr_via_html(
-                client, settings
-            )
-        assert url is None
+            with pytest.raises(cb_fetcher.CobSourceUnreachable):
+                cb_fetcher._discover_latest_county_birr_via_html(client, settings)
 
 
 class TestWpdmLinkParsing:
