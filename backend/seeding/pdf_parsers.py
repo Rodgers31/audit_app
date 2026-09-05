@@ -61,6 +61,16 @@ class PDFCorruptedError(PDFParserError):
     pass
 
 
+class CountyTableIncomplete(PDFParserError):
+    """The consolidated county table was found but not read whole.
+
+    Raised rather than returned because a partial county table is the failure
+    that hides: 39 rows look exactly like 47 unless something counts them, and
+    the run that dropped eight counties reported success for every nightly it
+    ran in.
+    """
+
+
 class TableNotFoundError(PDFParserError):
     """Raised when expected table is not found in PDF."""
 
@@ -327,6 +337,174 @@ def find_table_by_row_anchors(
     # expenditure …). Stable sort means PDF-order is the final tiebreaker.
     candidates.sort(key=lambda t: (t[0], t[1]), reverse=True)
     return candidates[0][2]
+
+
+def _county_key(label: str) -> str:
+    """A county label reduced to comparable letters.
+
+    The CBIRR hyphenates across lines and uses a curly apostrophe, so the same
+    county appears as "Elgeyo -\nMarakwet", "Taita-Tav-\neta" and "Murang\u2019a".
+    """
+    return re.sub(r"[^a-z]", "", (label or "").lower())
+
+
+def stitch_table_continuation(
+    base: ExtractedTable,
+    tables: List[ExtractedTable],
+    anchors: List[str],
+    *,
+    max_page_gap: int = 2,
+) -> ExtractedTable:
+    """Append the rows of a table that continues ``base`` onto a later page.
+
+    A 47-row county table does not fit on one page. In the FY2025/26 CBIRR the
+    consolidated budget table runs across pages 61 and 62: page 61 carries 39
+    counties, page 62 the remaining 8 and the Total row. Only page 61 is ever a
+    candidate, because ranking requires 30+ county rows and the continuation
+    has 8 — so the parse silently covered 39 of the 47 counties, with the Total
+    row that would have exposed it sitting on the page nobody read.
+
+    A table is treated as a continuation only when all of these hold, which is
+    tight enough that an unrelated table of the same shape cannot qualify:
+
+    * it is on a LATER page, within ``max_page_gap``;
+    * it has the same number of columns;
+    * its first column holds county names, at least one of which the base
+      table does not already have;
+    * it contributes no county twice.
+    """
+    known = {_county_key(row[0]) for row in base.rows if row and row[0]}
+    anchor_keys = {_county_key(a) for a in anchors}
+    width = len(base.headers)
+    added: List[List[str]] = []
+    pages: List[int] = []
+
+    for candidate in sorted(tables, key=lambda t: (t.page_number, t.table_index)):
+        if not (base.page_number < candidate.page_number <= base.page_number + max_page_gap):
+            continue
+        if len(candidate.headers) != width:
+            continue
+        rows = [r for r in candidate.rows if r and r[0]]
+        # The header may repeat, or the first row may be a sub-label row.
+        county_rows = [r for r in rows if _county_key(r[0]) in anchor_keys]
+        if not county_rows:
+            continue
+        fresh = [r for r in county_rows if _county_key(r[0]) not in known]
+        if not fresh:
+            continue
+        for row in fresh:
+            known.add(_county_key(row[0]))
+            added.append(list(row) + [""] * (width - len(row)))
+        pages.append(candidate.page_number)
+
+    if not added:
+        return base
+
+    logger.info(
+        "Stitched %d continuation row(s) onto the county table from page(s) %s",
+        len(added),
+        ", ".join(str(p) for p in pages),
+        extra={"base_page": base.page_number, "added": len(added)},
+    )
+    return ExtractedTable(
+        page_number=base.page_number,
+        table_index=base.table_index,
+        headers=list(base.headers),
+        rows=list(base.rows) + added,
+        bbox=base.bbox,
+    )
+
+
+#: Row totals are printed to one decimal of a million, so 47 of them can drift
+#: by up to KSh 2.35m. The smallest county Total in the FY2025/26 CBIRR is
+#: Lamu at KSh 4,988.65m, a thousand times the tolerance, so a dropped county
+#: still fails.
+_COUNTY_TOTAL_TOLERANCE_MILLIONS = Decimal("3")
+
+
+def _printed_total_row(
+    base: ExtractedTable, tables: List[ExtractedTable]
+) -> Optional[List[str]]:
+    """The table's own Total row, wherever it ended up.
+
+    It sits at the foot of the LAST page of the table, which for the FY2025/26
+    CBIRR is the continuation page — so it has to be looked for beyond the
+    page the table was selected on.
+    """
+    width = len(base.headers)
+    for candidate in [base] + sorted(
+        (t for t in tables
+         if base.page_number <= t.page_number <= base.page_number + 2
+         and len(t.headers) == width),
+        key=lambda t: (t.page_number, t.table_index),
+    ):
+        for row in candidate.rows:
+            if row and row[0] and _county_key(row[0]) == "total":
+                return list(row)
+    return None
+
+
+def _check_county_coverage(
+    records: List[Dict[str, Any]],
+    printed_total: Optional[List[str]],
+    source: str,
+    allocated_col: Optional[int] = None,
+) -> None:
+    """Refuse a consolidated county table that is not whole.
+
+    Two checks the table answers itself:
+
+    1. all 47 counties present — a missing one is a row the parse lost;
+    2. the Total-category rows sum to the Total row the table prints.
+
+    The second is what makes the first more than a headcount: a row read from
+    the wrong column keeps the count right and breaks the sum.
+    """
+    totals = [r for r in records if r.get("category") == "Total"]
+    seen = {_county_key(str(r.get("county") or "")) for r in totals}
+    missing = [c for c in KENYAN_COUNTIES if _county_key(c) not in seen]
+    if missing:
+        raise CountyTableIncomplete(
+            f"{len(missing)} of {len(KENYAN_COUNTIES)} counties missing from the "
+            f"consolidated table in {source}: {', '.join(missing)}"
+        )
+    logger.info("CBIRR check: all %d counties read", len(KENYAN_COUNTIES))
+
+    if printed_total is None:
+        logger.warning(
+            "CBIRR: no Total row found, so the county rows could not be "
+            "checked against one",
+            extra={"source": source},
+        )
+        return
+
+    parsed = sum((r.get("allocated") or Decimal("0")) for r in totals)
+
+    # Read the SAME column the county rows were read from. Picking "the first
+    # big-looking cell" instead compared the county budget total against the
+    # row's Recurrent sub-total — 633,303.87 against 398,974.59 — and failed a
+    # parse that was in fact exact.
+    printed = None
+    if allocated_col is not None and allocated_col < len(printed_total):
+        value, _ = parse_currency(str(printed_total[allocated_col] or ""))
+        printed = value or None
+    if printed is None:
+        logger.warning(
+            "CBIRR: the Total row carried no comparable figure",
+            extra={"source": source, "row": printed_total, "col": allocated_col},
+        )
+        return
+
+    drift = abs(parsed - printed)
+    if drift > _COUNTY_TOTAL_TOLERANCE_MILLIONS:
+        raise CountyTableIncomplete(
+            f"county rows sum to {parsed:,} but the table prints {printed:,} "
+            f"(out by {parsed - printed:+,}, tolerance "
+            f"{_COUNTY_TOTAL_TOLERANCE_MILLIONS:,}) in {source}"
+        )
+    logger.info(
+        "CBIRR check: rows sum to the printed total within %s", drift
+    )
 
 
 def rank_tables_by_row_anchors(
@@ -628,6 +806,26 @@ class CoBQuarterlyReportParser:
                 "Could not find county budget execution table in report"
             )
 
+        # Whether this really is the 47-county consolidated table. The
+        # completeness gate below applies only when it is, so the small tables
+        # in the parser's own fixtures — which reach here via the legacy
+        # header probe — are not held to a 47-county standard.
+        _anchor_keys = {_county_key(c) for c in KENYAN_COUNTIES}
+        anchored = (
+            len([r for r in budget_table.rows
+                 if r and r[0] and _county_key(r[0]) in _anchor_keys]) >= 30
+        )
+
+        # The table runs past the bottom of its page — see
+        # stitch_table_continuation for what that cost.
+        budget_table = stitch_table_continuation(
+            budget_table, self.tables, list(KENYAN_COUNTIES)
+        )
+        printed_total = _printed_total_row(budget_table, self.tables)
+        total_allocated_col = find_column_index(
+            budget_table.headers, primary_total_synonyms
+        )
+
         records: List[Dict[str, Any]] = []
 
         # ── Extract Total / Recurrent / Development from the same
@@ -665,6 +863,15 @@ class CoBQuarterlyReportParser:
                 ],
                 [
                     ["actual", "expenditure", "rec"],
+                    # FY2025/26 CBIRR wording. Its consolidated table splits a
+                    # merged header into sub-columns, so the cell reads
+                    # "Expenditure (Kshs.Million) Rec" — no "actual", and "Rec"
+                    # rather than "Recurrent", which is why every synonym above
+                    # missed it. The Total category already had the equivalent
+                    # (["expenditure", "total"]); Recurrent and Development did
+                    # not, so both fell through to the legacy separate-table
+                    # path and the parse covered 25 of the 47 counties.
+                    ["expenditure", "rec"],
                     ["recurrent", "expenditure"],
                     ["recurrent", "absorbed"],
                 ],
@@ -683,6 +890,7 @@ class CoBQuarterlyReportParser:
                 ],
                 [
                     ["actual", "expenditure", "dev"],
+                    ["expenditure", "dev"],  # see the Recurrent note above
                     ["development", "expenditure"],
                     ["development", "absorbed"],
                 ],
@@ -757,6 +965,11 @@ class CoBQuarterlyReportParser:
                 subcategory="PE",
             )
         )
+
+        if anchored:
+            _check_county_coverage(
+                records, printed_total, str(self.pdf_path), total_allocated_col
+            )
 
         logger.info(
             f"Parsed {len(records)} budget execution records from CoB report",

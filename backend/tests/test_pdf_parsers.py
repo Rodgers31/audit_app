@@ -271,7 +271,11 @@ class TestCoBQuarterlyReportParser:
             c for c in KENYAN_COUNTIES
             if c not in ("Taita Taveta", "Tharaka Nithi", "Trans Nzoia", "Elgeyo Marakwet")
         ]
-        extra_rows = [[c, "1", "2", "3", "1", "1", "2"] for c in others[:27]]
+        # All of them, not a slice that merely clears min_matches=30: the
+        # parser now refuses a consolidated table that is missing counties,
+        # because a 31-row table looked exactly like a 47-row one and the
+        # FY2025/26 CBIRR parse quietly covered 39.
+        extra_rows = [[c, "1", "2", "3", "1", "1", "2"] for c in others]
         mock_extract.return_value = [
             ExtractedTable(
                 page_number=55, table_index=0,
@@ -391,7 +395,9 @@ class TestCoBQuarterlyReportParser:
                 ["", "Rec", "Dev", "Total", "Rec", "Dev", "Total"],
                 # Only 35 counties → 35 anchors, less than arrears_high's 47.
                 *[[c, "1", "2", "3", "1", "1", "2"]
-                  for c in KENYAN_COUNTIES[:35]],
+                  # All 47 — see the note in
+                  # test_anchor_matches_hyphenated_county_forms.
+                  for c in KENYAN_COUNTIES],
             ],
             bbox=(0, 0, 100, 100),
         )
