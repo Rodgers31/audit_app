@@ -9,7 +9,7 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from database import SessionLocal
 from models import (
@@ -83,6 +83,10 @@ _FIXTURE_DECLARATIONS: Dict[str, Dict[str, Any]] = {
             "bba74732d5959b1f39e63757c6f3337409db706693529d58654255969a5790f3"
         ),
         "live_source": "audits",
+        # Named check, run against the DATABASE — see _SUPERSESSION_CHECKS.
+        # A fixture is superseded only when the live domain is observed to
+        # have delivered, never because a declaration here says so.
+        "superseded_check": "county_audit_findings",
     },
     "oag_national_audit_data.json": {
         "date_field": ("metadata", "report_date"),
@@ -99,6 +103,177 @@ _FIXTURE_DECLARATIONS: Dict[str, Dict[str, Any]] = {
         "live_source": "counties_budget",
     },
 }
+
+
+# --------------------------------------------------------------------------
+# supersession: has the live domain actually delivered?
+# --------------------------------------------------------------------------
+#
+# A fixture's AGE only matters if a reader can still see what is in it. Once
+# the live domain named in `live_source` is genuinely producing the same
+# facts, the file is vestigial: bootstrap still reads it, but nothing it
+# contains reaches an API response, so counting its age as staleness points
+# the gate at the wrong file and hides the ones that do still matter.
+#
+# Two rules keep this from becoming the excuse that stale data hides behind:
+#
+# 1. Supersession is MEASURED, in the database, at the moment the census
+#    runs — never declared in this file. A declaration is exactly the kind of
+#    claim that rots silently, which is the failure this whole census exists
+#    to catch.
+# 2. It has to hold for EVERY published thing the file feeds, not just the
+#    obvious one. Partial supersession is not supersession: if any path can
+#    still put the file's content in front of a reader, its age still counts.
+#
+# Every failure path returns False. A check that cannot run — no session, a
+# broken query, an unreadable file — leaves the fixture stale, so a fixture
+# is never excused by the absence of evidence.
+
+
+def _county_audit_findings_superseded(session: Session) -> Tuple[bool, str]:
+    """Is every published claim in ``oag_audit_data.json`` now derived?
+
+    The file feeds three things. Each is checked against what it would take
+    for the file to reach a reader:
+
+    ``audit_queries`` -> Audit rows via :func:`_upsert_audit_records`, which
+        defers to extracted findings per county. Superseded only when EVERY
+        county the file names has extraction-backed findings; a county the
+        extractor has not reached is still served the fixture, so one gap
+        means the file is still live.
+
+    ``missing_funds_cases`` -> ``entity.meta["missing_funds_cases"]``, served
+        by ``/counties/{slug}`` through ``missing_funds_provenance_failure``.
+        These are NOT deferred anywhere — the reason none is published is
+        that none carries a source document, so the publication gate withholds
+        it. That is the condition checked here, and if a case ever gains a
+        source document and a page reference it becomes publishable straight
+        out of a year-old file, so supersession has to fail.
+
+    ``summary_statistics`` -> nothing. Written nowhere, read nowhere.
+        ``entity.meta["audit_summary"]`` is likewise written by the county
+        loop and read by no one (verified: bootstrap.py holds the only
+        reference). Neither can reach a reader, so neither is gated on here.
+    """
+    from services.publication_gate import missing_funds_provenance_failure
+
+    try:
+        payload = json.loads(AUDIT_DATA_PATH.read_text())
+    except Exception as exc:  # noqa: BLE001 - unreadable means unproven
+        return False, f"could not read {AUDIT_DATA_PATH.name}: {exc}"
+
+    queries = [e for e in (payload.get("audit_queries") or []) if isinstance(e, dict)]
+    cases = [c for c in (payload.get("missing_funds_cases") or []) if isinstance(c, dict)]
+
+    # --- audit_queries -> Audit rows ---
+    counties = sorted(
+        {str(e.get("county") or "").strip() for e in queries + cases} - {""}
+    )
+    if not counties:
+        return False, f"{AUDIT_DATA_PATH.name} names no county to check"
+
+    unresolved: List[str] = []
+    uncovered: List[str] = []
+    covered: Dict[str, int] = {}
+    for name in counties:
+        # Resolved the same way the seeding loop resolves it, so the answer is
+        # to the real question: would the fixture path write for this county?
+        entity = (
+            session.query(Entity)
+            .filter(Entity.canonical_name == f"{name} County")
+            .first()
+        )
+        if entity is None:
+            unresolved.append(name)
+            continue
+        found = (
+            session.query(Audit)
+            .filter(Audit.entity_id == entity.id, Audit.extraction_id.isnot(None))
+            .count()
+        )
+        if found:
+            covered[name] = found
+        else:
+            uncovered.append(name)
+
+    if unresolved:
+        return False, (
+            f"{len(unresolved)} of {len(counties)} county name(s) in "
+            f"{AUDIT_DATA_PATH.name} resolve to no entity: {', '.join(unresolved)}"
+        )
+    if uncovered:
+        return False, (
+            f"{len(uncovered)} of {len(counties)} "
+            f"{'county' if len(counties) == 1 else 'counties'} named in "
+            f"{AUDIT_DATA_PATH.name} still has no extracted findings, so the "
+            f"fixture is what it is served: {', '.join(uncovered)}"
+        )
+
+    # --- missing_funds_cases -> entity.meta, gated at the API ---
+    doc_ids = set()
+    for case in cases:
+        raw = case.get("source_document_id")
+        if raw not in (None, ""):
+            try:
+                doc_ids.add(int(raw))
+            except (TypeError, ValueError):
+                continue
+    docs = {}
+    if doc_ids:
+        docs = {
+            d.id: d
+            for d in session.query(SourceDocument)
+            .filter(SourceDocument.id.in_(doc_ids))
+            .all()
+        }
+    publishable = [
+        str(case.get("case_id") or "?")
+        for case in cases
+        if missing_funds_provenance_failure(case, docs) is None
+    ]
+    if publishable:
+        return False, (
+            f"{len(publishable)} missing-funds case(s) in "
+            f"{AUDIT_DATA_PATH.name} would still be published: "
+            f"{', '.join(publishable)}"
+        )
+
+    return True, (
+        f"all {len(counties)} {'county' if len(counties) == 1 else 'counties'} "
+        f"named here have extraction-backed findings "
+        f"({min(covered.values())}-{max(covered.values())} each, "
+        f"{sum(covered.values())} in total), so _upsert_audit_records defers "
+        f"for every one; and all {len(cases)} missing-funds case(s) are "
+        f"withheld by the publication gate for having no source document"
+    )
+
+
+#: Named so the declaration table stays plain data.
+_SUPERSESSION_CHECKS: Dict[str, Callable[[Session], Tuple[bool, str]]] = {
+    "county_audit_findings": _county_audit_findings_superseded,
+}
+
+
+def _supersession(
+    spec: Dict[str, Any], session: Optional[Session]
+) -> Tuple[bool, Optional[str]]:
+    """Whether this fixture is superseded, and the evidence either way."""
+    name = spec.get("superseded_check")
+    if not name:
+        return False, None
+    check = _SUPERSESSION_CHECKS.get(name)
+    if check is None:  # a declaration naming a check that does not exist
+        logger.warning("bootstrap: no supersession check named %r", name)
+        return False, f"no check named {name!r} is registered"
+    if session is None:
+        # The census is also read without a database (tests, tooling). No
+        # session means no evidence, and no evidence means still stale.
+        return False, "not verified: the census ran without a database session"
+    try:
+        return check(session)
+    except Exception as exc:  # noqa: BLE001 - unproven, so still stale
+        logger.warning("bootstrap: supersession check %r failed: %s", name, exc)
+        return False, f"check {name!r} could not be completed: {exc}"
 
 
 def _declared_date(path: Path, spec: Dict[str, Any]) -> str:
@@ -119,11 +294,16 @@ def _declared_date(path: Path, spec: Dict[str, Any]) -> str:
     return spec["declared_date"]
 
 
-def bootstrap_provenance() -> Dict[str, Any]:
-    """What the weekly bootstrap read, and how old it was.
+def bootstrap_provenance(session: Optional[Session] = None) -> Dict[str, Any]:
+    """What the weekly bootstrap read, how old it was, and what still uses it.
 
     Written into ``IngestionJob.meta`` so the run is visible to the same
     checks that watch the nightly. Returns plain JSON-serialisable types.
+
+    ``session`` lets a fixture be shown SUPERSEDED — its facts now derived by
+    the live domain, so nothing in it reaches a reader and its age is no
+    longer a staleness signal. Without a session nothing can be verified and
+    every fixture stays stale, which is the safe direction.
     """
     files: List[Dict[str, Any]] = []
     today = datetime.now(timezone.utc).date()
@@ -140,6 +320,8 @@ def bootstrap_provenance() -> Dict[str, Any]:
                     "data_date": None,
                     "age_days": None,
                     "live_source": spec["live_source"],
+                    "superseded": False,
+                    "supersession_evidence": "the file is absent",
                 }
             )
             continue
@@ -149,6 +331,7 @@ def bootstrap_provenance() -> Dict[str, Any]:
             age = (today - datetime.fromisoformat(date_str).date()).days
         except ValueError:
             age = None
+        superseded, evidence = _supersession(spec, session)
         files.append(
             {
                 "file": name,
@@ -158,14 +341,22 @@ def bootstrap_provenance() -> Dict[str, Any]:
                 "data_date": date_str,
                 "age_days": age,
                 "live_source": spec["live_source"],
+                # Age still reported for a superseded file — it is read, and
+                # a reader of this record should see how old it is — but it no
+                # longer counts as staleness.
+                "superseded": superseded,
+                "supersession_evidence": evidence,
             }
         )
 
     stale = [
         f["file"]
         for f in files
-        if f["age_days"] is not None and f["age_days"] > STALE_AFTER_DAYS
+        if f["age_days"] is not None
+        and f["age_days"] > STALE_AFTER_DAYS
+        and not f["superseded"]
     ]
+    superseded = [f["file"] for f in files if f["superseded"]]
     missing = [f["file"] for f in files if not f["present"]]
 
     # WHY this run served a fixture, in the key the staleness gate reads
@@ -193,6 +384,26 @@ def bootstrap_provenance() -> Dict[str, Any]:
             f"{oldest['age_days']}d, which the '{oldest['live_source']}' "
             f"domain is meant to supersede"
         )
+        if superseded:
+            # Name what is already done, so the count going down is visible
+            # and the remaining files are the ones the message points at.
+            detail += (
+                f" (not counted: {', '.join(superseded)} — already superseded "
+                f"by live data)"
+            )
+    elif superseded and len(superseded) == len(files):
+        # Every fixture read is now vestigial: verified, this run, against the
+        # database. bootstrap still reads these files, but nothing in them can
+        # reach a reader, so their age is not a staleness signal.
+        reason = "fixture_superseded"
+        detail = (
+            f"all {len(files)} fixture(s) superseded by live data: "
+            + "; ".join(
+                f"{f['file']} ({f['live_source']}) — {f['supersession_evidence']}"
+                for f in files
+                if f["superseded"]
+            )
+        )
     else:
         reason = "fixture_current"
         detail = (
@@ -209,6 +420,7 @@ def bootstrap_provenance() -> Dict[str, Any]:
         "stale_after_days": STALE_AFTER_DAYS,
         "files": files,
         "stale_files": stale,
+        "superseded_files": superseded,
         "is_stale": bool(stale),
     }
 
@@ -1549,7 +1761,7 @@ def initialize_reference_data(
         # Before this the weekly job was invisible: no IngestionJob, no
         # freshness mark, so a fixture could freeze for a year — and one had —
         # while every gate stayed green because none of them was looking.
-        provenance = bootstrap_provenance()
+        provenance = bootstrap_provenance(session)
         session.add(
             IngestionJob(
                 domain=BOOTSTRAP_DOMAIN,
