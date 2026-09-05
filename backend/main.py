@@ -461,6 +461,38 @@ def county_debt_total(loans) -> Optional[float]:
     return total if found else None
 
 
+#: The category the CBIRR own-source revenue rows are written under.
+OWN_SOURCE_REVENUE_CATEGORY = "own source revenue"
+
+
+def county_own_source_revenue(budget_lines) -> Optional[float]:
+    """What a county actually collected itself, or None if unpublished.
+
+    Read from the CBIRR's "Own Source Revenue Collection" table
+    (``actual_spent`` on the Own Source Revenue row; ``allocated_amount`` is
+    the target). This is rates, licences, park fees, hospital charges — NOT
+    the county's budget, most of which is the equitable share.
+
+    It replaces ``metrics["revenue_2024"]``, which was exactly 0.85 x a
+    modelled budget for all 47 counties and was published under the label
+    "Revenue Collected". The real figures are about a tenth of that: KSh 53.9B
+    collected across all 47 counties in the first nine months of FY 2025/26,
+    against budgets of KSh 633.3B.
+
+    None rather than 0.0 when the county has no such row, because a county
+    that collected nothing and a county nobody has published are different
+    claims.
+    """
+    for line in budget_lines or []:
+        if (line.category or "").strip().lower() != OWN_SOURCE_REVENUE_CATEGORY:
+            continue
+        amount = line.actual_spent
+        if amount is None:
+            continue
+        return float(amount)
+    return None
+
+
 def _debt_sustainability(
     total_debt: Optional[float], total_allocated: float
 ) -> Optional[str]:
@@ -2702,9 +2734,9 @@ async def get_counties(fiscal_year: Optional[str] = None):
 
                 meta = e.meta or {}
                 metrics = _resolve_fy_metrics(meta, fiscal_year)
-                revenue_collection = float(
-                    metrics.get("local_revenue") or metrics.get("revenue_2024", 0)
-                )
+                # Own-source revenue as the Controller of Budget reports it.
+                # The meta rungs behind it were a flat 0.85 x budget.
+                revenue_collection = county_own_source_revenue(budget_lines)
                 money_received = float(
                     metrics.get("transfers_received", total_allocated)
                 )
@@ -2980,9 +3012,8 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
 
                     meta = e.meta or {}
                     metrics = _resolve_fy_metrics(meta, fiscal_year)
-                    revenue_collection = float(
-                        metrics.get("local_revenue") or metrics.get("revenue_2024", 0)
-                    )
+                    # Absent stays absent — see county_own_source_revenue.
+                    revenue_collection = county_own_source_revenue(budget_lines)
                     money_received = float(
                         metrics.get("transfers_received", total_allocated)
                     )
@@ -3490,10 +3521,11 @@ async def get_county_comprehensive(
             stalled_projects = meta.get("stalled_projects") or []
 
             # --- Revenue ---
-            revenue_2024 = float(
-                financial_metrics_meta.get("revenue_2024", 0)
-            ) or float(metrics.get("revenue_2024", 0))
-            local_revenue = float(metrics.get("local_revenue", 0))
+            # Own-source revenue as the Controller of Budget reports it. Both
+            # meta rungs this replaces were the same figure: 0.85 x a modelled
+            # budget, four times what the 47 counties actually collect.
+            revenue_2024 = county_own_source_revenue(budget_lines)
+            local_revenue = revenue_2024
 
             # --- Coordinates ---
             coords = COUNTY_COORDINATES.get(county_id, [36.8219, -1.2921])
@@ -3921,13 +3953,17 @@ async def get_county_debt(county_id: str):
                 )
                 total_spent = sum(float(b.actual_spent or 0) for b in budget_rows)
 
-                # Local revenue from meta
+                # Own-source revenue from the CBIRR, not 0.85 x a modelled
+                # budget. A ratio against the modelled figure was flattering
+                # by a factor of four.
                 meta = e.meta or {}
                 metrics = _resolve_fy_metrics(meta)
-                revenue = float(metrics.get("revenue_2024", 0) or 0)
+                revenue = county_own_source_revenue(budget_rows)
 
                 debt_to_revenue = (
-                    round(total_outstanding / revenue * 100, 1) if revenue > 0 else 0
+                    round(total_outstanding / revenue * 100, 1)
+                    if revenue is not None and revenue > 0
+                    else None
                 )
 
                 # Debt breakdown by lender type

@@ -339,13 +339,47 @@ def find_table_by_row_anchors(
     return candidates[0][2]
 
 
+#: County labels the CBIRR prints differently from this project's names, once
+#: reduced to letters. Kept explicit rather than inferred: "nairobicity" and
+#: "nairobi" are the same county, but no general rule that collapses them
+#: leaves "kisii" and "kisumu" distinct.
+_COUNTY_LABEL_ALIASES = {
+    "nairobicity": "nairobi",
+}
+
+
+def canonical_county_label(label: str) -> str:
+    """The county this label names, spelled the way this project spells it.
+
+    The report breaks names across lines ("Taita-Tav-\neta"), uses a curly
+    apostrophe, and calls the capital "Nairobi City". Emitting the raw label
+    pushed that onto the writer, which slugified it and looked for
+    "nairobi-city-county" — a county that does not exist here, so Nairobi's
+    own-source revenue was dropped with an error while three other counties
+    were rescued by a "despaced" fallback. Resolving it once, here, means
+    every consumer gets a name that resolves exactly.
+
+    Unrecognised labels are returned unchanged, so a genuinely new row still
+    reaches the caller rather than vanishing.
+    """
+    key = _county_key(label)
+    for county in KENYAN_COUNTIES:
+        if _county_key(county) == key:
+            return county
+    return (label or "").strip()
+
+
 def _county_key(label: str) -> str:
     """A county label reduced to comparable letters.
 
     The CBIRR hyphenates across lines and uses a curly apostrophe, so the same
     county appears as "Elgeyo -\nMarakwet", "Taita-Tav-\neta" and "Murang\u2019a".
+    Its own-source revenue table also names the capital "Nairobi City", which
+    is why the alias map exists — without it Nairobi was the one county missing
+    from that table, and the sum gate would have refused the whole parse.
     """
-    return re.sub(r"[^a-z]", "", (label or "").lower())
+    key = re.sub(r"[^a-z]", "", (label or "").lower())
+    return _COUNTY_LABEL_ALIASES.get(key, key)
 
 
 def stitch_table_continuation(
@@ -367,8 +401,15 @@ def stitch_table_continuation(
     A table is treated as a continuation only when all of these hold, which is
     tight enough that an unrelated table of the same shape cannot qualify:
 
-    * it is on a LATER page, within ``max_page_gap``;
-    * it has the same number of columns;
+    * it is on a page within ``max_page_gap`` — either side, because which
+      part of a split table is the "base" depends on which half has more
+      rows. The budget table's continuation is the page AFTER it (39 counties
+      on 61, 8 on 62); the own-source revenue table's is the page BEFORE
+      (33 on 56, 13 on 55);
+    * it repeats the base table's headers exactly. A continuation reprints
+      them, and requiring equality rather than a matching column count is
+      what stops two DIFFERENT county tables of the same width from being
+      welded together — this report has several;
     * its first column holds county names, at least one of which the base
       table does not already have;
     * it contributes no county twice.
@@ -379,10 +420,13 @@ def stitch_table_continuation(
     added: List[List[str]] = []
     pages: List[int] = []
 
-    for candidate in sorted(tables, key=lambda t: (t.page_number, t.table_index)):
-        if not (base.page_number < candidate.page_number <= base.page_number + max_page_gap):
+    for raw in sorted(tables, key=lambda t: (t.page_number, t.table_index)):
+        if raw.page_number == base.page_number and raw.table_index == base.table_index:
             continue
-        if len(candidate.headers) != width:
+        if abs(raw.page_number - base.page_number) > max_page_gap:
+            continue
+        candidate = flatten_grouped_headers(raw)
+        if candidate.headers != base.headers:
             continue
         rows = [r for r in candidate.rows if r and r[0]]
         # The header may repeat, or the first row may be a sub-label row.
@@ -449,6 +493,7 @@ def _check_county_coverage(
     printed_total: Optional[List[str]],
     source: str,
     allocated_col: Optional[int] = None,
+    category: str = "Total",
 ) -> None:
     """Refuse a consolidated county table that is not whole.
 
@@ -460,7 +505,7 @@ def _check_county_coverage(
     The second is what makes the first more than a headcount: a row read from
     the wrong column keeps the count right and breaks the sum.
     """
-    totals = [r for r in records if r.get("category") == "Total"]
+    totals = [r for r in records if r.get("category") == category]
     seen = {_county_key(str(r.get("county") or "")) for r in totals}
     missing = [c for c in KENYAN_COUNTIES if _county_key(c) not in seen]
     if missing:
@@ -971,6 +1016,10 @@ class CoBQuarterlyReportParser:
                 records, printed_total, str(self.pdf_path), total_allocated_col
             )
 
+        # What each county RAISES ITSELF, which is a different figure from its
+        # budget and was previously modelled as 0.85 x it.
+        records.extend(self._extract_own_source_revenue())
+
         logger.info(
             f"Parsed {len(records)} budget execution records from CoB report",
             extra={
@@ -981,6 +1030,75 @@ class CoBQuarterlyReportParser:
         )
 
         return records
+
+    def _extract_own_source_revenue(self) -> List[Dict[str, Any]]:
+        """Table 2.1 — "Own Source Revenue Collection", per county.
+
+        This is what a county raises itself: rates, licences, park fees,
+        hospital charges. It is NOT the county's budget, most of which is the
+        equitable share from the national government, and the difference is
+        large — 47 counties collected KSh 53.9B against budgets of KSh 633.3B
+        in the first nine months of FY 2025/26.
+
+        That matters because the figure this replaces was
+        ``0.85 x budget_2025`` from a fixture, published under the label
+        "Revenue Collected" — roughly ten times what counties actually collect.
+
+        ``allocated`` carries the TARGET and ``absorbed`` the ACTUAL REALISED
+        figure, which is the same shape the budget rows use, so the writer and
+        the absorption-rate derivation need no special case.
+        """
+        target_synonyms: List[List[str]] = [
+            ["target", "total osr"],
+            ["target", "total", "osr"],
+        ]
+        actual_synonyms: List[List[str]] = [
+            ["actual", "realised", "total osr"],
+            ["actual", "realised", "total", "osr"],
+            ["actual", "realized", "total", "osr"],
+        ]
+        rate_synonyms: List[List[str]] = [
+            ["performance", "total osr"],
+            ["performance", "total", "osr"],
+        ]
+
+        ranked = rank_tables_by_row_anchors(
+            self.tables,
+            list(KENYAN_COUNTIES),
+            min_matches=30,
+            header_synonyms=[["target", "actual"], ["osr"]],
+        )
+        for candidate in ranked:
+            flat = flatten_grouped_headers(candidate)
+            target_col = find_column_index(flat.headers, target_synonyms)
+            actual_col = find_column_index(flat.headers, actual_synonyms)
+            if target_col is None or actual_col is None:
+                continue
+
+            stitched = stitch_table_continuation(
+                flat, self.tables, list(KENYAN_COUNTIES)
+            )
+            records = self._rows_from_columns(
+                stitched,
+                category="Own Source Revenue",
+                allocated_col=target_col,
+                absorbed_col=actual_col,
+                rate_col=find_column_index(stitched.headers, rate_synonyms),
+            )
+            _check_county_coverage(
+                records,
+                _printed_total_row(stitched, self.tables),
+                f"{self.pdf_path} (own source revenue)",
+                target_col,
+                category="Own Source Revenue",
+            )
+            return records
+
+        logger.info(
+            "CoB PDF has no per-county own-source revenue table",
+            extra={"source": str(self.pdf_path)},
+        )
+        return []
 
     def _extract_category(
         self,
@@ -1060,7 +1178,7 @@ class CoBQuarterlyReportParser:
 
                 out.append(
                     {
-                        "county": county_name,
+                        "county": canonical_county_label(county_name),
                         "category": category,
                         "subcategory": subcategory,
                         "allocated": allocated,
@@ -1102,7 +1220,7 @@ class CoBQuarterlyReportParser:
                 )
 
                 record: Dict[str, Any] = {
-                    "county": county_name,
+                    "county": canonical_county_label(county_name),
                     "category": category,
                     "subcategory": subcategory,
                     "allocated": allocated,

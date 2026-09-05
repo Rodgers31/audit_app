@@ -141,11 +141,35 @@ class TestStitching:
 
         assert stitch_table_continuation(base, [base, far], COUNTIES).rows == base.rows
 
-    def test_an_earlier_page_is_not_treated_as_a_continuation(self):
-        base = table(61, COUNTIES[8:])
-        earlier = table(60, COUNTIES[:8])
+    def test_an_earlier_adjacent_page_is_joined(self):
+        """Which half is the "base" depends on which one has more rows.
 
-        assert stitch_table_continuation(base, [earlier, base], COUNTIES).rows == base.rows
+        The budget table's continuation is the page after it (39 counties on
+        61, 8 on 62). The own-source revenue table's is the page BEFORE (33 on
+        56, 13 on 55) — only page 56 clears the 30-row ranking threshold, so
+        the base is the later page and its continuation is earlier. A
+        forward-only join left Nairobi and twelve others out.
+        """
+        base = table(56, COUNTIES[13:])
+        earlier = table(55, COUNTIES[:13])
+
+        joined = stitch_table_continuation(base, [earlier, base], COUNTIES)
+
+        assert len(joined.rows) == 47
+
+    def test_a_table_with_different_headers_is_not_joined(self):
+        """What replaced the direction guard, and a stronger test.
+
+        This report has several 10-column county tables. Requiring the
+        continuation to REPEAT the headers — which a real one does — is what
+        stops the own-source revenue table being welded to the budget table.
+        """
+        base = table(61, COUNTIES[:39])
+        other_headers = list(HEADERS)
+        other_headers[1] = "Target (Kshs.Million) Ordinary OSR"
+        other = table(62, COUNTIES[39:], headers=other_headers)
+
+        assert stitch_table_continuation(base, [base, other], COUNTIES).rows == base.rows
 
 
 class TestCountyKey:
@@ -295,3 +319,173 @@ class TestTheParserOnAWholeTable:
         with pytest.raises(CountyTableIncomplete) as e:
             self._parse(monkeypatch, tables)
         assert "West Pokot" in str(e.value)
+
+
+class TestOwnSourceRevenue:
+    """Table 2.1 — what each county raises itself.
+
+    Not the county's budget: 47 counties collected KSh 53.9B against budgets
+    of KSh 633.3B in the first nine months of FY 2025/26. The figure this
+    replaces was 0.85 x a modelled budget, published as "Revenue Collected" —
+    about ten times what counties actually collect.
+    """
+
+    OSR_HEADERS = [
+        "County",
+        "Target (Kshs.Million) Ordinary\nOSR",
+        "Target (Kshs.Million) FIF/ AIA",
+        "Target (Kshs.Million) Total OSR",
+        "Actual Realised (Kshs.Million) Ordinary\nOSR",
+        "Actual Realised (Kshs.Million) FIF/AIA",
+        "Actual Realised (Kshs.Million) Total OSR",
+        "Performance (%) Ordinary\nOSR",
+        "Performance (%) FIF/AIA",
+        "Performance (%) Total OSR",
+    ]
+
+    def _row(self, name):
+        # target 100 total, realised 50 total
+        return [name, "60", "40", "100", "30", "20", "50", "50", "50", "50"]
+
+    def _tables(self, first_names, second_names, *, total_row=True):
+        first = ExtractedTable(
+            page_number=55, table_index=0, headers=list(self.OSR_HEADERS),
+            rows=[self._row(n) for n in first_names],
+            bbox=(0.0, 0.0, 100.0, 100.0),
+        )
+        rows = [self._row(n) for n in second_names]
+        if total_row:
+            n = len(first_names) + len(second_names)
+            rows.append(
+                ["Total", str(60 * n), str(40 * n), str(100 * n),
+                 str(30 * n), str(20 * n), str(50 * n), "50", "50", "50"]
+            )
+        second = ExtractedTable(
+            page_number=56, table_index=0, headers=list(self.OSR_HEADERS),
+            rows=rows, bbox=(0.0, 0.0, 100.0, 100.0),
+        )
+        return [first, second]
+
+    def _parse(self, monkeypatch, tables):
+        """Drive the OSR extraction alone.
+
+        ``self.tables`` is populated by ``parse()``, not the constructor, so a
+        direct call needs it set — patching extract_all_tables is not enough.
+        """
+        from pathlib import Path
+
+        from seeding import pdf_parsers
+
+        parser = pdf_parsers.CoBQuarterlyReportParser(Path("cbirr.pdf"))
+        parser.tables = tables
+        return parser._extract_own_source_revenue()
+
+    def test_all_47_counties_are_read_across_both_pages(self, monkeypatch):
+        """13 counties on page 55, 34 on page 56 — only the second clears the
+        30-row ranking threshold, so the continuation is the EARLIER page."""
+        records = self._parse(
+            monkeypatch, self._tables(COUNTIES[:13], COUNTIES[13:])
+        )
+
+        assert len(records) == 47
+        assert {r["category"] for r in records} == {"Own Source Revenue"}
+
+    def test_target_is_allocated_and_realised_is_absorbed(self, monkeypatch):
+        """The same shape the budget rows use, so nothing downstream needs a
+        special case — and the API reads the REALISED figure."""
+        records = self._parse(
+            monkeypatch, self._tables(COUNTIES[:13], COUNTIES[13:])
+        )
+        row = next(r for r in records if r["county"] == "Baringo")
+
+        assert row["allocated"] == Decimal("100")  # Target, Total OSR column
+        assert row["absorbed"] == Decimal("50")  # Actual Realised, Total OSR
+
+    def test_nairobi_city_resolves_to_nairobi(self, monkeypatch):
+        """The table names the capital "Nairobi City".
+
+        Emitted verbatim, the writer slugified it to "nairobi-city-county",
+        matched no county, and dropped the row with an error — so Nairobi, the
+        largest own-source collector in the country, had no figure.
+        """
+        names = [c for c in COUNTIES if c != "Nairobi"]
+        records = self._parse(
+            monkeypatch, self._tables(names[:13], names[13:] + ["Nairobi City"])
+        )
+
+        assert "Nairobi" in {r["county"] for r in records}
+        assert "Nairobi City" not in {r["county"] for r in records}
+
+    def test_a_missing_county_is_refused(self, monkeypatch):
+        from seeding.pdf_parsers import CountyTableIncomplete
+
+        with pytest.raises(CountyTableIncomplete) as e:
+            self._parse(monkeypatch, self._tables(COUNTIES[:13], COUNTIES[13:46]))
+        assert "West Pokot" in str(e.value)
+
+    def test_rows_that_do_not_sum_to_the_printed_total_are_refused(
+        self, monkeypatch
+    ):
+        from seeding.pdf_parsers import CountyTableIncomplete
+
+        tables = self._tables(COUNTIES[:13], COUNTIES[13:])
+        # Move the printed Total far from the sum of the rows.
+        tables[1].rows[-1][3] = "999999"
+
+        with pytest.raises(CountyTableIncomplete):
+            self._parse(monkeypatch, tables)
+
+    def test_a_report_with_no_osr_table_yields_nothing(self, monkeypatch):
+        """Absence is not a failure — an older vintage may not carry it."""
+        plain = ExtractedTable(
+            page_number=10, table_index=0,
+            headers=["County", "Something", "Else"],
+            rows=[[c, "1", "2"] for c in COUNTIES],
+            bbox=(0.0, 0.0, 100.0, 100.0),
+        )
+
+        assert self._parse(monkeypatch, [plain]) == []
+
+
+class TestTheApiReadsTheRealisedFigure:
+    @staticmethod
+    def _line(category, allocated, actual):
+        from types import SimpleNamespace
+
+        return SimpleNamespace(
+            category=category, allocated_amount=allocated, actual_spent=actual
+        )
+
+    def test_it_reads_the_own_source_revenue_row(self):
+        import main
+
+        lines = [
+            self._line("Total", 9_542_030_000, 4_092_380_000),
+            self._line("Own Source Revenue", 1_000_000_000, 421_000_000),
+        ]
+
+        assert main.county_own_source_revenue(lines) == 421_000_000
+
+    def test_it_does_not_read_the_budget_row(self):
+        """The budget is not revenue, and confusing them is how a county's
+        own collection came to be reported as 85% of its budget."""
+        import main
+
+        lines = [self._line("Total", 9_542_030_000, 4_092_380_000)]
+
+        assert main.county_own_source_revenue(lines) is None
+
+    def test_a_county_with_no_osr_row_is_absent_not_zero(self):
+        import main
+
+        result = main.county_own_source_revenue([])
+
+        assert result is None
+        assert result != 0
+
+    def test_a_published_zero_is_kept(self):
+        import main
+
+        lines = [self._line("Own Source Revenue", 1_000_000, 0)]
+
+        assert main.county_own_source_revenue(lines) == 0.0

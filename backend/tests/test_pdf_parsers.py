@@ -294,13 +294,20 @@ class TestCoBQuarterlyReportParser:
         ]
         records = CoBQuarterlyReportParser(Path("hyphenated.pdf")).parse()
         counties = {r["county"] for r in records}
-        # The parser preserves the original spelling — the hyphenated
-        # rows are still extracted (we don't rewrite the row label,
-        # only the matching code is hyphen-insensitive).
-        assert "Taita-Taveta" in counties
-        assert "Tharaka-Nithi" in counties
-        assert "Trans-Nzoia" in counties
-        assert "Elgeyo-Marakwet" in counties
+        # The parser now RESOLVES the spelling instead of passing it through.
+        # It used to emit the row label verbatim, which pushed the problem onto
+        # the writer: it slugified "Taita-Tav-\neta" and was rescued by a
+        # "despaced" fallback, but slugified "Nairobi City" to
+        # "nairobi-city-county", found no such county, and dropped Nairobi's
+        # own-source revenue with an error. Resolving once, in the parser,
+        # means every consumer gets a name that resolves exactly.
+        assert "Taita Taveta" in counties
+        assert "Tharaka Nithi" in counties
+        assert "Trans Nzoia" in counties
+        assert "Elgeyo Marakwet" in counties
+        # ...and the hyphenated rows are still all extracted, which is what
+        # this test was written to protect.
+        assert len(counties) == 47
 
     @patch("seeding.pdf_parsers.extract_all_tables")
     def test_derives_absorption_rate_when_column_missing(self, mock_extract):
