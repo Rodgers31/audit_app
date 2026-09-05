@@ -171,6 +171,10 @@ def load_blue_book_extractions(
 ) -> PersistenceStats:
     """Extractions of ``doc`` → audit rows, provenance columns populated."""
     stats = PersistenceStats()
+    # Lookup caches for this document. Scoped per call, not module-level, so
+    # nothing leaks between documents or between runs.
+    _entity_cache: dict = {}
+    _period_cache: dict = {}
 
     extractions = (
         session.execute(
@@ -207,10 +211,21 @@ def load_blue_book_extractions(
             stats.skipped += 1
             continue
 
+        # Memoised per run. Every finding used to cost its own SELECT for the
+        # entity and another for the period, and a consolidated county volume
+        # carries ~1,500 findings against 47 entities and ONE fiscal year.
+        # Measured at 221 ms per round-trip to the production database, that
+        # is ~1,000s of lookups against a 600s domain budget — which is what
+        # aborted the 2026-09-05 run, not OCR (only 4 pages of 701 qualify).
         try:
-            entity = _ensure_entity(
-                session, doc.country_id, name, payload.get("vote")
-            )
+            ekey = (name, payload.get("vote"))
+            if ekey in _entity_cache:
+                entity = _entity_cache[ekey]
+            else:
+                entity = _ensure_entity(
+                    session, doc.country_id, name, payload.get("vote")
+                )
+                _entity_cache[ekey] = entity
         except CountyEntityUnresolved as exc:
             # Never invent an entity for a finding: a public audit finding
             # filed against a county row we made up is worse than one absent.
@@ -218,7 +233,11 @@ def load_blue_book_extractions(
             stats.errors.append(str(exc))
             stats.skipped += 1
             continue
-        period = _ensure_period(session, doc.country_id, fy)
+        if fy in _period_cache:
+            period = _period_cache[fy]
+        else:
+            period = _ensure_period(session, doc.country_id, fy)
+            _period_cache[fy] = period
 
         amounts = payload.get("amounts") or []
         amount = amounts[0] if len(amounts) == 1 else None

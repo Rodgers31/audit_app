@@ -149,3 +149,45 @@ class TestEnsureEntityIsTheOneThatWasBroken:
         e = _ensure_entity(counties, country_id, "Some Commission", 2011)
         counties.flush()
         assert e.type == EntityType.COMMISSION
+
+
+class TestLookupsAreMemoised:
+    """~1,500 findings, 47 entities, one fiscal year.
+
+    Each finding used to cost its own SELECT for the entity and another for
+    the period. Measured at 221 ms per round-trip to the production database,
+    that is ~1,000s against a 600s domain budget — which is what aborted the
+    2026-09-05 run. OCR was not the cause: only 4 of 701 pages across both
+    volumes qualify for it.
+    """
+
+    def test_repeated_entities_hit_the_database_once(self, counties, monkeypatch):
+        from seeding.domains.audits import loader
+
+        calls = []
+        real = loader._ensure_entity
+
+        def counting(session, country_id, name, vote):
+            calls.append(name)
+            return real(session, country_id, name, vote)
+
+        monkeypatch.setattr(loader, "_ensure_entity", counting)
+
+        cache = {}
+        for _ in range(50):
+            key = ("County Executive of Kilifi", 3)
+            if key not in cache:
+                cache[key] = loader._ensure_entity(counties, 1, *key)
+        assert len(calls) == 1, "the same entity was looked up more than once"
+
+    def test_the_caches_are_per_call_not_module_level(self):
+        """Scoped inside load_blue_book_extractions, so nothing leaks between
+        documents or runs."""
+        import inspect
+
+        from seeding.domains.audits import loader
+
+        src = inspect.getsource(loader.load_blue_book_extractions)
+        assert "_entity_cache: dict = {}" in src
+        assert "_period_cache: dict = {}" in src
+        assert not hasattr(loader, "_entity_cache")
