@@ -105,6 +105,7 @@ def run(
     from models import DocumentType
 
     from ...extractors import get_parser
+    from .candidates import split_county_audit_candidates
     from ...extractors.oag_county_audit import (
         CountyAuditError as QuarantinedDocument,
     )
@@ -123,6 +124,14 @@ def run(
                 if u not in set(known)
             ][:_MAX_NEW_DOCUMENTS_PER_RUN]
             candidates = known + fresh
+            if dataset_id == "oag_county_audits":
+                candidates, rejected = split_county_audit_candidates(candidates)
+                for url, why in rejected:
+                    logger.info(
+                        "Not a county audit, skipped before download (%s): %s",
+                        why,
+                        url.rsplit("/", 1)[-1][:80],
+                    )
             logger.info(
                 "%s: %d known + %d newly discovered document(s)%s",
                 dataset_id,
