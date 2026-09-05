@@ -78,7 +78,7 @@ def fetch_fiscal_summary_payload(
         try:
             wb_data = _fetch_worldbank_fiscal_data(client, settings)
             if wb_data:
-                payload = _merge_worldbank_data(payload, wb_data)
+                payload = _merge_worldbank_data(payload, wb_data, client)
                 wb_applied = True
                 wb_years = len(wb_data)
                 logger.info(
@@ -314,6 +314,8 @@ def _fetch_revenue_estimates(
     reason rather than raising, so a bad run leaves the year's revenue absent
     instead of publishing a figure nothing verified.
     """
+    from pathlib import Path
+
     from ...discovery import discover_latest_pdf
     from ...pdf_download import get_or_download_pdf
     from .revenue_estimates import (
@@ -344,6 +346,8 @@ def _fetch_revenue_estimates(
         pdf_path = get_or_download_pdf(
             client,
             found.url,
+            cache_dir=Path(settings.cache_path) / "pdfs",
+            ttl_seconds=settings.pdf_cache_ttl_seconds,
             max_seconds=settings.pdf_download_timeout_seconds,
             max_bytes=settings.pdf_download_max_bytes,
         )
@@ -816,6 +820,7 @@ def _calendar_year_to_fy(year: int) -> str:
 def _merge_worldbank_data(
     payload: Dict[str, Any],
     wb_data: Dict[str, Dict[str, float]],
+    client=None,
 ) -> Dict[str, Any]:
     """Merge World Bank data into the fixture payload.
 
@@ -855,7 +860,11 @@ def _merge_worldbank_data(
             # Without a rate the field is omitted rather than guessed.
             from ..national_debt.fx import usd_kes_rate_for_year
 
-            kes_rate = usd_kes_rate_for_year(client, cal_year)
+            kes_rate = (
+                usd_kes_rate_for_year(client, cal_year)
+                if client is not None
+                else None
+            )
             if kes_rate is None:
                 logger.warning(
                     "No USD/KES rate for %s; omitting the USD-derived fiscal "
