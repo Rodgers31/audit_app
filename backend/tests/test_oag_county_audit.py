@@ -178,3 +178,39 @@ class TestUnreadableFiles:
         with pytest.raises(CountyAuditError) as e:
             read_pages(tmp_path / "absent.pdf")
         assert e.value.reason == "pdf_unreadable"
+
+
+class TestConsolidatedVolumesAreRefused:
+    """OAG publishes county audits in TWO shapes, and this parser reads one.
+
+    Single-entity:  "REPORT OF THE AUDITOR-GENERAL ON COUNTY ASSEMBLY OF
+                     HOMA BAY" — ~11 pages, one auditee. Handled.
+
+    Consolidated:   "REPORT OF THE AUDITOR-GENERAL FOR THE COUNTY GOVERNMENTS
+                     FOR THE FINANCIAL YEAR 2020/2021 VOLUME II - COUNTY
+                     ASSEMBLIES" — 232 and 469 pages, all 47 counties behind a
+                     "Code | County Assembly" table of contents. NOT handled.
+
+    Verified against both real volumes. The distinction is "ON <entity>" versus
+    "FOR THE COUNTY GOVERNMENTS", and getting it wrong would attribute every
+    county's findings to whichever name the title regex happened to catch.
+    Refusing is the correct behaviour until a consolidated parser exists.
+    """
+
+    CONSOLIDATED_HEAD = (
+        "Enhancing Accountability\nREPORT\nOF\nTHE AUDITOR - GENERAL\nFOR\n"
+        "THE COUNTY GOVERNMENTS\nFOR\nTHE FINANCIAL YEAR\n2020/2021\n"
+        "VOLUME II - COUNTY ASSEMBLIES\n"
+    )
+
+    def test_a_consolidated_volume_is_refused_not_mis_attributed(self):
+        with pytest.raises(CountyAuditError) as e:
+            build_result(
+                [(1, self.CONSOLIDATED_HEAD), (2, BODY)], known_counties=KNOWN
+            )
+        assert e.value.reason == "auditee_not_found"
+
+    def test_the_single_entity_shape_is_still_accepted(self):
+        """POSITIVE CONTROL — the refusal above is about shape, not strictness."""
+        r = build_result(pages(), known_counties=KNOWN)
+        assert r.county_name == "Homa Bay"
