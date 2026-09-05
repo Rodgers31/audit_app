@@ -10,6 +10,7 @@ import time
 from contextlib import AbstractContextManager
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
+from urllib.parse import urlparse
 
 import httpx
 from tenacity import (
@@ -20,6 +21,7 @@ from tenacity import (
     wait_exponential,
 )
 
+from . import tls_chain
 from .config import SeedingSettings
 from .rate_limiter import RateLimiter
 from .storage import SimpleHTTPCache
@@ -82,8 +84,50 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
             headers=settings.default_headers,
             follow_redirects=settings.http_follow_redirects,
         )
+        # Built on demand, per host, only for publishers that send an
+        # incomplete certificate chain. See seeding/tls_chain.py.
+        self._injected_client = client is not None
+        self._chain_clients: Dict[str, httpx.Client] = {}
+
+    def _client_for(self, url: str) -> httpx.Client:
+        """The client to use for ``url``.
+
+        Some publishers serve their leaf certificate without the intermediate
+        that signs it, which OpenSSL cannot chain and so refuses. For those
+        hosts — and only those — this returns a client whose trust store has
+        been completed with intermediates fetched and verified up to a root
+        certifi already carries. Verification stays ON throughout; a host that
+        cannot be completed safely keeps the normal client and is allowed to
+        fail.
+        """
+        # getattr, not attribute access: tests build this surface with
+        # object.__new__ and set only the fields they need, so __init__ has
+        # not necessarily run.
+        if getattr(self, "_injected_client", True) or not tls_chain.needs_completion(url):
+            return self._client
+        host = (urlparse(url).hostname or "").lower()
+        chain_clients = getattr(self, "_chain_clients", None)
+        if chain_clients is None:
+            return self._client
+        if host not in chain_clients:
+            context = tls_chain.completed_ssl_context(host)
+            chain_clients[host] = (
+                httpx.Client(
+                    timeout=self._settings.timeout_seconds,
+                    headers=self._settings.default_headers,
+                    follow_redirects=self._settings.http_follow_redirects,
+                    verify=context,
+                )
+                if context is not None
+                else self._client
+            )
+        return chain_clients[host]
 
     def close(self) -> None:
+        for client in getattr(self, "_chain_clients", {}).values():
+            if client is not self._client:
+                client.close()
+        getattr(self, "_chain_clients", {}).clear()
         self._client.close()
 
     def __exit__(self, exc_type, exc, tb) -> None:  # pragma: no cover - trivial
@@ -143,7 +187,9 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
         for attempt in retryer:
             with attempt:
                 with self._rate_limiter.context():
-                    response = self._client.request(method_upper, url, **kwargs)
+                    response = self._client_for(url).request(
+                        method_upper, url, **kwargs
+                    )
                 if raise_for_status:
                     response.raise_for_status()
                 break
@@ -352,7 +398,7 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
                 mode = "ab" if offset else "wb"
                 try:
                     with self._rate_limiter.context():
-                        with self._client.stream(
+                        with self._client_for(url).stream(
                             "GET", url, headers=request_headers, timeout=timeout
                         ) as response:
                             if raise_for_status:

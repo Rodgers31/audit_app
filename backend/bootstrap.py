@@ -404,12 +404,13 @@ def _county_reference_data_superseded(session: Session) -> Tuple[bool, str]:
         )
 
     if outstanding:
+        # The closing clause names what is left, not a fixed list: county
+        # population moved to the 2019 census volume on 2026-09-05 and the
+        # sentence that still said otherwise would have been wrong the moment
+        # it did.
         return False, (
             f"still served from {COUNTY_DATA_PATH.name}: "
             + "; ".join(outstanding)
-            + f" — the '{_FIXTURE_DECLARATIONS[COUNTY_DATA_PATH.name]['live_source']}'"
-            " domain writes BudgetLine rows only, so county debt, population"
-            " and entity.meta have no live source yet"
         )
 
     return True, (
@@ -1020,6 +1021,37 @@ def _upsert_county_debt(
                     provenance=provenance,
                 )
             )
+
+    # DERIVED PENDING BILLS WIN.
+    #
+    # This figure is modelled: the fixture sets every county's pending bills
+    # at a flat 8% of a budget that is itself population x KSh 4,500. The
+    # `pending_bills` domain publishes the real thing — Table 10 of the
+    # Treasury's Budget Review and Outlook Paper, the audited per-county
+    # breakdown — as "Pending Bills - County Governments (<X> County)".
+    #
+    # Where that row exists, writing the modelled one beside it puts two
+    # different claims about the same debt in the same table. Per county, so
+    # a county the BROP parse has not reached keeps the fixture rather than
+    # losing the only figure it has — which is not hypothetical: the parse
+    # currently yields 46 of 47, and Narok has no live row.
+    live_pending_bills = (
+        session.query(Loan)
+        .filter(
+            Loan.entity_id == entity_id,
+            Loan.debt_category == DebtCategory.PENDING_BILLS,
+            Loan.lender.like("Pending Bills — County Governments%"),
+        )
+        .count()
+    )
+    if live_pending_bills:
+        logger.info(
+            "%s: pending bills already derived from the BROP — skipping the "
+            "modelled figure from %s",
+            county_name,
+            COUNTY_DATA_PATH.name,
+        )
+        pending_bills = 0.0
 
     if pending_bills and pending_bills > 0:
         existing = (

@@ -34,8 +34,28 @@ def sqlite_session(tmp_path) -> Iterator[Session]:
         engine.dispose()
 
 
+def _no_census(monkeypatch):
+    """Stub the census step for the tests below.
+
+    The domain now also reads county populations from the 2019 census volume
+    (seeding/domains/population/census_counties.py). These tests are about the
+    World Bank / fixture persistence path, and their `calls == 1` assertions
+    are about THAT fetch; letting the census run turns them into assertions
+    about how many requests the domain happens to make. The census has its own
+    tests — test_knbs_census_population.py — and its own domain test below.
+    """
+    from seeding.domains.population import census_counties
+
+    monkeypatch.setattr(
+        census_counties,
+        "load_census_population",
+        lambda *a, **k: census_counties.CensusLoadStats(),
+    )
+
+
 @pytest.fixture()
 def http_mock(monkeypatch):
+    _no_census(monkeypatch)
     state = {
         "payload": {"records": []},
         "status": 200,
