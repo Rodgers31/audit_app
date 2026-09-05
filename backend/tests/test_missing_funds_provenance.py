@@ -1,7 +1,7 @@
 """The /accountability/missing-funds publication gate (AUDIT_FINDINGS F5.3).
 
 The endpoint used to serve three hardcoded cases naming Nairobi, Mombasa and
-Kisumu from ``apis/oag_audit_data.json`` — a file carrying no URL, publisher,
+Kisumu from ``backend/data/reference/oag_audit_data.json`` — a file carrying no URL, publisher,
 document title or page reference — under an on-page assurance that every case
 traced to a published audit report.
 
@@ -26,7 +26,7 @@ class FakeDoc:
 
 
 # The three cases that were live in production, verbatim from
-# apis/oag_audit_data.json. Each names a county and cites nothing.
+# backend/data/reference/oag_audit_data.json. Each names a county and cites nothing.
 UNSOURCED_PRODUCTION_CASES = [
     {
         "case_id": "MF_001",

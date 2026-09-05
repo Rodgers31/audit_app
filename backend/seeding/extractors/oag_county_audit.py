@@ -10,7 +10,7 @@ never read. The nightly said so plainly every run::
       (no parser — fetch/register only)
 
 The consequence was that county audit findings on the site came from
-``apis/oag_audit_data.json``, a hand-maintained fixture 365 days old whose 25
+``backend/data/reference/oag_audit_data.json``, a hand-maintained fixture 365 days old whose 25
 national findings the publication gate already withholds for having no source
 URL. There was no path from an OAG county report to a published finding at all.
 

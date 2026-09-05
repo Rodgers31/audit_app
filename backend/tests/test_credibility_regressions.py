@@ -160,7 +160,7 @@ class TestNoHardcodedFiscalYears:
         """audit §3.8: /audits/federal must never report a hardcoded fiscal year.
 
         Originally this asserted the FY came from
-        ``apis/oag_national_audit_data.json``, which was an improvement over a
+        ``backend/data/reference/oag_national_audit_data.json``, which was an improvement over a
         code literal. That file is now quarantined — it cites only a bare
         domain and holds the same fabricated figures as the withheld audits
         rows — so the FY must be derived from publishable rows, or be null.

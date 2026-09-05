@@ -21,7 +21,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 # Load governor data from JSON
-json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "apis", "enhanced_county_data.json")
+json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "backend", "data", "reference", "enhanced_county_data.json")
 with open(json_path) as f:
     county_data = json.load(f)["county_data"]
 

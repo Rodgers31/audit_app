@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import os
 from collections import defaultdict
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -38,7 +39,34 @@ logger = logging.getLogger(__name__)
 FISCAL_LABEL = "FY2025/26"
 FISCAL_START = datetime(2025, 7, 1)
 FISCAL_END = datetime(2026, 6, 30)
-DATA_DIR = Path(__file__).resolve().parent.parent / "apis"
+#: A deployment that mounts the reference data somewhere else says so here.
+DATA_DIR_ENV_VAR = "BOOTSTRAP_DATA_DIR"
+
+#: Inside the backend package, because that is the only place that ships.
+#:
+#: This used to be ``Path(__file__).resolve().parent.parent / "apis"`` — true
+#: of a git checkout, false of the container. The backend image is built with
+#: ``context: ./backend`` and ``COPY . .`` into ``/app``
+#: (docker-build-deploy.yml), so ``bootstrap.py`` lands at
+#: ``/app/bootstrap.py`` and the old expression resolved to ``/apis``, which
+#: nothing has ever written. Anything above this directory is outside the
+#: build context and CANNOT be copied in, so the files have to live here.
+#:
+#: The visible symptom was a false line in the freshness record: every restart
+#: of the production web process wrote ``fixture_missing`` / "absent from the
+#: repo", of three files that are in the repo. Because that run also stamped
+#: the domain's IngestionJob, a no-op overwrote the reason recorded by the
+#: weekly job that does have the data.
+PACKAGED_DATA_DIR = Path(__file__).resolve().parent / "data" / "reference"
+
+
+def resolve_data_dir() -> Path:
+    """Where the reference fixtures are, honouring the env override."""
+    override = os.environ.get(DATA_DIR_ENV_VAR, "").strip()
+    return Path(override) if override else PACKAGED_DATA_DIR
+
+
+DATA_DIR = resolve_data_dir()
 COUNTY_DATA_PATH = DATA_DIR / "enhanced_county_data.json"
 AUDIT_DATA_PATH = DATA_DIR / "oag_audit_data.json"
 NATIONAL_AUDIT_PATH = DATA_DIR / "oag_national_audit_data.json"
@@ -514,8 +542,20 @@ def bootstrap_provenance(session: Optional[Session] = None) -> Dict[str, Any]:
     # and it must keep failing the gate rather than being excused as a
     # by-design gap.
     if missing:
+        # NOT "absent from the repo": these files are tracked, and saying they
+        # were deleted sends the next reader to look for a deletion that never
+        # happened. The fault this actually catches is a deployment that did
+        # not ship them, so the message names the directory that was searched.
+        where = (
+            str(DATA_DIR)
+            if DATA_DIR.is_dir()
+            else f"{DATA_DIR} (no such directory in this deployment)"
+        )
         reason = "fixture_missing"
-        detail = f"absent from the repo: {', '.join(missing)}"
+        detail = (
+            f"{len(missing)} of {len(files)} fixture(s) not found under "
+            f"{where}: {', '.join(missing)}"
+        )
     elif stale:
         oldest = max(
             (f for f in files if f["file"] in stale),
@@ -562,6 +602,9 @@ def bootstrap_provenance(session: Optional[Session] = None) -> Dict[str, Any]:
         "source_fallback_reason": reason,
         "source_fallback_detail": detail,
         "stale_after_days": STALE_AFTER_DAYS,
+        # Which directory answered, so a run that found nothing can be told
+        # apart from one that read a different copy.
+        "data_dir": str(DATA_DIR),
         "files": files,
         "stale_files": stale,
         "superseded_files": superseded,
@@ -1041,7 +1084,7 @@ def _upsert_audit_records(
 
     # DERIVED FINDINGS WIN.
     #
-    # These entries come from apis/oag_audit_data.json, a hand-maintained
+    # These entries come from backend/data/reference/oag_audit_data.json, a hand-maintained
     # fixture whose age is why bootstrap_reference_data fails the staleness
     # gate (365 days as of 2026-09-05). Since 49a6e75 the audits domain
     # extracts county findings from the OAG reports themselves — 1,499 rows

@@ -29,7 +29,6 @@ import json
 import re
 from datetime import datetime, timezone
 from decimal import Decimal
-from pathlib import Path
 
 import pytest
 from models import (
@@ -447,12 +446,13 @@ def test_no_row_failing_the_predicate_appears_anywhere(client, db_session, senti
 # ── Stage 0.2: the same fabricated dataset, stored in a second place ───────
 #
 # Gating the database closed one door. The identical figures also live in
-# apis/oag_national_audit_data.json (24 amounts, sum 3,313,000,000,000 — the
+# backend/data/reference/oag_national_audit_data.json (24 amounts, sum 3,313,000,000,000 — the
 # same sum as the quarantined rows, 22 of 24 amounts byte-identical), whose
 # only citation is the bare domain "https://www.oagkenya.go.ke". These parse
 # the files rather than hardcoding numbers, so re-seeding cannot stale them.
 
-APIS_DIR = Path(__file__).resolve().parent.parent.parent / "apis"
+# See the note in test_bootstrap_is_observable: bootstrap owns this path.
+from bootstrap import DATA_DIR as APIS_DIR
 
 
 def _kes(value):

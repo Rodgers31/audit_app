@@ -4386,15 +4386,16 @@ async def get_federal_audits():
             # Load the audit opinion summary + report metadata from the JSON.
             opinion_summary = {}
             report_meta = {}
+            # The same parent.parent/"apis" bug bootstrap had: in the container
+            # that resolved to /apis, so this file was silently never read.
+            # One definition now, in bootstrap. Bound outside the try so the
+            # handler below can still name it if the import itself fails.
+            nat_path = None
             try:
                 import json
-                from pathlib import Path
 
-                nat_path = (
-                    Path(__file__).resolve().parent.parent
-                    / "apis"
-                    / "oag_national_audit_data.json"
-                )
+                from bootstrap import NATIONAL_AUDIT_PATH as nat_path
+
                 if nat_path.exists():
                     with open(nat_path) as f:
                         nat_data = json.load(f)

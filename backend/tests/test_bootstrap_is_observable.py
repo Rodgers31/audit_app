@@ -13,9 +13,9 @@ three git-tracked files every Sunday:
 ===================================  ===========  ==============
 file                                 last commit  age at 2026-09-02
 ===================================  ===========  ==============
-apis/oag_audit_data.json             2025-09-05   362 days
-apis/oag_national_audit_data.json    2026-02-21   192 days
-apis/enhanced_county_data.json       2026-02-24   189 days
+backend/data/reference/oag_audit_data.json             2025-09-05   362 days
+backend/data/reference/oag_national_audit_data.json    2026-02-21   192 days
+backend/data/reference/enhanced_county_data.json       2026-02-24   189 days
 ===================================  ===========  ==============
 
 That is the silently-frozen-fixture shape the nightly instrumentation exists to
@@ -35,11 +35,15 @@ from __future__ import annotations
 
 import hashlib
 import json
-from pathlib import Path
 
 import pytest
 
-_APIS = Path(__file__).resolve().parents[2] / "apis"
+import bootstrap
+
+# Asked of bootstrap rather than rebuilt here: these files moved into the
+# backend package so they ship in the image, and a path spelled out again in
+# a test is a path that goes stale the next time they move.
+_APIS = bootstrap.DATA_DIR
 _FIXTURES = [
     "oag_audit_data.json",
     "oag_national_audit_data.json",

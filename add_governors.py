@@ -53,7 +53,7 @@ GOVERNORS = {
     "Nairobi": "Sakaja Arthur Johnson",
 }
 
-with open("apis/enhanced_county_data.json", "r") as f:
+with open("backend/data/reference/enhanced_county_data.json", "r") as f:
     data = json.load(f)
 
 for county_name, county_info in data["county_data"].items():
@@ -65,7 +65,7 @@ for county_name, county_info in data["county_data"].items():
 matched = sum(1 for c in data["county_data"] if "governor" in data["county_data"][c])
 print(f"Added governor to {matched}/47 counties")
 
-with open("apis/enhanced_county_data.json", "w") as f:
+with open("backend/data/reference/enhanced_county_data.json", "w") as f:
     json.dump(data, f, indent=2, ensure_ascii=False)
 
 print("Done - enhanced_county_data.json updated")

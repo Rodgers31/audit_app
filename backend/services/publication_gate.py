@@ -334,7 +334,7 @@ def missing_funds_provenance_failure(
 
 # A URL with no path beyond "/" is a publisher's homepage. It tells a reader
 # who published something, never which document or which page, so it cannot
-# support a figure. `apis/oag_national_audit_data.json` cites exactly this.
+# support a figure. `backend/data/reference/oag_national_audit_data.json` cites exactly this.
 _DOCUMENT_EXTENSIONS = (".pdf", ".xlsx", ".xls", ".csv", ".doc", ".docx")
 
 
@@ -344,7 +344,7 @@ def file_source_provenance_failure(meta: Optional[Dict[str, Any]]) -> Optional[s
     Same rule as everywhere else — a figure needs a document and a page — but
     applied to a JSON file's own ``metadata`` block instead of a database row.
 
-    ``apis/oag_national_audit_data.json`` holds 24 amounts summing to
+    ``backend/data/reference/oag_national_audit_data.json`` holds 24 amounts summing to
     KES 3,313,000,000,000: the *same* fabricated dataset as the 24 quarantined
     ``audits`` rows (22 of 24 amounts byte-identical), attributed to a named
     Auditor-General's report. Its only citation is ``https://www.oagkenya.go.ke``.

@@ -1,6 +1,6 @@
 """Derived findings win over the hand-maintained fixture.
 
-``apis/oag_audit_data.json`` is 365 days old and is why
+``backend/data/reference/oag_audit_data.json`` is 365 days old and is why
 ``bootstrap_reference_data`` fails the staleness gate. Since the county-audit
 extractor landed, the same findings are derived from the OAG reports
 themselves — 1,499 rows across all 47 counties, each carrying the source
