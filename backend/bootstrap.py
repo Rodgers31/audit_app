@@ -166,10 +166,46 @@ def bootstrap_provenance() -> Dict[str, Any]:
         for f in files
         if f["age_days"] is not None and f["age_days"] > STALE_AFTER_DAYS
     ]
+    missing = [f["file"] for f in files if not f["present"]]
+
+    # WHY this run served a fixture, in the key the staleness gate reads
+    # (`ingestion_jobs.meta.source_fallback_reason`). Without it the gate
+    # reported "reasons: unrecorded" for 26 consecutive runs — it could see
+    # that bootstrap had never reached a publisher but not why, which is the
+    # one thing needed to act on it.
+    #
+    # Not "no_live_source": every file here DECLARES a live domain that is
+    # supposed to supersede it, so this is a live path that is not working,
+    # and it must keep failing the gate rather than being excused as a
+    # by-design gap.
+    if missing:
+        reason = "fixture_missing"
+        detail = f"absent from the repo: {', '.join(missing)}"
+    elif stale:
+        oldest = max(
+            (f for f in files if f["file"] in stale),
+            key=lambda f: f["age_days"] or 0,
+        )
+        reason = "fixture_stale"
+        detail = (
+            f"{len(stale)} of {len(files)} fixture(s) older than "
+            f"{STALE_AFTER_DAYS}d; oldest {oldest['file']} at "
+            f"{oldest['age_days']}d, which the '{oldest['live_source']}' "
+            f"domain is meant to supersede"
+        )
+    else:
+        reason = "fixture_current"
+        detail = (
+            f"all {len(files)} fixture(s) within {STALE_AFTER_DAYS}d, but "
+            f"still read from the repo rather than a publisher"
+        )
+
     return {
         # Declared, not inferred: a run that reads git-tracked JSON must never
         # be indistinguishable from one that fetched from a publisher.
         "source_mode": "fixture",
+        "source_fallback_reason": reason,
+        "source_fallback_detail": detail,
         "stale_after_days": STALE_AFTER_DAYS,
         "files": files,
         "stale_files": stale,
@@ -1518,7 +1554,13 @@ def initialize_reference_data(
                     started_at=started_at,
                     finished_at=datetime.now(timezone.utc),
                     errors=[str(exc)[:2000]],
-                    meta={"source_mode": "fixture"},
+                    meta={
+                        "source_mode": "fixture",
+                        "source_fallback_reason": "bootstrap_failed",
+                        "source_fallback_detail": (
+                            f"{type(exc).__name__}: {str(exc)[:300]}"
+                        ),
+                    },
                 )
             )
             session.commit()
