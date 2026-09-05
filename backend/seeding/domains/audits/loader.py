@@ -38,6 +38,7 @@ from ...extractors.oag_blue_book import EXTRACTOR_ID, source_hash_of
 from ...types import DomainRunContext
 from ...utils import normalize_fiscal_label, slugify_entity
 from .writer import PersistenceStats
+import re
 
 logger = logging.getLogger("seeding.audits.loader")
 
@@ -46,6 +47,52 @@ _SEVERITY_MAP = {
     "WARNING": Severity.WARNING,
     "INFO": Severity.INFO,
 }
+
+
+#: "County Executive of Kilifi", "County Assembly of Nairobi City" — an
+#: auditee that belongs to an EXISTING county, not a new MDA.
+_COUNTY_ENTRY_RE = re.compile(
+    r"^county\s+(?:executive|assembly|government)\s+of\s+(?P<county>.+)$", re.I
+)
+
+
+class CountyEntityUnresolved(RuntimeError):
+    """A county auditee that does not map to a county row we already hold."""
+
+
+def _county_entity(session: Session, name: str) -> Optional[Entity]:
+    """The existing COUNTY entity a county auditee belongs to.
+
+    ``None`` when ``name`` is not a county entry at all (a national vote).
+    Raises ``CountyEntityUnresolved`` when it IS one but no county matches —
+    the caller must skip, never create.
+
+    Why this exists: the consolidated county volumes number their TOC 1..47,
+    and _ensure_entity read those as national vote numbers. It slugified
+    "County Executive of Kilifi" to `county-executive-of-kilifi`, missed the
+    real `kilifi-county`, and created a MINISTRY with `vote: 3`. A run would
+    have written ~94 mis-typed entities duplicating counties that already
+    exist. Only the 600s timeout rolling the run back prevented it.
+    """
+    m = _COUNTY_ENTRY_RE.match((name or "").strip())
+    if not m:
+        return None
+
+    from ...utils import resolve_entity_by_slug
+
+    raw = m.group("county").strip()
+    # "Taita/Taveta" slugifies fine; "Nairobi City" is the county the DB holds
+    # as plain "Nairobi", so a trailing City is tried as an alias.
+    for probe in (raw, re.sub(r"\s+city$", "", raw, flags=re.I)):
+        entity, _how = resolve_entity_by_slug(
+            session, slugify_entity(probe), entity_type=EntityType.COUNTY
+        )
+        if entity is not None:
+            return entity
+
+    raise CountyEntityUnresolved(
+        f"{name!r} is a county auditee but {raw!r} matches no county entity"
+    )
 
 
 def _ensure_entity(
@@ -58,6 +105,10 @@ def _ensure_entity(
     Department for Correctional Services"); vote 2xxx are constitutional
     commissions and independent offices.
     """
+    county = _county_entity(session, name)
+    if county is not None:
+        return county
+
     slug = slugify_entity(name, county_suffix=False)
     entity = session.execute(
         select(Entity).where(Entity.slug == slug)
@@ -156,9 +207,17 @@ def load_blue_book_extractions(
             stats.skipped += 1
             continue
 
-        entity = _ensure_entity(
-            session, doc.country_id, name, payload.get("vote")
-        )
+        try:
+            entity = _ensure_entity(
+                session, doc.country_id, name, payload.get("vote")
+            )
+        except CountyEntityUnresolved as exc:
+            # Never invent an entity for a finding: a public audit finding
+            # filed against a county row we made up is worse than one absent.
+            logger.warning("Skipping finding — %s", exc)
+            stats.errors.append(str(exc))
+            stats.skipped += 1
+            continue
         period = _ensure_period(session, doc.country_id, fy)
 
         amounts = payload.get("amounts") or []
