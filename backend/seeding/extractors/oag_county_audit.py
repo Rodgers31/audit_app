@@ -106,6 +106,14 @@ _SECTION_CODES = (
     ("internal controls", "C"),
 )
 
+#: A consolidated volume titles itself "FOR THE COUNTY GOVERNMENTS", not
+#: "ON <entity>". The two shapes need different machinery, and the registry
+#: allows one parser_id per dataset, so the shape is detected here and the
+#: consolidated case is delegated to the Blue Book walk.
+_CONSOLIDATED_RE = re.compile(
+    r"AUDITOR\s*[-–]?\s*GENERAL\s+FOR\s+THE\s+COUNTY\s+GOVERNMENTS", re.I | re.S
+)
+
 #: Blocks WITHIN a part that restart numbering — "Basis for Qualified Opinion"
 #: then "Other Matter" both begin at 1. The Blue Book extractor carries the
 #: same distinction as ``sub_section``, for the same reason.
@@ -461,6 +469,12 @@ def read_pages(pdf_path) -> List[Tuple[int, str]]:
         ) from exc
 
 
+def is_consolidated(pages: List[Tuple[int, str]]) -> bool:
+    """True for a multi-county volume rather than a single-entity report."""
+    head = "\n".join(t for _, t in pages[:3])
+    return bool(_CONSOLIDATED_RE.search(re.sub(r"\s+", " ", head)))
+
+
 def extract_county_audit(session, doc, settings) -> dict:
     """Extract ``doc`` (a fetched county audit report) into extraction rows.
 
@@ -491,9 +505,24 @@ def extract_county_audit(session, doc, settings) -> dict:
             "reason": "already_extracted",
         }
 
-    result = build_result(
-        read_pages(doc.file_path), known_counties=_known_counties(session)
-    )
+    pages = read_pages(doc.file_path)
+
+    if is_consolidated(pages):
+        # 47 counties behind a table of contents — the Blue Book walk reads
+        # this shape (it was taught the county TOC and heading forms); the
+        # single-entity path below would refuse it with auditee_not_found.
+        from .oag_blue_book import extract_blue_book
+
+        logger.info(
+            "oag_county_audit: %s is a consolidated volume — delegating to "
+            "the Blue Book walk",
+            doc.url or doc.id,
+        )
+        stats = extract_blue_book(session, doc, settings)
+        stats["shape"] = "consolidated"
+        return stats
+
+    result = build_result(pages, known_counties=_known_counties(session))
 
     created = 0
     for f in result.findings:
@@ -526,4 +555,5 @@ def extract_county_audit(session, doc, settings) -> dict:
         "county": result.county_name,
         "fiscal_year": result.fiscal_year_label,
         "opinion": result.opinion,
+        "shape": "single_entity",
     }

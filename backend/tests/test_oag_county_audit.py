@@ -287,3 +287,31 @@ class TestConsolidatedVolumesViaBlueBook:
         from seeding.extractors.oag_blue_book import _entity_in_head
 
         assert not _entity_in_head("County Assembly of Kilifi", "COUNTY ASSEMBLY OF\n")
+
+
+class TestShapeDispatch:
+    """One dataset, two document shapes, one parser_id.
+
+    The registry allows a single parser per dataset, and oag_county_audits
+    holds both shapes. Without dispatch the consolidated volumes route to the
+    single-entity parser, which refuses them — so the Blue Book work would
+    have been correct and never actually run.
+    """
+
+    def test_a_consolidated_volume_is_recognised(self):
+        from seeding.extractors.oag_county_audit import is_consolidated
+
+        assert is_consolidated([(1, TestConsolidatedVolumesAreRefused.CONSOLIDATED_HEAD)])
+
+    def test_a_single_entity_report_is_recognised(self):
+        from seeding.extractors.oag_county_audit import is_consolidated
+
+        assert not is_consolidated([(1, HEAD)])
+
+    def test_detection_survives_the_line_broken_title(self):
+        """The real volumes break the title across many lines:
+        "REPORT\\nOF\\nTHE AUDITOR - GENERAL\\nFOR\\nTHE COUNTY GOVERNMENTS"."""
+        from seeding.extractors.oag_county_audit import is_consolidated
+
+        assert is_consolidated([(1, "REPORT\nOF\nTHE AUDITOR - GENERAL\nFOR\n"
+                                    "THE COUNTY GOVERNMENTS\nFOR\n2020/2021\n")])
