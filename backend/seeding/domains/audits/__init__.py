@@ -105,6 +105,9 @@ def run(
     from models import DocumentType
 
     from ...extractors import get_parser
+    from ...extractors.oag_county_audit import (
+        CountyAuditError as QuarantinedDocument,
+    )
     from ...fetch_documents import fetch_document
     from .loader import load_blue_book_extractions
 
@@ -156,6 +159,20 @@ def run(
                     try:
                         ext_stats = parser(session, doc, settings)
                         doc_stat["extractions"] = ext_stats
+                    except QuarantinedDocument as exc:
+                        # A document the parser deliberately refused — a
+                        # thematic or performance audit with no auditee, say.
+                        # That is a SKIP with a reason, not an extraction
+                        # failure: counting it as one marks a healthy run
+                        # unhealthy and buries the real errors beside it.
+                        doc_stat["skipped"] = getattr(exc, "reason", str(exc))
+                        logger.info(
+                            "Skipping doc %s — parser refused it (%s)",
+                            doc.id,
+                            doc_stat["skipped"],
+                        )
+                        metadata["documents"].append(doc_stat)
+                        continue
                     except Exception as exc:
                         errors.append(f"extract failed for doc {doc.id}: {exc}")
                         logger.exception("Extraction failed for doc %s", doc.id)
