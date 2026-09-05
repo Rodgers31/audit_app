@@ -214,3 +214,76 @@ class TestConsolidatedVolumesAreRefused:
         """POSITIVE CONTROL — the refusal above is about shape, not strictness."""
         r = build_result(pages(), known_counties=KNOWN)
         assert r.county_name == "Homa Bay"
+
+
+class TestConsolidatedVolumesViaBlueBook:
+    """The consolidated volumes are read by the Blue Book machinery, taught
+    two county-shaped forms.
+
+    Verified against both real volumes:
+        VOLUME I  (county executives, 469pp) -> 47 entities,  986 findings
+        VOLUME II (county assemblies, 232pp) -> 47 entities,  512 findings
+
+    Two things had to be learned, and each was failing CLOSED rather than
+    producing garbage:
+
+      1. parse_toc required a 4-digit vote ("1011 State Department ...");
+         the county form numbers 1..47 with a period. It returned 0 entries.
+      2. The chapter check confirmed a chapter by finding VOTE-nnnn in the
+         page header. County volumes have no such line on ANY page (0 of 232),
+         so every chapter was skipped "rather than mis-attributing findings".
+    """
+
+    def test_parse_toc_reads_the_county_sequence_form(self):
+        from seeding.extractors.oag_blue_book import PageText, parse_toc
+
+        toc = parse_toc([
+            PageText(3, "Table of Contents\n"
+                        "Introduction ................................ iii\n"
+                        "1. County Assembly of Mombasa ............... 1\n"
+                        "2. County Assembly of Kwale ................. 4\n", "pdfplumber"),
+        ])
+        assert toc == [(1, "County Assembly of Mombasa", 1),
+                       (2, "County Assembly of Kwale", 4)]
+
+    def test_a_roman_numeral_page_is_not_an_entity(self):
+        """"Introduction ..... iii" is front matter, not a county."""
+        from seeding.extractors.oag_blue_book import PageText, parse_toc
+
+        toc = parse_toc([PageText(3, "Introduction ......... iii\n", "pdfplumber")])
+        assert toc == []
+
+    def test_the_vote_form_takes_precedence_over_the_county_form(self):
+        """A national book's front matter can hold short numbered lists.
+
+        Trying both patterns together would let "1. Introduction ..... 3"
+        become an entity in a document that has real votes.
+        """
+        from seeding.extractors.oag_blue_book import PageText, parse_toc
+
+        toc = parse_toc([
+            PageText(2, "1. Introduction ....................... 3\n"
+                        "1011 State Department for Basic Education ... 5\n", "pdfplumber"),
+        ])
+        assert toc == [(1011, "State Department for Basic Education", 5)]
+
+    def test_a_chapter_is_confirmed_by_its_entity_heading(self):
+        from seeding.extractors.oag_blue_book import _entity_in_head
+
+        assert _entity_in_head(
+            "County Assembly of Nairobi City",
+            "COUNTY ASSEMBLY OF NAIROBI CITY\nREPORT ON THE FINANCIAL STATEMENTS",
+        )
+
+    def test_a_different_county_cannot_confirm_the_chapter(self):
+        """The guard that keeps findings on the right county."""
+        from seeding.extractors.oag_blue_book import _entity_in_head
+
+        assert not _entity_in_head(
+            "County Assembly of Kilifi", "COUNTY ASSEMBLY OF KISUMU\n"
+        )
+
+    def test_a_partial_name_cannot_confirm_the_chapter(self):
+        from seeding.extractors.oag_blue_book import _entity_in_head
+
+        assert not _entity_in_head("County Assembly of Kilifi", "COUNTY ASSEMBLY OF\n")

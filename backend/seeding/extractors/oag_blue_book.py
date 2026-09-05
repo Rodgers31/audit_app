@@ -59,6 +59,12 @@ def cid_ratio(text: str) -> float:
 
 # ── document grammar ─────────────────────────────────────────────────
 _TOC_RE = re.compile(r"^(\d{4})\s+(.+?)\s*\.{3,}\s*(\d+)\s*$")
+#: The CONSOLIDATED COUNTY volumes number their entries 1..47 with a period,
+#: not by 4-digit vote: "1. County Assembly of Mombasa ......... 1". Without
+#: this, parse_toc returned 0 entries for Volume I (469pp, county executives)
+#: and Volume II (232pp, county assemblies) — the two documents that carry
+#: nearly all county audit data — so they were fetched and never read.
+_TOC_COUNTY_RE = re.compile(r"^(\d{1,2})\.\s+(.+?)\s*\.{3,}\s*(\d+)\s*$")
 _VOTE_RE = re.compile(r"VOTE\s*[-–]?\s*(\d{4})", re.IGNORECASE)
 _SUBREPORT_RE = re.compile(
     r"^REPORT ON (THE FINANCIAL STATEMENTS|LAWFULNESS AND EFFECTIVENESS"
@@ -136,14 +142,30 @@ def severity_for(heading: Optional[str], opinion: Optional[str]) -> str:
 
 # ── pure parsing over page text ──────────────────────────────────────
 def parse_toc(pages: List[PageText]) -> List[Tuple[int, str, int]]:
-    """(vote, entity, printed_page) from the TOC pages (front matter)."""
-    toc: List[Tuple[int, str, int]] = []
-    for page in pages[:12]:  # TOC lives in the front matter
-        for line in page.text.split("\n"):
-            m = _TOC_RE.match(line.strip())
-            if m:
-                toc.append((int(m.group(1)), m.group(2).strip(), int(m.group(3))))
-    return toc
+    """(code, entity, printed_page) from the TOC pages (front matter).
+
+    ``code`` is the 4-digit vote in a national Blue Book and the 1..47
+    sequence number in a consolidated county volume.
+
+    The two forms are tried in ORDER, not together: a national book's front
+    matter can contain short numbered lists ("1. Introduction ..... 3") that
+    the county pattern would happily match, so the county form is only
+    consulted when the vote form found nothing. That keeps a document with
+    real votes from picking up front-matter noise as entities.
+    """
+
+    def scan(pattern) -> List[Tuple[int, str, int]]:
+        out: List[Tuple[int, str, int]] = []
+        for page in pages[:12]:  # TOC lives in the front matter
+            for line in page.text.split("\n"):
+                m = pattern.match(line.strip())
+                if m:
+                    out.append(
+                        (int(m.group(1)), m.group(2).strip(), int(m.group(3)))
+                    )
+        return out
+
+    return scan(_TOC_RE) or scan(_TOC_COUNTY_RE)
 
 
 def find_offset(pages: List[PageText]) -> Optional[int]:
@@ -163,6 +185,20 @@ def fiscal_year_from_url(url: str) -> Optional[str]:
         if y2 == y1 + 1:
             return f"{y1}/{y2}"
     return None
+
+
+def _entity_in_head(entity: str, head: str) -> bool:
+    """Is ``entity`` the heading of this page?
+
+    Compared on letters only, because the TOC and the chapter heading differ
+    in case, spacing and punctuation ("County Assembly of Nairobi City" vs
+    "COUNTY ASSEMBLY OF NAIROBI CITY"). Requires the WHOLE entity name, so
+    "County Assembly of Kilifi" cannot confirm a chapter headed
+    "County Assembly of Kisumu".
+    """
+    norm = lambda t: re.sub(r"[^a-z]", "", (t or "").lower())
+    needle, hay = norm(entity), norm(head)
+    return bool(needle) and needle in hay
 
 
 def segment_chapter(
@@ -328,7 +364,15 @@ def parse_blue_book(pages: List[PageText], source_url: str) -> BlueBookResult:
             continue
         head = "\n".join(pages[idx].text.split("\n")[:3])
         m = _VOTE_RE.search(head)
-        if not m or int(m.group(1)) != vote:
+        confirmed = bool(m) and int(m.group(1)) == vote
+        if not confirmed:
+            # Consolidated COUNTY volumes carry no VOTE-nnnn header at all
+            # (0 of 232 pages in Volume II) — the chapter is headed by the
+            # entity name instead. Confirm on that, so the check still proves
+            # the chapter is the one the TOC promised rather than being
+            # skipped for lacking a marker this document class never has.
+            confirmed = _entity_in_head(entity, head)
+        if not confirmed:
             logger.warning(
                 "TOC says vote %s starts on printed page %s but the page "
                 "header does not confirm it — skipping this chapter rather "
