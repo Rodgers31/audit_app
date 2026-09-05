@@ -45,6 +45,14 @@ logger = logging.getLogger("seeding.staleness")
 # Severity levels, mirroring the nightly's existing vocabulary.
 FAIL = "FAIL"
 WARN = "WARN"
+
+#: Fallback reasons a domain sets to say "there is no live source for this
+#: yet", as opposed to "the live source failed". Only these downgrade an
+#: all-fixture domain from FAIL to WARN. Emitted today by learning_hub
+#: (editorial glossary copy) and stalled_projects (OAG audit records with no
+#: machine-readable publisher). Adding a reason here is a decision that the
+#: gap is known and accepted — not a way to quiet a broken fetch.
+DECLARED_NO_SOURCE_REASONS = frozenset({"no_live_source"})
 OK = "OK"
 
 
@@ -304,13 +312,31 @@ def check_ingestion_freshness(
                 for j in jobs
                 if (j.meta or {}).get("source_fallback_reason")
             }
+            declared = bool(reasons) and reasons <= DECLARED_NO_SOURCE_REASONS
             findings.append(
                 Finding(
-                    FAIL,
+                    # A domain that has never HAD a live source is undelivered,
+                    # not broken, and failing the run for it every night is how
+                    # a real breakage hides in a permanently red gate. It stays
+                    # visible as a WARN — never OK — so the gap is still
+                    # reported, it just does not masquerade as a regression.
+                    #
+                    # Only reasons the domain DECLARED qualify. An unrecorded
+                    # reason is still a FAIL: "we don't know why this fell back"
+                    # is exactly the state this module exists to catch.
+                    WARN if declared else FAIL,
                     f"{domain} ingestion",
-                    f"served from a FIXTURE in all {len(modes)} recent run(s) "
-                    f"— the publisher was never successfully read "
-                    f"(reasons: {', '.join(sorted(reasons)) or 'unrecorded'})",
+                    (
+                        f"served from a FIXTURE in all {len(modes)} recent "
+                        f"run(s) BY DESIGN — no extractor has been built for "
+                        f"it yet (reasons: {', '.join(sorted(reasons))})"
+                    )
+                    if declared
+                    else (
+                        f"served from a FIXTURE in all {len(modes)} recent "
+                        f"run(s) — the publisher was never successfully read "
+                        f"(reasons: {', '.join(sorted(reasons)) or 'unrecorded'})"
+                    ),
                 )
             )
     return findings
