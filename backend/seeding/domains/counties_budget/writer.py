@@ -256,12 +256,49 @@ def persist_budget_records(
         entities_by_slug = {e.slug: e for e in rows}
 
     # Drop records whose entity we can't resolve; surface once-each.
+    #
+    # The bulk preload above matches on EXACT slug only, which is a fast path,
+    # not the resolution rule. `_resolve_entity` below was taught to tolerate
+    # COB's text-extraction artifacts ("Taita Tav eta" -> taita-tav-eta-county)
+    # but this path was not, so every Taita Taveta row was dropped here on
+    # every run — with a warning nobody read, which is how it survived. A miss
+    # now goes through the same tolerant resolver before anything is discarded.
+    from models import EntityType
+
+    from ...utils import resolve_entity_by_slug
+
     resolvable: List[BudgetRecord] = []
     unknown_slugs_reported: set[str] = set()
+    artifact_slugs_reported: set[str] = set()
     for record in records:
         if record.entity_slug in entities_by_slug:
             resolvable.append(record)
             continue
+
+        entity, matched_by = resolve_entity_by_slug(
+            session, record.entity_slug, entity_type=EntityType.COUNTY
+        )
+        if entity is not None:
+            # Key it by the ARTIFACT slug: every downstream lookup in this
+            # function is entities_by_slug[record.entity_slug].
+            entities_by_slug[record.entity_slug] = entity
+            resolvable.append(record)
+            if (
+                matched_by != "exact"
+                and record.entity_slug not in artifact_slugs_reported
+            ):
+                # Never resolve silently — a fuzzy match is a parser defect
+                # upstream that should stay visible and fixable.
+                logger.warning(
+                    "county resolved via %s, not exact slug: %r -> %r",
+                    matched_by,
+                    record.entity_slug,
+                    entity.slug,
+                    extra={"entity_slug": record.entity_slug},
+                )
+                artifact_slugs_reported.add(record.entity_slug)
+            continue
+
         stats.skipped += 1
         msg = f"Unknown entity slug '{record.entity_slug}'"
         stats.errors.append(msg)
