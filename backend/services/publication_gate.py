@@ -53,7 +53,7 @@ stricter check costs nothing there and is kept.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Iterable, Optional
 
 from sqlalchemy import and_ as sa_and
 from sqlalchemy import func
@@ -326,6 +326,64 @@ def missing_funds_provenance_failure(
     if not _has_page_locator(case.get("page_ref"), case.get("page_number")):
         return "no_page_reference"
     return None
+
+
+# --------------------------------------------------------------------------
+# county pending bills
+# --------------------------------------------------------------------------
+
+#: The bootstrap fixture stamps every row it writes with this dataset.
+_BOOTSTRAP_COUNTY_DATASET = "enhanced_county_data.json"
+
+
+def loan_is_modelled_fixture(loan: Any) -> bool:
+    """True when this Loan row is bootstrap's modelled figure, not a source.
+
+    ``enhanced_county_data.json`` does not measure county pending bills, it
+    computes them: every one of the 47 is exactly 8% of a budget that is
+    itself population x KSh 4,500. The rows are stamped
+    ``[{"source": "bootstrap", "dataset": "enhanced_county_data.json"}]``,
+    which is how they are told apart from the Treasury BROP rows that carry a
+    real per-county figure.
+    """
+    provenance = getattr(loan, "provenance", None)
+    entries = provenance if isinstance(provenance, list) else [provenance]
+    for entry in entries:
+        if isinstance(entry, dict) and entry.get("dataset") == _BOOTSTRAP_COUNTY_DATASET:
+            return True
+    return False
+
+
+def county_pending_bills(loans: Iterable[Any]) -> Optional[float]:
+    """A county's pending bills from SOURCED rows, or None if it has none.
+
+    ``None`` means "not published", and the caller must render it as absence
+    rather than as zero. The distinction is the whole point here: Narok did
+    not submit pending-bills data for FY 2024/25 — the BROP says so in its own
+    footnote, and prints an empty row for it — so Narok's pending bills are
+    unknown. A zero would say the county owes nothing, which is a different
+    claim and one nobody has made.
+
+    Modelled rows are excluded rather than used as a fallback. A fallback
+    chain whose every rung is the same fixture is not a fallback, and until
+    this existed the county list served the modelled figure for ALL 47
+    counties — 8.7x below the Treasury's published total, and 21.9x below it
+    for Nairobi — while the real BROP figures sat unused in the same table.
+    """
+    total = 0.0
+    found = False
+    for loan in loans or []:
+        category = getattr(loan, "debt_category", None)
+        if getattr(category, "value", category) != "pending_bills":
+            continue
+        if loan_is_modelled_fixture(loan):
+            continue
+        amount = getattr(loan, "outstanding", None) or getattr(loan, "principal", None)
+        if amount is None:
+            continue
+        total += float(amount)
+        found = True
+    return total if found else None
 
 
 # --------------------------------------------------------------------------

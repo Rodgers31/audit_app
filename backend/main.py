@@ -20,6 +20,7 @@ import uvicorn
 from config.settings import settings
 from services.publication_gate import (
     count_withheld_audits,
+    county_pending_bills,
     file_source_provenance_failure,
     log_withheld_audits,
     missing_funds_provenance_failure,
@@ -2591,15 +2592,17 @@ async def get_counties(fiscal_year: Optional[str] = None):
                     if _is_debt_loan(loan)
                 )
 
+                # Sourced rows only. The meta fallback that used to sit here
+                # served bootstrap's modelled figure — 8% of a modelled budget
+                # — for every county, while the Treasury's real per-county
+                # figures sat unused in the loans table. It reported KSh 20.3B
+                # across the 46 counties that have one, against the BROP's
+                # published 176.9B.
                 pending_bills = sum(
                     float(bl.allocated_amount or 0)
                     for bl in budget_lines
                     if bl.category and "pending" in bl.category.lower()
-                )
-                if pending_bills == 0:
-                    meta = e.meta or {}
-                    metrics = _resolve_fy_metrics(meta, fiscal_year)
-                    pending_bills = float(metrics.get("pending_bills", 0))
+                ) or county_pending_bills(loans)
 
                 latest_audit = audits[0] if audits else None
 
@@ -2862,7 +2865,7 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                         float(bl.allocated_amount or 0)
                         for bl in budget_lines
                         if bl.category and "pending" in bl.category.lower()
-                    )
+                    ) or county_pending_bills(loans)
 
                     # Display-grade audits only — this endpoint previously
                     # served the fabricated fixture findings (template
@@ -2962,8 +2965,9 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                                 )
                             )
 
-                    if pending_bills == 0:
-                        pending_bills = float(metrics.get("pending_bills", 0))
+                    if not pending_bills:
+                        # Absent, not zero — see services/publication_gate.py.
+                        pending_bills = county_pending_bills(loans)
 
                     return {
                         "id": county_id,
@@ -3243,17 +3247,11 @@ async def get_county_comprehensive(
                     }
                 )
 
-            # Pending bills from Loan table (PENDING_BILLS category) or meta
-            pending_bills_from_loans = sum(
-                float(l.outstanding or l.principal or 0)
-                for l in loans
-                if l.debt_category and l.debt_category.value == "pending_bills"
-            )
-            pending_bills = (
-                pending_bills_from_loans
-                or float(financial_metrics_meta.get("pending_bills", 0))
-                or float(metrics.get("pending_bills", 0))
-            )
+            # Pending bills from SOURCED Loan rows only. The two meta rungs
+            # that used to follow were both the same modelled figure, so the
+            # chain could never fail to produce a number — including for a
+            # county that told the Treasury nothing.
+            pending_bills = county_pending_bills(loans)
 
             # --- Audits --- (display-grade only: fabricated/modelled
             # rows must never render as OAG findings)
@@ -3655,13 +3653,14 @@ async def get_county_comprehensive(
                         ),
                         1,
                     ),
-                    "pending_bills_ratio": round(
-                        (
-                            (pending_bills / total_allocated * 100)
-                            if total_allocated > 0
-                            else 0
-                        ),
-                        1,
+                    # A ratio needs both its inputs. When no publisher has
+                    # reported this county's pending bills the share of budget
+                    # they represent is unknown, not 0.0 — the same rule the
+                    # debt-service series follows.
+                    "pending_bills_ratio": (
+                        round(pending_bills / total_allocated * 100, 1)
+                        if pending_bills is not None and total_allocated > 0
+                        else None
                     ),
                     "debt_sustainability": (
                         "sustainable"

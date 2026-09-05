@@ -112,3 +112,43 @@ describe('transformCountyData — absent figures stay absent', () => {
     expect(c.debt).toBeUndefined();
   });
 });
+
+describe('pendingBills: not reported is not zero', () => {
+  // Narok submitted no pending-bills data to the Treasury for FY 2024/25.
+  // The BROP prints an empty row for it and says so in a footnote, so the API
+  // returns null. `?? 0` used to turn that into "KSh 0 pending bills", which
+  // is a claim the county owes nothing — one nobody has made.
+  it('renders absence, not zero, when the API reports none', () => {
+    const county = transformCountyData({
+      id: 'narok',
+      name: 'Narok',
+      pending_bills: null,
+    } as never);
+
+    expect(county.pendingBills).toBeUndefined();
+    expect(county.pendingBills).not.toBe(0);
+  });
+
+  it('keeps a genuine published zero', () => {
+    // A publisher CAN report zero pending bills, and that is a figure. This
+    // is why the field does not go through publishedAmount(), which drops
+    // zeros because its own fields are backend SUMs.
+    const county = transformCountyData({
+      id: 'x',
+      name: 'X',
+      pending_bills: 0,
+    } as never);
+
+    expect(county.pendingBills).toBe(0);
+  });
+
+  it('passes a reported figure through', () => {
+    const county = transformCountyData({
+      id: 'nairobi',
+      name: 'Nairobi',
+      pending_bills: 86_769_200_000,
+    } as never);
+
+    expect(county.pendingBills).toBe(86_769_200_000);
+  });
+});

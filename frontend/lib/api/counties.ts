@@ -29,7 +29,7 @@ interface BackendCountyResponse {
   // Revenue / money
   money_received?: number;
   revenue_collection?: number;
-  pending_bills?: number;
+  pending_bills?: number | null;
   // Debt
   debt?: number;
   total_debt?: number;
@@ -70,6 +70,17 @@ interface BackendCountyResponse {
  * stopping the UI from stating one the source never made. Non-finite values
  * are rejected for the same reason: NaN is not a figure either.
  */
+/**
+ * A figure the API reported, keeping a genuine zero.
+ *
+ * The counterpart to `publishedAmount`: that one drops zeros because the
+ * fields it guards are backend SUMs, where 0 means "nothing aggregated". This
+ * one guards a field the backend now nulls explicitly when no source
+ * published a figure, so 0 can be taken at face value.
+ */
+const reportedAmount = (v: number | null | undefined): number | undefined =>
+  typeof v === 'number' && Number.isFinite(v) ? v : undefined;
+
 const publishedAmount = (...candidates: Array<number | null | undefined>): number | undefined => {
   for (const v of candidates) {
     if (typeof v === 'number' && Number.isFinite(v) && v !== 0) return v;
@@ -133,7 +144,15 @@ export const transformCountyData = (bc: BackendCountyResponse): County => {
     moneyReceived: publishedAmount(bc.money_received, bc.total_spent),
     budgetUtilization: bc.budget_utilization ?? undefined,
     revenueCollection: bc.revenue_collection ?? undefined,
-    pendingBills: bc.pending_bills ?? 0,
+    // `?? 0` here published a zero for a county with no figure. The API now
+    // returns null when nobody has published one — Narok submitted no
+    // pending-bills data to the Treasury for FY 2024/25, and the BROP says so
+    // — and "owes nothing" is a different claim from "not reported".
+    //
+    // NOT publishedAmount(): that treats 0 as absence, which is right for the
+    // backend's SUM-backed fields but wrong here. A publisher can report zero
+    // pending bills, and that is a figure.
+    pendingBills: reportedAmount(bc.pending_bills),
     developmentBudget: bc.development_budget || undefined,
     recurrentBudget: bc.recurrent_budget || undefined,
     auditIssues: (bc.audit_issues || []).map((a) => ({

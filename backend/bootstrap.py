@@ -1022,34 +1022,29 @@ def _upsert_county_debt(
                 )
             )
 
-    # DERIVED PENDING BILLS WIN.
+    # THE MODELLED PENDING-BILLS FIGURE IS NOT PUBLISHED AT ALL.
     #
-    # This figure is modelled: the fixture sets every county's pending bills
-    # at a flat 8% of a budget that is itself population x KSh 4,500. The
-    # `pending_bills` domain publishes the real thing — Table 10 of the
-    # Treasury's Budget Review and Outlook Paper, the audited per-county
-    # breakdown — as "Pending Bills - County Governments (<X> County)".
+    # It is not a measurement. Every one of the 47 is exactly 8% of a budget
+    # that is itself population x KSh 4,500 — the same ratio for the whole
+    # country, which is what a formula looks like, not a set of observations.
     #
-    # Where that row exists, writing the modelled one beside it puts two
-    # different claims about the same debt in the same table. Per county, so
-    # a county the BROP parse has not reached keeps the fixture rather than
-    # losing the only figure it has — which is not hypothetical: the parse
-    # currently yields 46 of 47, and Narok has no live row.
-    live_pending_bills = (
-        session.query(Loan)
-        .filter(
-            Loan.entity_id == entity_id,
-            Loan.debt_category == DebtCategory.PENDING_BILLS,
-            Loan.lender.like("Pending Bills — County Governments%"),
-        )
-        .count()
-    )
-    if live_pending_bills:
+    # An earlier version of this deferred only where the Treasury BROP had a
+    # real figure, so that "a county the parse has not reached keeps the only
+    # figure it has". That reasoning was wrong: the figure it kept was a
+    # fabrication, and the one county it applied to — Narok — is precisely
+    # the county the BROP reports as having submitted nothing. Publishing 8%
+    # of a modelled budget for the one county that told the Treasury nothing
+    # is the worst case, not the safe one.
+    #
+    # So nothing is written. Where the BROP has a figure the API serves it;
+    # where it does not, county_pending_bills() returns None and the UI shows
+    # absence. See services/publication_gate.py.
+    if pending_bills and pending_bills > 0:
         logger.info(
-            "%s: pending bills already derived from the BROP — skipping the "
-            "modelled figure from %s",
+            "%s: not writing the modelled pending-bills figure (%.0f) — it is "
+            "8%% of a modelled budget, not a published one",
             county_name,
-            COUNTY_DATA_PATH.name,
+            pending_bills,
         )
         pending_bills = 0.0
 
