@@ -101,6 +101,7 @@ _FIXTURE_DECLARATIONS: Dict[str, Dict[str, Any]] = {
         "date_field": ("metadata", "extraction_date"),
         "declared_date": "2025-08-24",
         "live_source": "counties_budget",
+        "superseded_check": "county_reference_data",
     },
 }
 
@@ -248,9 +249,152 @@ def _county_audit_findings_superseded(session: Session) -> Tuple[bool, str]:
     )
 
 
+#: The fields ``enhanced_county_data.json`` MODELS rather than reports. Its
+#: own metadata calls them "realistic estimates" on a "Population-based"
+#: methodology — budget is population x KES 4,500 x an economic factor, debt
+#: is a flat 15% of that budget and pending bills a flat 8% (identical ratios
+#: for all 47 counties), and every record carries
+#: ``"data_source": "realistic_estimate", "needs_verification": true``.
+#:
+#: A figure derived from a Controller of Budget report would not match one of
+#: these to the shilling, so an exact match means the stored figure IS this
+#: file's. ``population`` is deliberately excluded: it is a real Census 2019
+#: count, so a live source would legitimately agree with it and the match
+#: would prove nothing.
+_MODELLED_COUNTY_METRICS = (
+    "budget_2025",
+    "revenue_2024",
+    "debt_outstanding",
+    "pending_bills",
+    "missing_funds",
+)
+
+
+def _fixture_document_ids(session: Session, filename: str) -> List[int]:
+    """Documents ``_ensure_source_document`` minted for ``filename``.
+
+    Scanned in Python rather than with a JSON path operator so the check
+    behaves the same on SQLite as on Postgres, and so it cannot silently
+    under-count if a publisher or title ever changes — under-counting here
+    would push toward calling a fixture superseded, which is the one direction
+    that must never happen by accident.
+    """
+    return [
+        doc_id
+        for doc_id, meta in session.query(SourceDocument.id, SourceDocument.meta).all()
+        if isinstance(meta, dict) and meta.get("source") == filename
+    ]
+
+
+def _county_reference_data_superseded(session: Session) -> Tuple[bool, str]:
+    """Is every published claim in ``enhanced_county_data.json`` now derived?
+
+    The `counties_budget` domain named as this file's live source writes
+    ``BudgetLine`` rows and nothing else. The file writes four surfaces, so
+    three of them have no live path at all today:
+
+    ``BudgetLine``      via ``_upsert_budget_lines``. This one IS superseded in
+        practice — the Controller of Budget and Government of Kenya documents
+        own all 2,000 county lines and none traces to this file.
+    ``Loan``            via ``_upsert_county_debt`` — county debt and pending
+        bills, both modelled as fixed percentages of a modelled budget.
+    ``PopulationData``  via ``_upsert_population``.
+    ``entity.meta``     ``metrics`` (read by /counties for revenue, transfers,
+        development budget and pending bills), plus ``economic_profile``,
+        ``governor`` and ``last_updated``, which nothing else writes.
+
+    So this returns False until each of those has a live source. The evidence
+    names what is still outstanding, which is the actionable form of "377 days
+    old".
+    """
+    try:
+        payload = json.loads(COUNTY_DATA_PATH.read_text())
+    except Exception as exc:  # noqa: BLE001 - unreadable means unproven
+        return False, f"could not read {COUNTY_DATA_PATH.name}: {exc}"
+
+    records = payload.get("county_data") or {}
+    if not isinstance(records, dict) or not records:
+        return False, f"{COUNTY_DATA_PATH.name} carries no county_data to check"
+
+    outstanding: List[str] = []
+
+    # --- rows still hanging off documents this file minted ---
+    doc_ids = _fixture_document_ids(session, COUNTY_DATA_PATH.name)
+    if doc_ids:
+        for model, label in (
+            (BudgetLine, "budget-line"),
+            (Loan, "loan"),
+            (PopulationData, "population"),
+        ):
+            rows = (
+                session.query(model)
+                .filter(model.source_document_id.in_(doc_ids))
+                .count()
+            )
+            if rows:
+                counties = (
+                    session.query(model.entity_id)
+                    .filter(model.source_document_id.in_(doc_ids))
+                    .distinct()
+                    .count()
+                )
+                outstanding.append(
+                    f"{rows} {label} row(s) across {counties} counties"
+                )
+
+    # --- the modelled figures still stored on the entity ---
+    still_modelled: List[str] = []
+    for name, info in records.items():
+        if not isinstance(info, dict):
+            continue
+        entity = (
+            session.query(Entity)
+            .filter(Entity.canonical_name == f"{name} County")
+            .first()
+        )
+        if entity is None:
+            continue
+        stored: Dict[str, Any] = {}
+        for by_year in ((entity.meta or {}).get("metrics") or {}).values():
+            if isinstance(by_year, dict):
+                stored.update(by_year)
+        for field in _MODELLED_COUNTY_METRICS:
+            if field not in stored or info.get(field) is None:
+                continue
+            try:
+                if Decimal(str(stored[field])) == Decimal(str(info[field])):
+                    still_modelled.append(name)
+                    break
+            except Exception:  # noqa: BLE001 - unparseable is not a match
+                continue
+    if still_modelled:
+        outstanding.append(
+            f"entity.meta metrics on {len(still_modelled)} of {len(records)} "
+            f"counties still hold this file's modelled figures exactly "
+            f"({', '.join(sorted(still_modelled)[:3])}"
+            f"{', ...' if len(still_modelled) > 3 else ''})"
+        )
+
+    if outstanding:
+        return False, (
+            f"still served from {COUNTY_DATA_PATH.name}: "
+            + "; ".join(outstanding)
+            + f" — the '{_FIXTURE_DECLARATIONS[COUNTY_DATA_PATH.name]['live_source']}'"
+            " domain writes BudgetLine rows only, so county debt, population"
+            " and entity.meta have no live source yet"
+        )
+
+    return True, (
+        f"no budget-line, loan or population row traces to "
+        f"{COUNTY_DATA_PATH.name}, and none of the {len(records)} counties "
+        f"still holds its modelled figures"
+    )
+
+
 #: Named so the declaration table stays plain data.
 _SUPERSESSION_CHECKS: Dict[str, Callable[[Session], Tuple[bool, str]]] = {
     "county_audit_findings": _county_audit_findings_superseded,
+    "county_reference_data": _county_reference_data_superseded,
 }
 
 
