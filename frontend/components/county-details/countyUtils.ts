@@ -11,7 +11,7 @@ import { County } from '@/types';
 /**
  * Format population numbers with appropriate units
  */
-export const formatPopulation = (population: number | undefined): string => {
+export const formatPopulation = (population: number | null | undefined): string => {
   if (!population || population === 0) return 'N/A';
   if (population >= 1e6) return `${(population / 1e6).toFixed(3)}M`;
   if (population >= 1e3) return `${(population / 1e3).toFixed(0)}K`;
@@ -147,7 +147,10 @@ export const calculateCountyMetrics = (county: County) => {
   const budget = countyBudget(county) ?? null;
   const debt = countyDebt(county) ?? null;
   const debtRatio = countyDebtRatio(county);
-  const perCapitaDebt = debt != null && county.population > 0 ? debt / county.population : null;
+  const perCapitaDebt =
+    debt != null && county.population != null && county.population > 0
+      ? debt / county.population
+      : null;
   const revenue = county.revenueCollection ?? null;
   const expenditure =
     budgetUtilization != null && budget != null ? budget * (budgetUtilization / 100) : null;

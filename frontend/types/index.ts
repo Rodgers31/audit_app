@@ -40,7 +40,9 @@ export interface CountyComprehensive {
   coordinates: [number, number];
   governor?: string;
   demographics: {
-    population: number;
+    // Null where no census row exists. The API used to publish 0 there,
+    // which claims a county has no residents.
+    population: number | null;
     population_year?: number;
     male_population?: number;
     female_population?: number;
@@ -153,7 +155,12 @@ export interface County {
   // was allocated nothing / owes nothing / received nothing.
   budget?: number;
   debt?: number;
-  population: number;
+  // Null when no KNBS census row exists — same rule, and the same field, as
+  // CountyComprehensive.demographics.population above. The list endpoint
+  // published 0 for those counties, and every consumer read it as a real
+  // count: the ranking table sorted them smallest, the compare page divided
+  // a budget by it.
+  population: number | null;
   // Backend actual fields
   budget_2025: number;
   financial_health_score?: number; // absent when fewer than two components can be computed
