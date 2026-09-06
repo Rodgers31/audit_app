@@ -141,6 +141,27 @@ const AUDIT_STATUS_CFG: Record<
 type SortField = 'name' | 'population' | 'health' | 'budget' | 'utilization' | 'debt';
 type SortDir = 'asc' | 'desc';
 
+/**
+ * The sort column and its direction, held as one value.
+ *
+ * They used to be two `useState`s, which left no single place to decide both:
+ * picking a direction meant calling `setSortDir` from inside the
+ * `setSortField` updater. React treats updaters as pure and may call them more
+ * than once — StrictMode does so deliberately — so the nested toggle ran twice
+ * per click and cancelled itself, and the column headers did nothing in
+ * development. One state means one updater, computing the pair from the pair.
+ */
+type SortState = { field: SortField; dir: SortDir };
+
+/** Opening sort. Kept in step with `defaultFilters.sortBy` ('budget-desc'). */
+const defaultSort: SortState = { field: 'budget', dir: 'desc' };
+
+/** Which way a column opens when it first takes over the sort. */
+function initialDir(field: SortField): SortDir {
+  // Names read A → Z; every other column leads with its interesting end.
+  return field === 'name' ? 'asc' : 'desc';
+}
+
 function gradeCategory(score: number | null | undefined): string {
   if (typeof score !== 'number' || !Number.isFinite(score)) return 'Unknown';
   if (score >= 70) return 'A';
@@ -690,6 +711,7 @@ function FiltersSidebar({
               <option value='budget-asc'>{t('counties.sort.budget_low_high')}</option>
               <option value='debt-desc'>{t('counties.sort.debt_high_low')}</option>
               <option value='population-desc'>{t('counties.sort.population_high_low')}</option>
+              <option value='population-asc'>{t('counties.sort.population_low_high')}</option>
               <option value='health-desc'>{t('counties.sort.grade_best_worst')}</option>
               <option value='utilization-desc'>{t('counties.sort.execution_high_low')}</option>
             </select>
@@ -1526,8 +1548,8 @@ export default function CountyExplorerPage() {
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  const [sortField, setSortField] = useState<SortField>('budget');
-  const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [sort, setSort] = useState<SortState>(defaultSort);
+  const { field: sortField, dir: sortDir } = sort;
 
   // NOTE: "View All" toggle state now lives inside CountyRankingsTable
   // and is URL-driven via ?view=all so that back-navigation from a
@@ -1539,15 +1561,14 @@ export default function CountyExplorerPage() {
     setMapGrades((prev) => (prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]));
   }, []);
 
+  // Clicking the active column flips it; clicking any other takes it over at
+  // that column's opening direction. Both come out of one pure updater, so it
+  // is safe for React to call this twice with the same `prev`.
   const handleSort = useCallback((field: SortField) => {
-    setSortField((prev) => {
-      if (prev === field) {
-        setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-        return prev;
-      }
-      setSortDir(field === 'name' ? 'asc' : 'desc');
-      return field;
-    });
+    setSort((prev) => ({
+      field,
+      dir: prev.field === field ? (prev.dir === 'asc' ? 'desc' : 'asc') : initialDir(field),
+    }));
   }, []);
 
   // Apply sort when sortBy filter changes
@@ -1560,8 +1581,12 @@ export default function CountyExplorerPage() {
       health: 'health',
       utilization: 'utilization',
     };
-    if (fieldMap[sf]) setSortField(fieldMap[sf]);
-    if (sd === 'asc' || sd === 'desc') setSortDir(sd);
+    const field = fieldMap[sf];
+    const dir = sd === 'asc' || sd === 'desc' ? sd : undefined;
+    if (!field && !dir) return;
+    // Each half still falls back to what the sort already had, so a value the
+    // select does not spell out in full changes only the half it names.
+    setSort((prev) => ({ field: field ?? prev.field, dir: dir ?? prev.dir }));
   }, [filters.sortBy]);
 
   const handleApply = useCallback(() => {
@@ -1570,8 +1595,7 @@ export default function CountyExplorerPage() {
 
   const handleReset = useCallback(() => {
     setFilters(defaultFilters);
-    setSortField('budget');
-    setSortDir('desc');
+    setSort(defaultSort);
   }, []);
 
   const filtered = useMemo(() => {
