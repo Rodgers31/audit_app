@@ -258,7 +258,10 @@ export interface AccountabilityScorecard {
     region: string;
     region_avg_flagged_amount: number | null;
     region_avg_grade: string | null;
-    population_bracket: string;
+    /** null when the county has no census row — a county with no counted
+     *  population has no population bracket, and cannot be compared against
+     *  one. See AccountabilityTab's `|| bracket_fallback` rung. */
+    population_bracket: string | null;
     population_bracket_avg: number | null;
   };
 }
