@@ -26,9 +26,9 @@ This deletes them, for two reasons:
    which points the staleness gate at the wrong file.
 
 The rule is not copied here: this imports the same
-``bootstrap.purge_modelled_county_metrics`` the seed's own tests exercise, so
-there is one definition of "what this fixture modelled" rather than two that
-can drift. ``county_code`` survives it — an identifier, not a claim about
+``county_metrics_purge.purge_modelled_county_metrics`` the seed's
+own tests exercise, so there is one definition of "what this fixture modelled"
+rather than two that can drift. ``county_code`` survives it — an identifier, not a claim about
 money, and ``/search`` reads it out of the same dict.
 
 Replaying this on a fresh database touches an empty ``entities`` table, and
@@ -56,7 +56,12 @@ if _BACKEND_DIR not in sys.path:
 def upgrade():
     from sqlalchemy.orm import Session
 
-    from bootstrap import purge_modelled_county_metrics
+    # NOT `from bootstrap import ...`: bootstrap imports `database`, which
+    # imports `dotenv` unguarded, and the run-migrations job installs only
+    # alembic, sqlalchemy and psycopg2. That job is skipped on pull requests,
+    # so the ModuleNotFoundError would have surfaced on main, with the deploy
+    # already blocked behind it.
+    from county_metrics_purge import purge_modelled_county_metrics
 
     session = Session(bind=op.get_bind())
     stats = purge_modelled_county_metrics(session)

@@ -462,3 +462,66 @@ class TestTheMigration:
 
         heads = revisions - parents
         assert heads == {"ce6ed007f696"}, f"expected one head, found {sorted(heads)}"
+
+
+class TestTheMigrationRunsWhereItActuallyRuns:
+    """The ``run-migrations`` job installs alembic, sqlalchemy and psycopg2.
+
+    Nothing else — not ``python-dotenv``, which ``database`` imports unguarded
+    and ``bootstrap`` therefore drags in. A migration that reached the purge
+    through ``bootstrap`` died at ``alembic upgrade head`` with
+    ``ModuleNotFoundError: No module named 'dotenv'``, and because that job is
+    skipped on pull requests, every PR check would still have been green: the
+    failure would have surfaced on main, with the production deploy already
+    blocked behind it.
+
+    So the rule lives in a module that imports ``models`` and nothing else,
+    and this runs the revision in a process where ``dotenv`` is unimportable.
+    """
+
+    def test_upgrade_completes_without_the_app_runtime(self):
+        import pathlib
+        import subprocess
+        import sys
+        import textwrap
+
+        backend = pathlib.Path(__file__).resolve().parents[1]
+        code = textwrap.dedent(
+            """
+            import importlib.util, sys
+            sys.modules["dotenv"] = None  # as the migration job has it
+
+            from sqlalchemy import create_engine
+            from sqlalchemy.dialects.postgresql import JSONB
+            from sqlalchemy.ext.compiler import compiles
+
+            @compiles(JSONB, "sqlite")
+            def _c(t, c, **kw):
+                return "TEXT"
+
+            from models import Base
+
+            engine = create_engine("sqlite://")
+            Base.metadata.create_all(engine)
+            conn = engine.connect()
+
+            spec = importlib.util.spec_from_file_location(
+                "mig",
+                "alembic/versions/ce6ed007f696_clear_the_modelled_county_metrics.py",
+            )
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            mod.op.get_bind = lambda: conn
+            mod.upgrade()
+            print("UPGRADE-OK")
+            """
+        )
+        proc = subprocess.run(
+            [sys.executable, "-c", code],
+            cwd=backend,
+            capture_output=True,
+            text=True,
+        )
+        assert "UPGRADE-OK" in proc.stdout, (
+            f"the revision could not run without the app runtime:\n{proc.stderr}"
+        )
