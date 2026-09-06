@@ -22,7 +22,7 @@ import PageShell from '@/components/layout/PageShell';
 import ResponsiveTable from '@/components/ui/ResponsiveTable';
 import { useCountyFiscalYears } from '@/lib/react-query';
 import { useAllCountiesMoneyFlow, useNationalMoneyFlow } from '@/lib/react-query/useMoneyFlow';
-import { getCurrentFiscalYear, transparencyYearOptions } from '@/lib/utils';
+import { transparencyYearOptions } from '@/lib/utils';
 import { MoneyFlowData } from '@/types';
 import { motion } from 'framer-motion';
 import {
@@ -60,6 +60,29 @@ function fundingImpact(amount: number): string {
   return '';
 }
 
+/**
+ * The calendar year the in-progress Kenyan fiscal year began in (FY runs
+ * 1 Jul – 30 Jun). On 2026-09-06 that is 2026, i.e. FY2026/27.
+ *
+ * This asks which year we are IN, which the calendar can answer. Both callers
+ * below ask exactly that. Anything choosing a year to FETCH asks a question
+ * about the data instead, and wants `transparencyYearOptions` /
+ * `resolveExplorerYear` / `moneyFlowDefaultYear`, which resolve it from
+ * GET /api/v1/counties/fiscal-years.
+ *
+ * Deliberately local and unexported. `getCurrentFiscalYear`,
+ * `getLatestReportedFiscalYear` and `generateFiscalYears` were all removed
+ * from `@/lib/utils`, because a shared, exported, clock-derived fiscal-year
+ * helper is what put four pages on a year the database held no reported
+ * figures for. Kept here it answers one page's calendar question and cannot
+ * be reached for as a data one; it returns the start YEAR rather than a label
+ * so both callers can use it without parsing one back apart.
+ */
+function currentFiscalStartYear(): number {
+  const now = new Date();
+  return now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
+}
+
 /** Convert a raw "YYYY/YY" string into the shape FiscalYearPicker wants.
  *
  * `is_current` drives a pulsing "still running" dot. That is a question about
@@ -67,7 +90,8 @@ function fundingImpact(amount: number): string {
  * DEFAULT year, which is now whatever the API reports it actually holds. */
 function toPickerOptions(years: string[]): { fiscal_year: string; is_current?: boolean }[] {
   if (!years || years.length === 0) return [];
-  const currentLabel = getCurrentFiscalYear();
+  const startYr = currentFiscalStartYear();
+  const currentLabel = `${startYr}/${String(startYr + 1).slice(-2)}`;
   return years.map((y) => ({ fiscal_year: y, is_current: y === currentLabel }));
 }
 
@@ -339,9 +363,7 @@ export default function TransparencyPage() {
     if (!noSpendData) return false;
     const startYr = fiscalStartYear(selectedYear);
     if (startYr == null) return false;
-    const now = new Date();
-    const currentStartYr = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
-    return startYr >= currentStartYr;
+    return startYr >= currentFiscalStartYear();
   }, [countyRows, selectedYear]);
 
   const sortedRows = useMemo(() => {

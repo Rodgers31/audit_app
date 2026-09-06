@@ -143,23 +143,6 @@ export function getDebtRiskLevel(debtToGdpRatio: number | null | undefined): str
   return band === null ? 'Not assessed' : `${band} Risk`;
 }
 
-/**
- * Return the current Kenyan fiscal year label (e.g. "2024/25").
- * Kenya FY runs July 1 – June 30.
- *
- * This asks the calendar which year we are IN, which the calendar can answer.
- * Two neighbours that asked it which year has DATA — `getLatestReportedFiscalYear`
- * and `generateFiscalYears` — are gone: they put four pages on a fiscal year the
- * database held no reported figures for. Anything choosing a year to fetch wants
- * `resolveExplorerYear` / `moneyFlowDefaultYear` / `transparencyYearOptions`,
- * which resolve it from GET /api/v1/counties/fiscal-years.
- */
-export function getCurrentFiscalYear(): string {
-  const now = new Date();
-  const startYear = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
-  return `${startYear}/${String(startYear + 1).slice(-2)}`;
-}
-
 /** What `GET /api/v1/counties/fiscal-years` reports. */
 export interface CountyFiscalYears {
   years: Array<{

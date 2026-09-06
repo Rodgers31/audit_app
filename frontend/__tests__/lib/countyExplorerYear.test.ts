@@ -26,15 +26,21 @@ import {
 
 /**
  * What the removed calendar helpers returned on the frozen date below. They
- * are literals now because the helpers are gone — `getLatestReportedFiscalYear`
- * and `generateFiscalYears` were deleted once nothing called them — but the
- * numbers are why: each is a year the database held no reported figures for,
- * and each is what a page was showing before these resolvers replaced them.
+ * are literals now because the helpers are gone — `getLatestReportedFiscalYear`,
+ * `generateFiscalYears` and `getCurrentFiscalYear` were all deleted from
+ * `@/lib/utils` — but the numbers are why: each is a year the database held no
+ * reported figures for, and each is what a page was showing before these
+ * resolvers replaced them.
+ *
+ * The one surviving caller of a clock-derived fiscal year — the pulsing
+ * "still running" dot on /transparency — keeps its own local, unexported
+ * helper, so there is no shared one left to reach for when the question is
+ * about data rather than the calendar.
  */
 const CALENDAR_ON_2026_09 = {
   /** getLatestReportedFiscalYear() — the CRA projection period. */
   latestReported: '2025/26',
-  /** generateFiscalYears()[0] — a year in no list at all. */
+  /** getCurrentFiscalYear(), and generateFiscalYears()[0] — a year in no list at all. */
   newestGenerated: '2026/27',
 };
 
