@@ -240,12 +240,6 @@ def backfill_publishable_audits(session) -> Dict[str, int]:
     from sqlalchemy import update
 
     crit = publishable_audit_criterion()
-    published = session.execute(
-        update(Audit)
-        .where(crit)
-        .values(publishable=True, quarantine_reason=None)
-        .execution_options(synchronize_session=False)
-    ).rowcount
     # Which clause failed? URL first (the commoner failure), then text
     # integrity — a row can fail both; the URL reason wins as the more
     # fundamental defect.
@@ -255,21 +249,74 @@ def backfill_publishable_audits(session) -> Dict[str, int]:
             func.length(func.trim(SourceDocument.url)) > 0,
         )
     )
-    session.execute(
-        update(Audit)
-        .where(no_url)
-        .values(publishable=False, quarantine_reason="source_document_has_no_url")
-        .execution_options(synchronize_session=False)
-    )
-    withheld_cid = session.execute(
-        update(Audit)
-        .where(~no_url, ~crit)
-        .values(publishable=False, quarantine_reason="finding_text_unreadable_cid")
-        .execution_options(synchronize_session=False)
-    ).rowcount
+
+    # The counts describe the TABLE, so they are read, not inferred from how
+    # many rows this particular call happened to write. Previously they were
+    # the UPDATEs' rowcounts, which forced every UPDATE to match every row it
+    # was reporting on — see the write guards below.
+    published = session.execute(
+        select(func.count(Audit.id)).where(crit)
+    ).scalar_one()
     no_url_count = session.execute(
         select(func.count(Audit.id)).where(no_url)
     ).scalar_one()
+    withheld_cid = session.execute(
+        select(func.count(Audit.id)).where(~no_url, ~crit)
+    ).scalar_one()
+
+    # Write only where the stored verdict differs from the computed one.
+    #
+    # The loader calls this after EVERY document it loads, and each of these
+    # three statements used to be unconditional — so a settled table was
+    # rewritten end to end, several times a run, to the values it already
+    # held. Measured on production 2026-09-06: 2338 rows, 2312 matching the
+    # criterion, 0 needing any change, and the audits domain spending
+    # 120s + 146s + 80s = 346s of a 1320s global seed budget on three
+    # backfills that logged identical results. The run then ran out of budget
+    # in `pending_bills` and dropped four domains.
+    #
+    # It was never the scan: EXPLAIN (ANALYZE) on this same WHERE returns in
+    # 9ms. It was the writing — `audits` is 16MB with nine indexes, so each
+    # pointless row rewrite dragged nine index entries with it.
+    #
+    # `IS NOT TRUE` / `IS NOT FALSE` rather than `!=` so a NULL `publishable`
+    # (a row inserted before the column was backfilled) still converges.
+    # `quarantine_reason` is compared with an explicit NULL branch rather than
+    # `IS DISTINCT FROM`, which SQLite only learned in 3.39.
+    def _needs(publishable: bool, reason: Optional[str]):
+        stored_reason = (
+            Audit.quarantine_reason.isnot(None)
+            if reason is None
+            else sa_or(
+                Audit.quarantine_reason.is_(None),
+                Audit.quarantine_reason != reason,
+            )
+        )
+        stored_flag = (
+            Audit.publishable.isnot(True)
+            if publishable
+            else Audit.publishable.isnot(False)
+        )
+        return sa_or(stored_flag, stored_reason)
+
+    session.execute(
+        update(Audit)
+        .where(crit, _needs(True, None))
+        .values(publishable=True, quarantine_reason=None)
+        .execution_options(synchronize_session=False)
+    )
+    session.execute(
+        update(Audit)
+        .where(no_url, _needs(False, "source_document_has_no_url"))
+        .values(publishable=False, quarantine_reason="source_document_has_no_url")
+        .execution_options(synchronize_session=False)
+    )
+    session.execute(
+        update(Audit)
+        .where(~no_url, ~crit, _needs(False, "finding_text_unreadable_cid"))
+        .values(publishable=False, quarantine_reason="finding_text_unreadable_cid")
+        .execution_options(synchronize_session=False)
+    )
     session.flush()
     stats = {"published": published, "withheld": no_url_count + withheld_cid}
     logger.info(

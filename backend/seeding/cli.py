@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import signal
 import sys
 import threading
@@ -24,6 +25,11 @@ from .logging import configure_logging
 from .registries import REGISTRY, load_builtin_domains
 from .types import DomainRunContext, DomainRunResult
 from . import freshness
+
+#: Module-level logger for helpers that run outside ``run_seed_command``'s
+#: locally-configured one. ``configure_logging`` attaches handlers to the
+#: "seeding" root, so records emitted here land in the same place.
+logger = logging.getLogger("seeding")
 
 
 def _parse_since(value: Optional[str]) -> Optional[datetime]:
@@ -121,6 +127,59 @@ def _ensure_db_sessionlocal() -> None:
         raise RuntimeError("SessionLocal could not be imported from database module")
 
 
+def _record_dropped_domains(names, total_budget: float, elapsed: float) -> None:
+    """Leave an ingestion_jobs row for each domain the budget never reached.
+
+    A domain that is never attempted used to write no row at all, so it was
+    absent from the nightly's "--- Ingestion Job Results ---" summary AND
+    invisible to ``check_ingestion_freshness``, which only judges domains that
+    reported a run. On 2026-09-06 the 03:19 nightly stopped in
+    ``pending_bills`` and silently dropped ``population``,
+    ``revenue_by_source`` and ``stalled_projects``; the step's only red came
+    from an unrelated bootstrap failure, and without it the run would have
+    printed "All domains completed successfully."
+
+    FAILED, not completed_with_errors: the workflow's exit-code check counts
+    only ``status == 'failed'``, and a domain that did not run did not refresh.
+    Best-effort — never mask the truncation itself by raising here.
+    """
+    if not names:
+        return
+    try:
+        _ensure_db_sessionlocal()
+        assert SessionLocal is not None
+        now = datetime.now(timezone.utc)
+        from models import IngestionJob, IngestionStatus
+
+        with SessionLocal() as session:
+            for name in names:
+                session.add(
+                    IngestionJob(
+                        domain=name,
+                        status=IngestionStatus.FAILED,
+                        dry_run=False,
+                        started_at=now,
+                        finished_at=now,
+                        items_processed=0,
+                        items_created=0,
+                        items_updated=0,
+                        errors=[
+                            f"not run: global seed budget of "
+                            f"{total_budget:.0f}s was exhausted after "
+                            f"{elapsed:.0f}s"
+                        ],
+                        meta={"dropped_by_global_budget": True},
+                    )
+                )
+            session.commit()
+    except Exception:  # pragma: no cover - best-effort bookkeeping
+        logger.exception(
+            "Could not record %d domain(s) dropped by the global budget: %s",
+            len(names),
+            ", ".join(names),
+        )
+
+
 def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int:
     logger = configure_logging(settings.log_level, settings.log_path)
 
@@ -168,6 +227,14 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
                 ", ".join(skipped),
                 extra={"skipped_domains": skipped},
             )
+            # A partial run is not a successful one. Recorded and non-zero so
+            # the drop is named in the summary and reddens the step; the
+            # validation job is kept running by seed.yml's `!cancelled()`
+            # rather than by this run misreporting itself.
+            _record_dropped_domains(
+                skipped, total_budget, time.monotonic() - loop_start
+            )
+            status = 1
             break
 
         handler = REGISTRY.get(domain)
@@ -352,9 +419,12 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
 
                                 stopped_job = budget_session.get(IngestionJob, job_id)
                                 if stopped_job:
-                                    stopped_job.status = (
-                                        IngestionStatus.COMPLETED_WITH_ERRORS
-                                    )
+                                    # FAILED, not completed_with_errors: this
+                                    # domain did not refresh. As a [WARN] it
+                                    # was not counted by the workflow's
+                                    # exit-code check, so a truncated run
+                                    # reported success.
+                                    stopped_job.status = IngestionStatus.FAILED
                                     stopped_job.finished_at = datetime.now(timezone.utc)
                                     stopped_job.errors = [
                                         "stopped: global seed budget exhausted"
@@ -362,6 +432,12 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
                                     budget_session.commit()
                         except Exception:  # pragma: no cover - best-effort
                             pass
+                    _record_dropped_domains(
+                        domains[index + 1 :],
+                        total_budget,
+                        time.monotonic() - loop_start,
+                    )
+                    status = 1
                     break
 
                 logger.exception(

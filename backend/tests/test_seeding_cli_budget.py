@@ -98,9 +98,18 @@ def _make_handler(calls, name, *, work=0.0, raise_timeout=False, clock=None):
     return _handler
 
 
-def test_global_budget_skips_remaining_domains_and_stays_green(
+def test_global_budget_skips_remaining_domains_and_reports_the_drop(
     clock, sessionmaker_factory, monkeypatch
 ):
+    """The budget still stops work early — but the run says so.
+
+    This asserted ``status == 0`` and ``"c" not in jobs``, on the reasoning
+    that a clean stop should not fail the step (so the validation job, which
+    `needs: [seed]`, would still run). That made a partial run indistinguishable
+    from a complete one: see
+    test_a_truncated_run_is_not_a_successful_run.py. Validation is now kept
+    running by `!cancelled()` in seed.yml instead.
+    """
     calls: list[str] = []
     handlers = {
         "a": _make_handler(calls, "a", work=60, clock=clock),
@@ -112,17 +121,21 @@ def test_global_budget_skips_remaining_domains_and_stays_green(
 
     status = seed_cli.run_seed_command(_args(), settings)
 
-    assert status == 0  # clean, green exit (no SIGKILL, validation can run)
+    assert status == 1  # a run that dropped a domain did not do its job
     assert calls == ["a", "b"]  # "c" never started — past the global deadline
     jobs = _jobs_by_domain(sessionmaker_factory)
     assert jobs["a"].status == IngestionStatus.COMPLETED
     assert jobs["b"].status == IngestionStatus.COMPLETED
-    assert "c" not in jobs  # skipped domains get no job record
+    # "c" is recorded as dropped rather than vanishing from the run
+    assert jobs["c"].status == IngestionStatus.FAILED
+    assert any("budget" in str(e).lower() for e in (jobs["c"].errors or []))
 
 
 def test_global_budget_truncates_in_flight_domain_cleanly(
     clock, sessionmaker_factory, monkeypatch
 ):
+    """Still a clean stop — the CLI returns rather than being SIGKILLed — but
+    the truncated domain is a FAILURE, because it did not refresh."""
     calls: list[str] = []
     handlers = {
         "a": _make_handler(calls, "a", work=60, clock=clock),
@@ -135,13 +148,13 @@ def test_global_budget_truncates_in_flight_domain_cleanly(
 
     status = seed_cli.run_seed_command(_args(), settings)
 
-    assert status == 0  # a global-budget truncation is NOT a failure
+    assert status == 1  # the run did not seed everything it was asked to
     assert calls == ["a", "b"]  # "c" never started
     jobs = _jobs_by_domain(sessionmaker_factory)
     assert jobs["a"].status == IngestionStatus.COMPLETED
-    assert jobs["b"].status == IngestionStatus.COMPLETED_WITH_ERRORS
+    assert jobs["b"].status == IngestionStatus.FAILED
     assert any("budget" in str(e).lower() for e in (jobs["b"].errors or []))
-    assert "c" not in jobs
+    assert jobs["c"].status == IngestionStatus.FAILED
 
 
 def test_per_domain_timeout_still_fails_and_continues(
@@ -196,7 +209,8 @@ def test_global_budget_timeout_survives_fetcher_except_exception(
     clock, sessionmaker_factory, monkeypatch
 ):
     """Regression: a globally-capped timeout must not be swallowed by a
-    fetcher's ``except Exception``. It should stop the run cleanly (green)."""
+    fetcher's ``except Exception``. It should stop the run cleanly — the CLI
+    returns instead of being SIGKILLed — and report the domains it dropped."""
     calls: list[str] = []
     swallowed: list[str] = []
     handlers = {
@@ -210,11 +224,11 @@ def test_global_budget_timeout_survives_fetcher_except_exception(
     status = seed_cli.run_seed_command(_args(), settings)
 
     assert swallowed == []  # the fetcher's except Exception did NOT catch it
-    assert status == 0  # clean global-budget stop, not a failure
+    assert status == 1  # stopped cleanly, but domains were dropped
     assert calls == ["a", "b"]  # timeout stopped the run at b; c never started
     jobs = _jobs_by_domain(sessionmaker_factory)
-    assert jobs["b"].status == IngestionStatus.COMPLETED_WITH_ERRORS
-    assert "c" not in jobs
+    assert jobs["b"].status == IngestionStatus.FAILED
+    assert jobs["c"].status == IngestionStatus.FAILED
 
 
 def test_own_budget_timeout_survives_fetcher_except_exception(

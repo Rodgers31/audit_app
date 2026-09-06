@@ -380,12 +380,30 @@ jobs:
       - name: Compute PDF cache period (ISO year-week)
         id: pdf_cache_period
         run: echo "period=$(date -u +%G-w%V)" >> "$GITHUB_OUTPUT"
-      - name: Cache downloaded source PDFs
-        uses: actions/cache@v4
+      # Split restore/save. `actions/cache` skips its save step entirely when
+      # the primary key was an exact hit, and the key here was constant for a
+      # whole ISO week — so only the FIRST run of each week could ever add to
+      # the cache. Every later run restored that Monday snapshot and
+      # re-downloaded anything discovered since:
+      #
+      #   Cache hit for: seed-pdf-cache-2026-w36
+      #   Cache Size: ~43 MB
+      #   ... PDF cache miss; streaming download ... (x8, 198s)
+      #
+      # On 2026-09-06 both nightlies re-fetched the same 66MB — the 29.6MB
+      # Treasury PBB alone took 158s — 15% of the global seed budget, on a run
+      # that then ran out of budget and dropped four domains. The only cache
+      # HIT in either run was a COB PDF 27 days old, i.e. nothing had been
+      # saved in a month.
+      - name: Restore downloaded source PDFs
+        uses: actions/cache/restore@v4
         with:
           path: backend/data/seeding/cache/pdfs
-          key: seed-pdf-cache-${{ steps.pdf_cache_period.outputs.period }}
+          # Deliberately unmatchable, so the restore always falls through to
+          # the prefixes below and picks up the most recent snapshot.
+          key: seed-pdf-cache-${{ steps.pdf_cache_period.outputs.period }}-${{ github.run_id }}
           restore-keys: |
+            seed-pdf-cache-${{ steps.pdf_cache_period.outputs.period }}-
             seed-pdf-cache-
 
       - name: Seed all domains
@@ -462,6 +480,26 @@ jobs:
           print('\nAll domains completed successfully.')
           PY
 
+      # Cache filenames are sha256(url), so the sorted file list is a stable
+      # identity for "which documents are cached". Folding it into the save key
+      # means a run that downloaded nothing new writes no cache (the key
+      # already exists — this is what kept weekly keys cheap), while a run that
+      # fetched a newly-published report does save it, which the weekly key
+      # could not.
+      - name: Fingerprint the PDF cache
+        if: always()
+        id: pdf_cache_state
+        run: |
+          fp=$(find backend/data/seeding/cache/pdfs -maxdepth 1 -name '*.pdf' \
+                 -printf '%f\n' 2>/dev/null | sort | sha256sum | cut -c1-16)
+          echo "fingerprint=${fp:-empty}" >> "$GITHUB_OUTPUT"
+      - name: Save downloaded source PDFs
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: backend/data/seeding/cache/pdfs
+          key: seed-pdf-cache-${{ steps.pdf_cache_period.outputs.period }}-${{ steps.pdf_cache_state.outputs.fingerprint }}
+
   # ══════════════════════════════════════════════════════════════════
   # Step 4: Data validation — verify tables have data and key metrics are sane
   # ══════════════════════════════════════════════════════════════════
@@ -470,7 +508,14 @@ jobs:
     needs: [seed]
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: github.event.inputs.run_validation != 'false'
+    # Runs even when seeding failed. The freshness gates report on the state of
+    # the DATABASE, which is exactly what an operator needs to see on a bad
+    # night — and previously did not: the 2026-09-06 03:19 nightly skipped this
+    # job entirely because the seed job was red, so nothing checked whether the
+    # published data had gone stale. Keeping it independent is also what lets
+    # a truncated seed run report itself as failed (seeding/cli.py) instead of
+    # staying green to protect this job.
+    if: ${{ !cancelled() && github.event.inputs.run_validation != 'false' }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
