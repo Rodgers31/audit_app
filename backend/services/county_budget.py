@@ -123,3 +123,59 @@ BUDGET_PROVENANCE_LABELS = {
         "read from Controller of Budget CBIRR tables"
     ),
 }
+
+
+#: A pooled figure spanning counties whose budgets came from DIFFERENT kinds of
+#: row — the national money-flow aggregate over a partially-ingested CBIRR.
+#: Naming either single source there would be wrong about the other half of the
+#: money, so the aggregate says it is both. Only ever produced by
+#: ``combine_budget_provenance``; a single county is never "mixed".
+BUDGET_SOURCE_MIXED = "mixed"
+
+
+def combine_budget_provenance(codes) -> Optional[str]:
+    """One provenance for a figure pooled across several counties.
+
+    ``budget_provenance`` answers for one county's rows. The national
+    money-flow waterfall sums 47 of them, and the Controller of Budget's CBIRR
+    does not land for all 47 at once — mid-ingest, and in any period the report
+    covers only partially, some counties carry classification rows and the rest
+    are still the CRA model.
+
+    Counties that published no budget contribute no provenance: they added
+    nothing to the total, so they cannot make it mixed.
+    """
+    present = {
+        c
+        for c in codes
+        if c in (BUDGET_SOURCE_COB_CBIRR, BUDGET_SOURCE_CRA_MODEL)
+    }
+    if not present:
+        return None
+    if len(present) > 1:
+        return BUDGET_SOURCE_MIXED
+    return present.pop()
+
+
+#: The same claim as ``BUDGET_PROVENANCE_LABELS``, short enough for a caption
+#: printed under a single waterfall stage ("Source: ..."). Keyed on the same
+#: codes so a stage cannot end up captioned differently from the note above it.
+#:
+#: The money-flow "Allocated" stage hardcoded "CRA Allocation + Conditional
+#: Grants" at five call sites. That described the sum it used to publish; since
+#: the classification-split fix the amount is the Controller of Budget's own
+#: CBIRR aggregate, so the card credited the CRA for a figure its own footer
+#: credited to the County BIRR.
+BUDGET_PROVENANCE_STAGE_LABELS = {
+    BUDGET_SOURCE_COB_CBIRR: (
+        "Controller of Budget — County Budget Implementation Review Report"
+    ),
+    BUDGET_SOURCE_CRA_MODEL: (
+        "Modelled from the CRA equitable-share formula — not Controller of "
+        "Budget reported"
+    ),
+    BUDGET_SOURCE_MIXED: (
+        "Controller of Budget CBIRR where published; modelled from the CRA "
+        "equitable-share formula elsewhere"
+    ),
+}

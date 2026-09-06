@@ -142,11 +142,14 @@ export interface CountyComprehensive {
  * `cob_cbirr` — the Controller of Budget's own Total/Development/Recurrent
  * aggregates, read from the County Budget Implementation Review Report.
  * `cra_model` — a CRA equitable-share projection period: modelled.
+ * `mixed` — a figure POOLED across counties that came from both kinds of row,
+ * which is what the national money-flow aggregate is whenever the CBIRR has
+ * reached only part of the country. A single county is never `mixed`.
  * `null`/absent — no budget was published, so there is no source to name.
  *
  * The standing provenance note on the county pages is rendered from this.
  */
-export type BudgetSource = 'cob_cbirr' | 'cra_model' | null;
+export type BudgetSource = 'cob_cbirr' | 'cra_model' | 'mixed' | null;
 
 export interface County {
   id: string;
@@ -300,6 +303,10 @@ export interface MoneyFlowStage {
   stage: string;
   label: string;
   amount: number | null;
+  /** Caption printed under the figure. On the Allocated stage this is derived
+   *  from `MoneyFlowData.budget_source`, so it names the rows the amount was
+   *  actually summed from. Absent when nothing was published — an unpublished
+   *  figure has no source. */
   source?: string;
   source_doc?: string;
   gap_from_prev?: number | null;
@@ -319,6 +326,11 @@ export interface MoneyFlowData {
    * in the UI so every number is traceable to a government source. */
   source_document_title?: string | null;
   source_document_url?: string | null;
+  /** Which rows produced the Allocated stage's amount — see BudgetSource.
+   *  The stage's own `source` caption is the API's prose for this code; keep
+   *  any UI that captions the stage switching on this rather than asserting a
+   *  source of its own, or the caption drifts from the figure again. */
+  budget_source?: BudgetSource;
   /** Procurement encumbrances — not a waterfall stage but shown as a
    * supplementary line under "Spent" when present, so readers can see
    * how much of the budget is committed to contracts vs fully free. */

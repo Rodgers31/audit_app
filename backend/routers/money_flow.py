@@ -15,7 +15,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
-from services.county_budget import split_classification_and_sector_lines
+from services.county_budget import (
+    BUDGET_PROVENANCE_STAGE_LABELS,
+    budget_provenance,
+    combine_budget_provenance,
+    split_classification_and_sector_lines,
+)
 from services.publication_gate import publishable_audit_criterion
 
 from database import get_db
@@ -116,6 +121,24 @@ def _build_stage(
     if data_unavailable:
         d["data_unavailable"] = True
     return d
+
+
+def _allocated_source(budget_source: Optional[str]) -> Optional[str]:
+    """Caption for the Allocated stage, from the rows its amount came from.
+
+    All five stage-building call sites in this module hardcoded
+    ``"CRA Allocation + Conditional Grants"``. That described the sum the stage
+    used to publish; since the classification split it publishes the Controller
+    of Budget's own CBIRR aggregate, so one Follow the Money card credited the
+    CRA formula for a figure its own footer credited to the County BIRR. Both
+    kinds of period are still in the database, so the fix is to report the
+    provenance rather than swap one unconditional string for another.
+
+    ``None`` — nothing published — deliberately yields no caption. A source
+    line under a blank stage is a provenance claim about a figure the card
+    never showed.
+    """
+    return BUDGET_PROVENANCE_STAGE_LABELS.get(budget_source)
 
 
 class UnparseableFiscalYear(ValueError):
@@ -242,8 +265,10 @@ def _money_flow_for_entity(
     if not period_ids:
         return {
             "stages": [
+                # No source line: nothing was published, and an absent figure
+                # has no provenance. See _allocated_source.
                 _build_stage("Allocated", "Budget Allocation", None,
-                             source="CRA Allocation + Conditional Grants", data_unavailable=True),
+                             data_unavailable=True),
                 _build_stage("Spent", "Actual Expenditure", None,
                              gap_label="Unspent Funds", data_unavailable=True),
                 _build_stage("Flagged", "Auditor Flagged", None,
@@ -251,6 +276,7 @@ def _money_flow_for_entity(
             ],
             "total_waste_estimate": None,
             "efficiency_score": None,
+            "budget_source": None,
         }
 
     budget_q = db.query(BudgetLine).filter(
@@ -269,6 +295,13 @@ def _money_flow_for_entity(
         allocated, split_spent, _sector_lines, _class_by_cat = (
             split_classification_and_sector_lines(budget_lines)
         )
+        # Which of the two kinds of row produced that figure — the Controller
+        # of Budget's classification aggregates, or the modelled sector split
+        # of a CRA equitable-share projection. Same answer /comprehensive and
+        # GET /counties publish, from the same function, so the Follow the
+        # Money tab and the Budget & Debt tab on one page cannot name
+        # different sources for one number.
+        budget_source = budget_provenance(_class_by_cat, allocated)
         # Treat "no non-null spent rows" as data-unavailable (projected-
         # year budgets don't have execution figures yet). Returning 0
         # would misleadingly render as "100% unspent" in the waterfall.
@@ -302,6 +335,7 @@ def _money_flow_for_entity(
         spent = None
         source_doc_url = None
         source_doc_title = None
+        budget_source = None
 
     # --- Audit flagged amounts ---
     audit_q = db.query(func.sum(Audit.amount)).filter(
@@ -330,7 +364,7 @@ def _money_flow_for_entity(
         stage="Allocated",
         label="Budget Allocation",
         amount=allocated,
-        source="CRA Allocation + Conditional Grants",
+        source=_allocated_source(budget_source),
         source_doc=source_doc_url,
         data_unavailable=allocated is None,
     ))
@@ -372,6 +406,10 @@ def _money_flow_for_entity(
         # back to an official Controller of Budget (CoB) publication.
         "source_document_title": source_doc_title,
         "source_document_url": source_doc_url,
+        # Machine-readable twin of the Allocated stage's caption — the same
+        # vocabulary as /comprehensive's budget.source and the county list's
+        # budget_source, so the frontend switches one note on one field.
+        "budget_source": budget_source,
         # Surface committed separately (not as a waterfall stage) for
         # callers that want to show "procurement encumbered" as a
         # supplementary figure.
@@ -461,6 +499,7 @@ async def national_money_flow(
         spent = None
         source_doc_url = None
         flagged = None
+        budget_source = None
     else:
         budget_q = db.query(BudgetLine).filter(
             BudgetLine.entity_id.in_(entity_ids),
@@ -479,10 +518,17 @@ async def national_money_flow(
             by_entity: Dict[int, list] = {}
             for b in budget_lines:
                 by_entity.setdefault(b.entity_id, []).append(b)
+            # ...and per entity for the provenance too. The CBIRR does not
+            # land for all 47 counties at once, so a pooled figure can be part
+            # Controller of Budget and part CRA model; combine_budget_provenance
+            # says so rather than crediting one source for the other's money.
+            _sources = []
             for _rows in by_entity.values():
                 _alloc, _spent, _s, _c = split_classification_and_sector_lines(_rows)
                 allocated += _alloc
                 spent_total += _spent
+                _sources.append(budget_provenance(_c, _alloc))
+            budget_source = combine_budget_provenance(_sources)
             # Treat "no non-null spent rows" as data-unavailable (e.g.
             # projected-year budgets where CoB has not yet released the
             # execution figures). Returning 0 in that case lies by
@@ -495,6 +541,7 @@ async def national_money_flow(
             allocated = None
             spent = None
             source_doc_url = None
+            budget_source = None
 
         # --- Aggregated audit flags ---
         audit_q = db.query(func.sum(Audit.amount)).filter(
@@ -512,7 +559,7 @@ async def national_money_flow(
         stage="Allocated",
         label="Budget Allocation",
         amount=allocated,
-        source="CRA Allocation + Conditional Grants",
+        source=_allocated_source(budget_source),
         source_doc=source_doc_url,
         data_unavailable=allocated is None,
     ))
@@ -556,6 +603,10 @@ async def national_money_flow(
         "total_waste_estimate": flagged,
         "efficiency_score": efficiency,
         "source_document_url": source_doc_url,
+        # Which rows the pooled Allocated figure came from — "mixed" when the
+        # CBIRR covers only some of the counties in it. See
+        # combine_budget_provenance.
+        "budget_source": budget_source,
         # Why the stages are empty, when they are. A caller could previously
         # not tell "this fiscal period is not in the database" from "the
         # period is there but nothing has been published for it yet"
@@ -595,8 +646,9 @@ async def all_counties_money_flow(
     # Short-circuit if no matching fiscal periods
     if not period_ids:
         no_data_stages = [
+            # No source line — nothing published has no provenance.
             _build_stage("Allocated", "Budget Allocation", None,
-                         source="CRA Allocation + Conditional Grants", data_unavailable=True),
+                         data_unavailable=True),
             _build_stage("Spent", "Actual Expenditure", None,
                          gap_label="Unspent Funds", data_unavailable=True),
             _build_stage("Flagged", "Auditor Flagged", None,
@@ -610,6 +662,7 @@ async def all_counties_money_flow(
                 "stages": no_data_stages,
                 "total_waste_estimate": None,
                 "efficiency_score": None,
+                "budget_source": None,
             }
             for eid, name in county_entities
         ]
@@ -639,6 +692,10 @@ async def all_counties_money_flow(
         ]
         budget_map[eid] = {
             "allocated": float(alloc) if alloc else None,
+            # Per county, from that county's own rows. A single caption for
+            # the whole feed is wrong for somebody whenever the CBIRR has
+            # reached only part of the country.
+            "source": budget_provenance(_cls, alloc),
             # An absent execution figure is not a zero — a projected year has
             # no actuals, and 0 renders as "100% unspent".
             "spent": (
@@ -677,12 +734,13 @@ async def all_counties_money_flow(
         committed = b.get("committed")
         spent = b.get("spent")
         flagged = flagged_map.get(eid)
+        budget_source = b.get("source")
 
         stages: List[Dict[str, Any]] = []
 
         stages.append(_build_stage(
             stage="Allocated", label="Budget Allocation", amount=allocated,
-            source="CRA Allocation + Conditional Grants",
+            source=_allocated_source(budget_source),
             data_unavailable=allocated is None,
         ))
 
@@ -713,6 +771,7 @@ async def all_counties_money_flow(
             "stages": stages,
             "total_waste_estimate": flagged,
             "efficiency_score": efficiency,
+            "budget_source": budget_source,
         })
 
     return results

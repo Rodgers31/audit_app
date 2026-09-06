@@ -10,6 +10,7 @@
  */
 
 import { BookOpenCheck, ExternalLink } from 'lucide-react';
+import type { BudgetSource } from '@/types';
 
 interface SourceEntry {
   publisher: string;
@@ -21,6 +22,12 @@ interface SourceEntry {
 
 interface Props {
   fiscalYear: string;
+  /** What the waterfall's Allocated figure was actually read from, as reported
+   *  by the money-flow API. This panel's whole claim is which document feeds
+   *  which stage, and the CRA row used to claim "Allocated" for every year —
+   *  including the ones whose allocation is now read from the Controller of
+   *  Budget's CBIRR. */
+  budgetSource?: BudgetSource;
 }
 
 /**
@@ -29,15 +36,27 @@ interface Props {
  * exist yet; CoB CBIRRs publish quarterly + annual, so the current FY has
  * only partial coverage.
  */
-function buildSourcesFor(fy: string): SourceEntry[] {
+function buildSourcesFor(fy: string, budgetSource?: BudgetSource): SourceEntry[] {
   const norm = fy.replace('FY', '').trim();
+
+  // Which document the Allocated stage is actually anchored to, this year.
+  // `cob_cbirr` means the Controller of Budget published the county totals and
+  // the CRA formula only supplies the sector split; `mixed` means both, across
+  // different counties. Claiming the CRA feeds "Allocated" regardless is the
+  // same contradiction the stage caption used to print.
+  const craCovers =
+    budgetSource === 'cob_cbirr'
+      ? 'Sector split (modelled)'
+      : budgetSource === 'mixed'
+        ? 'Allocated (counties not yet in the CBIRR), sector split'
+        : 'Allocated';
 
   const common: SourceEntry[] = [
     {
       publisher: 'Commission on Revenue Allocation',
       title: `County Equitable Share — FY ${norm}`,
       url: 'https://www.crakenya.org/county-allocations/',
-      covers: 'Allocated',
+      covers: craCovers,
       status: 'published',
     },
   ];
@@ -113,10 +132,18 @@ function buildSourcesFor(fy: string): SourceEntry[] {
   };
 
   const entries = matrix[norm] ?? matrix[norm.replace(/(\d{4})\/(\d{2})$/, (_, a, b) => `${a}/${b}`)] ?? [];
+  const cbirrFeedsAllocated =
+    budgetSource === 'cob_cbirr' || budgetSource === 'mixed';
   const mapped = entries.map((e) => ({
     publisher: e.publisher,
     title: e.title,
-    covers: e.covers,
+    // The CBIRR feeds the Allocated stage too wherever its county aggregates
+    // are what the waterfall published — which, since the classification
+    // split, is every county the report covers.
+    covers:
+      cbirrFeedsAllocated && e.publisher.includes('Controller')
+        ? `Allocated, ${e.covers}`
+        : e.covers,
     status: e.status,
     url:
       e.url ??
@@ -147,8 +174,11 @@ const STATUS_STYLES: Record<SourceEntry['status'], { label: string; className: s
   },
 };
 
-export default function MoneyFlowSourceReconciliation({ fiscalYear }: Props) {
-  const sources = buildSourcesFor(fiscalYear);
+export default function MoneyFlowSourceReconciliation({
+  fiscalYear,
+  budgetSource,
+}: Props) {
+  const sources = buildSourcesFor(fiscalYear, budgetSource);
 
   return (
     <section className='rounded-2xl bg-white dark:bg-surface-base border border-neutral-border/40 shadow-surface overflow-hidden'>

@@ -811,7 +811,10 @@ export default function TransparencyPage() {
 
       {/* ═══ 6. Source reconciliation ═══ */}
       <Section delay={0.18}>
-        <MoneyFlowSourceReconciliation fiscalYear={selectedYear} />
+        <MoneyFlowSourceReconciliation
+          fiscalYear={selectedYear}
+          budgetSource={nationalFlow?.budget_source}
+        />
       </Section>
 
       {/* ═══ 7. What can you do? ═══ */}
