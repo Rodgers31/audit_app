@@ -94,6 +94,22 @@ describe('MoneyFlowHero — Allocated stage provenance', () => {
     expect(text).toMatch(/Commission on Revenue Allocation/i);
   });
 
+  it('does not describe a Released stage it never renders', () => {
+    // The hero draws Allocated → Spent → Flagged. Its footer credited the CBIRR
+    // for "Releases and expenditure", and the projected-year line promised
+    // "release and spend figures" — both naming a stage the reader cannot find
+    // above them, fed by exchequer data no source here ingests.
+    render(<MoneyFlowHero data={flow('cob_cbirr')} />);
+    expect(heroText()).not.toMatch(/\brelease[sd]?\b/i);
+  });
+
+  it('does not promise release figures on a year with no execution yet', () => {
+    const projected = flow('cra_model');
+    projected.stages = [projected.stages[0], { ...projected.stages[1], amount: null }];
+    render(<MoneyFlowHero data={projected} />);
+    expect(heroText()).not.toMatch(/\brelease[sd]?\b/i);
+  });
+
   it('claims no allocation source when the API reports none', () => {
     render(<MoneyFlowHero data={flow(null)} />);
     const text = heroText();

@@ -66,12 +66,20 @@ function buildSourcesFor(fy: string, budgetSource?: BudgetSource): SourceEntry[]
   const oagBase = 'https://oagkenya.go.ke/index.php/reports/county-audit-reports';
 
   // Encode the publishing status of each source, per year.
+  //
+  // `covers` may only name stages the waterfall actually has — Allocated,
+  // Spent, Flagged. These rows read "Released, Spent" for every year, anchoring
+  // a stage the reader cannot find above them: the money-flow endpoints stopped
+  // building a Released stage when it turned out to be `committed_amount`
+  // (procurement encumbrances, not Treasury disbursements), which produced
+  // impossible readings like spent > released. Exchequer releases are not
+  // ingested from any source, so no document here feeds them.
   const matrix: Record<string, Array<Omit<SourceEntry, 'url'> & { url?: string }>> = {
     '2022/23': [
       {
         publisher: 'Controller of Budget',
         title: 'County Budget Implementation Review Report FY2022/23 Annual',
-        covers: 'Released, Spent',
+        covers: 'Spent',
         status: 'published',
       },
       {
@@ -85,7 +93,7 @@ function buildSourcesFor(fy: string, budgetSource?: BudgetSource): SourceEntry[]
       {
         publisher: 'Controller of Budget',
         title: 'County Budget Implementation Review Report FY2023/24 Annual',
-        covers: 'Released, Spent',
+        covers: 'Spent',
         status: 'published',
       },
       {
@@ -99,7 +107,7 @@ function buildSourcesFor(fy: string, budgetSource?: BudgetSource): SourceEntry[]
       {
         publisher: 'Controller of Budget',
         title: 'County Budget Implementation Review Report FY2024/25 H1 + Q3',
-        covers: 'Released, Spent',
+        covers: 'Spent',
         status: 'preliminary',
       },
       {
@@ -119,7 +127,7 @@ function buildSourcesFor(fy: string, budgetSource?: BudgetSource): SourceEntry[]
       {
         publisher: 'Controller of Budget',
         title: 'County Budget Implementation Review Report FY2025/26',
-        covers: 'Released, Spent',
+        covers: 'Spent',
         status: 'pending',
       },
       {

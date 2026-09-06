@@ -10,7 +10,10 @@
  *   - Eyebrow: source + FY
  *   - Headline: "KES X allocated → KES Y reached citizens"
  *   - Callout: leak ratio (how many shillings of every 100 the auditor flagged)
- *   - 4-stage horizontal waterfall: Allocated → Released → Spent → Flagged
+ *   - 3-stage horizontal waterfall: Allocated → Spent → Flagged. There is no
+ *     Released stage: exchequer disbursements are not ingested from any source
+ *     (see backend/routers/money_flow.py), and the `Released` entry left in
+ *     STAGE_META below is parked for if they ever are, not rendered today.
  *   - Each gap is rendered explicitly above the bar so users can *see* the leak
  *   - Footer caveat points to the authoritative CoB + OAG sources
  */
@@ -182,7 +185,7 @@ export default function MoneyFlowHero({ data }: Props) {
             </h2>
             <p className='text-sm text-neutral-muted mt-1 max-w-2xl'>
               {isProjected
-                ? 'This fiscal year is still being executed, so release and spend figures will appear as the Controller of Budget publishes quarterly reports.'
+                ? 'This fiscal year is still being executed, so spending figures will appear as the Controller of Budget publishes quarterly reports.'
                 : 'The waterfall below traces every shilling from Treasury allocation through execution, and the portion the Auditor General questioned (could not confirm was properly spent).'}
             </p>
           </div>
@@ -267,8 +270,8 @@ export default function MoneyFlowHero({ data }: Props) {
         <div className='flex items-start gap-2 text-[11px] text-neutral-muted/90 leading-relaxed border-t border-neutral-border/40 pt-3'>
           <Info size={13} className='mt-0.5 flex-shrink-0 text-gov-forest/70 dark:text-emerald-100/70' />
           <span>
-            {allocationProvenanceSentence(data.budget_source)} Releases
-            and expenditure come from the Controller of Budget&apos;s{' '}
+            {allocationProvenanceSentence(data.budget_source)} Expenditure
+            comes from the Controller of Budget&apos;s{' '}
             <em>County Budget Implementation Review Report</em> (CBIRR). Flagged amounts
             are the aggregate of findings the Auditor General <em>questioned</em>{' '}
             (classified as irregular, unsupported, or wasteful) in the consolidated county
