@@ -642,8 +642,10 @@ export default function CountyDetailClient() {
                 {data.name} {t('county.page.name_suffix')}
               </h1>
               <p className='text-sm text-white/75 mt-1.5 max-w-md'>
-                {fmtPop(data.demographics.population)} {t('county.hero.residents')} ·{' '}
-                {fmtLabel(data.economic_profile.economic_base)} {t('county.hero.economy_suffix')}
+                {fmtPop(data.demographics.population)} {t('county.hero.residents')}
+                {data.economic_profile.economic_base
+                  ? ` · ${fmtLabel(data.economic_profile.economic_base)} ${t('county.hero.economy_suffix')}`
+                  : ''}
                 {data.governor ? ` · ${t('county.hero.governor_short')} ${data.governor}` : ''}
               </p>
               {data.budget.fiscal_year && (

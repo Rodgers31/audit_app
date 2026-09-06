@@ -49,11 +49,14 @@ export interface CountyComprehensive {
     population_density?: number;
   };
   economic_profile: {
-    county_type: string;
-    economic_base: string;
-    infrastructure_level: string;
-    revenue_potential: string;
+    // Null: nobody publishes a county's "economic base". The fixture said
+    // "agriculture" for 42 of the 47 — a judgement, not a figure. KNBS's
+    // Gross County Product would support one; the fixture did not.
+    economic_base: string | null;
+    // The Auditor-General's findings for THIS county. They used to be four
+    // strings identical across all 47.
     major_issues: string[];
+    major_issues_source?: string | null;
   };
   budget: {
     total_allocated: number;

@@ -15,7 +15,7 @@ import { CountyComprehensive } from '@/types';
 import { AlertTriangle, ExternalLink, Scale, TrendingDown, TrendingUp } from 'lucide-react';
 import React from 'react';
 import ModelledDataNote from '@/components/ModelledDataNote';
-import { hasIngestedAudit, fmtKES, fmtLabel, fmtPop, pct, SEVERITY_STYLE } from '../shared';
+import { ABSENT, hasIngestedAudit, fmtKES, fmtLabel, fmtPop, pct, SEVERITY_STYLE } from '../shared';
 import KPI from './KPI';
 
 /* ═══════════ Circular progress ═══════════ */
@@ -73,7 +73,12 @@ function OfficialsCard({
 }) {
   const { t } = useLang();
   const officials = getCountyOfficials(countyId);
-  const governor = officials.governor?.name || fallbackGovernor || null;
+  // The API's governor wins. It now comes from the Council of Governors —
+  // whose membership IS the 47 sitting governors — read on every seed run
+  // and gated on all 47 being listed exactly once. `county-officials.ts` is a
+  // hardcoded list that cannot notice an election, so it is the fallback and
+  // only supplies party and term, which the Council's page does not carry.
+  const governor = fallbackGovernor || officials.governor?.name || null;
   const rows: Array<{
     role: string;
     title: string;
@@ -377,7 +382,11 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
           />
           <KPI
             label={t('county.profile.economic_base')}
-            value={fmtLabel(economic_profile.economic_base)}
+            value={
+              economic_profile.economic_base
+                ? fmtLabel(economic_profile.economic_base)
+                : ABSENT
+            }
             accent='text-emerald-700'
           />
           <KPI
@@ -407,7 +416,9 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
               ))}
             </div>
             <p className='mt-2 text-[11px] text-gray-400 dark:text-neutral-muted/80 italic'>
-              {t('county.overview.challenges_generic_note')}
+              {economic_profile.major_issues_source
+                ? t('county.overview.challenges_oag_note')
+                : t('county.overview.challenges_generic_note')}
             </p>
           </div>
         )}

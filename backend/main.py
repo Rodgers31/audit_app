@@ -683,6 +683,51 @@ def county_own_source_target(budget_lines) -> Optional[float]:
     return None
 
 
+#: How many of a county's audit findings to surface as its key challenges.
+_MAJOR_ISSUES_LIMIT = 4
+
+
+def _county_major_issues(audits, titles: Optional[Dict[int, str]] = None) -> List[str]:
+    """A county's actual audit findings, worst first, as short labels.
+
+    Replaces four strings that were identical for all 47 counties. These are
+    the Auditor-General's findings for THIS county, already filtered to
+    publishable and display-grade rows by the caller, so a county with none
+    gets an empty list rather than somebody else's problems.
+
+    ``titles`` maps extraction id -> the finding's own heading, which the
+    extractor captured ("Use of Goods and Services", "Irregular Award of
+    Tenders"). ``finding_text`` runs that heading straight into the paragraph
+    beneath it with no punctuation between, so trimming the text gives
+    "Unsupported Accounts Receivables The statement of assets and liabil…"
+    where the heading alone is the label.
+    """
+    order = {"critical": 0, "warning": 1, "info": 2}
+    ranked = sorted(
+        audits,
+        key=lambda a: order.get(
+            getattr(getattr(a, "severity", None), "value", ""), 3
+        ),
+    )
+    issues: List[str] = []
+    for audit in ranked:
+        label = (titles or {}).get(getattr(audit, "extraction_id", None) or -1)
+        if not label:
+            # No captured heading (a fixture-era row, or an older extractor).
+            text = " ".join((audit.finding_text or "").split())
+            if not text:
+                continue
+            label = re.split(r"(?<=[a-z])\.\s", text)[0].strip(" .")
+        label = " ".join(label.split())
+        if len(label) > 90:
+            label = label[:87].rstrip() + "…"
+        if label not in issues:
+            issues.append(label)
+        if len(issues) >= _MAJOR_ISSUES_LIMIT:
+            break
+    return issues
+
+
 def _debt_sustainability(
     total_debt: Optional[float], total_allocated: float
 ) -> Optional[str]:
@@ -3549,6 +3594,19 @@ async def get_county_comprehensive(
                 if _audit_is_display_grade(a)
             ]
 
+            # The finding's own heading, for the "key challenges" labels.
+            _finding_titles: Dict[int, str] = {}
+            _ext_ids = [a.extraction_id for a in audits if a.extraction_id]
+            if _ext_ids:
+                from models import Extraction as _DBExtraction
+
+                for _ext in db.query(_DBExtraction).filter(
+                    _DBExtraction.id.in_(_ext_ids)
+                ):
+                    _title = (_ext.extracted_json or {}).get("title")
+                    if _title:
+                        _finding_titles[_ext.id] = str(_title)
+
             audit_findings = []
             by_severity = {"info": 0, "warning": 0, "critical": 0}
             # `0.0` here reads as "the Auditor-General questioned nothing".
@@ -3814,18 +3872,31 @@ async def get_county_comprehensive(
                 # Governor
                 "governor": meta.get("governor", ""),
                 # Economic profile
+                #
+                # county_type, infrastructure_level and revenue_potential are
+                # gone. They came from enhanced_county_data.json — typed
+                # classifications with no publisher behind them, defaulted
+                # here to "standard_county" / "medium" / "medium" for anything
+                # missing — and nothing in the UI rendered any of the three.
+                #
+                # economic_base is withheld for the same reason: "agriculture"
+                # for 42 of the 47 counties is somebody's judgement, not a
+                # figure anyone published. KNBS's Gross County Product would
+                # support it; the fixture does not.
+                #
+                # major_issues was the same four strings for ALL 47 counties
+                # ("Budget execution delays", "Revenue collection challenges",
+                # "Infrastructure maintenance needs", "Service delivery
+                # gaps"), rendered under "Key Challenges" beside a note
+                # admitting they were not this county's. The Auditor-General's
+                # own findings for this county are right here in `audits`, so
+                # they are what gets served.
                 "economic_profile": {
-                    "county_type": economic_profile.get(
-                        "county_type", "standard_county"
+                    "economic_base": None,
+                    "major_issues": _county_major_issues(audits, _finding_titles),
+                    "major_issues_source": (
+                        "Office of the Auditor-General" if audits else None
                     ),
-                    "economic_base": economic_profile.get("economic_base", "mixed"),
-                    "infrastructure_level": economic_profile.get(
-                        "infrastructure_level", "medium"
-                    ),
-                    "revenue_potential": economic_profile.get(
-                        "revenue_potential", "medium"
-                    ),
-                    "major_issues": economic_profile.get("major_issues", []),
                 },
                 # Budget
                 "budget": {

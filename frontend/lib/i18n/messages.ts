@@ -912,6 +912,11 @@ export const MESSAGES = {
   'county.overview.kpi.census': { en: 'Census', sw: 'Sensa', plain: 'Census' },
   'county.overview.kpi.na': { en: 'N/A', sw: 'Haipo', plain: 'None' },
   'county.overview.key_challenges': { en: 'Key Challenges', sw: 'Changamoto Kuu', plain: 'Main Problems' },
+  'county.overview.challenges_oag_note': {
+    en: "The Auditor-General's own findings for this county, most serious first.",
+    sw: 'Matokeo ya Mkaguzi Mkuu wa Hesabu kwa kaunti hii, mazito kwanza.',
+    plain: "What the Auditor-General found in this county's own accounts.",
+  },
   'county.overview.challenges_generic_note': { en: "Representative challenges common across many counties — not derived from this county's specific records.", sw: 'Changamoto za kawaida katika kaunti nyingi — si kutoka kwa rekodi mahususi za kaunti hii.', plain: 'Common problems in many counties — not specific to this one.' },
 
   // Stalled projects summary (overview)

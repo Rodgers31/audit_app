@@ -62,6 +62,7 @@ _BUILTIN_DOMAIN_PACKAGES = [
     "seeding.domains.audits",
     "seeding.domains.economic_indicators",
     "seeding.domains.population",
+    "seeding.domains.county_officials",
     "seeding.domains.national_debt",
     "seeding.domains.national_budget",
     "seeding.domains.pending_bills",
