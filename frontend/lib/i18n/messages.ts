@@ -473,10 +473,44 @@ export const MESSAGES = {
   // Counties list page
   // ══════════════════════════════════════════════════
   'counties.title': { en: 'County Explorer', sw: 'Kivinjari cha Kaunti', plain: 'Explore Counties' },
-  'counties.modelled_estimate': {
-    en: 'County budget allocations are a modelled estimate — not official Controller of Budget figures — using the Commission on Revenue Allocation (CRA) equitable-share formula. Pending bills are the audited per-county figures from Table 10 of the National Treasury\'s Budget Review and Outlook Paper. County debt is shown only where a source publishes it; most counties have none, and those show a dash rather than a figure. Audit findings are from the Office of the Auditor-General.',
-    sw: 'Mgao wa bajeti ya kaunti ni makadirio ya kielelezo — si takwimu rasmi za Mdhibiti wa Bajeti — ukitumia fomula ya mgao sawa ya Tume ya Ugawaji wa Mapato (CRA). Bili ambazo hazijalipwa ni takwimu zilizokaguliwa za kila kaunti kutoka Jedwali la 10 la Karatasi ya Mapitio na Mtazamo wa Bajeti ya Hazina ya Taifa. Deni la kaunti linaonyeshwa pale tu chanzo kinapolichapisha; kaunti nyingi hazina, na hizo zinaonyesha mstari badala ya takwimu. Matokeo ya ukaguzi yanatoka Ofisi ya Mkaguzi Mkuu wa Hesabu.',
-    plain: 'The county budget numbers are estimates, not official Controller of Budget figures — they use the CRA sharing formula. The unpaid-bill numbers are real: they come from the Treasury\'s audited county-by-county table. County debt is shown only when a source publishes it; for most counties nobody does, so you will see a dash instead of a number. The audit findings are real, from the Auditor-General.',
+  // ── The standing provenance note ────────────────────────────────────────
+  // Split into a budget clause + a shared tail. The budget clause is chosen
+  // from the provenance the API reports for the rows it actually summed
+  // (`budget.source` / `budget_source`), because both kinds of period exist in
+  // the database at once: CBIRR-reported ones carrying the Controller of
+  // Budget's Total/Development/Recurrent aggregates, and CRA equitable-share
+  // PROJECTION ones carrying a modelled sector split.
+  //
+  // It used to be one unconditional string opening "County budget allocations
+  // are a modelled estimate — not official Controller of Budget figures". That
+  // is now false for all 47 counties: the CBIRR parse reconciles to the
+  // report's printed total of 633,303.87m, and Baringo's page printed KES
+  // 9.54B straight off it under a banner calling it a CRA model.
+  'counties.provenance.budget_cbirr': {
+    en: 'County budget figures are the Controller of Budget\'s own, read from the County Budget Implementation Review Report (CBIRR) — the total, development and recurrent aggregates. The per-sector split is modelled from the Commission on Revenue Allocation (CRA) equitable-share formula, not read from the CBIRR.',
+    sw: 'Takwimu za bajeti ya kaunti ni za Mdhibiti wa Bajeti mwenyewe, zilizosomwa kutoka Ripoti ya Mapitio ya Utekelezaji wa Bajeti za Kaunti (CBIRR) — jumla, maendeleo na matumizi ya kawaida. Mgawanyo wa kisekta umekadiriwa kwa fomula ya mgao sawa ya Tume ya Ugawaji wa Mapato (CRA), si kutoka CBIRR.',
+    plain: 'The county budget totals are real: the Controller of Budget published them in its County Budget Implementation Review Report. The split between sectors is our own estimate, worked out with the CRA sharing formula — that part is not from the report.',
+  },
+  'counties.provenance.budget_cra': {
+    en: 'County budget allocations are a modelled estimate — not official Controller of Budget figures — using the Commission on Revenue Allocation (CRA) equitable-share formula.',
+    sw: 'Mgao wa bajeti ya kaunti ni makadirio ya kielelezo — si takwimu rasmi za Mdhibiti wa Bajeti — ukitumia fomula ya mgao sawa ya Tume ya Ugawaji wa Mapato (CRA).',
+    plain: 'The county budget numbers are estimates, not official Controller of Budget figures — they use the CRA sharing formula.',
+  },
+  // Reachable when a page shows counties resolved to different periods: some
+  // read from the CBIRR, some still modelled. Naming only one source would be
+  // wrong about half the rows, in one direction or the other.
+  'counties.provenance.budget_mixed': {
+    en: 'Budget figures here come from two places. Where the Controller of Budget has published a county in its County Budget Implementation Review Report (CBIRR), the figure is theirs; the rest are a modelled estimate using the Commission on Revenue Allocation (CRA) equitable-share formula. Per-sector splits are modelled throughout.',
+    sw: 'Takwimu za bajeti hapa zinatoka vyanzo viwili. Pale Mdhibiti wa Bajeti amechapisha kaunti katika Ripoti ya Mapitio ya Utekelezaji wa Bajeti za Kaunti (CBIRR), takwimu ni zake; nyingine ni makadirio ya kielelezo kwa fomula ya mgao sawa ya Tume ya Ugawaji wa Mapato (CRA). Mgawanyo wa kisekta ni wa kukadiriwa kote.',
+    plain: 'The budget numbers here come from two places. Where the Controller of Budget has published a county, the number is theirs. For the rest it is our estimate, using the CRA sharing formula. The sector splits are estimates either way.',
+  },
+  // The other three figures on these pages, whose provenance does not vary.
+  // Rendered on its own when no budget was published at all — an absent figure
+  // has no source, and either budget clause would then describe nothing.
+  'counties.provenance.rest': {
+    en: 'Pending bills are the audited per-county figures from Table 10 of the National Treasury\'s Budget Review and Outlook Paper. County debt is shown only where a source publishes it; most counties have none, and those show a dash rather than a figure. Audit findings are from the Office of the Auditor-General.',
+    sw: 'Bili ambazo hazijalipwa ni takwimu zilizokaguliwa za kila kaunti kutoka Jedwali la 10 la Karatasi ya Mapitio na Mtazamo wa Bajeti ya Hazina ya Taifa. Deni la kaunti linaonyeshwa pale tu chanzo kinapolichapisha; kaunti nyingi hazina, na hizo zinaonyesha mstari badala ya takwimu. Matokeo ya ukaguzi yanatoka Ofisi ya Mkaguzi Mkuu wa Hesabu.',
+    plain: 'The unpaid-bill numbers are real: they come from the Treasury\'s audited county-by-county table. County debt is shown only when a source publishes it; for most counties nobody does, so you will see a dash instead of a number. The audit findings are real, from the Auditor-General.',
   },
   'counties.subtitle': {
     en: 'Compare all 47 Kenyan counties on budget, execution, debt, and audit findings.',
@@ -869,16 +903,20 @@ export const MESSAGES = {
   'county.overview.utilized_suffix': { en: 'utilized', sw: 'imetumika', plain: 'spent' },
   'county.overview.spent_of': { en: 'spent of', sw: 'imetumika kati ya', plain: 'spent of' },
   'county.overview.allocated_suffix': { en: 'allocated', sw: 'iliyotengwa', plain: 'planned' },
-  // This label sat ~200px below the page's own disclaimer saying these figures
-  // are "Modelled estimate — NOT official Controller of Budget figures", and
-  // Fallback only. The API now returns data_sources.budget describing the rows
-  // it actually selected — CoB BIRR aggregates where the parse landed, CRA
-  // model where it did not — and OverviewTab renders that. This string is used
-  // only when the API omits the field, so it states the weaker case.
+  // Fallback only. The API returns data_sources.budget describing the rows it
+  // actually selected — CoB CBIRR aggregates where the parse landed, CRA model
+  // where it did not — and OverviewTab renders that.
+  //
+  // This string used to assert the CRA model whenever the field was missing,
+  // which was the same stale claim the page banner made: it named a formula
+  // for a figure that is now the Controller of Budget's for all 47 counties.
+  // A fallback cannot know which, so it names neither and says only that it
+  // does not know. The API withholds the field only when it published no
+  // budget at all, in which case there is no figure to source anyway.
   'county.overview.source_cob': {
-    en: 'Modelled from the CRA equitable-share formula',
-    sw: 'Imekadiriwa kwa fomula ya mgao sawa ya CRA',
-    plain: 'Worked out using the CRA sharing formula, not read from a report',
+    en: 'Source not reported for this period',
+    sw: 'Chanzo hakijaripotiwa kwa kipindi hiki',
+    plain: 'We could not tell you where this figure came from',
   },
 
   // Debt position card

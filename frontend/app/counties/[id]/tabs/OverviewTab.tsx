@@ -215,7 +215,7 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
 
   return (
     <div className='space-y-6'>
-      <ModelledDataNote />
+      <ModelledDataNote budgetSource={budget.source} />
       {/* Hero row: Budget execution as a magazine-style feature */}
       <div className='grid grid-cols-1 lg:grid-cols-5 gap-5'>
         {/* Budget execution — large, editorial */}

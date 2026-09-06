@@ -2646,6 +2646,159 @@ def _split_classification_and_sector_lines(budget_lines):
     return total_allocated, total_spent, sector_lines, class_by_cat
 
 
+#: Provenance codes for a county's headline budget figure. The frontend
+#: switches its standing provenance note on these, so they are part of the
+#: API contract — widen the vocabulary rather than redefining a member.
+BUDGET_SOURCE_COB_CBIRR = "cob_cbirr"
+BUDGET_SOURCE_CRA_MODEL = "cra_model"
+
+
+def _budget_provenance(class_by_cat, total_allocated) -> Optional[str]:
+    """Which kind of row produced the headline budget this response published.
+
+    Both kinds of period live in the database at once — see
+    ``tests/test_county_period_agreement``. A CBIRR-reported period carries the
+    Controller of Budget's Total / Development / Recurrent classification rows;
+    a CRA equitable-share PROJECTION period carries only the modelled sector
+    split, and a reader still reaches one through ``?fiscal_year=``.
+
+    The page prints a standing note naming the source of the figure beside it.
+    It said "modelled estimate — not official Controller of Budget figures" for
+    every county and every period, which is now false for all 47: the CBIRR
+    parse reconciles to the report's printed 633,303.87m total. Rather than
+    swap one unconditional claim for the other, both endpoints report which
+    rows they actually summed and the note follows.
+
+    Returns ``None`` when nothing was published — an absent budget has no
+    source, and defaulting it to either label would print a provenance note
+    about a figure the page never showed.
+    """
+    if any(
+        class_by_cat.get(cat, {}).get("allocated") for cat in _CLASSIFICATION_CATEGORIES
+    ):
+        return BUDGET_SOURCE_COB_CBIRR
+    if total_allocated:
+        return BUDGET_SOURCE_CRA_MODEL
+    return None
+
+
+#: Rendered verbatim under the headline figure. Keyed on the code above so the
+#: prose and the machine-readable field cannot drift apart.
+_BUDGET_PROVENANCE_LABELS = {
+    BUDGET_SOURCE_COB_CBIRR: (
+        "Controller of Budget — County Budget Implementation Review "
+        "Report (Total / Development / Recurrent aggregates). The "
+        "per-sector split below is modelled from the CRA "
+        "equitable-share formula, not read from the CBIRR."
+    ),
+    BUDGET_SOURCE_CRA_MODEL: (
+        "Modelled from the CRA equitable-share formula — NOT "
+        "read from Controller of Budget CBIRR tables"
+    ),
+}
+
+
+def _county_budget_period_rows(db):
+    """Fiscal periods that actually carry county budget rows, newest first.
+
+    One definition, shared by the year picker (``GET /counties/fiscal-years``)
+    and by the guard that rejects a requested year outside this set — so the
+    years the API offers and the years it accepts cannot drift apart.
+
+    Each row carries ``classification_rows`` (> 0 where the Controller of
+    Budget's Total/Development/Recurrent rows landed) and ``counties``.
+    """
+    from sqlalchemy import case
+    from sqlalchemy import func as _f
+
+    return (
+        db.query(
+            DBFiscalPeriod.id,
+            DBFiscalPeriod.label,
+            _f.sum(
+                case(
+                    (
+                        _f.lower(DBBudgetLine.category).in_(
+                            list(_CLASSIFICATION_CATEGORIES)
+                        ),
+                        1,
+                    ),
+                    else_=0,
+                )
+            ).label("classification_rows"),
+            _f.count(_f.distinct(DBBudgetLine.entity_id)).label("counties"),
+        )
+        .join(DBBudgetLine, DBBudgetLine.period_id == DBFiscalPeriod.id)
+        .join(DBEntity, DBEntity.id == DBBudgetLine.entity_id)
+        .filter(DBEntity.type == EntityType.COUNTY)
+        .group_by(DBFiscalPeriod.id, DBFiscalPeriod.label, DBFiscalPeriod.start_date)
+        .order_by(DBFiscalPeriod.start_date.desc())
+        .all()
+    )
+
+
+def _resolve_requested_county_period_ids(db, fiscal_year: str) -> List[int]:
+    """Period ids for an EXPLICITLY requested county fiscal year.
+
+    Raises 404 when the label names no period that holds county budget data.
+
+    The three county endpoints used to resolve this inline and swallow the
+    miss::
+
+        period_ids = None
+        if fiscal_year:
+            try:
+                canonical = _nlbl(fiscal_year)
+                period_ids = [fp.id for fp in db.query(_FP).all()
+                              if fp.label == canonical] or None
+            except (ValueError, IndexError):
+                pass  # Ignore bad fiscal_year format, return unfiltered
+        ...
+        if period_ids:
+            bl_query = bl_query.filter(DBBudgetLine.period_id.in_(period_ids))
+
+    A typo, a stale bookmark or a year not yet ingested left ``period_ids`` at
+    None, the period filter was skipped, and EVERY period was summed into one
+    row — published as that year's budget, under no label. With two CBIRR years
+    ingested a county's budget reads as the sum of both.
+
+    ``/comprehensive`` was milder: it fell through to auto-resolve and served a
+    different period than the caller asked for, correctly labelled. Silently
+    ignoring the parameter is the same defect, just harder to see.
+
+    Periods with no county budget rows are not servable either: filtering to
+    one returns zeros for all 47 counties, which states that every county was
+    allocated nothing.
+    """
+    from seeding.utils import normalize_fiscal_label as _nlbl
+
+    rows = _county_budget_period_rows(db)
+    available = [r.label for r in rows if r.label]
+
+    try:
+        canonical = _nlbl(fiscal_year)
+    except (ValueError, IndexError):
+        canonical = None
+
+    ids = [r.id for r in rows if canonical and r.label == canonical]
+    if not ids:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "error": "Fiscal year not available",
+                "message": (
+                    f"No county budget data for fiscal year {fiscal_year!r}."
+                    if canonical
+                    else f"{fiscal_year!r} is not a fiscal year label."
+                ),
+                "requested": fiscal_year,
+                "available_fiscal_years": available,
+                "solution": "Call GET /api/v1/counties/fiscal-years for the years that can be served, or omit fiscal_year to get the latest reported one.",
+            },
+        )
+    return ids
+
+
 def _latest_county_actuals_period_ids(db) -> Optional[List[int]]:
     """Period ids for the newest fiscal period with REAL county execution
     data. Preference order:
@@ -2743,19 +2896,12 @@ async def get_counties(fiscal_year: Optional[str] = None):
                 )
 
             # Resolve fiscal period IDs for the requested year
-            from models import FiscalPeriod as _FP
-
-            from seeding.utils import normalize_fiscal_label as _nlbl
-
             period_ids = None
             if fiscal_year:
-                try:
-                    canonical = _nlbl(fiscal_year)
-                    period_ids = [
-                        fp.id for fp in db.query(_FP).all() if fp.label == canonical
-                    ] or None
-                except (ValueError, IndexError):
-                    pass  # Ignore bad fiscal_year format, return unfiltered
+                # A year the API cannot serve is refused, not silently widened:
+                # leaving period_ids at None here skipped the filter below and
+                # summed EVERY period into one row.
+                period_ids = _resolve_requested_county_period_ids(db, fiscal_year)
             else:
                 # Default to the latest fiscal period WITH COUNTY ACTUALS
                 # (not merely the newest period — that picked projection
@@ -3011,6 +3157,15 @@ async def get_counties(fiscal_year: Optional[str] = None):
                             ),
                             1,
                         ),
+                        # Whether this row's budget is the Controller of
+                        # Budget's own CBIRR aggregate or the CRA model. The
+                        # list and compare pages carry the same standing
+                        # provenance note the detail page does, so they need
+                        # the same answer from the same rule. null when
+                        # nothing was published — absence has no source.
+                        "budget_source": _budget_provenance(
+                            class_by_cat, total_allocated
+                        ),
                         "development_budget": development_total,
                         "recurrent_budget": recurrent_total,
                         "sector_breakdown": sector_breakdown,
@@ -3058,6 +3213,84 @@ async def get_counties(fiscal_year: Optional[str] = None):
         )
 
 
+# NOTE: must stay ABOVE /api/v1/counties/{county_id} — FastAPI matches in
+# declaration order, and the parameterised route would otherwise capture
+# "fiscal-years" as a county id. tests/test_county_fiscal_years.py pins this.
+@app.get("/api/v1/counties/fiscal-years")
+@cached(key_prefix="counties:fiscal_years", ttl=1800)
+async def get_county_fiscal_years():
+    """Fiscal years county budget data exists for, and the one to show first.
+
+    The county explorer seeded its year picker from
+    ``getLatestReportedFiscalYear()`` — a label derived from ``new Date()``
+    with no reference to what the database holds. In September 2026 that is
+    "2025/26", the CRA equitable-share projection, so the explorer published
+    Baringo at KES 7.13B while the county's own page — which sends no year and
+    lets this API resolve the period — published KES 9.54B from the CBIRR.
+    Same county, same site, two budgets (credibility audit F7 again, this time
+    through the frontend's explicit ``fiscal_year``).
+
+    ``default`` is resolved by the SAME rule ``GET /counties`` applies when no
+    ``fiscal_year`` is passed, so the label the explorer prints and the figures
+    it fetched cannot describe different periods.
+
+    ``years`` lists only periods that actually carry county budget rows, each
+    with the provenance of that year's figures, so the picker never offers a
+    year with nothing behind it.
+
+    Both are ``None``/empty when no county budget data exists at all. Returning
+    a calendar-derived label there would reproduce the original defect.
+    """
+    if not DATABASE_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "Database unavailable",
+                "message": "Cannot resolve county fiscal years",
+                "solution": "Check database connectivity",
+            },
+        )
+
+    try:
+        with next(get_db()) as db:
+            # Same query the requested-year guard uses, so the years the
+            # picker offers and the years the API accepts are one set.
+            rows = _county_budget_period_rows(db)
+
+            default_ids = _latest_county_actuals_period_ids(db)
+            default_id = default_ids[0] if default_ids else None
+
+            years = [
+                {
+                    "label": r.label,
+                    # A year is CBIRR-reported when the Controller of Budget's
+                    # classification rows landed for it; otherwise its figures
+                    # are the CRA model. Same vocabulary as budget_source on
+                    # the county rows.
+                    "source": (
+                        BUDGET_SOURCE_COB_CBIRR
+                        if (r.classification_rows or 0) > 0
+                        else BUDGET_SOURCE_CRA_MODEL
+                    ),
+                    "counties": r.counties,
+                }
+                for r in rows
+                if r.label
+            ]
+            offered = {y["label"] for y in years}
+            default_label = next(
+                (r.label for r in rows if r.id == default_id and r.label), None
+            )
+            # Never name a default the picker does not offer.
+            if default_label not in offered:
+                default_label = None
+
+            return {"years": years, "default": default_label}
+    except Exception as e:
+        logging.error(f"Error fetching county fiscal years: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
 @app.get("/api/v1/counties/{county_id}")
 @cached(key_prefix="county", ttl=1800)  # Cache for 30 minutes
 async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
@@ -3084,21 +3317,13 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                 )
                 if e:
                     # Resolve fiscal period — same logic as list endpoint
-                    from models import FiscalPeriod as _FP
-
-                    from seeding.utils import normalize_fiscal_label as _nlbl
-
                     period_ids = None
                     if fiscal_year:
-                        try:
-                            canonical = _nlbl(fiscal_year)
-                            period_ids = [
-                                fp.id
-                                for fp in db.query(_FP).all()
-                                if fp.label == canonical
-                            ] or None
-                        except (ValueError, IndexError):
-                            pass
+                        # Same guard as the list endpoint — this block carried
+                        # the same silent widen-to-all-periods fallback.
+                        period_ids = _resolve_requested_county_period_ids(
+                            db, fiscal_year
+                        )
                     else:
                         # Latest fiscal period WITH county actuals — same
                         # honesty rule as the list endpoint (newest-by-
@@ -3316,6 +3541,15 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                             ),
                             1,
                         ),
+                        # Whether this row's budget is the Controller of
+                        # Budget's own CBIRR aggregate or the CRA model —
+                        # same rule as the list and /comprehensive, so a
+                        # caller cannot get three answers for one county.
+                        # null when nothing was published: absence has no
+                        # source, and naming one would describe no figure.
+                        "budget_source": _budget_provenance(
+                            class_by_cat, total_allocated
+                        ),
                         "development_budget": development_total,
                         "recurrent_budget": recurrent_total,
                         "sector_breakdown": sector_breakdown,
@@ -3405,18 +3639,12 @@ async def get_county_comprehensive(
             # --- Budget lines (scoped to requested FY, or latest executed) ---
             requested_period_id: Optional[int] = None
             if fiscal_year:
-                try:
-                    from seeding.utils import normalize_fiscal_label as _nlbl
-                    canonical = _nlbl(fiscal_year)
-                    fp_match = (
-                        db.query(DBFiscalPeriod)
-                        .filter(DBFiscalPeriod.label == canonical)
-                        .first()
-                    )
-                    if fp_match:
-                        requested_period_id = fp_match.id
-                except (ValueError, IndexError, ImportError):
-                    pass  # Bad format — fall through to auto-resolve
+                # This used to fall through to auto-resolve on a miss, serving
+                # a different period than the caller asked for. Same guard as
+                # the list endpoints, so all three answer a given year alike.
+                requested_period_id = _resolve_requested_county_period_ids(
+                    db, fiscal_year
+                )[0]
             budget_lines = _entity_period_budget_query(
                 db, entity.id, period_id=requested_period_id
             ).all()
@@ -3430,22 +3658,12 @@ async def get_county_comprehensive(
 
             # Provenance for the headline budget: does it come from parsed CoB
             # BIRR classification rows, or from the modelled sector/projection
-            # split? The frontend renders this string, so it must track the
-            # rows this response actually used.
-            _has_cob_rows = bool(
-                _class_by_cat.get("total", {}).get("allocated")
-                or _class_by_cat.get("development", {}).get("allocated")
-                or _class_by_cat.get("recurrent", {}).get("allocated")
-            )
-            _budget_provenance_label = (
-                "Controller of Budget — County Budget Implementation Review "
-                "Report (Total / Development / Recurrent aggregates). The "
-                "per-sector split below is modelled from the CRA "
-                "equitable-share formula, not read from the CBIRR."
-                if _has_cob_rows
-                else "Modelled from the CRA equitable-share formula — NOT "
-                "read from Controller of Budget CBIRR tables"
-            )
+            # split? The frontend renders both of these — the prose under the
+            # figure and, from the code, the standing provenance note at the
+            # top of the page — so they must track the rows this response
+            # actually used.
+            _budget_source = _budget_provenance(_class_by_cat, total_allocated)
+            _budget_provenance_label = _BUDGET_PROVENANCE_LABELS.get(_budget_source)
 
             # Resolve the fiscal year label so the frontend can display
             # "Budget FY2024/25" (e.g. if we selected the latest executed FY
@@ -3915,6 +4133,11 @@ async def get_county_comprehensive(
                     "per_capita_budget": per_capita_budget,
                     "sector_breakdown": sector_breakdown,
                     "fiscal_year": budget_fy_label,
+                    # "cob_cbirr" | "cra_model" | null. The page's provenance
+                    # note is rendered from this, so a period showing the
+                    # Controller of Budget's own aggregates stops being
+                    # described to the reader as a CRA model.
+                    "source": _budget_source,
                 },
                 # Revenue
                 "revenue": {

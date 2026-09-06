@@ -158,11 +158,85 @@ export function getCurrentFiscalYear(): string {
  * prior to the currently active FY. Execution data (actual spending, audits)
  * isn't published until well after year-end, so UI defaults that require
  * actuals should use this, not `getCurrentFiscalYear()`.
+ *
+ * This is a calendar guess: it assumes a report exists for last FY because the
+ * date has passed, which is not the same as it having landed. Prefer
+ * `resolveExplorerYear()` wherever the API can say what it actually holds.
  */
 export function getLatestReportedFiscalYear(): string {
   const now = new Date();
   const startYear = now.getMonth() >= 6 ? now.getFullYear() - 1 : now.getFullYear() - 2;
   return `${startYear}/${String(startYear + 1).slice(-2)}`;
+}
+
+/** What `GET /api/v1/counties/fiscal-years` reports. */
+export interface CountyFiscalYears {
+  years: Array<{
+    label: string;
+    /** 'cob_cbirr' — the Controller of Budget reported this year;
+     *  'cra_model' — its figures are the CRA equitable-share model. */
+    source: 'cob_cbirr' | 'cra_model';
+    counties: number;
+  }>;
+  /** The year the API resolves to when asked for none. Null when it holds no
+   *  county budget data at all. */
+  default: string | null;
+}
+
+/**
+ * The fiscal year the county explorer should show.
+ *
+ * The explorer used to seed its picker with `getLatestReportedFiscalYear()`,
+ * a label derived from `new Date()`. On 2026-09-05 that is "2025/26" — the CRA
+ * equitable-share projection — so the explorer asked for that year and
+ * published Baringo at KES 7.13B, while the county's own page sends no year,
+ * lets the API resolve the period from the rows that exist, and published
+ * KES 9.54B from the Controller of Budget's CBIRR. Same county, two budgets
+ * (credibility audit F7, reopened through the frontend's explicit
+ * `fiscal_year`).
+ *
+ * `meta.default` is resolved by the same rule `GET /counties` applies when
+ * given no year, so the label the page prints and the figures it fetched
+ * cannot describe different periods.
+ *
+ * Returns `undefined` when the API offers no years — the picker then has
+ * nothing to show, which is the honest answer. Falling back to a calendar
+ * label here would put a year on screen that nothing in the database supports.
+ */
+export function resolveExplorerYear(
+  picked: string | undefined,
+  meta: CountyFiscalYears | undefined
+): string | undefined {
+  const offered = meta?.years.map((y) => y.label) ?? [];
+  // A stored or bookmarked choice only stands while the API still offers it.
+  if (picked && offered.includes(picked)) return picked;
+  return meta?.default ?? undefined;
+}
+
+/**
+ * A requested fiscal year, or `undefined` when the API would refuse it.
+ *
+ * The API no longer answers a `fiscal_year` it holds no county budget data
+ * for — it used to skip the period filter entirely and sum every period into
+ * one figure. It now returns 404, so a county page reached with a stale `?fy=`
+ * bookmark would render "Failed to load county data": wrong twice over, since
+ * the county loads fine and only the year is unavailable.
+ *
+ * Dropping the year sends the reader to the period the API resolves itself,
+ * which the page labels on screen — a dropped request, not a substituted
+ * figure.
+ *
+ * `meta === undefined` means the year list has not arrived, which is not the
+ * same as the year being refused: passing the request through keeps the common
+ * path to a single fetch, and a genuinely bad year self-corrects once the list
+ * lands.
+ */
+export function serviceableFiscalYear(
+  requested: string | undefined,
+  meta: CountyFiscalYears | undefined
+): string | undefined {
+  if (!requested || !meta) return requested;
+  return meta.years.some((y) => y.label === requested) ? requested : undefined;
 }
 
 /**
