@@ -7,7 +7,7 @@ import json
 import logging
 import os
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
@@ -125,6 +125,11 @@ _FIXTURE_DECLARATIONS: Dict[str, Dict[str, Any]] = {
         "date_field": ("metadata", "report_date"),
         "declared_date": "2024-12-15",
         "live_source": "audits",
+        # This entry had no check, so _supersession() returned False for it
+        # unconditionally and 630 days of age could never be cleared by any
+        # amount of live seeding — nothing was asking. It is the OLDEST of the
+        # three, so it is also the file the stale message named.
+        "superseded_check": "national_audit_findings",
     },
     "enhanced_county_data.json": {
         # This file's own metadata describes its figures as
@@ -434,10 +439,88 @@ def _county_reference_data_superseded(session: Session) -> Tuple[bool, str]:
     )
 
 
+def _national_audit_findings_superseded(session: Session) -> Tuple[bool, str]:
+    """Can anything in ``oag_national_audit_data.json`` still reach a reader?
+
+    This file had no check at all, so it was stale forever at 630 days and was
+    the one the ``fixture_stale`` message named — the nightly's CRITICAL.
+
+    Two surfaces, and BOTH must be closed:
+
+    ``Audit`` rows      via ``_seed_federal_audits``, hung off the source
+        document this file mints. ``_ensure_source_document`` takes the URL
+        from the file's own metadata block, which has no ``url`` key, so the
+        column is NULL and ``publishable_audit_criterion`` withholds every row
+        on it. Asked of the DATABASE rather than assumed: that function matches
+        on (country_id, title), so a real document with the same title would be
+        reused and merged, and the rows would publish again.
+    ``audit_opinion_summary`` + ``metadata`` — NOT read through the database at
+        all. ``/audits/federal`` opens this file off disk (main.py) and gates it
+        with ``file_source_provenance_failure``, which withholds it for citing
+        ``https://www.oagkenya.go.ke`` — a homepage, not a document.
+
+    Note what this deliberately does NOT claim: that national audit findings
+    are arriving. That question belongs to ``TableRule("Audit findings",
+    dataset_id="oag_national_audits")``, and answering it here would let a
+    silent extractor hide behind a withheld fixture.
+    """
+    from services.publication_gate import (
+        file_source_provenance_failure,
+        publishable_audit_criterion,
+    )
+
+    try:
+        payload = json.loads(NATIONAL_AUDIT_PATH.read_text())
+    except Exception as exc:  # noqa: BLE001 - unreadable means unproven
+        return False, f"could not read {NATIONAL_AUDIT_PATH.name}: {exc}"
+
+    outstanding: List[str] = []
+
+    # --- the Audit rows this file writes ---
+    doc_ids = _fixture_document_ids(session, NATIONAL_AUDIT_PATH.name)
+    if doc_ids:
+        publishable = (
+            session.query(Audit)
+            .filter(
+                Audit.source_document_id.in_(doc_ids),
+                publishable_audit_criterion(),
+            )
+            .count()
+        )
+        if publishable:
+            outstanding.append(
+                f"{publishable} audit row(s) minted from this file would still "
+                f"be published — the publication gate resolves their source "
+                f"document"
+            )
+
+    # --- the opinion summary /audits/federal reads straight off disk ---
+    gate = file_source_provenance_failure(payload.get("metadata"))
+    if gate is None:
+        outstanding.append(
+            "its audit opinion summary would be published — this file's own "
+            "metadata now satisfies the publication gate"
+        )
+
+    if outstanding:
+        return False, (
+            f"still served from {NATIONAL_AUDIT_PATH.name}: "
+            + "; ".join(outstanding)
+        )
+
+    findings = len(payload.get("national_audit_findings") or [])
+    return True, (
+        f"none of the {findings} national finding(s) here can reach a reader: "
+        f"every audit row minted from this file is withheld by the publication "
+        f"gate, and its opinion summary is withheld for {gate}"
+    )
+
+
 #: Named so the declaration table stays plain data.
 _SUPERSESSION_CHECKS: Dict[str, Callable[[Session], Tuple[bool, str]]] = {
     "county_audit_findings": _county_audit_findings_superseded,
     "county_reference_data": _county_reference_data_superseded,
+    "national_audit_findings": _national_audit_findings_superseded,
 }
 
 
@@ -1764,6 +1847,45 @@ def _seed_national_budget(session: Session) -> None:
         logger.warning("national_budget seed skipped: %s", exc)
 
 
+#: How long a RUNNING ingestion row is taken at its word. The seeding CLI's own
+#: ceiling is SEED_TOTAL_TIMEOUT_SECONDS (1320s = 22 min in seed.yml), so an
+#: hour is comfortably past any healthy run. Beyond it the row is assumed to be
+#: the debris of a crashed run: a process that died mid-domain leaves RUNNING
+#: behind forever, and honouring that would wedge every future boot into a
+#: no-op — trading a timeout for a silent, permanent one.
+DEFER_TO_SEED_WITHIN_MINUTES = 60
+
+
+def _seed_run_in_flight(session: Session) -> Optional[str]:
+    """The domain of a seeding run currently writing, if there is one.
+
+    Bootstrap and the nightly both write ``audits``. When they overlap, one
+    blocks on the other's row locks until the database's statement timeout
+    fires — see ``test_bootstrap_defers_to_a_live_seed`` for the run this comes
+    from. Bootstrap is the side that yields: its input is a git-tracked file
+    that will still be there in twenty minutes, while the seed run is fetching
+    from publishers on a clock it cannot restart.
+
+    ``BOOTSTRAP_DOMAIN`` is excluded deliberately. Two web processes starting
+    together would otherwise each see the other's RUNNING row and both defer,
+    turning a race into a guaranteed no-op.
+    """
+    cutoff = datetime.now(timezone.utc) - timedelta(
+        minutes=DEFER_TO_SEED_WITHIN_MINUTES
+    )
+    row = (
+        session.query(IngestionJob)
+        .filter(
+            IngestionJob.status == IngestionStatus.RUNNING,
+            IngestionJob.domain != BOOTSTRAP_DOMAIN,
+            IngestionJob.started_at >= cutoff.replace(tzinfo=None),
+        )
+        .order_by(IngestionJob.started_at.desc())
+        .first()
+    )
+    return row.domain if row else None
+
+
 def initialize_reference_data(
     code_lookup: Optional[Dict[str, str]] = None, *, force: bool = False
 ) -> None:
@@ -1776,6 +1898,33 @@ def initialize_reference_data(
     (e.g. federal audit findings) is picked up on restart without
     needing `--force`.
     """
+    # Yield to a seed run that is already writing. Nothing here is urgent —
+    # these are git-tracked files — and the alternative is a row-lock wait that
+    # ends in the database's statement timeout, which costs three things at
+    # once: a FAILED ingestion row that the nightly's 30-minute results window
+    # counts as its own domain failure, a web process that never reaches
+    # `_app_ready`, and no bootstrap either way.
+    #
+    # No IngestionJob is recorded: this run did not happen, and a fixture-mode
+    # row saying otherwise would be read by check_ingestion_freshness as a
+    # bootstrap that served a fixture.
+    if not force:
+        probe = SessionLocal()
+        try:
+            busy = _seed_run_in_flight(probe)
+        except Exception:  # noqa: BLE001 - a probe must never be the failure
+            busy = None
+        finally:
+            probe.close()
+        if busy:
+            logger.warning(
+                "bootstrap: deferring — the '%s' seeding domain is writing "
+                "now, and both write `audits`. The weekly bootstrap job owns "
+                "this refresh; nothing here is time-critical.",
+                busy,
+            )
+            return
+
     # Fast-path check — skip the expensive county loop only. National
     # seeders further down still run so newly added data files get picked
     # up even when the county entities are already in place.

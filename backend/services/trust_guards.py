@@ -235,9 +235,29 @@ _FISCAL_BANDS_BILLION: dict[str, tuple[float, float]] = {
 # recent years — these are real, curated values that the band FLOORS reject:
 #
 #   FY2010/11 total_revenue        641B   (floor 1,000B)
-#   FY2017/18 debt_service_cost    363B   (floor   400B)
 #   FY2018/19 appropriated_budget 1,924B  (floor 2,000B)
+#
+# Both come from World Bank LCU government-finance series (GC.REV.TOTL.CN,
+# GC.XPN.TOTL.CN) and are the measure their field names claim.
+#
+# This list USED TO CITE two more, and they were not real:
+#
+#   FY2017/18 debt_service_cost    363B   (floor   400B)
 #   FY2020/21 debt_service_cost    318B   (floor   400B)
+#
+# Those were DT.TDS.DECT.CD — debt service on EXTERNAL debt — written into a
+# field this dataset defines as interest plus redemptions, domestic AND
+# external. They are roughly a third of the real figure, and the exemption
+# below was calibrated partly on them: contaminated data cited as evidence for
+# where the floors should sit, which then exempted the years carrying it from
+# the only check that would have caught it. The fetcher no longer fills
+# debt_service_cost from that series, so those years now hold no debt-service
+# figure at all and the band skips them for absence rather than by era.
+#
+# Worth keeping straight when reading the two survivors above: the era cutoff
+# is still right for total_revenue and appropriated_budget, which really do
+# grow through the floors. It was only ever wrong as applied to
+# debt_service_cost, and the fix was upstream of the band, not in it.
 #
 # The cutoff is therefore set where the current floors actually hold, not
 # where the warnings happen to stop: FY2021/22 is the first year every

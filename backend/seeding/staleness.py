@@ -53,6 +53,26 @@ WARN = "WARN"
 #: machine-readable publisher). Adding a reason here is a decision that the
 #: gap is known and accepted — not a way to quiet a broken fetch.
 DECLARED_NO_SOURCE_REASONS = frozenset({"no_live_source"})
+
+#: Reasons meaning "this fixture is still READ, but nothing in it can reach a
+#: reader" — the live domain took over and the file is vestigial. Kept apart
+#: from DECLARED_NO_SOURCE_REASONS because it is the opposite statement: not
+#: "no extractor exists" but "the extractor exists and it delivered".
+#:
+#: Without this the gate could not express the healthiest state the design
+#: produces. ``bootstrap_provenance`` always reports ``source_mode="fixture"``
+#: — bootstrap reads git-tracked files by definition and has no publisher of
+#: its own — so a fully superseded bootstrap landed in the all-fixture branch
+#: and was reported CRITICAL. The WEAKER claim (no_live_source: nobody ever
+#: built an extractor) warned, while the STRONGER one (verified this run
+#: against the database: every fixture vestigial) failed the nightly. A domain
+#: in the best state it can reach was indistinguishable from a broken one.
+#:
+#: This is NOT a general-purpose exemption. bootstrap only emits it from
+#: ``_supersession()``, which demands per-file evidence from the DATABASE and
+#: returns False on any doubt — no session, an unregistered check, a raising
+#: check. And it stays WARN, never OK: a git-tracked file is still being read.
+SUPERSEDED_REASONS = frozenset({"fixture_superseded"})
 OK = "OK"
 
 
@@ -313,6 +333,43 @@ def check_ingestion_freshness(
                 if (j.meta or {}).get("source_fallback_reason")
             }
             declared = bool(reasons) and reasons <= DECLARED_NO_SOURCE_REASONS
+            superseded = bool(reasons) and reasons <= SUPERSEDED_REASONS
+            # WHICH file, not just "a fixture". bootstrap already records the
+            # offending filename and its age in `source_fallback_detail`; the
+            # gate dropped it, so "reasons: fixture_stale" named none of the
+            # three files it reads and the message could not be acted on. Take
+            # the newest run's detail — the others describe runs already
+            # superseded by it.
+            detail = next(
+                (
+                    d
+                    for d in (
+                        (j.meta or {}).get("source_fallback_detail")
+                        for j in sorted(
+                            jobs,
+                            key=lambda j: (j.started_at is not None, j.started_at),
+                            reverse=True,
+                        )
+                    )
+                    if d
+                ),
+                None,
+            )
+            suffix = f" — {detail}" if detail else ""
+            if superseded:
+                findings.append(
+                    Finding(
+                        # Never OK: a git-tracked file is still being read, and
+                        # a reader of this line should still see that.
+                        WARN,
+                        f"{domain} ingestion",
+                        f"served from a FIXTURE in all {len(modes)} recent "
+                        f"run(s), but every file is SUPERSEDED — verified "
+                        f"against the database this run, nothing in them "
+                        f"reaches a reader{suffix}",
+                    )
+                )
+                continue
             findings.append(
                 Finding(
                     # A domain that has never HAD a live source is undelivered,
@@ -336,6 +393,7 @@ def check_ingestion_freshness(
                         f"served from a FIXTURE in all {len(modes)} recent "
                         f"run(s) — the publisher was never successfully read "
                         f"(reasons: {', '.join(sorted(reasons)) or 'unrecorded'})"
+                        f"{suffix}"
                     ),
                 )
             )

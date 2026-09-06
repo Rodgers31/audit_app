@@ -316,7 +316,13 @@ jobs:
   # ══════════════════════════════════════════════════════════════════
   bootstrap:
     name: Bootstrap Reference Data
-    needs: migrate
+    # AFTER seed, not beside it. Both write `audits`, and on `needs: migrate`
+    # they started within a second of each other every Sunday — the collision
+    # that ended run 34008714644 in a statement timeout. Bootstrap now also
+    # defers at runtime when it sees a seed run in flight
+    # (bootstrap._seed_run_in_flight), so ordering the jobs here is what keeps
+    # the weekly refresh from deferring itself into a permanent no-op.
+    needs: [migrate, seed]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     if: >-

@@ -43,11 +43,19 @@ CANONICAL_BUDGET_BASIS = "cob_gross"
 # opting a row in costs one JSON key.
 _ALLOW_UNDECLARED_BASIS = False
 
-# World Bank indicator codes for Kenya
+# World Bank indicator codes for Kenya.
+#
+# The DT.* pair is EXTERNAL-ONLY. "total" inside those World Bank names means
+# total external — long-term + IMF + short-term — not total including domestic,
+# and Kenya's domestic side is the larger half of both. The alias for
+# DT.TDS.DECT.CD used to read `total_debt_service_usd`, and under that name it
+# was written to `debt_service_cost`, a field this dataset defines as "interest
+# payments PLUS principal redemptions (domestic + external)". The scope now
+# lives in the alias so the next reader cannot make the same substitution.
 _WB_INDICATORS: Dict[str, str] = {
     "GC.XPN.TOTL.CN": "government_expenditure_lcu",
     "DT.DOD.DECT.CD": "external_debt_stocks_usd",
-    "DT.TDS.DECT.CD": "total_debt_service_usd",
+    "DT.TDS.DECT.CD": "external_debt_service_usd",
     "GC.REV.TOTL.CN": "government_revenue_lcu",
 }
 
@@ -78,7 +86,7 @@ def fetch_fiscal_summary_payload(
         try:
             wb_data = _fetch_worldbank_fiscal_data(client, settings)
             if wb_data:
-                payload = _merge_worldbank_data(payload, wb_data, client)
+                payload = _merge_worldbank_data(payload, wb_data)
                 wb_applied = True
                 wb_years = len(wb_data)
                 logger.info(
@@ -820,7 +828,6 @@ def _calendar_year_to_fy(year: int) -> str:
 def _merge_worldbank_data(
     payload: Dict[str, Any],
     wb_data: Dict[str, Dict[str, float]],
-    client=None,
 ) -> Dict[str, Any]:
     """Merge World Bank data into the fixture payload.
 
@@ -853,36 +860,50 @@ def _merge_worldbank_data(
             if rev_lcu:
                 new_entry["total_revenue"] = round(rev_lcu / 1e9, 1)
 
-            # USD figures are converted at the official rate FOR THIS YEAR,
-            # fetched from the World Bank's own PA.NUS.FCRF series. A frozen
-            # 130.0 used to stand in here; it was 3.7% out against 2024 and
-            # drifted further every year while reading as a checked number.
-            # Without a rate the field is omitted rather than guessed.
-            from ..national_debt.fx import usd_kes_rate_for_year
-
-            kes_rate = (
-                usd_kes_rate_for_year(client, cal_year)
-                if client is not None
-                else None
-            )
-            if kes_rate is None:
-                logger.warning(
-                    "No USD/KES rate for %s; omitting the USD-derived fiscal "
-                    "fields rather than converting at a guess",
-                    cal_year,
-                )
-            else:
-                ds_usd = indicators.get("total_debt_service_usd")
-                if ds_usd:
-                    new_entry["debt_service_cost"] = round(
-                        ds_usd * float(kes_rate) / 1e9, 1
-                    )
-
-                ext_debt_usd = indicators.get("external_debt_stocks_usd")
-                if ext_debt_usd:
-                    new_entry["actual_debt"] = round(
-                        ext_debt_usd * float(kes_rate) / 1e9, 1
-                    )
+            # `debt_service_cost` and `actual_debt` are NOT filled from the
+            # World Bank here, though the indicators for both are fetched.
+            #
+            # DT.TDS.DECT.CD is debt service on EXTERNAL debt and
+            # DT.DOD.DECT.CD is EXTERNAL debt stock, while the fields they were
+            # written to are national totals: `debt_service_cost` is defined by
+            # this dataset as "interest payments PLUS principal redemptions
+            # (domestic + external)", and `actual_debt` is the total public debt
+            # the (repealed) ceiling was measured against. Kenya's domestic side
+            # is the larger half of both, so these rows understated the figure
+            # by roughly two thirds while looking entirely well-formed.
+            #
+            # What that cost: FY2021/22 came out at 393B beside the fixture's
+            # own FY2022/23 of 1,162B on the real definition. Only that one year
+            # was ever caught, by the trust_guards band, because it is the first
+            # year of the band era — and being caught, it was never written.
+            # Every EARLIER year took the `historical` exemption, skipped the
+            # band, and WAS written: those rows carry an external-only figure in
+            # a total's column to this day. The exemption's own comment then
+            # cited two of them as "real, curated" evidence for where the floors
+            # should sit, which is how the contamination came to justify the
+            # rule that hid it.
+            #
+            # They did not reach a reader, but not because anything noticed the
+            # measure was wrong: /api/v1/fiscal/summary drops rows carrying
+            # fewer than 3 of its 4 headline fields, and a World Bank stub has
+            # 2. That filter is aimed at SPARSENESS. A stub that ever gained a
+            # third field would publish the bad figure, and the fact table is
+            # wrong either way.
+            #
+            # A partial measure under a total's name is a claim the source does
+            # not support, so the field is omitted — the same choice the missing
+            # exchange rate below already makes. Absence, never a stand-in
+            # number. Fixture years FY2022/23 onward are unaffected: they carry
+            # Treasury APDMR figures and this branch only builds years the
+            # fixture does not have.
+            #
+            # A correctly-named external series would be a separate field; the
+            # national_debt domain already owns external debt.
+            #
+            # These were the only two USD-denominated fields here, so the
+            # USD/KES conversion goes with them — along with the `client` this
+            # function took solely to fetch that rate. Nothing in this branch
+            # crosses currencies now: both remaining series are World Bank LCU.
 
             if len(new_entry) > 1:  # has at least one data field
                 new_entry["_source"] = "world_bank_api"
