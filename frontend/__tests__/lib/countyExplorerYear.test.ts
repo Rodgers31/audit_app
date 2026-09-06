@@ -18,10 +18,12 @@
  * figures cannot describe different periods.
  */
 import {
+  generateFiscalYears,
   getLatestReportedFiscalYear,
   moneyFlowDefaultYear,
   resolveExplorerYear,
   serviceableFiscalYear,
+  transparencyYearOptions,
 } from '@/lib/utils';
 
 /** The live payload on 2026-09-05, abridged. */
@@ -146,5 +148,70 @@ describe('moneyFlowDefaultYear', () => {
     expect(
       moneyFlowDefaultYear(undefined, 'FY2024/25', { years: [], default: null })
     ).toBeUndefined();
+  });
+});
+
+/**
+ * The national Follow the Money page (/transparency) took its years from
+ * /audits/fiscal-years — every FiscalPeriod row — and its default from a
+ * wall-clock "current FY".
+ *
+ * On 2026-09-06 that current FY was 2026/27, which is in no list at all, so
+ * the page fired two money-flow requests for a year with nothing behind it,
+ * then corrected to years[0] = FY2025/26: the CRA projection (405,100m)
+ * rather than the CBIRR-reported FY2024/25 (633,304m).
+ *
+ * Four of the eight pills it offered — FY2025/26 9M, FY2025/26 H1, FY2021/22,
+ * FY2020/21 — are periods with no county budget rows, so clicking them
+ * emptied the page.
+ */
+const TRANSPARENCY_META = {
+  years: [
+    { label: 'FY2025/26', source: 'cra_model' as const, counties: 47 },
+    { label: 'FY2024/25', source: 'cob_cbirr' as const, counties: 47 },
+    { label: 'FY2023/24', source: 'cra_model' as const, counties: 47 },
+    { label: 'FY2022/23', source: 'cra_model' as const, counties: 47 },
+  ],
+  default: 'FY2024/25',
+};
+
+describe('transparencyYearOptions', () => {
+  afterEach(() => jest.useRealTimers());
+
+  it('defaults to the reported year, not the one the calendar is in', () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-09-06T00:00:00Z'));
+    expect(transparencyYearOptions(TRANSPARENCY_META).default).toBe('2024/25');
+    // The two labels the page used to reach for, neither of them this one.
+    expect(getLatestReportedFiscalYear()).toBe('2025/26');
+    expect(generateFiscalYears()[0]).toBe('2026/27');
+  });
+
+  it('offers only years with county budget data behind them', () => {
+    const { years } = transparencyYearOptions(TRANSPARENCY_META);
+    expect(years).toEqual(['2025/26', '2024/25', '2023/24', '2022/23']);
+    // Periods that exist but carry no county rows must not be offered.
+    expect(years).not.toContain('2025/26 9M');
+    expect(years).not.toContain('2021/22');
+  });
+
+  it('strips the FY prefix so the picker and the selection compare equal', () => {
+    // A mismatched form is what left no pill highlighted on load (F37).
+    for (const y of transparencyYearOptions(TRANSPARENCY_META).years) {
+      expect(y).toMatch(/^\d{4}\/\d{2}$/);
+    }
+  });
+
+  it('offers the default among the years', () => {
+    const { years, default: def } = transparencyYearOptions(TRANSPARENCY_META);
+    expect(def).toBeDefined();
+    expect(years).toContain(def!);
+  });
+
+  it('reports nothing rather than guessing when the API says nothing', () => {
+    expect(transparencyYearOptions(undefined)).toEqual({ years: [], default: undefined });
+    expect(transparencyYearOptions({ years: [], default: null })).toEqual({
+      years: [],
+      default: undefined,
+    });
   });
 });

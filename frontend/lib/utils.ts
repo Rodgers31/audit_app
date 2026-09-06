@@ -263,6 +263,36 @@ export function moneyFlowDefaultYear(
 }
 
 /**
+ * Year options for the national Follow the Money page, in the bare
+ * "YYYY/YY" form its picker compares on.
+ *
+ * That page took its years from `/audits/fiscal-years` — every `FiscalPeriod`
+ * row — and its default from a wall-clock "current FY". On 2026-09-06 the
+ * current FY was 2026/27, which appears in no list at all, so the page fired
+ * two money-flow requests for a year with nothing behind it before correcting
+ * to the newest list entry: FY2025/26, the CRA projection (405,100m) rather
+ * than the CBIRR-reported FY2024/25 (633,304m).
+ *
+ * Four of the eight pills it offered — FY2025/26 9M, FY2025/26 H1, FY2021/22,
+ * FY2020/21 — are periods carrying no county budget rows, so clicking them
+ * emptied the page.
+ *
+ * Both now come from `/counties/fiscal-years`, the same source the county
+ * pages use. Empty when the API says nothing: a calendar-derived label here is
+ * what put the page on a year its own picker did not offer.
+ */
+export function transparencyYearOptions(meta: CountyFiscalYears | undefined): {
+  years: string[];
+  default: string | undefined;
+} {
+  const strip = (y: string) => y.replace(/^FY\s*/i, '').trim();
+  return {
+    years: meta?.years.map((y) => strip(y.label)) ?? [],
+    default: meta?.default ? strip(meta.default) : undefined,
+  };
+}
+
+/**
  * Generate an array of Kenyan fiscal year labels starting from the current year going back.
  */
 export function generateFiscalYears(count = 5): string[] {
