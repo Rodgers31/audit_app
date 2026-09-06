@@ -27,9 +27,11 @@
  * is what `next dev` does (Next 15, `reactStrictMode` unset = on). Without the
  * StrictMode wrapper the pre-fix code passes, so the wrapper is the fixture.
  *
- * The POPULATION column is the one that mattered: the sidebar's SORT BY select
- * offers `population-desc` and no ascending twin, so "smallest county first"
- * was reachable only through this header.
+ * The POPULATION column is the one that mattered. The sidebar's SORT BY select
+ * used to offer `population-desc` with no ascending twin, so "fewest people
+ * first" was reachable only through this header — the toggle that was broken.
+ * The select now carries both directions, and the second half of this file
+ * covers it: two controls, one piece of sort state, which must agree.
  */
 import '@testing-library/jest-dom';
 import { fireEvent, render, screen, within } from '@testing-library/react';
@@ -150,6 +152,15 @@ function header(name: RegExp): HTMLElement {
   return within(rankingTable()).getByRole('columnheader', { name });
 }
 
+/** The sidebar's SORT BY select — the one carrying the sort options. */
+function sortSelect(): HTMLSelectElement {
+  const select = Array.from(document.querySelectorAll('select')).find((s) =>
+    Array.from(s.options).some((o) => o.value === 'population-desc')
+  );
+  if (!select) throw new Error('SORT BY select not rendered');
+  return select;
+}
+
 /** What the header's arrow claims the direction is: ↑ asc, ↓ desc, none. */
 function arrow(name: RegExp): 'asc' | 'desc' | 'none' {
   const text = header(name).textContent ?? '';
@@ -202,5 +213,48 @@ describe('County Explorer — column header sort toggle under StrictMode', () =>
     fireEvent.click(header(/population/i));
     expect(arrow(/population/i)).toBe('desc');
     expect(rankedNames()).toEqual(BY_POPULATION_DESC);
+  });
+});
+
+/* ── the sidebar select ─────────────────────────────────────────────── */
+
+describe('County Explorer — the sidebar SORT BY select', () => {
+  it('offers population in both directions, not just high → low', () => {
+    renderExplorer(COUNTIES);
+
+    const options = Array.from(sortSelect().options).map((o) => [o.value, o.textContent] as const);
+    const values = options.map(([v]) => v);
+
+    // Every column the select offers should be reachable both ways round; the
+    // ascending half of population was missing, which left the column header
+    // as the only route to "fewest people first".
+    expect(values).toContain('population-desc');
+    expect(values).toContain('population-asc');
+    expect(options).toContainEqual(['population-asc', 'Population (Low → High)']);
+  });
+
+  it('sorts fewest people first when the ascending option is chosen', () => {
+    renderExplorer(COUNTIES);
+    expect(rankedNames()).toEqual(BY_BUDGET_DESC);
+
+    fireEvent.change(sortSelect(), { target: { value: 'population-asc' } });
+    expect(rankedNames()).toEqual(BY_POPULATION_ASC);
+
+    // The header must agree with the select rather than contradict it — both
+    // drive the same single piece of sort state.
+    expect(arrow(/population/i)).toBe('asc');
+  });
+
+  it('still sorts most people first on the descending option', () => {
+    renderExplorer(COUNTIES);
+
+    fireEvent.change(sortSelect(), { target: { value: 'population-desc' } });
+    expect(rankedNames()).toEqual(BY_POPULATION_DESC);
+    expect(arrow(/population/i)).toBe('desc');
+
+    // And the two options are genuinely distinct, rather than both landing on
+    // whichever direction the sort happened to be in already.
+    fireEvent.change(sortSelect(), { target: { value: 'population-asc' } });
+    expect(rankedNames()).toEqual(BY_POPULATION_ASC);
   });
 });

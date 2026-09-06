@@ -711,6 +711,7 @@ function FiltersSidebar({
               <option value='budget-asc'>{t('counties.sort.budget_low_high')}</option>
               <option value='debt-desc'>{t('counties.sort.debt_high_low')}</option>
               <option value='population-desc'>{t('counties.sort.population_high_low')}</option>
+              <option value='population-asc'>{t('counties.sort.population_low_high')}</option>
               <option value='health-desc'>{t('counties.sort.grade_best_worst')}</option>
               <option value='utilization-desc'>{t('counties.sort.execution_high_low')}</option>
             </select>
