@@ -659,7 +659,13 @@ export default function CountyDetailClient() {
                   clause and the separator with it. */}
               <p className='text-sm text-white/75 mt-1.5 max-w-md'>
                 {[
-                  typeof data.demographics.population === 'number'
+                  // A county nobody has counted gets no residents clause at
+                  // all. "— residents" is a phrase about nothing, and the
+                  // map tooltip already drops the wording rather than printing
+                  // it around an em dash. The KPI tile in the Overview tab
+                  // keeps its em dash — there the label "Population" supplies
+                  // the subject the dash is standing in for.
+                  data.demographics.population != null
                     ? `${fmtPop(data.demographics.population)} ${t('county.hero.residents')}`
                     : null,
                   data.economic_profile.economic_base

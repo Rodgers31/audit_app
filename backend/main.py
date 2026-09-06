@@ -1214,14 +1214,21 @@ def transform_county_data_for_frontend(backend_data: Dict, county_id: str) -> Di
 
     # Derive commonly used fields for the frontend
     name = backend_data.get("county", "")
-    population = basic_info.get("population") or backend_data.get("population", 0)
+    # Absence stays absence on this path too. The DB path in
+    # /api/v1/counties/{id} answers null for a county with no census row; this
+    # fallback answered 0, so one endpoint carried two conventions depending on
+    # which path served the request. `or` is not used here because it treats a
+    # source-stated 0 as a missing key.
+    population = basic_info.get("population")
+    if population is None:
+        population = backend_data.get("population")
     budget_2025 = basic_info.get("budget_2025") or backend_data.get("budget_2025", 0)
     revenue_2024 = basic_info.get("revenue_2024") or backend_data.get("revenue_2024", 0)
 
     return {
         "id": county_id,
         "name": name,
-        "population": population or 0,
+        "population": population,
         # Commonly referenced budget fields in the UI
         "budget_2025": budget_2025 or 0,
         "totalBudget": budget_2025 or 0,
@@ -3923,18 +3930,27 @@ async def get_county_comprehensive(
             coords = COUNTY_COORDINATES.get(county_id, [36.8219, -1.2921])
 
             # --- Per-capita stats ---
-            # The census, or nothing. The rung below this one read
-            # entity.meta["metrics"]["population"] — bootstrap's copy of the
-            # same 2019 count, except for Mandera, where it held 1,200,890
-            # against the census's 867,457 — and when that was missing too it
-            # defaulted to 0, which says a county has no residents and takes
-            # per-capita budget down with it. Both are gone: the stored copy
-            # was deleted with the rest of the modelled metrics
-            # (bootstrap.purge_modelled_county_metrics), and absence is now
-            # published as absence.
+            # The census row, or nothing — the rule the four sibling county
+            # endpoints already follow. The second rung this replaces read
+            # entity.meta.metrics[FY]["population"], bootstrap's copy of the
+            # same KNBS 2019 count out of enhanced_county_data.json. The count
+            # is real; what it lacks is everything that makes it citable. It
+            # arrives with no source document and no year, so it would print
+            # beside the population_year, sex split and density directly below
+            # — all of which correctly report absence — and the same county
+            # would answer 866,820 here and null on /counties, /counties/{id},
+            # /summary and its accountability bracket. And when even the meta
+            # copy was missing, `, 0)` published the claim that nobody lives
+            # there. 2760328 verified against production that all 47 counties
+            # have a PopulationData row, so this rung is unreachable today.
             population = pop.total_population if pop else None
+            # A share of a budget cannot be computed without a denominator,
+            # and 0 is not the answer to "what is each resident's share?" —
+            # it is the answer to a question nobody asked.
             per_capita_budget = (
-                round(total_allocated / population, 2) if population else None
+                round(total_allocated / population, 2)
+                if population
+                else None
             )
             per_capita_debt = (
                 round(total_debt / population, 2)
@@ -5961,9 +5977,19 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
         .order_by(DBPopulationData.year.desc())
         .first()
     )
-    population = pop_data.total_population if pop_data else 0
+    population = pop_data.total_population if pop_data else None
 
-    if population < 500_000:
+    # No census row, no bracket. Bucketing an uncounted county on 0 filed it
+    # under "<500k" — Kenya's smallest bracket — and the county page then
+    # printed "vs <500k Average" over an Above/Below verdict against a peer
+    # group the county was never shown to belong to. The frontend's
+    # `peer.population_bracket || t('...bracket_fallback')` rung labels the
+    # card "vs Population Bracket Average" when this is None, and its null
+    # check on population_bracket_avg renders an em dash with "Not enough
+    # sourced data to compare" — which is what we know.
+    if population is None:
+        pop_bracket = None
+    elif population < 500_000:
         pop_bracket = "<500k"
     elif population < 1_000_000:
         pop_bracket = "500k-1M"
@@ -6095,18 +6121,28 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
             region_grades.append(pg)
 
     # Population-bracket peers: iterate every county and keep same-bracket ones.
-    for cid, cname in COUNTY_MAPPING.items():
-        if cid == county_id:
-            continue
-        ce = peers_by_name.get(f"{cname} County")
-        if not ce:
-            continue
-        cpop = peer_pop_by_entity.get(ce.id, 0)
-        if _bracket_for(cpop) == pop_bracket:
-            ca = peer_audits_by_entity.get(ce.id, [])
-            _peer_amounts = [float(x.amount) for x in ca if x.amount is not None]
-            if _peer_amounts:  # a peer with no recorded amount is unknown, not 0
-                bracket_flagged_amounts.append(float(sum(_peer_amounts)))
+    # Skipped entirely when this county has no census row: "the counties in the
+    # same bracket as this one" is not a set that can be formed without knowing
+    # the bracket, so population_bracket_avg goes absent with the bracket.
+    if pop_bracket is not None:
+        for cid, cname in COUNTY_MAPPING.items():
+            if cid == county_id:
+                continue
+            ce = peers_by_name.get(f"{cname} County")
+            if not ce:
+                continue
+            cpop = peer_pop_by_entity.get(ce.id)
+            if cpop is None:
+                # An uncounted PEER has no bracket either. Defaulting it to 0
+                # put counties of unknown size into "<500k", so the average a
+                # genuinely small county is measured against was computed over
+                # peers that may not be small at all.
+                continue
+            if _bracket_for(cpop) == pop_bracket:
+                ca = peer_audits_by_entity.get(ce.id, [])
+                _peer_amounts = [float(x.amount) for x in ca if x.amount is not None]
+                if _peer_amounts:  # a peer with no recorded amount is unknown, not 0
+                    bracket_flagged_amounts.append(float(sum(_peer_amounts)))
 
     region_avg_flagged = (
         round(sum(region_flagged_amounts) / len(region_flagged_amounts), 2)
@@ -6235,7 +6271,12 @@ async def get_county_summary(county_id: str):
             return {
                 "county_id": county_id,
                 "county_name": (entity.canonical_name or "").replace(" County", ""),
-                "population": pop_data.total_population if pop_data else 0,
+                # The census, or nothing — same rule as the list and detail
+                # endpoints. A 0 here is not a small population; it is the
+                # claim that nobody lives in the county.
+                "population": (
+                    pop_data.total_population if pop_data else None
+                ),
                 "total_budget": total_allocated,
                 "total_spent": total_spent,
                 "audit_findings_count": len(audits),

@@ -40,8 +40,9 @@ export interface CountyComprehensive {
   coordinates: [number, number];
   governor?: string;
   demographics: {
-    // Null where no census row exists. The API used to publish 0 there,
-    // which claims a county has no residents.
+    /** null when the county has no PopulationData row. The endpoint used to
+     *  fall back to bootstrap's un-sourced copy in entity.meta, and to 0 when
+     *  even that was absent. */
     population: number | null;
     population_year?: number;
     male_population?: number;
@@ -66,7 +67,9 @@ export interface CountyComprehensive {
     utilization_rate: number;
     development_budget: number;
     recurrent_budget: number;
-    per_capita_budget: number;
+    /** null when the population is unknown — the share of a budget cannot be
+     *  computed without a denominator, and 0 is not that share. */
+    per_capita_budget: number | null;
     sector_breakdown: Record<string, { allocated: number; spent: number }>;
     /** Fiscal year these budget numbers refer to (e.g. "FY2024/25").
      * Set by the backend to the latest FY with actual execution data,
@@ -86,7 +89,8 @@ export interface CountyComprehensive {
     total_debt: number;
     pending_bills: number;
     debt_to_budget_ratio: number;
-    per_capita_debt: number;
+    /** null when the population or the debt is unknown. */
+    per_capita_debt: number | null;
     breakdown: Array<{
       lender: string;
       category: string;
@@ -284,7 +288,10 @@ export interface AccountabilityScorecard {
     region: string;
     region_avg_flagged_amount: number | null;
     region_avg_grade: string | null;
-    population_bracket: string;
+    /** null when the county has no census row — a county with no counted
+     *  population has no population bracket, and cannot be compared against
+     *  one. See AccountabilityTab's `|| bracket_fallback` rung. */
+    population_bracket: string | null;
     population_bracket_avg: number | null;
   };
 }
