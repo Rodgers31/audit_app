@@ -45,6 +45,44 @@ _MONEY_RE = re.compile(
     re.IGNORECASE,
 )
 
+# ── Which money is the head's FY collection, and which is something else ──
+#
+# "Nearest figure to the head's name" is not enough. KRA's FY2024/25 release
+# says, in one tight sentence:
+#
+#   "Significant amounts of adjustment vouchers were utilized across various
+#    tax heads, with Corporation Tax accounting for Kshs 28.622 Billion, PAYE
+#    for Kshs 10.422 Billion, and Domestic VAT for Kshs 6.510 Billion"
+#
+# Three heads each with a figure right beside the name — distances 9, 32 and 9,
+# beating the real collection sentences where the money sits further away. Those
+# are ADJUSTMENT VOUCHERS. Excise separately matched a betting-tax *surplus* of
+# 1.945B instead of Domestic Excise's 69.385B. Four of five heads were wrong,
+# summing to 927B against an expected 2,323B, so the trust gate quarantined the
+# parse and the fixture stood on all 20 runs since the overlay was enabled.
+#
+# The missing distinction is semantic: we want a COLLECTION. KRA always says so
+# ("collected Kshs X", "collection stood at Kshs X", "with a collection of
+# Kshs X"), while the figures we must not take are qualified as vouchers,
+# targets, surpluses, or half-year splits.
+
+#: Phrases immediately BEFORE a figure that mark it as not-a-collection.
+_FIGURE_DISQUALIFIER = re.compile(
+    r"(?:target|surplus|shortfall|deficit|refunds?|arrears|growth)\s+(?:of\s+)?$",
+    re.IGNORECASE,
+)
+
+#: Phrases anywhere in the sentence that make every figure in it suspect.
+_SENTENCE_DISQUALIFIER = re.compile(
+    r"adjustment\s+vouchers?|first\s+half|second\s+half", re.IGNORECASE
+)
+
+#: Phrases immediately before a figure that mark it AS a collection.
+_COLLECTION_CUE = re.compile(r"collect(?:ed|ion|ions)\b[^.]{0,40}$", re.IGNORECASE)
+
+#: How far back to look for the cue / disqualifier that qualifies a figure.
+_CUE_WINDOW = 60
+
 # "FY 2024/25", "FY2024/2025", "2024/25 financial year"
 _FY_RE = re.compile(r"(?:FY\s*)?(20\d{2})\s*[/-]\s*(20\d{2}|\d{2})", re.IGNORECASE)
 
@@ -87,19 +125,30 @@ def extract_kra_revenue_by_type_from_text(text: str) -> Dict[str, Decimal]:
         return out
     low = text.lower()
     for canonical, patterns in _TAX_HEADS:
+        # (is_a_stated_collection, -distance) — prefer a figure KRA calls a
+        # collection; fall back to nearest so prose that never uses the verb
+        # ("PAYE contributed Kshs 646 billion") still parses.
+        best_key: tuple[int, int] | None = None
         best_amount: Decimal | None = None
-        best_dist: int | None = None
         for pattern in patterns:
             for anchor in re.finditer(pattern, low):
                 a = anchor.start()
                 lo, hi = _sentence_bounds(text, a)
-                for money in _MONEY_RE.finditer(text[lo:hi]):
+                sentence = text[lo:hi]
+                if _SENTENCE_DISQUALIFIER.search(sentence):
+                    continue
+                for money in _MONEY_RE.finditer(sentence):
                     amount = _money_to_billion(money.group(1), money.group(2))
                     if amount is None or amount <= 0:
                         continue
+                    cue_from = max(0, money.start() - _CUE_WINDOW)
+                    before = sentence[cue_from : money.start()]
+                    if _FIGURE_DISQUALIFIER.search(before):
+                        continue
                     dist = abs((lo + money.start()) - a)
-                    if best_dist is None or dist < best_dist:
-                        best_dist, best_amount = dist, amount
+                    key = (1 if _COLLECTION_CUE.search(before) else 0, -dist)
+                    if best_key is None or key > best_key:
+                        best_key, best_amount = key, amount
         if best_amount is not None:
             out[canonical] = best_amount
     return out

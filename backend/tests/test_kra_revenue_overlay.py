@@ -124,7 +124,11 @@ def test_overlay_promotes_reconciling_breakdown_for_target_fy():
 def test_overlay_rejects_non_reconciling_keeps_fixture():
     by_type = {"PAYE": 6460}  # 10x — won't reconcile to ~2380
     payload, status = _overlay_kra_breakdown(_payload(), by_type, "FY 2024/25")
-    assert status == "failed_validation"
+    # The status now carries the failing check's own note, so the nightly says
+    # WHY rather than only that something failed. 6,460B trips the per-head cap
+    # before the sum is ever compared.
+    assert status.startswith("failed_validation")
+    assert "PAYE" in status and "cap" in status
     paye = next(r for r in payload if r["fiscal_year"] == "FY 2024/25" and r["revenue_type"] == "PAYE")
     assert paye["amount_billion_kes"] == 640  # unchanged
 
