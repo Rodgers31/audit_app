@@ -18,13 +18,25 @@
  * figures cannot describe different periods.
  */
 import {
-  generateFiscalYears,
-  getLatestReportedFiscalYear,
   moneyFlowDefaultYear,
   resolveExplorerYear,
   serviceableFiscalYear,
   transparencyYearOptions,
 } from '@/lib/utils';
+
+/**
+ * What the removed calendar helpers returned on the frozen date below. They
+ * are literals now because the helpers are gone — `getLatestReportedFiscalYear`
+ * and `generateFiscalYears` were deleted once nothing called them — but the
+ * numbers are why: each is a year the database held no reported figures for,
+ * and each is what a page was showing before these resolvers replaced them.
+ */
+const CALENDAR_ON_2026_09 = {
+  /** getLatestReportedFiscalYear() — the CRA projection period. */
+  latestReported: '2025/26',
+  /** generateFiscalYears()[0] — a year in no list at all. */
+  newestGenerated: '2026/27',
+};
 
 /** The live payload on 2026-09-05, abridged. */
 const META = {
@@ -41,10 +53,12 @@ describe('resolveExplorerYear', () => {
 
   it('takes the API default, not the year the calendar is in', () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-09-05T00:00:00Z'));
-    // What the old seed produced — the in-progress, unreported FY.
-    expect(getLatestReportedFiscalYear()).toBe('2025/26');
-    // What the data says has actually been reported.
+    // The old seed produced the in-progress, unreported FY on this date.
+    // What the data says has actually been reported is a different year:
     expect(resolveExplorerYear(undefined, META)).toBe('FY2024/25');
+    expect(resolveExplorerYear(undefined, META)).not.toBe(
+      `FY${CALENDAR_ON_2026_09.latestReported}`
+    );
   });
 
   it('is stable across the calendar', () => {
@@ -123,7 +137,9 @@ describe('moneyFlowDefaultYear', () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-09-05T00:00:00Z'));
     // The page resolved FY2024/25; the calendar would have said 2025/26.
     expect(moneyFlowDefaultYear(undefined, 'FY2024/25', META)).toBe('FY2024/25');
-    expect(getLatestReportedFiscalYear()).toBe('2025/26');
+    expect(moneyFlowDefaultYear(undefined, 'FY2024/25', META)).not.toBe(
+      `FY${CALENDAR_ON_2026_09.latestReported}`
+    );
   });
 
   it('follows the page even onto a projection year', () => {
@@ -180,10 +196,14 @@ describe('transparencyYearOptions', () => {
 
   it('defaults to the reported year, not the one the calendar is in', () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-09-06T00:00:00Z'));
-    expect(transparencyYearOptions(TRANSPARENCY_META).default).toBe('2024/25');
-    // The two labels the page used to reach for, neither of them this one.
-    expect(getLatestReportedFiscalYear()).toBe('2025/26');
-    expect(generateFiscalYears()[0]).toBe('2026/27');
+    const { years, default: def } = transparencyYearOptions(TRANSPARENCY_META);
+    expect(def).toBe('2024/25');
+    // Neither of the two labels the page used to reach for on this date.
+    expect(def).not.toBe(CALENDAR_ON_2026_09.latestReported);
+    expect(def).not.toBe(CALENDAR_ON_2026_09.newestGenerated);
+    // ...and the second was not even offered, which is how the page ended up
+    // fetching a year absent from its own picker (F37).
+    expect(years).not.toContain(CALENDAR_ON_2026_09.newestGenerated);
   });
 
   it('offers only years with county budget data behind them', () => {

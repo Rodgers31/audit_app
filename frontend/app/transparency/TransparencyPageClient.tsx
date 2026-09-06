@@ -22,7 +22,7 @@ import PageShell from '@/components/layout/PageShell';
 import ResponsiveTable from '@/components/ui/ResponsiveTable';
 import { useCountyFiscalYears } from '@/lib/react-query';
 import { useAllCountiesMoneyFlow, useNationalMoneyFlow } from '@/lib/react-query/useMoneyFlow';
-import { transparencyYearOptions } from '@/lib/utils';
+import { getCurrentFiscalYear, transparencyYearOptions } from '@/lib/utils';
 import { MoneyFlowData } from '@/types';
 import { motion } from 'framer-motion';
 import {
@@ -67,9 +67,7 @@ function fundingImpact(amount: number): string {
  * DEFAULT year, which is now whatever the API reports it actually holds. */
 function toPickerOptions(years: string[]): { fiscal_year: string; is_current?: boolean }[] {
   if (!years || years.length === 0) return [];
-  const now = new Date();
-  const startYr = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
-  const currentLabel = `${startYr}/${String(startYr + 1).slice(-2)}`;
+  const currentLabel = getCurrentFiscalYear();
   return years.map((y) => ({ fiscal_year: y, is_current: y === currentLabel }));
 }
 

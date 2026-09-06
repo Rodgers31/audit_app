@@ -146,26 +146,17 @@ export function getDebtRiskLevel(debtToGdpRatio: number | null | undefined): str
 /**
  * Return the current Kenyan fiscal year label (e.g. "2024/25").
  * Kenya FY runs July 1 – June 30.
+ *
+ * This asks the calendar which year we are IN, which the calendar can answer.
+ * Two neighbours that asked it which year has DATA — `getLatestReportedFiscalYear`
+ * and `generateFiscalYears` — are gone: they put four pages on a fiscal year the
+ * database held no reported figures for. Anything choosing a year to fetch wants
+ * `resolveExplorerYear` / `moneyFlowDefaultYear` / `transparencyYearOptions`,
+ * which resolve it from GET /api/v1/counties/fiscal-years.
  */
 export function getCurrentFiscalYear(): string {
   const now = new Date();
   const startYear = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
-  return `${startYear}/${String(startYear + 1).slice(-2)}`;
-}
-
-/**
- * Return the latest *completed* (reported) Kenyan fiscal year — i.e. the one
- * prior to the currently active FY. Execution data (actual spending, audits)
- * isn't published until well after year-end, so UI defaults that require
- * actuals should use this, not `getCurrentFiscalYear()`.
- *
- * This is a calendar guess: it assumes a report exists for last FY because the
- * date has passed, which is not the same as it having landed. Prefer
- * `resolveExplorerYear()` wherever the API can say what it actually holds.
- */
-export function getLatestReportedFiscalYear(): string {
-  const now = new Date();
-  const startYear = now.getMonth() >= 6 ? now.getFullYear() - 1 : now.getFullYear() - 2;
   return `${startYear}/${String(startYear + 1).slice(-2)}`;
 }
 
@@ -290,16 +281,4 @@ export function transparencyYearOptions(meta: CountyFiscalYears | undefined): {
     years: meta?.years.map((y) => strip(y.label)) ?? [],
     default: meta?.default ? strip(meta.default) : undefined,
   };
-}
-
-/**
- * Generate an array of Kenyan fiscal year labels starting from the current year going back.
- */
-export function generateFiscalYears(count = 5): string[] {
-  const now = new Date();
-  let startYear = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
-  return Array.from({ length: count }, (_, i) => {
-    const y = startYear - i;
-    return `${y}/${String(y + 1).slice(-2)}`;
-  });
 }
