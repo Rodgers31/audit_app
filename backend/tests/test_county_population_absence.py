@@ -31,9 +31,11 @@ import pytest
 from models import (
     Audit,
     BudgetLine,
+    DebtCategory,
     Entity,
     EntityType,
     FiscalPeriod,
+    Loan,
     PopulationData,
     Severity,
 )
@@ -335,4 +337,174 @@ class TestEnhancedFallbackPopulation:
             "the enhanced-API fallback served "
             f"population={body['population']!r} from a payload with no "
             "population; the DB path on this same endpoint serves null"
+        )
+
+
+# The census figure bootstrap copies into entity.meta.metrics[FY] from
+# enhanced_county_data.json. It is a real KNBS 2019 count — the objection to
+# serving it is not that it is wrong, it is that it arrives with no source
+# document, no year and no sex split, beside six sibling fields that all
+# report absence honestly, on an endpoint whose four siblings read
+# PopulationData alone.
+KWALE_CENSUS_2019 = 866_820
+
+
+@pytest.fixture()
+def comprehensive_counties(db_session, seed_country, seed_source_doc, period):
+    """Three counties covering both shapes of a missing census row.
+
+    Nairobi  — has a PopulationData row. The control.
+    Kwale    — no row, but carries bootstrap's copy of the census in
+               entity.meta.metrics, which is the rung this change removes.
+    Tana River — no row and no meta either, which is where the rung ended in
+               a literal 0. It also carries a publishable loan, so total_debt
+               is not None and the per_capita_debt guard is actually
+               evaluated instead of short-circuiting on the debt being absent.
+    """
+    nairobi = _entity(seed_country, eid=601, name="Nairobi")
+    kwale = _entity(seed_country, eid=602, name="Kwale")
+    tana = _entity(seed_country, eid=604, name="Tana River")
+    kwale.meta = {
+        "metrics": {
+            "FY2024/25": {
+                "population": KWALE_CENSUS_2019,
+                "budget_2025": 3_900_690_000,
+            }
+        }
+    }
+    db_session.add_all([nairobi, kwale, tana])
+    db_session.flush()
+
+    db_session.add(
+        PopulationData(
+            entity_id=nairobi.id,
+            year=2019,
+            total_population=NAIROBI_CENSUS_2019,
+            source_document_id=seed_source_doc.id,
+        )
+    )
+
+    for entity in (nairobi, kwale, tana):
+        db_session.add(
+            BudgetLine(
+                entity_id=entity.id,
+                period_id=period.id,
+                category="Health",
+                allocated_amount=8_000_000,
+                actual_spent=6_000_000,
+                currency="KES",
+                source_document_id=seed_source_doc.id,
+            )
+        )
+
+    db_session.add(
+        Loan(
+            entity_id=tana.id,
+            lender="Kenya Commercial Bank",
+            debt_category=DebtCategory.DOMESTIC_BONDS,
+            principal=Decimal("400000000"),
+            outstanding=Decimal("250000000"),
+            issue_date=datetime(2023, 1, 15),
+            currency="KES",
+            source_document_id=seed_source_doc.id,
+            provenance=[],
+        )
+    )
+
+    db_session.commit()
+    return {"nairobi": nairobi, "kwale": kwale, "tana": tana}
+
+
+class TestComprehensivePopulationAbsence:
+    """GET /api/v1/counties/{id}/comprehensive — demographics.population."""
+
+    def test_no_census_row_and_no_meta_is_not_zero(
+        self, client, comprehensive_counties
+    ):
+        response = client.get("/api/v1/counties/004/comprehensive")
+        assert response.status_code == 200, response.text
+
+        demographics = response.json()["demographics"]
+        assert demographics["population"] is None, (
+            "a county with neither a PopulationData row nor a stored meta "
+            f"figure was published as population={demographics['population']!r}"
+        )
+
+    def test_the_unprovenanced_meta_copy_is_not_served_either(
+        self, client, comprehensive_counties
+    ):
+        """The census row, or nothing — the rule the four sibling endpoints use.
+
+        entity.meta.metrics[FY].population is bootstrap's copy of the same
+        KNBS count, but it carries no source document and no year, and
+        /counties, /counties/{id}, /summary and the accountability bracket all
+        read PopulationData alone. Serving it here made one county answer
+        866,820 on this endpoint and null on the other four.
+        """
+        response = client.get("/api/v1/counties/002/comprehensive")
+        assert response.status_code == 200, response.text
+
+        demographics = response.json()["demographics"]
+        assert demographics["population"] is None, (
+            "a county with no PopulationData row was published as "
+            f"population={demographics['population']!r} out of entity.meta, "
+            "beside population_year="
+            f"{demographics['population_year']!r} and population_density="
+            f"{demographics['population_density']!r}"
+        )
+
+    def test_counted_county_still_reports_its_census(
+        self, client, comprehensive_counties
+    ):
+        response = client.get("/api/v1/counties/001/comprehensive")
+        assert response.status_code == 200, response.text
+
+        demographics = response.json()["demographics"]
+        assert demographics["population"] == NAIROBI_CENSUS_2019
+        assert demographics["population_year"] == 2019
+
+
+class TestComprehensivePerCapitaAbsence:
+    """The two figures divided by that population."""
+
+    def test_per_capita_budget_is_withheld_not_zeroed(
+        self, client, comprehensive_counties
+    ):
+        response = client.get("/api/v1/counties/004/comprehensive")
+        assert response.status_code == 200, response.text
+
+        budget = response.json()["budget"]
+        assert budget["total_allocated"] == 8_000_000, "the budget is known"
+        assert budget["per_capita_budget"] is None, (
+            "per_capita_budget was published as "
+            f"{budget['per_capita_budget']!r} for a county whose population "
+            "nobody has counted; 0 says each resident's share of a KES 8M "
+            "budget is nothing"
+        )
+
+    def test_per_capita_debt_does_not_crash_the_endpoint(
+        self, client, comprehensive_counties
+    ):
+        """`population > 0` on a None raises TypeError, and the endpoint 500s.
+
+        Tana River has a publishable loan, so ``total_debt is not None`` and
+        the second half of that guard is reached. Without the None check this
+        request never returns a payload at all.
+        """
+        response = client.get("/api/v1/counties/004/comprehensive")
+        assert response.status_code == 200, response.text
+
+        debt = response.json()["debt"]
+        assert debt["total_debt"] == 250_000_000, "the debt is known"
+        assert debt["per_capita_debt"] is None
+
+    def test_counted_county_still_gets_both_per_capita_figures(
+        self, client, comprehensive_counties
+    ):
+        response = client.get("/api/v1/counties/001/comprehensive")
+        assert response.status_code == 200, response.text
+
+        body = response.json()
+        assert body["budget"]["per_capita_budget"] == round(
+            8_000_000 / NAIROBI_CENSUS_2019, 2
         )

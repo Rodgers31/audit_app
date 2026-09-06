@@ -3788,15 +3788,31 @@ async def get_county_comprehensive(
             coords = COUNTY_COORDINATES.get(county_id, [36.8219, -1.2921])
 
             # --- Per-capita stats ---
-            population = (
-                pop.total_population if pop else int(metrics.get("population", 0))
-            )
+            # The census row, or nothing — the rule the four sibling county
+            # endpoints already follow. The second rung this replaces read
+            # entity.meta.metrics[FY]["population"], bootstrap's copy of the
+            # same KNBS 2019 count out of enhanced_county_data.json. The count
+            # is real; what it lacks is everything that makes it citable. It
+            # arrives with no source document and no year, so it would print
+            # beside the population_year, sex split and density directly below
+            # — all of which correctly report absence — and the same county
+            # would answer 866,820 here and null on /counties, /counties/{id},
+            # /summary and its accountability bracket. And when even the meta
+            # copy was missing, `, 0)` published the claim that nobody lives
+            # there. 2760328 verified against production that all 47 counties
+            # have a PopulationData row, so this rung is unreachable today.
+            population = pop.total_population if pop else None
+            # A share of a budget cannot be computed without a denominator,
+            # and 0 is not the answer to "what is each resident's share?" —
+            # it is the answer to a question nobody asked.
             per_capita_budget = (
-                round(total_allocated / population, 2) if population > 0 else 0
+                round(total_allocated / population, 2)
+                if population
+                else None
             )
             per_capita_debt = (
                 round(total_debt / population, 2)
-                if total_debt is not None and population > 0
+                if total_debt is not None and population
                 else None
             )
 
