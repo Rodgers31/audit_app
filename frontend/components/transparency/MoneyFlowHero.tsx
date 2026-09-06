@@ -10,7 +10,10 @@
  *   - Eyebrow: source + FY
  *   - Headline: "KES X allocated → KES Y reached citizens"
  *   - Callout: leak ratio (how many shillings of every 100 the auditor flagged)
- *   - 4-stage horizontal waterfall: Allocated → Released → Spent → Flagged
+ *   - 3-stage horizontal waterfall: Allocated → Spent → Flagged. There is no
+ *     Released stage: exchequer disbursements are not ingested from any source
+ *     (see backend/routers/money_flow.py), and the `Released` entry left in
+ *     STAGE_META below is parked for if they ever are, not rendered today.
  *   - Each gap is rendered explicitly above the bar so users can *see* the leak
  *   - Footer caveat points to the authoritative CoB + OAG sources
  */
@@ -18,10 +21,48 @@
 import { motion } from 'framer-motion';
 import { AlertTriangle, ArrowDownRight, Info } from 'lucide-react';
 import { useState } from 'react';
-import type { MoneyFlowData } from '@/types';
+import type { BudgetSource, MoneyFlowData } from '@/types';
 
 interface Props {
   data: MoneyFlowData | null | undefined;
+}
+
+/**
+ * What the Allocated stage's figure was read from, in this hero's terse
+ * register. Keyed on the API's `budget_source` — the same vocabulary
+ * ModelledDataNote switches its note on — because the stage's provenance is
+ * not fixed: since the classification-split fix its amount is the Controller
+ * of Budget's own CBIRR aggregate wherever the report has landed, and only a
+ * CRA equitable-share projection period is the model this used to name
+ * unconditionally.
+ *
+ * `mixed` is a pooled national figure over a partly-ingested CBIRR: naming
+ * either single source there would be wrong about the other half of the money.
+ */
+const ALLOCATED_TAGLINE: Record<NonNullable<BudgetSource>, string> = {
+  cob_cbirr: 'Controller of Budget CBIRR county aggregates',
+  cra_model: 'CRA equitable-share model — not CoB-reported',
+  mixed: 'CoB CBIRR where published; CRA model elsewhere',
+};
+
+/**
+ * The same claim, in the footer's prose. It read "Allocations follow the
+ * Commission on Revenue Allocation formula" unconditionally, on a page whose
+ * allocation figure is now the Controller of Budget's own for every county the
+ * CBIRR covers. Absent provenance says nothing about allocations rather than
+ * defaulting to either source.
+ */
+function allocationProvenanceSentence(source: BudgetSource | undefined): string {
+  switch (source) {
+    case 'cob_cbirr':
+      return "Allocations are the Controller of Budget's own county budget aggregates.";
+    case 'cra_model':
+      return 'Allocations follow the Commission on Revenue Allocation formula and are modelled, not Controller of Budget figures.';
+    case 'mixed':
+      return "Allocations are the Controller of Budget's own where it has published the county, and modelled on the Commission on Revenue Allocation formula elsewhere.";
+    default:
+      return '';
+  }
 }
 
 const STAGE_META: Record<
@@ -30,7 +71,10 @@ const STAGE_META: Record<
 > = {
   Allocated: {
     label: 'Allocated',
-    tagline: 'CRA equitable share + conditional grants',
+    // Overridden per response from ALLOCATED_TAGLINE — see below. This value
+    // is only reached when the API reports no provenance at all, and then no
+    // tagline is rendered rather than this one.
+    tagline: '',
     gradStart: '#2F6343',
     gradEnd: '#1F4A30',
     accent: '#1B3A2A',
@@ -86,6 +130,13 @@ export default function MoneyFlowHero({ data }: Props) {
   // A projected / budgeted year will have allocation but no execution yet.
   const isProjected = allocated != null && spent == null && released == null;
 
+  // The Allocated stage's provenance is per-response, not fixed — see
+  // ALLOCATED_TAGLINE. Absent means the API published no budget, and then the
+  // stage carries no source claim at all.
+  const allocatedTagline = data.budget_source
+    ? ALLOCATED_TAGLINE[data.budget_source]
+    : '';
+
   const fy = data.fiscal_year;
   const countyLabel = data.county_name || 'All counties';
 
@@ -134,7 +185,7 @@ export default function MoneyFlowHero({ data }: Props) {
             </h2>
             <p className='text-sm text-neutral-muted mt-1 max-w-2xl'>
               {isProjected
-                ? 'This fiscal year is still being executed, so release and spend figures will appear as the Controller of Budget publishes quarterly reports.'
+                ? 'This fiscal year is still being executed, so spending figures will appear as the Controller of Budget publishes quarterly reports.'
                 : 'The waterfall below traces every shilling from Treasury allocation through execution, and the portion the Auditor General questioned (could not confirm was properly spent).'}
             </p>
           </div>
@@ -181,6 +232,7 @@ export default function MoneyFlowHero({ data }: Props) {
             widthPct={allocatedPct}
             hover={hover}
             setHover={setHover}
+            tagline={allocatedTagline}
           />
           <StageGap
             label='Unspent — absorption shortfall'
@@ -218,8 +270,8 @@ export default function MoneyFlowHero({ data }: Props) {
         <div className='flex items-start gap-2 text-[11px] text-neutral-muted/90 leading-relaxed border-t border-neutral-border/40 pt-3'>
           <Info size={13} className='mt-0.5 flex-shrink-0 text-gov-forest/70 dark:text-emerald-100/70' />
           <span>
-            Allocations follow the Commission on Revenue Allocation formula; releases
-            and expenditure come from the Controller of Budget&apos;s{' '}
+            {allocationProvenanceSentence(data.budget_source)} Expenditure
+            comes from the Controller of Budget&apos;s{' '}
             <em>County Budget Implementation Review Report</em> (CBIRR). Flagged amounts
             are the aggregate of findings the Auditor General <em>questioned</em>{' '}
             (classified as irregular, unsupported, or wasteful) in the consolidated county
@@ -243,6 +295,7 @@ function WaterfallStage({
   hover,
   setHover,
   severity,
+  tagline,
 }: {
   stage: keyof typeof STAGE_META;
   amount: number | null | undefined;
@@ -250,8 +303,13 @@ function WaterfallStage({
   hover: string | null;
   setHover: (s: string | null) => void;
   severity?: 'critical';
+  /** Overrides the stage's fixed tagline where the claim is per-response —
+   *  the Allocated stage's source. Empty means render no tagline, which is
+   *  what an unpublished figure's provenance is. */
+  tagline?: string;
 }) {
   const meta = STAGE_META[stage];
+  const caption = tagline ?? meta.tagline;
   const isActive = hover === stage;
   const isDim = hover != null && hover !== stage;
   const unavailable = amount == null;
@@ -275,9 +333,11 @@ function WaterfallStage({
             style={{ color: meta.accent }}>
             {meta.label}
           </span>
-          <span className='text-[11px] text-neutral-muted hidden sm:inline truncate'>
-            · {meta.tagline}
-          </span>
+          {caption && (
+            <span className='text-[11px] text-neutral-muted hidden sm:inline truncate'>
+              · {caption}
+            </span>
+          )}
         </div>
         <span className='font-display text-[15px] text-gov-dark dark:text-white tabular-nums flex-shrink-0'>
           {unavailable ? (

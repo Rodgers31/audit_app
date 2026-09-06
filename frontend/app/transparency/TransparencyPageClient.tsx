@@ -6,8 +6,8 @@
  * The page now mirrors the Budget and Debt pages:
  *   1. A small intro strip
  *   2. FiscalYearPicker drives the entire page
- *   3. MoneyFlowHero — the centrepiece waterfall (Allocated → Released →
- *      Spent → Flagged) with explicit gap callouts between stages
+ *   3. MoneyFlowHero — the centrepiece waterfall (Allocated → Spent →
+ *      Flagged) with explicit gap callouts between stages
  *   4. KPI cards — allocated / unspent / flagged / national efficiency
  *   5. County comparison table (sortable, searchable)
  *   6. "What can you do" action cards
@@ -441,9 +441,8 @@ export default function TransparencyPage() {
           <p className='text-base text-gov-dark/70 dark:text-white/70 leading-relaxed'>
             Every year, the Treasury allocates trillions of shillings to Kenya&apos;s 47
             counties. But how much actually reaches citizens? The waterfall below traces
-            the journey — from <strong>allocation</strong> by the Commission on Revenue
-            Allocation, to <strong>release</strong> by the Exchequer, to what counties
-            actually <strong>spent</strong>, to the portion the Auditor General
+            the journey — from what was <strong>allocated</strong> to the counties, to
+            what they actually <strong>spent</strong>, to the portion the Auditor General
             <strong> questioned</strong> as irregular or unsupported.
           </p>
         </div>
@@ -811,7 +810,10 @@ export default function TransparencyPage() {
 
       {/* ═══ 6. Source reconciliation ═══ */}
       <Section delay={0.18}>
-        <MoneyFlowSourceReconciliation fiscalYear={selectedYear} />
+        <MoneyFlowSourceReconciliation
+          fiscalYear={selectedYear}
+          budgetSource={nationalFlow?.budget_source}
+        />
       </Section>
 
       {/* ═══ 7. What can you do? ═══ */}

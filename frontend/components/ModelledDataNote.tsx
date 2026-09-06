@@ -69,12 +69,16 @@ export function budgetProvenanceKey(
   budgetSource: BudgetSource | Array<BudgetSource | undefined> | null | undefined
 ): TranslationKey | null {
   const present = (Array.isArray(budgetSource) ? budgetSource : [budgetSource]).filter(
-    (s): s is 'cob_cbirr' | 'cra_model' => s === 'cob_cbirr' || s === 'cra_model'
+    (s): s is 'cob_cbirr' | 'cra_model' | 'mixed' =>
+      s === 'cob_cbirr' || s === 'cra_model' || s === 'mixed'
   );
   if (present.length === 0) return null;
 
-  const hasCbirr = present.includes('cob_cbirr');
-  const hasModel = present.includes('cra_model');
+  // A single `mixed` is an aggregate the API already resolved as spanning both
+  // — the national money-flow figure over a partly-ingested CBIRR. It counts
+  // as both, not as a third thing.
+  const hasCbirr = present.includes('cob_cbirr') || present.includes('mixed');
+  const hasModel = present.includes('cra_model') || present.includes('mixed');
   if (hasCbirr && hasModel) return 'counties.provenance.budget_mixed';
   return hasCbirr ? 'counties.provenance.budget_cbirr' : 'counties.provenance.budget_cra';
 }

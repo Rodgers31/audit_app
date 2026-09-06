@@ -186,7 +186,9 @@ const MONEY_FLOW = {
       stage: 'Allocated',
       label: 'Budget Allocation',
       amount: 21_903_185_214,
-      source: 'CRA Allocation + Conditional Grants',
+      // Derived by the API from budget_source below, not fixed — see
+      // backend/routers/money_flow.py::_allocated_source.
+      source: 'Controller of Budget — County Budget Implementation Review Report',
       source_doc: 'https://cob.go.ke/reports/consolidated-county-budget-implementation-review-reports/',
     },
     {
@@ -208,6 +210,7 @@ const MONEY_FLOW = {
   source_document_title: 'CoB County Budget Implementation Review Report FY2024/25 H1',
   source_document_url: 'https://cob.go.ke/reports/consolidated-county-budget-implementation-review-reports/',
   committed_amount: 4_148_463_279.52,
+  budget_source: 'cob_cbirr',
 };
 
 const FISCAL_YEARS = {
