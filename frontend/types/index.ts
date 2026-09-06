@@ -72,6 +72,10 @@ export interface CountyComprehensive {
      * Set by the backend to the latest FY with actual execution data,
      * not necessarily the current FY. */
     fiscal_year?: string | null;
+    /** Which rows produced the figures above — see BudgetSource. Drives the
+     *  page's provenance note, so a CBIRR period stops being described to the
+     *  reader as a CRA model. */
+    source?: BudgetSource;
   };
   revenue: {
     total_revenue: number;
@@ -128,6 +132,18 @@ export interface CountyComprehensive {
   data_sources: Record<string, string>;
 }
 
+/**
+ * Where a county's headline budget figure came from, as reported by the API.
+ *
+ * `cob_cbirr` — the Controller of Budget's own Total/Development/Recurrent
+ * aggregates, read from the County Budget Implementation Review Report.
+ * `cra_model` — a CRA equitable-share projection period: modelled.
+ * `null`/absent — no budget was published, so there is no source to name.
+ *
+ * The standing provenance note on the county pages is rendered from this.
+ */
+export type BudgetSource = 'cob_cbirr' | 'cra_model' | null;
+
 export interface County {
   id: string;
   name: string;
@@ -162,6 +178,9 @@ export interface County {
   pendingBills?: number; // Outstanding payments
   developmentBudget?: number; // Capital/development budget
   recurrentBudget?: number; // Operational budget
+  // Provenance of `budget` above — the list and compare pages carry the same
+  // provenance note the detail page does, and need the same answer.
+  budgetSource?: BudgetSource;
   // Additional fields for county explorer
   governor?: string; // Governor name
   totalBudget?: number; // Total budget (computed from dev + recurrent)

@@ -20,9 +20,9 @@ import MoneyFlowSourceReconciliation from '@/components/transparency/MoneyFlowSo
 import FiscalYearPicker from '@/components/budget/FiscalYearPicker';
 import PageShell from '@/components/layout/PageShell';
 import ResponsiveTable from '@/components/ui/ResponsiveTable';
-import { useAvailableFiscalYears } from '@/lib/react-query';
+import { useCountyFiscalYears } from '@/lib/react-query';
 import { useAllCountiesMoneyFlow, useNationalMoneyFlow } from '@/lib/react-query/useMoneyFlow';
-import { generateFiscalYears } from '@/lib/utils';
+import { transparencyYearOptions } from '@/lib/utils';
 import { MoneyFlowData } from '@/types';
 import { motion } from 'framer-motion';
 import {
@@ -60,26 +60,40 @@ function fundingImpact(amount: number): string {
   return '';
 }
 
-/** Strip an optional "FY" or "FY " prefix so year strings from all
- * sources normalise to the same "YYYY/YY" canonical form. The audits
- * API returns "FY2025/26" but `generateFiscalYears()` (and the rest of
- * the app) uses bare "2025/26" — mixing them left `selectedYear` and
- * the picker buttons never comparing equal, so no button highlighted
- * on page load. */
-function normalizeFY(y: string): string {
-  return (y || '').replace(/^FY\s*/i, '').trim();
+/**
+ * The calendar year the in-progress Kenyan fiscal year began in (FY runs
+ * 1 Jul – 30 Jun). On 2026-09-06 that is 2026, i.e. FY2026/27.
+ *
+ * This asks which year we are IN, which the calendar can answer. Both callers
+ * below ask exactly that. Anything choosing a year to FETCH asks a question
+ * about the data instead, and wants `transparencyYearOptions` /
+ * `resolveExplorerYear` / `moneyFlowDefaultYear`, which resolve it from
+ * GET /api/v1/counties/fiscal-years.
+ *
+ * Deliberately local and unexported. `getCurrentFiscalYear`,
+ * `getLatestReportedFiscalYear` and `generateFiscalYears` were all removed
+ * from `@/lib/utils`, because a shared, exported, clock-derived fiscal-year
+ * helper is what put four pages on a year the database held no reported
+ * figures for. Kept here it answers one page's calendar question and cannot
+ * be reached for as a data one; it returns the start YEAR rather than a label
+ * so both callers can use it without parsing one back apart.
+ */
+function currentFiscalStartYear(): number {
+  const now = new Date();
+  return now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
 }
 
-/** Convert a raw "YYYY/YY" string into the shape FiscalYearPicker wants. */
+/** Convert a raw "YYYY/YY" string into the shape FiscalYearPicker wants.
+ *
+ * `is_current` drives a pulsing "still running" dot. That is a question about
+ * the calendar, not about the data, so it stays on the clock — unlike the
+ * DEFAULT year, which is now whatever the API reports it actually holds. */
 function toPickerOptions(years: string[]): { fiscal_year: string; is_current?: boolean }[] {
   if (!years || years.length === 0) return [];
-  const now = new Date();
-  const startYr = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
+  const startYr = currentFiscalStartYear();
   const currentLabel = `${startYr}/${String(startYr + 1).slice(-2)}`;
   return years.map((y) => ({ fiscal_year: y, is_current: y === currentLabel }));
 }
-
-const DEFAULT_FISCAL_YEARS = generateFiscalYears();
 
 type SortKey = 'efficiency' | 'flagged' | 'gap' | 'name' | 'allocated';
 type SortDir = 'asc' | 'desc';
@@ -242,37 +256,32 @@ function EfficiencyBar({ score }: { score: number }) {
 /* ═══════════ Page ═══════════ */
 
 export default function TransparencyPage() {
-  const { data: fiscalYearsRaw } = useAvailableFiscalYears();
-  // Normalize every source to bare "YYYY/YY" so the API-returned
-  // "FY2025/26" doesn't diverge from the local `generateFiscalYears()`
-  // fallback — otherwise `selectedYear` (set from the fallback on
-  // first render) never matches any button once the API resolves, and
-  // no pill is highlighted.
-  const years = useMemo(() => {
-    const raw = fiscalYearsRaw && fiscalYearsRaw.length > 0 ? fiscalYearsRaw : DEFAULT_FISCAL_YEARS;
-    return raw.map(normalizeFY);
-  }, [fiscalYearsRaw]);
+  // Years and default both come from /counties/fiscal-years — the periods
+  // county budget data actually exists for — not /audits/fiscal-years, which
+  // is every FiscalPeriod row. Four of the eight pills this page used to offer
+  // (FY2025/26 9M, FY2025/26 H1, FY2021/22, FY2020/21) carry no county budget
+  // rows, so clicking them emptied the page. Labels arrive bare ("2024/25") so
+  // `selectedYear` and the picker buttons compare equal (F37).
+  const { data: fiscalYearsMeta } = useCountyFiscalYears();
+  const { years, default: defaultYear } = useMemo(
+    () => transparencyYearOptions(fiscalYearsMeta),
+    [fiscalYearsMeta]
+  );
   const pickerYears = useMemo(() => toPickerOptions(years), [years]);
 
   // Land on a year the picker actually offers.
   //
-  // `selectedYear` was seeded from DEFAULT_FISCAL_YEARS — generateFiscalYears(),
-  // a wall-clock guess — and useState only takes its initial value, so once
-  // /audits/fiscal-years resolved the page was still sitting on FY2026/27: a
-  // year absent from its own picker, showing "No data yet" as the landing
-  // state (credibility audit F37). Now the choice waits for the real list and
-  // is applied when it arrives.
-  const defaultYear =
-    pickerYears.find((y) => y.is_current)?.fiscal_year ?? years[0] ?? null;
+  // The default used to be the wall-clock "current FY" — 2026/27 in September
+  // 2026, a year in no list at all — so the page fired two money-flow requests
+  // for a year with nothing behind it before correcting to years[0], the CRA
+  // projection. It now waits for the API's own answer and asks once.
   const [selectedYear, setSelectedYear] = useState<string>('');
   useEffect(() => {
     // Correct the selection whenever it is not one of the years the picker
-    // actually offers — which covers both "nothing chosen yet" and the case
-    // that kept breaking this page: the first render uses
-    // DEFAULT_FISCAL_YEARS, a wall-clock guess, and once
-    // /audits/fiscal-years resolves that guess is no longer in the list.
-    // Seeding state on first render alone left the page parked on FY2026/27
-    // with no pill highlighted and a "No data yet" body (F37).
+    // offers — which covers both "nothing chosen yet" and a year dropped from
+    // the list. Seeding on first render alone left the page parked on a year
+    // absent from its own picker, no pill highlighted, "No data yet" body
+    // (credibility audit F37).
     if (!defaultYear) return;
     if (!selectedYear || !years.includes(selectedYear)) {
       setSelectedYear(defaultYear);
@@ -354,9 +363,7 @@ export default function TransparencyPage() {
     if (!noSpendData) return false;
     const startYr = fiscalStartYear(selectedYear);
     if (startYr == null) return false;
-    const now = new Date();
-    const currentStartYr = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
-    return startYr >= currentStartYr;
+    return startYr >= currentFiscalStartYear();
   }, [countyRows, selectedYear]);
 
   const sortedRows = useMemo(() => {

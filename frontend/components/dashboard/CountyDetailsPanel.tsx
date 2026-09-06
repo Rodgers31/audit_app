@@ -306,7 +306,10 @@ export default function CountyDetailsPanel({ county, className = '' }: CountyDet
                   is identical for all 47 counties, so the bars said the same
                   thing about every county in Kenya. A disclaimer under them was
                   not enough: they were rendered as this county's spending mix. */}
-              <ModelledDataNote className='!px-3 !py-2 text-xs' />
+              <ModelledDataNote
+                className='!px-3 !py-2 text-xs'
+                budgetSource={county.budgetSource}
+              />
 
               {/* OAG Audit Findings */}
               <AuditFindings county={county} />

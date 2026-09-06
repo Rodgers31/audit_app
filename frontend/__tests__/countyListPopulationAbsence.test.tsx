@@ -134,6 +134,16 @@ jest.mock('@/lib/react-query', () => ({
     error: null,
     refetch: jest.fn(),
   }),
+  // The factory replaces the WHOLE module, so every hook the explorer calls
+  // has to appear here — a missing one is `undefined` at the call site, not a
+  // pass-through. This branch made the explorer resolve its fiscal year from
+  // the API instead of the clock, which added this call; the test was written
+  // on a branch where the hook did not exist yet, so only the merge has both.
+  // Same defect, same fix, as countySortControls.test.tsx one commit earlier.
+  //
+  // No year list: resolveExplorerYear yields undefined, the explorer sends no
+  // fiscal_year, and these tests stay about population.
+  useCountyFiscalYears: () => ({ data: undefined, isLoading: false, error: null }),
 }));
 
 // eslint-disable-next-line import/first

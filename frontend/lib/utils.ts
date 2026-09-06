@@ -143,36 +143,125 @@ export function getDebtRiskLevel(debtToGdpRatio: number | null | undefined): str
   return band === null ? 'Not assessed' : `${band} Risk`;
 }
 
-/**
- * Return the current Kenyan fiscal year label (e.g. "2024/25").
- * Kenya FY runs July 1 – June 30.
- */
-export function getCurrentFiscalYear(): string {
-  const now = new Date();
-  const startYear = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
-  return `${startYear}/${String(startYear + 1).slice(-2)}`;
+/** What `GET /api/v1/counties/fiscal-years` reports. */
+export interface CountyFiscalYears {
+  years: Array<{
+    label: string;
+    /** 'cob_cbirr' — the Controller of Budget reported this year;
+     *  'cra_model' — its figures are the CRA equitable-share model. */
+    source: 'cob_cbirr' | 'cra_model';
+    counties: number;
+  }>;
+  /** The year the API resolves to when asked for none. Null when it holds no
+   *  county budget data at all. */
+  default: string | null;
 }
 
 /**
- * Return the latest *completed* (reported) Kenyan fiscal year — i.e. the one
- * prior to the currently active FY. Execution data (actual spending, audits)
- * isn't published until well after year-end, so UI defaults that require
- * actuals should use this, not `getCurrentFiscalYear()`.
+ * The fiscal year the county explorer should show.
+ *
+ * The explorer used to seed its picker with `getLatestReportedFiscalYear()`,
+ * a label derived from `new Date()`. On 2026-09-05 that is "2025/26" — the CRA
+ * equitable-share projection — so the explorer asked for that year and
+ * published Baringo at KES 7.13B, while the county's own page sends no year,
+ * lets the API resolve the period from the rows that exist, and published
+ * KES 9.54B from the Controller of Budget's CBIRR. Same county, two budgets
+ * (credibility audit F7, reopened through the frontend's explicit
+ * `fiscal_year`).
+ *
+ * `meta.default` is resolved by the same rule `GET /counties` applies when
+ * given no year, so the label the page prints and the figures it fetched
+ * cannot describe different periods.
+ *
+ * Returns `undefined` when the API offers no years — the picker then has
+ * nothing to show, which is the honest answer. Falling back to a calendar
+ * label here would put a year on screen that nothing in the database supports.
  */
-export function getLatestReportedFiscalYear(): string {
-  const now = new Date();
-  const startYear = now.getMonth() >= 6 ? now.getFullYear() - 1 : now.getFullYear() - 2;
-  return `${startYear}/${String(startYear + 1).slice(-2)}`;
+export function resolveExplorerYear(
+  picked: string | undefined,
+  meta: CountyFiscalYears | undefined
+): string | undefined {
+  const offered = meta?.years.map((y) => y.label) ?? [];
+  // A stored or bookmarked choice only stands while the API still offers it.
+  if (picked && offered.includes(picked)) return picked;
+  return meta?.default ?? undefined;
 }
 
 /**
- * Generate an array of Kenyan fiscal year labels starting from the current year going back.
+ * A requested fiscal year, or `undefined` when the API would refuse it.
+ *
+ * The API no longer answers a `fiscal_year` it holds no county budget data
+ * for — it used to skip the period filter entirely and sum every period into
+ * one figure. It now returns 404, so a county page reached with a stale `?fy=`
+ * bookmark would render "Failed to load county data": wrong twice over, since
+ * the county loads fine and only the year is unavailable.
+ *
+ * Dropping the year sends the reader to the period the API resolves itself,
+ * which the page labels on screen — a dropped request, not a substituted
+ * figure.
+ *
+ * `meta === undefined` means the year list has not arrived, which is not the
+ * same as the year being refused: passing the request through keeps the common
+ * path to a single fetch, and a genuinely bad year self-corrects once the list
+ * lands.
  */
-export function generateFiscalYears(count = 5): string[] {
-  const now = new Date();
-  let startYear = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
-  return Array.from({ length: count }, (_, i) => {
-    const y = startYear - i;
-    return `${y}/${String(y + 1).slice(-2)}`;
-  });
+export function serviceableFiscalYear(
+  requested: string | undefined,
+  meta: CountyFiscalYears | undefined
+): string | undefined {
+  if (!requested || !meta) return requested;
+  return meta.years.some((y) => y.label === requested) ? requested : undefined;
+}
+
+/**
+ * The fiscal year the Follow the Money tab should show.
+ *
+ * It used to pick with `getLatestReportedFiscalYear()` matched against
+ * `/audits/fiscal-years` — every fiscal period, not the ones county budget data
+ * exists for — so in September 2026 it landed on FY2025/26, the CRA projection.
+ *
+ * Worse, it chose independently of the page it sits on: the Budget & Debt tab
+ * two clicks away could show FY2024/25 while this one showed FY2025/26, for the
+ * same county, with nothing saying they differed. So the page's own resolved
+ * year leads, and `resolveExplorerYear` drops it if the API no longer offers it.
+ *
+ * Precedence: the reader's selection, then the year the page is showing, then
+ * the API's default.
+ */
+export function moneyFlowDefaultYear(
+  picked: string | undefined,
+  pageYear: string | undefined,
+  meta: CountyFiscalYears | undefined
+): string | undefined {
+  return resolveExplorerYear(picked ?? pageYear, meta);
+}
+
+/**
+ * Year options for the national Follow the Money page, in the bare
+ * "YYYY/YY" form its picker compares on.
+ *
+ * That page took its years from `/audits/fiscal-years` — every `FiscalPeriod`
+ * row — and its default from a wall-clock "current FY". On 2026-09-06 the
+ * current FY was 2026/27, which appears in no list at all, so the page fired
+ * two money-flow requests for a year with nothing behind it before correcting
+ * to the newest list entry: FY2025/26, the CRA projection (405,100m) rather
+ * than the CBIRR-reported FY2024/25 (633,304m).
+ *
+ * Four of the eight pills it offered — FY2025/26 9M, FY2025/26 H1, FY2021/22,
+ * FY2020/21 — are periods carrying no county budget rows, so clicking them
+ * emptied the page.
+ *
+ * Both now come from `/counties/fiscal-years`, the same source the county
+ * pages use. Empty when the API says nothing: a calendar-derived label here is
+ * what put the page on a year its own picker did not offer.
+ */
+export function transparencyYearOptions(meta: CountyFiscalYears | undefined): {
+  years: string[];
+  default: string | undefined;
+} {
+  const strip = (y: string) => y.replace(/^FY\s*/i, '').trim();
+  return {
+    years: meta?.years.map((y) => strip(y.label)) ?? [],
+    default: meta?.default ? strip(meta.default) : undefined,
+  };
 }

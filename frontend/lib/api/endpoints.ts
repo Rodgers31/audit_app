@@ -29,6 +29,10 @@ export const COUNTIES_ENDPOINTS = {
   // Specialized queries
   TOP_PERFORMING: '/counties/top-performing',
   FLAGGED: '/counties/flagged',
+  // Fiscal years county budget data actually exists for, plus the one the
+  // API resolves to by default. Replaces the calendar-derived year the
+  // explorer used to seed its picker with.
+  FISCAL_YEARS: '/counties/fiscal-years',
 
   // County-specific data
   COMPREHENSIVE: (id: string) => `/counties/${id}/comprehensive`,

@@ -1,7 +1,13 @@
 /**
  * Counties API service
  */
-import { AccountabilityScorecard, County, CountyComprehensive } from '@/types';
+import {
+  AccountabilityScorecard,
+  BudgetSource,
+  County,
+  CountyComprehensive,
+} from '@/types';
+import type { CountyFiscalYears } from '@/lib/utils';
 import { apiClient } from './axios';
 import { COUNTIES_ENDPOINTS, buildUrlWithParams } from './endpoints';
 import { ApiResponse, CountyFilters, CountyResponse, PaginatedResponse } from './types';
@@ -27,6 +33,9 @@ interface BackendCountyResponse {
   budget_utilization?: number;
   development_budget?: number;
   recurrent_budget?: number;
+  /** 'cob_cbirr' | 'cra_model' | null — which rows the API summed for
+   *  total_budget. null when it published no budget for this county. */
+  budget_source?: BudgetSource;
   sector_breakdown?: Record<string, { allocated: number; spent: number }>;
   // Revenue / money
   money_received?: number;
@@ -174,6 +183,11 @@ export const transformCountyData = (bc: BackendCountyResponse): County => {
     pendingBills: reportedAmount(bc.pending_bills),
     developmentBudget: bc.development_budget || undefined,
     recurrentBudget: bc.recurrent_budget || undefined,
+    // Passed through verbatim, including null: the provenance note treats
+    // "no source reported" as a reason to make no claim, not as a default to
+    // the modelled wording. `?? null` would be the same value; an older API
+    // that omits the field entirely lands on undefined, which reads the same.
+    budgetSource: bc.budget_source,
     auditIssues: (bc.audit_issues || []).map((a) => ({
       id: String(a.id),
       type: 'financial' as const,
@@ -274,6 +288,22 @@ export const getTopPerformingCounties = async (limit: number = 10): Promise<Coun
 export const getFlaggedCounties = async (): Promise<CountyResponse[]> => {
   const response = await apiClient.get<ApiResponse<CountyResponse[]>>(COUNTIES_ENDPOINTS.FLAGGED);
   return response.data.data;
+};
+
+/**
+ * Which fiscal years county budget data exists for, and which one the API
+ * resolves to when asked for none.
+ *
+ * The explorer's year picker was seeded from the calendar, which named the
+ * in-progress FY — a CRA projection — while the county detail pages let the
+ * API resolve the period from the rows that exist. The two published different
+ * budgets for the same county. This is the one source both now use.
+ */
+export const getCountyFiscalYears = async (): Promise<CountyFiscalYears> => {
+  const response = await apiClient.get<CountyFiscalYears>(
+    COUNTIES_ENDPOINTS.FISCAL_YEARS
+  );
+  return response.data;
 };
 
 // Get comprehensive county data (one-stop detail)

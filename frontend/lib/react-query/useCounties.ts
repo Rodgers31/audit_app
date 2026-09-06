@@ -5,6 +5,7 @@ import { AccountabilityScorecard, CountyComprehensive } from '@/types';
 import { useInfiniteQuery, useQuery, UseQueryOptions } from '@tanstack/react-query';
 import {
   getCounties,
+  getCountyFiscalYears,
   getCountiesPaginated,
   getCounty,
   getCountyByCode,
@@ -16,6 +17,7 @@ import {
   searchCounties,
 } from '../api/counties';
 import { CountyFilters, CountyResponse } from '../api/types';
+import type { CountyFiscalYears } from '../utils';
 
 // Query keys for counties
 const QUERY_KEYS = {
@@ -153,6 +155,19 @@ export const useCountyAccountability = (
     queryFn: () => getCountyAccountability(id),
     enabled: !!id,
     staleTime: 10 * 60 * 1000,
+    ...options,
+  });
+};
+
+// Which fiscal years county budget data exists for, and the one to show
+// first. Long stale time: this only changes when a new report is ingested.
+export const useCountyFiscalYears = (
+  options?: Omit<UseQueryOptions<CountyFiscalYears>, 'queryKey' | 'queryFn'>
+) => {
+  return useQuery({
+    queryKey: ['counties', 'fiscal-years'] as const,
+    queryFn: getCountyFiscalYears,
+    staleTime: 30 * 60 * 1000,
     ...options,
   });
 };
