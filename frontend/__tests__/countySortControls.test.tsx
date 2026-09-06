@@ -111,6 +111,15 @@ jest.mock('@/lib/react-query', () => ({
     error: null,
     refetch: jest.fn(),
   }),
+  // The factory replaces the WHOLE module, so every hook the explorer calls
+  // has to appear here — a missing one is `undefined` at the call site, not a
+  // pass-through. The explorer now resolves its fiscal year from the API
+  // rather than the clock, so it calls this too.
+  //
+  // No year list: resolveExplorerYear then yields undefined, the explorer
+  // sends no fiscal_year, and these tests stay about sorting. Give it
+  // { years: [...], default: 'FY2024/25' } if a case ever needs a pinned year.
+  useCountyFiscalYears: () => ({ data: undefined, isLoading: false, error: null }),
 }));
 
 // eslint-disable-next-line import/first
