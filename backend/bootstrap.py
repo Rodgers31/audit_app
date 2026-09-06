@@ -32,6 +32,11 @@ from models import (
     Severity,
     SourceDocument,
 )
+from county_metrics_purge import (  # noqa: F401 - re-exported
+    PURGED_META_KEYS,
+    PURGED_METRIC_FIELDS,
+    purge_modelled_county_metrics,
+)
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
@@ -296,6 +301,15 @@ _MODELLED_COUNTY_METRICS = (
     "pending_bills",
     "missing_funds",
 )
+
+
+#: The purge and the field list it works from live in ``services`` so the
+#: Alembic revision that clears production can import them without dragging in
+#: ``database`` — see that module's docstring. Aliased here under their old
+#: private names because this module is where the writer and the census read
+#: them, and one definition is the point.
+_PURGED_METRIC_FIELDS = PURGED_METRIC_FIELDS
+_PURGED_META_KEYS = PURGED_META_KEYS
 
 
 def _fixture_document_ids(session: Session, filename: str) -> List[int]:
@@ -1841,37 +1855,29 @@ def initialize_reference_data(
             from seeding.utils import normalize_fiscal_label as _nlbl
 
             _fy_key = _nlbl(FISCAL_LABEL)
+            # One key: the county's code. This used to store thirteen more —
+            # budget_2025, revenue_2024, debt_outstanding, pending_bills,
+            # missing_funds, population, four ratios, a health score, an audit
+            # letter grade — and a second copy of seven of them under
+            # `financial_metrics`. Every one was modelled here (budget is
+            # population x KSh 4,500; debt is 15% of that; pending bills 8%;
+            # the "rates" are the same constant for 40 counties), and every
+            # one now has a publisher behind it or is withheld for having
+            # none. See _PURGED_METRIC_FIELDS for the field-by-field map, and
+            # purge_modelled_county_metrics for the databases that still hold
+            # what this loop wrote before today.
+            #
+            # `county_code` stays because it is an identifier rather than a
+            # claim, and /search and the entity listing read it from here.
             metrics = dict((meta.get("metrics") or {}).get(_fy_key, {}))
-            _rev = info.get("revenue_2024", 0)
-            metrics.update(
-                {
-                    "county_code": county_code,
-                    "population": info.get("population", 0),
-                    "budget_2025": info.get("budget_2025", 0),
-                    "revenue_2024": _rev,
-                    "local_revenue": _rev,
-                    "debt_outstanding": info.get("debt_outstanding", 0),
-                    "pending_bills": info.get("pending_bills", 0),
-                    "missing_funds": info.get("missing_funds", 0),
-                    "budget_execution_rate": info.get("budget_execution_rate", 0),
-                    "audit_rating": info.get("audit_rating", ""),
-                    "financial_health_score": info.get("financial_health_score", 0),
-                    "debt_to_budget_ratio": info.get("debt_to_budget_ratio", 0),
-                    "pending_bills_ratio": info.get("pending_bills_ratio", 0),
-                    "per_capita_budget": info.get("per_capita_budget", 0),
-                }
-            )
+            metrics = {
+                k: v for k, v in metrics.items() if k not in _PURGED_METRIC_FIELDS
+            }
+            metrics["county_code"] = county_code
 
             meta.setdefault("metrics", {})[_fy_key] = metrics
-            meta["financial_metrics"] = {
-                "budget_execution_rate": info.get("budget_execution_rate", 0),
-                "pending_bills": info.get("pending_bills", 0),
-                "financial_health_score": info.get("financial_health_score", 0),
-                "debt_outstanding": info.get("debt_outstanding", 0),
-                "missing_funds": info.get("missing_funds", 0),
-                "revenue_2024": _rev,
-                "local_revenue": _rev,
-            }
+            for _stale in _PURGED_META_KEYS:
+                meta.pop(_stale, None)
             meta["economic_profile"] = {
                 "county_type": info.get("county_type"),
                 "economic_base": info.get("economic_base"),

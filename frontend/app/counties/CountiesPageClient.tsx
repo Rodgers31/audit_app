@@ -9,11 +9,12 @@ import {
   compareByPublishedFigure,
   countyBudget,
   countyDebt,
+  countyPopulation,
   sumPublished,
 } from '@/lib/countyFigures';
 import { countyDebtRatio } from '@/components/map/MapUtilities';
-import { useCounties } from '@/lib/react-query';
-import { generateFiscalYears, getLatestReportedFiscalYear } from '@/lib/utils';
+import { useCounties, useCountyFiscalYears } from '@/lib/react-query';
+import { resolveExplorerYear } from '@/lib/utils';
 import { County } from '@/types';
 import { motion } from 'framer-motion';
 import {
@@ -59,13 +60,18 @@ function fmtKES(n: number): string {
 const RANKED_FIGURE: Partial<Record<SortField, (c: County) => number | undefined>> = {
   budget: countyBudget,
   debt: countyDebt,
+  population: countyPopulation,
 };
 
 /** Em dash for a figure the API withheld. A real 0 still renders as "0". */
 function fmtKESorDash(n: number | null | undefined): string {
   return n == null ? '—' : fmtKES(n);
 }
-function fmtPop(n: number): string {
+function fmtPop(n: number | null | undefined): string {
+  // Null for a county with no KNBS census row. `String(null)` printed the
+  // word "null" at the reader; the 0 the API used to send printed "0",
+  // which is worse — it reads as a count.
+  if (typeof n !== 'number' || !Number.isFinite(n)) return '—';
   if (n >= 1e6) return `${(n / 1e6).toFixed(1)}M`;
   if (n >= 1e3) return `${(n / 1e3).toFixed(0)}K`;
   return String(n);
@@ -140,6 +146,27 @@ const AUDIT_STATUS_CFG: Record<
 
 type SortField = 'name' | 'population' | 'health' | 'budget' | 'utilization' | 'debt';
 type SortDir = 'asc' | 'desc';
+
+/**
+ * The sort column and its direction, held as one value.
+ *
+ * They used to be two `useState`s, which left no single place to decide both:
+ * picking a direction meant calling `setSortDir` from inside the
+ * `setSortField` updater. React treats updaters as pure and may call them more
+ * than once — StrictMode does so deliberately — so the nested toggle ran twice
+ * per click and cancelled itself, and the column headers did nothing in
+ * development. One state means one updater, computing the pair from the pair.
+ */
+type SortState = { field: SortField; dir: SortDir };
+
+/** Opening sort. Kept in step with `defaultFilters.sortBy` ('budget-desc'). */
+const defaultSort: SortState = { field: 'budget', dir: 'desc' };
+
+/** Which way a column opens when it first takes over the sort. */
+function initialDir(field: SortField): SortDir {
+  // Names read A → Z; every other column leads with its interesting end.
+  return field === 'name' ? 'asc' : 'desc';
+}
 
 function gradeCategory(score: number | null | undefined): string {
   if (typeof score !== 'number' || !Number.isFinite(score)) return 'Unknown';
@@ -690,6 +717,7 @@ function FiltersSidebar({
               <option value='budget-asc'>{t('counties.sort.budget_low_high')}</option>
               <option value='debt-desc'>{t('counties.sort.debt_high_low')}</option>
               <option value='population-desc'>{t('counties.sort.population_high_low')}</option>
+              <option value='population-asc'>{t('counties.sort.population_low_high')}</option>
               <option value='health-desc'>{t('counties.sort.grade_best_worst')}</option>
               <option value='utilization-desc'>{t('counties.sort.execution_high_low')}</option>
             </select>
@@ -1214,7 +1242,11 @@ function CountyRankingsTable({
   sortField: SortField;
   sortDir: SortDir;
   onSort: (f: SortField) => void;
-  fiscalYear: string;
+  /** The year the list is showing, or undefined while the API has not said
+   *  which one that is. Undefined omits ?fy= from the row links, which leaves
+   *  the detail page to resolve the period itself — the same period this list
+   *  is showing, since both go through the API's own rule. */
+  fiscalYear: string | undefined;
 }) {
   const { t } = useLang();
   // BOTH pagination (?p=N) and the "View All" toggle (?view=all) are
@@ -1370,7 +1402,12 @@ function CountyRankingsTable({
               const grade = getGrade(county.financial_health_score);
               const issues = county.auditIssues?.length ?? 0;
               const auditCfg = AUDIT_STATUS_CFG[county.auditStatus ?? 'pending'];
-              const base = `/counties/${county.id}?fy=${encodeURIComponent(fiscalYear)}`;
+              // No ?fy= when the year is not yet known: pinning a period we
+              // cannot name would be a guess, and the detail page resolves the
+              // same one on its own.
+              const base = fiscalYear
+                ? `/counties/${county.id}?fy=${encodeURIComponent(fiscalYear)}`
+                : `/counties/${county.id}`;
               const rank = showAll ? i + 1 : (page - 1) * PAGE_SIZE + i + 1;
 
               return (
@@ -1514,20 +1551,35 @@ function CountyRankingsTable({
 
 export default function CountyExplorerPage() {
   const { t } = useLang();
-  // Year dropdown state (must be declared before useCounties which depends on it)
-  // Default to the latest *reported* FY — the current FY usually has allocations
-  // but no execution/audit data yet, which makes the KPI row look broken.
-  const YEARS = generateFiscalYears(4);
-  const [selectedYear, setSelectedYear] = useState(getLatestReportedFiscalYear());
+  // Year dropdown state (must be declared before useCounties which depends on it).
+  //
+  // This used to seed from generateFiscalYears(4) / getLatestReportedFiscalYear(),
+  // both computed from `new Date()` with no reference to what the database
+  // holds. In September 2026 that named FY2025/26 — the CRA equitable-share
+  // projection — so the explorer asked for that year and published Baringo at
+  // KES 7.13B, while the county's own page sent no year, let the API resolve
+  // the period from the rows that exist, and published KES 9.54B from the
+  // Controller of Budget's CBIRR. Same county, same site, two budgets
+  // (credibility audit F7, reopened through this explicit fiscal_year).
+  //
+  // The API now reports which years county budget data exists for and which
+  // one it resolves to by default, by the same rule GET /counties applies when
+  // given no year. Only a year the reader picks is sent — until then the query
+  // goes unparameterised and the backend chooses, so the label below and the
+  // figures on screen are always the same period.
+  const { data: fiscalYearsMeta } = useCountyFiscalYears();
+  const YEARS = fiscalYearsMeta?.years.map((y) => y.label) ?? [];
+  const [pickedYear, setPickedYear] = useState<string | undefined>(undefined);
+  const selectedYear = resolveExplorerYear(pickedYear, fiscalYearsMeta);
   const [yearOpen, setYearOpen] = useState(false);
 
-  const { data: counties, isLoading, error, refetch } = useCounties({ fiscalYear: selectedYear });
+  const { data: counties, isLoading, error, refetch } = useCounties({ fiscalYear: pickedYear });
 
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  const [sortField, setSortField] = useState<SortField>('budget');
-  const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [sort, setSort] = useState<SortState>(defaultSort);
+  const { field: sortField, dir: sortDir } = sort;
 
   // NOTE: "View All" toggle state now lives inside CountyRankingsTable
   // and is URL-driven via ?view=all so that back-navigation from a
@@ -1539,15 +1591,14 @@ export default function CountyExplorerPage() {
     setMapGrades((prev) => (prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]));
   }, []);
 
+  // Clicking the active column flips it; clicking any other takes it over at
+  // that column's opening direction. Both come out of one pure updater, so it
+  // is safe for React to call this twice with the same `prev`.
   const handleSort = useCallback((field: SortField) => {
-    setSortField((prev) => {
-      if (prev === field) {
-        setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-        return prev;
-      }
-      setSortDir(field === 'name' ? 'asc' : 'desc');
-      return field;
-    });
+    setSort((prev) => ({
+      field,
+      dir: prev.field === field ? (prev.dir === 'asc' ? 'desc' : 'asc') : initialDir(field),
+    }));
   }, []);
 
   // Apply sort when sortBy filter changes
@@ -1560,8 +1611,12 @@ export default function CountyExplorerPage() {
       health: 'health',
       utilization: 'utilization',
     };
-    if (fieldMap[sf]) setSortField(fieldMap[sf]);
-    if (sd === 'asc' || sd === 'desc') setSortDir(sd);
+    const field = fieldMap[sf];
+    const dir = sd === 'asc' || sd === 'desc' ? sd : undefined;
+    if (!field && !dir) return;
+    // Each half still falls back to what the sort already had, so a value the
+    // select does not spell out in full changes only the half it names.
+    setSort((prev) => ({ field: field ?? prev.field, dir: dir ?? prev.dir }));
   }, [filters.sortBy]);
 
   const handleApply = useCallback(() => {
@@ -1570,8 +1625,7 @@ export default function CountyExplorerPage() {
 
   const handleReset = useCallback(() => {
     setFilters(defaultFilters);
-    setSortField('budget');
-    setSortDir('desc');
+    setSort(defaultSort);
   }, []);
 
   const filtered = useMemo(() => {
@@ -1628,9 +1682,6 @@ export default function CountyExplorerPage() {
           cmp = compareByPublishedFigure(a, b, (c) => c.financial_health_score, 'asc');
           break;
 
-        case 'population':
-          cmp = a.population - b.population;
-          break;
         case 'utilization':
           // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- ordering only: sorts unreported counties last, publishes nothing
           cmp = (a.budgetUtilization ?? 0) - (b.budgetUtilization ?? 0);
@@ -1658,7 +1709,7 @@ export default function CountyExplorerPage() {
     const rows = filtered.map((c, i) => [
       i + 1,
       c.name,
-      c.population,
+      c.population ?? '',
       getGrade(c.financial_health_score).letter,
       countyBudget(c) ?? '',
       c.budgetUtilization != null ? c.budgetUtilization.toFixed(1) : '',
@@ -1670,7 +1721,7 @@ export default function CountyExplorerPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `county_data_${selectedYear.replace('/', '-')}.csv`;
+    a.download = `county_data_${(selectedYear ?? 'unspecified-fy').replace('/', '-')}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }, [filtered, selectedYear]);
@@ -1772,36 +1823,42 @@ export default function CountyExplorerPage() {
                 </p>
               </motion.div>
               <div className='flex items-center gap-3'>
-                <div className='relative'>
-                  <button
-                    onClick={() => setYearOpen((v) => !v)}
-                    className='inline-flex min-h-10 items-center gap-2 border border-white/25 bg-transparent px-4 py-2 text-sm font-semibold text-white hover:border-gov-gold'>
-                    {t('counties.header.year')}: {selectedYear}
-                    <ChevronDown
-                      size={14}
-                      className={`transition-transform ${yearOpen ? 'rotate-180' : ''}`}
-                    />
-                  </button>
-                  {yearOpen && (
-                    <div className='absolute right-0 z-50 mt-1 min-w-[140px] rounded-sm border border-neutral-border bg-surface-elevated py-1 shadow-elevated'>
-                      {YEARS.map((y) => (
-                        <button
-                          key={y}
-                          onClick={() => {
-                            setSelectedYear(y);
-                            setYearOpen(false);
-                          }}
-                          className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
-                            y === selectedYear
-                              ? 'bg-gov-forest/10 text-gov-forest dark:text-emerald-100 font-semibold'
-                              : 'text-gray-700 dark:text-neutral-muted hover:bg-gray-50 dark:bg-surface-elevated'
-                          }`}>
-                          {y}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                {/* No picker when the API offers no years — an empty dropdown
+                    is a control that claims choices exist. The list still
+                    renders: the query goes unparameterised and the backend
+                    resolves the period from the data. */}
+                {YEARS.length > 0 && (
+                  <div className='relative'>
+                    <button
+                      onClick={() => setYearOpen((v) => !v)}
+                      className='inline-flex min-h-10 items-center gap-2 border border-white/25 bg-transparent px-4 py-2 text-sm font-semibold text-white hover:border-gov-gold'>
+                      {t('counties.header.year')}: {selectedYear ?? '—'}
+                      <ChevronDown
+                        size={14}
+                        className={`transition-transform ${yearOpen ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+                    {yearOpen && (
+                      <div className='absolute right-0 z-50 mt-1 min-w-[140px] rounded-sm border border-neutral-border bg-surface-elevated py-1 shadow-elevated'>
+                        {YEARS.map((y) => (
+                          <button
+                            key={y}
+                            onClick={() => {
+                              setPickedYear(y);
+                              setYearOpen(false);
+                            }}
+                            className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
+                              y === selectedYear
+                                ? 'bg-gov-forest/10 text-gov-forest dark:text-emerald-100 font-semibold'
+                                : 'text-gray-700 dark:text-neutral-muted hover:bg-gray-50 dark:bg-surface-elevated'
+                            }`}>
+                            {y}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
                 <button
                   onClick={handleExport}
                   className='inline-flex min-h-10 items-center gap-2 border border-white/25 bg-transparent px-4 py-2 text-sm font-semibold text-white hover:border-gov-gold'>
@@ -1817,8 +1874,13 @@ export default function CountyExplorerPage() {
         <div className='max-w-[1400px] mx-auto px-5 lg:px-8 py-8'>
           {/* Data freshness banner */}
           <DataFreshnessBadge sources='COB' variant='banner' className='mb-2' />
-          {/* County financials are modelled estimates, not official COB data */}
-          <ModelledDataNote className='mb-4' />
+          {/* Provenance of the rows actually on screen — the CBIRR parse for
+              counties the Controller of Budget has published, the CRA model
+              for any that resolved to a projection period. */}
+          <ModelledDataNote
+            className='mb-4'
+            budgetSource={filtered.map((c) => c.budgetSource)}
+          />
 
           {/* KPI Cards */}
           <motion.div

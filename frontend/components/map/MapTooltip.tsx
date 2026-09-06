@@ -122,7 +122,10 @@ const STATUS_CONFIG: Record<
   },
 };
 
-const fmtPopulation = (n?: number) => {
+const fmtPopulation = (n?: number | null) => {
+  // Null for a county with no census row. Returning null drops the whole
+  // "N residents" clause from the subtitle below rather than leading it
+  // with a count nobody published.
   if (!n) return null;
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M residents`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K residents`;

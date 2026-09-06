@@ -23,6 +23,13 @@ describe('fmtPop', () => {
     expect(fmtPop(null as never)).not.toContain('null');
   });
 
+  // From the branch that widened `fmtPop` alongside this one: `undefined` and
+  // `NaN` reach it by the same routes null does, each with its own String()
+  // spelling.
+  it.each([null, undefined, NaN])('never prints a placeholder word for %p', (v) => {
+    expect(fmtPop(v as never)).not.toMatch(/null|undefined|NaN/);
+  });
+
   it('does not turn absence into a population of zero', () => {
     expect(fmtPop(null as never)).not.toContain('0');
   });

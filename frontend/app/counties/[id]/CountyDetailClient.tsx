@@ -14,7 +14,12 @@ import PDFExportButton from '@/components/PDFExportButton';
 import WatchButton from '@/components/WatchButton';
 import { useLang } from '@/lib/i18n/LangProvider';
 import type { TranslationKey } from '@/lib/i18n/messages';
-import { useCountyAccountability, useCountyComprehensive } from '@/lib/react-query/useCounties';
+import {
+  useCountyAccountability,
+  useCountyComprehensive,
+  useCountyFiscalYears,
+} from '@/lib/react-query/useCounties';
+import { serviceableFiscalYear } from '@/lib/utils';
 import { CountyComprehensive } from '@/types';
 import { motion } from 'framer-motion';
 import {
@@ -479,7 +484,15 @@ export default function CountyDetailClient() {
   // equitable-share projection period. That is why /counties said Mombasa's
   // budget was KES 14.63B and this page said KES 9.42B, and why Nairobi's
   // pending bills differed 23-fold between the two (credibility audit F7).
-  const fiscalYear = searchParams.get('fy') || undefined;
+  //
+  // The API now refuses a fiscal_year it holds no county budget data for
+  // (it used to skip the period filter and sum every period into one figure),
+  // so a stale ?fy= bookmark would render "Failed to load county data" over a
+  // county that loads perfectly well. An unservable year is dropped rather
+  // than sent; the API then resolves the period and the hero labels it.
+  const requestedYear = searchParams.get('fy') || undefined;
+  const { data: fiscalYearsMeta } = useCountyFiscalYears();
+  const fiscalYear = serviceableFiscalYear(requestedYear, fiscalYearsMeta);
   const { data, isLoading, error } = useCountyComprehensive(countyId, fiscalYear);
   // Prefetch accountability so the hero can show the grade immediately
   const { data: acctData } = useCountyAccountability(countyId);
@@ -641,6 +654,9 @@ export default function CountyDetailClient() {
               <h1 className='text-2xl sm:text-3xl font-bold tracking-tight'>
                 {data.name} {t('county.page.name_suffix')}
               </h1>
+              {/* Only what someone published. A county with no census row
+                  used to lead this line with "0 residents"; now it drops the
+                  clause and the separator with it. */}
               <p className='text-sm text-white/75 mt-1.5 max-w-md'>
                 {[
                   // A county nobody has counted gets no residents clause at

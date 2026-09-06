@@ -13,6 +13,7 @@ import ModelledDataNote from '@/components/ModelledDataNote';
 import api from '@/lib/api/axios';
 import { useLang } from '@/lib/i18n/LangProvider';
 import type { TranslationKey } from '@/lib/i18n/messages';
+import type { BudgetSource } from '@/types';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, Plus, X } from 'lucide-react';
 import Link from 'next/link';
@@ -58,6 +59,8 @@ interface CountySummary {
   audit_rating: string;
   audit_status: string;
   sector_breakdown?: Record<string, { allocated: number; spent: number }>;
+  /** Which rows the API summed for total_budget — drives the provenance note. */
+  budget_source?: BudgetSource;
 }
 
 function fmtKES(n: number | null | undefined): string {
@@ -241,7 +244,11 @@ function CompareContent() {
 
   return (
     <div className='space-y-6'>
-      <ModelledDataNote />
+      {/* The counties being compared; before any are picked, the pool they
+          are picked from. */}
+      <ModelledDataNote
+        budgetSource={(picked.length ? picked : all || []).map((c) => c.budget_source)}
+      />
       {isLoading && (
         <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-8 flex items-center justify-center gap-3 text-gray-500 dark:text-neutral-muted/80'>
           <Loader2 className='animate-spin' size={18} />

@@ -48,7 +48,10 @@ function fmtKES(n: number | undefined): string {
   return `KES ${n.toLocaleString()}`;
 }
 
-function fmtPop(n: number): string {
+function fmtPop(n: number | null | undefined): string {
+  // An em dash, like fmtKES above: the API returns null for a county with
+  // no KNBS census row, and "0" there reads as a population.
+  if (typeof n !== 'number' || !Number.isFinite(n)) return '—';
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
   return n.toLocaleString();
@@ -303,7 +306,10 @@ export default function CountyDetailsPanel({ county, className = '' }: CountyDet
                   is identical for all 47 counties, so the bars said the same
                   thing about every county in Kenya. A disclaimer under them was
                   not enough: they were rendered as this county's spending mix. */}
-              <ModelledDataNote className='!px-3 !py-2 text-xs' />
+              <ModelledDataNote
+                className='!px-3 !py-2 text-xs'
+                budgetSource={county.budgetSource}
+              />
 
               {/* OAG Audit Findings */}
               <AuditFindings county={county} />

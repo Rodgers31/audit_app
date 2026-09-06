@@ -46,6 +46,15 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
     return Math.min(95, baseScore + (budgetUtilization > 80 ? 10 : 0));
   };
 
+  /**
+   * How many residents a focus area touches — or `null` when nobody has
+   * counted them. Every one of these is a share of the county's population,
+   * so an absent census row makes the whole head-count unavailable rather
+   * than zero: "Affects ~0 citizens" is a claim about a real place.
+   */
+  const affected = (share: number): number | null =>
+    county.population != null ? Math.floor(county.population * share) : null;
+
   // Generate citizen-impact focus areas
   const getCitizenImpactIssues = () => {
     const score = calculateTransparencyScore();
@@ -55,14 +64,14 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
           category: 'Budget Execution',
           status: 'good',
           impact: 'Development projects delivered on time',
-          citizens_affected: Math.floor(county.population * 0.8),
+          citizens_affected: affected(0.8),
           icon: TrendingUp,
         },
         {
           category: 'Public Procurement',
           status: 'good',
           impact: 'Transparent tender processes saving taxpayer money',
-          citizens_affected: county.population,
+          citizens_affected: affected(1),
           icon: DollarSign,
         },
       ];
@@ -72,21 +81,21 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
           category: 'Budget Delays',
           status: 'concern',
           impact: 'Delayed infrastructure projects affecting daily commute',
-          citizens_affected: Math.floor(county.population * 0.6),
+          citizens_affected: affected(0.6),
           icon: TrendingDown,
         },
         {
           category: 'Procurement Issues',
           status: 'concern',
           impact: 'Questionable tender awards requiring investigation',
-          citizens_affected: county.population,
+          citizens_affected: affected(1),
           icon: AlertTriangle,
         },
         {
           category: 'Revenue Collection',
           status: 'attention',
           impact: 'Lower local revenue affecting service delivery',
-          citizens_affected: Math.floor(county.population * 0.4),
+          citizens_affected: affected(0.4),
           icon: Gavel,
         },
       ];
@@ -221,7 +230,7 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
                         <div className='flex justify-between'>
                           <span className='text-gray-600 dark:text-neutral-muted'>Citizens Served</span>
                           <span className='font-semibold'>
-                            {county.population?.toLocaleString()}
+                            {county.population != null ? county.population.toLocaleString() : '—'}
                           </span>
                         </div>
                       </div>
@@ -259,9 +268,11 @@ export default function TransparencyModal({ isOpen, onClose, county }: Transpare
                                     {impact.category}
                                   </h4>
                                   <p className='text-gray-700 dark:text-neutral-muted text-sm mb-2'>{impact.impact}</p>
-                                  <div className='text-xs text-gray-500 dark:text-neutral-muted/80'>
-                                    Affects ~{impact.citizens_affected.toLocaleString()} citizens
-                                  </div>
+                                  {impact.citizens_affected != null && (
+                                    <div className='text-xs text-gray-500 dark:text-neutral-muted/80'>
+                                      Affects ~{impact.citizens_affected.toLocaleString()} citizens
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </motion.div>

@@ -22,7 +22,7 @@ export default function BudgetTab({ data }: { data: CountyComprehensive }) {
 
   return (
     <div className='space-y-5'>
-      <ModelledDataNote />
+      <ModelledDataNote budgetSource={budget.source} />
       {/* Top-level budget stats */}
       <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-5'>
         <h3 className='text-sm font-semibold text-gray-800 dark:text-neutral-text mb-4'>{t('county.budget.summary')}</h3>

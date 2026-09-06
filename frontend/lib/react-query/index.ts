@@ -12,6 +12,7 @@ export {
   useCountyAccountability,
   useCountyByCode,
   useCountyComprehensive,
+  useCountyFiscalYears,
   useCountyFinancialSummary,
   useFlaggedCounties,
   useTopPerformingCounties,
