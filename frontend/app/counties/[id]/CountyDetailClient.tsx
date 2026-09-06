@@ -641,12 +641,23 @@ export default function CountyDetailClient() {
               <h1 className='text-2xl sm:text-3xl font-bold tracking-tight'>
                 {data.name} {t('county.page.name_suffix')}
               </h1>
+              {/* Only what someone published. A county with no census row
+                  used to lead this line with "0 residents"; now it drops the
+                  clause and the separator with it. */}
               <p className='text-sm text-white/75 mt-1.5 max-w-md'>
-                {fmtPop(data.demographics.population)} {t('county.hero.residents')}
-                {data.economic_profile.economic_base
-                  ? ` · ${fmtLabel(data.economic_profile.economic_base)} ${t('county.hero.economy_suffix')}`
-                  : ''}
-                {data.governor ? ` · ${t('county.hero.governor_short')} ${data.governor}` : ''}
+                {[
+                  typeof data.demographics.population === 'number'
+                    ? `${fmtPop(data.demographics.population)} ${t('county.hero.residents')}`
+                    : null,
+                  data.economic_profile.economic_base
+                    ? `${fmtLabel(data.economic_profile.economic_base)} ${t('county.hero.economy_suffix')}`
+                    : null,
+                  data.governor
+                    ? `${t('county.hero.governor_short')} ${data.governor}`
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
               </p>
               {data.budget.fiscal_year && (
                 <div className='mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/10 backdrop-blur-sm px-3 py-1 text-[11px] font-medium text-white/90 border border-white/10'>

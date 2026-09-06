@@ -3391,8 +3391,6 @@ async def get_county_comprehensive(
 
             meta = entity.meta or {}
             metrics = _resolve_fy_metrics(meta)
-            financial_metrics_meta = meta.get("financial_metrics") or {}
-            economic_profile = meta.get("economic_profile") or {}
 
             # --- Population ---
             pop = (
@@ -3694,9 +3692,9 @@ async def get_county_comprehensive(
 
             # Financial health — one disclosed composite, shared with the
             # /counties list endpoint so the listing's Health column and this
-            # page's HEALTH badge cannot disagree. Do NOT fall back to the
-            # cached `financial_metrics_meta.financial_health_score`; it is
-            # stale and desynced from the current fiscal-year filter.
+            # page's HEALTH badge cannot disagree. There is no cached score to
+            # fall back to any more: entity.meta["financial_metrics"] held a
+            # constant 75.0 for 40 of the 47 counties and has been deleted.
             #
             # The formula this replaces was a piecewise transform of
             # utilisation alone, and returned 0.0 — grade "C" — for a county
@@ -3781,15 +3779,22 @@ async def get_county_comprehensive(
             coords = COUNTY_COORDINATES.get(county_id, [36.8219, -1.2921])
 
             # --- Per-capita stats ---
-            population = (
-                pop.total_population if pop else int(metrics.get("population", 0))
-            )
+            # The census, or nothing. The rung below this one read
+            # entity.meta["metrics"]["population"] — bootstrap's copy of the
+            # same 2019 count, except for Mandera, where it held 1,200,890
+            # against the census's 867,457 — and when that was missing too it
+            # defaulted to 0, which says a county has no residents and takes
+            # per-capita budget down with it. Both are gone: the stored copy
+            # was deleted with the rest of the modelled metrics
+            # (bootstrap.purge_modelled_county_metrics), and absence is now
+            # published as absence.
+            population = pop.total_population if pop else None
             per_capita_budget = (
-                round(total_allocated / population, 2) if population > 0 else 0
+                round(total_allocated / population, 2) if population else None
             )
             per_capita_debt = (
                 round(total_debt / population, 2)
-                if total_debt is not None and population > 0
+                if total_debt is not None and population
                 else None
             )
 
