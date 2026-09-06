@@ -40,7 +40,9 @@ export interface CountyComprehensive {
   coordinates: [number, number];
   governor?: string;
   demographics: {
-    population: number;
+    // Null where no census row exists. The API used to publish 0 there,
+    // which claims a county has no residents.
+    population: number | null;
     population_year?: number;
     male_population?: number;
     female_population?: number;

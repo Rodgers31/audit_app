@@ -21,7 +21,12 @@ export function fmtKES(n: number | null | undefined): string {
   return `KES ${n.toLocaleString()}`;
 }
 
-export function fmtPop(n: number): string {
+export function fmtPop(n: number | null | undefined): string {
+  // The API returns null for a county nobody has counted. It used to serve
+  // bootstrap's stored copy of the census instead, and 0 when even that was
+  // missing; `String(null)` here would have printed the word "null" at a
+  // reader. All three are wrong answers to "we don't know".
+  if (typeof n !== 'number' || !Number.isFinite(n)) return ABSENT;
   if (n >= 1e6) return `${(n / 1e6).toFixed(2)}M`;
   if (n >= 1e3) return `${(n / 1e3).toFixed(0)}K`;
   return String(n);
