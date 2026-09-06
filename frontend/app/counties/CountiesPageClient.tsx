@@ -9,6 +9,7 @@ import {
   compareByPublishedFigure,
   countyBudget,
   countyDebt,
+  countyPopulation,
   sumPublished,
 } from '@/lib/countyFigures';
 import { countyDebtRatio } from '@/components/map/MapUtilities';
@@ -59,13 +60,18 @@ function fmtKES(n: number): string {
 const RANKED_FIGURE: Partial<Record<SortField, (c: County) => number | undefined>> = {
   budget: countyBudget,
   debt: countyDebt,
+  population: countyPopulation,
 };
 
 /** Em dash for a figure the API withheld. A real 0 still renders as "0". */
 function fmtKESorDash(n: number | null | undefined): string {
   return n == null ? '—' : fmtKES(n);
 }
-function fmtPop(n: number): string {
+function fmtPop(n: number | null | undefined): string {
+  // Null for a county with no KNBS census row. `String(null)` printed the
+  // word "null" at the reader; the 0 the API used to send printed "0",
+  // which is worse — it reads as a count.
+  if (typeof n !== 'number' || !Number.isFinite(n)) return '—';
   if (n >= 1e6) return `${(n / 1e6).toFixed(1)}M`;
   if (n >= 1e3) return `${(n / 1e3).toFixed(0)}K`;
   return String(n);
@@ -1628,9 +1634,6 @@ export default function CountyExplorerPage() {
           cmp = compareByPublishedFigure(a, b, (c) => c.financial_health_score, 'asc');
           break;
 
-        case 'population':
-          cmp = a.population - b.population;
-          break;
         case 'utilization':
           // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- ordering only: sorts unreported counties last, publishes nothing
           cmp = (a.budgetUtilization ?? 0) - (b.budgetUtilization ?? 0);
@@ -1658,7 +1661,7 @@ export default function CountyExplorerPage() {
     const rows = filtered.map((c, i) => [
       i + 1,
       c.name,
-      c.population,
+      c.population ?? '',
       getGrade(c.financial_health_score).letter,
       countyBudget(c) ?? '',
       c.budgetUtilization != null ? c.budgetUtilization.toFixed(1) : '',

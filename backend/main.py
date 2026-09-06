@@ -2999,7 +2999,16 @@ async def get_counties(fiscal_year: Optional[str] = None):
                         "name": name,
                         "code": county_id or "",
                         "coordinates": coords,
-                        "population": pop_data.total_population if pop_data else 0,
+                        # The census, or nothing. A 0 here is not a
+                        # smaller number than Lamu's 143,920 — it is the
+                        # statement that nobody lives in the county, and
+                        # this payload is what the Explorer table, the map
+                        # and the compare page all read. Absent sorts last
+                        # and renders as an em dash; a zero sorted first
+                        # and divided into per-capita budget.
+                        "population": (
+                            pop_data.total_population if pop_data else None
+                        ),
                         "budget_2025": total_allocated,
                         "total_budget": total_allocated,
                         "total_spent": total_spent,
@@ -3304,7 +3313,11 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                         "name": cname,
                         "code": county_id,
                         "coordinates": coords,
-                        "population": pop_data.total_population if pop_data else 0,
+                        # Absent stays absent — same rule as the list
+                        # endpoint above and the comprehensive one below.
+                        "population": (
+                            pop_data.total_population if pop_data else None
+                        ),
                         "budget_2025": total_allocated,
                         "total_budget": total_allocated,
                         "total_spent": total_spent,

@@ -84,7 +84,8 @@ export default function CountiesWithApi({ onCountySelect, selectedCounty }: Coun
               <h3 className='font-semibold text-gray-900 dark:text-neutral-text'>{county.name} County</h3>
               <p className='text-sm text-gray-600 dark:text-neutral-muted'>Code: {county.code}</p>
               <p className='text-sm text-gray-600 dark:text-neutral-muted'>
-                Population: {(county.population / 1e6).toFixed(1)}M
+                Population:{' '}
+                {county.population != null ? `${(county.population / 1e6).toFixed(1)}M` : '—'}
               </p>
               <div className='mt-2'>
                 <span

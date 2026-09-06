@@ -22,7 +22,7 @@ const formatKES = (amount: number | null | undefined): string => {
   return `KES ${amount}`;
 };
 
-const formatPop = (population: number | undefined): string => {
+const formatPop = (population: number | null | undefined): string => {
   if (!population || population === 0) return 'N/A';
   if (population >= 1e6) return `${(population / 1e6).toFixed(1)}M`;
   if (population >= 1e3) return `${(population / 1e3).toFixed(0)}K`;

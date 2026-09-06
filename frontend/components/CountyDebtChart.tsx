@@ -44,8 +44,12 @@ export default function CountyDebtChart({ county }: CountyDebtChartProps) {
     totalDebt != null && totalDebt > 0 ? `${((amount / totalDebt) * 100).toFixed(1)}%` : '—';
 
   const debtRatio = countyDebtRatio(county);
+  // A per-capita figure needs a population someone counted. Absent, it is
+  // withheld — not divided by the 0 the API used to send.
   const perCapitaDebt =
-    totalDebt != null && county.population > 0 ? Math.round(totalDebt / county.population) : null;
+    totalDebt != null && county.population != null && county.population > 0
+      ? Math.round(totalDebt / county.population)
+      : null;
 
   // Calculate pie chart segments
   const createPieSlice = (startAngle: number, endAngle: number, color: string) => {
