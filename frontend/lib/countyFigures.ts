@@ -22,6 +22,26 @@ export const countyBudget = (county: County): number | undefined =>
 export const countyDebt = (county: County): number | undefined =>
   county.debt ?? county.totalDebt;
 
+/**
+ * The county's census population, or `undefined` if nobody has counted it.
+ *
+ * Not a money figure, but the same rule and the same reason: `/counties`
+ * published 0 for a county with no KNBS row, and the ranking table's
+ * comparator subtracted it like any other number, so an uncounted county
+ * ranked below Lamu's 143,920 — the least populous county in Kenya, stated
+ * on the strength of a figure nobody published.
+ *
+ * A real 0 is kept, unlike `countyBudget`/`countyDebt`, which drop zeros
+ * because their fields are backend SUMs where 0 means "nothing aggregated".
+ * `population` is a single census row, not an aggregate: the backend now
+ * nulls it explicitly when the row is missing, so a 0 arriving here would
+ * have to be a count someone published.
+ */
+export const countyPopulation = (county: County): number | undefined =>
+  typeof county.population === 'number' && Number.isFinite(county.population)
+    ? county.population
+    : undefined;
+
 /** A total alongside how much of the population it actually covers. */
 export interface PublishedSum {
   /** Sum over the counties that published a figure; `null` if none did. */

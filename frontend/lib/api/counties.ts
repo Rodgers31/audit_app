@@ -11,7 +11,9 @@ interface BackendCountyResponse {
   id: string;
   name: string;
   code?: string;
-  population: number;
+  // Null where no KNBS census row exists for the county. The endpoint used to
+  // send 0 there, which is a count, not an absence.
+  population: number | null;
   budget_2025: number;
   financial_health_score?: number | null;
   audit_rating: string; // severity: info/warning/critical

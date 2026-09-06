@@ -139,7 +139,12 @@ export interface County {
   // was allocated nothing / owes nothing / received nothing.
   budget?: number;
   debt?: number;
-  population: number;
+  // Null when no KNBS census row exists — same rule, and the same field, as
+  // CountyComprehensive.demographics.population above. The list endpoint
+  // published 0 for those counties, and every consumer read it as a real
+  // count: the ranking table sorted them smallest, the compare page divided
+  // a budget by it.
+  population: number | null;
   // Backend actual fields
   budget_2025: number;
   financial_health_score?: number; // absent when fewer than two components can be computed
