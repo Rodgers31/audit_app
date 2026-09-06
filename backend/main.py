@@ -493,6 +493,159 @@ def county_own_source_revenue(budget_lines) -> Optional[float]:
     return None
 
 
+#: Grade bands for the financial-health index. Ours, not a publisher's, and
+#: reported alongside the score so a reader can see where a letter came from.
+_HEALTH_GRADE_BANDS = ((85, "A"), (70, "B+"), (55, "B"), (40, "B-"), (0, "C"))
+
+#: Pending bills at or above this share of a county's budget scores zero on
+#: that component. County pending bills are a first charge on the next year's
+#: budget, so a quarter of a budget already committed to last year's unpaid
+#: invoices is the point at which the component stops discriminating.
+_PENDING_BILLS_SEVERE_SHARE = 25.0
+
+#: How an audit opinion maps onto 0-100. The ordering is the Auditor-General's;
+#: the numbers are ours.
+_AUDIT_OPINION_SCORES = {
+    "clean": 100.0,
+    "qualified": 60.0,
+    "adverse": 20.0,
+    "disclaimer": 0.0,
+}
+
+#: Fewer components than this and no score is published. One component is not
+#: a composite — which is exactly what the previous score was.
+_MIN_HEALTH_COMPONENTS = 2
+
+
+def county_financial_health(
+    *,
+    total_allocated: Optional[float],
+    total_spent: Optional[float],
+    pending_bills: Optional[float],
+    audit_status: Optional[str],
+    own_source_target: Optional[float] = None,
+    own_source_actual: Optional[float] = None,
+) -> Optional[Dict[str, Any]]:
+    """A county's financial-health index, its grade, and what went into it.
+
+    WHAT THIS REPLACES
+    ------------------
+    The previous score was::
+
+        health_score = utilization              if utilization <= 95
+                     = 90                       if 95 < utilization <= 100
+                     = max(0, 80 - (util-100))  if utilization > 100
+
+    — a piecewise transform of ONE input. A county that had spent 42.9% of its
+    budget was shown "42.9/100" and a grade of B-, beside a Budget Utilisation
+    figure of 42.9%: the same number twice, the second time wearing the word
+    "health". And ``total_allocated == 0`` gave a score of 0.0, which graded a
+    county with no budget data a C.
+
+    WHAT IT IS NOW
+    --------------
+    An equal-weighted mean of the components below, each of which is derived
+    from a published figure and each of which is REPORTED with the score, so
+    the number can be taken apart:
+
+    ``budget_absorption``  spent vs allocated (Controller of Budget). Scored
+        symmetrically about 100 — under-spending is a failure to deliver and
+        over-spending is a failure to budget, so both cost the same.
+    ``own_source_revenue`` realised vs target (CBIRR Table 2.1). Capped at
+        100 so a lowballed target cannot buy a high score.
+    ``pending_bills``      pending bills as a share of budget, inverted.
+    ``audit_opinion``      the Auditor-General's opinion.
+
+    Equal weights are a deliberate choice, not a measured one: any other
+    weighting would assert a ranking of importance that nobody has published.
+    They are stated in the payload for the same reason.
+
+    Returns None when fewer than two components can be computed. A composite
+    of one component is not a composite, and absence must not read as zero.
+    """
+    components: List[Dict[str, Any]] = []
+
+    if total_allocated and total_allocated > 0 and total_spent is not None:
+        absorption = total_spent / total_allocated * 100
+        components.append(
+            {
+                "name": "budget_absorption",
+                "score": round(max(0.0, 100.0 - abs(100.0 - absorption)), 1),
+                "observed": round(absorption, 1),
+                "basis": (
+                    "spent vs allocated, Controller of Budget; scored "
+                    "symmetrically about 100%"
+                ),
+            }
+        )
+
+    if own_source_target and own_source_target > 0 and own_source_actual is not None:
+        performance = own_source_actual / own_source_target * 100
+        components.append(
+            {
+                "name": "own_source_revenue",
+                "score": round(min(100.0, max(0.0, performance)), 1),
+                "observed": round(performance, 1),
+                "basis": "realised vs target, CBIRR own-source revenue table",
+            }
+        )
+
+    if total_allocated and total_allocated > 0 and pending_bills is not None:
+        share = pending_bills / total_allocated * 100
+        components.append(
+            {
+                "name": "pending_bills",
+                "score": round(
+                    max(0.0, 100.0 * (1 - share / _PENDING_BILLS_SEVERE_SHARE)), 1
+                ),
+                "observed": round(share, 1),
+                "basis": (
+                    f"pending bills as a share of budget, Treasury BROP; zero "
+                    f"at {_PENDING_BILLS_SEVERE_SHARE:.0f}% or above"
+                ),
+            }
+        )
+
+    opinion_score = _AUDIT_OPINION_SCORES.get((audit_status or "").lower())
+    if opinion_score is not None:
+        components.append(
+            {
+                "name": "audit_opinion",
+                "score": opinion_score,
+                "observed": audit_status,
+                "basis": "Office of the Auditor-General opinion",
+            }
+        )
+
+    if len(components) < _MIN_HEALTH_COMPONENTS:
+        return None
+
+    score = round(sum(c["score"] for c in components) / len(components), 1)
+    grade = next(letter for floor, letter in _HEALTH_GRADE_BANDS if score >= floor)
+    return {
+        "score": score,
+        "grade": grade,
+        "weighting": "equal",
+        "components": components,
+    }
+
+
+def county_own_source_target(budget_lines) -> Optional[float]:
+    """The county's own-source revenue TARGET, or None.
+
+    The CBIRR prints target and realised side by side; the realised figure is
+    what gets published as revenue, and the pair is what makes a revenue
+    PERFORMANCE component possible.
+    """
+    for line in budget_lines or []:
+        if (line.category or "").strip().lower() != OWN_SOURCE_REVENUE_CATEGORY:
+            continue
+        if line.allocated_amount is None:
+            continue
+        return float(line.allocated_amount)
+    return None
+
+
 def _debt_sustainability(
     total_debt: Optional[float], total_allocated: float
 ) -> Optional[str]:
@@ -2727,17 +2880,19 @@ async def get_counties(fiscal_year: Optional[str] = None):
                     elif sev == "critical":
                         audit_status = "adverse"
 
-                health_score = 0.0
-                if total_allocated > 0:
-                    utilization = (
-                        (total_spent / total_allocated * 100) if total_spent > 0 else 0
-                    )
-                    if utilization <= 95:
-                        health_score = min(utilization, 95)
-                    elif utilization <= 100:
-                        health_score = 90
-                    else:
-                        health_score = max(0, 80 - (utilization - 100))
+                # One disclosed composite, shared by all three endpoints — see
+                # county_financial_health. The formula this replaces was a piecewise
+                # transform of utilisation alone, so the "health" score printed the
+                # Budget Utilisation figure a second time.
+                _health = county_financial_health(
+                    total_allocated=total_allocated,
+                    total_spent=total_spent,
+                    pending_bills=pending_bills,
+                    audit_status=audit_status,
+                    own_source_target=county_own_source_target(budget_lines),
+                    own_source_actual=county_own_source_revenue(budget_lines),
+                )
+                health_score = _health["score"] if _health else None
 
                 meta = e.meta or {}
                 metrics = _resolve_fy_metrics(meta, fiscal_year)
@@ -2783,7 +2938,8 @@ async def get_counties(fiscal_year: Optional[str] = None):
                         "debt": total_debt,
                         "total_debt": total_debt,
                         "gdp": float(gdp_data.gdp_value) if gdp_data else None,
-                        "financial_health_score": round(health_score, 1),
+                        "financial_health_score": health_score,
+                        "financial_health": _health,
                         "audit_rating": audit_rating,
                         "audit_status": audit_status,
                         "last_audit_date": last_audit_date,
@@ -3003,19 +3159,19 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                         elif sev == "critical":
                             audit_status = "adverse"
 
-                    health_score = 0.0
-                    if total_allocated > 0:
-                        utilization = (
-                            (total_spent / total_allocated * 100)
-                            if total_spent > 0
-                            else 0
-                        )
-                        if utilization <= 95:
-                            health_score = min(utilization, 95)
-                        elif utilization <= 100:
-                            health_score = 90
-                        else:
-                            health_score = max(0, 80 - (utilization - 100))
+                    # One disclosed composite, shared by all three endpoints — see
+                    # county_financial_health. The formula this replaces was a piecewise
+                    # transform of utilisation alone, so the "health" score printed the
+                    # Budget Utilisation figure a second time.
+                    _health = county_financial_health(
+                        total_allocated=total_allocated,
+                        total_spent=total_spent,
+                        pending_bills=pending_bills,
+                        audit_status=audit_status,
+                        own_source_target=county_own_source_target(budget_lines),
+                        own_source_actual=county_own_source_revenue(budget_lines),
+                    )
+                    health_score = _health["score"] if _health else None
 
                     meta = e.meta or {}
                     metrics = _resolve_fy_metrics(meta, fiscal_year)
@@ -3087,7 +3243,8 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                         "debt": total_debt,
                         "total_debt": total_debt,
                         "gdp": float(gdp_data.gdp_value) if gdp_data else None,
-                        "financial_health_score": round(health_score, 1),
+                        "financial_health_score": health_score,
+                        "financial_health": _health,
                         "audit_rating": audit_rating,
                         "audit_status": audit_status,
                         "last_audit_date": last_audit_date,
@@ -3440,34 +3597,25 @@ async def get_county_comprehensive(
                 elif sev == "critical":
                     audit_status = "adverse"
 
-            # Financial health score — computed live from the same budget_lines
-            # the /counties list endpoint uses, so the listing's Health column
-            # and the detail-page HEALTH badge always show the same letter for
-            # the same county/FY. Do NOT fall back to the cached
-            # `financial_metrics_meta.financial_health_score`; it's stale and
-            # desynced from the current fiscal-year filter.
-            health_score = 0.0
-            if total_allocated > 0:
-                utilization = (
-                    (total_spent / total_allocated * 100) if total_spent > 0 else 0
-                )
-                if utilization <= 95:
-                    health_score = min(utilization, 95)
-                elif utilization <= 100:
-                    health_score = 90
-                else:
-                    health_score = max(0, 80 - (utilization - 100))
-
-            # Letter grade from health score
-            grade = "C"
-            if health_score >= 85:
-                grade = "A"
-            elif health_score >= 70:
-                grade = "B+"
-            elif health_score >= 55:
-                grade = "B"
-            elif health_score >= 40:
-                grade = "B-"
+            # Financial health — one disclosed composite, shared with the
+            # /counties list endpoint so the listing's Health column and this
+            # page's HEALTH badge cannot disagree. Do NOT fall back to the
+            # cached `financial_metrics_meta.financial_health_score`; it is
+            # stale and desynced from the current fiscal-year filter.
+            #
+            # The formula this replaces was a piecewise transform of
+            # utilisation alone, and returned 0.0 — grade "C" — for a county
+            # with no budget data at all.
+            _health = county_financial_health(
+                total_allocated=total_allocated,
+                total_spent=total_spent,
+                pending_bills=pending_bills,
+                audit_status=audit_status,
+                own_source_target=county_own_source_target(budget_lines),
+                own_source_actual=county_own_source_revenue(budget_lines),
+            )
+            health_score = _health["score"] if _health else None
+            grade = _health["grade"] if _health else None
 
             # --- Missing funds ---
             # Same publication gate as /accountability/missing-funds: a case
@@ -3696,7 +3844,7 @@ async def get_county_comprehensive(
                 "audit": {
                     "status": audit_status,
                     "grade": grade,
-                    "health_score": round(health_score, 1),
+                    "health_score": health_score,
                     "findings_count": len(audits),
                     "total_amount_involved": (
                         total_audit_amount if any_audit_amount else None
@@ -3733,7 +3881,7 @@ async def get_county_comprehensive(
                 },
                 # Financial summary
                 "financial_summary": {
-                    "health_score": round(health_score, 1),
+                    "health_score": health_score,
                     "grade": grade,
                     "budget_execution_rate": round(
                         (

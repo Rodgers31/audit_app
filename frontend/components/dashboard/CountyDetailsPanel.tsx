@@ -86,13 +86,16 @@ function auditLabelKey(status?: string): TranslationKey {
   }
 }
 
-function healthColor(score: number) {
+function healthColor(score: number | null | undefined) {
+  // Absent scores get a neutral colour, not the red of a bad one.
+  if (typeof score !== 'number' || !Number.isFinite(score)) return 'text-gray-400';
   if (score >= 70) return 'text-emerald-600';
   if (score >= 55) return 'text-amber-600';
   return 'text-red-600';
 }
 
-function healthBarColor(score: number) {
+function healthBarColor(score: number | null | undefined) {
+  if (typeof score !== 'number' || !Number.isFinite(score)) return 'from-gray-200 to-gray-300';
   if (score >= 70) return 'from-emerald-400 to-emerald-600';
   if (score >= 55) return 'from-amber-400 to-amber-500';
   return 'from-red-400 to-red-600';
@@ -188,16 +191,18 @@ export default function CountyDetailsPanel({ county, className = '' }: CountyDet
                 <div className='flex items-center justify-between mb-1'>
                   <span className='text-[11px] text-gray-500 dark:text-neutral-muted/80 font-medium'>{t('home.county_panel.financial_health')}</span>
                   <span
-                    className={`text-base font-bold tabular-nums ${healthColor(county.financial_health_score)}`}>
-                    {county.financial_health_score}
-                    <span className='text-[11px] font-normal text-gray-400 dark:text-neutral-muted/80'>/100</span>
+                    className={`text-base font-bold tabular-nums ${healthColor(county.financial_health_score ?? null)}`}>
+                    {county.financial_health_score ?? '—'}
+                    {county.financial_health_score != null && (
+                      <span className='text-[11px] font-normal text-gray-400 dark:text-neutral-muted/80'>/100</span>
+                    )}
                   </span>
                 </div>
                 <div className='h-1.5 rounded-full bg-gray-100 dark:bg-surface-elevated overflow-hidden'>
                   <motion.div
                     key={`health-${county.id}`}
                     initial={{ width: 0 }}
-                    animate={{ width: `${county.financial_health_score}%` }}
+                    animate={{ width: `${county.financial_health_score ?? 0}%` }}
                     transition={{ duration: 0.5, ease: 'easeOut', delay: 0.1 }}
                     className={`h-full rounded-full bg-gradient-to-r ${healthBarColor(county.financial_health_score)}`}
                   />

@@ -13,7 +13,7 @@ interface BackendCountyResponse {
   code?: string;
   population: number;
   budget_2025: number;
-  financial_health_score: number;
+  financial_health_score?: number | null;
   audit_rating: string; // severity: info/warning/critical
   audit_status: string; // clean/qualified/adverse/disclaimer/pending
   last_audit_date?: string;
@@ -95,15 +95,32 @@ export const transformCountyData = (bc: BackendCountyResponse): County => {
   const budget = publishedAmount(bc.total_budget, bc.budget_2025);
   const debt = publishedAmount(bc.total_debt, bc.debt);
 
-  // Fiscal grade — derived from financial_health_score (which is budget
-  // utilisation), NOT an audit opinion. Kept in its own field so the UI
-  // can never present a modelled number as an OAG audit rating: production
-  // currently has audit_rating="" / audit_status="pending" for all 47
-  // counties (the audits seeding domain hasn't landed county opinions),
-  // and this derived grade used to be displayed as "Audit Rating".
-  const score = bc.financial_health_score || 0;
+  // Fiscal grade — from the backend's financial-health index, NOT an audit
+  // opinion. Kept in its own field so the UI can never present a computed
+  // number as an OAG audit rating: production currently has audit_rating="" /
+  // audit_status="pending" for many counties, and this derived grade used to
+  // be displayed as "Audit Rating".
+  //
+  // The index is no longer budget utilisation under another name — it is an
+  // equal-weighted composite of absorption, own-source revenue performance,
+  // pending-bill burden and audit opinion, and the API reports its components.
+  //
+  // `|| 0` here graded a county with no score at all a "C". The backend now
+  // returns null when fewer than two components can be computed, and a county
+  // nobody can score must not be given the lowest grade.
+  const score = reportedAmount(bc.financial_health_score);
   const fiscalGrade =
-    score >= 85 ? 'A' : score >= 70 ? 'B+' : score >= 55 ? 'B' : score >= 40 ? 'B-' : 'C';
+    score == null
+      ? undefined
+      : score >= 85
+        ? 'A'
+        : score >= 70
+          ? 'B+'
+          : score >= 55
+            ? 'B'
+            : score >= 40
+              ? 'B-'
+              : 'C';
 
   // The backend already classifies audit_status – use it directly.
   const validStatuses = ['clean', 'qualified', 'adverse', 'disclaimer'];
@@ -124,7 +141,7 @@ export const transformCountyData = (bc: BackendCountyResponse): County => {
     code: bc.code || bc.id,
     coordinates,
     budget_2025: bc.budget_2025,
-    financial_health_score: bc.financial_health_score,
+    financial_health_score: score,
     // Real OAG rating only — empty until the audits pipeline provides one.
     // The backend currently mirrors audit SEVERITY ("info"/"warning"/
     // "critical") into audit_rating; that's a status, not a rating, so

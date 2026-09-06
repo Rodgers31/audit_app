@@ -152,3 +152,48 @@ describe('pendingBills: not reported is not zero', () => {
     expect(county.pendingBills).toBe(86_769_200_000);
   });
 });
+
+describe('fiscal grade: no score means no grade', () => {
+  // The financial-health index returns null when fewer than two of its
+  // components can be computed. `bc.financial_health_score || 0` graded such
+  // a county a "C" — the lowest grade, awarded for having no data.
+  it('does not grade a county the API could not score', () => {
+    const county = transformCountyData({
+      id: 'x',
+      name: 'X',
+      financial_health_score: null,
+    } as never);
+
+    expect(county.financial_health_score).toBeUndefined();
+    expect(county.fiscal_grade).toBeUndefined();
+  });
+
+  it('does not turn an absent score into zero', () => {
+    const county = transformCountyData({ id: 'x', name: 'X' } as never);
+
+    expect(county.financial_health_score).not.toBe(0);
+    expect(county.fiscal_grade).not.toBe('C');
+  });
+
+  it('grades a county that has a score', () => {
+    const county = transformCountyData({
+      id: 'y',
+      name: 'Y',
+      financial_health_score: 59.6,
+    } as never);
+
+    expect(county.financial_health_score).toBe(59.6);
+    expect(county.fiscal_grade).toBe('B');
+  });
+
+  it('keeps a genuine zero score, which is a measurement', () => {
+    const county = transformCountyData({
+      id: 'z',
+      name: 'Z',
+      financial_health_score: 0,
+    } as never);
+
+    expect(county.financial_health_score).toBe(0);
+    expect(county.fiscal_grade).toBe('C');
+  });
+});

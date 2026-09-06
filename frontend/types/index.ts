@@ -137,9 +137,9 @@ export interface County {
   population: number;
   // Backend actual fields
   budget_2025: number;
-  financial_health_score: number;
+  financial_health_score?: number; // absent when fewer than two components can be computed
   audit_rating: string; // Real OAG rating — empty string until audits pipeline provides one
-  fiscal_grade: string; // Derived from financial_health_score (budget utilisation) — NOT an audit opinion
+  fiscal_grade?: string; // From the financial-health composite — NOT an audit opinion; absent when it cannot be computed
   // Legacy frontend fields for compatibility
   auditStatus?: 'clean' | 'qualified' | 'adverse' | 'disclaimer' | 'pending';
   lastAuditDate?: string;

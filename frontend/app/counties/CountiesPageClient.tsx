@@ -75,7 +75,12 @@ function fmtPop(n: number): string {
 // `financial_summary.grade` bands in main.py so the listing and the
 // county detail hero show the same letter for the same county.
 //   A ≥ 85 · B+ ≥ 70 · B ≥ 55 · B- ≥ 40 · else C
-function getGrade(score: number) {
+function getGrade(score: number | null | undefined) {
+  // The backend returns null when fewer than two of the health index's
+  // components can be computed. A county nobody can score must not be handed
+  // the lowest grade, which is what fell out of the previous `|| 0`.
+  if (typeof score !== 'number' || !Number.isFinite(score))
+    return { letter: '—', cls: 'bg-gray-200 text-gray-600' };
   if (score >= 85) return { letter: 'A', cls: 'bg-emerald-500 text-white' };
   if (score >= 70) return { letter: 'B+', cls: 'bg-green-500 text-white' };
   if (score >= 55) return { letter: 'B', cls: 'bg-amber-500 text-white' };
@@ -136,7 +141,8 @@ const AUDIT_STATUS_CFG: Record<
 type SortField = 'name' | 'population' | 'health' | 'budget' | 'utilization' | 'debt';
 type SortDir = 'asc' | 'desc';
 
-function gradeCategory(score: number): string {
+function gradeCategory(score: number | null | undefined): string {
+  if (typeof score !== 'number' || !Number.isFinite(score)) return 'Unknown';
   if (score >= 70) return 'A';
   if (score >= 55) return 'B';
   if (score >= 40) return 'C';
@@ -941,8 +947,11 @@ function CountyInsightsPanel({ counties }: { counties: County[] }) {
   const { t } = useLang();
 
   const { best, worst, stats } = useMemo(() => {
-    const sorted = [...counties].sort(
-      (a, b) => b.financial_health_score - a.financial_health_score
+    // Absent scores sort LAST in both directions — the helper takes the
+    // direction rather than returning a value the caller negates, because a
+    // flipped +/-1 put the unscored counties at the top of "best".
+    const sorted = [...counties].sort((a, b) =>
+      compareByPublishedFigure(a, b, (c) => c.financial_health_score, 'desc')
     );
     const count = sorted.length;
     // Take top 3 and bottom 3 — guaranteed no overlap when count > 5
@@ -961,7 +970,14 @@ function CountyInsightsPanel({ counties }: { counties: County[] }) {
         ? utilReporters.reduce((s, c) => s + (c.budgetUtilization as number), 0) /
           utilReporters.length
         : null;
-    const avgHealth = counties.reduce((s, c) => s + c.financial_health_score, 0) / (count || 1);
+    // Same rule as avgUtil above: a county with no score is not a county
+    // that scored zero.
+    const healthReporters = counties.filter((c) => c.financial_health_score != null);
+    const avgHealth =
+      healthReporters.length > 0
+        ? healthReporters.reduce((s, c) => s + (c.financial_health_score as number), 0) /
+          healthReporters.length
+        : null;
 
     return {
       best: bestList,
@@ -1002,8 +1018,12 @@ function CountyInsightsPanel({ counties }: { counties: County[] }) {
         <div className='flex items-center gap-1.5 text-xs'>
           <span className='font-semibold text-gray-700 dark:text-neutral-muted'>{t('counties.insights.avg_health')}:</span>
           <span
-            className={`px-1.5 py-0.5 rounded font-bold text-[11px] ${GRADE_COLORS[gradeCategory(stats.avgHealth)]}`}>
-            {gradeCategory(stats.avgHealth)} ({stats.avgHealth.toFixed(0)})
+            className={`px-1.5 py-0.5 rounded font-bold text-[11px] ${
+              GRADE_COLORS[gradeCategory(stats.avgHealth)] ?? 'bg-gray-200 text-gray-600'
+            }`}>
+            {stats.avgHealth == null
+              ? '—'
+              : `${gradeCategory(stats.avgHealth)} (${stats.avgHealth.toFixed(0)})`}
           </span>
         </div>
       </div>
@@ -1604,7 +1624,8 @@ export default function CountyExplorerPage() {
           break;
 
         case 'health':
-          cmp = a.financial_health_score - b.financial_health_score;
+          // Absent last, whichever way the column is sorted.
+          cmp = compareByPublishedFigure(a, b, (c) => c.financial_health_score, 'asc');
           break;
 
         case 'population':
