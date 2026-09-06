@@ -251,6 +251,35 @@ def _all_registered_domains(seen: dict) -> List[str]:
     return sorted(registered | set(seen))
 
 
+def _run_order(job) -> tuple:
+    """Sort key for job recency that never compares ``None`` to ``None``.
+
+    ``started_at`` is non-null in practice, but two rows missing it made the
+    plain ``(is not None, started_at)`` key raise on the tuple's second
+    element. Ordering by recency must not be able to crash the gate.
+    """
+    started = getattr(job, "started_at", None)
+    return (started is not None, started or datetime.min)
+
+
+def _latest_run_reasons(jobs) -> set:
+    """The fallback reason(s) recorded by the most recent run that recorded one.
+
+    Rows tied on ``started_at`` are kept together: concurrent writers are
+    describing the same moment, and a moment its own writers disagree about is
+    not a moment we can call healthy.
+    """
+    reasoned = [j for j in jobs if (j.meta or {}).get("source_fallback_reason")]
+    if not reasoned:
+        return set()
+    newest = max(_run_order(j) for j in reasoned)
+    return {
+        (j.meta or {}).get("source_fallback_reason")
+        for j in reasoned
+        if _run_order(j) == newest
+    }
+
+
 def check_ingestion_freshness(
     session, now: Optional[datetime] = None, domains: Optional[List[str]] = None
 ) -> List[Finding]:
@@ -333,7 +362,32 @@ def check_ingestion_freshness(
                 if (j.meta or {}).get("source_fallback_reason")
             }
             declared = bool(reasons) and reasons <= DECLARED_NO_SOURCE_REASONS
-            superseded = bool(reasons) and reasons <= SUPERSEDED_REASONS
+            # Supersession is a claim about NOW, so it is judged on the newest
+            # run alone rather than on the union above.
+            #
+            # Every bootstrap run writes ONE job row whose reason is already
+            # aggregated across all three fixtures (``bootstrap_provenance``
+            # -> ``initialize_reference_data``), so that row is a complete,
+            # current answer. The union asks a different question — "was this
+            # domain ever unhealthy in the last MAX_DAYS_SINCE_LIVE days" — to
+            # which, after any one bad night, the answer is permanently yes.
+            # That is why #173 did not turn the nightly green: production's
+            # window held 27 pre-fix `fixture_stale` rows and one
+            # `bootstrap_failed`, so the newest run's verified
+            # `fixture_superseded` could not be heard for another fortnight,
+            # and any single failure re-armed the veto for a fortnight more.
+            # The message already came from the newest row, so the gate
+            # printed "all 3 fixture(s) superseded by live data" and failed
+            # the run in the same line.
+            #
+            # ``declared`` deliberately keeps the union: "no extractor was
+            # ever built for this domain" is a stable property of the
+            # codebase, so a run that disagrees is suspicious, not superseded
+            # (see test_staleness_declared_no_source.py). "Every fixture is
+            # vestigial" is a property of the live DATABASE, which this
+            # pipeline is supposed to flip from false to true.
+            latest_reasons = _latest_run_reasons(jobs)
+            superseded = bool(latest_reasons) and latest_reasons <= SUPERSEDED_REASONS
             # WHICH file, not just "a fixture". bootstrap already records the
             # offending filename and its age in `source_fallback_detail`; the
             # gate dropped it, so "reasons: fixture_stale" named none of the
@@ -345,11 +399,7 @@ def check_ingestion_freshness(
                     d
                     for d in (
                         (j.meta or {}).get("source_fallback_detail")
-                        for j in sorted(
-                            jobs,
-                            key=lambda j: (j.started_at is not None, j.started_at),
-                            reverse=True,
-                        )
+                        for j in sorted(jobs, key=_run_order, reverse=True)
                     )
                     if d
                 ),
