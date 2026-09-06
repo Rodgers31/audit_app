@@ -307,8 +307,13 @@ def _overlay_kra_breakdown(
 
     from services.trust_guards import check_revenue_breakdown
 
-    if check_revenue_breakdown(by_type, expected_total):
-        return payload, "failed_validation"
+    notes = check_revenue_breakdown(by_type, expected_total)
+    if notes:
+        # Carry WHY into the status. It reaches the nightly through
+        # mark_partial's reason, and "failed_validation" on its own named
+        # nothing: the parse was wrong by a factor of 54 on PAYE for 20
+        # consecutive runs and the log said only that a check had failed.
+        return payload, f"failed_validation: {notes[0]}"
 
     by_name = {r.get("revenue_type"): r for r in fy_rows}
     applied = 0
