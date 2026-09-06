@@ -65,13 +65,20 @@ class TestItIsACompositeNow:
         for component in result["components"]:
             assert component["basis"], component
             assert "observed" in component
-        assert result["weighting"] == "equal"
-
-    def test_the_score_is_the_mean_of_the_components(self):
-        result = health()
-        expected = sum(c["score"] for c in result["components"]) / len(
-            result["components"]
+            # Its weight and effective share too, so a reader can re-weight
+            # the components rather than take the ratio on trust.
+            assert component["weight"] >= 1
+            assert component["share_pct"] > 0
+        assert result["weighting"] == "audit_opinion_weighted"
+        assert result["weights"]["audit_opinion"] == 3
+        assert sum(c["share_pct"] for c in result["components"]) == pytest.approx(
+            100.0, abs=0.3
         )
+
+    def test_the_score_is_the_weighted_mean_of_the_components(self):
+        result = health()
+        weights = sum(c["weight"] for c in result["components"])
+        expected = sum(c["score"] * c["weight"] for c in result["components"]) / weights
 
         assert result["score"] == pytest.approx(round(expected, 1))
 
@@ -199,16 +206,14 @@ class TestGrade:
         assert result["score"] == 100.0
         assert result["grade"] == "A"
 
-    def test_equal_weighting_lets_strong_components_offset_a_disclaimer(self):
-        """A property of the choice, recorded rather than hidden.
+    def test_a_disclaimer_is_not_offset_by_strong_financials(self):
+        """Why the opinion carries as much as the other three combined.
 
-        Perfect absorption and revenue performance, against a disclaimer of
-        opinion and a pending-bill burden of a whole budget, averages to 50.0
-        and grades B-. Equal weights mean the worst audit outcome the
-        Auditor-General can issue does not dominate — which is precisely why
-        the components are published beside the score instead of only the
-        letter. Any other weighting would assert a ranking of importance that
-        nobody has published.
+        A disclaimer means the Auditor-General could not form an opinion on
+        the accounts these very figures come out of — so perfect absorption
+        and revenue performance are perfect according to books nobody will
+        vouch for. Under equal weighting this county scored 50.0 and graded
+        B-, one band off a clean opinion.
         """
         result = health(
             total_spent=10_000_000_000,
@@ -217,9 +222,50 @@ class TestGrade:
             pending_bills=10_000_000_000,
         )
 
-        assert result["score"] == 50.0
-        assert result["grade"] == "B-"
-        assert [c["score"] for c in result["components"]] == [100.0, 100.0, 0.0, 0.0]
+        assert result["score"] == pytest.approx(33.3)
+        assert result["grade"] == "C"
+
+    @pytest.mark.parametrize(
+        "opinion,expected_grade",
+        [("clean", "B+"), ("qualified", "B"), ("adverse", "B-"), ("disclaimer", "C")],
+    )
+    def test_the_opinion_alone_moves_the_grade(self, opinion, expected_grade):
+        """Identical financial figures, four opinions, four grades.
+
+        Under equal weighting the same four cases gave B+, B, B-, B- — adverse
+        and a disclaimer were indistinguishable.
+        """
+        result = health(
+            total_spent=10_000_000_000,
+            own_source_actual=1_000_000_000,
+            pending_bills=10_000_000_000,
+            audit_status=opinion,
+        )
+
+        assert result["grade"] == expected_grade
+
+    def test_the_opinion_carries_as_much_as_the_other_three_together(self):
+        result = health()
+        by_name = {c["name"]: c for c in result["components"]}
+        others = sum(c["weight"] for n, c in by_name.items() if n != "audit_opinion")
+
+        assert by_name["audit_opinion"]["weight"] == others
+        assert by_name["audit_opinion"]["share_pct"] == pytest.approx(50.0)
+
+    def test_weights_are_renormalised_over_the_components_present(self):
+        """A county missing a component is neither penalised nor flattered."""
+        result = county_financial_health(
+            total_allocated=10_000_000_000,
+            total_spent=10_000_000_000,
+            pending_bills=None,
+            audit_status="clean",
+        )
+        by_name = {c["name"]: c for c in result["components"]}
+
+        # Absorption 1 + opinion 3 = 4, so the opinion is 75% here.
+        assert by_name["audit_opinion"]["share_pct"] == pytest.approx(75.0)
+        assert by_name["budget_absorption"]["share_pct"] == pytest.approx(25.0)
+        assert result["score"] == pytest.approx(100.0)
 
     def test_no_score_means_no_grade(self):
         """A county with no data must not be graded at all — it used to get C."""

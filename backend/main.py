@@ -516,6 +516,27 @@ _AUDIT_OPINION_SCORES = {
 #: a composite — which is exactly what the previous score was.
 _MIN_HEALTH_COMPONENTS = 2
 
+#: Relative weights, renormalised over whichever components a county has.
+#:
+#: The audit opinion carries as much as the three financial components put
+#: together, because it is the only one that speaks to whether the other three
+#: can be believed at all: a disclaimer means the Auditor-General could not
+#: form an opinion on the accounts those figures come out of. Under equal
+#: weighting a county with perfect absorption and revenue performance still
+#: scored 50.0 (B-) on a disclaimer; it now scores 33.3 (C).
+#:
+#: These are a CHOSEN weighting, not a measured one — no publisher ranks these
+#: four against each other. Integers rather than fractions so the ratio is
+#: legible, and both the weight and its effective share are reported with the
+#: score so a reader can re-weight the components themselves.
+_HEALTH_COMPONENT_WEIGHTS: Dict[str, int] = {
+    "audit_opinion": 3,
+    "budget_absorption": 1,
+    "own_source_revenue": 1,
+    "pending_bills": 1,
+}
+_DEFAULT_HEALTH_WEIGHT = 1
+
 
 def county_financial_health(
     *,
@@ -556,9 +577,9 @@ def county_financial_health(
     ``pending_bills``      pending bills as a share of budget, inverted.
     ``audit_opinion``      the Auditor-General's opinion.
 
-    Equal weights are a deliberate choice, not a measured one: any other
-    weighting would assert a ranking of importance that nobody has published.
-    They are stated in the payload for the same reason.
+    The audit opinion carries as much weight as the other three combined —
+    see ``_HEALTH_COMPONENT_WEIGHTS`` for why, and note that the ratio is a
+    chosen one, reported in the payload so a reader can re-weight it.
 
     Returns None when fewer than two components can be computed. A composite
     of one component is not a composite, and absence must not read as zero.
@@ -620,12 +641,28 @@ def county_financial_health(
     if len(components) < _MIN_HEALTH_COMPONENTS:
         return None
 
-    score = round(sum(c["score"] for c in components) / len(components), 1)
+    # Renormalised over the components this county actually has, so a missing
+    # one neither penalises nor flatters it.
+    total_weight = sum(
+        _HEALTH_COMPONENT_WEIGHTS.get(c["name"], _DEFAULT_HEALTH_WEIGHT)
+        for c in components
+    )
+    for component in components:
+        weight = _HEALTH_COMPONENT_WEIGHTS.get(
+            component["name"], _DEFAULT_HEALTH_WEIGHT
+        )
+        component["weight"] = weight
+        component["share_pct"] = round(weight / total_weight * 100, 1)
+
+    score = round(
+        sum(c["score"] * c["weight"] for c in components) / total_weight, 1
+    )
     grade = next(letter for floor, letter in _HEALTH_GRADE_BANDS if score >= floor)
     return {
         "score": score,
         "grade": grade,
-        "weighting": "equal",
+        "weighting": "audit_opinion_weighted",
+        "weights": dict(_HEALTH_COMPONENT_WEIGHTS),
         "components": components,
     }
 
