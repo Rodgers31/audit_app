@@ -240,6 +240,29 @@ export function serviceableFiscalYear(
 }
 
 /**
+ * The fiscal year the Follow the Money tab should show.
+ *
+ * It used to pick with `getLatestReportedFiscalYear()` matched against
+ * `/audits/fiscal-years` — every fiscal period, not the ones county budget data
+ * exists for — so in September 2026 it landed on FY2025/26, the CRA projection.
+ *
+ * Worse, it chose independently of the page it sits on: the Budget & Debt tab
+ * two clicks away could show FY2024/25 while this one showed FY2025/26, for the
+ * same county, with nothing saying they differed. So the page's own resolved
+ * year leads, and `resolveExplorerYear` drops it if the API no longer offers it.
+ *
+ * Precedence: the reader's selection, then the year the page is showing, then
+ * the API's default.
+ */
+export function moneyFlowDefaultYear(
+  picked: string | undefined,
+  pageYear: string | undefined,
+  meta: CountyFiscalYears | undefined
+): string | undefined {
+  return resolveExplorerYear(picked ?? pageYear, meta);
+}
+
+/**
  * Generate an array of Kenyan fiscal year labels starting from the current year going back.
  */
 export function generateFiscalYears(count = 5): string[] {

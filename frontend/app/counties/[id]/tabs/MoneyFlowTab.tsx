@@ -9,53 +9,37 @@
  */
 import FollowTheMoney, { YearSelector } from '@/components/FollowTheMoney';
 import { useLang } from '@/lib/i18n/LangProvider';
-import { useAvailableFiscalYears } from '@/lib/react-query';
+import { useCountyFiscalYears } from '@/lib/react-query';
 import { useCountyMoneyFlow } from '@/lib/react-query/useMoneyFlow';
-import { generateFiscalYears, getLatestReportedFiscalYear } from '@/lib/utils';
+import { moneyFlowDefaultYear } from '@/lib/utils';
 import { CountyComprehensive } from '@/types';
-import { useEffect, useState } from 'react';
-
-const DEFAULT_FISCAL_YEARS = generateFiscalYears();
-
-/** Resolve the best default year from the available list. Backend
- * sometimes prefixes years with "FY" and sometimes not — we match
- * either form. Falls back to the first list item, or to the util
- * helper if the list is completely empty. */
-function pickDefaultYear(years: string[]): string {
-  const latestReported = getLatestReportedFiscalYear();
-  return (
-    years.find((y) => y === latestReported || y === `FY${latestReported}`) ||
-    years[1] /* first completed FY in a desc-sorted list */ ||
-    years[0] ||
-    latestReported
-  );
-}
+import { useState } from 'react';
 
 export default function MoneyFlowTab({ data: countyData }: { data: CountyComprehensive }) {
   const { t } = useLang();
-  const { data: fiscalYears } = useAvailableFiscalYears();
-  const years = fiscalYears && fiscalYears.length > 0 ? fiscalYears : DEFAULT_FISCAL_YEARS;
 
-  // Default to the latest *reported* FY, not the in-progress one —
-  // money-flow aggregates need actuals, which aren't published until
-  // well after year-end. Previously this defaulted to `FY2025/26` in
-  // April 2026 and the tab showed "No money flow data for this period".
-  const [selectedYear, setSelectedYear] = useState(() => pickDefaultYear(years));
+  // The year list used to come from /audits/fiscal-years — EVERY fiscal
+  // period, including ones with no county budget data — and the default was
+  // picked from it with getLatestReportedFiscalYear(), a label derived from
+  // `new Date()`. In September 2026 that landed on FY2025/26, the CRA
+  // equitable-share projection.
+  //
+  // It also chose independently of the page it sits on, so this tab could show
+  // FY2025/26 while Budget & Debt two clicks away showed FY2024/25, for the
+  // same county, with nothing saying they differed. The page's own resolved
+  // year now leads; the reader's selection still wins over it.
+  const { data: fiscalYearsMeta } = useCountyFiscalYears();
+  const years = fiscalYearsMeta?.years.map((y) => y.label) ?? [];
+  const [pickedYear, setPickedYear] = useState<string | undefined>(undefined);
+  const selectedYear = moneyFlowDefaultYear(
+    pickedYear,
+    countyData.budget.fiscal_year ?? undefined,
+    fiscalYearsMeta
+  );
 
-  // `useAvailableFiscalYears` often resolves AFTER the first render, so
-  // the initial `selectedYear` was picked from the fallback list — which
-  // can use a different format (`2024/25` vs `FY2024/25`). Reconcile
-  // once the real list arrives so the visible `<select>` highlights the
-  // right option and the query key matches a cached backend response.
-  useEffect(() => {
-    if (!fiscalYears || fiscalYears.length === 0) return;
-    if (fiscalYears.includes(selectedYear)) return;
-    setSelectedYear(pickDefaultYear(fiscalYears));
-    // Only reconcile on list change — user selections stand.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fiscalYears]);
-
-  const { data, isLoading } = useCountyMoneyFlow(countyData.id, selectedYear);
+  // '' keeps the query disabled (useCountyMoneyFlow gates on !!year) until the
+  // year list says which period to ask for — one fetch, for the right year.
+  const { data, isLoading } = useCountyMoneyFlow(countyData.id, selectedYear ?? '');
 
   return (
     <div className='space-y-5'>
@@ -69,10 +53,15 @@ export default function MoneyFlowTab({ data: countyData }: { data: CountyCompreh
             </h3>
           </div>
           <p className='text-xs text-gray-500 dark:text-neutral-muted/80 ml-3'>
-            {t('county.money.subtitle')} · {selectedYear}
+            {t('county.money.subtitle')}
+            {selectedYear ? ` · ${selectedYear}` : ''}
           </p>
         </div>
-        <YearSelector value={selectedYear} onChange={setSelectedYear} years={years} />
+        {/* No selector until the API says which years exist — an empty
+            dropdown is a control claiming choices it does not have. */}
+        {years.length > 0 && selectedYear && (
+          <YearSelector value={selectedYear} onChange={setPickedYear} years={years} />
+        )}
       </div>
 
       {/* The visualization itself renders its own cards — no wrapper */}

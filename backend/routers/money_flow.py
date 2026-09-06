@@ -15,6 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
+from services.county_budget import split_classification_and_sector_lines
 from services.publication_gate import publishable_audit_criterion
 
 from database import get_db
@@ -259,12 +260,22 @@ def _money_flow_for_entity(
     budget_lines = budget_q.all()
 
     if budget_lines:
-        allocated = sum(float(b.allocated_amount or 0) for b in budget_lines)
+        # The CoB reports carry whole-budget classification rows -- Total /
+        # Development / Recurrent -- alongside the modelled per-sector split of
+        # the SAME money. Adding both together published Baringo's FY2024/25
+        # budget as KES 26.55B against the Controller of Budget's 9.54B, while
+        # the Budget & Debt tab on the same page showed 9.54B. One rule, shared
+        # with GET /counties and /comprehensive, so they cannot drift again.
+        allocated, split_spent, _sector_lines, _class_by_cat = (
+            split_classification_and_sector_lines(budget_lines)
+        )
         # Treat "no non-null spent rows" as data-unavailable (projected-
         # year budgets don't have execution figures yet). Returning 0
         # would misleadingly render as "100% unspent" in the waterfall.
-        spent_vals = [b.actual_spent for b in budget_lines if b.actual_spent is not None]
-        spent = sum(float(s) for s in spent_vals) if spent_vals else None
+        # The split's own total is a sum over rows and cannot tell an absent
+        # figure from a zero, so that question is still asked of the rows.
+        has_spent = any(b.actual_spent is not None for b in budget_lines)
+        spent = split_spent if has_spent else None
         # "Committed" = procurement encumbrances (contracts awarded but
         # not yet paid out). This is NOT the same as "exchequer release"
         # — Treasury disbursements aren't currently captured in the COB
@@ -458,13 +469,26 @@ async def national_money_flow(
         budget_lines = budget_q.all()
 
         if budget_lines:
-            allocated = sum(float(b.allocated_amount or 0) for b in budget_lines)
+            # Same split as the per-county waterfall — summing the CoB
+            # classification rows and the sector rows together inflated the
+            # national total by the same multiple it inflated each county's.
+            # Per entity, because the rule picks one aggregate per county and
+            # a pooled split would mix 47 counties' rows into one choice.
+            allocated = 0.0
+            spent_total = 0.0
+            by_entity: Dict[int, list] = {}
+            for b in budget_lines:
+                by_entity.setdefault(b.entity_id, []).append(b)
+            for _rows in by_entity.values():
+                _alloc, _spent, _s, _c = split_classification_and_sector_lines(_rows)
+                allocated += _alloc
+                spent_total += _spent
             # Treat "no non-null spent rows" as data-unavailable (e.g.
             # projected-year budgets where CoB has not yet released the
             # execution figures). Returning 0 in that case lies by
             # omission — the waterfall would show 100% unspent.
-            spent_vals = [b.actual_spent for b in budget_lines if b.actual_spent is not None]
-            spent = sum(float(s) for s in spent_vals) if spent_vals else None
+            has_spent = any(b.actual_spent is not None for b in budget_lines)
+            spent = spent_total if has_spent else None
             first_doc = budget_lines[0].source_document if budget_lines else None
             source_doc_url = first_doc.url if first_doc and hasattr(first_doc, "url") else None
         else:
@@ -591,26 +615,40 @@ async def all_counties_money_flow(
         ]
 
     # 2. Aggregate budget lines per entity in ONE query
-    budget_rows = (
-        db.query(
-            BudgetLine.entity_id,
-            func.sum(func.coalesce(BudgetLine.allocated_amount, 0)).label("allocated"),
-            func.sum(func.coalesce(BudgetLine.actual_spent, 0)).label("spent"),
-            func.sum(BudgetLine.committed_amount).label("committed"),
-        )
+    # SUM() in SQL cannot tell the CoB classification rows from the sector
+    # split of the same money, and adding both inflated every county on the map
+    # by up to 2.8x. Fetch the rows and apply the shared rule per entity — one
+    # query still, ~14 rows per county.
+    budget_lines_all = (
+        db.query(BudgetLine)
         .filter(
             BudgetLine.entity_id.in_(entity_ids),
             BudgetLine.period_id.in_(period_ids),
         )
-        .group_by(BudgetLine.entity_id)
         .all()
     )
+    lines_by_entity: Dict[int, list] = {}
+    for b in budget_lines_all:
+        lines_by_entity.setdefault(b.entity_id, []).append(b)
+
     budget_map: Dict[int, Dict[str, Any]] = {}
-    for eid, alloc, spent, committed in budget_rows:
+    for eid, rows in lines_by_entity.items():
+        alloc, spent, _sector, _cls = split_classification_and_sector_lines(rows)
+        committed_vals = [
+            r.committed_amount for r in rows if r.committed_amount is not None
+        ]
         budget_map[eid] = {
             "allocated": float(alloc) if alloc else None,
-            "spent": float(spent) if spent else None,
-            "committed": float(committed) if committed else None,
+            # An absent execution figure is not a zero — a projected year has
+            # no actuals, and 0 renders as "100% unspent".
+            "spent": (
+                float(spent)
+                if any(r.actual_spent is not None for r in rows) and spent
+                else None
+            ),
+            "committed": (
+                float(sum(committed_vals)) if committed_vals else None
+            ),
         }
 
     # 3. Aggregate audit flagged amounts per entity in ONE query

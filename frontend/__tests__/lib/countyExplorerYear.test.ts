@@ -19,6 +19,7 @@
  */
 import {
   getLatestReportedFiscalYear,
+  moneyFlowDefaultYear,
   resolveExplorerYear,
   serviceableFiscalYear,
 } from '@/lib/utils';
@@ -100,5 +101,50 @@ describe('serviceableFiscalYear', () => {
     // fetch on the common path. Unknown is not the same as refused.
     expect(serviceableFiscalYear('FY2023/24', undefined)).toBe('FY2023/24');
     expect(serviceableFiscalYear('FY2019/20', undefined)).toBe('FY2019/20');
+  });
+});
+
+/**
+ * The Follow the Money tab picked its year with the same calendar helper,
+ * matched against /audits/fiscal-years — every fiscal period, not the ones
+ * county budget data exists for. In September 2026 it landed on FY2025/26, the
+ * CRA projection.
+ *
+ * Worse, it chose independently of the page it sits on: the Budget & Debt tab
+ * two clicks away could be showing FY2024/25 while this one showed FY2025/26,
+ * for the same county, with no indication they differed.
+ */
+describe('moneyFlowDefaultYear', () => {
+  afterEach(() => jest.useRealTimers());
+
+  it('follows the year the rest of the county page is showing', () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-09-05T00:00:00Z'));
+    // The page resolved FY2024/25; the calendar would have said 2025/26.
+    expect(moneyFlowDefaultYear(undefined, 'FY2024/25', META)).toBe('FY2024/25');
+    expect(getLatestReportedFiscalYear()).toBe('2025/26');
+  });
+
+  it('follows the page even onto a projection year', () => {
+    // A reader who pinned ?fy=FY2025/26 sees that year on every tab. The tab
+    // agreeing with its page matters more than which year the page picked.
+    expect(moneyFlowDefaultYear(undefined, 'FY2025/26', META)).toBe('FY2025/26');
+  });
+
+  it("keeps the reader's own selection over the page's year", () => {
+    expect(moneyFlowDefaultYear('FY2023/24', 'FY2024/25', META)).toBe('FY2023/24');
+  });
+
+  it('falls back to the API default when the page names no year', () => {
+    expect(moneyFlowDefaultYear(undefined, undefined, META)).toBe('FY2024/25');
+  });
+
+  it('ignores a page year the API does not offer', () => {
+    expect(moneyFlowDefaultYear(undefined, 'FY2019/20', META)).toBe('FY2024/25');
+  });
+
+  it('reports no year when the API offers none', () => {
+    expect(
+      moneyFlowDefaultYear(undefined, 'FY2024/25', { years: [], default: null })
+    ).toBeUndefined();
   });
 });
