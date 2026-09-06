@@ -28,7 +28,38 @@ export interface RevSource {
   target?: number | null;
   share_pct?: number | null;
   yoy_growth_pct?: number | null;
+  /** What the figure is — see BASIS_LABEL. Absent means nothing was recorded. */
+  basis?: string | null;
+  /** The row's own note explaining the figure, e.g. how it was derived. */
+  basis_note?: string | null;
 }
+
+/* ─── Provenance ───────────────────────────────────────────────────────────
+
+   Two of the six heads on this page are not figures KRA published:
+
+   * `Other Tax Revenue` is a subtraction — the exchequer total less the heads
+     KRA names — in every year with actuals;
+   * the whole of FY 2022/23 is back-computed out of the FY 2023/24 release's
+     growth rates, and it is the leftmost bar of every sparkline below.
+
+   They rendered as equals under one "Source: KRA Annual Performance" credit.
+   The rows always knew better; the API now carries `basis` so the page can
+   say so where the reader is looking. An absent basis is treated as absence —
+   it earns no badge, and it earns no credit either.
+
+   The headline "How KRA collected KES …" stays unqualified on purpose: KRA
+   does publish the exchequer total, and does collect the taxes in the
+   residual. What is unpublished is the per-head split, which is what the
+   cards and the footnote below are about.                                  */
+const BASIS_LABEL: Record<string, string> = {
+  derived: 'Derived',
+  residual: 'Residual',
+  projected: 'Projected',
+};
+
+/** True for a figure the cited source states for that year. */
+const isPublished = (basis?: string | null) => basis === 'published';
 
 export interface RevFy {
   fiscal_year: string;
@@ -57,8 +88,39 @@ const SOURCE_DESC: Record<string, string> = {
   VAT: 'Value-Added Tax — the 16% on most goods and services you buy.',
   'Excise Duty': 'Specific-rate tax on fuel, alcohol, tobacco, airtime, sugar.',
   'Customs & Import Duty': 'Duties at the port on imported goods plus import VAT.',
-  'Other Tax Revenue': 'Stamp duty, agricultural cess, minor taxes lumped together.',
+  // `Other Tax Revenue` deliberately has no blurb here. It used to read
+  // "Stamp duty, agricultural cess, minor taxes lumped together", which named
+  // a cess the row does not cover and read as a measured stream. It is a
+  // residual, and its own note says what it absorbs — so the note is what the
+  // card shows. See descriptionFor.
 };
+
+/** Strip the prefix the badge beside it already carries. */
+function trimBasisPrefix(note: string): string {
+  return note.replace(/^(Derived|Residual|Projected)\s*:\s*/i, '');
+}
+
+/**
+ * What the card says the figure is.
+ *
+ * A row that declares itself unpublished gets its own note, because for those
+ * the interesting fact is not what the tax is but where the number came from —
+ * and because the generic blurb was wrong for the one row that most needed it
+ * to be right. Everything else gets the editorial one-liner.
+ *
+ * The `basis == null` case is deliberately *not* treated as unpublished. Rows
+ * seeded before `basis` existed still carry `notes`, and swapping the blurb for
+ * one of those prints "KRA Annual Performance FY 2024/25: PAYE collected KES
+ * 560.963B" as the card's description — putting the sourcing claim this change
+ * removes straight back on the page, through a field meant to describe the tax.
+ */
+function descriptionFor(source: { revenue_type: string; basis?: string | null; basis_note?: string | null }): string {
+  const declaredUnpublished = source.basis != null && !isPublished(source.basis);
+  if (declaredUnpublished && source.basis_note) {
+    return trimBasisPrefix(source.basis_note);
+  }
+  return SOURCE_DESC[source.revenue_type] ?? '';
+}
 
 function paletteFor(name: string) {
   return SOURCE_PALETTE[name] ?? FALLBACK_PAL;
@@ -116,9 +178,20 @@ export default function RevenueMix({ revenueBySource }: Props) {
       const series = seriesFYs
         .map((fy) => {
           const row = (fy.sources ?? []).find((s) => s.revenue_type === r.revenue_type);
-          return { year: fy.fiscal_year?.replace('FY ', '') ?? '', amount: row?.amount ?? null };
+          return {
+            year: fy.fiscal_year?.replace('FY ', '') ?? '',
+            amount: row?.amount ?? null,
+            // Carried per point: one stream can be published in the latest
+            // year and back-computed in the earliest, which is exactly the
+            // FY 2022/23 case these bars would otherwise hide.
+            basis: row?.basis ?? null,
+          };
         })
-        .filter((p) => p.amount != null && p.amount > 0) as { year: string; amount: number }[];
+        .filter((p) => p.amount != null && p.amount > 0) as {
+        year: string;
+        amount: number;
+        basis: string | null;
+      }[];
       const prevVal = prev?.sources?.find((s) => s.revenue_type === r.revenue_type)?.amount ?? null;
       const yoy =
         prevVal != null && prevVal > 0 && r.amount != null
@@ -133,12 +206,58 @@ export default function RevenueMix({ revenueBySource }: Props) {
         share: totalB > 0 ? ((r.amount ?? 0) / totalB) * 100 : 0,
         yoy,
         pal,
-        desc: SOURCE_DESC[r.revenue_type] ?? '',
+        desc: descriptionFor(r),
+        basis: r.basis ?? null,
         series,
         totalB,
       };
     });
   }, [latest, prev, multiSourceActualFYs]);
+
+  /* ── What the section may claim about its source ──────────────────────
+     Built from the rows on screen rather than hardcoded, so the credit
+     cannot outlive the data it describes. Three outcomes:
+       - nothing declared  → no credit at all (absence is not a claim);
+       - everything published → the plain KRA credit;
+       - anything else     → the credit, qualified, with the specifics on
+                             each card and in the footnote below.            */
+  const provenance = useMemo(() => {
+    const cardBases = rows.map((r) => r.basis);
+    // A charted year is called out when a stream KRA publishes today carries a
+    // figure KRA did not publish back then — the FY 2022/23 sparkline bars.
+    // Rows that are unpublished in their own right are labelled on their card
+    // instead, so they do not also drag their whole series into the footnote.
+    const flaggedYears: Record<string, string[]> = {};
+    for (const r of rows) {
+      if (!isPublished(r.basis)) continue;
+      for (const p of r.series) {
+        if (p.basis && !isPublished(p.basis)) {
+          const seen = flaggedYears[p.year] ?? (flaggedYears[p.year] = []);
+          if (!seen.includes(p.basis)) seen.push(p.basis);
+        }
+      }
+    }
+    const anyFlaggedYear = Object.keys(flaggedYears).length > 0;
+    const declared = cardBases.some((b) => b != null) || anyFlaggedYear;
+    const unpublished =
+      cardBases.some((b) => b != null && !isPublished(b)) || anyFlaggedYear;
+    return { declared, unpublished, flaggedYears };
+  }, [rows]);
+
+  const basisFootnote = useMemo(() => {
+    const years = Object.keys(provenance.flaggedYears).sort();
+    if (years.length === 0) return null;
+    const words = years
+      .flatMap((y) => provenance.flaggedYears[y])
+      .map((b) => BASIS_LABEL[b]?.toLowerCase() ?? b)
+      .filter((w, i, all) => all.indexOf(w) === i)
+      .sort();
+    const yearList =
+      years.length === 1
+        ? years[0]
+        : `${years.slice(0, -1).join(', ')} and ${years[years.length - 1]}`;
+    return { yearList, plural: years.length > 1, words: words.join(' or ') };
+  }, [provenance.flaggedYears]);
 
   if (!latest || rows.length === 0) return null;
 
@@ -168,13 +287,23 @@ export default function RevenueMix({ revenueBySource }: Props) {
             {topSource?.label} is the single largest — {topSource?.share.toFixed(0)}% of tax revenue.
           </p>
         </div>
-        <div className='text-right'>
-          <div className='text-[11px] uppercase tracking-wider font-semibold text-neutral-muted'>
-            Source
+        {provenance.declared && (
+          <div className='text-right' data-testid='revenue-section-source'>
+            <div className='text-[11px] uppercase tracking-wider font-semibold text-neutral-muted'>
+              Source
+            </div>
+            <div className='text-[12px] font-semibold text-gov-dark dark:text-white'>
+              KRA Annual Performance
+              {provenance.unpublished && (
+                <span className='font-normal text-neutral-muted'>
+                  {' '}
+                  — except where marked
+                </span>
+              )}
+            </div>
+            <div className='text-[11px] text-neutral-muted'>{latest.fiscal_year}</div>
           </div>
-          <div className='text-[12px] font-semibold text-gov-dark dark:text-white'>KRA Annual Performance</div>
-          <div className='text-[11px] text-neutral-muted'>FY {latest.fiscal_year}</div>
-        </div>
+        )}
       </div>
 
       {/* Flow bar */}
@@ -218,6 +347,8 @@ export default function RevenueMix({ revenueBySource }: Props) {
           return (
             <div
               key={r.key}
+              data-revenue-card
+              data-basis={r.basis ?? undefined}
               onMouseEnter={() => setHoverKey(r.key)}
               onMouseLeave={() => setHoverKey(null)}
               className={`relative rounded-xl bg-white dark:bg-surface-base border overflow-hidden transition-all ${
@@ -241,6 +372,13 @@ export default function RevenueMix({ revenueBySource }: Props) {
                     {r.share.toFixed(1)}%
                   </span>
                 </div>
+                {/* A figure the source did not publish says so beside its own
+                    number, not only in a note at the foot of the section. */}
+                {!isPublished(r.basis) && BASIS_LABEL[r.basis ?? ''] && (
+                  <span className='inline-block mb-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider border border-amber-400/70 bg-amber-50 text-amber-800 dark:border-amber-600/50 dark:bg-amber-950/40 dark:text-amber-200'>
+                    {BASIS_LABEL[r.basis ?? '']} — not a published line
+                  </span>
+                )}
                 <div className='flex items-baseline justify-between gap-2'>
                   <div className='text-base font-extrabold text-gov-dark dark:text-white tabular-nums tracking-tight'>
                     KES {fmtB(r.amount)}
@@ -266,21 +404,47 @@ export default function RevenueMix({ revenueBySource }: Props) {
                       const max = Math.max(...r.series.map((s) => s.amount));
                       const h = (p.amount / max) * 100;
                       const isLatest = i === r.series.length - 1;
+                      // A bar is a quantity claim as much as a printed figure
+                      // is. An unpublished year is drawn hollow so the reader
+                      // can see which bars are not measurements.
+                      const unpublished = p.basis != null && !isPublished(p.basis);
+                      // The asterisk points at the footnote, so it goes only on
+                      // bars the footnote covers: those the card's own badge
+                      // does not already explain. On the residual card every
+                      // bar is a residual and the badge says so — starring them
+                      // would send the reader to a note about a different year.
+                      const needsFootnote = unpublished && p.basis !== r.basis;
                       return (
                         <div
                           key={p.year}
                           className='flex-1 flex flex-col items-center gap-0.5'>
                           <div
-                            className='w-full rounded-t-sm transition-all'
+                            data-testid='spark-bar'
+                            data-year={p.year}
+                            data-basis={p.basis ?? undefined}
+                            title={
+                              unpublished
+                                ? `${p.year}: ${BASIS_LABEL[p.basis!] ?? p.basis} — not a published figure`
+                                : undefined
+                            }
+                            className={`w-full rounded-t-sm transition-all ${
+                              unpublished ? 'border border-dashed border-amber-500/70' : ''
+                            }`}
                             style={{
                               height: `${Math.max(h, 10)}%`,
-                              background: isLatest
-                                ? `linear-gradient(180deg, ${r.pal.start}, ${r.pal.end})`
-                                : '#E2DDD5',
+                              background: unpublished
+                                ? 'transparent'
+                                : isLatest
+                                  ? `linear-gradient(180deg, ${r.pal.start}, ${r.pal.end})`
+                                  : '#E2DDD5',
                             }}
                           />
-                          <span className='text-[11px] text-neutral-muted tabular-nums'>
+                          <span
+                            className={`text-[11px] tabular-nums ${
+                              unpublished ? 'text-amber-700 dark:text-amber-300' : 'text-neutral-muted'
+                            }`}>
                             {p.year}
+                            {needsFootnote && '*'}
                           </span>
                         </div>
                       );
@@ -297,6 +461,27 @@ export default function RevenueMix({ revenueBySource }: Props) {
           );
         })}
       </div>
+
+      {/* Names the charted years whose bars are not measurements. The cards
+          above label their own figure; this covers the sparkline, where a
+          stream KRA publishes today carries a back-computed figure for an
+          earlier year and nothing on the bar would otherwise say so. */}
+      {basisFootnote && (
+        <p
+          data-testid='revenue-basis-footnote'
+          className='mt-3 text-[11px] leading-snug text-neutral-muted'>
+          <span aria-hidden='true'>* </span>
+          {basisFootnote.plural ? 'The bars marked ' : 'The bar marked '}
+          <strong className='font-semibold text-gov-dark dark:text-white'>
+            {basisFootnote.yearList}
+          </strong>{' '}
+          {basisFootnote.plural ? 'are ' : 'is '}
+          {basisFootnote.words} rather than published: KRA states the growth rate
+          for that year, not the amount per tax head, so each head is
+          back-computed from the following year&rsquo;s figure. Shown because the
+          trend is real; marked because the level is not KRA&rsquo;s own.
+        </p>
+      )}
     </motion.section>
   );
 }

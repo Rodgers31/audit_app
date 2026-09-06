@@ -8477,10 +8477,22 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
             fy = r.fiscal_year
             if fy not in rev_by_fy:
                 rev_by_fy[fy] = []
+            # Row provenance. Six tax heads render as equals on /budget under
+            # one blanket "Source: KRA Annual Performance" credit, but two of
+            # the six are not KRA-published figures: the whole of FY 2022/23 is
+            # back-computed out of the FY 2023/24 release's growth rates, and
+            # "Other Tax Revenue" is a subtraction in every year. The rows said
+            # so in their own notes; this response did not carry them, so the
+            # blanket credit was the only provenance a reader ever saw.
+            # `basis` is None where nothing was recorded — an omission is
+            # absence, not a claim that the figure was published.
+            meta = r.meta or {}
             rev_by_fy[fy].append(
                 {
                     "revenue_type": r.revenue_type,
                     "category": r.category,
+                    "basis": meta.get("basis"),
+                    "basis_note": meta.get("notes"),
                     "amount": (
                         float(r.amount_billion_kes) if r.amount_billion_kes else None
                     ),
