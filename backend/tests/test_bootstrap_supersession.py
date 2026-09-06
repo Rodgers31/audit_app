@@ -138,13 +138,21 @@ class TestItFires:
         assert "publication gate" in evidence
 
     def test_the_stale_detail_stops_blaming_it(self, seeded):
-        """The point of the change: the message names the files that matter."""
+        """The point of the change: the message names the files that matter.
+
+        This state used to leave ``oag_national_audit_data.json`` behind as the
+        one stale file, because it had no check of its own. It has one now, and
+        in this minimal database nothing any fixture writes reaches a reader —
+        so the census lands on ``fixture_superseded`` and names each file with
+        the evidence that cleared it. What must not happen is this file being
+        blamed while its own facts are demonstrably derived.
+        """
         session, _ = seeded
         p = bootstrap.bootstrap_provenance(session)
 
-        assert p["source_fallback_reason"] == "fixture_stale"
-        assert "oag_national_audit_data.json" in p["source_fallback_detail"]
-        assert "already superseded" in p["source_fallback_detail"]
+        assert p["source_fallback_reason"] == "fixture_superseded"
+        assert bootstrap.AUDIT_DATA_PATH.name not in p["stale_files"]
+        assert bootstrap.AUDIT_DATA_PATH.name in p["source_fallback_detail"]
 
     def test_the_age_is_still_reported(self, seeded):
         """Superseded is not hidden — the file is still read, and still old."""
@@ -248,24 +256,52 @@ class TestItRefusesToFire:
 
 
 class TestTheOtherFixturesAreUntouched:
-    @pytest.mark.parametrize("name", ["oag_national_audit_data.json"])
-    def test_a_fixture_with_no_check_is_never_superseded(self, seeded, name):
-        """Nothing is superseded by default — only by a check that passed."""
+    def test_a_fixture_with_no_check_is_never_superseded(self, seeded):
+        """Nothing is superseded by default — only by a check that passed.
+
+        Asserted against ``_supersession`` directly rather than a named file:
+        all three declarations carry a check now, and the invariant being
+        pinned is about the DEFAULT, not about which files happen to lack one.
+        """
         session, _ = seeded
-        f = next(f for f in bootstrap.bootstrap_provenance(session)["files"] if f["file"] == name)
+        assert bootstrap._supersession({"live_source": "audits"}, session) == (
+            False,
+            None,
+        )
 
-        assert f["superseded"] is False
-        assert f["supersession_evidence"] is None
-        assert name in bootstrap.bootstrap_provenance(session)["stale_files"]
+    def test_a_declaration_naming_a_missing_check_is_not_superseded(self, seeded):
+        """A typo in the table must not read as proof."""
+        session, _ = seeded
+        superseded, evidence = bootstrap._supersession(
+            {"live_source": "audits", "superseded_check": "no_such_check"}, session
+        )
+        assert superseded is False
+        assert "no_such_check" in evidence
 
-    def test_the_gate_still_fails(self, seeded):
-        """The whole run must stay red while any live path is not working."""
+    def test_the_gate_still_fails_while_any_live_path_is_broken(self, seeded):
+        """The whole run must stay red while any live path is not working.
+
+        The state this fixture builds now clears every check, so the condition
+        is created explicitly: one file that is NOT superseded must be enough
+        to keep the census stale and out of the by-design exemption.
+        """
         from seeding.staleness import DECLARED_NO_SOURCE_REASONS
 
         session, _ = seeded
-        p = bootstrap.bootstrap_provenance(session)
+
+        def _not_superseded(_session):
+            return False, "the live path is not working"
+
+        original = dict(bootstrap._SUPERSESSION_CHECKS)
+        bootstrap._SUPERSESSION_CHECKS["national_audit_findings"] = _not_superseded
+        try:
+            p = bootstrap.bootstrap_provenance(session)
+        finally:
+            bootstrap._SUPERSESSION_CHECKS.clear()
+            bootstrap._SUPERSESSION_CHECKS.update(original)
 
         assert p["is_stale"] is True
+        assert p["source_fallback_reason"] == "fixture_stale"
         assert p["source_fallback_reason"] not in DECLARED_NO_SOURCE_REASONS
 
 
