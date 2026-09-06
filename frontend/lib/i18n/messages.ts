@@ -593,6 +593,7 @@ export const MESSAGES = {
   'counties.sort.budget_low_high': { en: 'Budget (Low → High)', sw: 'Bajeti (Chini → Juu)', plain: 'Smallest budget first' },
   'counties.sort.debt_high_low': { en: 'Debt (High → Low)', sw: 'Deni (Juu → Chini)', plain: 'Biggest debt first' },
   'counties.sort.population_high_low': { en: 'Population (High → Low)', sw: 'Idadi ya Watu (Juu → Chini)', plain: 'Most people first' },
+  'counties.sort.population_low_high': { en: 'Population (Low → High)', sw: 'Idadi ya Watu (Chini → Juu)', plain: 'Fewest people first' },
   'counties.sort.grade_best_worst': { en: 'Grade (Best → Worst)', sw: 'Daraja (Bora → Mbaya)', plain: 'Best grade first' },
   'counties.sort.execution_high_low': { en: 'Execution (High → Low)', sw: 'Utekelezaji (Juu → Chini)', plain: 'Most spent first' },
 
