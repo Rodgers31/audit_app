@@ -31,6 +31,28 @@ on:
         type: boolean
         default: true
 
+# ── One seeder at a time, against one database ─────────────────────
+# Every run of this workflow writes the SAME production database, whichever
+# ref it was launched from, so the group is a constant rather than keyed on
+# github.ref or github.workflow. A scheduled run on main and a manual dispatch
+# from a branch must not overlap either.
+#
+# 2026-09-07: two workflow_dispatch runs started 60 seconds apart and both
+# reached "Seed all domains". They happened to be compatible; the register
+# writer is not. `reconcile_external_creditors` deletes every external loan the
+# incoming run does not name and then upserts its own, so two interleaved runs
+# can delete each other's rows and commit a partial register — the half-written
+# state the fail-closed check in `fetch_debt_payload` exists to prevent.
+#
+# cancel-in-progress is FALSE deliberately. Cancelling the in-flight run is the
+# usual choice for CI, where the newest commit is the only interesting one, and
+# the wrong one here: the running job is mid-transaction against production and
+# the queued one loses nothing by waiting. GitHub keeps one pending run per
+# group and drops the rest while they are still pending, so this cannot back up.
+concurrency:
+  group: seed-production-database
+  cancel-in-progress: false
+
 permissions:
   contents: read
   issues: write
