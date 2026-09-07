@@ -293,6 +293,13 @@ export interface DebtToGdpIndicator extends SustainabilityIndicator {
   year: number;
   threshold_imf: number;
   threshold_eac: number;
+  /**
+   * Which measure this ratio is, in words. Present since #179 — the same
+   * figure and basis as /debt/national's headline, so a reader comparing the
+   * two pages is comparing one thing.
+   */
+  basis?: string;
+  source?: string;
 }
 
 export interface DebtServiceIndicator extends SustainabilityIndicator {
@@ -311,12 +318,17 @@ export interface PeerColumnBasis {
   /** The publisher's own series code, e.g. "GC.XPN.INTP.RV.ZS". */
   indicator: string;
   publisher: string;
+  /**
+   * The single year the whole column is pinned to, on the one column that is
+   * pinned (`debt_to_gdp`). Absent on the other columns; null when no
+   * reference year could be established, in which case no row's
+   * `debt_to_gdp_year` is stamped either.
+   */
+  reference_year?: number | null;
 }
 
-export interface RegionalPeer {
+interface RegionalPeerColumns {
   country: string;
-  /** General government gross debt, % of GDP (IMF GGXWDG_NGDP). */
-  debt_to_gdp: number | null;
   /**
    * Always null. Kenya's headline 77.6% is total debt service (principal +
    * interest) over revenue; no cross-country series measures that here, and
@@ -339,6 +351,36 @@ export interface RegionalPeer {
   /** External debt stocks, % of GNI — denominator is GNI, not debt (DT.DOD.DECT.GN.ZS). */
   external_debt_pct_gni: number | null;
 }
+
+/**
+ * One row of the peer table.
+ *
+ * `debt_to_gdp` (general government gross debt, % of GDP — IMF GGXWDG_NGDP)
+ * is only comparable across rows when every row is on the same year, and it
+ * is not always possible to put them there. So the vintage travels with the
+ * cell:
+ *
+ *   debt_to_gdp_year = <number>  the cell IS on the column's reference year
+ *   debt_to_gdp_year = null      the cell came from a fallback series on a
+ *                                vintage nobody recorded — NOT comparable
+ *                                with the rows that carry a year
+ *
+ * A null year beside a real number is the thing to render, not to skip. The
+ * column previously carried each country's 2031 IMF *forecast* under a
+ * present-tense label, because the DataMapper honours neither its country nor
+ * its period filter and the old code took `max(year)`. Ethiopia read 27.0
+ * against an actual 43.1. Nothing on the page could have shown that, because
+ * no row said which year it was on.
+ *
+ * The union forbids the one combination that would be nonsense — a vintage
+ * stamped on a cell that has no value. Reading `peer.debt_to_gdp` still gives
+ * `number | null` with no narrowing, so this costs a consumer nothing.
+ */
+export type RegionalPeer = RegionalPeerColumns &
+  (
+    | { debt_to_gdp: number; debt_to_gdp_year: number }
+    | { debt_to_gdp: number | null; debt_to_gdp_year: null }
+  );
 
 export interface DebtProjection {
   year: number;
