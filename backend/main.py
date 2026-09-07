@@ -8671,6 +8671,14 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
             # Say which year the population describes, so a per-capita figure
             # can be checked rather than assumed current.
             "total_population_year": total_pop_year,
+            # And say why it is missing when it is. `latest_national_population`
+            # no longer substitutes a county sum for the national series
+            # (issue #190), so absence here is absence of the series itself —
+            # which is a reseed, not a code fix. Both per-capita figures below
+            # go null with it rather than resting on a guess.
+            "total_population_absent_reason": (
+                None if total_pop else "no_national_population_series"
+            ),
             "budget_to_gdp_pct": (
                 round((budget_raw_kes / (gdp_billion * 1e9)) * 100, 1)
                 if budget_raw_kes and gdp_billion
@@ -10573,14 +10581,11 @@ async def get_pending_bills_summary(db: Session = Depends(get_db)):
                 }
             county_totals[eid]["amount"] += float(b.amount or 0)
 
-        # Get population for per_capita (best-effort)
-        _pop_map = _get_population_map(db)
+        # Per-capita, with a reason attached whenever it is absent.
         top_counties = sorted(
             county_totals.values(), key=lambda x: x["amount"], reverse=True
         )[:15]
-        for c in top_counties:
-            pop = _pop_map.get(c["county"], 0)
-            c["per_capita"] = round(c["amount"] / pop, 2) if pop > 0 else None
+        _attach_per_capita(db, top_counties)
 
         # Aging buckets. ``aging_days`` is nullable, and ``or 0`` used to file
         # every undated bill under "0-30d" — see :data:`_AGING_BUCKETS`.
@@ -10711,26 +10716,85 @@ def _normalised_fiscal_year(raw: Optional[str]) -> Optional[str]:
 
 
 def _get_population_map(db: Session) -> Dict[str, int]:
-    """Return {county_name: population} from latest PopulationData."""
-    try:
-        from sqlalchemy import func as sqlfunc
+    """Return {county_name: population}, each county at ITS OWN latest year.
 
-        latest_year_sub = (
-            db.query(sqlfunc.max(DBPopulationData.year))
-            .filter(DBPopulationData.entity_id.isnot(None))
-            .scalar()
+    This returned ``{}`` on every call it ever served, from two independent
+    faults (issue #190):
+
+    1. ``PopulationData`` has no ``population`` attribute — the column is
+       ``total_population``. ``hasattr(PopulationData, "population")`` is False,
+       so the comprehension raised AttributeError and ``except Exception:
+       return {}`` swallowed it.
+    2. A single global ``MAX(year)`` was taken across all entity-bearing rows.
+       On production that is 2026 — population_data id=69, National Government,
+       total_population 82 — which selects one national row and excludes all 47
+       counties. "latest PopulationData" means latest PER ENTITY.
+
+    Fixing only (1) would have been worse than fixing neither: the map would
+    then have held ``{"National Government": 82}``, and a pending bill filed
+    against the national entity would have published ``amount / 82`` as a
+    per-capita figure. Hence the ``EntityType.COUNTY`` filter — this map's
+    contract is county populations, and a national row is not one.
+
+    It no longer catches. An empty map now means the table holds no county
+    population; a failed query raises, because "the lookup broke" and "there is
+    no data" are different answers and returning ``{}`` for both is what let
+    the AttributeError live undetected.
+    """
+    from sqlalchemy import and_
+    from sqlalchemy import func as sqlfunc
+
+    latest_per_entity = (
+        db.query(
+            DBPopulationData.entity_id.label("entity_id"),
+            sqlfunc.max(DBPopulationData.year).label("year"),
         )
-        if not latest_year_sub:
-            return {}
-        rows = (
-            db.query(DBPopulationData, DBEntity)
-            .join(DBEntity, DBPopulationData.entity_id == DBEntity.id)
-            .filter(DBPopulationData.year == latest_year_sub)
-            .all()
+        .filter(DBPopulationData.entity_id.isnot(None))
+        .group_by(DBPopulationData.entity_id)
+        .subquery()
+    )
+
+    rows = (
+        db.query(DBPopulationData, DBEntity)
+        .join(DBEntity, DBPopulationData.entity_id == DBEntity.id)
+        .join(
+            latest_per_entity,
+            and_(
+                DBPopulationData.entity_id == latest_per_entity.c.entity_id,
+                DBPopulationData.year == latest_per_entity.c.year,
+            ),
         )
-        return {e.canonical_name: int(p.population) for p, e in rows if p.population}
-    except Exception:
-        return {}
+        .filter(DBEntity.type == EntityType.COUNTY)
+        .all()
+    )
+    return {
+        e.canonical_name: int(p.total_population)
+        for p, e in rows
+        if p.total_population
+    }
+
+
+def _attach_per_capita(db: Session, counties: List[Dict[str, Any]]) -> None:
+    """Set ``per_capita`` on each row, and say why when it cannot be computed.
+
+    ``_pop_map.get(name, 0)`` used to make a missing population indistinguishable
+    from a real one, and every caller then read ``per_capita: null`` with no way
+    to tell "we hold no population data at all" from "we hold none for this
+    county". Withholding is a claim; a reader has to be able to act on it.
+    """
+    population = _get_population_map(db)
+    absent_reason = None if population else "no_population_data"
+
+    for county in counties:
+        pop = population.get(county.get("county"))
+        if pop:
+            county["per_capita"] = round(county["amount"] / pop, 2)
+            county["per_capita_absent_reason"] = None
+        else:
+            county["per_capita"] = None
+            county["per_capita_absent_reason"] = (
+                absent_reason or "no_population_row_for_entity"
+            )
 
 
 def _pending_bills_summary_from_loans(db: Session) -> dict:

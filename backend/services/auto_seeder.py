@@ -44,6 +44,17 @@ from services.live_data_fetcher import LiveDataAggregator
 
 logger = logging.getLogger("auto_seeder")
 
+#: Kept in step with alembic a2f7c1b48d90's MIN_NATIONAL_POPULATION.
+#:
+#: This writer produced population_data id=69 — National Government, year 2026,
+#: total_population 82, no source document (issue #190). Its national branch
+#: takes whatever ``fetch_all_population_data`` hands back, and one of that
+#: function's three sources is a regex over the KNBS homepage that matches a
+#: bare number next to the word "population" with no plausibility check. Kenya's
+#: 1948 census counted 5.4 million; nothing below this floor is a national
+#: population, and a row that fails it is dropped loudly rather than stored.
+MIN_NATIONAL_POPULATION = 5_000_000
+
 # Refresh schedule configuration (hours between refreshes)
 REFRESH_SCHEDULE = {
     "debt": 24,  # Daily - CBK updates monthly but we check daily
@@ -580,8 +591,20 @@ class AutoSeeder:
                         db.add(pop_record)
                         records_created += 1
 
-            # Add national population if available
-            if population_data.get("national_population"):
+            # Add national population if available — and only if it could be one.
+            national_population = population_data.get("national_population")
+            if national_population and national_population < MIN_NATIONAL_POPULATION:
+                logger.error(
+                    "[AUTO-SEEDER] Refusing national population %s for %s: below "
+                    "the %s floor, so it is not a national population. Source: %s",
+                    f"{national_population:,}",
+                    census_year,
+                    f"{MIN_NATIONAL_POPULATION:,}",
+                    population_data.get("source", "unknown"),
+                )
+                national_population = None
+
+            if national_population:
                 national = (
                     db.query(Entity).filter(Entity.type == EntityType.NATIONAL).first()
                 )
@@ -597,16 +620,14 @@ class AutoSeeder:
                     )
 
                     if existing:
-                        existing.total_population = population_data[
-                            "national_population"
-                        ]
+                        existing.total_population = national_population
                         records_updated += 1
                     else:
                         db.add(
                             PopulationData(
                                 entity_id=national.id,
                                 year=census_year,
-                                total_population=population_data["national_population"],
+                                total_population=national_population,
                                 confidence=1.0,
                             )
                         )
