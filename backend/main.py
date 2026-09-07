@@ -380,6 +380,42 @@ def _category_items_with_remainder(data: dict) -> dict:
     }
 
 
+def _category_share_of_total(data: dict, total_outstanding: float) -> dict:
+    """A category's share of the published debt total — or why there isn't one.
+
+    ``total_outstanding`` excludes ``PENDING_BILLS`` (:func:`_is_debt_loan`),
+    because arrears are not borrowed money. Dividing every category by it
+    regardless handed ``pending_bills`` a 7.86% share of a total it is not in,
+    so production's shares summed to **107.86%** and every share on the page
+    was wrong by that factor against the whole a reader adds them to.
+
+    Numerator is ``outstanding_in_total`` — the part of the category the
+    denominator actually contains — so the published shares sum to 100 by
+    construction. A category with nothing in the denominator gets ``None`` and
+    a reason, the shape ``/budget/national`` uses for
+    ``budget_split_absent_reason``. ``0`` would say the category is empty; the
+    ``total_principal`` beside it says otherwise.
+    """
+    if total_outstanding <= 0:
+        return {
+            "percentage_of_total": None,
+            "percentage_absent_reason": "no_published_total_to_divide_by",
+        }
+    if not data.get("rows_in_total"):
+        return {
+            "percentage_of_total": None,
+            "percentage_absent_reason": (
+                "category_excluded_from_total_debt_denominator"
+            ),
+        }
+    return {
+        "percentage_of_total": round(
+            data["outstanding_in_total"] / total_outstanding * 100, 2
+        ),
+        "percentage_absent_reason": None,
+    }
+
+
 #: Response-cache TTL for endpoints whose data is refreshed by the nightly
 #: seed.
 #:
@@ -8762,19 +8798,40 @@ async def get_debt_timeline(db: Session = Depends(get_db)):
                 }
             )
 
-        # Source info from the DB source document
+        # ── Source: the document behind the figure this response leads with ──
+        #
+        # This read ``rows[0]`` — the OLDEST row, the series being ordered
+        # year.asc() — while ``last_updated`` and
+        # ``reconciliation.primary_value_kes`` both describe ``rows[-1]``. The
+        # series runs 2013-2025, so production credited "CBK public debt table,
+        # December 2013" for a 2025 figure, and
+        # /provenance/verify/debt_timeline?year=2025 named a different document
+        # for that same number (audit 2026-09-06 §P2-10).
+        #
+        # The series genuinely spans many documents, so there is no single
+        # honest series-wide title. Attribute the row the response leads with,
+        # name its year so the claim is checkable, and say plainly whether the
+        # earlier years came from elsewhere.
         source_title = "Central Bank of Kenya Annual Reports & National Treasury BPS"
         last_updated = None
-        if rows[0].source_document_id:
+        source_year = None
+        source_covers_full_series = False
+        latest_row = rows[-1]
+        if latest_row.source_document_id:
             sdoc = (
                 db.query(DBSourceDocument)
-                .filter(DBSourceDocument.id == rows[0].source_document_id)
+                .filter(DBSourceDocument.id == latest_row.source_document_id)
                 .first()
             )
-            if sdoc:
-                source_title = sdoc.title or source_title
-        if rows[-1].updated_at:
-            last_updated = rows[-1].updated_at.isoformat()
+            if sdoc and sdoc.title:
+                source_title = sdoc.title
+                source_year = latest_row.year
+                source_covers_full_series = all(
+                    r.source_document_id == latest_row.source_document_id
+                    for r in rows
+                )
+        if latest_row.updated_at:
+            last_updated = latest_row.updated_at.isoformat()
 
         # ── Cross-check against /debt/national (Loan sum) ──
         # Same rationale as the reciprocal check on /debt/national:
@@ -8869,6 +8926,11 @@ async def get_debt_timeline(db: Session = Depends(get_db)):
             ),
             "last_updated": last_updated,
             "source": source_title,
+            # Which year ``source`` is the document for, and whether it covers
+            # the rest of the series. Without these a document title beside a
+            # 13-year series reads as if it had produced all 13 years.
+            "source_year": source_year,
+            "source_covers_full_series": source_covers_full_series,
             "years": len(timeline),
             "timeline": timeline,
             "reconciliation": reconciliation,
@@ -9704,61 +9766,30 @@ async def get_national_debt():
                     from models import DebtCategory
 
                     # Initialize category totals
+                    # ``outstanding_in_total`` is the slice of a category that
+                    # ``_is_debt_loan`` lets into ``total_outstanding``. It is the
+                    # only honest numerator for a "share of the total" — see the
+                    # percentage block near the end of this handler.
+                    def _empty_category() -> dict:
+                        return {
+                            "principal": 0,
+                            "outstanding": 0,
+                            "outstanding_in_total": 0,
+                            "rows_in_total": 0,
+                            "count": 0,
+                            "items": [],
+                        }
+
                     categories = {
-                        "external_multilateral": {
-                            "principal": 0,
-                            "outstanding": 0,
-                            "count": 0,
-                            "items": [],
-                        },
-                        "external_bilateral": {
-                            "principal": 0,
-                            "outstanding": 0,
-                            "count": 0,
-                            "items": [],
-                        },
-                        "external_commercial": {
-                            "principal": 0,
-                            "outstanding": 0,
-                            "count": 0,
-                            "items": [],
-                        },
-                        "domestic_bonds": {
-                            "principal": 0,
-                            "outstanding": 0,
-                            "count": 0,
-                            "items": [],
-                        },
-                        "domestic_bills": {
-                            "principal": 0,
-                            "outstanding": 0,
-                            "count": 0,
-                            "items": [],
-                        },
-                        "domestic_overdraft": {
-                            "principal": 0,
-                            "outstanding": 0,
-                            "count": 0,
-                            "items": [],
-                        },
-                        "pending_bills": {
-                            "principal": 0,
-                            "outstanding": 0,
-                            "count": 0,
-                            "items": [],
-                        },
-                        "county_guaranteed": {
-                            "principal": 0,
-                            "outstanding": 0,
-                            "count": 0,
-                            "items": [],
-                        },
-                        "other": {
-                            "principal": 0,
-                            "outstanding": 0,
-                            "count": 0,
-                            "items": [],
-                        },
+                        "external_multilateral": _empty_category(),
+                        "external_bilateral": _empty_category(),
+                        "external_commercial": _empty_category(),
+                        "domestic_bonds": _empty_category(),
+                        "domestic_bills": _empty_category(),
+                        "domestic_overdraft": _empty_category(),
+                        "pending_bills": _empty_category(),
+                        "county_guaranteed": _empty_category(),
+                        "other": _empty_category(),
                     }
 
                     # Pattern matching for categorization (fallback if debt_category is None)
@@ -9835,6 +9866,9 @@ async def get_national_debt():
                         categories[cat]["principal"] += principal
                         categories[cat]["outstanding"] += outstanding
                         categories[cat]["count"] += 1
+                        if _is_debt_loan(loan):
+                            categories[cat]["outstanding_in_total"] += outstanding
+                            categories[cat]["rows_in_total"] += 1
                         categories[cat]["items"].append(
                             {
                                 "lender": loan.lender,
@@ -9861,14 +9895,21 @@ async def get_national_debt():
                         "domestic_overdraft",
                     ]
 
+                    # ONE basis for every derived figure in this response:
+                    # ``outstanding``, which is what ``total_outstanding`` (the
+                    # published headline) and ``check_debt_composition`` below
+                    # both use. These sums read ``["principal"]`` until
+                    # 2026-09-06 while being compared against an outstanding
+                    # total — invisible only because every current row has
+                    # principal == outstanding.
                     external_debt = sum(
-                        categories[c]["principal"] for c in external_cats
+                        categories[c]["outstanding"] for c in external_cats
                     )
                     domestic_debt = sum(
-                        categories[c]["principal"] for c in domestic_cats
+                        categories[c]["outstanding"] for c in domestic_cats
                     )
-                    pending_bills = categories["pending_bills"]["principal"]
-                    county_debt = categories["county_guaranteed"]["principal"]
+                    pending_bills = categories["pending_bills"]["outstanding"]
+                    county_debt = categories["county_guaranteed"]["outstanding"]
 
                     # ── Cross-check against DebtTimeline (aggregate series) ──
                     # The Loan table and DebtTimeline table are populated from
@@ -9883,25 +9924,31 @@ async def get_national_debt():
                         db.query(_DT).order_by(_DT.year.desc()).first()
                     )
 
-                    # Correct the external-vs-domestic DIRECTION using the
-                    # authoritative CBK aggregate (DebtTimeline). The loan register
-                    # individually tracks external loans but under-represents
-                    # domestic instruments (T-bonds/bills), which inverted the split
-                    # (audit §3.3 — domestic has led external since ~2024). Keep the
-                    # loan-register total as the base and apply the CBK split
-                    # proportion, so the parts still sum to the total.
-                    if (
-                        latest_timeline_row
-                        and latest_timeline_row.external
-                        and latest_timeline_row.domestic
-                    ):
-                        _tl_ext = float(latest_timeline_row.external)
-                        _tl_dom = float(latest_timeline_row.domestic)
-                        _tl_split = _tl_ext + _tl_dom
-                        _base = external_debt + domestic_debt
-                        if _tl_split > 0 and _base > 0:
-                            external_debt = _base * (_tl_ext / _tl_split)
-                            domestic_debt = _base * (_tl_dom / _tl_split)
+                    # The external/domestic split is the register's OWN sum,
+                    # and nothing else. It used to be the register's *total*
+                    # re-divided by DebtTimeline's proportion:
+                    #
+                    #     external_debt = _base * (_tl_ext / _tl_split)
+                    #     domestic_debt = _base * (_tl_dom / _tl_split)
+                    #
+                    # which put two contradictory splits in one response — the
+                    # summary card said 5,265.0 / 6,591.0 while the category
+                    # block below it said 4,797.3 / 7,058.7, a 467.7Bn
+                    # disagreement on one page (audit 2026-09-06 §P1-3).
+                    #
+                    # The comment that justified it said the register
+                    # "under-represents domestic instruments (T-bonds/bills),
+                    # which inverted the split". That was true when written and
+                    # is not true now: the domestic side carries the CBK
+                    # bulletin overlay at 7,058.7Bn — MORE than CBK's own
+                    # Dec-2025 domestic figure of 6,837.5Bn — and already leads
+                    # the external side unaided. The correction had begun
+                    # producing the error it was added to prevent, moving
+                    # domestic 467.7Bn away from the register that measured it.
+                    #
+                    # ``latest_timeline_row`` is still read below, for the
+                    # reconciliation block: DebtTimeline is an independent
+                    # source to CHECK this endpoint against, not an input to it.
 
                     reconciliation: dict = {
                         "primary_source": "loans_table",
@@ -10012,19 +10059,27 @@ async def get_national_debt():
                             "reconciliation": reconciliation,
                             # High-level breakdown
                             "summary": {
+                                # Which of the two money columns these are. The
+                                # split was read off ``principal`` while being
+                                # published beside an ``outstanding`` headline,
+                                # and nothing in the payload said so.
+                                "basis": "outstanding",
                                 "external_debt": external_debt,
                                 "domestic_debt": domestic_debt,
                                 "pending_bills": pending_bills,
                                 "county_guaranteed": county_debt,
+                                # Denominator is ``total_outstanding`` — the same
+                                # figure the numerators come from, so the two
+                                # percentages sum to 100 of the published total.
                                 "external_percentage": (
-                                    round(external_debt / total_debt * 100, 1)
-                                    if total_debt > 0
-                                    else 0
+                                    round(external_debt / total_outstanding * 100, 1)
+                                    if total_outstanding > 0
+                                    else None
                                 ),
                                 "domestic_percentage": (
-                                    round(domestic_debt / total_debt * 100, 1)
-                                    if total_debt > 0
-                                    else 0
+                                    round(domestic_debt / total_outstanding * 100, 1)
+                                    if total_outstanding > 0
+                                    else None
                                 ),
                             },
                             # Detailed categorized breakdown
@@ -10033,10 +10088,23 @@ async def get_national_debt():
                                     "total_principal": data["principal"],
                                     "total_outstanding": data["outstanding"],
                                     "loan_count": data["count"],
-                                    "percentage_of_total": (
-                                        round(data["principal"] / total_debt * 100, 2)
-                                        if total_debt > 0
-                                        else 0
+                                    # Share of ``total_outstanding``, computed
+                                    # from the part of this category that is
+                                    # actually IN that total.
+                                    #
+                                    # Every category used to be divided by this
+                                    # denominator including ``pending_bills``,
+                                    # which ``_is_debt_loan`` deliberately keeps
+                                    # OUT of it — so production's seven shares
+                                    # summed to 107.86%, the excess being exactly
+                                    # the row that does not belong (audit
+                                    # 2026-09-06 §P2-9). There is no correct
+                                    # share to publish for a category outside the
+                                    # denominator, so it is withheld with a
+                                    # reason rather than filled with a number
+                                    # that adds up to nothing.
+                                    **_category_share_of_total(
+                                        data, total_outstanding
                                     ),
                                     # The named lenders the treemap draws,
                                     # plus what is left over.
@@ -10410,27 +10478,26 @@ async def get_pending_bills_summary(db: Session = Depends(get_db)):
             pop = _pop_map.get(c["county"], 0)
             c["per_capita"] = round(c["amount"] / pop, 2) if pop > 0 else None
 
-        # Aging buckets
-        aging_buckets = {"0-30d": 0, "31-90d": 0, "91-180d": 0, "180d+": 0}
+        # Aging buckets. ``aging_days`` is nullable, and ``or 0`` used to file
+        # every undated bill under "0-30d" — see :data:`_AGING_BUCKETS`.
+        aging_buckets = _empty_aging_buckets()
         for b in bills:
-            amt = float(b.amount or 0)
-            days = b.aging_days or 0
-            if days <= 30:
-                aging_buckets["0-30d"] += amt
-            elif days <= 90:
-                aging_buckets["31-90d"] += amt
-            elif days <= 180:
-                aging_buckets["91-180d"] += amt
-            else:
-                aging_buckets["180d+"] += amt
+            aging_buckets[_aging_bucket(b.aging_days)] += float(b.amount or 0)
 
-        # Trend by fiscal year (filter out unknown)
+        # Trend by fiscal year, on CANONICAL labels — same rule as the loans
+        # fallback below, which drew one year as two points because it keyed
+        # off the raw string. ``PendingBill``'s natural key is
+        # (entity, bill_type, fiscal_year), so two spellings survive as two
+        # rows here too and the defect has the same shape.
         trend_map: Dict[str, float] = {}
+        trend_unattributed = 0.0
         for b in bills:
-            fy = b.fiscal_year or ""
-            if not fy or fy.lower() == "unknown":
+            amount = float(b.amount or 0)
+            fy = _normalised_fiscal_year(b.fiscal_year)
+            if fy is None:
+                trend_unattributed += amount
                 continue
-            trend_map[fy] = trend_map.get(fy, 0) + float(b.amount or 0)
+            trend_map[fy] = trend_map.get(fy, 0) + amount
         trend = [{"year": k, "total_amount": v} for k, v in sorted(trend_map.items())]
 
         # Eligible / Ineligible totals
@@ -10447,13 +10514,96 @@ async def get_pending_bills_summary(db: Session = Depends(get_db)):
             "breakdown_by_type": breakdown_by_type,
             "top_counties_by_amount": top_counties,
             "aging_buckets": aging_buckets,
+            "aging_buckets_absent_reason": None,
             "trend": trend,
+            "trend_unattributed_amount": trend_unattributed,
             "currency": "KES",
         }
 
     except Exception as e:
         logging.error(f"Pending bills summary failed: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+#: Aging buckets, and the bucket for a bill whose age nobody recorded.
+#:
+#: ``days = b.aging_days or 0`` filed every undated bill under "0-30d" — an
+#: assertion that a bill of unknown age is less than a month old, which is the
+#: most reassuring reading available and rests on nothing. Its mirror image
+#: lived in the loans fallback, which asserted the most alarming reading (see
+#: :func:`_pending_bills_summary_from_loans`). Neither is a measurement.
+_AGING_BUCKETS = ("0-30d", "31-90d", "91-180d", "180d+", "unknown")
+
+
+def _empty_aging_buckets() -> Dict[str, float]:
+    return {bucket: 0 for bucket in _AGING_BUCKETS}
+
+
+def _aging_bucket(aging_days) -> str:
+    """Which bucket a bill belongs in, including "I was never told"."""
+    if aging_days is None:
+        return "unknown"
+    days = int(aging_days)
+    if days <= 30:
+        return "0-30d"
+    if days <= 90:
+        return "31-90d"
+    if days <= 180:
+        return "91-180d"
+    return "180d+"
+
+
+#: Bill-type keywords, matched against a lender string. Weak evidence, but not
+#: no evidence — a row reading "Pending Bills — Salary Arrears" does say what
+#: it is.
+_BILL_TYPE_KEYWORDS = (
+    ("salary", ("salary", "wage")),
+    ("pension", ("pension",)),
+    ("statutory", ("statutory",)),
+    ("court_awards", ("court", "award")),
+)
+
+#: Where a row goes when the lender string says nothing about its type.
+#:
+#: This used to be ``supplier_arrears``, unconditionally. Nothing in the
+#: register's lender strings matches any keyword above, so production reported
+#: 100% supplier arrears — presented as a finding about the composition of
+#: Kenya's arrears, actually a statement about a dictionary having no matches
+#: (audit 2026-09-06 §P1-7).
+_BILL_TYPE_UNCLASSIFIED = "unclassified"
+
+
+def _bill_type_from_lender(lender: Optional[str]) -> str:
+    text = (lender or "").lower()
+    for bill_type, terms in _BILL_TYPE_KEYWORDS:
+        if any(term in text for term in terms):
+            return bill_type
+    return _BILL_TYPE_UNCLASSIFIED
+
+
+def _normalised_fiscal_year(raw: Optional[str]) -> Optional[str]:
+    """Canonical ``FY{YYYY}/{YY}``, or None when the label is not one.
+
+    Trend keys were taken verbatim from provenance, so ``"FY 2024/25"`` and
+    ``"FY2024/25"`` drew one fiscal year as two points — 702.8Bn and 405.4Bn,
+    a year that appeared to have halved, whose two halves sum to the total
+    printed above the chart (audit 2026-09-06 §P2-13).
+
+    ``normalize_fiscal_label`` keeps sub-period markers distinct, so
+    ``"FY2025/26 Q1"`` does not fold into ``"FY2025/26"`` — a quarter and a
+    year are different quantities and adding them would be a new version of
+    the same bug.
+    """
+    from seeding.utils import normalize_fiscal_label
+
+    label = (raw or "").strip()
+    if not label or label.lower() == "unknown":
+        return None
+    try:
+        return normalize_fiscal_label(label)
+    except (ValueError, IndexError):
+        logging.warning("pending-bills trend: unparseable fiscal label %r", label)
+        return None
 
 
 def _get_population_map(db: Session) -> Dict[str, int]:
@@ -10493,9 +10643,12 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
             "status": "no_data",
             "total_pending_amount": 0,
             "breakdown_by_type": {},
+            "breakdown_by_type_absent_reason": "no_pending_bills_rows",
             "top_counties_by_amount": [],
-            "aging_buckets": {"0-30d": 0, "31-90d": 0, "91-180d": 0, "180d+": 0},
+            "aging_buckets": None,
+            "aging_buckets_absent_reason": "no_pending_bills_rows",
             "trend": [],
+            "trend_unattributed_amount": 0,
             "currency": "KES",
             "note": "No pending bills data. Run: python -m seeding.cli seed --domain pending_bills",
         }
@@ -10528,32 +10681,36 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
         entity_totals.values(), key=lambda x: x["amount"], reverse=True
     )[:15]
 
-    # Derive bill type from lender name
+    # Bill type, inferred from the lender string where the lender string
+    # actually says something. Rows it does not are ``unclassified``, not
+    # ``supplier_arrears`` — see :data:`_BILL_TYPE_UNCLASSIFIED`.
     breakdown_by_type: Dict[str, float] = {}
     for l in pending_loans:
-        lender = (l.lender or "").lower()
-        if "salary" in lender or "wage" in lender:
-            bt = "salary"
-        elif "pension" in lender:
-            bt = "pension"
-        elif "statutory" in lender:
-            bt = "statutory"
-        elif "court" in lender or "award" in lender:
-            bt = "court_awards"
-        else:
-            bt = "supplier_arrears"
+        bt = _bill_type_from_lender(l.lender)
         breakdown_by_type[bt] = breakdown_by_type.get(bt, 0) + float(
             l.outstanding or l.principal or 0
         )
+    breakdown_by_type_absent_reason = (
+        "loans_table_carries_no_bill_type"
+        if set(breakdown_by_type) <= {_BILL_TYPE_UNCLASSIFIED}
+        else None
+    )
 
-    # Trend from provenance fiscal_year (filter out "unknown")
+    # Trend by fiscal year, on CANONICAL labels — see
+    # :func:`_normalised_fiscal_year`. Money whose row names no usable fiscal
+    # year is reported as a total rather than dropped in silence: the chart's
+    # bars used not to sum to the figure printed above them, and nothing said
+    # why.
     trend_map: Dict[str, float] = {}
+    trend_unattributed = 0.0
     for l in pending_loans:
         prov = l.provenance if isinstance(l.provenance, dict) else {}
-        fy = prov.get("fiscal_year", "")
-        if not fy or fy.lower() == "unknown":
+        amount = float(l.outstanding or l.principal or 0)
+        fy = _normalised_fiscal_year(prov.get("fiscal_year"))
+        if fy is None:
+            trend_unattributed += amount
             continue
-        trend_map[fy] = trend_map.get(fy, 0) + float(l.outstanding or l.principal or 0)
+        trend_map[fy] = trend_map.get(fy, 0) + amount
     trend = [{"year": k, "total_amount": v} for k, v in sorted(trend_map.items())]
 
     # Eligible / Ineligible totals from provenance
@@ -10571,9 +10728,20 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
         "eligible_total": eligible_total,
         "ineligible_total": ineligible_total,
         "breakdown_by_type": breakdown_by_type,
+        "breakdown_by_type_absent_reason": breakdown_by_type_absent_reason,
         "top_counties_by_amount": top_counties,
-        "aging_buckets": {"0-30d": 0, "31-90d": 0, "91-180d": 0, "180d+": total},
+        # Withheld, not asserted.
+        #
+        # This was ``{"0-30d": 0, "31-90d": 0, "91-180d": 0, "180d+": total}``:
+        # a claim that 100% of KSh 1.108 TRILLION is more than 180 days
+        # overdue, made by a code path reading a table that has no aging
+        # column at all (audit 2026-09-06 §P1-4). The difference between a
+        # bill 20 days old and one 400 days old is the difference between
+        # routine and default, and this asserted the second for all of it.
+        "aging_buckets": None,
+        "aging_buckets_absent_reason": "loans_table_carries_no_aging_data",
         "trend": trend,
+        "trend_unattributed_amount": trend_unattributed,
         "currency": "KES",
         "note": "Derived from loans table. Seed pending_bills table for richer data.",
     }
@@ -10608,19 +10776,34 @@ async def get_pending_bills_by_county(county_id: str, db: Session = Depends(get_
                 .all()
             )
             total = sum(float(l.outstanding or l.principal or 0) for l in pending_loans)
+            # The same two assertions the national fallback used to make, on
+            # the page that never carried the debt page's disclaimer: 100% of
+            # this county's arrears declared over 180 days old, and 100%
+            # declared supplier arrears, from a table holding neither fact.
+            by_type: Dict[str, float] = {}
+            for l in pending_loans:
+                bt = _bill_type_from_lender(l.lender)
+                by_type[bt] = by_type.get(bt, 0) + float(
+                    l.outstanding or l.principal or 0
+                )
             return {
                 "status": "success" if pending_loans else "no_data",
                 "data_source": "loans_table_fallback" if pending_loans else "none",
                 "county": entity.canonical_name,
                 "county_id": county_id,
                 "total_pending": total,
-                "breakdown_by_type": {"supplier_arrears": total} if total else {},
-                "aging_buckets": {
-                    "0-30d": 0,
-                    "31-90d": 0,
-                    "91-180d": 0,
-                    "180d+": total,
-                },
+                "breakdown_by_type": by_type,
+                "breakdown_by_type_absent_reason": (
+                    "loans_table_carries_no_bill_type"
+                    if by_type and set(by_type) <= {_BILL_TYPE_UNCLASSIFIED}
+                    else None
+                ),
+                "aging_buckets": None,
+                "aging_buckets_absent_reason": (
+                    "loans_table_carries_no_aging_data"
+                    if pending_loans
+                    else "no_pending_bills_rows"
+                ),
                 "bills": [],
                 "currency": "KES",
             }
@@ -10633,19 +10816,10 @@ async def get_pending_bills_by_county(county_id: str, db: Session = Depends(get_
             bt = b.bill_type.value if b.bill_type else "other"
             by_type[bt] = by_type.get(bt, 0) + float(b.amount or 0)
 
-        # Aging buckets
-        aging = {"0-30d": 0, "31-90d": 0, "91-180d": 0, "180d+": 0}
+        # Aging buckets — same rule as the summary endpoint.
+        aging = _empty_aging_buckets()
         for b in bills:
-            amt = float(b.amount or 0)
-            days = b.aging_days or 0
-            if days <= 30:
-                aging["0-30d"] += amt
-            elif days <= 90:
-                aging["31-90d"] += amt
-            elif days <= 180:
-                aging["91-180d"] += amt
-            else:
-                aging["180d+"] += amt
+            aging[_aging_bucket(b.aging_days)] += float(b.amount or 0)
 
         bill_details = [
             {
@@ -10991,13 +11165,43 @@ async def get_debt_sustainability(db: Session = Depends(get_db)):
                 "debt_service_to_revenue": None,
                 "external_debt_share": None,
                 "projections": [],
+                "projections_source": None,
+                "projections_absent_reason": "no_published_projection_seeded",
                 "regional_peers": _get_regional_peers(),
+                "regional_peers_basis": _peer_column_basis(None),
             }
 
         # ── Debt-to-GDP ────────────────────────────────────────────
-        debt_to_gdp = None
-        if latest_dt and latest_dt.gdp_ratio:
+        #
+        # Same helper, same measure and same declared basis as
+        # /debt/national's headline. This read DebtTimeline.gdp_ratio, so the
+        # site published TWO debt-to-GDP figures for one year under one label:
+        # 69.3 on the homepage (IMF GGXWDG_NGDP, basis declared) and 70.0 here
+        # (basis undeclared). DebtTimeline remains a legitimate fallback; an
+        # undeclared basis was the defect, not the series.
+        ratio = None
+        ratio_year = None
+        ratio_basis = None
+        ratio_source = None
+        _imf_headline = _latest_imf_debt_to_gdp(db)
+        if _imf_headline is not None:
+            ratio, ratio_year = _imf_headline[0], _imf_headline[1]
+            ratio_basis = (
+                "IMF General Government Gross Debt, % of GDP (GGXWDG_NGDP) "
+                "— vintage-consistent"
+            )
+            ratio_source = "IMF World Economic Outlook"
+        elif latest_dt and latest_dt.gdp_ratio:
             ratio = float(latest_dt.gdp_ratio)
+            ratio_year = latest_dt.year
+            ratio_basis = (
+                "Central government debt / nominal GDP (CBK debt timeline) "
+                "— not the IMF general-government measure"
+            )
+            ratio_source = "CBK Annual Reports / National Treasury BPS"
+
+        debt_to_gdp = None
+        if ratio is not None:
             if ratio > 55:
                 status = "above"
             elif ratio > 50:
@@ -11006,7 +11210,9 @@ async def get_debt_sustainability(db: Session = Depends(get_db)):
                 status = "below"
             debt_to_gdp = {
                 "value": ratio,
-                "year": latest_dt.year,
+                "year": ratio_year,
+                "basis": ratio_basis,
+                "source": ratio_source,
                 "threshold_imf": 55.0,
                 "threshold_eac": 50.0,
                 "status": status,
@@ -11038,16 +11244,24 @@ async def get_debt_sustainability(db: Session = Depends(get_db)):
             if total > 0:
                 external_share = round(ext / total * 100, 1)
 
-        # ── 5-Year Projections (linear extrapolation) ──────────────
-        projections = _compute_debt_projections(db)
+        # ── Projections: published, or absent ──────────────────────
+        projections, projections_source, projections_absent_reason = (
+            _published_debt_projections(db)
+        )
 
         # ── Regional Peers ─────────────────────────────────────────
+        #
+        # Kenya's cell used to be overwritten with DebtTimeline.gdp_ratio,
+        # which made Kenya the one country in its own comparison measured
+        # differently from its four comparators — and did not even match the
+        # site's declared headline. It is now the same figure, basis and year
+        # as the headline above it, and the whole column is pinned to that
+        # year (see :func:`_imf_fetch_debt_to_gdp`). Where no IMF reference
+        # year exists, no country is special-cased.
+        _peer_reference_year = ratio_year if _imf_headline is not None else None
         peers = _get_regional_peers(
-            kenya_ratio=(
-                float(latest_dt.gdp_ratio)
-                if latest_dt and latest_dt.gdp_ratio
-                else None
-            )
+            kenya_debt_to_gdp=(ratio if _imf_headline is not None else None),
+            reference_year=_peer_reference_year,
         )
 
         return {
@@ -11057,7 +11271,13 @@ async def get_debt_sustainability(db: Session = Depends(get_db)):
             "debt_service_to_revenue": debt_service_to_revenue,
             "external_debt_share": external_share,
             "projections": projections,
+            "projections_source": projections_source,
+            "projections_absent_reason": projections_absent_reason,
             "regional_peers": peers,
+            # What each peer column measures. The peer table repeats Kenya
+            # beside the headline above it, so an undeclared basis here is a
+            # contradiction on one page rather than a footnote.
+            "regional_peers_basis": _peer_column_basis(_peer_reference_year),
             "currency": "KES",
             "source": "National Treasury BPS, CBK Annual Reports",
         }
@@ -11067,49 +11287,89 @@ async def get_debt_sustainability(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-def _compute_debt_projections(db: Session) -> list:
-    """Simple linear extrapolation of debt-to-GDP for next 5 years."""
-    from models import DebtTimeline
+#: The projection series that already exists in this database, seeded nightly
+#: by ``backend.seeding.domains.imf_weo`` and already served by
+#: ``/api/v1/debt/broader``.
+_PROJECTION_INDICATOR = "GGXWDG_NGDP"
+_PROJECTION_SOURCE_LABEL = "IMF World Economic Outlook (GGXWDG_NGDP)"
 
-    # Fetch only the last 5 data points directly from DB (not all rows)
-    recent = (
-        db.query(DebtTimeline)
-        .filter(DebtTimeline.gdp_ratio.isnot(None))
-        .order_by(DebtTimeline.year.desc())
-        .limit(5)
+
+def _published_debt_projections(db: Session) -> tuple:
+    """Kenya's PUBLISHED debt-to-GDP projection, or nothing and a reason.
+
+    Returns ``(projections, source_label, absent_reason)``.
+
+    This was a least-squares fit over the last five ``DebtTimeline`` points,
+    emitted as ``projected_debt_to_gdp``: 70.4 / 70.7 / 71.0 / 71.3 / 71.6 —
+    +0.3 every year, to 2030. Nobody published that. It was a straight line
+    drawn through five historical observations and given a forecast's name
+    (audit 2026-09-06 §P2-12).
+
+    It was also wrong in a checkable way. The IMF's actual projection for
+    Kenya sits in ``imf_weo_observations`` in the same database — 71.6 / 72.4 /
+    73.3 / 73.6 / 74.2 — so the fitted line understated the one published
+    forecast available by 2.6 points of GDP at 2030.
+
+    It is also a basis fix, not only an accuracy one. The fit ran over
+    ``DebtTimeline.gdp_ratio``, so the projection chart did not even start
+    from the figure the page states above it: the headline is IMF
+    GGXWDG_NGDP (69.3 for 2025 — see the debt-to-GDP block in
+    :func:`get_debt_sustainability`), while the line began at DebtTimeline's
+    70.0. These rows continue the headline's own series.
+
+    Read the newest vintage only. IMF publishes twice a year and every
+    snapshot is kept, so mixing vintages would splice two forecasts into one
+    curve. When nothing is seeded the answer is no projection and a reason —
+    an extrapolation is not a fallback for a forecast.
+    """
+    from sqlalchemy import func as _func  # local — main.py imports sqla locally
+
+    from models import ImfWeoObservation
+
+    latest_vintage = (
+        db.query(_func.max(ImfWeoObservation.vintage))
+        .filter(
+            ImfWeoObservation.country_code == "KEN",
+            ImfWeoObservation.indicator == _PROJECTION_INDICATOR,
+        )
+        .scalar()
+    )
+    if latest_vintage is None:
+        return [], None, "no_published_projection_seeded"
+
+    rows = (
+        db.query(ImfWeoObservation)
+        .filter(
+            ImfWeoObservation.country_code == "KEN",
+            ImfWeoObservation.indicator == _PROJECTION_INDICATOR,
+            ImfWeoObservation.vintage == latest_vintage,
+            ImfWeoObservation.is_projection.is_(True),
+            ImfWeoObservation.value.isnot(None),
+        )
+        .order_by(ImfWeoObservation.year.asc())
         .all()
     )
-    if len(recent) < 2:
-        return []
+    if not rows:
+        return [], None, "vintage_carries_no_projection_years"
 
-    # Reverse so oldest-first for the linear fit
-    recent = list(reversed(recent))
-    n = len(recent)
-    xs = [float(r.year) for r in recent]
-    ys = [float(r.gdp_ratio) for r in recent]
-
-    x_mean = sum(xs) / n
-    y_mean = sum(ys) / n
-    num = sum((xs[i] - x_mean) * (ys[i] - y_mean) for i in range(n))
-    den = sum((xs[i] - x_mean) ** 2 for i in range(n))
-
-    if den == 0:
-        return []
-
-    slope = num / den
-    intercept = y_mean - slope * x_mean
-
-    last_year = int(xs[-1])
-    projections = []
-    for i in range(1, 6):
-        proj_year = last_year + i
-        proj_val = round(slope * proj_year + intercept, 1)
-        projections.append({"year": proj_year, "projected_debt_to_gdp": proj_val})
-
-    return projections
+    return (
+        [
+            {
+                "year": r.year,
+                "projected_debt_to_gdp": round(float(r.value), 1),
+                "is_published_projection": True,
+            }
+            for r in rows
+        ],
+        _PROJECTION_SOURCE_LABEL,
+        None,
+    )
 
 
-def _get_regional_peers(kenya_ratio: Optional[float] = None) -> list:
+def _get_regional_peers(
+    kenya_debt_to_gdp: Optional[float] = None,
+    reference_year: Optional[int] = None,
+) -> list:
     """Return EAC regional debt comparison with multiple indicators.
 
     Fetches three indicators from World Bank + IMF APIs (cached 12 hours):
@@ -11119,7 +11379,7 @@ def _get_regional_peers(kenya_ratio: Optional[float] = None) -> list:
 
     Falls back to verified static values when APIs are unreachable.
     """
-    return _get_regional_peers_cached(kenya_ratio)
+    return _get_regional_peers_cached(kenya_debt_to_gdp, reference_year)
 
 
 # ── EAC peer data with multi-indicator support ────────────────────
@@ -11131,11 +11391,66 @@ _EAC_COUNTRIES = {
     "RWA": "Rwanda",
 }
 
-# World Bank indicator codes
+# World Bank indicator codes, keyed by WHAT THEY MEASURE.
+#
+# Two of these used to be keyed by the headline field they were poured into —
+# ``debt_service_to_revenue`` and ``external_debt_pct`` — which is how the
+# regional-peer table came to state Kenya's debt service as 24.3% on a page
+# whose headline says 77.6%, and Kenya's external share as 35.0% beside a
+# headline of 44.4% (audit 2026-09-06 §P2-11). Neither peer number was wrong;
+# both were a different measure wearing the headline's name:
+#
+#   GC.XPN.INTP.RV.ZS   INTEREST payments only, no principal, % of revenue
+#   DT.DOD.DECT.GN.ZS   external debt over GNI — not over total public debt
+#
+# Rwanda's 93.9 in that second column is the tell: no country holds 93.9% of
+# its public debt externally, but 93.9% of GNI is unremarkable.
 _WB_INDICATORS = {
     "debt_to_gdp": "GC.DOD.TOTL.GD.ZS",  # Central govt debt (% GDP)
-    "debt_service_to_revenue": "GC.XPN.INTP.RV.ZS",  # Interest payments (% revenue)
-    "external_debt_pct": "DT.DOD.DECT.GN.ZS",  # External debt stocks (% GNI)
+    "interest_payments_pct_revenue": "GC.XPN.INTP.RV.ZS",
+    "external_debt_pct_gni": "DT.DOD.DECT.GN.ZS",
+}
+
+#: What each regional-peer column is, published with the data so no reader has
+#: to infer a measure from a field name.
+_PEER_COLUMN_BASIS = {
+    "debt_to_gdp": {
+        "measure": "General government gross debt, % of GDP",
+        "indicator": "GGXWDG_NGDP",
+        "publisher": "IMF World Economic Outlook",
+        # Filled per response — the whole column is pinned to one year so the
+        # five countries are comparable. See _imf_fetch_debt_to_gdp.
+        "reference_year": None,
+    },
+    "interest_payments_pct_revenue": {
+        "measure": "Interest payments, % of revenue (excludes principal)",
+        "indicator": "GC.XPN.INTP.RV.ZS",
+        "publisher": "World Bank",
+    },
+    "external_debt_pct_gni": {
+        "measure": "External debt stocks, % of GNI (denominator is GNI, not debt)",
+        "indicator": "DT.DOD.DECT.GN.ZS",
+        "publisher": "World Bank",
+    },
+}
+
+def _peer_column_basis(reference_year: Optional[int]) -> Dict[str, Any]:
+    """:data:`_PEER_COLUMN_BASIS` with this response's reference year stamped."""
+    basis = {k: dict(v) for k, v in _PEER_COLUMN_BASIS.items()}
+    basis["debt_to_gdp"]["reference_year"] = reference_year
+    return basis
+
+
+#: Why the two headline measures have no peer column. Kenya's 77.6% is total
+#: debt service (principal + interest) over revenue, from ``fiscal_summaries``;
+#: 44.4% is external debt over TOTAL PUBLIC DEBT. Neither has a cross-country
+#: series behind it here, and the nearest-looking World Bank series is a
+#: different measure — which is what produced the contradiction.
+_PEER_ABSENT_REASONS = {
+    "debt_service_to_revenue": "no_comparable_total_debt_service_series_for_peers",
+    "external_debt_share": (
+        "no_comparable_share_of_total_public_debt_series_for_peers"
+    ),
 }
 
 # IMF DataMapper indicator codes (WEO dataset)
@@ -11143,8 +11458,10 @@ _IMF_INDICATORS = {
     "debt_to_gdp": "GGXWDG_NGDP",  # General govt gross debt (% GDP)
 }
 
-# Simple TTL cache: (timestamp, data)
-_peers_cache: Dict[str, Any] = {"ts": 0.0, "data": None}
+# Simple TTL cache: (timestamp, data, reference_year). The reference year is
+# part of the entry's identity — a cached column from last year's WEO vintage
+# must not be served against this year's.
+_peers_cache: Dict[str, Any] = {"ts": 0.0, "data": None, "reference_year": None}
 _PEERS_CACHE_TTL = 12 * 3600  # 12 hours
 
 _logger_peers = logging.getLogger("audit_app.regional_peers")
@@ -11178,17 +11495,33 @@ def _wb_fetch_indicator(indicator_code: str, country_codes: str) -> Dict[str, fl
     return {iso: d["value"] for iso, d in latest.items()}
 
 
-def _imf_fetch_debt_to_gdp() -> Dict[str, float]:
-    """Fetch debt-to-GDP from the IMF DataMapper API (WEO dataset).
+def _imf_fetch_debt_to_gdp(reference_year: int) -> Dict[str, float]:
+    """Debt-to-GDP for the EAC peers at ONE year, from the IMF DataMapper.
 
-    Endpoint: /api/v1/GGXWDG_NGDP/{countries}?periods=2020,2021,...,2026
-    Returns {ISO3: value} for countries that have data.
+    Returns ``{ISO3: value}`` for countries that publish a value for exactly
+    ``reference_year``. Countries that do not are omitted, so the caller can
+    show absence rather than a value from some other year.
+
+    The DataMapper honours neither filter in the URL. Asked for five countries
+    over ``periods=2018,...,2026`` it answers with **226** country and
+    aggregate codes (WEOWORLD, EURO, ADVEC ...) covering **1998-2031**. The
+    previous ``max(year_vals.keys())`` therefore selected the furthest
+    PROJECTION in the file for every country, under a column a reader takes
+    for a current debt level::
+
+        country   max(year)=2031    2025 actual
+        KEN            75.1             69.3
+        ETH            27.0             43.1
+        RWA            61.6             64.6
+
+    Ethiopia would have read 27.0 — a 2031 forecast, 16 points below its
+    actual. Bound the year here, where it can be enforced, rather than in a
+    query string the server discards.
     """
     countries = "/".join(_EAC_COUNTRIES.keys())
-    periods = ",".join(str(y) for y in range(2018, 2027))
     url = (
         f"https://www.imf.org/external/datamapper/api/v1"
-        f"/GGXWDG_NGDP/{countries}?periods={periods}"
+        f"/GGXWDG_NGDP/{countries}?periods={reference_year}"
     )
     resp = httpx.get(url, timeout=8)
     resp.raise_for_status()
@@ -11198,45 +11531,76 @@ def _imf_fetch_debt_to_gdp() -> Dict[str, float]:
     indicator_data = data.get("values", {}).get("GGXWDG_NGDP", {})
     result: Dict[str, float] = {}
     for iso, year_vals in indicator_data.items():
-        if not year_vals:
+        # The response carries every country and every aggregate, asked for or
+        # not. Keep only the peers this table compares.
+        if iso not in _EAC_COUNTRIES or not year_vals:
             continue
-        # Get the most recent year with a value
-        latest_year = max(year_vals.keys())
-        val = year_vals[latest_year]
+        val = year_vals.get(str(reference_year))
         if val is not None:
             result[iso] = round(float(val), 1)
 
     return result
 
 
-def _get_regional_peers_cached(kenya_ratio: Optional[float] = None) -> list:
-    """Fetch EAC peers from World Bank + IMF APIs with 12-hour TTL cache."""
+def _get_regional_peers_cached(
+    kenya_debt_to_gdp: Optional[float] = None,
+    reference_year: Optional[int] = None,
+) -> list:
+    """Fetch EAC peers from World Bank + IMF APIs with 12-hour TTL cache.
+
+    ``kenya_debt_to_gdp`` is Kenya's headline figure from the seeded IMF WEO
+    table, passed in ONLY when it is on the same measure and year as the rest
+    of the column. It used to be ``kenya_ratio`` — DebtTimeline.gdp_ratio —
+    which made Kenya the one country in its own comparison measured
+    differently from its four comparators, and did not match the site's
+    declared headline either. Using the seeded table rather than this fetch
+    for Kenya's cell guarantees the peer row and the headline above it agree
+    even when the DataMapper is unreachable.
+    """
     now = time.time()
 
-    # Check cache
+    # Cache holds the fetched column; the reference year is part of its
+    # identity, so a new IMF vintage does not serve last year's figures.
     if (
         _peers_cache["data"] is not None
+        and _peers_cache.get("reference_year") == reference_year
         and (now - _peers_cache["ts"]) < _PEERS_CACHE_TTL
     ):
         cached = [dict(p) for p in _peers_cache["data"]]  # shallow copy
-        if kenya_ratio is not None:
+        if kenya_debt_to_gdp is not None:
             for p in cached:
                 if p["country"] == "Kenya":
-                    p["debt_to_gdp"] = round(kenya_ratio, 1)
+                    p["debt_to_gdp"] = round(kenya_debt_to_gdp, 1)
+                    p["debt_to_gdp_year"] = reference_year
         return cached
 
     # ── Fetch all indicators ──────────────────────────────────────
     codes_str = ";".join(_EAC_COUNTRIES.keys())
     debt_gdp: Dict[str, float] = {}
-    service_rev: Dict[str, float] = {}
-    external_pct: Dict[str, float] = {}
+    interest_pct_rev: Dict[str, float] = {}
+    external_pct_gni: Dict[str, float] = {}
 
-    # 1. Try IMF for debt-to-GDP (often more current than World Bank)
-    try:
-        debt_gdp = _imf_fetch_debt_to_gdp()
-        _logger_peers.info("IMF debt-to-GDP: got data for %d countries", len(debt_gdp))
-    except Exception as exc:
-        _logger_peers.debug("IMF API unavailable: %s", exc)
+    # 1. IMF debt-to-GDP, pinned to the reference year.
+    #
+    # No reference year means the IMF WEO table is not seeded, so there is
+    # nothing that says which years are actuals and which are forecasts.
+    # Skip the fetch rather than guess: an unbounded call returns the 2031
+    # projection.
+    if reference_year is not None:
+        try:
+            debt_gdp = _imf_fetch_debt_to_gdp(reference_year)
+            _logger_peers.info(
+                "IMF debt-to-GDP %s: got data for %d countries",
+                reference_year,
+                len(debt_gdp),
+            )
+        except Exception as exc:
+            _logger_peers.debug("IMF API unavailable: %s", exc)
+    else:
+        _logger_peers.info(
+            "IMF debt-to-GDP skipped — no reference year (WEO table not seeded)"
+        )
+    imf_sourced = set(debt_gdp)
 
     # 2. World Bank: debt-to-GDP (fallback if IMF missed countries)
     try:
@@ -11250,56 +11614,44 @@ def _get_regional_peers_cached(kenya_ratio: Optional[float] = None) -> list:
     except Exception as exc:
         _logger_peers.debug("WB debt-to-GDP unavailable: %s", exc)
 
-    # 3. World Bank: debt service to revenue
+    # 3. World Bank: interest payments as % of revenue
     try:
-        service_rev = _wb_fetch_indicator(
-            _WB_INDICATORS["debt_service_to_revenue"], codes_str
+        interest_pct_rev = _wb_fetch_indicator(
+            _WB_INDICATORS["interest_payments_pct_revenue"], codes_str
         )
         _logger_peers.info(
-            "WB debt-service/revenue: got data for %d countries", len(service_rev)
+            "WB interest/revenue: got data for %d countries", len(interest_pct_rev)
         )
     except Exception as exc:
-        _logger_peers.debug("WB debt-service/revenue unavailable: %s", exc)
+        _logger_peers.debug("WB interest/revenue unavailable: %s", exc)
 
     # 4. World Bank: external debt as % of GNI
     try:
-        external_pct = _wb_fetch_indicator(
-            _WB_INDICATORS["external_debt_pct"], codes_str
+        external_pct_gni = _wb_fetch_indicator(
+            _WB_INDICATORS["external_debt_pct_gni"], codes_str
         )
         _logger_peers.info(
-            "WB external-debt%%: got data for %d countries", len(external_pct)
+            "WB external-debt%%GNI: got data for %d countries", len(external_pct_gni)
         )
     except Exception as exc:
-        _logger_peers.debug("WB external-debt%% unavailable: %s", exc)
+        _logger_peers.debug("WB external-debt%%GNI unavailable: %s", exc)
 
     # ── Verified fallback values (updated Mar 2026) ───────────────
     # Used ONLY when both APIs are unreachable for a given indicator.
+    # Only debt-to-GDP has a fallback, and only because it is the SAME measure
+    # the live APIs serve (general government gross debt, % of GDP).
+    #
+    # The other two fallback columns are gone. They carried KEN 57.6 / 52.3 —
+    # neither the headline's measure nor the World Bank series they stood in
+    # for, so the number in a given field silently changed *measure* depending
+    # on whether api.worldbank.org answered. A value on an undeclared basis is
+    # worse than no value: absence is visible, a wrong basis is not.
     _fallback = {
-        "KEN": {
-            "debt_to_gdp": 68.0,
-            "debt_service_to_revenue": 57.6,
-            "external_debt_share": 52.3,
-        },
-        "ETH": {
-            "debt_to_gdp": 31.4,
-            "debt_service_to_revenue": 22.8,
-            "external_debt_share": 58.1,
-        },
-        "TZA": {
-            "debt_to_gdp": 48.2,
-            "debt_service_to_revenue": 15.3,
-            "external_debt_share": 61.5,
-        },
-        "UGA": {
-            "debt_to_gdp": 53.1,
-            "debt_service_to_revenue": 19.7,
-            "external_debt_share": 55.8,
-        },
-        "RWA": {
-            "debt_to_gdp": 67.2,
-            "debt_service_to_revenue": 13.5,
-            "external_debt_share": 68.4,
-        },
+        "KEN": {"debt_to_gdp": 68.0},
+        "ETH": {"debt_to_gdp": 31.4},
+        "TZA": {"debt_to_gdp": 48.2},
+        "UGA": {"debt_to_gdp": 53.1},
+        "RWA": {"debt_to_gdp": 67.2},
     }
 
     # ── Assemble peers ────────────────────────────────────────────
@@ -11307,35 +11659,67 @@ def _get_regional_peers_cached(kenya_ratio: Optional[float] = None) -> list:
     for iso, name in _EAC_COUNTRIES.items():
         fb = _fallback.get(iso, {})
 
-        # Debt-to-GDP: Kenya uses our CBK data; others prefer IMF/WB then fallback
-        if iso == "KEN" and kenya_ratio is not None:
-            d2g = kenya_ratio
+        # Debt-to-GDP. Kenya's cell comes from the seeded IMF WEO table when
+        # that is available — same indicator, same reference year as its four
+        # comparators, and identical to the headline above the table. Every
+        # other country comes from the DataMapper at that same year, falling
+        # back to the World Bank series and then to the static values.
+        #
+        # ``debt_to_gdp_year`` is stamped only where the value really is the
+        # reference year. A null year marks a cell that came from a fallback
+        # on some other vintage, so a year mismatch inside the column is
+        # visible instead of implied.
+        d2g_year = None
+        if iso == "KEN" and kenya_debt_to_gdp is not None:
+            d2g = kenya_debt_to_gdp
+            d2g_year = reference_year
         else:
-            d2g = debt_gdp.get(iso) or fb.get("debt_to_gdp")
+            d2g = debt_gdp.get(iso)
+            if d2g is not None and iso in imf_sourced:
+                d2g_year = reference_year
+            if d2g is None:
+                d2g = fb.get("debt_to_gdp")
 
-        # Debt service to revenue
-        dsr = service_rev.get(iso) or fb.get("debt_service_to_revenue")
-
-        # External debt share
-        ext = external_pct.get(iso) or fb.get("external_debt_share")
+        # The World Bank series, under their own names. No fallback: an
+        # unreachable API is an absent value, not a value on another basis.
+        interest = interest_pct_rev.get(iso)
+        ext_gni = external_pct_gni.get(iso)
 
         peers.append(
             {
                 "country": name,
-                "debt_to_gdp": round(d2g, 1) if d2g else None,
-                "debt_service_to_revenue": round(dsr, 1) if dsr else None,
-                "external_debt_share": round(ext, 1) if ext else None,
+                "debt_to_gdp": round(d2g, 1) if d2g is not None else None,
+                "debt_to_gdp_year": d2g_year,
+                # The headline's two measures have no peer series. They stayed
+                # as keys — dropping them would read as ``undefined`` to a
+                # caller rather than as a stated absence — but they carry
+                # nothing except the reason there is nothing.
+                "debt_service_to_revenue": None,
+                "debt_service_to_revenue_absent_reason": _PEER_ABSENT_REASONS[
+                    "debt_service_to_revenue"
+                ],
+                "external_debt_share": None,
+                "external_debt_share_absent_reason": _PEER_ABSENT_REASONS[
+                    "external_debt_share"
+                ],
+                "interest_payments_pct_revenue": (
+                    round(interest, 1) if interest is not None else None
+                ),
+                "external_debt_pct_gni": (
+                    round(ext_gni, 1) if ext_gni is not None else None
+                ),
             }
         )
 
     _peers_cache["ts"] = now
     _peers_cache["data"] = peers
+    _peers_cache["reference_year"] = reference_year
     _logger_peers.info(
-        "Regional peers updated: %d/%d countries have full data",
+        "Regional peers updated: %d/%d countries have every published column",
         sum(
             1
             for p in peers
-            if all(v is not None for k, v in p.items() if k != "country")
+            if all(p.get(col) is not None for col in _PEER_COLUMN_BASIS)
         ),
         len(peers),
     )

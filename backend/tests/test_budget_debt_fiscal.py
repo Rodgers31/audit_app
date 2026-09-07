@@ -497,19 +497,50 @@ class TestDebtSustainability:
         assert ext == 44.2
 
     def test_projections(self, client, seed_debt_sustainability):
+        """No published projection seeded → none published.
+
+        This asserted ``len(proj) == 5`` starting at 2025 — the shape of the
+        five-year least-squares extrapolation the endpoint used to fit over
+        this fixture's five DebtTimeline points and emit as
+        ``projected_debt_to_gdp``. It was pinning the defect: the line was
+        nobody's forecast, and against the IMF projection that does exist for
+        Kenya it ran 2.6 points of GDP low by 2030.
+
+        ``projections`` now carries the IMF WEO series or nothing. This fixture
+        seeds no ``imf_weo_observations``, so the answer is nothing, with a
+        reason. The populated case is covered in
+        tests/test_debt_sustainability_one_label_one_measure.py.
+        """
         data = client.get("/api/v1/debt/sustainability").json()
-        proj = data["projections"]
-        assert len(proj) == 5
-        assert proj[0]["year"] == 2025
-        assert "projected_debt_to_gdp" in proj[0]
+        assert data["projections"] == []
+        assert data["projections_absent_reason"] == "no_published_projection_seeded"
+        assert data["projections_source"] is None
 
     def test_regional_peers(self, client, seed_debt_sustainability):
+        """Kenya is not special-cased inside its own comparison.
+
+        This asserted ``kenya_peer["debt_to_gdp"] == 61.4`` — this fixture's
+        ``DebtTimeline.gdp_ratio``, injected over Kenya's cell while the four
+        comparators beside it came from IMF GGXWDG. It was pinning the
+        injection: one country in a five-country table measured on a different
+        basis from the other four, and on a different basis from the site's
+        own declared headline.
+
+        The fixture seeds no ``imf_weo_observations``, so there is no IMF
+        reference year and every country — Kenya included — falls through the
+        same path. The case where IMF rows ARE seeded, and Kenya's cell equals
+        the headline above it by construction, is covered in
+        tests/test_debt_to_gdp_is_one_measure_everywhere.py.
+        """
         data = client.get("/api/v1/debt/sustainability").json()
         peers = data["regional_peers"]
         assert len(peers) == 5
         countries = [p["country"] for p in peers]
         assert "Kenya" in countries
         assert "Tanzania" in countries
-        # Kenya's value should come from DB
+
         kenya_peer = next(p for p in peers if p["country"] == "Kenya")
-        assert kenya_peer["debt_to_gdp"] == 61.4
+        assert kenya_peer["debt_to_gdp"] != 61.4, "still injecting DebtTimeline"
+        # Nothing here is at the reference year, and every row says so.
+        assert data["regional_peers_basis"]["debt_to_gdp"]["reference_year"] is None
+        assert all(p["debt_to_gdp_year"] is None for p in peers)
