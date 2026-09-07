@@ -196,9 +196,27 @@ def test_kenyas_peer_cell_is_not_injected_from_the_debt_timeline(
 def test_kenyas_peer_cell_equals_the_headline_above_it(
     client, seeded, imf_datamapper_live
 ):
+    """They must agree BECAUSE they are the same measure.
+
+    Equality alone is not evidence here, and asserting only that made this a
+    tautology against the code it guards: pre-fix the two agreed at 70.0 by
+    construction, because ``kenya_ratio`` copied DebtTimeline.gdp_ratio into
+    both the headline and the peer cell. A test that the injection satisfies
+    cannot be the test that removes it.
+
+    So pin the reason as well as the result — same declared basis, same year,
+    and that year is the one the whole column is pinned to.
+    """
     body = sustainability(client)
-    assert peer(body, "Kenya")["debt_to_gdp"] == pytest.approx(
-        body["debt_to_gdp"]["value"]
+    headline = body["debt_to_gdp"]
+    row = peer(body, "Kenya")
+
+    assert row["debt_to_gdp"] == pytest.approx(headline["value"])
+    assert "GGXWDG_NGDP" in headline["basis"]
+    assert row["debt_to_gdp_year"] == headline["year"]
+    assert (
+        body["regional_peers_basis"]["debt_to_gdp"]["reference_year"]
+        == headline["year"]
     )
 
 
