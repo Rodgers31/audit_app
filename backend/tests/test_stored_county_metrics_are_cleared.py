@@ -445,7 +445,16 @@ class TestTheMigration:
         assert _stored(reloaded).get("county_code") == "030"
 
     def test_the_chain_still_has_one_head(self):
-        """A second head makes ``alembic upgrade head`` fail on deploy."""
+        """A second head makes ``alembic upgrade head`` fail on deploy.
+
+        This asserts the COUNT, not the identity. It used to pin
+        ``heads == {"ce6ed007f696"}``, which is a different claim: it failed on
+        the next migration anyone wrote, however well-formed, and it would have
+        gone on failing until someone retyped the new revision id here. A test
+        that must be edited every time the thing it guards changes legitimately
+        gets edited without being read. The hazard named above is a FORK — two
+        heads — and that is what is checked.
+        """
         import pathlib
         import re
 
@@ -461,7 +470,10 @@ class TestTheMigration:
                 parents.add(down.group(1))
 
         heads = revisions - parents
-        assert heads == {"ce6ed007f696"}, f"expected one head, found {sorted(heads)}"
+        assert len(heads) == 1, (
+            f"the migration chain has forked: {len(heads)} heads, "
+            f"{sorted(heads)}. `alembic upgrade head` cannot resolve this."
+        )
 
 
 class TestTheMigrationRunsWhereItActuallyRuns:
