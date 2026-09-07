@@ -380,6 +380,42 @@ def _category_items_with_remainder(data: dict) -> dict:
     }
 
 
+def _category_share_of_total(data: dict, total_outstanding: float) -> dict:
+    """A category's share of the published debt total — or why there isn't one.
+
+    ``total_outstanding`` excludes ``PENDING_BILLS`` (:func:`_is_debt_loan`),
+    because arrears are not borrowed money. Dividing every category by it
+    regardless handed ``pending_bills`` a 7.86% share of a total it is not in,
+    so production's shares summed to **107.86%** and every share on the page
+    was wrong by that factor against the whole a reader adds them to.
+
+    Numerator is ``outstanding_in_total`` — the part of the category the
+    denominator actually contains — so the published shares sum to 100 by
+    construction. A category with nothing in the denominator gets ``None`` and
+    a reason, the shape ``/budget/national`` uses for
+    ``budget_split_absent_reason``. ``0`` would say the category is empty; the
+    ``total_principal`` beside it says otherwise.
+    """
+    if total_outstanding <= 0:
+        return {
+            "percentage_of_total": None,
+            "percentage_absent_reason": "no_published_total_to_divide_by",
+        }
+    if not data.get("rows_in_total"):
+        return {
+            "percentage_of_total": None,
+            "percentage_absent_reason": (
+                "category_excluded_from_total_debt_denominator"
+            ),
+        }
+    return {
+        "percentage_of_total": round(
+            data["outstanding_in_total"] / total_outstanding * 100, 2
+        ),
+        "percentage_absent_reason": None,
+    }
+
+
 #: Response-cache TTL for endpoints whose data is refreshed by the nightly
 #: seed.
 #:
@@ -9730,61 +9766,30 @@ async def get_national_debt():
                     from models import DebtCategory
 
                     # Initialize category totals
+                    # ``outstanding_in_total`` is the slice of a category that
+                    # ``_is_debt_loan`` lets into ``total_outstanding``. It is the
+                    # only honest numerator for a "share of the total" — see the
+                    # percentage block near the end of this handler.
+                    def _empty_category() -> dict:
+                        return {
+                            "principal": 0,
+                            "outstanding": 0,
+                            "outstanding_in_total": 0,
+                            "rows_in_total": 0,
+                            "count": 0,
+                            "items": [],
+                        }
+
                     categories = {
-                        "external_multilateral": {
-                            "principal": 0,
-                            "outstanding": 0,
-                            "count": 0,
-                            "items": [],
-                        },
-                        "external_bilateral": {
-                            "principal": 0,
-                            "outstanding": 0,
-                            "count": 0,
-                            "items": [],
-                        },
-                        "external_commercial": {
-                            "principal": 0,
-                            "outstanding": 0,
-                            "count": 0,
-                            "items": [],
-                        },
-                        "domestic_bonds": {
-                            "principal": 0,
-                            "outstanding": 0,
-                            "count": 0,
-                            "items": [],
-                        },
-                        "domestic_bills": {
-                            "principal": 0,
-                            "outstanding": 0,
-                            "count": 0,
-                            "items": [],
-                        },
-                        "domestic_overdraft": {
-                            "principal": 0,
-                            "outstanding": 0,
-                            "count": 0,
-                            "items": [],
-                        },
-                        "pending_bills": {
-                            "principal": 0,
-                            "outstanding": 0,
-                            "count": 0,
-                            "items": [],
-                        },
-                        "county_guaranteed": {
-                            "principal": 0,
-                            "outstanding": 0,
-                            "count": 0,
-                            "items": [],
-                        },
-                        "other": {
-                            "principal": 0,
-                            "outstanding": 0,
-                            "count": 0,
-                            "items": [],
-                        },
+                        "external_multilateral": _empty_category(),
+                        "external_bilateral": _empty_category(),
+                        "external_commercial": _empty_category(),
+                        "domestic_bonds": _empty_category(),
+                        "domestic_bills": _empty_category(),
+                        "domestic_overdraft": _empty_category(),
+                        "pending_bills": _empty_category(),
+                        "county_guaranteed": _empty_category(),
+                        "other": _empty_category(),
                     }
 
                     # Pattern matching for categorization (fallback if debt_category is None)
@@ -9861,6 +9866,9 @@ async def get_national_debt():
                         categories[cat]["principal"] += principal
                         categories[cat]["outstanding"] += outstanding
                         categories[cat]["count"] += 1
+                        if _is_debt_loan(loan):
+                            categories[cat]["outstanding_in_total"] += outstanding
+                            categories[cat]["rows_in_total"] += 1
                         categories[cat]["items"].append(
                             {
                                 "lender": loan.lender,
@@ -9887,14 +9895,21 @@ async def get_national_debt():
                         "domestic_overdraft",
                     ]
 
+                    # ONE basis for every derived figure in this response:
+                    # ``outstanding``, which is what ``total_outstanding`` (the
+                    # published headline) and ``check_debt_composition`` below
+                    # both use. These sums read ``["principal"]`` until
+                    # 2026-09-06 while being compared against an outstanding
+                    # total — invisible only because every current row has
+                    # principal == outstanding.
                     external_debt = sum(
-                        categories[c]["principal"] for c in external_cats
+                        categories[c]["outstanding"] for c in external_cats
                     )
                     domestic_debt = sum(
-                        categories[c]["principal"] for c in domestic_cats
+                        categories[c]["outstanding"] for c in domestic_cats
                     )
-                    pending_bills = categories["pending_bills"]["principal"]
-                    county_debt = categories["county_guaranteed"]["principal"]
+                    pending_bills = categories["pending_bills"]["outstanding"]
+                    county_debt = categories["county_guaranteed"]["outstanding"]
 
                     # ── Cross-check against DebtTimeline (aggregate series) ──
                     # The Loan table and DebtTimeline table are populated from
@@ -9909,25 +9924,31 @@ async def get_national_debt():
                         db.query(_DT).order_by(_DT.year.desc()).first()
                     )
 
-                    # Correct the external-vs-domestic DIRECTION using the
-                    # authoritative CBK aggregate (DebtTimeline). The loan register
-                    # individually tracks external loans but under-represents
-                    # domestic instruments (T-bonds/bills), which inverted the split
-                    # (audit §3.3 — domestic has led external since ~2024). Keep the
-                    # loan-register total as the base and apply the CBK split
-                    # proportion, so the parts still sum to the total.
-                    if (
-                        latest_timeline_row
-                        and latest_timeline_row.external
-                        and latest_timeline_row.domestic
-                    ):
-                        _tl_ext = float(latest_timeline_row.external)
-                        _tl_dom = float(latest_timeline_row.domestic)
-                        _tl_split = _tl_ext + _tl_dom
-                        _base = external_debt + domestic_debt
-                        if _tl_split > 0 and _base > 0:
-                            external_debt = _base * (_tl_ext / _tl_split)
-                            domestic_debt = _base * (_tl_dom / _tl_split)
+                    # The external/domestic split is the register's OWN sum,
+                    # and nothing else. It used to be the register's *total*
+                    # re-divided by DebtTimeline's proportion:
+                    #
+                    #     external_debt = _base * (_tl_ext / _tl_split)
+                    #     domestic_debt = _base * (_tl_dom / _tl_split)
+                    #
+                    # which put two contradictory splits in one response — the
+                    # summary card said 5,265.0 / 6,591.0 while the category
+                    # block below it said 4,797.3 / 7,058.7, a 467.7Bn
+                    # disagreement on one page (audit 2026-09-06 §P1-3).
+                    #
+                    # The comment that justified it said the register
+                    # "under-represents domestic instruments (T-bonds/bills),
+                    # which inverted the split". That was true when written and
+                    # is not true now: the domestic side carries the CBK
+                    # bulletin overlay at 7,058.7Bn — MORE than CBK's own
+                    # Dec-2025 domestic figure of 6,837.5Bn — and already leads
+                    # the external side unaided. The correction had begun
+                    # producing the error it was added to prevent, moving
+                    # domestic 467.7Bn away from the register that measured it.
+                    #
+                    # ``latest_timeline_row`` is still read below, for the
+                    # reconciliation block: DebtTimeline is an independent
+                    # source to CHECK this endpoint against, not an input to it.
 
                     reconciliation: dict = {
                         "primary_source": "loans_table",
@@ -10038,19 +10059,27 @@ async def get_national_debt():
                             "reconciliation": reconciliation,
                             # High-level breakdown
                             "summary": {
+                                # Which of the two money columns these are. The
+                                # split was read off ``principal`` while being
+                                # published beside an ``outstanding`` headline,
+                                # and nothing in the payload said so.
+                                "basis": "outstanding",
                                 "external_debt": external_debt,
                                 "domestic_debt": domestic_debt,
                                 "pending_bills": pending_bills,
                                 "county_guaranteed": county_debt,
+                                # Denominator is ``total_outstanding`` — the same
+                                # figure the numerators come from, so the two
+                                # percentages sum to 100 of the published total.
                                 "external_percentage": (
-                                    round(external_debt / total_debt * 100, 1)
-                                    if total_debt > 0
-                                    else 0
+                                    round(external_debt / total_outstanding * 100, 1)
+                                    if total_outstanding > 0
+                                    else None
                                 ),
                                 "domestic_percentage": (
-                                    round(domestic_debt / total_debt * 100, 1)
-                                    if total_debt > 0
-                                    else 0
+                                    round(domestic_debt / total_outstanding * 100, 1)
+                                    if total_outstanding > 0
+                                    else None
                                 ),
                             },
                             # Detailed categorized breakdown
@@ -10059,10 +10088,23 @@ async def get_national_debt():
                                     "total_principal": data["principal"],
                                     "total_outstanding": data["outstanding"],
                                     "loan_count": data["count"],
-                                    "percentage_of_total": (
-                                        round(data["principal"] / total_debt * 100, 2)
-                                        if total_debt > 0
-                                        else 0
+                                    # Share of ``total_outstanding``, computed
+                                    # from the part of this category that is
+                                    # actually IN that total.
+                                    #
+                                    # Every category used to be divided by this
+                                    # denominator including ``pending_bills``,
+                                    # which ``_is_debt_loan`` deliberately keeps
+                                    # OUT of it — so production's seven shares
+                                    # summed to 107.86%, the excess being exactly
+                                    # the row that does not belong (audit
+                                    # 2026-09-06 §P2-9). There is no correct
+                                    # share to publish for a category outside the
+                                    # denominator, so it is withheld with a
+                                    # reason rather than filled with a number
+                                    # that adds up to nothing.
+                                    **_category_share_of_total(
+                                        data, total_outstanding
                                     ),
                                     # The named lenders the treemap draws,
                                     # plus what is left over.
