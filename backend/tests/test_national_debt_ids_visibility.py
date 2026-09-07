@@ -103,8 +103,8 @@ def test_a_refused_run_is_stale_to_the_freshness_gate(monkeypatch):
     """Refusing must not read as a healthy run.
 
     ``mark_live`` sits at the end of fetch_debt_payload and is never reached,
-    so the domain records no live mode and ``is_stale`` says so. That is what
-    the nightly's staleness gate keys on.
+    so the domain cannot record a live mode and ``is_stale`` says so. That is
+    what the nightly's staleness gate keys on.
     """
     from seeding import freshness
 
@@ -117,19 +117,90 @@ def test_a_refused_run_is_stale_to_the_freshness_gate(monkeypatch):
     assert freshness.is_stale("national_debt") is True
 
 
+def test_the_refusal_is_recorded_before_the_raise(monkeypatch):
+    """Stale is not enough — the record has to say WHY, and say it truthfully.
+
+    Raising before any ``mark_*`` left the mode at "unknown", which the nightly
+    then rendered as "served from a FIXTURE ... (reasons: unrecorded)". Both
+    halves of that sentence were false: no fixture was served, and the reason
+    was sitting in ``job.errors`` the whole time.
+
+    ``mark_fixture`` is deliberately NOT the fix. It would write a false
+    statement into the provenance record on a project whose thesis is that the
+    provenance record is true.
+    """
+    from seeding import freshness
+
+    freshness.reset("national_debt")
+    _stub_everything(monkeypatch, creditors=lambda *a, **k: None)
+    with pytest.raises(fetcher.DebtRegisterIncomplete):
+        fetcher.fetch_debt_payload(object(), _Settings())
+
+    recorded = freshness.get("national_debt")
+    assert recorded["mode"] == freshness.REFUSED
+    assert recorded["mode"] != freshness.FIXTURE
+    assert recorded.get("reason"), "a refusal with no recorded reason"
+    # The gate that refused, not merely "something refused".
+    assert "returned_no_creditors" in (recorded.get("detail") or "")
+    freshness.reset("national_debt")
+
+
+def test_a_published_run_is_not_recorded_as_refused(monkeypatch):
+    """NEGATIVE CONTROL. A mode that is always set is not a mode."""
+    from seeding import freshness
+
+    freshness.reset("national_debt")
+    _stub_everything(
+        monkeypatch,
+        creditors=lambda *a, **k: {
+            "year": 2024,
+            "creditors": [object()],
+            "coverage": {"status": "within_band"},
+            "loans": [
+                {
+                    "entity_name": "National Government",
+                    "entity_type": "national",
+                    "lender": "Multilateral (International Monetary Fund)",
+                    "debt_category": "external_multilateral",
+                    "principal": "668500000000.00",
+                    "outstanding": "668500000000.00",
+                    "currency": "KES",
+                }
+            ],
+        },
+    )
+    fetcher.fetch_debt_payload(object(), _Settings())
+    assert freshness.get("national_debt")["mode"] != freshness.REFUSED
+    freshness.reset("national_debt")
+
+
 def test_a_refused_run_fails_the_nightly_freshness_gate(db_session):
     """The claim the whole refusal rests on, checked rather than assumed.
 
     Refusing only beats publishing the fixture if somebody finds out. The CLI
-    writes ``source_mode`` from freshness onto the job row, and a refused run
-    reaches no ``mark_live``, so the mode is "unknown". This pins that
-    ``check_ingestion_freshness`` treats that as FAIL rather than skipping the
-    domain — an unjudged domain would be the false green all over again.
+    copies ``source_mode``, ``source_fallback_reason`` and ``source_detail``
+    off ``freshness.get()`` onto the job row, so this builds the row the CLI
+    would build for a refused run and asserts the nightly both FAILS on it and
+    describes it correctly.
+
+    The level alone is not enough. It was already FAIL before the mode existed
+    — via the all-fixture branch, whose prose said a fixture had been served
+    and the reason was unrecorded. Neither was true.
     """
     from datetime import datetime, timezone
 
     from models import IngestionJob, IngestionStatus
+    from seeding import freshness
     from seeding.staleness import check_ingestion_freshness
+
+    freshness.reset("national_debt")
+    freshness.mark_refused(
+        "national_debt",
+        reason="external_register_incomplete",
+        detail="IDS creditor replacement did not apply (returned_no_creditors)",
+    )
+    provenance = freshness.get("national_debt")
+    freshness.reset("national_debt")
 
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     db_session.add(
@@ -142,7 +213,12 @@ def test_a_refused_run_fails_the_nightly_freshness_gate(db_session):
             items_created=0,
             items_updated=0,
             errors=["Register refused, nothing written: gate 3 refused the pull"],
-            meta={"source_mode": "unknown"},
+            # Exactly the three keys seeding/cli.py writes.
+            meta={
+                "source_mode": provenance["mode"],
+                "source_fallback_reason": provenance["reason"],
+                "source_detail": provenance["detail"],
+            },
         )
     )
     db_session.commit()
@@ -151,6 +227,13 @@ def test_a_refused_run_fails_the_nightly_freshness_gate(db_session):
     assert findings, "a refused run left the domain unjudged"
     assert [f.level for f in findings] == ["FAIL"], (
         f"a refused run did not fail the gate: {[(f.level, f.message) for f in findings]}"
+    )
+    message = findings[0].message
+    assert "refused to publish" in message, message
+    assert "previous seed" in message, message
+    assert "returned_no_creditors" in message, message
+    assert "FIXTURE" not in message.upper(), (
+        f"the gate still calls a refusal a fixture: {message}"
     )
 
 

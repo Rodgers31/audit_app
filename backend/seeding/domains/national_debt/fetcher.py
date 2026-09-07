@@ -35,7 +35,9 @@ loudly in the log and invisibly on the page.
 
 Raising fails the domain with zero writes (``__init__.run`` catches it), so the
 previous seed's rows stand and the freshness/staleness gates see a run that did
-not reach its publisher. Stale and correct beats fresh and 1.1T wrong.
+not reach its publisher — recorded as ``freshness.REFUSED``, which is neither
+"live" nor "fixture", because nothing was served either way. Stale and correct
+beats fresh and 1.1T wrong.
 
 Two things this deliberately does NOT do. It does not drop the external rows
 and publish a domestic-only 6.76T — that is a different wrong number, not a
@@ -452,7 +454,8 @@ def fetch_debt_payload(
         #
         # Raising instead fails the domain with zero writes, so the PREVIOUS
         # seed's rows stand and the staleness gate sees a run that did not
-        # reach the publisher (freshness records no live mode for it). Stale
+        # reach the publisher — recorded as freshness.REFUSED just below, so
+        # the nightly can name the refusal instead of guessing at it. Stale
         # and correct beats fresh and 1.1T wrong.
         #
         # Note this also abandons the CBK domestic overlay for the run, which
@@ -469,6 +472,29 @@ def fetch_debt_payload(
             "~13.34T on the page against the register's ~12.22T. This run "
             "writes nothing; the previous seed's rows stand.",
             reason,
+        )
+        # Record the refusal BEFORE raising, or it is not recorded at all.
+        #
+        # mark_live/mark_fixture sit at the end of this function and the raise
+        # jumps over both, so this run used to reach the job row with
+        # source_mode="unknown" — and the nightly rendered that as "served
+        # from a FIXTURE in all 1 recent run(s) ... (reasons: unrecorded)".
+        # Right severity, false prose: no fixture was served, nothing at all
+        # was served, and the reason was already in job.errors.
+        #
+        # NOT mark_fixture(reason=...), which would make the message read
+        # correctly by putting a false statement in the provenance record.
+        # See freshness.REFUSED.
+        from ...freshness import mark_refused
+
+        mark_refused(
+            "national_debt",
+            reason="external_register_incomplete",
+            detail=(
+                f"IDS creditor replacement did not apply ({reason}); the "
+                f"fixture's external rows would have published ~13.34T "
+                f"against the register's ~12.22T"
+            ),
         )
         raise DebtRegisterIncomplete(
             f"external creditor pull did not apply ({reason}), so the register "

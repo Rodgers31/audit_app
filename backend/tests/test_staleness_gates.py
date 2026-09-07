@@ -230,3 +230,243 @@ class TestEveryDomainRecordsProvenance:
         freshness.reset("national_gdp")
         freshness.mark_fixture("national_gdp", reason="worldbank_unreachable")
         assert freshness.is_stale("national_gdp")
+
+
+# ── A run that REFUSED to publish is neither live nor fixture ─────────
+class TestRefusedRuns:
+    """The fifth mode: the domain reached a verdict of "do not publish".
+
+    ``national_debt.fetcher`` raises ``DebtRegisterIncomplete`` when the IDS
+    creditor pull is quarantined, because serving the fixture's external rows
+    would put a 13.34T headline against the register's 12.22T. The domain
+    writes nothing and the previous seed's rows stand.
+
+    Before this, such a run reached no ``mark_*`` at all, recorded ``unknown``,
+    and fell through to the all-fixture branch, which printed:
+
+        FAIL  national_debt ingestion
+              served from a FIXTURE in all 1 recent run(s) — the publisher was
+              never successfully read (reasons: unrecorded)
+
+    Right severity, false prose. Nothing was served from a fixture; nothing was
+    served at all, and the reason was known. The gate must say what happened.
+    """
+
+    def _job(self, domain, days_ago, mode, reason=None, detail=None):
+        meta = {"source_mode": mode} if mode else {}
+        if reason:
+            meta["source_fallback_reason"] = reason
+        if detail:
+            # The key ``seeding/cli.py`` actually writes from
+            # ``freshness.get()["detail"]``.
+            meta["source_detail"] = detail
+        return IngestionJob(
+            domain=domain, status=IngestionStatus.COMPLETED_WITH_ERRORS,
+            dry_run=False,
+            started_at=(NOW - timedelta(days=days_ago)).replace(tzinfo=None),
+            items_processed=0, items_created=0, items_updated=0,
+            errors=["Register refused, nothing written"], meta=meta,
+        )
+
+    def test_a_refused_run_is_not_described_as_a_fixture(self, db_session):
+        """THE defect. A refusal published NOTHING — not a fixture."""
+        db_session.add(
+            self._job("national_debt", 1, "refused", "external_register_incomplete")
+        )
+        db_session.commit()
+
+        f = _finding(
+            check_ingestion_freshness(db_session, now=NOW), "national_debt ingestion"
+        )
+        assert f.level == FAIL
+        assert "FIXTURE" not in f.message.upper(), (
+            f"a refused run was reported as fixture-served: {f.message}"
+        )
+        assert "refused to publish" in f.message
+        assert "external_register_incomplete" in f.message
+
+    def test_the_message_tells_the_operator_what_is_on_the_page(self, db_session):
+        """"Nothing was written" is only half the fact an operator needs; the
+        other half is that the site is still serving something."""
+        db_session.add(
+            self._job("national_debt", 1, "refused", "external_register_incomplete")
+        )
+        db_session.commit()
+
+        f = _finding(
+            check_ingestion_freshness(db_session, now=NOW), "national_debt ingestion"
+        )
+        assert "previous seed" in f.message
+
+    def test_the_message_names_the_gate_that_refused(self, db_session):
+        """The reason slug says the register was incomplete; the DETAIL says
+        which gate said so, which is the part somebody can act on."""
+        db_session.add(
+            self._job(
+                "national_debt", 1, "refused", "external_register_incomplete",
+                detail="IDS creditor pull did not apply (returned_no_creditors)",
+            )
+        )
+        db_session.commit()
+
+        f = _finding(
+            check_ingestion_freshness(db_session, now=NOW), "national_debt ingestion"
+        )
+        assert "returned_no_creditors" in f.message
+
+    def test_an_unreasoned_refusal_still_fails_rather_than_going_quiet(
+        self, db_session
+    ):
+        """A refusal with no recorded reason is still a refusal. It must not
+        fall back to the fixture prose, and it must not go OK."""
+        db_session.add(self._job("national_debt", 1, "refused"))
+        db_session.commit()
+
+        f = _finding(
+            check_ingestion_freshness(db_session, now=NOW), "national_debt ingestion"
+        )
+        assert f.level == FAIL
+        assert "refused to publish" in f.message
+        assert "FIXTURE" not in f.message.upper()
+
+    def test_a_refusal_outranks_older_live_runs(self, db_session):
+        """The false green this branch has to beat.
+
+        The window holds 14 days. On 2026-09-07 production's window held 8
+        live national_debt runs, so the first night the refusal fires the
+        ``"live" in modes`` branch would have printed
+
+            [OK] national_debt ingestion: reached the publisher in 8/22 ...
+
+        while the register was being refused every night. A refusal is a claim
+        about NOW — what is on the page today — so it is judged on the most
+        recent run, the same way supersession is (see ``_latest_run_reasons``).
+        """
+        db_session.add(self._job("national_debt", 3, "live"))
+        db_session.add(
+            self._job("national_debt", 1, "refused", "external_register_incomplete")
+        )
+        db_session.commit()
+
+        f = _finding(
+            check_ingestion_freshness(db_session, now=NOW), "national_debt ingestion"
+        )
+        assert f.level == FAIL, (
+            f"a window with older live runs hid tonight's refusal: {f.message}"
+        )
+        assert "refused to publish" in f.message
+
+    def test_the_count_is_honest_when_only_some_runs_refused(self, db_session):
+        """Never "all N" when it was not all N — that is the same class of
+        false sentence this branch exists to remove."""
+        db_session.add(self._job("national_debt", 3, "live"))
+        db_session.add(
+            self._job("national_debt", 1, "refused", "external_register_incomplete")
+        )
+        db_session.commit()
+
+        f = _finding(
+            check_ingestion_freshness(db_session, now=NOW), "national_debt ingestion"
+        )
+        assert "all 2" not in f.message, f"claimed all runs refused: {f.message}"
+        assert "1 of 2 recent run(s)" in f.message
+
+    # ── NEGATIVE CONTROLS: the branch must be able to NOT fire ────────
+    def test_a_live_run_after_a_refusal_is_ok_again(self, db_session):
+        """The pull recovers, the register publishes. The gate must clear —
+        a branch that cannot turn off becomes a permanently red gate, which
+        is how real breakages hide."""
+        db_session.add(
+            self._job("national_debt", 3, "refused", "external_register_incomplete")
+        )
+        db_session.add(self._job("national_debt", 1, "live"))
+        db_session.commit()
+
+        assert _finding(
+            check_ingestion_freshness(db_session, now=NOW), "national_debt ingestion"
+        ).level == OK
+
+    def test_an_ordinary_fixture_run_still_reads_as_a_fixture(self, db_session):
+        """The neighbouring branch must be untouched: a domain that really did
+        serve a git-tracked file must still say so."""
+        db_session.add(self._job("national_budget", 1, "fixture", "live_fetch_failed"))
+        db_session.commit()
+
+        f = _finding(
+            check_ingestion_freshness(db_session, now=NOW), "national_budget ingestion"
+        )
+        assert f.level == FAIL
+        assert "FIXTURE" in f.message
+        assert "refused" not in f.message
+
+
+# ── The shared module owns the mode, not national_debt ────────────────
+class TestRefusedIsASharedMode:
+    def test_the_mode_is_defined_in_the_shared_module(self):
+        from seeding import freshness
+
+        assert freshness.REFUSED == "refused"
+        assert freshness.REFUSED not in (
+            freshness.LIVE, freshness.FIXTURE, freshness.PARTIAL, freshness.UNKNOWN
+        )
+
+    def test_any_domain_can_record_a_refusal(self):
+        """No national_debt special-casing: the helper takes a domain name."""
+        from seeding import freshness
+
+        freshness.reset("some_other_domain")
+        freshness.mark_refused(
+            "some_other_domain", reason="gate_said_no", detail="why"
+        )
+        recorded = freshness.get("some_other_domain")
+        assert recorded["mode"] == freshness.REFUSED
+        assert recorded["reason"] == "gate_said_no"
+        assert recorded["detail"] == "why"
+        freshness.reset("some_other_domain")
+
+    def test_a_refusal_is_stale(self):
+        from seeding import freshness
+
+        freshness.reset("some_other_domain")
+        freshness.mark_refused("some_other_domain", reason="gate_said_no")
+        assert freshness.is_stale("some_other_domain") is True
+        freshness.reset("some_other_domain")
+
+    def test_the_recorded_shape_is_what_the_cli_copies_onto_the_job_row(self):
+        """``cli.py`` reads exactly these keys off ``freshness.get()``. If a
+        refusal recorded them under different names the mode would reach the
+        gate as ``None`` and land back in the unknown-provenance branch."""
+        from seeding import freshness
+
+        freshness.reset("some_other_domain")
+        freshness.mark_refused(
+            "some_other_domain", reason="gate_said_no", detail="which gate"
+        )
+        provenance = freshness.get("some_other_domain")
+        assert provenance.get("mode") == "refused"
+        assert provenance.get("reason") == "gate_said_no"
+        assert provenance.get("detail") == "which gate"
+        freshness.reset("some_other_domain")
+
+    def test_the_module_docstring_comment_counts_every_mode(self):
+        """The comment above the ContextVar undercounted the modes for the
+        whole life of ``partial`` — which is how the fifth one nearly got
+        missed as well. Any mode constant absent from it fails here."""
+        import pathlib
+
+        source = (
+            pathlib.Path(__file__).resolve().parents[1] / "seeding" / "freshness.py"
+        ).read_text()
+        comment = next(
+            line for line in source.splitlines() if line.startswith("# mode ∈")
+        )
+        from seeding import freshness
+
+        missing = [
+            m for m in (
+                freshness.LIVE, freshness.FIXTURE, freshness.PARTIAL,
+                freshness.REFUSED, freshness.UNKNOWN,
+            )
+            if f'"{m}"' not in comment
+        ]
+        assert missing == [], f"modes absent from the comment: {missing}"

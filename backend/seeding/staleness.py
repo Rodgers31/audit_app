@@ -280,6 +280,24 @@ def _latest_run_reasons(jobs) -> set:
     }
 
 
+def _latest_run_modes(jobs) -> set:
+    """The ``source_mode``(s) recorded by the most recent run.
+
+    Rows tied on ``started_at`` are kept together, for the same reason
+    :func:`_latest_run_reasons` keeps them: concurrent writers are describing
+    one moment, and a moment its own writers disagree about is not one we can
+    call healthy.
+    """
+    if not jobs:
+        return set()
+    newest = max(_run_order(j) for j in jobs)
+    return {
+        (j.meta or {}).get("source_mode")
+        for j in jobs
+        if _run_order(j) == newest
+    }
+
+
 def check_ingestion_freshness(
     session, now: Optional[datetime] = None, domains: Optional[List[str]] = None
 ) -> List[Finding]:
@@ -317,7 +335,70 @@ def check_ingestion_freshness(
             )
             continue
         modes = [(j.meta or {}).get("source_mode") for j in jobs]
-        if "live" not in modes and "partial" in modes:
+        if "refused" in _latest_run_modes(jobs):
+            # The domain reached a verdict of "do not publish" and wrote
+            # nothing (freshness.REFUSED). Two things this must not say:
+            #
+            #   "served from a FIXTURE ... (reasons: unrecorded)"
+            #       — which is what a refusal used to print, because raising
+            #         before any mark_* left the mode at "unknown" and dropped
+            #         it into the all-fixture branch below. Right severity,
+            #         false prose: nothing was served from a fixture, nothing
+            #         was served at all, and the reason was known.
+            #
+            #   "reached the publisher in 8/22 recent run(s)"  [OK]
+            #       — which is what the `"live" in modes` branch would print
+            #         for the first fortnight of nightly refusals, because the
+            #         window is 14 days wide and production's window held 8
+            #         live runs the day the refuse path went in. That is a
+            #         false GREEN, and worse than the false prose.
+            #
+            # Hence: judged on the LATEST run, not on the union of the window.
+            # A refusal is a claim about NOW — about what a reader is being
+            # served today — the same reason supersession is judged that way
+            # (see _latest_run_reasons). Older live runs do not un-refuse
+            # tonight, and a later live run clears it immediately.
+            refusals = [m for m in modes if m == "refused"]
+            span = (
+                f"all {len(modes)} recent run(s)"
+                if len(refusals) == len(modes)
+                # Never "all N" when it was not all N: writing a different
+                # false sentence is not a fix for a false sentence.
+                else f"{len(refusals)} of {len(modes)} recent run(s)"
+            )
+            reasons = {
+                (j.meta or {}).get("source_fallback_reason")
+                for j in jobs
+                if (j.meta or {}).get("source_mode") == "refused"
+                and (j.meta or {}).get("source_fallback_reason")
+            }
+            # WHICH gate refused, not merely that one did. ``source_detail``
+            # is the key seeding/cli.py writes from freshness's ``detail``;
+            # take the newest refusing run's, since the others describe runs
+            # already superseded by it.
+            detail = next(
+                (
+                    d
+                    for d in (
+                        (j.meta or {}).get("source_detail")
+                        for j in sorted(jobs, key=_run_order, reverse=True)
+                        if (j.meta or {}).get("source_mode") == "refused"
+                    )
+                    if d
+                ),
+                None,
+            )
+            findings.append(
+                Finding(
+                    FAIL,
+                    f"{domain} ingestion",
+                    f"refused to publish in {span}: "
+                    f"{', '.join(sorted(reasons)) or 'reason unrecorded'}"
+                    f"{f' — {detail}' if detail else ''}. Nothing was written; "
+                    f"the site is serving the previous seed's data.",
+                )
+            )
+        elif "live" not in modes and "partial" in modes:
             # Reached the publisher for a secondary series only. Not OK: the
             # figure this domain publishes did not move. See freshness.PARTIAL.
             reasons = {
