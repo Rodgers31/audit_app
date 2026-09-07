@@ -44,47 +44,15 @@ import { useFiscalSummary } from '@/lib/react-query/useFiscal';
 import { motion } from 'framer-motion';
 import { AlertTriangle, ExternalLink, Info, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { DATA_SOURCES } from './dataSources';
 
 /* ═══════════════════════════════════════════════════════
    Data sources panel (explanation modal)
-   ═══════════════════════════════════════════════════════ */
 
-const DATA_SOURCES = [
-  {
-    section: 'Budget Execution by Sector',
-    authority: 'Office of the Controller of Budget (OCOB)',
-    description:
-      'Sector-level expenditure vs. approved estimates from the Annual National Government Budget Implementation Review Reports (NG-BIRR).',
-    methodology:
-      'Approved Estimates from the Appropriation Act; Actual Expenditure from CoB exchequer-release reports to Parliament per Article 228(6) of the Constitution of Kenya.',
-    url: 'https://cob.go.ke/publications/annual-national-government-budget-implementation-review-reports/',
-    urlLabel: 'CoB Annual NG-BIRR Reports',
-  },
-  {
-    section: 'Revenue by Source',
-    authority: 'Kenya Revenue Authority (KRA)',
-    description:
-      'Tax revenue breakdown (PAYE, VAT, Corporation Tax, Excise Duty, Customs) from KRA annual performance press releases.',
-    url: 'https://www.kra.go.ke/news-center/press-release',
-    urlLabel: 'KRA Press Releases',
-  },
-  {
-    section: 'County Budget Allocations',
-    authority: 'Commission on Revenue Allocation (CRA)',
-    description:
-      'County-level budget allocations per the Division of Revenue Act and County Allocation of Revenue Act.',
-    url: 'https://www.crakenya.org/county-allocations/',
-    urlLabel: 'CRA County Allocations',
-  },
-  {
-    section: 'Fiscal Summary & Borrowing',
-    authority: 'National Treasury & Central Bank of Kenya',
-    description:
-      'High-level fiscal aggregates (revenue, expenditure, borrowing, debt service) from the Budget Policy Statement and Controller of Budget quarterly reports.',
-    url: 'https://www.treasury.go.ke/budget-policy-statement/',
-    urlLabel: 'National Treasury BPS',
-  },
-];
+   DATA_SOURCES moved to ./dataSources so the standing credits can be pinned
+   by a test on their own — the page's provider tree needs Supabase at import
+   time, which put the only claims on this page beyond reach of one.
+   ═══════════════════════════════════════════════════════ */
 
 function DataSourcesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const overlayRef = useRef<HTMLDivElement>(null);

@@ -323,6 +323,14 @@ def _overlay_kra_breakdown(
             rec["amount_billion_kes"] = round(amount, 1)
             rec["data_quality"] = "official"
             rec["_revenue_source"] = "kra_live"
+            # Re-base the row along with its amount. The fixture's ``basis``
+            # (and its ``notes``, which this overlay does not rewrite)
+            # describes the figure the fixture carried; the number here is
+            # KRA's own, freshly parsed from the release. Leaving the old
+            # basis would caption a published collection as a projection or a
+            # derivation — the page reads this field to decide what to tell
+            # the reader about the figure.
+            rec["basis"] = "published"
             applied += 1
 
     return payload, (f"promoted:{applied}/{target_fy}" if applied else "no_match")
