@@ -120,15 +120,23 @@ class TestAuditSummary:
         assert resp.status_code == 200
         data = resp.json()
         assert data["total_findings"] == 0
-        assert data["total_irregular_expenditure"] == 0
+        # This assertion used to read `== 0`, and in doing so it PINNED the
+        # defect: an empty table has no irregular expenditure to report, and
+        # "KES 0" is a claim that none was found. `total_findings == 0` is a
+        # legitimate zero — a count of rows — and stays.
+        assert data["total_irregular_expenditure"]["value"] is None
+        assert data["total_irregular_expenditure"]["reason"]
 
     def test_summary_totals(self, client, seed_audit_dashboard):
         data = client.get("/api/v1/audit/summary").json()
         assert data["total_findings"] == 4
         # Only Financial Irregularity amounts: 50M + 30M = 80M
-        assert data["total_irregular_expenditure"] == 80_000_000
-        # Unsupported = status != Resolved → 50M + 30M + 0 = 80M (Mombasa resolved excluded)
-        assert data["total_unsupported_expenditure"] == 80_000_000
+        assert data["total_irregular_expenditure"]["value"] == 80_000_000
+        # Unsupported expenditure is now the amount on findings CLASSIFIED as
+        # unsupported — the single 10M Mombasa row. It used to be "the amount
+        # on every finding whose status is not Resolved", which returned
+        # 80M here and, in production, the sum of every publishable amount.
+        assert data["total_unsupported_expenditure"]["value"] == 10_000_000
 
     def test_findings_by_type(self, client, seed_audit_dashboard):
         data = client.get("/api/v1/audit/summary").json()
@@ -138,8 +146,17 @@ class TestAuditSummary:
 
     def test_findings_by_opinion(self, client, seed_audit_dashboard):
         data = client.get("/api/v1/audit/summary").json()
-        assert data["findings_by_opinion"]["Qualified"] == 2
-        assert data["findings_by_opinion"]["Adverse"] == 1
+        # Opinions are reported under their canonical ISA 700 names, and
+        # "Unqualified" folds onto "Unmodified" — the same opinion before and
+        # after the standard was revised. The facet publishes because it
+        # contains modified opinions; see test_audit_dashboard_absence_and_labels.py
+        # for the case where it does not.
+        assert data["findings_by_opinion"] == {
+            "Adverse Opinion": 1,
+            "Qualified Opinion": 2,
+            "Unmodified Opinion": 1,  # the fixture's "Unqualified" row
+        }
+        assert data["findings_by_opinion_reason"] is None
 
     def test_worst_counties(self, client, seed_audit_dashboard):
         data = client.get("/api/v1/audit/summary").json()
@@ -187,8 +204,10 @@ class TestAuditTrends:
 
     def test_trends_opinion_per_year(self, client, seed_audit_dashboard):
         data = client.get("/api/v1/audit/trends").json()
-        assert data["opinion_per_year"]["2022"]["Adverse"] == 1
-        assert data["opinion_per_year"]["2023"]["Qualified"] == 2
+        # Canonical ISA 700 names, same gate as /summary.
+        assert data["opinion_per_year"]["2022"]["Adverse Opinion"] == 1
+        assert data["opinion_per_year"]["2023"]["Qualified Opinion"] == 2
+        assert data["opinion_per_year_reason"] is None
 
 
 # ── Recurring ────────────────────────────────────────────────────────────

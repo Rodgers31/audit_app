@@ -232,12 +232,28 @@ export interface WorstCounty {
   finding_count: number;
 }
 
+/**
+ * A published figure, or absence with the reason stated.
+ *
+ * `value: null` means NOT PUBLISHED. It never means zero — `0` here would be a
+ * claim about the world ("the Auditor-General questioned nothing"), and the
+ * API deliberately spells the two differently. Render `null` as an em dash and
+ * show `reason`; never coerce it with `?? 0` or `|| 0`.
+ */
+export interface WithheldFigure {
+  value: number | null;
+  reason: string | null;
+}
+
 export interface AuditDashboardSummary {
-  total_irregular_expenditure: number;
-  total_unsupported_expenditure: number;
+  total_irregular_expenditure: WithheldFigure;
+  total_unsupported_expenditure: WithheldFigure;
   total_findings: number;
   findings_by_type: Record<string, number>;
-  findings_by_opinion: Record<string, number>;
+  /** `null` when the facet is not published — see `findings_by_opinion_reason`. */
+  findings_by_opinion: Record<string, number> | null;
+  findings_by_opinion_reason: string | null;
+  /** COUNTY governments only — ministries and state departments are not counties. */
   worst_counties: WorstCounty[];
   year_range: { min_year: number | null; max_year: number | null };
 }
@@ -246,7 +262,9 @@ export interface AuditTrendsData {
   years: number[];
   findings_per_year: Record<string, number>;
   amount_per_year: Record<string, number>;
-  opinion_per_year: Record<string, Record<string, number>>;
+  /** `null` when the facet is not published — see `opinion_per_year_reason`. */
+  opinion_per_year: Record<string, Record<string, number>> | null;
+  opinion_per_year_reason: string | null;
 }
 
 export interface RecurringFindingItem {

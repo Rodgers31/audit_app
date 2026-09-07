@@ -23,6 +23,7 @@ from sqlalchemy.orm import Session
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from cache.redis_cache import cached
+from services.audit_opinions import opinion_facet, opinion_facet_by_year
 from services.oag_report_sections import canonical_section
 from services.publication_gate import (
     count_withheld_audits,
@@ -48,10 +49,33 @@ logger = logging.getLogger(__name__)
 # ===== Response Models =====
 
 
+class WithheldFigure(BaseModel):
+    """A published figure, or absence with the reason stated.
+
+    Same shape as ``services.publication_gate.withheld_file_figure`` so a
+    reader meets one convention across the API. ``value is None`` means **not
+    published**; it never means zero. A zero here would be a claim about the
+    world — "the Auditor-General questioned nothing" — and the two must not be
+    spelled the same way (the zero-for-absence rule).
+    """
+
+    value: Optional[float] = None
+    reason: Optional[str] = None
+
+
 class WorstCounty(BaseModel):
     county_id: int
     county_name: str
-    total_amount: float
+    total_amount: float = Field(
+        ...,
+        description=(
+            "Sum of the amounts recorded on this county's findings. These are "
+            "amounts the Auditor-General DISCUSSED — the extraction takes the "
+            "single Kshs. figure in a finding paragraph, which is often the "
+            "account balance under review rather than a sum being queried — "
+            "so this is not a measure of money lost or irregularly spent."
+        ),
+    )
     finding_count: int
 
 
@@ -61,12 +85,44 @@ class YearRange(BaseModel):
 
 
 class AuditSummaryResponse(BaseModel):
-    total_irregular_expenditure: float
-    total_unsupported_expenditure: float
+    total_irregular_expenditure: WithheldFigure = Field(
+        ...,
+        description=(
+            "Irregular expenditure as the Auditor-General defines it. "
+            "Published only when findings carry that classification."
+        ),
+    )
+    total_unsupported_expenditure: WithheldFigure = Field(
+        ...,
+        description=(
+            "Unsupported expenditure as the Auditor-General defines it. "
+            "Published only when findings carry that classification."
+        ),
+    )
     total_findings: int
     findings_by_type: Dict[str, int]
-    findings_by_opinion: Dict[str, int]
-    worst_counties: List[WorstCounty]
+    findings_by_opinion: Optional[Dict[str, int]] = Field(
+        None,
+        description=(
+            "Findings grouped by the audit opinion on the entity's accounts. "
+            "`null` means the facet is not published — see "
+            "`findings_by_opinion_reason`. Never an empty object as a "
+            "stand-in for absence."
+        ),
+    )
+    findings_by_opinion_reason: Optional[str] = Field(
+        None,
+        description="Why `findings_by_opinion` is null, when it is.",
+    )
+    worst_counties: List[WorstCounty] = Field(
+        default_factory=list,
+        description=(
+            "COUNTY governments only. National ministries, state departments "
+            "and commissions are audited under separate votes and are not "
+            "counties; listing one here put a named public body in a category "
+            "it does not belong to, against a money figure."
+        ),
+    )
     year_range: YearRange
     withheld_findings: int = Field(
         0,
@@ -81,7 +137,16 @@ class AuditTrendsResponse(BaseModel):
     years: List[int]
     findings_per_year: Dict[str, int]
     amount_per_year: Dict[str, float]
-    opinion_per_year: Dict[str, Dict[str, int]]
+    opinion_per_year: Optional[Dict[str, Dict[str, int]]] = Field(
+        None,
+        description=(
+            "Findings grouped by audit opinion, per year. `null` means the "
+            "facet is not published — see `opinion_per_year_reason`."
+        ),
+    )
+    opinion_per_year_reason: Optional[str] = Field(
+        None, description="Why `opinion_per_year` is null, when it is."
+    )
 
 
 class RecurringFinding(BaseModel):
@@ -132,6 +197,103 @@ def _check_db(db: Session):
         raise HTTPException(status_code=503, detail="Database not available")
 
 
+# ── Expenditure classes ──────────────────────────────────────────────
+#
+# "Irregular expenditure" and "unsupported expenditure" are specific findings
+# in the Auditor-General's vocabulary, not loose descriptions. A figure
+# published under either name has to be the sum of findings classified that
+# way — and if nothing carries the classification, the honest answer is that
+# the figure does not exist, not that it is zero.
+#
+# WHAT THE TWO SUMS USED TO BE
+# ----------------------------
+# `total_irregular_expenditure` summed `query_type == "Financial Irregularity"`
+# wrapped in `coalesce(..., 0)`. Measured against production on 2026-09-06:
+# **no row has ever carried that value.** The only rows whose `query_type`
+# contains "Irregularit" at all are four — Payroll, Procurement, Subsidy
+# Programme and ASAL Fund — and all four hang off source_document 1836, the
+# fabricated `oag_national_audit_data.json` dataset, which the publication gate
+# withholds for having no URL. So the sum ran over an empty set and published
+# `0.0` as "Kenya's irregular expenditure".
+#
+# The taxonomy did not drift out from under the query so much as never arrive.
+# `query_type` is written by the Blue Book extractor and holds the OAG REPORT
+# SECTION a finding sits under ("Report on the Financial Statements", and 11
+# truncation/case variants of the other two) — a location in the document, not
+# a nature of irregularity. Nothing in the pipeline classifies an amount as
+# irregular or unsupported, so neither figure is measured anywhere.
+#
+# `total_unsupported_expenditure` summed `status != "Resolved"`, i.e. the
+# amount on findings of EVERY type whose status was not one particular word —
+# a general quantity under a specific accounting name. That clause is also
+# inert: no row in the table has ever had status "Resolved" (publishable
+# statuses are `published_report` × 2,311 and `pending` × 1), so the figure
+# production published as unsupported expenditure — KES 214,814,058,083.86 —
+# was simply the sum of every amount on every publishable finding.
+#
+# These sets are kept as the classifications a future extractor would write.
+# When one starts writing them the figures publish themselves; until then the
+# endpoint says so in words.
+IRREGULAR = "irregular"
+UNSUPPORTED = "unsupported"
+
+_EXPENDITURE_CLASSES = {
+    IRREGULAR: {
+        "query_types": ("Financial Irregularity", "Irregular Expenditure"),
+        "reason": (
+            "not published: no finding is classified as irregular expenditure. "
+            "`query_type` carries the Auditor-General's report SECTION, not the "
+            "nature of the irregularity, so nothing in the data measures this "
+            "figure. A zero here would assert that no irregular expenditure was "
+            "found, which is a different and unsupported claim."
+        ),
+    },
+    UNSUPPORTED: {
+        "query_types": ("Unsupported Expenditure",),
+        "reason": (
+            "not published: no finding is classified as unsupported "
+            "expenditure. This field previously summed the amount on findings "
+            "whose status was not \"Resolved\" — every finding of every type, "
+            "since no row has that status — and published it under a specific "
+            "accounting term it did not measure. A zero here would assert that "
+            "the Auditor-General questioned no unsupported expenditure, which "
+            "is a different and unsupported claim."
+        ),
+    },
+}
+
+
+def _expenditure_class_criterion(name: str):
+    """SQL criterion: this finding is classified as `name` expenditure."""
+    return Audit.query_type.in_(_EXPENDITURE_CLASSES[name]["query_types"])
+
+
+def _expenditure_figure(name: str, matched: int, amount) -> WithheldFigure:
+    """The class total, or absence with the reason — never a manufactured zero.
+
+    Three cases, deliberately distinguished:
+
+    * **no finding carries the classification** → absence, with the reason.
+    * **findings carry it but none records an amount** → absence, saying so.
+      `SUM()` over all-NULL amounts is NULL; publishing 0 there would claim the
+      findings questioned nothing.
+    * **findings carry it and record amounts** → the sum, including a genuine
+      0.0 if that is what they add up to. A measured zero is publishable.
+    """
+    if not matched:
+        return WithheldFigure(value=None, reason=_EXPENDITURE_CLASSES[name]["reason"])
+    if amount is None:
+        return WithheldFigure(
+            value=None,
+            reason=(
+                f"not published: {matched} finding(s) are classified as {name} "
+                "expenditure but none records an amount, so there is no total "
+                "to publish."
+            ),
+        )
+    return WithheldFigure(value=float(amount), reason=None)
+
+
 # ===== Endpoints =====
 
 
@@ -147,30 +309,34 @@ async def get_audit_summary(db: Session = Depends(get_db)):
     try:
         # --- Combined totals in ONE query (was 3 separate queries) ---
         # INDEX hint: CREATE INDEX ix_audits_query_type ON audits(query_type)
-        # INDEX hint: CREATE INDEX ix_audits_status ON audits(status)
+        #
+        # Each expenditure class is asked for TWICE: how many findings carry
+        # it, and what they sum to. The count is what makes the difference
+        # between "KES 0 was questioned" and "no finding is classified this
+        # way" expressible — the sum alone cannot tell them apart, because
+        # SUM() over no rows is NULL and the old `coalesce(..., 0)` spelled
+        # that absence as a published zero.
         totals = db.query(
             func.count(Audit.id),
-            func.coalesce(
-                func.sum(case(
-                    (Audit.query_type == "Financial Irregularity", Audit.amount),
-                    else_=0,
-                )), 0
+            func.count(Audit.id).filter(_expenditure_class_criterion(IRREGULAR)),
+            func.sum(
+                case((_expenditure_class_criterion(IRREGULAR), Audit.amount))
             ),
-            func.coalesce(
-                func.sum(case(
-                    (Audit.status != "Resolved", Audit.amount),
-                    else_=0,
-                )), 0
+            func.count(Audit.id).filter(_expenditure_class_criterion(UNSUPPORTED)),
+            func.sum(
+                case((_expenditure_class_criterion(UNSUPPORTED), Audit.amount))
             ),
             func.min(Audit.audit_year),
             func.max(Audit.audit_year),
         ).filter(publishable_audit_criterion()).first()
 
         total_findings = totals[0] or 0
-        total_irregular = totals[1]
-        total_unsupported = totals[2]
-        min_year = totals[3]
-        max_year = totals[4]
+        total_irregular = _expenditure_figure(IRREGULAR, totals[1] or 0, totals[2])
+        total_unsupported = _expenditure_figure(
+            UNSUPPORTED, totals[3] or 0, totals[4]
+        )
+        min_year = totals[5]
+        max_year = totals[6]
 
         # Findings by type
         # INDEX hint: CREATE INDEX ix_audits_query_type ON audits(query_type)
@@ -199,7 +365,14 @@ async def get_audit_summary(db: Session = Depends(get_db)):
             .group_by(Audit.audit_opinion)
             .all()
         )
-        findings_by_opinion = {o: c for o, c in opinion_rows}
+        # Fold the superseded label onto the current one, then decide whether
+        # the facet may be published at all. See services/audit_opinions.py:
+        # "Unqualified" and "Unmodified" are the same opinion under ISA 700
+        # before and after revision, and a facet holding no modified opinion
+        # has not been shown to be complete.
+        findings_by_opinion, findings_by_opinion_reason = opinion_facet(
+            {o: c for o, c in opinion_rows}
+        )
 
         # Worst counties by total flagged amount
         # INDEX hint: CREATE INDEX ix_audits_entity_amount ON audits(entity_id, amount)
@@ -213,6 +386,21 @@ async def get_audit_summary(db: Session = Depends(get_db)):
             .join(Entity, Audit.entity_id == Entity.id)
             .filter(publishable_audit_criterion())
             .filter(Audit.amount.isnot(None))
+            # COUNTY only. Without this the list ranked national ministries
+            # under a field named `county_name`: production returned "State
+            # Department for Medical Services" (entity 97), "Executive Office
+            # of the President" (80) and "State Department for Immigration and
+            # Citizen Services" (86) among the top five, and the page heading
+            # said counties. 16 of the entities in this aggregate are
+            # EntityType.MINISTRY, carrying KES 73.4Bn of the KES 214.8Bn.
+            #
+            # Naming a specific public body against a money figure under a
+            # category it does not belong to is a false statement of fact about
+            # that body, and truth is the defence that matters here (kenya-legal
+            # / Defamation Act Cap 36). The national findings are not deleted —
+            # they are served by /api/v1/audit/findings, where nothing calls
+            # them counties.
+            .filter(Entity.type == EntityType.COUNTY)
             .group_by(Entity.id, Entity.canonical_name)
             .order_by(desc("total_amount"))
             .limit(10)
@@ -238,11 +426,12 @@ async def get_audit_summary(db: Session = Depends(get_db)):
             )
 
         return AuditSummaryResponse(
-            total_irregular_expenditure=float(total_irregular),
-            total_unsupported_expenditure=float(total_unsupported),
+            total_irregular_expenditure=total_irregular,
+            total_unsupported_expenditure=total_unsupported,
             total_findings=total_findings,
             findings_by_type=findings_by_type,
             findings_by_opinion=findings_by_opinion,
+            findings_by_opinion_reason=findings_by_opinion_reason,
             worst_counties=worst_counties,
             year_range=YearRange(min_year=min_year, max_year=max_year),
             withheld_findings=withheld,
@@ -329,9 +518,16 @@ async def get_audit_trends(
             .group_by(Audit.audit_year, Audit.audit_opinion)
             .all()
         )
-        opinion_per_year: Dict[str, Dict[str, int]] = defaultdict(dict)
+        # Same gate as /summary, applied per year. This is the same facet
+        # sliced differently, so it withholds for the same reason and by the
+        # same rule — an opinion mix carrying no Qualified, Adverse or
+        # Disclaimer opinion is not published. Withholding it on /summary while
+        # /trends went on serving it year by year would have moved the defect
+        # rather than fixed it.
+        raw_per_year: Dict[str, Dict[str, int]] = defaultdict(dict)
         for yr, opinion, cnt in opinion_rows:
-            opinion_per_year[str(yr)][opinion] = cnt
+            raw_per_year[str(yr)][opinion] = cnt
+        opinion_per_year, opinion_reason = opinion_facet_by_year(dict(raw_per_year))
 
         # Distinct years
         years = sorted(int(y) for y in findings_per_year.keys())
@@ -340,7 +536,8 @@ async def get_audit_trends(
             years=years,
             findings_per_year=findings_per_year,
             amount_per_year=amount_per_year,
-            opinion_per_year=dict(opinion_per_year),
+            opinion_per_year=opinion_per_year,
+            opinion_per_year_reason=opinion_reason,
         )
 
     except OperationalError as e:
