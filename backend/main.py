@@ -10478,27 +10478,26 @@ async def get_pending_bills_summary(db: Session = Depends(get_db)):
             pop = _pop_map.get(c["county"], 0)
             c["per_capita"] = round(c["amount"] / pop, 2) if pop > 0 else None
 
-        # Aging buckets
-        aging_buckets = {"0-30d": 0, "31-90d": 0, "91-180d": 0, "180d+": 0}
+        # Aging buckets. ``aging_days`` is nullable, and ``or 0`` used to file
+        # every undated bill under "0-30d" — see :data:`_AGING_BUCKETS`.
+        aging_buckets = _empty_aging_buckets()
         for b in bills:
-            amt = float(b.amount or 0)
-            days = b.aging_days or 0
-            if days <= 30:
-                aging_buckets["0-30d"] += amt
-            elif days <= 90:
-                aging_buckets["31-90d"] += amt
-            elif days <= 180:
-                aging_buckets["91-180d"] += amt
-            else:
-                aging_buckets["180d+"] += amt
+            aging_buckets[_aging_bucket(b.aging_days)] += float(b.amount or 0)
 
-        # Trend by fiscal year (filter out unknown)
+        # Trend by fiscal year, on CANONICAL labels — same rule as the loans
+        # fallback below, which drew one year as two points because it keyed
+        # off the raw string. ``PendingBill``'s natural key is
+        # (entity, bill_type, fiscal_year), so two spellings survive as two
+        # rows here too and the defect has the same shape.
         trend_map: Dict[str, float] = {}
+        trend_unattributed = 0.0
         for b in bills:
-            fy = b.fiscal_year or ""
-            if not fy or fy.lower() == "unknown":
+            amount = float(b.amount or 0)
+            fy = _normalised_fiscal_year(b.fiscal_year)
+            if fy is None:
+                trend_unattributed += amount
                 continue
-            trend_map[fy] = trend_map.get(fy, 0) + float(b.amount or 0)
+            trend_map[fy] = trend_map.get(fy, 0) + amount
         trend = [{"year": k, "total_amount": v} for k, v in sorted(trend_map.items())]
 
         # Eligible / Ineligible totals
@@ -10515,13 +10514,96 @@ async def get_pending_bills_summary(db: Session = Depends(get_db)):
             "breakdown_by_type": breakdown_by_type,
             "top_counties_by_amount": top_counties,
             "aging_buckets": aging_buckets,
+            "aging_buckets_absent_reason": None,
             "trend": trend,
+            "trend_unattributed_amount": trend_unattributed,
             "currency": "KES",
         }
 
     except Exception as e:
         logging.error(f"Pending bills summary failed: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+#: Aging buckets, and the bucket for a bill whose age nobody recorded.
+#:
+#: ``days = b.aging_days or 0`` filed every undated bill under "0-30d" — an
+#: assertion that a bill of unknown age is less than a month old, which is the
+#: most reassuring reading available and rests on nothing. Its mirror image
+#: lived in the loans fallback, which asserted the most alarming reading (see
+#: :func:`_pending_bills_summary_from_loans`). Neither is a measurement.
+_AGING_BUCKETS = ("0-30d", "31-90d", "91-180d", "180d+", "unknown")
+
+
+def _empty_aging_buckets() -> Dict[str, float]:
+    return {bucket: 0 for bucket in _AGING_BUCKETS}
+
+
+def _aging_bucket(aging_days) -> str:
+    """Which bucket a bill belongs in, including "I was never told"."""
+    if aging_days is None:
+        return "unknown"
+    days = int(aging_days)
+    if days <= 30:
+        return "0-30d"
+    if days <= 90:
+        return "31-90d"
+    if days <= 180:
+        return "91-180d"
+    return "180d+"
+
+
+#: Bill-type keywords, matched against a lender string. Weak evidence, but not
+#: no evidence — a row reading "Pending Bills — Salary Arrears" does say what
+#: it is.
+_BILL_TYPE_KEYWORDS = (
+    ("salary", ("salary", "wage")),
+    ("pension", ("pension",)),
+    ("statutory", ("statutory",)),
+    ("court_awards", ("court", "award")),
+)
+
+#: Where a row goes when the lender string says nothing about its type.
+#:
+#: This used to be ``supplier_arrears``, unconditionally. Nothing in the
+#: register's lender strings matches any keyword above, so production reported
+#: 100% supplier arrears — presented as a finding about the composition of
+#: Kenya's arrears, actually a statement about a dictionary having no matches
+#: (audit 2026-09-06 §P1-7).
+_BILL_TYPE_UNCLASSIFIED = "unclassified"
+
+
+def _bill_type_from_lender(lender: Optional[str]) -> str:
+    text = (lender or "").lower()
+    for bill_type, terms in _BILL_TYPE_KEYWORDS:
+        if any(term in text for term in terms):
+            return bill_type
+    return _BILL_TYPE_UNCLASSIFIED
+
+
+def _normalised_fiscal_year(raw: Optional[str]) -> Optional[str]:
+    """Canonical ``FY{YYYY}/{YY}``, or None when the label is not one.
+
+    Trend keys were taken verbatim from provenance, so ``"FY 2024/25"`` and
+    ``"FY2024/25"`` drew one fiscal year as two points — 702.8Bn and 405.4Bn,
+    a year that appeared to have halved, whose two halves sum to the total
+    printed above the chart (audit 2026-09-06 §P2-13).
+
+    ``normalize_fiscal_label`` keeps sub-period markers distinct, so
+    ``"FY2025/26 Q1"`` does not fold into ``"FY2025/26"`` — a quarter and a
+    year are different quantities and adding them would be a new version of
+    the same bug.
+    """
+    from seeding.utils import normalize_fiscal_label
+
+    label = (raw or "").strip()
+    if not label or label.lower() == "unknown":
+        return None
+    try:
+        return normalize_fiscal_label(label)
+    except (ValueError, IndexError):
+        logging.warning("pending-bills trend: unparseable fiscal label %r", label)
+        return None
 
 
 def _get_population_map(db: Session) -> Dict[str, int]:
@@ -10561,9 +10643,12 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
             "status": "no_data",
             "total_pending_amount": 0,
             "breakdown_by_type": {},
+            "breakdown_by_type_absent_reason": "no_pending_bills_rows",
             "top_counties_by_amount": [],
-            "aging_buckets": {"0-30d": 0, "31-90d": 0, "91-180d": 0, "180d+": 0},
+            "aging_buckets": None,
+            "aging_buckets_absent_reason": "no_pending_bills_rows",
             "trend": [],
+            "trend_unattributed_amount": 0,
             "currency": "KES",
             "note": "No pending bills data. Run: python -m seeding.cli seed --domain pending_bills",
         }
@@ -10596,32 +10681,36 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
         entity_totals.values(), key=lambda x: x["amount"], reverse=True
     )[:15]
 
-    # Derive bill type from lender name
+    # Bill type, inferred from the lender string where the lender string
+    # actually says something. Rows it does not are ``unclassified``, not
+    # ``supplier_arrears`` — see :data:`_BILL_TYPE_UNCLASSIFIED`.
     breakdown_by_type: Dict[str, float] = {}
     for l in pending_loans:
-        lender = (l.lender or "").lower()
-        if "salary" in lender or "wage" in lender:
-            bt = "salary"
-        elif "pension" in lender:
-            bt = "pension"
-        elif "statutory" in lender:
-            bt = "statutory"
-        elif "court" in lender or "award" in lender:
-            bt = "court_awards"
-        else:
-            bt = "supplier_arrears"
+        bt = _bill_type_from_lender(l.lender)
         breakdown_by_type[bt] = breakdown_by_type.get(bt, 0) + float(
             l.outstanding or l.principal or 0
         )
+    breakdown_by_type_absent_reason = (
+        "loans_table_carries_no_bill_type"
+        if set(breakdown_by_type) <= {_BILL_TYPE_UNCLASSIFIED}
+        else None
+    )
 
-    # Trend from provenance fiscal_year (filter out "unknown")
+    # Trend by fiscal year, on CANONICAL labels — see
+    # :func:`_normalised_fiscal_year`. Money whose row names no usable fiscal
+    # year is reported as a total rather than dropped in silence: the chart's
+    # bars used not to sum to the figure printed above them, and nothing said
+    # why.
     trend_map: Dict[str, float] = {}
+    trend_unattributed = 0.0
     for l in pending_loans:
         prov = l.provenance if isinstance(l.provenance, dict) else {}
-        fy = prov.get("fiscal_year", "")
-        if not fy or fy.lower() == "unknown":
+        amount = float(l.outstanding or l.principal or 0)
+        fy = _normalised_fiscal_year(prov.get("fiscal_year"))
+        if fy is None:
+            trend_unattributed += amount
             continue
-        trend_map[fy] = trend_map.get(fy, 0) + float(l.outstanding or l.principal or 0)
+        trend_map[fy] = trend_map.get(fy, 0) + amount
     trend = [{"year": k, "total_amount": v} for k, v in sorted(trend_map.items())]
 
     # Eligible / Ineligible totals from provenance
@@ -10639,9 +10728,20 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
         "eligible_total": eligible_total,
         "ineligible_total": ineligible_total,
         "breakdown_by_type": breakdown_by_type,
+        "breakdown_by_type_absent_reason": breakdown_by_type_absent_reason,
         "top_counties_by_amount": top_counties,
-        "aging_buckets": {"0-30d": 0, "31-90d": 0, "91-180d": 0, "180d+": total},
+        # Withheld, not asserted.
+        #
+        # This was ``{"0-30d": 0, "31-90d": 0, "91-180d": 0, "180d+": total}``:
+        # a claim that 100% of KSh 1.108 TRILLION is more than 180 days
+        # overdue, made by a code path reading a table that has no aging
+        # column at all (audit 2026-09-06 §P1-4). The difference between a
+        # bill 20 days old and one 400 days old is the difference between
+        # routine and default, and this asserted the second for all of it.
+        "aging_buckets": None,
+        "aging_buckets_absent_reason": "loans_table_carries_no_aging_data",
         "trend": trend,
+        "trend_unattributed_amount": trend_unattributed,
         "currency": "KES",
         "note": "Derived from loans table. Seed pending_bills table for richer data.",
     }
@@ -10676,19 +10776,34 @@ async def get_pending_bills_by_county(county_id: str, db: Session = Depends(get_
                 .all()
             )
             total = sum(float(l.outstanding or l.principal or 0) for l in pending_loans)
+            # The same two assertions the national fallback used to make, on
+            # the page that never carried the debt page's disclaimer: 100% of
+            # this county's arrears declared over 180 days old, and 100%
+            # declared supplier arrears, from a table holding neither fact.
+            by_type: Dict[str, float] = {}
+            for l in pending_loans:
+                bt = _bill_type_from_lender(l.lender)
+                by_type[bt] = by_type.get(bt, 0) + float(
+                    l.outstanding or l.principal or 0
+                )
             return {
                 "status": "success" if pending_loans else "no_data",
                 "data_source": "loans_table_fallback" if pending_loans else "none",
                 "county": entity.canonical_name,
                 "county_id": county_id,
                 "total_pending": total,
-                "breakdown_by_type": {"supplier_arrears": total} if total else {},
-                "aging_buckets": {
-                    "0-30d": 0,
-                    "31-90d": 0,
-                    "91-180d": 0,
-                    "180d+": total,
-                },
+                "breakdown_by_type": by_type,
+                "breakdown_by_type_absent_reason": (
+                    "loans_table_carries_no_bill_type"
+                    if by_type and set(by_type) <= {_BILL_TYPE_UNCLASSIFIED}
+                    else None
+                ),
+                "aging_buckets": None,
+                "aging_buckets_absent_reason": (
+                    "loans_table_carries_no_aging_data"
+                    if pending_loans
+                    else "no_pending_bills_rows"
+                ),
                 "bills": [],
                 "currency": "KES",
             }
@@ -10701,19 +10816,10 @@ async def get_pending_bills_by_county(county_id: str, db: Session = Depends(get_
             bt = b.bill_type.value if b.bill_type else "other"
             by_type[bt] = by_type.get(bt, 0) + float(b.amount or 0)
 
-        # Aging buckets
-        aging = {"0-30d": 0, "31-90d": 0, "91-180d": 0, "180d+": 0}
+        # Aging buckets — same rule as the summary endpoint.
+        aging = _empty_aging_buckets()
         for b in bills:
-            amt = float(b.amount or 0)
-            days = b.aging_days or 0
-            if days <= 30:
-                aging["0-30d"] += amt
-            elif days <= 90:
-                aging["31-90d"] += amt
-            elif days <= 180:
-                aging["91-180d"] += amt
-            else:
-                aging["180d+"] += amt
+            aging[_aging_bucket(b.aging_days)] += float(b.amount or 0)
 
         bill_details = [
             {
