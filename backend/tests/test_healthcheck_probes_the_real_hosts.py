@@ -105,6 +105,71 @@ class TestEveryFetchedHostIsProbed:
         )
 
 
+class TestTheRemediationGuidanceIsNotWrong:
+    """#138 fixed the PROBE. It left the instructions beside it wrong.
+
+    When the health check fails, the notify job files an issue carrying a
+    "Common URL Migrations" table. That table told a maintainer to migrate
+    Treasury from ``treasury.go.ke/`` TO ``newsite.treasury.go.ke/`` — the
+    legacy host, the one #138 had just removed. Acting on it would have
+    reverted the fix, in the file the issue itself names two lines earlier
+    (``backend/seeding/config.py``).
+
+    A probe pointed at the wrong host is silently green. Advice pointed at
+    the wrong host is worse: someone follows it.
+    """
+
+    def _guidance(self) -> str:
+        text = _WORKFLOW.read_text()
+        block = re.search(r"### Common URL Migrations(.*?)`---`", text, re.S)
+        assert block, "could not find the URL-migration guidance in seed.yml"
+        return block.group(1)
+
+    def _migration_targets(self) -> dict:
+        """``{site: host}`` from the New Pattern column — where the issue
+        sends a maintainer. The Old Pattern column is allowed to name a dead
+        host; that is what it is for."""
+        out = {}
+        for line in self._guidance().splitlines():
+            cells = line.split("|")
+            if len(cells) < 5 or "---" in line or "Old Pattern" in line:
+                continue
+            hosts = re.findall(r"[a-z0-9.-]+\.go\.ke", cells[3])
+            if hosts:
+                out[cells[1].strip(" `\\")] = hosts[0]
+        return out
+
+    def test_the_guidance_does_not_send_anyone_to_an_unfetched_host(self):
+        # Hosts reached by config default OR hardcoded in a fetcher — the
+        # guidance may legitimately name either. Only a host the pipeline
+        # touches nowhere is a stray.
+        fetched = {urlparse(u).netloc for u in _config_default_urls()}
+        fetched |= set(PROBED_WITHOUT_A_CONFIG_DEFAULT)
+        targets = self._migration_targets()
+        assert targets, "parsed no migration targets — the table shape moved"
+        # A bare-domain form of a host the pipeline does fetch is fine
+        # (`oagkenya.go.ke` for `www.oagkenya.go.ke`); a DIFFERENT subdomain
+        # is not, which is exactly what `newsite.` was.
+        strays = {
+            site: h
+            for site, h in targets.items()
+            if h not in fetched
+            and not any(f == h or f.endswith("." + h) for f in fetched)
+        }
+        assert not strays, (
+            "the auto-filed issue tells maintainers to migrate TO hosts "
+            f"nothing in the seeding pipeline fetches: {strays}"
+        )
+
+    def test_treasury_is_pointed_at_the_host_the_pipeline_uses(self):
+        guidance = self._guidance()
+        treasury = [ln for ln in guidance.splitlines() if "| Treasury |" in ln]
+        assert len(treasury) == 1, treasury
+        old, new = treasury[0].split("|")[2:4]
+        assert "newsite.treasury.go.ke" in old, old
+        assert "www.treasury.go.ke" in new, new
+
+
 class TestTheRegistryIsParseable:
     """Anti-vacuity: every assertion above passes trivially if the parse
     returns nothing."""

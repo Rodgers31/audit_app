@@ -146,6 +146,65 @@ TABLE_RULES: List[TableRule] = [
 MAX_DAYS_SINCE_LIVE = 14
 
 
+# ─────────────────────────────────────────────────────────────────────────
+# Row-count regression — the third question, and the one the FLOORS in
+# seed.yml were pretending to answer.
+# ─────────────────────────────────────────────────────────────────────────
+#
+# The nightly asserts ~20 absolute floors. Measured against the 2026-09-07
+# run (the counts are that run's own output, not an estimate):
+#
+#     [OK] Budget Lines: 2136 rows (expected >= 400)
+#     [OK] Audit Records: 2338 rows (expected >= 20)
+#     [OK] Extractions (provenance middle link): 2325 rows (expected >= 1)
+#
+# Delete four fifths of the database and fourteen of those twenty floors
+# still print ``[OK]`` — including every large fact table. A floor set at
+# 20%, or at 0.04%, of live volume is a DISASTER detector wearing a
+# regression gate's clothes: it answers "is the table empty?", never "did
+# this table just lose most of its rows?".
+#
+# Raising the constants does not fix it. A hand-tuned higher number is
+# stale the next time the data grows, and it converts every legitimate
+# reduction into a red night. The floor has to be RELATIVE to what this
+# same pipeline saw recently, so it tracks growth by itself.
+#
+# The baseline is the MAXIMUM observed in a trailing window, not the last
+# observation. Comparing only against last night is a ratchet: -5% a night
+# clears every individual comparison and compounds to -79% in a month,
+# which is the same "cannot fail" defect one layer up. A window maximum
+# fires on the cliff AND on the slow bleed, and stays red while the rows
+# are still missing rather than absolving itself the following night.
+#
+# The cost of that choice, stated plainly: a DELIBERATE reduction (the 512
+# fabricated county audit rows purged on 2026-07-07 was one) fails the gate
+# until the window rolls past it. That is why the window is a week rather
+# than MAX_DAYS_SINCE_LIVE's fortnight. No mute is provided, on purpose —
+# building an escape hatch before observing any real noise is how a gate
+# ends up permanently muted.
+
+#: ``ingestion_jobs.domain`` under which each validate run parks the counts
+#: it observed. Reuses a table that already exists and that the freshness
+#: gates already read; no migration, no new schema to go dead (P6).
+ROW_CENSUS_DOMAIN = "__row_census__"
+
+#: How far back to look for a baseline. Short enough that a deliberate
+#: reduction clears on its own within a week; long enough that a single
+#: failed night cannot erase the high-water mark.
+ROW_CENSUS_WINDOW_DAYS = 7
+
+#: Fraction of the baseline a table may lose before it is a regression.
+#: 10% is wider than the churn actually seen between nightly runs (the
+#: pending-bills domain rewrites 48 of the 110 loan rows each night, so a
+#: short BROP table moves single digits) and far tighter than the 81-99.96%
+#: headroom the absolute floors leave.
+ROW_DROP_TOLERANCE = 0.10
+
+#: …and it must be a real drop, not tiny-table arithmetic. On a 7-row table
+#: one row is 14%. Below this many rows lost, the percentage is noise.
+ROW_DROP_MIN_ABSOLUTE = 2
+
+
 def _age_days(ts: Optional[datetime], now: datetime) -> Optional[float]:
     if ts is None:
         return None
@@ -218,6 +277,207 @@ def check_table_freshness(session, now: Optional[datetime] = None) -> List[Findi
                 )
             )
     return findings
+
+
+def _prior_census(session, now: datetime) -> tuple:
+    """Every row census recorded inside the window, oldest first.
+
+    Returns ``(observations, error)``. ``error`` is a string when the census
+    could NOT be read — the caller must surface that rather than treat an
+    unreadable history as "no drop detected", which is the fail-open shape
+    this whole module exists to remove.
+    """
+    from models import IngestionJob
+
+    cutoff = now - timedelta(days=ROW_CENSUS_WINDOW_DAYS)
+    try:
+        rows = (
+            session.query(IngestionJob)
+            .filter(
+                IngestionJob.domain == ROW_CENSUS_DOMAIN,
+                IngestionJob.started_at >= cutoff.replace(tzinfo=None),
+            )
+            .all()
+        )
+    except Exception as exc:  # pragma: no cover - defensive
+        return [], f"could not read the row census: {exc}"
+
+    observations = []
+    for job in sorted(rows, key=_run_order):
+        # ``meta`` is JSONB: it can legitimately come back as a list, a
+        # string or null. Calling .get on those raises, and a raise inside
+        # the read loop would take out the whole validate step — so the
+        # shape is checked rather than assumed.
+        meta = job.meta if isinstance(job.meta, dict) else {}
+        counts = meta.get("row_counts")
+        if isinstance(counts, dict) and counts:
+            observations.append((getattr(job, "started_at", None), counts))
+    return observations, None
+
+
+def check_row_count_drop(
+    session, counts: dict, now: Optional[datetime] = None
+) -> List[Finding]:
+    """Has any counted table lost rows against what this pipeline last saw?
+
+    ``counts`` is ``{label: row_count}`` for the current run — the same
+    labels the nightly's absolute floors already print, so the two gates
+    describe the same tables and a reader can line them up.
+
+    Reads only observations recorded by EARLIER runs. It never sees the
+    current run's own census, because a baseline that includes today is a
+    baseline the current run can never fall below — see
+    :func:`check_and_record_row_census`, which is the only supported way to
+    call this.
+    """
+    now = now or datetime.now(timezone.utc)
+    findings: List[Finding] = []
+
+    observations, error = _prior_census(session, now)
+    if error:
+        return [Finding(FAIL, "Row census", error)]
+
+    if not observations:
+        # First run after this gate ships, or the census stopped being
+        # written. Either way nothing is known — and "nothing is known" is
+        # reported as such, never as OK.
+        return [
+            Finding(
+                WARN,
+                "Row census",
+                f"no baseline in the last {ROW_CENSUS_WINDOW_DAYS} days — "
+                f"{len(counts)} count(s) recorded now; drop detection starts "
+                f"on the next run",
+            )
+        ]
+
+    baselines: dict = {}
+    for started_at, observed in observations:
+        for label, value in observed.items():
+            if not isinstance(value, int) or isinstance(value, bool):
+                continue
+            best = baselines.get(label)
+            if best is None or value > best[0]:
+                baselines[label] = (value, started_at)
+
+    for label in sorted(counts):
+        count = counts[label]
+        entry = baselines.get(label)
+        if entry is None:
+            findings.append(
+                Finding(
+                    WARN,
+                    label,
+                    f"{count} rows — no baseline in the last "
+                    f"{ROW_CENSUS_WINDOW_DAYS} days for this count; it is "
+                    f"new, or it was renamed",
+                )
+            )
+            continue
+
+        baseline, seen_at = entry
+        lost = baseline - count
+        limit = baseline * (1 - ROW_DROP_TOLERANCE)
+        when = seen_at.date().isoformat() if seen_at else "an earlier run"
+        if count < limit and lost >= ROW_DROP_MIN_ABSOLUTE:
+            findings.append(
+                Finding(
+                    FAIL,
+                    label,
+                    f"{count} rows — DOWN {lost} ({lost / baseline:.0%}) from "
+                    f"{baseline} seen on {when}. Tolerance is "
+                    f"{ROW_DROP_TOLERANCE:.0%}. Rows that were published "
+                    f"yesterday are not being published today; find what "
+                    f"stopped writing them before the next deploy.",
+                )
+            )
+        elif lost > 0:
+            findings.append(
+                Finding(
+                    OK,
+                    label,
+                    f"{count} rows — down {lost} from {baseline} ({when}), "
+                    f"inside the {ROW_DROP_TOLERANCE:.0%} tolerance",
+                )
+            )
+        else:
+            findings.append(
+                Finding(
+                    OK,
+                    label,
+                    f"{count} rows — {'+' if count > baseline else '='}"
+                    f"{count - baseline} vs {baseline} ({when})",
+                )
+            )
+
+    # A count that was watched a week ago and is not watched now means a
+    # check left seed.yml. Silently narrowing the watch list is the defect
+    # in miniature, so it is reported.
+    dropped = sorted(set(baselines) - set(counts))
+    if dropped:
+        findings.append(
+            Finding(
+                WARN,
+                "Row census",
+                f"{len(dropped)} count(s) were recorded within the last "
+                f"{ROW_CENSUS_WINDOW_DAYS} days and are no longer being "
+                f"checked: {', '.join(dropped)}",
+            )
+        )
+
+    return findings
+
+
+def record_row_census(
+    session, counts: dict, now: Optional[datetime] = None
+) -> List[Finding]:
+    """Park this run's counts so the next run has something to compare to.
+
+    Returns a FAIL finding if it could not be recorded. A census that stops
+    being written freezes the baseline, and a frozen baseline degrades this
+    gate back into the floors it replaced — quietly. So it is reported.
+    """
+    from models import IngestionJob, IngestionStatus
+
+    now = now or datetime.now(timezone.utc)
+    try:
+        session.add(
+            IngestionJob(
+                domain=ROW_CENSUS_DOMAIN,
+                status=IngestionStatus.COMPLETED,
+                started_at=now.replace(tzinfo=None),
+                finished_at=now.replace(tzinfo=None),
+                items_processed=len(counts),
+                meta={"row_counts": dict(counts)},
+            )
+        )
+        session.commit()
+    except Exception as exc:
+        session.rollback()
+        return [
+            Finding(
+                FAIL,
+                "Row census",
+                f"counts could NOT be recorded ({exc}) — the next run will "
+                f"compare against an older baseline, or none at all",
+            )
+        ]
+    return []
+
+
+def check_and_record_row_census(
+    session, counts: dict, now: Optional[datetime] = None
+) -> List[Finding]:
+    """Check for a drop, THEN record — in that order, always.
+
+    The order is the whole point, which is why it is not left to callers.
+    Recording first puts the current run into its own baseline window, the
+    maximum then includes today, and the comparison can never fail. That is
+    precisely the shape this gate replaces.
+    """
+    now = now or datetime.now(timezone.utc)
+    findings = check_row_count_drop(session, counts, now=now)
+    return findings + record_row_census(session, counts, now=now)
 
 
 def _all_registered_domains(seen: dict) -> List[str]:
@@ -320,6 +580,13 @@ def check_ingestion_freshness(
     )
     seen: dict[str, list] = {}
     for job in rows:
+        # The row census parks its counts in this same table but is not a
+        # seeding domain: it has no publisher and records no source_mode, so
+        # letting it through would post a permanent "provenance unknown" WARN
+        # about the gate's own bookkeeping. A gate that generates its own
+        # noise gets muted along with everything beside it.
+        if job.domain == ROW_CENSUS_DOMAIN:
+            continue
         seen.setdefault(job.domain, []).append(job)
 
     watched = domains if domains is not None else _all_registered_domains(seen)
@@ -531,21 +798,40 @@ def check_ingestion_freshness(
     return findings
 
 
-def run_all(session, now: Optional[datetime] = None) -> List[Finding]:
-    return check_table_freshness(session, now) + check_ingestion_freshness(
+def run_all(
+    session, now: Optional[datetime] = None, counts: Optional[dict] = None
+) -> List[Finding]:
+    """Every gate. ``counts`` enables the row-count regression check.
+
+    Omitting ``counts`` runs the two original gates only. It is optional
+    because ``run_all`` has callers that have no count to offer, NOT because
+    the third gate is — the nightly passes the counts it already computed for
+    its own floors.
+    """
+    findings = check_table_freshness(session, now) + check_ingestion_freshness(
         session, now
     )
+    if counts is not None:
+        findings += check_and_record_row_census(session, counts, now=now)
+    return findings
 
 
 __all__ = [
     "FAIL",
     "Finding",
     "OK",
+    "ROW_CENSUS_DOMAIN",
+    "ROW_CENSUS_WINDOW_DAYS",
+    "ROW_DROP_MIN_ABSOLUTE",
+    "ROW_DROP_TOLERANCE",
     "TABLE_RULES",
     "TableRule",
     "WARN",
+    "check_and_record_row_census",
     "check_ingestion_freshness",
+    "check_row_count_drop",
     "check_table_freshness",
     "in_publication_lull",
+    "record_row_census",
     "run_all",
 ]
