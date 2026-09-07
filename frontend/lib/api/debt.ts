@@ -267,21 +267,105 @@ export const getCountyPendingBills = async (countyId: string): Promise<CountyPen
 };
 
 // Debt sustainability indicators (national level)
+//
+// Written against the actual `GET /debt/sustainability` response. The previous
+// declaration described a payload the endpoint has never sent: `debt_to_gdp`
+// and `debt_service_to_revenue` are objects with their own thresholds, not
+// bare numbers, and a projection row carries `projected_debt_to_gdp`, not
+// `debt_to_gdp`/`debt_service_to_revenue`.
+//
+// That is not cosmetic. A type that says `array` where the API sends an object
+// is exactly how the county pending-bills aging section came to be dead code:
+// `aging_buckets.length > 0` compiled, evaluated `undefined > 0`, and rendered
+// nothing for months. Nothing reads this interface today — the peer strip and
+// the sustainability gauges were withdrawn (credibility audit F5/F10/F26) — so
+// the cost of it being wrong is deferred, not absent.
+
+/** A measure published beside the threshold it is judged against. */
+export interface SustainabilityIndicator {
+  value: number;
+  /** Calendar year, or a fiscal-year label such as "FY 2026/27". */
+  year: number | string;
+  status: 'above' | 'warning' | 'below';
+}
+
+export interface DebtToGdpIndicator extends SustainabilityIndicator {
+  year: number;
+  threshold_imf: number;
+  threshold_eac: number;
+}
+
+export interface DebtServiceIndicator extends SustainabilityIndicator {
+  threshold: number;
+}
+
+/**
+ * What a regional-peer column measures, keyed by the column name.
+ *
+ * Published with the data so no reader has to infer a measure from a field
+ * name — the failure this replaces was three different measures served under
+ * one label depending on whether the World Bank API answered.
+ */
+export interface PeerColumnBasis {
+  measure: string;
+  /** The publisher's own series code, e.g. "GC.XPN.INTP.RV.ZS". */
+  indicator: string;
+  publisher: string;
+}
+
+export interface RegionalPeer {
+  country: string;
+  /** General government gross debt, % of GDP (IMF GGXWDG_NGDP). */
+  debt_to_gdp: number | null;
+  /**
+   * Always null. Kenya's headline 77.6% is total debt service (principal +
+   * interest) over revenue; no cross-country series measures that here, and
+   * the nearest-looking World Bank one is interest only — which is what put
+   * 77.6% and 24.3% on the same page. The key is kept rather than dropped so
+   * a caller reads a stated absence instead of `undefined`.
+   */
+  debt_service_to_revenue: null;
+  debt_service_to_revenue_absent_reason?: string;
+  /**
+   * Always null, for the same reason: the headline 44.4% is external debt over
+   * TOTAL PUBLIC DEBT, and the series that used to fill this column is
+   * external debt over GNI — a different denominator, which is why Rwanda read
+   * as holding 93.9% of its debt externally.
+   */
+  external_debt_share: null;
+  external_debt_share_absent_reason?: string;
+  /** Interest payments, % of revenue — excludes principal (GC.XPN.INTP.RV.ZS). */
+  interest_payments_pct_revenue: number | null;
+  /** External debt stocks, % of GNI — denominator is GNI, not debt (DT.DOD.DECT.GN.ZS). */
+  external_debt_pct_gni: number | null;
+}
+
+export interface DebtProjection {
+  year: number;
+  projected_debt_to_gdp: number;
+  /**
+   * Present and true on a projection somebody published. Its absence on a row
+   * is the tell for a fitted line — the endpoint used to emit a least-squares
+   * extrapolation of our own history under this key.
+   */
+  is_published_projection?: boolean;
+}
+
 export interface DebtSustainabilityResponse {
-  debt_to_gdp: number;
-  debt_service_to_revenue: number;
-  external_debt_share: number;
-  projections: {
-    year: number;
-    debt_to_gdp: number;
-    debt_service_to_revenue: number;
-  }[];
-  regional_peers: {
-    country: string;
-    debt_to_gdp: number;
-    debt_service_to_revenue: number;
-    external_debt_share: number;
-  }[];
+  status?: string;
+  debt_to_gdp: DebtToGdpIndicator | null;
+  debt_service_to_revenue: DebtServiceIndicator | null;
+  /** External debt as % of total public debt. */
+  external_debt_share: number | null;
+  /** Empty when no published forecast is seeded — see `projections_absent_reason`. */
+  projections: DebtProjection[];
+  projections_source?: string | null;
+  projections_absent_reason?: string | null;
+  regional_peers: RegionalPeer[];
+  /** Keyed by peer column name; absent on an older backend. */
+  regional_peers_basis?: Record<string, PeerColumnBasis>;
+  currency?: string;
+  source?: string;
 }
 
 export const getDebtSustainability = async (): Promise<DebtSustainabilityResponse> => {
