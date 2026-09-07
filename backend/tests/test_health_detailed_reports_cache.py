@@ -67,6 +67,27 @@ class TestHealthDetailedIsReachable:
         )
         assert body["status"] == "healthy", body
 
+    def test_a_pinned_build_scope_reaches_the_endpoint(self, client):
+        """A self-defeating CACHE_VERSION must be visible without log access.
+
+        The scope still resolves and the service still works, so nothing else
+        would ever surface it — `source: CACHE_VERSION` reads as correctly
+        configured. See tests/test_cache_namespace_pinning_warning.py.
+        """
+        import cache.redis_cache as rc
+
+        original = rc.cache.namespace_warning
+        rc.cache.namespace_warning = "CACHE_VERSION='v1' PINS the cache scope."
+        try:
+            cache = client.get("/health/detailed").json()["components"]["cache"]
+            assert "PINS" in cache.get("cache_namespace_warning", ""), cache
+        finally:
+            rc.cache.namespace_warning = original
+
+        # And absent again once the misconfiguration is gone.
+        cache = client.get("/health/detailed").json()["components"]["cache"]
+        assert "cache_namespace_warning" not in cache, cache
+
     def test_it_reports_the_cache_build_scope(self, client):
         """So an operator can see whether per-deploy scoping is really active."""
         cache = client.get("/health/detailed").json()["components"]["cache"]

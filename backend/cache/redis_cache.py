@@ -40,6 +40,20 @@ def _sanitise_namespace(value: str) -> str:
     return "".join(c for c in value.strip() if c.isalnum() or c in "-_.")
 
 
+def _tracks_the_commit(value: str, commit: str) -> bool:
+    """True when ``value`` visibly follows ``commit``, so the scope still
+    advances per deploy.
+
+    ``CACHE_VERSION=$RENDER_GIT_COMMIT`` in the start command is the
+    recommended configuration when the commit is not otherwise on the
+    process's environment, and warning about it would be a false positive on
+    the one setup we tell people to use. A 7-character floor keeps a short
+    namespace from matching hex by coincidence.
+    """
+    shorter, longer = sorted((value, commit), key=len)
+    return len(shorter) >= 7 and shorter in longer
+
+
 def _resolve_cache_namespace() -> tuple:
     """Which build's cache entries this process may read, and where that came from.
 
@@ -60,28 +74,44 @@ def _resolve_cache_namespace() -> tuple:
     providing none — a guard that cannot fire is worse than no guard, because
     it stops anyone looking.
     """
-    explicit = os.getenv("CACHE_VERSION")
-    if explicit and _sanitise_namespace(explicit):
-        return _sanitise_namespace(explicit), "CACHE_VERSION"
-
+    explicit = _sanitise_namespace(os.getenv("CACHE_VERSION") or "")
     # Render sets this on every deploy, so the scope advances without anyone
     # remembering to bump anything.
-    commit = os.getenv("RENDER_GIT_COMMIT")
-    if commit and _sanitise_namespace(commit):
-        return _sanitise_namespace(commit)[:12], "RENDER_GIT_COMMIT"
+    commit = _sanitise_namespace(os.getenv("RENDER_GIT_COMMIT") or "")
 
-    return "dev", "fallback (neither CACHE_VERSION nor RENDER_GIT_COMMIT is set)"
+    if explicit:
+        warning = None
+        if commit and not _tracks_the_commit(explicit, commit):
+            warning = (
+                f"CACHE_VERSION={explicit!r} PINS the cache scope. It overrides "
+                f"RENDER_GIT_COMMIT ({commit[:12]!r}), which advances on every "
+                "deploy, with a value that does not. Entries written by one "
+                "build will be read by the next — which is the whole thing this "
+                "scope exists to prevent, and the health report will still read "
+                "'source: CACHE_VERSION' as though it were configured correctly. "
+                "Unset CACHE_VERSION, or set it to $RENDER_GIT_COMMIT."
+            )
+        return explicit, "CACHE_VERSION", warning
+
+    if commit:
+        return commit[:12], "RENDER_GIT_COMMIT", None
+
+    return "dev", "fallback (neither CACHE_VERSION nor RENDER_GIT_COMMIT is set)", None
 
 
 #: Resolved once per process. Reported by health_check() and logged at import,
 #: because a namespace that quietly falls back to a constant is inert while
 #: looking exactly like a working one.
-CACHE_NAMESPACE, CACHE_NAMESPACE_SOURCE = _resolve_cache_namespace()
+CACHE_NAMESPACE, CACHE_NAMESPACE_SOURCE, CACHE_NAMESPACE_WARNING = (
+    _resolve_cache_namespace()
+)
 logger.info(
     "Cache keys scoped to namespace %r (source: %s)",
     CACHE_NAMESPACE,
     CACHE_NAMESPACE_SOURCE,
 )
+if CACHE_NAMESPACE_WARNING:
+    logger.warning("%s", CACHE_NAMESPACE_WARNING)
 
 
 class RedisCache:
@@ -116,6 +146,11 @@ class RedisCache:
     #: is running uncached). health_check() reports it so the caller can tell.
     redis_url_configured: bool = False
 
+    #: Set when the resolved namespace is self-defeating — see
+    #: _resolve_cache_namespace(). Reported by health_check() as well as
+    #: logged, because a log line alone is what let #184 hide.
+    namespace_warning: Optional[str] = CACHE_NAMESPACE_WARNING
+
     def __init__(self, redis_url: str = None):
         self.redis_url = redis_url or os.getenv("REDIS_URL", "redis://localhost:6379")
         self.client: Optional[redis.Redis] = None
@@ -126,6 +161,7 @@ class RedisCache:
         self.namespace = CACHE_NAMESPACE
         self.namespace_source = CACHE_NAMESPACE_SOURCE
         self.redis_url_configured = bool(redis_url or os.getenv("REDIS_URL"))
+        self.namespace_warning = CACHE_NAMESPACE_WARNING
         RedisCache._instances.add(self)
         self._initialize()
 
@@ -281,6 +317,8 @@ class RedisCache:
         }
         if self._last_unserialisable:
             diagnostics["last_unserialisable"] = self._last_unserialisable
+        if self.namespace_warning:
+            diagnostics["cache_namespace_warning"] = self.namespace_warning
 
         try:
             if self.client:
