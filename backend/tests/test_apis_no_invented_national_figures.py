@@ -1,4 +1,5 @@
-"""No service under ``apis/`` or ``analysis/`` may type in a public-finance figure.
+"""No module under ``apis/``, ``analysis/`` or ``extractors/`` may type in a
+public-finance figure.
 
 On 2026-09-07, ``apis/data_driven_analytics.py`` — and its byte-identical twin
 ``analysis/data_driven_analytics.py`` (md5 ``e0713a40054986c9c0ca51d99c4f406c``)
@@ -40,15 +41,20 @@ arithmetic, labelled ``"data_derivation": "calculated_from_actual_budget_data"``
 — a number that changes on every server restart, because ``hash()`` on a ``str``
 is salted per process.
 
-NOTE FOR ANYONE TEMPTED TO TEST THE INSTABILITY DIRECTLY: pytest pins
-``PYTHONHASHSEED``, so under this runner that expression is stable. A test
-asserting the figures move would FAIL while the defect was live; one asserting
-they hold still would PASS while it was live. Either way it measures the
-harness. This guard therefore keys on the literal in the source, which is
-seed-independent.
+NOTE FOR ANYONE TEMPTED TO TEST THE INSTABILITY DIRECTLY: do not. This guard
+keys on the literal in the source, which is seed-independent, and the rule
+about ``hash()`` itself now lives in
+``test_no_published_figure_from_hash_or_clock.py`` (issue #193). The reason is
+that ``hash()`` is stable *within* a process whatever the seed, so a
+run-it-twice test in one interpreter finds these values rock steady even while
+the defect is live, and a runner that pinned ``PYTHONHASHSEED`` would freeze
+them across processes too. (This note previously said pytest pins that variable.
+It does not here — ``pytest-randomly`` is not installed and
+``os.environ.get("PYTHONHASHSEED")`` is ``None`` under this runner. The
+conclusion was right for the weaker reason.)
 
-THE RULE. A module under ``apis/`` or ``analysis/`` may not publish a numeric
-literal under a name that denotes a measured public-finance quantity — a debt,
+THE RULE. A module under ``apis/``, ``analysis/`` or ``extractors/`` may not
+publish a numeric literal under a name that denotes a measured public-finance quantity — a debt,
 a budget, a revenue, an allocation, a ratio, a rate, a share, a score. If the
 figure is measured, it comes from the data; if it is typed, it is invented. This
 holds however the literal is dressed: bare (``"total_debt": 11500000000000``),
@@ -61,7 +67,7 @@ Separately, a dict mapping four-digit years to numbers is a hand-typed time
 series and is barred on its own, whatever key it hangs under. That is the shape
 ``_calculate_debt_trend`` used, and no key name was involved.
 
-BOTH DIRECTORIES ARE SCANNED, deliberately. The two copies are byte-identical;
+``apis/`` AND ``analysis/`` ARE BOTH SCANNED, deliberately. The two copies are byte-identical;
 a guard over ``apis/`` alone would go green on cleaning one of them while the
 invented debt series stayed in the repo under ``analysis/``.
 
@@ -82,6 +88,27 @@ WHAT IS NOT A FIGURE, and why each exemption is safe:
 * slice bounds (``rankings[:5]``) and the ``ndigits`` of ``round(x, 2)`` — list
   length and display precision are structure, not quantity.
 
+EXTENDED TO ``extractors/`` 2026-09-07 (issue #193), and that root is the one
+that matters. ``apis/`` and ``analysis/`` do not ship; ``Dockerfile:26`` does
+``COPY extractors/ /app/extractors/``, so everything this sweep now reads is in
+the production image. It caught 21 figures in
+``extractors/government/comprehensive_government_extractor.py`` — a national
+database typed in whole, including a debt block repeating #188's defects
+independently (10.2T, 67.8% of GDP, a 59.8% external share) and a
+``transparency_score: 95`` sitting in the same dict as genuinely counted
+reports, unable to disagree with them.
+
+A NUMBER THAT LOOKS THE SAME AND IS NOT.
+``extractors/county/official_county_budget_extractor.py:45+`` holds 55 numeric
+literals in a dict of named counties and is REFERENCE DATA — KNBS 2019 census
+populations with official county codes. It draws no findings here, and the
+reason is worth keeping: the rule fires on a literal under a label that names a
+measured public-finance quantity, and ``population`` and ``code`` are neither.
+Do not add ``population`` to ``SUBJECTS`` to make the sweep feel thorough; it
+would turn a census into a defect. What separates it from the figures above is
+not the shape of the literal but whether anybody measured it, and the census
+was measured.
+
 ESCAPE HATCH, following ``local/no-zero-fallback-on-published-figure``
 (7b5d366) and the county guard beside this file: a suppression must carry a
 written reason. Put
@@ -101,7 +128,11 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SCANNED_ROOTS = (REPO_ROOT / "apis", REPO_ROOT / "analysis")
+SCANNED_ROOTS = (
+    REPO_ROOT / "apis",
+    REPO_ROOT / "analysis",
+    REPO_ROOT / "extractors",
+)
 
 # A label names a measured public-finance quantity if it mentions what the
 # figure is ABOUT ...
@@ -293,10 +324,44 @@ def find_invented_figures(source: str, where: str = "<source>") -> list[str]:
 
 
 def _modules(root: Path) -> list[Path]:
-    return sorted(root.glob("*.py")) if root.is_dir() else []
+    """Every module under ``root``. Recursive: ``extractors/`` has subpackages."""
+    return sorted(root.rglob("*.py")) if root.is_dir() else []
 
 
 SCANNED_MODULES = [m for root in SCANNED_ROOTS for m in _modules(root)]
+
+
+def _rel(module: Path) -> str:
+    return module.relative_to(REPO_ROOT).as_posix()
+
+
+# Modules that carry this defect and are NOT this change's to fix. Each entry
+# is a ratchet, not a pardon: the count is pinned, so adding a figure fails,
+# and ``test_quarantined_modules_still_carry_their_figures`` fails if a file is
+# cleaned without being taken off this list — so the list cannot rot into a
+# blanket exemption. Nothing goes in here without a reason a person signed.
+QUARANTINE: dict[str, tuple[int, str]] = {
+    "extractors/county/enhanced_county_extractor.py": (
+        20,
+        "issue #193 leaves this generator to the owner deliberately: the DATA "
+        "it modelled was already cleared from entity.meta by "
+        "backend/county_metrics_purge.py and migration ce6ed007f696, guarded "
+        "by backend/tests/test_stored_county_metrics_are_cleared.py, so the "
+        "figures below are not reaching anybody today",
+    ),
+    "extractors/cob/cob_report_extractor.py": (
+        9,
+        "no issue owns this yet; surfaced by extending this sweep to "
+        "extractors/ and left untouched so that fix can carry its own evidence "
+        "instead of riding in on #193's",
+    ),
+    "extractors/cob/enhanced_cob_extractor.py": (
+        10,
+        "no issue owns this yet; surfaced by extending this sweep to "
+        "extractors/ and left untouched so that fix can carry its own evidence "
+        "instead of riding in on #193's",
+    ),
+}
 
 
 def test_the_scanned_directories_are_where_we_think_they_are():
@@ -308,7 +373,7 @@ def test_the_scanned_directories_are_where_we_think_they_are():
     """
     surviving = [root for root in SCANNED_ROOTS if root.is_dir()]
     if not surviving:
-        pytest.skip("apis/ and analysis/ have both been removed — nothing to guard")
+        pytest.skip("every scanned root has been removed — nothing to guard")
     for root in surviving:
         assert _modules(root), (
             f"{root.name}/ exists but holds no .py files — its scan would be vacuous"
@@ -438,17 +503,47 @@ debt = {
     )
 
 
-@pytest.mark.skipif(
-    not SCANNED_MODULES, reason="apis/ and analysis/ hold no modules"
+@pytest.mark.parametrize(
+    "relative_path,expected,reason",
+    [(path, count, why) for path, (count, why) in sorted(QUARANTINE.items())],
+    ids=sorted(QUARANTINE),
 )
+def test_quarantined_modules_still_carry_their_figures(
+    relative_path: str, expected: int, reason: str
+):
+    """The reverse ratchet. A quarantine that outlives its debt is a lie.
+
+    Clean one of these files and this fails, telling you to delete its entry.
+    Add a figure to one and it fails too. Either way the list stays honest
+    about how much is still owed.
+    """
+    module = REPO_ROOT / relative_path
+    if not module.is_file():
+        pytest.fail(
+            f"{relative_path} is gone but is still quarantined. Delete its "
+            f"QUARANTINE entry. It was held for: {reason}"
+        )
+    findings = find_invented_figures(
+        module.read_text(encoding="utf-8"), relative_path
+    )
+    assert len(findings) == expected, "\n".join(
+        [
+            f"{relative_path} was quarantined with {expected} known figure(s) "
+            f"and now has {len(findings)}.",
+            f"  held because: {reason}",
+            "  If you cleaned it, delete its QUARANTINE entry. If you added to "
+            "it, do not.",
+            *findings,
+        ]
+    )
+
+
+@pytest.mark.skipif(not SCANNED_MODULES, reason="the scanned roots hold no modules")
 @pytest.mark.parametrize(
     "module",
-    SCANNED_MODULES,
-    ids=[f"{m.parent.name}/{m.name}" for m in SCANNED_MODULES] or ["none"],
+    [m for m in SCANNED_MODULES if _rel(m) not in QUARANTINE],
+    ids=[_rel(m) for m in SCANNED_MODULES if _rel(m) not in QUARANTINE] or ["none"],
 )
 def test_no_module_publishes_an_invented_figure(module: Path):
-    findings = find_invented_figures(
-        module.read_text(encoding="utf-8"),
-        f"{module.parent.name}/{module.name}",
-    )
+    findings = find_invented_figures(module.read_text(encoding="utf-8"), _rel(module))
     assert not findings, "\n".join(["invented public-finance figures found:", *findings])
