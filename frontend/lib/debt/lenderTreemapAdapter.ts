@@ -18,6 +18,8 @@
  *     slices sum to 100% rather than to some fraction of a wider total.
  */
 
+import { displayLenderName } from './lenderName';
+
 export interface ApiLenderItem {
   lender: string;
   outstanding?: number | string | null;
@@ -71,7 +73,12 @@ export function toTreemapCategories(
       label: labelFor(key),
       outstanding: Number(val.total_outstanding ?? val.total_principal ?? 0),
       lenders: (val.items ?? []).map((it) => ({
-        lender: it.lender,
+        // Display-only trim. World Bank IDS pads its creditor labels with
+        // non-breaking spaces and the seeding writer stores them verbatim, so
+        // "Multilateral (World Bank-IDA<25 NBSPs>)" reaches the treemap. The
+        // stored value is the writer's join key and is not touched — see
+        // lib/debt/lenderName.
+        lender: displayLenderName(it.lender),
         outstanding: Number(it.outstanding ?? it.principal ?? 0) || 0,
         rate: it.interest_rate,
         annual_service_cost: it.annual_service_cost,

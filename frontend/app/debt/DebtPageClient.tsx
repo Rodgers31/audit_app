@@ -45,6 +45,12 @@ import {
   toTreemapCategories,
   treemapTotal,
 } from '@/lib/debt/lenderTreemapAdapter';
+import { displayLenderName } from '@/lib/debt/lenderName';
+import {
+  agingDistributionSupport,
+  agingUnsupportedNote,
+  normalizeAgingBuckets,
+} from '@/lib/debt/pendingBillsAging';
 import { useEffect, useMemo, useState } from 'react';
 import {
   Area,
@@ -195,15 +201,10 @@ export default function NationalDebtPage() {
       }));
     }
 
-    let agingBuckets = raw.aging_buckets;
-    if (agingBuckets && !Array.isArray(agingBuckets)) {
-      agingBuckets = Object.entries(agingBuckets).map(([bucket, amount]: [string, any]) => ({
-        bucket,
-        amount: Number(amount) || 0,
-        percentage: totalPending > 0 ? ((Number(amount) || 0) / totalPending) * 100 : 0,
-        count: 0,
-      }));
-    }
+    // Shared with the county Budget tab so both surfaces hand the same shape
+    // to the same guard — a component that normalised on its own could
+    // otherwise bypass it.
+    const agingBuckets = normalizeAgingBuckets(raw.aging_buckets, totalPending);
 
     const topCounties = (raw.top_counties_by_amount || []).map((c: any) => ({
       ...c,
@@ -214,7 +215,7 @@ export default function NationalDebtPage() {
     return {
       ...raw,
       breakdown_by_type: breakdownByType || [],
-      aging_buckets: agingBuckets || [],
+      aging_buckets: agingBuckets,
       top_counties_by_amount: topCounties,
     };
   }, [rawPendingBillsSummary]);
@@ -948,10 +949,13 @@ export default function NationalDebtPage() {
         const nationalPct = pb.total > 0 ? (pb.national / pb.total) * 100 : 0;
         const countyPct = pb.total > 0 ? (pb.county / pb.total) * 100 : 0;
         const buckets = pendingBillsSummary?.aging_buckets || [];
-        // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- filter predicate — selects buckets that HAVE data
-        const bucketsWithData = buckets.filter((b: any) => (b.amount || 0) > 0);
-        const agingIsDegenerate =
-          bucketsWithData.length === 1 && bucketsWithData[0].bucket?.includes('180');
+        // Whether an aging distribution may be DRAWN at all. This used to draw
+        // the chart unconditionally and append a caveat under it — a solid bar
+        // reading "180d+ · KES 1.11T" with a note beneath saying the backend
+        // made it up. A reader takes the chart; the note is the small print.
+        // The same guard now runs on /counties/[id], so one rule governs both
+        // surfaces. See lib/debt/pendingBillsAging.
+        const agingSupport = agingDistributionSupport(buckets, pendingBillsSummary);
         return (
           <motion.section
             initial={{ opacity: 0, y: 20 }}
@@ -1059,7 +1063,7 @@ export default function NationalDebtPage() {
               </div>
             </div>
 
-            {bucketsWithData.length > 0 && (
+            {agingSupport.supported && (
               <div className='rounded-2xl bg-white dark:bg-surface-base border border-neutral-border/40 shadow-surface p-5 sm:p-6'>
                 <div className='flex items-start justify-between gap-3 mb-4'>
                   <div>
@@ -1119,17 +1123,26 @@ export default function NationalDebtPage() {
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
-                {agingIsDegenerate && (
-                  <div className='mt-3 flex items-start gap-2 text-[11px] text-neutral-muted bg-gov-gold/8 border border-gov-gold/25 rounded-lg px-3 py-2'>
-                    <AlertTriangle size={14} className='text-gov-gold flex-shrink-0 mt-0.5' />
-                    <span>
-                      <span className='font-semibold text-gov-dark dark:text-white'>Data quality note:</span> The
-                      backend currently derives aging from the loans table, where all entries are
-                      flagged as 180d+. A richer breakdown will appear once the pending_bills seed
-                      lands.
-                    </span>
-                  </div>
-                )}
+              </div>
+            )}
+
+            {/* No distribution to draw. The panel still appears — the absence
+                is itself a fact about the public record, and silently dropping
+                the section would leave a reader assuming nobody had asked. */}
+            {!agingSupport.supported && agingSupport.reason !== 'no-data' && (
+              <div className='rounded-2xl bg-white dark:bg-surface-base border border-neutral-border/40 shadow-surface p-5 sm:p-6'>
+                <h3 className='text-sm font-semibold text-gov-dark dark:text-white'>
+                  Aging — how long bills have gone unpaid
+                </h3>
+                <div className='mt-3 flex items-start gap-2 text-[11px] text-neutral-muted bg-gov-gold/8 border border-gov-gold/25 rounded-lg px-3 py-2'>
+                  <AlertTriangle size={14} className='text-gov-gold flex-shrink-0 mt-0.5' />
+                  <span>
+                    <span className='font-semibold text-gov-dark dark:text-white'>Not published:</span>{' '}
+                    {agingUnsupportedNote(agingSupport.reason)} Bills older than 180 days are
+                    referred to the Pending Bills Verification Committee, so the split matters —
+                    it is simply not in the source.
+                  </span>
+                </div>
               </div>
             )}
 
@@ -1322,7 +1335,9 @@ export default function NationalDebtPage() {
                   <tr
                     key={`${l.lender}-${i}`}
                     className='border-b border-neutral-border/20 hover:bg-white/40 dark:bg-surface-elevated transition-colors'>
-                    <td className='px-4 py-3 text-sm font-medium text-gov-dark dark:text-white'>{l.lender}</td>
+                    <td className='px-4 py-3 text-sm font-medium text-gov-dark dark:text-white'>
+                      {displayLenderName(l.lender)}
+                    </td>
                     <td className='px-4 py-3 text-xs text-neutral-muted'>
                       {l.lender_type?.replace(/_/g, ' ')}
                     </td>
@@ -1347,7 +1362,9 @@ export default function NationalDebtPage() {
             <div className='md:hidden divide-y divide-neutral-border/20'>
               {(showAllLoans ? loans : loans.slice(0, 10)).map((l, i) => (
                 <div key={`${l.lender}-${i}`} className='p-4'>
-                  <div className='text-sm font-semibold text-gov-dark dark:text-white mb-0.5'>{l.lender}</div>
+                  <div className='text-sm font-semibold text-gov-dark dark:text-white mb-0.5'>
+                    {displayLenderName(l.lender)}
+                  </div>
                   <div className='text-[11px] text-neutral-muted mb-2'>
                     {l.lender_type?.replace(/_/g, ' ')}
                   </div>
