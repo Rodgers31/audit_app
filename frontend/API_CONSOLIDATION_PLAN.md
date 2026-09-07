@@ -6,6 +6,17 @@
 > four aggregates nothing measured. Everything it is credited with here is a
 > record of what existed then, not of what runs now. Note in particular that
 > `InternalAPIClient` in `backend/main.py` still holds a client for it.
+>
+> **Partly superseded, 2026-09-07.** The Modernized API (`apis/modernized_api.py`,
+> port 8004) is credited below with `/national/overview`, `/national/debt` and
+> `/national/ministries`. Those three, plus `/national/ministries/{name}`,
+> `/national/revenue` and `/analytics/comprehensive`, were withdrawn under issue
+> #188: the debt total, the 60/40 external split, the debt-to-GDP ratio, the
+> 2020–2024 series and the ministry execution rates they published were typed-in
+> constants that disagree with the CBK figures in
+> `backend/seeding/real_data/debt_timeline.json`. The service's other nine
+> endpoints still run. Nothing replaced the withdrawn figures here — `backend/`
+> already holds that data, sourced.
 
 ## Current State Analysis
 
