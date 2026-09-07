@@ -297,3 +297,44 @@ def test_the_pending_bills_table_normalises_its_fiscal_years_too(
     assert body["data_source"] == "pending_bills_table"
     assert [p["year"] for p in body["trend"]] == ["FY2024/25"]
     assert body["trend"][0]["total_amount"] == pytest.approx(110.0 * B)
+
+
+def test_the_county_path_infers_from_rows_it_actually_read(
+    client, db_session, county_entity, seed_source_doc
+):
+    """The county breakdown is not a label stuck on a scalar.
+
+    Pre-fix it was ``{"supplier_arrears": total} if total else {}`` — built
+    from ONE summed number, with no per-bill data consulted at all. That is a
+    fabricated category rather than a misclassification: there was nothing in
+    the expression that could ever have produced a different answer.
+
+    Post-fix the county path reads the same per-row ``Loan.lender`` strings the
+    national path reads, filtered to one entity, so a row that names its type
+    classifies on the county page exactly as it does nationally — and a row
+    that does not is ``unclassified`` rather than assumed.
+    """
+    from main import clear_all_caches
+
+    B = 1e9
+    db_session.add_all([
+        _bill(county_entity, seed_source_doc,
+              "Pending Bills — Salary Arrears (Mombasa County)", 30.0 * B,
+              "FY2024/25", 11),
+        _bill(county_entity, seed_source_doc,
+              "Pending Bills — County Governments", 70.0 * B, "FY2024/25", 12),
+    ])
+    db_session.commit()
+
+    clear_all_caches()
+    body = client.get("/api/v1/pending-bills/counties/mombasa-county").json()
+
+    assert body["breakdown_by_type"]["salary"] == pytest.approx(30.0 * B)
+    assert body["breakdown_by_type"]["unclassified"] == pytest.approx(70.0 * B)
+    assert "supplier_arrears" not in body["breakdown_by_type"]
+    # Something was classified, so the block is not wholly absent.
+    assert body["breakdown_by_type_absent_reason"] is None
+    # And the parts still sum to the total printed beside them.
+    assert sum(body["breakdown_by_type"].values()) == pytest.approx(
+        body["total_pending"]
+    )
