@@ -61,76 +61,6 @@
           }
         },
         {
-          "name": "Get National Overview",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8004/national/overview",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "8004",
-              "path": ["national", "overview"]
-            }
-          }
-        },
-        {
-          "name": "Get National Debt Analysis",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8004/national/debt",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "8004",
-              "path": ["national", "debt"]
-            }
-          }
-        },
-        {
-          "name": "Get All Ministries Data",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8004/national/ministries",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "8004",
-              "path": ["national", "ministries"]
-            }
-          }
-        },
-        {
-          "name": "Get Specific Ministry Data",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8004/national/ministries/Education",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "8004",
-              "path": ["national", "ministries", "Education"]
-            }
-          }
-        },
-        {
-          "name": "Get Revenue Data",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8004/national/revenue",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "8004",
-              "path": ["national", "revenue"]
-            }
-          }
-        },
-        {
           "name": "Get County Statistics",
           "request": {
             "method": "GET",
@@ -193,20 +123,6 @@
                   "value": "high"
                 }
               ]
-            }
-          }
-        },
-        {
-          "name": "Get Comprehensive Analytics",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8004/analytics/comprehensive",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "8004",
-              "path": ["analytics", "comprehensive"]
             }
           }
         },

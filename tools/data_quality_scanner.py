@@ -18,7 +18,6 @@ def scan_data_files():
         "comprehensive_government_reports.json",
         "comprehensive_cob_reports_database.json",
         "ultimate_etl_results.json",
-        "data_driven_analytics_results.json",
         "enhanced_county_data.json",  # Already fixed
     ]
 
