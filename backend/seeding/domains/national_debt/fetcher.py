@@ -37,7 +37,8 @@ parser expected. See PR #75 for the full investigation.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List
+from dataclasses import dataclass
+from typing import Any, Dict, List, Tuple
 
 from ...config import SeedingSettings
 from ...http_client import SeedingHttpClient
@@ -63,8 +64,52 @@ logger = logging.getLogger("seeding.national_debt.fetcher")
 #
 # Match the inclusive Treasury-bonds aggregate only. Eurobonds are external
 # commercial debt and must not appear here either.
+#
+# NOTE: excluding the subset here only ever fixed the coverage-gate
+# DENOMINATOR. The row itself stayed in the loans payload and went on being
+# summed into the published headline, which is the KSh 300Bn double-count
+# _drop_subsumed_rows below removes from the register itself.
 _DOMESTIC_BOND_MARKERS = ("treasury bond", "domestic bond")
 _NOT_A_DOMESTIC_BOND = ("eurobond", "external", "syndicated", "commercial bank")
+
+
+@dataclass(frozen=True)
+class _SubsumedRow:
+    """A row another row in the same category already counts."""
+
+    #: Lender substrings (lowercased) that identify the subset row.
+    subset_markers: Tuple[str, ...]
+    #: Lender substring that identifies the aggregate containing it.
+    aggregate_marker: str
+    #: The category both must be in. A subset is only subsumed within the
+    #: bucket its aggregate is published in.
+    category: str
+    #: The published classification that says the aggregate contains it.
+    because: str
+
+
+# Subsets the register must never carry beside their own aggregate.
+#
+# CBK's Statistical Bulletin Table 4.1.4 ("Composition of Government Gross
+# Domestic Debt by Instrument") publishes ONE Treasury Bonds column, and that
+# column is the whole bond stock — infrastructure and green bonds are Treasury
+# bonds in CBK's classification, sit inside it, and get no line of their own.
+# ``cbk_bulletin._COLUMN_MAPPINGS`` maps that column straight onto the
+# "Domestic Treasury Bonds" row here, so the aggregate is inclusive by
+# construction and there is no published figure that would make it exclusive:
+# netting 300B off it would be inventing a split CBK does not publish, and the
+# next bulletin overlay would overwrite it anyway. The subset row is what goes.
+_SUBSUMED_ROWS: Tuple[_SubsumedRow, ...] = (
+    _SubsumedRow(
+        subset_markers=("infrastructure bond", "infrastructure &", "green bond"),
+        aggregate_marker="treasury bond",
+        category="domestic_bonds",
+        because=(
+            "CBK Statistical Bulletin Table 4.1.4 publishes a single Treasury "
+            "Bonds column and infrastructure and green bonds are inside it"
+        ),
+    ),
+)
 
 
 # Categories the IDS creditor pull owns outright. When it succeeds, every
@@ -157,6 +202,97 @@ def _replace_external_loans(
     return {**payload, "loans": kept + list(creditor_rows)}
 
 
+def _row_amount_kes(loan: Dict[str, Any]) -> float:
+    """A loan row's shilling amount, or 0.0 when it carries none."""
+    try:
+        return float(loan.get("outstanding") or loan.get("principal") or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _lender_key(loan: Dict[str, Any]) -> str:
+    return " ".join((loan.get("lender") or "").lower().split())
+
+
+def _drop_subsumed_rows(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Remove rows another row in the same category already counts.
+
+    Runs on the FINAL register, after every overlay, because that list is what
+    gets summed into the published headline. Until this existed, the
+    ``domestic_bonds`` category held both CBK's inclusive Treasury Bonds
+    aggregate (5,579Bn) and a separate 300Bn infrastructure/green bond row that
+    is a subset of it, and the site published 5,879Bn.
+
+    A subset is dropped only when its aggregate is actually present in the same
+    category: on its own it is the only bond row there is, and removing it
+    would understate rather than correct.
+
+    Loud on purpose — WARNING plus a metadata record — because a silent drop
+    and a register that never had the row look identical from the outside.
+    """
+    loans: List[Dict[str, Any]] = list(payload.get("loans", []))
+    kept: List[Dict[str, Any]] = []
+    dropped: List[Dict[str, Any]] = []
+
+    for loan in loans:
+        lender = _lender_key(loan)
+        category = loan.get("debt_category") or ""
+        rule = next(
+            (
+                r
+                for r in _SUBSUMED_ROWS
+                if r.category == category
+                and any(m in lender for m in r.subset_markers)
+            ),
+            None,
+        )
+        aggregate = (
+            next(
+                (
+                    other
+                    for other in loans
+                    if other is not loan
+                    and (other.get("debt_category") or "") == rule.category
+                    and rule.aggregate_marker in _lender_key(other)
+                ),
+                None,
+            )
+            if rule is not None
+            else None
+        )
+        if rule is None or aggregate is None:
+            kept.append(loan)
+            continue
+
+        amount = _row_amount_kes(loan)
+        dropped.append(
+            {
+                "lender": loan.get("lender"),
+                "debt_category": category,
+                "amount_kes": amount,
+                "already_counted_by": aggregate.get("lender"),
+                "reason": rule.because,
+            }
+        )
+        logger.warning(
+            "Dropping %s (KES %.1fBn, %s): %s already counts it — %s. Carrying "
+            "both would publish the same debt twice.",
+            loan.get("lender"),
+            amount / 1e9,
+            category,
+            aggregate.get("lender"),
+            rule.because,
+        )
+
+    if not dropped:
+        return payload
+
+    meta = dict(payload.get("metadata", {}))
+    meta["subsumed_rows_dropped"] = dropped
+    meta["subsumed_rows_dropped_kes"] = sum(d["amount_kes"] for d in dropped)
+    return {**payload, "loans": kept, "metadata": meta}
+
+
 def _published_bond_stock_kes(payload: Dict[str, Any]) -> float | None:
     """CBK's own domestic Treasury-bond total from the loans payload.
 
@@ -192,7 +328,7 @@ def fetch_debt_payload(
 
     if not settings.live_pdf_fetch_enabled:
         logger.info("Live fetch disabled; using fixture for national debt")
-        return payload
+        return _drop_subsumed_rows(payload)
 
     # ── Overlay: World Bank IDS per-creditor external debt ─────────
     try:
@@ -305,6 +441,11 @@ def fetch_debt_payload(
         meta["cbk_bulletin_overlay_applied"] = True
         meta["cbk_bulletin_overlay_count"] = len(cbk_loans)
         payload["metadata"] = meta
+
+    # ── Enforce: no row beside an aggregate that already counts it ──
+    # After every overlay, because this is the list that gets summed into the
+    # headline. See _drop_subsumed_rows.
+    payload = _drop_subsumed_rows(payload)
 
     # ── Attach: instrument-level Treasury bond register ────────────
     # NOT an overlay. The register is a list of individual securities with

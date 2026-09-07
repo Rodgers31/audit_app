@@ -4,7 +4,7 @@
     "description": "Kenya national government debt breakdown by lender category, sourced from CBK quarterly public debt bulletins",
     "units": "kes",
     "last_updated": "2025-04-30",
-    "notes": "MIXED VINTAGE — say so wherever this is cited. The domestic instrument rows (Treasury Bonds, Treasury Bills, CBK Overdraft, Advances from Commercial Banks) were re-sourced from the CBK Statistical Bulletin of December 2025, Tables 4.1.3 and 4.1.4, by the 2026-08-29 correction. The external rows (multilateral, bilateral, commercial) still carry the April 2025 baseline and have NOT been re-sourced. The rows are aggregate categories, not individual instruments, so this register is coarser than Kenya's actual portfolio. Its sum is not a figure any publisher states: CBK's own aggregate for December 2025 is KES 12.299T against this register's ~13.55T, and the two are unreconciled. Do not label this register with a single bulletin issue date."
+    "notes": "MIXED VINTAGE — say so wherever this is cited. The domestic instrument rows (Treasury Bonds, Treasury Bills, CBK Overdraft, Advances from Commercial Banks) were re-sourced from the CBK Statistical Bulletin of December 2025, Tables 4.1.3 and 4.1.4, by the 2026-08-29 correction. The external rows (multilateral, bilateral, commercial) still carry the April 2025 baseline and have NOT been re-sourced. The rows are aggregate categories, not individual instruments, so this register is coarser than Kenya's actual portfolio. Its sum is not a figure any publisher states: CBK's own aggregate for December 2025 is KES 12.299T against this register's ~13.55T, and the two are unreconciled. Do not label this register with a single bulletin issue date. 2026-09-06 correction: the separate KES 300B \"Domestic Infrastructure & Green Bonds\" row was REMOVED. Infrastructure and green bonds are Treasury bonds in CBK's own classification and sit inside the single Treasury Bonds column of Statistical Bulletin Table 4.1.4 \u2014 which is the column the live overlay writes into the Treasury Bonds row here, and which this row's own note already declared it includes. Carrying both put KES 300B of the same bonds in the published total twice. Do not re-add it: CBK publishes no infrastructure-bond line to source it from, and the fetcher now drops any row a row in the same category already counts."
   },
   "source_url": "https://www.centralbank.go.ke/uploads/statistical_bulletin/107371226_Statistical%20Bulletin%20-%20December%202025.pdf",
   "source_title": "Instrument register — CBK public debt statistics (domestic instruments: Statistical Bulletin, December 2025, Tables 4.1.3/4.1.4; external rows: April 2025 baseline, not yet re-sourced)",
@@ -151,19 +151,6 @@
       "maturity_date": null,
       "currency": "KES",
       "notes": "Fixed and floating rate Treasury bonds. Includes infrastructure bonds. Weighted average yield ~14.5% (2025 auctions)."
-    },
-    {
-      "entity_name": "National Government",
-      "entity_type": "national",
-      "lender": "Domestic Infrastructure & Green Bonds",
-      "debt_category": "domestic_bonds",
-      "principal": "300000000000.00",
-      "outstanding": "300000000000.00",
-      "interest_rate": "13.00",
-      "issue_date": "2015-01-01",
-      "maturity_date": null,
-      "currency": "KES",
-      "notes": "Tax-exempt infrastructure bonds and green bonds. Popular with retail and institutional investors."
     },
     {
       "entity_name": "National Government",
