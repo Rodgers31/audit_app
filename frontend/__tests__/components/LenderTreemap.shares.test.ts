@@ -197,3 +197,58 @@ describe('the API response the treemap actually receives', () => {
     expect(categories[0].otherOutstanding).toBe(0);
   });
 });
+
+/**
+ * Creditor names reach the treemap through this same adapter, so the padding
+ * the source API ships has to be gone by the time a lender row exists.
+ *
+ * World Bank IDS pads its creditor labels to a fixed column width with
+ * non-breaking spaces and the seeding writer stores them verbatim, so /debt
+ * rendered "Top: Multilateral (World Bank-IDA<25 NBSPs>)" in the drill-down.
+ * Display only — the stored value is the seeding writer's join key and is not
+ * touched. See lib/debt/lenderName.
+ *
+ * Strings below are verbatim from GET /api/v1/debt/national on 2026-09-06.
+ */
+describe('creditor names carry no source padding by the time they are drawn', () => {
+  const NBSP = '\u00a0';
+  const PADDED: Record<string, ApiCategory> = {
+    external_multilateral: {
+      total_outstanding: 2_695_722_058_890,
+      items: [
+        { lender: `Multilateral (World Bank-IDA${NBSP.repeat(25)})`, outstanding: 1_600_000_000_000 },
+        { lender: `Multilateral (African Dev. Bank${NBSP.repeat(9)})`, outstanding: 524_800_000_000 },
+        { lender: `Multilateral (World Bank-IBRD${NBSP.repeat(25)})`, outstanding: 262_500_000_000 },
+      ],
+    },
+    domestic_bonds: { total_outstanding: 5_878_982_400_000, items: [] },
+  };
+
+  it('trims the padding out of every lender name', () => {
+    const { categories } = toTreemapCategories(PADDED);
+    const names = categories.flatMap((c) => c.lenders.map((l) => l.lender));
+    expect(names).toEqual([
+      'Multilateral (World Bank-IDA)',
+      'Multilateral (African Dev. Bank)',
+      'Multilateral (World Bank-IBRD)',
+    ]);
+  });
+
+  it('leaves no invisible whitespace anywhere in the drawn names', () => {
+    const { categories } = toTreemapCategories(PADDED);
+    for (const c of categories) {
+      for (const l of c.lenders) {
+        expect(l.lender).not.toMatch(/[\u00a0\u2000-\u200d\u202f\u205f\u3000\ufeff]/);
+        expect(l.lender).not.toMatch(/\s\s/);
+      }
+    }
+  });
+
+  it('does not disturb the amounts beside the names', () => {
+    const { categories } = toTreemapCategories(PADDED);
+    const multi = categories.find((c) => c.category === 'external_multilateral')!;
+    expect(multi.lenders.map((l) => l.outstanding)).toEqual([
+      1_600_000_000_000, 524_800_000_000, 262_500_000_000,
+    ]);
+  });
+});
