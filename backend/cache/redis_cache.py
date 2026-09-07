@@ -9,8 +9,30 @@ from functools import wraps
 from typing import Any, Callable, Optional
 
 import redis
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
+
+
+def _json_default(obj: Any) -> Any:
+    """Encode the one type endpoint handlers legitimately hand the cache.
+
+    A FastAPI handler that declares ``response_model`` returns the MODEL — the
+    framework validates and serialises it on the way out. ``json.dumps`` does
+    not know how to encode one, so before issue #184 the write raised
+    ``TypeError``, was swallowed, and the endpoint ran uncached forever.
+
+    ``mode="json"`` resolves nested models, datetimes, Decimals and enums to
+    JSON-native types, so what lands in Redis is what FastAPI would have sent
+    for that same model.
+
+    Deliberately narrow. Anything that is NOT a model still raises, and the
+    caller counts and reports it — a cache that quietly re-encodes whatever it
+    is given cannot tell you when a value is wrong.
+    """
+    if isinstance(obj, BaseModel):
+        return obj.model_dump(mode="json")
+    raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
 
 
 class RedisCache:
@@ -26,11 +48,20 @@ class RedisCache:
     #: Weak refs so the registry can never itself become a leak.
     _instances: "weakref.WeakSet[RedisCache]" = weakref.WeakSet()
 
+    #: How many values were dropped because they can NEVER be serialised.
+    #: Class-level defaults so an instance built without __init__ still reports.
+    #: This is a PERMANENT condition, unlike a Redis outage, and health_check()
+    #: surfaces it separately for exactly that reason — see set().
+    _unserialisable_values: int = 0
+    _last_unserialisable: Optional[str] = None
+
     def __init__(self, redis_url: str = None):
         self.redis_url = redis_url or os.getenv("REDIS_URL", "redis://localhost:6379")
         self.client: Optional[redis.Redis] = None
         self._memory_cache = {}  # {key: (value, expiry_timestamp)}
         self._memory_cache_max_size = 1024
+        self._unserialisable_values = 0
+        self._last_unserialisable = None
         RedisCache._instances.add(self)
         self._initialize()
 
@@ -73,10 +104,41 @@ class RedisCache:
         return None
 
     def set(self, key: str, value: Any, ttl: int = 3600):
-        """Set value in cache with TTL."""
+        """Set value in cache with TTL.
+
+        Serialisation and transport are attempted separately because they fail
+        for opposite reasons and need opposite responses:
+
+        * **Serialisation** failure is PERMANENT. The value can never be
+          cached, so the endpoint re-runs its query on every request until the
+          code changes. It is counted, not just logged.
+        * **Transport** failure is TRANSIENT. Redis is unreachable now and the
+          next write may well succeed.
+
+        One ``except Exception`` used to cover both and log them identically as
+        ``Cache set error``, so four model-returning endpoints ran uncached in
+        production and the only symptom read like a Redis blip (issue #184).
+        """
+        try:
+            payload = json.dumps(value, default=_json_default)
+        except (TypeError, ValueError) as exc:
+            self._unserialisable_values += 1
+            self._last_unserialisable = f"{key}: {type(exc).__name__}: {exc}"
+            logger.error(
+                "Cache set SKIPPED — the value for %r can never be serialised "
+                "(%s: %s). This is not a Redis outage and will not heal on its "
+                "own: this key re-runs its query on every request until the "
+                "value is made JSON-serialisable. Total such values: %d",
+                key,
+                type(exc).__name__,
+                exc,
+                self._unserialisable_values,
+            )
+            return
+
         try:
             if self.client:
-                self.client.setex(key, ttl, json.dumps(value))
+                self.client.setex(key, ttl, payload)
             else:
                 # Fallback to memory cache with TTL
                 if len(self._memory_cache) >= self._memory_cache_max_size:
@@ -89,9 +151,14 @@ class RedisCache:
                     if len(self._memory_cache) >= self._memory_cache_max_size:
                         oldest_key = next(iter(self._memory_cache))
                         del self._memory_cache[oldest_key]
-                self._memory_cache[key] = (value, time.time() + ttl)
+                # Store what Redis WOULD have stored, not the live object.
+                # Development and CI have no Redis, so this branch is the only
+                # one they ever take; keeping it un-normalised is precisely why
+                # #184 was invisible everywhere except production. A cache hit
+                # now yields the same shape here as it does on Render.
+                self._memory_cache[key] = (json.loads(payload), time.time() + ttl)
         except Exception as e:
-            logger.error(f"Cache set error: {e}")
+            logger.error(f"Cache set error (transport) for {key!r}: {e}")
 
     def delete(self, key: str):
         """Delete key from cache."""
@@ -121,7 +188,18 @@ class RedisCache:
             logger.error(f"Cache clear error: {e}")
 
     def health_check(self) -> dict:
-        """Check Redis health status."""
+        """Check Redis health status.
+
+        ``unserialisable_values`` is reported on EVERY path, including the
+        healthy one. A connected, responsive Redis that is being handed values
+        it can never store is exactly the production state issue #184 sat in
+        for months, and a health report that only describes the connection
+        cannot distinguish it from a cache that is working.
+        """
+        serialisation = {"unserialisable_values": self._unserialisable_values}
+        if self._last_unserialisable:
+            serialisation["last_unserialisable"] = self._last_unserialisable
+
         try:
             if self.client:
                 self.client.ping()
@@ -131,6 +209,7 @@ class RedisCache:
                     "connected_clients": info.get("connected_clients", 0),
                     "used_memory": info.get("used_memory_human", "unknown"),
                     "uptime_seconds": info.get("uptime_in_seconds", 0),
+                    **serialisation,
                 }
         except Exception as e:
             logger.error(f"Redis health check failed: {e}")
@@ -138,6 +217,7 @@ class RedisCache:
         return {
             "status": "unavailable" if self.client else "using_memory_cache",
             "message": "Using in-memory fallback cache",
+            **serialisation,
         }
 
 
