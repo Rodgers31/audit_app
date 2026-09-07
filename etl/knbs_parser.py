@@ -28,6 +28,78 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+# ──────────────────────────────────────────────────────────────────
+# What a year is, and what a population is
+#
+# These bound two columns this parser reads by header substring. It
+# matched the header "Years and abov" — a fragment of the shattered
+# TITLE of Table 1.2.1 in a county Statistical Abstract — as a year
+# column, and "f Population A" as a population column, then wrote
+# whatever integers those columns held. That produced twelve rows for
+# Samburu from source_document 524: eleven with years 130, 135, 220,
+# 232, 252, 335, 396, 399, 531, 621 and 897, and one at 20,317,126
+# people against the county's real 310,327.
+# ──────────────────────────────────────────────────────────────────
+
+#: KNBS publishes contemporary statistics; nothing it reports is dated
+#: outside this range, so an integer outside it is not a year at all.
+MIN_DATA_YEAR = 1900
+MAX_DATA_YEAR = 2100
+
+#: Kenya's largest county at the 2019 census is Nairobi, 4,397,073.
+#: The ceiling carries headroom for growth. A larger figure inside a
+#: single county's abstract is a national aggregate, a different
+#: metric, or a column we misread — it is not that county's population.
+MAX_COUNTY_POPULATION = 6_000_000
+
+#: Kenya's own population, for documents that are about the country.
+MIN_NATIONAL_POPULATION = 10_000_000
+MAX_NATIONAL_POPULATION = 100_000_000
+
+#: Below this a "population" is a sample, a household count or a stray
+#: cell rather than the population of a place we publish.
+MIN_PLAUSIBLE_POPULATION = 10_000
+
+
+def _parse_calendar_year(cell: Any) -> Optional[int]:
+    """The calendar year stated in ``cell``, or ``None`` if it states none.
+
+    Accepts a bare year and the leading year of a range or fiscal label
+    ("2019", "2019/20", "2019-20"). Returns ``None`` for anything else —
+    an age, a count, a code — rather than coercing it with ``int()``.
+    """
+    if cell is None:
+        return None
+    text = str(cell).strip()
+    if not text:
+        return None
+    match = re.search(r"\b(1[89]\d{2}|20\d{2})\b", text)
+    if match is None:
+        return None
+    year = int(match.group(1))
+    return year if MIN_DATA_YEAR <= year <= MAX_DATA_YEAR else None
+
+
+def _column_holds_years(table: List[List], col: int) -> bool:
+    """Whether column ``col`` actually contains calendar years.
+
+    A header can only be trusted about its own column once the column
+    agrees with it. Every non-empty cell must parse as a year, and there
+    must be at least one — an empty column proves nothing.
+    """
+    seen = 0
+    for row in table[1:]:
+        if not row or len(row) <= col:
+            continue
+        cell = row[col]
+        if cell is None or not str(cell).strip():
+            continue
+        seen += 1
+        if _parse_calendar_year(cell) is None:
+            return False
+    return seen > 0
+
+
 @dataclass
 class EconomicIndicator:
     """Data class for economic indicator."""
@@ -507,8 +579,43 @@ class KNBSParser:
     def _extract_population_from_text(
         self, text: str, year: Optional[int], county: Optional[str] = None
     ) -> Optional[PopulationData]:
-        """Extract population data from text with enhanced patterns."""
+        """Extract population data from text with enhanced patterns.
+
+        National documents only. See the guard below for why a county's
+        population is never taken from free text.
+        """
         if not text or len(text) < 50:
+            return None
+
+        # A county's population is not recoverable from free text, so this
+        # refuses rather than guesses.
+        #
+        # The patterns below are anchored on the word "population" only
+        # optionally — pattern 2's trailing (people|persons|inhabitants) is
+        # an optional group — so in practice the first comma-formatted number
+        # in the document wins. Across a county Statistical Abstract that is
+        # a lottery among sub-county counts, household counts, enrolment,
+        # livestock and areas. Run against Samburu's, it returns 21,090, from
+        # "covering an area of 21,090 square kilometers".
+        #
+        # The band that used to sit at the bottom of this method hid that by
+        # being Kenya's — 10M to 100M — which for a single county rejects
+        # every real figure and accepts only national-scale ones. That is not
+        # a filter that happened to be wrong; for a county document it has no
+        # correct output at all, and what it let through was 20,317,126 as
+        # Samburu's population, published on the county page as "20.32M
+        # residents" with a per-capita budget of KES 399.14.
+        #
+        # County populations come from a table, where the column can be
+        # identified and checked — see
+        # backend/seeding/extractors/knbs_census_population.py, which reads
+        # Census Table 2.2 and gates on the table's own arithmetic.
+        if county:
+            logger.debug(
+                "Not reading a population for %s out of free text: the "
+                "county's own figure is not identifiable this way",
+                county,
+            )
             return None
 
         # Clean and normalize text
@@ -544,8 +651,10 @@ class KNBSParser:
                     else:
                         population = int(float(pop_str))
 
-                    # Sanity check: Kenya's population should be between 10M and 100M
-                    if 10_000_000 <= population <= 100_000_000:
+                    # Sanity check: this is Kenya's population, and the guard
+                    # at the top of the method has already ruled out anything
+                    # county-scoped reaching here.
+                    if MIN_NATIONAL_POPULATION <= population <= MAX_NATIONAL_POPULATION:
                         logger.info(
                             f"📊 Extracted population: {population:,} for {county or 'Kenya'}"
                         )
@@ -903,6 +1012,41 @@ class KNBSParser:
                     county_col = i
 
             if pop_col is not None:
+                # A column whose header matched "year"/"period" has to hold
+                # years. pdfplumber shatters a table's title across the header
+                # row — "Table 1.2.1. Distribution of Population Aged 5 Years
+                # and above by Activity Status, Sex, County and Sub-County,
+                # 2019" arrives as ['Table 1.2.1.', 'Distribution o',
+                # 'f Population A', 'ged', '', '5', 'Years and abov', ...] —
+                # so "Years and abov" is taken for a year column and
+                # "f Population A" for a population column. Neither is one.
+                #
+                # If the year column holds no years then we have not
+                # understood this table, and the population column is no more
+                # trustworthy than the year column. Emit nothing: a figure we
+                # cannot place in time is not a figure a reader can check.
+                if year_col is not None and not _column_holds_years(
+                    table, year_col
+                ):
+                    logger.warning(
+                        "Rejecting table: header %r was read as a year column "
+                        "but holds no calendar years — the table's columns "
+                        "have not been identified, so no population row from "
+                        "it can be published",
+                        headers[year_col],
+                    )
+                    return
+
+                # Which "too big" applies depends on what the document is
+                # about. Kenya's band admits any county-sized figure AND any
+                # national one, which is how 20,317,126 was published as
+                # Samburu's population.
+                max_population = (
+                    MAX_COUNTY_POPULATION
+                    if metadata.get("county")
+                    else MAX_NATIONAL_POPULATION
+                )
+
                 for row in table[1:]:
                     if len(row) <= pop_col:
                         continue
@@ -918,21 +1062,23 @@ class KNBSParser:
                         )
                         population = int(float(pop_str))
 
-                        # Get year if available
+                        # Get year if available. The column has been shown to
+                        # hold years, so a cell that still fails to parse is
+                        # this row's own gap: fall back to the year the
+                        # document is filed under, never to the raw cell.
                         year = metadata.get("year")
                         if year_col is not None and len(row) > year_col:
-                            try:
-                                year = int(str(row[year_col]).strip())
-                            except:
-                                pass
+                            row_year = _parse_calendar_year(row[year_col])
+                            if row_year is not None:
+                                year = row_year
 
                         # Get county if available
                         county = metadata.get("county")
                         if county_col is not None and len(row) > county_col:
                             county = str(row[county_col]).strip()
 
-                        # Sanity check
-                        if 10_000 <= population <= 100_000_000:
+                        # Sanity check, scoped to what this document is about
+                        if MIN_PLAUSIBLE_POPULATION <= population <= max_population:
                             pop_data = {
                                 "total_population": population,
                                 "year": year,
