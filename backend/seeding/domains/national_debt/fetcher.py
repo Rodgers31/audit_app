@@ -20,6 +20,28 @@ Strategy
    ``cbk_bulletin.py`` for the parsing approach (text-mode regex
    because pdfplumber's table extractor smushes the cells).
 
+When the external pull is quarantined, this publishes NOTHING
+------------------------------------------------------------
+Step 2's replacement is gated (see ``wb_ids_creditors``). When a gate refuses
+the pull, this fetcher raises ``DebtRegisterIncomplete`` rather than returning
+a payload carrying the fixture's external rows.
+
+It used to return them, and that is the more dangerous behaviour. Measured on a
+live run with the pull forced to quarantine, the fixture publishes a **13.34T**
+headline against the gated register's 12.22T — Eurobonds at 2,276Bn where IDS
+reports ~890Bn, syndicated banks at 400Bn against ~124Bn. So a gate doing its
+job correctly would have put the worst number in this codebase on the homepage,
+loudly in the log and invisibly on the page.
+
+Raising fails the domain with zero writes (``__init__.run`` catches it), so the
+previous seed's rows stand and the freshness/staleness gates see a run that did
+not reach its publisher. Stale and correct beats fresh and 1.1T wrong.
+
+Two things this deliberately does NOT do. It does not drop the external rows
+and publish a domestic-only 6.76T — that is a different wrong number, not a
+safer one. And it does not apply when ``live_pdf_fetch_enabled`` is False,
+which is the offline/dev path where the fixture is the declared source.
+
 Why we dropped the CBK PDF discovery path
 -----------------------------------------
 The original `_fetch_from_cbk_pdf` scraped
@@ -50,6 +72,16 @@ from .wb_ids_creditors import fetch_external_creditors
 from .wb_ids import fetch_external_debt_from_wb_ids
 
 logger = logging.getLogger("seeding.national_debt.fetcher")
+
+
+class DebtRegisterIncomplete(RuntimeError):
+    """The register could not be assembled, so nothing may be published.
+
+    Raised instead of returning a payload whose external rows are the fixture's.
+    The domain's ``run`` turns this into a failed run with zero writes, which
+    leaves the previous seed's rows in place — see the module docstring for why
+    publishing the fixture is the worse of the two.
+    """
 
 
 # Domestic bond rows in the loans payload.
@@ -401,18 +433,50 @@ def fetch_debt_payload(
             external_creditors["year"],
         )
     else:
-        # A silent skip publishes the fixture's external rows, which this
-        # module's own comment records as overstating the book (+165% on
-        # Eurobonds against IDS). Say so, in the log AND in the payload, so a
-        # run that quietly fell back is visible rather than looking healthy.
-        meta = dict(payload.get("metadata", {}))
-        meta["ids_creditor_replacement_applied"] = False
-        meta["ids_creditor_skip_reason"] = ids_skip_reason or "not_attempted"
-        payload["metadata"] = meta
-        logger.warning(
-            "IDS creditor replacement did NOT apply (%s) — external debt is "
-            "being served from the fixture, which overstates it",
-            ids_skip_reason or "not_attempted",
+        # PUBLISH NOTHING. Not the fixture.
+        #
+        # Falling back used to look like the cautious option. It is the
+        # opposite. Measured on a live run with the pull forced to quarantine,
+        # what the fixture publishes is:
+        #
+        #   external              6,584.7Bn   (against 5,465.8 from the pull)
+        #     Eurobonds             2,276.0Bn — IDS reports ~890Bn, 2.6x
+        #     Commercial banks        400.0Bn — IDS reports ~124Bn, 3.2x
+        #   HEADLINE                  13.34T   (against 12.22T)
+        #
+        # So the gate firing correctly would put the single worst number in
+        # this codebase on the homepage — 1.1T above the register, and roughly
+        # the figure the 2026-09-06 audit was opened over. Loud in the log,
+        # invisible on the page. A gate whose failure mode is worse than its
+        # success is not protecting anything.
+        #
+        # Raising instead fails the domain with zero writes, so the PREVIOUS
+        # seed's rows stand and the staleness gate sees a run that did not
+        # reach the publisher (freshness records no live mode for it). Stale
+        # and correct beats fresh and 1.1T wrong.
+        #
+        # Note this also abandons the CBK domestic overlay for the run, which
+        # is deliberate: the register is published as one total, and half of it
+        # refreshed beside a stale half is the mixed-basis problem in miniature.
+        # It is raised HERE, before the bulletin download, so a run that is
+        # already going to be refused does not spend the domain's time budget
+        # fetching a PDF it will discard.
+        reason = ids_skip_reason or "not_attempted"
+        logger.error(
+            "IDS creditor replacement did NOT apply (%s). REFUSING to publish "
+            "the national-debt register: the fixture's external rows overstate "
+            "the book (Eurobonds 2,276Bn against IDS's ~890Bn) and would put "
+            "~13.34T on the page against the register's ~12.22T. This run "
+            "writes nothing; the previous seed's rows stand.",
+            reason,
+        )
+        raise DebtRegisterIncomplete(
+            f"external creditor pull did not apply ({reason}), so the register "
+            f"would have published the fixture's external rows — which "
+            f"overstate the book by ~1.1T. Nothing was written; the previous "
+            f"seed's rows stand. Fix the pull (see the wb_ids_creditors "
+            f"warnings above for which gate refused it) rather than relaxing a "
+            f"gate."
         )
 
     # ── Overlay: CBK Statistical Bulletin domestic debt ────────────

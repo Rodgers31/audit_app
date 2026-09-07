@@ -79,6 +79,32 @@ def _cbk_bond_overlay() -> List[Dict[str, Any]]:
     ]
 
 
+def _external_pull_succeeded(*_args, **_kwargs):
+    """A gated external pull that applied.
+
+    Needed because a REFUSED pull no longer returns a payload at all — the
+    fetcher raises rather than publishing the fixture's external rows (see
+    test_national_debt_ids_visibility.py). These tests are about the domestic
+    bond category, so the external side has to succeed for them to reach it.
+    """
+    return {
+        "year": 2024,
+        "creditors": [object()],
+        "coverage": {"status": "within_band"},
+        "loans": [
+            {
+                "entity_name": "National Government",
+                "entity_type": "national",
+                "lender": "Multilateral (International Monetary Fund)",
+                "debt_category": "external_multilateral",
+                "principal": "668500000000.00",
+                "outstanding": "668500000000.00",
+                "currency": "KES",
+            }
+        ],
+    }
+
+
 def _domestic_bonds(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
     return [
         loan
@@ -111,7 +137,9 @@ def test_the_bond_category_publishes_cbks_figure_not_cbks_figure_plus_a_subset(
             nd_fetcher, "load_json_resource", return_value=_shipped_payload()
         ),
         patch.object(nd_fetcher, "fetch_external_debt_from_wb_ids", return_value=[]),
-        patch.object(nd_fetcher, "fetch_external_creditors", return_value=None),
+        patch.object(
+            nd_fetcher, "fetch_external_creditors", _external_pull_succeeded
+        ),
         patch.object(
             nd_fetcher,
             "fetch_domestic_debt_from_cbk_bulletin",
@@ -141,7 +169,9 @@ def test_the_bond_category_holds_no_aggregate_and_its_own_subset(settings):
             nd_fetcher, "load_json_resource", return_value=_shipped_payload()
         ),
         patch.object(nd_fetcher, "fetch_external_debt_from_wb_ids", return_value=[]),
-        patch.object(nd_fetcher, "fetch_external_creditors", return_value=None),
+        patch.object(
+            nd_fetcher, "fetch_external_creditors", _external_pull_succeeded
+        ),
         patch.object(
             nd_fetcher,
             "fetch_domestic_debt_from_cbk_bulletin",
