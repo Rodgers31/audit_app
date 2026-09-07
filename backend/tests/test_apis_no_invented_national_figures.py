@@ -344,16 +344,12 @@ def _rel(module: Path) -> str:
 # and ``test_quarantined_modules_still_carry_their_figures`` fails if a file is
 # cleaned without being taken off this list — so the list cannot rot into a
 # blanket exemption. Nothing goes in here without a reason a person signed.
-QUARANTINE: dict[str, tuple[int, str]] = {
-    "extractors/county/enhanced_county_extractor.py": (
-        20,
-        "issue #193 leaves this generator to the owner deliberately: the DATA "
-        "it modelled was already cleared from entity.meta by "
-        "backend/county_metrics_purge.py and migration ce6ed007f696, guarded "
-        "by backend/tests/test_stored_county_metrics_are_cleared.py, so the "
-        "figures below are not reaching anybody today",
-    ),
-}
+#
+# Empty since issue #198. Its one entry held
+# ``extractors/county/enhanced_county_extractor.py`` at 20 findings, all of
+# them inside ``generate_mock_comprehensive_county_data``; that method was
+# withdrawn and the file now goes through the sweep below like any other.
+QUARANTINE: dict[str, tuple[int, str]] = {}
 
 
 def test_the_scanned_directories_are_where_we_think_they_are():

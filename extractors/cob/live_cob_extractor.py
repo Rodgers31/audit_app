@@ -341,9 +341,12 @@ class LiveCOBExtractor:
 
             info["preview_text"] = text_content[:500]  # First 500 characters
 
-            # Look for county names in content
+            # Look for county names in content. The five below are SEARCH TERMS,
+            # not a selection: counties_found reports which of them appear in the
+            # text. The probe is incomplete, so an empty result means "none of
+            # these five", never "no county is mentioned".
             counties_found = []
-            for county in [
+            for county in [  # counties-literal-ok: search terms, see above
                 "Nairobi",
                 "Mombasa",
                 "Nakuru",
