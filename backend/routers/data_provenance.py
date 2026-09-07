@@ -20,7 +20,10 @@ from pydantic import BaseModel
 from sqlalchemy import func, desc
 from sqlalchemy.orm import Session
 
-from services.publication_gate import publishable_audit_criterion
+from services.publication_gate import (
+    loan_is_modelled_fixture,
+    publishable_audit_criterion,
+)
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -29,6 +32,7 @@ try:
     from models import (
         Audit,
         BudgetLine,
+        DebtCategory,
         DebtTimeline,
         EconomicIndicator,
         Entity,
@@ -41,6 +45,7 @@ try:
         Loan,
         PopulationData,
         PovertyIndex,
+        RevenueBySource,
         SourceDocument,
     )
 
@@ -270,6 +275,80 @@ def _grade_verification(verification) -> None:
         verification.verification_status = "unverified"
         if not getattr(verification, "reason", None):
             verification.reason = "no resolvable source document"
+
+
+def _attach_source_document(verification, db, source_document_id) -> None:
+    """Resolve a ``source_document_id`` onto the verification, or say nothing.
+
+    Written once for the four branches added here rather than copied four
+    times. The older branches still carry their own inline copy, and the drift
+    that produces is already visible: ``population_data`` and ``budget_lines``
+    set ``fetch_date``, ``gdp_data`` and ``loans`` do not, for no reason but
+    the copies falling out of step. Folding them in is a separate change.
+    """
+    if not source_document_id:
+        return
+    doc = (
+        db.query(SourceDocument)
+        .filter(SourceDocument.id == source_document_id)
+        .first()
+    )
+    if doc is None:
+        return
+    verification.source_document = doc.title
+    verification.source_url = doc.url
+    verification.publisher = doc.publisher
+    verification.fetch_date = doc.fetch_date.isoformat() if doc.fetch_date else None
+
+
+def _note_document_integrity(verification, db, source_document_id) -> None:
+    """Append what CAN be said about the stored document, without fetching it.
+
+    This does not upgrade the status and does not soften the sentence
+    ``_grade_verification`` writes — it only adds a fact that sentence leaves
+    open. "The document has not been fetched" is true either way; whether an
+    md5 is on file decides whether a reissued document *could* ever be
+    detected, and that is the difference between a chain that can be closed
+    later and one that cannot.
+
+    Measured on production 2026-09-06: 2,158 of 2,327 source documents carry an
+    md5, but the four documents behind fiscal summaries, revenue by source and
+    pending bills carry none — they were written by ETL code that never held
+    the bytes. Saying so is cheap and true. Re-fetching the URL from inside a
+    public request handler to prove it still resolves is neither, so this
+    stops short of claiming it.
+    """
+    if not source_document_id or not verification.reason:
+        return
+    doc = (
+        db.query(SourceDocument)
+        .filter(SourceDocument.id == source_document_id)
+        .first()
+    )
+    if doc is None:
+        return
+    if getattr(doc, "md5", None):
+        verification.reason += (
+            "; an md5 is on file for the document, so a reissue would be "
+            "detectable once the file is re-fetched"
+        )
+    else:
+        verification.reason += (
+            "; no md5 is on file for the document, so a reissued or edited "
+            "file could not be detected"
+        )
+
+
+def _fiscal_year_matches(column, year: int):
+    """SQL condition: this ``FY 2024/25``-style label starts in ``year``.
+
+    The trailing slash is load-bearing. ``LIKE '%2024%'`` would also be
+    correct here, but only by accident — it happens not to collide with
+    "FY 2023/24" because those digits are not adjacent. ``'%2024/%'`` says what
+    is actually meant (the year the label OPENS in) and matches both stored
+    shapes, "FY 2024/25" and "2024/25".
+    """
+    return column.like(f"%{year}/%")
 
 
 @router.get(
@@ -607,6 +686,7 @@ async def verify_data_point(
                      "url": "https://www.knbs.or.ke/2019-kenya-population-and-housing-census-results/"},
                 ]
                 _grade_verification(verification)
+                _note_document_integrity(verification, db, record.source_document_id)
 
         elif table_name == "gdp_data":
             query = db.query(GDPData)
@@ -631,6 +711,7 @@ async def verify_data_point(
                     {"cross_check": "World Bank", "url": "https://data.worldbank.org/indicator/NY.GDP.MKTP.CN?locations=KE"},
                 ]
                 _grade_verification(verification)
+                _note_document_integrity(verification, db, record.source_document_id)
 
         elif table_name == "audits":
             # Only rows that pass the publication gate. This branch previously
@@ -671,6 +752,7 @@ async def verify_data_point(
                     "resolves to a source document; the URL has not been "
                     "fetched, md5 not checked, page locator not required"
                 )
+                _note_document_integrity(verification, db, record.source_document_id)
 
         elif table_name == "loans":
             query = db.query(Loan)
@@ -688,6 +770,7 @@ async def verify_data_point(
                 if record.provenance:
                     verification.provenance_chain = record.provenance
                 _grade_verification(verification)
+                _note_document_integrity(verification, db, record.source_document_id)
 
         elif table_name == "budget_lines":
             # /sources promised a reader could "trace any county's budget
@@ -760,6 +843,7 @@ async def verify_data_point(
                             doc.fetch_date.isoformat() if doc.fetch_date else None
                         )
                 _grade_verification(verification)
+                _note_document_integrity(verification, db, record.source_document_id)
                 # County budget lines are modelled from the CRA equitable-share
                 # formula, not read from a CoB table. A resolvable source
                 # document does not make the FIGURE sourced, so say so rather
@@ -805,6 +889,9 @@ async def verify_data_point(
                         verification.source_url = doc.url
                         verification.publisher = doc.publisher
                 _grade_verification(verification)
+                _note_document_integrity(
+                    verification, db, getattr(record, "source_document_id", None)
+                )
                 # 2013-2021 are round-number estimates across external,
                 # domestic AND total at once — no CBK table produces that.
                 # Flag the row rather than grading an estimate as sourced.
@@ -816,12 +903,178 @@ async def verify_data_point(
                         "published CBK table produces"
                     )
 
+        elif table_name == "fiscal_summaries":
+            # Every national headline on /budget — appropriated budget, total
+            # revenue, debt service — reads this table, and asking where those
+            # figures came from answered "Unknown table". The chain exists:
+            # FiscalSummary.source_document_id is populated on all 29 rows.
+            _fs_query = db.query(FiscalSummary)
+            if year:
+                _fs_query = _fs_query.filter(
+                    _fiscal_year_matches(FiscalSummary.fiscal_year, year)
+                )
+            record = _fs_query.order_by(desc(FiscalSummary.fiscal_year)).first()
+            if record is None:
+                verification.reason = "no_rows_for_year" if year else "no_rows"
+            else:
+                # The money columns are nullable and correctly NULL for years
+                # nobody measured — FY 2021/22 and earlier carry no
+                # total_revenue. Reporting that as "KES 0 appropriated" would
+                # manufacture the zero this endpoint exists to expose, so
+                # absence is reported as absence.
+                if record.appropriated_budget is None:
+                    verification.value = None
+                    verification.reason = (
+                        "no appropriated budget recorded for "
+                        f"{record.fiscal_year}"
+                    )
+                else:
+                    verification.value = (
+                        f"KES {float(record.appropriated_budget):,.0f} "
+                        f"appropriated budget ({record.fiscal_year})"
+                    )
+                _attach_source_document(verification, db, record.source_document_id)
+                _grade_verification(verification)
+                _note_document_integrity(verification, db, record.source_document_id)
+
+        elif table_name == "revenue_by_source":
+            # One row is one tax head for one year, so identify WHICH — a
+            # verification that cannot name its own data point is not one.
+            _rev_query = db.query(RevenueBySource)
+            if year:
+                _rev_query = _rev_query.filter(
+                    _fiscal_year_matches(RevenueBySource.fiscal_year, year)
+                )
+            record = (
+                _rev_query.order_by(
+                    desc(RevenueBySource.fiscal_year),
+                    # Rows with a figure first. Postgres sorts NULLs FIRST on a
+                    # DESC ordering, so without this the endpoint verified
+                    # "Other Tax Revenue · FY 2025/26" — a projection row with
+                    # no actual collected — and answered "no collection
+                    # recorded" while six rows carrying real KRA figures sat
+                    # behind it. Expressed as a boolean sort rather than NULLS
+                    # LAST so it means the same thing on SQLite.
+                    RevenueBySource.amount_billion_kes.is_(None),
+                    desc(RevenueBySource.amount_billion_kes),
+                    # Deterministic tiebreak. Six FY 2025/26 rows are all
+                    # projections with a NULL actual; without this the endpoint
+                    # can name a different one on each call, and a verification
+                    # that moves is not one.
+                    RevenueBySource.revenue_type,
+                )
+                .first()
+            )
+            if record is None:
+                verification.reason = "no_rows_for_year" if year else "no_rows"
+            else:
+                _rev_id = f"{record.revenue_type} · {record.fiscal_year}"
+                # amount_billion_kes is nullable BY DESIGN — the column holds
+                # NULL for projection rows that have a target but no actual.
+                # A zero would say the tax head collected nothing.
+                if record.amount_billion_kes is None:
+                    verification.value = None
+                    verification.reason = f"no collection recorded for {_rev_id}"
+                else:
+                    verification.value = (
+                        f"KES {float(record.amount_billion_kes):,.2f} billion "
+                        f"collected ({_rev_id})"
+                    )
+                _attach_source_document(verification, db, record.source_document_id)
+                _grade_verification(verification)
+                _note_document_integrity(verification, db, record.source_document_id)
+
+        elif table_name == "pending_bills":
+            # Pending bills are not their own table: they are Loan rows in the
+            # pending_bills category. Asking about "pending_bills" is what a
+            # reader would do, so the name is answered rather than corrected.
+            _pb_query = db.query(Loan).filter(
+                Loan.debt_category == DebtCategory.PENDING_BILLS
+            )
+            if entity_id:
+                _pb_query = _pb_query.filter(Loan.entity_id == entity_id)
+            record = _pb_query.order_by(desc(Loan.outstanding)).first()
+            if record is None:
+                verification.reason = (
+                    "no_pending_bill_rows_for_entity" if entity_id else "no_rows"
+                )
+            else:
+                verification.value = (
+                    f"KES {float(record.outstanding):,.0f} outstanding "
+                    f"({record.lender})"
+                )
+                _attach_source_document(verification, db, record.source_document_id)
+                if record.provenance:
+                    verification.provenance_chain = (
+                        record.provenance
+                        if isinstance(record.provenance, list)
+                        else [record.provenance]
+                    )
+                _grade_verification(verification)
+                _note_document_integrity(verification, db, record.source_document_id)
+                # The bootstrap fixture computes county pending bills as 8% of
+                # a budget that is itself population x KSh 4,500. Those rows
+                # resolve to a document too, and grading them on that alone
+                # would call a modelled figure sourced.
+                if loan_is_modelled_fixture(record):
+                    verification.verification_status = "modelled"
+                    _modelled = (
+                        "this row is the bootstrap fixture's modelled figure "
+                        "(8% of a population-derived budget), not a pending-bill "
+                        "total read from a Treasury or Controller of Budget table"
+                    )
+                    verification.reason = (
+                        f"{verification.reason}; {_modelled}"
+                        if verification.reason
+                        else _modelled
+                    )
+
+        elif table_name == "counties":
+            # Answered, and the answer is that the chain does not exist.
+            #
+            # Counties are Entity rows of type COUNTY. `entities` has no
+            # source_document_id and no provenance column (models.py:107-123),
+            # so there is nothing to resolve — a county's name, slug and
+            # metadata block cannot be traced to a document by this endpoint at
+            # all. Leaving the table out of the supported list said the same
+            # thing by omission, which a reader can only discover by guessing
+            # the name and getting a 400.
+            #
+            # The figures ABOUT a county do have chains, and they are named so
+            # a reader is not left at a dead end.
+            _c_query = db.query(Entity).filter(Entity.type == EntityType.COUNTY)
+            if entity_id:
+                _c_query = _c_query.filter(Entity.id == entity_id)
+            record = _c_query.order_by(Entity.canonical_name).first()
+            verification.verification_status = "unverified"
+            _no_chain = (
+                "the counties table carries no source document: `entities` has "
+                "no source_document_id and no provenance column, so a county "
+                "row cannot be traced to a document by this endpoint. Figures "
+                "about a county are traceable individually — try "
+                "budget_lines, population_data or pending_bills with the same "
+                "entity_id."
+            )
+            if record is None:
+                # "there is no such county" and "counties have no provenance
+                # chain" are different answers and both matter. An earlier
+                # draft of this branch set the first and then overwrote it with
+                # the second, which lost the only fact specific to the request.
+                _missing = (
+                    "no_county_for_entity_id" if entity_id else "no_rows"
+                )
+                verification.reason = f"{_missing}; {_no_chain}"
+            else:
+                verification.value = f"{record.canonical_name} (entity {record.id})"
+                verification.reason = _no_chain
+
         else:
             raise HTTPException(
                 status_code=400,
                 detail=(
                     f"Unknown table: {table_name}. Supported: population_data, "
-                    "gdp_data, audits, loans, budget_lines, debt_timeline"
+                    "gdp_data, audits, loans, budget_lines, debt_timeline, "
+                    "fiscal_summaries, revenue_by_source, pending_bills, counties"
                 ),
             )
 

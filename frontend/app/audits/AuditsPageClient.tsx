@@ -149,17 +149,22 @@ export default function AuditFindingsPage() {
   }, [trends]);
 
   // `0` here would mean "the Auditor-General issued no adverse or disclaimer
-  // opinion", which is a strong claim. What it actually means today is that
-  // the extraction produced only one opinion value ("Unmodified Opinion"), so
-  // neither key exists in the facet. Absent key -> null (renders "—"); present
-  // key with value 0 -> a real zero we can stand behind. Credibility audit F21.
+  // opinion", which is a strong claim. Absent key -> null (renders "—");
+  // present key with value 0 -> a real zero we can stand behind. Credibility
+  // audit F21.
+  //
+  // `findings_by_opinion` is now `null` outright whenever the facet contains
+  // no modified opinion at all, because the extraction records a modified
+  // opinion in the finding's HEADING ("Basis for Qualified Opinion") and never
+  // carries it into the opinion field — so every opinion it can show is a
+  // clean one. The keys are the canonical ISA 700 names the API returns.
   const adverseCount = useMemo<number | null>(() => {
     const byOpinion = summary?.findings_by_opinion;
     if (!byOpinion) return null;
-    const hasAdverse = 'Adverse' in byOpinion;
-    const hasDisclaimer = 'Disclaimer' in byOpinion;
+    const hasAdverse = 'Adverse Opinion' in byOpinion;
+    const hasDisclaimer = 'Disclaimer of Opinion' in byOpinion;
     if (!hasAdverse && !hasDisclaimer) return null;
-    return (byOpinion['Adverse'] || 0) + (byOpinion['Disclaimer'] || 0);
+    return (byOpinion['Adverse Opinion'] || 0) + (byOpinion['Disclaimer of Opinion'] || 0);
   }, [summary]);
 
   // --- Filter options ---
@@ -237,7 +242,9 @@ export default function AuditFindingsPage() {
             subtitle={
               adverseCount != null
                 ? 'Entities whose accounts drew a modified opinion'
-                : 'Opinion type not captured for this report'
+                : summary?.findings_by_opinion_reason
+                  ? 'Opinion mix withheld — modified opinions are not extracted'
+                  : 'Opinion type not captured for this report'
             }
           />
         </div>
@@ -498,13 +505,16 @@ export default function AuditFindingsPage() {
               options={typeOptions.map((t) => ({ value: t, label: t }))}
             />
 
-            {/* Opinion filter */}
-            <FilterSelect
-              label='Audit Opinion'
-              value={filters.audit_opinion || ''}
-              onChange={(v) => updateFilter('audit_opinion', v || undefined)}
-              options={opinionOptions.map((o) => ({ value: o, label: o }))}
-            />
+            {/* Opinion filter — hidden when the facet is withheld, rather than
+                rendered as a dropdown whose only option is "All". */}
+            {opinionOptions.length > 0 && (
+              <FilterSelect
+                label='Audit Opinion'
+                value={filters.audit_opinion || ''}
+                onChange={(v) => updateFilter('audit_opinion', v || undefined)}
+                options={opinionOptions.map((o) => ({ value: o, label: o }))}
+              />
+            )}
 
             {/* Severity filter */}
             <FilterSelect
