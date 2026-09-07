@@ -1,4 +1,5 @@
-"""No service under ``apis/`` may hand-pick a list of named counties.
+"""No module under ``apis/``, ``analysis/`` or ``extractors/`` may hand-pick a
+set of named counties.
 
 On 2026-09-07, ``apis/enhanced_county_analytics_api.py`` served this from
 ``GET /analytics/comprehensive``::
@@ -24,7 +25,7 @@ Lamu as the counties needing improvement is a statement of fact about five
 public bodies, actionable under the Defamation Act (Cap 36) whether or not the
 number beside it is flattering.
 
-THE RULE. A module under ``apis/`` may not contain a literal list of strings
+THE RULE. A module under one of the scanned roots may not contain a literal
 that names some-but-not-all of Kenya's 47 counties. A hand-typed subset IS the
 judgement — which counties made the list is the claim, and no amount of
 renaming the key changes that. The full 47 are exempt: a complete roster is a
@@ -32,6 +33,38 @@ reference table, not a selection.
 
 Renaming ``best_performing_counties`` to ``group_a`` therefore does not get you
 past this. A single county under a judgement-flavoured key does not either.
+
+TWO SHAPES, AND WHY THE SECOND WAS ADDED (issue #198). The original rule read
+list literals only. ``extractors/county/enhanced_county_extractor.py:210-260``
+wrote the same claim as a *mapping*::
+
+    county_profiles = {
+        "Nairobi City": {"audit_rating": "B+", "missing_funds": 2100000000,
+                         "major_issues": ["Delayed project implementation ...
+        "Mombasa":      {"audit_rating": "B",  "missing_funds": 890000000, ...
+        "Kiambu":       {"audit_rating": "A-", "missing_funds": 420000000, ...
+        "Nakuru":       {"audit_rating": "B+", "missing_funds": 680000000, ...
+    }
+
+Four of the 47 singled out, each given a grade no auditor issued, a
+missing-public-money figure nobody measured, and a named failing. Turning the
+list on its side does not make it reference data, so a county-keyed dict whose
+values are RECORDS — dicts, lists, tuples, sets — reads the same as a list.
+
+A county-keyed dict of SCALARS does not, and that distinction is load-bearing
+rather than convenient. ``official_county_budget_extractor.py:414``'s
+``economic_factors`` maps seven counties to a float and is read with
+``.get(county, 1.0)``, so every county gets a value and the seven names are
+parameters, not a selection. A per-county record says something *about* that
+county; a coefficient says something about the formula.
+
+WHY THE ROOTS GREW. This guard was rooted at ``apis/`` because that is where
+the payload it was written for sat. ``extractors/`` ships — ``Dockerfile:26``
+copies it into the production image — and the two guards beside this file
+(``test_apis_no_invented_national_figures.py``,
+``test_no_published_figure_from_hash_or_clock.py``) already scan all three
+roots. A claim about a named county government is the same claim whichever
+directory it is typed in.
 
 ESCAPE HATCH, following ``local/no-zero-fallback-on-published-figure`` (7b5d366):
 a suppression must carry a written reason. Put
@@ -50,7 +83,11 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-APIS_DIR = REPO_ROOT / "apis"
+SCANNED_ROOTS = (
+    REPO_ROOT / "apis",
+    REPO_ROOT / "analysis",
+    REPO_ROOT / "extractors",
+)
 
 # The 47 counties of the First Schedule to the Constitution of Kenya (2010).
 # Hardcoded deliberately: this guard must not weaken because a roster file
@@ -132,12 +169,34 @@ def _suppressed(source_lines: list[str], node: ast.AST) -> bool:
     return False
 
 
-def find_county_selections(source: str, where: str = "<source>") -> list[str]:
-    """Every hand-picked list of named counties in ``source``.
+def _county_names(strings: list[str]) -> set[str]:
+    """The canonical counties among ``strings``."""
+    return {
+        CANON_TO_COUNTY[_canonical(s)]
+        for s in strings
+        if _canonical(s) in CANON_TO_COUNTY
+    }
 
-    Returns human-readable descriptions, one per offending literal. Empty list
-    means clean. This is the detector; the tests below are two thin wrappers
-    around it, one over the real tree and one over a known-bad string.
+
+def _is_a_selection(named: set[str], total: int, judgemental: bool) -> bool:
+    """Is this set of names a hand-picked subset, or a verdict on one county?
+
+    (a) two or more of the 47, but not all 47, and mostly counties: the
+        selection IS the claim; or
+    (b) a single county under a verdict-shaped key.
+    """
+    subset = 2 <= len(named) < 47 and len(named) >= total / 2
+    return subset or (judgemental and len(named) >= 1)
+
+
+def find_county_selections(source: str, where: str = "<source>") -> list[str]:
+    """Every hand-picked set of named counties in ``source``.
+
+    Two shapes, both described in the module docstring: a list/tuple/set of
+    county-name strings, and a dict keyed by county names whose values are
+    RECORDS. Returns human-readable descriptions, one per offending literal.
+    Empty list means clean. This is the detector; the tests below are thin
+    wrappers around it, over the real tree and over known-bad strings.
     """
     tree = ast.parse(source, filename=where)
     labels = _labels(tree)
@@ -145,39 +204,47 @@ def find_county_selections(source: str, where: str = "<source>") -> list[str]:
     findings: list[str] = []
 
     for node in ast.walk(tree):
-        if not isinstance(node, (ast.List, ast.Tuple, ast.Set)):
+        if isinstance(node, (ast.List, ast.Tuple, ast.Set)):
+            elements = node.elts
+            if not elements:
+                continue
+            strings = [
+                e.value for e in elements
+                if isinstance(e, ast.Constant) and isinstance(e.value, str)
+            ]
+            if len(strings) != len(elements):
+                continue  # not a pure literal — a comprehension or computed list
+            shape = "list"
+        elif isinstance(node, ast.Dict):
+            pairs = [
+                (key.value, value)
+                for key, value in zip(node.keys, node.values)
+                if isinstance(key, ast.Constant) and isinstance(key.value, str)
+            ]
+            # ``{**base, "Nairobi": {...}}`` has a None key; a computed key is
+            # not a literal either. Either way this is not a hand-typed table.
+            if not pairs or len(pairs) != len(node.keys):
+                continue
+            # Only a dict of RECORDS. A county-keyed dict of scalars is a
+            # coefficient table read with .get(county, default), which gives
+            # every county a value — see the module docstring.
+            if not all(
+                isinstance(value, (ast.Dict, ast.List, ast.Tuple, ast.Set))
+                for _, value in pairs
+            ):
+                continue
+            strings = [key for key, _ in pairs]
+            shape = "mapping"
+        else:
             continue
-        elements = node.elts
-        if not elements:
-            continue
-        strings = [
-            e.value for e in elements
-            if isinstance(e, ast.Constant) and isinstance(e.value, str)
-        ]
-        if len(strings) != len(elements):
-            continue  # not a pure literal — a comprehension or computed list
 
-        named = {
-            CANON_TO_COUNTY[_canonical(s)]
-            for s in strings
-            if _canonical(s) in CANON_TO_COUNTY
-        }
+        named = _county_names(strings)
         if not named:
             continue
 
         label = labels.get(id(node), "")
         judgemental = any(word in label.lower() for word in JUDGEMENT_WORDS)
-
-        # (a) A subset of the 47, mostly counties: the selection IS the claim.
-        subset = (
-            len(named) >= 2
-            and len(named) < 47
-            and len(named) >= len(strings) / 2
-        )
-        # (b) A single county under a verdict-shaped key.
-        verdict = judgemental and len(named) >= 1
-
-        if not (subset or verdict):
+        if not _is_a_selection(named, len(strings), judgemental):
             continue
         if _suppressed(lines, node):
             continue
@@ -185,7 +252,11 @@ def find_county_selections(source: str, where: str = "<source>") -> list[str]:
         findings.append(
             f"{where}:{node.lineno}: "
             + (f"{label!r} is " if label else "an unnamed literal is ")
-            + f"a hand-picked list of {len(named)} of the 47 counties "
+            + (
+                f"a hand-picked list of {len(named)} of the 47 counties "
+                if shape == "list"
+                else f"a hand-typed record for {len(named)} of the 47 counties "
+            )
             + f"({', '.join(sorted(named))})"
             + (" under a judgement-shaped key" if judgemental else "")
             + ". Nothing ordered it. Serve a measured ranking or serve nothing."
@@ -194,18 +265,32 @@ def find_county_selections(source: str, where: str = "<source>") -> list[str]:
     return findings
 
 
-API_MODULES = sorted(APIS_DIR.glob("*.py")) if APIS_DIR.is_dir() else []
+def _modules(root: Path) -> list[Path]:
+    return sorted(root.rglob("*.py")) if root.is_dir() else []
 
 
-def test_the_apis_directory_is_where_we_think_it_is():
-    """Anti-vacuity: if apis/ has no modules, every check below is silent.
+SCANNED_MODULES = [m for root in SCANNED_ROOTS for m in _modules(root)]
 
-    Skip rather than fail if the whole directory is gone — deleting it is a
-    legitimate outcome — but never let an empty scan read as a pass.
+
+def _rel(module: Path) -> str:
+    return module.relative_to(REPO_ROOT).as_posix()
+
+
+def test_the_scanned_directories_are_where_we_think_they_are():
+    """Anti-vacuity: an empty sweep must never read as a pass.
+
+    Skip a root that has been removed entirely — deleting one is a legitimate
+    outcome and the owner's call — but fail if a root exists and the scan finds
+    nothing in it, and fail if every root has vanished at once.
     """
-    if not APIS_DIR.is_dir():
-        pytest.skip("apis/ has been removed entirely — nothing to guard")
-    assert API_MODULES, "apis/ exists but holds no .py files — scan would be vacuous"
+    surviving = [root for root in SCANNED_ROOTS if root.is_dir()]
+    if not surviving:
+        pytest.skip("every scanned root has been removed — nothing to guard")
+    for root in surviving:
+        assert _modules(root), (
+            f"{root.name}/ exists but holds no .py files — its scan would be vacuous"
+        )
+    assert SCANNED_MODULES, "no modules collected — the sweep would be silent"
 
 
 def test_the_detector_catches_the_payload_it_was_written_for():
@@ -246,6 +331,59 @@ payload = {
     )
 
 
+def test_the_detector_catches_the_mapping_shape_too():
+    """Positive control for the second shape, added by issue #198.
+
+    This is the block withdrawn from
+    ``extractors/county/enhanced_county_extractor.py:210-260`` — four counties
+    out of 47, each handed a grade, a missing-public-money figure and a named
+    failing, none of it extracted from anything.
+    """
+    known_bad = '''
+county_profiles = {
+    "Nairobi City": {
+        "budget_2025": 37500000000,
+        "audit_rating": "B+",
+        "missing_funds": 2100000000,
+        "major_issues": ["Delayed project implementation (30% of budget)"],
+    },
+    "Mombasa": {
+        "budget_2025": 18000000000,
+        "audit_rating": "B",
+        "missing_funds": 890000000,
+        "major_issues": ["Port revenue sharing disputes"],
+    },
+    "Kiambu": {"audit_rating": "A-", "missing_funds": 420000000},
+    "Nakuru": {"audit_rating": "B+", "missing_funds": 680000000},
+}
+'''
+    findings = find_county_selections(known_bad, "known_bad.py")
+    assert len(findings) == 1, f"the mapping shape slipped through: {findings}"
+    assert "county_profiles" in findings[0]
+    assert "hand-typed record" in findings[0], findings
+
+    # Renaming the binding must not help — the selection is the claim.
+    renamed = known_bad.replace("county_profiles", "table_a")
+    assert len(find_county_selections(renamed, "renamed.py")) == 1, (
+        "the guard keys on the label alone — a rename would defeat it"
+    )
+
+    # A written reason buys silence; an empty one does not.
+    signed = known_bad.replace(
+        "county_profiles = {",
+        "county_profiles = {  # counties-literal-ok: transcribed from OAG p.14",
+    )
+    assert not find_county_selections(signed, "signed.py"), (
+        "a suppression with a written reason must be honoured"
+    )
+    unreasoned = known_bad.replace(
+        "county_profiles = {", "county_profiles = {  # counties-literal-ok:"
+    )
+    assert find_county_selections(unreasoned, "unreasoned.py"), (
+        "an empty suppression bought silence for free"
+    )
+
+
 def test_the_detector_does_not_flag_a_full_roster_or_a_lookup():
     """Negative control. A complete roster is reference data, not a selection."""
     roster = "COUNTY_NAMES = [\n" + "".join(
@@ -259,15 +397,36 @@ def test_the_detector_does_not_flag_a_full_roster_or_a_lookup():
         'STATUSES = ["draft", "published", "withdrawn"]', "statuses.py"
     )
 
+    # A complete county-keyed table of records is reference data too.
+    full_map = "COUNTY_META = {\n" + "".join(
+        f'    "{name}": {{"code": "{i:03d}"}},\n'
+        for i, name in enumerate(COUNTIES_47, start=1)
+    ) + "}\n"
+    assert not find_county_selections(full_map, "full_map.py"), (
+        "a complete county-keyed table must not trip the guard"
+    )
 
-@pytest.mark.skipif(not API_MODULES, reason="apis/ has no modules")
+    # A county-keyed dict of SCALARS is a coefficient table, not a selection.
+    # This is ``official_county_budget_extractor.py:414`` in miniature: read
+    # with ``.get(county, 1.0)``, so every county gets a value.
+    coefficients = '''
+economic_factors = {"Nairobi": 2.5, "Mombasa": 1.8, "Nakuru": 1.4, "Kiambu": 1.3}
+factor = economic_factors.get(county, 1.0)
+'''
+    assert not find_county_selections(coefficients, "coefficients.py"), (
+        "a per-county coefficient read with a default is a parameter, not a "
+        "claim about the counties named"
+    )
+
+
+@pytest.mark.skipif(not SCANNED_MODULES, reason="the scanned roots hold no modules")
 @pytest.mark.parametrize(
     "module",
-    API_MODULES,
-    ids=[m.name for m in API_MODULES] or ["none"],
+    SCANNED_MODULES,
+    ids=[_rel(m) for m in SCANNED_MODULES] or ["none"],
 )
-def test_no_api_module_hand_picks_named_counties(module: Path):
+def test_no_module_hand_picks_named_counties(module: Path):
     findings = find_county_selections(
-        module.read_text(encoding="utf-8"), f"apis/{module.name}"
+        module.read_text(encoding="utf-8"), _rel(module)
     )
-    assert not findings, "\n".join(["hand-picked county lists found:", *findings])
+    assert not findings, "\n".join(["hand-picked county selections found:", *findings])

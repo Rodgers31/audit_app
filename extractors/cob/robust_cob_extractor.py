@@ -337,8 +337,11 @@ class RobustCOBExtractor:
                 first_page_text = pdf_reader.pages[0].extract_text()
                 metadata["first_page_preview"] = first_page_text[:300]
 
-                # Look for county names
-                counties = [
+                # Look for county names. The six below are SEARCH TERMS, not a
+                # selection: counties_mentioned reports which of them appear on
+                # the first page. The probe is incomplete, so an empty result
+                # means "none of these six", never "no county is mentioned".
+                counties = [  # counties-literal-ok: search terms, see above
                     "Nairobi",
                     "Mombasa",
                     "Nakuru",

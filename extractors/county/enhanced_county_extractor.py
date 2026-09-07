@@ -1,15 +1,102 @@
 """
 Enhanced County Data Extractor
-Integrates Open County Portal, Bajeti Yetu, and structured data sources
-Provides comprehensive county analytics: budgets, loans, issues, missing funds, audit queries, rankings
+Probes the Open County portals and Bajeti Yetu and reports what responded.
+
+WITHDRAWN 2026-09-07 (issue #198): the generator that made up every county
+figure this module emitted, and the four things computed from it.
+
+    generate_mock_comprehensive_county_data  205-306  a population, budget,
+                                                      revenue, debt, pending
+                                                      bills, missing funds,
+                                                      audit rating and list of
+                                                      "major issues" for all 47
+                                                      counties
+    calculate_financial_health_score         309-326  graded a county out of
+                                                      100 from those figures
+    generate_county_rankings                 328-358  ordered all 47 by them,
+                                                      including a
+                                                      "worst_pending_bills"
+                                                      table
+    analytics_summary (in the run method)             totalled them, and
+                                                      averaged the grade
+
+It worked in two tiers and both were invented.
+
+TIER 1 (210-260) hand-typed four counties. Nairobi City, Mombasa, Kiambu and
+Nakuru each got a budget, a revenue, a debt, a pending-bills figure, a
+``missing_funds`` amount (KSh 2.1 Bn for Nairobi City, 890 M for Mombasa), an
+``audit_rating`` no auditor issued, and a ``major_issues`` list naming specific
+failings. Counties are named public bodies; an unsourced allegation of missing
+public money against one is a statement of fact about it, which is the issue
+#182/#183 concern in the same form as the OAG withdrawal beside this one.
+
+TIER 2 (267-285) derived the remaining counties from ``hash(county)``::
+
+    pop_factor = hash(county) % 1000000 + 200000      # a POPULATION
+    "audit_rating": ["A-", "B+", "B", "B-", "C+"][hash(county) % 5]
+
+``hash()`` on a ``str`` is salted per process, so nothing it returns describes
+the world and a rerun returns different figures. Five fresh interpreters put
+Turkana's population at 600,436 / 1,015,787 / 1,056,980 / 508,167 / 860,893,
+moving its budget, debt, pending bills and missing funds with it and changing
+its audit rating four times. Kenya has counted these populations: the KNBS 2019
+census sits in ``official_county_budget_extractor.py:45+``, and against it the
+run above had Nairobi at 225,569 (-94.9%), Garissa at 231,825 (-72.4%) and Lamu
+at 1,119,980 (+678.2%).
+
+Tier 2 covered FORTY-FOUR counties, not the 43 the issue expected: the tier-1
+table is keyed "Nairobi City" while the roster said "Nairobi", so the capital
+never matched its own profile and fell through to ``hash()``.
+
+NOT REPAIRABLE BY SUPPLYING THE CENSUS. Only ``population`` had a real source.
+Every other field was a fixed multiple of it — budget = population x 3000,
+revenue = 75% of budget, debt 25%, pending bills 15%, missing funds 5% — so
+feeding the true census in would have produced better-looking invented budgets,
+and 44 counties would still have shared a budget execution rate of exactly
+75.0%, a debt-to-budget ratio of exactly 25.0% and a per-capita budget of
+exactly 3000, the input constant echoed back. An audit rating and a
+missing-funds allegation have no formula at all. A figure nobody measured is
+withheld here, not replaced by a zero or by a tidier estimate.
+
+WHY IT MATTERED WHILE NOTHING IMPORTED IT. ``main()`` writes
+``enhanced_county_data.json`` into the working directory, and
+``backend/bootstrap.py:75`` reads that filename out of ``BOOTSTRAP_DATA_DIR``
+(default ``backend/data/reference/``). Running this module from that directory
+would have overwritten a fixture that carries real KNBS populations, official
+county codes and a ``"data_source": "realistic_estimate",
+"needs_verification": true`` marker on every record — which is what
+``bootstrap.py:290-300``'s modelled-field rule is written against — with an
+unlabelled file of hash-derived populations. What this withdrawal closes is the
+fabrication: there are no invented figures left to write. The FILENAME
+collision is not closed and is called out at ``main()``; ``oag_audit_extractor``
+has the same one.
+
+The stored data was already cleared by ``backend/county_metrics_purge.py`` and
+migration ``ce6ed007f696``, guarded by
+``backend/tests/test_stored_county_metrics_are_cleared.py``, and none of that
+is touched here. This is a regeneration hazard closed, not a live defect
+fixed — nothing imported this module and no reader was reaching it.
+
+What survives probes real endpoints and records what answered:
+``discover_opencounty_apis``, ``extract_nairobi_opencounty_data`` and
+``extract_bajeti_yetu_data``. They report nothing when they find nothing, which
+is the correct answer when nothing was found.
+``run_enhanced_county_extraction`` keeps those three steps and lost the two
+generated ones. The 47-name ``self.counties`` roster went with the generator,
+which was its only reader.
+
+Two smaller claims in the surviving code went with them, both written whether
+or not anything answered: ``extraction_summary.structured_sources_found``, a
+literal ``2``, and the Nairobi record's ``"data_quality": "high"``. The record
+now lists the endpoints that answered instead, and the run summary counts the
+counties whose portal answered separately from the records written — the old
+``counties_processed`` was ``len(self.county_data)``, which is 1 even when
+every request failed.
 """
 
 import json
 import logging
-import sqlite3
-import time
 from datetime import datetime
-from typing import Dict, List, Optional
 
 import requests
 
@@ -27,57 +114,6 @@ class EnhancedCountyDataExtractor:
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
             }
         )
-
-        # Kenya's 47 counties
-        self.counties = [
-            "Nairobi",
-            "Mombasa",
-            "Kwale",
-            "Kilifi",
-            "Tana River",
-            "Lamu",
-            "Taita Taveta",
-            "Garissa",
-            "Wajir",
-            "Mandera",
-            "Marsabit",
-            "Isiolo",
-            "Meru",
-            "Tharaka Nithi",
-            "Embu",
-            "Kitui",
-            "Machakos",
-            "Makueni",
-            "Nyandarua",
-            "Nyeri",
-            "Kirinyaga",
-            "Murang'a",
-            "Kiambu",
-            "Turkana",
-            "West Pokot",
-            "Samburu",
-            "Trans Nzoia",
-            "Uasin Gishu",
-            "Elgeyo Marakwet",
-            "Nandi",
-            "Baringo",
-            "Laikipia",
-            "Nakuru",
-            "Narok",
-            "Kajiado",
-            "Kericho",
-            "Bomet",
-            "Kakamega",
-            "Vihiga",
-            "Bungoma",
-            "Busia",
-            "Siaya",
-            "Kisumu",
-            "Homa Bay",
-            "Migori",
-            "Kisii",
-            "Nyamira",
-        ]
 
         self.county_data = {}
         self.api_endpoints = {}
@@ -134,7 +170,11 @@ class EnhancedCountyDataExtractor:
             nairobi_data = {
                 "county": "Nairobi City",
                 "source": "Nairobi Open County Portal",
-                "data_quality": "high",
+                # Which of the endpoints above actually answered. Recorded
+                # rather than asserted: this used to carry
+                # ``"data_quality": "high"``, written even when every request
+                # failed and all three sections below stayed empty.
+                "endpoints_answered": [],
                 "projects": [],
                 "indicators": {},
                 "budget_summary": {},
@@ -153,6 +193,7 @@ class EnhancedCountyDataExtractor:
                         elif "budgets" in api_url:
                             nairobi_data["budget_summary"] = data
 
+                        nairobi_data["endpoints_answered"].append(api_url)
                         logger.info(f"✅ Nairobi data from: {api_url}")
 
                 except Exception as e:
@@ -202,165 +243,16 @@ class EnhancedCountyDataExtractor:
         except Exception as e:
             logger.warning(f"⚠️ Bajeti Yetu extraction failed: {str(e)}")
 
-    def generate_mock_comprehensive_county_data(self):
-        """Generate comprehensive mock county data based on real Kenya structure."""
-        logger.info("📊 Generating comprehensive county analytics...")
-
-        # Real data-based mock for major counties
-        county_profiles = {
-            "Nairobi City": {
-                "population": 4500000,
-                "budget_2025": 37500000000,  # 37.5B KES
-                "revenue_2024": 29000000000,  # 29B KES
-                "debt_outstanding": 12000000000,  # 12B KES
-                "pending_bills": 8500000000,  # 8.5B KES
-                "audit_rating": "B+",
-                "missing_funds": 2100000000,  # 2.1B KES
-                "major_issues": [
-                    "Delayed project implementation (30% of budget)",
-                    "Pending bills accumulation",
-                    "Revenue collection gaps",
-                ],
-            },
-            "Mombasa": {
-                "population": 1300000,
-                "budget_2025": 18000000000,  # 18B KES
-                "revenue_2024": 14500000000,  # 14.5B KES
-                "debt_outstanding": 5200000000,  # 5.2B KES
-                "pending_bills": 3800000000,  # 3.8B KES
-                "audit_rating": "B",
-                "missing_funds": 890000000,  # 890M KES
-                "major_issues": [
-                    "Port revenue sharing disputes",
-                    "Infrastructure maintenance backlog",
-                ],
-            },
-            "Kiambu": {
-                "population": 2400000,
-                "budget_2025": 12500000000,  # 12.5B KES
-                "revenue_2024": 9800000000,  # 9.8B KES
-                "debt_outstanding": 3100000000,  # 3.1B KES
-                "pending_bills": 2200000000,  # 2.2B KES
-                "audit_rating": "A-",
-                "missing_funds": 420000000,  # 420M KES
-                "major_issues": ["Land acquisition disputes", "Water project delays"],
-            },
-            "Nakuru": {
-                "population": 2162000,
-                "budget_2025": 15200000000,  # 15.2B KES
-                "revenue_2024": 11900000000,  # 11.9B KES
-                "debt_outstanding": 4100000000,  # 4.1B KES
-                "pending_bills": 2900000000,  # 2.9B KES
-                "audit_rating": "B+",
-                "missing_funds": 680000000,  # 680M KES
-                "major_issues": [
-                    "Agricultural support program gaps",
-                    "Road maintenance backlog",
-                ],
-            },
-        }
-
-        # Generate data for all 47 counties
-        for county in self.counties:
-            if county in county_profiles:
-                profile = county_profiles[county]
-            else:
-                # Generate realistic data for smaller counties
-                pop_factor = hash(county) % 1000000 + 200000  # 200K - 1.2M population
-                budget_factor = pop_factor * 3000  # Rough budget calculation
-
-                profile = {
-                    "population": pop_factor,
-                    "budget_2025": budget_factor,
-                    "revenue_2024": int(budget_factor * 0.75),
-                    "debt_outstanding": int(budget_factor * 0.25),
-                    "pending_bills": int(budget_factor * 0.15),
-                    "audit_rating": ["A-", "B+", "B", "B-", "C+"][hash(county) % 5],
-                    "missing_funds": int(budget_factor * 0.05),
-                    "major_issues": [
-                        "Budget execution delays",
-                        "Revenue collection challenges",
-                    ],
-                }
-
-            # Add calculated metrics
-            profile.update(
-                {
-                    "budget_execution_rate": round(
-                        (profile["revenue_2024"] / profile["budget_2025"]) * 100, 1
-                    ),
-                    "debt_to_budget_ratio": round(
-                        (profile["debt_outstanding"] / profile["budget_2025"]) * 100, 1
-                    ),
-                    "pending_bills_ratio": round(
-                        (profile["pending_bills"] / profile["budget_2025"]) * 100, 1
-                    ),
-                    "per_capita_budget": round(
-                        profile["budget_2025"] / profile["population"], 0
-                    ),
-                    "financial_health_score": self.calculate_financial_health_score(
-                        profile
-                    ),
-                }
-            )
-
-            self.county_data[county] = profile
-
-    def calculate_financial_health_score(self, profile):
-        """Calculate county financial health score."""
-        # Scoring factors (0-100)
-        execution_score = min(
-            100, profile["revenue_2024"] / profile["budget_2025"] * 100
-        )
-        debt_score = max(
-            0, 100 - (profile["debt_outstanding"] / profile["budget_2025"] * 100)
-        )
-        bills_score = max(
-            0, 100 - (profile["pending_bills"] / profile["budget_2025"] * 100)
-        )
-
-        # Weighted average
-        health_score = (
-            (execution_score * 0.4) + (debt_score * 0.3) + (bills_score * 0.3)
-        )
-        return round(health_score, 1)
-
-    def generate_county_rankings(self):
-        """Generate county rankings based on various metrics."""
-        logger.info("🏆 Generating county rankings...")
-
-        rankings = {
-            "by_budget_size": sorted(
-                self.county_data.items(),
-                key=lambda x: x[1]["budget_2025"],
-                reverse=True,
-            ),
-            "by_financial_health": sorted(
-                self.county_data.items(),
-                key=lambda x: x[1]["financial_health_score"],
-                reverse=True,
-            ),
-            "by_per_capita_budget": sorted(
-                self.county_data.items(),
-                key=lambda x: x[1]["per_capita_budget"],
-                reverse=True,
-            ),
-            "by_debt_ratio": sorted(
-                self.county_data.items(), key=lambda x: x[1]["debt_to_budget_ratio"]
-            ),
-            "worst_pending_bills": sorted(
-                self.county_data.items(),
-                key=lambda x: x[1]["pending_bills_ratio"],
-                reverse=True,
-            ),
-        }
-
-        return rankings
-
     def run_enhanced_county_extraction(self):
-        """Run comprehensive county data extraction."""
+        """Probe the county data sources and report what answered.
+
+        Steps 4 and 5 of this method used to be "generate comprehensive county
+        data" and "generate rankings"; they went with the methods behind them,
+        and so did ``analytics_summary``, every field of which totalled or
+        averaged figures the generator had made up. See the module docstring.
+        """
         logger.info("\n" + "=" * 80)
-        logger.info("🚀 ENHANCED COUNTY DATA EXTRACTION")
+        logger.info("🚀 ENHANCED COUNTY SOURCE DISCOVERY")
         logger.info("=" * 80)
 
         start_time = datetime.now()
@@ -374,79 +266,61 @@ class EnhancedCountyDataExtractor:
         # Step 3: Extract from Bajeti Yetu
         self.extract_bajeti_yetu_data()
 
-        # Step 4: Generate comprehensive county data
-        self.generate_mock_comprehensive_county_data()
-
-        # Step 5: Generate rankings
-        rankings = self.generate_county_rankings()
-
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
+
+        # Counties for which a portal actually answered. Counted from the
+        # records rather than from len(self.county_data), because a record is
+        # written whether or not anything responded — counting the records
+        # would report 1 for a run in which every request failed. Not a
+        # coverage claim either: how many counties these sources cover is
+        # whatever they served, and this number cannot see it.
+        answered = sum(
+            1
+            for record in self.county_data.values()
+            if record.get("endpoints_answered")
+        )
 
         # Compile results
         results = {
             "extraction_summary": {
-                "counties_processed": len(self.county_data),
+                "counties_with_a_portal_that_answered": answered,
+                "county_records_written": len(self.county_data),
                 "api_endpoints_discovered": len(self.api_endpoints),
-                "structured_sources_found": 2,  # Nairobi + Bajeti Yetu accessible
                 "extraction_duration": duration,
                 "timestamp": datetime.now().isoformat(),
             },
             "county_data": self.county_data,
-            "county_rankings": rankings,
             "data_sources": {
                 "open_county_apis": self.api_endpoints,
                 "nairobi_portal": "nairobi.opencounty.org",
                 "bajeti_yetu": "bajetiyetu.treasury.go.ke",
                 "fallback_sources": ["OCOB spreadsheets", "County PDFs"],
             },
-            "analytics_summary": {
-                "total_county_budgets": sum(
-                    [data["budget_2025"] for data in self.county_data.values()]
-                ),
-                "total_county_debt": sum(
-                    [data["debt_outstanding"] for data in self.county_data.values()]
-                ),
-                "total_pending_bills": sum(
-                    [data["pending_bills"] for data in self.county_data.values()]
-                ),
-                "total_missing_funds": sum(
-                    [data["missing_funds"] for data in self.county_data.values()]
-                ),
-                "average_financial_health": round(
-                    sum(
-                        [
-                            data["financial_health_score"]
-                            for data in self.county_data.values()
-                        ]
-                    )
-                    / len(self.county_data),
-                    1,
-                ),
-            },
         }
 
         # Log summary
-        summary = results["analytics_summary"]
-        logger.info(f"\n📋 COUNTY EXTRACTION COMPLETE:")
-        logger.info(f"   🏛️ Counties Processed: {len(self.county_data)}")
-        logger.info(
-            f"   💰 Total County Budgets: {summary['total_county_budgets']:,.0f} KES"
-        )
-        logger.info(f"   📊 Total County Debt: {summary['total_county_debt']:,.0f} KES")
-        logger.info(
-            f"   ⚠️ Total Missing Funds: {summary['total_missing_funds']:,.0f} KES"
-        )
-        logger.info(
-            f"   🏆 Avg Financial Health: {summary['average_financial_health']}%"
-        )
+        logger.info("\n📋 COUNTY SOURCE DISCOVERY COMPLETE:")
+        logger.info(f"   🏛️ Counties whose portal answered: {answered}")
+        logger.info(f"   📄 County records written: {len(self.county_data)}")
+        logger.info(f"   🔗 API endpoints discovered: {len(self.api_endpoints)}")
         logger.info(f"   ⏱️ Duration: {duration:.1f} seconds")
 
         return results
 
 
 def main():
-    """Main function to run enhanced county extraction."""
+    """Main function to run enhanced county source discovery.
+
+    NOTE the output filename. ``backend/bootstrap.py:75`` reads
+    ``enhanced_county_data.json`` out of ``BOOTSTRAP_DATA_DIR`` (default
+    ``backend/data/reference/``), and that tracked fixture is NOT this module's
+    output — it carries real KNBS populations, official county codes and a
+    ``needs_verification`` marker on every record, from a later correction
+    pass. Run this from that directory and you overwrite it with a probe
+    report. The same collision exists in ``oag_audit_extractor.py``; renaming
+    either is the owner's call, not this withdrawal's.
+    """
     extractor = EnhancedCountyDataExtractor()
     results = extractor.run_enhanced_county_extraction()
 
@@ -454,12 +328,13 @@ def main():
     with open("enhanced_county_data.json", "w") as f:
         json.dump(results, f, indent=2)
 
-    summary = results["analytics_summary"]
-    print(f"\n✅ Enhanced county extraction completed!")
-    print(f"🏛️ Counties: {len(results['county_data'])}")
-    print(f"💰 Total Budgets: {summary['total_county_budgets']:,.0f} KES")
-    print(f"⚠️ Missing Funds: {summary['total_missing_funds']:,.0f} KES")
-    print(f"📁 Results saved to: enhanced_county_data.json")
+    summary = results["extraction_summary"]
+    print("\n✅ Enhanced county source discovery completed!")
+    print(
+        f"🏛️ Counties whose portal answered: {summary['counties_with_a_portal_that_answered']}"
+    )
+    print(f"🔗 API endpoints discovered: {summary['api_endpoints_discovered']}")
+    print("📁 Results saved to: enhanced_county_data.json")
 
 
 if __name__ == "__main__":

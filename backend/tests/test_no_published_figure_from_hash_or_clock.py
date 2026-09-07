@@ -313,15 +313,13 @@ def _rel(module: Path) -> str:
 # `test_quarantined_modules_still_carry_their_debt` fails if a file is cleaned
 # without being taken off this list. Nothing may be added here without an
 # issue that owns it.
-QUARANTINE: dict[str, tuple[int, str]] = {
-    "extractors/county/enhanced_county_extractor.py": (
-        2,
-        "issue #193 leaves this generator to the owner: the DATA it modelled "
-        "was already cleared from entity.meta by backend/county_metrics_purge.py "
-        "and migration ce6ed007f696, guarded by "
-        "backend/tests/test_stored_county_metrics_are_cleared.py",
-    ),
-}
+#
+# Empty since issue #198. Its one entry held
+# ``extractors/county/enhanced_county_extractor.py`` at 2 sites — a population
+# and an audit rating, both ``hash(county)`` — and both went with
+# ``generate_mock_comprehensive_county_data``. The file now goes through the
+# sweep below like any other.
+QUARANTINE: dict[str, tuple[int, str]] = {}
 
 
 def test_the_scanned_roots_are_where_we_think_they_are():
