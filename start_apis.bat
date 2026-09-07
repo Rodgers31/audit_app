@@ -13,12 +13,6 @@ if not exist "start_all_apis.py" (
 )
 
 echo.
-echo 🔧 Starting Enhanced County Analytics API (Port 8003)...
-start /b cmd /c "cd apis && python enhanced_county_analytics_api.py"
-
-REM Wait a moment
-timeout /t 2 /nobreak >nul
-
 echo 🔧 Starting Modernized Data-Driven API (Port 8004)...
 start /b cmd /c "cd apis && python modernized_api.py"
 
@@ -34,7 +28,6 @@ timeout /t 3 /nobreak >nul
 echo.
 echo 🎉 ALL APIs STARTED!
 echo ===================
-echo 📊 Enhanced County Analytics API: http://localhost:8003
 echo 🔧 Modernized Data-Driven API:    http://localhost:8004
 echo 🏛️ Main Backend API:              http://localhost:8000
 echo.

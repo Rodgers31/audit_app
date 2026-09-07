@@ -1,5 +1,12 @@
 # Frontend-Backend Endpoint Alignment Analysis 🔍
 
+> **Superseded, 2026-09-07.** The Enhanced County Analytics service
+> (`apis/enhanced_county_analytics_api.py`, port 8003) described below was
+> deleted in issue #183 — it served hardcoded rankings of named counties and
+> four aggregates nothing measured. Everything it is credited with here is a
+> record of what existed then, not of what runs now. Note in particular that
+> `InternalAPIClient` in `backend/main.py` still holds a client for it.
+
 ## Executive Summary
 
 After analyzing your frontend endpoint configuration and backend API services, I've identified significant misalignments and data storage recommendations. Here's what I found:

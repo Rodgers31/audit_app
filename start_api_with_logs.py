@@ -82,13 +82,6 @@ def main():
 
     apis = [
         {
-            "name": "Enhanced County Analytics API",
-            "script": "enhanced_county_analytics_api.py",
-            "directory": "apis",
-            "port": 8003,
-            "url": "http://localhost:8003",
-        },
-        {
             "name": "Modernized Data-Driven API",
             "script": "modernized_api.py",
             "directory": "apis",

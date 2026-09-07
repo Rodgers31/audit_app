@@ -11,16 +11,6 @@ if [ ! -f "start_all_apis.py" ]; then
     exit 1
 fi
 
-# Start Enhanced County Analytics API (Port 8003)
-echo "🔧 Starting Enhanced County Analytics API (Port 8003)..."
-cd apis
-python enhanced_county_analytics_api.py &
-ENHANCED_PID=$!
-cd ..
-
-# Wait a moment
-sleep 2
-
 # Start Modernized Data-Driven API (Port 8004) 
 echo "🔧 Starting Modernized Data-Driven API (Port 8004)..."
 cd apis
@@ -44,17 +34,15 @@ sleep 3
 echo ""
 echo "🎉 ALL APIs STARTED!"
 echo "==================="
-echo "📊 Enhanced County Analytics API: http://localhost:8003"
 echo "🔧 Modernized Data-Driven API:    http://localhost:8004" 
 echo "🏛️ Main Backend API:              http://localhost:8000"
 echo ""
 echo "📋 Process IDs:"
-echo "• Enhanced API PID: $ENHANCED_PID"
 echo "• Modernized API PID: $MODERNIZED_PID"
 echo "• Backend API PID: $BACKEND_PID"
 echo ""
 echo "⚠️  To stop all APIs, press Ctrl+C or run:"
-echo "   kill $ENHANCED_PID $MODERNIZED_PID $BACKEND_PID"
+echo "   kill $MODERNIZED_PID $BACKEND_PID"
 echo ""
 echo "🧪 Test with Postman collection or visit URLs above"
 
@@ -62,7 +50,7 @@ echo "🧪 Test with Postman collection or visit URLs above"
 cleanup() {
     echo ""
     echo "🛑 Stopping all APIs..."
-    kill $ENHANCED_PID $MODERNIZED_PID $BACKEND_PID 2>/dev/null
+    kill $MODERNIZED_PID $BACKEND_PID 2>/dev/null
     echo "✅ All APIs stopped"
     exit 0
 }

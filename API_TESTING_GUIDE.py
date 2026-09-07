@@ -18,149 +18,12 @@ def generate_api_testing_guide():
 
     print("🏗️ AVAILABLE API SERVICES")
     print("=" * 26)
-    print("1. 📊 Enhanced County Analytics API (Port 8003)")
-    print("2. 🔧 Modernized Data-Driven API (Port 8004)")
-    print("3. 🏛️ Main Backend API (Port 8000)")
+    print("1. 🔧 Modernized Data-Driven API (Port 8004)")
+    print("2. 🏛️ Main Backend API (Port 8000)")
     print()
 
     print("=" * 80)
-    print("📊 1. ENHANCED COUNTY ANALYTICS API")
-    print("=" * 80)
-    print("Base URL: http://localhost:8003")
-    print("Description: Comprehensive county analytics with OAG audit data")
-    print()
-
-    endpoints = [
-        {
-            "method": "GET",
-            "endpoint": "/",
-            "description": "API information and available features",
-            "params": None,
-            "body": None,
-        },
-        {
-            "method": "GET",
-            "endpoint": "/counties/all",
-            "description": "Get all counties with comprehensive data",
-            "params": None,
-            "body": None,
-        },
-        {
-            "method": "GET",
-            "endpoint": "/counties/{county_name}",
-            "description": "Get detailed data for specific county",
-            "params": "county_name (path): e.g., 'Nairobi', 'Mombasa', 'Nakuru'",
-            "body": None,
-        },
-        {
-            "method": "GET",
-            "endpoint": "/audit/queries",
-            "description": "Get all OAG audit queries",
-            "params": "county (query, optional): Filter by county name",
-            "body": None,
-        },
-        {
-            "method": "GET",
-            "endpoint": "/audit/county/{county_name}",
-            "description": "Get audit queries for specific county",
-            "params": "county_name (path): County name",
-            "body": None,
-        },
-        {
-            "method": "GET",
-            "endpoint": "/audit/missing-funds",
-            "description": "Get all missing funds cases",
-            "params": None,
-            "body": None,
-        },
-        {
-            "method": "GET",
-            "endpoint": "/rankings/{metric}",
-            "description": "Get county rankings by metric",
-            "params": "metric (path): 'budget', 'debt', 'execution_rate', 'financial_health'",
-            "body": None,
-        },
-        {
-            "method": "GET",
-            "endpoint": "/analytics/summary",
-            "description": "Get comprehensive analytics summary",
-            "params": None,
-            "body": None,
-        },
-        {
-            "method": "GET",
-            "endpoint": "/counties/{county_name}/cob-implementation",
-            "description": "Get COB budget implementation data for county",
-            "params": "county_name (path): County name",
-            "body": None,
-        },
-        {
-            "method": "GET",
-            "endpoint": "/cob-summary",
-            "description": "Get Controller of Budget summary data",
-            "params": None,
-            "body": None,
-        },
-        {
-            "method": "GET",
-            "endpoint": "/national/overview",
-            "description": "Get national government overview",
-            "params": None,
-            "body": None,
-        },
-        {
-            "method": "GET",
-            "endpoint": "/national/ministries",
-            "description": "Get all ministry performance data",
-            "params": None,
-            "body": None,
-        },
-        {
-            "method": "GET",
-            "endpoint": "/national/ministries/{ministry_name}",
-            "description": "Get specific ministry details",
-            "params": "ministry_name (path): e.g., 'Health', 'Education', 'Infrastructure'",
-            "body": None,
-        },
-        {
-            "method": "GET",
-            "endpoint": "/national/debt",
-            "description": "Get national debt analysis",
-            "params": None,
-            "body": None,
-        },
-        {
-            "method": "GET",
-            "endpoint": "/national/revenue",
-            "description": "Get national revenue analysis",
-            "params": None,
-            "body": None,
-        },
-        {
-            "method": "GET",
-            "endpoint": "/national/issues",
-            "description": "Get identified national government issues",
-            "params": None,
-            "body": None,
-        },
-        {
-            "method": "GET",
-            "endpoint": "/analytics/comprehensive",
-            "description": "Get comprehensive analytics across all data sources",
-            "params": None,
-            "body": None,
-        },
-    ]
-
-    for i, ep in enumerate(endpoints, 1):
-        print(f"{i:2d}. {ep['method']} {ep['endpoint']}")
-        print(f"    📝 {ep['description']}")
-        if ep["params"]:
-            print(f"    📋 Parameters: {ep['params']}")
-        print()
-
-    print("=" * 80)
-    print("🔧 2. MODERNIZED DATA-DRIVEN API")
+    print("🔧 1. MODERNIZED DATA-DRIVEN API")
     print("=" * 80)
     print("Base URL: http://localhost:8004")
     print("Description: Modern API using actual extracted data")
@@ -282,7 +145,7 @@ def generate_api_testing_guide():
         print()
 
     print("=" * 80)
-    print("🏛️ 3. MAIN BACKEND API")
+    print("🏛️ 2. MAIN BACKEND API")
     print("=" * 80)
     print("Base URL: http://localhost:8000")
     print("Description: Core backend API with ETL and document management")
@@ -405,7 +268,6 @@ def generate_api_testing_guide():
     print("1. 🚀 START THE APIS:")
     print("   cd /c/Users/rodge/projects/audit_app")
     print("   # Terminal 1:")
-    print("   cd apis && python enhanced_county_analytics_api.py")
     print("   # Terminal 2:")
     print("   cd apis && python modernized_api.py")
     print("   # Terminal 3:")
@@ -413,16 +275,10 @@ def generate_api_testing_guide():
     print()
     print("2. 📋 CREATE POSTMAN COLLECTION:")
     print("   • Create new collection: 'Kenya Audit Transparency API'")
-    print("   • Add folders: 'County Analytics', 'Modernized API', 'Main Backend'")
+    print("   • Add folders: 'Modernized API', 'Main Backend'")
     print("   • Import endpoints from this guide")
     print()
     print("3. 🎯 PRIORITY ENDPOINTS TO TEST FIRST:")
-    print("   Enhanced County Analytics API:")
-    print("   • GET /counties/all")
-    print("   • GET /counties/Nairobi")
-    print("   • GET /audit/queries")
-    print("   • GET /national/overview")
-    print()
     print("   Modernized API:")
     print("   • GET /health")
     print("   • GET /data-sources")

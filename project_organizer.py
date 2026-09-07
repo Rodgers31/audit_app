@@ -134,7 +134,6 @@ class ProjectOrganizer:
         print("=" * 17)
 
         api_files = [
-            "enhanced_county_analytics_api.py",
             "county_analytics_api.py",
             "modernized_api.py",
         ]
@@ -219,7 +218,6 @@ class ProjectOrganizer:
         # This would require parsing Python files and updating imports
         # For now, we'll just note which files might need updates
         files_needing_updates = [
-            "apis/enhanced_county_analytics_api.py",
             "apis/modernized_api.py",
             "analysis/data_driven_analytics.py",
         ]

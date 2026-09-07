@@ -1,5 +1,12 @@
 # API Consolidation Plan 🔄
 
+> **Superseded, 2026-09-07.** The Enhanced County Analytics service
+> (`apis/enhanced_county_analytics_api.py`, port 8003) described below was
+> deleted in issue #183 — it served hardcoded rankings of named counties and
+> four aggregates nothing measured. Everything it is credited with here is a
+> record of what existed then, not of what runs now. Note in particular that
+> `InternalAPIClient` in `backend/main.py` still holds a client for it.
+
 ## Current State Analysis
 
 You have **financial data endpoints** spread across 3 APIs:

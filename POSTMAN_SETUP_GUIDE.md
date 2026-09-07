@@ -15,18 +15,9 @@
 
 ### 2. Start All API Services
 
-Open 3 separate terminals and run:
+Open 2 separate terminals and run:
 
-**Terminal 1 - Enhanced County Analytics API:**
-
-```bash
-cd c:/Users/rodge/projects/audit_app/apis
-python enhanced_county_analytics_api.py
-```
-
-_Should start on http://localhost:8003_
-
-**Terminal 2 - Modernized Data-Driven API:**
+**Terminal 1 - Modernized Data-Driven API:**
 
 ```bash
 cd c:/Users/rodge/projects/audit_app/apis
@@ -35,7 +26,7 @@ python modernized_api.py
 
 _Should start on http://localhost:8004_
 
-**Terminal 3 - Main Backend API:**
+**Terminal 2 - Main Backend API:**
 
 ```bash
 cd c:/Users/rodge/projects/audit_app/backend
@@ -49,25 +40,13 @@ _Should start on http://localhost:8000_
 ### Phase 1: Health Checks (Test First!)
 
 1. **Modernized API Health Check** - `GET /health`
-2. **Enhanced Analytics API Info** - `GET /`
-3. **Main Backend API Root** - `GET /`
+2. **Main Backend API Root** - `GET /`
 
 ### Phase 2: Data Validation (Critical!)
 
-1. **Get All Counties** - `GET /counties/all` (Enhanced API)
-
-   - ✅ Verify Nairobi population: 4.4M
-   - ✅ Verify realistic budget figures
-   - ✅ No algorithmic patterns
-
-2. **Get County Statistics** - `GET /counties/statistics` (Modernized API)
-
+1. **Get County Statistics** - `GET /counties/statistics` (Modernized API)
    - ✅ Check total budget is ~259B KES
    - ✅ Verify 47 counties present
-
-3. **Get National Overview** - `GET /national/overview` (Enhanced API)
-   - ✅ National debt should be 11.5T KES
-   - ✅ No fake data patterns
 
 ### Phase 3: Core Functionality
 
@@ -179,7 +158,7 @@ _Should start on http://localhost:8000_
 
 ## 📈 TESTING REPORT TEMPLATE
 
-**API Service**: [Enhanced/Modernized/Main Backend]
+**API Service**: [Modernized/Main Backend]
 **Endpoint**: [GET/POST endpoint URL]
 **Status Code**: [200/404/500]
 **Response Time**: [X seconds]
