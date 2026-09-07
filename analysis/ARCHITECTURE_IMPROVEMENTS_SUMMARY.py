@@ -1,5 +1,26 @@
 """
 AUDIT APP DATA ARCHITECTURE IMPROVEMENTS SUMMARY
+
+PARTLY SUPERSEDED, 2026-09-07. The figures below are a record of what was
+claimed in 2025, not of what runs now. Issue #188 withdrew six methods from the
+DataDrivenGovernmentAnalytics class this file celebrates, in both copies
+(apis/data_driven_analytics.py and analysis/data_driven_analytics.py), because
+what they called "verified" was typed in:
+
+  * the 11.5T total, the 60/40 external split and the 70.2% debt-to-GDP ratio
+    below were never measured. CBK, in backend/seeding/real_data/debt_timeline
+    .json with page citations, records 2024 total debt at 10,925.3 Bn, external
+    at 46.3%, and a 2023-2024 FALL where the module drew a rise;
+  * ministry execution rates were abs(hash(name)) % 25, which changes on every
+    process restart;
+  * the "95% transparency score" was scored on nothing: the five data files
+    listed under "AVAILABLE DATA SOURCES" do not resolve at the paths the
+    loader uses, and every miss was swallowed into an empty dict.
+
+The class itself, its file loader and its county, audit and transparency
+methods survive, and so do nine of the fifteen endpoints listed below. The six
+withdrawn ones are /national/overview, /national/debt, /national/ministries,
+/national/ministries/{name}, /national/revenue and /analytics/comprehensive.
 ================================================================
 
 PROBLEMS IDENTIFIED:
@@ -161,36 +182,27 @@ data and can automatically update when new information becomes available.
 
 
 def print_summary():
-    """Print a condensed summary of improvements."""
-    print("🏛️ AUDIT APP DATA ARCHITECTURE IMPROVEMENTS")
-    print("=" * 50)
+    """Print what was withdrawn from this summary, and why."""
+    print("🏛️ AUDIT APP DATA ARCHITECTURE IMPROVEMENTS — PARTLY SUPERSEDED")
+    print("=" * 63)
     print()
-    print("✅ FIXED ISSUES:")
-    print("   • Hard-coded values → Data-driven system")
-    print("   • Outdated debt (10.2T) → Current debt (11.5T KES)")
-    print("   • Manual updates → Automatic data refresh")
-    print("   • Fake data → Real government extractions")
+    print("This summary described a 'data-driven analytics system' added in")
+    print("2025. Six of its methods were withdrawn on 2026-09-07 under")
+    print("issue #188, along with the six endpoints that served them.")
     print()
-    print("📊 CURRENT STATUS:")
-    print("   • National Debt: KES 11.5 Trillion (verified)")
-    print("   • Data Sources: 5 active files")
-    print("   • Transparency Score: 95%")
-    print("   • Counties Covered: 47")
-    print("   • Audit Queries: From real OAG data")
-    print("   • COB Reports: 129 tracked")
+    print("WHAT WAS WRONG WITH THEM:")
+    print("   • The national debt, budget and revenue figures they published")
+    print("     were typed-in constants, not readings from any data file.")
+    print("   • They disagree with the CBK series this repo already holds")
+    print("     with page citations, including on the direction of the")
+    print("     2023-2024 move and on which half of the debt is larger.")
+    print("   • Ministry execution rates were abs(hash(name)) % 25, so every")
+    print("     restart published different ones.")
     print()
-    print("🚀 API ENDPOINTS:")
-    print("   • /national/overview - Real debt & budget data")
-    print("   • /national/debt - Verified 11.5T figures")
-    print("   • /counties/{name} - Actual county data")
-    print("   • /audit/queries - Real OAG audit data")
-    print("   • /health - Data source status")
-    print()
-    print("🎯 BENEFITS:")
-    print("   • Accurate figures from verified sources")
-    print("   • Automatic updates when data changes")
-    print("   • Clear data lineage and sources")
-    print("   • No more manual figure maintenance")
+    print("WHAT SURVIVES: the class, its file loader, and its county, audit")
+    print("and transparency methods — plus nine of the fifteen endpoints.")
+    print("The five data-source paths still do not resolve, so those methods")
+    print("report absence. That is a separate defect, not a fabricated figure.")
 
 
 if __name__ == "__main__":

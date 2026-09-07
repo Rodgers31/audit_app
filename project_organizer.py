@@ -65,7 +65,6 @@ class ProjectOrganizer:
                 "comprehensive_government_reports.json",
                 "ultimate_etl_results.json",
                 "comprehensive_etl_results.json",
-                "data_driven_analytics_results.json",
             ],
             # Audit data
             "data/audit/": ["oag_audit_data.json"],

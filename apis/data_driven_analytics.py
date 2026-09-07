@@ -2,6 +2,31 @@
 Data-Driven Government Analytics System
 Reads from actual extracted data files instead of hard-coded values
 Automatically updates when new data is available
+
+WITHDRAWN 2026-09-07 (issue #188): six methods that did NOT read from any data
+file, and published typed-in figures under the docstring above.
+
+    get_current_national_debt          "total_debt": 11_500_000_000_000, a 60/40
+                                       external split, "debt_to_gdp_ratio": 70.2
+    _calculate_debt_trend              five typed constants for 2020-2024
+    get_actual_budget_data             "national_budget_2024_25": 3_800_000_000_000
+    get_ministry_performance_from_data execution rates from abs(hash(name)) % 25
+    get_revenue_data_from_sources      revenue = budget * 0.75 * 0.875, split 80/20
+    get_comprehensive_analytics        composed the five above
+
+Every point of that debt series disagrees with backend/seeding/real_data/
+debt_timeline.json, which carries CBK figures cited to the PDF page — including
+the direction of 2023-2024, which CBK records as a fall (11,139.7 to 10,925.3
+Bn) and the module drew as a rise, and the external share, which CBK puts at
+46.3% for 2024 against the module's 60%.
+
+What remains reads from files and reports what it finds. Note that the five
+paths in ``data_sources`` below do not resolve in this repo — ``data/`` exists,
+``data/county/``, ``data/audit/``, ``data/cob/`` and ``data/government/`` do
+not — so these methods currently report absence. That is a separate defect,
+recorded in issue #188 under "the data-driven path is dead, and fails
+silently", and reporting absence is not the same thing as asserting a
+fabricated number.
 """
 
 import json
@@ -46,50 +71,6 @@ class DataDrivenGovernmentAnalytics:
             except Exception as e:
                 logger.error(f"❌ Failed to load {filename}: {e}")
                 self.cached_data[source_name] = {}
-
-    def get_current_national_debt(self) -> Dict[str, Any]:
-        """Get current national debt from multiple data sources."""
-        # Check if we have recent government reports data
-        gov_reports = self.cached_data.get("government_reports", {})
-        etl_data = self.cached_data.get("etl_results", {})
-
-        # Start with the verified current figure
-        current_debt = {
-            "total_debt": 11500000000000,  # 11.5T KES (verified online)
-            "source": "Official online sources (late 2024/early 2025)",
-            "last_updated": "2024-12-15T00:00:00Z",
-            "verification_status": "manually_verified",
-        }
-
-        # Add breakdown based on typical debt structure
-        external_percentage = 60.0  # Typical for Kenya
-        total = current_debt["total_debt"]
-
-        current_debt.update(
-            {
-                "debt_breakdown": {
-                    "external_debt": int(total * external_percentage / 100),
-                    "domestic_debt": int(total * (100 - external_percentage) / 100),
-                    "external_percentage": external_percentage,
-                    "domestic_percentage": 100 - external_percentage,
-                },
-                "debt_to_gdp_ratio": 70.2,  # Updated calculation
-                "trend_analysis": self._calculate_debt_trend(),
-            }
-        )
-
-        return current_debt
-
-    def _calculate_debt_trend(self) -> Dict[str, int]:
-        """Calculate debt trend based on historical patterns."""
-        # Historical debt progression (verified patterns)
-        return {
-            "2020": 7400000000000,  # 7.4T KES
-            "2021": 8200000000000,  # 8.2T KES
-            "2022": 9100000000000,  # 9.1T KES
-            "2023": 10200000000000,  # 10.2T KES
-            "2024": 11500000000000,  # 11.5T KES (current)
-        }
 
     def get_actual_county_statistics(self) -> Dict[str, Any]:
         """Get county statistics from actual extracted data."""
@@ -172,187 +153,6 @@ class DataDrivenGovernmentAnalytics:
             "last_calculated": datetime.now().isoformat(),
         }
 
-    def get_actual_budget_data(self) -> Dict[str, Any]:
-        """Get budget data from ETL results and government reports."""
-        etl_data = self.cached_data.get("etl_results", {})
-        gov_reports = self.cached_data.get("government_reports", {})
-
-        # Start with known budget figures
-        budget_data = {
-            "national_budget_2024_25": 3800000000000,  # 3.8T KES (from budget documents)
-            "source": "National Treasury Budget Documents",
-            "data_available": True,
-        }
-
-        # Add county budget totals from actual data
-        county_stats = self.get_actual_county_statistics()
-        if county_stats.get("data_available"):
-            budget_data.update(
-                {
-                    "total_county_budget": county_stats["total_county_budget"],
-                    "intergovernmental_transfers": county_stats["total_county_budget"]
-                    * 0.85,  # 85% from national
-                    "county_own_revenue": county_stats["total_county_budget"]
-                    * 0.15,  # 15% own revenue
-                }
-            )
-
-        # Add ETL extracted budget information
-        if etl_data:
-            treasury_docs = etl_data.get("treasury_documents", [])
-            budget_mentions = []
-
-            for doc in treasury_docs:
-                if "budget" in doc.get("title", "").lower():
-                    budget_mentions.append(
-                        {
-                            "document": doc.get("title"),
-                            "url": doc.get("url"),
-                            "year": doc.get("year"),
-                        }
-                    )
-
-            budget_data["supporting_documents"] = budget_mentions
-
-        budget_data["last_calculated"] = datetime.now().isoformat()
-        return budget_data
-
-    def get_ministry_performance_from_data(self) -> Dict[str, Any]:
-        """Generate ministry performance based on actual available data patterns."""
-        # Get base data
-        audit_data = self.get_actual_audit_statistics()
-        budget_data = self.get_actual_budget_data()
-
-        # Known ministries from government structure
-        ministries = [
-            "Health",
-            "Education",
-            "Transport",
-            "Energy",
-            "Agriculture",
-            "Defense",
-            "Interior",
-            "Foreign Affairs",
-            "Finance",
-            "Public Works",
-            "Water",
-            "Environment",
-            "ICT",
-            "Trade",
-            "Tourism",
-        ]
-
-        ministry_performance = {}
-
-        for ministry in ministries:
-            # Calculate based on actual patterns and proportional allocation
-            ministry_hash = abs(hash(ministry))
-
-            # Proportional budget allocation (realistic distribution)
-            if ministry == "Defense":
-                budget_share = 0.15  # 15% of national budget
-            elif ministry in ["Health", "Education"]:
-                budget_share = 0.12  # 12% each for key social sectors
-            elif ministry in ["Transport", "Energy", "Public Works"]:
-                budget_share = 0.08  # 8% each for infrastructure
-            else:
-                budget_share = 0.04  # 4% each for other ministries
-
-            ministry_budget = (
-                budget_data.get("national_budget_2024_25", 0) * budget_share
-            )
-
-            ministry_performance[ministry] = {
-                "budget_allocation": ministry_budget,
-                "execution_rate": min(95, max(60, 75 + (ministry_hash % 25) - 12)),
-                "performance_score": min(100, max(50, 70 + (ministry_hash % 30) - 15)),
-                "data_derivation": "calculated_from_actual_budget_data",
-                "budget_share_percentage": budget_share * 100,
-            }
-
-        return {
-            "ministries": ministry_performance,
-            "total_ministries": len(ministries),
-            "data_source": "calculated_from_actual_government_data",
-            "base_budget": budget_data.get("national_budget_2024_25", 0),
-            "last_calculated": datetime.now().isoformat(),
-        }
-
-    def get_revenue_data_from_sources(self) -> Dict[str, Any]:
-        """Get revenue data from actual sources and realistic projections."""
-        budget_data = self.get_actual_budget_data()
-
-        # Base revenue targets from budget documents
-        national_budget = budget_data.get("national_budget_2024_25", 3800000000000)
-
-        # Realistic revenue collection (typically 85-90% in Kenya)
-        collection_rate = 87.5
-        revenue_target = (
-            national_budget * 0.75
-        )  # Revenue typically covers 75% of budget
-        actual_revenue = revenue_target * (collection_rate / 100)
-
-        revenue_data = {
-            "revenue_target": revenue_target,
-            "actual_revenue": actual_revenue,
-            "collection_rate": collection_rate,
-            "revenue_breakdown": {
-                "tax_revenue": actual_revenue * 0.80,  # 80% from taxes
-                "non_tax_revenue": actual_revenue * 0.20,  # 20% from other sources
-            },
-            "data_source": "calculated_from_budget_documents",
-            "calculation_method": "proportional_from_actual_budget",
-            "last_calculated": datetime.now().isoformat(),
-        }
-
-        return revenue_data
-
-    def get_comprehensive_analytics(self) -> Dict[str, Any]:
-        """Generate comprehensive analytics from actual data sources."""
-        logger.info("📊 Generating comprehensive analytics from actual data...")
-
-        # Get all actual data
-        debt_data = self.get_current_national_debt()
-        county_data = self.get_actual_county_statistics()
-        audit_data = self.get_actual_audit_statistics()
-        budget_data = self.get_actual_budget_data()
-        ministry_data = self.get_ministry_performance_from_data()
-        revenue_data = self.get_revenue_data_from_sources()
-
-        # Calculate transparency score based on actual data availability
-        transparency_score = self._calculate_transparency_score()
-
-        comprehensive = {
-            "national_government": {
-                "debt_analysis": debt_data,
-                "budget_data": budget_data,
-                "revenue_data": revenue_data,
-                "ministry_performance": ministry_data,
-            },
-            "county_government": county_data,
-            "audit_oversight": audit_data,
-            "transparency_metrics": {
-                "overall_score": transparency_score,
-                "data_sources_available": len(
-                    [k for k, v in self.cached_data.items() if v]
-                ),
-                "last_data_update": datetime.now().isoformat(),
-            },
-            "data_freshness": {
-                "county_data": (
-                    "current" if county_data.get("data_available") else "missing"
-                ),
-                "audit_data": (
-                    "current" if audit_data.get("data_available") else "missing"
-                ),
-                "budget_data": (
-                    "current" if budget_data.get("data_available") else "missing"
-                ),
-            },
-        }
-
-        return comprehensive
-
     def _calculate_transparency_score(self) -> int:
         """Calculate transparency score based on actual data availability."""
         total_sources = len(self.data_sources)
@@ -408,16 +208,8 @@ def create_data_driven_config() -> Dict[str, Any]:
                 "update_frequency": "annually",
                 "critical": True,
             },
-            "debt_data": {
-                "source": "manual_verification",
-                "description": "National debt figures from official sources",
-                "last_verified": "2024-12-15",
-                "critical": True,
-            },
         },
         "calculation_methods": {
-            "ministry_budgets": "proportional_allocation_from_national_budget",
-            "execution_rates": "derived_from_actual_county_patterns",
             "transparency_score": "data_availability_weighted",
         },
         "update_notifications": {
@@ -438,11 +230,6 @@ def main():
     print("=" * 50)
 
     # Test each component
-    print("\n📊 NATIONAL DEBT (from verified sources):")
-    debt_data = analytics.get_current_national_debt()
-    print(f"Total Debt: KES {debt_data['total_debt']:,}")
-    print(f"Source: {debt_data['source']}")
-
     print("\n🏛️ COUNTY STATISTICS (from actual data):")
     county_stats = analytics.get_actual_county_statistics()
     print(f"Counties: {county_stats['total_counties']}")
@@ -455,17 +242,8 @@ def main():
     print(f"Audit Queries: {audit_stats['total_audit_queries']}")
     print(f"Data Available: {audit_stats['data_available']}")
 
-    print("\n📈 COMPREHENSIVE ANALYTICS:")
-    comprehensive = analytics.get_comprehensive_analytics()
-    transparency = comprehensive["transparency_metrics"]
-    print(f"Transparency Score: {transparency['overall_score']}")
-    print(f"Data Sources Available: {transparency['data_sources_available']}")
-
-    # Save results
-    with open("data_driven_analytics_results.json", "w") as f:
-        json.dump(comprehensive, f, indent=2)
-
-    print(f"\n💾 Results saved to: data_driven_analytics_results.json")
+    print("\n📈 TRANSPARENCY SCORE (from data availability):")
+    print(f"Score: {analytics._calculate_transparency_score()}")
 
     # Save configuration
     config = create_data_driven_config()

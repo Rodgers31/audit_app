@@ -26,6 +26,12 @@ python modernized_api.py
 
 _Should start on http://localhost:8004_
 
+> Six of this service's endpoints were withdrawn on 2026-09-07 under issue #188
+> — `/national/overview`, `/national/debt`, `/national/ministries`,
+> `/national/ministries/{name}`, `/national/revenue` and
+> `/analytics/comprehensive` served typed-in debt, budget and revenue figures.
+> Its other nine endpoints are unchanged.
+
 **Terminal 2 - Main Backend API:**
 
 ```bash
@@ -78,8 +84,9 @@ _Should start on http://localhost:8000_
 ### National Data Quality Checks:
 
 - **Total County Budgets**: ~259B KES
-- **National Debt**: 11.5T KES
-- **Ministry Data**: Realistic allocations
+- **National Debt**: check against `backend/seeding/real_data/debt_timeline.json`,
+  which carries CBK figures cited to the PDF page. Do not assert 11.5T — that
+  came from the endpoints withdrawn under issue #188 and disagrees with CBK.
 
 ### Audit Data Quality Checks:
 
@@ -103,14 +110,7 @@ _Should start on http://localhost:8000_
 3. Check for missing funds cases
 4. Verify severity classifications
 
-### Scenario 3: National Overview
-
-1. Get national debt analysis
-2. Get ministry performance data
-3. Get revenue analysis
-4. Check for data consistency
-
-### Scenario 4: ETL Pipeline
+### Scenario 3: ETL Pipeline
 
 1. Start Kenya ETL pipeline
 2. Check job status
@@ -139,7 +139,7 @@ _Should start on http://localhost:8000_
 
 - All counties have realistic population data
 - Budget allocations correlate with population
-- National debt shows 11.5T KES
+- Every published figure traces to a sourced row, not to a typed constant
 - No algorithmic fake patterns
 
 ### API Functionality ✅

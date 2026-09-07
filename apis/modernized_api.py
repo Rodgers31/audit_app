@@ -2,6 +2,33 @@
 Modernized Data-Driven Government Analytics API
 Uses actual extracted data instead of hard-coded values
 Automatically updates when new data files are available
+
+WITHDRAWN 2026-09-07 (issue #188): six routes that served typed-in national
+figures, together with the ``NationalOverview`` response model that only
+``/national/overview`` used.
+
+    GET /national/overview                    total_debt, debt_to_gdp_ratio,
+                                              execution_rate=78.5
+    GET /national/debt                        11.5T, a 60/40 external split,
+                                              70.2% debt-to-GDP, a typed
+                                              2020-2024 series — wrapped in a
+                                              second "verification" block
+                                              claiming manual cross-reference
+    GET /national/ministries                  execution rates from
+    GET /national/ministries/{ministry_name}  abs(hash(name)) % 25
+    GET /national/revenue                     budget * 0.75 * 0.875, split 80/20
+    GET /analytics/comprehensive              composed all of the above
+
+Those figures disagree with backend/seeding/real_data/debt_timeline.json, which
+carries CBK figures cited to the PDF page — including the direction of the
+2023-2024 move and which half of the debt is larger.
+
+The nine routes below served no invented figure and are unchanged. They read
+from ``DataDrivenGovernmentAnalytics``, whose five data-source paths do not
+resolve in this repo, so several of them currently report absence. That is a
+separate defect (issue #188, "the data-driven path is dead, and fails
+silently"); a route that returns empty is not a route that asserts a fabricated
+number, and it is not withdrawn here.
 """
 
 import json
@@ -71,20 +98,6 @@ class DataSourceStatus(BaseModel):
     last_updated: str
     record_count: int
     file_path: str
-
-
-class NationalOverview(BaseModel):
-    government_level: str
-    fiscal_year: str
-    total_ministries: int
-    national_budget: float
-    execution_rate: float
-    total_debt: float
-    debt_to_gdp_ratio: float
-    revenue_collection_rate: float
-    transparency_score: int
-    data_sources_used: List[str]
-    last_updated: str
 
 
 # Startup event
@@ -195,108 +208,6 @@ async def refresh_data(background_tasks: BackgroundTasks):
         "message": "Data refresh started in background",
         "timestamp": datetime.now().isoformat(),
     }
-
-
-# National Government Endpoints
-
-
-@app.get("/national/overview", response_model=NationalOverview)
-async def get_national_overview():
-    """Get comprehensive national government overview from actual data."""
-
-    # Get actual data
-    debt_data = analytics.get_current_national_debt()
-    budget_data = analytics.get_actual_budget_data()
-    revenue_data = analytics.get_revenue_data_from_sources()
-    ministry_data = analytics.get_ministry_performance_from_data()
-
-    overview = NationalOverview(
-        government_level="National",
-        fiscal_year="2024-2025",
-        total_ministries=ministry_data["total_ministries"],
-        national_budget=budget_data.get("national_budget_2024_25", 0),
-        execution_rate=78.5,  # Can be calculated from ministry data
-        total_debt=debt_data["total_debt"],
-        debt_to_gdp_ratio=debt_data["debt_to_gdp_ratio"],
-        revenue_collection_rate=revenue_data["collection_rate"],
-        transparency_score=analytics._calculate_transparency_score(),
-        data_sources_used=list(analytics.cached_data.keys()),
-        last_updated=datetime.now().isoformat(),
-    )
-
-    return overview
-
-
-@app.get("/national/debt")
-async def get_national_debt():
-    """Get current national debt analysis from verified sources."""
-    debt_data = analytics.get_current_national_debt()
-
-    return {
-        "status": "success",
-        "data": debt_data,
-        "currency": "KES",
-        "verification": {
-            "source": "Official government sources and online verification",
-            "last_verified": "2024-12-15",
-            "verification_method": "manual_cross_reference",
-        },
-    }
-
-
-@app.get("/national/ministries")
-async def get_ministry_performance():
-    """Get ministry performance based on actual budget data."""
-    ministry_data = analytics.get_ministry_performance_from_data()
-
-    return {
-        "status": "success",
-        "data": ministry_data,
-        "calculation_method": "proportional_from_actual_budget_data",
-        "last_calculated": ministry_data["last_calculated"],
-    }
-
-
-@app.get("/national/ministries/{ministry_name}")
-async def get_ministry_details(ministry_name: str):
-    """Get detailed ministry information."""
-    ministry_data = analytics.get_ministry_performance_from_data()
-    ministries = ministry_data["ministries"]
-
-    # Find matching ministry (case-insensitive)
-    matching_ministry = None
-    for ministry in ministries.keys():
-        if ministry.lower() == ministry_name.lower():
-            matching_ministry = ministry
-            break
-
-    if not matching_ministry:
-        available_ministries = list(ministries.keys())
-        raise HTTPException(
-            status_code=404,
-            detail=f"Ministry '{ministry_name}' not found. Available: {', '.join(available_ministries)}",
-        )
-
-    ministry_info = ministries[matching_ministry]
-
-    # Add additional calculated details
-    details = {
-        "ministry_name": matching_ministry,
-        **ministry_info,
-        "budget_allocation_billions": ministry_info["budget_allocation"] / 1000000000,
-        "budget_share_of_total": ministry_info["budget_share_percentage"],
-        "data_source": "calculated_from_actual_national_budget",
-    }
-
-    return {"status": "success", "data": details}
-
-
-@app.get("/national/revenue")
-async def get_revenue_analysis():
-    """Get revenue analysis from actual data sources."""
-    revenue_data = analytics.get_revenue_data_from_sources()
-
-    return {"status": "success", "data": revenue_data, "currency": "KES"}
 
 
 # County Government Endpoints
@@ -415,19 +326,6 @@ async def get_audit_queries(
 
 
 # Analytics and Reporting Endpoints
-
-
-@app.get("/analytics/comprehensive")
-async def get_comprehensive_analytics():
-    """Get comprehensive analytics from all data sources."""
-    comprehensive = analytics.get_comprehensive_analytics()
-
-    return {
-        "status": "success",
-        "data": comprehensive,
-        "generation_method": "data_driven_from_actual_sources",
-        "timestamp": datetime.now().isoformat(),
-    }
 
 
 @app.get("/analytics/transparency")
