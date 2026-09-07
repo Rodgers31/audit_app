@@ -562,9 +562,16 @@ jobs:
           session = SessionLocal()
           errors = []
           warnings = []
+          # Every count check() sees, kept for the row-count regression gate
+          # below. The floors answer 'is this table catastrophically empty?';
+          # these same numbers, compared against what earlier runs observed,
+          # answer 'did this table just LOSE most of its rows?' — which no
+          # absolute floor here can answer. See seeding/staleness.py.
+          observed = {}
 
           def check(label, query_count, min_expected, is_warning=False):
               count = query_count
+              observed[label] = count
               status = 'OK' if count >= min_expected else ('WARN' if is_warning else 'FAIL')
               print(f'[{status}] {label}: {count} rows (expected >= {min_expected})')
               if count < min_expected:
@@ -689,13 +696,24 @@ jobs:
           # Row-count floors above ('27 rows >= 20') pass forever and did:
           # they reported [OK] every night for months while audits had not
           # gained a row in 6 weeks and budget_lines in 11. These gates ask
-          # the two questions a floor cannot — has the data MOVED, and did
-          # the pipeline actually reach the PUBLISHER? See
+          # the three questions a floor cannot — has the data MOVED, did
+          # the pipeline actually reach the PUBLISHER, and has any table
+          # LOST rows against what earlier runs saw? See
           # backend/seeding/staleness.py.
+          #
+          # The floors above are kept, and are now only what they can
+          # honestly be: DISASTER detectors for an empty or half-migrated
+          # database, plus tight structural assertions on reference data
+          # (47 counties is 47 counties). On 2026-09-07 they read
+          # 'Budget Lines: 2136 rows (expected >= 400)' and
+          # 'Extractions: 2325 rows (expected >= 1)' — 81% and 99.96%
+          # headroom. Fourteen of the twenty still print [OK] against a
+          # database that has lost four fifths of its rows, which is what
+          # the regression gate is here to catch instead.
           from seeding.staleness import FAIL, WARN, run_all
 
           print('\n--- Freshness gates ---')
-          for finding in run_all(session):
+          for finding in run_all(session, counts=observed):
               print(f'  {finding}')
               if finding.level == FAIL:
                   errors.append(f'{finding.label}: {finding.message}')
