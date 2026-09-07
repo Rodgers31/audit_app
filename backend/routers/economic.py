@@ -206,38 +206,24 @@ async def get_population_latest(db: Session = Depends(get_db)):
         raise HTTPException(status_code=503, detail="Database not available")
 
     try:
-        # Try national-level record first (entity_id IS NULL)
+        # The national series, ``entity_id IS NULL`` — what KNBS and the World
+        # Bank publish. This is the only source.
+        #
+        # There used to be a fallback here that summed entity-bearing rows at
+        # MAX(year) and served the total through a ``_SyntheticPop`` shim. It
+        # was removed with the one in ``services.population`` (issue #190): its
+        # filter was ``entity_id IS NOT NULL``, not "county", so on production
+        # it returned 95,128,592 at 2019 — the 47 counties plus the National
+        # Government's own row, double-counted — and 82 at 2026, from
+        # population_data id=69. It could not have served a correct figure, and
+        # a synthetic row with ``source_document = None`` published as though it
+        # were a measurement.
         row = (
             db.query(PopulationData)
             .filter(PopulationData.entity_id.is_(None))
             .order_by(desc(PopulationData.year))
             .first()
         )
-
-        # Fallback: aggregate county populations if no national record exists.
-        # Scoped to ONE year — the previous version summed county rows across
-        # every seeded year while separately taking max(year), so the year it
-        # reported and the population it reported came from different sets of
-        # rows (credibility audit F29).
-        if not row:
-            from services.population import latest_national_population
-
-            _total, _year = latest_national_population(db)
-            agg = (_total, _year)
-            if agg and agg[0]:
-                # Create a synthetic response (don't save to DB)
-                class _SyntheticPop:
-                    total_population = int(agg[0])
-                    year = agg[1]
-                    male_population = None
-                    female_population = None
-                    urban_population = None
-                    rural_population = None
-                    population_density = None
-                    source_document_id = None
-                    source_document = None
-                    created_at = None
-                row = _SyntheticPop()
     except OperationalError as e:
         logger.error("Database connection error on /population/latest: %s", e)
         raise HTTPException(status_code=503, detail="Database unavailable")
@@ -246,7 +232,14 @@ async def get_population_latest(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Database query failed")
 
     if not row:
-        raise HTTPException(status_code=404, detail="No population data found")
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "No national population data. population_data holds no row with "
+                "entity_id IS NULL; county rows are not summed to stand in for "
+                "one. Reseed with: python -m seeding.cli seed --domain population"
+            ),
+        )
 
     source_name = None
     if getattr(row, "source_document", None):
