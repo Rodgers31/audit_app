@@ -18,17 +18,24 @@
  * backend sends — including a backend that keeps emitting the fabricated shape
  * after this ships.
  *
- * Two signals, in order:
+ * Three signals, in order:
  *
- *  1. DECLARED provenance. `data_source` names the table the answer came from.
+ *  1. A DECLARED absence. Once PR #179 lands, the endpoints stop inventing the
+ *     buckets and send `aging_buckets: null` with an
+ *     `aging_buckets_absent_reason`. A backend that says why there is nothing
+ *     has looked; the page states that rather than falling silent.
+ *  2. DECLARED provenance. `data_source` names the table the answer came from.
  *     `loans_table_fallback` and `none` carry no per-bill aging by
- *     construction, so nothing derived from them is measured. This is the
- *     primary test: provenance is declared, not sniffed.
- *  2. SHAPE, as a fail-closed fallback for a payload that declares nothing.
+ *     construction, so nothing derived from them is measured. Provenance is
+ *     declared, not sniffed.
+ *  3. SHAPE, as a fail-closed fallback for a payload that declares nothing.
  *     A distribution whose entire mass sits in one bucket is indistinguishable
  *     from the hardcoded shape, so it is not drawn. This withholds the rare
  *     genuine all-one-bucket case; that is the correct direction to err when
  *     the alternative is publishing an invented distribution.
+ *
+ * Signals 2 and 3 stay in force after #179: the guard must hold on a payload
+ * that declares nothing at all, including one from an older backend.
  */
 
 export interface AgingBucket {
@@ -113,13 +120,31 @@ export function normalizeAgingBuckets(
 export interface AgingPayload {
   data_source?: unknown;
   aging_buckets?: unknown;
+  /**
+   * Why there is no distribution, when the backend states one. PR #179 stops
+   * emitting the fabricated buckets and sends `aging_buckets: null` with this
+   * code instead — so the absence arrives declared rather than inferred.
+   */
+  aging_buckets_absent_reason?: unknown;
+}
+
+/**
+ * Absent-reason codes that mean there are no bills at all, so there is nothing
+ * to say about their ages. Every other reason is a bill whose age nobody
+ * recorded — which IS worth saying.
+ */
+const REASONS_MEANING_NO_BILLS = new Set(['no_pending_bills_rows']);
+
+function declaredAbsentReason(payload?: AgingPayload | null): string | null {
+  const raw = payload?.aging_buckets_absent_reason;
+  return typeof raw === 'string' && raw.trim() !== '' ? raw.trim() : null;
 }
 
 /**
  * Whether an aging distribution may be drawn as measured.
  *
  * `buckets` are the normalised rows; `payload` is the response they came from,
- * read only for its declared `data_source`.
+ * read only for what it declares — `data_source` and any absent reason.
  */
 export function agingDistributionSupport(
   buckets: AgingBucket[] | null | undefined,
@@ -128,7 +153,18 @@ export function agingDistributionSupport(
   const rows = buckets ?? [];
   const withMass = rows.filter((b) => Number.isFinite(b.amount) && b.amount > 0);
 
-  if (withMass.length === 0) return { supported: false, reason: 'no-data' };
+  if (withMass.length === 0) {
+    // A backend that says WHY there is no distribution has looked and found
+    // none. That is a fact about the public record and belongs on the page —
+    // going silent here would be less disclosure than the fabricated chart
+    // gave, which is the wrong direction to move. Only a reason that says
+    // there are no bills at all leaves nothing to state.
+    const reason = declaredAbsentReason(payload);
+    if (reason && !REASONS_MEANING_NO_BILLS.has(reason)) {
+      return { supported: false, reason: 'not-measured' };
+    }
+    return { supported: false, reason: 'no-data' };
+  }
 
   if (declaresBillLevelDetail(payload?.data_source) === false) {
     return { supported: false, reason: 'not-measured' };

@@ -180,3 +180,85 @@ describe('agingUnsupportedNote', () => {
     }
   });
 });
+
+/**
+ * The payloads PR #179 will send once it lands.
+ *
+ * It stops emitting the fabricated buckets entirely: `aging_buckets` becomes
+ * null and an `aging_buckets_absent_reason` says why. Read naively that is
+ * "no buckets" and the section would fall silent — LESS disclosure than the
+ * fabricated chart carried, which is the wrong direction. A declared absence
+ * is a fact about the public record and gets stated.
+ *
+ * Shapes taken from `main.py` on `fix/debt-endpoints-manufactured-figures`.
+ */
+describe('agingDistributionSupport — after the backend stops fabricating', () => {
+  const COUNTY_AFTER_179 = {
+    status: 'success',
+    data_source: 'loans_table_fallback',
+    total_pending: 9_255_600_000,
+    aging_buckets: null,
+    aging_buckets_absent_reason: 'loans_table_carries_no_aging_data',
+  };
+
+  const NO_BILLS_AFTER_179 = {
+    status: 'no_data',
+    data_source: 'none',
+    total_pending: 0,
+    aging_buckets: null,
+    aging_buckets_absent_reason: 'no_pending_bills_rows',
+  };
+
+  it('states the absence when the backend declares one', () => {
+    const buckets = normalizeAgingBuckets(COUNTY_AFTER_179.aging_buckets, COUNTY_AFTER_179.total_pending);
+    expect(buckets).toEqual([]);
+    expect(agingDistributionSupport(buckets, COUNTY_AFTER_179)).toEqual({
+      supported: false,
+      reason: 'not-measured',
+    });
+  });
+
+  it('stays quiet when the reason is that there are no bills at all', () => {
+    // Nothing owed means nothing to say about how old it is. `no-data` is the
+    // one reason the pages render nothing for.
+    const buckets = normalizeAgingBuckets(NO_BILLS_AFTER_179.aging_buckets, NO_BILLS_AFTER_179.total_pending);
+    expect(agingDistributionSupport(buckets, NO_BILLS_AFTER_179)).toEqual({
+      supported: false,
+      reason: 'no-data',
+    });
+  });
+
+  it('ignores an empty or non-string reason', () => {
+    expect(agingDistributionSupport([], { aging_buckets_absent_reason: '' })).toEqual({
+      supported: false,
+      reason: 'no-data',
+    });
+    expect(agingDistributionSupport([], { aging_buckets_absent_reason: 0 })).toEqual({
+      supported: false,
+      reason: 'no-data',
+    });
+  });
+
+  it('still draws a real distribution from the fixed backend', () => {
+    const measured = {
+      data_source: 'pending_bills_table',
+      total_pending: 1_000,
+      aging_buckets: { '0-30d': 100, '31-90d': 200, '91-180d': 300, '180d+': 400 },
+      aging_buckets_absent_reason: null,
+    };
+    const buckets = normalizeAgingBuckets(measured.aging_buckets, measured.total_pending);
+    expect(agingDistributionSupport(buckets, measured)).toEqual({ supported: true });
+  });
+
+  it('keeps the shape guard in force — a declared source cannot license one bucket', () => {
+    // If a future backend declares the good table but still sends everything
+    // in one band, that is still indistinguishable from the old fabrication.
+    const buckets = normalizeAgingBuckets({ '0-30d': 0, '180d+': 500 }, 500);
+    expect(
+      agingDistributionSupport(buckets, {
+        data_source: 'pending_bills_table',
+        aging_buckets_absent_reason: null,
+      }),
+    ).toEqual({ supported: false, reason: 'single-bucket' });
+  });
+});

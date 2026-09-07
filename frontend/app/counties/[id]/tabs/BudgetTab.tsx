@@ -44,7 +44,14 @@ export default function BudgetTab({ data }: { data: CountyComprehensive }) {
   // without also deciding what may be drawn would have put that bar on all 47
   // county pages; the two land together.
   const raw = countyPendingBills as unknown as
-    | { total_pending?: number; data_source?: unknown; aging_buckets?: unknown; breakdown_by_type?: unknown }
+    | {
+        total_pending?: number;
+        data_source?: unknown;
+        aging_buckets?: unknown;
+        aging_buckets_absent_reason?: unknown;
+        breakdown_by_type?: unknown;
+        breakdown_by_type_absent_reason?: unknown;
+      }
     | undefined;
   const totalPending = raw?.total_pending ?? null;
   const agingBuckets = useMemo(
@@ -52,7 +59,12 @@ export default function BudgetTab({ data }: { data: CountyComprehensive }) {
     [raw?.aging_buckets, totalPending],
   );
   const agingSupport = agingDistributionSupport(agingBuckets, raw);
-  const billDetailDeclared = declaresBillLevelDetail(raw?.data_source) === true;
+  // The type split is drawn only when the source records a bill type AND the
+  // backend does not itself say the rows are unclassified. PR #179 adds that
+  // second signal: rows it could not classify land in one `unclassified`
+  // bucket with a reason beside them, which is a stated absence, not a split.
+  const billDetailDeclared =
+    declaresBillLevelDetail(raw?.data_source) === true && !raw?.breakdown_by_type_absent_reason;
   const breakdownByType = useMemo(() => {
     const src = raw?.breakdown_by_type;
     const rows = Array.isArray(src)

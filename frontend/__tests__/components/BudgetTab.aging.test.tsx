@@ -152,3 +152,39 @@ describe('county aging bar — no pending-bills payload at all', () => {
     expect(screen.getAllByText(/KES 9\.26B/).length).toBeGreaterThan(0);
   });
 });
+
+describe('county aging bar — the payload PR #179 will send', () => {
+  /** aging_buckets null, with the reason stated beside it. */
+  const AFTER_179 = {
+    status: 'success',
+    data_source: 'loans_table_fallback',
+    county: 'Kilifi County',
+    county_id: '3',
+    total_pending: 9_255_600_000,
+    breakdown_by_type: { unclassified: 9_255_600_000 },
+    breakdown_by_type_absent_reason: 'loans_table_carries_no_bill_type',
+    aging_buckets: null,
+    aging_buckets_absent_reason: 'loans_table_carries_no_aging_data',
+  };
+
+  it('still states the absence rather than falling silent', () => {
+    // Read naively, null buckets are "nothing to draw" and the section would
+    // vanish — less disclosure than the fabricated bar carried.
+    pendingBills = AFTER_179;
+    render(<BudgetTab data={county()} />);
+    expect(screen.getByText(/not recorded in the source they come from/i)).toBeInTheDocument();
+    expect(screen.queryByText(/180d\+/)).not.toBeInTheDocument();
+  });
+
+  it('withholds the type split the backend itself flags as unclassified', () => {
+    pendingBills = AFTER_179;
+    render(<BudgetTab data={county()} />);
+    expect(screen.queryByText(/Unclassified/i)).not.toBeInTheDocument();
+  });
+
+  it('keeps the total, which #179 does not change', () => {
+    pendingBills = AFTER_179;
+    render(<BudgetTab data={county()} />);
+    expect(screen.getByText(/KES 9\.26B/)).toBeInTheDocument();
+  });
+});
