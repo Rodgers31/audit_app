@@ -109,6 +109,13 @@ class RedisCache:
     namespace: str = CACHE_NAMESPACE
     namespace_source: str = CACHE_NAMESPACE_SOURCE
 
+    #: Whether REDIS_URL was actually set. Without it, `redis_url` falls back
+    #: to redis://localhost:6379 and "using the in-memory cache" is
+    #: indistinguishable between "no Redis in development" (normal) and "Redis
+    #: was configured but unreachable at startup" (an incident: every endpoint
+    #: is running uncached). health_check() reports it so the caller can tell.
+    redis_url_configured: bool = False
+
     def __init__(self, redis_url: str = None):
         self.redis_url = redis_url or os.getenv("REDIS_URL", "redis://localhost:6379")
         self.client: Optional[redis.Redis] = None
@@ -118,6 +125,7 @@ class RedisCache:
         self._last_unserialisable = None
         self.namespace = CACHE_NAMESPACE
         self.namespace_source = CACHE_NAMESPACE_SOURCE
+        self.redis_url_configured = bool(redis_url or os.getenv("REDIS_URL"))
         RedisCache._instances.add(self)
         self._initialize()
 
@@ -269,6 +277,7 @@ class RedisCache:
             "unserialisable_values": self._unserialisable_values,
             "cache_namespace": self.namespace,
             "cache_namespace_source": self.namespace_source,
+            "redis_configured": self.redis_url_configured,
         }
         if self._last_unserialisable:
             diagnostics["last_unserialisable"] = self._last_unserialisable
