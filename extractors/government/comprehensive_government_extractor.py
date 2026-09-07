@@ -1,7 +1,74 @@
 """
 Comprehensive Government Reports Extractor
-Extracts both County and National government reports from multiple sources
-Provides complete audit coverage for transparency platform
+Discovers County and National government report documents from COB, Treasury
+and OAG, and downloads the ones it is asked for.
+
+WITHDRAWN 2026-09-07 (issue #193): three methods that typed in a national
+government database, and a block that graded the run's own coverage.
+
+    generate_national_government_issues  170-209  seventeen typed figures
+    _generate_ministry_performance       212-247  fifteen ministries' money
+                                                  from hash(ministry)
+    _generate_ministry_issues            249-281  named findings against named
+                                                  ministries
+    coverage_analysis (in the results)   545-551  "Complete - All 47 counties
+                                                  covered", transparency_score 95
+
+The seventeen were an execution rate of 78.5% (development 65.2, recurrent
+89.1), 156 audit queries, 45 high-priority issues, KSh 12.5Bn of "irregular
+expenditure" and 8.3Bn "unsupported", 23 pending investigations, a debt block
+of 10.2T at 67.8% of GDP split 6.1T external / 4.1T domestic, and a revenue
+block of 2.8T targeted against 2.45T collected at 87.5%, of which 1.96T tax.
+None was read from any document this module fetches. Several were already known
+to be invented under other names: 78.5 and 156 are issue #183's, 87.5 is
+#188's, and "irregular expenditure" is the classification #182 established the
+pipeline does not produce at all. The debt block repeats #188's defects
+independently — 10.2T against CBK's 10,925.3Bn for 2024 in
+``backend/seeding/real_data/debt_timeline.json``, 67.8% against that fixture's
+62.3%, and 59.8% of the stock on the external side where CBK's 2024 share is
+46.3% and this repo's own loan register is 47.4% on ``outstanding``.
+
+``_generate_ministry_performance`` was the worse of the two hash-driven
+generators in this tree, because #188's drove rates and this one drove money:
+each ministry's ``budget_allocation`` was ``(hash(name) % 500000000000) +
+100000000000`` and its ``pending_bills`` ``(hash(name) % 10000000000) +
+1000000000``. ``hash()`` on a ``str`` is salted per process, so three runs put
+Health at KSh 116.4Bn, 147.3Bn and 338.1Bn.
+
+``coverage_analysis`` went for a different reason. It sat in the same dict as
+``extraction_summary``, whose ``county_reports`` is ``len(cob_reports.get(
+"county", []))`` — a real count. Being literals, it could report "Complete -
+All 47 counties covered" and a transparency score of 95 while that count was
+zero, and ``:574`` logged the 95 as the run's headline. A self-assessment that
+cannot disagree with the thing it assesses reports healthy because it measured
+nothing.
+
+WITHDRAWN 2026-09-07 (issue #196): the rest of the self-assessment, twelve
+lines below where ``coverage_analysis`` had been.
+
+    api_integration (in the results)     472-482  ``ready_for_ui: True`` and an
+                                                  endpoints_available list
+
+``ready_for_ui`` was a literal. It could not become False whatever the run
+found, which makes it the same shape as the block above it, and it was the last
+of the self-grading in this module.
+
+The endpoint list was worse than unmeasured, because it had become wrong. It
+advertised six paths, and three of them — ``/national/issues``,
+``/national/ministries`` and ``/national/debt`` — were deleted by PR #191 when
+it withdrew the six methods that typed in the national debt. Nothing in the
+repo has served them since. The other three do resolve:
+``/counties/{county_name}`` at ``apis/modernized_api.py:228``,
+``/audit/queries`` at ``:286``, and ``/analytics/summary`` at
+``apis/county_analytics_api.py:371``.
+
+``backend/tests/test_advertised_endpoints_are_served.py`` now checks every
+advertised path against the routes this repo registers, so a list that outlives
+its endpoints fails rather than shipping.
+
+What survives fetches pages, finds document links, downloads them and reports
+how many of each it got. Those counts are measurements and they are already in
+``extraction_summary``.
 """
 
 import json
@@ -166,119 +233,6 @@ class ComprehensiveGovernmentExtractor:
                 logger.warning(f"⚠️ OAG error {url}: {str(e)}")
 
         return oag_reports
-
-    def generate_national_government_issues(self):
-        """Generate comprehensive national government issues database."""
-        logger.info("🏛️ Generating National Government Issues Database...")
-
-        national_issues = {
-            "budget_execution": {
-                "overall_national_execution_rate": 78.5,
-                "development_budget_execution": 65.2,
-                "recurrent_budget_execution": 89.1,
-                "major_challenges": [
-                    "Delayed procurement processes affecting development projects",
-                    "Revenue shortfalls impacting budget implementation",
-                    "Pending bills accumulation across ministries",
-                    "Weak monitoring and evaluation systems",
-                ],
-            },
-            "audit_findings": {
-                "total_audit_queries": 156,
-                "high_priority_issues": 45,
-                "irregular_expenditure": 12500000000,  # 12.5B KES
-                "unsupported_expenditure": 8300000000,  # 8.3B KES
-                "pending_investigations": 23,
-            },
-            "ministry_performance": self._generate_ministry_performance(),
-            "national_debt": {
-                "total_debt": 10200000000000,  # 10.2T KES
-                "debt_to_gdp_ratio": 67.8,
-                "external_debt": 6100000000000,  # 6.1T KES
-                "domestic_debt": 4100000000000,  # 4.1T KES
-                "debt_sustainability_risk": "High",
-            },
-            "revenue_performance": {
-                "total_revenue_target": 2800000000000,  # 2.8T KES
-                "actual_revenue_collected": 2450000000000,  # 2.45T KES
-                "collection_rate": 87.5,
-                "tax_revenue": 1960000000000,  # 1.96T KES
-                "non_tax_revenue": 490000000000,  # 490B KES
-            },
-        }
-
-        return national_issues
-
-    def _generate_ministry_performance(self):
-        """Generate ministry-level performance data."""
-        ministries = [
-            "Health",
-            "Education",
-            "Transport",
-            "Energy",
-            "Agriculture",
-            "Defense",
-            "Interior",
-            "Foreign Affairs",
-            "Finance",
-            "Public Works",
-            "Water",
-            "Environment",
-            "ICT",
-            "Trade",
-            "Tourism",
-        ]
-
-        ministry_data = {}
-
-        for ministry in ministries:
-            ministry_hash = hash(ministry)
-
-            ministry_data[ministry] = {
-                "budget_allocation": (ministry_hash % 500000000000)
-                + 100000000000,  # 100B-600B KES
-                "execution_rate": min(95, max(45, 75 + (ministry_hash % 30) - 15)),
-                "audit_queries": (ministry_hash % 20) + 2,
-                "major_issues": self._generate_ministry_issues(ministry),
-                "performance_score": min(100, max(30, 70 + (ministry_hash % 40) - 20)),
-                "pending_bills": (ministry_hash % 10000000000)
-                + 1000000000,  # 1B-11B KES
-            }
-
-        return ministry_data
-
-    def _generate_ministry_issues(self, ministry: str) -> List[str]:
-        """Generate ministry-specific issues."""
-        common_issues = [
-            "Budget execution delays",
-            "Procurement irregularities",
-            "Inadequate monitoring systems",
-            "Staff capacity challenges",
-            "Infrastructure maintenance backlog",
-        ]
-
-        ministry_specific = {
-            "Health": [
-                "Medical equipment procurement delays",
-                "Drug shortage in facilities",
-            ],
-            "Education": [
-                "School infrastructure gaps",
-                "Teacher shortage in rural areas",
-            ],
-            "Transport": ["Road maintenance backlog", "Contractor payment delays"],
-            "Energy": ["Power transmission losses", "Rural electrification delays"],
-            "Agriculture": [
-                "Fertilizer subsidy program inefficiencies",
-                "Irrigation project delays",
-            ],
-        }
-
-        issues = common_issues[:2]  # Take 2 common issues
-        if ministry in ministry_specific:
-            issues.extend(ministry_specific[ministry])
-
-        return issues
 
     def _extract_reports_from_page(self, url: str, category: str) -> List[Dict]:
         """Extract report links from a webpage."""
@@ -510,10 +464,7 @@ class ComprehensiveGovernmentExtractor:
         # Step 3: Extract OAG national audit reports
         oag_reports = self.extract_oag_national_reports()
 
-        # Step 4: Generate national government issues
-        national_issues = self.generate_national_government_issues()
-
-        # Step 5: Download priority reports
+        # Step 4: Download priority reports
         all_reports = {
             **cob_reports,
             "treasury": treasury_reports,
@@ -541,25 +492,6 @@ class ComprehensiveGovernmentExtractor:
             },
             "discovered_reports": all_reports,
             "downloaded_reports": downloaded_reports,
-            "national_government_issues": national_issues,
-            "coverage_analysis": {
-                "county_level": "Complete - All 47 counties covered",
-                "national_level": "Complete - All major ministries covered",
-                "audit_coverage": "Complete - County and national audit data",
-                "budget_coverage": "Complete - Implementation and allocation data",
-                "transparency_score": 95,
-            },
-            "api_integration": {
-                "ready_for_ui": True,
-                "endpoints_available": [
-                    "/counties/{name} - Individual county data",
-                    "/audit/queries - County audit queries",
-                    "/national/issues - National government issues",
-                    "/national/ministries - Ministry performance",
-                    "/national/debt - National debt analysis",
-                    "/analytics/summary - Overall transparency metrics",
-                ],
-            },
         }
 
         # Log comprehensive summary
@@ -569,9 +501,6 @@ class ComprehensiveGovernmentExtractor:
         logger.info(f"   🏛️ County Reports: {summary['county_reports']}")
         logger.info(f"   🇰🇪 National Reports: {summary['national_reports']}")
         logger.info(f"   💾 Downloaded: {summary['reports_downloaded']}")
-        logger.info(
-            f"   🎯 Transparency Score: {results['coverage_analysis']['transparency_score']}%"
-        )
         logger.info(f"   ⏱️ Duration: {duration:.1f} seconds")
 
         return results
@@ -593,9 +522,6 @@ def main():
         f"🏛️ County: {summary['county_reports']} | 🇰🇪 National: {summary['national_reports']}"
     )
     print(f"💾 Downloaded: {summary['reports_downloaded']}")
-    print(
-        f"🎯 Transparency Score: {results['coverage_analysis']['transparency_score']}%"
-    )
     print(f"📁 Results: comprehensive_government_reports.json")
     print(f"📂 Files: ./reports/ directory")
 

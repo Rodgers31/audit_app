@@ -28,6 +28,12 @@ def generate_api_testing_guide():
     print("Base URL: http://localhost:8004")
     print("Description: Modern API using actual extracted data")
     print()
+    print("   Six endpoints were withdrawn from this service on 2026-09-07")
+    print("   under issue #188 — /national/overview, /national/debt,")
+    print("   /national/ministries, /national/ministries/{name},")
+    print("   /national/revenue and /analytics/comprehensive served typed-in")
+    print("   debt, budget and revenue figures. The nine below are unchanged.")
+    print()
 
     modernized_endpoints = [
         {
@@ -48,41 +54,6 @@ def generate_api_testing_guide():
             "method": "POST",
             "endpoint": "/refresh-data",
             "description": "Refresh all data from source files",
-            "params": None,
-            "body": None,
-        },
-        {
-            "method": "GET",
-            "endpoint": "/national/overview",
-            "description": "Get data-driven national overview",
-            "params": None,
-            "body": None,
-        },
-        {
-            "method": "GET",
-            "endpoint": "/national/debt",
-            "description": "Get real-time debt analysis",
-            "params": None,
-            "body": None,
-        },
-        {
-            "method": "GET",
-            "endpoint": "/national/ministries",
-            "description": "Get ministry data from actual sources",
-            "params": None,
-            "body": None,
-        },
-        {
-            "method": "GET",
-            "endpoint": "/national/ministries/{ministry_name}",
-            "description": "Get specific ministry from data-driven sources",
-            "params": "ministry_name (path): Ministry name",
-            "body": None,
-        },
-        {
-            "method": "GET",
-            "endpoint": "/national/revenue",
-            "description": "Get revenue data from actual sources",
             "params": None,
             "body": None,
         },
@@ -112,13 +83,6 @@ def generate_api_testing_guide():
             "endpoint": "/audit/queries",
             "description": "Get audit queries with filtering",
             "params": "county (query, optional), query_type (query, optional), severity (query, optional)",
-            "body": None,
-        },
-        {
-            "method": "GET",
-            "endpoint": "/analytics/comprehensive",
-            "description": "Get comprehensive analytics from all sources",
-            "params": None,
             "body": None,
         },
         {
@@ -305,7 +269,6 @@ def generate_api_testing_guide():
     print("   • All endpoints return valid JSON responses")
     print("   • County data shows realistic figures (not fake patterns)")
     print("   • Audit data contains real OAG queries")
-    print("   • National debt shows 11.5T KES (corrected figure)")
     print("   • No hard-coded fake values in responses")
 
 
