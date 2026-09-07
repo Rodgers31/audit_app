@@ -144,11 +144,6 @@ def main():
     # Test each API
     apis = [
         {
-            "name": "Enhanced County Analytics API",
-            "script": "enhanced_county_analytics_api.py",
-            "directory": "apis",
-        },
-        {
             "name": "Modernized Data-Driven API",
             "script": "modernized_api.py",
             "directory": "apis",

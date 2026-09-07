@@ -3,10 +3,9 @@
 START ALL API ENDPOINTS SCRIPT
 ==============================
 
-This script starts all three API services for the Kenya Audit Transparency Application:
-1. Enhanced County Analytics API (Port 8003)
-2. Modernized Data-Driven API (Port 8004)
-3. Main Backend API (Port 8000)
+This script starts both API services for the Kenya Audit Transparency Application:
+1. Modernized Data-Driven API (Port 8004)
+2. Main Backend API (Port 8000)
 
 Usage:
     python start_all_apis.py
@@ -30,13 +29,6 @@ class APILauncher:
         self.project_root = Path(__file__).parent.absolute()
         self.processes = []
         self.apis = [
-            {
-                "name": "Enhanced County Analytics API",
-                "script": "enhanced_county_analytics_api.py",
-                "directory": "apis",
-                "port": 8003,
-                "url": "http://localhost:8003",
-            },
             {
                 "name": "Modernized Data-Driven API",
                 "script": "modernized_api.py",

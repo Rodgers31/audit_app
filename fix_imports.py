@@ -35,17 +35,6 @@ def fix_api_imports():
     print("🔧 FIXING API IMPORT STATEMENTS")
     print("=" * 31)
 
-    # Enhanced County Analytics API
-    api_file = "apis/enhanced_county_analytics_api.py"
-    if os.path.exists(api_file):
-        import_updates = {
-            'with open("enhanced_county_data.json"': 'with open("../data/county/enhanced_county_data.json"',
-            'with open("oag_audit_data.json"': 'with open("../data/audit/oag_audit_data.json"',
-            'with open("cob_budget_implementation_data.json"': 'with open("../data/cob/cob_budget_implementation_data.json"',
-        }
-        if update_file_imports(api_file, import_updates):
-            print(f"📝 Updated: {api_file}")
-
     # Modernized API
     modernized_file = "apis/modernized_api.py"
     if os.path.exists(modernized_file):
@@ -173,7 +162,6 @@ def run_import_fixes():
 
     print("\n✅ IMPORT FIXES COMPLETE!")
     print("\n📝 NEXT STEPS:")
-    print("1. Test APIs: cd apis && python enhanced_county_analytics_api.py")
     print("2. Test analysis: cd analysis && python county_data_analyzer.py")
     print("3. Use data_helper.py for easy data access in new files")
 
