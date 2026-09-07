@@ -321,16 +321,6 @@ QUARANTINE: dict[str, tuple[int, str]] = {
         "and migration ce6ed007f696, guarded by "
         "backend/tests/test_stored_county_metrics_are_cleared.py",
     ),
-    "extractors/cob/cob_report_extractor.py": (
-        2,
-        "not raised by any issue yet; found by extending this sweep to "
-        "extractors/ and left untouched so the fix carries its own evidence",
-    ),
-    "extractors/cob/enhanced_cob_extractor.py": (
-        1,
-        "not raised by any issue yet; found by extending this sweep to "
-        "extractors/ and left untouched so the fix carries its own evidence",
-    ),
 }
 
 
