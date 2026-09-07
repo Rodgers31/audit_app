@@ -14,6 +14,11 @@ import { Skeleton, SkeletonChart } from '@/components/ui/Skeleton';
 import { AlertTriangle, BarChart3, Globe2, Landmark, Loader2, MapPinned, TrendingUp } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { gdpRatioComparison } from '@/lib/debt/debtCardBasis';
+import {
+  displayedSplit,
+  externalShare,
+  reconcileExternalDomestic,
+} from '@/lib/debt/externalDomesticSplit';
 import InfoTip from '@/components/InfoTip';
 import {
   Area,
@@ -212,27 +217,51 @@ export default function NationalDebtCard() {
   // debt-to-GDP ratio, else nothing.
   const riskLevel: 'Low' | 'Moderate' | 'High' | null =
     sustainability.risk_level ?? classifyDebtRisk(gdpRatio);
-  const externalDebt =
-    apiData?.summary?.external_debt ?? (lastYear ? lastYear.external * 1_000_000_000 : null);
-  const domesticDebt =
-    apiData?.summary?.domestic_debt ?? (lastYear ? lastYear.domestic * 1_000_000_000 : null);
-  // External vs domestic split — shares of (external + domestic) so the two
-  // always sum to exactly 100%. Rounding each independently off the total
-  // previously produced 100.2% (51.5% + 48.7%).
+  // External vs domestic split.
+  //
+  // `summary.external_debt` is NOT the sum of the external creditors this site
+  // publishes. The backend computes that sum, then overwrites it with the
+  // register TOTAL re-split by a proportion taken from the DebtTimeline table
+  // — a different table on a different date. In production the two answers
+  // differ by KSh 467.7Bn (5.27T here vs 4.80T across /debt's creditor cards),
+  // so these tiles named a figure that describes no set of rows on the site,
+  // and a reader following them to /debt found cards that do not add up to it.
+  //
+  // The reconciler prefers the register's own sum whenever the two disagree
+  // and reports the gap so the disclosure below can state it. When the backend
+  // fix lands and they agree, `reconciles` goes true and this reverts to the
+  // API's own figures with no further change here. See
+  // lib/debt/externalDomesticSplit.
+  const splitReconciliation = useMemo(
+    () => reconcileExternalDomestic(apiData?.categories, apiData?.summary),
+    [apiData?.categories, apiData?.summary],
+  );
+  const shownSplit = displayedSplit(splitReconciliation);
+  const timelineSplit =
+    lastYear && lastYear.external != null && lastYear.domestic != null
+      ? { external: lastYear.external * 1_000_000_000, domestic: lastYear.domestic * 1_000_000_000 }
+      : null;
+  const split = shownSplit ?? timelineSplit;
+  const externalDebt = split ? split.external : null;
+  const domesticDebt = split ? split.domestic : null;
+  // Shares of (external + domestic) so the two always sum to exactly 100%.
+  // Rounding each independently off the total previously produced 100.2%
+  // (51.5% + 48.7%).
   //
   // The split only exists when BOTH sides are known. With one side missing it
   // used to fall back to 0, which rendered "0% of total" and a "0% / 0%"
   // split beside an em-dash value — a fabricated statistic presented with the
   // same confidence as a real one. Absent inputs now yield null and every
   // consumer renders "—".
-  const splitAvailable =
-    externalDebt != null && domesticDebt != null && externalDebt + domesticDebt > 0;
-  // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- guarded: splitAvailable above requires both to be non-null before any of these are read
-  const splitBase = (externalDebt ?? 0) + (domesticDebt ?? 0);
-  const externalPct = splitAvailable
-    ? +((externalDebt! / splitBase) * 100).toFixed(1)
-    : null;
+  const externalPct = externalShare(split);
   const domesticPct = externalPct != null ? +(100 - externalPct).toFixed(1) : null;
+  // The gap is only disclosed when the tiles beside it are the register's own
+  // sum — i.e. when the page has actually chosen one of two disagreeing
+  // answers on the reader's behalf and owes them that fact.
+  const splitGapKes =
+    !splitReconciliation.reconciles && shownSplit === splitReconciliation.register
+      ? splitReconciliation.gapKes
+      : null;
 
   // Both derived claims must start from the earliest SOURCED year, not the
   // earliest year on the chart. Anchoring "4.0× since 2013" and "From 58.4% in
@@ -370,6 +399,27 @@ export default function NationalDebtCard() {
             accent='sage'
           />
         </div>
+
+        {/* Two answers, one question. The API's `summary` split and the sum of
+            the creditor categories on /debt disagree; the tiles above show the
+            latter, because it is the one that describes rows this site
+            publishes. Saying so is not optional — without it a reader takes
+            the tiles for the composition of the register and finds /debt's
+            cards adding to something else. Disappears when the two agree. */}
+        {splitGapKes != null && (
+          <p className='mt-3 text-[11px] leading-snug text-neutral-muted'>
+            <span className='font-semibold text-gov-dark dark:text-white'>
+              Two sources disagree by {fmtKES(splitGapKes)}.
+            </span>{' '}
+            The figures above are our own creditor rows added up — the same rows{' '}
+            <Link href='/debt' className='underline hover:no-underline'>
+              /debt
+            </Link>{' '}
+            breaks down by lender. The API also reports a split derived from the
+            CBK aggregate series, which puts external debt {fmtKES(splitGapKes)}{' '}
+            higher. Neither is reconciled to a source document.
+          </p>
+        )}
 
         {/* The "IMF broader measure … includes counties, SOEs, pending bills"
             callout was withdrawn (credibility audit F8). It described the IMF
