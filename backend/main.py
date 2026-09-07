@@ -11165,7 +11165,10 @@ async def get_debt_sustainability(db: Session = Depends(get_db)):
                 "debt_service_to_revenue": None,
                 "external_debt_share": None,
                 "projections": [],
+                "projections_source": None,
+                "projections_absent_reason": "no_published_projection_seeded",
                 "regional_peers": _get_regional_peers(),
+                "regional_peers_basis": _PEER_COLUMN_BASIS,
             }
 
         # ── Debt-to-GDP ────────────────────────────────────────────
@@ -11212,8 +11215,10 @@ async def get_debt_sustainability(db: Session = Depends(get_db)):
             if total > 0:
                 external_share = round(ext / total * 100, 1)
 
-        # ── 5-Year Projections (linear extrapolation) ──────────────
-        projections = _compute_debt_projections(db)
+        # ── Projections: published, or absent ──────────────────────
+        projections, projections_source, projections_absent_reason = (
+            _published_debt_projections(db)
+        )
 
         # ── Regional Peers ─────────────────────────────────────────
         peers = _get_regional_peers(
@@ -11231,7 +11236,13 @@ async def get_debt_sustainability(db: Session = Depends(get_db)):
             "debt_service_to_revenue": debt_service_to_revenue,
             "external_debt_share": external_share,
             "projections": projections,
+            "projections_source": projections_source,
+            "projections_absent_reason": projections_absent_reason,
             "regional_peers": peers,
+            # What each peer column measures. The peer table repeats Kenya
+            # beside the headline above it, so an undeclared basis here is a
+            # contradiction on one page rather than a footnote.
+            "regional_peers_basis": _PEER_COLUMN_BASIS,
             "currency": "KES",
             "source": "National Treasury BPS, CBK Annual Reports",
         }
@@ -11241,46 +11252,76 @@ async def get_debt_sustainability(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-def _compute_debt_projections(db: Session) -> list:
-    """Simple linear extrapolation of debt-to-GDP for next 5 years."""
-    from models import DebtTimeline
+#: The projection series that already exists in this database, seeded nightly
+#: by ``backend.seeding.domains.imf_weo`` and already served by
+#: ``/api/v1/debt/broader``.
+_PROJECTION_INDICATOR = "GGXWDG_NGDP"
+_PROJECTION_SOURCE_LABEL = "IMF World Economic Outlook (GGXWDG_NGDP)"
 
-    # Fetch only the last 5 data points directly from DB (not all rows)
-    recent = (
-        db.query(DebtTimeline)
-        .filter(DebtTimeline.gdp_ratio.isnot(None))
-        .order_by(DebtTimeline.year.desc())
-        .limit(5)
+
+def _published_debt_projections(db: Session) -> tuple:
+    """Kenya's PUBLISHED debt-to-GDP projection, or nothing and a reason.
+
+    Returns ``(projections, source_label, absent_reason)``.
+
+    This was a least-squares fit over the last five ``DebtTimeline`` points,
+    emitted as ``projected_debt_to_gdp``: 70.4 / 70.7 / 71.0 / 71.3 / 71.6 —
+    +0.3 every year, to 2030. Nobody published that. It was a straight line
+    drawn through five historical observations and given a forecast's name
+    (audit 2026-09-06 §P2-12).
+
+    It was also wrong in a checkable way. The IMF's actual projection for
+    Kenya sits in ``imf_weo_observations`` in the same database — 71.6 / 72.4 /
+    73.3 / 73.6 / 74.2 — so the fitted line understated the one published
+    forecast available by 2.6 points of GDP at 2030.
+
+    Read the newest vintage only. IMF publishes twice a year and every
+    snapshot is kept, so mixing vintages would splice two forecasts into one
+    curve. When nothing is seeded the answer is no projection and a reason —
+    an extrapolation is not a fallback for a forecast.
+    """
+    from sqlalchemy import func as _func  # local — main.py imports sqla locally
+
+    from models import ImfWeoObservation
+
+    latest_vintage = (
+        db.query(_func.max(ImfWeoObservation.vintage))
+        .filter(
+            ImfWeoObservation.country_code == "KEN",
+            ImfWeoObservation.indicator == _PROJECTION_INDICATOR,
+        )
+        .scalar()
+    )
+    if latest_vintage is None:
+        return [], None, "no_published_projection_seeded"
+
+    rows = (
+        db.query(ImfWeoObservation)
+        .filter(
+            ImfWeoObservation.country_code == "KEN",
+            ImfWeoObservation.indicator == _PROJECTION_INDICATOR,
+            ImfWeoObservation.vintage == latest_vintage,
+            ImfWeoObservation.is_projection.is_(True),
+            ImfWeoObservation.value.isnot(None),
+        )
+        .order_by(ImfWeoObservation.year.asc())
         .all()
     )
-    if len(recent) < 2:
-        return []
+    if not rows:
+        return [], None, "vintage_carries_no_projection_years"
 
-    # Reverse so oldest-first for the linear fit
-    recent = list(reversed(recent))
-    n = len(recent)
-    xs = [float(r.year) for r in recent]
-    ys = [float(r.gdp_ratio) for r in recent]
-
-    x_mean = sum(xs) / n
-    y_mean = sum(ys) / n
-    num = sum((xs[i] - x_mean) * (ys[i] - y_mean) for i in range(n))
-    den = sum((xs[i] - x_mean) ** 2 for i in range(n))
-
-    if den == 0:
-        return []
-
-    slope = num / den
-    intercept = y_mean - slope * x_mean
-
-    last_year = int(xs[-1])
-    projections = []
-    for i in range(1, 6):
-        proj_year = last_year + i
-        proj_val = round(slope * proj_year + intercept, 1)
-        projections.append({"year": proj_year, "projected_debt_to_gdp": proj_val})
-
-    return projections
+    return (
+        [
+            {
+                "year": r.year,
+                "projected_debt_to_gdp": round(float(r.value), 1),
+                "is_published_projection": True,
+            }
+            for r in rows
+        ],
+        _PROJECTION_SOURCE_LABEL,
+        None,
+    )
 
 
 def _get_regional_peers(kenya_ratio: Optional[float] = None) -> list:
@@ -11305,11 +11346,56 @@ _EAC_COUNTRIES = {
     "RWA": "Rwanda",
 }
 
-# World Bank indicator codes
+# World Bank indicator codes, keyed by WHAT THEY MEASURE.
+#
+# Two of these used to be keyed by the headline field they were poured into —
+# ``debt_service_to_revenue`` and ``external_debt_pct`` — which is how the
+# regional-peer table came to state Kenya's debt service as 24.3% on a page
+# whose headline says 77.6%, and Kenya's external share as 35.0% beside a
+# headline of 44.4% (audit 2026-09-06 §P2-11). Neither peer number was wrong;
+# both were a different measure wearing the headline's name:
+#
+#   GC.XPN.INTP.RV.ZS   INTEREST payments only, no principal, % of revenue
+#   DT.DOD.DECT.GN.ZS   external debt over GNI — not over total public debt
+#
+# Rwanda's 93.9 in that second column is the tell: no country holds 93.9% of
+# its public debt externally, but 93.9% of GNI is unremarkable.
 _WB_INDICATORS = {
     "debt_to_gdp": "GC.DOD.TOTL.GD.ZS",  # Central govt debt (% GDP)
-    "debt_service_to_revenue": "GC.XPN.INTP.RV.ZS",  # Interest payments (% revenue)
-    "external_debt_pct": "DT.DOD.DECT.GN.ZS",  # External debt stocks (% GNI)
+    "interest_payments_pct_revenue": "GC.XPN.INTP.RV.ZS",
+    "external_debt_pct_gni": "DT.DOD.DECT.GN.ZS",
+}
+
+#: What each regional-peer column is, published with the data so no reader has
+#: to infer a measure from a field name.
+_PEER_COLUMN_BASIS = {
+    "debt_to_gdp": {
+        "measure": "General government gross debt, % of GDP",
+        "indicator": "GGXWDG_NGDP",
+        "publisher": "IMF World Economic Outlook",
+    },
+    "interest_payments_pct_revenue": {
+        "measure": "Interest payments, % of revenue (excludes principal)",
+        "indicator": "GC.XPN.INTP.RV.ZS",
+        "publisher": "World Bank",
+    },
+    "external_debt_pct_gni": {
+        "measure": "External debt stocks, % of GNI (denominator is GNI, not debt)",
+        "indicator": "DT.DOD.DECT.GN.ZS",
+        "publisher": "World Bank",
+    },
+}
+
+#: Why the two headline measures have no peer column. Kenya's 77.6% is total
+#: debt service (principal + interest) over revenue, from ``fiscal_summaries``;
+#: 44.4% is external debt over TOTAL PUBLIC DEBT. Neither has a cross-country
+#: series behind it here, and the nearest-looking World Bank series is a
+#: different measure — which is what produced the contradiction.
+_PEER_ABSENT_REASONS = {
+    "debt_service_to_revenue": "no_comparable_total_debt_service_series_for_peers",
+    "external_debt_share": (
+        "no_comparable_share_of_total_public_debt_series_for_peers"
+    ),
 }
 
 # IMF DataMapper indicator codes (WEO dataset)
@@ -11402,8 +11488,8 @@ def _get_regional_peers_cached(kenya_ratio: Optional[float] = None) -> list:
     # ── Fetch all indicators ──────────────────────────────────────
     codes_str = ";".join(_EAC_COUNTRIES.keys())
     debt_gdp: Dict[str, float] = {}
-    service_rev: Dict[str, float] = {}
-    external_pct: Dict[str, float] = {}
+    interest_pct_rev: Dict[str, float] = {}
+    external_pct_gni: Dict[str, float] = {}
 
     # 1. Try IMF for debt-to-GDP (often more current than World Bank)
     try:
@@ -11424,56 +11510,44 @@ def _get_regional_peers_cached(kenya_ratio: Optional[float] = None) -> list:
     except Exception as exc:
         _logger_peers.debug("WB debt-to-GDP unavailable: %s", exc)
 
-    # 3. World Bank: debt service to revenue
+    # 3. World Bank: interest payments as % of revenue
     try:
-        service_rev = _wb_fetch_indicator(
-            _WB_INDICATORS["debt_service_to_revenue"], codes_str
+        interest_pct_rev = _wb_fetch_indicator(
+            _WB_INDICATORS["interest_payments_pct_revenue"], codes_str
         )
         _logger_peers.info(
-            "WB debt-service/revenue: got data for %d countries", len(service_rev)
+            "WB interest/revenue: got data for %d countries", len(interest_pct_rev)
         )
     except Exception as exc:
-        _logger_peers.debug("WB debt-service/revenue unavailable: %s", exc)
+        _logger_peers.debug("WB interest/revenue unavailable: %s", exc)
 
     # 4. World Bank: external debt as % of GNI
     try:
-        external_pct = _wb_fetch_indicator(
-            _WB_INDICATORS["external_debt_pct"], codes_str
+        external_pct_gni = _wb_fetch_indicator(
+            _WB_INDICATORS["external_debt_pct_gni"], codes_str
         )
         _logger_peers.info(
-            "WB external-debt%%: got data for %d countries", len(external_pct)
+            "WB external-debt%%GNI: got data for %d countries", len(external_pct_gni)
         )
     except Exception as exc:
-        _logger_peers.debug("WB external-debt%% unavailable: %s", exc)
+        _logger_peers.debug("WB external-debt%%GNI unavailable: %s", exc)
 
     # ── Verified fallback values (updated Mar 2026) ───────────────
     # Used ONLY when both APIs are unreachable for a given indicator.
+    # Only debt-to-GDP has a fallback, and only because it is the SAME measure
+    # the live APIs serve (general government gross debt, % of GDP).
+    #
+    # The other two fallback columns are gone. They carried KEN 57.6 / 52.3 —
+    # neither the headline's measure nor the World Bank series they stood in
+    # for, so the number in a given field silently changed *measure* depending
+    # on whether api.worldbank.org answered. A value on an undeclared basis is
+    # worse than no value: absence is visible, a wrong basis is not.
     _fallback = {
-        "KEN": {
-            "debt_to_gdp": 68.0,
-            "debt_service_to_revenue": 57.6,
-            "external_debt_share": 52.3,
-        },
-        "ETH": {
-            "debt_to_gdp": 31.4,
-            "debt_service_to_revenue": 22.8,
-            "external_debt_share": 58.1,
-        },
-        "TZA": {
-            "debt_to_gdp": 48.2,
-            "debt_service_to_revenue": 15.3,
-            "external_debt_share": 61.5,
-        },
-        "UGA": {
-            "debt_to_gdp": 53.1,
-            "debt_service_to_revenue": 19.7,
-            "external_debt_share": 55.8,
-        },
-        "RWA": {
-            "debt_to_gdp": 67.2,
-            "debt_service_to_revenue": 13.5,
-            "external_debt_share": 68.4,
-        },
+        "KEN": {"debt_to_gdp": 68.0},
+        "ETH": {"debt_to_gdp": 31.4},
+        "TZA": {"debt_to_gdp": 48.2},
+        "UGA": {"debt_to_gdp": 53.1},
+        "RWA": {"debt_to_gdp": 67.2},
     }
 
     # ── Assemble peers ────────────────────────────────────────────
@@ -11487,29 +11561,44 @@ def _get_regional_peers_cached(kenya_ratio: Optional[float] = None) -> list:
         else:
             d2g = debt_gdp.get(iso) or fb.get("debt_to_gdp")
 
-        # Debt service to revenue
-        dsr = service_rev.get(iso) or fb.get("debt_service_to_revenue")
-
-        # External debt share
-        ext = external_pct.get(iso) or fb.get("external_debt_share")
+        # The World Bank series, under their own names. No fallback: an
+        # unreachable API is an absent value, not a value on another basis.
+        interest = interest_pct_rev.get(iso)
+        ext_gni = external_pct_gni.get(iso)
 
         peers.append(
             {
                 "country": name,
                 "debt_to_gdp": round(d2g, 1) if d2g else None,
-                "debt_service_to_revenue": round(dsr, 1) if dsr else None,
-                "external_debt_share": round(ext, 1) if ext else None,
+                # The headline's two measures have no peer series. They stayed
+                # as keys — dropping them would read as ``undefined`` to a
+                # caller rather than as a stated absence — but they carry
+                # nothing except the reason there is nothing.
+                "debt_service_to_revenue": None,
+                "debt_service_to_revenue_absent_reason": _PEER_ABSENT_REASONS[
+                    "debt_service_to_revenue"
+                ],
+                "external_debt_share": None,
+                "external_debt_share_absent_reason": _PEER_ABSENT_REASONS[
+                    "external_debt_share"
+                ],
+                "interest_payments_pct_revenue": (
+                    round(interest, 1) if interest is not None else None
+                ),
+                "external_debt_pct_gni": (
+                    round(ext_gni, 1) if ext_gni is not None else None
+                ),
             }
         )
 
     _peers_cache["ts"] = now
     _peers_cache["data"] = peers
     _logger_peers.info(
-        "Regional peers updated: %d/%d countries have full data",
+        "Regional peers updated: %d/%d countries have every published column",
         sum(
             1
             for p in peers
-            if all(v is not None for k, v in p.items() if k != "country")
+            if all(p.get(col) is not None for col in _PEER_COLUMN_BASIS)
         ),
         len(peers),
     )

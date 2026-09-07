@@ -497,11 +497,24 @@ class TestDebtSustainability:
         assert ext == 44.2
 
     def test_projections(self, client, seed_debt_sustainability):
+        """No published projection seeded → none published.
+
+        This asserted ``len(proj) == 5`` starting at 2025 — the shape of the
+        five-year least-squares extrapolation the endpoint used to fit over
+        this fixture's five DebtTimeline points and emit as
+        ``projected_debt_to_gdp``. It was pinning the defect: the line was
+        nobody's forecast, and against the IMF projection that does exist for
+        Kenya it ran 2.6 points of GDP low by 2030.
+
+        ``projections`` now carries the IMF WEO series or nothing. This fixture
+        seeds no ``imf_weo_observations``, so the answer is nothing, with a
+        reason. The populated case is covered in
+        tests/test_debt_sustainability_one_label_one_measure.py.
+        """
         data = client.get("/api/v1/debt/sustainability").json()
-        proj = data["projections"]
-        assert len(proj) == 5
-        assert proj[0]["year"] == 2025
-        assert "projected_debt_to_gdp" in proj[0]
+        assert data["projections"] == []
+        assert data["projections_absent_reason"] == "no_published_projection_seeded"
+        assert data["projections_source"] is None
 
     def test_regional_peers(self, client, seed_debt_sustainability):
         data = client.get("/api/v1/debt/sustainability").json()
