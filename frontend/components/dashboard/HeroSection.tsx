@@ -7,6 +7,7 @@ import { useDebtTimeline, useNationalDebtOverview } from '@/lib/react-query/useD
 import { useFiscalSummary } from '@/lib/react-query/useFiscal';
 import { useLang } from '@/lib/i18n/LangProvider';
 import { assessDebtAnchor } from '@/lib/debt/debtAnchor';
+import { registerSourceLabel, summedRegisterRows } from '@/lib/debt/registerScope';
 import { classifyDebtRisk, fmtBillionKES, toRawKES } from '@/lib/utils';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
@@ -131,18 +132,27 @@ export function SummaryStrip() {
   // The debt-to-GDP ratio and the debt total beside it are on DIFFERENT
   // bases and are not two views of one number: `debt_to_gdp_ratio` is IMF
   // General-Government gross debt over GDP (69.3%), while `total_outstanding`
-  // is our central-government instrument register (13.55T). Dividing the two
-  // figures on screen gives 77%, not 69.3%. Name the basis rather than
-  // letting a reader assume they divide (credibility audit F4/F8).
+  // is our central-government loans table (11.86T as of 2026-09-06 — it was
+  // 13.55T until the external book was replaced with per-creditor World Bank
+  // IDS data). Dividing the two figures on screen gives 77%, not 69.3%. Name
+  // the basis rather than letting a reader assume they divide (credibility
+  // audit F4/F8).
   const gdpBasis: string | null = apiData?.debt_to_gdp_basis ?? null;
   const gdpSource: string | null = apiData?.debt_to_gdp_source ?? null;
 
   // What the headline total actually is. `total_outstanding` is the sum of the
-  // rows in our instrument register; `reconciliation.secondary_value_kes` is
+  // debt rows in our loans table; `reconciliation.secondary_value_kes` is
   // the aggregate the publisher states for the same period. They disagree by
   // ~9%, so the card names both rather than attributing our sum to CBK, which
   // publishes a different number (credibility audit F3).
-  const loanCount: number | null = apiData?.loan_count ?? null;
+  //
+  // The row count is NOT `loan_count`. That field is `len(loans)` — every
+  // national row, pending bills included — while the total above them is
+  // summed with `_is_debt_loan`, which drops the 13 pending-bill rows. The
+  // label said "60 rows" over a 47-row sum. `summedRegisterRows` recovers the
+  // real count from the per-category counts and only returns one when those
+  // categories add back up to the figure it is labelling.
+  const summedRows = summedRegisterRows(apiData?.categories, totalKES);
   const publishedTotalKES: number | null =
     apiData?.reconciliation?.secondary_value_kes ?? null;
   const publishedTotalT =
@@ -206,11 +216,7 @@ export function SummaryStrip() {
             </p>
           )}
           <div className='mt-3 text-xs leading-snug text-neutral-muted'>
-            <span>
-              {loanCount != null
-                ? `Sum of our instrument register (${loanCount} rows)`
-                : 'Sum of our instrument register'}
-            </span>
+            <span>{registerSourceLabel(summedRows)}</span>
             {publishedTotalT && (
               <span className='block mt-0.5'>
                 CBK publishes KES {publishedTotalT}T for the same period —{' '}

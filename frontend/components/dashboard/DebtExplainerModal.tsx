@@ -1,6 +1,7 @@
 'use client';
 
 import { usePendingBillsSummary } from '@/lib/react-query';
+import { summedRegisterRows } from '@/lib/debt/registerScope';
 import { toRawKES } from '@/lib/utils';
 import { useDebtTimeline, useNationalDebtOverview } from '@/lib/react-query/useDebt';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -16,7 +17,7 @@ import { createPortal } from 'react-dom';
  * The previous copy had them the wrong way round: it said the hero was a
  * Treasury "aggregate projection" INCLUDING pending bills, when the hero is
  * `/api/v1/debt/national` -> `total_outstanding`, the sum of our own
- * instrument register, which EXCLUDES pending bills (`_is_debt_loan`). It also
+ * loans table, which EXCLUDES pending bills (`_is_debt_loan`). It also
  * explained the gap as pending bills and FX rounding — a confident account of
  * a discrepancy the site's own audit banner calls unreconciled.
  *
@@ -57,7 +58,10 @@ export default function DebtExplainerModal({ context, className = '' }: Props) {
   // em dash while the hero beside it showed the number.
   const apiData = (overview as any)?.data ?? overview;
   const registerTotal = apiData?.total_outstanding ?? apiData?.total_debt ?? null;
-  const registerRows: number | null = apiData?.loan_count ?? null;
+  // Not `loan_count`: that is every national row (60), while the total beside
+  // it is summed over the 47 that are not pending bills — which this very card
+  // goes on to say it excludes. See lib/debt/registerScope.
+  const registerRows: number | null = summedRegisterRows(apiData?.categories, registerTotal);
 
   const timeline = (timelineResp as any)?.timeline ?? timelineResp ?? [];
   const newest = Array.isArray(timeline) && timeline.length
@@ -147,7 +151,7 @@ export default function DebtExplainerModal({ context, className = '' }: Props) {
                     🇰🇪 Hero banner — &quot;Total Debt&quot; · {fmtT(registerTotal)}
                   </p>
                   <p className='font-semibold text-gov-dark dark:text-white mb-1'>
-                    Our own sum of individual instruments
+                    Our own sum of individual loan rows
                     {registerRows != null ? ` (${registerRows} rows)` : ''}
                   </p>
                   <p>
