@@ -11168,13 +11168,40 @@ async def get_debt_sustainability(db: Session = Depends(get_db)):
                 "projections_source": None,
                 "projections_absent_reason": "no_published_projection_seeded",
                 "regional_peers": _get_regional_peers(),
-                "regional_peers_basis": _PEER_COLUMN_BASIS,
+                "regional_peers_basis": _peer_column_basis(None),
             }
 
         # ── Debt-to-GDP ────────────────────────────────────────────
-        debt_to_gdp = None
-        if latest_dt and latest_dt.gdp_ratio:
+        #
+        # Same helper, same measure and same declared basis as
+        # /debt/national's headline. This read DebtTimeline.gdp_ratio, so the
+        # site published TWO debt-to-GDP figures for one year under one label:
+        # 69.3 on the homepage (IMF GGXWDG_NGDP, basis declared) and 70.0 here
+        # (basis undeclared). DebtTimeline remains a legitimate fallback; an
+        # undeclared basis was the defect, not the series.
+        ratio = None
+        ratio_year = None
+        ratio_basis = None
+        ratio_source = None
+        _imf_headline = _latest_imf_debt_to_gdp(db)
+        if _imf_headline is not None:
+            ratio, ratio_year = _imf_headline[0], _imf_headline[1]
+            ratio_basis = (
+                "IMF General Government Gross Debt, % of GDP (GGXWDG_NGDP) "
+                "— vintage-consistent"
+            )
+            ratio_source = "IMF World Economic Outlook"
+        elif latest_dt and latest_dt.gdp_ratio:
             ratio = float(latest_dt.gdp_ratio)
+            ratio_year = latest_dt.year
+            ratio_basis = (
+                "Central government debt / nominal GDP (CBK debt timeline) "
+                "— not the IMF general-government measure"
+            )
+            ratio_source = "CBK Annual Reports / National Treasury BPS"
+
+        debt_to_gdp = None
+        if ratio is not None:
             if ratio > 55:
                 status = "above"
             elif ratio > 50:
@@ -11183,7 +11210,9 @@ async def get_debt_sustainability(db: Session = Depends(get_db)):
                 status = "below"
             debt_to_gdp = {
                 "value": ratio,
-                "year": latest_dt.year,
+                "year": ratio_year,
+                "basis": ratio_basis,
+                "source": ratio_source,
                 "threshold_imf": 55.0,
                 "threshold_eac": 50.0,
                 "status": status,
@@ -11221,12 +11250,18 @@ async def get_debt_sustainability(db: Session = Depends(get_db)):
         )
 
         # ── Regional Peers ─────────────────────────────────────────
+        #
+        # Kenya's cell used to be overwritten with DebtTimeline.gdp_ratio,
+        # which made Kenya the one country in its own comparison measured
+        # differently from its four comparators — and did not even match the
+        # site's declared headline. It is now the same figure, basis and year
+        # as the headline above it, and the whole column is pinned to that
+        # year (see :func:`_imf_fetch_debt_to_gdp`). Where no IMF reference
+        # year exists, no country is special-cased.
+        _peer_reference_year = ratio_year if _imf_headline is not None else None
         peers = _get_regional_peers(
-            kenya_ratio=(
-                float(latest_dt.gdp_ratio)
-                if latest_dt and latest_dt.gdp_ratio
-                else None
-            )
+            kenya_debt_to_gdp=(ratio if _imf_headline is not None else None),
+            reference_year=_peer_reference_year,
         )
 
         return {
@@ -11242,7 +11277,7 @@ async def get_debt_sustainability(db: Session = Depends(get_db)):
             # What each peer column measures. The peer table repeats Kenya
             # beside the headline above it, so an undeclared basis here is a
             # contradiction on one page rather than a footnote.
-            "regional_peers_basis": _PEER_COLUMN_BASIS,
+            "regional_peers_basis": _peer_column_basis(_peer_reference_year),
             "currency": "KES",
             "source": "National Treasury BPS, CBK Annual Reports",
         }
@@ -11274,6 +11309,13 @@ def _published_debt_projections(db: Session) -> tuple:
     Kenya sits in ``imf_weo_observations`` in the same database — 71.6 / 72.4 /
     73.3 / 73.6 / 74.2 — so the fitted line understated the one published
     forecast available by 2.6 points of GDP at 2030.
+
+    It is also a basis fix, not only an accuracy one. The fit ran over
+    ``DebtTimeline.gdp_ratio``, so the projection chart did not even start
+    from the figure the page states above it: the headline is IMF
+    GGXWDG_NGDP (69.3 for 2025 — see the debt-to-GDP block in
+    :func:`get_debt_sustainability`), while the line began at DebtTimeline's
+    70.0. These rows continue the headline's own series.
 
     Read the newest vintage only. IMF publishes twice a year and every
     snapshot is kept, so mixing vintages would splice two forecasts into one
@@ -11324,7 +11366,10 @@ def _published_debt_projections(db: Session) -> tuple:
     )
 
 
-def _get_regional_peers(kenya_ratio: Optional[float] = None) -> list:
+def _get_regional_peers(
+    kenya_debt_to_gdp: Optional[float] = None,
+    reference_year: Optional[int] = None,
+) -> list:
     """Return EAC regional debt comparison with multiple indicators.
 
     Fetches three indicators from World Bank + IMF APIs (cached 12 hours):
@@ -11334,7 +11379,7 @@ def _get_regional_peers(kenya_ratio: Optional[float] = None) -> list:
 
     Falls back to verified static values when APIs are unreachable.
     """
-    return _get_regional_peers_cached(kenya_ratio)
+    return _get_regional_peers_cached(kenya_debt_to_gdp, reference_year)
 
 
 # ── EAC peer data with multi-indicator support ────────────────────
@@ -11373,6 +11418,9 @@ _PEER_COLUMN_BASIS = {
         "measure": "General government gross debt, % of GDP",
         "indicator": "GGXWDG_NGDP",
         "publisher": "IMF World Economic Outlook",
+        # Filled per response — the whole column is pinned to one year so the
+        # five countries are comparable. See _imf_fetch_debt_to_gdp.
+        "reference_year": None,
     },
     "interest_payments_pct_revenue": {
         "measure": "Interest payments, % of revenue (excludes principal)",
@@ -11385,6 +11433,13 @@ _PEER_COLUMN_BASIS = {
         "publisher": "World Bank",
     },
 }
+
+def _peer_column_basis(reference_year: Optional[int]) -> Dict[str, Any]:
+    """:data:`_PEER_COLUMN_BASIS` with this response's reference year stamped."""
+    basis = {k: dict(v) for k, v in _PEER_COLUMN_BASIS.items()}
+    basis["debt_to_gdp"]["reference_year"] = reference_year
+    return basis
+
 
 #: Why the two headline measures have no peer column. Kenya's 77.6% is total
 #: debt service (principal + interest) over revenue, from ``fiscal_summaries``;
@@ -11403,8 +11458,10 @@ _IMF_INDICATORS = {
     "debt_to_gdp": "GGXWDG_NGDP",  # General govt gross debt (% GDP)
 }
 
-# Simple TTL cache: (timestamp, data)
-_peers_cache: Dict[str, Any] = {"ts": 0.0, "data": None}
+# Simple TTL cache: (timestamp, data, reference_year). The reference year is
+# part of the entry's identity — a cached column from last year's WEO vintage
+# must not be served against this year's.
+_peers_cache: Dict[str, Any] = {"ts": 0.0, "data": None, "reference_year": None}
 _PEERS_CACHE_TTL = 12 * 3600  # 12 hours
 
 _logger_peers = logging.getLogger("audit_app.regional_peers")
@@ -11438,17 +11495,33 @@ def _wb_fetch_indicator(indicator_code: str, country_codes: str) -> Dict[str, fl
     return {iso: d["value"] for iso, d in latest.items()}
 
 
-def _imf_fetch_debt_to_gdp() -> Dict[str, float]:
-    """Fetch debt-to-GDP from the IMF DataMapper API (WEO dataset).
+def _imf_fetch_debt_to_gdp(reference_year: int) -> Dict[str, float]:
+    """Debt-to-GDP for the EAC peers at ONE year, from the IMF DataMapper.
 
-    Endpoint: /api/v1/GGXWDG_NGDP/{countries}?periods=2020,2021,...,2026
-    Returns {ISO3: value} for countries that have data.
+    Returns ``{ISO3: value}`` for countries that publish a value for exactly
+    ``reference_year``. Countries that do not are omitted, so the caller can
+    show absence rather than a value from some other year.
+
+    The DataMapper honours neither filter in the URL. Asked for five countries
+    over ``periods=2018,...,2026`` it answers with **226** country and
+    aggregate codes (WEOWORLD, EURO, ADVEC ...) covering **1998-2031**. The
+    previous ``max(year_vals.keys())`` therefore selected the furthest
+    PROJECTION in the file for every country, under a column a reader takes
+    for a current debt level::
+
+        country   max(year)=2031    2025 actual
+        KEN            75.1             69.3
+        ETH            27.0             43.1
+        RWA            61.6             64.6
+
+    Ethiopia would have read 27.0 — a 2031 forecast, 16 points below its
+    actual. Bound the year here, where it can be enforced, rather than in a
+    query string the server discards.
     """
     countries = "/".join(_EAC_COUNTRIES.keys())
-    periods = ",".join(str(y) for y in range(2018, 2027))
     url = (
         f"https://www.imf.org/external/datamapper/api/v1"
-        f"/GGXWDG_NGDP/{countries}?periods={periods}"
+        f"/GGXWDG_NGDP/{countries}?periods={reference_year}"
     )
     resp = httpx.get(url, timeout=8)
     resp.raise_for_status()
@@ -11458,31 +11531,47 @@ def _imf_fetch_debt_to_gdp() -> Dict[str, float]:
     indicator_data = data.get("values", {}).get("GGXWDG_NGDP", {})
     result: Dict[str, float] = {}
     for iso, year_vals in indicator_data.items():
-        if not year_vals:
+        # The response carries every country and every aggregate, asked for or
+        # not. Keep only the peers this table compares.
+        if iso not in _EAC_COUNTRIES or not year_vals:
             continue
-        # Get the most recent year with a value
-        latest_year = max(year_vals.keys())
-        val = year_vals[latest_year]
+        val = year_vals.get(str(reference_year))
         if val is not None:
             result[iso] = round(float(val), 1)
 
     return result
 
 
-def _get_regional_peers_cached(kenya_ratio: Optional[float] = None) -> list:
-    """Fetch EAC peers from World Bank + IMF APIs with 12-hour TTL cache."""
+def _get_regional_peers_cached(
+    kenya_debt_to_gdp: Optional[float] = None,
+    reference_year: Optional[int] = None,
+) -> list:
+    """Fetch EAC peers from World Bank + IMF APIs with 12-hour TTL cache.
+
+    ``kenya_debt_to_gdp`` is Kenya's headline figure from the seeded IMF WEO
+    table, passed in ONLY when it is on the same measure and year as the rest
+    of the column. It used to be ``kenya_ratio`` — DebtTimeline.gdp_ratio —
+    which made Kenya the one country in its own comparison measured
+    differently from its four comparators, and did not match the site's
+    declared headline either. Using the seeded table rather than this fetch
+    for Kenya's cell guarantees the peer row and the headline above it agree
+    even when the DataMapper is unreachable.
+    """
     now = time.time()
 
-    # Check cache
+    # Cache holds the fetched column; the reference year is part of its
+    # identity, so a new IMF vintage does not serve last year's figures.
     if (
         _peers_cache["data"] is not None
+        and _peers_cache.get("reference_year") == reference_year
         and (now - _peers_cache["ts"]) < _PEERS_CACHE_TTL
     ):
         cached = [dict(p) for p in _peers_cache["data"]]  # shallow copy
-        if kenya_ratio is not None:
+        if kenya_debt_to_gdp is not None:
             for p in cached:
                 if p["country"] == "Kenya":
-                    p["debt_to_gdp"] = round(kenya_ratio, 1)
+                    p["debt_to_gdp"] = round(kenya_debt_to_gdp, 1)
+                    p["debt_to_gdp_year"] = reference_year
         return cached
 
     # ── Fetch all indicators ──────────────────────────────────────
@@ -11491,12 +11580,27 @@ def _get_regional_peers_cached(kenya_ratio: Optional[float] = None) -> list:
     interest_pct_rev: Dict[str, float] = {}
     external_pct_gni: Dict[str, float] = {}
 
-    # 1. Try IMF for debt-to-GDP (often more current than World Bank)
-    try:
-        debt_gdp = _imf_fetch_debt_to_gdp()
-        _logger_peers.info("IMF debt-to-GDP: got data for %d countries", len(debt_gdp))
-    except Exception as exc:
-        _logger_peers.debug("IMF API unavailable: %s", exc)
+    # 1. IMF debt-to-GDP, pinned to the reference year.
+    #
+    # No reference year means the IMF WEO table is not seeded, so there is
+    # nothing that says which years are actuals and which are forecasts.
+    # Skip the fetch rather than guess: an unbounded call returns the 2031
+    # projection.
+    if reference_year is not None:
+        try:
+            debt_gdp = _imf_fetch_debt_to_gdp(reference_year)
+            _logger_peers.info(
+                "IMF debt-to-GDP %s: got data for %d countries",
+                reference_year,
+                len(debt_gdp),
+            )
+        except Exception as exc:
+            _logger_peers.debug("IMF API unavailable: %s", exc)
+    else:
+        _logger_peers.info(
+            "IMF debt-to-GDP skipped — no reference year (WEO table not seeded)"
+        )
+    imf_sourced = set(debt_gdp)
 
     # 2. World Bank: debt-to-GDP (fallback if IMF missed countries)
     try:
@@ -11555,11 +11659,26 @@ def _get_regional_peers_cached(kenya_ratio: Optional[float] = None) -> list:
     for iso, name in _EAC_COUNTRIES.items():
         fb = _fallback.get(iso, {})
 
-        # Debt-to-GDP: Kenya uses our CBK data; others prefer IMF/WB then fallback
-        if iso == "KEN" and kenya_ratio is not None:
-            d2g = kenya_ratio
+        # Debt-to-GDP. Kenya's cell comes from the seeded IMF WEO table when
+        # that is available — same indicator, same reference year as its four
+        # comparators, and identical to the headline above the table. Every
+        # other country comes from the DataMapper at that same year, falling
+        # back to the World Bank series and then to the static values.
+        #
+        # ``debt_to_gdp_year`` is stamped only where the value really is the
+        # reference year. A null year marks a cell that came from a fallback
+        # on some other vintage, so a year mismatch inside the column is
+        # visible instead of implied.
+        d2g_year = None
+        if iso == "KEN" and kenya_debt_to_gdp is not None:
+            d2g = kenya_debt_to_gdp
+            d2g_year = reference_year
         else:
-            d2g = debt_gdp.get(iso) or fb.get("debt_to_gdp")
+            d2g = debt_gdp.get(iso)
+            if d2g is not None and iso in imf_sourced:
+                d2g_year = reference_year
+            if d2g is None:
+                d2g = fb.get("debt_to_gdp")
 
         # The World Bank series, under their own names. No fallback: an
         # unreachable API is an absent value, not a value on another basis.
@@ -11569,7 +11688,8 @@ def _get_regional_peers_cached(kenya_ratio: Optional[float] = None) -> list:
         peers.append(
             {
                 "country": name,
-                "debt_to_gdp": round(d2g, 1) if d2g else None,
+                "debt_to_gdp": round(d2g, 1) if d2g is not None else None,
+                "debt_to_gdp_year": d2g_year,
                 # The headline's two measures have no peer series. They stayed
                 # as keys — dropping them would read as ``undefined`` to a
                 # caller rather than as a stated absence — but they carry
@@ -11593,6 +11713,7 @@ def _get_regional_peers_cached(kenya_ratio: Optional[float] = None) -> list:
 
     _peers_cache["ts"] = now
     _peers_cache["data"] = peers
+    _peers_cache["reference_year"] = reference_year
     _logger_peers.info(
         "Regional peers updated: %d/%d countries have every published column",
         sum(

@@ -517,12 +517,30 @@ class TestDebtSustainability:
         assert data["projections_source"] is None
 
     def test_regional_peers(self, client, seed_debt_sustainability):
+        """Kenya is not special-cased inside its own comparison.
+
+        This asserted ``kenya_peer["debt_to_gdp"] == 61.4`` — this fixture's
+        ``DebtTimeline.gdp_ratio``, injected over Kenya's cell while the four
+        comparators beside it came from IMF GGXWDG. It was pinning the
+        injection: one country in a five-country table measured on a different
+        basis from the other four, and on a different basis from the site's
+        own declared headline.
+
+        The fixture seeds no ``imf_weo_observations``, so there is no IMF
+        reference year and every country — Kenya included — falls through the
+        same path. The case where IMF rows ARE seeded, and Kenya's cell equals
+        the headline above it by construction, is covered in
+        tests/test_debt_to_gdp_is_one_measure_everywhere.py.
+        """
         data = client.get("/api/v1/debt/sustainability").json()
         peers = data["regional_peers"]
         assert len(peers) == 5
         countries = [p["country"] for p in peers]
         assert "Kenya" in countries
         assert "Tanzania" in countries
-        # Kenya's value should come from DB
+
         kenya_peer = next(p for p in peers if p["country"] == "Kenya")
-        assert kenya_peer["debt_to_gdp"] == 61.4
+        assert kenya_peer["debt_to_gdp"] != 61.4, "still injecting DebtTimeline"
+        # Nothing here is at the reference year, and every row says so.
+        assert data["regional_peers_basis"]["debt_to_gdp"]["reference_year"] is None
+        assert all(p["debt_to_gdp_year"] is None for p in peers)
