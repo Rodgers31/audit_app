@@ -118,6 +118,8 @@ def test_fiscal_summary_endpoint_surfaces_quality_notes(client, db_session, seed
             total_borrowing=910,
             county_allocation=415,
             source_document_id=seed_source_doc.id,
+            # Tier B (#137): a published fiscal row cites a page.
+            page_ref="s.3.2, report p.16 (PDF p.37)",
         )
     )
     db_session.commit()

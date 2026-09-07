@@ -4765,13 +4765,21 @@ async def get_available_fiscal_years(db: Session = Depends(get_db)):
         if not years:
             # Fallback: derive from fiscal_summaries table
             from models import FiscalSummary
+            from services.publication_gate import publishable_fiscal_summaries
 
+            # page_ref is selected because the gate reads it. Offering a year
+            # in the selector whose figures are then withheld is its own small
+            # dishonesty — the reader picks it and gets nothing.
             summaries = (
-                db.query(FiscalSummary.fiscal_year)
+                db.query(FiscalSummary.fiscal_year, FiscalSummary.page_ref)
                 .order_by(FiscalSummary.fiscal_year.desc())
                 .all()
             )
-            years = [s.fiscal_year for s in summaries if s.fiscal_year]
+            years = [
+                row.fiscal_year
+                for row in publishable_fiscal_summaries(summaries)
+                if row.fiscal_year
+            ]
         return {"status": "success", "data": years}
     except Exception as e:
         logger.error(f"Error fetching fiscal years: {e}")
@@ -8103,8 +8111,11 @@ async def get_budget_overview():
 
             # ── Fiscal history (for year-over-year comparison) ─────
             from models import FiscalSummary as FSModel
+            from services.publication_gate import publishable_fiscal_summaries
 
-            fiscal_rows = db.query(FSModel).order_by(FSModel.fiscal_year.asc()).all()
+            fiscal_rows = publishable_fiscal_summaries(
+                db.query(FSModel).order_by(FSModel.fiscal_year.asc()).all()
+            )
             fiscal_years = []
 
             # This response declares fiscal_history_unit = "billion_kes";
@@ -8609,10 +8620,11 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
 
         total_pop, total_pop_year = latest_national_population(db)
 
-        # Get latest fiscal summary for budget context
-        latest_fiscal = (
-            db.query(FiscalSummary).order_by(FiscalSummary.fiscal_year.desc()).first()
-        )
+        # Get latest fiscal summary for budget context — the newest row that
+        # cites a page, not simply the newest row.
+        from services.publication_gate import latest_publishable_fiscal_summary
+
+        latest_fiscal = latest_publishable_fiscal_summary(db)
 
         # fiscal_summaries stores raw KES (stage1 3a migration).
         budget_raw_kes = (
@@ -8949,11 +8961,41 @@ async def get_fiscal_summary(db: Session = Depends(get_db)):
     Controller of Budget reports, and CBK data.
     """
     from models import FiscalSummary as FSModel
+    from services.publication_gate import (
+        fiscal_summary_withheld_disclosure,
+        publishable_fiscal_summaries,
+    )
 
     try:
-        rows = db.query(FSModel).order_by(FSModel.fiscal_year.asc()).all()
+        stored_rows = db.query(FSModel).order_by(FSModel.fiscal_year.asc()).all()
+
+        # Tier B (issue #137): a fiscal year is published only if its row cites
+        # a page of the document it came from. The disclosure is computed over
+        # the STORED rows, before the gate, because it has to describe what was
+        # taken away — computed after, it would always report zero.
+        withheld = fiscal_summary_withheld_disclosure(stored_rows)
+        rows = publishable_fiscal_summaries(stored_rows)
 
         if not rows:
+            # Two different causes, two different remedies. Gating created the
+            # second: rows are present and every one of them cites no page.
+            # Answering "database_empty" there sends an operator to re-run a
+            # seeder that will not help, because the seeder is not the problem.
+            if stored_rows:
+                return {
+                    "status": "no_data",
+                    "data_source": "all_rows_withheld",
+                    "last_updated": None,
+                    "source": (
+                        f"{len(stored_rows)} fiscal year(s) are stored and none "
+                        "cites a page of its source document, so none can be "
+                        "published. Backfill fiscal_summaries.page_ref."
+                    ),
+                    "current": None,
+                    "history": [],
+                    "total_fiscal_years": 0,
+                    "withheld": withheld,
+                }
             return {
                 "status": "no_data",
                 "data_source": "database_empty",
@@ -8962,6 +9004,7 @@ async def get_fiscal_summary(db: Session = Depends(get_db)):
                 "current": None,
                 "history": [],
                 "total_fiscal_years": 0,
+                "withheld": withheld,
             }
 
         def _row_to_dict(r: FSModel) -> dict:
@@ -9128,6 +9171,10 @@ async def get_fiscal_summary(db: Session = Depends(get_db)):
             "current": latest,
             "history": fiscal_years,
             "total_fiscal_years": len(fiscal_years),
+            # What is NOT here, and why. A history that silently loses
+            # FY2017/18..FY2021/22 asserts by omission that Kenya's budget
+            # series begins in 2022.
+            "withheld": withheld,
             "debt_anchor": debt_anchor,
         }
     except Exception as e:
@@ -9209,8 +9256,11 @@ async def get_civic_figures(db: Session = Depends(get_db)):
         # ── National budget + county equitable share — latest FiscalSummary
         #    row that actually carries each field. Period is the fiscal year. ─
         from models import FiscalSummary as _FS
+        from services.publication_gate import publishable_fiscal_summaries
 
-        fs_rows = db.query(_FS).order_by(_FS.fiscal_year.asc()).all()
+        fs_rows = publishable_fiscal_summaries(
+            db.query(_FS).order_by(_FS.fiscal_year.asc()).all()
+        )
 
         def _latest_fs(attr):
             for r in reversed(fs_rows):
@@ -11152,10 +11202,11 @@ async def get_debt_sustainability(db: Session = Depends(get_db)):
     try:
         # Latest debt timeline entry (has debt/GDP data)
         latest_dt = db.query(DebtTimeline).order_by(DebtTimeline.year.desc()).first()
-        # Latest fiscal summary (has debt service and revenue)
-        latest_fs = (
-            db.query(FiscalSummary).order_by(FiscalSummary.fiscal_year.desc()).first()
-        )
+        # Latest fiscal summary (has debt service and revenue) — the newest
+        # row that cites a page.
+        from services.publication_gate import latest_publishable_fiscal_summary
+
+        latest_fs = latest_publishable_fiscal_summary(db)
 
         if not latest_dt and not latest_fs:
             return {
@@ -12324,18 +12375,31 @@ async def dashboard_fiscal_outturns():
     Uses the FiscalSummary table (national-scope by design) to avoid
     mixing county and national BudgetLine data.
     """
+    from services.publication_gate import fiscal_summary_withheld_disclosure
+
+    # Bound before the try, because the fallback below reads it and the
+    # fallback runs when there is no database at all — an unbound name there is
+    # a 500, outside the `except` that would have caught it. The empty shape
+    # comes from the same function that builds the populated one so the two
+    # cannot drift.
+    _fiscal_withheld = fiscal_summary_withheld_disclosure([])
+
     # Try DB data first — use FiscalSummary (national-scope, has real revenue/expenditure)
     if DATABASE_AVAILABLE:
         try:
             from models import FiscalSummary as FSModel
 
             with next(get_db()) as db:
-                rows = (
-                    db.query(FSModel)
-                    .order_by(FSModel.fiscal_year.desc())
-                    .limit(12)
-                    .all()
+                # Gate BEFORE the limit. Taking 12 rows and then withholding
+                # some of them returns a short series and calls it twelve
+                # years; gating first returns twelve publishable years.
+                from services.publication_gate import (
+                    publishable_fiscal_summaries,
                 )
+
+                stored = db.query(FSModel).order_by(FSModel.fiscal_year.desc()).all()
+                _fiscal_withheld = fiscal_summary_withheld_disclosure(stored)
+                rows = publishable_fiscal_summaries(stored)[:12]
                 if rows:
                     series = []
                     for r in rows:
@@ -12365,6 +12429,7 @@ async def dashboard_fiscal_outturns():
                     series = series[:8]  # cap to 8 most recent complete years
                     if series:
                         return {
+                            "withheld": _fiscal_withheld,
                             "series": series,
                             "data_source": "database",
                             "unit": "billion_kes",
@@ -12395,16 +12460,31 @@ async def dashboard_fiscal_outturns():
             }
         )
     if not series:
+        # Two causes, two remedies. If fiscal rows are present and every one of
+        # them was withheld for want of a page reference, re-running the ETL
+        # adds nothing — the rows are already there. Saying "Run ETL pipeline"
+        # there sends a reader at the wrong problem.
+        note = "No fiscal outturn data available. Run ETL pipeline."
+        if _fiscal_withheld["count"]:
+            note = (
+                f"{_fiscal_withheld['count']} fiscal year(s) are stored but "
+                "cite no page of their source document, so none can be "
+                "published. Backfill fiscal_summaries.page_ref."
+            )
         series = [
             {
                 "period": f"{get_current_fiscal_year()} Q1",
                 "revenue": None,
                 "expenditure": None,
                 "balance": None,
-                "note": "No fiscal outturn data available. Run ETL pipeline.",
+                "note": note,
             },
         ]
-    return {"series": series, "data_source": "fallback"}
+    return {
+        "series": series,
+        "data_source": "fallback",
+        "withheld": _fiscal_withheld,
+    }
 
 
 @app.get("/api/v1/dashboards/national/sector-ceilings")

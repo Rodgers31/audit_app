@@ -342,6 +342,100 @@ def log_withheld_audits(context: str, withheld: int, published: int) -> None:
 
 
 # --------------------------------------------------------------------------
+# fiscal summaries
+# --------------------------------------------------------------------------
+
+#: Slug written into a response and a log line when a fiscal row names no page.
+#: One word for one cause, matching the ``quarantine_reason`` vocabulary the
+#: audits backfill already writes, so a response, a log and a column agree.
+FISCAL_SUMMARY_NO_PAGE_REF = "no_page_reference"
+
+
+def fiscal_summary_withheld_reason(row) -> Optional[str]:
+    """Why this fiscal row may not be published, or ``None`` if it may.
+
+    Tier B of the provenance ladder: a **locator**. The rung is deliberately
+    ``page_ref`` and not ``extraction_id`` — a reader cannot open an extraction
+    id, and it is neither necessary nor sufficient. The FY2026/27 headline
+    carries ``"voted total PDF p.11; CFS summary PDF p.1193"`` and no
+    ``extraction_id`` at all; audit 902 had an ``Extraction`` and was 89.6%
+    ``(cid:NN)`` glyphs off a cover page.
+
+    This is a Python predicate rather than a SQL criterion on purpose. The
+    locator rule already exists exactly once, in :func:`_has_page_locator`, and
+    restating "is this a positive page number?" in SQL would need a second copy
+    of it whose regex differs between Postgres and SQLite. Two copies of a rule
+    that must agree is the drift this module exists to prevent.
+    ``fiscal_summaries`` holds 29 rows and every read site already materialises
+    them, so the SQL form would buy nothing.
+    """
+    if not _has_page_locator(getattr(row, "page_ref", None)):
+        return FISCAL_SUMMARY_NO_PAGE_REF
+    return None
+
+
+def publishable_fiscal_summaries(rows: Iterable[Any]) -> list:
+    """The subset of ``rows`` that names a page a reader can turn to."""
+    return [r for r in rows if fiscal_summary_withheld_reason(r) is None]
+
+
+def latest_publishable_fiscal_summary(db):
+    """The newest fiscal row that cites a page, or ``None``.
+
+    Named once because three sites want it — the national per-capita budget,
+    the civic-figures panel and the debt-sustainability ratios — and each of
+    them wrote ``.order_by(fiscal_year.desc()).first()``. That is a publication
+    decision wearing the clothes of a lookup: whichever row happens to be
+    newest becomes a headline. Gating has to happen before the ``first()``, not
+    after, or the answer is "the newest row, and it is withheld, so None" when
+    a perfectly publishable older row was available.
+    """
+    from models import FiscalSummary
+
+    rows = db.query(FiscalSummary).order_by(FiscalSummary.fiscal_year.desc()).all()
+    published = publishable_fiscal_summaries(rows)
+    return published[0] if published else None
+
+
+def fiscal_summary_withheld_disclosure(rows: Iterable[Any]) -> Dict[str, Any]:
+    """What a response must say about the rows it is not showing.
+
+    Withholding is itself a claim. A history that silently loses FY2017/18
+    through FY2021/22 asserts, by omission, that Kenya's national budget series
+    begins in 2022 — five real figures between KES 1,924.5B and 3,380.9B simply
+    gone, with no way for a reader to know they existed or why they went.
+
+    So this names the years as well as counting them. A count tells a reader
+    that something is missing; only the years tell them *what*, which is the
+    difference between a disclosure they can act on and an apology.
+
+    Always returns the full shape, zeros and empty lists included. A key that
+    appears only when there is something to report cannot be told apart from a
+    build that has no disclosure at all.
+    """
+    withheld: Dict[str, list] = {}
+    for row in rows:
+        reason = fiscal_summary_withheld_reason(row)
+        if reason is not None:
+            withheld.setdefault(reason, []).append(row.fiscal_year)
+
+    years = sorted(y for group in withheld.values() for y in group)
+    return {
+        "count": len(years),
+        "by_reason": {
+            FISCAL_SUMMARY_NO_PAGE_REF: len(
+                withheld.get(FISCAL_SUMMARY_NO_PAGE_REF, [])
+            ),
+        },
+        "fiscal_years": years,
+        "criterion": (
+            "A fiscal year is published only if its row cites a page of the "
+            "document it came from (fiscal_summaries.page_ref)."
+        ),
+    }
+
+
+# --------------------------------------------------------------------------
 # missing-funds cases (free-form JSON on entity.meta, not a table)
 # --------------------------------------------------------------------------
 

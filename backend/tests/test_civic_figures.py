@@ -62,6 +62,8 @@ def seed_civic_data(db_session, seed_country, seed_source_doc):
             appropriated_budget=4190,
             county_allocation=405,
             source_document_id=seed_source_doc.id,
+            # Tier B (#137): a published fiscal row cites a page.
+            page_ref="s.3.2, report p.16 (PDF p.37)",
         )
     )
 

@@ -468,6 +468,8 @@ class TestUnitDeclarationsAgree:
                 appropriated_budget=4690e9, total_revenue=2910e9,
                 total_borrowing=910e9, county_allocation=415e9,
                 unit="KES", source_document_id=seed_source_doc.id,
+                # Tier B (#137): a published fiscal row cites a page.
+                page_ref="s.3.2, report p.16 (PDF p.37)",
             )
         )
         db_session.commit()
