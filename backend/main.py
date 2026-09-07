@@ -8762,19 +8762,40 @@ async def get_debt_timeline(db: Session = Depends(get_db)):
                 }
             )
 
-        # Source info from the DB source document
+        # ── Source: the document behind the figure this response leads with ──
+        #
+        # This read ``rows[0]`` — the OLDEST row, the series being ordered
+        # year.asc() — while ``last_updated`` and
+        # ``reconciliation.primary_value_kes`` both describe ``rows[-1]``. The
+        # series runs 2013-2025, so production credited "CBK public debt table,
+        # December 2013" for a 2025 figure, and
+        # /provenance/verify/debt_timeline?year=2025 named a different document
+        # for that same number (audit 2026-09-06 §P2-10).
+        #
+        # The series genuinely spans many documents, so there is no single
+        # honest series-wide title. Attribute the row the response leads with,
+        # name its year so the claim is checkable, and say plainly whether the
+        # earlier years came from elsewhere.
         source_title = "Central Bank of Kenya Annual Reports & National Treasury BPS"
         last_updated = None
-        if rows[0].source_document_id:
+        source_year = None
+        source_covers_full_series = False
+        latest_row = rows[-1]
+        if latest_row.source_document_id:
             sdoc = (
                 db.query(DBSourceDocument)
-                .filter(DBSourceDocument.id == rows[0].source_document_id)
+                .filter(DBSourceDocument.id == latest_row.source_document_id)
                 .first()
             )
-            if sdoc:
-                source_title = sdoc.title or source_title
-        if rows[-1].updated_at:
-            last_updated = rows[-1].updated_at.isoformat()
+            if sdoc and sdoc.title:
+                source_title = sdoc.title
+                source_year = latest_row.year
+                source_covers_full_series = all(
+                    r.source_document_id == latest_row.source_document_id
+                    for r in rows
+                )
+        if latest_row.updated_at:
+            last_updated = latest_row.updated_at.isoformat()
 
         # ── Cross-check against /debt/national (Loan sum) ──
         # Same rationale as the reciprocal check on /debt/national:
@@ -8869,6 +8890,11 @@ async def get_debt_timeline(db: Session = Depends(get_db)):
             ),
             "last_updated": last_updated,
             "source": source_title,
+            # Which year ``source`` is the document for, and whether it covers
+            # the rest of the series. Without these a document title beside a
+            # 13-year series reads as if it had produced all 13 years.
+            "source_year": source_year,
+            "source_covers_full_series": source_covers_full_series,
             "years": len(timeline),
             "timeline": timeline,
             "reconciliation": reconciliation,
