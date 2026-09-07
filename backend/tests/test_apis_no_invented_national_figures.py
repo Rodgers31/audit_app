@@ -28,7 +28,11 @@ majority: CBK puts 2024 external at 46.3%, and the repo's own loan register at
 47.4% on outstanding (5,276 of 11,140 Bn) or 47.6% on principal (5,326 of
 11,190 Bn), summing all 13 rows of ``national_debt.json`` both ways. Read one
 column while quoting the other and the difference looks like an addition slip;
-the register carries both, and they differ on 8 of its 13 rows.
+the register carries both, and they differ on 7 of its 13 rows — rows 1, 2, 3,
+5, 6, 7 and 8. (This said 8 until issue #193 recounted it. Row 4,
+``Multilateral (Other — EIB, IFAD, IFC)``, is 95.0 Bn in both columns and was
+counted as differing. The totals and shares above are unaffected and were
+right.)
 ``outstanding`` is the basis the repo publishes on — ``backend/main.py:369``,
 ``:492``, ``:2462``, ``:4428`` and ``test_debt_total_double_count.py:117`` all
 sum ``outstanding``, falling back to ``principal`` only where it is absent —
