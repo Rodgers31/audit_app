@@ -20,6 +20,28 @@ Strategy
    ``cbk_bulletin.py`` for the parsing approach (text-mode regex
    because pdfplumber's table extractor smushes the cells).
 
+When the external pull is quarantined, this publishes NOTHING
+------------------------------------------------------------
+Step 2's replacement is gated (see ``wb_ids_creditors``). When a gate refuses
+the pull, this fetcher raises ``DebtRegisterIncomplete`` rather than returning
+a payload carrying the fixture's external rows.
+
+It used to return them, and that is the more dangerous behaviour. Measured on a
+live run with the pull forced to quarantine, the fixture publishes a **13.34T**
+headline against the gated register's 12.22T — Eurobonds at 2,276Bn where IDS
+reports ~890Bn, syndicated banks at 400Bn against ~124Bn. So a gate doing its
+job correctly would have put the worst number in this codebase on the homepage,
+loudly in the log and invisibly on the page.
+
+Raising fails the domain with zero writes (``__init__.run`` catches it), so the
+previous seed's rows stand and the freshness/staleness gates see a run that did
+not reach its publisher. Stale and correct beats fresh and 1.1T wrong.
+
+Two things this deliberately does NOT do. It does not drop the external rows
+and publish a domestic-only 6.76T — that is a different wrong number, not a
+safer one. And it does not apply when ``live_pdf_fetch_enabled`` is False,
+which is the offline/dev path where the fixture is the declared source.
+
 Why we dropped the CBK PDF discovery path
 -----------------------------------------
 The original `_fetch_from_cbk_pdf` scraped
@@ -37,7 +59,8 @@ parser expected. See PR #75 for the full investigation.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List
+from dataclasses import dataclass
+from typing import Any, Dict, List, Tuple
 
 from ...config import SeedingSettings
 from ...http_client import SeedingHttpClient
@@ -49,6 +72,16 @@ from .wb_ids_creditors import fetch_external_creditors
 from .wb_ids import fetch_external_debt_from_wb_ids
 
 logger = logging.getLogger("seeding.national_debt.fetcher")
+
+
+class DebtRegisterIncomplete(RuntimeError):
+    """The register could not be assembled, so nothing may be published.
+
+    Raised instead of returning a payload whose external rows are the fixture's.
+    The domain's ``run`` turns this into a failed run with zero writes, which
+    leaves the previous seed's rows in place — see the module docstring for why
+    publishing the fixture is the worse of the two.
+    """
 
 
 # Domestic bond rows in the loans payload.
@@ -63,8 +96,52 @@ logger = logging.getLogger("seeding.national_debt.fetcher")
 #
 # Match the inclusive Treasury-bonds aggregate only. Eurobonds are external
 # commercial debt and must not appear here either.
+#
+# NOTE: excluding the subset here only ever fixed the coverage-gate
+# DENOMINATOR. The row itself stayed in the loans payload and went on being
+# summed into the published headline, which is the KSh 300Bn double-count
+# _drop_subsumed_rows below removes from the register itself.
 _DOMESTIC_BOND_MARKERS = ("treasury bond", "domestic bond")
 _NOT_A_DOMESTIC_BOND = ("eurobond", "external", "syndicated", "commercial bank")
+
+
+@dataclass(frozen=True)
+class _SubsumedRow:
+    """A row another row in the same category already counts."""
+
+    #: Lender substrings (lowercased) that identify the subset row.
+    subset_markers: Tuple[str, ...]
+    #: Lender substring that identifies the aggregate containing it.
+    aggregate_marker: str
+    #: The category both must be in. A subset is only subsumed within the
+    #: bucket its aggregate is published in.
+    category: str
+    #: The published classification that says the aggregate contains it.
+    because: str
+
+
+# Subsets the register must never carry beside their own aggregate.
+#
+# CBK's Statistical Bulletin Table 4.1.4 ("Composition of Government Gross
+# Domestic Debt by Instrument") publishes ONE Treasury Bonds column, and that
+# column is the whole bond stock — infrastructure and green bonds are Treasury
+# bonds in CBK's classification, sit inside it, and get no line of their own.
+# ``cbk_bulletin._COLUMN_MAPPINGS`` maps that column straight onto the
+# "Domestic Treasury Bonds" row here, so the aggregate is inclusive by
+# construction and there is no published figure that would make it exclusive:
+# netting 300B off it would be inventing a split CBK does not publish, and the
+# next bulletin overlay would overwrite it anyway. The subset row is what goes.
+_SUBSUMED_ROWS: Tuple[_SubsumedRow, ...] = (
+    _SubsumedRow(
+        subset_markers=("infrastructure bond", "infrastructure &", "green bond"),
+        aggregate_marker="treasury bond",
+        category="domestic_bonds",
+        because=(
+            "CBK Statistical Bulletin Table 4.1.4 publishes a single Treasury "
+            "Bonds column and infrastructure and green bonds are inside it"
+        ),
+    ),
+)
 
 
 # Categories the IDS creditor pull owns outright. When it succeeds, every
@@ -157,6 +234,97 @@ def _replace_external_loans(
     return {**payload, "loans": kept + list(creditor_rows)}
 
 
+def _row_amount_kes(loan: Dict[str, Any]) -> float:
+    """A loan row's shilling amount, or 0.0 when it carries none."""
+    try:
+        return float(loan.get("outstanding") or loan.get("principal") or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _lender_key(loan: Dict[str, Any]) -> str:
+    return " ".join((loan.get("lender") or "").lower().split())
+
+
+def _drop_subsumed_rows(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Remove rows another row in the same category already counts.
+
+    Runs on the FINAL register, after every overlay, because that list is what
+    gets summed into the published headline. Until this existed, the
+    ``domestic_bonds`` category held both CBK's inclusive Treasury Bonds
+    aggregate (5,579Bn) and a separate 300Bn infrastructure/green bond row that
+    is a subset of it, and the site published 5,879Bn.
+
+    A subset is dropped only when its aggregate is actually present in the same
+    category: on its own it is the only bond row there is, and removing it
+    would understate rather than correct.
+
+    Loud on purpose — WARNING plus a metadata record — because a silent drop
+    and a register that never had the row look identical from the outside.
+    """
+    loans: List[Dict[str, Any]] = list(payload.get("loans", []))
+    kept: List[Dict[str, Any]] = []
+    dropped: List[Dict[str, Any]] = []
+
+    for loan in loans:
+        lender = _lender_key(loan)
+        category = loan.get("debt_category") or ""
+        rule = next(
+            (
+                r
+                for r in _SUBSUMED_ROWS
+                if r.category == category
+                and any(m in lender for m in r.subset_markers)
+            ),
+            None,
+        )
+        aggregate = (
+            next(
+                (
+                    other
+                    for other in loans
+                    if other is not loan
+                    and (other.get("debt_category") or "") == rule.category
+                    and rule.aggregate_marker in _lender_key(other)
+                ),
+                None,
+            )
+            if rule is not None
+            else None
+        )
+        if rule is None or aggregate is None:
+            kept.append(loan)
+            continue
+
+        amount = _row_amount_kes(loan)
+        dropped.append(
+            {
+                "lender": loan.get("lender"),
+                "debt_category": category,
+                "amount_kes": amount,
+                "already_counted_by": aggregate.get("lender"),
+                "reason": rule.because,
+            }
+        )
+        logger.warning(
+            "Dropping %s (KES %.1fBn, %s): %s already counts it — %s. Carrying "
+            "both would publish the same debt twice.",
+            loan.get("lender"),
+            amount / 1e9,
+            category,
+            aggregate.get("lender"),
+            rule.because,
+        )
+
+    if not dropped:
+        return payload
+
+    meta = dict(payload.get("metadata", {}))
+    meta["subsumed_rows_dropped"] = dropped
+    meta["subsumed_rows_dropped_kes"] = sum(d["amount_kes"] for d in dropped)
+    return {**payload, "loans": kept, "metadata": meta}
+
+
 def _published_bond_stock_kes(payload: Dict[str, Any]) -> float | None:
     """CBK's own domestic Treasury-bond total from the loans payload.
 
@@ -192,7 +360,7 @@ def fetch_debt_payload(
 
     if not settings.live_pdf_fetch_enabled:
         logger.info("Live fetch disabled; using fixture for national debt")
-        return payload
+        return _drop_subsumed_rows(payload)
 
     # ── Overlay: World Bank IDS per-creditor external debt ─────────
     try:
@@ -265,18 +433,50 @@ def fetch_debt_payload(
             external_creditors["year"],
         )
     else:
-        # A silent skip publishes the fixture's external rows, which this
-        # module's own comment records as overstating the book (+165% on
-        # Eurobonds against IDS). Say so, in the log AND in the payload, so a
-        # run that quietly fell back is visible rather than looking healthy.
-        meta = dict(payload.get("metadata", {}))
-        meta["ids_creditor_replacement_applied"] = False
-        meta["ids_creditor_skip_reason"] = ids_skip_reason or "not_attempted"
-        payload["metadata"] = meta
-        logger.warning(
-            "IDS creditor replacement did NOT apply (%s) — external debt is "
-            "being served from the fixture, which overstates it",
-            ids_skip_reason or "not_attempted",
+        # PUBLISH NOTHING. Not the fixture.
+        #
+        # Falling back used to look like the cautious option. It is the
+        # opposite. Measured on a live run with the pull forced to quarantine,
+        # what the fixture publishes is:
+        #
+        #   external              6,584.7Bn   (against 5,465.8 from the pull)
+        #     Eurobonds             2,276.0Bn — IDS reports ~890Bn, 2.6x
+        #     Commercial banks        400.0Bn — IDS reports ~124Bn, 3.2x
+        #   HEADLINE                  13.34T   (against 12.22T)
+        #
+        # So the gate firing correctly would put the single worst number in
+        # this codebase on the homepage — 1.1T above the register, and roughly
+        # the figure the 2026-09-06 audit was opened over. Loud in the log,
+        # invisible on the page. A gate whose failure mode is worse than its
+        # success is not protecting anything.
+        #
+        # Raising instead fails the domain with zero writes, so the PREVIOUS
+        # seed's rows stand and the staleness gate sees a run that did not
+        # reach the publisher (freshness records no live mode for it). Stale
+        # and correct beats fresh and 1.1T wrong.
+        #
+        # Note this also abandons the CBK domestic overlay for the run, which
+        # is deliberate: the register is published as one total, and half of it
+        # refreshed beside a stale half is the mixed-basis problem in miniature.
+        # It is raised HERE, before the bulletin download, so a run that is
+        # already going to be refused does not spend the domain's time budget
+        # fetching a PDF it will discard.
+        reason = ids_skip_reason or "not_attempted"
+        logger.error(
+            "IDS creditor replacement did NOT apply (%s). REFUSING to publish "
+            "the national-debt register: the fixture's external rows overstate "
+            "the book (Eurobonds 2,276Bn against IDS's ~890Bn) and would put "
+            "~13.34T on the page against the register's ~12.22T. This run "
+            "writes nothing; the previous seed's rows stand.",
+            reason,
+        )
+        raise DebtRegisterIncomplete(
+            f"external creditor pull did not apply ({reason}), so the register "
+            f"would have published the fixture's external rows — which "
+            f"overstate the book by ~1.1T. Nothing was written; the previous "
+            f"seed's rows stand. Fix the pull (see the wb_ids_creditors "
+            f"warnings above for which gate refused it) rather than relaxing a "
+            f"gate."
         )
 
     # ── Overlay: CBK Statistical Bulletin domestic debt ────────────
@@ -305,6 +505,11 @@ def fetch_debt_payload(
         meta["cbk_bulletin_overlay_applied"] = True
         meta["cbk_bulletin_overlay_count"] = len(cbk_loans)
         payload["metadata"] = meta
+
+    # ── Enforce: no row beside an aggregate that already counts it ──
+    # After every overlay, because this is the list that gets summed into the
+    # headline. See _drop_subsumed_rows.
+    payload = _drop_subsumed_rows(payload)
 
     # ── Attach: instrument-level Treasury bond register ────────────
     # NOT an overlay. The register is a list of individual securities with

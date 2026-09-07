@@ -510,7 +510,37 @@ class TestCbkBulletinFetcher:
 # ── fetcher.fetch_debt_payload (integration) ──
 
 
+def _passthrough_creditor_pull(*_args, **_kwargs):
+    """A successful external replacement that hands back the baseline's own
+    external rows, so the replacement is a no-op.
+
+    These tests are about the two OVERLAYS. The external replacement is gated
+    separately, and when a gate refuses it the fetcher now refuses to publish
+    at all rather than serving the fixture's external rows — see
+    test_national_debt_ids_visibility.py for why. Without a successful pull
+    stubbed here, every test below would fail on that refusal instead of on
+    the overlay behaviour it was written to check.
+    """
+    return {
+        "year": 2024,
+        "creditors": [object()],
+        "coverage": {"status": "within_band"},
+        "loans": [
+            loan
+            for loan in _baseline_payload()["loans"]
+            if (loan.get("debt_category") or "").startswith("external_")
+        ],
+    }
+
+
 class TestFetchDebtPayload:
+    @pytest.fixture(autouse=True)
+    def _external_replacement_succeeds(self):
+        with patch.object(
+            nd_fetcher, "fetch_external_creditors", _passthrough_creditor_pull
+        ):
+            yield
+
     def test_falls_back_to_fixture_when_wb_returns_nothing(self, settings):
         """If WB IDS yields zero rows (whole API down), we just return
         the fixture payload unchanged."""

@@ -40,6 +40,22 @@ def run(
     with create_http_client(settings) as client:
         try:
             payload = fetcher.fetch_debt_payload(client, settings)
+        except fetcher.DebtRegisterIncomplete as exc:
+            # Not a fetch failure — the fetch worked and the register was
+            # REFUSED, because publishing it would have put the fixture's
+            # external rows (~13.34T) on the page instead of the gated
+            # register's ~12.22T. Return before the writer so nothing is
+            # touched and the previous seed's rows stand.
+            logger.error("Refusing to publish the debt register: %s", exc)
+            return DomainRunResult(
+                domain="national_debt",
+                started_at=started_at,
+                finished_at=datetime.now(timezone.utc),
+                items_processed=0,
+                items_created=0,
+                items_updated=0,
+                errors=[f"Register refused, nothing written: {exc}"],
+            )
         except Exception as exc:
             logger.exception("Failed to fetch debt payload", extra={"error": str(exc)})
             return DomainRunResult(

@@ -79,6 +79,18 @@ IDS_2024 = {
         ("Belgium", "002", 307_050_651.0),
     ],
     "DT.DOD.DPPG.CD": [("World", "WLD", 35_582_544_109.0)],
+    # The rest of DT.DOD.DECT.CD. DPPG is one component of Kenya's external
+    # debt, not all of it, and every other component is now declared in
+    # wb_ids_creditors.DECT_COMPONENTS as carried or excluded — see
+    # test_external_debt_components_are_declared.py for what that gate is for.
+    # Captured 2026-09-06; the four sum to DECT to the cent.
+    "DT.DOD.DIMF.CD": [
+        ("World", "WLD", 4_958_198_572.8),
+        ("International Monetary Fund", "907", 4_958_198_572.8),
+    ],
+    "DT.DOD.DSTC.CD": [("World", "WLD", 2_007_772_843.5)],
+    "DT.DOD.DPNG.CD": [("World", "WLD", 337_611_692.6)],
+    "DT.DOD.DECT.CD": [("World", "WLD", 42_886_127_218.3)],
 }
 
 
@@ -132,11 +144,13 @@ def test_returns_none_when_ids_has_no_year_at_all():
     assert latest_year_with_data(client, candidates=[2026, 2025]) is None
 
 
-def test_pulls_every_creditor_across_the_four_series():
+def test_pulls_every_creditor_across_the_carried_series():
     creditors, checks = fetch_creditors(FakeIds(), 2024, IDS_TEST_RATE)
-    # 13 multilateral + 4 bilateral + 1 bondholders + 3 banks
-    assert len(creditors) == 21
+    # 13 multilateral + 4 bilateral + 1 bondholders + 3 banks, and the IMF —
+    # which IDS reports outside DPPG, so it needs its own component.
+    assert len(creditors) == 22
     assert checks["components_identity"] == "ok"
+    assert checks["declaration_identity"] == "ok"
     categories = {c.debt_category for c in creditors}
     assert categories == {
         "external_multilateral",
@@ -191,10 +205,14 @@ def test_a_series_with_no_world_row_is_refused():
         fetch_creditors(FakeIds(broken), 2024)
 
 
-def test_gate_3_flags_a_units_or_fx_error():
-    """IDS is PPG-only and a year behind, so it should read somewhat LOW
-    against a current CBK figure. A ratio far outside that is arithmetic, not
-    vintage."""
+def test_gate_4_flags_a_units_or_fx_error():
+    """The cross-publisher band. It catches arithmetic, not a missing class.
+
+    It is the LAST gate now, not the only one: with the whole of IMF credit
+    absent it read 94.87% of CBK's published external debt and passed. The
+    identity gates in fetch_creditors are what stand over the creditor list —
+    see test_external_debt_components_are_declared.py.
+    """
     creditors, _ = fetch_creditors(FakeIds(), 2024, Decimal("134.822483279332"))
     good = check_external_coverage(creditors, 5_462_000_000_000)
     assert good["status"] == "within_band"
@@ -229,7 +247,18 @@ def test_loan_rows_carry_their_own_provenance():
         assert "International Debt Statistics 2024" in row["notes"]
         assert "counterpart area" in row["notes"]
         assert str(IDS_TEST_RATE) in row["notes"], "the FX rate used must be on the row"
-        assert "publicly guaranteed" in row["notes"], "PPG scope must be stated"
+        # Every row states the basis of the component it came from. The IMF row
+        # must NOT claim to be PPG debt — IDS reports it outside that aggregate.
+        assert row["notes"].rstrip().endswith(
+            "Public and publicly guaranteed external debt only."
+        ) or "Use of IMF credit" in row["notes"], row["notes"]
+
+    imf = [r for r in rows if "International Monetary Fund" in r["lender"]]
+    assert len(imf) == 1
+    assert "Use of IMF credit" in imf[0]["notes"]
+    assert not imf[0]["notes"].rstrip().endswith(
+        "Public and publicly guaranteed external debt only."
+    )
 
 
 def test_bondholders_are_named_for_what_kenya_issued():
@@ -400,7 +429,7 @@ def test_an_out_of_band_pull_is_quarantined():
         FakeIds(), published_external_kes_for_year=lambda _yr: 5_462_000_000_000
     )
     assert ok is not None and ok["year"] == 2024
-    assert len(ok["creditors"]) == 21
+    assert len(ok["creditors"]) == 22
 
 
 # ── Both gates must be able to fire on the shapes that matter ──────────────
