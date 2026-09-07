@@ -53,6 +53,8 @@ stricter check costs nothing there and is kept.
 from __future__ import annotations
 
 import logging
+import re
+from decimal import Decimal
 from typing import Any, Dict, Iterable, Optional
 
 from sqlalchemy import and_ as sa_and
@@ -493,6 +495,130 @@ def withheld_file_figure(reason: str) -> Dict[str, Any]:
 
 # --------------------------------------------------------------------------
 # county-level debt instruments
+# --------------------------------------------------------------------------
+# the CBK Treasury bond register (debt_instruments)
+# --------------------------------------------------------------------------
+#
+# NOT the same thing as ``county_debt_instrument_failure`` below, which governs
+# county-level rows in ``loans``. This governs ``debt_instruments`` — the
+# maturity-and-coupon register behind /api/v1/debt/instruments.
+
+#: ISO 6166: two letters, nine alphanumerics, one check digit. Kenyan
+#: securities are KE + ten digits, which this admits without hardcoding KE.
+_ISIN_RE = re.compile(r"^[A-Z]{2}[A-Z0-9]{9}[0-9]$")
+
+BOND_REGISTER_NO_URL = "source_document_has_no_url"
+BOND_REGISTER_NO_ISIN = "no_isin_locator"
+BOND_REGISTER_NO_FACE_VALUE = "no_face_value"
+
+
+def bond_register_withheld_reason(row, source_document=None) -> Optional[str]:
+    """Why this bond-register row may not be published, or ``None`` if it may.
+
+    WHY THIS TABLE DOES NOT TAKE ``page_ref``
+    -----------------------------------------
+    ``fiscal_summaries`` and ``audits`` are gated on a page because they come
+    from PDFs and a page is what a reader turns to. This register does not:
+    source document 2432 is ``https://www.centralbank.go.ke/bills-bonds/treasury-bonds/``,
+    which answers ``content-type: text/html``. It is a web table. It has no
+    pages, all 56 production rows carry ``page_ref IS NULL``, and they are
+    right to. Requiring one would withhold the whole maturity ladder over a
+    category error rather than a provenance gap.
+
+    A ``page_ref`` synthesised from the row's own ``isin`` and ``issue_no`` was
+    considered and rejected: a locator computed from the data it locates can
+    never be absent, so a gate on it can never fail. That is the constant this
+    function replaces, wearing a better disguise.
+
+    WHAT A READER ACTUALLY USES
+    ---------------------------
+    They open the CBK table and look for the security, and what finds it there
+    is the **ISIN**. It is a first-class column, it is what CBK keys the table
+    on, and — unlike a derived string — it can be malformed or missing. So the
+    rule is the one ``instrument_writer`` already states in a comment and never
+    checked: the row resolves to a document a reader can open, and carries the
+    key that locates it inside that document.
+
+    Reasons are ordered: an unopenable source first, since no locator helps
+    when there is nothing to open.
+    """
+    url = getattr(source_document, "url", None) if source_document is not None else None
+    if url is None or not str(url).strip():
+        return BOND_REGISTER_NO_URL
+
+    isin = getattr(row, "isin", None)
+    if isin is None or not _ISIN_RE.match(str(isin).strip().upper()):
+        return BOND_REGISTER_NO_ISIN
+
+    face_value = getattr(row, "face_value", None)
+    if face_value is None or Decimal(str(face_value)) <= 0:
+        return BOND_REGISTER_NO_FACE_VALUE
+
+    return None
+
+
+BOND_REGISTER_QUARANTINED = "quarantined"
+
+
+def bond_register_publication_failure(row, source_document=None) -> Optional[str]:
+    """Why a reader must not be shown this row: the rule OR a stored quarantine.
+
+    Two independent things can hold a row back, and the endpoint has to respect
+    both:
+
+    * the rule in :func:`bond_register_withheld_reason`, recomputed per request
+      so a column written by an older seeder cannot publish what the current
+      rule rejects; and
+    * ``publishable = False`` in the column itself, which is the general
+      quarantine channel — an operator or a future cause marking one row —
+      and predates this function. Ignoring it would un-quarantine every row
+      held back for any reason this rule does not happen to name.
+
+    Fail closed: either one withholds. ``quarantine_reason`` is preferred as
+    the word when the column is the cause, so the response repeats what is
+    stored rather than inventing a second vocabulary for it.
+    """
+    reason = bond_register_withheld_reason(
+        row,
+        source_document
+        if source_document is not None
+        else getattr(row, "source_document", None),
+    )
+    if reason is not None:
+        return reason
+    if getattr(row, "publishable", True) is False:
+        return getattr(row, "quarantine_reason", None) or BOND_REGISTER_QUARANTINED
+    return None
+
+
+def publishable_bond_register_rows(rows: Iterable[Any], source_document=None) -> list:
+    """The subset of ``rows`` a reader could check against the CBK table."""
+    return [
+        r
+        for r in rows
+        if bond_register_publication_failure(r, source_document) is None
+    ]
+
+
+def bond_register_withheld_disclosure(rows: Iterable[Any]) -> Dict[str, Any]:
+    """What the response must say about register rows the GATE held back.
+
+    Deliberately separate from the ``withheld_isins`` the response already
+    carries. Those are six securities the EXTRACTOR could not settle —
+    ambiguous maturities — recorded on the source document. This is a different
+    fact with a different remedy, and folding the two together would let a
+    reader think the six covered both.
+
+    Always the full shape, zeros included.
+    """
+    by_reason: Dict[str, int] = {}
+    for row in rows:
+        reason = bond_register_publication_failure(row)
+        if reason is not None:
+            by_reason[reason] = by_reason.get(reason, 0) + 1
+    return {"count": sum(by_reason.values()), "by_reason": by_reason}
+
+
 # --------------------------------------------------------------------------
 
 # Creditors that lend to sovereigns, not to county governments. Article 212 of
