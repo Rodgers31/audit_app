@@ -1,13 +1,49 @@
 """
 Office of the Auditor-General (OAG) Audit Extractor
-Specialized extractor for OAG audit reports, queries, and findings
-Focuses on county and national audit data with specific audit queries and irregularities
+Discovers OAG audit report documents and reads what their titles state.
+
+WITHDRAWN 2026-09-07 (issue #193): four methods that manufactured audit
+findings about named county governments out of ``hash()``, and the parts of the
+run summary computed from them.
+
+    generate_county_audit_queries       149-241  2-5 "audit queries" per county,
+                                                 each with an amount to KSh 50M,
+                                                 a severity, a status, a
+                                                 four-digit id and a date raised
+    generate_missing_funds_analysis     243-280  1-3 "missing funds" cases per
+                                                 county, to KSh 100M, each with
+                                                 an MF#### case id and a
+                                                 percentage of a budget that was
+                                                 itself hash(county)
+    _generate_missing_funds_description 348-357  chose the wording by hash()
+    _generate_recovery_efforts          359-369  chose how many "recovery
+                                                 efforts" to claim by
+                                                 hash(str(time.time()))
+
+None of it was extracted from anything. ``hash()`` on a ``str`` is salted per
+process, so every county's figures changed on each restart; the last method was
+seeded on the clock and so varied *within* one run. Counties are named public
+bodies, and a fabricated finding against one — an amount, a severity, a case
+id, a date it was raised — is a statement of fact about that body, which is the
+issue #182/#183 concern in its stronger form. Unlike those, this file ships:
+``Dockerfile:26`` copies ``extractors/`` into the production image.
+
+What survives reads the OAG website and reports what it finds there:
+``extract_oag_audit_reports`` and the five ``_extract``/``_categorize`` helpers
+it calls, which parse report titles. They report nothing when they find
+nothing, which is the correct answer when nothing was found.
+``run_comprehensive_oag_extraction`` keeps its one real step and lost the two
+generated ones, along with ``audit_statistics`` (every field of which counted
+fabricated records) and the ``data_sources.coverage`` claim of "All 47 Kenya
+Counties", which measured nothing — it restated the length of the name-matching
+roster. ``_generate_recommendation`` is kept and is currently unreferenced: it
+maps a query category to generic remediation advice, which is not a claim about
+any county.
 """
 
 import json
 import logging
 import re
-import time
 from datetime import datetime
 from typing import Dict, List, Optional
 
@@ -30,7 +66,6 @@ class OAGAuditExtractor:
         )
 
         self.audit_reports = []
-        self.county_audit_queries = []
         self.national_audit_findings = []
         self.special_audit_reports = []
 
@@ -146,139 +181,6 @@ class OAGAuditExtractor:
         self.audit_reports = extracted_reports
         return extracted_reports
 
-    def generate_county_audit_queries(self):
-        """Generate realistic county audit queries based on common issues."""
-        logger.info("📋 Generating County Audit Queries...")
-
-        # Common audit query patterns from real OAG reports
-        query_templates = [
-            {
-                "type": "Financial Irregularity",
-                "patterns": [
-                    "Unsupported expenditure of KES {amount:,}",
-                    "Missing supporting documents for KES {amount:,}",
-                    "Irregular procurement of KES {amount:,}",
-                    "Unexplained variance of KES {amount:,}",
-                ],
-            },
-            {
-                "type": "Procurement Issues",
-                "patterns": [
-                    "Non-compliance with procurement procedures - KES {amount:,}",
-                    "Single sourcing without justification - KES {amount:,}",
-                    "Contracts awarded irregularly - KES {amount:,}",
-                    "Inflated contract values - KES {amount:,}",
-                ],
-            },
-            {
-                "type": "Missing Funds",
-                "patterns": [
-                    "Unaccounted revenue collection - KES {amount:,}",
-                    "Missing imprest funds - KES {amount:,}",
-                    "Unexplained cash shortfall - KES {amount:,}",
-                    "Bank reconciliation differences - KES {amount:,}",
-                ],
-            },
-            {
-                "type": "Payroll Issues",
-                "patterns": [
-                    "Ghost workers detected - KES {amount:,}",
-                    "Duplicate salary payments - KES {amount:,}",
-                    "Irregular allowances - KES {amount:,}",
-                    "Unauthorized overtime payments - KES {amount:,}",
-                ],
-            },
-            {
-                "type": "Asset Management",
-                "patterns": [
-                    "Missing fixed assets worth KES {amount:,}",
-                    "Inadequate asset register - KES {amount:,}",
-                    "Disposal without approval - KES {amount:,}",
-                    "Uninsured assets worth KES {amount:,}",
-                ],
-            },
-        ]
-
-        county_queries = []
-        query_id = 1
-
-        for county in self.counties:
-            # Generate 2-5 queries per county
-            num_queries = hash(county) % 4 + 2
-
-            for i in range(num_queries):
-                query_type = query_templates[
-                    hash(f"{county}-{i}") % len(query_templates)
-                ]
-                pattern = query_type["patterns"][
-                    hash(f"{county}-{i}") % len(query_type["patterns"])
-                ]
-
-                # Generate realistic amounts
-                base_amount = (
-                    hash(f"{county}-{i}") % 50000000
-                ) + 1000000  # 1M - 50M KES
-
-                query = {
-                    "query_id": f"AQ{query_id:04d}",
-                    "county": county,
-                    "query_type": query_type["type"],
-                    "description": pattern.format(amount=base_amount),
-                    "amount": base_amount,
-                    "status": ["Pending", "Under Review", "Resolved", "Escalated"][
-                        hash(f"{county}-{i}") % 4
-                    ],
-                    "date_raised": f"2024-{(hash(county) % 12) + 1:02d}-{(hash(f'{county}-{i}') % 28) + 1:02d}",
-                    "audit_year": "2024",
-                    "severity": ["High", "Medium", "Low"][hash(f"{county}-{i}") % 3],
-                    "recommendation": self._generate_recommendation(query_type["type"]),
-                }
-
-                county_queries.append(query)
-                query_id += 1
-
-        self.county_audit_queries = county_queries
-        return county_queries
-
-    def generate_missing_funds_analysis(self):
-        """Generate detailed missing funds analysis from audit findings."""
-        logger.info("💰 Generating Missing Funds Analysis...")
-
-        missing_funds_cases = []
-
-        for county in self.counties:
-            # Generate missing funds cases
-            num_cases = hash(county) % 3 + 1  # 1-3 cases per county
-
-            for i in range(num_cases):
-                amount = (
-                    hash(f"{county}-missing-{i}") % 100000000
-                ) + 5000000  # 5M - 100M KES
-
-                case = {
-                    "case_id": f"MF{hash(f'{county}-{i}') % 9999:04d}",
-                    "county": county,
-                    "amount": amount,
-                    "description": self._generate_missing_funds_description(
-                        county, amount
-                    ),
-                    "date_identified": f"2024-{(hash(county) % 12) + 1:02d}-{(hash(f'{county}-{i}') % 28) + 1:02d}",
-                    "status": [
-                        "Under Investigation",
-                        "Recovered",
-                        "Court Case",
-                        "Pending",
-                    ][hash(f"{county}-{i}") % 4],
-                    "percentage_of_budget": round(
-                        (amount / ((hash(county) % 10000000000) + 5000000000)) * 100, 2
-                    ),
-                    "recovery_efforts": self._generate_recovery_efforts(),
-                }
-
-                missing_funds_cases.append(case)
-
-        return missing_funds_cases
-
     def _categorize_audit_report(self, title: str, url: str) -> str:
         """Categorize audit report type."""
         title_lower = title.lower()
@@ -345,62 +247,32 @@ class OAGAuditExtractor:
         }
         return recommendations.get(query_type, "Address the identified issues promptly")
 
-    def _generate_missing_funds_description(self, county: str, amount: int) -> str:
-        """Generate realistic missing funds description."""
-        descriptions = [
-            f"Unaccounted revenue collection from county operations in {county}",
-            f"Missing funds from {county} county development projects",
-            f"Irregular withdrawals from {county} county accounts",
-            f"Unexplained transfers from {county} county revenue",
-            f"Missing documentation for {county} county expenditure",
-        ]
-        return descriptions[hash(f"{county}-{amount}") % len(descriptions)]
-
-    def _generate_recovery_efforts(self) -> List[str]:
-        """Generate recovery efforts."""
-        efforts = [
-            "Investigation committee established",
-            "Forensic audit initiated",
-            "Criminal investigation ongoing",
-            "Asset recovery proceedings",
-            "Disciplinary action taken",
-            "System improvements implemented",
-        ]
-        return efforts[: hash(str(time.time())) % 3 + 1]
-
     def run_comprehensive_oag_extraction(self):
-        """Run comprehensive OAG audit extraction."""
+        """Discover OAG audit reports and report what was actually found.
+
+        Steps 2 and 3 of this method used to be "generate county audit queries"
+        and "generate missing funds analysis"; they went with the methods
+        behind them. See the module docstring.
+        """
         logger.info("\n" + "=" * 80)
-        logger.info("🏛️ COMPREHENSIVE OAG AUDIT EXTRACTION")
+        logger.info("🏛️ OAG AUDIT REPORT DISCOVERY")
         logger.info("=" * 80)
 
         start_time = datetime.now()
-
-        # Step 1: Extract audit reports
         audit_reports = self.extract_oag_audit_reports()
+        duration = (datetime.now() - start_time).total_seconds()
 
-        # Step 2: Generate county audit queries
-        county_queries = self.generate_county_audit_queries()
-
-        # Step 3: Generate missing funds analysis
-        missing_funds = self.generate_missing_funds_analysis()
-
-        end_time = datetime.now()
-        duration = (end_time - start_time).total_seconds()
-
-        # Compile results
         results = {
             "extraction_summary": {
                 "audit_reports_found": len(audit_reports),
-                "county_audit_queries": len(county_queries),
-                "missing_funds_cases": len(missing_funds),
-                "counties_covered": len(self.counties),
+                # The size of the name-matching roster. NOT a coverage claim:
+                # how many counties are represented in the reports found is
+                # whatever the OAG site listed, and this number cannot see it.
+                "counties_in_name_matcher": len(self.counties),
                 "extraction_duration": duration,
                 "timestamp": datetime.now().isoformat(),
             },
             "audit_reports": audit_reports,
-            "county_audit_queries": county_queries,
-            "missing_funds_analysis": missing_funds,
             "data_sources": {
                 "primary": "Office of the Auditor-General Kenya (oagkenya.go.ke)",
                 "report_types": [
@@ -408,34 +280,18 @@ class OAGAuditExtractor:
                     "Annual Reports",
                     "Special Audits",
                 ],
-                "coverage": "All 47 Kenya Counties",
-            },
-            "audit_statistics": {
-                "total_queries": len(county_queries),
-                "total_missing_funds": sum([case["amount"] for case in missing_funds]),
-                "high_severity_queries": len(
-                    [q for q in county_queries if q["severity"] == "High"]
-                ),
-                "pending_cases": len(
-                    [q for q in county_queries if q["status"] == "Pending"]
-                ),
             },
         }
 
-        # Log summary
-        stats = results["audit_statistics"]
-        logger.info(f"\n📋 OAG EXTRACTION COMPLETE:")
+        logger.info("\n📋 OAG DISCOVERY COMPLETE:")
         logger.info(f"   📊 Audit Reports: {len(audit_reports)}")
-        logger.info(f"   🔍 County Queries: {len(county_queries)}")
-        logger.info(f"   💰 Missing Funds: {stats['total_missing_funds']:,.0f} KES")
-        logger.info(f"   ⚠️ High Severity: {stats['high_severity_queries']} queries")
         logger.info(f"   ⏱️ Duration: {duration:.1f} seconds")
 
         return results
 
 
 def main():
-    """Main function to run OAG audit extraction."""
+    """Main function to run OAG audit report discovery."""
     extractor = OAGAuditExtractor()
     results = extractor.run_comprehensive_oag_extraction()
 
@@ -443,12 +299,9 @@ def main():
     with open("oag_audit_data.json", "w") as f:
         json.dump(results, f, indent=2)
 
-    stats = results["audit_statistics"]
-    print(f"\n✅ OAG audit extraction completed!")
+    print("\n✅ OAG audit report discovery completed!")
     print(f"📊 Audit Reports: {len(results['audit_reports'])}")
-    print(f"🔍 County Queries: {len(results['county_audit_queries'])}")
-    print(f"💰 Missing Funds: {stats['total_missing_funds']:,.0f} KES")
-    print(f"📁 Results saved to: oag_audit_data.json")
+    print("📁 Results saved to: oag_audit_data.json")
 
 
 if __name__ == "__main__":
