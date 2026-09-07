@@ -56,27 +56,38 @@ could inherit a clean opinion from earlier in the same sub-report, and the site
 would have been labelling qualified audits clean rather than merely omitting
 them. That is a materially stronger defect than a gap.
 
-It did not happen. Joining ``audits.audit_opinion`` against the ``heading`` on
-the same row's extraction, over the 2,311 publishable findings that carry an
-``extraction_id`` (production, 2026-09-06)::
+It did not happen. The claim's population is every published clean label —
+191 of them — and the join sees all 191: ``extraction_id`` is NULL on exactly
+one publishable row (audit 901, Homa Bay), and that row carries no opinion. So
+nothing clean-labelled sits outside the check.
 
-    audit_opinion         heading                              rows
-    NULL                  Basis for Qualified Opinion           408
-    NULL                  Basis for Adverse Opinion             104
-    NULL                  Basis for Disclaimer of Opinion        33
-    Unmodified Opinion    Other Matter                          107
-    Unmodified Opinion    Emphasis of Matter                     63
-    Unqualified Opinion   Other Matter                            9
-    Unmodified Opinion    Basis for Conclusion                    7
-    Unmodified Opinion    Other Information                       3
+Every clean label, by the heading on its own extraction (production,
+2026-09-06). This table is deliberately complete and sums to 191, so a reader
+can reconcile it rather than take the total on trust — an earlier draft
+abridged away the two no-heading rows and the arithmetic stopped closing, which
+is precisely the way a refutation gets believed without being checked::
 
-    clean opinion under a "Basis for <modified> Opinion" heading:  0
+    audit_opinion         heading                    rows
+    Unmodified Opinion    Other Matter                107
+    Unmodified Opinion    Emphasis of Matter           63
+    Unqualified Opinion   Other Matter                  9
+    Unmodified Opinion    Basis for Conclusion          7
+    Unmodified Opinion    Other Information             3
+    Unmodified Opinion    (no heading)                  2
+                                                    -----
+                                                      191
 
-All 545 modified-basis findings arrive NULL; every published clean label sits
-under a heading that follows a clean opinion section. The reason the sticky
-variable never bites is structural: the "Basis for ..." section opens a
-modified financial-statements sub-report, so ``_SUBREPORT_RE`` has just cleared
-``opinion`` and there is nothing to inherit.
+    clean label under a "Basis for <modified> Opinion" heading:        0
+    clean label under ANY heading containing qualified/adverse/
+      disclaimer — a wider net, in case of a heading not listed here:  0
+
+And the other side of the same join: all 545 findings under a modified basis
+(``Basis for Qualified Opinion`` 408, ``Basis for Adverse Opinion`` 104,
+``Basis for Disclaimer of Opinion`` 33) carry ``audit_opinion`` NULL.
+
+The reason the sticky variable never bites is structural: the "Basis for ..."
+section opens a modified financial-statements sub-report, so ``_SUBREPORT_RE``
+has just cleared ``opinion`` and there is nothing to inherit.
 
 **So the defect is omission, not misstatement** — the weaker of the two, and the
 bound is worth having. One residue for whoever fixes the extractor: 7 findings
