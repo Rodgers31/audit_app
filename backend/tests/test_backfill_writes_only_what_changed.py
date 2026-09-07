@@ -100,6 +100,8 @@ def populated(db_session, seed_country):
             finding_text=text,
             severity=sev,
             source_document_id=doc.id,
+            # Tier B (#137): a published finding cites a page.
+            page_ref="p.409",
         )
 
     db_session.add_all(

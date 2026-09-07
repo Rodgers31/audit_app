@@ -236,6 +236,8 @@ class TestGateBackfill:
                     finding_text="A finding citing an unopenable document",
                     severity=Severity.WARNING,
                     source_document_id=no_url_doc.id,
+                    # Tier B (#137): a published finding cites a page.
+                    page_ref="p.409",
                 ),
                 Audit(
                     entity_id=entity.id,
@@ -243,6 +245,8 @@ class TestGateBackfill:
                     finding_text="(cid:31)(cid:30) glyph junk row",
                     severity=Severity.CRITICAL,
                     source_document_id=blue_book_doc.id,
+                    # Tier B (#137): a published finding cites a page.
+                    page_ref="p.409",
                 ),
             ]
         )

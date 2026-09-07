@@ -122,6 +122,8 @@ class TestDerivedFindingsWin:
                 severity=Severity.WARNING,
                 source_document_id=doc.id,
                 extraction_id=ext.id,  # <- what makes it derived
+                # Tier B (#137): a published finding cites a page.
+                page_ref="p.409",
             )
         )
         session.flush()
@@ -169,6 +171,8 @@ class TestDerivedFindingsWin:
                 severity=Severity.WARNING,
                 source_document_id=doc.id,
                 extraction_id=None,  # <- no extraction: not derived
+                # Tier B (#137): a published finding cites a page.
+                page_ref="p.409",
             )
         )
         session.flush()

@@ -152,6 +152,8 @@ def test_variants_of_one_section_merge_into_a_single_recurring_row(
                 finding_text=f"Finding recorded under {qt!r} for {year}.",
                 source_document_id=seed_source_doc.id,
                 created_at=datetime(year, 7, 1),
+                # Tier B (#137): a published finding cites a page.
+                page_ref="p.409",
             )
         )
     db_session.commit()

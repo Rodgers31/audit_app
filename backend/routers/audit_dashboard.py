@@ -163,6 +163,12 @@ class RecurringFinding(BaseModel):
 class RecurringFindingsResponse(BaseModel):
     recurring_findings: List[RecurringFinding]
     total: int
+    #: Why the list is empty, when it is. "0 recurring findings" is a claim
+    #: about Kenyan county audits; what is actually true is narrower — no
+    #: entity-and-section group in the PUBLISHED rows appears in two different
+    #: audit years — and a reader cannot tell those apart from the integer.
+    #: None whenever there is something to show; present data explains itself.
+    absent_reason: Optional[str] = None
 
 
 class FindingDetail(BaseModel):
@@ -633,7 +639,34 @@ async def get_recurring_findings(db: Session = Depends(get_db)):
         }
 
         if not result_map:
-            return RecurringFindingsResponse(recurring_findings=[], total=0)
+            # Say which absence this is. The published rows may span one audit
+            # year, in which case nothing CAN recur; or several, in which case
+            # nothing did. Those are different facts and the count is the same.
+            years = sorted({yr for _, _, _, yr, _, _ in rows if yr is not None})
+            if not rows:
+                reason = (
+                    "No audit findings are published, so recurrence cannot be "
+                    "assessed. See withheld_findings_by_reason on "
+                    "/api/v1/audits/statistics."
+                )
+            elif len(years) < 2:
+                covered = ", ".join(str(y) for y in years) or "no stated year"
+                reason = (
+                    f"The {len(rows)} published findings cover {covered}. A "
+                    "finding is counted as recurring when its entity and "
+                    "section appear in two or more audit years, which one year "
+                    "of data cannot show."
+                )
+            else:
+                covered = ", ".join(str(y) for y in years)
+                reason = (
+                    f"No entity and section appears in two or more of the "
+                    f"audit years published ({covered}) across the "
+                    f"{len(rows)} published findings."
+                )
+            return RecurringFindingsResponse(
+                recurring_findings=[], total=0, absent_reason=reason
+            )
 
         entity_name_map: Dict[int, str] = {}
         _entity_ids = list({eid for eid, _ in result_map})

@@ -1,9 +1,13 @@
 """The audits publication gate (AUDIT_FINDINGS F5.4).
 
-The /audits headline of KES 3.91T stood on 27 rows. 25 of them hang off
-source_document 1836 — an OAG title whose ``url`` and ``md5`` are both NULL,
-so no reader can open it — contributing KES 3.313T (84.8%). Only KES 592.06B
-traces to a document that resolves.
+The /audits headline of KES 3.91T stood on 27 rows at the time this gate was
+written. 25 of them hang off source_document 1836 — an OAG title whose ``url``
+and ``md5`` are both NULL, so no reader can open it — contributing KES 3.313T
+(84.8%). Only KES 592.06B traced to a document that resolves.
+
+The extractor work since has taken ``audits`` to **2,338** rows on production
+(2026-09-07), so read "27" above as the table's size *then*, not now. The 25
+withheld for a missing URL is still 25; what changed is everything around it.
 
 The gate excludes a finding whose source document has no openable URL. Rows are
 retained in the database, never deleted, and the count held back is reported on
@@ -80,6 +84,8 @@ def gate_fixture(db_session, seed_country, seed_source_doc):
                 status="Unresolved",
                 audit_opinion="Adverse",
                 audit_year=2025,
+                # Tier B (#137): a published finding cites a page.
+                page_ref="p.409",
             ),
             # Untraceable, and a perfectly round 1.2T — must be withheld.
             Audit(
@@ -93,6 +99,8 @@ def gate_fixture(db_session, seed_country, seed_source_doc):
                 status="Unresolved",
                 audit_opinion="Adverse",
                 audit_year=2023,
+                # Tier B (#137): a published finding cites a page.
+                page_ref="p.409",
             ),
         ]
     )

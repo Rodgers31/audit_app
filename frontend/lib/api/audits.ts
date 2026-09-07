@@ -283,6 +283,13 @@ export interface RecurringFindingItem {
 export interface RecurringFindingsData {
   recurring_findings: RecurringFindingItem[];
   total: number;
+  /**
+   * Why the list is empty, when it is. "0 patterns" is a claim about Kenyan
+   * county audits; what the backend can actually assert is narrower — that no
+   * entity and section appears in two or more of the audit years published.
+   * Present only when there is nothing to show.
+   */
+  absent_reason?: string | null;
 }
 
 export interface FindingDetailItem {

@@ -132,6 +132,8 @@ def seed_county_with_audits(db_session, seed_country, seed_source_doc):
             status="Pending",
             audit_opinion="qualified",
             audit_year=2022,
+            # Tier B (#137): a published finding cites a page.
+            page_ref="p.409",
         ),
         Audit(
             entity_id=entity.id,
@@ -144,6 +146,8 @@ def seed_county_with_audits(db_session, seed_country, seed_source_doc):
             status="Unresolved",
             audit_opinion="unqualified",
             audit_year=2023,
+            # Tier B (#137): a published finding cites a page.
+            page_ref="p.409",
         ),
         Audit(
             entity_id=entity.id,
@@ -156,6 +160,8 @@ def seed_county_with_audits(db_session, seed_country, seed_source_doc):
             status="Resolved",
             audit_opinion="unqualified",
             audit_year=2023,
+            # Tier B (#137): a published finding cites a page.
+            page_ref="p.409",
         ),
     ]
     db_session.add_all(audits)
@@ -315,6 +321,8 @@ class TestCountyAccountability:
             source_document_id=seed_source_doc.id,
             audit_opinion="unqualified",
             audit_year=2024,
+            # Tier B (#137): a published finding cites a page.
+            page_ref="p.409",
         )
         db_session.add(audit)
         db_session.commit()
@@ -358,6 +366,8 @@ class TestCountyAccountability:
             source_document_id=seed_source_doc.id,
             audit_opinion="adverse",
             audit_year=2024,
+            # Tier B (#137): a published finding cites a page.
+            page_ref="p.409",
         )
         db_session.add(audit)
         db_session.commit()

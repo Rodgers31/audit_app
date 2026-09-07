@@ -74,6 +74,8 @@ def seed_credibility_data(db_session, seed_country, seed_source_doc):
                 finding_text="Procurement irregularity KES 150,000,000",
                 severity=Severity.CRITICAL,
                 source_document_id=seed_source_doc.id,
+                # Tier B (#137): a published finding cites a page.
+                page_ref="p.409",
             ),
             Audit(
                 entity_id=ministry.id,
@@ -81,6 +83,8 @@ def seed_credibility_data(db_session, seed_country, seed_source_doc):
                 finding_text="Misstatement of expenditure",
                 severity=Severity.WARNING,
                 source_document_id=seed_source_doc.id,
+                # Tier B (#137): a published finding cites a page.
+                page_ref="p.409",
             ),
             Audit(
                 entity_id=county.id,
@@ -88,6 +92,8 @@ def seed_credibility_data(db_session, seed_country, seed_source_doc):
                 finding_text="Unsupported vouchers KES 20,000,000",
                 severity=Severity.CRITICAL,
                 source_document_id=seed_source_doc.id,
+                # Tier B (#137): a published finding cites a page.
+                page_ref="p.409",
             ),
         ]
     )

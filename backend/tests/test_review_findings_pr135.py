@@ -106,7 +106,10 @@ class TestWithheldReasonsAreDistinguished:
         db_session.add(
             Audit(entity_id=entity.id, period_id=period.id,
                   source_document_id=seed_source_doc.id,
-                  finding_text="a normal finding", severity=Severity.INFO)
+                  finding_text="a normal finding", severity=Severity.INFO,
+                  # Tier B (#137): a published finding cites a page, so this
+                  # row is withheld for the URL and nothing else.
+                  page_ref="p.409")
         )
         db_session.commit()
 

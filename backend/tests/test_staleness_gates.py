@@ -59,6 +59,8 @@ class TestTableFreshness:
             entity_id=ent.id, period_id=per.id, finding_text="old",
             severity=Severity.INFO, source_document_id=doc.id,
             created_at=NOW - timedelta(days=500),
+            # Tier B (#137): a published finding cites a page.
+            page_ref="p.409",
         ))
         db_session.commit()
 
@@ -83,6 +85,8 @@ class TestTableFreshness:
             entity_id=ent.id, period_id=per.id, finding_text="new",
             severity=Severity.INFO, source_document_id=doc.id,
             created_at=NOW - timedelta(days=2),
+            # Tier B (#137): a published finding cites a page.
+            page_ref="p.409",
         ))
         db_session.commit()
 

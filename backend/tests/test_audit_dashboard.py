@@ -67,6 +67,8 @@ def seed_audit_dashboard(db_session, seed_country, seed_source_doc):
             audit_opinion="Adverse",
             audit_year=2022,
             follow_up_status="Recurring",
+            # Tier B (#137): a published finding cites a page.
+            page_ref="p.409",
         ),
         # Nairobi, 2023, same query_type (recurring by multi-year)
         Audit(
@@ -80,6 +82,8 @@ def seed_audit_dashboard(db_session, seed_country, seed_source_doc):
             status="Unresolved",
             audit_opinion="Qualified",
             audit_year=2023,
+            # Tier B (#137): a published finding cites a page.
+            page_ref="p.409",
         ),
         # Mombasa, 2023, different type
         Audit(
@@ -93,6 +97,8 @@ def seed_audit_dashboard(db_session, seed_country, seed_source_doc):
             status="Resolved",
             audit_opinion="Unqualified",
             audit_year=2023,
+            # Tier B (#137): a published finding cites a page.
+            page_ref="p.409",
         ),
         # Nairobi, 2023, no amount
         Audit(
@@ -104,6 +110,8 @@ def seed_audit_dashboard(db_session, seed_country, seed_source_doc):
             query_type="Governance",
             audit_opinion="Qualified",
             audit_year=2023,
+            # Tier B (#137): a published finding cites a page.
+            page_ref="p.409",
         ),
     ]
     db_session.add_all(audits)
