@@ -1791,6 +1791,14 @@ except Exception as e:
     logger.warning(f"Could not register audit dashboard router: {e}")
 
 try:
+    from routers.health import router as health_router
+
+    app.include_router(health_router)
+    logger.info("Detailed health router registered at /health/detailed")
+except Exception as e:
+    logger.warning(f"Could not register detailed health router: {e}")
+
+try:
     from routers.money_flow import router as money_flow_router
 
     app.include_router(money_flow_router)

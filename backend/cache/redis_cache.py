@@ -9,8 +9,109 @@ from functools import wraps
 from typing import Any, Callable, Optional
 
 import redis
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
+
+
+def _json_default(obj: Any) -> Any:
+    """Encode the one type endpoint handlers legitimately hand the cache.
+
+    A FastAPI handler that declares ``response_model`` returns the MODEL — the
+    framework validates and serialises it on the way out. ``json.dumps`` does
+    not know how to encode one, so before issue #184 the write raised
+    ``TypeError``, was swallowed, and the endpoint ran uncached forever.
+
+    ``mode="json"`` resolves nested models, datetimes, Decimals and enums to
+    JSON-native types, so what lands in Redis is what FastAPI would have sent
+    for that same model.
+
+    Deliberately narrow. Anything that is NOT a model still raises, and the
+    caller counts and reports it — a cache that quietly re-encodes whatever it
+    is given cannot tell you when a value is wrong.
+    """
+    if isinstance(obj, BaseModel):
+        return obj.model_dump(mode="json")
+    raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+
+
+def _sanitise_namespace(value: str) -> str:
+    """Keys are colon-separated, so a namespace may not contain one."""
+    return "".join(c for c in value.strip() if c.isalnum() or c in "-_.")
+
+
+def _tracks_the_commit(value: str, commit: str) -> bool:
+    """True when ``value`` visibly follows ``commit``, so the scope still
+    advances per deploy.
+
+    ``CACHE_VERSION=$RENDER_GIT_COMMIT`` in the start command is the
+    recommended configuration when the commit is not otherwise on the
+    process's environment, and warning about it would be a false positive on
+    the one setup we tell people to use. A 7-character floor keeps a short
+    namespace from matching hex by coincidence.
+    """
+    shorter, longer = sorted((value, commit), key=len)
+    return len(shorter) >= 7 and shorter in longer
+
+
+def _resolve_cache_namespace() -> tuple:
+    """Which build's cache entries this process may read, and where that came from.
+
+    Redis outlives a deploy. Since #184 made the model-returning endpoints
+    genuinely cacheable, a cached value is a dict that FastAPI re-validates
+    against ``response_model`` on the way out — so an entry written before a
+    model changed can be read by the build that changed it. Observed on this
+    branch by planting one under the live key of ``/economic/population/latest``:
+    a missing required field or a wrong type answers **500**, and a missing
+    OPTIONAL field answers **200 with a field the previous build never set**.
+    That last one does not fail; it publishes a false provenance claim until
+    the TTL expires.
+
+    Scoping the key to the build makes it impossible rather than unlikely.
+
+    Deliberately NOT derived from ``settings.APP_VERSION``: that is the string
+    "1.0.0" and nothing bumps it, so it would look like versioning while
+    providing none — a guard that cannot fire is worse than no guard, because
+    it stops anyone looking.
+    """
+    explicit = _sanitise_namespace(os.getenv("CACHE_VERSION") or "")
+    # Render sets this on every deploy, so the scope advances without anyone
+    # remembering to bump anything.
+    commit = _sanitise_namespace(os.getenv("RENDER_GIT_COMMIT") or "")
+
+    if explicit:
+        warning = None
+        if commit and not _tracks_the_commit(explicit, commit):
+            warning = (
+                f"CACHE_VERSION={explicit!r} PINS the cache scope. It overrides "
+                f"RENDER_GIT_COMMIT ({commit[:12]!r}), which advances on every "
+                "deploy, with a value that does not. Entries written by one "
+                "build will be read by the next — which is the whole thing this "
+                "scope exists to prevent, and the health report will still read "
+                "'source: CACHE_VERSION' as though it were configured correctly. "
+                "Unset CACHE_VERSION, or set it to $RENDER_GIT_COMMIT."
+            )
+        return explicit, "CACHE_VERSION", warning
+
+    if commit:
+        return commit[:12], "RENDER_GIT_COMMIT", None
+
+    return "dev", "fallback (neither CACHE_VERSION nor RENDER_GIT_COMMIT is set)", None
+
+
+#: Resolved once per process. Reported by health_check() and logged at import,
+#: because a namespace that quietly falls back to a constant is inert while
+#: looking exactly like a working one.
+CACHE_NAMESPACE, CACHE_NAMESPACE_SOURCE, CACHE_NAMESPACE_WARNING = (
+    _resolve_cache_namespace()
+)
+logger.info(
+    "Cache keys scoped to namespace %r (source: %s)",
+    CACHE_NAMESPACE,
+    CACHE_NAMESPACE_SOURCE,
+)
+if CACHE_NAMESPACE_WARNING:
+    logger.warning("%s", CACHE_NAMESPACE_WARNING)
 
 
 class RedisCache:
@@ -26,11 +127,41 @@ class RedisCache:
     #: Weak refs so the registry can never itself become a leak.
     _instances: "weakref.WeakSet[RedisCache]" = weakref.WeakSet()
 
+    #: How many values were dropped because they can NEVER be serialised.
+    #: Class-level defaults so an instance built without __init__ still reports.
+    #: This is a PERMANENT condition, unlike a Redis outage, and health_check()
+    #: surfaces it separately for exactly that reason — see set().
+    _unserialisable_values: int = 0
+    _last_unserialisable: Optional[str] = None
+
+    #: Build scope for every key this instance reads or writes. Class-level
+    #: defaults so an instance built without __init__ still scopes its keys.
+    namespace: str = CACHE_NAMESPACE
+    namespace_source: str = CACHE_NAMESPACE_SOURCE
+
+    #: Whether REDIS_URL was actually set. Without it, `redis_url` falls back
+    #: to redis://localhost:6379 and "using the in-memory cache" is
+    #: indistinguishable between "no Redis in development" (normal) and "Redis
+    #: was configured but unreachable at startup" (an incident: every endpoint
+    #: is running uncached). health_check() reports it so the caller can tell.
+    redis_url_configured: bool = False
+
+    #: Set when the resolved namespace is self-defeating — see
+    #: _resolve_cache_namespace(). Reported by health_check() as well as
+    #: logged, because a log line alone is what let #184 hide.
+    namespace_warning: Optional[str] = CACHE_NAMESPACE_WARNING
+
     def __init__(self, redis_url: str = None):
         self.redis_url = redis_url or os.getenv("REDIS_URL", "redis://localhost:6379")
         self.client: Optional[redis.Redis] = None
         self._memory_cache = {}  # {key: (value, expiry_timestamp)}
         self._memory_cache_max_size = 1024
+        self._unserialisable_values = 0
+        self._last_unserialisable = None
+        self.namespace = CACHE_NAMESPACE
+        self.namespace_source = CACHE_NAMESPACE_SOURCE
+        self.redis_url_configured = bool(redis_url or os.getenv("REDIS_URL"))
+        self.namespace_warning = CACHE_NAMESPACE_WARNING
         RedisCache._instances.add(self)
         self._initialize()
 
@@ -52,31 +183,72 @@ class RedisCache:
             )
             self.client = None
 
+    def _scoped(self, key: str) -> str:
+        """Prefix ``key`` with the build scope.
+
+        Applied inside RedisCache rather than in the decorators because this
+        codebase has three separate ``cached`` implementations
+        (cache.redis_cache, main, routers.money_flow) that all funnel here.
+        Scoping at the choke point means none of them has to remember.
+        """
+        return f"{self.namespace}:{key}"
+
     def get(self, key: str) -> Optional[Any]:
         """Get value from cache."""
         try:
             if self.client:
-                value = self.client.get(key)
+                value = self.client.get(self._scoped(key))
                 if value:
                     return json.loads(value)
             else:
                 # Fallback to memory cache
-                entry = self._memory_cache.get(key)
+                entry = self._memory_cache.get(self._scoped(key))
                 if entry is not None:
                     value, expiry = entry
                     if time.time() < expiry:
                         return value
                     else:
-                        del self._memory_cache[key]  # Expired
+                        del self._memory_cache[self._scoped(key)]  # Expired
         except Exception as e:
             logger.error(f"Cache get error: {e}")
         return None
 
     def set(self, key: str, value: Any, ttl: int = 3600):
-        """Set value in cache with TTL."""
+        """Set value in cache with TTL.
+
+        Serialisation and transport are attempted separately because they fail
+        for opposite reasons and need opposite responses:
+
+        * **Serialisation** failure is PERMANENT. The value can never be
+          cached, so the endpoint re-runs its query on every request until the
+          code changes. It is counted, not just logged.
+        * **Transport** failure is TRANSIENT. Redis is unreachable now and the
+          next write may well succeed.
+
+        One ``except Exception`` used to cover both and log them identically as
+        ``Cache set error``, so four model-returning endpoints ran uncached in
+        production and the only symptom read like a Redis blip (issue #184).
+        """
+        try:
+            payload = json.dumps(value, default=_json_default)
+        except (TypeError, ValueError) as exc:
+            self._unserialisable_values += 1
+            self._last_unserialisable = f"{key}: {type(exc).__name__}: {exc}"
+            logger.error(
+                "Cache set SKIPPED — the value for %r can never be serialised "
+                "(%s: %s). This is not a Redis outage and will not heal on its "
+                "own: this key re-runs its query on every request until the "
+                "value is made JSON-serialisable. Total such values: %d",
+                key,
+                type(exc).__name__,
+                exc,
+                self._unserialisable_values,
+            )
+            return
+
         try:
             if self.client:
-                self.client.setex(key, ttl, json.dumps(value))
+                self.client.setex(self._scoped(key), ttl, payload)
             else:
                 # Fallback to memory cache with TTL
                 if len(self._memory_cache) >= self._memory_cache_max_size:
@@ -89,31 +261,39 @@ class RedisCache:
                     if len(self._memory_cache) >= self._memory_cache_max_size:
                         oldest_key = next(iter(self._memory_cache))
                         del self._memory_cache[oldest_key]
-                self._memory_cache[key] = (value, time.time() + ttl)
+                # Store what Redis WOULD have stored, not the live object.
+                # Development and CI have no Redis, so this branch is the only
+                # one they ever take; keeping it un-normalised is precisely why
+                # #184 was invisible everywhere except production. A cache hit
+                # now yields the same shape here as it does on Render.
+                self._memory_cache[self._scoped(key)] = (json.loads(payload), time.time() + ttl)
         except Exception as e:
-            logger.error(f"Cache set error: {e}")
+            logger.error(f"Cache set error (transport) for {key!r}: {e}")
 
     def delete(self, key: str):
         """Delete key from cache."""
         try:
             if self.client:
-                self.client.delete(key)
+                self.client.delete(self._scoped(key))
             else:
-                self._memory_cache.pop(key, None)
+                self._memory_cache.pop(self._scoped(key), None)
         except Exception as e:
             logger.error(f"Cache delete error: {e}")
 
     def clear_pattern(self, pattern: str):
         """Clear all keys matching pattern."""
+        # Only this build's keys. A previous build's entries are unreachable
+        # anyway and expire on their own TTL.
+        scoped_pattern = self._scoped(pattern)
         try:
             if self.client:
-                keys = self.client.keys(pattern)
+                keys = self.client.keys(scoped_pattern)
                 if keys:
                     self.client.delete(*keys)
             else:
                 # Memory cache - clear matching keys
                 keys_to_delete = [
-                    k for k in self._memory_cache if pattern.replace("*", "") in k
+                    k for k in self._memory_cache if scoped_pattern.replace("*", "") in k
                 ]
                 for key in keys_to_delete:
                     self._memory_cache.pop(key, None)
@@ -121,7 +301,25 @@ class RedisCache:
             logger.error(f"Cache clear error: {e}")
 
     def health_check(self) -> dict:
-        """Check Redis health status."""
+        """Check Redis health status.
+
+        ``unserialisable_values`` is reported on EVERY path, including the
+        healthy one. A connected, responsive Redis that is being handed values
+        it can never store is exactly the production state issue #184 sat in
+        for months, and a health report that only describes the connection
+        cannot distinguish it from a cache that is working.
+        """
+        diagnostics = {
+            "unserialisable_values": self._unserialisable_values,
+            "cache_namespace": self.namespace,
+            "cache_namespace_source": self.namespace_source,
+            "redis_configured": self.redis_url_configured,
+        }
+        if self._last_unserialisable:
+            diagnostics["last_unserialisable"] = self._last_unserialisable
+        if self.namespace_warning:
+            diagnostics["cache_namespace_warning"] = self.namespace_warning
+
         try:
             if self.client:
                 self.client.ping()
@@ -131,6 +329,7 @@ class RedisCache:
                     "connected_clients": info.get("connected_clients", 0),
                     "used_memory": info.get("used_memory_human", "unknown"),
                     "uptime_seconds": info.get("uptime_in_seconds", 0),
+                    **diagnostics,
                 }
         except Exception as e:
             logger.error(f"Redis health check failed: {e}")
@@ -138,6 +337,7 @@ class RedisCache:
         return {
             "status": "unavailable" if self.client else "using_memory_cache",
             "message": "Using in-memory fallback cache",
+            **diagnostics,
         }
 
 
