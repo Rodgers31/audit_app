@@ -20,6 +20,7 @@ from decimal import Decimal
 from typing import Any, Dict, List
 
 from models import Country, DebtInstrument, DocumentType, SourceDocument
+from services.publication_gate import bond_register_withheld_reason
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger("seeding.national_debt.instrument_writer")
@@ -101,7 +102,7 @@ def write_bond_register(
     coverage = register.get("coverage") or {}
 
     seen: set[tuple[str, datetime]] = set()
-    created = updated = 0
+    created = updated = withheld = 0
 
     for s in securities:
         maturity = datetime.fromisoformat(s["maturity_date"])
@@ -132,10 +133,6 @@ def write_bond_register(
             ),
             tranches=s.get("tranches") or 1,
             source_document_id=doc.id,
-            # The register traces to a document a reader can open, at a URL
-            # that is the table itself. That is what publishable asserts here.
-            publishable=True,
-            quarantine_reason=None,
             meta={
                 "source": "cbk_treasury_bonds_table",
                 "coverage_ratio": coverage.get("coverage_ratio"),
@@ -143,13 +140,31 @@ def write_bond_register(
             },
         )
 
+        # The verdict, computed. This used to be `publishable=True` in the dict
+        # above, next to a comment stating the rule it meant to assert — "the
+        # register traces to a document a reader can open, at a URL that is the
+        # table itself". Nothing checked it, so every row was stamped True
+        # whatever it held, and a column that cannot say False is not a gate.
+        candidate = DebtInstrument(
+            isin=s["isin"], maturity_date=maturity, **values
+        )
+        reason = bond_register_withheld_reason(candidate, doc)
+        values["publishable"] = reason is None
+        values["quarantine_reason"] = reason
+
         if row is None:
-            session.add(DebtInstrument(isin=s["isin"], maturity_date=maturity, **values))
+            session.add(
+                DebtInstrument(isin=s["isin"], maturity_date=maturity, **values)
+            )
             created += 1
+            if reason:
+                withheld += 1
         else:
             for k, v in values.items():
                 setattr(row, k, v)
             updated += 1
+            if reason:
+                withheld += 1
 
     # Anything we hold that CBK no longer lists has matured or been bought
     # back. Leaving it would keep a redeemed bond on the maturity ladder.
@@ -160,7 +175,13 @@ def write_bond_register(
             deleted += 1
 
     logger.info(
-        "debt_instruments: %d created, %d updated, %d removed (no longer listed)",
-        created, updated, deleted,
+        "debt_instruments: %d created, %d updated, %d removed (no longer listed), "
+        "%d withheld by the gate",
+        created, updated, deleted, withheld,
     )
-    return {"created": created, "updated": updated, "deleted": deleted}
+    return {
+        "created": created,
+        "updated": updated,
+        "deleted": deleted,
+        "withheld": withheld,
+    }

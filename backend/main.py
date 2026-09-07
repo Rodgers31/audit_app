@@ -9674,13 +9674,20 @@ async def get_debt_instruments(db: Session = Depends(get_db)):
     # migration — and a route-smoke test caught this endpoint 500ing with
     # `relation "debt_instruments" does not exist` rather than reporting that
     # it has nothing. Deploy order must not decide whether a page renders.
+    from services.publication_gate import (
+        bond_register_withheld_disclosure,
+        publishable_bond_register_rows,
+    )
+
     try:
-        rows = (
-            db.query(_DI)
-            .filter(_DI.publishable.is_(True))
-            .order_by(_DI.maturity_date.asc())
-            .all()
-        )
+        # Read the whole register, then partition. The filter used to be
+        # `.filter(_DI.publishable.is_(True))` on the stored column — which the
+        # writer set to the literal True for every row, so it selected
+        # everything and meant nothing. Applying the rule here and computing
+        # the disclosure from the SAME function makes the two agree by
+        # construction; the column remains the writer's persisted record of the
+        # same verdict.
+        stored = db.query(_DI).order_by(_DI.maturity_date.asc()).all()
     except SQLAlchemyError as exc:
         db.rollback()
         # ONLY the missing-table case. Catching every SQLAlchemyError turned
@@ -9706,12 +9713,31 @@ async def get_debt_instruments(db: Session = Depends(get_db)):
             "ladder": [],
         }
 
+    withheld_by_gate = bond_register_withheld_disclosure(stored)
+    rows = publishable_bond_register_rows(stored)
+
     if not rows:
         # Absent, with the reason — never an empty ladder that reads as
-        # "no debt falls due".
+        # "no debt falls due". Two causes, two remedies: nothing was ingested,
+        # or rows are present and every one of them failed the gate. Answering
+        # the first when it is the second sends a reader at the wrong problem.
+        if stored:
+            return {
+                "status": "unavailable",
+                "reason": "all_rows_withheld_by_gate",
+                "message": (
+                    f"{len(stored)} Treasury bond rows are stored and none can "
+                    "be published: see withheld_by_gate. This is not a finding "
+                    "that no government debt falls due."
+                ),
+                "withheld_by_gate": withheld_by_gate,
+                "instruments": [],
+                "ladder": [],
+            }
         return {
             "status": "unavailable",
             "reason": "no_instrument_register_ingested",
+            "withheld_by_gate": withheld_by_gate,
             "message": (
                 "No Treasury bond register has been ingested. This is not a "
                 "finding that no government debt falls due."
@@ -9766,8 +9792,14 @@ async def get_debt_instruments(db: Session = Depends(get_db)):
         "is_debt_total": False,
         "not_a_stock_measure": doc_meta.get("not_a_stock_measure"),
         "coverage": coverage,
+        # Two different withholdings, kept apart. `withheld_isins` is the six
+        # securities the EXTRACTOR could not settle (ambiguous maturities),
+        # recorded on the source document. `withheld_by_gate` is rows that
+        # reached the database and cannot be published. Different facts,
+        # different remedies; one count covering both would hide the newer one.
         "withheld_isins": withheld,
         "withheld_count": len(withheld),
+        "withheld_by_gate": withheld_by_gate,
         "instrument_count": len(instruments),
         "instruments": instruments,
         "ladder": [ladder[y] for y in sorted(ladder)],

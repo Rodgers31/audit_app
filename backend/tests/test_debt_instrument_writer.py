@@ -55,7 +55,9 @@ def test_writes_the_register(db_session, seed_country):
         ]),
     )
     db_session.commit()
-    assert counts == {"created": 2, "updated": 0, "deleted": 0}
+    # `withheld` was added with the computed publishable verdict (#137 step 4):
+    # a seeding run has to report rows it wrote but cannot publish.
+    assert counts == {"created": 2, "updated": 0, "deleted": 0, "withheld": 0}
     rows = db_session.query(DebtInstrument).all()
     assert len(rows) == 2
     assert {float(r.coupon_rate) for r in rows} == {12.5, 14.399}
@@ -74,7 +76,7 @@ def test_a_rerun_updates_rather_than_duplicating(db_session, seed_country):
     counts = write_bond_register(db_session, reg2)
     db_session.commit()
 
-    assert counts == {"created": 0, "updated": 1, "deleted": 0}
+    assert counts == {"created": 0, "updated": 1, "deleted": 0, "withheld": 0}
     rows = db_session.query(DebtInstrument).all()
     assert len(rows) == 1
     assert float(rows[0].face_value) == pytest.approx(2e10)
