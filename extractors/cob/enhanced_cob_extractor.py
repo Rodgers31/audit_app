@@ -1,7 +1,40 @@
 """
 Enhanced COB Report Extractor with Real Report Processing
-Specialized extractor for Controller of Budget (COB) reports including CBIRR
-Handles real COB website issues and processes actual report formats
+Discovers Controller of Budget (COB) reports including CBIRR, handles the COB
+website's SSL and timeout behaviour, and reads local CBIRR PDFs with pdfplumber.
+
+WITHDRAWN 2026-09-07 (issue #196): one method that derived every named county
+government's budget, execution rate and expenditure from ``hash()``.
+
+    generate_county_implementation_data  763-874  all 47 counties' total budget,
+                                                  development and recurrent
+                                                  split, expenditure, absorption
+                                                  and compliance scores, from
+                                                  ``hash(county) % 100``
+
+It was ``cob_report_extractor.py``'s generator copied verbatim, down to the
+``# 5B - 105B KES`` comment, with a ``cob_compliance`` block added on top. Its
+own comment said "Use the existing implementation from the parent class"; there
+is no parent class, and the duplicate meant cleaning either file alone would
+have left the defect in the repo. See that module's docstring for the evidence:
+``hash()`` on a ``str`` is salted per process, so across three runs Nairobi's
+budget was KSh 73.0 Bn, 51.0 Bn and 24.0 Bn, and in one of them Turkana
+received exactly the figures Nairobi had held in another.
+
+This file ships: ``Dockerfile:26`` copies ``extractors/`` into the production
+image.
+
+What survives fetches and parses. ``extract_cob_reports_with_retry`` walks
+seven COB URLs with retry, HTTP fallback and SSL handling;
+``process_local_cob_report`` reads a CBIRR PDF page by page with pdfplumber,
+extracts its tables, and hands the text to ``_analyze_text_for_counties`` and
+``_extract_summary_statistics``, which report which counties the document
+mentions and what figures sit near them. They report nothing when they find
+nothing, which is the correct answer when nothing was found.
+
+``run_comprehensive_cob_extraction`` keeps its two real steps and lost the
+generated one, along with ``data_sources.coverage``'s "All 47 Kenya Counties",
+which measured nothing — it restated the length of the name-matching roster.
 """
 
 import json
@@ -39,7 +72,6 @@ class EnhancedCOBExtractor:
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
         self.cob_reports = []
-        self.county_implementation_data = {}
         self.extracted_text_data = {}
 
         # COB-specific URLs with better error handling
@@ -727,9 +759,6 @@ class EnhancedCOBExtractor:
         )
         pdf_data = self.process_local_cob_report(local_pdf_path)
 
-        # Step 3: Generate additional county implementation data
-        implementation_data = self.generate_county_implementation_data()
-
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
 
@@ -738,140 +767,23 @@ class EnhancedCOBExtractor:
             "extraction_summary": {
                 "web_reports_found": len(web_reports),
                 "local_pdf_processed": pdf_data is not None,
-                "counties_with_data": len(implementation_data),
                 "extraction_duration": duration,
                 "timestamp": datetime.now().isoformat(),
             },
             "web_reports": web_reports,
             "local_pdf_data": pdf_data,
-            "county_implementation_data": implementation_data,
             "data_sources": {
                 "cob_website": "cob.go.ke",
                 "local_cbirr_pdf": local_pdf_path if pdf_data else None,
-                "coverage": "All 47 Kenya Counties",
             },
         }
 
         logger.info(f"\n📋 ENHANCED COB EXTRACTION COMPLETE:")
         logger.info(f"   🌐 Web Reports: {len(web_reports)}")
         logger.info(f"   📄 PDF Processed: {'Yes' if pdf_data else 'No'}")
-        logger.info(f"   🏛️ Counties: {len(implementation_data)}")
         logger.info(f"   ⏱️ Duration: {duration:.1f} seconds")
 
         return results
-
-    def generate_county_implementation_data(self):
-        """Generate enhanced county implementation data."""
-        # Use the existing implementation from the parent class
-        logger.info("📋 Generating Enhanced County Implementation Data...")
-
-        implementation_data = {}
-
-        counties = [
-            "Nairobi",
-            "Mombasa",
-            "Kwale",
-            "Kilifi",
-            "Tana River",
-            "Lamu",
-            "Taita Taveta",
-            "Garissa",
-            "Wajir",
-            "Mandera",
-            "Marsabit",
-            "Isiolo",
-            "Meru",
-            "Tharaka Nithi",
-            "Embu",
-            "Kitui",
-            "Machakos",
-            "Makueni",
-            "Nyandarua",
-            "Nyeri",
-            "Kirinyaga",
-            "Murang'a",
-            "Kiambu",
-            "Turkana",
-            "West Pokot",
-            "Samburu",
-            "Trans Nzoia",
-            "Uasin Gishu",
-            "Elgeyo Marakwet",
-            "Nandi",
-            "Baringo",
-            "Laikipia",
-            "Nakuru",
-            "Narok",
-            "Kajiado",
-            "Kericho",
-            "Bomet",
-            "Kakamega",
-            "Vihiga",
-            "Bungoma",
-            "Busia",
-            "Siaya",
-            "Kisumu",
-            "Homa Bay",
-            "Migori",
-            "Kisii",
-            "Nyamira",
-        ]
-
-        for county in counties:
-            # Generate realistic data based on county characteristics
-            county_code = hash(county) % 100
-            base_budget = (county_code * 1000000000) + 5000000000  # 5B - 105B KES
-
-            implementation_rate = min(95, max(45, 75 + (county_code % 30) - 15))
-            actual_expenditure = base_budget * (implementation_rate / 100)
-
-            development_allocation = base_budget * 0.3
-            recurrent_allocation = base_budget * 0.7
-
-            development_expenditure = development_allocation * (
-                (implementation_rate - 10) / 100
-            )
-            recurrent_expenditure = recurrent_allocation * (implementation_rate / 100)
-
-            county_data = {
-                "county": county,
-                "financial_year": "2024/2025",
-                "quarter": "Q2",
-                "budget_allocation": {
-                    "total_budget": base_budget,
-                    "development_budget": development_allocation,
-                    "recurrent_budget": recurrent_allocation,
-                },
-                "budget_expenditure": {
-                    "total_expenditure": actual_expenditure,
-                    "development_expenditure": development_expenditure,
-                    "recurrent_expenditure": recurrent_expenditure,
-                },
-                "implementation_rates": {
-                    "overall_implementation_rate": implementation_rate,
-                    "development_implementation_rate": max(
-                        30, implementation_rate - 10
-                    ),
-                    "recurrent_implementation_rate": min(100, implementation_rate + 5),
-                },
-                "revenue_performance": {
-                    "local_revenue_target": base_budget * 0.15,
-                    "local_revenue_collected": (base_budget * 0.15)
-                    * (implementation_rate / 100),
-                    "national_transfers": base_budget * 0.85,
-                    "conditional_grants": base_budget * 0.1,
-                },
-                "cob_compliance": {
-                    "quarterly_reports_submitted": implementation_rate > 70,
-                    "expenditure_returns_timely": implementation_rate > 60,
-                    "budget_variance_acceptable": abs(100 - implementation_rate) < 25,
-                    "compliance_score": min(100, implementation_rate + 5),
-                },
-            }
-
-            implementation_data[county] = county_data
-
-        return implementation_data
 
 
 def main():
@@ -886,7 +798,6 @@ def main():
     print(f"\n✅ Enhanced COB extraction completed!")
     print(f"🌐 Web Reports: {len(results['web_reports'])}")
     print(f"📄 PDF Processed: {'Yes' if results['local_pdf_data'] else 'No'}")
-    print(f"🏛️ Counties: {len(results['county_implementation_data'])}")
     print(f"📁 Results saved to: enhanced_cob_extraction_results.json")
 
 

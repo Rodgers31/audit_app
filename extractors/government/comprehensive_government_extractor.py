@@ -43,6 +43,29 @@ zero, and ``:574`` logged the 95 as the run's headline. A self-assessment that
 cannot disagree with the thing it assesses reports healthy because it measured
 nothing.
 
+WITHDRAWN 2026-09-07 (issue #196): the rest of the self-assessment, twelve
+lines below where ``coverage_analysis`` had been.
+
+    api_integration (in the results)     472-482  ``ready_for_ui: True`` and an
+                                                  endpoints_available list
+
+``ready_for_ui`` was a literal. It could not become False whatever the run
+found, which makes it the same shape as the block above it, and it was the last
+of the self-grading in this module.
+
+The endpoint list was worse than unmeasured, because it had become wrong. It
+advertised six paths, and three of them — ``/national/issues``,
+``/national/ministries`` and ``/national/debt`` — were deleted by PR #191 when
+it withdrew the six methods that typed in the national debt. Nothing in the
+repo has served them since. The other three do resolve:
+``/counties/{county_name}`` at ``apis/modernized_api.py:228``,
+``/audit/queries`` at ``:286``, and ``/analytics/summary`` at
+``apis/county_analytics_api.py:371``.
+
+``backend/tests/test_advertised_endpoints_are_served.py`` now checks every
+advertised path against the routes this repo registers, so a list that outlives
+its endpoints fails rather than shipping.
+
 What survives fetches pages, finds document links, downloads them and reports
 how many of each it got. Those counts are measurements and they are already in
 ``extraction_summary``.
@@ -469,17 +492,6 @@ class ComprehensiveGovernmentExtractor:
             },
             "discovered_reports": all_reports,
             "downloaded_reports": downloaded_reports,
-            "api_integration": {
-                "ready_for_ui": True,
-                "endpoints_available": [
-                    "/counties/{name} - Individual county data",
-                    "/audit/queries - County audit queries",
-                    "/national/issues - National government issues",
-                    "/national/ministries - Ministry performance",
-                    "/national/debt - National debt analysis",
-                    "/analytics/summary - Overall transparency metrics",
-                ],
-            },
         }
 
         # Log comprehensive summary

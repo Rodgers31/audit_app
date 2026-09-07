@@ -1,7 +1,54 @@
 """
 Controller of Budget (COB) Report Extractor
-Specialized extractor for COB county budget implementation review reports
-Focuses on the consolidated county budget implementation data from cob.go.ke
+Discovers COB county budget implementation review documents on cob.go.ke and
+reads what their titles and page text state.
+
+WITHDRAWN 2026-09-07 (issue #196): two methods that derived a named county
+government's entire budget, execution rate and expenditure — and the failings
+attributed to it — from ``hash()``, and the parts of the run summary computed
+from them.
+
+    generate_county_implementation_data  167-238  every one of the 47 counties'
+                                                  total budget, development and
+                                                  recurrent split, expenditure,
+                                                  absorption rate, revenue
+                                                  target, transfers and pending
+                                                  bills ratio, all from
+                                                  ``hash(county) % 100``
+    _generate_implementation_challenges  366-392  2-5 named failings ("Delayed
+                                                  procurement processes", "Weak
+                                                  revenue collection") picked
+                                                  for a named county by
+                                                  ``hash(county)``
+
+``hash()`` on a ``str`` is salted per process, so none of it was attached to
+the county it named. Three runs of the withdrawn lines put Nairobi's budget at
+KSh 73.0 Bn, then 51.0 Bn, then 24.0 Bn — and in the second run Turkana
+received exactly the figures Nairobi had held in the first. The identities were
+interchangeable between processes.
+
+A county is a named public body. Its budget and its execution rate are
+statements of fact about it, and an attributed failing more so — the same
+concern issues #182/#183 raised about rankings, in its stronger form. This file
+ships: ``Dockerfile:26`` copies ``extractors/`` into the production image.
+
+What survives fetches and parses. ``extract_cob_consolidated_reports`` reads
+the COB publication pages; ``_extract_budget_implementation_data``,
+``_find_county_section`` and ``_extract_budget_figures`` pull figures out of
+page text with regular expressions; the six ``_extract``/``_get``/``_is``
+helpers read report titles. They report nothing when they find nothing, which
+is the correct answer when nothing was found.
+
+``run_comprehensive_cob_extraction`` keeps its one real step and lost the
+generated one, along with ``implementation_statistics`` — whose
+``average_implementation_rate``, ``total_budget_allocation`` and
+``best_performers`` ranking of five named counties were all arithmetic over
+fabricated records — and ``data_sources.coverage``'s "All 47 Kenya Counties",
+which measured nothing: it restated the length of the name-matching roster.
+``_generate_cob_recommendations`` is kept and is currently unreferenced,
+following the same call made for ``_generate_recommendation`` in
+``oag_audit_extractor.py`` under issue #193: it maps a performance band to
+generic remediation advice, which is not a claim about any county.
 """
 
 import json
@@ -36,7 +83,6 @@ class COBReportExtractor:
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
         self.cob_reports = []
-        self.county_implementation_data = {}
 
         # Kenya's 47 counties
         self.counties = [
@@ -164,79 +210,6 @@ class COBReportExtractor:
         self.cob_reports = extracted_reports
         return extracted_reports
 
-    def generate_county_implementation_data(self):
-        """Generate county budget implementation data based on COB structure."""
-        logger.info("📋 Generating County Budget Implementation Data...")
-
-        implementation_data = {}
-
-        for county in self.counties:
-            # Generate realistic implementation data
-            county_code = hash(county) % 100
-            base_budget = (county_code * 1000000000) + 5000000000  # 5B - 105B KES
-
-            # Implementation rates vary by county efficiency
-            implementation_rate = min(95, max(45, 75 + (county_code % 30) - 15))
-            actual_expenditure = base_budget * (implementation_rate / 100)
-
-            # Development vs recurrent split
-            development_allocation = base_budget * 0.3
-            recurrent_allocation = base_budget * 0.7
-
-            development_expenditure = development_allocation * (
-                (implementation_rate - 10) / 100
-            )
-            recurrent_expenditure = recurrent_allocation * (implementation_rate / 100)
-
-            county_data = {
-                "county": county,
-                "financial_year": "2024/2025",
-                "quarter": "Q2",
-                "budget_allocation": {
-                    "total_budget": base_budget,
-                    "development_budget": development_allocation,
-                    "recurrent_budget": recurrent_allocation,
-                },
-                "budget_expenditure": {
-                    "total_expenditure": actual_expenditure,
-                    "development_expenditure": development_expenditure,
-                    "recurrent_expenditure": recurrent_expenditure,
-                },
-                "implementation_rates": {
-                    "overall_implementation_rate": implementation_rate,
-                    "development_implementation_rate": max(
-                        30, implementation_rate - 10
-                    ),
-                    "recurrent_implementation_rate": min(100, implementation_rate + 5),
-                },
-                "revenue_performance": {
-                    "local_revenue_target": base_budget * 0.15,
-                    "local_revenue_collected": (base_budget * 0.15)
-                    * (implementation_rate / 100),
-                    "national_transfers": base_budget * 0.85,
-                    "conditional_grants": base_budget * 0.1,
-                },
-                "performance_indicators": {
-                    "absorption_rate": implementation_rate,
-                    "revenue_collection_rate": implementation_rate,
-                    "pending_bills_ratio": max(5, 25 - (implementation_rate / 5)),
-                    "development_projects_completed": min(
-                        100, implementation_rate + 10
-                    ),
-                },
-                "challenges": self._generate_implementation_challenges(
-                    county, implementation_rate
-                ),
-                "recommendations": self._generate_cob_recommendations(
-                    implementation_rate
-                ),
-            }
-
-            implementation_data[county] = county_data
-
-        self.county_implementation_data = implementation_data
-        return implementation_data
-
     def _is_county_budget_report(self, title: str, url: str) -> bool:
         """Check if document is a county budget implementation report."""
         keywords = [
@@ -363,34 +336,6 @@ class COBReportExtractor:
 
         return figures
 
-    def _generate_implementation_challenges(
-        self, county: str, rate: float
-    ) -> List[str]:
-        """Generate implementation challenges based on performance."""
-        all_challenges = [
-            "Delayed procurement processes",
-            "Inadequate technical capacity",
-            "Poor infrastructure for project delivery",
-            "Limited local revenue collection",
-            "Pending bills affecting cash flow",
-            "Weak project management systems",
-            "Political interference in implementation",
-            "Insufficient community participation",
-            "Seasonal weather challenges",
-            "Limited contractor capacity",
-        ]
-
-        # Lower performing counties have more challenges
-        num_challenges = 5 if rate < 60 else 3 if rate < 80 else 2
-        county_hash = hash(county)
-
-        challenges = []
-        for i in range(num_challenges):
-            challenge_idx = (county_hash + i) % len(all_challenges)
-            challenges.append(all_challenges[challenge_idx])
-
-        return challenges
-
     def _generate_cob_recommendations(self, rate: float) -> List[str]:
         """Generate COB recommendations based on performance."""
         if rate >= 80:
@@ -421,11 +366,7 @@ class COBReportExtractor:
 
         start_time = datetime.now()
 
-        # Step 1: Extract COB reports
         cob_reports = self.extract_cob_consolidated_reports()
-
-        # Step 2: Generate county implementation data
-        implementation_data = self.generate_county_implementation_data()
 
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
@@ -434,60 +375,23 @@ class COBReportExtractor:
         results = {
             "extraction_summary": {
                 "cob_reports_found": len(cob_reports),
-                "counties_with_data": len(implementation_data),
                 "extraction_duration": duration,
                 "timestamp": datetime.now().isoformat(),
             },
             "cob_reports": cob_reports,
-            "county_implementation_data": implementation_data,
             "data_sources": {
                 "primary": "Controller of Budget Kenya (cob.go.ke)",
                 "report_types": [
                     "Consolidated County Budget Implementation Review",
                     "County Performance Reports",
                 ],
-                "coverage": "All 47 Kenya Counties",
                 "data_focus": "Budget implementation, absorption rates, revenue performance",
-            },
-            "implementation_statistics": {
-                "total_counties": len(implementation_data),
-                "average_implementation_rate": round(
-                    sum(
-                        [
-                            data["implementation_rates"]["overall_implementation_rate"]
-                            for data in implementation_data.values()
-                        ]
-                    )
-                    / len(implementation_data),
-                    1,
-                ),
-                "best_performers": sorted(
-                    implementation_data.items(),
-                    key=lambda x: x[1]["implementation_rates"][
-                        "overall_implementation_rate"
-                    ],
-                    reverse=True,
-                )[:5],
-                "total_budget_allocation": sum(
-                    [
-                        data["budget_allocation"]["total_budget"]
-                        for data in implementation_data.values()
-                    ]
-                ),
             },
         }
 
         # Log summary
-        stats = results["implementation_statistics"]
         logger.info(f"\n📋 COB EXTRACTION COMPLETE:")
         logger.info(f"   📊 COB Reports: {len(cob_reports)}")
-        logger.info(f"   🏛️ Counties Covered: {len(implementation_data)}")
-        logger.info(
-            f"   📈 Avg Implementation Rate: {stats['average_implementation_rate']}%"
-        )
-        logger.info(
-            f"   💰 Total Budget Allocation: {stats['total_budget_allocation']:,.0f} KES"
-        )
         logger.info(f"   ⏱️ Duration: {duration:.1f} seconds")
 
         return results
@@ -502,11 +406,8 @@ def main():
     with open("cob_budget_implementation_data.json", "w") as f:
         json.dump(results, f, indent=2)
 
-    stats = results["implementation_statistics"]
     print(f"\n✅ COB extraction completed!")
     print(f"📊 COB Reports: {len(results['cob_reports'])}")
-    print(f"🏛️ Counties: {len(results['county_implementation_data'])}")
-    print(f"📈 Avg Implementation: {stats['average_implementation_rate']}%")
     print(f"📁 Results saved to: cob_budget_implementation_data.json")
 
 

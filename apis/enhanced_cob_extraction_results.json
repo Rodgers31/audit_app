@@ -1,10 +1,10 @@
 {
   "extraction_metadata": {
-    "source": "Controller of Budget Reports",
-    "extraction_date": "2024-08-24",
+    "source_claimed": "Controller of Budget Reports",
+    "extraction_date_claimed": "2024-08-24",
     "report_period": "FY 2023/24",
-    "total_counties": 47,
-    "data_quality": "high"
+    "counties_count": 6,
+    "provenance_note": "CORRECTED 2026-09-07 (issue #196). This header declared total_counties: 47 over a body holding 6, and data_quality: 'high', a grade nothing in the file could contradict. The count now states what is present and the grade is gone. Everything else here is a CLAIM, not an established fact: no module in this repository produces this shape (enhanced_cob_extractor.process_local_cob_report emits source_file/extraction_date/county_data/summary_data/tables, and its county rows are mentioned/context_length/budget_figures, none of which appear below), and the file's only reader, apis/enhanced_county_analytics_api.py:97, was deleted by PR #187. Nothing reads it today. The rows below are UNVERIFIED against any COB document and are left for the owner to correct, re-source or remove. Two things about them are worth knowing first: actual_expenditure equals total_budget x budget_implementation_rate / 100 in 5 of the 6 rows (Nairobi is 0.04% off), and absorption_rate restates budget_implementation_rate as a string in all 6 — so each row carries at most one measured quantity presented as three."
   },
   "local_pdf_data": {
     "county_data": {
@@ -95,17 +95,13 @@
     }
   },
   "summary_insights": {
-    "average_implementation_rate": 76.8,
-    "best_performing_county": "Uasin Gishu",
-    "counties_needing_improvement": ["Mombasa", "Kisumu"],
-    "total_budget_analyzed": "KES 110.1B",
-    "total_expenditure": "KES 84.6B",
     "common_challenges": [
       "Procurement delays",
       "Capacity constraints",
       "Revenue shortfalls",
       "Environmental clearances",
       "Technical expertise gaps"
-    ]
+    ],
+    "withdrawn_note": "WITHDRAWN 2026-09-07 (issue #196). Five fields went, in two groups. best_performing_county: 'Uasin Gishu' and counties_needing_improvement: ['Mombasa', 'Kisumu'] sorted named county governments into a good half and a bad half over 6 of 47 counties, on rates nothing sourced. That is the defect PR #187 deleted a whole service for, and naming a public body as one needing improvement is a statement of fact about it. total_budget_analyzed: 'KES 110.1B' and total_expenditure: 'KES 84.6B' did not reconcile with the rows they claimed to summarise, which sum to 111.1B and 86.4B; they were not rewritten to the reconciling figures, because making a summary agree with unsourced rows only makes the claim harder to doubt. average_implementation_rate: 76.8 was the mean of six counties presented without saying so. common_challenges is kept: it names no county, and generic advice is not a claim of fact about a body."
   }
 }

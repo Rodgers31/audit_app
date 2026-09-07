@@ -353,18 +353,6 @@ QUARANTINE: dict[str, tuple[int, str]] = {
         "by backend/tests/test_stored_county_metrics_are_cleared.py, so the "
         "figures below are not reaching anybody today",
     ),
-    "extractors/cob/cob_report_extractor.py": (
-        9,
-        "no issue owns this yet; surfaced by extending this sweep to "
-        "extractors/ and left untouched so that fix can carry its own evidence "
-        "instead of riding in on #193's",
-    ),
-    "extractors/cob/enhanced_cob_extractor.py": (
-        10,
-        "no issue owns this yet; surfaced by extending this sweep to "
-        "extractors/ and left untouched so that fix can carry its own evidence "
-        "instead of riding in on #193's",
-    ),
 }
 
 
