@@ -20,6 +20,7 @@ import uvicorn
 from config.settings import settings
 from services.publication_gate import (
     count_withheld_audits,
+    count_withheld_by_reason,
     county_debt_instrument_failure,
     county_pending_bills,
     file_source_provenance_failure,
@@ -4669,6 +4670,11 @@ async def get_audit_statistics():
             total_amount = float(amount_from_col) + fallback_amount
 
             _withheld_stats = count_withheld_audits(db)
+            # Not just how many, but why. The breakdown existed and had no
+            # caller, so the API published a withheld count a reader could do
+            # nothing with — and the three causes want fixes from three
+            # different people: a URL for the document, an OCR pass, a page.
+            _withheld_reasons = count_withheld_by_reason(db)
             log_withheld_audits("/audits/statistics", _withheld_stats, total)
 
             # Latest fiscal year covered by the Audit table (derived, NOT hardcoded)
@@ -4707,6 +4713,7 @@ async def get_audit_statistics():
             return {
                 "total_findings": total,
                 "withheld_findings": _withheld_stats,
+                "withheld_findings_by_reason": _withheld_reasons,
                 "counties_audited": counties_audited,
                 "total_counties": 47,
                 "total_amount_flagged": total_amount,
@@ -4981,6 +4988,12 @@ async def get_federal_audits():
             _withheld_federal = count_withheld_audits(
                 db, entity_types=FEDERAL_AUDIT_ENTITY_TYPES
             )
+            # Scoped exactly like the count it explains — a federal endpoint
+            # explaining itself with global figures would state numbers that
+            # do not mean what the field name says.
+            _withheld_federal_reasons = count_withheld_by_reason(
+                db, entity_types=FEDERAL_AUDIT_ENTITY_TYPES
+            )
             log_withheld_audits("/audits/federal", _withheld_federal, len(findings))
 
             # Ministries with most findings
@@ -5139,6 +5152,7 @@ async def get_federal_audits():
                 # Findings excluded because their source document has no URL a
                 # reader could open. Retained in the database, not served here.
                 "withheld_findings": _withheld_federal,
+                "withheld_findings_by_reason": _withheld_federal_reasons,
                 "by_severity": by_severity,
                 # When the gate leaves nothing to publish, say why and when
                 # the next OAG publication is expected — both machine-readable

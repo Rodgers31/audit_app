@@ -25,29 +25,36 @@ passing row for a verified one:
 2. **``md5`` is not checked.** It is NULL on 100% of the source documents behind
    published figures, so requiring it would withhold everything. Stage 2 populates
    it; only then can a reissued document invalidate its derived rows.
-3. **No page locator is required for audits.** See the asymmetry note below.
+3. **The locator is not resolved.** A ``page_ref`` of ``p.409`` is required and
+   is checked for being a locator at all — present, non-blank, and a positive
+   page rather than ``0`` or ``-3`` — but nobody opens the PDF at page 409 to
+   see whether the finding is there. That is Stage 2/3 work alongside item 1.
 
-ASYMMETRY WITH THE MISSING-FUNDS GATE — deliberate, and why
------------------------------------------------------------
-``missing_funds_provenance_failure`` requires *document + URL + page reference*.
-``publishable_audit_criterion`` requires *document + URL* only. That is not an
-oversight and not laziness:
+NO LONGER AN ASYMMETRY — closed 2026-09-07 (issue #137)
+--------------------------------------------------------
+``missing_funds_provenance_failure`` requires *document + URL + page*, and
+``publishable_audit_criterion`` now requires the same. This section used to
+explain why audits were exempt. Both of its reasons had expired:
 
-* ``Audit`` has **no page column**. ``page_ref`` is defined on ``BudgetLine``
-  (``models.py:202``), not on ``Audit``; ``Audit.provenance`` carries
-  ``source_url``/``reference``/``audit_year`` but no page number.
-* Requiring a page on audits today would withhold **audit id 902** — the single
-  genuine extraction in the table (KES 592,062,382,245, traced to the live PDF
-  ``AUDITOR-GENERALS-REPORT-ON-NATIONAL-GOVERNMENT-2024-2025.pdf``, doc 2392).
-  Withholding the one real row to satisfy a uniformity rule would be worse than
-  the asymmetry.
+* *"``Audit`` has no page column."* It has one. Stage 1 added ``page_ref`` to
+  ``audits``, and the extractors fill it: measured on production 2026-09-07,
+  **2,311 of 2,338** rows carry one, every one of the form ``p.NNN``, none
+  blank and none numeric-only.
+* *"Requiring a page would withhold audit id 902 — the single genuine
+  extraction in the table."* Audit 902 is withheld already, by the clause
+  below it: it is 89.6% ``(cid:NN)`` glyph codes off a cover page and carries
+  ``publishable = False`` today. It was never the genuine extraction this
+  paragraph took it for, which is also why an ``extraction_id`` is not the
+  rung this ladder uses — 902 had one.
 
-The missing-funds cases *are* free-form JSON and *can* carry a page, so the
-stricter check costs nothing there and is kept.
-
-**Close this gap in Stage 1** by adding ``page_ref`` to ``audits`` alongside the
-``publishable`` column, backfilling it during extraction, and then tightening
-``publishable_audit_criterion`` to require it.
+The cost of closing it, measured before it was closed: **one row**. Audit 901,
+Homa Bay, source document 2391 — the OAG report's PREAMBLE ("I draw your
+attention to the contents of my report which is in three parts"), 500
+characters cut mid-word, no amount, no extraction, no page, stored with
+severity CRITICAL and published. It was that county's only critical finding
+and it is counted in ``/api/v1/audit/summary``'s ``total_findings``. Requiring
+a locator does not lose a finding here; it stops publishing a page of front
+matter as one.
 """
 
 from __future__ import annotations
@@ -119,6 +126,58 @@ def _has_page_locator(*candidates) -> bool:
     return False
 
 
+#: Whitespace that ``str.strip()`` removes but SQL ``trim()`` does not — SQL
+#: trims spaces only, so a page_ref of "\t\n" would read as present.
+_WHITESPACE = (" ", "\t", "\n", "\r")
+
+#: The characters a bare number is made of, minus the digits 1-9. Removing
+#: these from a value leaves nothing only when the value was a number built
+#: entirely from zeros, signs and a decimal point: "0", "00", "0.0", "-0".
+_ZERO_ISH = ("0", "+", "-", ".")
+
+
+def _has_page_locator_criterion(column):
+    """SQL form of :func:`_has_page_locator`, for use inside a query.
+
+    There are now two expressions of one rule — this and the Python predicate
+    — because the audits gate runs in SQL at 47 call sites while the fiscal and
+    missing-funds gates run over materialised rows. Two copies of a rule that
+    must agree is exactly the drift this module exists to prevent, so they are
+    not trusted to stay in step: ``tests/test_audits_page_locator_gate.py``
+    runs both over one shared table of cases and fails if they ever disagree.
+
+    Expressed with ``replace`` rather than a regular expression because the
+    dialects do not share one — Postgres has ``~``, SQLite does not — and a
+    criterion that behaves differently under test than in production would be
+    worse than no criterion at all.
+    """
+    squeezed = column
+    for ch in _WHITESPACE:
+        squeezed = func.replace(squeezed, ch, "")
+    bare = squeezed
+    for ch in _ZERO_ISH:
+        bare = func.replace(bare, ch, "")
+    return sa_and(
+        column.isnot(None),
+        func.length(squeezed) > 0,   # not blank, whatever the whitespace
+        func.length(bare) > 0,       # not "0" / "00" / "0.0" / "-0"
+        ~squeezed.like("-%"),        # not a negative page number
+    )
+
+
+def _finding_text_is_readable():
+    """The text-integrity half of the gate, named once so it cannot drift.
+
+    Extracted while adding the locator clause: ``count_withheld_by_reason``
+    has to ask "did THIS clause fail?" for three causes now, and re-typing the
+    condition there would have created a second copy of it.
+    """
+    return sa_or(
+        Audit.finding_text.is_(None),
+        ~Audit.finding_text.contains("(cid:"),
+    )
+
+
 def publishable_audit_criterion():
     """SQL criterion: this finding resolves to a document a reader can open.
 
@@ -126,10 +185,19 @@ def publishable_audit_criterion():
 
         db.query(...).filter(publishable_audit_criterion())
 
-    25 of the 27 rows in ``audits`` hang off source_document 1836 — an
-    authoritative-looking OAG title whose ``url`` and ``md5`` are both NULL and
-    whose ``status`` is nevertheless ``AVAILABLE`` — contributing KES 3.313T of
-    the KES 3.91T ``/audits`` headline (``AUDIT_FINDINGS`` F5.4).
+    Twenty-five rows hang off source_document 1836 — an authoritative-looking
+    OAG title whose ``url`` and ``md5`` are both NULL and whose ``status`` is
+    nevertheless ``AVAILABLE`` — which contributed KES 3.313T of the KES 3.91T
+    ``/audits`` headline (``AUDIT_FINDINGS`` F5.4).
+
+    That 25 was once **25 of 27**, and this docstring said so. The extractor
+    work since has taken ``audits`` to **2,338** rows on production
+    (2026-09-07), so the old phrasing read as if the table held 27 rows in
+    total — 27 was the ``page_ref`` count, not the table — and anyone sizing
+    the blast radius of a change here off that sentence would have been wrong
+    by two orders of magnitude. Today the gate withholds 27 of 2,338:
+    25 for no URL, 1 for unreadable text (audit 902), 1 for no page
+    reference (audit 901).
 
     Because ``Audit.source_document_id`` is ``nullable=False`` and this is an
     ``IN (SELECT ...)``, the criterion already implies *the FK target exists*
@@ -141,17 +209,19 @@ def publishable_audit_criterion():
         # Text integrity. Audit 902 — the row previously described as "the
         # single genuine extraction" — is 89.6% ``(cid:NN)`` glyph codes ending
         # in the report's VISION statement: the PDF's cover page, not a
-        # finding, with an empty ``amount_involved``.
+        # finding, with an empty ``amount``.
         #
         # A.4 quarantines text that is >20% ``(cid:``; expressing a ratio in
         # SQL is awkward, so this withholds a finding containing ANY such
         # token. That is deliberately stricter than A.4 and is the safe
         # direction while the OCR-retry path A.4 assumes does not yet exist
         # (Stage 2). Revisit when it does.
-        sa_or(
-            Audit.finding_text.is_(None),
-            ~Audit.finding_text.contains("(cid:"),
-        ),
+        _finding_text_is_readable(),
+        # A locator. Closing the gap this module's docstring asked Stage 1 to
+        # close. Costs exactly one row on production: audit 901, the OAG
+        # report's PREAMBLE, published today as Homa Bay's only CRITICAL
+        # finding with no amount and no page.
+        _has_page_locator_criterion(Audit.page_ref),
     )
 
 
@@ -186,17 +256,42 @@ def count_withheld_by_reason(db, entity_id=None, entity_types=None) -> dict:
             )
         return q.scalar() or 0
 
-    no_url = ~_source_document_is_resolvable()
+    # Mutually exclusive by precedence, so each row is counted once and under
+    # the first thing actually wrong with it.
+    #
+    # This used to derive the second bucket by subtracting the first from the
+    # total, on the reasoning that the parts would then always sum "even if a
+    # third cause is added without updating this function". A third cause has
+    # now been added, and subtraction handles it exactly wrong: a finding
+    # withheld for citing no page would have been reported as unreadable glyph
+    # text — the same mislabelling this function was written to fix, one layer
+    # down. Summing to the total is necessary, not sufficient; the words have
+    # to be true too.
+    resolvable = _source_document_is_resolvable()
+    readable = _finding_text_is_readable()
+    located = _has_page_locator_criterion(Audit.page_ref)
+
     total = _count(~publishable_audit_criterion())
-    no_url_n = _count(no_url)
-    # Anything withheld that DOES have a resolvable document was withheld for
-    # the other reason. Derived by subtraction so the parts always sum to the
-    # total even if a third cause is added without updating this function —
-    # a breakdown that silently loses a category would be the same defect.
-    return {
-        "source_document_has_no_url": no_url_n,
-        "finding_text_unreadable_cid": total - no_url_n,
+    reasons = {
+        "source_document_has_no_url": _count(~resolvable),
+        "finding_text_unreadable_cid": _count(sa_and(resolvable, ~readable)),
+        "no_page_reference": _count(sa_and(resolvable, readable, ~located)),
     }
+
+    # The three clauses above are the whole of the criterion, so a residual
+    # means a fourth clause was added without a word for it. Report it rather
+    # than let the parts quietly stop summing, or file it under a cause it
+    # does not have.
+    residual = total - sum(reasons.values())
+    if residual:
+        logger.error(
+            "publication gate: %d withheld audit row(s) match no named reason "
+            "— a clause was added to publishable_audit_criterion() without "
+            "extending count_withheld_by_reason()",
+            residual,
+        )
+        reasons["unclassified"] = residual
+    return reasons
 
 
 def count_withheld_audits(db, entity_id=None, entity_types=None) -> int:
@@ -240,15 +335,21 @@ def backfill_publishable_audits(session) -> Dict[str, int]:
     from sqlalchemy import update
 
     crit = publishable_audit_criterion()
-    # Which clause failed? URL first (the commoner failure), then text
-    # integrity — a row can fail both; the URL reason wins as the more
-    # fundamental defect.
-    no_url = ~Audit.source_document_id.in_(
-        select(SourceDocument.id).where(
-            SourceDocument.url.isnot(None),
-            func.length(func.trim(SourceDocument.url)) > 0,
-        )
-    )
+    # Which clause failed? In order: URL (the commonest and most fundamental
+    # defect), then text integrity, then the locator. A row can fail more than
+    # one; the earliest reason wins, and the buckets are disjoint so no row is
+    # counted or stamped twice.
+    #
+    # These reuse the same three named clauses the criterion is built from,
+    # rather than restating them. The URL clause used to be re-typed here as a
+    # second copy of `_source_document_is_resolvable()`.
+    resolvable = _source_document_is_resolvable()
+    readable = _finding_text_is_readable()
+    located = _has_page_locator_criterion(Audit.page_ref)
+
+    no_url = ~resolvable
+    unreadable = sa_and(resolvable, ~readable)
+    unlocated = sa_and(resolvable, readable, ~located)
 
     # The counts describe the TABLE, so they are read, not inferred from how
     # many rows this particular call happened to write. Previously they were
@@ -261,7 +362,10 @@ def backfill_publishable_audits(session) -> Dict[str, int]:
         select(func.count(Audit.id)).where(no_url)
     ).scalar_one()
     withheld_cid = session.execute(
-        select(func.count(Audit.id)).where(~no_url, ~crit)
+        select(func.count(Audit.id)).where(unreadable)
+    ).scalar_one()
+    withheld_no_page = session.execute(
+        select(func.count(Audit.id)).where(unlocated)
     ).scalar_one()
 
     # Write only where the stored verdict differs from the computed one.
@@ -313,18 +417,29 @@ def backfill_publishable_audits(session) -> Dict[str, int]:
     )
     session.execute(
         update(Audit)
-        .where(~no_url, ~crit, _needs(False, "finding_text_unreadable_cid"))
+        .where(unreadable, _needs(False, "finding_text_unreadable_cid"))
         .values(publishable=False, quarantine_reason="finding_text_unreadable_cid")
         .execution_options(synchronize_session=False)
     )
+    session.execute(
+        update(Audit)
+        .where(unlocated, _needs(False, "no_page_reference"))
+        .values(publishable=False, quarantine_reason="no_page_reference")
+        .execution_options(synchronize_session=False)
+    )
     session.flush()
-    stats = {"published": published, "withheld": no_url_count + withheld_cid}
+    stats = {
+        "published": published,
+        "withheld": no_url_count + withheld_cid + withheld_no_page,
+    }
     logger.info(
-        "publishable backfill: %d published, %d withheld (%d no-url, %d cid)",
+        "publishable backfill: %d published, %d withheld "
+        "(%d no-url, %d cid, %d no-page)",
         stats["published"],
         stats["withheld"],
         no_url_count,
         withheld_cid,
+        withheld_no_page,
     )
     return stats
 

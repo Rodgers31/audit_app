@@ -91,6 +91,8 @@ def national(db_session):
                 finding_text=f"national finding {i}",
                 severity=Severity.WARNING,
                 source_document_id=doc.id,
+                # Tier B (#137): a published finding cites a page.
+                page_ref="p.409",
             )
         )
     db_session.flush()

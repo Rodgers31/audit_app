@@ -158,6 +158,8 @@ def sentinels(db_session, seed_country):
             # /audits/federal sums provenance[0].amount_involved, not .amount,
             # so the sentinel has to be reachable by both paths.
             provenance=[{"amount_involved": f"{amount}", "status": "pending"}],
+            # Tier B (#137): a published finding cites a page.
+            page_ref="p.409",
         )
 
     db_session.add_all(
@@ -557,6 +559,8 @@ def test_a_finding_of_broken_glyphs_is_not_published(client, db_session, sentine
             amount=None,
             audit_year=2025,
             provenance=[{"amount_involved": "", "status": "pending"}],
+            # Tier B (#137): a published finding cites a page.
+            page_ref="p.409",
         )
     )
     db_session.commit()

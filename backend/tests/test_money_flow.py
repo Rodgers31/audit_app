@@ -69,6 +69,8 @@ def seed_money_flow(db_session, seed_country, seed_source_doc):
         severity=Severity.CRITICAL,
         amount=1_200_000,
         source_document_id=seed_source_doc.id,
+        # Tier B (#137): a published finding cites a page.
+        page_ref="p.409",
     )
     db_session.add(audit)
     db_session.commit()

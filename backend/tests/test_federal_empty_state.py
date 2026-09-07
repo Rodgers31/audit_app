@@ -64,6 +64,8 @@ def withheld_federal_fixture(db_session, seed_country):
         finding_text="Irregular procurement of KES 12.3 billion",
         severity=Severity.WARNING,
         source_document_id=unopenable.id,
+        # Tier B (#137): a published finding cites a page.
+        page_ref="p.409",
     )
     db_session.add(audit)
     db_session.commit()
@@ -135,6 +137,8 @@ class TestFederalEmptyStateContract:
                 finding_text="Pending accounts payable of Kshs.20,811,926,257",
                 severity=Severity.WARNING,
                 source_document_id=openable.id,
+                # Tier B (#137): a published finding cites a page.
+                page_ref="p.409",
             )
         )
         db_session.commit()

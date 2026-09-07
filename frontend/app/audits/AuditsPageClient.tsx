@@ -468,7 +468,18 @@ export default function AuditFindingsPage() {
               </table>
             </ResponsiveTable>
           ) : (
-            <div className='text-center py-8 text-gov-dark/40 dark:text-white/40'>No recurring findings detected</div>
+            /* An empty list is a claim, so it says which claim. "No recurring
+               findings detected" alone reads as "nothing recurs"; the backend
+               can only assert that nothing recurs ACROSS THE AUDIT YEARS
+               PUBLISHED, which is a different and much narrower statement. */
+            <div className='text-center py-8 space-y-2'>
+              <div className='text-gov-dark/40 dark:text-white/40'>No recurring findings detected</div>
+              {recurring?.absent_reason && (
+                <p className='mx-auto max-w-2xl text-xs leading-relaxed text-gov-dark/60 dark:text-white/60'>
+                  {recurring.absent_reason}
+                </p>
+              )}
+            </div>
           )}
         </div>
       </Section>

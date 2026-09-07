@@ -193,6 +193,8 @@ class TestAuditModel:
             severity=Severity.CRITICAL,
             recommended_action="Investigate",
             source_document_id=seed_source_doc.id,
+            # Tier B (#137): a published finding cites a page.
+            page_ref="p.409",
         )
         db_session.add(a)
         db_session.commit()

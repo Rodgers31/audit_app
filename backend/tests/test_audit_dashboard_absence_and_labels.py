@@ -80,6 +80,8 @@ def _audit(entity_id, period_id, doc_id, **kw):
         severity=Severity.CRITICAL,
         status="published_report",
         audit_year=2024,
+        # Tier B (#137): a published finding cites a page.
+        page_ref="p.409",
     )
     fields.update(kw)
     return Audit(**fields)

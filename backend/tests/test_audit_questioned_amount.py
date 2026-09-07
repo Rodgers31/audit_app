@@ -51,6 +51,8 @@ def seeded_federal(db_session, seed_country, seed_source_doc):
             amount=NAIVE_AMOUNT,
             audit_year=2023,
             provenance=[{"amount_involved": "KES 156.8B", "status": "pending"}],
+            # Tier B (#137): a published finding cites a page.
+            page_ref="p.409",
         )
     )
     db_session.commit()

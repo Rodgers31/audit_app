@@ -106,6 +106,8 @@ def seeded(db_session):
                 severity=Severity.WARNING,
                 source_document_id=doc.id,
                 extraction_id=ext.id,
+                # Tier B (#137): a published finding cites a page.
+                page_ref="p.409",
             )
         )
         entities[name] = entity

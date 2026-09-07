@@ -45,6 +45,8 @@ def seed_audit(db_session, seed_country, seed_source_doc):
         severity=Severity.CRITICAL,
         recommended_action="Investigate and recover funds",
         source_document_id=seed_source_doc.id,
+        # Tier B (#137): a published finding cites a page.
+        page_ref="p.409",
     )
     db_session.add(audit)
     db_session.commit()

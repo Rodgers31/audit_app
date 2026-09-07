@@ -73,6 +73,8 @@ def _audit(entity_id: int, period_id: int, doc_id: int, amount: int) -> Audit:
         amount=Decimal(amount),
         status="Unresolved",
         audit_year=2024,
+        # Tier B (#137): a published finding cites a page.
+        page_ref="p.409",
     )
 
 
