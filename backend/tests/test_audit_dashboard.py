@@ -158,13 +158,17 @@ class TestAuditSummary:
         }
         assert data["findings_by_opinion_reason"] is None
 
-    def test_worst_counties(self, client, seed_audit_dashboard):
+    def test_worst_counties_is_withheld(self, client, seed_audit_dashboard):
+        """This asserted Nairobi ranked first on KES 80M. The ranking is
+        withdrawn: its order rests on `Audit.amount`, which is whatever single
+        `Kshs.` figure a finding paragraph contained — usually the balance
+        under discussion, not a sum being queried (F1) — so naming counties in
+        that order is a claim the report does not make. See
+        test_audit_dashboard_absence_and_labels.py for the full case, and
+        /api/v1/audit/findings for the per-finding amounts that remain."""
         data = client.get("/api/v1/audit/summary").json()
-        worst = data["worst_counties"]
-        assert len(worst) >= 2
-        # Nairobi should be first (80M vs 10M)
-        assert worst[0]["county_name"] == "Nairobi"
-        assert worst[0]["total_amount"] == 80_000_000
+        assert data["worst_counties"] is None
+        assert data["worst_counties_reason"]
 
     def test_year_range(self, client, seed_audit_dashboard):
         data = client.get("/api/v1/audit/summary").json()

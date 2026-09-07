@@ -249,10 +249,27 @@ class TestExpenditureControl:
         assert "none records an amount" in _reason(figure)
 
 
-# ── 3. worst_counties must contain counties ──────────────────────────────
+# ── 3. The county ranking ────────────────────────────────────────────────
 
 
-class TestWorstCountiesAreCounties:
+class TestWorstCountiesIsWithheld:
+    """The ranking is withdrawn, not re-categorised.
+
+    It began as a category defect: production ranked "State Department for
+    Medical Services", "Executive Office of the President" and "State
+    Department for Immigration and Citizen Services" under a field named
+    ``county_name``, 16 MINISTRY entities carrying KES 73.4Bn of the KES
+    214.8Bn. Filtering to ``EntityType.COUNTY`` fixes that in one line.
+
+    It does not fix the list. The ORDER is the claim — these are the worst
+    counties — and the order rests on ``Audit.amount``, taken from any finding
+    paragraph carrying one ``Kshs.`` figure, usually the balance under
+    discussion (credibility audit F1). 152 county findings record one; the rest
+    do not. Mombasa County led at KES 21.62Bn on a single finding. A filtered
+    version of that list is a correctly-categorised false statement about which
+    counties fared worst, so the whole ranking goes.
+    """
+
     @pytest.fixture()
     def seed_mixed_entities(
         self, db_session, seed_country, seed_source_doc, audit_period
@@ -285,44 +302,82 @@ class TestWorstCountiesAreCounties:
             [
                 _audit(
                     ministry.id, audit_period.id, seed_source_doc.id,
-                    amount=25_197_083_648, query_type="Report on the Financial Statements",
+                    amount=25_197_083_648,
+                    query_type="Report on the Financial Statements",
                 ),
                 _audit(
                     president.id, audit_period.id, seed_source_doc.id,
-                    amount=13_684_847_839, query_type="Report on the Financial Statements",
+                    amount=13_684_847_839,
+                    query_type="Report on the Financial Statements",
                 ),
                 _audit(
                     county.id, audit_period.id, seed_source_doc.id,
-                    amount=21_624_772_127, query_type="Report on the Financial Statements",
+                    amount=21_624_772_127,
+                    query_type="Report on the Financial Statements",
                 ),
             ]
         )
         db_session.commit()
 
-    def test_no_ministry_is_listed_as_a_county(self, client, seed_mixed_entities):
-        worst = client.get("/api/v1/audit/summary").json()["worst_counties"]
-        names = [c["county_name"] for c in worst]
-        assert "State Department for Medical Services" not in names
-        assert "Executive Office of the President" not in names
+    def test_ranking_is_null_with_a_reason(self, client, seed_mixed_entities):
+        data = client.get("/api/v1/audit/summary").json()
+        assert data["worst_counties"] is None
+        assert data["worst_counties_reason"]
 
-    def test_every_listed_entity_is_a_county(
+    def test_absence_is_null_not_an_empty_list(self, client, seed_mixed_entities):
+        """``[]`` would read as "no county has a single finding", which is a
+        claim about the world and a false one here."""
+        assert client.get("/api/v1/audit/summary").json()["worst_counties"] != []
+
+    def test_no_county_named_key_carries_a_non_county(
         self, client, db_session, seed_mixed_entities
     ):
-        worst = client.get("/api/v1/audit/summary").json()["worst_counties"]
-        assert worst, "the control: a real county must still be listed"
-        for row in worst:
-            entity = db_session.query(Entity).filter(
-                Entity.id == row["county_id"]
-            ).first()
-            assert entity is not None
-            assert entity.type == EntityType.COUNTY, (
-                f"{entity.canonical_name} is {entity.type}, published as a county"
-            )
+        """The tripwire the deleted type-filter tests leave behind.
 
-    def test_the_real_county_still_ranks(self, client, seed_mixed_entities):
-        worst = client.get("/api/v1/audit/summary").json()["worst_counties"]
-        assert worst[0]["county_name"] == "Mombasa County"
-        assert worst[0]["total_amount"] == 21_624_772_127
+        It is not idle: run against pre-fix code it fires with
+        ``'State Department for Medical Services' is not a county and is
+        published under a county-named key``. It passes today because nothing
+        is published, and that is the point — it sweeps the whole response
+        rather than one field, so restoring the list without an entity-type
+        filter fails here in whatever shape the list comes back in, not only
+        in the assertion written for its old one.
+        """
+        data = client.get("/api/v1/audit/summary").json()
+        non_counties = {
+            e.canonical_name
+            for e in db_session.query(Entity)
+            .filter(Entity.type != EntityType.COUNTY)
+            .all()
+        }
+
+        def walk(node, under_county_key):
+            if isinstance(node, dict):
+                for key, value in node.items():
+                    walk(value, under_county_key or "county" in key.lower())
+            elif isinstance(node, list):
+                for item in node:
+                    walk(item, under_county_key)
+            elif isinstance(node, str) and under_county_key:
+                assert node not in non_counties, (
+                    f"{node!r} is not a county and is published under a "
+                    f"county-named key"
+                )
+
+        walk(data, False)
+
+    def test_the_underlying_findings_are_still_served(
+        self, client, seed_mixed_entities
+    ):
+        """The control. Withdrawing the RANKING must not withdraw the data —
+        every finding, its entity and its own stated amount stay available,
+        each attached to the document it came from, which is the form the
+        Auditor-General actually supports."""
+        items = client.get("/api/v1/audit/findings").json()["items"]
+        assert len(items) == 3
+        amounts = {i["amount"] for i in items}
+        assert 21_624_772_127 in amounts
+        assert 25_197_083_648 in amounts
+        assert all(i["source_document_url"] for i in items)
 
 
 # ── 4. The opinion facet ─────────────────────────────────────────────────

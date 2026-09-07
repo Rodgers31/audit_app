@@ -104,24 +104,25 @@ def test_untraceable_finding_is_excluded_from_the_headline(client, gate_fixture)
     assert r.status_code == 200
     d = r.json()
 
-    # The money observable moved. This test asserted against
-    # `total_unsupported_expenditure`, which was never a measure of unsupported
-    # expenditure — it summed the amount on every finding whose status was not
-    # "Resolved" — and that field is now withheld with a reason. The gate's
-    # behaviour is unchanged, so the assertion moves to the amount total that
-    # survives, rather than being dropped.
-    assert d["worst_counties"] == [
-        {
-            "county_id": 300,
-            "county_name": "Nairobi",
-            "total_amount": pytest.approx(592_062_382_245.0),
-            "finding_count": 1,
-        }
-    ]
     # The 1.2T round-number row must not reach the total...
     assert d["total_findings"] == 1
     # ...and its absence must be stated, not silent.
     assert d["withheld_findings"] == 1
+
+    # The money observable moved twice, and neither move weakened the test.
+    # It first asserted against `total_unsupported_expenditure`, which never
+    # measured unsupported expenditure (it summed the amount on every finding
+    # whose status was not "Resolved"); then against `worst_counties`, which is
+    # now withheld because a ranking of named counties cannot rest on that
+    # amount. `amount_per_year` on /trends is what still sums amounts through
+    # the gate, so that is where the assertion lives. Using it is not an
+    # endorsement of the sum — this test is about which ROWS reach a total.
+    t = client.get("/api/v1/audit/trends").json()
+    assert t["amount_per_year"] == {"2025": pytest.approx(592_062_382_245.0)}
+    assert "2023" not in t["amount_per_year"], (
+        "the withheld row's year must not appear at all — a 0.0 entry for 2023 "
+        "would say the Auditor-General flagged nothing that year"
+    )
 
 
 def test_withheld_finding_is_retained_not_deleted(db_session, gate_fixture):
@@ -165,9 +166,9 @@ def test_gate_publishes_when_the_document_gains_a_url(client, db_session, gate_f
     d = client.get("/api/v1/audit/summary").json()
     assert d["total_findings"] == 2
     assert d["withheld_findings"] == 0
-    assert d["worst_counties"][0]["total_amount"] == pytest.approx(
-        1_792_062_382_245.0
-    )
+    t = client.get("/api/v1/audit/trends").json()
+    assert t["amount_per_year"]["2023"] == pytest.approx(1_200_000_000_000.0)
+    assert t["amount_per_year"]["2025"] == pytest.approx(592_062_382_245.0)
 
 
 def test_whitespace_only_url_does_not_count_as_a_source(client, db_session, gate_fixture):

@@ -32,7 +32,7 @@ from services.publication_gate import (
 
 try:
     from database import get_db
-    from models import Audit, Entity, EntityType, Extraction, SourceDocument
+    from models import Audit, Entity, Extraction, SourceDocument
 
     DATABASE_AVAILABLE = True
 except Exception:
@@ -114,14 +114,17 @@ class AuditSummaryResponse(BaseModel):
         None,
         description="Why `findings_by_opinion` is null, when it is.",
     )
-    worst_counties: List[WorstCounty] = Field(
-        default_factory=list,
+    worst_counties: Optional[List[WorstCounty]] = Field(
+        None,
         description=(
-            "COUNTY governments only. National ministries, state departments "
-            "and commissions are audited under separate votes and are not "
-            "counties; listing one here put a named public body in a category "
-            "it does not belong to, against a money figure."
+            "`null` — not published. A ranking of named counties by flagged "
+            "amount is not supported by the data behind it; see "
+            "`worst_counties_reason`. Never an empty list as a stand-in for "
+            "absence, which would read as 'no county has any finding'."
         ),
+    )
+    worst_counties_reason: Optional[str] = Field(
+        None, description="Why `worst_counties` is null."
     )
     year_range: YearRange
     withheld_findings: int = Field(
@@ -236,6 +239,34 @@ def _check_db(db: Session):
 # endpoint says so in words.
 IRREGULAR = "irregular"
 UNSUPPORTED = "unsupported"
+
+#: Why no county ranking is published. A ranking asserts a comparison BETWEEN
+#: named public bodies, so it needs more than the sum it is ordered by — it
+#: needs that sum to mean the same thing for every body in the list.
+#: `Audit.amount` does not: it is present on 152 of the county findings and
+#: absent on the rest, and where present it is whatever single `Kshs.` figure
+#: the finding paragraph contained, usually the balance under discussion. An
+#: order built on that is an artefact of which findings happened to state a
+#: number.
+#:
+#: This is an unconditional withdrawal, and deliberately so. The repo's rule
+#: for a partial sum — publish it WITH its coverage, or not at all
+#: (`test_partial_questioned_amount.py`) — rescues a national TOTAL, because a
+#: coverage figure qualifies one number honestly. It cannot rescue an ORDERING:
+#: coverage differs per county, so annotating the list does not stop it ranking
+#: them wrongly. The figure returns when the extraction separates an amount
+#: QUESTIONED from an amount DISCUSSED, and not before.
+WORST_COUNTIES_WITHHELD_REASON = (
+    "not published: this was a ranking of named counties by the sum of the "
+    "amounts on their findings. Those amounts are taken from any finding "
+    "paragraph carrying a single Kshs. figure — usually the account balance "
+    "the Auditor-General was discussing, not a sum being queried — and only "
+    "152 county findings record one at all, so the ordering reflects which "
+    "findings happened to state a number rather than which counties fared "
+    "worst. Naming counties in that order would be a claim the report does "
+    "not make. Every finding, its entity and its own stated amount are served "
+    "individually by /api/v1/audit/findings, each with its source document."
+)
 
 _EXPENDITURE_CLASSES = {
     IRREGULAR: {
@@ -374,47 +405,36 @@ async def get_audit_summary(db: Session = Depends(get_db)):
             {o: c for o, c in opinion_rows}
         )
 
-        # Worst counties by total flagged amount
-        # INDEX hint: CREATE INDEX ix_audits_entity_amount ON audits(entity_id, amount)
-        worst_rows = (
-            db.query(
-                Entity.id,
-                Entity.canonical_name,
-                func.coalesce(func.sum(Audit.amount), 0).label("total_amount"),
-                func.count(Audit.id).label("finding_count"),
-            )
-            .join(Entity, Audit.entity_id == Entity.id)
-            .filter(publishable_audit_criterion())
-            .filter(Audit.amount.isnot(None))
-            # COUNTY only. Without this the list ranked national ministries
-            # under a field named `county_name`: production returned "State
-            # Department for Medical Services" (entity 97), "Executive Office
-            # of the President" (80) and "State Department for Immigration and
-            # Citizen Services" (86) among the top five, and the page heading
-            # said counties. 16 of the entities in this aggregate are
-            # EntityType.MINISTRY, carrying KES 73.4Bn of the KES 214.8Bn.
-            #
-            # Naming a specific public body against a money figure under a
-            # category it does not belong to is a false statement of fact about
-            # that body, and truth is the defence that matters here (kenya-legal
-            # / Defamation Act Cap 36). The national findings are not deleted —
-            # they are served by /api/v1/audit/findings, where nothing calls
-            # them counties.
-            .filter(Entity.type == EntityType.COUNTY)
-            .group_by(Entity.id, Entity.canonical_name)
-            .order_by(desc("total_amount"))
-            .limit(10)
-            .all()
-        )
-        worst_counties = [
-            WorstCounty(
-                county_id=r[0],
-                county_name=r[1],
-                total_amount=float(r[2]),
-                finding_count=r[3],
-            )
-            for r in worst_rows
-        ]
+        # Worst counties — WITHHELD. See WORST_COUNTIES_WITHHELD_REASON.
+        #
+        # The query that used to stand here ranked entities by
+        # `sum(Audit.amount)`. Two things were wrong with it and only one was
+        # repairable:
+        #
+        #   * it had no entity-type filter, so it ranked national ministries
+        #     under a field named `county_name` — production returned "State
+        #     Department for Medical Services", "Executive Office of the
+        #     President" and "State Department for Immigration and Citizen
+        #     Services" in the top five, with 16 MINISTRY entities carrying KES
+        #     73.4Bn of the KES 214.8Bn. That part was a one-line fix.
+        #
+        #   * the ordering key itself is not a measure of anything. The
+        #     ordering IS the claim — "these are the worst counties" — and it
+        #     rests on `Audit.amount`, which the loader fills from any finding
+        #     paragraph carrying exactly one `Kshs.` figure, usually the
+        #     account balance under discussion rather than a sum being queried
+        #     (credibility audit F1). Only 152 county findings record an amount
+        #     at all, and Mombasa County led the list at KES 21.62Bn on the
+        #     strength of ONE finding. Filtering to counties would have left a
+        #     correctly-categorised false statement about which counties fared
+        #     worst.
+        #
+        # Fixing the category and keeping the ranking would have been the
+        # smaller change and the wrong one. The frontend withdrew this ranking
+        # on these grounds already (F1/F34); an API that goes on serving what
+        # the page refuses to show is the same publication wearing a thinner
+        # disguise.
+        worst_counties = None
 
         withheld = count_withheld_audits(db)
         if withheld:
@@ -433,6 +453,7 @@ async def get_audit_summary(db: Session = Depends(get_db)):
             findings_by_opinion=findings_by_opinion,
             findings_by_opinion_reason=findings_by_opinion_reason,
             worst_counties=worst_counties,
+            worst_counties_reason=WORST_COUNTIES_WITHHELD_REASON,
             year_range=YearRange(min_year=min_year, max_year=max_year),
             withheld_findings=withheld,
         )

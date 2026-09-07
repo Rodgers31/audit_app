@@ -44,6 +44,47 @@ modified opinion survives. That is a fail-closed gate, not a filter: seed a
 Qualified opinion and the facet publishes normally. It goes green the moment
 the extractor stops dropping them — which is the repair, and it belongs in
 ``seeding/extractors/oag_blue_book.py``, not here.
+
+WAS ANY PUBLISHED LABEL *INHERITED*? NO — CHECKED, 0 ROWS
+---------------------------------------------------------
+Worth recording, because the mechanism invites the worry. ``opinion`` is a
+*sticky* variable in that parse loop: set when ``_OPINION_RE`` matches a
+standalone opinion line, cleared only when ``_SUBREPORT_RE`` starts a new
+sub-report. ``_HEADING_RE`` — the branch that consumes "Basis for Qualified
+Opinion" — does not clear it. So in principle a finding under a modified basis
+could inherit a clean opinion from earlier in the same sub-report, and the site
+would have been labelling qualified audits clean rather than merely omitting
+them. That is a materially stronger defect than a gap.
+
+It did not happen. Joining ``audits.audit_opinion`` against the ``heading`` on
+the same row's extraction, over the 2,311 publishable findings that carry an
+``extraction_id`` (production, 2026-09-06)::
+
+    audit_opinion         heading                              rows
+    NULL                  Basis for Qualified Opinion           408
+    NULL                  Basis for Adverse Opinion             104
+    NULL                  Basis for Disclaimer of Opinion        33
+    Unmodified Opinion    Other Matter                          107
+    Unmodified Opinion    Emphasis of Matter                     63
+    Unqualified Opinion   Other Matter                            9
+    Unmodified Opinion    Basis for Conclusion                    7
+    Unmodified Opinion    Other Information                       3
+
+    clean opinion under a "Basis for <modified> Opinion" heading:  0
+
+All 545 modified-basis findings arrive NULL; every published clean label sits
+under a heading that follows a clean opinion section. The reason the sticky
+variable never bites is structural: the "Basis for ..." section opens a
+modified financial-statements sub-report, so ``_SUBREPORT_RE`` has just cleared
+``opinion`` and there is nothing to inherit.
+
+**So the defect is omission, not misstatement** — the weaker of the two, and the
+bound is worth having. One residue for whoever fixes the extractor: 7 findings
+carry a clean opinion under ``Basis for Conclusion``, a heading belonging to
+the Lawfulness / Internal-Controls sub-reports, which use "Conclusion" and not
+"Opinion". An opinion label leaking onto a conclusion finding is a category
+slip, not a wrong opinion, but it says the sub-report reset is not perfectly
+tight.
 """
 
 from __future__ import annotations

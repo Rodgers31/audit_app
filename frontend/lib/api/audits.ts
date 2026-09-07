@@ -253,8 +253,13 @@ export interface AuditDashboardSummary {
   /** `null` when the facet is not published — see `findings_by_opinion_reason`. */
   findings_by_opinion: Record<string, number> | null;
   findings_by_opinion_reason: string | null;
-  /** COUNTY governments only — ministries and state departments are not counties. */
-  worst_counties: WorstCounty[];
+  /**
+   * `null` — not published. A ranking of named counties by flagged amount is
+   * not supported by the data behind it; see `worst_counties_reason`. Never
+   * an empty array as a stand-in for absence.
+   */
+  worst_counties: WorstCounty[] | null;
+  worst_counties_reason: string | null;
   year_range: { min_year: number | null; max_year: number | null };
 }
 
