@@ -92,6 +92,8 @@ def seed_unit_test_data(db_session, seed_country, seed_source_doc):
             recurrent_spending=2610,
             county_allocation=410,
             source_document_id=seed_source_doc.id,
+            # Tier B (#137): a published fiscal row cites a page.
+            page_ref="s.3.2, report p.16 (PDF p.37)",
         )
     )
 

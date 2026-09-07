@@ -42,6 +42,8 @@ def seed_fiscal_and_budget(db_session, seed_country, seed_source_doc):
         county_allocation=390e9,
         unit="KES",
         source_document_id=seed_source_doc.id,
+        # Tier B (#137): a published fiscal row cites a page.
+        page_ref="s.3.2, report p.16 (PDF p.37)",
     )
     fs_incomplete = FiscalSummary(
         fiscal_year="FY2022/23",
@@ -56,6 +58,8 @@ def seed_fiscal_and_budget(db_session, seed_country, seed_source_doc):
         county_allocation=370e9,
         unit="KES",
         source_document_id=seed_source_doc.id,
+        # Tier B (#137): a published fiscal row cites a page.
+        page_ref="s.3.2, report p.16 (PDF p.37)",
     )
     db_session.add_all([fs_complete, fs_incomplete])
     db_session.flush()

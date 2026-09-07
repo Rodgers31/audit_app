@@ -98,6 +98,8 @@ def seeded(db_session, seed_source_doc):
             debt_service_cost=2328.0 * B,  # 77.6% of revenue
             unit="KES",
             source_document_id=seed_source_doc.id,
+            # Tier B (#137): a published fiscal row cites a page.
+            page_ref="s.3.2, report p.16 (PDF p.37)",
         )
     )
     # Five points chosen so the pre-fix least-squares fit reproduces

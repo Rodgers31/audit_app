@@ -92,6 +92,8 @@ def seed_budget_data(db_session, seed_country, seed_source_doc):
         development_spending=700_000_000_000,
         recurrent_spending=2_100_000_000_000,
         county_allocation=400_000_000_000,
+        # Tier B (#137): a published fiscal row cites a page.
+        page_ref="s.3.2, report p.16 (PDF p.37)",
     )
     db_session.add(fs)
 
@@ -393,6 +395,8 @@ def seed_debt_sustainability(db_session, seed_country, seed_source_doc):
         total_revenue=2_800_000_000_000,
         tax_revenue=2_200_000_000_000,
         debt_service_cost=1_000_000_000_000,
+        # Tier B (#137): a published fiscal row cites a page.
+        page_ref="s.3.2, report p.16 (PDF p.37)",
     )
     db_session.add(fs)
     db_session.commit()
