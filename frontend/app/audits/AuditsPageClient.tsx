@@ -4,6 +4,7 @@ import DataFreshnessBadge from '@/components/DataFreshnessBadge';
 import PageShell from '@/components/layout/PageShell';
 import type { FindingsFilters } from '@/lib/api/audits';
 import {
+  AUDIT_FINDINGS_INITIAL_FILTERS,
   useAuditDashboardSummary,
   useAuditFindings,
   useAuditTrends,
@@ -122,7 +123,9 @@ function Section({
 
 export default function AuditFindingsPage() {
   // --- Filters state ---
-  const [filters, setFilters] = useState<FindingsFilters>({ page: 1, limit: 20 });
+  // Seeded from the shared constant `app/audits/page.tsx` prefetches against,
+  // so the first render reads the page the server already put in the HTML.
+  const [filters, setFilters] = useState<FindingsFilters>(AUDIT_FINDINGS_INITIAL_FILTERS);
 
   // --- Data hooks ---
   const { data: summary, isLoading: summaryLoading } = useAuditDashboardSummary();
@@ -197,7 +200,7 @@ export default function AuditFindingsPage() {
   }, []);
 
   const clearFilters = useCallback(() => {
-    setFilters({ page: 1, limit: 20 });
+    setFilters(AUDIT_FINDINGS_INITIAL_FILTERS);
   }, []);
 
   const hasActiveFilters = !!(filters.county_id || filters.year || filters.query_type || filters.severity || filters.audit_opinion || filters.status);

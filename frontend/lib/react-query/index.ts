@@ -20,6 +20,11 @@ export {
 
 // Audits hooks
 export {
+  AUDIT_FINDINGS_INITIAL_FILTERS,
+  auditDashboardSummaryKey,
+  auditFindingsKey,
+  auditRecurringFindingsKey,
+  auditTrendsKey,
   useAuditDashboardSummary,
   useAuditFindings,
   useAuditReport,
