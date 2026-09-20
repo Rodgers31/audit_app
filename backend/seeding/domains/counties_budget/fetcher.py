@@ -119,6 +119,31 @@ def _derive_fiscal_year_dates(fy: str) -> Tuple[Optional[str], Optional[str]]:
     return f"{start_year}-07-01", f"{end_year}-06-30"
 
 
+#: Libraries whose version changes what the CoB parse returns, even though
+#: none of our own source moved. Fed into the parse cache's key.
+_PDF_STACK = ("pdfplumber", "pdfminer.six")
+
+
+def _pdf_stack_versions() -> str:
+    """``pdfplumber=0.11.10;pdfminer.six=20260107`` — the cache's key_extra.
+
+    A version that cannot be read becomes ``unknown``, which is a value like
+    any other: two runs on different unreadable versions still share it, so
+    this must never be the only thing distinguishing them. It is not — the
+    document digest and the parser digest are the other two thirds of the
+    key, and this is only the part that tracks the library.
+    """
+    from importlib.metadata import PackageNotFoundError, version
+
+    parts = []
+    for name in _PDF_STACK:
+        try:
+            parts.append(f"{name}={version(name)}")
+        except PackageNotFoundError:
+            parts.append(f"{name}=unknown")
+    return ";".join(parts)
+
+
 class CobSourceUnreachable(RuntimeError):
     """No COB URL could be reached at all.
 
@@ -479,6 +504,7 @@ def _download_and_parse_county_pdf(
     try:
         from ...pdf_parsers import CoBQuarterlyReportParser
         from ...pdf_download import get_or_download_pdf
+        from ...parse_cache import parse_with_cache
 
         # Use a browser-shaped UA for the PDF download — the same CDN
         # rule that rejects the HTML landing with 415 can block `*/*`
@@ -515,10 +541,43 @@ def _download_and_parse_county_pdf(
             pdf_path,
         )
 
+        # The parse, not the download, is the expensive half. pdfplumber
+        # walks all ~700 pages and pulls 1,048 tables out of this document to
+        # find four of them, and it did that every night against a file the
+        # PDF cache already held:
+        #
+        #   Sep 16  Parsed COB county BIRR PDF (188 records, 251.5s)
+        #   Sep 17  Parsed COB county BIRR PDF (188 records, 249.1s)
+        #   Sep 18  Parsed COB county BIRR PDF (188 records, 258.5s)
+        #
+        # ~250s of a 1320s budget, for the same 188 records. parse_with_cache
+        # banks the RESULT under the PDF's content digest AND a digest of the
+        # parser's own source, so a republished report and an edited parser
+        # both miss; see seeding/parse_cache.py for why the second half of
+        # that key is not optional.
         logger.info("Parsing COB county BIRR PDF: %s", pdf_path)
         parse_start = time.monotonic()
         parser = CoBQuarterlyReportParser(pdf_path)
-        parsed_records = parser.parse()
+        # The PDF stack's versions are part of the key. The parser digest
+        # covers pdf_parsers.py, which is self-contained (KENYAN_COUNTIES and
+        # every table helper are defined in it; its only non-stdlib import is
+        # pdfplumber) — but the tables themselves come out of the library,
+        # and an upgrade changes them without touching a byte of our source.
+        # Without this the upgrade would land and every cached parse would go
+        # on serving the previous version's tables.
+        #
+        # pdfminer.six as well as pdfplumber: extract_tables() clusters chars
+        # and words that pdfminer produced, requirements.txt pins only
+        # `pdfplumber>=0.10.3`, and pdfminer.six is not pinned at all — so it
+        # is the one most likely to move underneath us unannounced.
+        parsed_records = parse_with_cache(
+            pdf_path,
+            cache_dir=Path(settings.cache_path) / "pdfs",
+            kind="cob_county_birr",
+            parse_fn=parser.parse,
+            enabled=settings.parse_cache_enabled,
+            key_extra=_pdf_stack_versions(),
+        )
         parse_elapsed = time.monotonic() - parse_start
         logger.info(
             "Parsed COB county BIRR PDF (%d records, %.1fs)",

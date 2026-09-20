@@ -61,6 +61,7 @@ from __future__ import annotations
 
 import logging
 import re
+import time
 from decimal import Decimal
 from typing import Any, Dict, Iterable, Optional
 
@@ -336,6 +337,15 @@ def backfill_publishable_audits(session) -> Dict[str, int]:
     """
     from sqlalchemy import update
 
+    # Timed because it was not, and that cost a diagnosis. This line is
+    # emitted three times a night with byte-identical text ("2311 published,
+    # 27 withheld (25 no-url, 1 cid, 1 no-page)"), which made it the obvious
+    # suspect for the audits domain's 434s — and it is not the culprit. With
+    # no duration on it, the only way to find that out was to regress the
+    # gaps between log lines against the extraction counts. Print the number
+    # instead of making the next reader derive it.
+    started = time.monotonic()
+
     crit = publishable_audit_criterion()
     # Which clause failed? In order: URL (the commonest and most fundamental
     # defect), then text integrity, then the locator. A row can fail more than
@@ -436,12 +446,13 @@ def backfill_publishable_audits(session) -> Dict[str, int]:
     }
     logger.info(
         "publishable backfill: %d published, %d withheld "
-        "(%d no-url, %d cid, %d no-page)",
+        "(%d no-url, %d cid, %d no-page) in %.2fs",
         stats["published"],
         stats["withheld"],
         no_url_count,
         withheld_cid,
         withheld_no_page,
+        time.monotonic() - started,
     )
     return stats
 

@@ -31,6 +31,7 @@ from models import (
     SourceDocument,
 )
 from sqlalchemy import and_, select
+from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.orm import Session
 
 from ...config import SeedingSettings
@@ -163,6 +164,44 @@ def _ensure_period(
     return period
 
 
+#: How many extraction ids go into one ``IN (...)``. Postgres would take all
+#: 2,311 in one statement; SQLite's default host-parameter ceiling is 999,
+#: and the tests run on SQLite. 500 keeps both happy and still turns the
+#: largest document's 986 round trips into 2.
+_LOOKUP_CHUNK = 500
+
+
+def _audits_by_extraction_id(session: Session, extraction_ids: list) -> dict:
+    """Existing audit rows for these extractions, keyed by extraction_id.
+
+    Raises on a duplicate rather than picking one. ``audits.extraction_id``
+    is indexed but NOT unique (models.py), so the module docstring's "one
+    extraction, one audit row" is an invariant this code path upholds rather
+    than one the schema enforces. The per-row lookup this replaces used
+    ``scalar_one_or_none()``, which raised ``MultipleResultsFound`` on a
+    duplicate; a dict build would instead keep whichever row came back last
+    and carry on. Swapping a loud failure for a silent arbitrary choice is
+    not a performance improvement.
+    """
+    found: dict = {}
+    for start in range(0, len(extraction_ids), _LOOKUP_CHUNK):
+        chunk = extraction_ids[start : start + _LOOKUP_CHUNK]
+        for audit in (
+            session.execute(select(Audit).where(Audit.extraction_id.in_(chunk)))
+            .scalars()
+            .all()
+        ):
+            clash = found.get(audit.extraction_id)
+            if clash is not None and clash.id != audit.id:
+                raise MultipleResultsFound(
+                    f"audits {clash.id} and {audit.id} both claim extraction "
+                    f"{audit.extraction_id}; the loader's one-extraction-one-row "
+                    "invariant is broken and the fact table has a duplicate"
+                )
+            found[audit.extraction_id] = audit
+    return found
+
+
 def load_blue_book_extractions(
     session: Session,
     doc: SourceDocument,
@@ -191,6 +230,30 @@ def load_blue_book_extractions(
     if not extractions:
         logger.info("No %s extractions for document %s", EXTRACTOR_ID, doc.id)
         return stats
+
+    # One round trip for all of this document's audit rows, not one per
+    # extraction.
+    #
+    # The entity and period lookups were memoised for exactly this reason
+    # (see the comment in the loop). The `existing` lookup was left as a
+    # SELECT per extraction, and it is the one that runs on EVERY extraction
+    # — the caches skip the other two after the first hit.
+    #
+    # OBSERVED on the nightly, from the gap between "already extracted …
+    # skipping" and "publishable backfill" with nothing logged in between:
+    #
+    #   run 35048000013  813→84.0s  986→99.2s  512→54.0s   96ms/row  R²=0.999
+    #   run 35174426953  813→123.6s 986→140.8s 512→76.9s  137ms/row  R²=0.989
+    #   run 35299414702  813→85.7s  986→100.6s 512→54.8s   97ms/row  R²=0.998
+    #
+    # Linear in the extraction COUNT with a ~5-8s intercept — the signature
+    # of one round trip per row against a remote database, not of the
+    # backfill (which is the intercept). 2,311 extractions across the three
+    # documents, 0 created and 0-1 updated every night: 222-317s a run spent
+    # asking 2,311 times whether anything had changed, and being told no.
+    existing_by_extraction = _audits_by_extraction_id(
+        session, [e.id for e in extractions]
+    )
 
     for ext in extractions:
         stats.processed += 1
@@ -263,9 +326,29 @@ def load_blue_book_extractions(
             "extraction_method": payload.get("extraction_method"),
         }
 
-        existing = session.execute(
-            select(Audit).where(Audit.extraction_id == ext.id)
-        ).scalar_one_or_none()
+        # Read from the batch. A HIT is final — the snapshot was taken after
+        # this session's own flush, and nothing else rewrites an audit's
+        # extraction_id.
+        #
+        # A MISS is confirmed against the database before inserting. The
+        # snapshot is taken once and the loop runs for 55-141s per document
+        # on production; `audits.extraction_id` is indexed but NOT unique, so
+        # a row landing inside that window would be invisible here and this
+        # loop would insert a second audit for the same extraction. That is
+        # silent tonight — a duplicated published finding — and a hard
+        # failure tomorrow, when _audits_by_extraction_id raises on the pair.
+        #
+        # The confirming SELECT costs NOTHING on the run this change is for:
+        # the nightly creates 0 rows, so every lookup is a hit and never
+        # reaches it. It costs one round trip per genuinely-new finding on a
+        # night that is writing anyway. It also restores the `IS NULL`
+        # semantics of the predicate it replaced, which `IN (NULL)` does not
+        # have.
+        existing = existing_by_extraction.get(ext.id)
+        if existing is None:
+            existing = session.execute(
+                select(Audit).where(Audit.extraction_id == ext.id)
+            ).scalar_one_or_none()
 
         if context.dry_run:
             stats.created += 0 if existing else 1

@@ -36,7 +36,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
-from typing import Callable, List, Optional
+from typing import Callable, Iterable, List, Optional
 
 from .source_registry import PUBLICATION_SCHEDULE
 
@@ -798,6 +798,192 @@ def check_ingestion_freshness(
     return findings
 
 
+#: ``ingestion_jobs.domain`` for bootstrap's reference-data load. Bootstrap
+#: reads git-tracked files by definition and has no publisher of its own, so
+#: it always records ``source_mode="fixture"`` and its fixture vocabulary
+#: (``fixture_current``, ``fixture_stale``, ``fixture_missing``,
+#: ``fixture_superseded``, ``bootstrap_failed``) is judged by
+#: :func:`check_ingestion_freshness`, not by the per-run verdict below.
+#:
+#: Spelled out here rather than imported: ``bootstrap.py`` is a 2,000-line
+#: module that pulls in the whole model layer, and this file is imported by
+#: a workflow step. ``tests/test_hollow_run_gate.py`` asserts the two strings
+#: are equal, so the copy cannot drift in silence.
+BOOTSTRAP_DOMAIN = "bootstrap_reference_data"
+
+#: Rows in ``ingestion_jobs`` that are not a seeding domain reaching a
+#: publisher, and so cannot be judged as one.
+NON_PUBLISHER_DOMAINS = frozenset({ROW_CENSUS_DOMAIN, BOOTSTRAP_DOMAIN})
+
+#: Fixture reasons that do NOT make a run hollow. Same two sets the window
+#: gate already uses, deliberately reused rather than re-typed: a reason is
+#: either "there is no publisher to reach" or "the publisher's data already
+#: landed and the file is vestigial". Anything else means the domain HAS a
+#: publisher and did not reach it tonight.
+EXEMPT_FIXTURE_REASONS = DECLARED_NO_SOURCE_REASONS | SUPERSEDED_REASONS
+
+
+def latest_job_per_domain(jobs: Iterable) -> List:
+    """One row per domain — the most recent — from a window of jobs.
+
+    The nightly reads ``ingestion_jobs`` over the last 30 minutes, which can
+    hold two rows for a domain if a run was re-dispatched. A verdict about
+    THIS run must be about the newest row, not whichever the query happened
+    to yield first.
+
+    On a ``started_at`` tie the higher ``id`` wins. ``_run_order`` alone is
+    stable, so the survivor was whichever the CALLER's ordering put last —
+    and the nightly queries ``ORDER BY id DESC``, which made the tie-break
+    select the OLDEST row and contradict this docstring.
+    """
+    newest: dict = {}
+    for job in sorted(jobs, key=lambda j: (_run_order(j), getattr(j, "id", 0) or 0)):
+        newest[getattr(job, "domain", None)] = job
+    return list(newest.values())
+
+
+def hollow_run_findings(jobs: Iterable) -> List[Finding]:
+    """Domains that published nothing from their publisher on THIS run.
+
+    WHY THIS IS SEPARATE FROM :func:`check_ingestion_freshness`
+    -----------------------------------------------------------
+    That gate asks "has this domain reached its publisher recently?" over a
+    14-day window, and answers with the UNION of the window. It is the right
+    question for "has a source gone away", and it is structurally blind to
+    the failure this one catches.
+
+    On 2026-09-19 (run 35415601792) the nightly served fixtures for
+    ``audits`` (``processed=0`` — all five OAG URLs returned HTML, not PDFs),
+    ``counties_budget`` (COB 403) and ``national_budget``, printed::
+
+        [STALE] audits: completed_with_errors | created=0 updated=0 processed=0
+        [STALE] counties_budget: completed_with_errors | ...
+        ...
+        All domains completed successfully.
+
+    and exited 0. The window gate, in the same workflow minutes later, said::
+
+        [OK] audits ingestion: reached the publisher in 13/22 recent run(s)
+
+    Both were working as written. Neither could say "tonight, nothing
+    arrived", because the run-level check only counted ``status == 'failed'``
+    and the window-level check was answering about a fortnight.
+
+    A run that refreshes nothing is the failure this project cares most
+    about — it reads as success, so nobody looks, and the site goes on
+    publishing figures it describes as current.
+
+    WHAT IS EXEMPT, AND WHY IT IS NOT A LOOPHOLE
+    --------------------------------------------
+    Only two reasons: ``no_live_source`` (learning_hub's editorial copy and
+    stalled_projects' OAG records, neither of which has a machine-readable
+    publisher) and ``fixture_superseded`` (the file is still read but every
+    figure in it has been replaced from the database). Both are the same
+    slugs the window gate already exempts. Adding a slug here is a decision
+    that a gap is known and accepted, not a way to quiet a broken fetch — a
+    domain that starts returning ``no_live_source`` because someone deleted
+    its fetcher would be exempting itself, which is why the slugs are listed
+    in one place and reviewed as a set.
+
+    EVERY MODE IS JUDGED, AND THE SEVERITIES ARE NOT NEW
+    ----------------------------------------------------
+    ``freshness.py`` declares five modes: live, fixture, partial, refused,
+    unknown. The first version of this function branched on ``fixture`` and
+    ``unknown`` and let the other two fall through to no finding at all —
+    so a domain that recorded PARTIAL or REFUSED passed the gate silently,
+    printed ``[OK]``, and exited 0. That is the same shape as the defect the
+    function exists to catch, one mode over, and it was live: the KRA
+    overlay leaves ``revenue_by_source`` PARTIAL and the census leaves
+    ``population`` PARTIAL.
+
+    So the mapping is exhaustive, and its severities are taken from
+    :func:`check_ingestion_freshness` rather than invented here:
+
+    * ``live`` — OK, nothing reported.
+    * ``fixture`` — FAIL, unless the reason is declared exempt.
+    * ``refused`` — FAIL. The domain reached a verdict of "do not publish"
+      and wrote nothing; the reader is on the previous seed's rows.
+    * ``partial`` — WARN, not FAIL. A secondary series DID refresh. The
+      window gate says WARN for the same state, and it must stay WARN here:
+      ``revenue_by_source`` has been partial for ~20 consecutive runs, so
+      failing on it would make the nightly red every single night, and a
+      gate that fires every night gets muted along with everything beside
+      it. WARN still prints, which is the part that was missing.
+    * anything else — FAIL. ``unknown``, ``None``, a mode this function has
+      not been taught, a non-string, a value with stray whitespace or odd
+      casing. "We did not record where this came from", and "we recorded
+      something nobody here understands", are both the absence of evidence
+      that the publisher was reached. Matching a known set and failing on
+      the remainder is what keeps a sixth mode from arriving green.
+
+    An unrecorded mode is therefore a FAIL, not a pass — the whole freshness
+    module exists because an absent signal was being read as a good one.
+    """
+    findings: List[Finding] = []
+    for job in latest_job_per_domain(jobs):
+        domain = getattr(job, "domain", None)
+        if domain in NON_PUBLISHER_DOMAINS:
+            continue
+        meta = job.meta if isinstance(getattr(job, "meta", None), dict) else {}
+        mode = meta.get("source_mode")
+        reason = meta.get("source_fallback_reason")
+        label = f"{domain} this run"
+
+        if mode == "live":
+            continue
+
+        if mode == "fixture":
+            if reason in EXEMPT_FIXTURE_REASONS:
+                continue
+            findings.append(
+                Finding(
+                    FAIL,
+                    label,
+                    "served a FIXTURE, not the publisher "
+                    f"(reason={reason or 'unrecorded'}). This run published "
+                    "nothing new for this domain; its created/updated counts "
+                    "describe a git-tracked file.",
+                )
+            )
+        elif mode == "refused":
+            findings.append(
+                Finding(
+                    FAIL,
+                    label,
+                    f"REFUSED to publish (reason={reason or 'unrecorded'}). "
+                    "Nothing was written — not a fixture, not a partial "
+                    "register. The reader is on the previous seed's rows.",
+                )
+            )
+        elif mode == "partial":
+            findings.append(
+                Finding(
+                    WARN,
+                    label,
+                    f"only a SECONDARY series refreshed (reason="
+                    f"{reason or 'unrecorded'}); the figure this domain "
+                    "publishes is still a fixture.",
+                )
+            )
+        else:
+            status = getattr(getattr(job, "status", None), "value", None)
+            if status == "failed":
+                # Already a failure by its own status; saying it twice
+                # would inflate the count the operator reads.
+                continue
+            described = "no source_mode" if mode in (None, "") else repr(mode)
+            findings.append(
+                Finding(
+                    FAIL,
+                    label,
+                    f"recorded {described}, so there is no evidence it "
+                    "reached its publisher. Unrecorded, and unrecognised, "
+                    "are not the same as fine.",
+                )
+            )
+    return findings
+
+
 def run_all(
     session, now: Optional[datetime] = None, counts: Optional[dict] = None
 ) -> List[Finding]:
@@ -817,8 +1003,11 @@ def run_all(
 
 
 __all__ = [
+    "BOOTSTRAP_DOMAIN",
+    "EXEMPT_FIXTURE_REASONS",
     "FAIL",
     "Finding",
+    "NON_PUBLISHER_DOMAINS",
     "OK",
     "ROW_CENSUS_DOMAIN",
     "ROW_CENSUS_WINDOW_DAYS",
@@ -831,7 +1020,9 @@ __all__ = [
     "check_ingestion_freshness",
     "check_row_count_drop",
     "check_table_freshness",
+    "hollow_run_findings",
     "in_publication_lull",
+    "latest_job_per_domain",
     "record_row_census",
     "run_all",
 ]
