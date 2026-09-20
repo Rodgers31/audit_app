@@ -132,6 +132,18 @@ class SeedingSettings(BaseSettings):
             "help the nightly job. 0 disables the PDF cache."
         ),
     )
+    parse_cache_enabled: bool = Field(
+        default=True,
+        description=(
+            "Reuse the RESULT of parsing a source PDF across runs when both "
+            "the document's content digest and the parser's own source digest "
+            "are unchanged. Saves ~250s a night on the 48MB COB county BIRR "
+            "report, whose parse produced the same 188 records every night. "
+            "Set SEED_PARSE_CACHE_ENABLED=false to force a full reparse — "
+            "useful when bisecting a parse, not needed to pick up a parser "
+            "change (an edited parser invalidates its own entries)."
+        ),
+    )
     population_dataset_url: str = Field(
         default="file://seeding/real_data/population.json",
         description=(
