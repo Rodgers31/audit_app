@@ -465,6 +465,11 @@ jobs:
           from models import IngestionJob, IngestionStatus
           from datetime import datetime, timedelta
 
+          from seeding.staleness import (
+              NON_PUBLISHER_DOMAINS,
+              hollow_run_findings,
+          )
+
           session = SessionLocal()
           cutoff = datetime.utcnow() - timedelta(minutes=30)
           jobs = session.query(IngestionJob).filter(IngestionJob.started_at >= cutoff).order_by(IngestionJob.id.desc()).all()
@@ -477,8 +482,18 @@ jobs:
               # A domain that served a git-tracked fixture is NOT [OK]: it
               # published nothing from the publisher, and its 0-created count
               # reflects a static file rather than a confirmed no-op upstream.
+              #
+              # partial and refused are named too. They used to fall through
+              # to [OK] because the chain tested `fixture` and then `status`,
+              # and both of those modes complete cleanly — so a domain whose
+              # headline figure never moved printed exactly like one that
+              # refreshed. freshness.py declares five modes; this prints five.
               if mode == 'fixture':
                   emoji = 'STALE'
+              elif mode == 'refused':
+                  emoji = 'REFUSED'
+              elif mode == 'partial':
+                  emoji = 'PARTIAL'
               elif status == 'completed':
                   emoji = 'OK'
               elif status == 'completed_with_errors':
@@ -496,9 +511,57 @@ jobs:
               if status == 'failed':
                   failed += 1
 
+          # A run that refreshed NOTHING must not report success.
+          #
+          # 2026-09-19, run 35415601792: audits processed=0 (all five OAG
+          # URLs returned HTML, not PDFs), counties_budget fell back after a
+          # COB 403, national_budget too. The table above printed [STALE] for
+          # five domains and this step then printed "All domains completed
+          # successfully." and exited 0, because it counted only
+          # status == 'failed'. The validate job, minutes later, printed
+          # "[OK] audits ingestion: reached the publisher in 13/22 recent
+          # run(s)" — it judges a 14-day window, so one hollow night is
+          # invisible to it by construction.
+          #
+          # hollow_run_findings asks the question neither of them asked: did
+          # THIS run reach the publisher? Its exemptions are the same two
+          # reason slugs the window gate already exempts (no_live_source,
+          # fixture_superseded), so learning_hub and stalled_projects — which
+          # have no publisher — stay green, and a broken fetch cannot exempt
+          # itself. The rule lives in seeding/staleness.py, tested by
+          # backend/tests/test_hollow_run_gate.py, which runs THIS step.
+          # Every finding is printed; only FAIL-level ones stop the run.
+          # partial is WARN on purpose — a secondary series did refresh, and
+          # revenue_by_source has been partial for ~20 consecutive runs, so
+          # failing on it would paint every night red and the gate would be
+          # muted along with everything beside it.
+          findings = hollow_run_findings(jobs)
+          for finding in findings:
+              print(f'  {finding}')
+          hollow = [f for f in findings if f.level == 'FAIL']
+
+          # No rows at all is the same defect one step further back: the
+          # loop above prints nothing, `failed` stays 0, and the step reports
+          # a success it never observed. The seed step always writes a job
+          # per domain it starts, so an empty table means the seeder did not
+          # get that far.
+          graded = [j for j in jobs if j.domain not in NON_PUBLISHER_DOMAINS]
+          if not graded:
+              print(
+                  '\nNo ingestion job rows in the last 30 minutes. The seeder '
+                  'recorded nothing, so there is nothing to call successful.'
+              )
+
           session.close()
-          if failed > 0:
-              print(f'\n{failed} domain(s) failed!')
+          if failed or hollow or not graded:
+              if failed:
+                  print(f'\n{failed} domain(s) failed!')
+              if hollow:
+                  print(
+                      f'\n{len(hollow)} domain(s) served a fixture or recorded '
+                      'no provenance: this run refreshed nothing for them, so '
+                      'it is not a success.'
+                  )
               sys.exit(1)
           print('\nAll domains completed successfully.')
           PY
