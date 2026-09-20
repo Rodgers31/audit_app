@@ -418,6 +418,7 @@ jobs:
       # HIT in either run was a COB PDF 27 days old, i.e. nothing had been
       # saved in a month.
       - name: Restore downloaded source PDFs
+        id: restore_pdfs
         uses: actions/cache/restore@v4
         with:
           path: backend/data/seeding/cache/pdfs
@@ -502,25 +503,69 @@ jobs:
           print('\nAll domains completed successfully.')
           PY
 
-      # Cache filenames are sha256(url), so the sorted file list is a stable
-      # identity for "which documents are cached". Folding it into the save key
-      # means a run that downloaded nothing new writes no cache (the key
-      # already exists — this is what kept weekly keys cheap), while a run that
-      # fetched a newly-published report does save it, which the weekly key
-      # could not.
+      # The save key must change whenever there is PROGRESS TO BANK, and not
+      # otherwise. The previous version hashed completed `*.pdf` FILENAMES
+      # only, which made the commonest kind of progress invisible: a night
+      # that downloads 27MB of a 48MB PDF and is then stopped by the seed
+      # budget leaves a `.part` file and the same *.pdf filename set it
+      # started with, so it recomputed the SAME key, collided with the entry
+      # already stored under it, and saved nothing.
+      #
+      # OBSERVED on five consecutive nightlies (runs 34799406076, 34921218282,
+      # 35048000013, 35174426953, 35299414702) — a stalled cache and, with it,
+      # a stalled download:
+      #
+      #   Sep 14  Cache saved with key: seed-pdf-cache-2026-w38-c72cd0b7025eea9d
+      #   Sep 15  Failed to save: Unable to reserve cache with key
+      #             seed-pdf-cache-2026-w38-c72cd0b7025eea9d
+      #   Sep 16  Failed to save: ... (same key)
+      #   Sep 17  Failed to save: ... (same key)
+      #   Sep 18  Failed to save: ... (same key)
+      #
+      #   Sep 15..18 each: "resuming from 27751154 bytes" — byte-identical,
+      #   four nights running. Real progress was made every one of those
+      #   nights and thrown away every one of those nights.
+      #
+      # The fingerprint now covers every file in the directory, so a grown
+      # `.part` and a refreshed TTL sidecar both move the key. See
+      # .github/scripts/pdf_cache_fingerprint.py for the rule and the reasons,
+      # and backend/tests/test_pdf_cache_banks_progress.py, which runs this
+      # step for real over a simulated week.
+      # The period arrives through `env:` rather than being interpolated into
+      # the script. A `${{ }}` inside a run: block is pasted in as text before
+      # the shell sees it, which is the same seam that broke every nightly from
+      # 2026-09-03 — and it makes test_workflow_inline_scripts.py skip the step
+      # instead of checking it.
       - name: Fingerprint the PDF cache
         if: always()
         id: pdf_cache_state
+        env:
+          PDF_CACHE_PERIOD: ${{ steps.pdf_cache_period.outputs.period }}
         run: |
-          fp=$(find backend/data/seeding/cache/pdfs -maxdepth 1 -name '*.pdf' \
-                 -printf '%f\n' 2>/dev/null | sort | sha256sum | cut -c1-16)
-          echo "fingerprint=${fp:-empty}" >> "$GITHUB_OUTPUT"
+          python3 .github/scripts/pdf_cache_fingerprint.py \
+            backend/data/seeding/cache/pdfs \
+            "seed-pdf-cache-${PDF_CACHE_PERIOD}-"
+
+      # Two guards, both of which the old unconditional save needed and did
+      # not have:
+      #
+      # `files > 0` — never store an empty directory. `actions/cache` restores
+      # the NEWEST entry matching the prefix, so an empty snapshot saved by a
+      # run that died before its first download (this step is `if: always()`)
+      # would become that newest entry and delete every banked partial on the
+      # following night. Now that the key tracks content, that save would
+      # succeed rather than collide, so the hazard is real and new.
+      #
+      # `!= cache-matched-key` — when nothing changed, the restored entry is
+      # already exactly what we would upload. Skipping keeps the weekly-key
+      # frugality #175 was after, and keeps "Unable to reserve cache" out of
+      # the log, where it reads as a failure rather than as a no-op.
       - name: Save downloaded source PDFs
-        if: always()
+        if: always() && steps.pdf_cache_state.outputs.files != '0' && steps.pdf_cache_state.outputs.key != steps.restore_pdfs.outputs.cache-matched-key
         uses: actions/cache/save@v4
         with:
           path: backend/data/seeding/cache/pdfs
-          key: seed-pdf-cache-${{ steps.pdf_cache_period.outputs.period }}-${{ steps.pdf_cache_state.outputs.fingerprint }}
+          key: ${{ steps.pdf_cache_state.outputs.key }}
 
   # ══════════════════════════════════════════════════════════════════
   # Step 4: Data validation — verify tables have data and key metrics are sane
