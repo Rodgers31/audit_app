@@ -46,6 +46,65 @@ const QUERY_KEYS = {
   federal: ['audits', 'federal'] as const,
 };
 
+/* ═══════════════════════════════════════════════════════════════════════
+   National Audit Dashboard cache keys — shared by the /audits server
+   prefetch and the client hooks that read it.
+
+   These are exported factories rather than literals for the reason #222
+   found the hard way on /counties: a hand-written key in a server component
+   and the hook's own key are two copies of one contract, and when they drift
+   the prefetched payload is stranded in the HTML under a key nobody reads.
+   The page then renders its `isLoading` spinner and re-fetches over the
+   network what the document already contains.
+
+   `app/audits/page.tsx` builds every one of its prefetch keys through these.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/** Root prefix for every national-dashboard query. */
+export const AUDIT_DASHBOARD_KEY_ROOT = ['audit', 'dashboard'] as const;
+
+/**
+ * Drop keys whose value is `undefined`, and collapse an object with nothing
+ * left onto `undefined`.
+ *
+ * React Query hashes keys with `JSON.stringify`, which renders `undefined` as
+ * `null` but an all-undefined object as `{}` — so two spellings of the same
+ * request land on two cache entries. Only `undefined` is dropped: every param
+ * `getAuditTrends` and `getAuditFindings` send is guarded by a truthiness
+ * check on a defined value (`lib/api/audits.ts:338-365`), so this cannot
+ * change which request a key stands for.
+ */
+function normalizeParams<T extends object>(params?: T): T | undefined {
+  if (!params) return undefined;
+  const entries = Object.entries(params).filter(([, v]) => v !== undefined);
+  return entries.length ? (Object.fromEntries(entries) as T) : undefined;
+}
+
+export const auditDashboardSummaryKey = () => ['audit', 'dashboard', 'summary'] as const;
+
+export const auditRecurringFindingsKey = () => ['audit', 'dashboard', 'recurring'] as const;
+
+export const auditTrendsKey = (params?: { county_id?: number; query_type?: string }) =>
+  ['audit', 'dashboard', 'trends', normalizeParams(params)] as const;
+
+export const auditFindingsKey = (filters?: FindingsFilters) =>
+  ['audit', 'dashboard', 'findings', normalizeParams(filters)] as const;
+
+/**
+ * The findings filter state `AuditsPageClient` renders with before the reader
+ * touches anything — and therefore the only filter shape the server can
+ * usefully prefetch.
+ *
+ * Shared so the two sides cannot drift: the client seeds `useState` from it
+ * and resets to it, and `app/audits/page.tsx` prefetches
+ * `auditFindingsKey(AUDIT_FINDINGS_INITIAL_FILTERS)`. Frozen because the
+ * same object reference is handed to every mount.
+ */
+export const AUDIT_FINDINGS_INITIAL_FILTERS: FindingsFilters = Object.freeze({
+  page: 1,
+  limit: 20,
+});
+
 // Get all audit reports
 export const useAuditReports = (
   filters?: AuditFilters,
@@ -192,7 +251,7 @@ export const useAuditDashboardSummary = (
   options?: Omit<UseQueryOptions<AuditDashboardSummary>, 'queryKey' | 'queryFn'>
 ) => {
   return useQuery({
-    queryKey: ['audit', 'dashboard', 'summary'],
+    queryKey: auditDashboardSummaryKey(),
     queryFn: getAuditDashboardSummary,
     staleTime: 15 * 60 * 1000,
     ...options,
@@ -204,7 +263,7 @@ export const useAuditTrends = (
   options?: Omit<UseQueryOptions<AuditTrendsData>, 'queryKey' | 'queryFn'>
 ) => {
   return useQuery({
-    queryKey: ['audit', 'dashboard', 'trends', params],
+    queryKey: auditTrendsKey(params),
     queryFn: () => getAuditTrends(params),
     staleTime: 15 * 60 * 1000,
     ...options,
@@ -215,7 +274,7 @@ export const useRecurringFindings = (
   options?: Omit<UseQueryOptions<RecurringFindingsData>, 'queryKey' | 'queryFn'>
 ) => {
   return useQuery({
-    queryKey: ['audit', 'dashboard', 'recurring'],
+    queryKey: auditRecurringFindingsKey(),
     queryFn: getRecurringFindings,
     staleTime: 15 * 60 * 1000,
     ...options,
@@ -227,7 +286,7 @@ export const useAuditFindings = (
   options?: Omit<UseQueryOptions<FindingsListData>, 'queryKey' | 'queryFn'>
 ) => {
   return useQuery({
-    queryKey: ['audit', 'dashboard', 'findings', filters],
+    queryKey: auditFindingsKey(filters),
     queryFn: () => getAuditFindings(filters),
     staleTime: 5 * 60 * 1000,
     ...options,
