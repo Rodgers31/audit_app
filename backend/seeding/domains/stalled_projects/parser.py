@@ -23,4 +23,3 @@ def parse(raw: list[dict], settings: Any | None = None) -> list[dict]:
         valid.append(rec)
     logger.info("Parsed %d valid stalled project records", len(valid))
     return valid
-    return valid

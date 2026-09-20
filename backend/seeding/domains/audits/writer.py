@@ -232,4 +232,3 @@ def persist_audit_records(
 
 
 __all__ = ["PersistenceStats", "persist_audit_records"]
-__all__ = ["PersistenceStats", "persist_audit_records"]
