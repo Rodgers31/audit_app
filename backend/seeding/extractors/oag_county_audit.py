@@ -60,6 +60,10 @@ logger = logging.getLogger("seeding.extractors.oag_county_audit")
 
 EXTRACTOR_ID = "oag_county_audit"  # recorded on every extractions row
 
+#: The extractor a consolidated volume is delegated to. Its rows carry
+#: *its* id, not ours, so the early-out below has to look for both.
+DELEGATE_EXTRACTOR_ID = "oag_blue_book"
+
 #: The opinions the Auditor-General issues. Anything else is a parse error,
 #: not a new kind of opinion.
 OPINIONS = ("Unqualified", "Qualified", "Adverse", "Disclaimer")
@@ -481,14 +485,52 @@ def is_consolidated(pages: List[Tuple[int, str]]) -> bool:
     return bool(_CONSOLIDATED_RE.search(re.sub(r"\s+", " ", head)))
 
 
+def _delegate_rows_at_current_md5(session, doc) -> int:
+    """Rows the Blue Book walk has written for *these* bytes; 0 if unknown.
+
+    The page read below exists only to decide who should extract this
+    document. When the delegate has already finished it at the document's
+    current md5 that question is moot — nobody has work to do — so the read
+    can be skipped entirely.
+
+    Keyed on ``doc.meta["extracted_md5"]``, the stamp ``extract_blue_book``
+    writes after a successful extraction, compared against the same
+    ``doc.md5`` it compares. Reading the delegate's own bookkeeping rather
+    than keeping a second record of it is what stops the two from drifting
+    apart.
+
+    Fails closed, returning 0 — "re-read it" — whenever the answer is not
+    positively known. A missing md5 on either side is not evidence that the
+    work is current: ``meta.get(...) == doc.md5`` alone reads None == None
+    as "current" and would skip a document nobody has ever extracted. A
+    re-issued volume moves the md5, the stamp no longer matches, and the
+    read happens as it must.
+    """
+    from models import Extraction
+
+    if not doc.md5:
+        return 0
+    if (doc.meta or {}).get("extracted_md5") != doc.md5:
+        return 0
+    return (
+        session.query(Extraction)
+        .filter(
+            Extraction.source_document_id == doc.id,
+            Extraction.extractor == DELEGATE_EXTRACTOR_ID,
+        )
+        .count()
+    )
+
+
 def extract_county_audit(session, doc, settings) -> dict:
     """Extract ``doc`` (a fetched county audit report) into extraction rows.
 
     One row per finding, ``page_number`` = 1-based PDF page. Idempotent: rows
     already written by this extractor for an unchanged document are left
-    alone. Returns a stats dict; raises ``CountyAuditError`` when the document
-    cannot identify itself, so the caller records a reason rather than
-    publishing a guess.
+    alone, and a consolidated volume already extracted by the delegate is
+    recognised from the database rather than by re-reading the PDF. Returns a
+    stats dict; raises ``CountyAuditError`` when the document cannot identify
+    itself, so the caller records a reason rather than publishing a guess.
     """
     from models import Extraction
 
@@ -509,6 +551,30 @@ def extract_county_audit(session, doc, settings) -> dict:
             "skipped": existing,
             "rejected_cid": 0,
             "reason": "already_extracted",
+        }
+
+    delegated = _delegate_rows_at_current_md5(session, doc)
+    if delegated:
+        # A consolidated volume we already handed to the Blue Book walk. Its
+        # rows carry DELEGATE_EXTRACTOR_ID, so the count above sees none and
+        # would read every page of a ~1000-page PDF (101.3s and 74.2s for
+        # documents 2395 and 2396 in run 35299414702) purely to rediscover
+        # that this is consolidated — after which extract_blue_book skips on
+        # md5 and does nothing. Answer that from the DB instead.
+        logger.info(
+            "oag_county_audit: %s already extracted by %s at md5 %s "
+            "(%d rows) — skipping the page read",
+            doc.url or doc.id,
+            DELEGATE_EXTRACTOR_ID,
+            doc.md5,
+            delegated,
+        )
+        return {
+            "created": 0,
+            "skipped": delegated,
+            "rejected_cid": 0,
+            "reason": "already_extracted_by_delegate",
+            "shape": "consolidated",
         }
 
     pages = read_pages(doc.file_path)
