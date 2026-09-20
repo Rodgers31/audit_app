@@ -69,4 +69,3 @@ def write(records: list[dict], db_session: Any, dry_run: bool = False) -> dict:
 
     logger.info("Stalled projects seeder: updated=%d, skipped=%d", updated, skipped)
     return {"updated": updated, "skipped": skipped}
-    return {"updated": updated, "skipped": skipped}
