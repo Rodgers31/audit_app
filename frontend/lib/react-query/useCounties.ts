@@ -19,12 +19,49 @@ import {
 import { CountyFilters, CountyResponse } from '../api/types';
 import type { CountyFiscalYears } from '../utils';
 
+/** Key prefix for the filtered county list. */
+export const COUNTIES_FILTERED_KEY_ROOT = ['counties', 'filtered'] as const;
+
+/**
+ * Cache key for the filtered county list.
+ *
+ * Shared by the client hook and by the server components that prefetch the
+ * list (`app/page.tsx`, `app/counties/page.tsx`) so the two cannot drift —
+ * when they do, the SSR payload is stranded in the HTML under a key nobody
+ * reads and the page falls back to a client fetch.
+ *
+ * Filters are normalised first: React Query hashes keys with JSON.stringify,
+ * which renders `undefined` as `null` but an all-undefined object as `{}`, so
+ * `getCounties(undefined)` and `getCounties({fiscalYear: undefined})` — which
+ * issue the byte-identical request — were landing on two different cache
+ * entries. `CountiesPageClient` calls `useCounties({fiscalYear: pickedYear})`
+ * with `pickedYear` undefined on first render; without this collapse it never
+ * found what `app/counties/page.tsx` had just prefetched for it.
+ */
+export const countiesFilteredKey = (filters?: CountyFilters) =>
+  ['counties', 'filtered', normalizeCountyFilters(filters)] as const;
+
+/**
+ * Drop keys whose value is `undefined`, and collapse an object with nothing
+ * left onto `undefined`.
+ *
+ * Only `undefined` is dropped. Every param `getCounties` sends is guarded by a
+ * truthiness check on a *defined* value, so this cannot change which request a
+ * key stands for — it only stops two spellings of "no filters" from splitting
+ * the cache.
+ */
+function normalizeCountyFilters(filters?: CountyFilters): CountyFilters | undefined {
+  if (!filters) return undefined;
+  const entries = Object.entries(filters).filter(([, v]) => v !== undefined);
+  return entries.length ? (Object.fromEntries(entries) as CountyFilters) : undefined;
+}
+
 // Query keys for counties
 const QUERY_KEYS = {
   counties: ['counties'] as const,
   county: (id: string) => ['counties', id] as const,
   countyByCode: (code: string) => ['counties', 'code', code] as const,
-  countiesFiltered: (filters?: CountyFilters) => ['counties', 'filtered', filters] as const,
+  countiesFiltered: countiesFilteredKey,
   countiesSearch: (query: string) => ['counties', 'search', query] as const,
   topPerforming: (limit: number) => ['counties', 'top-performing', limit] as const,
   flagged: ['counties', 'flagged'] as const,

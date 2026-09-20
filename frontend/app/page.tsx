@@ -26,6 +26,7 @@ import { getCounties } from '@/lib/api/counties';
 import { getDebtTimeline, getNationalDebtOverview, getNationalLoans } from '@/lib/api/debt';
 import { getFiscalSummary } from '@/lib/api/fiscal';
 import { getQueryClient } from '@/lib/react-query/getQueryClient';
+import { countiesFilteredKey } from '@/lib/react-query/useCounties';
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import HomeDashboardClient from './HomeDashboardClient';
 
@@ -83,7 +84,7 @@ export default async function HomePage() {
           queryFn: () => getNationalLoans(),
         }),
         queryClient.prefetchQuery({
-          queryKey: ['counties', 'filtered', undefined],
+          queryKey: countiesFilteredKey(),
           queryFn: () => getCounties(),
         }),
       ]),
