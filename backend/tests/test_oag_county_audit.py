@@ -409,3 +409,170 @@ class TestWritePath:
         assert again["created"] == 0
         assert again["skipped"] == 4
         assert db_session.query(Extraction).count() == count
+
+
+CONSOLIDATED_HEAD = (
+    "REPORT\nOF\nTHE AUDITOR - GENERAL\nFOR\nTHE COUNTY GOVERNMENTS\nFOR\n"
+    "2020/2021\n"
+)
+
+
+def consolidated_pages():
+    return [(1, CONSOLIDATED_HEAD), (2, "...")]
+
+
+class TestDelegatedVolumeIsNotReRead:
+    """A volume the delegate has already extracted must not be re-read.
+
+    Documents 2395 and 2396 are consolidated volumes, so their extraction
+    rows were written by ``oag_blue_book``, under *that* extractor's id. The
+    early-out at the top of ``extract_county_audit`` counts rows under
+    ``oag_county_audit`` only, finds none, and reads every page of the PDF —
+    101.3s and 74.2s in run 35299414702 — purely to rediscover that the Blue
+    Book walk should handle it. ``extract_blue_book`` then skips on md5 and
+    does nothing. The page read is the waste; the delegation is correct.
+
+    The cheap pre-check reads the state the delegate already maintains
+    (``doc.meta["extracted_md5"]``) under the key it already uses (the md5),
+    so the two cannot drift. It must skip the read only when the delegate's
+    work is known-current, never when the bytes have moved.
+    """
+
+    @staticmethod
+    def _doc(db_session, *, md5, extracted_md5, delegate_rows):
+        from datetime import datetime, timezone
+
+        from models import Country, DocumentType, Extraction, SourceDocument
+
+        country = Country(
+            name="Kenya", iso_code="KEN", currency="KES",
+            timezone="Africa/Nairobi", default_locale="en-KE",
+        )
+        db_session.add(country)
+        db_session.flush()
+        doc = SourceDocument(
+            title="Report of the Auditor-General on County Governments 2020-2021",
+            url="https://www.oagkenya.go.ke/consolidated.pdf",
+            publisher="Office of the Auditor-General",
+            fetch_date=datetime.now(timezone.utc),
+            doc_type=DocumentType.AUDIT,
+            country_id=country.id,
+            file_path=__file__,  # exists; content is stubbed
+            md5=md5,
+            meta={"extracted_md5": extracted_md5} if extracted_md5 else {},
+        )
+        db_session.add(doc)
+        db_session.flush()
+        for n in range(delegate_rows):
+            db_session.add(
+                Extraction(
+                    source_document_id=doc.id,
+                    page_number=n + 1,
+                    extracted_json={"schema": "oag_blue_book/v1"},
+                    extractor="oag_blue_book",
+                    confidence=0.90,
+                )
+            )
+        db_session.flush()
+        return doc
+
+    @staticmethod
+    def _spy_on_read(monkeypatch):
+        """Record every read_pages call; return consolidated text."""
+        from seeding.extractors import oag_blue_book as bb
+        from seeding.extractors import oag_county_audit as mod
+
+        reads = []
+
+        def _read(path, *a, **kw):
+            reads.append(path)
+            return consolidated_pages()
+
+        monkeypatch.setattr(mod, "read_pages", _read)
+        # The delegate is imported at call time, so patch it on its module.
+        delegations = []
+        monkeypatch.setattr(
+            bb,
+            "extract_blue_book",
+            lambda s, d, st: delegations.append(d.id)
+            or {"created": 0, "existing": 986, "rejected_cid": 0,
+                "votes_seen": 0, "skipped_unchanged": True},
+        )
+        return reads, delegations
+
+    MD5 = "f82bd20b45bb54ca6857ddd93a6a16ec"
+
+    def test_an_already_extracted_volume_is_not_re_read(
+        self, db_session, monkeypatch
+    ):
+        """The 101.3s/74.2s page read, with nothing at the end of it."""
+        from seeding.config import SeedingSettings
+        from seeding.extractors import oag_county_audit as mod
+
+        reads, _ = self._spy_on_read(monkeypatch)
+        doc = self._doc(
+            db_session, md5=self.MD5, extracted_md5=self.MD5, delegate_rows=986
+        )
+
+        stats = mod.extract_county_audit(db_session, doc, SeedingSettings())
+
+        assert reads == [], (
+            "read every page of a volume the delegate had already extracted "
+            f"at md5 {self.MD5}"
+        )
+        assert stats["created"] == 0
+
+    def test_a_republished_volume_is_still_re_read(self, db_session, monkeypatch):
+        """New bytes at the same URL must be extracted, not skipped."""
+        from seeding.config import SeedingSettings
+        from seeding.extractors import oag_county_audit as mod
+
+        reads, delegations = self._spy_on_read(monkeypatch)
+        doc = self._doc(
+            db_session,
+            md5="0000000000000000000000000000beef",  # re-issued
+            extracted_md5=self.MD5,
+            delegate_rows=986,
+        )
+
+        mod.extract_county_audit(db_session, doc, SeedingSettings())
+
+        assert len(reads) == 1, "a republished volume was skipped"
+        assert delegations == [doc.id]
+
+    def test_a_volume_with_no_md5_is_still_re_read(self, db_session, monkeypatch):
+        """Fail closed: absent md5 is not evidence the work is current.
+
+        ``doc.md5`` is nullable, and ``meta.get("extracted_md5")`` is None
+        when unset — so a bare equality test reads None == None as "current"
+        and skips a document nobody has ever extracted.
+        """
+        from seeding.config import SeedingSettings
+        from seeding.extractors import oag_county_audit as mod
+
+        reads, delegations = self._spy_on_read(monkeypatch)
+        doc = self._doc(
+            db_session, md5=None, extracted_md5=None, delegate_rows=986
+        )
+
+        mod.extract_county_audit(db_session, doc, SeedingSettings())
+
+        assert len(reads) == 1, "skipped a volume with no md5 to compare"
+        assert delegations == [doc.id]
+
+    def test_a_volume_the_delegate_never_touched_is_read(
+        self, db_session, monkeypatch
+    ):
+        """No delegate rows: the shape is genuinely unknown, so read it."""
+        from seeding.config import SeedingSettings
+        from seeding.extractors import oag_county_audit as mod
+
+        reads, delegations = self._spy_on_read(monkeypatch)
+        doc = self._doc(
+            db_session, md5=self.MD5, extracted_md5=self.MD5, delegate_rows=0
+        )
+
+        mod.extract_county_audit(db_session, doc, SeedingSettings())
+
+        assert len(reads) == 1, "skipped a volume with no extractions at all"
+        assert delegations == [doc.id]
