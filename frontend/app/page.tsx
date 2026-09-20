@@ -26,6 +26,7 @@ import { getCounties } from '@/lib/api/counties';
 import { getDebtTimeline, getNationalDebtOverview, getNationalLoans } from '@/lib/api/debt';
 import { getFiscalSummary } from '@/lib/api/fiscal';
 import { getQueryClient } from '@/lib/react-query/getQueryClient';
+import { federalAuditsKey } from '@/lib/react-query/useAudits';
 import { countiesFilteredKey } from '@/lib/react-query/useCounties';
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import HomeDashboardClient from './HomeDashboardClient';
@@ -72,7 +73,10 @@ export default async function HomePage() {
           queryFn: () => getFiscalSummary(),
         }),
         queryClient.prefetchQuery({
-          queryKey: ['audits', 'federal'],
+          // Shared factory, not a literal: `useFederalAudits` reads this
+          // exact key for `AuditReportsSection`, and this is the prefetch
+          // holding the 886KB payload.
+          queryKey: federalAuditsKey(),
           queryFn: () => getFederalAudits(),
         }),
         queryClient.prefetchQuery({

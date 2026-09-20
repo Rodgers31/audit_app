@@ -28,6 +28,22 @@ import {
 } from '../api/audits';
 import { AuditFilters, AuditReportResponse } from '../api/types';
 
+/**
+ * Cache key for the national-government audit findings.
+ *
+ * Exported as a factory because `app/page.tsx` prefetches this query on the
+ * server and `useFederalAudits` reads it on the client — two copies of one
+ * contract if the key is written out twice. It was written out twice: the
+ * homepage held the literal `['audits','federal']` and matched only by
+ * coincidence. That coincidence is what failed on `/counties` (#222) and on
+ * the `/audits` half of #224, and this key is the one guarding the 886KB
+ * payload, so it is the expensive one to get wrong.
+ *
+ * `QUERY_KEYS.federal` is this same call, so the hook and the prefetch
+ * resolve to one definition rather than two equal ones.
+ */
+export const federalAuditsKey = () => ['audits', 'federal'] as const;
+
 // Query keys for audits
 const QUERY_KEYS = {
   audits: ['audits'] as const,
@@ -43,7 +59,7 @@ const QUERY_KEYS = {
   ) => ['audits', 'county', countyId, 'list', params] as const,
   statistics: ['audits', 'statistics'] as const,
   fiscalYears: ['audits', 'fiscal-years'] as const,
-  federal: ['audits', 'federal'] as const,
+  federal: federalAuditsKey(),
 };
 
 /* ═══════════════════════════════════════════════════════════════════════

@@ -46,9 +46,11 @@ import {
   auditFindingsKey,
   auditRecurringFindingsKey,
   auditTrendsKey,
+  federalAuditsKey,
   useAuditDashboardSummary,
   useAuditFindings,
   useAuditTrends,
+  useFederalAudits,
   useRecurringFindings,
 } from '@/lib/react-query/useAudits';
 
@@ -59,10 +61,13 @@ const TRENDS = { years: [2023, 2024], findings_per_year: { '2023': 10, '2024': 1
 const RECURRING = { recurring: [] };
 const FINDINGS = { total: 2312, page: 1, limit: 20, findings: [{ id: 1 }] };
 
+const FEDERAL = { report_title: 'Report of the Auditor-General', findings: [{ id: 1 }] };
+
 const getAuditDashboardSummary = jest.fn();
 const getAuditTrends = jest.fn();
 const getRecurringFindings = jest.fn();
 const getAuditFindings = jest.fn();
+const getFederalAudits = jest.fn();
 
 jest.mock('@/lib/api/audits', () => ({
   __esModule: true,
@@ -71,6 +76,7 @@ jest.mock('@/lib/api/audits', () => ({
   getAuditTrends: (...a: unknown[]) => getAuditTrends(...a),
   getRecurringFindings: (...a: unknown[]) => getRecurringFindings(...a),
   getAuditFindings: (...a: unknown[]) => getAuditFindings(...a),
+  getFederalAudits: (...a: unknown[]) => getFederalAudits(...a),
 }));
 
 const allFetchers = () => [
@@ -78,6 +84,7 @@ const allFetchers = () => [
   getAuditTrends,
   getRecurringFindings,
   getAuditFindings,
+  getFederalAudits,
 ];
 
 beforeEach(() => {
@@ -86,6 +93,7 @@ beforeEach(() => {
   getAuditTrends.mockResolvedValue(TRENDS);
   getRecurringFindings.mockResolvedValue(RECURRING);
   getAuditFindings.mockResolvedValue(FINDINGS);
+  getFederalAudits.mockResolvedValue(FEDERAL);
 });
 
 /**
@@ -251,5 +259,53 @@ describe('audit dashboard cache keys', () => {
     ).toBe(hashKey(auditFindingsKey(AUDIT_FINDINGS_INITIAL_FILTERS)));
 
     expect(hashKey(auditTrendsKey({ county_id: undefined }))).toBe(hashKey(auditTrendsKey()));
+  });
+});
+
+/* ── the homepage's federal prefetch — the last hand-written SSR key ─── */
+
+/**
+ * `/audits` no longer prefetches `['audits','federal']`, but `/` still does,
+ * and that prefetch is the one carrying the 886KB payload.
+ *
+ * `app/page.tsx` used to write the key out as a literal while
+ * `useFederalAudits` read `QUERY_KEYS.federal`. The two matched only because
+ * they happened to be equal — the same coincidence that stopped holding on
+ * `/counties` (#222). Both now resolve to `federalAuditsKey()`.
+ */
+describe('homepage federal audits prefetch', () => {
+  /** Exactly what `app/page.tsx` passes to `prefetchQuery`. */
+  const homepagePrefetchKey = () => federalAuditsKey();
+
+  it('serves the SSR-prefetched federal payload to AuditReportsSection — no loading state', async () => {
+    const server = new QueryClient();
+    await server.prefetchQuery({
+      queryKey: homepagePrefetchKey(),
+      queryFn: () => getFederalAudits(),
+    });
+    const state = dehydrate(server);
+    getFederalAudits.mockClear();
+
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: 15 * 60 * 1000 } },
+    });
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <QueryClientProvider client={client}>
+        <HydrationBoundary state={state}>{children}</HydrationBoundary>
+      </QueryClientProvider>
+    );
+
+    const { result } = renderHook(() => useFederalAudits(), { wrapper });
+
+    // `AuditReportsSection` gates on this. If the homepage prefetch key ever
+    // drifts from the hook's, 886KB sits unread in a 1.32MB document and the
+    // component re-fetches all of it over the network.
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.data).toEqual(FEDERAL);
+    expect(getFederalAudits).not.toHaveBeenCalled();
+  });
+
+  it('pins the serialised key, which the hook and the prefetch must share', () => {
+    expect(hashKey(federalAuditsKey())).toBe('["audits","federal"]');
   });
 });
