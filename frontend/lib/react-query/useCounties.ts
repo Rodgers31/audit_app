@@ -196,13 +196,25 @@ export const useCountyAccountability = (
   });
 };
 
+/** Shared with the `/transparency` server prefetch — see `nationalMoneyFlowKey`. */
+export const countyFiscalYearsKey = () => ['counties', 'fiscal-years'] as const;
+
+/**
+ * The picker pool behind `/counties/compare`.
+ *
+ * Exported so `app/counties/compare/page.tsx` (server), `CompareContent` and
+ * the Suspense fallback that reserves its space all name the same entry
+ * instead of three literals that can drift.
+ */
+export const compareCountiesKey = () => ['counties', 'all-for-compare'] as const;
+
 // Which fiscal years county budget data exists for, and the one to show
 // first. Long stale time: this only changes when a new report is ingested.
 export const useCountyFiscalYears = (
   options?: Omit<UseQueryOptions<CountyFiscalYears>, 'queryKey' | 'queryFn'>
 ) => {
   return useQuery({
-    queryKey: ['counties', 'fiscal-years'] as const,
+    queryKey: countyFiscalYearsKey(),
     queryFn: getCountyFiscalYears,
     staleTime: 30 * 60 * 1000,
     ...options,

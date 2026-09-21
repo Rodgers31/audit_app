@@ -38,7 +38,7 @@ import {
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 /* ═══════════ Helpers ═══════════ */
 
@@ -275,18 +275,19 @@ export default function TransparencyPage() {
   // 2026, a year in no list at all — so the page fired two money-flow requests
   // for a year with nothing behind it before correcting to years[0], the CRA
   // projection. It now waits for the API's own answer and asks once.
-  const [selectedYear, setSelectedYear] = useState<string>('');
-  useEffect(() => {
-    // Correct the selection whenever it is not one of the years the picker
-    // offers — which covers both "nothing chosen yet" and a year dropped from
-    // the list. Seeding on first render alone left the page parked on a year
-    // absent from its own picker, no pill highlighted, "No data yet" body
-    // (credibility audit F37).
-    if (!defaultYear) return;
-    if (!selectedYear || !years.includes(selectedYear)) {
-      setSelectedYear(defaultYear);
-    }
-  }, [selectedYear, defaultYear, years]);
+  //
+  // Resolved DURING RENDER rather than in an effect. The invariant is the same
+  // one the effect enforced — never sit on a year absent from the picker, which
+  // covers both "nothing chosen yet" and a year dropped from the list
+  // (credibility audit F37) — but an effect cannot run on the server, and it
+  // does not run until after the client has mounted. So the first render always
+  // asked for `''`, both money-flow queries were `enabled: false`, and the year
+  // the server had just prefetched for was unreachable: the page rendered its
+  // skeletons, hydrated, and only then went looking for data. Deriving it makes
+  // the server's own render ask for the prefetched year (#221 finding #6).
+  const [pickedYear, setPickedYear] = useState<string>('');
+  const selectedYear =
+    pickedYear && years.includes(pickedYear) ? pickedYear : (defaultYear ?? '');
   const [sortKey, setSortKey] = useState<SortKey>('efficiency');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [searchQuery, setSearchQuery] = useState('');
@@ -453,7 +454,7 @@ export default function TransparencyPage() {
         <FiscalYearPicker
           years={pickerYears}
           selected={selectedYear}
-          onSelect={setSelectedYear}
+          onSelect={setPickedYear}
         />
       </Section>
 
