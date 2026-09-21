@@ -11,7 +11,7 @@ import PageShell from '@/components/layout/PageShell';
 import api from '@/lib/api/axios';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import { Activity, Clock, Database, ExternalLink, FileText, Globe, Loader2 } from 'lucide-react';
+import { Activity, Clock, Database, ExternalLink, FileText, Globe } from 'lucide-react';
 
 interface SourceSummary {
   publisher: string;
@@ -76,6 +76,42 @@ function freshnessColor(iso: string | null): string {
   return 'text-rose-600';
 }
 
+/**
+ * Reserved space for a figure that has not arrived, in place of the figure.
+ *
+ * NOT a value. The strip used to render `{total.toLocaleString()}` with
+ * `total = data?.total_documents || 0`, so a reader on a cold load — and
+ * anyone reading the prerendered HTML — saw "Documents indexed 0" and
+ * "Publishing agencies 0" for as long as the fetch took. Those are the same
+ * two slots that later say 2,330 and 11; nothing distinguished the zero that
+ * means "nobody has counted yet" from a zero that was counted.
+ *
+ * `h-8` is the line box of the `text-2xl` figure it stands in for, so the
+ * strip is the same height either way and the page below it does not move.
+ */
+function ReservedFigure({ label }: { label: string }) {
+  return (
+    <div
+      className='h-8 w-24 rounded bg-gray-200/70 dark:bg-surface-elevated animate-pulse'
+      role='status'
+      aria-label={`${label} — still loading`}
+    />
+  );
+}
+
+/** One placeholder card. Height is deliberately a little UNDER the real card's:
+ *  reserving less than the content needs pushes what follows off-screen and
+ *  costs nothing, while reserving MORE drags visible content upward when the
+ *  data lands, which is a layout shift in the other direction. */
+function SkeletonCard({ className = '' }: { className?: string }) {
+  return (
+    <div
+      aria-hidden='true'
+      className={`rounded-lg border border-gray-100 dark:border-neutral-border bg-gray-50/60 dark:bg-surface-elevated/40 animate-pulse ${className}`}
+    />
+  );
+}
+
 function DocTypeBadge({ type, count }: { type: string; count: number }) {
   const palette: Record<string, string> = {
     budget: 'bg-blue-50 text-blue-700 border-blue-200',
@@ -99,8 +135,9 @@ export default function SourcesPage() {
   });
 
   const sources = data?.sources || [];
-  // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- document count; zero documents is a real state and has its own empty state below
-  const total = data?.total_documents || 0;
+  /** `null` until the manifest answers. A real 0 is a real answer and still
+   *  prints as 0 — it is the *absence* of an answer that must not. */
+  const total = data ? data.total_documents : null;
 
   /**
    * Distinct publishing BODIES, not distinct manifest rows.
@@ -137,7 +174,7 @@ export default function SourcesPage() {
 
   // Data-health grid — surfaces the /provenance/health endpoint (previously
   // unused by any page; audit §2.9). Shows live completeness of each dataset.
-  const { data: health } = useQuery<HealthResponse>({
+  const { data: health, isLoading: healthLoading } = useQuery<HealthResponse>({
     queryKey: ['provenance', 'health'],
     queryFn: async () => (await api.get<HealthResponse>('/provenance/health')).data,
     staleTime: 10 * 60 * 1000,
@@ -159,9 +196,13 @@ export default function SourcesPage() {
               <div className='text-xs uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-semibold'>
                 Documents indexed
               </div>
-              <div className='text-2xl font-bold text-gray-900 dark:text-neutral-text tabular-nums'>
-                {total.toLocaleString()}
-              </div>
+              {total == null ? (
+                <ReservedFigure label='Documents indexed' />
+              ) : (
+                <div className='text-2xl font-bold text-gray-900 dark:text-neutral-text tabular-nums'>
+                  {total.toLocaleString()}
+                </div>
+              )}
             </div>
           </div>
           <div className='flex items-center gap-3'>
@@ -172,9 +213,13 @@ export default function SourcesPage() {
               <div className='text-xs uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-semibold'>
                 Publishing agencies
               </div>
-              <div className='text-2xl font-bold text-gray-900 dark:text-neutral-text tabular-nums'>
-                {distinctAgencyCount ?? sources.length}
-              </div>
+              {data == null ? (
+                <ReservedFigure label='Publishing agencies' />
+              ) : (
+                <div className='text-2xl font-bold text-gray-900 dark:text-neutral-text tabular-nums'>
+                  {distinctAgencyCount ?? sources.length}
+                </div>
+              )}
             </div>
           </div>
           <div className='flex-1 min-w-[220px] text-sm text-gray-600 dark:text-neutral-muted leading-relaxed sm:pl-6 sm:border-l border-gray-100 dark:border-neutral-border'>
@@ -184,7 +229,52 @@ export default function SourcesPage() {
           </div>
         </div>
 
-        {/* Data health grid — surfaces /provenance/health */}
+        {/*
+          Data health grid — surfaces /provenance/health.
+
+          While it is in flight the block renders its own (static) heading and
+          explanation with a placeholder grid under it, rather than nothing at
+          all. Rendering nothing is what made this page shift: the block
+          appeared above the fold once the fetch landed and shoved everything
+          below it off-screen — 0.197 of the page's 0.374 came from that one
+          insertion (#221 finding #6).
+
+          The placeholder count is chosen per breakpoint so it never reserves
+          MORE than the content needs — twelve at `lg` (four rows of three,
+          which is what the endpoint's ten real cards also make), nine below
+          it (five rows of two at `sm`, again matching ten; nine rows against
+          ten on mobile). Under-reserving pushes what follows below the fold
+          and costs nothing; over-reserving would pull visible content upward
+          when the data lands, which is a shift in the other direction.
+        */}
+        {healthLoading && (
+          <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-5'>
+            <div className='flex items-center gap-2 mb-1'>
+              <Activity size={16} className='text-gov-forest dark:text-emerald-100' />
+              <h2 className='text-base font-bold text-gray-900 dark:text-neutral-text'>Data health</h2>
+            </div>
+            <p className='text-xs text-gray-500 dark:text-neutral-muted/80 mb-4 max-w-2xl'>
+              Reading how many rows each dataset holds and how long since any of
+              them changed.
+            </p>
+            <div
+              className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'
+              role='status'
+              aria-label='Data health — still loading'>
+              {Array.from({ length: 9 }, (_, i) => (
+                <SkeletonCard key={i} className='h-[110px]' />
+              ))}
+              {/* Three more only at `lg`, where the grid is 3 columns: 9 cards
+                  would be 3 rows against the real 4, and 12 is 4 — the same
+                  row count, so the reserve is exact there. At `sm` these are
+                  hidden and 9 cards is 5 rows, which is what 10 real cards
+                  also make. */}
+              {Array.from({ length: 3 }, (_, i) => (
+                <SkeletonCard key={`lg-${i}`} className='h-[110px] hidden lg:block' />
+              ))}
+            </div>
+          </div>
+        )}
         {healthTables.length > 0 && (
           <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-5'>
             <div className='flex items-center gap-2 mb-1'>
@@ -239,11 +329,24 @@ export default function SourcesPage() {
           </div>
         )}
 
-        {/* Loading / Error */}
+        {/*
+          Loading / Error.
+
+          The manifest's own placeholder is card-shaped for the same reason:
+          an 84px spinner box standing in for a 1,657px grid is what pushed
+          the methodology footer out of the viewport. Six cards against the
+          eighteen the endpoint returns — three rows at `lg` against nine, six
+          against eighteen on mobile — so, again, never more than the content.
+        */}
         {isLoading && (
-          <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-8 flex items-center justify-center gap-3 text-gray-500 dark:text-neutral-muted/80'>
-            <Loader2 className='animate-spin' size={18} />
-            <span>Loading source manifest…</span>
+          <div
+            className='grid grid-cols-1 lg:grid-cols-2 gap-4'
+            role='status'
+            aria-label='Loading source manifest'>
+            <span className='sr-only'>Loading source manifest…</span>
+            {Array.from({ length: 6 }, (_, i) => (
+              <SkeletonCard key={i} className='h-[160px]' />
+            ))}
           </div>
         )}
         {error && (

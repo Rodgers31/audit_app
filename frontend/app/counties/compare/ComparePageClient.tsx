@@ -14,6 +14,7 @@ import api from '@/lib/api/axios';
 import { useLang } from '@/lib/i18n/LangProvider';
 import type { TranslationKey } from '@/lib/i18n/messages';
 import type { BudgetSource } from '@/types';
+import { compareCountiesKey } from '@/lib/react-query/useCounties';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, Plus, X } from 'lucide-react';
 import Link from 'next/link';
@@ -193,6 +194,103 @@ function CompareRow({ label, values, highlight, sublabel }: RowProps) {
   );
 }
 
+/**
+ * The county list, behind one key shared by `CompareContent` and
+ * `CompareFallback`.
+ *
+ * `app/counties/compare/page.tsx` prefetches this exact key on the server, so
+ * both the boundary's fallback and its content are served from the hydrated
+ * cache and render the same provenance note — a hand-written second copy of
+ * the key is how `/counties` stranded its payload in the HTML (#222).
+ */
+function useCompareCounties() {
+  return useQuery<CountySummary[]>({
+    queryKey: compareCountiesKey(),
+    queryFn: async () => (await api.get<CountySummary[]>('/counties?limit=50')).data,
+    staleTime: 15 * 60 * 1000,
+  });
+}
+
+/** Shown until two counties are picked — static copy, no data. */
+function CompareEmptyState() {
+  const { t } = useLang();
+  return (
+    <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-12 text-center'>
+      <div className='text-base font-semibold text-gray-700 dark:text-neutral-muted mb-1'>
+        {t('compare.empty.title')}
+      </div>
+      <p className='text-sm text-gray-500 dark:text-neutral-muted/80 max-w-md mx-auto'>
+        {t('compare.empty.body')}
+      </p>
+    </div>
+  );
+}
+
+/** The "reading this table" legend under the comparison — static copy. */
+function CompareReadingNote() {
+  const { t } = useLang();
+  return (
+    <div className='bg-gov-forest/5 border border-gov-forest/20 rounded-xl p-5 text-sm text-gray-700 dark:text-neutral-muted leading-relaxed'>
+      <p className='font-semibold text-gray-900 dark:text-neutral-text mb-1'>
+        {t('compare.footer.title')}
+      </p>
+      <p>{t('compare.footer.body')}</p>
+    </div>
+  );
+}
+
+/**
+ * What the prerendered document shows while the URL-reading subtree is
+ * client-rendered.
+ *
+ * It reserves the height of the state the page opens in rather than guessing
+ * at one: three of its four blocks ARE the real components — the provenance
+ * note off the same hydrated query, and the two static copy blocks — so their
+ * height is whatever the real layout computes at this viewport and cannot
+ * drift from it. Only the picker is a placeholder, and a `<select>`'s height
+ * comes from its padding and line-height, not from its options, so the same
+ * wrapper with the same label and an empty control-shaped box is the same
+ * height as the picker that replaces it.
+ *
+ * Nothing here stands in for a figure. The placeholder box is empty — no `0`,
+ * no `—` — because a reader must not be able to mistake reserved space for a
+ * number that was measured.
+ */
+function CompareFallback() {
+  const { t } = useLang();
+  const { data: all } = useCompareCounties();
+  return (
+    <div className='space-y-6'>
+      <ModelledDataNote budgetSource={(all || []).map((c) => c.budget_source)} />
+      <div
+        aria-hidden='true'
+        className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-4 flex flex-wrap items-end gap-3'>
+        {[0, 1].map((i) => (
+          <div key={i} className='flex-1 min-w-[200px] relative'>
+            <label className='text-[11px] uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-semibold block mb-1'>
+              {t('compare.county_label')} {i + 1}
+            </label>
+            <div className='flex items-center gap-2'>
+              <div
+                data-testid='compare-picker-placeholder'
+                className='flex-1 text-sm border border-gray-200 dark:border-neutral-border rounded-lg px-3 py-2 bg-gray-50 dark:bg-surface-elevated'>
+                {/* Control-shaped, deliberately empty: reserved space, not a value. */}
+                &nbsp;
+              </div>
+            </div>
+          </div>
+        ))}
+        <span className='text-sm font-semibold inline-flex items-center gap-1 px-3 py-2 opacity-0'>
+          <Plus size={14} />
+          {t('compare.add_county')}
+        </span>
+      </div>
+      <CompareEmptyState />
+      <CompareReadingNote />
+    </div>
+  );
+}
+
 function CompareContent() {
   const { t } = useLang();
   const router = useRouter();
@@ -205,11 +303,7 @@ function CompareContent() {
     return ['', ''];
   });
 
-  const { data: all, isLoading } = useQuery<CountySummary[]>({
-    queryKey: ['counties', 'all-for-compare'],
-    queryFn: async () => (await api.get<CountySummary[]>('/counties?limit=50')).data,
-    staleTime: 15 * 60 * 1000,
-  });
+  const { data: all, isLoading } = useCompareCounties();
 
   const byId = useMemo(() => {
     const m: Record<string, CountySummary> = {};
@@ -267,14 +361,7 @@ function CompareContent() {
           />
 
           {picked.length < 2 ? (
-            <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-12 text-center'>
-              <div className='text-base font-semibold text-gray-700 dark:text-neutral-muted mb-1'>
-                {t('compare.empty.title')}
-              </div>
-              <p className='text-sm text-gray-500 dark:text-neutral-muted/80 max-w-md mx-auto'>
-                {t('compare.empty.body')}
-              </p>
-            </div>
+            <CompareEmptyState />
           ) : (
             <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border overflow-hidden'>
               <ResponsiveTable>
@@ -517,10 +604,7 @@ function CompareContent() {
             </div>
           )}
 
-          <div className='bg-gov-forest/5 border border-gov-forest/20 rounded-xl p-5 text-sm text-gray-700 dark:text-neutral-muted leading-relaxed'>
-            <p className='font-semibold text-gray-900 dark:text-neutral-text mb-1'>{t('compare.footer.title')}</p>
-            <p>{t('compare.footer.body')}</p>
-          </div>
+          <CompareReadingNote />
         </>
       )}
     </div>
@@ -528,16 +612,7 @@ function CompareContent() {
 }
 
 export default function ComparePage() {
-  return (
-    <Suspense
-      fallback={
-        <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-8 flex items-center justify-center gap-3 text-gray-500 dark:text-neutral-muted/80'>
-          <Loader2 className='animate-spin' size={18} />
-        </div>
-      }>
-      <ComparePageInner />
-    </Suspense>
-  );
+  return <ComparePageInner />;
 }
 
 function ComparePageInner() {
@@ -547,7 +622,24 @@ function ComparePageInner() {
       title={t('compare.title')}
       subtitle={t('compare.subtitle')}
       back={{ href: '/counties', label: t('common.all_counties') }}>
-      <CompareContent />
+      {/*
+        The Suspense boundary sits HERE, not around the whole page.
+        `CompareContent` calls `useSearchParams()`, which on a statically
+        prerendered route opts its subtree out of server rendering; the
+        boundary is what scopes that bailout, so whatever it wraps is all the
+        prerendered document can contain. It used to wrap `ComparePageInner` —
+        PageShell and every heading with it — behind an 84px spinner, so the
+        served HTML was the nav, an 84px box and the footer, and the footer
+        then got shoved from y=84 to y=988 the moment the client rendered the
+        page. One layout shift, 0.269, on a 0.1 budget (#221 finding #6).
+
+        PageShell does not read the URL, so it is outside the boundary and
+        server-renders. `CompareFallback` reserves the height of the state the
+        page opens in, so the swap the boundary still performs costs nothing.
+      */}
+      <Suspense fallback={<CompareFallback />}>
+        <CompareContent />
+      </Suspense>
     </PageShell>
   );
 }
