@@ -3,6 +3,8 @@
 import InfoTip from '@/components/InfoTip';
 import { SkeletonTable } from '@/components/ui/Skeleton';
 import { NationalLoan } from '@/lib/api/debt';
+import { annualCostCell, annualDebtServiceHeadline, rateCell } from '@/lib/debt/loanInterest';
+import { displayLenderName } from '@/lib/debt/lenderName';
 import { useLang } from '@/lib/i18n/LangProvider';
 import type { TranslationKey } from '@/lib/i18n/messages';
 import { useNationalLoans } from '@/lib/react-query/useDebt';
@@ -15,7 +17,14 @@ import DebtExplainerModal from './DebtExplainerModal';
 // fmtKES imported from @/lib/utils — expects raw KES input (Loan table data)
 
 function shortLender(name: string): string {
-  return name
+  // IDS rows are "<class> (<creditor>)": the parenthetical IS the creditor,
+  // and the type badge beside it already says the class. Stripping every
+  // parenthetical (the old rule, written for the fixture's bucket names)
+  // left fourteen rows reading "Bilateral" and "Multilateral )".
+  const clean = displayLenderName(name);
+  const creditor = /^(?:Multilateral|Bilateral|Commercial banks)\s*\((.+)\)$/.exec(clean);
+  if (creditor) return creditor[1];
+  return clean
     .replace(/\s*\(.*?\)\s*/g, ' ')
     .replace('Treasury Bonds ', 'T-Bonds ')
     .replace('Treasury Bills ', 'T-Bills ')
@@ -85,6 +94,11 @@ export default function NationalLoansCard() {
   /** Max visible rows — tuned so card height ≈ BudgetSnapshotCard */
   const VISIBLE = 14;
   const topLoans = sorted.slice(0, VISIBLE);
+  // The published debt-service figure for the current fiscal year, from the
+  // same row /fiscal/summary calls current. This card used to total its own
+  // rows' "annual cost" — three April-2025 fixture rates × three balances,
+  // KES 1.02T — beside rows reading 0.00% (issue #235).
+  const service = annualDebtServiceHeadline(data.annual_debt_service);
 
   return (
     <motion.div
@@ -129,7 +143,7 @@ export default function NationalLoansCard() {
               <DebtExplainerModal context='loans' />
             </div>
             <span className='text-lg font-bold text-gov-copper tabular-nums leading-none'>
-              {fmtKES(data.total_outstanding)}
+              {data.total_outstanding != null ? fmtKES(data.total_outstanding) : '—'}
             </span>
           </div>
           <div className='rounded-xl bg-gov-gold/[0.06] border border-neutral-border/30 px-4 py-3'>
@@ -139,8 +153,16 @@ export default function NationalLoansCard() {
                 {t('home.loans.annual_service')}
               </span>
             </div>
-            <span className='text-lg font-bold text-gov-gold tabular-nums leading-none'>
-              {fmtKES(data.total_annual_service_cost)}
+            <span
+              className='text-lg font-bold text-gov-gold tabular-nums leading-none'
+              title={service.title}
+              data-testid='loans-annual-debt-service'>
+              {service.value != null ? fmtKES(service.value) : '—'}
+            </span>
+            <span className='block text-[10px] text-neutral-muted mt-1'>
+              {service.period
+                ? `${service.period} · ${service.sourceTitle ?? 'interest + principal'}`
+                : 'Not published'}
             </span>
           </div>
         </div>
@@ -186,16 +208,37 @@ export default function NationalLoansCard() {
                 <span className='text-xs font-bold text-gov-dark dark:text-white tabular-nums flex-shrink-0'>
                   {fmtKES(loan.outstanding_numeric)}
                 </span>
-                <span className='text-[11px] text-neutral-muted tabular-nums flex-shrink-0'>
-                  {loan.interest_rate}
-                </span>
-                <span className='text-[11px] font-semibold text-gov-copper tabular-nums flex-shrink-0 w-12 text-right'>
-                  {fmtKES(loan.annual_service_cost)}
-                </span>
+                {(() => {
+                  // Absent is "—" with the reason on hover, never 0.00% / KES 0.
+                  const rate = rateCell(loan);
+                  const cost = annualCostCell(loan);
+                  return (
+                    <>
+                      <span
+                        className='text-[11px] text-neutral-muted tabular-nums flex-shrink-0'
+                        title={rate.title}>
+                        {rate.value != null ? `${rate.value.toFixed(2)}%` : '—'}
+                      </span>
+                      <span
+                        className='text-[11px] font-semibold text-gov-copper tabular-nums flex-shrink-0 w-12 text-right'
+                        title={cost.tag ? `${cost.tag}: ${cost.title}` : cost.title}>
+                        {cost.value != null ? fmtKES(cost.value) : '—'}
+                        {cost.tag === 'modelled' ? '*' : ''}
+                      </span>
+                    </>
+                  );
+                })()}
               </motion.div>
             );
           })}
         </div>
+
+        {/* A published KES 0 (IDS reports no interest paid to a few creditors
+            in the year) must not look like the old manufactured zero. */}
+        <p className='mt-2 text-[10px] leading-snug text-neutral-muted'>
+          Rate: — where no publisher gives one. Interest: paid in the year World Bank IDS
+          reports; * modelled as balance × a published CBK rate. Hover a figure for its source.
+        </p>
 
         {data.loans.length > VISIBLE && (
           <Link

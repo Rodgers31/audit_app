@@ -19,10 +19,14 @@ import {
 import { buildDebtServiceSeries, yearMissingRevenue } from '@/lib/debt/debtServiceSeries';
 import { useFiscalSummary } from '@/lib/react-query/useFiscal';
 import { apiClient } from '@/lib/api/axios';
+import type { NationalLoan } from '@/lib/api/debt';
 import {
   computeRevenueAllocation,
+  fiscalSourceLine,
   formatHeadlineKes,
+  ratioWorking,
 } from '@/lib/debt/revenueAllocation';
+import { annualCostCell, rateCell, sortLoans } from '@/lib/debt/loanInterest';
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 import {
   AlertTriangle,
@@ -156,6 +160,53 @@ function Sparkline({
 }
 
 /* ═══════════════════════════════════════════════════════
+   Register cells — a figure, its basis tag, or "—" with the reason.
+   See lib/debt/loanInterest for the rules (issue #235).
+   ═══════════════════════════════════════════════════════ */
+
+function FigureText({
+  cell,
+  kind,
+  className = '',
+}: {
+  cell: ReturnType<typeof rateCell>;
+  kind: 'rate' | 'kes';
+  className?: string;
+}) {
+  if (cell.value == null) {
+    return (
+      <span className={`${className} text-neutral-muted`} title={cell.title} aria-label={`Not published: ${cell.title}`}>
+        —
+      </span>
+    );
+  }
+  return (
+    <span className={className} title={cell.title}>
+      {kind === 'rate' ? `${cell.value.toFixed(2)}%` : fmtKES(cell.value)}
+      {cell.tag && (
+        <span className='ml-1 text-[10px] font-normal text-neutral-muted'>{cell.tag}</span>
+      )}
+    </span>
+  );
+}
+
+function RateTd({ loan }: { loan: NationalLoan }) {
+  return (
+    <td className='px-4 py-3 text-xs text-right'>
+      <FigureText cell={rateCell(loan)} kind='rate' className='text-gov-copper tabular-nums' />
+    </td>
+  );
+}
+
+function CostTd({ loan }: { loan: NationalLoan }) {
+  return (
+    <td className='px-4 py-3 text-xs text-right'>
+      <FigureText cell={annualCostCell(loan)} kind='kes' className='text-neutral-muted tabular-nums' />
+    </td>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
    MAIN PAGE
    ═══════════════════════════════════════════════════════ */
 
@@ -274,24 +325,12 @@ export default function NationalDebtPage() {
     };
   }, [overview, fetchedPopulation]);
 
-  const loans = useMemo(() => {
-    if (!loansResp?.loans) return [];
-    const arr = [...loansResp.loans];
-    if (loanSort === 'rate') {
-      arr.sort((a, b) => {
-        const rA = parseFloat((a.interest_rate || '0').replace('%', ''));
-        const rB = parseFloat((b.interest_rate || '0').replace('%', ''));
-        return rB - rA;
-      });
-    } else if (loanSort === 'service') {
-      // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- sort comparator
-      arr.sort((a, b) => (b.annual_service_cost || 0) - (a.annual_service_cost || 0));
-    } else {
-      // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- sort comparator
-      arr.sort((a, b) => (b.outstanding_numeric || 0) - (a.outstanding_numeric || 0));
-    }
-    return arr;
-  }, [loansResp, loanSort]);
+  // Absent rates and costs sort LAST. The old comparator read them as 0,
+  // which ranked "no publisher gives a rate" as "the cheapest loan".
+  const loans = useMemo(
+    () => (loansResp?.loans ? sortLoans(loansResp.loans, loanSort) : []),
+    [loansResp, loanSort]
+  );
 
   // Normalise both series to RAW KES once, on each row's declared unit
   // (raw KES since the stage1 3a migration; bare billions from an older
@@ -583,8 +622,12 @@ export default function NationalDebtPage() {
                 </span>
               </div>
               <p className='text-[11px] text-white/50 mt-1'>
+                {/* Was "Based on IMF debt-sustainability thresholds". The 40/60
+                    cutoffs are this site's own banding (DEBT_RISK_THRESHOLDS
+                    in lib/utils, which cites no source); the IMF publishes no
+                    threshold at those values, so the band says what it is. */}
                 {riskBand
-                  ? 'Based on IMF debt-sustainability thresholds'
+                  ? 'Our banding of debt-to-GDP (40% / 60%) — not an IMF rating'
                   : 'No debt-to-GDP ratio available to classify against'}
               </p>
             </div>
@@ -745,15 +788,15 @@ export default function NationalDebtPage() {
                   out of every <span className='font-bold'>KES 100</span> collected in
                   tax &amp; non-tax revenue
                 </div>
-                <div className='mt-4 flex items-center gap-2 text-xs text-neutral-muted'>
-                  <span className='inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gov-copper/10 text-gov-copper font-semibold'>
-                    <AlertTriangle size={12} />
-                    Above IMF 30% ceiling
-                  </span>
-                </div>
+                {/* An "Above IMF 30% ceiling" pill sat here, unconditionally.
+                    No IMF threshold applies to this ratio: it is TOTAL debt
+                    service (domestic + external, interest + principal) over
+                    revenue, and the IMF-World Bank LIC-DSF debt-service-to-
+                    revenue thresholds (14/18/23% by debt-carrying capacity)
+                    are for EXTERNAL public debt service only. A comparison
+                    that cannot be made honestly is not made (issue #235). */}
                 <p className='text-[11px] text-neutral-muted mt-3 leading-relaxed max-w-sm'>
-                  Source: National Treasury fiscal summary{' '}
-                  {taxAllocation.fiscalYear}. Uses tax &amp; non-tax
+                  {fiscalSourceLine(fiscal?.current)} Uses tax &amp; non-tax
                   revenue; debt figure includes total debt service
                   (interest + principal redemptions).
                 </p>
@@ -767,16 +810,9 @@ export default function NationalDebtPage() {
                   </summary>
                   <div className='mt-2 pl-5 text-[11px] text-neutral-muted leading-relaxed space-y-2'>
                     <p>
-                      Calculated as {taxAllocation.fiscalYear} total
-                      debt service of about KSh{' '}
-                      {(taxAllocation.ds / 1000).toFixed(3)}T divided by
-                      tax &amp; non-tax revenue of about KSh{' '}
-                      {(taxAllocation.rev / 1000).toFixed(3)}T (
-                      {(taxAllocation.ds / 1000).toFixed(3)} ÷{' '}
-                      {(taxAllocation.rev / 1000).toFixed(3)} × 100 ≈{' '}
-                      {taxAllocation.debtServicePerRev.toFixed(1)}). This
-                      keeps the published ratio aligned with the Treasury
-                      APDMR series while FY2025/26 remains budgeted.
+                      Calculated as {taxAllocation.fiscalYear}{' '}
+                      {ratioWorking(taxAllocation)}.{' '}
+                      {fiscalSourceLine(fiscal?.current)}
                     </p>
                     <p>
                       Different official debt-service measures may give
@@ -1070,9 +1106,10 @@ export default function NationalDebtPage() {
                     <h3 className='text-sm font-semibold text-gov-dark dark:text-white'>
                       Aging — how long bills have gone unpaid
                     </h3>
-                    <p className='text-[11px] text-neutral-muted mt-0.5'>
-                      Bills older than 180 days are referred to the Pending Bills Verification Committee.
-                    </p>
+                    {/* "Bills older than 180 days are referred to the Pending
+                        Bills Verification Committee" was here. The committee's
+                        mandate is national bills accumulated 1 June 2005 –
+                        30 June 2022; there is no 180-day referral rule. */}
                   </div>
                 </div>
                 <ResponsiveContainer width='100%' height={220}>
@@ -1138,9 +1175,7 @@ export default function NationalDebtPage() {
                   <AlertTriangle size={14} className='text-gov-gold flex-shrink-0 mt-0.5' />
                   <span>
                     <span className='font-semibold text-gov-dark dark:text-white'>Not published:</span>{' '}
-                    {agingUnsupportedNote(agingSupport.reason)} Bills older than 180 days are
-                    referred to the Pending Bills Verification Committee, so the split matters —
-                    it is simply not in the source.
+                    {agingUnsupportedNote(agingSupport.reason)}
                   </span>
                 </div>
               </div>
@@ -1296,7 +1331,8 @@ export default function NationalDebtPage() {
                 The full loan register
               </h2>
               <p className='text-sm text-neutral-muted mt-1'>
-                Every active loan facility, sortable by what matters most to you.
+                Every row of the register — one per external creditor, one per domestic
+                instrument — sortable by what matters most to you.
               </p>
             </div>
             <div className='inline-flex rounded-lg bg-white/70 dark:bg-surface-elevated border border-white/70 p-1 text-xs'>
@@ -1326,7 +1362,7 @@ export default function NationalDebtPage() {
                   <th className='text-left px-4 py-3 font-semibold'>Type</th>
                   <th className='text-right px-4 py-3 font-semibold'>Outstanding</th>
                   <th className='text-right px-4 py-3 font-semibold'>Rate</th>
-                  <th className='text-right px-4 py-3 font-semibold'>Annual cost</th>
+                  <th className='text-right px-4 py-3 font-semibold'>Annual interest</th>
                   <th className='text-left px-4 py-3 font-semibold'>Maturity</th>
                 </tr>
               </thead>
@@ -1344,14 +1380,12 @@ export default function NationalDebtPage() {
                     <td className='px-4 py-3 text-sm font-semibold text-gov-dark dark:text-white text-right tabular-nums'>
                       {fmtKES(l.outstanding_numeric)}
                     </td>
-                    <td className='px-4 py-3 text-xs text-gov-copper text-right tabular-nums'>
-                      {l.interest_rate || '—'}
-                    </td>
-                    <td className='px-4 py-3 text-xs text-neutral-muted text-right tabular-nums'>
-                      {fmtKES(l.annual_service_cost)}
-                    </td>
+                    <RateTd loan={l} />
+                    <CostTd loan={l} />
                     <td className='px-4 py-3 text-xs text-neutral-muted'>
-                      {l.maturity_date || 'Revolving'}
+                      {/* No maturity date is unknown, not "Revolving" — these are
+                          aggregate buckets and IDS creditor totals (F24). */}
+                      {l.maturity_date || '—'}
                     </td>
                   </tr>
                 ))}
@@ -1377,24 +1411,30 @@ export default function NationalDebtPage() {
                     </div>
                     <div>
                       <span className='text-neutral-muted block text-[11px] uppercase'>Rate</span>
-                      <span className='font-semibold text-gov-copper tabular-nums'>
-                        {l.interest_rate || '—'}
-                      </span>
+                      <FigureText cell={rateCell(l)} kind='rate' className='font-semibold text-gov-copper tabular-nums' />
                     </div>
                     <div>
-                      <span className='text-neutral-muted block text-[11px] uppercase'>Annual cost</span>
-                      <span className='font-semibold text-gov-dark dark:text-white tabular-nums'>
-                        {fmtKES(l.annual_service_cost)}
-                      </span>
+                      <span className='text-neutral-muted block text-[11px] uppercase'>Annual interest</span>
+                      <FigureText cell={annualCostCell(l)} kind='kes' className='font-semibold text-gov-dark dark:text-white tabular-nums' />
                     </div>
                     <div>
                       <span className='text-neutral-muted block text-[11px] uppercase'>Maturity</span>
-                      <span className='text-gov-dark dark:text-white'>{l.maturity_date || 'Revolving'}</span>
+                      <span className='text-gov-dark dark:text-white'>{l.maturity_date || '—'}</span>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
+
+            <p className='px-4 py-3 text-[11px] text-neutral-muted border-t border-neutral-border/20 leading-relaxed'>
+              <span className='font-semibold text-gov-dark dark:text-white'>How to read the rate and interest columns.</span>{' '}
+              External rows show the interest Kenya actually paid each creditor in the year World Bank
+              IDS reports (&ldquo;paid&rdquo;); IDS gives no rate per creditor. Treasury bonds show the
+              average coupon of the bonds in CBK&rsquo;s register and bills show CBK&rsquo;s 91-day
+              yield; their interest is <em>modelled</em> as balance × that rate, not published.
+              &ldquo;—&rdquo; means no publisher gives the figure; hover for why. These columns do not
+              add up to a total: they are on different bases and different years.
+            </p>
 
             {loans.length > 10 && (
               <button
@@ -1422,8 +1462,9 @@ export default function NationalDebtPage() {
           <li>• National Treasury — Budget Policy Statement, Budget Review &amp; Outlook</li>
           <li>• Office of the Controller of Budget — Budget Implementation Review Reports</li>
           <li>
-            • Peer comparison: IMF World Economic Outlook, World Bank International Debt Statistics
+            • World Bank International Debt Statistics — external debt and interest paid, by creditor
           </li>
+          <li>• IMF World Economic Outlook — debt-to-GDP</li>
         </ul>
       </div>
     </PageShell>

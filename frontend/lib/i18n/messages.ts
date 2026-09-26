@@ -316,7 +316,7 @@ export const MESSAGES = {
   'home.loans.header_sub': { en: '{n} active loans — {src}', sw: 'Mikopo hai {n} — {src}', plain: '{n} loans — {src}' },
   'home.loans.unavailable': { en: 'Loan data unavailable', sw: 'Data ya mikopo haipatikani', plain: 'Loan data unavailable' },
   'home.loans.outstanding': { en: 'Outstanding Debt', sw: 'Deni Lililobaki', plain: 'Still Owed' },
-  'home.loans.annual_service': { en: 'Annual Service Cost', sw: 'Gharama ya Kila Mwaka', plain: 'Cost Per Year' },
+  'home.loans.annual_service': { en: 'Debt Service', sw: 'Malipo ya Deni', plain: 'Debt Repayments' },
   'home.loans.see_all_n': { en: 'See all {n} loans →', sw: 'Tazama mikopo yote {n} →', plain: 'See all {n} loans →' },
   'home.loans.type.multilateral': { en: 'Multilateral', sw: 'Ya Kimataifa', plain: 'Multi-country' },
   'home.loans.type.bilateral': { en: 'Bilateral', sw: 'Baina ya Nchi Mbili', plain: 'Country-to-country' },
