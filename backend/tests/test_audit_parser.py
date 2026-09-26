@@ -279,3 +279,46 @@ class TestParseIntegration:
         results = parser.parse(extraction, meta)
         assert len(results) >= 1
         assert results[0]["audit_opinion"] is None
+
+
+# ---- Entity inference covers every county ----
+
+
+class TestInferEntityCoversAll47:
+    """``COUNTY_NAMES`` held 45 of the 47 counties: Kwale and Murang'a were missing.
+
+    Found when the county-selection guard was widened to the whole tree (issue
+    #206) and flagged the roster as a hand-picked subset. It was not a verdict,
+    it was a gap: a Kwale report was never attributed to Kwale. Title inference
+    found nothing, and the first-page fallback handed the report — and every
+    finding parsed from it — to whichever OTHER county page 1 happened to name.
+    """
+
+    def test_a_kwale_report_is_attributed_to_kwale(self, parser):
+        hint = parser.infer_entity(
+            "Report of the Auditor-General on the County Executive of Kwale", []
+        )
+        assert hint is not None and hint["canonical_name"] == "Kwale County", hint
+
+    def test_a_muranga_report_is_attributed_to_muranga(self, parser):
+        hint = parser.infer_entity(
+            "Report of the Auditor-General on the County Executive of Murang'a", []
+        )
+        assert hint is not None and hint["canonical_name"] == "Murang'a County", hint
+
+    def test_a_neighbour_named_on_page_one_does_not_take_the_report(self, parser):
+        pages = [{"text": "Kwale County borders Mombasa County to the north-east."}]
+        hint = parser.infer_entity("Kwale County Executive 2023/24", pages)
+        assert hint is not None and hint["canonical_name"] == "Kwale County", hint
+
+    def test_the_roster_is_all_47(self):
+        from etl.audit_parser import COUNTY_NAMES
+        from etl.entity_resolver import COUNTY_NAMES as RESOLVER_COUNTY_NAMES
+
+        def canon(name):
+            return name.lower().replace("-", " ").replace("'", "")
+
+        assert {canon(c) for c in COUNTY_NAMES} == {
+            canon(c) for c in RESOLVER_COUNTY_NAMES
+        }
+        assert len({canon(c) for c in COUNTY_NAMES}) == 47

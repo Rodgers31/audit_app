@@ -1,5 +1,5 @@
-"""No module under ``apis/``, ``analysis/`` or ``extractors/`` may derive a
-value from ``hash()``, from the clock, or from a random draw.
+"""No module in this repository may derive a value from ``hash()``, from the
+clock, or from a random draw — unless it says why in writing.
 
 On 2026-09-07, ``extractors/government/oag_audit_extractor.py`` manufactured
 audit findings about named county governments out of ``hash()``::
@@ -34,7 +34,7 @@ invisible. A label heuristic cannot be made complete; "this number came from a
 pseudo-random generator" needs no vocabulary at all.
 
 THE RULE. Three sources are barred outright wherever they appear in the
-scanned roots:
+tree:
 
 * ``hash(...)``. It is a per-process pseudo-random function of its argument.
   Nothing it returns describes the world. For a stable digest, use ``hashlib``.
@@ -71,6 +71,17 @@ processes`` demonstrates it honestly, by shelling out to fresh interpreters
 with the seed unset. That test is a demonstration of the motive, not the
 guard: it runs against a string, never against the tree.
 
+SCOPE: THE WHOLE TREE (issue #206). This guard used to read ``apis/``,
+``analysis/`` and ``extractors/`` only. ``county_analytics_generator.py`` put
+``hash(county)`` behind every county's population, audit rating and
+missing-funds figure, and ``cob_database_generator.py`` behind 17 report and
+execution-rate fields — both at the repo root, both invisible, the guard green
+beside them. An inclusion list says nothing about what it leaves out. The scan
+now walks everything and ``tests/_repo_tree.py`` lists, with reasons, the
+little it skips. Widening it also surfaced legitimate randomness — scheduler
+jitter, quiz shuffling — which now carries a written ``nondeterminism-ok:``
+reason at each site rather than a directory-sized exemption.
+
 ESCAPE HATCH, following ``local/no-zero-fallback-on-published-figure``
 (7b5d366) and the two guards beside this file: a suppression must carry a
 written reason. Put
@@ -90,12 +101,7 @@ from pathlib import Path
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-SCANNED_ROOTS = (
-    REPO_ROOT / "apis",
-    REPO_ROOT / "analysis",
-    REPO_ROOT / "extractors",
-)
+from tests._repo_tree import REPO_ROOT, python_modules, rel as _rel
 
 SUPPRESSION = "nondeterminism-ok:"
 
@@ -297,15 +303,11 @@ def find_nondeterministic_sources(source: str, where: str = "<source>") -> list[
     return sorted(set(findings))
 
 
-def _modules(root: Path) -> list[Path]:
-    return sorted(root.rglob("*.py")) if root.is_dir() else []
-
-
-SCANNED_MODULES = [m for root in SCANNED_ROOTS for m in _modules(root)]
-
-
-def _rel(module: Path) -> str:
-    return module.relative_to(REPO_ROOT).as_posix()
+# The whole tree, minus the written exclusions in ``tests/_repo_tree.py``.
+# Until issue #206 this was ``apis/``, ``analysis/`` and ``extractors/`` only,
+# and ``county_analytics_generator.py`` (11 sites) and
+# ``cob_database_generator.py`` (17) sat at the repo root, invisible to it.
+SCANNED_MODULES = python_modules()
 
 
 # Modules that carry this defect and are NOT this change's to fix. Each entry
@@ -322,21 +324,14 @@ def _rel(module: Path) -> str:
 QUARANTINE: dict[str, tuple[int, str]] = {}
 
 
-def test_the_scanned_roots_are_where_we_think_they_are():
+def test_the_sweep_is_not_empty():
     """Anti-vacuity: an empty sweep must never read as a pass.
 
-    Skip a root that has been removed entirely — deleting one is a legitimate
-    outcome and the owner's call — but fail if a root exists and the scan finds
-    nothing in it, and fail if every root has vanished at once.
+    The walk itself — that it reaches the root, new directories, and every
+    tracked module — is pinned in ``test_guards_scan_the_whole_tree.py``.
     """
-    surviving = [root for root in SCANNED_ROOTS if root.is_dir()]
-    if not surviving:
-        pytest.skip("apis/, analysis/ and extractors/ have all been removed")
-    for root in surviving:
-        assert _modules(root), (
-            f"{root.name}/ exists but holds no .py files — its scan would be vacuous"
-        )
-    assert SCANNED_MODULES, "no modules collected — the sweep would be silent"
+    scanned = {_rel(m) for m in SCANNED_MODULES}
+    assert "backend/main.py" in scanned, "the sweep does not reach the shipping API"
 
 
 def test_the_detector_catches_the_payload_it_was_written_for():
@@ -559,7 +554,6 @@ def test_quarantined_modules_still_carry_their_debt(
     )
 
 
-@pytest.mark.skipif(not SCANNED_MODULES, reason="the scanned roots hold no modules")
 @pytest.mark.parametrize(
     "module",
     [m for m in SCANNED_MODULES if _rel(m) not in QUARANTINE],

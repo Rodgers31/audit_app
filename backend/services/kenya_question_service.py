@@ -296,6 +296,7 @@ class KenyaGovernmentQuestionSource:
                 questions = [q for q in questions if q["category"] == category]
 
             # Randomize and limit
+            # nondeterminism-ok: which quiz questions to show; a selection of questions, not a figure
             random.shuffle(questions)
             return questions[:limit]
 
@@ -332,6 +333,7 @@ class QuestionAggregatorService:
             ]
 
         # Randomize and limit final results
+        # nondeterminism-ok: which quiz questions to show; a selection of questions, not a figure
         random.shuffle(all_questions)
         return all_questions[:limit]
 

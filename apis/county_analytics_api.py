@@ -25,7 +25,7 @@ class CountySummary(BaseModel):
     revenue_2024: float
     debt_outstanding: float
     pending_bills: float
-    loans_received: float
+    loans_received: Optional[float] = None  # no record carries it today
     audit_rating: str
     missing_funds: float
     financial_health_score: float
@@ -68,6 +68,33 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+#: Why a summary figure is ``None``. A ``0`` here would say the counties' budgets
+#: total nothing and no money is missing; the file simply does not say (#207).
+SUMMARY_FIGURE_ABSENT = "not_in_county_data_file"
+
+SUMMARY_FIGURES = (
+    "total_county_budgets",
+    "total_missing_funds",
+    "average_financial_health",
+)
+
+
+def _summary_figures(summary: Dict) -> Dict:
+    """Each summary figure, or ``None`` and why — ``/budget/national``'s shape."""
+    out: Dict = {}
+    for key in SUMMARY_FIGURES:
+        value = summary.get(key)
+        out[key] = value
+        out[f"{key}_absent_reason"] = None if value is not None else SUMMARY_FIGURE_ABSENT
+    return out
+
+
+def _insight(label: str, value, fmt: str, unit: str) -> str:
+    if value is None:
+        return f"{label}: not in the county data file"
+    return f"{label}: {value:{fmt}}{unit}"
+
+
 # Load county data
 try:
     with open("enhanced_county_data.json", "r") as f:
@@ -88,11 +115,10 @@ async def root():
 
     return {
         "message": "Kenya County Analytics Platform",
-        "description": "Comprehensive analytics for all 47 Kenya counties",
-        "total_counties": 47,
-        "total_county_budgets": summary.get("total_county_budgets", 0),
-        "total_missing_funds": summary.get("total_missing_funds", 0),
-        "average_financial_health": summary.get("average_financial_health", 0),
+        "description": "Analytics for the counties in the loaded county data file",
+        # Counted from the file. It was a literal 47 whatever the file held.
+        "total_counties": len(county_data.get("county_data", {})),
+        **_summary_figures(summary),
         "endpoints": [
             "/counties/all",
             "/counties/{county_name}",
@@ -123,9 +149,7 @@ async def get_all_counties(
                 revenue_2024=data["revenue_2024"],
                 debt_outstanding=data["debt_outstanding"],
                 pending_bills=data["pending_bills"],
-                loans_received=data.get(
-                    "loans_received", 0
-                ),  # Default to 0 if not present
+                loans_received=data.get("loans_received"),
                 audit_rating=data["audit_rating"],
                 missing_funds=data["missing_funds"],
                 financial_health_score=data["financial_health_score"],
@@ -166,9 +190,7 @@ async def get_county_details(county_name: str):
         "financial_metrics": {
             "debt_outstanding": county_info["debt_outstanding"],
             "pending_bills": county_info["pending_bills"],
-            "loans_received": county_info.get(
-                "loans_received", 0
-            ),  # Default to 0 if not present
+            "loans_received": county_info.get("loans_received"),
             "missing_funds": county_info["missing_funds"],
             "budget_execution_rate": county_info["budget_execution_rate"],
             "debt_to_budget_ratio": county_info["debt_to_budget_ratio"],
@@ -399,9 +421,24 @@ async def get_analytics_summary():
             ],
         },
         "key_insights": [
-            f"Total county budgets: {summary.get('total_county_budgets', 0):,.0f} KES",
-            f"Average financial health: {summary.get('average_financial_health', 0)}%",
-            f"Total missing funds: {summary.get('total_missing_funds', 0):,.0f} KES",
+            _insight(
+                "Total county budgets",
+                summary.get("total_county_budgets"),
+                ",.0f",
+                " KES",
+            ),
+            _insight(
+                "Average financial health",
+                summary.get("average_financial_health"),
+                "",
+                "%",
+            ),
+            _insight(
+                "Total missing funds",
+                summary.get("total_missing_funds"),
+                ",.0f",
+                " KES",
+            ),
             f"Counties with debt issues: {len([c for c in worst_debt if c[1]['debt_to_budget_ratio'] > 30])}",
         ],
     }
@@ -411,7 +448,7 @@ if __name__ == "__main__":
     import uvicorn
 
     print("🚀 Starting Kenya County Analytics Platform...")
-    print("🏛️ Counties: 47")
+    print(f"🏛️ Counties in the data file: {len(county_data.get('county_data', {}))}")
     print("💰 Comprehensive budget, audit, and ranking data")
     print("🌐 API Documentation: http://localhost:8002/docs")
     uvicorn.run(app, host="0.0.0.0", port=8002)
