@@ -22,9 +22,7 @@ const revalidatePath = jest.fn();
 jest.mock('next/cache', () => ({ revalidatePath: (...args: unknown[]) => revalidatePath(...args) }));
 
 // Imported after the mock so the route binds to it.
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { POST } = require('@/app/api/revalidate/route');
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { NextRequest } = require('next/server');
 
 const FRONTEND = path.resolve(__dirname, '..', '..');
@@ -44,8 +42,8 @@ function workflowPaths(): string[] {
   if (at < 0) throw new Error('seed.yml no longer calls the revalidation webhook');
   // The BODY assignment is the last one before the request to the webhook.
   const before = yml.slice(0, at);
-  const literal = [...before.matchAll(/BODY='(\{"paths".*?\})'/g)].pop();
-  const fromFile = [...before.matchAll(/BODY=\$\(jq -c '\{paths: \.paths\}' (\S+?)\)/g)].pop();
+  const literal = Array.from(before.matchAll(/BODY='(\{"paths".*?\})'/g)).pop();
+  const fromFile = Array.from(before.matchAll(/BODY=\$\(jq -c '\{paths: \.paths\}' (\S+?)\)/g)).pop();
   const lastLiteral = literal?.index ?? -1;
   const lastFile = fromFile?.index ?? -1;
   if (lastFile > lastLiteral && fromFile) {

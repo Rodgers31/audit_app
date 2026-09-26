@@ -3618,6 +3618,25 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+def _official_source(meta: Dict[str, Any], role: str) -> Optional[Dict[str, Any]]:
+    """Where ``role``'s name came from, or None when nothing says."""
+    prov = meta.get(f"{role}_provenance")
+    if not isinstance(prov, dict) or not prov.get("source_url"):
+        return None
+    return {
+        "publisher": prov.get("source"),
+        "source_url": prov.get("source_url"),
+        "fetched_at": prov.get("fetched_at"),
+    }
+
+
+def _sourced_official(meta: Dict[str, Any], role: str) -> Optional[str]:
+    name = meta.get(role)
+    if not name or _official_source(meta, role) is None:
+        return None
+    return name
+
+
 @app.get("/api/v1/counties/{county_id}/comprehensive")
 @cached(key_prefix="county:comprehensive", ttl=1800)
 async def get_county_comprehensive(
@@ -4129,8 +4148,19 @@ async def get_county_comprehensive(
                         else None
                     ),
                 },
-                # Governor
-                "governor": meta.get("governor", ""),
+                # Officials: published only with a publisher behind them
+                # (issue #231). bootstrap writes a governor from
+                # enhanced_county_data.json with no provenance; the
+                # county_officials domain writes both roles from the
+                # Council of Governors with provenance. A name without
+                # provenance is one nobody can check, and an election can
+                # have made it wrong, so it is withheld.
+                "governor": _sourced_official(meta, "governor"),
+                "deputy_governor": _sourced_official(meta, "deputy_governor"),
+                "officials_source": {
+                    role: _official_source(meta, role)
+                    for role in ("governor", "deputy_governor")
+                },
                 # Economic profile
                 #
                 # county_type, infrastructure_level and revenue_potential are
