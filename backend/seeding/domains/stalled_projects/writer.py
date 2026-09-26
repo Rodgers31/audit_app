@@ -1,42 +1,72 @@
-"""Own, and clear, the ``Entity.meta['stalled_projects*']`` keys.
+"""Own the ``Entity.meta['stalled_projects*']`` keys, and write COB's rows there.
 
 Until issue #230 this writer copied 25 invented records from
 ``seeding/real_data/stalled_projects.json`` into four meta keys on 21
-counties every night. The fixture is gone; what remains in production is
-removed here, by the nightly, rather than by hand-run SQL, so the clean-up is
-reviewed, repeatable and recorded in the ingestion log like any other write.
+counties every night. What remains of them in production is removed here, by
+the nightly, rather than by hand-run SQL, so the clean-up is reviewed,
+repeatable and recorded in the ingestion log like any other write.
 
 Ownership is by prefix: every meta key starting ``stalled_projects`` belongs
-to this domain (``stalled_projects``, ``_count``, ``_total_value``,
-``_total_paid`` today). A key another domain writes must not share it.
+to this domain. A key another domain writes must not share it.
+
+Shape written (``schema: 2``)::
+
+    meta["stalled_projects"] = {
+        "schema": 2,
+        "source": {...edition: publisher, title, url, wpdmdl, sha256, as_of...},
+        "rows": [...one per table row, each with source_url/source_page/as_of/
+                 reported_by and the cells exactly as printed...],
+        "summary": {...COB's sentence for this county, verbatim + parsed...},
+        "statement": {...COB's words when the county reported nothing...},
+        "table_2_6": {...this county's line in the national table...},
+        "reconciliation": {...every comparison, agreeing or not...},
+        "withheld_fields": [...money fields not published, and why...],
+    }
 """
 
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, Dict, List, Optional
+
+from .cob_parser import MONEY_FIELDS, REPORTED_BY, normalise_county
 
 logger = logging.getLogger(__name__)
 
 OWNED_PREFIX = "stalled_projects"
+SCHEMA = 2
+PUBLISHER = "Office of the Controller of Budget"
 
 
 def owned_keys(meta: dict | None) -> list[str]:
     return sorted(k for k in (meta or {}) if k.startswith(OWNED_PREFIX))
 
 
-def clear_owned_keys(db_session: Any, dry_run: bool = False) -> dict:
-    """Remove this domain's keys from every county's meta.
+def _is_current(meta: dict | None) -> bool:
+    value = (meta or {}).get(OWNED_PREFIX)
+    return isinstance(value, dict) and value.get("schema") == SCHEMA
 
-    Returns ``{"entities": n, "keys": m}`` — how many counties held any, and
-    how many keys were (or in a dry run, would be) removed.
-    """
+
+def _counties(db_session: Any):
     from models import Entity, EntityType
 
+    return db_session.query(Entity).filter(Entity.type == EntityType.COUNTY)
+
+
+def clear_owned_keys(db_session: Any, dry_run: bool = False, *, legacy_only: bool = False) -> dict:
+    """Remove this domain's keys from every county's meta.
+
+    ``legacy_only`` keeps a county's current (schema 2, COB-sourced) block
+    and removes only what predates it — the invented fixture's list and its
+    three summary keys. That is what a run that REFUSES does: the previous
+    real edition stays published, the invented records never do.
+    """
     entities = 0
     keys = 0
-    for entity in db_session.query(Entity).filter(Entity.type == EntityType.COUNTY):
+    for entity in _counties(db_session):
         stale = owned_keys(entity.meta)
+        if legacy_only and _is_current(entity.meta):
+            stale = [k for k in stale if k != OWNED_PREFIX]
         if not stale:
             continue
         entities += 1
@@ -56,3 +86,155 @@ def clear_owned_keys(db_session: Any, dry_run: bool = False) -> dict:
         " [dry run]" if dry_run else "",
     )
     return {"entities": entities, "keys": keys}
+
+
+def published_edition(db_session: Any) -> Optional[Dict[str, Any]]:
+    """The edition currently in the database, from any county that holds one."""
+    for entity in _counties(db_session):
+        if _is_current(entity.meta):
+            return entity.meta[OWNED_PREFIX].get("source")
+    return None
+
+
+def _withheld_fields(county: Dict[str, Any]) -> List[Dict[str, str]]:
+    """Money fields that must not be published for this county, and why.
+
+    Not a judgement on COB's arithmetic — Kakamega's table total leaving out
+    its own row 10 is published, mismatch and all. These are the cases where
+    the TABLE cannot be read against its own header: the unit it declares is
+    contradicted a thousand- or million-fold, its columns are shifted, or its
+    rows do not line up with its header at all.
+    """
+    rec = county.get("reconciliation") or {}
+    reasons: List[Dict[str, str]] = []
+    if rec.get("unit_conflicts"):
+        reasons += [
+            {"field": f, "why": "unit_conflict", "detail": f"conflicts on {', '.join(rec['unit_conflicts'])}"}
+            for f in MONEY_FIELDS
+        ]
+    elif rec.get("column_shift"):
+        reasons += [{"field": f, "why": "column_shift", "detail": str(rec["column_shift"])} for f in MONEY_FIELDS]
+    return reasons
+
+
+def build_county_block(county: Dict[str, Any], edition: Dict[str, Any]) -> Dict[str, Any]:
+    """The schema-2 block for one county."""
+    summary = county.get("summary") or {}
+    reporter = summary.get("reported_by") or REPORTED_BY
+    withheld = _withheld_fields(county)
+    withheld_names = {w["field"] for w in withheld}
+    rows: List[Dict[str, Any]] = []
+    for table in county.get("tables", []):
+        for raw in table.get("rows", []):
+            row = {
+                "project_name": raw.get("project_name"),
+                "row_no": raw.get("row_no"),
+                "sector": raw.get("sector"),
+                "location": raw.get("location"),
+                "completion_pct": raw.get("completion_pct"),
+                "reason": raw.get("reason"),
+                "action": raw.get("action"),
+                "group": raw.get("group"),
+                "estimated_value_kes": raw.get("estimated_value_kes"),
+                "amount_paid_kes": raw.get("amount_paid_kes"),
+                "cells": raw.get("cells"),
+                "flags": list(raw.get("flags") or []),
+                # Evidence — what services/stalled_projects.py requires.
+                "source_url": edition.get("url"),
+                "source_page": raw.get("source_page"),
+                "as_of": table.get("as_of") or edition.get("as_of"),
+                # The caption names the assembly when the assembly reported
+                # (Kisii Q1 FY2025/26); that outranks the county's sentence.
+                "reported_by": table.get("reported_by") or reporter,
+                "publisher": PUBLISHER,
+                "table_caption": table.get("caption"),
+                "table_no": table.get("table_no"),
+            }
+            for field in ("estimated_value", "amount_paid"):
+                if field in withheld_names and row[f"{field}_kes"] is not None:
+                    row[f"{field}_kes"] = None
+                    row["flags"].append(f"{field}:withheld")
+            rows.append(row)
+    return {
+        "schema": SCHEMA,
+        "source": {
+            "publisher": PUBLISHER,
+            "title": edition.get("title"),
+            "fiscal_year": edition.get("fiscal_year"),
+            "period": edition.get("period"),
+            "published": edition.get("published"),
+            "as_of": edition.get("as_of"),
+            "url": edition.get("url"),
+            "wpdmdl": edition.get("wpdmdl"),
+            "sha256": edition.get("sha256"),
+            "server_fingerprint": edition.get("server_fingerprint"),
+            "reported_by": reporter,
+        },
+        "rows": rows,
+        "summary": county.get("summary"),
+        "statement": county.get("statement"),
+        "table_2_6": county.get("table_2_6"),
+        "tables": [
+            {
+                "caption": t.get("caption"),
+                "caption_page": t.get("caption_page"),
+                "county_as_printed": t.get("county_as_printed"),
+                "total": t.get("total"),
+                "layout": t.get("layout"),
+                "skipped": t.get("skipped"),
+                "notes": t.get("notes"),
+            }
+            for t in county.get("tables", [])
+        ],
+        "reconciliation": county.get("reconciliation"),
+        "withheld_fields": withheld,
+    }
+
+
+def write(
+    counties: List[Dict[str, Any]],
+    edition: Dict[str, Any],
+    db_session: Any,
+    dry_run: bool = False,
+) -> dict:
+    """Replace every county's block with this edition's.
+
+    Every county is cleared first, including ones the new edition says
+    nothing about: a county that had a table last quarter and has none now
+    must not keep last quarter's rows under this quarter's date.
+    """
+    # Matched on the county NAME, not the slug. Production's slugs are
+    # "nairobi-county"; a freshly bootstrapped database's are "nairobi-047"
+    # (bootstrap.py builds them from the county code). Keyed on slug, every
+    # write to a new environment would have matched nothing, silently.
+    by_name = {c["county"]: c for c in counties}
+    written = 0
+    rows = 0
+    unmatched = set(by_name)
+    for entity in _counties(db_session):
+        name = normalise_county(entity.canonical_name or "") or normalise_county(
+            (entity.slug or "").rsplit("-", 1)[0]
+        )
+        county = by_name.get(name) if name else None
+        meta = {k: v for k, v in (entity.meta or {}).items() if not k.startswith(OWNED_PREFIX)}
+        if county is not None:
+            unmatched.discard(name)
+            block = build_county_block(county, edition)
+            meta[OWNED_PREFIX] = block
+            written += 1
+            rows += len(block["rows"])
+        if dry_run:
+            continue
+        if meta != (entity.meta or {}):
+            entity.meta = meta
+    if unmatched:
+        logger.warning("stalled_projects: no county entity for %s", sorted(unmatched))
+    if not dry_run:
+        db_session.commit()
+    logger.info(
+        "stalled_projects: wrote %d county block(s), %d row(s)%s",
+        written,
+        rows,
+        " [dry run]" if dry_run else "",
+    )
+    return {"counties": written, "rows": rows, "unmatched": sorted(unmatched)}

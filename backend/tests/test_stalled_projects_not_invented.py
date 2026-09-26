@@ -121,31 +121,39 @@ class TestTheApiServesOnlyEvidence:
 
 
 class TestTheDomainCleansProduction:
-    def _run(self, db_session, dry_run=False):
+    def _run(self, db_session, monkeypatch, dry_run=False):
+        """Run the domain with COB unreachable — the path every nightly takes
+        until the live source is read, and the one that must still clean up."""
         from seeding import freshness
         from seeding.config import SeedingSettings
         from seeding.domains import stalled_projects
+        from seeding.domains.stalled_projects import fetcher
         from seeding.types import DomainRunContext
 
+        monkeypatch.setattr(
+            fetcher,
+            "fetch",
+            lambda settings, client=None: fetcher._refuse("listing_unreachable", "stubbed"),
+        )
         freshness.reset("stalled_projects")
         result = stalled_projects.run(
             db_session, SeedingSettings(), DomainRunContext(since=None, dry_run=dry_run)
         )
         return result, freshness.get("stalled_projects")
 
-    def test_the_nightly_removes_every_key_it_owns(self, db_session, nairobi):
-        result, _ = self._run(db_session)
+    def test_the_nightly_removes_every_key_it_owns(self, db_session, nairobi, monkeypatch):
+        result, _ = self._run(db_session, monkeypatch)
         db_session.refresh(nairobi)
         assert {k for k in nairobi.meta if k.startswith("stalled_projects")} == set()
         assert nairobi.meta["governor"] == "Johnson Sakaja"
-        assert result.metadata["cleared_keys"] == 4
+        assert result.metadata["cleared_legacy_keys"] == 4
 
-    def test_a_dry_run_touches_nothing(self, db_session, nairobi):
-        self._run(db_session, dry_run=True)
+    def test_a_dry_run_touches_nothing(self, db_session, nairobi, monkeypatch):
+        self._run(db_session, monkeypatch, dry_run=True)
         db_session.refresh(nairobi)
         assert nairobi.meta == PRODUCTION_META
 
-    def test_it_writes_no_new_records_and_says_so(self, db_session, nairobi):
-        result, mode = self._run(db_session)
+    def test_it_writes_no_new_records_and_says_so(self, db_session, nairobi, monkeypatch):
+        result, mode = self._run(db_session, monkeypatch)
         assert result.items_created == 0
-        assert mode["mode"] != "fixture"
+        assert mode["mode"] == "refused"

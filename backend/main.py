@@ -30,7 +30,10 @@ from services.publication_gate import (
     publishable_audit_criterion,
 )
 from seeding.source_registry import next_expected_window
-from services.stalled_projects import build_stalled_projects_block
+from services.stalled_projects import (
+    build_stalled_projects_block,
+    stalled_oag_findings,
+)
 from services.trust_guards import (
     check_budget_sectors,
     check_coverage_staleness,
@@ -3791,6 +3794,7 @@ async def get_county_comprehensive(
 
             # The finding's own heading, for the "key challenges" labels.
             _finding_titles: Dict[int, str] = {}
+            _extracted: Dict[int, dict] = {}
             _ext_ids = [a.extraction_id for a in audits if a.extraction_id]
             if _ext_ids:
                 from models import Extraction as _DBExtraction
@@ -3798,6 +3802,7 @@ async def get_county_comprehensive(
                 for _ext in db.query(_DBExtraction).filter(
                     _DBExtraction.id.in_(_ext_ids)
                 ):
+                    _extracted[_ext.id] = _ext.extracted_json or {}
                     _title = (_ext.extracted_json or {}).get("title")
                     if _title:
                         _finding_titles[_ext.id] = str(_title)
@@ -3965,8 +3970,11 @@ async def get_county_comprehensive(
             # --- Stalled projects ---
             # Evidence-gated: only rows that name their document, page, as-of
             # date and reporter are published (issue #230).
+            # OAG findings about unfinished projects corroborate COB's rows
+            # (or stand alone), in the Auditor-General's own words.
             stalled_block = build_stalled_projects_block(
-                meta.get("stalled_projects")
+                meta.get("stalled_projects"),
+                oag_findings=stalled_oag_findings(audits, _extracted),
             )
 
             # --- Revenue ---
@@ -4234,8 +4242,10 @@ async def get_county_comprehensive(
                 # formula (the page's own disclaimer says so, while this field
                 # said CoB); county debt rows carry no source document at all;
                 # and the stalled-projects fixture was never read from an OAG
-                # report — that domain has been withdrawn from the UI
-                # entirely. Credibility audit F7/F15/F6.
+                # report — it was deleted in #230; the block now carries COB's
+                # own tables with per-row provenance, and the Projects tab
+                # stays withdrawn until that is reviewed. Credibility audit
+                # F7/F15/F6.
                 "data_sources": {
                     # Derived from the rows actually selected, not asserted.
                     # This field used to hardcode "modelled from CRA", which
