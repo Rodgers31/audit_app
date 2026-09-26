@@ -206,6 +206,16 @@ def _check_db(db: Session):
         raise HTTPException(status_code=503, detail="Database not available")
 
 
+def _openable_url(value: Optional[str]) -> Optional[str]:
+    """``value`` if a browser can open it as-is, else None. Never builds one."""
+    if not value:
+        return None
+    value = value.strip()
+    if value.lower().startswith(("http://", "https://")):
+        return value
+    return None
+
+
 # ── Expenditure classes ──────────────────────────────────────────────
 #
 # "Irregular expenditure" and "unsupported expenditure" are specific findings
@@ -765,16 +775,12 @@ async def get_audit_findings(
 
         items = []
         for a, county_name, doc_url, avg_conf in rows:
-            # Build source document URL: prefer external_reference, then doc URL
-            source_url = None
-            if a.external_reference:
-                ref = a.external_reference.strip()
-                if ref.startswith("http"):
-                    source_url = ref
-                else:
-                    source_url = f"https://www.oagkenya.go.ke/wp-content/uploads/{ref}"
-            elif doc_url:
-                source_url = doc_url
+            # The document the finding was extracted from, else a reference
+            # that is itself a link, else nothing. external_reference is an
+            # internal key ("OAG-BB-2024/2025-V2091-P11"); this used to be
+            # pasted onto oagkenya.go.ke/wp-content/uploads/, which 404s, and
+            # it outranked the real document URL on every production finding.
+            source_url = _openable_url(doc_url) or _openable_url(a.external_reference)
 
             items.append(
                 FindingDetail(
