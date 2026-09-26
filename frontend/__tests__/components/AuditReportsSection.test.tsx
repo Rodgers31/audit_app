@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom';
 import { render, screen } from '@testing-library/react';
+import type { FederalAuditHeadline, FederalAuditResponse } from '@/lib/api/audits';
 
 // The exact shape /api/v1/audits/federal returns when the publication gate
 // withholds every federal finding (verified against the live DB 2026-08-29:
@@ -9,11 +10,11 @@ const GATED_EMPTY_RESPONSE = {
   auditor_general: 'Office of the Auditor General of Kenya',
   fiscal_year: null,
   report_date: null,
-  opinion_type: null,
   total_findings: 0,
   total_amount_questioned: null,
-  total_amount_questioned_label: null,
+  total_amount_questioned_reason: 'not_extracted',
   withheld_findings: 26,
+  findings_with_amount: 0,
   by_severity: {},
   findings_reason: 'awaiting_sourced_data',
   next_expected: {
@@ -26,13 +27,12 @@ const GATED_EMPTY_RESPONSE = {
     window_end: '2027-04-30',
     in_window: false,
   },
-  basis_for_qualification: [],
-  emphasis_of_matter: [],
-  key_statistics: {},
+  headline: null,
+  headline_reason: 'no_extraction_backed_findings',
   findings: [],
   top_ministries: [],
   last_updated: null,
-};
+} satisfies FederalAuditResponse;
 
 const mockUseFederalAudits = jest.fn();
 jest.mock('@/lib/react-query/useAudits', () => ({
@@ -183,7 +183,6 @@ describe('AuditReportsSection with published findings', () => {
       total_findings: 813,
       findings: [],
       total_amount_questioned: null,
-      total_amount_questioned_label: null,
       total_amount_in_findings: 73_382_064_434,
       findings_with_amount: 49,
     };
@@ -217,5 +216,159 @@ describe('AuditReportsSection with published findings', () => {
       render(<AuditReportsSection />);
       expect(screen.queryByText(/across .* findings/i)).toBeNull();
     });
+  });
+});
+
+// The headline production's FY2024/25 report derives, measured on a clone of
+// the production database taken 2026-09-26 (issue #233), after excluding the
+// 304 prior-year table rows the extractor reads as findings. Typed, so `tsc`
+// fails the moment the hand-written interface drifts from the payload.
+const LIVE_HEADLINE: FederalAuditHeadline = {
+  basis: 'extracted_section_headings',
+  source_document: {
+    id: 2392,
+    title: 'AUDITOR-GENERALS-REPORT-ON-NATIONAL-GOVERNMENT-2024-2025.pdf',
+    url: 'https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-NATIONAL-GOVERNMENT-2024-2025.pdf',
+  },
+  entities_with_findings: 37,
+  excluded_table_rows: 304,
+  entities_opinion_read: 23,
+  modified_opinions: [
+    { opinion: 'Disclaimer', entities: 1, findings: 8 },
+    { opinion: 'Qualified', entities: 8, findings: 45 },
+  ],
+  entities: [
+    {
+      entity: 'State Department for Medical Services',
+      opinion: 'Disclaimer',
+      findings: 8,
+      page_ref: 'p.295',
+      source_url:
+        'https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-NATIONAL-GOVERNMENT-2024-2025.pdf#page=295',
+    },
+    {
+      entity: 'The National Treasury',
+      opinion: 'Qualified',
+      findings: 3,
+      page_ref: 'p.21',
+      source_url:
+        'https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-NATIONAL-GOVERNMENT-2024-2025.pdf#page=21',
+    },
+  ],
+  recurring_prior_year: {
+    entities: 17,
+    findings: 36,
+    page_ref: 'p.14',
+    source_url:
+      'https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-NATIONAL-GOVERNMENT-2024-2025.pdf#page=14',
+  },
+  emphasis_of_matter: {
+    entities: 15,
+    findings: 76,
+    most_common_title: 'Budgetary Control and Performance',
+    most_common_findings: 41,
+    page_ref: 'p.14',
+    source_url:
+      'https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-NATIONAL-GOVERNMENT-2024-2025.pdf#page=14',
+  },
+};
+
+describe('AuditReportsSection with a derived headline (issue #233)', () => {
+  const withHeadline = {
+    ...GATED_EMPTY_RESPONSE,
+    fiscal_year: 'FY2024/25',
+    total_findings: 813,
+    withheld_findings: 26,
+    withheld_findings_by_reason: {
+      source_document_has_no_url: 25,
+      finding_text_unreadable_cid: 1,
+      no_page_reference: 0,
+    },
+    headline: LIVE_HEADLINE,
+    headline_reason: null,
+    findings_reason: null,
+    next_expected: null,
+    by_severity: { WARNING: 1 },
+    findings: [
+      {
+        id: 2419,
+        entity_name: 'The National Treasury',
+        entity_type: 'MINISTRY',
+        finding: 'Unsupported Payments The statement reflects payments not supported by documents.',
+        severity: 'WARNING',
+        recommended_action: '',
+        amount_involved: '',
+        amount_numeric: null,
+        status: 'published_report',
+        category: '',
+        query_type: 'REPORT ON THE FINANCIAL STATEMENTS',
+        report_section: '',
+        date_raised: '',
+        date: null,
+        page_ref: 'p.21',
+      },
+    ],
+  } satisfies FederalAuditResponse;
+
+  beforeEach(() => {
+    mockUseFederalAudits.mockReturnValue({ data: withHeadline, isLoading: false, error: null });
+  });
+
+  it('replaces "not yet published" with the opinions the report states', () => {
+    render(<AuditReportsSection />);
+    expect(screen.queryByText(/audit opinion not yet published here/i)).toBeNull();
+    expect(screen.getByText(/modified audit opinions found in this report/i)).toBeInTheDocument();
+    expect(screen.getByText('1 vote(s) · 8 finding(s)')).toBeInTheDocument();
+    expect(screen.getByText('8 vote(s) · 45 finding(s)')).toBeInTheDocument();
+  });
+
+  it('links every vote it names to the page the opinion was found on', () => {
+    render(<AuditReportsSection />);
+    const link = screen.getByRole('link', { name: /p\.295/ });
+    expect(link).toHaveAttribute('href', LIVE_HEADLINE.entities[0].source_url);
+  });
+
+  it('states what the counts were read from, so they cannot pass as totals', () => {
+    render(<AuditReportsSection />);
+    expect(screen.getByText(/could be read for 23 of the 37 votes/)).toBeInTheDocument();
+    expect(screen.getByText(/these counts are minimums/)).toBeInTheDocument();
+    expect(screen.getByText(/No vote is shown as clean/)).toBeInTheDocument();
+  });
+
+  it('fills the tiles that used to be em-dashes from the derived counts', () => {
+    render(<AuditReportsSection />);
+    expect(screen.getByText('37')).toBeInTheDocument(); // votes with extracted findings
+    expect(screen.getByText('17')).toBeInTheDocument(); // unresolved prior-year
+    expect(screen.getByRole('link', { name: 'votes' })).toHaveAttribute(
+      'href',
+      LIVE_HEADLINE.recurring_prior_year!.source_url
+    );
+  });
+
+  it('gives each withheld finding its own reason', () => {
+    // Production rendered "26 findings held back for lack of a traceable
+    // source document" — true of 25 of them. The 26th is unreadable text.
+    render(<AuditReportsSection />);
+    expect(screen.getByText(/25 finding\(s\) held back for lack of a traceable source document/)).toBeInTheDocument();
+    expect(screen.getByText(/1 finding\(s\) held back because the extracted text is unreadable/)).toBeInTheDocument();
+    expect(screen.queryByText(/26 finding/)).toBeNull();
+    expect(screen.queryByText(/0 finding/)).toBeNull();
+  });
+
+  it('summarises Emphasis of Matter in the report\'s words, with its page', () => {
+    render(<AuditReportsSection />);
+    expect(screen.getByText(/Raised on 15 votes \(76 paragraphs\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Budgetary Control and Performance/)).toBeInTheDocument();
+  });
+
+  it('says none was found, with its coverage, rather than inventing a clean opinion', () => {
+    mockUseFederalAudits.mockReturnValue({
+      data: { ...withHeadline, headline: { ...LIVE_HEADLINE, modified_opinions: [], entities: [] } },
+      isLoading: false,
+      error: null,
+    });
+    render(<AuditReportsSection />);
+    expect(screen.getByText(/No .Basis for … Opinion. section was found among the 23 votes/)).toBeInTheDocument();
+    expect(screen.queryByText(/clean opinion/i)).toBeNull();
   });
 });

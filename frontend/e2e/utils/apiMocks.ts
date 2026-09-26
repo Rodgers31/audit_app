@@ -130,7 +130,7 @@ const COUNTY_COMPREHENSIVE = (id: string) => ({
     { fy: 'FY2023/24', score: 75, grade: 'B+' },
     { fy: 'FY2024/25', score: 78, grade: 'B+' },
   ],
-  missing_funds: { total_amount: 120_000_000, cases_count: 1, cases: [] },
+  missing_funds: { basis: 'oag_finding_title', total_amount: null, total_amount_reason: 'no_amount_extracted', cases_count: 0, cases: [], reason: 'no_matching_findings' },
   stalled_projects: {
     count: 2,
     total_contracted_value: 500_000_000,
