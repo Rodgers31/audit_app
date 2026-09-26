@@ -2356,44 +2356,10 @@ async def get_pipeline_health(db: Session = Depends(get_db)) -> JSONResponse:
     )
 
 
-@app.post("/api/v1/system/seeder-refresh")
-async def trigger_seeder_refresh() -> JSONResponse:
-    """
-    Manually trigger a full data refresh from all live sources.
-
-    This endpoint forces an immediate refresh of all data domains,
-    bypassing the normal scheduling logic.
-    """
-    try:
-        from services.auto_seeder import auto_seeder
-
-        if not auto_seeder.is_running:
-            return JSONResponse(
-                {
-                    "status": "error",
-                    "message": "Auto-seeder is not running. Start the service first.",
-                },
-                status_code=503,
-            )
-
-        # Trigger refresh in background
-        asyncio.create_task(auto_seeder.seed_all_domains())
-
-        return JSONResponse(
-            {
-                "status": "ok",
-                "message": "Full data refresh triggered. Check /api/v1/system/seeder-status for progress.",
-            }
-        )
-    except Exception as e:
-        logger.error(f"Error triggering seeder refresh: {e}")
-        return JSONResponse(
-            {
-                "status": "error",
-                "error": str(e),
-            },
-            status_code=500,
-        )
+# POST /api/v1/system/seeder-refresh was removed: it started a full in-app
+# seed for any anonymous caller and nothing in the repo called it. The
+# admin-gated trigger is POST /api/v1/admin/etl/trigger/{source}; see
+# tests/test_system_routes_are_read_only.py before adding a write route here.
 
 
 @app.get("/api/v1/countries", response_model=List[CountryResponse])
