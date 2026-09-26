@@ -1816,12 +1816,37 @@ except Exception as e:
     logger.warning(f"Could not register data freshness router: {e}")
 
 try:
+    from routers.cache_invalidation import router as cache_invalidation_router
+
+    app.include_router(cache_invalidation_router)
+    logger.info("Cache invalidation registered at /api/v1/system/cache/invalidate")
+except Exception as e:
+    # ERROR, not warning: without this route the nightly's call 404s and the
+    # job fails, and this line is where to look.
+    logger.error(f"Could not register cache invalidation router: {e}")
+
+try:
     from routers.data_provenance import router as data_provenance_router
 
     app.include_router(data_provenance_router)
     logger.info("Data provenance router registered at /api/v1/provenance")
 except Exception as e:
     logger.warning(f"Could not register data provenance router: {e}")
+
+
+# Cross-worker cache invalidation (issue #231). The nightly's signed call
+# lands on one gunicorn worker and bumps a marker file; every other worker
+# clears its own in-process caches on the next request it serves. One
+# os.stat per request. See cache/invalidation.py.
+@app.middleware("http")
+async def sync_cache_generation(request: Request, call_next):
+    try:
+        from cache.invalidation import sync_generation
+
+        sync_generation()
+    except Exception as e:  # never fail a request over a freshness signal
+        logger.error(f"cache generation sync failed: {e}")
+    return await call_next(request)
 
 
 # Request logging middleware.
@@ -1878,6 +1903,31 @@ def clear_all_caches():
                 rc.client.flushdb()
             except Exception:
                 pass
+
+
+def _clear_endpoint_mem_caches() -> int:
+    dropped = sum(len(c) for c in _all_mem_caches)
+    for c in _all_mem_caches:
+        c.clear()
+    return dropped
+
+
+def _clear_internal_api_cache() -> int:
+    dropped = len(InternalAPIClient._cache)
+    InternalAPIClient._cache.clear()
+    return dropped
+
+
+# The nightly's signed invalidation call (issue #231) clears these in every
+# worker. _peers_cache is deliberately absent: it holds live World Bank / IMF
+# figures, not anything the seed writes. See cache/invalidation.py.
+try:
+    from cache.invalidation import register_local_cache
+
+    register_local_cache("main.endpoint_memory", _clear_endpoint_mem_caches)
+    register_local_cache("main.internal_api_client", _clear_internal_api_cache)
+except Exception as e:  # pragma: no cover - import-time wiring
+    logger.error(f"Cache invalidation registry unavailable: {e}")
 
 
 def _redis_cache_instances():
