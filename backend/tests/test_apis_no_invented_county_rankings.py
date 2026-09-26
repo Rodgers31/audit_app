@@ -59,9 +59,9 @@ parameters, not a selection. A per-county record says something *about* that
 county; a coefficient says something about the formula.
 
 WHY THE ROOTS GREW. This guard was rooted at ``apis/`` because that is where
-the payload it was written for sat. ``extractors/`` ships — ``Dockerfile:26``
-copies it into the production image — and the two guards beside this file
-(``test_apis_no_invented_national_figures.py``,
+the payload it was written for sat. ``extractors/`` ships —
+``etl/Dockerfile:20`` copies the repo root into the published ETL image — and
+the two guards beside this file (``test_apis_no_invented_national_figures.py``,
 ``test_no_published_figure_from_hash_or_clock.py``) already scan all three
 roots. A claim about a named county government is the same claim whichever
 directory it is typed in.
