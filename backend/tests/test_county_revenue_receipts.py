@@ -341,3 +341,151 @@ def test_agreeing_tables_are_published_and_say_so(client, cbirr_period):
     revenue = _comprehensive(client, "nairobi-county")["revenue"]
     assert revenue["own_source_disagreement"] is None
     assert revenue["total_revenue"] == 26_035_120_532
+
+
+# --------------------------------------------------------------------------
+# found by an adversarial pass: inputs that published and should not have
+# --------------------------------------------------------------------------
+
+
+def _edit(county, fn):
+    """The county's real tables with ``fn(row) -> row`` applied to every row."""
+    return [
+        ExtractedTable(t.page_number, 0, t.headers, [fn(list(r)) for r in t.rows], (0, 0, 0, 0))
+        for t in _tables(county)
+    ]
+
+
+class TestRefusesWhatItCannotStandBehind:
+    @pytest.mark.parametrize("blank", ["", "-"])
+    def test_a_table_with_no_numbers_is_not_a_zero_revenue(self, blank):
+        tables = _edit("Nairobi", lambda r: r[:2] + [blank] * (len(r) - 2))
+        streams, why = county_revenue_receipts(tables)
+        assert streams is None, streams
+
+    def test_a_heading_that_lost_its_letter_does_not_fold_into_the_stream_above(self):
+        """Bomet's OSR section prints no Sub-Total; with its FIF heading
+        numbered "5" instead of lettered "E", FIF was summed into OSR and the
+        table still reconciled."""
+        def renumber(r):
+            if r[0] == "E" and "Facility" in (r[1] or ""):
+                r[0] = "5"
+            return r
+
+        streams, why = county_revenue_receipts(_edit("Bomet", renumber))
+        assert streams is None or (
+            "Facility Improvement Financing" in streams
+            and streams["Own Source Revenue"][1] == Decimal("88046345")
+        ), streams
+
+    @pytest.mark.parametrize("bad", ["NaN", "Infinity", "sNaN"])
+    def test_a_non_number_in_a_cell_is_a_refusal_not_a_crash(self, bad):
+        def poison(r):
+            if r[1] == "Equitable Share":
+                r[3] = bad
+            return r
+
+        streams, why = county_revenue_receipts(_edit("Nairobi", poison))
+        assert streams is None
+
+    @pytest.mark.parametrize("cell", ["1e6", "1_000_000", "1,000,000-"])
+    def test_loose_number_forms_are_not_numbers(self, cell):
+        from seeding.pdf_parsers import _kes_cell
+
+        assert _kes_cell(cell) is None
+
+    def test_an_unreadable_target_is_absent_not_zero(self):
+        def poison(r):
+            if r[1] == "Grand Total":
+                r[2] = "n/a"
+            return r
+
+        streams, why = county_revenue_receipts(_edit("Nairobi", poison))
+        assert streams is None or streams["Total"][0] is None
+
+    def test_a_negative_total_is_refused(self):
+        def negate(r):
+            return r[:2] + [
+                f"({c})" if c and c[0].isdigit() else c for c in r[2:]
+            ]
+
+        streams, why = county_revenue_receipts(_edit("Nairobi", negate))
+        assert streams is None
+
+
+class TestTheBlockChecksWhatItPublishes:
+    GOOD = {
+        "Equitable Share": {"target": 1.0, "actual": 1_000e6},
+        "Own Source Revenue": {"target": 1.0, "actual": 100e6},
+        "Total": {"target": 2.0, "actual": 1_100e6},
+    }
+
+    def _block(self, receipts, local=100e6):
+        from main import county_revenue_block
+
+        return county_revenue_block(
+            receipts, local_revenue=local, own_source_target=None, fiscal_year="FY2025/26"
+        )
+
+    def test_control_publishes(self):
+        assert self._block(self.GOOD)["total_revenue"] == 1_100e6
+
+    def test_without_table_2_1_the_contradiction_check_cannot_run(self):
+        assert self._block(self.GOOD, local=None)["total_revenue"] is None
+
+    @pytest.mark.parametrize("local", [float("nan"), float("inf"), True])
+    def test_a_non_figure_own_source_is_not_agreement(self, local):
+        assert self._block(self.GOOD, local=local)["total_revenue"] is None
+
+    def test_streams_that_do_not_sum_to_the_total_are_withheld(self):
+        receipts = dict(self.GOOD, Total={"target": 2.0, "actual": 9_000e6})
+        assert self._block(receipts)["total_revenue"] is None
+
+    def test_a_total_alone_is_withheld(self):
+        assert self._block({"Total": {"target": 1.0, "actual": 5e9}})["total_revenue"] is None
+
+    def test_a_nan_stream_is_withheld(self):
+        receipts = dict(self.GOOD)
+        receipts["Equitable Share"] = {"target": 1.0, "actual": float("nan")}
+        assert self._block(receipts)["total_revenue"] is None
+
+
+def test_a_revenue_table_that_raises_costs_that_county_only(monkeypatch):
+    """The revenue extraction runs inside the CBIRR parse; an exception there
+    used to abort the whole parse and every county's budget rows with it."""
+    from pathlib import Path
+
+    from seeding import pdf_parsers
+
+    def boom(tables):
+        raise ArithmeticError("a cell nobody anticipated")
+
+    from types import SimpleNamespace
+
+    caption = "Table 3.444: Nairobi City County, Revenue Performance in the first nine months"
+    pages = [
+        SimpleNamespace(extract_text=(lambda i=i: caption if i == 612 else ""))
+        for i in range(1, 700)
+    ]
+    pdf = SimpleNamespace(pages=pages)
+
+    class _Ctx:
+        def __enter__(self):
+            return pdf
+
+        def __exit__(self, *exc):
+            return False
+
+    called = []
+
+    def boom(tables):
+        called.append(True)
+        raise ArithmeticError("a cell nobody anticipated")
+
+    monkeypatch.setattr(pdf_parsers, "county_revenue_receipts", boom)
+    monkeypatch.setattr(pdf_parsers.pdfplumber, "open", lambda _p: _Ctx())
+    parser = pdf_parsers.CoBQuarterlyReportParser(Path("report-2025-26.pdf"))
+    parser.tables = _tables("Nairobi")
+
+    assert parser._extract_county_revenue_receipts() == []
+    assert called, "the extractor was never reached — the test proves nothing"

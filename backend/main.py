@@ -629,6 +629,10 @@ _OWN_SOURCE_STREAMS = (
     "Facility Improvement Financing",
     "Appropriations in Aid",
 )
+#: The parser's own reconciliation tolerance (seeding.pdf_parsers
+#: ._REVENUE_TOLERANCE_KES), re-checked on the rows as stored.
+_REVENUE_STREAMS_TOLERANCE = 1000
+
 #: How far the two may differ before the county table is withheld. Measured on
 #: the FY2025/26 CBIRR: Lamu and Narok differ by 0.18% and 0.79% and pass;
 #: Makueni, Nakuru, Tharaka Nithi and Mombasa differ by 10.7% to 70.6% and are
@@ -664,6 +668,37 @@ def county_revenue_block(
     # counties and not others (Nairobi's is FIF alone: 9,440.57M ordinary +
     # 1,348.85M FIF = its 10,789.42M exactly, with the 206.51M liquor A-i-A
     # left out), so agreement with or without that stream counts.
+    import math
+
+    def _figure(v) -> bool:
+        return (
+            isinstance(v, (int, float))
+            and not isinstance(v, bool)
+            and math.isfinite(v)
+        )
+
+    # What the block publishes must be what the parser proved: a positive
+    # Total that the streams add up to, every value a real number, and a
+    # Table 2.1 figure to check the own-source streams against. Rows that
+    # outlived a re-parse, a NaN from the database, or a missing Table 2.1 row
+    # would each publish a total nothing vouches for.
+    withheld_reason = None
+    if receipts:
+        total = receipts.get(REVENUE_RECEIPTS_TOTAL, {}).get("actual")
+        streams_actual = [
+            v["actual"] for k, v in receipts.items() if k != REVENUE_RECEIPTS_TOTAL
+        ]
+        if (
+            not _figure(total)
+            or total <= 0
+            or not streams_actual
+            or not all(_figure(v) for v in streams_actual)
+            or abs(sum(streams_actual) - total) > _REVENUE_STREAMS_TOLERANCE
+        ):
+            receipts, withheld_reason = None, "cbirr_revenue_streams_do_not_sum_to_total"
+        elif not _figure(local_revenue):
+            receipts, withheld_reason = None, "no_table_2_1_own_source_figure_to_check_against"
+
     disagreement = None
     if receipts and local_revenue is not None:
         def _sum(names) -> float:
@@ -715,7 +750,7 @@ def county_revenue_block(
             else (
                 "cbirr_tables_disagree_on_own_source_revenue"
                 if disagreement
-                else "no_reconciled_cbirr_revenue_table"
+                else withheld_reason or "no_reconciled_cbirr_revenue_table"
             )
         ),
         "own_source_disagreement": disagreement,

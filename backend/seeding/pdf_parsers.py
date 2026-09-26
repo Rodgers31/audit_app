@@ -842,6 +842,11 @@ def _cell_text(cell: Optional[str]) -> str:
     return " ".join(s.split()).lower()
 
 
+_KES_CELL_RE = re.compile(
+    r"(?:(?P<minus>-)|(?P<paren>\())?(?P<digits>\d+(?:\.\d+)?)(?(paren)\))"
+)
+
+
 def _kes_cell(cell: Optional[str]) -> Optional[Decimal]:
     """A whole-shilling cell: "7, 956, 564, 058" -> 7956564058; "-" -> 0.
 
@@ -851,13 +856,14 @@ def _kes_cell(cell: Optional[str]) -> Optional[Decimal]:
     s = (cell or "").strip().replace(",", "").replace(" ", "")
     if s in ("", "-", "–", "."):
         return Decimal(0)
-    negative = s.startswith("-") or s.startswith("(")
-    s = s.strip("-()")
-    try:
-        value = Decimal(s)
-    except Exception:  # noqa: BLE001 - "not a number" is the answer
+    # Digits, one optional decimal point, a leading minus or parentheses —
+    # nothing else. Decimal() alone would take "1e6", "1_000_000", "NaN" and
+    # "Infinity", and stripping "-" from both ends read "1,000,000-" as +1M.
+    match = _KES_CELL_RE.fullmatch(s)
+    if not match:
         return None
-    return -value if negative else value
+    value = Decimal(match.group("digits"))
+    return -value if (match.group("minus") or match.group("paren")) else value
 
 
 def _revenue_stream(label: str) -> Optional[str]:
@@ -886,6 +892,7 @@ class _RevenueSection:
     target_sub: Optional[Decimal] = None
     actual_sub: Optional[Decimal] = None
     subtotals: int = 0
+    target_unreadable: bool = False
 
     @property
     def target(self) -> Decimal:
@@ -910,9 +917,12 @@ def _revenue_rows(tables: List[ExtractedTable]):
         target_col = next(
             (i for i, h in enumerate(headers) if "annual" in h or "target" in h), None
         )
-        actual_col = next(
-            (i for i, h in enumerate(headers) if "actual" in h and "receipt" in h), None
-        )
+        actual_cols = [
+            i for i, h in enumerate(headers) if "actual" in h and "receipt" in h
+        ]
+        # Two "actual receipts" columns (a quarter and a cumulative, say) is
+        # a layout this cannot tell apart; take neither.
+        actual_col = actual_cols[0] if len(actual_cols) == 1 else None
         if target_col is None or actual_col is None or target_col < 1:
             continue
         for row in table.rows:
@@ -925,13 +935,23 @@ def _revenue_rows(tables: List[ExtractedTable]):
                 lettered = bool(_SECTION_LETTER_RE.match((row[0] or "").strip()))
                 yield ("header", lettered and target_col >= 2, label, None, None)
                 continue
+            if re.fullmatch(r"[A-Za-z]?", (row[target_col] or "").strip()) and re.fullmatch(
+                r"[A-Za-z]", (row[actual_col] or "").strip()
+            ):
+                # The column legend under the header ("A | B | C | D=B+C"),
+                # sometimes shifted a cell by the extraction.
+                continue
             target = _kes_cell(row[target_col])
             actual = _kes_cell(row[actual_col])
             if re.search(r"sub[- ]?to[- ]?tal", label):
                 yield ("sub", False, label, target, actual)
                 continue
             if re.fullmatch(r"(grand )?total", label):
-                yield ("grand", False, label, target, actual)
+                # A Grand Total cell that printed nothing is not a printed
+                # nil: read as 0 it reconciled 0 against 0 and published a
+                # county that received nothing.
+                printed = bool((row[actual_col] or "").strip().strip("-" + chr(0x2013)))
+                yield ("grand", False, label, target, actual if printed else None)
                 continue
             has_numbers = any((c or "").strip() for c in row[target_col:])
             lettered = bool(_SECTION_LETTER_RE.match((row[0] or "").strip())) and (
@@ -980,6 +1000,12 @@ def county_revenue_receipts(
         # Two counties' tables grouped as one — a caption was not found.
         return None, "more_than_one_grand_total"
     grand_target, grand_actual = grand[-1][3], grand[-1][4]
+    if not grand_actual.is_finite() or grand_actual <= 0:
+        return None, "grand_total_is_not_positive"
+    if any(r[0] in ("item", "sub") and r[4] is None for r in rows):
+        # A cell in the receipts column that is not a number ("n/a", "NaN",
+        # a merged cell): the streams cannot be proven to add up.
+        return None, "unreadable_receipts_cell"
 
     lettered = any(r[1] for r in rows if r[0] == "header")
     sections: List[_RevenueSection] = []
@@ -993,8 +1019,15 @@ def county_revenue_receipts(
                 # ("cadditional allocations", "3conditional allocations…").
                 # A heading for a DIFFERENT stream after the current section
                 # has printed its sub-total is the next section all the same.
+                # Also when the section above printed no Sub-Total: Bomet's
+                # own-source section prints none, and with the FIF heading's
+                # letter lost, FIF was summed into own-source and the table
+                # still reconciled. A heading naming the SAME stream (a
+                # "Conditional allocations" sub-heading under grants) does not.
                 top = is_lettered or (
-                    stream is not None and closed and stream != current.stream
+                    stream is not None
+                    and current is not None
+                    and stream != current.stream
                 )
             else:
                 top = stream is not None and (
@@ -1016,11 +1049,15 @@ def county_revenue_receipts(
                 # adds nothing; anything non-zero here is refused below.
                 continue
             current.subtotals += 1
-            current.actual_sub = actual if actual is not None else Decimal(0)
+            current.actual_sub = actual
             current.target_sub = target
+            current.target_unreadable = target is None
         elif kind == "item" and actual is not None:
             current.actual_items += actual
-            current.target_items += target or Decimal(0)
+            if target is None:
+                current.target_unreadable = True
+            else:
+                current.target_items += target
 
     if not sections:
         return None, "no_sections"
@@ -1028,16 +1065,24 @@ def county_revenue_receipts(
         return None, "a_section_has_two_subtotals"
     if sum(1 for s in sections if s.stream == "Equitable Share") != 1:
         return None, "equitable_share_not_exactly_one_section"
+    if any(s.stream == "Equitable Share" and s.actual <= 0 for s in sections):
+        return None, "equitable_share_is_not_positive"
     drift = abs(sum((s.actual for s in sections), Decimal(0)) - grand_actual)
     if drift > _REVENUE_TOLERANCE_KES:
         return None, f"streams_do_not_sum_to_grand_total (out by {drift:,})"
 
-    out: Dict[str, Tuple[Decimal, Decimal]] = {}
+    out: Dict[str, Tuple[Optional[Decimal], Decimal]] = {}
     for section in sections:
         stream = section.stream or REVENUE_OTHER
         prev_target, prev_actual = out.get(stream, (Decimal(0), Decimal(0)))
-        out[stream] = (prev_target + section.target, prev_actual + section.actual)
-    out[REVENUE_TOTAL] = (grand_target or Decimal(0), grand_actual)
+        target = (
+            None
+            if prev_target is None or section.target_unreadable
+            else prev_target + section.target
+        )
+        out[stream] = (target, prev_actual + section.actual)
+    # An unreadable target is absent, not 0.
+    out[REVENUE_TOTAL] = (grand_target, grand_actual)
     return out, ""
 
 
@@ -1486,7 +1531,13 @@ class CoBQuarterlyReportParser:
         refused: Dict[str, str] = {}
         grouped = group_revenue_tables_by_county(candidates, captions)
         for county, tables in sorted(grouped.items()):
-            streams, why = county_revenue_receipts(tables)
+            try:
+                streams, why = county_revenue_receipts(tables)
+            except Exception as exc:  # noqa: BLE001 - one county, not the report
+                # Revenue rows ride along with the budget parse; an exception
+                # here must cost this county its revenue, never every county
+                # its budget.
+                streams, why = None, f"extraction_error ({type(exc).__name__}: {exc})"
             if streams is None:
                 refused[county] = why
                 continue
