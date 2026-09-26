@@ -439,7 +439,7 @@ def _split_row(db_session, fy):
         FiscalSummary(
             fiscal_year=fy,
             unit="KES",
-            meta={"split_basis": "treasury_fiscal_framework", "fiscal_framework": {"x": 1}},
+            meta={"split_basis": "treasury_fiscal_framework", "fiscal_framework": {"total_expenditure_billion": 4785.2}},
         )
     )
 
@@ -501,6 +501,42 @@ class TestSplitGate:
         db_session.commit()
         [f] = check_fiscal_split_freshness(db_session, now=NOW)
         assert f.level == WARN and "unreachable" in f.message
+
+    def test_an_empty_framework_object_is_not_a_split(self, db_session):
+        from models import FiscalSummary
+        from seeding.staleness import FAIL, check_fiscal_split_freshness
+
+        db_session.add(
+            FiscalSummary(
+                fiscal_year="FY 2026/27",
+                unit="KES",
+                meta={"split_basis": "treasury_fiscal_framework", "fiscal_framework": {}},
+            )
+        )
+        db_session.add(_job(1, "FY 2026/27"))
+        db_session.commit()
+        [f] = check_fiscal_split_freshness(db_session, now=NOW)
+        assert f.level == FAIL
+
+    def test_a_listing_that_lost_its_newest_edition_is_not_ok(self, db_session):
+        """Split published through FY 2026/27, listing now tops out at FY
+        2025/26: the source of the newest split has gone from the listing."""
+        from seeding.staleness import WARN, check_fiscal_split_freshness
+
+        _split_row(db_session, "FY 2026/27")
+        db_session.add(_job(1, "FY 2025/26"))
+        db_session.commit()
+        [f] = check_fiscal_split_freshness(db_session, now=NOW)
+        assert f.level == WARN
+
+    def test_an_unparseable_listed_year_is_not_ok(self, db_session):
+        from seeding.staleness import WARN, check_fiscal_split_freshness
+
+        _split_row(db_session, "FY 2026/27")
+        db_session.add(_job(1, "next year"))
+        db_session.commit()
+        [f] = check_fiscal_split_freshness(db_session, now=NOW)
+        assert f.level == WARN
 
     def test_basis_constant_matches_the_parser(self):
         from seeding.staleness import FISCAL_SPLIT_BASIS

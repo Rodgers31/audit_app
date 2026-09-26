@@ -128,6 +128,13 @@ export const MESSAGES = {
   'home.govcard.seg_development': { en: 'Development', sw: 'Maendeleo', plain: 'Projects' },
   'home.govcard.seg_counties': { en: 'Counties', sw: 'Kaunti', plain: 'Counties' },
   'home.govcard.seg_other': { en: 'Other', sw: 'Nyingine', plain: 'Other' },
+  'home.govcard.seg_interest': { en: 'Interest on Debt', sw: 'Riba ya Deni', plain: 'Interest on loans' },
+  'home.govcard.seg_contingency': { en: 'Contingency', sw: 'Dharura', plain: 'Emergency fund' },
+  'home.govcard.framework_total': {
+    en: 'Of KES {total} spending · Treasury fiscal framework',
+    sw: 'Kati ya matumizi ya KES {total} · mfumo wa fedha wa Hazina',
+    plain: 'Out of KES {total} of spending · Treasury budget summary',
+  },
   'home.govcard.ceiling_breached': { en: 'Above the 55%-of-GDP anchor on a nominal basis', sw: 'Juu ya nanga ya 55% ya Pato la Taifa kwa msingi wa kawaida', plain: 'Above the 55% safe limit, measured the simple way' },
   // The anchor is set in PRESENT-VALUE terms; the ratio charted against it is
   // nominal. Present value is lower than nominal for a portfolio with
@@ -143,7 +150,9 @@ export const MESSAGES = {
   'home.govcard.stat_borrowed': { en: 'Borrowed', sw: 'Iliyokopwa', plain: 'Borrowed' },
   'home.govcard.stat_debt_service': { en: 'Debt Service', sw: 'Huduma ya Deni', plain: 'Debt Payments' },
   'home.govcard.tax_nontax': { en: 'Tax + non-tax', sw: 'Kodi + zisizo-kodi', plain: 'Taxes + other' },
-  'home.govcard.pct_of_budget': { en: '{pct}% of budget', sw: '{pct}% ya bajeti', plain: '{pct}% of budget' },
+  // The share is borrowing over Treasury's spending total (issue #237), not
+  // over the gross budget headline beside it, so "of budget" would misname it.
+  'home.govcard.pct_of_budget': { en: '{pct}% of spending', sw: '{pct}% ya matumizi', plain: '{pct}% of spending' },
   'home.govcard.cents_per_kes': { en: '{cents}¢/KES', sw: '{cents}¢/KES', plain: '{cents}¢ per KES' },
   'home.govcard.usage': { en: 'Usage', sw: 'Matumizi', plain: 'Used' },
 

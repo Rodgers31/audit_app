@@ -1069,15 +1069,38 @@ def check_fiscal_split_freshness(
         )
         return findings
 
+    if _fy_key(listed) == (-1,):
+        findings.append(
+            Finding(
+                WARN,
+                FISCAL_SPLIT_LABEL,
+                f"the listing's newest Budget Summary year {listed!r} is not a "
+                "fiscal year, so it cannot be compared with what is published",
+            )
+        )
+        return findings
+
+    # A split is the object with its total, not just the label: an empty or
+    # total-less object has nothing a page can draw.
     split_years = [
         r.fiscal_year
         for r in session.query(FiscalSummary).all()
         if (r.meta or {}).get("split_basis") == FISCAL_SPLIT_BASIS
-        and isinstance((r.meta or {}).get("fiscal_framework"), dict)
+        and ((r.meta or {}).get("fiscal_framework") or {}).get("total_expenditure_billion")
     ]
     newest_split = max(split_years, key=_fy_key) if split_years else None
 
-    if newest_split is None or _fy_key(listed) > _fy_key(newest_split):
+    if newest_split is not None and _fy_key(listed) < _fy_key(newest_split):
+        findings.append(
+            Finding(
+                WARN,
+                FISCAL_SPLIT_LABEL,
+                f"the split is published through {newest_split} but the listing's "
+                f"newest Budget Summary is now {listed}: the edition behind the "
+                "newest split has gone from Treasury's listing",
+            )
+        )
+    elif newest_split is None or _fy_key(listed) > _fy_key(newest_split):
         status = "; ".join(
             f"{e.get('status')}" + (f" ({e.get('detail')})" if e.get("detail") else "")
             for u, e in editions.items()

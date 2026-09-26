@@ -8,6 +8,7 @@ import { useFiscalSummary } from '@/lib/react-query/useFiscal';
 import { useLang } from '@/lib/i18n/LangProvider';
 import { assessDebtAnchor } from '@/lib/debt/debtAnchor';
 import { registerSourceLabel, summedRegisterRows } from '@/lib/debt/registerScope';
+import { frameworkOf, frameworkUses } from '@/lib/fiscal/framework';
 import { classifyDebtRisk, fmtBillionKES, toRawKES } from '@/lib/utils';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
@@ -523,64 +524,56 @@ export function KenyanGovCard() {
 
             {/* ── Where the Money Goes — budget breakdown bar ── */}
             {(() => {
-              // Every part is normalised to billions on the declared unit, and
-              // every part must be PRESENT. A stacked bar drawn from a partial
-              // breakdown is not a partial answer — the missing component is
-              // silently absorbed into "Other", which then reads as real
-              // unallocated slack. That is a fabricated composition, so the
-              // section is withheld instead. This is the ordinary case for a
-              // fiscal year the Controller of Budget has not yet reported on.
-              const debtSvc = fiscalBillions(fy.debt_service_cost, fy.unit);
-              const development = fiscalBillions(fy.development_spending, fy.unit);
-              const county = fiscalBillions(fy.county_allocation, fy.unit);
-              const recurrent = fiscalBillions(fy.recurrent_spending, fy.unit);
-              const total = fiscalBillions(fy.appropriated_budget, fy.unit);
-              if (
-                debtSvc == null ||
-                development == null ||
-                county == null ||
-                recurrent == null ||
-                total == null
-              ) {
-                return null;
-              }
-              // Recurrent spending in Kenya's budget INCLUDES debt service
-              // (Consolidated Fund Services). Separate it out to avoid double-counting.
-              const recurrentExclDebt = Math.max(recurrent - debtSvc, 0);
-              if (total <= 0) return null;
-              // "Other" captures any remaining slice (e.g. contingency, unallocated)
-              const accounted = debtSvc + recurrentExclDebt + development + county;
-              const other = Math.max(total - accounted, 0);
+              // One column of Treasury's fiscal framework, drawn against that
+              // column's own total (issue #237). This used to draw against
+              // appropriated_budget (COB gross — counts principal redemption,
+              // excludes counties), subtract interest-PLUS-principal from a
+              // recurrent figure holding interest only, and push the gap into
+              // "Other". Every segment is now a printed line; the parts sum to
+              // the total; absent or unreconciled -> withheld, never zeros.
+              // The framework is already in KSh billion.
+              const uses = frameworkUses(frameworkOf(fy));
+              if (!uses) return null;
+              const total = uses.total;
 
               const segments = [
                 {
                   label: t('home.govcard.seg_recurrent'),
-                  value: recurrentExclDebt,
+                  value: uses.recurrentExInterest,
                   color: 'bg-gov-forest',
                   dot: 'bg-gov-forest',
                 },
                 {
-                  label: t('home.govcard.seg_debt_service'),
-                  value: debtSvc,
+                  label: t('home.govcard.seg_interest'),
+                  value: uses.interest,
                   color: 'bg-gov-copper',
                   dot: 'bg-gov-copper',
                 },
                 {
                   label: t('home.govcard.seg_development'),
-                  value: development,
+                  value: uses.development,
                   color: 'bg-gov-gold',
                   dot: 'bg-gov-gold',
                 },
-                { label: t('home.govcard.seg_counties'), value: county, color: 'bg-[#0D7377]', dot: 'bg-[#0D7377]' },
-                ...(other > total * 0.01
-                  ? [{ label: t('home.govcard.seg_other'), value: other, color: 'bg-gray-300', dot: 'bg-gray-300' }]
-                  : []),
-              ];
+                { label: t('home.govcard.seg_counties'), value: uses.counties, color: 'bg-[#0D7377]', dot: 'bg-[#0D7377]' },
+                {
+                  label: t('home.govcard.seg_contingency'),
+                  value: uses.contingency,
+                  color: 'bg-gray-300',
+                  dot: 'bg-gray-300',
+                },
+              ].filter((seg) => seg.value > 0);
 
               return (
                 <div className='px-2 py-2.5 rounded-lg bg-white/50 dark:bg-surface-elevated border border-gray-100 dark:border-neutral-border'>
                   <span className='text-[11px] uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-semibold block mb-2'>
                     {t('home.govcard.where_money_goes')}
+                  </span>
+                  <span className='text-[11px] text-gray-500 dark:text-neutral-muted/80 block -mt-1.5 mb-2'>
+                    {t('home.govcard.framework_total').replace(
+                      '{total}',
+                      total >= 1000 ? `${(total / 1000).toFixed(2)}T` : `${total.toFixed(0)}B`
+                    )}
                   </span>
                   {/* Stacked horizontal bar */}
                   <div className='flex h-3 rounded-full overflow-hidden gap-[1px]'>

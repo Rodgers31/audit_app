@@ -6,17 +6,25 @@
  * Concentric donut for the Budget page, matching the Lender donut on the
  * Debt page so the two feel like sibling visualisations.
  *
- * Inner ring  — the 4 macro buckets of spending:
- *                 Debt service · Recurrent (ex-debt) · Development · Counties
- * Outer ring  — the 10 sector allocations from CoB (Health, Education, …)
+ * Inner ring  — the printed lines of one fiscal-framework column:
+ *                 Interest · Recurrent (ex-interest) · Development ·
+ *                 Counties · Contingency — summing to that column's total
+ * (The county-sector outer ring was withdrawn — F11.)
  *
- * Center readout reflects whichever slice, flow-bar segment, legend chip,
- * or sector card the user is hovering. Defaults to the national total.
+ * Center readout reflects whichever slice or legend chip the user is
+ * hovering. Defaults to the framework's spending total.
  */
 
 import { motion } from 'framer-motion';
 import { useMemo, useState } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Sector } from 'recharts';
+
+import {
+  frameworkCitation,
+  frameworkOf,
+  frameworkUses,
+  type FiscalFramework,
+} from '@/lib/fiscal/framework';
 
 export interface SpendSector {
   sector: string;
@@ -33,6 +41,8 @@ export interface SpendDonutData {
   debt_service_cost?: number | null;
   development_spending?: number | null;
   county_allocation?: number | null;
+  /** The split and its own total, KSh billion. The ONLY input drawn. */
+  fiscal_framework?: FiscalFramework | null;
   /** No longer rendered — the county-sector outer ring was withdrawn (F11). */
   sectors?: SpendSector[];
 }
@@ -84,60 +94,36 @@ interface Props {
 export default function SpendDonut({ data }: Props) {
   const [hoverKey, setHoverKey] = useState<string | null>(null);
 
-  // Every use has to be present before this decomposition means anything.
-  // Coercing absent uses to zero made `otherSpend` collapse to the whole
-  // budget, so an incomplete fiscal year rendered a 100% "Other (residual)"
-  // ring directly below a hero that correctly said the split was withheld.
-  // Same rule as BudgetFlowHero: withhold rather than fabricate.
-  // An absent component is not a zero-sized bucket: every shilling it should
-  // have held is silently absorbed into the "Other (residual)" slice, which
-  // then reads as real unallocated slack. The bar/hero on this page already
-  // withholds in that case; the donut has to as well. Credibility audit F2.
-  const debtService = data.debt_service_cost;
-  const recurrent = data.recurrent_spending;
-  const dev = data.development_spending;
-  const counties = data.county_allocation;
-
-  // The budget is part of the decomposition, not a separate concern: with it
-  // absent every share below divides by zero, and with the uses absent the
-  // residual becomes the whole budget. One predicate covers both.
-  const hasMacroSplit =
-    data.appropriated_budget != null &&
-    debtService != null &&
-    recurrent != null &&
-    dev != null &&
-    counties != null;
-
-  // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- guarded: hasMacroSplit gates the early return below, so this zero never renders
-  const budget = data.appropriated_budget ?? 0;
-
-  const recurrentNonDebt = hasMacroSplit ? Math.max(0, recurrent! - debtService!) : 0;
-  // Zero, NOT `budget`: falling back to the whole budget put a 100% "Other
-  // (residual)" slice into innerData, so the guard below never fired and the
-  // donut rendered fabricated slack instead of withholding.
-  const otherSpend = hasMacroSplit
-    ? Math.max(0, budget - recurrent! - dev! - counties!)
-    : 0;
+  // One column of Treasury's fiscal framework (issue #237), drawn against
+  // that column's own total. This used to draw against appropriated_budget
+  // (COB gross — counts principal redemption, excludes county transfers),
+  // subtract interest-plus-principal from a recurrent figure that holds
+  // interest only, and let an "Other (residual)" slice absorb the gap
+  // between the bases. Absent or unreconciled -> the donut withholds.
+  const uses = frameworkUses(frameworkOf(data));
+  const total = uses?.total ?? null;
 
   /* Inner ring — macro buckets */
   const innerData = useMemo(() => {
+    if (!uses) return [];
+    const share = (v: number) => (v / uses.total) * 100;
     const items = [
       {
         key: 'debtService',
-        name: 'Debt service',
-        value: hasMacroSplit ? debtService! : 0,
-        share: hasMacroSplit && budget > 0 ? (debtService! / budget) * 100 : 0,
+        name: 'Interest on debt',
+        value: uses.interest,
+        share: share(uses.interest),
         gradStart: INNER.debtService.start,
         gradEnd: INNER.debtService.end,
         color: INNER.debtService.base,
         note:
-          'Interest + principal on past debt. Paid ahead of any programme, per Article 221 of the Constitution.',
+          'Interest on domestic and foreign debt. Principal repaid on maturing loans is financing, not spending, so it is not in this ring.',
       },
       {
         key: 'recurrent',
-        name: 'Recurrent (ex-debt)',
-        value: recurrentNonDebt,
-        share: hasMacroSplit && budget > 0 ? (recurrentNonDebt / budget) * 100 : 0,
+        name: 'Recurrent (ex-interest)',
+        value: uses.recurrentExInterest,
+        share: share(uses.recurrentExInterest),
         gradStart: INNER.recurrent.start,
         gradEnd: INNER.recurrent.end,
         color: INNER.recurrent.base,
@@ -146,43 +132,42 @@ export default function SpendDonut({ data }: Props) {
       {
         key: 'development',
         name: 'Development',
-        value: hasMacroSplit ? dev! : 0,
-        share: hasMacroSplit && budget > 0 ? (dev! / budget) * 100 : 0,
+        value: uses.development,
+        share: share(uses.development),
         gradStart: INNER.development.start,
         gradEnd: INNER.development.end,
         color: INNER.development.base,
-        note: 'Capital projects — roads, hospitals, new classrooms.',
+        note: 'Capital projects and net lending — roads, hospitals, new classrooms.',
       },
       {
         key: 'counties',
         name: 'Counties',
-        value: hasMacroSplit ? counties! : 0,
-        share: hasMacroSplit && budget > 0 ? (counties! / budget) * 100 : 0,
+        value: uses.counties,
+        share: share(uses.counties),
         gradStart: INNER.counties.start,
         gradEnd: INNER.counties.end,
         color: INNER.counties.base,
-        note: "Equitable share transferred to the 47 county governments.",
+        note: 'Transfers to the 47 county governments: equitable share plus conditional allocations.',
       },
       {
         key: 'other',
-        name: 'Other (residual)',
-        value: otherSpend,
-        share: budget > 0 ? (otherSpend / budget) * 100 : 0,
+        name: 'Contingency fund',
+        value: uses.contingency,
+        share: share(uses.contingency),
         gradStart: INNER.other.start,
         gradEnd: INNER.other.end,
         color: INNER.other.base,
-        note: 'Computed residual — the balance after debt service, recurrent, development, and county transfers (largely Consolidated Fund Services: constitutional salaries, pensions, guaranteed payments).',
-        isResidual: true,
+        note: 'Set aside for urgent and unforeseen needs — a printed line, not a residual.',
       },
     ];
     return items.filter((d) => d.value > 0);
-  }, [debtService, recurrentNonDebt, dev, counties, otherSpend, budget]);
+  }, [uses]);
 
   /* Center readout — reflects whichever key is hovered */
   const centerInfo = useMemo(() => {
     const def = {
-      eyebrow: 'Total budget',
-      value: `KES ${fmtBillions(budget)}`,
+      eyebrow: 'Total spending',
+      value: `KES ${fmtBillions(total)}`,
       caption: `${data.fiscal_year ?? 'Latest FY'}`,
       accent: '#1B3A2A',
     };
@@ -192,14 +177,15 @@ export default function SpendDonut({ data }: Props) {
       return {
         eyebrow: inner.name,
         value: `KES ${fmtBillions(inner.value)}`,
-        caption: `${inner.share.toFixed(1)}% of budget`,
+        caption: `${inner.share.toFixed(1)}% of spending`,
         accent: inner.color,
       };
     }
     return def;
-  }, [hoverKey, innerData, budget, data.fiscal_year]);
+  }, [hoverKey, innerData, total, data.fiscal_year]);
 
-  if (!hasMacroSplit || innerData.length === 0) return null;
+  if (!uses || innerData.length === 0) return null;
+  const citationText = frameworkCitation(frameworkOf(data));
 
   return (
     <motion.section
@@ -217,8 +203,10 @@ export default function SpendDonut({ data }: Props) {
             The {data.fiscal_year ?? 'current'} budget, visualised
           </h3>
           <p className='text-[12.5px] text-neutral-muted mt-1 max-w-lg'>
-            The ring splits the national budget into macro buckets. Hover a slice
-            for the value.
+            Spending and net lending on Treasury&apos;s fiscal framework
+            {citationText ? ` (${citationText})` : ''}, split into its printed lines.
+            Hover a slice for the value. This total differs from the gross budget
+            headline, which counts debt principal and excludes counties.
           </p>
         </div>
       </div>
@@ -343,12 +331,7 @@ export default function SpendDonut({ data }: Props) {
                 );
               })}
             </div>
-            {innerData.some((d: any) => d.isResidual) && (
-              <p className='mt-2 text-[11px] leading-snug text-neutral-muted/75'>
-                “Other (residual)” is a computed balancing item — the budget left after the
-                named buckets — not a separately sourced line.
-              </p>
-            )}
+            {/* No residual slice exists any more: every slice is a printed line. */}
           </div>
 
           {/* The county-sector legend was withdrawn with the outer ring (F11). */}
