@@ -452,73 +452,29 @@ class KNBSDataFetcher:
                 logger.error(f"[KNBS] Error fetching population data: {e}")
                 result["error"] = str(e)
 
-        # Fallback: Try direct scraping
+        # No fallback past the structured documents (issue #204). There used
+        # to be two, and neither was a population source:
+        #
+        # * a regex over the KNBS homepage for a number next to "population",
+        #   filed under the current year. On 2026-09-26 it returned 82, from
+        #   "the population density of kenya in 2019 was of 82 people per
+        #   square kilometre", which is where population_data id=69 came from;
+        # * seeding/real_data/population.json, which is a git-tracked fixture
+        #   and not a fetch. It puts Mandera at 1,200,890 against the census's
+        #   867,457 and sums to 47,897,729, not 47,564,296, and the boot-time
+        #   auto-seeder wrote both over the extraction-backed 2019 rows in
+        #   place. The nightly population domain reads that fixture under the
+        #   census gate (seeding/domains/population/census_counties.py).
+        #
+        # Returning fetch_success=False is the correct answer when KNBS
+        # published nothing we can parse. The nightly owns this table.
         if not result["fetch_success"]:
-            fallback = await self._scrape_knbs_population()
-            if fallback:
-                result.update(fallback)
-                result["fetch_success"] = True
-
-        # Fallback 2: Load from cached population.json
-        if not result["fetch_success"]:
-            cached = self._load_cached_population()
-            if cached:
-                result.update(cached)
-                result["fetch_success"] = True
-
-        return result
-
-    def _load_cached_population(self) -> Optional[Dict]:
-        """Load population data from cached JSON file."""
-        cache_file = CACHE_PATH / "population.json"
-
-        if not cache_file.exists():
-            return None
-
-        try:
-            with open(cache_file, "r") as f:
-                pop_data = json.load(f)
-
-            if not pop_data:
-                return None
-
-            # Find national total and county data
-            counties = []
-            total_pop = 0
-            census_year = None
-
-            for record in pop_data:
-                county = record.get("county")
-                pop = record.get("total_population")
-                year = record.get("year")
-
-                if county and pop:
-                    counties.append(
-                        {
-                            "county": county,
-                            "total_population": pop,
-                            "year": year,
-                        }
-                    )
-                    total_pop += pop
-                    if year and (census_year is None or year > census_year):
-                        census_year = year
-
-            logger.info(
-                f"[KNBS] Loaded cached population data: {len(counties)} counties, total {total_pop:,}"
+            logger.warning(
+                "[KNBS] No population figure from a structured KNBS document; "
+                "nothing to write"
             )
 
-            return {
-                "national_population": total_pop,
-                "census_year": census_year,
-                "counties": counties,
-                "source": "Cached KNBS Census Data",
-                "cache_note": "Data from previously collected official sources",
-            }
-
-        except Exception as e:
-            logger.error(f"[KNBS] Error loading cached population: {e}")
-            return None
+        return result
 
     async def fetch_economic_indicators(self) -> Dict[str, Any]:
         """
@@ -617,43 +573,6 @@ class KNBSDataFetcher:
         # to download and parse county PDFs for fresh data
 
         return []
-
-    async def _scrape_knbs_population(self) -> Optional[Dict]:
-        """Direct scraping fallback for population data."""
-        try:
-            async with httpx.AsyncClient(timeout=30.0, verify=False) as client:
-                # Try the KNBS homepage and publications
-                response = await client.get(f"{self.base_url}/")
-
-                if response.status_code == 200:
-                    text = response.text.lower()
-
-                    # Look for population figures
-                    patterns = [
-                        r"population[:\s]+(\d+(?:[.,]\d+)?)\s*(million|billion)?",
-                        r"(\d+(?:[.,]\d+)?)\s*(million|billion)?\s*people",
-                    ]
-
-                    for pattern in patterns:
-                        match = re.search(pattern, text)
-                        if match:
-                            value = float(match.group(1).replace(",", ""))
-                            unit = match.group(2) or ""
-
-                            if "million" in unit:
-                                value *= 1e6
-                            elif "billion" in unit:
-                                value *= 1e9
-
-                            return {
-                                "national_population": int(value),
-                                "census_year": datetime.now(timezone.utc).year,
-                            }
-
-        except Exception as e:
-            logger.error(f"[KNBS] Scrape fallback error: {e}")
-
-        return None
 
 
 class TreasuryDataFetcher:
