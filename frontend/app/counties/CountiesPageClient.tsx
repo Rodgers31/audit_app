@@ -29,7 +29,15 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
 import ResponsiveTable from '@/components/ui/ResponsiveTable';
 
@@ -1231,6 +1239,40 @@ function Th({
 
 const PAGE_SIZE = 10;
 
+const subscribeToNothing = () => () => {};
+
+/**
+ * True while React is hydrating server HTML, false on every other render.
+ * `useSyncExternalStore` answers with the server snapshot during hydration
+ * (and on the server) and the client snapshot otherwise.
+ */
+function useIsHydrating(): boolean {
+  return useSyncExternalStore(
+    subscribeToNothing,
+    () => false,
+    () => true
+  );
+}
+
+/**
+ * Calls `onChange` on mount and whenever `useSearchParams()` changes identity,
+ * i.e. when a Next.js navigation changes the query without remounting the
+ * route or firing popstate. Renders nothing.
+ *
+ * It exists to quarantine the hook: on a statically prerendered route
+ * `useSearchParams()` bails its subtree out to client-side rendering, up to
+ * the nearest Suspense boundary. Rendered behind its own
+ * `<Suspense fallback={null}>`, the subtree that bails out is this null leaf,
+ * and the page around it server-renders.
+ */
+function SearchParamsChange({ onChange }: { onChange: () => void }) {
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    onChange();
+  }, [searchParams, onChange]);
+  return null;
+}
+
 function CountyRankingsTable({
   counties,
   sortField,
@@ -1260,9 +1302,15 @@ function CountyRankingsTable({
   // params map on first client render in App Router — the URL shows
   // `?p=3` but the hook says `{}`, so the table renders page 1. Direct
   // window access bypasses that hydration-timing bug.
+  //
+  // The hook is still what tells us a Next.js navigation changed the query,
+  // but it is called in `SearchParamsChange` below, never here: on this
+  // statically prerendered route, calling it anywhere in the page bails the
+  // render out to the client up to the nearest Suspense boundary — which was
+  // `loading.tsx`'s, so the whole explorer and its LCP element were missing
+  // from the served HTML (#221 finding #3).
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   const readPageFromUrl = useCallback((): number => {
     if (typeof window === 'undefined') return 1;
@@ -1276,24 +1324,30 @@ function CountyRankingsTable({
     return new URLSearchParams(window.location.search).get('view') === 'all';
   }, []);
 
-  const [pageFromUrl, setPageFromUrl] = useState<number>(() => readPageFromUrl());
-  const [showAll, setShowAllLocal] = useState<boolean>(() => readShowAllFromUrl());
+  // The prerendered document is built once, with no query string, and served
+  // for /counties?p=3 too. While hydrating it, the first render must produce
+  // what the server did — page 1, paginated — or React discards the server
+  // HTML as a mismatch. The URL takes over one effect later, via
+  // `SearchParamsChange`'s mount. A client-side mount (back from a county
+  // page) is not hydrating and reads the URL straight away, so the list the
+  // reader left is on screen in the first commit, which is what the browser
+  // restores scroll against.
+  const hydrating = useIsHydrating();
+  const [pageFromUrl, setPageFromUrl] = useState<number>(() => (hydrating ? 1 : readPageFromUrl()));
+  const [showAll, setShowAllLocal] = useState<boolean>(() =>
+    hydrating ? false : readShowAllFromUrl()
+  );
+
+  const syncFromUrl = useCallback(() => {
+    setPageFromUrl(readPageFromUrl());
+    setShowAllLocal(readShowAllFromUrl());
+  }, [readPageFromUrl, readShowAllFromUrl]);
 
   // Keep local mirrors in sync with browser history (back/forward, manual edits).
   useEffect(() => {
-    const onPop = () => {
-      setPageFromUrl(readPageFromUrl());
-      setShowAllLocal(readShowAllFromUrl());
-    };
-    window.addEventListener('popstate', onPop);
-    return () => window.removeEventListener('popstate', onPop);
-  }, [readPageFromUrl, readShowAllFromUrl]);
-
-  // Also resync when Next.js internal navigation updates `searchParams`.
-  useEffect(() => {
-    setPageFromUrl(readPageFromUrl());
-    setShowAllLocal(readShowAllFromUrl());
-  }, [searchParams, readPageFromUrl, readShowAllFromUrl]);
+    window.addEventListener('popstate', syncFromUrl);
+    return () => window.removeEventListener('popstate', syncFromUrl);
+  }, [syncFromUrl]);
 
   const totalPages = Math.ceil(counties.length / PAGE_SIZE);
   // Clamp to valid range — an out-of-range `p` just clamps to last page.
@@ -1352,6 +1406,11 @@ function CountyRankingsTable({
 
   return (
     <div className='ledger-panel overflow-hidden'>
+      {/* Resyncs on mount and whenever a Next.js navigation changes the query.
+          Its own boundary keeps the client-only render to this empty leaf. */}
+      <Suspense fallback={null}>
+        <SearchParamsChange onChange={syncFromUrl} />
+      </Suspense>
       <div className='flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-neutral-border'>
         <div className='flex items-center gap-2'>
           <h3 className='text-sm font-bold text-gray-900 dark:text-neutral-text'>{t('counties.rankings.title')}</h3>
