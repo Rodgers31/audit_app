@@ -319,6 +319,16 @@ export default function BudgetSpendingPage() {
   const viewingCurrentFY =
     !selectedFY || !overviewFY || fyKey(selectedFY) === fyKey(overviewFY);
 
+  // The execution-by-sector panel is NOT from the overview: it carries its own
+  // fiscal year — the newest ANNUAL COB report (#241). Gate it on that. The
+  // county overview moves to a new FY as soon as COB's first quarterly county
+  // report lands, months before the annual national one, so gating on the
+  // overview would show an FY2025/26 panel under FY2026/27 and hide it under
+  // FY2025/26 — the mismatch the comment above exists to prevent.
+  const executionFY = (enhanced as any)?.execution_fiscal_year ?? null;
+  const viewingExecutionFY =
+    !selectedFY || !executionFY || fyKey(selectedFY) === fyKey(executionFY);
+
   const countyUtil = overview?.county_utilization ?? {};
   const executionBySector = enhanced?.execution_by_sector ?? [];
   const revenueBySource = enhanced?.revenue_by_source ?? [];
@@ -415,10 +425,13 @@ export default function BudgetSpendingPage() {
       <RevenueMix revenueBySource={revenueBySource as any} />
 
       {/* ─── 5. The audit lens: execution by sector ─── */}
-      {viewingCurrentFY && (
+      {viewingExecutionFY && (
         <ExecutionAuditLens
           rows={executionBySector as any}
-          fiscalYear={(enhanced as any)?.execution_fiscal_year ?? undefined}
+          fiscalYear={executionFY ?? undefined}
+          source={(enhanced as any)?.execution_source ?? null}
+          coverage={(enhanced as any)?.execution_coverage ?? null}
+          excludes={(enhanced as any)?.execution_excludes ?? null}
         />
       )}
 

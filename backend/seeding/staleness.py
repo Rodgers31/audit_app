@@ -989,9 +989,10 @@ def run_all(
 ) -> List[Finding]:
     """Every gate. ``counts`` enables the row-count regression check.
 
-    Omitting ``counts`` runs the two original gates only. It is optional
+    Omitting ``counts`` skips the row-count regression check (the table,
+    ingestion and publisher-edition gates always run). It is optional
     because ``run_all`` has callers that have no count to offer, NOT because
-    the third gate is — the nightly passes the counts it already computed for
+    that check is — the nightly passes the counts it already computed for
     its own floors.
     """
     findings = check_table_freshness(session, now) + check_ingestion_freshness(
@@ -999,6 +1000,10 @@ def run_all(
     )
     if counts is not None:
         findings += check_and_record_row_census(session, counts, now=now)
+    # Is the publisher AHEAD of what we publish? (#241, #243)
+    from .edition_gates import check_publisher_editions
+
+    findings += check_publisher_editions(session)
     return findings
 
 

@@ -106,7 +106,10 @@ def seed_fiscal_and_budget(db_session, seed_country, seed_source_doc):
                 category=cat,
                 allocated_amount=alloc,
                 actual_spent=spent,
-                committed_amount=alloc,  # marks as NG-BIRR data
+                committed_amount=alloc,
+                # What marks these as annual NG-BIRR execution rows is the
+                # measure they DECLARE (#241) — not a filled-in column.
+                provenance=[{"measure": "expenditure", "period": "annual"}],
                 **common,
             )
         )

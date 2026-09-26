@@ -1,8 +1,9 @@
 """Fetch national budget execution payload with live COB PDF integration.
 
 Strategy (in order):
-1. If live_pdf_fetch_enabled, try to discover the latest COB National
-   Government BIRR PDF, download and parse it.
+1. If live_pdf_fetch_enabled, discover on COB's NG-BIRR listing (a) the
+   newest ANNUAL report — actual expenditure by sector — and (b) the newest
+   report of any period — exchequer issues by sector — and parse both.
 2. Fall back to the static fixture / configured URL.
 
 National budget execution data comes from the Controller of Budget (COB)
@@ -12,15 +13,27 @@ quarterly NG-BIRR reports.
 from __future__ import annotations
 
 import logging
+import re
 import time
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from ...cob_discovery import discover_latest_cob_pdf_url
 from ...config import SeedingSettings
 from ...http_client import SeedingHttpClient
 from ...utils import load_json_resource
-from ...freshness import mark_fixture, mark_live
+from .sector_expenditure import (
+    ALLOCATION_MEASURE,
+    EXCHEQUER_MEASURE,
+    EXPENDITURE_MEASURE,
+)
+from ...freshness import (
+    mark_fixture,
+    mark_live,
+    mark_partial,
+    record_publisher_edition,
+)
 
 logger = logging.getLogger("seeding.national_budget.fetcher")
 
@@ -28,48 +41,98 @@ logger = logging.getLogger("seeding.national_budget.fetcher")
 def fetch_national_budget_payload(
     client: SeedingHttpClient, settings: SeedingSettings
 ) -> list[dict[str, Any]]:
-    """Fetch national budget execution, trying live COB PDF first.
+    """Fetch national budget execution, trying live COB PDFs first.
 
-    Strategy:
-    1. Try live PDF fetch from COB NG-BIRR reports page.
-    2. Fall back to configured fixture/API URL.
+    Two live sources, both discovered on the same COB listing page:
+
+    1. **The newest ANNUAL NG-BIRR -> actual expenditure by sector**
+       (``sector_expenditure.py``). This is what the /budget execution panel
+       publishes. Every row it produces declares ``measure: expenditure`` in
+       its provenance; nothing else does.
+    2. **The newest report of any period -> Exchequer Issues by sector**
+       (``pdf_parser.NgBirrSectoralParser``), for quarterly reports. Skipped
+       when the newest report IS the annual one: that report's expenditure
+       rows supersede its exchequer proxies on the same period (#241).
+
+    Falls back to the configured fixture only when neither yields anything.
     """
-    # Strategy 1: Live PDF fetch
-    if settings.live_pdf_fetch_enabled:
-        try:
-            payload = _fetch_from_cob_ng_pdf(client, settings)
-            if payload and len(payload) > 0:
-                logger.info(
-                    "Successfully fetched national budget from COB PDF (%d records)",
-                    len(payload),
-                )
-                mark_live(
-                    "national_budget",
-                    detail=f"COB NG-BIRR PDF, {len(payload)} records",
-                )
-                # Filter metadata entries
-                return [r for r in payload if "_metadata" not in r]
-            else:
-                logger.warning(
-                    "COB NG-BIRR PDF fetch returned no data, "
-                    "falling back to fixture"
-                )
-                mark_fixture(
-                    "national_budget", reason="parser_returned_nothing"
-                )
-        except Exception as exc:
-            logger.warning(
-                "COB NG-BIRR PDF fetch failed, falling back to fixture: %s", exc
-            )
-            mark_fixture(
-                "national_budget",
-                reason="live_fetch_failed",
-                detail=str(exc)[:200],
-            )
-    else:
+    if not settings.live_pdf_fetch_enabled:
         mark_fixture("national_budget", reason="live_pdf_fetch_disabled")
+        return _load_fixture(client, settings)
 
-    # Strategy 2: Fixture fallback
+    page_url = settings.cob_birr_page_url
+    try:
+        logger.info("Fetching COB NG-BIRR reports page: %s", page_url)
+        html = client.get(page_url, raise_for_status=True).text
+    except Exception as exc:
+        logger.warning("COB NG-BIRR listing unreachable, falling back to fixture: %s", exc)
+        mark_fixture(
+            "national_budget", reason="live_fetch_failed", detail=str(exc)[:200]
+        )
+        return _load_fixture(client, settings)
+
+    records: List[Dict[str, Any]] = []
+
+    # ── 1. Annual report -> expenditure by sector ──
+    annual = discover_latest_annual_ng_birr(html, page_url)
+    annual_status = "no_annual_report_listed"
+    if annual is not None:
+        # Recorded BEFORE the download/parse, so a failure below still leaves
+        # the evidence that COB has an edition we do not hold.
+        record_publisher_edition(
+            "national_budget",
+            dataset=ANNUAL_DATASET,
+            edition=annual.fiscal_year,
+            url=annual.url,
+        )
+        try:
+            expenditure, annual_status = _fetch_annual_sector_expenditure(
+                client, settings, annual
+            )
+            records.extend(expenditure)
+        except Exception as exc:
+            logger.warning("Annual NG-BIRR expenditure parse failed: %s", exc)
+            annual_status = f"error({type(exc).__name__}: {str(exc)[:120]})"
+
+    # ── 2. Newest report of any period -> exchequer issues ──
+    latest_url = _discover_latest_ng_birr_pdf(html, page_url)
+    exchequer_status = "no_report_listed"
+    if latest_url and annual is not None and latest_url == annual.url:
+        exchequer_status = "skipped_newest_is_annual"
+    elif latest_url:
+        try:
+            exchequer = _download_and_parse_ng_pdf(client, latest_url, settings) or []
+            exchequer = [r for r in exchequer if "_metadata" not in r]
+            records.extend(exchequer)
+            exchequer_status = f"{len(exchequer)} rows"
+        except Exception as exc:
+            logger.warning("COB NG-BIRR exchequer parse failed: %s", exc)
+            exchequer_status = f"error({type(exc).__name__})"
+
+    detail = (
+        f"annual expenditure: {annual_status}; latest-report exchequer: "
+        f"{exchequer_status}"
+    )
+    logger.info("national_budget live sources — %s", detail)
+    if annual_status.startswith("promoted"):
+        mark_live("national_budget", detail=detail)
+        return records
+    if records:
+        # Reached COB, but not for the figure the execution panel publishes.
+        mark_partial(
+            "national_budget",
+            reason=f"annual_expenditure_not_promoted({annual_status})",
+            detail=detail,
+        )
+        return records
+
+    mark_fixture("national_budget", reason="parser_returned_nothing", detail=detail)
+    return _load_fixture(client, settings)
+
+
+def _load_fixture(
+    client: SeedingHttpClient, settings: SeedingSettings
+) -> list[dict[str, Any]]:
     logger.info("Using fixture/configured URL for national budget data")
     payload = load_json_resource(
         url=settings.national_budget_execution_dataset_url,
@@ -85,23 +148,227 @@ def fetch_national_budget_payload(
     return [r for r in payload if "_metadata" not in r]
 
 
-def _fetch_from_cob_ng_pdf(
-    client: SeedingHttpClient, settings: SeedingSettings
-) -> Optional[List[Dict[str, Any]]]:
-    """Discover and parse the latest COB national government BIRR PDF."""
-    page_url = settings.cob_birr_page_url
-    logger.info("Fetching COB NG-BIRR reports page: %s", page_url)
+# ─────────────────────────────────────────────────────────────────────────
+# Annual NG-BIRR -> actual expenditure by sector (#241)
+# ─────────────────────────────────────────────────────────────────────────
 
-    response = client.get(page_url, raise_for_status=True)
-    html = response.text
+#: ``ingestion_jobs.meta.publisher_edition.dataset`` for this series.
+ANNUAL_DATASET = "cob_ng_birr_annual"
 
-    pdf_url = _discover_latest_ng_birr_pdf(html, page_url)
-    if not pdf_url:
-        logger.warning("No NG-BIRR PDF link found on COB reports page")
-        return None
+# The measure every execution row declares lives in ``sector_expenditure``
+# (EXPENDITURE_MEASURE / ALLOCATION_MEASURE): ``/budget/enhanced`` publishes
+# only rows whose provenance says expenditure — never rows it has to guess
+# about.
 
-    logger.info("Downloading COB NG-BIRR PDF: %s", pdf_url)
-    return _download_and_parse_ng_pdf(client, pdf_url, settings)
+#: Subcategory of a sector's whole-year Total row (both votes combined).
+TOTAL_SUBCATEGORY = "Recurrent & Development"
+
+_WPDM_ANCHOR_RE = re.compile(
+    r"""href=["'](?P<url>https?://[^"'\s]+/download/(?P<slug>[^/"'\s]+)/?\?"""
+    r"""(?:[^"'\s]*&)?wpdmdl=\d+[^"'\s]*)["']""",
+    re.IGNORECASE,
+)
+# "…-review-report-fy-2025-2026", "…-report-for-the-fy-2020-21",
+# "…-report-fy-2022-23". The FY must END the slug: quarterly reports carry
+# "first-six-months-fy-…", "first-quarter-fy-…" etc. before it.
+_ANNUAL_SLUG_RE = re.compile(
+    r"national-government-budget-implementation-review-report-"
+    r"(?:for-the-)?fy-(?P<y1>(?:19|20)\d{2})-(?P<y2>\d{2,4})$",
+    re.IGNORECASE,
+)
+_SUBPERIOD_WORDS = ("first", "quarter", "months", "half", "six", "nine", "three")
+
+
+@dataclass(frozen=True)
+class AnnualReport:
+    url: str
+    fiscal_year: str  # "FY 2025/26"
+    start_year: int
+
+
+def discover_latest_annual_ng_birr(html: str, base_url: str) -> Optional[AnnualReport]:
+    """The newest ANNUAL NG-BIRR on COB's listing, ranked by the FY its slug
+    names — not by upload id, which COB can bump by re-uploading an old
+    report, and not by page order."""
+    best: Optional[AnnualReport] = None
+    for m in _WPDM_ANCHOR_RE.finditer(html or ""):
+        slug = m.group("slug").lower()
+        if any(w in slug for w in _SUBPERIOD_WORDS):
+            continue
+        sm = _ANNUAL_SLUG_RE.search(slug)
+        if not sm:
+            continue
+        y1 = int(sm.group("y1"))
+        raw = sm.group("y2")
+        y2 = int(raw) if len(raw) == 4 else (y1 // 100) * 100 + int(raw)
+        if y2 != y1 + 1:
+            continue
+        report = AnnualReport(
+            url=m.group("url"),
+            fiscal_year=f"FY {y1}/{str(y1 + 1)[-2:]}",
+            start_year=y1,
+        )
+        if best is None or report.start_year > best.start_year:
+            best = report
+    if best:
+        logger.info("Newest annual NG-BIRR on the listing: %s -> %s", best.fiscal_year, best.url)
+    else:
+        logger.warning("No annual NG-BIRR found on %s", base_url)
+    return best
+
+
+def _extract_page_texts(pdf_path: Path) -> List[Dict[str, Any]]:
+    """Every page's text, 1-based. The slow step (~1 min for a 426-page
+    report), and the only one the parse cache may skip — the verification in
+    ``sector_expenditure`` runs fresh on every night's text."""
+    import pdfplumber
+
+    out: List[Dict[str, Any]] = []
+    with pdfplumber.open(pdf_path) as pdf:
+        for i, page in enumerate(pdf.pages, start=1):
+            out.append({"page": i, "text": page.extract_text() or ""})
+    return out
+
+
+def report_period(pages: Dict[int, str]) -> Tuple[Optional[str], bool]:
+    """``(fiscal_year, is_annual)`` from the cover pages, using the same
+    descriptors as the quarterly parser — an annual report names none of
+    "FIRST SIX MONTHS", "FIRST QUARTER", …"""
+    from .pdf_parser import _PERIOD_DESCRIPTORS
+
+    cover = "\n".join(pages.get(i, "") for i in (1, 2, 3)).upper()
+    m = re.search(r"FY\s*(\d{4})\s*[/\-]\s*(\d{2,4})", cover)
+    if not m:
+        return None, False
+    y1 = int(m.group(1))
+    fy = f"FY {y1}/{str(y1 + 1)[-2:]}"
+    is_annual = not any(d in cover for d, _, _ in _PERIOD_DESCRIPTORS)
+    return fy, is_annual
+
+
+def _fetch_annual_sector_expenditure(
+    client: SeedingHttpClient, settings: SeedingSettings, report: AnnualReport
+) -> Tuple[List[Dict[str, Any]], str]:
+    """Download the annual report, parse and verify its Sector Summaries, and
+    return ``(records, status)``. ``status`` starts with ``promoted`` only when
+    at least one sector passed verification."""
+    import pdfplumber
+
+    from ...parse_cache import parse_with_cache
+    from ...pdf_download import get_or_download_pdf
+    from .sector_expenditure import parse_sector_expenditure
+
+    cache_dir = Path(settings.cache_path) / "pdfs"
+    pdf_path = get_or_download_pdf(
+        client,
+        report.url,
+        cache_dir=cache_dir,
+        ttl_seconds=settings.pdf_cache_ttl_seconds,
+        max_seconds=settings.pdf_download_timeout_seconds,
+        max_bytes=settings.pdf_download_max_bytes,
+    )
+    page_rows = parse_with_cache(
+        pdf_path,
+        cache_dir=cache_dir,
+        kind="cob_ng_birr_page_text",
+        parse_fn=lambda: _extract_page_texts(pdf_path),
+        key_extra=f"pdfplumber=={pdfplumber.__version__}",
+    )
+    pages = {int(r["page"]): str(r["text"]) for r in page_rows}
+
+    fy, is_annual = report_period(pages)
+    if fy != report.fiscal_year or not is_annual:
+        # The slug said annual FY X; the cover must agree, or we would write
+        # one year's expenditure under another year's label.
+        return [], (
+            f"refused(cover says {fy or 'no FY'}"
+            f"{'' if is_annual else ' sub-period'}; listing says {report.fiscal_year})"
+        )
+
+    result = parse_sector_expenditure(pages)
+    for s in result.sectors:
+        logger.info(
+            "NG-BIRR %s %s: accepted=%s split=%s total=%s checks=%s problems=%s",
+            report.fiscal_year, s.sector, s.accepted, s.split_published,
+            s.total.as_dict() if s.total else None, s.checks, s.problems,
+        )
+    accepted = result.accepted
+    if not accepted:
+        return [], "no_sector_passed_verification"
+
+    records = build_expenditure_records(result, report)
+    coverage = result.coverage()
+    status = (
+        f"promoted:{len(accepted)}/{coverage['sectors_expected']} sectors "
+        f"{report.fiscal_year}"
+    )
+    if result.missing:
+        status += f" missing={result.missing}"
+    if coverage["reconciles"] is False:
+        status += " coverage_gap"
+    return records, status
+
+
+def build_expenditure_records(result: Any, report: AnnualReport) -> List[Dict[str, Any]]:
+    """One record per verified sector: its whole-year Total, with the evidence
+    it was accepted on carried in the row's provenance."""
+    from decimal import Decimal
+
+    y1 = report.start_year
+    coverage = result.coverage()
+    billion = Decimal("1000000000")
+    out: List[Dict[str, Any]] = []
+    for s in result.accepted:
+        split = None
+        if s.split_published:
+            split = {
+                "development": s.development.as_dict(),
+                "recurrent": s.recurrent.as_dict(),
+            }
+        page_ref = f"p.{s.summary_page}" if s.summary_page else None
+        out.append(
+            {
+                "entity_slug": "national-government",
+                "entity": "National Government of Kenya",
+                "fiscal_year": report.fiscal_year,
+                "start_date": f"{y1}-07-01",
+                "end_date": f"{y1 + 1}-06-30",
+                "category": s.sector,
+                "subcategory": TOTAL_SUBCATEGORY,
+                "allocated_amount": str((s.total.gross * billion).quantize(Decimal("1"))),
+                "actual_spent": str((s.total.expenditure * billion).quantize(Decimal("1"))),
+                "committed_amount": None,
+                "source": f"CoB NG-BIRR {report.fiscal_year} (annual)",
+                "source_url": report.url,
+                "data_quality": "official",
+                "page_ref": page_ref,
+                "notes": (
+                    f"{s.table} Sector Summary, {page_ref}: revised gross "
+                    f"estimates {s.total.gross} bn, expenditure "
+                    f"{s.total.expenditure} bn (Controller of Budget, annual "
+                    f"NG-BIRR {report.fiscal_year})."
+                ),
+                "provenance_extra": {
+                    "measure": EXPENDITURE_MEASURE,
+                    "allocated_measure": ALLOCATION_MEASURE,
+                    "period": "annual",
+                    "table": s.table,
+                    "summary_page": s.summary_page,
+                    "prose_page": s.prose_page,
+                    "prose_expenditure_bn": (
+                        str(s.prose_expenditure_bn)
+                        if s.prose_expenditure_bn is not None
+                        else None
+                    ),
+                    "total": s.total.as_dict(),
+                    "checks": s.checks,
+                    "split": split,
+                    "notes": s.problems or None,
+                    "coverage": coverage,
+                },
+            }
+        )
+    return out
 
 
 _NG_BIRR_KEYWORDS = (
@@ -197,6 +464,13 @@ def _download_and_parse_ng_pdf(
                     "source": f"CoB NG-BIRR {period.label}",
                     "source_url": pdf_url,
                     "data_quality": "official",
+                    # Declared, so no reader has to guess: these are cash
+                    # releases against net estimates, not expenditure.
+                    "provenance_extra": {
+                        "measure": EXCHEQUER_MEASURE,
+                        "allocated_measure": "net_estimates",
+                        "period": period.label,
+                    },
                     "notes": (
                         "Sectoral aggregate from CoB NG-BIRR Tables 2.5 "
                         "(Development) / 2.6 (Recurrent). actual_spent "
