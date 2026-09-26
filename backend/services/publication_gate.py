@@ -623,8 +623,38 @@ def loan_is_modelled_fixture(loan: Any) -> bool:
     return False
 
 
+#: The one publication county pending bills are read from: the National
+#: Treasury's Budget Review and Outlook Paper, per-county table. Written onto
+#: each row's provenance by the pending_bills fetcher, never inferred.
+COUNTY_PENDING_BILLS_PUBLICATION = "treasury_brop"
+
+
+def county_pending_bills_row_is_published(loan: Any) -> bool:
+    """True for a PENDING_BILLS row read from the Treasury BROP.
+
+    The declaration, not the row's shape. A fixture row and a BROP row look
+    identical in the loans table — same category, same lender key, a
+    ``cob_pending_bills_etl`` source — so "sourced" used to mean only "not
+    bootstrap's modelled 8%", and the pending-bills fixture's invented county
+    figures passed. A row that does not say it came from the BROP is not
+    published, including rows written before the declaration existed: the
+    nightly re-stamps every BROP row, so that is one run of absence, never a
+    borrowed figure.
+    """
+    category = getattr(loan, "debt_category", None)
+    if getattr(category, "value", category) != "pending_bills":
+        return False
+    provenance = getattr(loan, "provenance", None)
+    entries = provenance if isinstance(provenance, list) else [provenance]
+    return any(
+        isinstance(entry, dict)
+        and entry.get("publication") == COUNTY_PENDING_BILLS_PUBLICATION
+        for entry in entries
+    )
+
+
 def county_pending_bills(loans: Iterable[Any]) -> Optional[float]:
-    """A county's pending bills from SOURCED rows, or None if it has none.
+    """A county's pending bills from the Treasury BROP, or None if it has none.
 
     ``None`` means "not published", and the caller must render it as absence
     rather than as zero. The distinction is the whole point here: Narok did
@@ -638,16 +668,19 @@ def county_pending_bills(loans: Iterable[Any]) -> Optional[float]:
     this existed the county list served the modelled figure for ALL 47
     counties — 8.7x below the Treasury's published total, and 21.9x below it
     for Nairobi — while the real BROP figures sat unused in the same table.
+
+    Every endpoint that shows a county's pending bills reads it through here —
+    the county list, the map, the detail page, compare, ``/pending-bills`` and
+    the debt page's top counties — so they cannot disagree.
     """
     total = 0.0
     found = False
     for loan in loans or []:
-        category = getattr(loan, "debt_category", None)
-        if getattr(category, "value", category) != "pending_bills":
+        if not county_pending_bills_row_is_published(loan):
             continue
-        if loan_is_modelled_fixture(loan):
-            continue
-        amount = getattr(loan, "outstanding", None) or getattr(loan, "principal", None)
+        amount = getattr(loan, "outstanding", None)
+        if amount is None:
+            amount = getattr(loan, "principal", None)
         if amount is None:
             continue
         total += float(amount)

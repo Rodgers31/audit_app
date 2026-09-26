@@ -15,6 +15,7 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from models import DebtCategory, DocumentType, Entity, EntityType, Loan, SourceDocument
+from services.publication_gate import COUNTY_PENDING_BILLS_PUBLICATION
 from sqlalchemy.orm import Session
 
 if TYPE_CHECKING:
@@ -29,6 +30,8 @@ def write_pending_bills(
     source_url: str | None = None,
     source_title: str | None = None,
     dry_run: bool = False,
+    publication: str | None = None,
+    publisher: str | None = None,
 ) -> tuple[int, int]:
     """
     Write pending bills records to the loans table.
@@ -54,8 +57,28 @@ def write_pending_bills(
         logger.info("No pending bills records to write")
         return created, updated
 
+    # County figures come from ONE publication, the Treasury BROP's per-county
+    # table. Any other payload — the git-tracked fixture the fetcher falls
+    # back to when the BROP is unreachable — does not write county rows. The
+    # fixture carries seven invented county figures (Nairobi 98.7B, …) under
+    # the same lender key the BROP uses, so one failed fetch used to OVERWRITE
+    # the published figure and serve the invention as sourced.
+    if publication != COUNTY_PENDING_BILLS_PUBLICATION:
+        skipped = [r for r in records if r.category == "county"]
+        if skipped:
+            logger.warning(
+                "pending bills: not writing %d county record(s) from a %s "
+                "payload — county pending bills are read from the Treasury "
+                "BROP only",
+                len(skipped),
+                publication or "fixture",
+            )
+        records = [r for r in records if r.category != "county"]
+
     # Get or create the source document
-    source_doc = _get_or_create_source_document(session, source_url, source_title)
+    source_doc = _get_or_create_source_document(
+        session, source_url, source_title, publisher=publisher
+    )
 
     for record in records:
         entity = _get_or_create_entity(session, record.entity_name, record.entity_type)
@@ -82,6 +105,9 @@ def write_pending_bills(
 
         provenance = {
             "source": "cob_pending_bills_etl",
+            # Which publication this figure was read from; None for a fixture.
+            # Declared by the fetcher, re-stamped on every write.
+            "publication": publication,
             "fiscal_year": record.fiscal_year,
             "category": record.category,
             "source_url": record.source_url or source_url,
@@ -203,9 +229,16 @@ def _get_or_create_source_document(
     session: Session,
     source_url: str | None,
     source_title: str | None,
+    publisher: str | None = None,
 ) -> SourceDocument | None:
-    """Get or create source document for COB pending bills report."""
+    """Get or create the source document a pending-bills payload came from.
+
+    ``publisher`` is the payload's own declaration. It used to be hardcoded to
+    the Controller of Budget, which named the wrong office for the Treasury's
+    BROP — the document every county figure is read from.
+    """
     title = source_title or "COB Pending Bills Report"
+    publisher = publisher or "Office of the Controller of Budget (OCOB)"
 
     doc = (
         session.query(SourceDocument)
@@ -216,6 +249,10 @@ def _get_or_create_source_document(
         .first()
     )
     if doc:
+        if doc.publisher != publisher:
+            doc.publisher = publisher
+        if source_url and doc.url != source_url:
+            doc.url = source_url
         return doc
 
     from models import Country
@@ -228,7 +265,7 @@ def _get_or_create_source_document(
     logger.info(f"Creating source document: {title}")
     doc = SourceDocument(
         country_id=kenya.id,
-        publisher="Office of the Controller of Budget (OCOB)",
+        publisher=publisher,
         title=title,
         doc_type=DocumentType.REPORT,
         url=source_url,

@@ -1,114 +1,83 @@
-"""The modelled pending-bills figure is never written.
+"""Bootstrap writes no county money, and only the Treasury BROP publishes pending bills.
 
 ``enhanced_county_data.json`` sets every county's pending bills at a flat 8%
 of a budget that is itself population x KSh 4,500 — the same ratio for all 47
 counties, which is what a formula looks like, not a set of measurements. The
-`pending_bills` domain publishes the real per-county figures from Table 10 of
-the Treasury's Budget Review and Outlook Paper.
+`pending_bills` domain publishes the real per-county figures from the
+Treasury's Budget Review and Outlook Paper.
 
-This started as a deferral: write the modelled figure only where the BROP has
-none, so "a county the parse has not reached keeps the only figure it has".
-That was wrong. The figure it kept was a fabrication, and the single county it
-applied to — Narok — is exactly the one the BROP reports as having submitted
-no data at all. So nothing is written now, and a county with no published
-figure shows absence.
+This started as a deferral ("write the modelled figure only where the BROP has
+none"), then became "write the debt row but not the pending-bills row". As of
+#238 bootstrap writes no county money at all — no budget lines, no debt, no
+pending bills — because every one of those rows either competed with a live
+domain's rows or sat in the database as a figure the gates had to keep
+catching. Bootstrap keeps the reference skeleton.
+
+The gate changed with it. "Sourced" used to mean "not bootstrap's modelled
+row", and the pending-bills FIXTURE's invented county figures passed that
+test. A row is now published only when it declares the BROP.
 """
-
-from datetime import date
 
 import pytest
 
-from models import Country, DebtCategory, DocumentType, Entity, EntityType, Loan, SourceDocument
+from models import Base, BudgetLine, DebtCategory, Entity, EntityType, Loan
 
 
 @pytest.fixture()
-def county(db_session):
-    country = Country(
-        name="Kenya", iso_code="KEN", currency="KES",
-        timezone="Africa/Nairobi", default_locale="en-KE",
-    )
-    db_session.add(country)
-    db_session.flush()
-    entity = Entity(
-        country_id=country.id, type=EntityType.COUNTY,
-        canonical_name="Narok County", slug="narok-county",
-    )
-    doc = SourceDocument(
-        title="Narok County Budget FY2024/25", publisher="County Treasury",
-        doc_type=DocumentType.BUDGET, country_id=country.id,
-        fetch_date=date(2025, 8, 24),
-    )
-    db_session.add_all([entity, doc])
-    db_session.flush()
-    return db_session, entity, doc
+def seeded_from_scratch(monkeypatch):
+    """A full ``initialize_reference_data`` run against an empty database."""
+    from sqlalchemy import create_engine
+    from sqlalchemy.dialects.postgresql import JSONB
+    from sqlalchemy.ext.compiler import compiles
+    from sqlalchemy.orm import sessionmaker
 
-
-def _seed(session, entity, doc, *, debt=1_000_000.0, bills=500_000.0):
     import bootstrap
 
-    bootstrap._upsert_county_debt(
-        session,
-        entity_id=entity.id,
-        county_name="Narok",
-        debt_outstanding=debt,
-        pending_bills=bills,
-        source_document_id=doc.id,
-    )
-    session.flush()
+    @compiles(JSONB, "sqlite")
+    def _c(t, c, **kw):  # pragma: no cover
+        return "TEXT"
+
+    engine = create_engine("sqlite://", connect_args={"check_same_thread": False})
+    Base.metadata.create_all(engine)
+    Sess = sessionmaker(bind=engine)
+    monkeypatch.setattr(bootstrap, "SessionLocal", Sess)
+
+    bootstrap.initialize_reference_data()
+
+    with Sess() as s:
+        yield s
 
 
-def _live_row(session, entity, doc):
-    session.add(
-        Loan(
-            entity_id=entity.id,
-            lender="Pending Bills — County Governments (Narok County)",
-            debt_category=DebtCategory.PENDING_BILLS,
-            principal=2_345_000, outstanding=2_345_000, currency="KES",
-            issue_date=date(2024, 7, 1), source_document_id=doc.id,
+def _county_ids(session):
+    return [
+        e.id
+        for e in session.query(Entity).filter(Entity.type == EntityType.COUNTY).all()
+    ]
+
+
+class TestBootstrapWritesNoCountyMoney:
+    def test_the_skeleton_is_still_there(self, seeded_from_scratch):
+        """Control: the run happened and seeded the 47 counties."""
+        assert len(_county_ids(seeded_from_scratch)) == 47
+
+    def test_no_county_budget_line(self, seeded_from_scratch):
+        """RED before #238: 470 modelled sector lines under FY2025/26."""
+        ids = _county_ids(seeded_from_scratch)
+        rows = (
+            seeded_from_scratch.query(BudgetLine)
+            .filter(BudgetLine.entity_id.in_(ids))
+            .count()
         )
-    )
-    session.flush()
+        assert rows == 0, f"bootstrap wrote {rows} county budget line(s)"
 
-
-class TestTheModelledFigureIsNeverWritten:
-    def test_the_modelled_figure_is_not_written_when_the_brop_row_exists(self, county):
-        session, entity, doc = county
-        _live_row(session, entity, doc)
-
-        _seed(session, entity, doc)
-
-        modelled = session.query(Loan).filter(Loan.lender == "Pending Bills").count()
-        assert modelled == 0, "the modelled pending-bills row was written anyway"
-
-    def test_it_is_not_written_for_a_county_with_no_brop_row_either(self, county):
-        """Narok, which is why this stopped being a deferral.
-
-        The BROP prints an empty row for Narok and a footnote saying the
-        entity did not submit. Filling that silence with 8% of a modelled
-        budget publishes a figure for the one county that reported none.
-        """
-        session, entity, doc = county
-
-        _seed(session, entity, doc)
-
-        assert session.query(Loan).filter(Loan.lender == "Pending Bills").count() == 0
-
-    def test_the_deferral_does_not_touch_the_other_loan(self, county):
-        """Only pending bills have a live source; the debt row is separate.
-
-        County Government Debt is modelled too — a flat 15% of the same
-        modelled budget — but no publisher issues a per-county debt stock, so
-        there is nothing for it to defer TO. Suppressing it here would delete
-        a figure rather than replace it, which is a different decision.
-        """
-        session, entity, doc = county
-        _live_row(session, entity, doc)
-
-        _seed(session, entity, doc)
-
-        assert session.query(Loan).filter(
-            Loan.lender == "County Government Debt"
-        ).count() == 1
+    def test_no_county_loan_of_any_kind(self, seeded_from_scratch):
+        """RED before #238: 47 modelled "County Government Debt" rows."""
+        ids = _county_ids(seeded_from_scratch)
+        rows = seeded_from_scratch.query(Loan).filter(Loan.entity_id.in_(ids)).all()
+        assert not rows, (
+            f"bootstrap wrote {len(rows)} county loan row(s), e.g. "
+            f"{[(r.lender, float(r.outstanding or 0)) for r in rows[:2]]}"
+        )
 
 
 class TestTheApiGate:
@@ -129,9 +98,45 @@ class TestTheApiGate:
             provenance=(
                 [{"source": "bootstrap", "dataset": "enhanced_county_data.json"}]
                 if modelled
-                else {"source": "cob_pending_bills", "notes": "Treasury BROP Table 10"}
+                else {
+                    "source": "cob_pending_bills_etl",
+                    "publication": "treasury_brop",
+                    "notes": "Treasury BROP Table 10",
+                }
             ),
         )
+
+    @staticmethod
+    def _fixture_row(amount):
+        """What a night on the pending-bills fixture wrote for Nairobi."""
+        from types import SimpleNamespace
+
+        return SimpleNamespace(
+            debt_category=SimpleNamespace(value="pending_bills"),
+            outstanding=amount,
+            principal=amount,
+            provenance={
+                "source": "cob_pending_bills_etl",
+                "fiscal_year": "FY2024/25",
+                "category": "county",
+                "source_url": "https://cob.go.ke/reports/pending-bills/",
+            },
+        )
+
+    def test_a_fixture_row_is_not_published(self):
+        """RED before #238: the fixture's invented 98.7B passed as sourced."""
+        from services.publication_gate import county_pending_bills
+
+        assert county_pending_bills([self._fixture_row(98_700_000_000)]) is None
+
+    def test_a_brop_row_beside_a_fixture_row_is_the_figure(self):
+        from services.publication_gate import county_pending_bills
+
+        loans = [
+            self._fixture_row(98_700_000_000),
+            self._loan(86_769_200_000, modelled=False),
+        ]
+        assert county_pending_bills(loans) == 86_769_200_000
 
     def test_a_sourced_row_is_published(self):
         from services.publication_gate import county_pending_bills

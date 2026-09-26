@@ -655,8 +655,13 @@ def _download_and_parse_county_pdf(
                 except ValueError:
                     absorbed = 0
 
-            allocated = _birr_amount_to_kes(float(allocated))
-            absorbed = _birr_amount_to_kes(float(absorbed))
+            if record.get("amounts_in") != "kes":
+                # Chapter 2 aggregates are printed in KSh millions. The
+                # Chapter 3 revenue tables are printed in shillings, and a
+                # small stream (a KSh 50,000 refund) scaled here would become
+                # KSh 50 billion.
+                allocated = _birr_amount_to_kes(float(allocated))
+                absorbed = _birr_amount_to_kes(float(absorbed))
 
             budget_records.append({
                 "entity_slug": entity_slug,

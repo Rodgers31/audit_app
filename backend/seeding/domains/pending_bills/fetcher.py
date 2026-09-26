@@ -34,6 +34,12 @@ from ...http_client import SeedingHttpClient
 
 logger = logging.getLogger("seeding.pending_bills.fetcher")
 
+#: What a Treasury Budget Review and Outlook Paper payload declares itself as.
+#: ``services.publication_gate.COUNTY_PENDING_BILLS_PUBLICATION`` is the same
+#: string; it is the only publication county pending bills are read from.
+BROP_PUBLICATION = "treasury_brop"
+BROP_PUBLISHER = "National Treasury"
+
 
 def _discover_brop_url(client, settings):
     """Newest Budget Review and Outlook Paper on Treasury's listing page.
@@ -305,6 +311,10 @@ def _brop_result_to_payload(
         "summary": summary,
         "source_url": brop_url,
         "source_title": source_title,
+        # Declared here, where it is known, and never inferred downstream from
+        # a title or URL. The writer and every reader key on it.
+        "publication": BROP_PUBLICATION,
+        "publisher": BROP_PUBLISHER,
     }
 
 

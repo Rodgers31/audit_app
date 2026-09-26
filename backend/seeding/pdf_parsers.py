@@ -765,6 +765,271 @@ def detect_cob_report_period(text: str) -> Tuple[Optional[str], Optional[str]]:
     return f"{start}/{end_short:02d}", sub
 
 
+# --------------------------------------------------------------------------
+# per-county revenue receipts (CBIRR Chapter 3, "Revenue Performance")
+# --------------------------------------------------------------------------
+
+#: The BudgetLine category every revenue-receipts row is written under. It is
+#: money the county RECEIVED, stored in the budget table because it has the
+#: same target/actual shape — so every budget aggregate must skip it
+#: (``services.county_budget.NON_SECTOR_CATEGORIES``).
+REVENUE_RECEIPTS_CATEGORY = "Revenue Receipts"
+
+#: Subcategories, one per stream the CBIRR prints, plus the printed total.
+REVENUE_TOTAL = "Total"
+REVENUE_STREAMS: Tuple[Tuple[str, Tuple[str, ...]], ...] = (
+    ("Balance Brought Forward", ("unspent", "brought forward", "balance b/f")),
+    ("Equitable Share", ("equitable share",)),
+    ("Equalisation Fund", ("equalisation", "equalization")),
+    ("Additional Allocations", ("additional allocation", "grant", "conditional")),
+    ("Facility Improvement Financing", ("facility improvement", "fif")),
+    ("Appropriations in Aid", ("appropriation", "a-i-a", "aia")),
+    ("Own Source Revenue", ("own source", "osr")),
+    ("Other Revenue", ("other revenue", "other income", "other sources")),
+)
+#: A section the table prints but these keywords do not name.
+REVENUE_OTHER = "Other Revenue"
+
+#: Rows are printed to the shilling; a section sum may differ from the printed
+#: total by rounding in the treasury's own spreadsheet, never by more.
+_REVENUE_TOLERANCE_KES = Decimal("1000")
+
+_REVENUE_CAPTION_RE = re.compile(
+    r"Table\s+3\.\d+:\s*(.+?)\s+County,?\s+Revenue\s+Performance", re.IGNORECASE
+)
+_SECTION_LETTER_RE = re.compile(r"^[A-H]\.?(\s|$)")
+
+
+def _cell_text(cell: Optional[str]) -> str:
+    """A cell with pdfplumber's line-break hyphenation undone, lowercased."""
+    s = (cell or "").replace("’", "'")
+    s = re.sub(r"(\w)-\s*\n\s*(\w)", r"\1\2", s)
+    s = re.sub(r"(\w)- (\w)", r"\1\2", s)
+    return " ".join(s.split()).lower()
+
+
+def _kes_cell(cell: Optional[str]) -> Optional[Decimal]:
+    """A whole-shilling cell: "7, 956, 564, 058" -> 7956564058; "-" -> 0.
+
+    None when the cell holds something that is not a number, so a caller can
+    tell a misread cell from a printed nil.
+    """
+    s = (cell or "").strip().replace(",", "").replace(" ", "")
+    if s in ("", "-", "–", "."):
+        return Decimal(0)
+    negative = s.startswith("-") or s.startswith("(")
+    s = s.strip("-()")
+    try:
+        value = Decimal(s)
+    except Exception:  # noqa: BLE001 - "not a number" is the answer
+        return None
+    return -value if negative else value
+
+
+def _revenue_stream(label: str) -> Optional[str]:
+    for stream, keywords in REVENUE_STREAMS:
+        if any(k in label for k in keywords):
+            return stream
+    return None
+
+
+def _is_revenue_table(table: ExtractedTable) -> bool:
+    headers = [_cell_text(c) for c in table.headers]
+    # "Revenue Stream" is sometimes split across the first two header cells
+    # ("No Reve" | "nue Stream"), so match it on the two joined.
+    joined = _cell_text("".join(table.headers[:2]))
+    return "revenue stream" in joined and any(
+        "actual" in h and "receipt" in h for h in headers
+    )
+
+
+@dataclass
+class _RevenueSection:
+    stream: Optional[str]
+    label: str
+    target_items: Decimal = Decimal(0)
+    actual_items: Decimal = Decimal(0)
+    target_sub: Optional[Decimal] = None
+    actual_sub: Optional[Decimal] = None
+    subtotals: int = 0
+
+    @property
+    def target(self) -> Decimal:
+        return self.target_sub if self.target_sub is not None else self.target_items
+
+    @property
+    def actual(self) -> Decimal:
+        return self.actual_sub if self.actual_sub is not None else self.actual_items
+
+
+def _revenue_rows(tables: List[ExtractedTable]):
+    """``(kind, lettered, label, target, actual)`` for each meaningful row.
+
+    kind is ``header`` (a section or sub-section title), ``item``, ``sub`` or
+    ``grand``. Columns are found per table from its own header, because the
+    47 county treasuries lay the table out differently: Kiambu has no "No"
+    column, Homa Bay no receivables column, and a table may be split across
+    pages with the header repeated inside the body.
+    """
+    for table in tables:
+        headers = [_cell_text(c) for c in table.headers]
+        target_col = next(
+            (i for i, h in enumerate(headers) if "annual" in h or "target" in h), None
+        )
+        actual_col = next(
+            (i for i, h in enumerate(headers) if "actual" in h and "receipt" in h), None
+        )
+        if target_col is None or actual_col is None or target_col < 1:
+            continue
+        for row in table.rows:
+            if len(row) <= actual_col or not any((c or "").strip() for c in row):
+                continue
+            label = _cell_text("".join(row[:target_col]))
+            if _cell_text(row[actual_col]).startswith("actual"):
+                # The header printed again inside the body. Its first cell can
+                # still carry a section letter ("B | Equitable Share | Annual…").
+                lettered = bool(_SECTION_LETTER_RE.match((row[0] or "").strip()))
+                yield ("header", lettered and target_col >= 2, label, None, None)
+                continue
+            target = _kes_cell(row[target_col])
+            actual = _kes_cell(row[actual_col])
+            if re.search(r"sub[- ]?to[- ]?tal", label):
+                yield ("sub", False, label, target, actual)
+                continue
+            if re.fullmatch(r"(grand )?total", label):
+                yield ("grand", False, label, target, actual)
+                continue
+            has_numbers = any((c or "").strip() for c in row[target_col:])
+            lettered = bool(_SECTION_LETTER_RE.match((row[0] or "").strip())) and (
+                target_col >= 2
+            )
+            if lettered or not has_numbers:
+                yield (
+                    "header",
+                    lettered,
+                    label,
+                    target if has_numbers else None,
+                    actual if has_numbers else None,
+                )
+            else:
+                yield ("item", False, label, target, actual)
+
+
+def county_revenue_receipts(
+    tables: List[ExtractedTable],
+) -> Tuple[Optional[Dict[str, Tuple[Decimal, Decimal]]], str]:
+    """One county's revenue receipts from its "Revenue Performance" table.
+
+    Returns ``({stream: (annual_target, actual_receipts)}, "")`` with a
+    ``"Total"`` entry, or ``(None, why)`` when the table does not prove itself.
+
+    It proves itself by adding up: the streams must sum to the table's own
+    Grand Total of actual receipts. That is the whole reason the result can be
+    published — each of the 47 tables is laid out by a different county
+    treasury (sections lettered A-H, or "C.", or not at all; sub-totals printed
+    for some sections and not others; the same heading split across two cells)
+    and a parse that has misread any of it does not reconcile. Two further
+    refusals catch a misread that happens to reconcile: a section carrying
+    two sub-totals (Turkana numbers its grants section "3", so the grants
+    sub-total lands on equitable share), and anything but exactly one
+    equitable-share section.
+
+    The actual-receipts column is read, never the accrual total beside it
+    (receipts plus receivables), which is a different measure — several
+    counties' own narratives quote the accrual figure.
+    """
+    rows = list(_revenue_rows(tables))
+    grand = [r for r in rows if r[0] == "grand" and r[4] is not None]
+    if not grand:
+        return None, "no_grand_total"
+    if len(grand) > 1:
+        # Two counties' tables grouped as one — a caption was not found.
+        return None, "more_than_one_grand_total"
+    grand_target, grand_actual = grand[-1][3], grand[-1][4]
+
+    lettered = any(r[1] for r in rows if r[0] == "header")
+    sections: List[_RevenueSection] = []
+    current: Optional[_RevenueSection] = None
+    for kind, is_lettered, label, target, actual in rows:
+        if kind == "header":
+            stream = _revenue_stream(label)
+            closed = current is not None and current.actual_sub is not None
+            if lettered:
+                # A lettered table can still lose a letter into the label
+                # ("cadditional allocations", "3conditional allocations…").
+                # A heading for a DIFFERENT stream after the current section
+                # has printed its sub-total is the next section all the same.
+                top = is_lettered or (
+                    stream is not None and closed and stream != current.stream
+                )
+            else:
+                top = stream is not None and (
+                    current is None or stream != current.stream or closed
+                )
+            if top:
+                current = _RevenueSection(stream=stream, label=label)
+                sections.append(current)
+                if actual is not None:
+                    current.actual_items += actual
+                    current.target_items += target or Decimal(0)
+            continue
+        if current is None:
+            continue
+        if kind == "sub":
+            if current.actual_sub is not None and not actual:
+                # A nil section whose heading did not survive extraction
+                # ("Transfers from the Equalisation Fund … Sub-Total -"). It
+                # adds nothing; anything non-zero here is refused below.
+                continue
+            current.subtotals += 1
+            current.actual_sub = actual if actual is not None else Decimal(0)
+            current.target_sub = target
+        elif kind == "item" and actual is not None:
+            current.actual_items += actual
+            current.target_items += target or Decimal(0)
+
+    if not sections:
+        return None, "no_sections"
+    if any(s.subtotals > 1 for s in sections):
+        return None, "a_section_has_two_subtotals"
+    if sum(1 for s in sections if s.stream == "Equitable Share") != 1:
+        return None, "equitable_share_not_exactly_one_section"
+    drift = abs(sum((s.actual for s in sections), Decimal(0)) - grand_actual)
+    if drift > _REVENUE_TOLERANCE_KES:
+        return None, f"streams_do_not_sum_to_grand_total (out by {drift:,})"
+
+    out: Dict[str, Tuple[Decimal, Decimal]] = {}
+    for section in sections:
+        stream = section.stream or REVENUE_OTHER
+        prev_target, prev_actual = out.get(stream, (Decimal(0), Decimal(0)))
+        out[stream] = (prev_target + section.target, prev_actual + section.actual)
+    out[REVENUE_TOTAL] = (grand_target or Decimal(0), grand_actual)
+    return out, ""
+
+
+def group_revenue_tables_by_county(
+    tables: List[ExtractedTable], captions: Dict[int, str]
+) -> Dict[str, List[ExtractedTable]]:
+    """Each county's revenue-table pages, keyed by county.
+
+    ``captions`` maps page number -> the county a "Table 3.N: X County,
+    Revenue Performance" caption on that page names. A table belongs to the
+    nearest caption at or before its page: the caption can sit at the foot of
+    the page before, and the table can run over two or three pages.
+    """
+    caption_pages = sorted(captions)
+    grouped: Dict[str, List[ExtractedTable]] = {}
+    for table in sorted(tables, key=lambda t: (t.page_number, t.table_index)):
+        if not _is_revenue_table(table):
+            continue
+        owner = [p for p in caption_pages if p <= table.page_number]
+        if not owner:
+            continue
+        county = canonical_county_label(captions[owner[-1]])
+        grouped.setdefault(county, []).append(table)
+    return grouped
+
+
 class CoBQuarterlyReportParser:
     """Parser for Controller of Budget quarterly budget execution reports."""
 
@@ -1060,6 +1325,10 @@ class CoBQuarterlyReportParser:
         # budget and was previously modelled as 0.85 x it.
         records.extend(self._extract_own_source_revenue())
 
+        # What each county RECEIVED, stream by stream (equitable share,
+        # additional allocations, ...) with the report's own total.
+        records.extend(self._extract_county_revenue_receipts())
+
         logger.info(
             f"Parsed {len(records)} budget execution records from CoB report",
             extra={
@@ -1139,6 +1408,83 @@ class CoBQuarterlyReportParser:
             extra={"source": str(self.pdf_path)},
         )
         return []
+
+    def _extract_county_revenue_receipts(self) -> List[Dict[str, Any]]:
+        """Chapter 3's per-county "Revenue Performance" tables, reconciled.
+
+        One record per revenue stream plus the table's Grand Total, under
+        ``REVENUE_RECEIPTS_CATEGORY``, for every county whose streams add up to
+        its own Grand Total (see ``county_revenue_receipts``). A county that
+        does not reconcile gets no records at all — its revenue is absent, not
+        partial — and is named in the log with the reason.
+
+        Amounts are whole shillings, as printed; ``amounts_in: "kes"`` tells
+        the fetcher not to apply the KSh-millions scaling the Chapter 2
+        aggregates need.
+        """
+        candidates = [t for t in self.tables if _is_revenue_table(t)]
+        if not candidates:
+            logger.info(
+                "CoB PDF has no per-county revenue performance tables",
+                extra={"source": str(self.pdf_path)},
+            )
+            return []
+
+        pages = sorted(
+            {p for t in candidates for p in (t.page_number - 1, t.page_number) if p >= 1}
+        )
+        captions: Dict[int, str] = {}
+        try:
+            with pdfplumber.open(self.pdf_path) as pdf:
+                for number in pages:
+                    if number > len(pdf.pages):
+                        continue
+                    match = _REVENUE_CAPTION_RE.search(
+                        pdf.pages[number - 1].extract_text() or ""
+                    )
+                    if match:
+                        captions[number] = match.group(1)
+        except Exception as exc:  # noqa: BLE001 - no captions means no owners
+            logger.warning("CoB revenue captions unreadable: %s", exc)
+            return []
+
+        records: List[Dict[str, Any]] = []
+        refused: Dict[str, str] = {}
+        grouped = group_revenue_tables_by_county(candidates, captions)
+        for county, tables in sorted(grouped.items()):
+            streams, why = county_revenue_receipts(tables)
+            if streams is None:
+                refused[county] = why
+                continue
+            for stream, (target, actual) in streams.items():
+                records.append(
+                    {
+                        "county": county,
+                        "category": REVENUE_RECEIPTS_CATEGORY,
+                        "subcategory": stream,
+                        "allocated": target,
+                        "absorbed": actual,
+                        "absorption_rate": None,
+                        "currency": "KES",
+                        "amounts_in": "kes",
+                        "quarter": self._extract_quarter(),
+                        "fiscal_year": self._extract_fiscal_year(),
+                    }
+                )
+        reconciled = len(grouped) - len(refused)
+        logger.info(
+            "CoB revenue receipts: %d of %d counties reconcile to their own "
+            "Grand Total",
+            reconciled,
+            len(grouped),
+        )
+        if refused:
+            logger.warning(
+                "CoB revenue receipts withheld for %d county(ies): %s",
+                len(refused),
+                "; ".join(f"{c} ({why})" for c, why in sorted(refused.items())),
+            )
+        return records
 
     def _extract_category(
         self,
