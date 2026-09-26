@@ -350,13 +350,16 @@ def _county_period_rollup(db, period_id: Optional[int]):
     county is the rule ``GET /counties`` and money-flow already use, so all
     three now publish the same total for the same period.
     """
+    if not period_id:
+        # No period is not "every period": summed across years, one county
+        # would carry several budgets as one.
+        return {}, []
     q = (
         db.query(DBBudgetLine, DBEntity.canonical_name)
         .join(DBEntity, DBBudgetLine.entity_id == DBEntity.id)
         .filter(DBEntity.type == EntityType.COUNTY)
+        .filter(DBBudgetLine.period_id == period_id)
     )
-    if period_id:
-        q = q.filter(DBBudgetLine.period_id == period_id)
     lines_by_entity: Dict[int, List[Any]] = {}
     names: Dict[int, str] = {}
     for line, name in q.all():

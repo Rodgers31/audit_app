@@ -167,3 +167,24 @@ def _find(obj, key):
             if found is not None:
                 return found
     return None
+
+
+def test_a_year_that_is_not_there_sums_nothing(client, cbirr_period, db_session, seed_country, seed_source_doc):
+    """``/budget/utilization?fiscal_year=`` with an unknown year left the
+    period unresolved, and an unresolved period summed EVERY period into one
+    figure per county. A second period makes that visible."""
+    other = FiscalPeriod(
+        id=9103, country_id=seed_country.id, label="FY2023/24",
+        start_date=datetime(2023, 7, 1), end_date=datetime(2024, 6, 30),
+    )
+    db_session.add(other)
+    db_session.flush()
+    db_session.add(BudgetLine(
+        entity_id=910, period_id=other.id, category="Total",
+        allocated_amount=40_000_000_000, actual_spent=1, currency="KES",
+        source_document_id=seed_source_doc.id,
+    ))
+    db_session.commit()
+
+    rows = _get(client, "/api/v1/budget/utilization?fiscal_year=1999/00")["data"]
+    assert rows == []
