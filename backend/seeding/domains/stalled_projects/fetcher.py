@@ -70,6 +70,24 @@ def parse_edition(pdf_path: Path, settings: Any) -> List[Dict[str, Any]]:
     )
 
 
+def _is_count(v: Any) -> bool:
+    return isinstance(v, int) and not isinstance(v, bool) and v >= 0
+
+
+def _malformed(edition: Dict[str, Any], counties: List[Dict[str, Any]]) -> Optional[str]:
+    """Why the parse output cannot be trusted, or None."""
+    if not _is_count(edition.get("captions_found")):
+        return f"captions_found={edition.get('captions_found')!r}"
+    for c in counties:
+        rec = c.get("reconciliation")
+        if not isinstance(c.get("county"), str) or not isinstance(rec, dict) or not _is_count(rec.get("rows")):
+            return f"county record {c.get('county')!r} has no usable reconciliation"
+        for t in c.get("tables") or []:
+            if t.get("as_of") is not None and not isinstance(t.get("as_of"), str):
+                return f"{c['county']}: as_of={t.get('as_of')!r}"
+    return None
+
+
 def fetch(settings: Any, client: Any = None) -> FetchResult:
     from ... import cob_cbirr
     from ...http_client import PdfDownloadError, PdfDownloadIncomplete
@@ -110,6 +128,13 @@ def fetch(settings: Any, client: Any = None) -> FetchResult:
         )
     except PdfDownloadError as exc:
         return _refuse("download_failed", str(exc)[:300], listing_newest=listing_newest)
+    except Exception as exc:
+        # Disk full, a transport error outside the downloader's own handling:
+        # still a refusal with a reason, never an escape that leaves the
+        # run's provenance "unknown".
+        return _refuse(
+            "download_failed", f"{type(exc).__name__}: {exc}"[:300], listing_newest=listing_newest
+        )
 
     try:
         records = parse_edition(pdf.path, settings)
@@ -119,10 +144,16 @@ def fetch(settings: Any, client: Any = None) -> FetchResult:
             "parse_failed", f"{type(exc).__name__}: {exc}"[:300], listing_newest=listing_newest
         )
 
-    edition = next((r for r in records if r.get("kind") == "edition"), None)
-    counties = [r for r in records if r.get("kind") == "county"]
+    edition = next((r for r in records if isinstance(r, dict) and r.get("kind") == "edition"), None)
+    counties = [r for r in records if isinstance(r, dict) and r.get("kind") == "county"]
     if edition is None:
         return _refuse("parse_failed", "parser returned no edition record", listing_newest=listing_newest)
+    problem = _malformed(edition, counties)
+    if problem:
+        # The parse cache can serve an entry written by an older parser, and
+        # a malformed record used to raise out of fetch() here, leaving the
+        # run's provenance "unknown". Refuse with the reason instead.
+        return _refuse("parse_output_invalid", problem, listing_newest=listing_newest)
     edition = dict(
         edition,
         url=newest.url,

@@ -326,6 +326,16 @@ class TestSummarySentences:
         assert s["value_kes"] == pytest.approx(value)
         assert s["paid_kes"] == (pytest.approx(paid) if paid is not None else None)
 
+    def test_allocated_is_not_paid(self):
+        # Machakos FY2024/25, verbatim.
+        s = cp.parse_summary_sentence(
+            "The County reported 54 stalled development projects as of 30 June, 2025, with an "
+            "estimated value of Kshs.1.13 billion, of which Kshs.314.26 million has been "
+            "allocated in the budget."
+        )
+        assert s["paid_kes"] is None
+        assert "second_amount_described_as_other" in s["flags"]
+
     def test_spent_is_flagged_not_silently_called_paid(self):
         s = cp.parse_summary_sentence(
             "The County reported 14 stalled development projects as of 30 June, 2025, with an "
@@ -445,3 +455,72 @@ class TestFy2425:
         assert c["table"]["total"]["estimated_value_kes"] == pytest.approx(465_273_525.60)
         assert c["rec"]["estimated_value_kes_sum"] == pytest.approx(480_430_358.60)
         assert c["rec"]["status"] == "disagrees"
+
+
+class TestAdversarialFindings:
+    """Inputs an adversarial pass used to make the first version of this
+    parser over-confident. Not seen in the three editions yet; each is one
+    typesetting or wording change away."""
+
+    def test_whole_billion_sentence_is_not_a_billion_wide_tolerance(self):
+        s = cp.parse_summary_sentence(
+            "The County reported 2 stalled development projects as of 30 June 2026, with an "
+            "estimated value of Kshs.1 billion, of which Kshs.300 million has already been paid."
+        )
+        rows = [{"estimated_value_kes": 0.5e9, "amount_paid_kes": 300e6, "flags": []},
+                {"estimated_value_kes": 1.0, "amount_paid_kes": 0.0, "flags": []}]
+        assert cp.reconcile(rows, None, s, None)["status"] == "disagrees"
+
+    @pytest.mark.parametrize("clause", ["has not been paid", "is yet to be paid", "remains unpaid"])
+    def test_an_unpaid_amount_is_not_read_as_paid(self, clause):
+        s = cp.parse_summary_sentence(
+            "The County reported 23 stalled development projects as of 30 June 2026, with an "
+            f"estimated value of Kshs.163.32 million, of which Kshs.83.69 million {clause}."
+        )
+        assert s["paid_kes"] is None
+
+    @pytest.mark.parametrize("header", ["Amount Paid (Kshs. '000)", "Amount Paid (Kshs. in thousands)"])
+    def test_thousands_header(self, header):
+        assert cp.unit_from_header(header) == 1e3
+
+    @pytest.mark.parametrize("cell", ["1000000\n500000", "1 2"])
+    def test_two_figures_in_one_cell_are_refused(self, cell):
+        assert cp.parse_amount(cell, 1.0) == (None, "unparseable")
+
+    def test_space_after_a_thousands_comma_is_still_read(self):
+        # Laikipia Q1 FY2025/26, verbatim.
+        assert cp.parse_amount("1, 053,976.40", 1.0) == (1_053_976.40, None)
+
+    @pytest.mark.parametrize("header", ["Balance to be paid (Kshs.)", "Amount not yet paid (Kshs.)", "Percentage Paid"])
+    def test_headers_that_say_paid_but_mean_something_else(self, header):
+        cols = cp.map_columns(["No", "Project Name", header, "Amount Paid (Kshs.)"])["columns"]
+        assert cols.get("amount_paid") == 3
+
+    def test_a_name_only_row_in_an_unnumbered_table_is_a_row_not_a_heading(self):
+        header = ["Project Name", "Project Location", "Estimated Value of the Project (Kshs.)"]
+        t = cp.parse_table(header, [(1, ["Kapsuser Market Shed", "", ""]),
+                                    (1, ["Donor Funded Projects", "", ""]),
+                                    (1, ["Bureti Fire Station", "Kapkatet", "8,248,375.00"])])
+        assert [r["project_name"] for r in t["rows"]] == ["Kapsuser Market Shed", "Bureti Fire Station"]
+        assert t["rows"][1]["group"] == "Donor Funded Projects"
+
+    def test_a_row_narrower_than_its_header_is_flagged(self):
+        header = ["No", "Project Name", "Project Location", "Estimated Value (Kshs.)"]
+        t = cp.parse_table(header, [(1, ["1", "Hall", "1,000"])])
+        assert "row_width_differs_from_header" in t["rows"][0]["flags"]
+
+    @pytest.mark.parametrize("printed", ["East Pokot", "Nyandira"])
+    def test_near_misses_are_not_filed_under_a_neighbour(self, printed):
+        assert cp.normalise_county(printed) is None
+
+    def test_count_only_agreement_with_no_values_is_not_plain_agrees(self):
+        s = cp.parse_summary_sentence(
+            "The County reported 1 stalled development project as of 30 June 2026, with an "
+            "estimated value of Kshs.5.00 million, of which Kshs.1.00 million has already been paid."
+        )
+        rows = [{"estimated_value_kes": None, "amount_paid_kes": None, "flags": []}]
+        assert cp.reconcile(rows, None, s, None)["status"] != "agrees"
+
+    def test_true_is_not_a_figure(self):
+        rows = [{"estimated_value_kes": True, "flags": []}]
+        assert cp.reconcile(rows, None, None, None)["estimated_value_kes_sum"] is None

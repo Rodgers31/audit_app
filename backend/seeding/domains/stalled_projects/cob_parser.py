@@ -162,7 +162,14 @@ def normalise_county(printed: str) -> Optional[str]:
     prefixed = [c for k, c in _COUNTY_KEYS.items() if k.startswith(key) and len(key) >= 4]
     if len(prefixed) == 1:
         return prefixed[0]
-    close = difflib.get_close_matches(key, list(_COUNTY_KEYS), n=2, cutoff=0.8)
+    # 0.85 and the same first two letters: "Kakemega" and "Elegyo-Marakwet"
+    # (both printed by COB) pass; "East Pokot" (a Baringo sub-county) and
+    # "Nyandira" do not become West Pokot and Nyamira.
+    close = [
+        k
+        for k in difflib.get_close_matches(key, list(_COUNTY_KEYS), n=2, cutoff=0.85)
+        if k[:2] == key[:2]
+    ]
     if len(close) == 1 or (
         len(close) == 2
         and difflib.SequenceMatcher(None, key, close[0]).ratio()
@@ -191,6 +198,8 @@ _ZERO_WORDS = {"nil", "not paid", "no payment", "none paid"}
 def unit_from_header(header: str) -> Optional[float]:
     """KES multiplier a column header declares, or ``None`` if it declares none."""
     h = clean(header).lower()
+    if re.search(r"'000|’000|\b000s\b|thousand", h):
+        return 1e3
     if re.search(r"billion|\bbn\b", h):
         return 1e9
     if re.search(r"million|\bmn\b|\bmns\b|kshs?\.?\s*m\b|\(m\)", h):
@@ -212,7 +221,10 @@ def parse_amount(cell: Optional[str], unit: Optional[float]) -> Tuple[Optional[f
     if text in _ZERO_WORDS:
         return 0.0, None
     text = re.sub(r"^k\s*shs?\.?\s*", "", text)
-    text = text.replace(" ", "")
+    # A space right after a thousands comma is typesetting ("1, 053,976.40",
+    # Laikipia Q1); any other space separates two figures, and two figures
+    # are not one amount.
+    text = re.sub(r",\s+", ",", text)
     # 1,234,567 or 1,234,567.89 or 1234567.8 — and nothing else. "3,490.800.00"
     # (Uasin Gishu FY2025/26) is refused rather than guessed at.
     if not re.fullmatch(r"\d{1,3}(,\d{3})*(\.\d+)?|\d+(\.\d+)?", text):
@@ -255,13 +267,13 @@ _COLUMN_RULES: Tuple[Tuple[str, str], ...] = (
     ("expected_completion", r"expected"),
     ("commencement", r"commence|start\s*date"),
     ("estimated_value", r"estimated\s*value|contract\s*sum|value\s*of\s*(the\s*)?project|project\s*(cost|value)"),
-    ("amount_paid", r"(?<!un)paid"),
+    ("amount_paid", r"^(?!.*\b(?:balance|not|yet|to be|percent\w*|outstanding)\b).*(?<!un)paid"),
     ("accrued_expenditure", r"accrued"),
     ("cumulative_expenditure", r"cumulative"),
     ("fy_funding", r"total\s*funding"),
     ("fy_expenditure", r"^expenditure"),
     ("outstanding_balance", r"outstanding|balance"),
-    ("completion_pct", r"percent|completion|%"),
+    ("completion_pct", r"^(?!.*\bpaid\b).*(?:percent|completion|%)"),
     ("reason", r"reason|cause"),
     ("action", r"action|recovery"),
     ("sector", r"sector|department"),
@@ -372,8 +384,15 @@ def parse_table(
         filled = [c for c in cells if c]
         if not filled:
             continue
-        if len(filled) == 1 and not _is_number(filled[0]):
-            group = filled[0]  # "County Funded Projects", "Donor Funded Projects"
+        if len(filled) == 1 and not _is_number(filled[0]) and (
+            "project_name" not in cols
+            or cells[cols["project_name"]] != filled[0]
+            or re.search(r"\b(funded|financed|donor|projects|programmes?)\b", filled[0], re.I)
+        ):
+            # "County Funded Projects", "Donor Funded Projects". A lone name in
+            # the project column that reads like a project (Kericho has no
+            # "No." column) is a row with no figures, not a heading.
+            group = filled[0]
             continue
 
         printed = {header_labels[i]: cells[i] for i in range(len(header_labels))}
@@ -415,6 +434,8 @@ def parse_table(
             "cells": printed,
             "flags": [] if name else ["project_name_blank"],
         }
+        if len([c for c in raw_cells]) != len(header):
+            row["flags"].append("row_width_differs_from_header")
         if "row_no" in cols and not numbered:
             # Baringo Q1 FY2025/26 lists five unnumbered components under
             # "9. Construction of Kabarnet Stadium"; COB counts 16, not 21.
@@ -633,12 +654,23 @@ def parse_summary_sentence(text: str) -> Optional[Dict[str, Any]]:
         if mult is None:
             return None
         frac = re.search(r"\.(\d+)$", am.group("v"))
-        return (10 ** -(len(frac.group(1)) if frac else 0)) * mult + 1.0
+        digit = (10 ** -(len(frac.group(1)) if frac else 0)) * mult
+        value = float(am.group("v").replace(",", "")) * mult
+        # One unit of the last printed digit, capped at 1% of the figure:
+        # "Kshs.1 billion" would otherwise accept anything from 0 to 2bn.
+        return min(digit, max(0.01 * value, 10_000.0)) + 1.0
 
     value = _kes(amounts[0], None) if amounts else None
     value_unit = amounts[0].group("u") if amounts else None
     paid: Optional[float] = None
-    if len(amounts) >= 2:
+    not_paid = re.search(
+        r"\b(?:not\s+(?:yet\s+)?been\s+paid|yet\s+to\s+be\s+paid|unpaid|outstanding|owed)\b", tail, re.I
+    )
+    if len(amounts) >= 2 and not_paid:
+        # "of which Kshs.83.69 million has not been paid" is a balance, not a
+        # payment. Kept in the sentence; not compared with the paid column.
+        flags.append("second_amount_is_unpaid_balance")
+    elif len(amounts) >= 2:
         if not amounts[1].group("u"):
             flags.append("paid_unit_not_printed_inherited_from_value")
         paid = _kes(amounts[1], value_unit)
@@ -646,9 +678,13 @@ def parse_summary_sentence(text: str) -> Optional[Dict[str, Any]]:
             # Kitui FY2024/25: "of which Kshs.476.92 million has been SPENT
             # towards the projects". Compared with the paid column, but the
             # word is COB's and the sentence is published beside it.
-            flags.append("second_amount_described_as_" + (
-                "spent" if re.search(r"\bspent\b", tail, re.I) else "other"
-            ))
+            if re.search(r"\bspent\b", tail, re.I):
+                flags.append("second_amount_described_as_spent")
+            else:
+                # Machakos FY2024/25: "of which Kshs.314.26 million has been
+                # allocated in the budget". Not a payment; not compared as one.
+                flags.append("second_amount_described_as_other")
+                paid = None
     elif re.search(r"no\s+amount\s+has\s+been\s+paid", tail, re.I):
         paid = 0.0
     who = m.group("who").lower()
@@ -746,7 +782,13 @@ def _sentence_tolerance(value: Optional[float]) -> float:
 
 
 def _sum_known(rows: List[Dict[str, Any]], key: str) -> Tuple[Optional[float], int]:
-    vals = [r.get(key) for r in rows if isinstance(r.get(key), (int, float))]
+    vals = [
+        r.get(key)
+        for r in rows
+        if isinstance(r.get(key), (int, float))
+        and not isinstance(r.get(key), bool)
+        and r.get(key) == r.get(key)  # NaN
+    ]
     return (float(sum(vals)) if vals else None), len(vals)
 
 
@@ -778,18 +820,20 @@ def reconcile(
     if summary:
         add("count", counted, summary.get("count"), "county summary sentence")
         add("estimated_value_kes", value_sum, summary.get("value_kes"), "county summary sentence",
-            tol=summary.get("value_tolerance_kes") or _sentence_tolerance(summary.get("value_kes")))
+            tol=summary["value_tolerance_kes"] if summary.get("value_tolerance_kes") is not None
+            else _sentence_tolerance(summary.get("value_kes")))
         add("amount_paid_kes", paid_sum, summary.get("paid_kes"), "county summary sentence",
-            tol=summary.get("paid_tolerance_kes") or _sentence_tolerance(summary.get("paid_kes")))
+            tol=summary["paid_tolerance_kes"] if summary.get("paid_tolerance_kes") is not None
+            else _sentence_tolerance(summary.get("paid_kes")))
     if table_total:
         add("estimated_value_kes", value_sum, table_total.get("estimated_value_kes"), "table total row", tol=1.0)
         add("amount_paid_kes", paid_sum, table_total.get("amount_paid_kes"), "table total row", tol=1.0)
     if t26:
         add("count", counted, t26.get("count"), "Table 2.6")
         add("estimated_value_kes", value_sum, t26.get("value_kes"), "Table 2.6",
-            tol=_tolerance(t26["printed"]["value"], 1e6))
+            tol=_tolerance((t26.get("printed") or {}).get("value"), 1e6))
         add("amount_paid_kes", paid_sum, t26.get("paid_kes"), "Table 2.6",
-            tol=_tolerance(t26["printed"]["paid"], 1e6))
+            tol=_tolerance((t26.get("printed") or {}).get("paid"), 1e6))
 
     # A thousand- or million-fold gap is not a disagreement about the
     # figures, it is a disagreement about the unit (Trans Nzoia FY2025/26:
@@ -826,7 +870,7 @@ def reconcile(
         for field, key in (("estimated_value_kes", "value"), ("amount_paid_kes", "paid")):
             amount = t26.get(f"{key}_kes")
             if amount:
-                stated.append(("Table 2.6", field, amount, _tolerance(t26["printed"][key], 1e6)))
+                stated.append(("Table 2.6", field, amount, _tolerance((t26.get("printed") or {}).get(key), 1e6)))
     sums = {"estimated_value_kes": value_sum, "amount_paid_kes": paid_sum}
     for field, total_rows in sums.items():
         if not total_rows:
@@ -837,8 +881,10 @@ def reconcile(
             column_shift.append({"field": field, "matches": other})
 
     decided = [c["agrees"] for c in checks if c["agrees"] is not None]
-    gaps = (value_rows < len(rows) and any(c["check"] == "estimated_value_kes" and c["agrees"] for c in checks)) or (
-        paid_rows < len(rows) and any(c["check"] == "amount_paid_kes" and c["agrees"] for c in checks)
+    # A gap is any row missing a figure COB states a total for — whether or
+    # not the rows that do carry one happened to agree.
+    gaps = (value_rows < len(rows) and any(c["check"] == "estimated_value_kes" and c["cob"] is not None for c in checks)) or (
+        paid_rows < len(rows) and any(c["check"] == "amount_paid_kes" and c["cob"] is not None for c in checks)
     )
     if not decided:
         status = "unverifiable"

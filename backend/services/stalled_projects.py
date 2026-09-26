@@ -27,8 +27,11 @@ Two voices, never mixed:
 
 from __future__ import annotations
 
+import math
 import re
+from datetime import date
 from typing import Any, Dict, Iterable, List, Optional, Tuple
+from urllib.parse import urlparse
 
 #: Fields a row must carry to be published. Each one is something a reader
 #: needs to go and check the figure: the document, the page in it, the date
@@ -41,14 +44,18 @@ def _evidence_gap(row: Any) -> Optional[str]:
     if not isinstance(row, dict):
         return "not_a_record"
     url = row.get("source_url")
-    if not isinstance(url, str) or not url.startswith(("http://", "https://")):
+    parsed = urlparse(url) if isinstance(url, str) else None
+    if parsed is None or parsed.scheme not in ("http", "https") or not parsed.netloc:
         return "no_source_document"
     page = row.get("source_page")
     # bool is an int subclass; True is not page 1.
     if isinstance(page, bool) or not isinstance(page, int) or page < 1:
         return "no_source_page"
     as_of = row.get("as_of")
-    if not isinstance(as_of, str) or len(as_of) < 10:
+    try:
+        # A real calendar date in ISO form, which is what the parser writes.
+        date.fromisoformat(as_of if isinstance(as_of, str) else "")
+    except ValueError:
         return "no_as_of_date"
     reported_by = row.get("reported_by")
     if not isinstance(reported_by, str) or not reported_by.strip():
@@ -72,7 +79,8 @@ def _stored_rows(stored: Any) -> Tuple[List[Any], Dict[str, Any]]:
 
 
 def _is_amount(v: Any) -> bool:
-    return isinstance(v, (int, float)) and not isinstance(v, bool)
+    """A finite number. NaN and inf are not amounts — and NaN is not JSON."""
+    return isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
 
 
 def _sum_known(rows: Iterable[dict], key: str) -> Tuple[Optional[float], int]:
@@ -219,7 +227,12 @@ def build_stalled_projects_block(
     for row in rows:
         gap = _evidence_gap(row)
         if gap is None:
-            published.append(dict(row))
+            row = dict(row)
+            for key in ("estimated_value_kes", "amount_paid_kes", "completion_pct"):
+                v = row.get(key)
+                if v is not None and not _is_amount(v):
+                    row[key] = None  # never serialise NaN/inf/bool as a figure
+            published.append(row)
         else:
             withheld[gap] = withheld.get(gap, 0) + 1
 

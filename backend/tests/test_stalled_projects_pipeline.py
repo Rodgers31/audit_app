@@ -138,6 +138,28 @@ class TestFetch:
             "detail": mode["detail"],
         }
 
+    def test_any_download_error_refuses_rather_than_escaping(self, settings, stubs):
+        """Found adversarially: a disk-full OSError escaped fetch() and left
+        provenance 'unknown', which the nightly prints as unrecorded."""
+        stubs["download"] = OSError(28, "No space left on device")
+        result, mode = self._fetch(settings)
+        assert (result.ok, mode["mode"], mode["reason"]) == (False, "refused", "download_failed")
+
+    @pytest.mark.parametrize("damage", ["no_reconciliation", "rows_as_text", "captions_as_prose"])
+    def test_malformed_parse_output_refuses(self, settings, stubs, damage):
+        """Found adversarially: these escaped fetch() and left provenance
+        'unknown'."""
+        recs = _records()
+        if damage == "no_reconciliation":
+            del recs[1]["reconciliation"]
+        elif damage == "rows_as_text":
+            recs[1]["reconciliation"] = dict(recs[1]["reconciliation"], rows="6")
+        else:
+            recs[0] = dict(recs[0], captions_found="twenty")
+        stubs["records"] = recs
+        result, mode = self._fetch(settings)
+        assert (result.ok, mode["mode"], mode["reason"]) == (False, "refused", "parse_output_invalid")
+
     def test_incomplete_download_refuses_and_names_the_edition(self, settings, stubs):
         stubs["download"] = PdfDownloadIncomplete("slow", bytes_downloaded=27_751_154)
         result, mode = self._fetch(settings)
@@ -215,6 +237,30 @@ class TestWriteAndServe:
         assert row["cells"]["Estimated Value (Kshs.)"] == "874"  # still shown as printed
         assert block["total_contracted_value"] is None
 
+    def test_unit_conflict_leaks_no_kes_figure_anywhere(self, client, db_session, counties):
+        """Found adversarially: the reconciliation still carried
+        estimated_value_kes_sum 874.0 — KSh 874 for a KSh 874 million project."""
+        import json as _json
+
+        _write(db_session)
+        block = _block(client, counties["Trans Nzoia"].id)
+        rec = block["reconciliation"]
+        assert rec["estimated_value_kes_sum"] is None and rec["amount_paid_kes_sum"] is None
+        assert all(c["rows"] is None for c in rec["checks"] if c["check"] != "count")
+        # No KES-bearing field anywhere holds the figures as read under the
+        # wrong unit (874 and 94.52). COB's own sentence, "Kshs.874.00
+        # million", is text and stays.
+        def leaks(node, key=""):
+            if isinstance(node, dict):
+                return [x for k, v in node.items() for x in leaks(v, k)]
+            if isinstance(node, list):
+                return [x for v in node for x in leaks(v, key)]
+            numeric = isinstance(node, (int, float)) and not isinstance(node, bool)
+            kes_key = "kes" in key or key in {"rows", "cob"} or key.endswith("_sum")
+            return [(key, node)] if numeric and kes_key and node in (874.0, 94.52) else []
+
+        assert leaks(_json.loads(_json.dumps(block))) == []
+
     def test_county_that_reported_nothing_is_cobs_words_not_zero(self, client, db_session, counties):
         _write(db_session)
         block = _block(client, counties["Vihiga"].id)
@@ -231,6 +277,19 @@ class TestWriteAndServe:
         stats = _write(db_session)
         assert "Kericho" not in stats["unmatched"]
         assert _block(client, counties["Kericho"].id)["count"] == 6
+
+    def test_a_duplicate_entity_cannot_hide_a_missing_county(self, db_session, counties, seed_country):
+        """Found adversarially: a stale second "Kericho" entity doubled the
+        rows written, which covered for a county that matched nothing."""
+        from models import Entity, EntityType
+
+        db_session.add(Entity(id=599, country_id=seed_country.id, type=EntityType.COUNTY,
+                              canonical_name="Kericho County", slug="kericho-035", meta={}))
+        db_session.delete(counties["Trans Nzoia"])
+        db_session.commit()
+        stats = _write(db_session)
+        assert stats["unmatched"] == ["Trans Nzoia"]
+        assert stats["rows"] == 6 + 10  # Kericho once, Kakamega; not Kericho twice
 
     def test_invented_records_do_not_survive_a_live_write(self, client, db_session, counties):
         _write(db_session)
@@ -352,3 +411,36 @@ class TestLinkingIsConservative:
             "Delayed Completion Works at Chepterwai Sub-County Hospital",
         )
 
+
+
+class TestEvidenceGateHostileInputs:
+    """Found by an adversarial pass: the gate accepted these before."""
+
+    BASE = {
+        "project_name": "x", "source_url": "https://cob.go.ke/download/x/?wpdmdl=16482",
+        "source_page": 5, "as_of": "2026-06-30", "reported_by": "County treasury",
+    }
+
+    @pytest.mark.parametrize(
+        "field,value",
+        [
+            ("source_url", "http://"),  # no host: not a document anyone can open
+            ("source_url", "https:///x"),
+            ("as_of", "          "),
+            ("as_of", "2026-13-45xx"),
+            ("as_of", "30 June 2026"),
+        ],
+    )
+    def test_not_evidence(self, field, value):
+        from services.stalled_projects import _evidence_gap
+
+        assert _evidence_gap(dict(self.BASE, **{field: value})) is not None
+
+    @pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
+    def test_non_finite_amounts_are_never_summed(self, value):
+        from services.stalled_projects import build_stalled_projects_block
+
+        block = build_stalled_projects_block({"rows": [dict(self.BASE, estimated_value_kes=value)]})
+        assert block["total_contracted_value"] is None
+        assert block["total_contracted_value_rows"] == 0
+        assert block["projects"][0]["estimated_value_kes"] is None  # not NaN in the JSON

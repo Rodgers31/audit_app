@@ -117,6 +117,27 @@ def _withheld_fields(county: Dict[str, Any]) -> List[Dict[str, str]]:
     return reasons
 
 
+def _scrub_rows_side(rec: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    if not isinstance(rec, dict):
+        return rec
+    rec = dict(rec, estimated_value_kes_sum=None, amount_paid_kes_sum=None)
+    checks = []
+    for c in rec.get("checks", []):
+        if c.get("check") != "count":
+            c = dict(c, rows=None, agrees=None, withheld=True)
+            if c.get("cob_source") == "table total row":
+                c["cob"] = None  # read under the same contradicted header
+        checks.append(c)
+    rec["checks"] = checks
+    return rec
+
+
+def _scrub_total(total: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    if not isinstance(total, dict):
+        return total
+    return {k: (None if k.endswith("_kes") else v) for k, v in total.items()}
+
+
 def build_county_block(county: Dict[str, Any], edition: Dict[str, Any]) -> Dict[str, Any]:
     """The schema-2 block for one county."""
     summary = county.get("summary") or {}
@@ -155,6 +176,18 @@ def build_county_block(county: Dict[str, Any], edition: Dict[str, Any]) -> Dict[
                     row[f"{field}_kes"] = None
                     row["flags"].append(f"{field}:withheld")
             rows.append(row)
+    reconciliation = county.get("reconciliation")
+    tables = county.get("tables", [])
+    if withheld_names:
+        # Nothing read against a contradicted header may reach a reader as
+        # KES — not a row, not a total, not a reconciliation sum. Trans Nzoia
+        # FY2025/26 otherwise showed "estimated_value_kes_sum: 874.0" (KSh
+        # 874) for a project COB values at KSh 874 million.
+        reconciliation = _scrub_rows_side(reconciliation)
+        tables = [
+            dict(t, total=_scrub_total(t.get("total")), rows=t.get("rows"))
+            for t in tables
+        ]
     return {
         "schema": SCHEMA,
         "source": {
@@ -184,9 +217,9 @@ def build_county_block(county: Dict[str, Any], edition: Dict[str, Any]) -> Dict[
                 "skipped": t.get("skipped"),
                 "notes": t.get("notes"),
             }
-            for t in county.get("tables", [])
+            for t in tables
         ],
-        "reconciliation": county.get("reconciliation"),
+        "reconciliation": reconciliation,
         "withheld_fields": withheld,
     }
 
@@ -218,11 +251,15 @@ def write(
         county = by_name.get(name) if name else None
         meta = {k: v for k, v in (entity.meta or {}).items() if not k.startswith(OWNED_PREFIX)}
         if county is not None:
-            unmatched.discard(name)
             block = build_county_block(county, edition)
             meta[OWNED_PREFIX] = block
-            written += 1
-            rows += len(block["rows"])
+            if name in unmatched:
+                # Counted once per county. A stale duplicate entity gets the
+                # same block, but must not add rows: doubled counts covered
+                # for a county that matched no entity at all.
+                unmatched.discard(name)
+                written += 1
+                rows += len(block["rows"])
         if dry_run:
             continue
         if meta != (entity.meta or {}):
