@@ -54,6 +54,25 @@ def _held_execution_fy(session) -> Optional[str]:
     return execution_by_sector(session)["fiscal_year"]
 
 
+def _held_revenue_fy(session) -> Optional[str]:
+    """Newest fiscal year with a KRA tax head the API serves as ``published``
+    and with an amount — the year /budget's revenue mix leads with. A year of
+    projections (amount null, basis "projected") is not held."""
+    from models import RevenueBySource
+
+    from .domains.revenue_by_source.kra_discovery import PUBLISHED_HEADS
+
+    best: Optional[str] = None
+    for fy, meta, amount in session.query(
+        RevenueBySource.fiscal_year, RevenueBySource.meta, RevenueBySource.amount_billion_kes
+    ).filter(RevenueBySource.revenue_type.in_(PUBLISHED_HEADS)):
+        if amount is None or not isinstance(meta, dict) or meta.get("basis") != "published":
+            continue
+        if best is None or (fy_start_year(fy) or 0) > (fy_start_year(best) or 0):
+            best = fy
+    return best
+
+
 @dataclass(frozen=True)
 class EditionRule:
     domain: str
@@ -68,6 +87,12 @@ EDITION_RULES: List[EditionRule] = [
         dataset="cob_ng_birr_annual",
         label="Execution by sector (COB annual NG-BIRR)",
         held=_held_execution_fy,
+    ),
+    EditionRule(
+        domain="revenue_by_source",
+        dataset="kra_annual_revenue_performance",
+        label="Revenue by tax head (KRA annual revenue performance)",
+        held=_held_revenue_fy,
     ),
 ]
 
