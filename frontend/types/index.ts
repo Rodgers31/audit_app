@@ -80,10 +80,26 @@ export interface CountyComprehensive {
      *  reader as a CRA model. */
     source?: BudgetSource;
   };
+  /**
+   * What the county received, from the Controller of Budget's CBIRR county
+   * revenue table (#238). `total_revenue` is that table's Grand Total of
+   * actual receipts and `streams` are the rows it is the sum of — both null /
+   * empty when the county's table did not reconcile. `local_revenue` is
+   * own-source revenue (CBIRR Table 2.1), the figure the list and map print;
+   * it is not one of the streams.
+   */
   revenue: {
-    total_revenue: number;
-    local_revenue: number;
-    equitable_share: number;
+    total_revenue: number | null;
+    total_revenue_target: number | null;
+    equitable_share: number | null;
+    equitable_share_target: number | null;
+    additional_allocations: number | null;
+    local_revenue: number | null;
+    own_source_target: number | null;
+    streams: Array<{ stream: string; target: number | null; actual: number }>;
+    fiscal_year: string | null;
+    source: string | null;
+    total_revenue_absent_reason: string | null;
   };
   debt: {
     total_debt: number;
