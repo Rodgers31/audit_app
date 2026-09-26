@@ -39,6 +39,11 @@ class FiscalSummaryRecord:
     #: rather than new spending — the largest single reason the gross figure
     #: and the enacted headline differ. Absent where it could not be proved.
     debt_redemption: float | None = None
+    #: The document ``debt_service_cost`` was read from. NOT the same thing as
+    #: ``budget_basis_source``, which is where the BUDGET figure came from —
+    #: for FY2025/26 that is COB's nine-month report while the debt service is
+    #: the BPS budget estimate. Citing one for the other mis-cites (issue #235).
+    debt_service_source: dict[str, Any] | None = None
 
 
 def _safe_float(val: Any) -> float | None:
@@ -164,6 +169,7 @@ def parse_fiscal_summary_payload(payload: dict[str, Any]) -> list[FiscalSummaryR
                 budget_basis=fy.get("budget_basis"),
                 debt_redemption=_safe_float(fy.get("debt_redemption")),
                 budget_basis_source=fy.get("budget_basis_source"),
+                debt_service_source=fy.get("debt_service_source"),
             )
         )
 

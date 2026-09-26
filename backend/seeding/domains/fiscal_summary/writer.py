@@ -76,11 +76,20 @@ def _raw_kes(value: Any) -> Any:
 
 
 def _budget_basis_meta(record) -> dict[str, Any]:
-    """``metadata`` payload recording the budget basis and its receipt."""
+    """``metadata`` payload recording the budget basis and its receipt.
+
+    Also the debt-service figure's own source, when the row declares one —
+    independently of the budget basis, because the two figures can come from
+    different documents.
+    """
+    out: dict[str, Any] = {}
+    ds_source = getattr(record, "debt_service_source", None)
+    if isinstance(ds_source, dict):
+        out["debt_service_source"] = ds_source
     basis = getattr(record, "budget_basis", None)
     if not basis:
-        return {}
-    out: dict[str, Any] = {"budget_basis": basis}
+        return out
+    out["budget_basis"] = basis
     source = getattr(record, "budget_basis_source", None)
     if isinstance(source, dict):
         out["budget_basis_source"] = source
