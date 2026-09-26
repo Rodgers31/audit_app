@@ -104,6 +104,7 @@ jobs:
     outputs:
       report: ${{ steps.check.outputs.report }}
       has_failures: ${{ steps.check.outputs.has_failures }}
+      unprobed: ${{ steps.check.outputs.unprobed }}
     steps:
       - name: Check data source URLs
         id: check
@@ -162,6 +163,29 @@ jobs:
           FAILED_WARN=0
           TOTAL=${#SOURCES[@]}
           OK_COUNT=0
+          NOT_PROBED=0
+
+          # ── Time budgets (seconds) ────────────────────────────────
+          # The job is killed at `timeout-minutes: 5`, and a killed job
+          # writes NO outputs. Run 36211613362 (2026-09-26): five [OK] lines,
+          # then OAG WP REST API went silent for 293s and the job was
+          # cancelled. The old probe was `curl --max-time 60 --retry 2
+          # --retry-delay 3`, and curl retries a --max-time timeout, so one
+          # call could last 3×60+2×3 = 186s; a timeout is "000", which is
+          # transient, so the browser-UA re-probe added another 186s — 372s
+          # for ONE source, longer than the whole job. Every wait is now drawn
+          # from two deadlines:
+          #   HC_SOURCE_BUDGET  all attempts, both UAs, for one source
+          #   HC_JOB_BUDGET     all sources; whatever is left when it runs out
+          #                     is reported "not probed", and the outputs are
+          #                     still written before the 300s job cap.
+          # Env-overridable so backend/tests/test_healthcheck_is_bounded.py
+          # can run this script against a host that never answers.
+          HC_ATTEMPT_MAX_TIME=${HC_ATTEMPT_MAX_TIME:-60}
+          HC_SOURCE_BUDGET=${HC_SOURCE_BUDGET:-75}
+          HC_JOB_BUDGET=${HC_JOB_BUDGET:-240}
+          HC_RETRY_DELAY=${HC_RETRY_DELAY:-3}
+          JOB_DEADLINE=$(( SECONDS + HC_JOB_BUDGET ))
 
           # Primary UA must start with a known HTTP-client identifier
           # (python-httpx / python-requests / curl) so the IMF DataMapper
@@ -173,10 +197,11 @@ jobs:
           # gets through, so we re-probe blocked sources with it.
           BROWSER_UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
-          # $1 = User-Agent, $2 = URL. Follow redirects; 60s timeout (COB's
-          # HTML listings legitimately take 30-50s); curl --retry covers
-          # connection resets / timeouts (not 4xx). Prints exactly one
-          # 3-digit HTTP code.
+          # $1 = User-Agent, $2 = URL, $3 = seconds allowed. ONE attempt,
+          # following redirects. Prints "<3-digit code> <curl exit status>".
+          # No curl --retry: curl retries a --max-time timeout, which is how
+          # one probe outlived the job. Retries are made by probe_source,
+          # which charges each one against the deadline.
           #
           # curl writes the code via -w; on a connection failure it prints
           # "000" AND exits non-zero. The old `... || echo "000"` appended a
@@ -184,15 +209,20 @@ jobs:
           # ("000" exactly) and wrongly escalated genuine outages to the
           # critical branch (see Treasury "000000" in issue #124). Capture
           # stdout, keep the assignment from tripping `set -e` on curl's
-          # non-zero exit (|| true), then normalise anything that isn't a
-          # bare 3-digit code to "000".
-          probe() {
-            local code
+          # non-zero exit, then normalise anything that isn't a bare 3-digit
+          # code to "000".
+          #
+          # Exit 28 is "operation timed out". A host that sends "200" headers
+          # and then stalls the body ALSO exits 28 — with code 200 — so the
+          # code alone would call a timeout healthy. Exit 28 forces "000".
+          probe_once() {
+            local code rc=0
             code=$(curl -s -o /dev/null -w "%{http_code}" \
-              -L --max-time 60 --retry 2 --retry-delay 3 \
-              -A "$1" "$2" 2>/dev/null) || true
+              -L --max-time "$3" \
+              -A "$1" "$2" 2>/dev/null) || rc=$?
             [[ "$code" =~ ^[0-9]{3}$ ]] || code="000"
-            printf '%s' "$code"
+            if [ "$rc" = "28" ]; then code="000"; fi
+            printf '%s %s' "$code" "$rc"
           }
 
           # A "transient/blocked" code means the host answered but bot-blocked
@@ -202,31 +232,81 @@ jobs:
           # source flagged critical. Only genuine 4xx-gone codes (404/410/…)
           # honour the per-source critical flag and can page us.
           is_transient() { [[ "$1" =~ ^(403|415|429|000)$ || "$1" =~ ^5[0-9][0-9]$ ]]; }
+          # What the old `curl --retry` retried: timeouts/resets, 408, 429, 5xx.
+          # A 403/415 block is not retried with the same UA — it goes straight
+          # to the browser UA below.
+          is_retryable() { [[ "$1" =~ ^(000|408|429)$ || "$1" =~ ^5[0-9][0-9]$ ]]; }
+
+          # $1 = URL. Sets HTTP_CODE, and TIMED_OUT=1 when the verdict is a
+          # primary-UA timeout. Up to 3 attempts per UA; returns by the
+          # earlier of its own deadline and the job's, whatever the host does.
+          #
+          # On a transient code, re-probe with the browser UA before
+          # concluding the source is unhealthy. Adopt the browser code
+          # whenever it is DEFINITIVE (i.e. not itself transient): a success
+          # (2xx/3xx) means the source is reachable and the block was just our
+          # UA, while a genuine 4xx-gone (404/410) revealed past the WAF means
+          # the URL migrated and must still surface via the critical-flag
+          # branch — not be masked behind the original transient code. Keep
+          # the primary code when the browser probe is also transient (the
+          # block is real/IP-based, not UA-based) or runs out of time.
+          probe_source() {
+            local url=$1 deadline ua attempt left out code rc
+            deadline=$(( SECONDS + HC_SOURCE_BUDGET ))
+            if [ "$deadline" -gt "$JOB_DEADLINE" ]; then deadline=$JOB_DEADLINE; fi
+            HTTP_CODE="000"
+            TIMED_OUT=0
+            for ua in "$PRIMARY_UA" "$BROWSER_UA"; do
+              for attempt in 1 2 3; do
+                left=$(( deadline - SECONDS ))
+                if [ "$left" -lt 1 ]; then return 0; fi
+                if [ "$left" -gt "$HC_ATTEMPT_MAX_TIME" ]; then left=$HC_ATTEMPT_MAX_TIME; fi
+                out=$(probe_once "$ua" "$url" "$left")
+                code=${out% *}
+                rc=${out#* }
+                if [ "$ua" = "$PRIMARY_UA" ]; then
+                  HTTP_CODE=$code
+                  TIMED_OUT=0
+                  if [ "$rc" = "28" ]; then TIMED_OUT=1; fi
+                elif ! is_transient "$code"; then
+                  HTTP_CODE=$code
+                  TIMED_OUT=0
+                  return 0
+                fi
+                if ! is_retryable "$code"; then break; fi
+                if [ $(( deadline - SECONDS )) -le "$HC_RETRY_DELAY" ]; then return 0; fi
+                sleep "$HC_RETRY_DELAY"
+              done
+              if ! is_transient "$HTTP_CODE"; then return 0; fi
+            done
+          }
 
           for entry in "${SOURCES[@]}"; do
             IFS='|' read -r label url critical <<< "$entry"
 
-            HTTP_CODE=$(probe "$PRIMARY_UA" "$url")
-            # On a block-style code, re-probe once with a browser UA before
-            # concluding the source is unhealthy. Adopt the retry code
-            # whenever it is DEFINITIVE (i.e. not itself transient): a
-            # success (2xx/3xx) means the source is reachable and the block
-            # was just our UA, while a genuine 4xx-gone (404/410) revealed
-            # past the WAF means the URL migrated and must still surface via
-            # the critical-flag branch — not be masked behind the original
-            # transient code. Keep the original code only when the re-probe
-            # is also transient (the block is real/IP-based, not UA-based).
-            if is_transient "$HTTP_CODE"; then
-              RETRY_CODE=$(probe "$BROWSER_UA" "$url")
-              if ! is_transient "$RETRY_CODE"; then
-                HTTP_CODE="$RETRY_CODE"
-              fi
+            # Out of job budget: say so for every source still waiting,
+            # rather than let the runner kill the job and drop the outputs.
+            if [ $(( JOB_DEADLINE - SECONDS )) -lt 1 ]; then
+              echo "  [WARNING] $label → not probed: the ${HC_JOB_BUDGET}s health-check budget ran out ($url)"
+              REPORT="${REPORT}WARNING|${label}|${url}|not probed\n"
+              FAILED_WARN=$((FAILED_WARN + 1))
+              NOT_PROBED=$((NOT_PROBED + 1))
+              continue
             fi
+
+            started=$SECONDS
+            probe_source "$url"
 
             if [[ "$HTTP_CODE" =~ ^[23] ]]; then
               echo "  [OK]   $label ($HTTP_CODE)"
               REPORT="${REPORT}OK|${label}|${url}|${HTTP_CODE}\n"
               OK_COUNT=$((OK_COUNT + 1))
+            elif [ "$TIMED_OUT" = "1" ]; then
+              # Transient like any 000, so never CRITICAL — but named, so the
+              # log says which host hung instead of going silent.
+              echo "  [WARNING] $label → timed out after $((SECONDS - started))s (transient/blocked) ($url)"
+              REPORT="${REPORT}WARNING|${label}|${url}|timeout\n"
+              FAILED_WARN=$((FAILED_WARN + 1))
             elif is_transient "$HTTP_CODE"; then
               echo "  [WARNING] $label → HTTP $HTTP_CODE (transient/blocked) ($url)"
               REPORT="${REPORT}WARNING|${label}|${url}|${HTTP_CODE}\n"
@@ -246,7 +326,7 @@ jobs:
 
           echo ""
           echo "─── Health Check Summary ───"
-          echo "Total: $TOTAL | OK: $OK_COUNT | Critical Failures: $FAILED_CRITICAL | Warnings: $FAILED_WARN"
+          echo "Total: $TOTAL | OK: $OK_COUNT | Critical Failures: $FAILED_CRITICAL | Warnings: $FAILED_WARN | Not probed: $NOT_PROBED | Elapsed: ${SECONDS}s"
 
           # Write outputs for downstream jobs
           # Escape newlines for GitHub Actions output
@@ -260,6 +340,10 @@ jobs:
           else
             echo "has_failures=false" >> "$GITHUB_OUTPUT"
           fi
+          # has_failures=false only means "no CRITICAL line". Sources the job
+          # budget never reached have no verdict at all, so the notify job must
+          # not read that as "all reachable" and auto-close open outage issues.
+          echo "unprobed=$NOT_PROBED" >> "$GITHUB_OUTPUT"
 
           # Write to step summary
           echo "## Data Source Health Check" >> $GITHUB_STEP_SUMMARY
@@ -277,7 +361,7 @@ jobs:
             fi
           done
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**OK:** $OK_COUNT / $TOTAL | **Critical:** $FAILED_CRITICAL | **Warnings:** $FAILED_WARN" >> $GITHUB_STEP_SUMMARY
+          echo "**OK:** $OK_COUNT / $TOTAL | **Critical:** $FAILED_CRITICAL | **Warnings:** $FAILED_WARN | **Not probed:** $NOT_PROBED" >> $GITHUB_STEP_SUMMARY
 
           # Log a warning annotation if critical sources are down
           if [ "$FAILED_CRITICAL" -gt 0 ]; then
@@ -1005,7 +1089,9 @@ jobs:
             }
 
       - name: Auto-close resolved health-check issues
-        if: needs.healthcheck.outputs.has_failures == 'false'
+        # `unprobed == '0'` as well: a run that ran out of budget before
+        # reaching a source has not shown that source to be reachable.
+        if: needs.healthcheck.outputs.has_failures == 'false' && needs.healthcheck.outputs.unprobed == '0'
         uses: actions/github-script@v7
         with:
           script: |
@@ -1043,24 +1129,49 @@ jobs:
       - name: Create issue on seeding/validation failure
         if: needs.seed.result == 'failure' || needs.validate.result == 'failure'
         uses: actions/github-script@v7
+        # Inputs arrive as env, not `${{ }}` spliced into the script, so
+        # backend/tests/test_healthcheck_is_bounded.py can run this script.
+        env:
+          PIPELINE_SEED_RESULT: ${{ needs.seed.result }}
+          PIPELINE_VALIDATE_RESULT: ${{ needs.validate.result }}
+          HEALTHCHECK_RESULT: ${{ needs.healthcheck.result }}
+          HEALTHCHECK_HAS_FAILURES: ${{ needs.healthcheck.outputs.has_failures }}
+          HEALTHCHECK_UNPROBED: ${{ needs.healthcheck.outputs.unprobed }}
+          PIPELINE_DOMAIN: ${{ github.event.inputs.domain || 'all' }}
         with:
           script: |
-            const seedResult = '${{ needs.seed.result }}';
-            const validateResult = '${{ needs.validate.result }}';
+            const env = process.env;
             const failedSteps = [];
-            if (seedResult === 'failure') failedSteps.push('Seeding');
-            if (validateResult === 'failure') failedSteps.push('Validation');
+            if (env.PIPELINE_SEED_RESULT === 'failure') failedSteps.push('Seeding');
+            if (env.PIPELINE_VALIDATE_RESULT === 'failure') failedSteps.push('Validation');
 
-            github.rest.issues.create({
+            // This line used to be `has_failures == 'true' && '⚠️ …' || '✅
+            // All sources reachable'`. A health check that was cancelled
+            // writes no outputs, so has_failures is '' and the issue said
+            // "✅ All sources reachable" about a check that never finished
+            // (#229, run 36211613362). And has_failures=false only ever meant
+            // "no CRITICAL line" — transient warnings do not set it.
+            let health;
+            if (env.HEALTHCHECK_RESULT !== 'success') {
+              health = `❔ Unknown — the health check did not finish (${env.HEALTHCHECK_RESULT || 'no result'})`;
+            } else if (env.HEALTHCHECK_HAS_FAILURES === 'true') {
+              health = '⚠️ Some sources were unreachable (may be related)';
+            } else if (env.HEALTHCHECK_UNPROBED !== '0') {
+              health = `❔ Partial — ${env.HEALTHCHECK_UNPROBED || 'some'} source(s) not probed before the health-check budget ran out`;
+            } else {
+              health = '✅ No critical source failures (warnings, if any, are in the health-check job)';
+            }
+
+            await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: `Data pipeline failed: ${failedSteps.join(', ')} — ${new Date().toISOString().split('T')[0]}`,
               body: `## Automated Data Pipeline Failure\n\n` +
                 `**Failed Steps:** ${failedSteps.join(', ')}\n` +
-                `**Health Check:** ${{ needs.healthcheck.outputs.has_failures == 'true' && '⚠️ Some sources were unreachable (may be related)' || '✅ All sources reachable' }}\n` +
+                `**Health Check:** ${health}\n` +
                 `**Run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n` +
                 `**Triggered by:** ${context.eventName}\n` +
-                `**Domain:** ${{ github.event.inputs.domain || 'all' }}\n\n` +
+                `**Domain:** ${env.PIPELINE_DOMAIN}\n\n` +
                 `### Action Required\n` +
                 `1. Check the [workflow run logs](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})\n` +
                 `2. Verify the \`ingestion_jobs\` table for domain-level errors\n` +
