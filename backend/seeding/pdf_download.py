@@ -18,6 +18,17 @@ next). Two problems this module addresses — see issue #119:
     publishes a new report, so a long TTL is safe and a new report naturally
     misses the cache. Persist the cache dir across CI runs (actions/cache) for
     this to help the nightly job.
+
+(c) A publisher can re-issue a document under the SAME link. COB's CBIRR
+    download (``?wpdmdl=16482``) sends no ETag, Last-Modified or
+    Content-Length, but it does name the file it is serving
+    (``Content-disposition: attachment;filename="CGBIRR FY 2025_26 August
+    2026 Final 5.pdf"``) — and "Final 5" says there were four before it. A
+    caller that passes ``fingerprint`` (see :func:`probe_fingerprint`) gets
+    a cache entry keyed on URL AND that fingerprint: a changed filename is a
+    miss, and the stale partial is discarded rather than resumed onto. Every
+    entry also records the SHA-256 of its bytes, so what was ingested is
+    identified by content, not by the link that happened to serve it.
 """
 
 from __future__ import annotations
@@ -64,6 +75,54 @@ def _part_path(cache_dir: Path, url: str) -> Path:
     """
     digest = hashlib.sha256(url.encode("utf-8")).hexdigest()
     return cache_dir / f"{digest}.part"
+
+
+def probe_fingerprint(
+    client: SeedingHttpClient,
+    url: str,
+    *,
+    headers: Optional[Dict[str, str]] = None,
+) -> Optional[str]:
+    """What the server says it is serving at ``url``, without the body.
+
+    Built from whichever of Content-Disposition, ETag, Last-Modified and
+    Content-Length the HEAD response carries. ``None`` when the probe fails
+    or the server says nothing identifying — the caller then falls back to
+    the URL-keyed cache and should record that the version was unverified.
+    """
+    try:
+        response = client.head(
+            url, raise_for_status=False, headers=headers, timeout=60.0
+        )
+    except Exception as exc:  # a probe must never block the download
+        logger.warning("fingerprint probe failed for %s: %s", url, exc)
+        return None
+    if getattr(response, "status_code", 500) >= 400:
+        return None
+    hdrs = {k.lower(): v for k, v in (getattr(response, "headers", {}) or {}).items()}
+    parts = [
+        f"{name}={hdrs[name]}"
+        for name in ("content-disposition", "etag", "last-modified", "content-length")
+        if hdrs.get(name)
+    ]
+    return "; ".join(parts) or None
+
+
+def _sha256_of(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def cached_pdf_meta(cache_dir: Path, url: str) -> Dict[str, object]:
+    """The sidecar of the cached entry for ``url`` (``{}`` if none)."""
+    _, meta_path = _cache_paths(Path(cache_dir), url)
+    try:
+        return json.loads(meta_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
 
 
 def _fresh_cache_hit(
@@ -188,8 +247,14 @@ def get_or_download_pdf(
     max_seconds: float,
     max_bytes: Optional[int] = None,
     headers: Optional[Dict[str, str]] = None,
+    fingerprint: Optional[str] = None,
 ) -> Path:
     """Return a path to the PDF at ``url``, downloading only on a cache miss.
+
+    ``fingerprint`` (optional) is what the server currently says it serves at
+    ``url``; an entry recorded under a different one is a miss. Callers that
+    share a cache entry must pass the same value, or each will evict the
+    other's download.
 
     On a hit (a non-empty cached file younger than ``ttl_seconds``) the cached
     path is returned with no network call. On a miss the body is streamed to a
@@ -205,6 +270,55 @@ def get_or_download_pdf(
     cache_dir.mkdir(parents=True, exist_ok=True)
     pdf_path, meta_path = _cache_paths(cache_dir, url)
 
+    part_path = _part_path(cache_dir, url)
+    part_meta = part_path.with_suffix(".part.json")
+    if fingerprint is not None:
+        sidecar = cached_pdf_meta(cache_dir, url)
+        recorded = sidecar.get("fingerprint")
+        if pdf_path.exists() and recorded is not None and recorded != fingerprint:
+            logger.warning(
+                "Cached PDF for %s was recorded under %r; the server now "
+                "serves %r. Treating it as a re-issue and downloading again.",
+                url,
+                recorded,
+                fingerprint,
+            )
+            pdf_path.unlink(missing_ok=True)
+            meta_path.unlink(missing_ok=True)
+        elif pdf_path.exists() and sidecar and recorded is None:
+            # An entry written before fingerprints existed (every entry in
+            # the CI cache on the day this shipped). Evicting it would cost a
+            # 50MB re-download at COB's 43 KB/s — several nights, during
+            # which counties_budget starves too. Adopt it, and say so: its
+            # version was never checked against the server.
+            sidecar.update(
+                fingerprint=fingerprint,
+                fingerprint_adopted=True,
+                sha256=sidecar.get("sha256") or _sha256_of(pdf_path),
+            )
+            try:
+                meta_path.write_text(json.dumps(sidecar), encoding="utf-8")
+            except OSError:
+                pass
+            logger.warning(
+                "Adopted pre-fingerprint cache entry for %s as %r; its version "
+                "was not verified against the server.",
+                url,
+                fingerprint,
+            )
+        try:
+            part_fp = json.loads(part_meta.read_text(encoding="utf-8")).get("fingerprint")
+        except (OSError, ValueError):
+            part_fp = None
+        if part_path.exists() and part_fp != fingerprint:
+            # Resuming would splice the new document's tail onto the old
+            # one's head.
+            part_path.unlink(missing_ok=True)
+        try:
+            part_meta.write_text(json.dumps({"fingerprint": fingerprint}), encoding="utf-8")
+        except OSError:
+            pass
+
     hit = _fresh_cache_hit(pdf_path, meta_path, ttl_seconds)
     if hit is not None:
         size, age = hit
@@ -213,7 +327,6 @@ def get_or_download_pdf(
         )
         return pdf_path
 
-    part_path = _part_path(cache_dir, url)
     resumed_from = part_path.stat().st_size if part_path.exists() else 0
     logger.info(
         "PDF cache miss; streaming download (cap %.0fs, resuming from %d "
@@ -258,6 +371,7 @@ def get_or_download_pdf(
     else:
         # Whole, validated PDF is now at pdf_path; the partial is spent.
         part_path.unlink(missing_ok=True)
+        part_meta.unlink(missing_ok=True)
 
     # Metadata is best-effort. The PDF is already safely in place, so a failed
     # sidecar write must NOT turn a successful download into an exception (which
@@ -265,7 +379,15 @@ def get_or_download_pdf(
     # sidecar the next run simply treats it as a cache miss and re-downloads.
     try:
         meta_path.write_text(
-            json.dumps({"url": url, "created_at": time.time(), "bytes": size}),
+            json.dumps(
+                {
+                    "url": url,
+                    "created_at": time.time(),
+                    "bytes": size,
+                    "sha256": _sha256_of(pdf_path),
+                    "fingerprint": fingerprint,
+                }
+            ),
             encoding="utf-8",
         )
     except OSError as exc:
@@ -277,4 +399,4 @@ def get_or_download_pdf(
     return pdf_path
 
 
-__all__ = ["get_or_download_pdf"]
+__all__ = ["cached_pdf_meta", "get_or_download_pdf", "probe_fingerprint"]

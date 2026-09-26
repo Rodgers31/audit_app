@@ -503,18 +503,13 @@ def _download_and_parse_county_pdf(
     """Download a COB county BIRR PDF, parse it, return budget records."""
     try:
         from ...pdf_parsers import CoBQuarterlyReportParser
-        from ...pdf_download import get_or_download_pdf
+        from ...cob_cbirr import download_cbirr
         from ...parse_cache import parse_with_cache
 
-        # Use a browser-shaped UA for the PDF download — the same CDN
-        # rule that rejects the HTML landing with 415 can block `*/*`
-        # downloads too. `Accept: application/pdf` is what real browsers
-        # send on direct-PDF clicks.
-        pdf_headers = {
-            "User-Agent": _BROWSER_UA,
-            "Accept": "application/pdf,*/*;q=0.8",
-        }
-        # get_or_download_pdf enforces a TOTAL wall-clock cap on the transfer
+        # The PDF request carries a browser-shaped UA and
+        # `Accept: application/pdf` (cob_cbirr.PDF_HEADERS): the CDN rule
+        # that rejects the HTML landing with 415 can block `*/*` downloads
+        # too. get_or_download_pdf enforces a TOTAL wall-clock cap on the transfer
         # (not httpx's per-chunk timeout, which a slow-but-steady 48MB body
         # never trips) and reuses a cached copy across runs. So a slow-CDN
         # night either reuses the last good download or bails to the fixture,
@@ -523,15 +518,10 @@ def _download_and_parse_county_pdf(
         # still points at the real culprit (CDN vs parser).
         logger.info("Starting COB county BIRR PDF download: %s", pdf_url)
         download_start = time.monotonic()
-        pdf_path = get_or_download_pdf(
-            client,
-            pdf_url,
-            cache_dir=Path(settings.cache_path) / "pdfs",
-            ttl_seconds=settings.pdf_cache_ttl_seconds,
-            max_seconds=settings.pdf_download_timeout_seconds,
-            max_bytes=settings.pdf_download_max_bytes,
-            headers=pdf_headers,
-        )
+        # Through the shared CBIRR helper, not get_or_download_pdf directly:
+        # stalled_projects reads the same ~50MB file, and the two share one
+        # cache entry only if they pass the same server fingerprint (#230).
+        pdf_path = download_cbirr(client, pdf_url, settings).path
         download_elapsed = time.monotonic() - download_start
 
         logger.info(
