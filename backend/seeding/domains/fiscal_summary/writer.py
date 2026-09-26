@@ -76,19 +76,33 @@ def _raw_kes(value: Any) -> Any:
 
 
 def _budget_basis_meta(record) -> dict[str, Any]:
-    """``metadata`` payload recording the budget basis and its receipt."""
+    """``metadata`` payload recording WHICH measure each figure is, and where
+    it came from: the budget basis and its receipt, and the fiscal-framework
+    split with its own total, basis and receipt.
+
+    Each part is written only when the record carries it, so a row that was
+    never sourced cannot come out of here looking as if it had been.
+    Stored in the existing JSONB column rather than new ones: this needs no
+    migration, so it cannot add to the production schema drift.
+    """
+    out: dict[str, Any] = {}
     basis = getattr(record, "budget_basis", None)
-    if not basis:
-        return {}
-    out: dict[str, Any] = {"budget_basis": basis}
-    source = getattr(record, "budget_basis_source", None)
-    if isinstance(source, dict):
-        out["budget_basis_source"] = source
-    # Stored in the existing JSONB column rather than a new one: this needs no
-    # migration, so it cannot add to the production schema drift.
-    redemption = getattr(record, "debt_redemption", None)
-    if redemption is not None:
-        out["debt_redemption_billion"] = redemption
+    if basis:
+        out["budget_basis"] = basis
+        source = getattr(record, "budget_basis_source", None)
+        if isinstance(source, dict):
+            out["budget_basis_source"] = source
+        redemption = getattr(record, "debt_redemption", None)
+        if redemption is not None:
+            out["debt_redemption_billion"] = redemption
+
+    framework = getattr(record, "fiscal_framework", None)
+    if isinstance(framework, dict):
+        out["fiscal_framework"] = framework
+    for key in ("split_basis", "fiscal_framework_absent_reason", "tax_split_absent_reason"):
+        value = getattr(record, key, None)
+        if value:
+            out[key] = value
     return out
 
 
@@ -135,7 +149,12 @@ def write_fiscal_summary_records(
         basis_meta = _budget_basis_meta(record)
         if basis_meta:
             fields["meta"] = basis_meta
-            page_ref = (basis_meta.get("budget_basis_source") or {}).get("page")
+            # The budget's own page first; a year whose budget is not sourced
+            # yet (a new edition landing before the budget books) cites the
+            # annex page its split came from.
+            page_ref = (basis_meta.get("budget_basis_source") or {}).get("page") or (
+                (basis_meta.get("fiscal_framework") or {}).get("source") or {}
+            ).get("page")
             if page_ref:
                 fields["page_ref"] = str(page_ref)[:50]
 

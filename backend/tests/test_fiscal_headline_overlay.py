@@ -178,24 +178,44 @@ def test_revenue_overlay_noop_on_missing():
 
 
 # ── derived borrowing_pct_of_budget ─────────────────────────────────────
-def test_borrowing_pct_is_derived_from_budget():
+# Issue #237 changed the denominator. These two tests used to pin
+# ``total_borrowing / appropriated_budget``, but appropriated_budget is COB
+# gross (it counts principal redemption and excludes county transfers) while
+# the borrowing is deficit financing from Treasury's fiscal framework: a
+# ratio of two bases. The share is now derived over the framework's own
+# spending total, and it is withheld where there is none.
+def _framework(total):
+    return {"basis": "treasury_fiscal_framework", "total_expenditure_billion": total}
+
+
+def test_borrowing_pct_is_derived_not_declared():
     payload = {
         "fiscal_years": [
-            {"fiscal_year": "FY 2025/26", "appropriated_budget": 4292,
-             "total_borrowing": 910, "borrowing_pct_of_budget": 99.9}  # declared bogus
+            {"fiscal_year": "FY 2026/27", "appropriated_budget": 5485.7,
+             "total_borrowing": 1111.8, "borrowing_pct_of_budget": 99.9,  # declared bogus
+             "fiscal_framework": _framework(4785.2)}
         ]
     }
     rec = parse_fiscal_summary_payload(payload)[0]
-    # 910 / 4292 * 100 = 21.2 — derived, ignoring the bogus declared 99.9.
-    assert rec.borrowing_pct_of_budget == 21.2
+    # 1111.8 / 4785.2 * 100 = 23.2: derived on one basis, ignoring the
+    # declared 99.9 and NOT dividing by the 5,485.7 COB gross figure (20.3).
+    assert rec.borrowing_pct_of_budget == 23.2
 
 
-def test_borrowing_pct_tracks_a_corrected_budget():
-    # Same borrowing, different budgets → different (correct) shares.
-    p1 = {"fiscal_years": [{"fiscal_year": "FY 2025/26", "appropriated_budget": 4190, "total_borrowing": 910}]}
-    p2 = {"fiscal_years": [{"fiscal_year": "FY 2025/26", "appropriated_budget": 4292, "total_borrowing": 910}]}
-    assert parse_fiscal_summary_payload(p1)[0].borrowing_pct_of_budget == 21.7
-    assert parse_fiscal_summary_payload(p2)[0].borrowing_pct_of_budget == 21.2
+def test_borrowing_pct_tracks_its_own_total_and_ignores_the_gross_budget():
+    p1 = {"fiscal_years": [{"fiscal_year": "FY 2025/26", "appropriated_budget": 4690,
+                            "total_borrowing": 1199.4, "fiscal_framework": _framework(4638.4)}]}
+    p2 = {"fiscal_years": [{"fiscal_year": "FY 2025/26", "appropriated_budget": 9999,
+                            "total_borrowing": 1199.4, "fiscal_framework": _framework(4638.4)}]}
+    assert parse_fiscal_summary_payload(p1)[0].borrowing_pct_of_budget == 25.9
+    assert parse_fiscal_summary_payload(p2)[0].borrowing_pct_of_budget == 25.9
+
+
+def test_borrowing_pct_is_withheld_without_a_same_basis_total():
+    """The legacy FY 2022/23 row: borrowing with no fiscal framework."""
+    p = {"fiscal_years": [{"fiscal_year": "FY 2022/23", "appropriated_budget": 3675,
+                           "total_borrowing": 886, "borrowing_pct_of_budget": 26.8}]}
+    assert parse_fiscal_summary_payload(p)[0].borrowing_pct_of_budget is None
 
 
 # ── The basis decision (2026-08-29) ─────────────────────────────────────
