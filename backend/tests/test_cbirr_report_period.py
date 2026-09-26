@@ -354,3 +354,45 @@ def test_a_run_that_writes_nothing_removes_nothing(session, tmp_path):
     session.commit()
     assert stats.superseded == 0
     assert session.query(BudgetLine).count() == 3
+
+
+def test_a_reparse_is_the_whole_revenue_story_for_its_document(session, tmp_path):
+    """Revenue receipts a document no longer yields do not outlive the parse
+    that stopped yielding them. A stricter parser (or a renamed stream) left
+    the earlier run's rows in place, still published."""
+    def receipts(*streams):
+        return [
+            _parsed("Revenue Receipts", str(a), str(a)) | {"subcategory": s, "amounts_in": "kes"}
+            for s, a in streams
+        ]
+
+    settings = _settings(tmp_path)
+    ctx = DomainRunContext(since=None, dry_run=False)
+    first = budget_parser.parse_budget_payload(_fetch(tmp_path, [
+        _parsed("Total", "44620.89", "32122.66"),
+        *receipts(("Equitable Share", 100), ("Other Revenue", 20), ("Total", 120)),
+    ]))
+    budget_writer.persist_budget_records(session, first, settings, ctx)
+    session.commit()
+
+    second = budget_parser.parse_budget_payload(_fetch(tmp_path, [
+        _parsed("Total", "44620.89", "32122.66"),
+        *receipts(("Equitable Share", 100), ("Additional Allocations", 20), ("Total", 120)),
+    ]))
+    budget_writer.persist_budget_records(session, second, settings, ctx)
+    session.commit()
+
+    streams = {
+        l.subcategory
+        for l in session.query(BudgetLine).filter(BudgetLine.category == "Revenue Receipts")
+    }
+    assert streams == {"Equitable Share", "Additional Allocations", "Total"}
+
+    third = budget_parser.parse_budget_payload(_fetch(tmp_path, [
+        _parsed("Total", "44620.89", "32122.66"),
+    ]))
+    budget_writer.persist_budget_records(session, third, settings, ctx)
+    session.commit()
+    assert session.query(BudgetLine).filter(BudgetLine.category == "Revenue Receipts").count() == 0
+    # The budget row the document still yields is untouched.
+    assert session.query(BudgetLine).filter(BudgetLine.category == "Total").count() == 1

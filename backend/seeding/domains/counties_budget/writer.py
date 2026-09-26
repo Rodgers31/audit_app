@@ -569,7 +569,77 @@ def persist_budget_records(
         ],
     )
 
+    # ── 8. Revenue receipts: each parse is the whole set for its document ──
+    # A county's receipts are published only when its table reconciles, so a
+    # re-parse that refuses a county (a stricter parser, a corrected table)
+    # or renames a stream must take the earlier rows with it — otherwise
+    # they stay published from a parse the current code would not stand by.
+    stats.superseded += _remove_revenue_receipts_not_reasserted(
+        session,
+        [
+            (
+                sources_by_url[r.source_url or settings.budgets_dataset_url].id,
+                entities_by_slug[r.entity_slug].id,
+                periods_by_key[
+                    (
+                        entities_by_slug[r.entity_slug].country_id,
+                        normalize_fiscal_label(r.period_label),
+                    )
+                ].id,
+                r.category,
+                r.subcategory,
+            )
+            for r in resolvable
+        ],
+    )
+
     return stats
+
+
+def _remove_revenue_receipts_not_reasserted(
+    session: Session, written: List[Tuple[int, int, int, str, Optional[str]]]
+) -> int:
+    """Delete a document's revenue-receipts rows this batch did not write.
+
+    Scoped to documents and counties the batch wrote anything for, so a run
+    that wrote nothing removes nothing.
+    """
+    from services.county_budget import REVENUE_RECEIPTS_CATEGORY
+
+    docs = {doc for doc, *_ in written}
+    entities = {entity for _doc, entity, *_ in written}
+    keep = {
+        (doc, entity, period, sub)
+        for doc, entity, period, category, sub in written
+        if category == REVENUE_RECEIPTS_CATEGORY
+    }
+    if not docs:
+        return 0
+    stale = [
+        line
+        for line in session.execute(
+            select(BudgetLine).where(
+                BudgetLine.source_document_id.in_(docs),
+                BudgetLine.entity_id.in_(entities),
+                BudgetLine.category == REVENUE_RECEIPTS_CATEGORY,
+            )
+        )
+        .scalars()
+        .all()
+        if (line.source_document_id, line.entity_id, line.period_id, line.subcategory)
+        not in keep
+    ]
+    for line in stale:
+        session.delete(line)
+    if stale:
+        logger.warning(
+            "removed %d revenue-receipts row(s) this parse no longer yields "
+            "(%d county(ies))",
+            len(stale),
+            len({line.entity_id for line in stale}),
+        )
+        session.flush()
+    return len(stale)
 
 
 def _remove_rows_filed_under_other_periods(
