@@ -984,6 +984,183 @@ def hollow_run_findings(jobs: Iterable) -> List[Finding]:
     return findings
 
 
+# ─────────────────────────────────────────────────────────────────────────
+# County audit coverage — the fourth question: has OAG published a year of
+# county audits that we do not carry?
+# ─────────────────────────────────────────────────────────────────────────
+#
+# Every gate above passed on 2026-09-24 while every county finding on the
+# site was FY2020/21 and OAG had published FY2021/22 through FY2024/25. The
+# audits table WAS moving (the national Blue Book loads nightly), the domain
+# DID reach its publisher, and no table lost rows. None of them asks "is
+# there a year the publisher has out that we hold nothing for?", so none
+# could see a four-year gap.
+#
+# The listing is read by the audits domain, not here: the validate job makes
+# no network calls, and OAG challenges GitHub runners intermittently. The
+# domain records what OAG's county listing named in
+# ``ingestion_jobs.metadata.oag_county_discovery.listing_fiscal_years``, and
+# this compares that against the county findings actually published.
+#
+# FAIL, not WARN, when a listed year has no county finding. The nightly
+# discovers and processes the newest year first in the same run that
+# validates, so a year OAG has just published is red for at most the nights
+# the backlog takes. A red that clears itself is what a gate is for.
+
+COUNTY_AUDIT_LABEL = "County audit coverage"
+#: Every county is audited every year: 47 executives and 47 assemblies.
+COUNTY_COUNT = 47
+
+
+def _county_findings_by_audit_year(session) -> dict:
+    """``{audit_year: distinct counties with a PUBLISHED finding}``.
+
+    Publishable only. A finding the gate withholds reaches no reader, so it
+    cannot count as holding that year.
+    """
+    from sqlalchemy import func
+
+    from models import Audit, Entity, EntityType
+
+    rows = (
+        session.query(Audit.audit_year, func.count(func.distinct(Audit.entity_id)))
+        .join(Entity, Entity.id == Audit.entity_id)
+        .filter(Entity.type == EntityType.COUNTY, Audit.publishable.is_(True))
+        .group_by(Audit.audit_year)
+        .all()
+    )
+    return {int(year): int(n) for year, n in rows if year is not None}
+
+
+def _latest_recorded_listing(session):
+    """The newest non-dry audits run that recorded a non-empty OAG listing.
+
+    Returns ``(job, discovery_meta)`` or ``(None, None)``.
+    """
+    from models import IngestionJob
+
+    jobs = (
+        session.query(IngestionJob)
+        .filter(IngestionJob.domain == "audits", IngestionJob.dry_run.is_(False))
+        .order_by(IngestionJob.started_at.desc(), IngestionJob.id.desc())
+        .limit(60)
+        .all()
+    )
+    for job in jobs:
+        meta = (job.meta or {}).get("oag_county_discovery") or {}
+        if meta.get("listing_fiscal_years"):
+            return job, meta
+    return None, None
+
+
+def _newest_volume_backlog(session) -> List[str]:
+    """Volumes the newest non-dry audits run deferred or failed, labelled."""
+    from models import IngestionJob
+
+    job = (
+        session.query(IngestionJob)
+        .filter(IngestionJob.domain == "audits", IngestionJob.dry_run.is_(False))
+        .order_by(IngestionJob.started_at.desc(), IngestionJob.id.desc())
+        .first()
+    )
+    report = ((job.meta or {}) if job else {}).get("county_volumes") or {}
+    return [f"deferred {v}" for v in report.get("deferred") or []] + [
+        f"failed {v}" for v in report.get("failed") or []
+    ]
+
+
+def check_county_audit_coverage(session, now: Optional[datetime] = None) -> List[Finding]:
+    """FAIL when OAG lists a fiscal year of county audits we hold none for."""
+    from .oag_discovery import FIRST_INGESTED_FISCAL_YEAR, fy_start
+
+    job, meta = _latest_recorded_listing(session)
+    if job is None:
+        return [
+            Finding(
+                WARN,
+                COUNTY_AUDIT_LABEL,
+                "no audits run has recorded OAG's county listing, so a published "
+                "fiscal year we hold nothing for cannot be seen. Unrecorded is "
+                "not the same as covered.",
+            )
+        ]
+
+    floor = fy_start(FIRST_INGESTED_FISCAL_YEAR)
+    listed = [fy for fy in meta["listing_fiscal_years"] if fy_start(fy) >= floor]
+    held = _county_findings_by_audit_year(session)
+    held_years = sorted(held)
+    newest_held = (
+        f"FY{held_years[-1] - 1}/{held_years[-1]}" if held_years else "none"
+    )
+    when = job.started_at.date().isoformat() if job.started_at else "unknown date"
+    if not listed:
+        # OAG has published every year since 2016/17. A listing that names
+        # none from the floor on was misread; it is not a clean bill.
+        return [
+            Finding(
+                WARN,
+                COUNTY_AUDIT_LABEL,
+                f"OAG's county listing (read {when}) named no fiscal year from "
+                f"{FIRST_INGESTED_FISCAL_YEAR} on "
+                f"({', '.join(meta['listing_fiscal_years'])}), so coverage "
+                "cannot be judged",
+            )
+        ]
+
+    missing =[fy for fy in listed if held.get(fy_start(fy) + 1, 0) == 0]
+    partial = [
+        f"{fy} ({held[fy_start(fy) + 1]}/{COUNTY_COUNT} counties)"
+        for fy in listed
+        if 0 < held.get(fy_start(fy) + 1, 0) < COUNTY_COUNT
+    ]
+    findings: List[Finding] = []
+    if missing:
+        findings.append(
+            Finding(
+                FAIL,
+                COUNTY_AUDIT_LABEL,
+                f"OAG's county listing (read {when}) publishes "
+                f"{', '.join(missing)}, and no county finding is published for "
+                f"{'it' if len(missing) == 1 else 'them'}; newest county year "
+                f"published is {newest_held}",
+            )
+        )
+    if partial:
+        findings.append(
+            Finding(
+                WARN,
+                COUNTY_AUDIT_LABEL,
+                f"some counties have no published finding for {', '.join(partial)}",
+            )
+        )
+    # A year counts as held once ANY of its volumes loads for all 47 counties,
+    # so a deferred or failed second volume is invisible to the counts above.
+    # It is named from the newest run alone: "still deferred" is a statement
+    # about now, and a union over past runs would keep reporting a backlog
+    # that has cleared.
+    backlog = _newest_volume_backlog(session)
+    if backlog:
+        findings.append(
+            Finding(
+                WARN,
+                COUNTY_AUDIT_LABEL,
+                "the newest audits run left combined volume(s) unloaded: "
+                + "; ".join(backlog),
+            )
+        )
+    if not findings:
+        findings.append(
+            Finding(
+                OK,
+                COUNTY_AUDIT_LABEL,
+                f"every fiscal year OAG lists from {FIRST_INGESTED_FISCAL_YEAR} "
+                f"({', '.join(listed) or 'none'}) has county findings for all "
+                f"{COUNTY_COUNT} counties (listing read {when})",
+            )
+        )
+    return findings
+
+
 def run_all(
     session, now: Optional[datetime] = None, counts: Optional[dict] = None
 ) -> List[Finding]:
@@ -994,8 +1171,10 @@ def run_all(
     the third gate is — the nightly passes the counts it already computed for
     its own floors.
     """
-    findings = check_table_freshness(session, now) + check_ingestion_freshness(
-        session, now
+    findings = (
+        check_table_freshness(session, now)
+        + check_ingestion_freshness(session, now)
+        + check_county_audit_coverage(session, now)
     )
     if counts is not None:
         findings += check_and_record_row_census(session, counts, now=now)
@@ -1004,6 +1183,8 @@ def run_all(
 
 __all__ = [
     "BOOTSTRAP_DOMAIN",
+    "COUNTY_AUDIT_LABEL",
+    "check_county_audit_coverage",
     "EXEMPT_FIXTURE_REASONS",
     "FAIL",
     "Finding",
