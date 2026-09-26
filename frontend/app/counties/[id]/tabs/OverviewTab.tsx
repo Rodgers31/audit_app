@@ -84,9 +84,9 @@ function OfficialsCard({ data }: { data: CountyComprehensive }) {
   // One link per distinct source page; both roles usually cite the same
   // publisher but two different pages.
   const cited = rows
-    .map((r) => sources?.[r.role])
-    .filter((s): s is OfficialSource => !!s)
-    .filter((s, i, all) => all.findIndex((o) => o.source_url === s.source_url) === i);
+    .map((r) => ({ role: r.role, src: sources?.[r.role] }))
+    .filter((c): c is { role: typeof c.role; src: OfficialSource } => !!c.src)
+    .filter((c, i, all) => all.findIndex((o) => o.src.source_url === c.src.source_url) === i);
 
   return (
     <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-5'>
@@ -113,7 +113,7 @@ function OfficialsCard({ data }: { data: CountyComprehensive }) {
       {cited.length > 0 && (
         <p className='text-[11px] text-gray-500 dark:text-neutral-muted/80 mt-3'>
           {t('county.officials.source')}:{' '}
-          {cited.map((s, i) => (
+          {cited.map(({ role, src: s }, i) => (
             <React.Fragment key={s.source_url}>
               {i > 0 && ' · '}
               <a
@@ -121,7 +121,8 @@ function OfficialsCard({ data }: { data: CountyComprehensive }) {
                 target='_blank'
                 rel='noopener noreferrer'
                 className='text-gov-forest dark:text-emerald-100 hover:underline inline-flex items-center gap-1'>
-                {s.publisher || new URL(s.source_url).hostname}
+                {s.publisher || new URL(s.source_url).hostname} —{' '}
+                {t(`county.officials.title.${role}` as TranslationKey)}
                 <ExternalLink size={10} />
               </a>
               {s.fetched_at && (
