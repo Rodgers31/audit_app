@@ -7,17 +7,20 @@ export interface AuditIssue {
   status: 'open' | 'resolved' | 'pending';
 }
 
+/** One row of a county's "Stalled Projects" table in the Controller of
+ * Budget's County Budget Implementation Review Report. The backend publishes a
+ * row only when it carries source_url, source_page, as_of and reported_by
+ * (backend/services/stalled_projects.py). Figures COB left blank ("-") are
+ * null, never 0. */
 export interface StalledProject {
   project_name: string;
-  sector: string;
-  contracted_amount: number;
-  amount_paid: number;
-  completion_pct: number;
-  start_year: number;
-  expected_completion: number;
-  status: 'stalled' | 'delayed';
-  reason: string;
-  oag_reference: string;
+  source_url: string;
+  source_page: number;
+  as_of: string;
+  reported_by: string;
+  estimated_value_kes?: number | null;
+  amount_paid_kes?: number | null;
+  [key: string]: unknown;
 }
 
 export interface AuditFinding {
@@ -118,10 +121,13 @@ export interface CountyComprehensive {
     cases: any[];
   };
   stalled_projects: {
-    count: number;
-    total_contracted_value: number;
-    total_amount_paid: number;
+    /** null when no evidence-backed row exists — unknown, not zero. */
+    count: number | null;
+    total_contracted_value: number | null;
+    total_amount_paid: number | null;
     projects: StalledProject[];
+    reason: string | null;
+    withheld: { count: number; by_reason: Record<string, number> };
   };
   financial_summary: {
     health_score: number;

@@ -30,6 +30,7 @@ from services.publication_gate import (
     publishable_audit_criterion,
 )
 from seeding.source_registry import next_expected_window
+from services.stalled_projects import build_stalled_projects_block
 from services.trust_guards import (
     check_budget_sectors,
     check_coverage_staleness,
@@ -3962,7 +3963,11 @@ async def get_county_comprehensive(
                 )
 
             # --- Stalled projects ---
-            stalled_projects = meta.get("stalled_projects") or []
+            # Evidence-gated: only rows that name their document, page, as-of
+            # date and reporter are published (issue #230).
+            stalled_block = build_stalled_projects_block(
+                meta.get("stalled_projects")
+            )
 
             # --- Revenue ---
             # Own-source revenue as the Controller of Budget reports it. Both
@@ -4192,16 +4197,7 @@ async def get_county_comprehensive(
                     },
                 },
                 # Stalled projects
-                "stalled_projects": {
-                    "count": len(stalled_projects),
-                    "total_contracted_value": sum(
-                        p.get("contracted_amount", 0) for p in stalled_projects
-                    ),
-                    "total_amount_paid": sum(
-                        p.get("amount_paid", 0) for p in stalled_projects
-                    ),
-                    "projects": stalled_projects,
-                },
+                "stalled_projects": stalled_block,
                 # Financial summary
                 "financial_summary": {
                     "health_score": health_score,

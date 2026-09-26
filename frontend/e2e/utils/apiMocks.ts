@@ -132,10 +132,12 @@ const COUNTY_COMPREHENSIVE = (id: string) => ({
   ],
   missing_funds: { total_amount: 120_000_000, cases_count: 1, cases: [] },
   stalled_projects: {
-    count: 2,
-    total_contracted_value: 500_000_000,
-    total_amount_paid: 300_000_000,
+    count: null,
+    total_contracted_value: null,
+    total_amount_paid: null,
     projects: [],
+    reason: 'no_evidence_backed_source',
+    withheld: { count: 0, by_reason: {} },
   },
   financial_summary: {
     health_score: 78,
