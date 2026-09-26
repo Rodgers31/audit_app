@@ -36,7 +36,8 @@ const GATED_EMPTY_RESPONSE = {
 
 const mockUseFederalAudits = jest.fn();
 jest.mock('@/lib/react-query/useAudits', () => ({
-  useFederalAudits: () => mockUseFederalAudits(),
+  ...jest.requireActual('@/lib/react-query/useAudits'),
+  useFederalAuditsHomeSummary: () => mockUseFederalAudits(),
 }));
 
 // Render motion elements as plain elements so whileInView content is visible.

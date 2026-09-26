@@ -3,7 +3,7 @@
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { useLang } from '@/lib/i18n/LangProvider';
 import type { TranslationKey } from '@/lib/i18n/messages';
-import { useFederalAudits } from '@/lib/react-query/useAudits';
+import { topStatedFindings, useFederalAuditsHomeSummary } from '@/lib/react-query/useAudits';
 import { motion } from 'framer-motion';
 import {
   AlertTriangle,
@@ -96,7 +96,7 @@ function SeverityDonut({ sev }: { sev: Record<string, number> }) {
 /* ═══════════════ MAIN COMPONENT ═══════════════ */
 export default function AuditReportsSection() {
   const { t } = useLang();
-  const { data, isLoading, error } = useFederalAudits();
+  const { data, isLoading, error } = useFederalAuditsHomeSummary();
   const [expandedFinding, setExpandedFinding] = useState<number | null>(null);
 
   // Derived data
@@ -121,14 +121,9 @@ export default function AuditReportsSection() {
       sev: s,
       // Real sum — 0 means 0. Guards against division live at use sites.
       sevTotal: Object.values(s).reduce((a, b) => a + b, 0),
-      // "Largest findings" means largest STATED figure. Findings that state
-      // none are excluded rather than sorted as 0 — with the honest null they
-      // would otherwise compare as NaN and scramble the order.
-      topFindings: [...data.findings]
-        .filter((f) => f.amount_involved !== 'KES 0' && f.amount_numeric != null)
-        // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- sort comparator
-        .sort((a, b) => (b.amount_numeric ?? 0) - (a.amount_numeric ?? 0))
-        .slice(0, 4),
+      // "Largest findings" means largest STATED figure — one computation,
+      // shared with the homepage prefetch, which ships only these rows.
+      topFindings: topStatedFindings(data.findings),
       ministryBars: (data.top_ministries || []).slice(0, 5).map((m) => ({
         ...m,
         pct: (m.finding_count / maxMinistry) * 100,

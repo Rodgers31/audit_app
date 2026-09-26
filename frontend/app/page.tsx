@@ -14,7 +14,6 @@
  * once the backend wakes up (~2-5s later).
  */
 import { Metadata } from 'next';
-import { getFederalAudits } from '@/lib/api/audits';
 
 export const metadata: Metadata = {
   title: 'AuditGava — Kenya Public Money Tracker',
@@ -26,7 +25,7 @@ import { getCounties } from '@/lib/api/counties';
 import { getDebtTimeline, getNationalDebtOverview, getNationalLoans } from '@/lib/api/debt';
 import { getFiscalSummary } from '@/lib/api/fiscal';
 import { getQueryClient } from '@/lib/react-query/getQueryClient';
-import { federalAuditsKey } from '@/lib/react-query/useAudits';
+import { federalAuditsHomeSummaryQuery } from '@/lib/react-query/useAudits';
 import { countiesFilteredKey } from '@/lib/react-query/useCounties';
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import HomeDashboardClient from './HomeDashboardClient';
@@ -72,13 +71,10 @@ export default async function HomePage() {
           queryKey: ['fiscal', 'summary'],
           queryFn: () => getFiscalSummary(),
         }),
-        queryClient.prefetchQuery({
-          // Shared factory, not a literal: `useFederalAudits` reads this
-          // exact key for `AuditReportsSection`, and this is the prefetch
-          // holding the 886KB payload.
-          queryKey: federalAuditsKey(),
-          queryFn: () => getFederalAudits(),
-        }),
+        // The trimmed summary `AuditReportsSection` renders, not the full
+        // ~886KB response: the section lists 4 of its 813 findings, and the
+        // rest were dehydrated into this document for nothing.
+        queryClient.prefetchQuery(federalAuditsHomeSummaryQuery()),
         queryClient.prefetchQuery({
           queryKey: ['budget', 'national', undefined],
           queryFn: () => getNationalBudgetSummary(),
