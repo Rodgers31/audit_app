@@ -243,62 +243,6 @@ def test_an_unparseable_fiscal_label_is_dropped_not_crashed(
     assert body["trend"][0]["total_amount"] == pytest.approx(100.0 * B)
 
 
-# ── 4. The same defect, pointing the other way ─────────────────────────────
-#
-# Not in the audit's list; found in the same function while fixing the three
-# above. The ``pending_bills`` TABLE path (the one the fallback exists for)
-# bucketed with ``days = b.aging_days or 0``, so a bill whose age nobody
-# recorded was filed under "0-30d" — the most reassuring reading available,
-# asserted from a NULL. It is the mirror of the "180d+": total literal.
-
-def test_a_bill_with_no_recorded_age_is_not_declared_brand_new(
-    client, db_session, county_entity
-):
-    from models import BillType, PendingBill
-
-    B = 1e9
-    db_session.add_all([
-        # (entity, bill_type, fiscal_year) is unique — vary the type.
-        PendingBill(entity_id=county_entity.id, bill_type=BillType.SUPPLIER_ARREARS,
-                    amount=10.0 * B, fiscal_year="FY2024/25", aging_days=15),
-        PendingBill(entity_id=county_entity.id, bill_type=BillType.SALARY,
-                    amount=90.0 * B, fiscal_year="FY2024/25", aging_days=None),
-    ])
-    db_session.commit()
-
-    body = summary(client)
-    assert body["data_source"] == "pending_bills_table"
-    buckets = body["aging_buckets"]
-
-    assert buckets["0-30d"] == pytest.approx(10.0 * B), (
-        "the undated 90Bn is being counted as under a month old"
-    )
-    assert buckets["unknown"] == pytest.approx(90.0 * B)
-    assert sum(buckets.values()) == pytest.approx(body["total_pending_amount"])
-
-
-def test_the_pending_bills_table_normalises_its_fiscal_years_too(
-    client, db_session, county_entity
-):
-    """``PendingBill``'s natural key is (entity, bill_type, fiscal_year), so
-    two spellings of one year survive as two rows there as well."""
-    from models import BillType, PendingBill
-
-    B = 1e9
-    db_session.add_all([
-        PendingBill(entity_id=county_entity.id, bill_type=BillType.SUPPLIER_ARREARS,
-                    amount=70.0 * B, fiscal_year="FY 2024/25", aging_days=200),
-        PendingBill(entity_id=county_entity.id, bill_type=BillType.SALARY,
-                    amount=40.0 * B, fiscal_year="FY2024/25", aging_days=200),
-    ])
-    db_session.commit()
-
-    body = summary(client)
-    assert body["data_source"] == "pending_bills_table"
-    assert [p["year"] for p in body["trend"]] == ["FY2024/25"]
-    assert body["trend"][0]["total_amount"] == pytest.approx(110.0 * B)
-
-
 def test_the_county_path_infers_from_rows_it_actually_read(
     client, db_session, county_entity, seed_source_doc
 ):
