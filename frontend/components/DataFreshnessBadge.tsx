@@ -17,34 +17,64 @@ interface FreshnessResponse {
   sources: SourceFreshness[];
 }
 
-const STATUS_DOT: Record<string, string> = {
+type FreshnessStatus = SourceFreshness['status'];
+
+/**
+ * What the badge can say. 'checking' and 'unknown' are not freshness verdicts:
+ * they are what renders when nothing was measured (request in flight or the
+ * server prerender; request failed or no entry for these sources). They must
+ * never fall through to 'fresh'.
+ */
+type BadgeState = FreshnessStatus | 'checking' | 'unknown';
+
+const STATUS_RANK: Record<FreshnessStatus, number> = { fresh: 0, stale: 1, outdated: 2 };
+
+function isFreshnessStatus(status: unknown): status is FreshnessStatus {
+  return typeof status === 'string' && Object.prototype.hasOwnProperty.call(STATUS_RANK, status);
+}
+
+const STATUS_DOT: Record<BadgeState, string> = {
   fresh: 'bg-emerald-400',
   stale: 'bg-amber-400',
   outdated: 'bg-red-400',
+  checking: 'bg-gray-300',
+  unknown: 'bg-gray-300',
 };
 
-const STATUS_LABEL: Record<string, string> = {
+const STATUS_LABEL: Record<BadgeState, string> = {
   fresh: 'Up to date',
   stale: 'May be stale',
   outdated: 'Outdated',
+  checking: 'Checking data freshness…',
+  unknown: 'Freshness unknown',
 };
 
-const STATUS_BANNER_BG: Record<string, string> = {
+const NEUTRAL_BANNER_BG = 'bg-gray-50 border-gray-200 dark:bg-surface-elevated dark:border-neutral-border';
+const NEUTRAL_BANNER_TEXT = 'text-gray-700 dark:text-neutral-muted';
+const NEUTRAL_ICON_COLOR = 'text-gray-400 dark:text-neutral-muted';
+
+const STATUS_BANNER_BG: Record<BadgeState, string> = {
   fresh: 'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-700/40',
   stale: 'bg-amber-50 border-amber-200 dark:bg-amber-900/30 dark:border-amber-700/40',
   outdated: 'bg-red-50 border-red-200 dark:bg-red-900/30 dark:border-red-700/40',
+  checking: NEUTRAL_BANNER_BG,
+  unknown: NEUTRAL_BANNER_BG,
 };
 
-const STATUS_BANNER_TEXT: Record<string, string> = {
+const STATUS_BANNER_TEXT: Record<BadgeState, string> = {
   fresh: 'text-emerald-800 dark:text-emerald-100',
   stale: 'text-amber-800 dark:text-amber-100',
   outdated: 'text-red-800 dark:text-red-100',
+  checking: NEUTRAL_BANNER_TEXT,
+  unknown: NEUTRAL_BANNER_TEXT,
 };
 
-const STATUS_ICON_COLOR: Record<string, string> = {
+const STATUS_ICON_COLOR: Record<BadgeState, string> = {
   fresh: 'text-emerald-500 dark:text-emerald-300',
   stale: 'text-amber-500 dark:text-amber-300',
   outdated: 'text-red-500 dark:text-red-300',
+  checking: NEUTRAL_ICON_COLOR,
+  unknown: NEUTRAL_ICON_COLOR,
 };
 
 export function useDataFreshness() {
@@ -94,16 +124,22 @@ export default function DataFreshnessBadge({
   className?: string;
   variant?: 'inline' | 'banner';
 }) {
-  const { data } = useDataFreshness();
+  const { data, isPending } = useDataFreshness();
 
   const sourceCodes = sources.split('/').map((s) => s.trim());
   const matched = data?.sources.filter((s) => sourceCodes.includes(s.source)) ?? [];
 
-  // Use the worst status among matched sources
-  const worstStatus = matched.reduce<'fresh' | 'stale' | 'outdated'>((worst, s) => {
-    const rank = { fresh: 0, stale: 1, outdated: 2 } as const;
-    return rank[s.status] > rank[worst] ? s.status : worst;
-  }, 'fresh');
+  // Worst status among matched sources. No match, or any status we do not
+  // recognise, is not a measurement — it must not default to 'fresh'.
+  const measured = matched.length > 0 && matched.every((s) => isFreshnessStatus(s.status));
+  const state: BadgeState = measured
+    ? matched.reduce<FreshnessStatus>(
+        (worst, s) => (STATUS_RANK[s.status] > STATUS_RANK[worst] ? s.status : worst),
+        matched[0].status,
+      )
+    : isPending
+      ? 'checking'
+      : 'unknown';
 
   // Most recent last_updated among matched
   const dates = matched
@@ -118,16 +154,16 @@ export default function DataFreshnessBadge({
   if (variant === 'banner') {
     return (
       <div
-        className={`flex items-center gap-3 rounded-xl border p-3 ${STATUS_BANNER_BG[worstStatus] || STATUS_BANNER_BG.fresh} ${className}`}
+        className={`flex items-center gap-3 rounded-xl border p-3 ${STATUS_BANNER_BG[state]} ${className}`}
         role="status"
-        aria-label={`Data freshness: ${STATUS_LABEL[worstStatus]}. ${latestDate ? `Last updated ${relativeTime(latestDate)}` : 'Update time unknown'}. Source: ${sources}`}
+        aria-label={`Data freshness: ${STATUS_LABEL[state]}. ${latestDate ? `Last updated ${relativeTime(latestDate)}` : 'Update time unknown'}. Source: ${sources}`}
       >
-        <div className={`flex-shrink-0 ${STATUS_ICON_COLOR[worstStatus]}`}>
-          {worstStatus === 'fresh' ? <RefreshCw size={18} /> : <Clock size={18} />}
+        <div className={`flex-shrink-0 ${STATUS_ICON_COLOR[state]}`}>
+          {state === 'fresh' ? <RefreshCw size={18} /> : <Clock size={18} />}
         </div>
         <div className="flex-1 min-w-0">
-          <div className={`text-sm font-medium ${STATUS_BANNER_TEXT[worstStatus]}`}>
-            {STATUS_LABEL[worstStatus]}
+          <div className={`text-sm font-medium ${STATUS_BANNER_TEXT[state]}`}>
+            {STATUS_LABEL[state]}
             {latestDate && (
               <span className="font-normal opacity-80">
                 {' — Updated '}
@@ -150,20 +186,20 @@ export default function DataFreshnessBadge({
           </div>
         </div>
         <span
-          className={`inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 ${STATUS_DOT[worstStatus]}`}
-          aria-label={`Status: ${STATUS_LABEL[worstStatus]}`}
+          className={`inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 ${STATUS_DOT[state]}`}
+          aria-label={`Status: ${STATUS_LABEL[state]}`}
         />
       </div>
     );
   }
 
   // Default: inline variant
-  if (matched.length === 0) {
+  if (!measured) {
     return (
       <div className={`flex items-center gap-2 text-xs text-gray-400 dark:text-neutral-muted/80 ${className}`}>
         <span
-          className='inline-block w-2 h-2 rounded-full bg-gray-300'
-          aria-label="Data freshness status: unknown"
+          className={`inline-block w-2 h-2 rounded-full ${STATUS_DOT[state]}`}
+          aria-label={`Data freshness status: ${STATUS_LABEL[state]}`}
         />
         Source: {sources}
       </div>
@@ -173,10 +209,10 @@ export default function DataFreshnessBadge({
   return (
     <div
       className={`flex items-center gap-2 text-xs text-gray-500 dark:text-neutral-muted/80 ${className}`}
-      title={`${label} — ${STATUS_LABEL[worstStatus]}. Updated: ${latestDate || 'unknown'}`}>
+      title={`${label} — ${STATUS_LABEL[state]}. Updated: ${latestDate || 'unknown'}`}>
       <span
-        className={`inline-block w-2 h-2 rounded-full ${STATUS_DOT[worstStatus]}`}
-        aria-label={`Data freshness status: ${STATUS_LABEL[worstStatus]}`}
+        className={`inline-block w-2 h-2 rounded-full ${STATUS_DOT[state]}`}
+        aria-label={`Data freshness status: ${STATUS_LABEL[state]}`}
       />
       <span>
         Data as of: {latestDate ? new Date(latestDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
