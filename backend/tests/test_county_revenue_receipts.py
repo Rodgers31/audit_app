@@ -268,3 +268,76 @@ def test_revenue_rows_are_never_counted_as_budget(client, cbirr_period):
     assert "Revenue Receipts" not in listed["Nairobi"]["sector_breakdown"]
     assert detail["budget"]["total_allocated"] == 44_620_890_000
     assert "Revenue Receipts" not in detail["budget"]["sector_breakdown"]
+
+
+@pytest.fixture()
+def contradicting_report(db_session, seed_country, seed_source_doc):
+    """Mombasa in the FY2025/26 CBIRR: Table 2.1 and its own revenue table
+    disagree on own-source revenue by KSh 14.9B."""
+    period = FiscalPeriod(
+        id=9002, country_id=seed_country.id, label="FY2025/26",
+        start_date=datetime(2025, 7, 1), end_date=datetime(2026, 6, 30),
+    )
+    mombasa = Entity(
+        id=47, country_id=seed_country.id, type=EntityType.COUNTY,
+        canonical_name="Mombasa County", slug="mombasa-county",
+    )
+    db_session.add_all([period, mombasa])
+    db_session.flush()
+    streams = {
+        "Balance Brought Forward": (219_300_000, 191_000_000),
+        "Equitable Share": (8_383_390_000, 8_383_390_000),
+        "Additional Allocations": (1_734_140_000, 1_001_800_000),
+        "Own Source Revenue": (6_664_570_000, 3_799_700_000),
+        "Facility Improvement Financing": (1_723_610_000, 2_414_890_000),
+        "Total": (18_725_000_000, 15_790_780_000),
+    }
+    rows = [
+        BudgetLine(
+            entity_id=47, period_id=period.id, category="Total",
+            allocated_amount=18_725_000_000, actual_spent=13_641_310_000,
+            currency="KES", source_document_id=seed_source_doc.id,
+        ),
+        BudgetLine(
+            entity_id=47, period_id=period.id, category="Own Source Revenue",
+            allocated_amount=8_388_180_000, actual_spent=21_126_230_000,
+            currency="KES", source_document_id=seed_source_doc.id,
+        ),
+    ] + [
+        BudgetLine(
+            entity_id=47, period_id=period.id, category="Revenue Receipts",
+            subcategory=name, allocated_amount=t, actual_spent=a, currency="KES",
+            source_document_id=seed_source_doc.id,
+        )
+        for name, (t, a) in streams.items()
+    ]
+    db_session.add_all(rows)
+    db_session.commit()
+
+
+def test_a_report_that_contradicts_itself_publishes_neither_total(
+    client, contradicting_report
+):
+    """RED before #238: total_revenue was the 21.13B own-source figure."""
+    revenue = _comprehensive(client, "mombasa-county")["revenue"]
+
+    assert revenue["local_revenue"] == 21_126_230_000
+    assert revenue["total_revenue"] is None
+    assert revenue["equitable_share"] is None
+    assert revenue["total_revenue_absent_reason"] == (
+        "cbirr_tables_disagree_on_own_source_revenue"
+    )
+    assert revenue["own_source_disagreement"] == {
+        "summary_table": 21_126_230_000,
+        "county_revenue_table": 6_214_590_000,
+    }
+
+
+def test_agreeing_tables_are_published_and_say_so(client, cbirr_period):
+    """Control: Nairobi's Table 2.1 own-source figure is its county table's
+    ordinary OSR + FIF (9,440,565,157 + 1,348,850,165 = 10,789,415,322 against
+    10,789,420,000 printed to the 10,000) — Table 2.1 leaves its liquor A-i-A
+    out — so the revenue table is published and nothing is flagged."""
+    revenue = _comprehensive(client, "nairobi-county")["revenue"]
+    assert revenue["own_source_disagreement"] is None
+    assert revenue["total_revenue"] == 26_035_120_532

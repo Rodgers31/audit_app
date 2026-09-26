@@ -619,6 +619,20 @@ _REVENUE_STREAM_ORDER = (
 )
 
 
+#: The revenue streams that are own-source revenue in the CBIRR's county
+#: tables — what Table 2.1 reports as "Total OSR" (ordinary + FIF/AiA).
+_OWN_SOURCE_STREAMS = (
+    "Own Source Revenue",
+    "Facility Improvement Financing",
+    "Appropriations in Aid",
+)
+#: How far the two may differ before the county table is withheld. Measured on
+#: the FY2025/26 CBIRR: Lamu and Narok differ by 0.18% and 0.79% and pass;
+#: Makueni, Nakuru, Tharaka Nithi and Mombasa differ by 10.7% to 70.6% and are
+#: withheld; the other 20 agree to within 0.01%.
+_OWN_SOURCE_AGREEMENT = 0.01
+
+
 def county_revenue_block(
     receipts: Optional[Dict[str, Dict[str, float]]],
     *,
@@ -636,6 +650,32 @@ def county_revenue_block(
     the second and not the first), so presenting it as a part would make the
     parts stop summing.
     """
+    # The report's two own-source figures must agree before its revenue table
+    # is published beside Table 2.1's. Of the 26 counties whose FY2025/26
+    # table reconciles, 20 agree to within 0.01% and two within 1%; Mombasa's
+    # Table 2.1 says 21,126.23M and its own revenue table 6,214.59M. Printing both on one page
+    # ("total 15.79B, local 21.13B") is a contradiction the site cannot
+    # resolve, so the revenue table is withheld and both figures are shown.
+    #
+    # Table 2.1's "FIF/AiA" column carries a county's A-i-A stream for some
+    # counties and not others (Nairobi's is FIF alone: 9,440.57M ordinary +
+    # 1,348.85M FIF = its 10,789.42M exactly, with the 206.51M liquor A-i-A
+    # left out), so agreement with or without that stream counts.
+    disagreement = None
+    if receipts and local_revenue is not None:
+        def _sum(names) -> float:
+            return sum(receipts[n]["actual"] for n in names if n in receipts)
+
+        with_aia = _sum(_OWN_SOURCE_STREAMS)
+        without_aia = _sum(_OWN_SOURCE_STREAMS[:2])
+        tolerance = max(abs(local_revenue) * _OWN_SOURCE_AGREEMENT, 1_000_000)
+        if all(abs(c - local_revenue) > tolerance for c in (with_aia, without_aia)):
+            disagreement = {
+                "summary_table": local_revenue,
+                "county_revenue_table": with_aia,
+            }
+            receipts = None
+
     def _stream(name: str, key: str) -> Optional[float]:
         return (receipts or {}).get(name, {}).get(key)
 
@@ -667,8 +707,15 @@ def county_revenue_block(
             else None
         ),
         "total_revenue_absent_reason": (
-            None if receipts else "no_reconciled_cbirr_revenue_table"
+            None
+            if receipts
+            else (
+                "cbirr_tables_disagree_on_own_source_revenue"
+                if disagreement
+                else "no_reconciled_cbirr_revenue_table"
+            )
         ),
+        "own_source_disagreement": disagreement,
     }
 
 
