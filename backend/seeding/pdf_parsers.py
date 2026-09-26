@@ -737,32 +737,66 @@ _COB_SUB_PERIODS: Tuple[Tuple[str, str], ...] = (
     ("FIRST QUARTER", "Q1"),
 )
 
-_COB_COVER_FY_RE = re.compile(r"FY\s*(\d{4})\s*[/\-]\s*(\d{2,4})")
+_YEAR = r"(?:FY|FINANCIAL\s+YEAR)\s*(\d{4})\s*[/\-]\s*(\d{2,4})"
+_COB_SUB_PERIOD_RE = re.compile(
+    r"(" + "|".join(p for p, _ in _COB_SUB_PERIODS) + r")\s+(?:OF\s+)?(?:THE\s+)?" + _YEAR
+)
+_COB_FULL_YEAR_RE = re.compile(r"FOR\s+(?:THE\s+)?" + _YEAR)
+_COB_ANY_YEAR_RE = re.compile(_YEAR)
+#: Wording of a part-year report. Present without a phrase this module can
+#: name ("THIRD QUARTER", "FIRST EIGHT MONTHS"), the period is refused — read
+#: as a full year, that report would be filed over the annual one.
+_COB_PART_YEAR_WORDS = re.compile(r"\b(QUARTER|MONTHS|HALF)\b")
+
+
+def _fy_label(start: str, end: str) -> Optional[str]:
+    start_year, end_short = int(start), int(end) % 100
+    if (start_year + 1) % 100 != end_short:
+        return None
+    return f"{start_year}/{end_short:02d}"
+
+
+def _cob_period_on_page(text: str) -> Tuple[bool, Optional[str], Optional[str]]:
+    """``(decided, fiscal_year, sub_period)`` from one page of a CoB report.
+
+    ``decided`` False means the page says nothing about the period and the
+    next page may be read. True with ``fiscal_year`` None is a refusal: the
+    page names a period this cannot read, and no later page may overrule it.
+    """
+    upper = " ".join((text or "").upper().split())
+    phrase = _COB_SUB_PERIOD_RE.search(upper)
+    if phrase:
+        sub = dict(_COB_SUB_PERIODS)[phrase.group(1)]
+        fy = _fy_label(phrase.group(2), phrase.group(3))
+        return True, fy, sub if fy else None
+    if _COB_PART_YEAR_WORDS.search(upper) and _COB_ANY_YEAR_RE.search(upper):
+        return True, None, None
+    full = _COB_FULL_YEAR_RE.search(upper)
+    if full:
+        return True, _fy_label(full.group(1), full.group(2)), None
+    years = {_fy_label(m.group(1), m.group(2)) for m in _COB_ANY_YEAR_RE.finditer(upper)}
+    if len(years) == 1:
+        return True, years.pop(), None
+    # Several years and no phrase tying one to the report: undecidable here.
+    return (len(years) > 1), None, None
 
 
 def detect_cob_report_period(text: str) -> Tuple[Optional[str], Optional[str]]:
     """``("2025/26", "9M")`` from a CoB report's cover text, or ``(None, None)``.
 
-    The cover says what the report covers — "FIRST NINE MONTHS OF FY 2025/26".
-    That, and not the file's name, is the report's period: the fetcher hands
-    this parser a file out of the PDF cache, whose name is a sha256, so the old
-    filename reading never matched and every CBIRR fell back to a hardcoded
-    "2024/25". The FY2025/26 nine-month report was filed as FY2024/25, and each
-    new edition would have overwritten the same rows.
+    The cover says what the report covers — "FIRST NINE MONTHS OF FY 2025/26",
+    "FOR THE FINANCIAL YEAR 2025/26". That, and not the file's name, is the
+    report's period: the fetcher hands this parser a file out of the PDF cache,
+    whose name is a sha256, so the old filename reading never matched and every
+    CBIRR fell back to a hardcoded "2024/25".
 
+    The year is the one the period phrase names, not the first year the text
+    mentions (a foreword compares with the year before). A part-year wording
+    this cannot name is refused rather than read as a full year.
     ``sub_period`` is None for a full-year report.
     """
-    upper = (text or "").upper()
-    fy = _COB_COVER_FY_RE.search(upper)
-    if not fy:
-        return None, None
-    start = int(fy.group(1))
-    end = fy.group(2)
-    end_short = int(end) % 100
-    if (start + 1) % 100 != end_short:
-        return None, None
-    sub = next((label for phrase, label in _COB_SUB_PERIODS if phrase in upper), None)
-    return f"{start}/{end_short:02d}", sub
+    _decided, fy, sub = _cob_period_on_page(text)
+    return (fy, sub) if fy else (None, None)
 
 
 # --------------------------------------------------------------------------
@@ -1633,16 +1667,19 @@ class CoBQuarterlyReportParser:
         """
         if self._period is not None:
             return self._period
-        cover = ""
+        # Page by page, cover first: the first page that decides the period
+        # wins, and a refusal is final (a foreword must not overrule a cover
+        # this could not read).
+        fy, sub, decided = None, None, False
         try:
             with pdfplumber.open(self.pdf_path) as pdf:
-                cover = "\n".join(
-                    (page.extract_text() or "") for page in pdf.pages[:3]
-                )
+                for page in pdf.pages[:3]:
+                    decided, fy, sub = _cob_period_on_page(page.extract_text() or "")
+                    if decided:
+                        break
         except Exception:  # noqa: BLE001 - an unreadable cover is "no cover"
-            cover = ""
-        fy, sub = detect_cob_report_period(cover)
-        if fy is None:
+            fy, sub, decided = None, None, False
+        if fy is None and not decided:
             name = self.pdf_path.name
             fy_match = re.search(r"(\d{4})[-/](\d{2,4})", name)
             if fy_match:

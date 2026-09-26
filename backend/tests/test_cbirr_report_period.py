@@ -93,6 +93,33 @@ class TestCoverPeriod:
     def test_an_unreadable_cover_names_nothing(self, cover):
         assert detect_cob_report_period(cover) == (None, None)
 
+    def test_the_full_year_cover_is_read_without_an_fy_token(self):
+        """The FY2025/26 annual CBIRR's cover (August 2026) says "FOR THE
+        FINANCIAL YEAR 2025/26" — no "FY". Found by adversarial pass: it was
+        only ever read off the foreword on page 3."""
+        cover = (
+            "Office of the\nController of Budget\nCOUNTY GOVERNMENTS\nBUDGET\n"
+            "IMPLEMENTATION\nREVIEW REPORT\nFOR THE FINANCIAL YEAR 2025/26\nAUGUST, 2026"
+        )
+        assert detect_cob_report_period(cover) == ("2025/26", None)
+
+    def test_the_period_phrase_names_the_year_not_the_first_year_mentioned(self):
+        text = (
+            "Revenue rose compared to FY 2024/25. COUNTY BUDGET IMPLEMENTATION "
+            "REVIEW REPORT FOR THE FIRST QUARTER OF FY 2025/26"
+        )
+        assert detect_cob_report_period(text) == ("2025/26", "Q1")
+
+    @pytest.mark.parametrize(
+        "cover",
+        ["REVIEW REPORT THIRD QUARTER FY 2025/26", "SECOND QUARTER OF FY 2025/26",
+         "FIRST EIGHT MONTHS OF FY 2025/26"],
+    )
+    def test_a_part_year_it_cannot_name_is_refused_not_read_as_a_full_year(self, cover):
+        """Read as a full year, a quarterly report would be filed over — and
+        overwrite — the annual one."""
+        assert detect_cob_report_period(cover) == (None, None)
+
 
 def _fake_pdf(cover_text: str):
     page = SimpleNamespace(extract_text=lambda: cover_text)
@@ -116,6 +143,32 @@ def _consolidated_table() -> ExtractedTable:
         rows=[["Nairobi", "44,620.89", "32,122.66", "72.0"]],
         bbox=(0, 0, 0, 0),
     )
+
+
+class TestParserReadsPagesInOrder:
+    def test_the_cover_wins_over_a_foreword_that_names_another_year(self):
+        pages = [
+            "COUNTY GOVERNMENTS BUDGET IMPLEMENTATION REVIEW REPORT\n"
+            "FOR THE FINANCIAL YEAR 2025/26",
+            "",
+            "FOREWORD In FY 2024/25 counties collected ...",
+        ]
+        parser = CoBQuarterlyReportParser(Path(CACHED_NAME))
+        with patch("seeding.pdf_parsers.pdfplumber.open", _fake_pages(pages)):
+            assert parser._report_period() == ("2025/26", None)
+
+
+def _fake_pages(texts):
+    pdf = SimpleNamespace(pages=[SimpleNamespace(extract_text=(lambda t=t: t)) for t in texts])
+
+    class _Ctx:
+        def __enter__(self):
+            return pdf
+
+        def __exit__(self, *exc):
+            return False
+
+    return lambda _path: _Ctx()
 
 
 class TestParserReadsTheCover:
