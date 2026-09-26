@@ -526,9 +526,10 @@ jobs:
           # hollow_run_findings asks the question neither of them asked: did
           # THIS run reach the publisher? Its exemptions are the same two
           # reason slugs the window gate already exempts (no_live_source,
-          # fixture_superseded), so learning_hub and stalled_projects — which
-          # have no publisher — stay green, and a broken fetch cannot exempt
-          # itself. The rule lives in seeding/staleness.py, tested by
+          # fixture_superseded), so learning_hub — which has no publisher —
+          # stays green (stalled_projects did too, until #230 gave it COB),
+          # and a broken fetch cannot exempt itself. The rule lives in
+          # seeding/staleness.py, tested by
           # backend/tests/test_hollow_run_gate.py, which runs THIS step.
           # Every finding is printed; only FAIL-level ones stop the run.
           # partial is WARN on purpose — a secondary series did refresh, and

@@ -49,8 +49,8 @@ WARN = "WARN"
 #: Fallback reasons a domain sets to say "there is no live source for this
 #: yet", as opposed to "the live source failed". Only these downgrade an
 #: all-fixture domain from FAIL to WARN. Emitted today by learning_hub
-#: (editorial glossary copy) and stalled_projects (OAG audit records with no
-#: machine-readable publisher). Adding a reason here is a decision that the
+#: (editorial glossary copy). stalled_projects emitted it until #230 gave it
+#: a live source (COB's CBIRR) and removed its invented fixture. Adding a reason here is a decision that the
 #: gap is known and accepted — not a way to quiet a broken fetch.
 DECLARED_NO_SOURCE_REASONS = frozenset({"no_live_source"})
 
@@ -875,9 +875,9 @@ def hollow_run_findings(jobs: Iterable) -> List[Finding]:
 
     WHAT IS EXEMPT, AND WHY IT IS NOT A LOOPHOLE
     --------------------------------------------
-    Only two reasons: ``no_live_source`` (learning_hub's editorial copy and
-    stalled_projects' OAG records, neither of which has a machine-readable
-    publisher) and ``fixture_superseded`` (the file is still read but every
+    Only two reasons: ``no_live_source`` (learning_hub's editorial copy,
+    which has no machine-readable publisher; stalled_projects used it until
+    #230) and ``fixture_superseded`` (the file is still read but every
     figure in it has been replaced from the database). Both are the same
     slugs the window gate already exempts. Adding a slug here is a decision
     that a gap is known and accepted, not a way to quiet a broken fetch — a
@@ -984,6 +984,121 @@ def hollow_run_findings(jobs: Iterable) -> List[Finding]:
     return findings
 
 
+STALLED_PROJECTS_DOMAIN = "stalled_projects"
+
+
+def check_stalled_projects_edition(session) -> List[Finding]:
+    """Is the site publishing COB's newest CBIRR, and did it read its tables?
+
+    Two ways this domain can go quiet that no other gate sees:
+
+    * COB lists a newer county BIRR than the one ingested. The download is
+      ~50MB at as little as 43 KB/s and resumes across nights, so a domain
+      that keeps refusing ``download_incomplete`` still has a live-looking
+      provenance history while the page shows last quarter's tables.
+    * The newest edition HAS "County Stalled Projects as of" captions and the
+      run parsed none of them — a layout change the parser did not survive.
+
+    Reads the most recent ``stalled_projects`` job only: both questions are
+    about what is published NOW. No job is WARN (the ingestion-freshness gate
+    owns "never ran"); every other state is judged.
+    """
+    from models import IngestionJob
+
+    job = (
+        session.query(IngestionJob)
+        .filter(IngestionJob.domain == STALLED_PROJECTS_DOMAIN)
+        .order_by(IngestionJob.started_at.desc(), IngestionJob.id.desc())
+        .first()
+    )
+    label = "stalled_projects edition"
+    if job is None:
+        return [Finding(WARN, label, "no stalled_projects run recorded")]
+    meta = job.meta or {}
+    newest = meta.get("cbirr_listing_newest") or None
+    published = meta.get("cbirr_published") or None
+    findings: List[Finding] = []
+    captions = meta.get("captions_found") or 0
+    if captions and not meta.get("rows_parsed"):
+        findings.append(
+            Finding(
+                FAIL,
+                label,
+                f"the newest edition has {captions} stalled-projects caption(s) "
+                f"and the last run parsed 0 rows from them",
+            )
+        )
+    if newest is None:
+        findings.append(
+            Finding(
+                WARN,
+                label,
+                "COB's listing was not read on the last run; cannot say whether "
+                "a newer edition exists "
+                f"({meta.get('source_fallback_reason') or 'reason unrecorded'})",
+            )
+        )
+    elif published is None:
+        findings.append(
+            Finding(
+                FAIL,
+                label,
+                f"COB lists wpdmdl={newest.get('wpdmdl')} ({newest.get('slug')}) "
+                "and no CBIRR edition is published",
+            )
+        )
+    elif newest.get("wpdmdl") != published.get("wpdmdl"):
+        findings.append(
+            Finding(
+                FAIL,
+                label,
+                f"COB lists a newer edition, wpdmdl={newest.get('wpdmdl')} "
+                f"({newest.get('slug')}), than the one published: "
+                f"wpdmdl={published.get('wpdmdl')} "
+                f"({published.get('fiscal_year')} {published.get('period')}, "
+                f"as of {published.get('as_of')}). Last run: "
+                f"{meta.get('source_fallback_reason') or meta.get('source_mode') or 'unrecorded'}",
+            )
+        )
+    elif (
+        newest.get("server_fingerprint")
+        and published.get("server_fingerprint")
+        and newest["server_fingerprint"] != published["server_fingerprint"]
+    ):
+        # Same link, different file: COB re-issued the edition (its
+        # filenames run "... Final 5.pdf") and the new one is not in yet.
+        findings.append(
+            Finding(
+                FAIL,
+                label,
+                f"COB re-issued wpdmdl={newest.get('wpdmdl')}: it now serves "
+                f"{newest['server_fingerprint']!r}, the site publishes "
+                f"{published['server_fingerprint']!r}",
+            )
+        )
+    written, parsed = meta.get("rows_written"), meta.get("rows_parsed")
+    if isinstance(written, int) and isinstance(parsed, int) and written < parsed:
+        findings.append(
+            Finding(
+                FAIL,
+                label,
+                f"{parsed} row(s) parsed but {written} written — county "
+                f"entities not matched: {meta.get('unmatched_counties')}",
+            )
+        )
+    if not findings:
+        findings.append(
+            Finding(
+                OK,
+                label,
+                f"publishing COB's newest edition, wpdmdl={published.get('wpdmdl')} "
+                f"({published.get('fiscal_year')} {published.get('period')}, as of "
+                f"{published.get('as_of')}): {meta.get('rows_parsed')} row(s)",
+            )
+        )
+    return findings
+
+
 def run_all(
     session, now: Optional[datetime] = None, counts: Optional[dict] = None
 ) -> List[Finding]:
@@ -994,8 +1109,10 @@ def run_all(
     the third gate is — the nightly passes the counts it already computed for
     its own floors.
     """
-    findings = check_table_freshness(session, now) + check_ingestion_freshness(
-        session, now
+    findings = (
+        check_table_freshness(session, now)
+        + check_ingestion_freshness(session, now)
+        + check_stalled_projects_edition(session)
     )
     if counts is not None:
         findings += check_and_record_row_census(session, counts, now=now)
@@ -1019,6 +1136,7 @@ __all__ = [
     "check_and_record_row_census",
     "check_ingestion_freshness",
     "check_row_count_drop",
+    "check_stalled_projects_edition",
     "check_table_freshness",
     "hollow_run_findings",
     "in_publication_lull",
