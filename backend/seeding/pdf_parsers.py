@@ -726,6 +726,45 @@ KENYAN_COUNTIES: Tuple[str, ...] = (
 assert len(KENYAN_COUNTIES) == 47, "Kenya has 47 counties"
 
 
+#: Cover-page wording for a part-year implementation report, and the canonical
+#: sub-period label ``seeding.utils.normalize_fiscal_label`` keeps. Longer
+#: phrases first, so "FIRST NINE MONTHS" is not read as some shorter match.
+_COB_SUB_PERIODS: Tuple[Tuple[str, str], ...] = (
+    ("FIRST NINE MONTHS", "9M"),
+    ("FIRST SIX MONTHS", "H1"),
+    ("FIRST HALF", "H1"),
+    ("HALF YEAR", "H1"),
+    ("FIRST QUARTER", "Q1"),
+)
+
+_COB_COVER_FY_RE = re.compile(r"FY\s*(\d{4})\s*[/\-]\s*(\d{2,4})")
+
+
+def detect_cob_report_period(text: str) -> Tuple[Optional[str], Optional[str]]:
+    """``("2025/26", "9M")`` from a CoB report's cover text, or ``(None, None)``.
+
+    The cover says what the report covers — "FIRST NINE MONTHS OF FY 2025/26".
+    That, and not the file's name, is the report's period: the fetcher hands
+    this parser a file out of the PDF cache, whose name is a sha256, so the old
+    filename reading never matched and every CBIRR fell back to a hardcoded
+    "2024/25". The FY2025/26 nine-month report was filed as FY2024/25, and each
+    new edition would have overwritten the same rows.
+
+    ``sub_period`` is None for a full-year report.
+    """
+    upper = (text or "").upper()
+    fy = _COB_COVER_FY_RE.search(upper)
+    if not fy:
+        return None, None
+    start = int(fy.group(1))
+    end = fy.group(2)
+    end_short = int(end) % 100
+    if (start + 1) % 100 != end_short:
+        return None, None
+    sub = next((label for phrase, label in _COB_SUB_PERIODS if phrase in upper), None)
+    return f"{start}/{end_short:02d}", sub
+
+
 class CoBQuarterlyReportParser:
     """Parser for Controller of Budget quarterly budget execution reports."""
 
@@ -738,6 +777,7 @@ class CoBQuarterlyReportParser:
         """
         self.pdf_path = pdf_path
         self.tables: List[ExtractedTable] = []
+        self._period: Optional[Tuple[Optional[str], Optional[str]]] = None
 
     def parse(self) -> List[Dict[str, Any]]:
         """
@@ -1236,27 +1276,48 @@ class CoBQuarterlyReportParser:
                 continue
         return out
 
-    def _extract_quarter(self) -> str:
-        """Extract quarter from PDF filename or content."""
-        # Try filename pattern: "Q2-2023-24.pdf"
-        quarter_match = re.search(r"Q([1-4])", self.pdf_path.name, re.IGNORECASE)
-        if quarter_match:
-            return f"Q{quarter_match.group(1)}"
+    def _report_period(self) -> Tuple[Optional[str], Optional[str]]:
+        """``(fiscal_year, sub_period)`` for this report, read once.
 
-        # Default to Q1 if not found
-        return "Q1"
+        The cover first; the filename only when there is no readable cover (a
+        test double, or a download saved under its publisher's name). Neither
+        is guessed: a report whose period cannot be read yields ``None`` and the
+        fetcher drops its rows, because rows filed under the wrong year are
+        worse than no rows — they look right.
+        """
+        if self._period is not None:
+            return self._period
+        cover = ""
+        try:
+            with pdfplumber.open(self.pdf_path) as pdf:
+                cover = "\n".join(
+                    (page.extract_text() or "") for page in pdf.pages[:3]
+                )
+        except Exception:  # noqa: BLE001 - an unreadable cover is "no cover"
+            cover = ""
+        fy, sub = detect_cob_report_period(cover)
+        if fy is None:
+            name = self.pdf_path.name
+            fy_match = re.search(r"(\d{4})[-/](\d{2,4})", name)
+            if fy_match:
+                fy = f"{fy_match.group(1)}/{fy_match.group(2)[-2:]}"
+                quarter = re.search(r"Q([1-4])", name, re.IGNORECASE)
+                sub = f"Q{quarter.group(1)}" if quarter else None
+        if fy is None:
+            logger.warning(
+                "CoB report period unreadable from cover or filename: %s",
+                self.pdf_path,
+            )
+        self._period = (fy, sub)
+        return self._period
 
-    def _extract_fiscal_year(self) -> str:
-        """Extract fiscal year from PDF filename or content."""
-        # Try pattern: "2023-24" or "2023/24"
-        fy_match = re.search(r"(\d{4})[-/](\d{2,4})", self.pdf_path.name)
-        if fy_match:
-            year1, year2 = fy_match.groups()
-            # Normalize to YYYY/YY format
-            return f"{year1}/{year2[-2:]}"
+    def _extract_quarter(self) -> Optional[str]:
+        """The report's sub-period ("9M", "H1", "Q2"), None for a full year."""
+        return self._report_period()[1]
 
-        # Default to current FY
-        return "2024/25"
+    def _extract_fiscal_year(self) -> Optional[str]:
+        """The report's fiscal year ("2025/26"), None when it cannot be read."""
+        return self._report_period()[0]
 
 
 class OAGAuditReportParser:
