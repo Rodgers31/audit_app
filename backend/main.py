@@ -24,6 +24,7 @@ from services.publication_gate import (
     county_debt_instrument_failure,
     county_pending_bills,
     county_pending_bills_row_is_published,
+    pending_bills_row_amount,
     file_source_provenance_failure,
     loan_is_modelled_fixture,
     log_withheld_audits,
@@ -10571,7 +10572,13 @@ async def get_pending_bills(
                 ):
                     continue
 
-                outstanding = loan.outstanding or loan.principal or D("0")
+                if entity_type == "county":
+                    _amt = pending_bills_row_amount(loan)
+                    if _amt is None:
+                        continue
+                    outstanding = D(str(_amt))
+                else:
+                    outstanding = loan.outstanding or loan.principal or D("0")
                 total_amount += outstanding
 
                 if entity_type == "county":
@@ -10684,18 +10691,25 @@ async def get_pending_bills(
         extractor = PendingBillsExtractor()
         data = await extractor.extract_all()
 
-        if data.get("pending_bills") or data.get("summary", {}).get("grand_total"):
+        # County figures come from the Treasury BROP rows, through the gate
+        # every county page reads — never from a live scrape that bypasses it.
+        _live_rows = [
+            r
+            for r in data.get("pending_bills", []) or []
+            if str(r.get("entity_type", "")).strip().lower() != "county"
+        ]
+        if _live_rows or data.get("summary", {}).get("total_national"):
             summary = data.get("summary", {})
             return {
                 "status": "success",
                 "data_source": "live_cob_extraction",
                 "last_updated": data.get("extracted_at"),
-                "pending_bills": data.get("pending_bills", []),
+                "pending_bills": _live_rows,
                 "summary": {
-                    "total_pending": summary.get("grand_total", 0),
-                    "national_total": summary.get("total_national", 0),
-                    "county_total": summary.get("total_county", 0),
-                    "record_count": len(data.get("pending_bills", [])),
+                    "total_pending": summary.get("total_national"),
+                    "national_total": summary.get("total_national"),
+                    "county_total": None,
+                    "record_count": len(_live_rows),
                     "as_at_date": summary.get("as_at_date"),
                 },
                 "source": data.get("source_title", "Controller of Budget Reports"),
@@ -10716,9 +10730,10 @@ async def get_pending_bills(
         "data_source": "none",
         "pending_bills": [],
         "summary": {
-            "total_pending": 0,
-            "national_total": 0,
-            "county_total": 0,
+            # Absent, not zero: nothing has been published here.
+            "total_pending": None,
+            "national_total": None,
+            "county_total": None,
             "record_count": 0,
         },
         "source": "Controller of Budget (https://cob.go.ke/publications/pending-bills/)",
@@ -11072,13 +11087,16 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
         eid = l.entity_id
         if eid not in county_ids:
             continue
+        amount = pending_bills_row_amount(l)
+        if amount is None:
+            continue
         if eid not in county_totals:
             county_totals[eid] = {
                 "county": entity_name_map.get(eid, f"Entity {eid}"),
                 "entity_id": eid,
                 "amount": 0,
             }
-        county_totals[eid]["amount"] += float(l.outstanding or l.principal or 0)
+        county_totals[eid]["amount"] += amount
 
     top_counties = sorted(
         county_totals.values(), key=lambda x: x["amount"], reverse=True
@@ -11192,9 +11210,7 @@ async def get_pending_bills_by_county(county_id: str, db: Session = Depends(get_
             by_type: Dict[str, float] = {}
             for l in pending_loans:
                 bt = _bill_type_from_lender(l.lender)
-                by_type[bt] = by_type.get(bt, 0) + float(
-                    l.outstanding or l.principal or 0
-                )
+                by_type[bt] = by_type.get(bt, 0) + (pending_bills_row_amount(l) or 0.0)
             return {
                 "status": "success" if pending_loans else "no_data",
                 "data_source": "loans_table_fallback" if pending_loans else "none",

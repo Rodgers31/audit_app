@@ -64,7 +64,7 @@ def write_pending_bills(
     # the same lender key the BROP uses, so one failed fetch used to OVERWRITE
     # the published figure and serve the invention as sourced.
     if publication != COUNTY_PENDING_BILLS_PUBLICATION:
-        skipped = [r for r in records if r.category == "county"]
+        skipped = [r for r in records if _is_county_record(r)]
         if skipped:
             logger.warning(
                 "pending bills: not writing %d county record(s) from a %s "
@@ -73,7 +73,7 @@ def write_pending_bills(
                 len(skipped),
                 publication or "fixture",
             )
-        records = [r for r in records if r.category != "county"]
+        records = [r for r in records if not _is_county_record(r)]
 
     # Get or create the source document
     source_doc = _get_or_create_source_document(
@@ -149,6 +149,9 @@ def write_pending_bills(
             created += 1
             logger.debug(f"Created: {lender_name} = {record.total_pending}")
 
+    if not dry_run and publication == COUNTY_PENDING_BILLS_PUBLICATION:
+        _retire_counties_this_edition_does_not_report(session, records)
+
     if not dry_run:
         session.flush()
 
@@ -156,6 +159,61 @@ def write_pending_bills(
         f"Pending bills write complete: " f"{created} created, {updated} updated"
     )
     return created, updated
+
+
+def _is_county_record(record: PendingBillRecord) -> bool:
+    """A record about a county, however the payload spelled its category."""
+    category = (record.category or "").strip().lower()
+    entity_type = (record.entity_type or "").strip().lower()
+    return category == "county" or entity_type == "county"
+
+
+def _retire_counties_this_edition_does_not_report(
+    session: Session, records: list[PendingBillRecord]
+) -> int:
+    """Stop publishing a county's figure from an older BROP edition.
+
+    The upsert key is (entity, lender), so a county the new edition reports is
+    overwritten in place. A county it does NOT report — Narok submitted to one
+    BROP and not the next — kept the previous edition's row, stamped as the
+    BROP, and went on being served beside everyone's newer figure and summed
+    into the county total. The row is kept (it is last year's publication) but
+    no longer declares itself the current one.
+    """
+    editions = {r.fiscal_year for r in records if _is_county_record(r)}
+    if len(editions) != 1:
+        return 0
+    edition = editions.pop()
+    retired = 0
+    rows = (
+        session.query(Loan)
+        .join(Entity, Entity.id == Loan.entity_id)
+        .filter(
+            Entity.type == EntityType.COUNTY,
+            Loan.debt_category == DebtCategory.PENDING_BILLS,
+        )
+        .all()
+    )
+    for loan in rows:
+        prov = loan.provenance if isinstance(loan.provenance, dict) else None
+        if not prov or prov.get("publication") != COUNTY_PENDING_BILLS_PUBLICATION:
+            continue
+        if prov.get("fiscal_year") == edition:
+            continue
+        loan.provenance = {
+            **prov,
+            "publication": None,
+            "superseded_by_edition": edition,
+        }
+        retired += 1
+    if retired:
+        logger.warning(
+            "pending bills: %d county row(s) from an earlier BROP edition are "
+            "no longer published — the %s edition does not report them",
+            retired,
+            edition,
+        )
+    return retired
 
 
 def _build_lender_name(record: PendingBillRecord) -> str:

@@ -167,12 +167,18 @@ def fetch_pending_bills_payload(
         logger.info("Fetching pending bills from configured URL: %s", dataset_url)
         from ...utils import load_json_resource
 
-        return load_json_resource(
+        payload = load_json_resource(
             url=dataset_url,
             client=client,
             logger=logger,
             label="pending_bills",
         )
+        # Only the BROP path above may declare the BROP. A dataset that says
+        # it is one is not believed.
+        if isinstance(payload, dict):
+            payload.pop("publication", None)
+            payload.pop("publisher", None)
+        return payload
 
     # Strategy 3: Live ETL extraction
     logger.info(

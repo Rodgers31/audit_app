@@ -653,6 +653,31 @@ def county_pending_bills_row_is_published(loan: Any) -> bool:
     )
 
 
+def pending_bills_row_amount(loan: Any) -> Optional[float]:
+    """A pending-bills row's amount as a publishable figure, or None.
+
+    ``outstanding``, falling back to ``principal`` only when outstanding is
+    absent — never when it is 0, because a published zero is a figure. Only a
+    finite, non-negative number counts: NaN reached ``/counties`` as a float
+    JSON cannot encode (HTTP 500 for all 47 counties), and a bool is not an
+    amount.
+    """
+    import math
+
+    amount = getattr(loan, "outstanding", None)
+    if amount is None:
+        amount = getattr(loan, "principal", None)
+    if amount is None or isinstance(amount, bool):
+        return None
+    try:
+        value = float(amount)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(value) or value < 0:
+        return None
+    return value
+
+
 def county_pending_bills(loans: Iterable[Any]) -> Optional[float]:
     """A county's pending bills from the Treasury BROP, or None if it has none.
 
@@ -678,12 +703,10 @@ def county_pending_bills(loans: Iterable[Any]) -> Optional[float]:
     for loan in loans or []:
         if not county_pending_bills_row_is_published(loan):
             continue
-        amount = getattr(loan, "outstanding", None)
-        if amount is None:
-            amount = getattr(loan, "principal", None)
+        amount = pending_bills_row_amount(loan)
         if amount is None:
             continue
-        total += float(amount)
+        total += amount
         found = True
     return total if found else None
 
