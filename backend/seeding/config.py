@@ -375,6 +375,33 @@ class SeedingSettings(BaseSettings):
             "the first ~30 pages."
         ),
     )
+    audits_county_start_budget_seconds: int = Field(
+        default=240,
+        ge=0,
+        description=(
+            "The audits domain starts a NEW OAG combined county volume "
+            "(download + extract + load) only while it has run for less than "
+            "this. A volume costs roughly 14-60s to read (measured locally "
+            "across the FY2021/22-FY2024/25 volumes, 217-688 pages), plus a "
+            "first load that confirms each new finding against the database "
+            "one round trip at a time (~0.1s each on production, ~500-1,300 "
+            "findings a volume). Started at 239s with the download cap below, "
+            "the worst case still ends inside domain_timeout_seconds (600s). "
+            "Volumes left over are recorded as deferred in the job metadata "
+            "and taken, newest fiscal year first, by the next run."
+        ),
+    )
+    audits_volume_download_timeout_seconds: float = Field(
+        default=120.0,
+        ge=1.0,
+        description=(
+            "Total wall-clock cap for downloading one combined county volume "
+            "(7-34MB). Lower than pdf_download_timeout_seconds because the "
+            "audits domain may start a volume late in its budget. Downloads "
+            "are resumable, so a slow night banks its bytes and the next "
+            "run continues."
+        ),
+    )
     counties_budget_prefer_live_source: bool = Field(
         default=True,
         description=(
