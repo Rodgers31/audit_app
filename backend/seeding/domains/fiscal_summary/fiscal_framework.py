@@ -218,6 +218,7 @@ class AnnexTable:
     rows: Dict[str, List[Decimal]]
     width: int
     page: int
+    column_labels: Dict[int, str] = field(default_factory=dict)
 
     def column(self, index: int) -> Dict[str, Decimal]:
         return {k: v[index] for k, v in self.rows.items() if len(v) == self.width}
@@ -265,7 +266,14 @@ def parse_annex_lines(lines: Sequence[str], *, page: int) -> AnnexTable:
             "rows_not_found",
             f"PDF p.{page}: no full-width row for {', '.join(missing)}",
         )
-    return AnnexTable(rows=rows, width=width, page=page)
+    # Recover only unambiguous, contiguous header cells. PDF text can reorder
+    # the multi-line BPS/Approved headers, so an unfamiliar layout stays unknown.
+    # This prefix is printed in the FY2026/27 Annex 2a; it is not inferred from
+    # the age of a fiscal year (a past year can still be preliminary).
+    labels = {}
+    if any(re.match(r"^Act\.\s+Prel\.\s+Budget\s+Suppl\.1\s+Budget\s+BROP\b", line.strip()) for line in lines):
+        labels = {0: "Actual", 1: "Preliminary", 3: "Supplementary I"}
+    return AnnexTable(rows=rows, width=width, page=page, column_labels=labels)
 
 
 def narrative_amounts(text: str) -> List[Decimal]:
@@ -329,6 +337,7 @@ class FrameworkSplit:
     tax_split_ok: bool
     tax_split_reason: Optional[str]
     checks: List[str] = field(default_factory=list)
+    column_label: Optional[str] = None
 
 
 def _check(
@@ -421,6 +430,7 @@ def gate_column(
         tax_split_ok=tax_ok,
         tax_split_reason=tax_reason,
         checks=checks,
+        column_label=("Approved" if identified_by == "approved_budget" else table.column_labels.get(index)),
     )
 
 
@@ -635,6 +645,7 @@ def framework_payload(split: FrameworkSplit, *, source_url: Optional[str], page:
             # Short: it can become ``fiscal_summaries.page_ref`` (50 chars).
             "page": f"Annex Table 2a, PDF p.{page}",
             "table": "Annex Table 2a: Fiscal Framework (KSh billion)",
+            "column": split.column_label or "Vintage unconfirmed",
         },
         "checks": list(split.checks),
     }

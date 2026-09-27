@@ -44,6 +44,7 @@ class FiscalSummaryRecord:
     #: for FY2025/26 that is COB's nine-month report while the debt service is
     #: the BPS budget estimate. Citing one for the other mis-cites (issue #235).
     debt_service_source: dict[str, Any] | None = None
+    revenue_source: dict[str, Any] | None = None
     #: The Budget Summary's fiscal-framework split for this year — one basis,
     #: its own reconciling total, page and checks. See ``fiscal_framework.py``.
     #: Absent on a year no edition could supply.
@@ -194,6 +195,7 @@ def parse_fiscal_summary_payload(payload: dict[str, Any]) -> list[FiscalSummaryR
                 debt_redemption=_safe_float(fy.get("debt_redemption")),
                 budget_basis_source=fy.get("budget_basis_source"),
                 debt_service_source=fy.get("debt_service_source"),
+                revenue_source=fy.get("revenue_source") if isinstance(fy.get("revenue_source"), dict) else None,
                 fiscal_framework=(
                     fy.get("fiscal_framework")
                     if isinstance(fy.get("fiscal_framework"), dict)

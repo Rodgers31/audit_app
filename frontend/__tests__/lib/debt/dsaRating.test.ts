@@ -10,6 +10,7 @@ import {
   dsaHref,
   dsaIsAlarm,
   dsaSourceLabel,
+  dsaVintageLabel,
   readDsaRating,
 } from '@/lib/debt/dsaRating';
 
@@ -62,6 +63,12 @@ describe('the citation says where the rating is printed', () => {
 
   it('dates the link by the DSA, not by today', () => {
     expect(dsaSourceLabel(r)).toBe('IMF–World Bank DSA, Oct 2024');
+  });
+
+  it('shows the publication and confirmation dates without requiring hover', () => {
+    expect(dsaVintageLabel(r)).toContain('Published 1 Nov 2024');
+    expect(dsaVintageLabel(r)).toContain('31 Mar 2026');
+    expect(dsaVintageLabel(r)).toContain('current status unverified');
   });
 
   it('opens the PDF at the rating page', () => {

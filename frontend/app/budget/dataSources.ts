@@ -31,9 +31,9 @@ export const DATA_SOURCES: DataSourceCredit[] = [
     section: 'Revenue by Source',
     authority: 'Kenya Revenue Authority (KRA)',
     description:
-      'Five tax heads — PAYE, VAT, Corporation Tax, Excise Duty and Customs — are taken from KRA annual performance press releases for the year each release reports. The sixth card, Other Tax Revenue, is not a line in any release: it is a residual, the exchequer total less those five heads, and it absorbs withholding tax, capital gains, stamp duty, betting and digital-economy taxes.',
+      'PAYE, domestic VAT, Corporation Tax, domestic Excise Duty and Customs departmental collections come from the cited KRA release. Customs includes agency levies, so these collections do not form a tax-only or Exchequer partition. The Other Tax Revenue residual and percentage shares are withheld. Publisher-stated total, Exchequer and agency collections remain separate measures.',
     methodology:
-      'FY 2022/23 has no per-head release of its own. Its five heads are derived — back-computed from the growth rates the FY 2023/24 release states — so the earliest bar in each sparkline is an implied level, not a KRA figure. It is shown marked rather than withheld because the trend it carries is real. Figures on the cards are labelled individually wherever they are not published lines.',
+      'FY 2022/23 has no per-head release of its own. Its five heads are derived — back-computed from the growth rates the FY 2023/24 release states — so the earliest bar in each sparkline is an implied level, not a KRA figure. It is shown marked rather than withheld as an estimate. Figures on the cards are labelled individually wherever they are not published lines.',
     url: 'https://www.kra.go.ke/news-center/press-release',
     urlLabel: 'KRA Press Releases',
   },

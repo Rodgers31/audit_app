@@ -385,14 +385,16 @@ def _county_period_rollup(db, period_id: Optional[int]):
 
 def _latest_national_period(db) -> Optional[int]:
     """Return the period_id of the latest FiscalPeriod that has national BudgetLines."""
-    from sqlalchemy import func as _fn
-
     row = (
         db.query(DBBudgetLine.period_id)
         .join(DBEntity, DBBudgetLine.entity_id == DBEntity.id)
         .join(DBFiscalPeriod, DBBudgetLine.period_id == DBFiscalPeriod.id)
         .filter(DBEntity.type == EntityType.NATIONAL)
-        .order_by(DBFiscalPeriod.start_date.desc())
+        .order_by(
+            DBFiscalPeriod.start_date.desc(),
+            DBFiscalPeriod.end_date.desc().nullslast(),
+            DBFiscalPeriod.id.desc(),
+        )
         .limit(1)
         .first()
     )
@@ -8808,7 +8810,7 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
     """Extended budget data not in the base overview.
 
     Returns:
-      - revenue_by_source: Tax-type breakdown per FY (PAYE, Corp Tax, VAT, Excise, Customs, Other)
+      - revenue_by_source: separately sourced collections per FY; incompatible residuals withheld
       - economic_context: Budget as % of GDP, per-capita budget, key economic indicators
       - execution_by_sector: revised gross estimates vs actual expenditure per
         sector, from the newest annual CoB NG-BIRR (declared rows only)
@@ -8819,6 +8821,7 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
         PopulationData,
         RevenueBySource,
     )
+    from services.revenue_publication import revenue_source_row
 
     try:
         # ── 1. Revenue by source ──
@@ -8834,39 +8837,7 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
             fy = r.fiscal_year
             if fy not in rev_by_fy:
                 rev_by_fy[fy] = []
-            # Row provenance. Six tax heads render as equals on /budget under
-            # one blanket "Source: KRA Annual Performance" credit, but two of
-            # the six are not KRA-published figures: the whole of FY 2022/23 is
-            # back-computed out of the FY 2023/24 release's growth rates, and
-            # "Other Tax Revenue" is a subtraction in every year. The rows said
-            # so in their own notes; this response did not carry them, so the
-            # blanket credit was the only provenance a reader ever saw.
-            # `basis` is None where nothing was recorded — an omission is
-            # absence, not a claim that the figure was published.
-            meta = r.meta or {}
-            rev_by_fy[fy].append(
-                {
-                    "revenue_type": r.revenue_type,
-                    "category": r.category,
-                    "basis": meta.get("basis"),
-                    "basis_note": meta.get("notes"),
-                    "amount": (
-                        float(r.amount_billion_kes) if r.amount_billion_kes else None
-                    ),
-                    "target": (
-                        float(r.target_billion_kes) if r.target_billion_kes else None
-                    ),
-                    "performance_pct": (
-                        float(r.performance_pct) if r.performance_pct else None
-                    ),
-                    "share_pct": (
-                        float(r.share_of_total_pct) if r.share_of_total_pct else None
-                    ),
-                    "yoy_growth_pct": (
-                        float(r.yoy_growth_pct) if r.yoy_growth_pct else None
-                    ),
-                }
-            )
+            rev_by_fy[fy].append(revenue_source_row(r))
 
         revenue_by_source = [
             {"fiscal_year": fy, "sources": sources}
@@ -9239,44 +9210,44 @@ def _fiscal_row_to_dict(r) -> dict:
         # The row's declared unit (stage1 3a): "KES" = raw KES.
         "unit": r.unit,
         "appropriated_budget": (
-            float(r.appropriated_budget) if r.appropriated_budget else None
+            float(r.appropriated_budget) if r.appropriated_budget is not None else None
         ),
-        "total_revenue": float(r.total_revenue) if r.total_revenue else None,
-        "tax_revenue": float(r.tax_revenue) if r.tax_revenue else None,
+        "total_revenue": float(r.total_revenue) if r.total_revenue is not None else None,
+        "tax_revenue": float(r.tax_revenue) if r.tax_revenue is not None else None,
         "non_tax_revenue": (
-            float(r.non_tax_revenue) if r.non_tax_revenue else None
+            float(r.non_tax_revenue) if r.non_tax_revenue is not None else None
         ),
         "total_borrowing": (
-            float(r.total_borrowing) if r.total_borrowing else None
+            float(r.total_borrowing) if r.total_borrowing is not None else None
         ),
         "borrowing_pct_of_budget": (
             float(r.borrowing_pct_of_budget)
-            if r.borrowing_pct_of_budget
+            if r.borrowing_pct_of_budget is not None
             else None
         ),
         "debt_service_cost": (
-            float(r.debt_service_cost) if r.debt_service_cost else None
+            float(r.debt_service_cost) if r.debt_service_cost is not None else None
         ),
         "debt_service_per_shilling": (
             float(r.debt_service_per_shilling)
-            if r.debt_service_per_shilling
+            if r.debt_service_per_shilling is not None
             else None
         ),
-        "debt_ceiling": float(r.debt_ceiling) if r.debt_ceiling else None,
-        "actual_debt": float(r.actual_debt) if r.actual_debt else None,
+        "debt_ceiling": float(r.debt_ceiling) if r.debt_ceiling is not None else None,
+        "actual_debt": float(r.actual_debt) if r.actual_debt is not None else None,
         "debt_ceiling_usage_pct": (
             float(r.debt_ceiling_usage_pct)
-            if r.debt_ceiling_usage_pct
+            if r.debt_ceiling_usage_pct is not None
             else None
         ),
         "development_spending": (
-            float(r.development_spending) if r.development_spending else None
+            float(r.development_spending) if r.development_spending is not None else None
         ),
         "recurrent_spending": (
-            float(r.recurrent_spending) if r.recurrent_spending else None
+            float(r.recurrent_spending) if r.recurrent_spending is not None else None
         ),
         "county_allocation": (
-            float(r.county_allocation) if r.county_allocation else None
+            float(r.county_allocation) if r.county_allocation is not None else None
         ),
         # WHICH measure the budget is: "cob_gross" (gross ministerial
         # + Consolidated Fund Services) vs the Budget Policy Statement
@@ -9287,6 +9258,7 @@ def _fiscal_row_to_dict(r) -> dict:
         # The document debt_service_cost was read from — which can differ
         # from budget_basis_source's, so it travels separately (issue #235).
         "debt_service_source": (r.meta or {}).get("debt_service_source"),
+        "revenue_source": (r.meta or {}).get("revenue_source"),
         # Billions KES of the gross budget that is redemption of
         # maturing debt. Lets the page say why the gross figure and the
         # enacted headline differ, instead of just asserting they do.
@@ -9465,10 +9437,11 @@ async def get_fiscal_summary(db: Session = Depends(get_db)):
             "debt_to_gdp_pct": _imf_d2g[0] if _imf_d2g else None,
             "debt_to_gdp_year": _imf_d2g[1] if _imf_d2g else None,
             "debt_to_gdp_basis": (
-                "IMF General Government Gross Debt, % of GDP (nominal); compared "
-                "to the 55% present-value anchor this is indicative, not exact"
+                "IMF General Government Gross Debt, % of GDP (nominal); not "
+                "comparable to the present-value anchor"
             ),
-            "above_anchor": (_imf_d2g[0] > 55.0) if _imf_d2g else None,
+            "above_anchor": None,
+            "comparison_absent_reason": "A comparable present-value debt ratio is not available.",
             "former_numeric_ceiling_kes_billion": 10000,
             "former_ceiling_repealed": True,
         }
@@ -10008,7 +9981,8 @@ async def get_national_loans(db: Session = Depends(get_db)):
         return {
             "_meta": _response_meta(unit="kes", entity_scope="national"),
             "loans": national_loans,
-            "total_loans": len(national_loans),
+            "total_loans": len(national_loans),  # legacy key: counts register lines
+            "count_basis": "creditor_and_instrument_lines",
             "total_outstanding": total_outstanding,
             "total_annual_service_cost": None,
             "total_annual_service_cost_absent_reason": LOANS_TOTAL_SERVICE_ABSENT_REASON,
@@ -11636,6 +11610,7 @@ async def get_debt_sustainability(db: Session = Depends(get_db)):
     5-year projections, and EAC regional peers.
     """
     from models import DebtTimeline, FiscalSummary
+    from services.fiscal_outturns import finite_number, has_source_locator
 
     try:
         # Latest debt timeline entry (has debt/GDP data)
@@ -11646,12 +11621,15 @@ async def get_debt_sustainability(db: Session = Depends(get_db)):
 
         latest_fs = latest_publishable_fiscal_summary(db)
 
-        if not latest_dt and not latest_fs:
+        _imf_headline = _latest_imf_debt_to_gdp(db)
+        if not latest_dt and not latest_fs and _imf_headline is None:
             return {
                 "status": "no_data",
                 "note": "Run seeders: debt_timeline and fiscal_summary",
+                "imf_dsa": kenya_dsa_rating(),
                 "debt_to_gdp": None,
                 "debt_service_to_revenue": None,
+                "debt_service_to_revenue_absent_reason": "No fiscal inputs with separate source locators are available.",
                 "external_debt_share": None,
                 "projections": [],
                 "projections_source": None,
@@ -11672,16 +11650,15 @@ async def get_debt_sustainability(db: Session = Depends(get_db)):
         ratio_year = None
         ratio_basis = None
         ratio_source = None
-        _imf_headline = _latest_imf_debt_to_gdp(db)
         if _imf_headline is not None:
-            ratio, ratio_year = _imf_headline[0], _imf_headline[1]
+            ratio, ratio_year = finite_number(_imf_headline[0]), _imf_headline[1]
             ratio_basis = (
                 "IMF General Government Gross Debt, % of GDP (GGXWDG_NGDP) "
                 "— vintage-consistent"
             )
             ratio_source = "IMF World Economic Outlook"
-        elif latest_dt and latest_dt.gdp_ratio:
-            ratio = float(latest_dt.gdp_ratio)
+        elif latest_dt and latest_dt.gdp_ratio is not None:
+            ratio = finite_number(latest_dt.gdp_ratio)
             ratio_year = latest_dt.year
             ratio_basis = (
                 "Central government debt / nominal GDP (CBK debt timeline) "
@@ -11691,46 +11668,49 @@ async def get_debt_sustainability(db: Session = Depends(get_db)):
 
         debt_to_gdp = None
         if ratio is not None:
-            if ratio > 55:
-                status = "above"
-            elif ratio > 50:
-                status = "warning"
-            else:
-                status = "below"
             debt_to_gdp = {
                 "value": ratio,
                 "year": ratio_year,
                 "basis": ratio_basis,
                 "source": ratio_source,
-                "threshold_imf": 55.0,
-                "threshold_eac": 50.0,
-                "status": status,
+                "vintage": _imf_headline[2] if _imf_headline else None,
+                "source_document_id": latest_dt.source_document_id if latest_dt and not _imf_headline else None,
+                "assessment": "Nominal debt ratio; not comparable to present-value debt benchmarks. See the separately cited DSA assessment.",
             }
 
         # ── Debt Service to Revenue ────────────────────────────────
         debt_service_to_revenue = None
-        if latest_fs and latest_fs.debt_service_cost and latest_fs.total_revenue:
-            ds = float(latest_fs.debt_service_cost)
-            rev = float(latest_fs.total_revenue)
-            if rev > 0:
+        debt_service_absent_reason = "Finite debt-service and positive revenue inputs with separate source locators are required."
+        if latest_fs and latest_fs.debt_service_cost is not None and latest_fs.total_revenue is not None:
+            ds = finite_number(latest_fs.debt_service_cost)
+            rev = finite_number(latest_fs.total_revenue)
+            meta = latest_fs.meta if isinstance(latest_fs.meta, dict) else {}
+            framework = meta.get("fiscal_framework")
+            framework = framework if isinstance(framework, dict) else {}
+            source = framework.get("source")
+            source = source if isinstance(source, dict) else {}
+            if (ds is not None and rev is not None and rev > 0
+                    and has_source_locator(meta.get("debt_service_source"))
+                    and has_source_locator(meta.get("revenue_source"))):
                 ratio_val = round(ds / rev * 100, 1)
                 debt_service_to_revenue = {
                     "value": ratio_val,
                     "year": latest_fs.fiscal_year,
-                    "threshold": 30.0,
-                    "status": (
-                        "above"
-                        if ratio_val > 30
-                        else ("warning" if ratio_val > 25 else "below")
-                    ),
+                    "basis": "App calculation: total debt service (interest and principal) / fiscal revenue × 100; no risk threshold applied.",
+                    "source_document_id": latest_fs.source_document_id,
+                    "page_ref": latest_fs.page_ref,
+                    "debt_service_source": meta.get("debt_service_source"),
+                    "revenue_source": meta.get("revenue_source"),
+                    "source_column": source.get("column"),
                 }
+                debt_service_absent_reason = None
 
         # ── External Debt Share ────────────────────────────────────
         external_share = None
-        if latest_dt and latest_dt.total and latest_dt.external:
-            total = float(latest_dt.total)
-            ext = float(latest_dt.external)
-            if total > 0:
+        if latest_dt and latest_dt.total is not None and latest_dt.external is not None:
+            total = finite_number(latest_dt.total)
+            ext = finite_number(latest_dt.external)
+            if total is not None and total > 0 and ext is not None and ext <= total:
                 external_share = round(ext / total * 100, 1)
 
         # ── Projections: published, or absent ──────────────────────
@@ -11757,7 +11737,9 @@ async def get_debt_sustainability(db: Session = Depends(get_db)):
             "status": "success",
             "_meta": _response_meta(unit="percentage", entity_scope="national"),
             "debt_to_gdp": debt_to_gdp,
+            "imf_dsa": kenya_dsa_rating(),
             "debt_service_to_revenue": debt_service_to_revenue,
+            "debt_service_to_revenue_absent_reason": debt_service_absent_reason,
             "external_debt_share": external_share,
             "projections": projections,
             "projections_source": projections_source,
@@ -12839,32 +12821,10 @@ async def dashboard_fiscal_outturns():
                 _fiscal_withheld = fiscal_summary_withheld_disclosure(stored)
                 rows = publishable_fiscal_summaries(stored)[:12]
                 if rows:
-                    series = []
-                    for r in rows:
-                        # fiscal_summaries stores raw KES (stage1 3a);
-                        # this endpoint's declared unit is billion_kes,
-                        # so convert here to keep the label truthful.
-                        rev = float(r.total_revenue or 0) / 1e9
-                        # expenditure = recurrent + development if available
-                        recurrent = float(r.recurrent_spending or 0) / 1e9
-                        development = float(r.development_spending or 0) / 1e9
-                        expenditure = (
-                            (recurrent + development)
-                            if (recurrent + development) > 0
-                            else 0
-                        )
-                        # Skip years with no revenue AND no expenditure (incomplete backfill)
-                        if rev == 0 or expenditure == 0:
-                            continue
-                        series.append(
-                            {
-                                "period": str(r.fiscal_year),
-                                "revenue": rev,
-                                "expenditure": expenditure,
-                                "balance": rev - expenditure,
-                            }
-                        )
-                    series = series[:8]  # cap to 8 most recent complete years
+                    from services.fiscal_outturns import fiscal_outturn
+
+                    series = [fiscal_outturn(r) for r in rows]
+                    series = series[:8]  # retain explicit gaps within recent years
                     if series:
                         return {
                             "withheld": _fiscal_withheld,

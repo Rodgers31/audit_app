@@ -22,7 +22,7 @@ import { motion } from 'framer-motion';
 import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
 import { useMemo } from 'react';
 
-import { FISCAL_FRAMEWORK_BASIS } from '@/lib/fiscal/framework';
+import { FISCAL_FRAMEWORK_BASIS, FiscalFramework, fiscalColumnLabel } from '@/lib/fiscal/framework';
 
 export interface FiscalHistoryRow {
   fiscal_year: string;
@@ -33,6 +33,8 @@ export interface FiscalHistoryRow {
   county_allocation?: number | null;
   /** Which basis total_borrowing is on; see lib/fiscal/framework.ts. */
   split_basis?: string | null;
+  fiscal_framework?: FiscalFramework | null;
+  debt_service_source?: { title?: string } | null;
 }
 
 interface Props {
@@ -40,7 +42,7 @@ interface Props {
 }
 
 function fmtB(v?: number | null): string {
-  if (v == null || v <= 0) return '—';
+  if (v == null) return '—';
   if (v >= 1000) return `${(v / 1000).toFixed(2)}T`;
   return `${v.toFixed(0)}B`;
 }
@@ -74,7 +76,7 @@ const CARDS: SeriesCard[] = [
     accent: '#3E6B84',
     gradStart: '#5088A8',
     gradEnd: '#2F5A70',
-    tagline: 'What KRA + SOEs brought in.',
+    tagline: 'Tax + non-tax revenue; each year names its vintage.',
   },
   {
     label: 'New borrowing',
@@ -136,11 +138,13 @@ export default function FiscalTrendStrip({ history }: Props) {
           if (rows.length < 2) return null;
           const values = rows.map((r) => ({
             year: r.fiscal_year.replace('FY ', ''),
-            value: (r[c.key] as number | null) ?? 0,
+            value: typeof r[c.key] === 'number' ? r[c.key] as number : null,
+            column: c.key === 'appropriated_budget' ? 'Appropriated budget' : c.key === 'debt_service_cost'
+              ? r.debt_service_source?.title ?? 'Vintage unconfirmed' : fiscalColumnLabel(r),
           }));
           const latest = values[values.length - 1];
           const first = values[0];
-          const max = Math.max(...values.map((v) => v.value), 1);
+          const max = Math.max(...values.flatMap((v) => v.value == null ? [] : [v.value]), 1);
           const delta = pctChange(latest.value, first.value);
           const isUp = delta != null && delta > 0.5;
           const isDown = delta != null && delta < -0.5;
@@ -180,20 +184,22 @@ export default function FiscalTrendStrip({ history }: Props) {
                 {/* Sparkbars */}
                 <div className='mt-3 flex items-end gap-1 h-10'>
                   {values.map((v, i) => {
-                    const h = (v.value / max) * 100;
+                    const h = v.value == null ? 0 : (v.value / max) * 100;
                     const isLatest = i === values.length - 1;
                     return (
                       <div key={v.year} className='flex-1 flex flex-col items-center gap-0.5'>
                         <div
                           className='w-full rounded-t-sm transition-all'
                           style={{
-                            height: `${Math.max(h, 8)}%`,
+                            height: `${v.value == null ? 0 : Math.max(h, 0)}%`,
                             background: isLatest
                               ? `linear-gradient(180deg, ${c.gradStart}, ${c.gradEnd})`
                               : '#E2DDD5',
                           }}
                         />
                         <span className='text-[11px] text-neutral-muted tabular-nums'>{v.year}</span>
+                        <span className='text-[10px] text-neutral-muted text-center'>{v.column}</span>
+                        {v.value == null && <span className='text-[10px]'>Not published</span>}
                       </div>
                     );
                   })}

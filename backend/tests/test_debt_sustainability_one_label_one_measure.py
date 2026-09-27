@@ -96,6 +96,10 @@ def seeded(db_session, seed_source_doc):
             fiscal_year="FY 2026/27",
             total_revenue=3000.0 * B,
             debt_service_cost=2328.0 * B,  # 77.6% of revenue
+            meta={
+                "debt_service_source": {"url": "https://treasury.go.ke/debt.pdf", "page": "p.1"},
+                "revenue_source": {"url": "https://treasury.go.ke/revenue.pdf", "page": "p.2"},
+            },
             unit="KES",
             source_document_id=seed_source_doc.id,
             # Tier B (#137): a published fiscal row cites a page.

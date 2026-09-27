@@ -1,4 +1,5 @@
 'use client';
+import { readDsaRating, dsaIsAlarm, dsaSourceLabel, dsaVintageLabel, dsaHref, dsaCitation } from '@/lib/debt/dsaRating';
 
 import { toRawKES } from '@/lib/utils';
 import DataFreshnessBadge from '@/components/DataFreshnessBadge';
@@ -434,18 +435,7 @@ export default function NationalDebtPage() {
     [lenderCategories]
   );
 
-  /* ── Risk band from debt-to-GDP ── */
-  // `?? 0` here rendered an ABSENT debt-to-GDP ratio as "Low" risk — a claim
-  // about Kenya's public finances manufactured from a missing field, and the
-  // mirror image of the `|| 'High'` defect already fixed in NationalDebtCard.
-  // Absence is not a risk band.
-  const riskBand = useMemo(() => {
-    const r = d.gdpRatio;
-    if (r == null) return null;
-    if (r >= 60) return { level: 'High', tone: 'text-gov-copper', bg: 'bg-gov-copper/15', pill: 'pill-risk' };
-    if (r >= 40) return { level: 'Moderate', tone: 'text-gov-gold', bg: 'bg-gov-gold/15', pill: 'pill-risk' };
-    return { level: 'Low', tone: 'text-gov-sage', bg: 'bg-gov-sage/15', pill: 'pill-safe' };
-  }, [d.gdpRatio]);
+  const dsa = readDsaRating((overview?.data || overview)?.debt_sustainability);
 
   /* ── Revenue allocation (per KES 100 of revenue — authoritative) ──
      APDMR-style framing: tax + non-tax revenue as denominator, total
@@ -623,27 +613,21 @@ export default function NationalDebtPage() {
             <div className='rounded-xl bg-white/8 backdrop-blur border border-white/15 p-4'>
               <div className='flex items-center gap-2 text-[11px] uppercase tracking-wider text-white/60 mb-1.5'>
                 <ShieldAlert size={12} />
-                Risk level
+                Overall risk of debt distress
               </div>
               <div className='flex items-center gap-2'>
                 <span
                   className={`text-2xl sm:text-3xl font-bold ${
-                    riskBand ? riskBand.tone : 'text-white/50'
+                    dsaIsAlarm(dsa) ? 'text-gov-copper' : 'text-white/50'
                   }`}>
-                  {riskBand ? riskBand.level : 'Not assessed'}
+                  {dsa ? dsa.overall_risk_of_debt_distress : 'Not assessed'}
                 </span>
               </div>
               <p className='text-[11px] text-white/50 mt-1'>
-                {/* Was "Based on IMF debt-sustainability thresholds". The 40/60
-                    cutoffs are this site's own banding (the riskBand memo
-                    above; the shared DEBT_RISK_THRESHOLDS constant they once
-                    came from was deleted in #279 because it cited no source).
-                    The IMF publishes no threshold at those values, so the band
-                    says what it is. The IMF-World Bank rating itself is shown,
-                    cited, on the homepage (#269). */}
-                {riskBand
-                  ? 'Our banding of debt-to-GDP (40% / 60%) — not an IMF rating'
-                  : 'No debt-to-GDP ratio available to classify against'}
+                {dsa ? <>
+                  <a href={dsaHref(dsa)} title={dsaCitation(dsa)} target='_blank' rel='noopener noreferrer' className='underline'>{dsaSourceLabel(dsa)}</a>
+                  <span className='block mt-1'>{dsaVintageLabel(dsa)}</span>
+                </> : 'No published assessment received.'}
               </p>
             </div>
           </div>
@@ -835,8 +819,7 @@ export default function NationalDebtPage() {
                       definition. It counts principal repaid on maturing
                       loans as well as interest; the bar below counts interest
                       only, because principal is refinanced rather than
-                      spent.{' '}
-                      {fiscalSourceLine(fiscal?.current)}
+                      spent.
                     </p>
                     <p>
                       Different official debt-service measures may give
@@ -1463,7 +1446,7 @@ export default function NationalDebtPage() {
                 className='w-full py-3 text-xs font-semibold text-gov-forest dark:text-emerald-100 hover:bg-white/40 dark:bg-surface-elevated transition-colors border-t border-neutral-border/20'>
                 {showAllLoans
                   ? `Show top 10 only`
-                  : `Show all ${loans.length} loans`}{' '}
+                  : `Show all ${loans.length} creditor and instrument lines`}{' '}
                 {showAllLoans ? (
                   <ChevronUp size={14} className='inline' />
                 ) : (
