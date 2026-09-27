@@ -9,23 +9,38 @@
  * asks about a national budget:
  *
  *   1. Where does the money come from?  (Sources)
- *      — Tax, non-tax, new borrowing, other financing
+ *      — Tax, non-tax, A-i-A, grants, net borrowing
  *
  *   2. Where does it actually go?       (Uses)
- *      — Debt service, recurrent non-debt, development, counties, other
+ *      — Interest on debt, recurrent (ex-interest), development, counties,
+ *        contingency
  *
- * The striking number that anchors the whole page is the debt-service-to-
- * revenue ratio: "for every 100 shillings government collects, X goes to
- * debt service BEFORE anything else is funded." We surface this as a
- * large callout between the two bars.
+ * BOTH BARS ARE ONE COLUMN OF ONE TABLE (issue #237): Annex Table 2a of the
+ * Budget Summary, Treasury's fiscal framework. Each bar reconciles to that
+ * column's "Expenditure and Net Lending", so there is no computed residual
+ * on either side. This used to draw sources and uses against
+ * `appropriated_budget` — the Controller of Budget's GROSS figure, which
+ * counts principal redemption and excludes county transfers — and let two
+ * "residual" segments absorb the difference between the bases, while
+ * subtracting interest-plus-principal from a recurrent figure that holds
+ * interest only. The gross budget is still the headline; it is explained
+ * beside the flow, not forced into it.
  *
- * Hover state: lifting a segment highlights it and reveals a detail popover
- * with the underlying KES value, share, and plain-English interpretation.
+ * The debt-service callout stays on its own declared basis (Treasury APDMR:
+ * interest + principal over tax + non-tax revenue).
  */
 
 import { motion } from 'framer-motion';
 import { ArrowDownRight, Info } from 'lucide-react';
 import { useMemo, useState } from 'react';
+
+import {
+  frameworkCitation,
+  frameworkOf,
+  frameworkSources,
+  frameworkUses,
+  type FiscalFramework,
+} from '@/lib/fiscal/framework';
 
 export interface FlowHeroInput {
   /** Billions KES of the gross budget that is redemption of maturing debt. */
@@ -43,6 +58,8 @@ export interface FlowHeroInput {
   recurrent_spending?: number | null;
   county_allocation?: number | null;
   debt_service_per_shilling?: number | null; // cents per KES of revenue
+  /** The split and the total it reconciles to, KSh billion. */
+  fiscal_framework?: FiscalFramework | null;
 }
 
 interface Props {
@@ -80,47 +97,23 @@ export default function BudgetFlowHero({ data }: Props) {
   const [hover, setHover] = useState<string | null>(null);
 
   const fy = data?.fiscal_year ?? '—';
-  // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- guarded: the component returns null when budget is falsy, three lines below
-  const budget = data?.appropriated_budget ?? 0;
-
-  // NOTHING here falls back to 0. A `null` from /fiscal/summary means the
-  // Treasury/CoB series for that year has not been published on this basis
-  // yet — rendering it as `KES 0B · 0.0%` told readers that Kenya collects no
-  // tax and spends nothing on debt service (credibility audit F2). The
-  // decomposition is all-or-nothing: the two residual segments below are only
-  // meaningful when every named input they are subtracted from is known.
-  const revenue = data?.total_revenue ?? null;
-  const tax = data?.tax_revenue ?? null;
-  const nonTax = data?.non_tax_revenue ?? null;
-  const borrowing = data?.total_borrowing ?? null;
-  const debtService = data?.debt_service_cost ?? null;
-  const dev = data?.development_spending ?? null;
-  const recurrent = data?.recurrent_spending ?? null;
-  const counties = data?.county_allocation ?? null;
+  const budget = data?.appropriated_budget ?? null;
   const redemptionB = data?.debt_redemption_billion ?? null;
 
-  const hasSources = tax != null && nonTax != null && borrowing != null;
-  const hasUses =
-    debtService != null && recurrent != null && dev != null && counties != null;
-  const hasFlow = budget > 0 && hasSources && hasUses;
-
-  // Derived — only computed when their inputs are all present.
-  const otherFinancing = hasSources
-    ? Math.max(0, budget - tax! - nonTax! - borrowing!)
-    : null;
-  const recurrentNonDebt = hasUses ? Math.max(0, recurrent! - debtService!) : null;
-  // The residual is what is left INSIDE the envelope `budget` measures.  That
-  // envelope is the Controller of Budget's National-Government gross figure,
-  // which excludes the county equitable share (CoB reports counties in a
-  // separate BIRR) — so `counties` must NOT be subtracted from it.  Doing so
-  // understated the residual by the whole county allocation while the bar's
-  // own note said counties sits beside, not inside, this total.
-  //
-  // The consequence is deliberate: the displayed shares sum to more than 100%
-  // by exactly the county share, which is what the note describes.
-  const otherSpend = hasUses ? Math.max(0, budget - recurrent! - dev!) : null;
+  // The flow is all-or-nothing and comes from one object. `null` means no
+  // Budget Summary column supplies this year on one basis — and a blank
+  // breakdown is not a finding that these amounts are zero.
+  const ff = frameworkOf(data);
+  const uses = frameworkUses(ff);
+  const sources = frameworkSources(ff);
+  const hasFlow = uses != null && sources != null;
+  const flowTotal = uses?.total ?? null;
+  const citation = frameworkCitation(ff);
+  const equitableShareB = ff?.county_equitable_share_billion ?? null;
 
   // "shillings-per-shilling-of-revenue" metric: debt service vs total revenue
+  const revenue = data?.total_revenue ?? null;
+  const debtService = data?.debt_service_cost ?? null;
   const debtServicePct =
     revenue != null && revenue > 0 && debtService != null
       ? (debtService / revenue) * 100
@@ -130,137 +123,164 @@ export default function BudgetFlowHero({ data }: Props) {
     (debtServicePct != null ? Math.round(debtServicePct) : null);
 
   /* ── Sources (money in) ── */
-  const sources: Segment[] = useMemo(
-    () => [
+  const sourceSegments: Segment[] = useMemo(() => {
+    if (!sources || !flowTotal) return [];
+    const revenueSegs: Segment[] =
+      sources.tax != null && sources.nonTax != null
+        ? [
+            {
+              key: 'tax',
+              label: 'Tax revenue',
+              valueB: sources.tax,
+              share: pct(sources.tax, flowTotal),
+              gradStart: '#2F6343',
+              gradEnd: '#1F4A30',
+              accent: '#1B3A2A',
+              note: 'Income tax, VAT, excise and import duty — collected by KRA.',
+            },
+            {
+              key: 'nonTax',
+              label: 'Non-tax revenue',
+              valueB: sources.nonTax,
+              share: pct(sources.nonTax, flowTotal),
+              gradStart: '#4B8564',
+              gradEnd: '#2F6343',
+              accent: '#2F6343',
+              note: 'Investment income, fees, fines and other ordinary revenue that is not tax.',
+            },
+          ]
+        : [
+            {
+              key: 'ordinary',
+              label: 'Tax & non-tax revenue',
+              valueB: sources.ordinaryRevenue,
+              share: pct(sources.ordinaryRevenue, flowTotal),
+              gradStart: '#2F6343',
+              gradEnd: '#1F4A30',
+              accent: '#1B3A2A',
+              note: 'The Budget Summary edition for this year prints no separate tax and non-tax rows.',
+            },
+          ];
+    const segs: Segment[] = [
+      ...revenueSegs,
       {
-        key: 'tax',
-        label: 'Tax revenue',
-        valueB: tax ?? 0,
-        share: pct(tax ?? 0, budget),
-        gradStart: '#2F6343',
-        gradEnd: '#1F4A30',
-        accent: '#1B3A2A',
-        note: 'PAYE, VAT, corporation tax, customs, excise — collected by KRA.',
+        key: 'aia',
+        label: 'A-i-A',
+        valueB: sources.aia,
+        share: pct(sources.aia, flowTotal),
+        gradStart: '#6A9E7F',
+        gradEnd: '#4B8564',
+        accent: '#3E7655',
+        note: 'Appropriations-in-Aid: money ministries collect and spend directly (levies, fees, project loans routed through them).',
       },
       {
-        key: 'nonTax',
-        label: 'Non-tax revenue',
-        valueB: nonTax ?? 0,
-        share: pct(nonTax ?? 0, budget),
-        gradStart: '#4B8564',
-        gradEnd: '#2F6343',
-        accent: '#2F6343',
-        note: 'Licence fees, interest, SOE dividends, A-in-A receipts.',
+        key: 'grants',
+        label: 'Grants',
+        valueB: sources.grants,
+        share: pct(sources.grants, flowTotal),
+        gradStart: '#8DB89C',
+        gradEnd: '#6A9E7F',
+        accent: '#4B8564',
+        note: 'Donor grants — not repaid.',
       },
       {
         key: 'borrowing',
-        label: 'New borrowing',
-        // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- unreachable when rendered — the bars only draw under hasSources, which requires this to be non-null
-        valueB: borrowing ?? 0,
-        // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- unreachable when rendered — see hasSources
-        share: pct(borrowing ?? 0, budget),
+        label: 'Net borrowing',
+        valueB: sources.borrowing,
+        share: pct(sources.borrowing, flowTotal),
         gradStart: '#B83E3E',
         gradEnd: '#7E2424',
         accent: '#9E3030',
-        note: 'Eurobonds, domestic T-bonds, T-bills, loans — adds to the debt stock.',
+        note: 'The fiscal deficit, financed by net domestic and net foreign borrowing — adds to the debt stock.',
       },
-      {
-        key: 'otherFin',
-        label: 'Financing residual',
-        valueB: otherFinancing ?? 0,
-        share: pct(otherFinancing ?? 0, budget),
+    ];
+    if (sources.cashAdjustment > 0.05) {
+      segs.push({
+        key: 'cashAdj',
+        label: 'Cash-basis adjustment',
+        valueB: sources.cashAdjustment,
+        share: pct(sources.cashAdjustment, flowTotal),
         gradStart: '#B38628',
         gradEnd: '#7D591A',
         accent: '#A6781F',
-        note:
-          'A COMPUTED RESIDUAL, not a sourced line: the approved budget less ' +
-          'tax, non-tax and new borrowing. It is whatever is needed to make ' +
-          'the two sides balance, and it absorbs any basis mismatch between ' +
-          'the budget total (CoB gross) and the revenue series (BPS).',
-      },
-    ],
-    [tax, nonTax, borrowing, otherFinancing, budget]
-  );
+        note: "The table's own 'Adjustment to Cash Basis' less its 'Statistical discrepancy' — printed rows, not a figure computed here.",
+      });
+    }
+    return segs;
+  }, [sources, flowTotal]);
 
   /* ── Uses (money out) ── */
-  // `hasUses` (above) proves every member of this array is non-null, and the
-  // component renders the withheld panel when it is false. Non-null assertions
-  // rather than `?? 0` so the file carries no zero-fallback at all: a future
-  // edit that drops the guard becomes a type error, not a silent "KES 0B".
-  const uses: Segment[] = useMemo(
-    () => [
+  const useSegments: Segment[] = useMemo(() => {
+    if (!uses) return [];
+    const t = uses.total;
+    return [
       {
-        key: 'debtService',
-        label: 'Debt service',
-        valueB: debtService!,
-        share: pct(debtService!, budget),
+        key: 'interest',
+        label: 'Interest on debt',
+        valueB: uses.interest,
+        share: pct(uses.interest, t),
         gradStart: '#9E3030',
         gradEnd: '#4C1616',
         accent: '#7E2424',
         note:
-          'Interest + principal repayment on past borrowing. Paid before any program runs.',
+          'Interest on domestic and foreign debt — the part of debt service that is spending. ' +
+          'Principal repaid on maturing loans is financing, not spending, so it is not in this bar.',
       },
       {
-        key: 'recurrentNonDebt',
-        label: 'Recurrent (ex-debt)',
-        valueB: recurrentNonDebt!,
-        share: pct(recurrentNonDebt!, budget),
+        key: 'recurrentExInterest',
+        label: 'Recurrent (ex-interest)',
+        valueB: uses.recurrentExInterest,
+        share: pct(uses.recurrentExInterest, t),
         gradStart: '#6B7280',
         gradEnd: '#3F4754',
         accent: '#4B5563',
-        note:
-          'Salaries, pensions, operations & maintenance — keeps existing services running.',
+        note: 'Salaries, pensions, operations & maintenance — keeps existing services running.',
       },
       {
         key: 'development',
         label: 'Development',
-        valueB: dev!,
-        share: pct(dev!, budget),
+        valueB: uses.development,
+        share: pct(uses.development, t),
         gradStart: '#3B7251',
         gradEnd: '#1F4A30',
         accent: '#2F6343',
-        note:
-          'New infrastructure and capital projects — roads, hospitals, water systems.',
+        note: 'Capital projects and net lending — roads, hospitals, water systems.',
       },
       {
         key: 'counties',
         label: 'Counties',
-        valueB: counties!,
-        share: pct(counties!, budget),
+        valueB: uses.counties,
+        share: pct(uses.counties, t),
         gradStart: '#4B8564',
         gradEnd: '#295B3E',
         accent: '#3E7655',
         note:
-          'Equitable share transferred to 47 county governments under the ' +
-          'Constitution. NOTE: the budget total this is drawn against is the ' +
-          "Controller of Budget's National-Government gross figure, which " +
-          'EXCLUDES the county equitable share — CoB reports it separately. ' +
-          'So this bar shows the county share beside, not inside, that ' +
-          'envelope: it is not subtracted from the residual, and the shares ' +
-          'therefore add up to more than 100% by exactly this amount.',
+          equitableShareB != null
+            ? `Transfers to the 47 county governments: the equitable share (KES ${fmtT(equitableShareB)}) plus conditional allocations.`
+            : 'Transfers to the 47 county governments: the equitable share plus conditional allocations.',
       },
       {
-        key: 'otherSpend',
-        label: 'Unallocated residual',
-        valueB: otherSpend!,
-        share: pct(otherSpend!, budget),
+        key: 'contingency',
+        label: 'Contingency fund',
+        valueB: uses.contingency,
+        share: pct(uses.contingency, t),
         gradStart: '#B38628',
         gradEnd: '#7D591A',
         accent: '#A6781F',
-        note:
-          'A COMPUTED RESIDUAL, not a sourced line: the approved budget less ' +
-          'the named buckets. It was previously labelled "Other (CFS etc.)", ' +
-          'which read as the Consolidated Fund Services total — it is not. ' +
-          'CFS for FY2025/26 is about KES 2.14T, several times this figure, ' +
-          'and most of CFS is already counted under Debt service above.',
+        note: 'Set aside for urgent and unforeseen needs.',
       },
-    ],
-    [debtService, recurrentNonDebt, dev, counties, otherSpend, budget]
-  );
+    ];
+  }, [uses, equitableShareB]);
 
   if (!data || !budget) {
     return null;
   }
+
+  // Gross less redemption, plus the county equitable share: the measure
+  // budget coverage usually quotes. From API values only — this sentence
+  // used to assert a hard-coded "~KES 4.8T".
+  const quotedScaleB =
+    redemptionB != null && equitableShareB != null ? budget - redemptionB + equitableShareB : null;
 
   return (
     <motion.section
@@ -277,13 +297,11 @@ export default function BudgetFlowHero({ data }: Props) {
               National Budget · {fy}
             </div>
             <h2 className='font-display text-[26px] sm:text-3xl text-gov-dark dark:text-white leading-tight mt-1'>
-              {hasFlow
-                ? `KES ${fmtT(budget)} in, KES ${fmtT(budget)} out`
-                : `KES ${fmtT(budget)} approved for ${fy}`}
+              {`KES ${fmtT(budget)} approved for ${fy}`}
             </h2>
             <p className='text-sm text-neutral-muted mt-1 max-w-2xl'>
               {hasFlow
-                ? "Every shilling the national government plans to spend this fiscal year must first be raised. Here's how the plumbing works — sources on top, uses on the bottom."
+                ? `The approved gross budget, on the Controller of Budget basis. Below, the same year on Treasury's fiscal framework: KES ${fmtT(flowTotal)} of spending and how it is paid for — sources on top, uses on the bottom.`
                 : 'The approved gross budget, on the Controller of Budget basis.'}
             </p>
 
@@ -306,17 +324,32 @@ export default function BudgetFlowHero({ data }: Props) {
                   service, pensions and constitutional salaries, which are charged
                   directly on the Consolidated Fund rather than voted each year.
                 </p>
-                {/* fmtT takes BILLIONS, and both values are already in
-                    billions here — no scaling. */}
-                {redemptionB != null && budget > 0 && (
+                {/* fmtT takes BILLIONS, and every value here is in billions. */}
+                {redemptionB != null && (
                   <p>
                     It <strong>includes</strong> KES {fmtT(redemptionB)} of debt{' '}
                     <em>redemption</em> — repaying maturing debt, not new spending —
                     and <strong>excludes</strong> the county equitable share, which
                     counties receive directly. Take redemption out and the national
-                    figure is about KES {fmtT(budget - redemptionB)}; add the county
-                    share back and you reach the ~KES 4.8T total that is usually
-                    quoted in budget coverage.
+                    figure is about KES {fmtT(budget - redemptionB)}
+                    {quotedScaleB != null && (
+                      <>
+                        ; add the county equitable share (KES {fmtT(equitableShareB)})
+                        back and it is about KES {fmtT(quotedScaleB)}, the scale of
+                        the total usually quoted in budget coverage
+                      </>
+                    )}
+                    .
+                  </p>
+                )}
+                {hasFlow && (
+                  <p>
+                    The flow below is Treasury&apos;s <strong>fiscal framework</strong>{' '}
+                    for the same year: KES {fmtT(flowTotal)} of spending and net
+                    lending, which counts interest but not principal, and counts
+                    transfers to counties. It is a different total from the gross
+                    figure above, so the flow is drawn against its own total rather
+                    than against the gross budget.
                   </p>
                 )}
                 <p>
@@ -352,9 +385,8 @@ export default function BudgetFlowHero({ data }: Props) {
         </div>
       </div>
 
-      {/* Composition withheld — the budget total is sourced (COB gross basis)
-          but the revenue/spending decomposition for this year is not published
-          on that basis yet. Say so rather than drawing bars of zeros. */}
+      {/* Composition withheld — no Budget Summary column supplies this year
+          on one basis. Say so rather than drawing bars of zeros. */}
       {!hasFlow && (
         <div className='px-5 sm:px-8 pb-7 pt-2'>
           <div className='rounded-xl border border-neutral-border/60 bg-surface-sunken/40 px-4 py-4'>
@@ -367,11 +399,10 @@ export default function BudgetFlowHero({ data }: Props) {
                 <span className='font-semibold text-gov-dark dark:text-white'>
                   How {fy} breaks down is not published yet.
                 </span>{' '}
-                The approved total above comes from the Controller of Budget gross
-                basis. The revenue, borrowing and debt-service series for this year
-                have not been published on that same basis, so the sources-and-uses
-                breakdown is withheld rather than estimated. Pick an earlier fiscal
-                year above to see the full flow.
+                The sources-and-uses breakdown is drawn only from Treasury&apos;s
+                Budget Summary, where every part adds up to one total. No edition we
+                can read supplies {fy} on that basis, so the breakdown is withheld
+                rather than assembled from figures measured different ways.
                 <span className='block mt-1.5 text-neutral-muted/80'>
                   A blank breakdown is not a finding that these amounts are zero.
                 </span>
@@ -382,29 +413,24 @@ export default function BudgetFlowHero({ data }: Props) {
       )}
 
       {/* Sources bar */}
-      {hasFlow && (
+      {hasFlow && flowTotal != null && (
       <div className='px-5 sm:px-8 pb-1 pt-2'>
         <div className='flex items-baseline justify-between gap-2 mb-2'>
           <h3 className='text-[13px] font-semibold text-gov-dark dark:text-white tracking-tight'>
             Where the money comes from
           </h3>
-          {/*
-            This said "Total budget", which reads as though the government
-            expects to RECEIVE that much. It does not: the inflow side is the
-            whole financing envelope — what is raised plus what is borrowed —
-            and only the revenue part is money the state expects to collect.
-            Naming both makes the gap between them visible, which is the point
-            of the bar.
-          */}
           <span className='text-[11px] text-neutral-muted'>
-            Total financing KES {fmtT(budget)}
-            {tax != null && nonTax != null && (
-              <> · revenue KES {fmtT(tax + nonTax)}</>
-            )}
+            Total KES {fmtT(flowTotal)} · revenue KES {fmtT(sources!.ordinaryRevenue)}
           </span>
         </div>
-        <FlowBar segments={sources} total={budget} hover={hover} setHover={setHover} />
-        <SegmentLegend segments={sources} hover={hover} setHover={setHover} />
+        <FlowBar segments={sourceSegments} total={flowTotal} hover={hover} setHover={setHover} />
+        <SegmentLegend segments={sourceSegments} hover={hover} setHover={setHover} />
+        {sources!.cashAdjustment < -0.05 && (
+          <p className='mt-1.5 text-[11px] text-neutral-muted'>
+            Treasury&apos;s table records a statistical discrepancy for this year, so
+            the sources shown exceed spending by KES {fmtT(-sources!.cashAdjustment)}.
+          </p>
+        )}
       </div>
       )}
 
@@ -420,20 +446,18 @@ export default function BudgetFlowHero({ data }: Props) {
       )}
 
       {/* Uses bar */}
-      {hasFlow && (
+      {hasFlow && flowTotal != null && (
       <div className='px-5 sm:px-8 pb-7 pt-1'>
         <div className='flex items-baseline justify-between gap-2 mb-2'>
           <h3 className='text-[13px] font-semibold text-gov-dark dark:text-white tracking-tight'>
             Where it actually goes
           </h3>
           <span className='text-[11px] text-neutral-muted'>
-            {debtService == null || debtServicePct == null
-              ? 'Debt service: not yet published for this year'
-              : `Debt service alone: KES ${fmtT(debtService)} (${debtServicePct.toFixed(0)}% of revenue)`}
+            Spending &amp; net lending KES {fmtT(flowTotal)}
           </span>
         </div>
-        <FlowBar segments={uses} total={budget} hover={hover} setHover={setHover} />
-        <SegmentLegend segments={uses} hover={hover} setHover={setHover} />
+        <FlowBar segments={useSegments} total={flowTotal} hover={hover} setHover={setHover} />
+        <SegmentLegend segments={useSegments} hover={hover} setHover={setHover} />
       </div>
       )}
 
@@ -443,18 +467,19 @@ export default function BudgetFlowHero({ data }: Props) {
           <Info size={13} className='mt-0.5 flex-shrink-0 text-gov-forest/70 dark:text-emerald-100/70' />
           <span>
             <strong className='text-gov-dark dark:text-white'>Basis:</strong> the
-            budget total is the Controller of Budget&apos;s National-Government
-            <em> original gross</em> figure, which excludes the county equitable
-            share. The revenue, borrowing and spending components come from the
-            Budget Policy Statement and the Annual Public Debt Management Report,
-            which are measured differently — so the two segments marked{' '}
-            <em>residual</em> are computed balancing items, not published lines,
-            and they absorb that mismatch.{' '}
-            Debt-service figure follows the National Treasury <em>Annual Public Debt
+            headline is the Controller of Budget&apos;s National-Government
+            <em> original gross</em> budget.
+            {hasFlow && citation && (
+              <>
+                {' '}The flow is Treasury&apos;s fiscal framework, {citation}: every
+                segment is a printed line of one column, and each bar adds up to that
+                column&apos;s total.
+              </>
+            )}{' '}
+            Debt-service callout follows the National Treasury <em>Annual Public Debt
             Management Report</em> definition — interest payments{' '}
             <strong>plus</strong> principal redemptions, domestic + external — as a share
-            of tax + non-tax revenue. Year-end actuals arrive from the Controller of
-            Budget in the National Government Budget Implementation Review Report.
+            of tax + non-tax revenue.
           </span>
         </div>
       </div>

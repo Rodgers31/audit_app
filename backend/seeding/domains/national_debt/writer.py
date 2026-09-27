@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
-from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from models import (
@@ -198,6 +197,79 @@ def reconcile_external_creditors(
     return deleted
 
 
+def drop_subsumed_stored_rows(session: Session, records: list[DebtRecord]) -> int:
+    """Delete STORED rows that an incoming aggregate already counts.
+
+    ``fetcher._drop_subsumed_rows`` keeps a subset row out of the payload, and
+    PR #178 removed the 300Bn "Domestic Infrastructure & Green Bonds" row from
+    the fixture. Neither reached the database: the upsert below only touches
+    rows it is given, and ``reconcile_external_creditors`` only deletes
+    EXTERNAL rows. So ``loans.id=382`` — last written 2026-02-21 — went on
+    being summed into the headline, and production published 12,524Bn against
+    the 12,224Bn #178 was meant to leave (issue #235).
+
+    Same registry, same rule, applied to the table: a stored row is deleted
+    only when its aggregate is in THIS run's records for the same entity and
+    category. Without the aggregate present it is the only row there is, and
+    deleting it would understate rather than correct. Runs in the caller's
+    transaction, before the upsert.
+    """
+    from .fetcher import _SUBSUMED_ROWS
+
+    def _key(lender: str | None) -> str:
+        return " ".join((lender or "").lower().split())
+
+    deleted = 0
+    for rule in _SUBSUMED_ROWS:
+        aggregates = {
+            r.entity_name
+            for r in records
+            if _category_name(r.debt_category) == rule.category
+            and rule.aggregate_marker in _key(r.lender)
+        }
+        for entity_name in aggregates:
+            entity = (
+                session.query(Entity)
+                .filter(Entity.canonical_name == entity_name)
+                .first()
+            )
+            if entity is None:
+                continue
+            for loan in (
+                session.query(Loan)
+                .filter(
+                    Loan.entity_id == entity.id,
+                    Loan.debt_category == _resolve_debt_category(rule.category),
+                )
+                .all()
+            ):
+                lender = _key(loan.lender)
+                if rule.aggregate_marker in lender:
+                    continue
+                if not any(m in lender for m in rule.subset_markers):
+                    continue
+                logger.warning(
+                    "Deleting stored loan #%s %r (KES %.1fBn): the incoming "
+                    "aggregate already counts it — %s",
+                    loan.id, loan.lender, float(loan.outstanding or 0) / 1e9,
+                    rule.because,
+                )
+                session.delete(loan)
+                deleted += 1
+    if deleted:
+        session.flush()
+    return deleted
+
+
+def _stored_terms(loan: Loan):
+    """The interest declaration on a stored row's newest provenance entry."""
+    from .interest_terms import TERMS_KEY
+
+    entries = loan.provenance if isinstance(loan.provenance, list) else []
+    latest = next((e for e in reversed(entries) if isinstance(e, dict)), None)
+    return latest.get(TERMS_KEY) if latest else None
+
+
 def write_debt_records(
     session: Session, records: list[DebtRecord], dataset_id: str, job_id: int | None
 ) -> tuple[int, int]:
@@ -231,6 +303,7 @@ def write_debt_records(
     # Reconcile BEFORE the upsert: external rows the creditor pull no longer
     # names must go, or the replacement silently becomes an append.
     reconcile_external_creditors(session, records)
+    drop_subsumed_stored_rows(session, records)
 
     for record in records:
         entity = _get_or_create_entity(session, record.entity_name, record.entity_type)
@@ -257,6 +330,12 @@ def write_debt_records(
             "ingestion_job_id": job_id,
             "ingested_at": datetime.now(timezone.utc).isoformat(),
         }
+        if record.interest_terms is not None:
+            from .interest_terms import TERMS_KEY
+
+            # The API publishes a rate or an annual cost ONLY from this
+            # declaration, read off the newest entry. See interest_terms.
+            provenance_entry[TERMS_KEY] = record.interest_terms
 
         if existing_loans:
             keeper = existing_loans[0]
@@ -289,6 +368,11 @@ def write_debt_records(
                 or keeper.issue_date != record.issue_date
                 or keeper.maturity_date != record.maturity_date
                 or keeper.debt_category is None
+                # A new rate or declaration is churn too. Without this, a run
+                # whose balances did not move appended no provenance entry, and
+                # the row kept publishing whatever its last entry declared.
+                or keeper.interest_rate != record.interest_rate
+                or _stored_terms(keeper) != record.interest_terms
             )
             if changed or zombies:
                 logger.info(
@@ -306,12 +390,18 @@ def write_debt_records(
                 resolved_cat = _resolve_debt_category(record.debt_category)
                 if resolved_cat is not None:
                     keeper.debt_category = resolved_cat
-                if record.interest_rate is not None:
-                    keeper.interest_rate = record.interest_rate
+                # Unconditional. ``if record.interest_rate is not None`` kept
+                # the April-2025 fixture's 14.5%/16% on the domestic rows for
+                # every run after the overlays took over their balances. The
+                # run's rate is published or it is NULL; the stored one is
+                # neither evidence nor a fallback.
+                keeper.interest_rate = record.interest_rate
 
-                provenance = keeper.provenance or []
-                provenance.append(provenance_entry)
-                keeper.provenance = provenance
+                # A NEW list. Appending to the loaded one and assigning it back
+                # hands SQLAlchemy the same object, which a plain JSONB column
+                # does not register as a change — and the API reads the
+                # interest declaration off the newest entry.
+                keeper.provenance = [*(keeper.provenance or []), provenance_entry]
                 updated += 1
         else:
             logger.info(
@@ -324,7 +414,9 @@ def write_debt_records(
                 debt_category=_resolve_debt_category(record.debt_category),
                 principal=record.principal,
                 outstanding=record.outstanding,
-                interest_rate=record.interest_rate or Decimal("0"),
+                # NULL, not 0: ``or Decimal("0")`` published 0.00% and KES 0
+                # annual cost on 45 of 48 production rows (issue #235).
+                interest_rate=record.interest_rate,
                 issue_date=record.issue_date,
                 maturity_date=record.maturity_date,
                 currency=record.currency,
