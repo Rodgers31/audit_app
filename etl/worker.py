@@ -70,6 +70,7 @@ def schedule_worker():
                 next_run = now
             else:
                 next_run = now + timedelta(
+                    # nondeterminism-ok: scheduler jitter delays a source's first run; never published
                     minutes=random.randint(0, int(sc.get("jitter_minutes", 30)))
                 )
             schedule[schedule_key] = {

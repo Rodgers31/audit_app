@@ -35,7 +35,9 @@ except Exception:  # pragma: no cover
     Image = None  # type: ignore
 
 
-# Minimal county list for entity inference; can be expanded or loaded from DB later
+# All 47 counties, for entity inference. Until issue #206 widened the county
+# guard to the whole tree, this held 45: Kwale and Murang'a were missing, so
+# their reports were attributed to no county, or to a neighbour named on page 1.
 COUNTY_NAMES: List[str] = [
     "Nairobi",
     "Mombasa",
@@ -73,12 +75,14 @@ COUNTY_NAMES: List[str] = [
     "Nyandarua",
     "Nyeri",
     "Kirinyaga",
+    "Murang'a",
     "Garissa",
     "Wajir",
     "Mandera",
     "Marsabit",
     "Isiolo",
     "Kilifi",
+    "Kwale",
     "Tana River",
     "Lamu",
     "Taita Taveta",
