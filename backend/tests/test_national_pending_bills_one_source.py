@@ -38,7 +38,11 @@ to KSh 525.9 billion. These comprise of KSh 404.3 billion (76.9 percent) and KSh
 (23.1 percent) for the State Corporations and MDAs, respectively.
 """
 PRINTED_NATIONAL_TOTAL = 525_900_000_000
-NAIROBI_BROP = 86_769_200_000  # BROP 2025 Table 10, Nairobi
+NAIROBI_BROP = 86_769_200_000  # BROP 2025 Table 10, Nairobi — not read (#238)
+#: Counties come from the CoB's year-end report since #238: Nairobi City at
+#: 30 June 2025 (FY 2024/25 Table 2.9) and at 30 June 2026 (FY 2025/26 Table 2.10).
+NAIROBI_COB_2025 = 86_769_200_000
+NAIROBI_COB_2026 = 86_899_380_000
 
 B = 1_000_000_000
 
@@ -107,6 +111,30 @@ def _write_brop(db_session, *, with_counties=True):
     db_session.commit()
 
 
+def _write_cob(db_session, amount, as_at):
+    """A county payload the CoB fetcher builds, through parser and writer."""
+    from seeding.domains.pending_bills.fetcher import county_payables_payload
+    from seeding.domains.pending_bills.parser import parse_pending_bills_payload
+    from seeding.domains.pending_bills.writer import write_pending_bills
+
+    year = int(as_at[:4])
+    entry = {
+        "county": "Nairobi", "status": "reported", "withheld_reason": None,
+        "total_millions": str(Decimal(amount) / Decimal(1_000_000)),
+        "assembly_printed": True, "cob_marked_inconsistent": False,
+        "chapter_total_millions": None, "chapter_table": None, "chapter_page": None,
+        "as_at": as_at, "fiscal_year": f"FY {year - 1}/{str(year)[2:]}",
+        "table": "Table 2.10", "page": 52,
+    }
+    payload = county_payables_payload([entry], "https://cob.go.ke/download/cbirr/?wpdmdl=1")
+    write_pending_bills(
+        db_session, parse_pending_bills_payload(payload),
+        source_url=payload["source_url"], source_title=payload["source_title"],
+        publication=payload["publication"], publisher=payload["publisher"],
+    )
+    db_session.commit()
+
+
 def _write_fixture(db_session):
     """The night the BROP is unreachable: the fetcher's Strategy 2."""
     from seeding.domains.pending_bills.parser import parse_pending_bills_payload
@@ -152,21 +180,47 @@ def test_the_national_rows_sum_to_the_brops_printed_total(client, db_session, en
     assert sorted(r["total_pending"] for r in rows) == [121_600_000_000, 404_300_000_000]
 
 
-def test_the_totals_are_the_brop_and_nothing_else(client, db_session, entities):
+def test_the_totals_are_the_sources_and_nothing_else(client, db_session, entities):
+    """National from the BROP at 30 June 2025, counties from the CoB at the
+    same date: one stock, so one total."""
     _write_brop(db_session)
+    _write_cob(db_session, NAIROBI_COB_2025, "2025-06-30")
     _write_fixture(db_session)
 
     pb = _get(client, "/api/v1/pending-bills")["summary"]
     summary = _get(client, "/api/v1/pending-bills/summary")
 
-    assert pb["county_total"] == NAIROBI_BROP
-    assert pb["total_pending"] == PRINTED_NATIONAL_TOTAL + NAIROBI_BROP
-    assert summary["total_pending_amount"] == PRINTED_NATIONAL_TOTAL + NAIROBI_BROP
+    assert pb["county_total"] == NAIROBI_COB_2025
+    assert pb["total_pending"] == PRINTED_NATIONAL_TOTAL + NAIROBI_COB_2025
+    assert pb["as_at"] == "2025-06-30"
+    assert summary["total_pending_amount"] == PRINTED_NATIONAL_TOTAL + NAIROBI_COB_2025
     # The fixture's 308.1B / 97.3B split was the only eligibility figure there
-    # was. The BROP prints none, so there is none — absent, not zero.
+    # was. Neither source prints one, so there is none — absent, not zero.
     assert summary["eligible_total"] is None
     assert summary["ineligible_total"] is None
-    assert sum(t["total_amount"] for t in summary["trend"]) == PRINTED_NATIONAL_TOTAL + NAIROBI_BROP
+    assert sum(t["total_amount"] for t in summary["trend"]) == PRINTED_NATIONAL_TOTAL + NAIROBI_COB_2025
+
+
+def test_no_total_and_no_trend_across_two_dates(client, db_session, entities):
+    """The state after #238 deploys and before the national half is read from
+    the 2026 BROP: national at 30 June 2025, counties at 30 June 2026. Their
+    sum is two days, not a stock, and a fiscal-year trend drew it as a fall
+    from 525.9B to 86.9B."""
+    _write_brop(db_session)
+    _write_cob(db_session, NAIROBI_COB_2026, "2026-06-30")
+
+    pb = _get(client, "/api/v1/pending-bills")["summary"]
+    summary = _get(client, "/api/v1/pending-bills/summary")
+
+    assert pb["national_total"] == PRINTED_NATIONAL_TOTAL
+    assert pb["county_total"] == NAIROBI_COB_2026
+    assert pb["total_pending"] is None
+    assert (pb["national_as_at"], pb["county_as_at"], pb["as_at"]) == (
+        "2025-06-30", "2026-06-30", None
+    )
+    assert summary["total_pending_amount"] is None
+    assert summary["trend"] == []
+    assert summary["trend_absent_reason"] == "national_and_county_stated_at_different_dates"
 
 
 def test_a_fixture_payload_writes_no_national_row(db_session, entities):
@@ -187,7 +241,10 @@ def _loan(entity, lender, amount, provenance):
     )
 
 
-STAMPED = {"source": "cob_pending_bills_etl", "publication": "treasury_brop", "fiscal_year": "FY 2024/25"}
+STAMPED = {"source": "cob_pending_bills_etl", "publication": "treasury_brop",
+           "fiscal_year": "FY 2024/25", "as_at": "2025-06-30"}
+COB_STAMPED = {"source": "cob_pending_bills_etl", "publication": "cob_cbirr_year_end",
+               "fiscal_year": "FY 2024/25", "as_at": "2025-06-30", "category": "county"}
 FIXTURE_PROV = {"source": "cob_pending_bills_etl", "publication": None, "fiscal_year": "FY2024/25",
                 "eligible_pending": 62_500_000_000.0, "ineligible_pending": 27_200_000_000.0}
 
@@ -202,7 +259,7 @@ def test_rows_already_written_from_the_fixture_are_not_counted(client, db_sessio
               121_600_000_000, {**STAMPED, "category": "mda"}),
         _loan(national, "Pending Bills — MDAs (Ministry of Health)", 89_700_000_000, FIXTURE_PROV),
         _loan(nairobi, "Pending Bills — County Governments (Nairobi County)",
-              NAIROBI_BROP, {**STAMPED, "category": "county"}),
+              NAIROBI_COB_2025, COB_STAMPED),
     ])
     db_session.commit()
 
@@ -212,7 +269,7 @@ def test_rows_already_written_from_the_fixture_are_not_counted(client, db_sessio
     assert body["source"] != "Controller of Budget Reports"
 
     summary = _get(client, "/api/v1/pending-bills/summary")
-    assert summary["total_pending_amount"] == PRINTED_NATIONAL_TOTAL + NAIROBI_BROP
+    assert summary["total_pending_amount"] == PRINTED_NATIONAL_TOTAL + NAIROBI_COB_2025
     assert summary["eligible_total"] is None
 
 
@@ -223,36 +280,57 @@ def test_rows_already_written_from_the_fixture_are_not_counted(client, db_sessio
 
 def test_no_total_without_a_published_national_figure(client, db_session, entities):
     """The window after deploy, before the nightly re-stamps the BROP rows:
-    counties are published, national is not. 176.9B is not "the total"."""
+    counties are published, national is not. 172.5B is not "the total"."""
     national, nairobi = entities
     db_session.add_all([
         _loan(national, "Pending Bills — MDAs (National Government — MDAs)",
               121_600_000_000, {"source": "cob_pending_bills_etl", "fiscal_year": "FY 2024/25"}),
         _loan(nairobi, "Pending Bills — County Governments (Nairobi County)",
-              NAIROBI_BROP, {**STAMPED, "category": "county"}),
+              NAIROBI_COB_2025, COB_STAMPED),
     ])
     db_session.commit()
 
     pb = _get(client, "/api/v1/pending-bills")["summary"]
     assert pb["national_total"] is None
-    assert pb["county_total"] == NAIROBI_BROP
+    assert pb["county_total"] == NAIROBI_COB_2025
     assert pb["total_pending"] is None
     assert _get(client, "/api/v1/pending-bills/summary")["total_pending_amount"] is None
 
 
-def test_no_total_across_two_brop_editions(client, db_session, entities):
+def test_no_total_across_two_dates_even_within_one_fiscal_year_label(client, db_session, entities):
     national, nairobi = entities
     db_session.add_all([
         _loan(national, "Pending Bills — MDAs (National Government — MDAs)",
-              121_600_000_000, {**STAMPED, "fiscal_year": "FY 2023/24"}),
+              121_600_000_000, {**STAMPED, "category": "mda", "as_at": "2024-06-30"}),
         _loan(nairobi, "Pending Bills — County Governments (Nairobi County)",
-              NAIROBI_BROP, {**STAMPED, "category": "county"}),
+              NAIROBI_COB_2025, COB_STAMPED),
     ])
     db_session.commit()
 
     pb = _get(client, "/api/v1/pending-bills")["summary"]
     assert pb["national_total"] == 121_600_000_000
-    assert pb["county_total"] == NAIROBI_BROP
+    assert pb["county_total"] == NAIROBI_COB_2025
+    assert pb["total_pending"] is None
+
+
+def test_no_total_when_a_row_states_no_date(client, db_session, entities):
+    """Production's BROP rows were written before rows carried ``as_at``. Until
+    the nightly re-stamps them there is no telling which day they are for."""
+    national, nairobi = entities
+    undated = {k: v for k, v in STAMPED.items() if k != "as_at"}
+    db_session.add_all([
+        _loan(national, "Pending Bills — MDAs (National Government — MDAs)",
+              121_600_000_000, {**undated, "category": "mda"}),
+        _loan(nairobi, "Pending Bills — County Governments (Nairobi County)",
+              NAIROBI_COB_2025, COB_STAMPED),
+    ])
+    db_session.commit()
+
+    pb = _get(client, "/api/v1/pending-bills")["summary"]
+    assert pb["national_total"] == 121_600_000_000
+    # Both halves published — the total is withheld for the missing date,
+    # not because one half is absent.
+    assert pb["county_total"] == NAIROBI_COB_2025
     assert pb["total_pending"] is None
 
 

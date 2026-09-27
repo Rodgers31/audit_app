@@ -1,12 +1,16 @@
-"""Fetcher for pending bills data from National Treasury BROP.
+"""Fetchers for pending bills: national from the BROP, counties from the CoB.
 
-Strategy (in order):
+National Government (``fetch_pending_bills_payload``), in order:
 1. If live_pdf_fetch_enabled AND treasury_brop_url is configured,
-   download and parse the BROP PDF — gives the para-18 national
-   aggregate + Table 10 per-county breakdown.
+   download and parse the BROP PDF — the para-18 national aggregate.
+   Its county table is not used: it reprints the Controller of Budget's.
 2. If pending_bills_dataset_url is configured, load from that
-   fixture / API.
+   fixture / API (the writer writes none of it).
 3. Otherwise, run the live ETL extractor against COB website.
+
+Counties (``fetch_county_payables_payload``): the trade payables table of the
+Controller of Budget's newest full-year County Governments Budget
+Implementation Review Report, stated at 30 June (#238).
 
 Why not the COB NG-BIRR
 -----------------------
@@ -24,6 +28,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import tempfile
 from decimal import Decimal
 from pathlib import Path
@@ -35,9 +40,9 @@ from ...http_client import SeedingHttpClient
 logger = logging.getLogger("seeding.pending_bills.fetcher")
 
 #: What a Treasury Budget Review and Outlook Paper payload declares itself as.
-#: ``services.publication_gate.PENDING_BILLS_PUBLICATION`` is the same string;
-#: it is the only publication pending bills — national or county — are read
-#: from, and the only payload the writer writes.
+#: ``services.publication_gate.NATIONAL_PENDING_BILLS_PUBLICATION`` is the
+#: same string; it is the only publication the National Government's pending
+#: bills are read from.
 BROP_PUBLICATION = "treasury_brop"
 BROP_PUBLISHER = "National Treasury"
 
@@ -242,10 +247,7 @@ def _brop_result_to_payload(
     Emits:
     * One ``state_corporation`` record for the SOEs aggregate.
     * One ``mda`` record for the MDAs aggregate.
-    * One ``county`` record per parsed county row.
-    * A ``summary`` block with grand totals so the parser's
-      summary-fallback path can also produce useful aggregates if
-      the per-row records get filtered out downstream.
+    * A ``summary`` block with the national total.
     """
     pending_bills: List[Dict[str, Any]] = []
     fy_label = result.fiscal_year_label
@@ -254,6 +256,9 @@ def _brop_result_to_payload(
     if result.national:
         nb = result.national
         as_at = nb.as_at_date.isoformat()
+        # Stamped only when the paragraph printed it — see
+        # NationalPendingBills.as_at_stated.
+        stated_as_at = as_at if getattr(nb, "as_at_stated", False) else None
         pending_bills.append(
             {
                 "entity_name": "National Government — State Corporations",
@@ -261,6 +266,7 @@ def _brop_result_to_payload(
                 "category": "state_corporation",
                 "fiscal_year": fy_label,
                 "total_pending": str(nb.state_corporations),
+                "as_at": stated_as_at,
                 "notes": f"Treasury BROP para-18 aggregate as at {as_at}",
             }
         )
@@ -271,43 +277,21 @@ def _brop_result_to_payload(
                 "category": "mda",
                 "fiscal_year": fy_label,
                 "total_pending": str(nb.mdas),
+                "as_at": stated_as_at,
                 "notes": f"Treasury BROP para-18 aggregate as at {as_at}",
             }
         )
 
-    for cb in result.counties:
-        breakdown_parts = []
-        if cb.executive_subtotal is not None:
-            breakdown_parts.append(
-                f"Exec subtotal {float(cb.executive_subtotal):,.0f}"
-            )
-        if cb.assembly_subtotal is not None:
-            breakdown_parts.append(
-                f"Assembly subtotal {float(cb.assembly_subtotal):,.0f}"
-            )
-        if cb.fy_budget is not None:
-            breakdown_parts.append(
-                f"FY budget {float(cb.fy_budget):,.0f}"
-            )
-        notes = "Treasury BROP Table 10"
-        if breakdown_parts:
-            notes += " — " + "; ".join(breakdown_parts)
-        # Match the fixture's "{County} County" entity-name format —
-        # the writer's _get_or_create_entity does an exact
-        # canonical_name match first, and that's the format the
-        # bootstrap-seeded county entities use. Earlier seed run
-        # 24966698677 had this code emitting "County Government of
-        # X" which fell through to the ILIKE fallback and failed for
-        # all 46 counties.
-        pending_bills.append(
-            {
-                "entity_name": f"{cb.county} County",
-                "entity_type": "county",
-                "category": "county",
-                "fiscal_year": fy_label,
-                "total_pending": str(cb.total),
-                "notes": notes,
-            }
+    # No county records. The BROP's county table is a reprint of the
+    # Controller of Budget's — Table 10 of the 2025 paper is the CoB's FY
+    # 2024/25 table less Narok, Table 11 of the 2026 paper its nine-month
+    # table — and counties are read from the CoB's year-end report directly
+    # (fetch_county_payables_payload, #238).
+    if result.counties:
+        logger.info(
+            "BROP: %d county row(s) not used — county pending bills are read "
+            "from the Controller of Budget's year-end report",
+            len(result.counties),
         )
 
     # Summary aggregates — useful for headline cards and as a
@@ -316,10 +300,6 @@ def _brop_result_to_payload(
     if result.national:
         summary["total_national"] = str(result.national.total)
         summary["as_at_date"] = result.national.as_at_date.isoformat()
-    if result.counties:
-        summary["total_county"] = str(
-            sum((c.total for c in result.counties), Decimal(0))
-        )
 
     return {
         "pending_bills": pending_bills,
@@ -378,3 +358,242 @@ def _run_live_extraction() -> dict[str, Any]:
             "source_title": "Controller of Budget Reports",
             "extraction_error": str(exc),
         }
+
+
+# --------------------------------------------------------------------------
+# counties: the Controller of Budget's year-end report
+# --------------------------------------------------------------------------
+
+#: What a county payables payload declares itself as. The same string as
+#: ``services.publication_gate.COUNTY_PENDING_BILLS_PUBLICATION``.
+COB_YEAR_END_PUBLICATION = "cob_cbirr_year_end"
+COB_PUBLISHER = "Office of the Controller of Budget (OCOB)"
+
+#: A county's chapter table and its Table 2.10 row are the same figure printed
+#: twice, once in shillings and once in millions to the cent. Below KSh 1m the
+#: difference is rounding (Vihiga 0.60m, Migori 0.25m); above it the report
+#: disagrees with itself (Uasin Gishu 327.72m, Narok 57.00m) and says so here.
+_CHAPTER_NOTE_THRESHOLD_MILLIONS = Decimal("1")
+
+#: A slug that names a sub-period is a quarterly edition. Every full-year
+#: edition on the listing names none — "for-the-financial-year-2025-26",
+#: "fy-2024-25", "annual-...-fy-2020-21" — and every quarterly one names its
+#: part of the year.
+_SUB_PERIOD_SLUG_RE = re.compile(r"quarter|half|nine-months|months", re.IGNORECASE)
+
+
+class CountyPayablesUnavailable(RuntimeError):
+    """The year-end county payables could not be read this run."""
+
+
+def year_end_cbirr_links(html: str) -> List[str]:
+    """Full-year county CBIRR download links on a COB listing, newest first.
+
+    Newest by WPDM id, which only ever grows. A quarterly edition is never
+    returned: the county page publishes the stock at 30 June only, and the
+    parser refuses any table stated at another date as well.
+    """
+    from ...cob_discovery import _WPDM_RE
+
+    found: Dict[str, int] = {}
+    for m in _WPDM_RE.finditer(html or ""):
+        url = m.group("url")
+        slug = url.lower()
+        if "budget-implementation-review" not in slug or "county" not in slug:
+            continue
+        if _SUB_PERIOD_SLUG_RE.search(slug.split("?")[0]):
+            continue
+        found[url] = max(found.get(url, 0), int(m.group("id")))
+    return [url for url, _id in sorted(found.items(), key=lambda kv: kv[1], reverse=True)]
+
+
+def _reader_notes(entry: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """What the report says about one county's figure, as note codes."""
+    notes: List[Dict[str, Any]] = []
+    if entry.get("cob_marked_inconsistent"):
+        notes.append({"code": "cob_marked_inconsistent", "table": entry["table"]})
+    if not entry.get("assembly_printed"):
+        notes.append({"code": "assembly_not_printed", "table": entry["table"]})
+    chapter = entry.get("chapter_total_millions")
+    total = entry.get("total_millions")
+    if chapter is not None and total is not None:
+        if abs(Decimal(chapter) - Decimal(total)) >= _CHAPTER_NOTE_THRESHOLD_MILLIONS:
+            notes.append(
+                {
+                    "code": "chapter_table_differs",
+                    "table": entry["table"],
+                    "chapter_table": entry.get("chapter_table"),
+                    "chapter_page": entry.get("chapter_page"),
+                    "chapter_total": str(Decimal(chapter) * Decimal(1_000_000)),
+                }
+            )
+    return notes
+
+
+def county_payables_payload(
+    entries: List[Dict[str, Any]], pdf_url: str
+) -> Dict[str, Any]:
+    """The pending-bills payload for one year-end report's county table.
+
+    One record per county the report states a figure for. A county it does
+    not (Nandi at 30 June 2026) or whose row the parser withheld gets none,
+    and the writer then stops publishing any older figure for it: absence,
+    never last year's number.
+    """
+    records: List[Dict[str, Any]] = []
+    fiscal_year = entries[0]["fiscal_year"] if entries else None
+    county_table = {
+        "as_at": entries[0]["as_at"] if entries else None,
+        "table": entries[0]["table"] if entries else None,
+        "not_reported": sorted(
+            e["county"] for e in entries if e.get("status") == "not_reported"
+        ),
+        "withheld": {
+            e["county"]: e.get("withheld_reason")
+            for e in entries
+            if e.get("status") == "withheld"
+        },
+    }
+    for entry in entries:
+        if entry.get("status") != "reported":
+            logger.info(
+                "county payables: no figure for %s (%s%s)",
+                entry.get("county"),
+                entry.get("status"),
+                f": {entry['withheld_reason']}" if entry.get("withheld_reason") else "",
+            )
+            continue
+        total_kes = Decimal(entry["total_millions"]) * Decimal(1_000_000)
+        records.append(
+            {
+                "entity_name": f"{entry['county']} County",
+                "entity_type": "county",
+                "category": "county",
+                "fiscal_year": entry["fiscal_year"],
+                "total_pending": str(total_kes),
+                "printed_zero": total_kes == 0,
+                "as_at": entry["as_at"],
+                "table": entry["table"],
+                "page": entry["page"],
+                "reader_notes": _reader_notes(entry),
+                "notes": (
+                    f"Controller of Budget CBIRR {entry['fiscal_year']}, "
+                    f"{entry['table']} (PDF p.{entry['page']}), trade payables "
+                    f"as at {entry['as_at']}"
+                ),
+            }
+        )
+    return {
+        "pending_bills": records,
+        "source_url": pdf_url,
+        "source_title": (
+            "Controller of Budget — County Governments Budget Implementation "
+            f"Review Report, {fiscal_year}"
+        ),
+        "publication": COB_YEAR_END_PUBLICATION,
+        "publisher": COB_PUBLISHER,
+        "county_table": county_table,
+    }
+
+
+def fetch_county_payables_payload(
+    client: SeedingHttpClient, settings: SeedingSettings
+) -> Optional[Dict[str, Any]]:
+    """County pending bills from the newest full-year CBIRR.
+
+    Returns None when live PDF fetching is switched off — nothing is read and
+    nothing is written, so the published rows stand. Raises
+    :class:`CountyPayablesUnavailable` when the report cannot be found, fetched
+    or read whole; the caller records it as a failure, because a night that
+    publishes no new county figure must not look like one that did.
+
+    Only the NEWEST full-year edition is tried. Falling back to an older one
+    on a bad night would republish last year's stock as if it were current.
+    """
+    if not settings.live_pdf_fetch_enabled:
+        logger.info("live_pdf_fetch_enabled is off; county payables not read")
+        return None
+
+    from ...parse_cache import parse_with_cache
+    from ...pdf_download import get_or_download_pdf
+    from ...pdf_parsers import CbirrYearEndPayablesParser
+    from ..counties_budget.fetcher import (
+        _BROWSER_UA,
+        _COB_COUNTY_BIRR_URLS,
+        _COB_HTML_HEADERS,
+        _pdf_stack_versions,
+    )
+
+    links: List[str] = []
+    reach_errors: List[str] = []
+    for page_url in _COB_COUNTY_BIRR_URLS:
+        try:
+            response = client.get(
+                page_url, raise_for_status=True, headers=_COB_HTML_HEADERS, timeout=60.0
+            )
+        except Exception as exc:
+            reach_errors.append(f"{page_url}: {type(exc).__name__}: {exc}")
+            continue
+        links = year_end_cbirr_links(response.text)
+        if links:
+            break
+    if not links:
+        raise CountyPayablesUnavailable(
+            "no full-year county CBIRR link found on the COB listing"
+            + (f" ({'; '.join(reach_errors)})" if reach_errors else "")
+        )
+
+    pdf_url = links[0]
+    logger.info("county payables: reading %s", pdf_url)
+    try:
+        pdf_path = get_or_download_pdf(
+            client,
+            pdf_url,
+            cache_dir=Path(settings.cache_path) / "pdfs",
+            ttl_seconds=settings.pdf_cache_ttl_seconds,
+            max_seconds=settings.pdf_download_timeout_seconds,
+            max_bytes=settings.pdf_download_max_bytes,
+            headers={"User-Agent": _BROWSER_UA, "Accept": "application/pdf,*/*;q=0.8"},
+        )
+        parser = CbirrYearEndPayablesParser(pdf_path)
+        entries = parse_with_cache(
+            pdf_path,
+            cache_dir=Path(settings.cache_path) / "pdfs",
+            kind="cob_cbirr_year_end_payables",
+            parse_fn=parser.parse,
+            enabled=settings.parse_cache_enabled,
+            key_extra=_pdf_stack_versions(),
+        )
+    except Exception as exc:
+        raise CountyPayablesUnavailable(f"{pdf_url}: {type(exc).__name__}: {exc}") from exc
+
+    check_county_payables_entries(entries, pdf_url)
+    return county_payables_payload(entries, pdf_url)
+
+
+def check_county_payables_entries(entries: List[Dict[str, Any]], pdf_url: str) -> None:
+    """Refuse a parse the writer must not act on.
+
+    * Not 47 counties.
+    * No county stated. The writer would write nothing and retire nothing, so
+      last year's rows would stand as current while the run reported success
+      (adversarial pass, #238).
+    * A table dated for another year than the edition the link names: a
+      report that also lists last year's county table must not have it
+      republished as this year's.
+    """
+    if len(entries) != 47:
+        raise CountyPayablesUnavailable(
+            f"{pdf_url}: parse returned {len(entries)} counties, not 47"
+        )
+    if not any(e.get("status") == "reported" for e in entries):
+        raise CountyPayablesUnavailable(f"{pdf_url}: no county's figure could be read")
+    fy = re.findall(r"(20\d{2})-(\d{2})(?!\d)", pdf_url.split("?")[0])
+    if fy:
+        expected_end = int(fy[-1][0]) + 1
+        years = {str(e.get("as_at", ""))[:4] for e in entries}
+        if years != {str(expected_end)}:
+            raise CountyPayablesUnavailable(
+                f"{pdf_url}: the link names FY {fy[-1][0]}/{fy[-1][1]} but the "
+                f"county table is stated at {sorted(years)}"
+            )

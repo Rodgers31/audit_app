@@ -343,7 +343,8 @@ def _county_reference_data_superseded(session: Session) -> Tuple[bool, str]:
     ``BudgetLine``      formerly written here (modelled sector split); no
         longer written — the counties_budget domain owns county budget lines.
     ``Loan``            formerly written here (modelled county debt and
-        pending bills); no longer written — pending bills are the BROP's.
+        pending bills); no longer written — pending bills are the pending_bills
+        domain's (national: Treasury BROP; counties: CoB year-end CBIRR).
     ``PopulationData``  via ``_upsert_population``.
     ``entity.meta``     ``metrics`` (read by /counties for revenue, transfers,
         development budget and pending bills), plus ``economic_profile``,
@@ -1784,7 +1785,7 @@ def initialize_reference_data(
             # 15% of that) and pending bills (8%) all came out of this loop on
             # a fresh database, where they competed with — and in a period
             # without live rows, stood in for — the Controller of Budget's
-            # CBIRR and the Treasury's BROP. Those two domains own county
+            # CBIRR. The counties_budget and pending_bills domains own county
             # money; this loop keeps the reference skeleton.
 
             # Seed PopulationData table (Census 2019)

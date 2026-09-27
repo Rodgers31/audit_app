@@ -81,7 +81,7 @@ _NATIONAL_PARA_RE = re.compile(
 # "as at 30th June 2025" → date(2025, 6, 30) — gives the records a
 # stable measurement date for the writer's natural key.
 _AS_AT_RE = re.compile(
-    r"as\s+at\s+(?P<day>\d{1,2})(?:st|nd|rd|th)?\s+(?P<month>"
+    r"as\s+(?:at|of)\s+(?P<day>\d{1,2})(?:st|nd|rd|th)?\s+(?P<month>"
     r"January|February|March|April|May|June|July|August|"
     r"September|October|November|December)\s+(?P<year>\d{4})",
     re.IGNORECASE,
@@ -122,6 +122,12 @@ class NationalPendingBills:
     total: Decimal
     state_corporations: Decimal
     mdas: Decimal
+    #: True only when the paragraph itself prints the date. An inferred
+    #: 30 June is fine as a natural key, but it is not what the publication
+    #: says, so it is not stamped as the figure's as-at date (#238): the
+    #: national + county total is published only when both halves STATE one
+    #: day.
+    as_at_stated: bool = False
 
 
 @dataclass(frozen=True)
@@ -227,7 +233,9 @@ def _detect_national_paragraph(
         mdas = _parse_kes_billion(m.group("mdas"))
         if total is None or soes is None or mdas is None:
             continue
-        date_match = _AS_AT_RE.search(text)
+        # The paragraph's own date, not any date on the page: a page can
+        # carry another paragraph "as at 31st March".
+        date_match = _AS_AT_RE.search(m.group(0))
         if date_match:
             as_at = date(
                 int(date_match.group("year")),
@@ -241,6 +249,7 @@ def _detect_national_paragraph(
             total=total,
             state_corporations=soes,
             mdas=mdas,
+            as_at_stated=date_match is not None,
         )
     return None
 

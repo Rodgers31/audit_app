@@ -23,7 +23,9 @@ from services.publication_gate import (
     count_withheld_by_reason,
     county_debt_instrument_failure,
     county_pending_bills,
+    county_pending_bills_details,
     county_pending_bills_row_is_published,
+    pending_bills_row_as_at,
     pending_bills_row_amount,
     pending_bills_row_is_published,
     file_source_provenance_failure,
@@ -759,6 +761,83 @@ def county_revenue_block(
     }
 
 
+def _county_pending_bills_absence(db: Session, entity) -> Optional[Dict[str, Any]]:
+    """Why a county has no pending-bills figure, when the report says why.
+
+    The newest CoB year-end report the published county rows came from lists
+    the counties it states no figure for (``not_reported`` — Nandi at 30 June
+    2026) and the rows the parser withheld. That list is kept on the report's
+    source document, since a county with no figure has no row. None — a bare
+    absence — for a county the report says nothing about, or when no county
+    figure is published at all.
+    """
+    from models import DebtCategory
+
+    doc_ids = {
+        loan.source_document_id
+        for loan in db.query(DBLoan)
+        .filter(DBLoan.debt_category == DebtCategory.PENDING_BILLS)
+        .all()
+        if loan.source_document_id
+        and county_pending_bills_row_is_published(loan)
+        and _pending_bills_provenance(loan).get("category") == "county"
+    }
+    if not doc_ids:
+        return None
+    tables = []
+    for doc in db.query(DBSourceDocument).filter(DBSourceDocument.id.in_(doc_ids)).all():
+        meta = doc.meta if isinstance(doc.meta, dict) else {}
+        table = meta.get("county_payables")
+        if isinstance(table, dict) and isinstance(table.get("as_at"), str):
+            tables.append(table)
+    if not tables:
+        return None
+    newest = max(tables, key=lambda t: t["as_at"])
+    name = (getattr(entity, "canonical_name", "") or "").removesuffix(" County").strip()
+    if name in (newest.get("not_reported") or []):
+        reason = "not_reported"
+    elif name in (newest.get("withheld") or {}):
+        reason = "withheld"
+    else:
+        return None
+    return {"reason": reason, "as_at": newest["as_at"], "table": newest.get("table")}
+
+
+def _county_pending_bills_fields(
+    loans, pending_bills: Optional[float], absence: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
+    """``pending_bills_as_at`` / ``_source`` / ``_notes`` / ``_absence``.
+
+    Read from the same published rows as the figure, so a date is never shown
+    beside an absent figure or the other way round. ``_absence`` is the
+    report's own reason for NO figure (see
+    :func:`_county_pending_bills_absence`), and only ever set when there is
+    none.
+    """
+    if pending_bills is None:
+        return {
+            "pending_bills_as_at": None,
+            "pending_bills_source": None,
+            "pending_bills_notes": [],
+            "pending_bills_absence": absence,
+        }
+    details = county_pending_bills_details(loans)
+    return {
+        "pending_bills_as_at": details["as_at"],
+        "pending_bills_source": {
+            "publisher": "Controller of Budget",
+            "title": (
+                "County Governments Budget Implementation Review Report"
+                + (f", {details['fiscal_year']}" if details["fiscal_year"] else "")
+            ),
+            "table": details["table"],
+            "url": details["source_url"],
+        },
+        "pending_bills_notes": details["notes"],
+        "pending_bills_absence": None,
+    }
+
+
 def county_debt_provenance_label(loans, total_debt: Optional[float]) -> str:
     """``data_sources.debt`` for a county, from the rows actually published.
 
@@ -766,17 +845,20 @@ def county_debt_provenance_label(loans, total_debt: Optional[float]) -> str:
     publisher column — the BROP's source document carried the Controller of
     Budget as publisher for months.
     """
-    brop = [loan for loan in loans or [] if county_pending_bills_row_is_published(loan)]
-    if brop:
-        prov = brop[0].provenance if isinstance(brop[0].provenance, dict) else {}
-        fy = prov.get("fiscal_year")
+    details = county_pending_bills_details(loans)
+    if county_pending_bills(loans) is not None:
         pending = (
-            "Pending bills: National Treasury — Budget Review and Outlook Paper"
-            + (f" ({fy})" if fy else "")
-            + ", county pending-bills table"
+            "Pending bills: Controller of Budget — County Governments Budget "
+            "Implementation Review Report"
+            + (f" ({details['fiscal_year']})" if details["fiscal_year"] else "")
+            + (f", {details['table']}" if details["table"] else "")
+            + (f", trade payables as at {details['as_at']}" if details["as_at"] else "")
         )
     else:
-        pending = "Pending bills: not reported for this county in the Treasury BROP"
+        pending = (
+            "Pending bills: no Controller of Budget year-end figure is published "
+            "for this county"
+        )
     debt = (
         "County debt: not published — no county borrowing figure is traced to "
         "a publication"
@@ -914,7 +996,8 @@ def county_financial_health(
                 ),
                 "observed": round(share, 1),
                 "basis": (
-                    f"pending bills as a share of budget, Treasury BROP; zero "
+                    f"pending bills as a share of budget, Controller of Budget "
+                    f"year-end report; zero "
                     f"at {_PENDING_BILLS_SEVERE_SHARE:.0f}% or above"
                 ),
             }
@@ -3271,7 +3354,7 @@ async def get_counties(fiscal_year: Optional[str] = None):
 
                 total_debt = county_debt_total(loans)
 
-                # The Treasury BROP's per-county figure, through the one reader
+                # The CoB year-end per-county figure, through the one reader
                 # every endpoint shares (services/publication_gate.py). A rung
                 # summing any budget line whose category mentioned "pending"
                 # used to sit in front of it here and nowhere else, so the list
@@ -4381,6 +4464,17 @@ async def get_county_comprehensive(
                 "debt": {
                     "total_debt": total_debt,
                     "pending_bills": pending_bills,
+                    # The day the figure is a stock on and what the report
+                    # says about it, both from the rows behind it; null / []
+                    # when no figure is published (#238).
+                    **_county_pending_bills_fields(
+                        loans, pending_bills,
+                        absence=(
+                            _county_pending_bills_absence(db, entity)
+                            if pending_bills is None
+                            else None
+                        ),
+                    ),
                     "debt_to_budget_ratio": (
                         round(total_debt / total_allocated * 100, 1)
                         if total_debt is not None and total_allocated > 0
@@ -4488,7 +4582,7 @@ async def get_county_comprehensive(
                     # From the rows this response published, not asserted.
                     # It read "Modelled — … not traced to a county or National
                     # Treasury publication" for every county while the pending
-                    # bills beside it were the Treasury BROP's own figures.
+                    # bills beside it were a publication's own figures.
                     "debt": county_debt_provenance_label(loans, total_debt),
                     "population": "Kenya National Bureau of Statistics (KNBS) Census 2019",
                 },
@@ -10523,9 +10617,10 @@ def _pending_bills_provenance(loan) -> Dict[str, Any]:
 def _published_pending_bills(db: Session) -> Tuple[List[tuple], Dict[str, Any]]:
     """The pending-bills rows a reader may publish, and the totals they make.
 
-    One rule for every row, national or county: it declares the Treasury BROP
-    (:func:`pending_bills_row_is_published`) and carries a real amount
-    (:func:`pending_bills_row_amount`). ``/pending-bills`` and the debt page's
+    One rule for every row: it declares the publication for its side — the
+    Treasury BROP for a national line, the Controller of Budget's year-end
+    report for a county (:func:`pending_bills_row_is_published`) — and carries
+    a real amount (:func:`pending_bills_row_amount`). ``/pending-bills`` and the debt page's
     ``/pending-bills/summary`` both read through here, so they cannot disagree.
 
     National rows used to be summed whatever wrote them. Production served
@@ -10537,10 +10632,14 @@ def _published_pending_bills(db: Session) -> Tuple[List[tuple], Dict[str, Any]]:
     Returns ``(rows, totals)``. Each row is ``(loan, entity_name, entity_type,
     amount)``. ``totals`` holds ``national``, ``county`` and ``total``, each
     None when nothing is published for it, and ``unpublished`` — rows present
-    but withheld. ``total`` is the two halves added only when BOTH are
-    published from ONE BROP edition: 176.9B of county bills is not "the total"
-    on a night the national lines are withheld, and two editions are two as-at
-    dates.
+    but withheld, and ``as_at`` — the one date every published row is a stock
+    on, or None. ``total`` is the two halves added only when BOTH are published
+    and every row states the SAME as-at date: 172.5B of county bills is not
+    "the total" on a night the national lines are withheld, and county bills
+    at 30 June 2026 added to national bills at 30 June 2025 is a sum of two
+    days, not a stock. Until the national half is read from the 2026 BROP
+    (stated at 30 June 2026) the total is null and the halves are published
+    apart.
     """
     from models import DebtCategory
 
@@ -10577,22 +10676,32 @@ def _published_pending_bills(db: Session) -> Tuple[List[tuple], Dict[str, Any]]:
     county = [amount for _l, _n, etype, amount in rows if etype == "county"]
     national_total = sum(national) if national else None
     county_total = sum(county) if county else None
-    editions = {
-        _normalised_fiscal_year(_pending_bills_provenance(loan).get("fiscal_year"))
-        for loan, *_rest in rows
-    }
-    one_edition = len(editions) == 1 and None not in editions
+    as_at_dates = {pending_bills_row_as_at(loan) for loan, *_rest in rows}
+    one_day = len(as_at_dates) == 1 and None not in as_at_dates
     total = (
         national_total + county_total
-        if national_total is not None and county_total is not None and one_edition
+        if national_total is not None and county_total is not None and one_day
         else None
     )
     return rows, {
         "national": national_total,
         "county": county_total,
         "total": total,
+        "as_at": next(iter(as_at_dates)) if one_day else None,
+        "national_as_at": _one_as_at(
+            loan for loan, _n, etype, _a in rows if etype != "county"
+        ),
+        "county_as_at": _one_as_at(
+            loan for loan, _n, etype, _a in rows if etype == "county"
+        ),
         "unpublished": len(loans) - len(rows),
     }
+
+
+def _one_as_at(loans) -> Optional[str]:
+    """The as-at date a set of rows shares, or None when they differ or omit it."""
+    dates = {pending_bills_row_as_at(loan) for loan in loans}
+    return next(iter(dates)) if len(dates) == 1 and None not in dates else None
 
 
 @app.get("/api/v1/pending-bills")
@@ -10600,13 +10709,15 @@ def _published_pending_bills(db: Session) -> Tuple[List[tuple], Dict[str, Any]]:
 async def get_pending_bills(
     db: Session = Depends(get_db),
 ):
-    """Government pending bills, as the National Treasury publishes them.
+    """Government pending bills, each half from the publication that first prints it.
 
     Pending bills are verified unpaid invoices owed by the government to
-    suppliers and contractors. They are read from ONE publication, the
-    Treasury's annual Budget Review and Outlook Paper: para 18 for the National
-    Government (State Corporations and MDAs), Table 10 for the counties. A row
-    is served only when it declares that publication — see
+    suppliers and contractors. The National Government's (State Corporations
+    and MDAs) are read from the Treasury's annual Budget Review and Outlook
+    Paper; the counties' from the Controller of Budget's full-year County
+    Governments Budget Implementation Review Report, stated at 30 June — the
+    table the BROP itself reprints (#238). A row is served only when it
+    declares the publication for its side — see
     :func:`_published_pending_bills`.
 
     There used to be a second strategy: with no rows in the database, scrape
@@ -10644,25 +10755,49 @@ async def get_pending_bills(
                     "eligible_pending": provenance.get("eligible_pending"),
                     "ineligible_pending": provenance.get("ineligible_pending"),
                     "fiscal_year": provenance.get("fiscal_year", ""),
+                    "as_at": pending_bills_row_as_at(loan),
                     "category": provenance.get("category", "mda"),
                     "notes": provenance.get("notes"),
                 }
             )
 
-        # The source is the published rows' document, never an unpublished
+        # The sources are the published rows' documents, never an unpublished
         # row's — the fixture's cited a COB URL that resolves to a template.
-        first = rows[0][0]
-        source_url = _pending_bills_provenance(first).get("source_url")
-        source_title = "National Treasury — Budget Review and Outlook Paper"
-        if first.source_document_id:
-            sdoc = (
-                db.query(DBSourceDocument)
-                .filter(DBSourceDocument.id == first.source_document_id)
-                .first()
+        # One per side, because since #238 the two halves are two publications.
+        sources = []
+        for side in ("national", "county"):
+            side_rows = [
+                l for l, _n, etype, _a in rows if (etype == "county") == (side == "county")
+            ]
+            if not side_rows:
+                continue
+            first = side_rows[0]
+            url = _pending_bills_provenance(first).get("source_url")
+            title = (
+                "National Treasury — Budget Review and Outlook Paper"
+                if side == "national"
+                else "Controller of Budget — County Governments Budget "
+                "Implementation Review Report"
             )
-            if sdoc:
-                source_title = sdoc.title or source_title
-                source_url = sdoc.url or source_url
+            if first.source_document_id:
+                sdoc = (
+                    db.query(DBSourceDocument)
+                    .filter(DBSourceDocument.id == first.source_document_id)
+                    .first()
+                )
+                if sdoc:
+                    title = sdoc.title or title
+                    url = sdoc.url or url
+            sources.append(
+                {
+                    "side": side,
+                    "title": title,
+                    "url": url,
+                    "as_at": totals[f"{side}_as_at"],
+                }
+            )
+        source_title = "; ".join(src["title"] for src in sources)
+        source_url = sources[0]["url"] if sources else None
 
         last_updated = max(
             (l.updated_at or l.created_at for l, *_rest in rows if l.updated_at or l.created_at),
@@ -10681,18 +10816,26 @@ async def get_pending_bills(
                 "total_pending": totals["total"],
                 "national_total": totals["national"],
                 "county_total": totals["county"],
+                # The day each figure is a stock on; ``as_at`` only when both
+                # halves share one, which is also when ``total_pending`` is set.
+                "as_at": totals["as_at"],
+                "national_as_at": totals["national_as_at"],
+                "county_as_at": totals["county_as_at"],
                 "record_count": len(bills),
             },
             "source": source_title,
             "source_url": source_url,
+            "sources": sources,
             "currency": "KES",
             "_meta": _response_meta(unit="kes", entity_scope="all"),
             "explanation": (
                 "Pending bills are verified but unpaid government invoices "
                 "to suppliers and contractors. Unlike formal loans, they "
                 "carry no interest but represent real obligations. "
-                "The National Treasury publishes them each year in the "
-                "Budget Review and Outlook Paper."
+                "The National Treasury publishes the National Government's "
+                "each year in the Budget Review and Outlook Paper; the "
+                "Controller of Budget publishes each county's at 30 June in "
+                "its County Governments Budget Implementation Review Report."
             ),
         }
 
@@ -10707,15 +10850,20 @@ async def get_pending_bills(
             "county_total": None,
             "record_count": 0,
         },
-        # Rows that exist but do not declare the BROP — written before the
-        # declaration existed, or from the fixture. Not a figure; a count.
+        # Rows that exist but do not declare their side's publication —
+        # written before the declaration existed, from the fixture, or a BROP
+        # county row from before #238. Not a figure; a count.
         "unpublished_row_count": totals["unpublished"],
-        "source": "National Treasury — Budget Review and Outlook Paper",
+        "source": (
+            "National Treasury — Budget Review and Outlook Paper; Controller "
+            "of Budget — County Governments Budget Implementation Review Report"
+        ),
         "source_url": "https://www.treasury.go.ke/budget-review-and-outlook-paper/",
         "currency": "KES",
         "explanation": (
             "No pending-bills figure read from the Treasury's Budget Review "
-            "and Outlook Paper is held. Run the seeding pipeline: "
+            "and Outlook Paper or the Controller of Budget's year-end county "
+            "report is held. Run the seeding pipeline: "
             "python -m seeding.cli seed --domain pending_bills."
         ),
     }
@@ -10998,7 +11146,7 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
     rows, totals = _published_pending_bills(db)
     if not rows:
         reason = (
-            "no_row_declares_the_treasury_brop"
+            "no_row_declares_its_publication"
             if totals["unpublished"]
             else "no_pending_bills_rows"
         )
@@ -11058,14 +11206,25 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
     # year is reported as a total rather than dropped in silence: the chart's
     # bars used not to sum to the figure printed above them, and nothing said
     # why.
+    #
+    # Not across the two halves on two days. Since #238 the national lines
+    # (BROP) and the county lines (CoB) can be stated a year apart, and
+    # bucketing them by fiscal year drew two bars — national at 30 June 2025,
+    # counties at 30 June 2026 — that read as a fall from 525.9B to 172.5B.
+    # Both halves present means both at one date, the rule the total follows.
     trend_map: Dict[str, float] = {}
     trend_unattributed = 0.0
-    for loan, _name, _type, amount in rows:
-        fy = _normalised_fiscal_year(_pending_bills_provenance(loan).get("fiscal_year"))
-        if fy is None:
-            trend_unattributed += amount
-            continue
-        trend_map[fy] = trend_map.get(fy, 0) + amount
+    trend_absent_reason = None
+    both_halves = totals["national"] is not None and totals["county"] is not None
+    if both_halves and totals["as_at"] is None:
+        trend_absent_reason = "national_and_county_stated_at_different_dates"
+    else:
+        for loan, _name, _type, amount in rows:
+            fy = _normalised_fiscal_year(_pending_bills_provenance(loan).get("fiscal_year"))
+            if fy is None:
+                trend_unattributed += amount
+                continue
+            trend_map[fy] = trend_map.get(fy, 0) + amount
     trend = [{"year": k, "total_amount": v} for k, v in sorted(trend_map.items())]
 
     # Eligible / Ineligible totals from provenance — null, not 0, when no
@@ -11082,9 +11241,12 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
     return {
         "status": "success",
         "data_source": "loans_table_fallback",
-        # Null unless national and county are both published from one BROP
-        # edition — the same figure /pending-bills prints.
+        # Null unless national and county are both published and stated at
+        # one date — the same figure /pending-bills prints.
         "total_pending_amount": totals["total"],
+        "as_at": totals["as_at"],
+        "national_as_at": totals["national_as_at"],
+        "county_as_at": totals["county_as_at"],
         "eligible_total": _split_total("eligible_pending"),
         "ineligible_total": _split_total("ineligible_pending"),
         "breakdown_by_type": breakdown_by_type,
@@ -11101,6 +11263,7 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
         "aging_buckets": None,
         "aging_buckets_absent_reason": "loans_table_carries_no_aging_data",
         "trend": trend,
+        "trend_absent_reason": trend_absent_reason,
         "trend_unattributed_amount": trend_unattributed,
         "currency": "KES",
         "note": "Derived from loans table. Seed pending_bills table for richer data.",
@@ -11140,7 +11303,8 @@ async def get_pending_bills_by_county(county_id: str, db: Session = Depends(get_
                 if county_pending_bills_row_is_published(l)
             ]
             # The same figure the county page prints beside this card, and
-            # null — not 0 — for a county the BROP has no figure for.
+            # null — not 0 — for a county the CoB year-end report has no
+            # figure for.
             total = county_pending_bills(pending_loans)
             # The same two assertions the national fallback used to make, on
             # the page that never carried the debt page's disclaimer: 100% of

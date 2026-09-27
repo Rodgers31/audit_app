@@ -1,20 +1,24 @@
 """County pending bills: one publication, one reader, the same number everywhere (#238).
 
-Production holds 46 county pending-bills rows from the Treasury's Budget Review
-and Outlook Paper (source document 2383, KSh 176.905B in total). Two things let
-a different number reach a page:
+County pending bills are read from ONE publication: the Controller of Budget's
+full-year County Governments Budget Implementation Review Report, table of
+trade payables at 30 June (Table 2.10 in FY 2025/26, KSh 172,526.69m, Nairobi
+City 86,899.38m). Production held 46 county rows from the Treasury's Budget
+Review and Outlook Paper (source document 2383, KSh 176.905B); the BROP's
+county table is a reprint of the CoB's, and those rows are no longer served.
+Two things let a different number reach a page:
 
 * The pending-bills FIXTURE carries seven invented county figures (Nairobi
-  98.7B, Mombasa 12.3B, ...) under the same lender key the BROP uses. The
-  fetcher falls back to it whenever the BROP is unreachable, and the writer
-  upserted on (entity, lender) — so one failed night overwrote the published
-  figure, and every reader served the invention as sourced.
+  98.7B, Mombasa 12.3B, ...) under the same lender key the county rows use.
+  The fetcher falls back to it whenever the BROP is unreachable, and the
+  writer upserted on (entity, lender) — so one failed night overwrote the
+  published figure, and every reader served the invention as sourced.
 * Each endpoint had its own rule. ``GET /counties`` summed any budget line
   whose category mentioned "pending" ahead of the loans; ``/pending-bills``
   and the debt page summed every row with no source test at all; the
   summary's ``top_counties_by_amount`` ranked national entities as counties.
 
-These tests seed a county with the BROP row AND a fixture row, and read every
+These tests seed a county with the CoB row AND a fixture row, and read every
 endpoint that shows county pending bills.
 """
 
@@ -25,8 +29,13 @@ from datetime import datetime, timezone
 import pytest
 from models import DebtCategory, Entity, EntityType, Loan
 
-NAIROBI_BROP = 86_769_200_000  # Treasury BROP 2025, Nairobi County row
+NAIROBI_COB = 86_899_380_000  # CoB CBIRR FY 2025/26 Table 2.10, Nairobi City
+NAIROBI_BROP = 86_769_200_000  # Treasury BROP 2025 Table 10 — no longer served
 FIXTURE_NAIROBI = 98_700_000_000  # seeding/fixtures/pending_bills.json
+CBIRR_URL = (
+    "https://cob.go.ke/download/county-governments-budget-implementation-"
+    "review-report-for-the-financial-year-2025-26/?wpdmdl=16482"
+)
 
 
 def _pending(entity, doc, amount, provenance):
@@ -43,7 +52,17 @@ def _pending(entity, doc, amount, provenance):
     )
 
 
-BROP = {
+COB = {
+    "source": "cob_pending_bills_etl",
+    "publication": "cob_cbirr_year_end",
+    "fiscal_year": "FY 2025/26",
+    "category": "county",
+    "as_at": "2026-06-30",
+    "table": "Table 2.10",
+    "source_url": CBIRR_URL,
+}
+#: A county row as #238 first wrote it, from the BROP's reprint.
+BROP_COUNTY = {
     "source": "cob_pending_bills_etl",
     "publication": "treasury_brop",
     "fiscal_year": "FY 2024/25",
@@ -74,8 +93,8 @@ def counties(db_session, seed_country, seed_source_doc):
     db_session.add_all([nairobi, mombasa, national])
     db_session.flush()
     db_session.add_all([
-        # Nairobi: the BROP figure, and a stale fixture row beside it.
-        _pending(nairobi, seed_source_doc, NAIROBI_BROP, BROP),
+        # Nairobi: the CoB figure, and a stale fixture row beside it.
+        _pending(nairobi, seed_source_doc, NAIROBI_COB, COB),
         Loan(
             entity_id=nairobi.id, lender="Pending Bills — County Governments (Nairobi)",
             debt_category=DebtCategory.PENDING_BILLS, principal=FIXTURE_NAIROBI,
@@ -83,8 +102,16 @@ def counties(db_session, seed_country, seed_source_doc):
             issue_date=datetime(2024, 12, 31, tzinfo=timezone.utc),
             source_document_id=seed_source_doc.id, provenance=FIXTURE,
         ),
-        # Mombasa: ONLY a fixture row — nothing published.
+        # Mombasa: a fixture row, and a BROP county row from before the
+        # source moved — nothing published.
         _pending(mombasa, seed_source_doc, 12_300_000_000, FIXTURE),
+        Loan(
+            entity_id=mombasa.id, lender="Pending Bills — County Governments (Mombasa)",
+            debt_category=DebtCategory.PENDING_BILLS, principal=3_867_700_000,
+            outstanding=3_867_700_000, currency="KES",
+            issue_date=datetime(2025, 6, 30, tzinfo=timezone.utc),
+            source_document_id=seed_source_doc.id, provenance=BROP_COUNTY,
+        ),
         # A national aggregate, which is not a county.
         Loan(
             entity_id=national.id, lender="Pending Bills — MDAs (National Government — MDAs)",
@@ -107,20 +134,23 @@ def _get(client, path):
     return response.json()
 
 
-def test_every_county_endpoint_serves_the_brop_figure(client, counties):
+def test_every_county_endpoint_serves_the_cob_figure(client, counties):
     listed = {c["name"]: c for c in _get(client, "/api/v1/counties")}
     detail = _get(client, "/api/v1/counties/nairobi-county/comprehensive")
     single = _get(client, "/api/v1/counties/nairobi-county")
     card = _get(client, "/api/v1/pending-bills/counties/nairobi-county")
 
-    assert listed["Nairobi"]["pending_bills"] == NAIROBI_BROP
-    assert single["pending_bills"] == NAIROBI_BROP
-    assert detail["debt"]["pending_bills"] == NAIROBI_BROP
-    assert card["total_pending"] == NAIROBI_BROP
+    assert listed["Nairobi"]["pending_bills"] == NAIROBI_COB
+    assert single["pending_bills"] == NAIROBI_COB
+    assert detail["debt"]["pending_bills"] == NAIROBI_COB
+    assert card["total_pending"] == NAIROBI_COB
 
 
 def test_a_county_with_only_a_fixture_row_is_absent_everywhere(client, counties):
-    """RED before #238: Mombasa answered 12.3B, a figure nobody published."""
+    """RED before #238: Mombasa answered 12.3B, a figure nobody published.
+
+    And since the source moved, its BROP row (3.87B) is not served either:
+    the BROP is not where county pending bills are read from."""
     listed = {c["name"]: c for c in _get(client, "/api/v1/counties")}
     detail = _get(client, "/api/v1/counties/mombasa-county/comprehensive")
     card = _get(client, "/api/v1/pending-bills/counties/mombasa-county")
@@ -132,19 +162,20 @@ def test_a_county_with_only_a_fixture_row_is_absent_everywhere(client, counties)
     assert card["total_pending"] is None
 
 
-def test_the_debt_page_ranks_counties_only_and_by_the_brop_figure(client, counties):
+def test_the_debt_page_ranks_counties_only_and_by_the_cob_figure(client, counties):
     """``top_counties_by_amount`` on /pending-bills/summary (the debt page)."""
     body = _get(client, "/api/v1/pending-bills/summary")
     top = body["top_counties_by_amount"]
 
     assert [(row["county"], row["amount"]) for row in top] == [
-        ("Nairobi County", NAIROBI_BROP)
+        ("Nairobi County", NAIROBI_COB)
     ]
 
 
-def test_the_counties_split_is_the_brop_sum(client, counties):
+def test_the_counties_split_is_the_cob_sum(client, counties):
     body = _get(client, "/api/v1/pending-bills")
-    assert body["summary"]["county_total"] == NAIROBI_BROP
+    assert body["summary"]["county_total"] == NAIROBI_COB
+    assert body["summary"]["county_as_at"] == "2026-06-30"
 
 
 def test_the_detail_page_names_the_publication_it_printed(client, counties):
@@ -153,10 +184,52 @@ def test_the_detail_page_names_the_publication_it_printed(client, counties):
     mombasa = _get(client, "/api/v1/counties/mombasa-county/comprehensive")
 
     assert "Modelled" not in nairobi["data_sources"]["debt"]
-    assert "National Treasury — Budget Review and Outlook Paper (FY 2024/25)" in (
-        nairobi["data_sources"]["debt"]
+    assert (
+        "Controller of Budget — County Governments Budget Implementation Review "
+        "Report (FY 2025/26), Table 2.10, trade payables as at 2026-06-30"
+    ) in nairobi["data_sources"]["debt"]
+    assert "Budget Review and Outlook Paper" not in nairobi["data_sources"]["debt"]
+    assert "no Controller of Budget year-end figure" in mombasa["data_sources"]["debt"]
+
+
+def test_the_detail_page_carries_the_date_the_figure_is_stated_at(client, counties):
+    """The page printed a figure with no date; the CoB states it at 30 June."""
+    nairobi = _get(client, "/api/v1/counties/nairobi-county/comprehensive")["debt"]
+    mombasa = _get(client, "/api/v1/counties/mombasa-county/comprehensive")["debt"]
+
+    assert nairobi["pending_bills_as_at"] == "2026-06-30"
+    assert nairobi["pending_bills_source"]["table"] == "Table 2.10"
+    assert nairobi["pending_bills_source"]["url"] == CBIRR_URL
+    assert nairobi["pending_bills_notes"] == []
+    # No figure, so no date: the BROP row's FY 2024/25 is not borrowed.
+    assert mombasa["pending_bills_as_at"] is None
+    assert mombasa["pending_bills_source"] is None
+
+
+def test_a_flagged_county_is_published_with_what_the_report_says(client, db_session, counties):
+    """Owner's call (#238): publish the CoB's flagged counties, with a note."""
+    uasin = Entity(
+        id=44, country_id=db_session.query(Entity).first().country_id,
+        type=EntityType.COUNTY, canonical_name="Uasin Gishu County", slug="uasin-gishu-county",
     )
-    assert "not reported for this county" in mombasa["data_sources"]["debt"]
+    db_session.add(uasin)
+    db_session.flush()
+    notes = [
+        {"code": "assembly_not_printed", "table": "Table 2.10"},
+        {"code": "chapter_table_differs", "table": "Table 2.10",
+         "chapter_table": "Table 3.678", "chapter_page": 877,
+         "chapter_total": "1481440000.00"},
+    ]
+    db_session.add(_pending(
+        uasin, db_session.query(Loan).first().source_document, 1_153_720_000,
+        {**COB, "reader_notes": notes + [{"code": "not_a_known_code"}]},
+    ))
+    db_session.commit()
+
+    debt = _get(client, "/api/v1/counties/uasin-gishu-county/comprehensive")["debt"]
+    assert debt["pending_bills"] == 1_153_720_000
+    # Known codes only: a note the page cannot word is not passed on.
+    assert debt["pending_bills_notes"] == notes
 
 
 # --------------------------------------------------------------------------
@@ -164,32 +237,38 @@ def test_the_detail_page_names_the_publication_it_printed(client, counties):
 # --------------------------------------------------------------------------
 
 
-def _record(total):
+def _record(total, name="Nairobi County", fiscal_year="FY 2025/26"):
     from seeding.domains.pending_bills.parser import PendingBillRecord
 
     return PendingBillRecord(
-        entity_name="Nairobi County",
+        entity_name=name,
         entity_type="county",
         category="county",
-        fiscal_year="FY 2024/25",
+        fiscal_year=fiscal_year,
         total_pending=total,
+        as_at="2026-06-30",
+        source_table="Table 2.10",
+        source_page=52,
     )
 
 
-def test_a_fixture_run_after_a_brop_run_leaves_the_brop_figure(db_session, counties):
+COB_WRITE = dict(
+    source_url=CBIRR_URL,
+    source_title="Controller of Budget — County Governments Budget Implementation Review Report, FY 2025/26",
+    publication="cob_cbirr_year_end",
+    publisher="Office of the Controller of Budget (OCOB)",
+)
+
+
+def test_a_fixture_run_after_a_cob_run_leaves_the_cob_figure(db_session, counties):
     from seeding.domains.pending_bills.writer import write_pending_bills
     from services.publication_gate import county_pending_bills
 
     db_session.query(Loan).delete()
     db_session.commit()
 
-    write_pending_bills(
-        db_session, [_record(NAIROBI_BROP)],
-        source_url="https://www.treasury.go.ke/sites/default/files/2025-Budget-Review-and-Outlook-Paper-1.pdf",
-        source_title="Treasury BROP FY 2024/25",
-        publication="treasury_brop", publisher="National Treasury",
-    )
-    # The night the BROP is unreachable: the fixture payload, undeclared.
+    write_pending_bills(db_session, [_record(NAIROBI_COB)], **COB_WRITE)
+    # The night the sources are unreachable: the fixture payload, undeclared.
     write_pending_bills(
         db_session, [_record(FIXTURE_NAIROBI)],
         source_url="https://cob.go.ke/reports/pending-bills/",
@@ -198,9 +277,41 @@ def test_a_fixture_run_after_a_brop_run_leaves_the_brop_figure(db_session, count
     db_session.commit()
 
     loans = db_session.query(Loan).filter(Loan.entity_id == 3).all()
-    assert [float(l.outstanding) for l in loans] == [NAIROBI_BROP]
-    assert county_pending_bills(loans) == NAIROBI_BROP
-    assert loans[0].source_document.publisher == "National Treasury"
+    assert [float(l.outstanding) for l in loans] == [NAIROBI_COB]
+    assert county_pending_bills(loans) == NAIROBI_COB
+    assert loans[0].source_document.publisher == "Office of the Controller of Budget (OCOB)"
+    # Written from what the parser read, not inferred later.
+    assert loans[0].provenance["as_at"] == "2026-06-30"
+    assert loans[0].provenance["table"] == "Table 2.10"
+    assert loans[0].provenance["page"] == 52
+
+
+def test_the_brop_writes_no_county_and_the_cob_no_national_row(db_session, counties):
+    """Each payload is the source for one side only. A BROP county record —
+    the reprint — must not overwrite the CoB's figure, and a CoB payload
+    carries no national line to write."""
+    from seeding.domains.pending_bills.parser import PendingBillRecord
+    from seeding.domains.pending_bills.writer import write_pending_bills
+    from services.publication_gate import county_pending_bills
+
+    db_session.query(Loan).delete()
+    db_session.commit()
+    write_pending_bills(db_session, [_record(NAIROBI_COB)], **COB_WRITE)
+    national = PendingBillRecord(
+        entity_name="National Government — MDAs", entity_type="national",
+        category="mda", fiscal_year="FY 2025/26", total_pending=121_600_000_000,
+    )
+    write_pending_bills(
+        db_session, [_record(NAIROBI_BROP, fiscal_year="FY 2024/25")],
+        source_url="https://t/brop.pdf", source_title="Treasury BROP FY 2024/25",
+        publication="treasury_brop", publisher="National Treasury",
+    )
+    write_pending_bills(db_session, [national], **COB_WRITE)
+    db_session.commit()
+
+    nairobi = db_session.query(Loan).filter(Loan.entity_id == 3).all()
+    assert county_pending_bills(nairobi) == NAIROBI_COB
+    assert db_session.query(Loan).filter(Loan.entity_id == 900).count() == 0
 
 
 def test_the_brop_payload_declares_itself():
@@ -209,11 +320,17 @@ def test_the_brop_payload_declares_itself():
 
     from seeding.domains.pending_bills.fetcher import _brop_result_to_payload
 
-    result = SimpleNamespace(fiscal_year_label="FY 2024/25", national=None, counties=[])
+    result = SimpleNamespace(
+        fiscal_year_label="FY 2024/25", national=None,
+        counties=[SimpleNamespace(county="Nairobi", total=NAIROBI_BROP)],
+    )
     payload = _brop_result_to_payload(result, "https://example.test/brop.pdf")
 
     assert payload["publication"] == "treasury_brop"
     assert payload["publisher"] == "National Treasury"
+    # The BROP's county table is not read: it reprints the CoB's.
+    assert payload["pending_bills"] == []
+    assert "total_county" not in payload["summary"]
 
 
 # --------------------------------------------------------------------------
@@ -228,7 +345,7 @@ def _row(amount, principal=None):
         debt_category=SimpleNamespace(value="pending_bills"),
         outstanding=amount,
         principal=amount if principal is None else principal,
-        provenance=dict(BROP),
+        provenance=dict(COB),
     )
 
 
@@ -241,9 +358,10 @@ def test_the_gate_publishes_only_a_real_amount(amount):
     assert county_pending_bills([_row(amount)]) is None
 
 
-def test_a_newer_brop_retires_a_county_it_does_not_report(db_session, counties):
-    """Narok submitted to one BROP and not the next. Its older figure sat
-    beside everyone's newer one, summed into the county total, indefinitely."""
+def test_a_newer_report_retires_a_county_it_does_not_state(db_session, counties):
+    """Nandi reported at 30 June 2025 and not at 30 June 2026. Its older figure
+    would sit beside everyone's newer one, summed into the county total,
+    indefinitely."""
     from seeding.domains.pending_bills.parser import PendingBillRecord
     from seeding.domains.pending_bills.writer import write_pending_bills
     from services.publication_gate import county_pending_bills
@@ -255,23 +373,44 @@ def test_a_newer_brop_retires_a_county_it_does_not_report(db_session, counties):
         return PendingBillRecord(
             entity_name=name, entity_type="county", category="county",
             fiscal_year=fy, total_pending=total,
+            as_at=f"20{fy[-2:]}-06-30",
         )
 
-    kwargs = dict(publication="treasury_brop", publisher="National Treasury")
+    kwargs = dict(publication="cob_cbirr_year_end", publisher="OCOB")
     write_pending_bills(
-        db_session, [rec("Nairobi County", "FY 2023/24", 80e9), rec("Mombasa County", "FY 2023/24", 3e9)],
-        source_url="https://t/brop2024.pdf", source_title="Treasury BROP FY 2023/24", **kwargs,
+        db_session, [rec("Nairobi County", "FY 2024/25", 86_769_200_000), rec("Mombasa County", "FY 2024/25", 3e9)],
+        source_url="https://c/cbirr2425.pdf", source_title="CBIRR FY 2024/25", **kwargs,
     )
     write_pending_bills(
-        db_session, [rec("Nairobi County", "FY 2024/25", NAIROBI_BROP)],
-        source_url="https://t/brop2025.pdf", source_title="Treasury BROP FY 2024/25", **kwargs,
+        db_session, [rec("Nairobi County", "FY 2025/26", NAIROBI_COB)],
+        source_url="https://c/cbirr2526.pdf", source_title="CBIRR FY 2025/26", **kwargs,
     )
     db_session.commit()
 
     mombasa = db_session.query(Loan).filter(Loan.entity_id == 47).all()
     nairobi = db_session.query(Loan).filter(Loan.entity_id == 3).all()
-    assert county_pending_bills(nairobi) == NAIROBI_BROP
+    assert county_pending_bills(nairobi) == NAIROBI_COB
     assert county_pending_bills(mombasa) is None
+
+
+def test_a_reread_of_the_same_report_retires_a_county_it_now_withholds(db_session, counties):
+    """Retiring by edition alone missed this: the same report read again with
+    Mombasa's row withheld kept Mombasa's figure, stamped as current."""
+    from seeding.domains.pending_bills.writer import write_pending_bills
+    from services.publication_gate import county_pending_bills
+
+    db_session.query(Loan).delete()
+    db_session.commit()
+    write_pending_bills(
+        db_session, [_record(NAIROBI_COB), _record(3_844_590_000, name="Mombasa County")],
+        **COB_WRITE,
+    )
+    write_pending_bills(db_session, [_record(NAIROBI_COB)], **COB_WRITE)
+    db_session.commit()
+
+    mombasa = db_session.query(Loan).filter(Loan.entity_id == 47).all()
+    assert county_pending_bills(mombasa) is None
+    assert county_pending_bills(db_session.query(Loan).filter(Loan.entity_id == 3).all()) == NAIROBI_COB
 
 
 @pytest.mark.parametrize("category", ["County", " county", None])
@@ -361,11 +500,54 @@ def test_a_published_zero_stays_zero_on_the_pending_bills_endpoints(client, db_s
     )
     db_session.add(kisumu)
     db_session.flush()
-    loan = _pending(kisumu, db_session.query(Loan).first().source_document, 0, BROP)
+    loan = _pending(kisumu, db_session.query(Loan).first().source_document, 0, COB)
     loan.principal = 5_000_000_000
     db_session.add(loan)
     db_session.commit()
 
     top = {r["county"]: r["amount"] for r in _get(client, "/api/v1/pending-bills/summary")["top_counties_by_amount"]}
     assert top.get("Kisumu County", 0) == 0
-    assert _get(client, "/api/v1/pending-bills")["summary"]["county_total"] == NAIROBI_BROP
+    assert _get(client, "/api/v1/pending-bills")["summary"]["county_total"] == NAIROBI_COB
+
+
+def test_a_county_the_report_says_did_not_report_is_told_so(client, db_session, counties):
+    """Nandi at 30 June 2026: the CoB prints "-" across its row and says it
+    did not report. The page says that, rather than a bare dash — and says
+    nothing for a county the report does not mention."""
+    from seeding.domains.pending_bills.writer import write_pending_bills
+
+    db_session.query(Loan).delete()
+    db_session.commit()
+    write_pending_bills(
+        db_session, [_record(NAIROBI_COB)], **COB_WRITE,
+        county_table={
+            "as_at": "2026-06-30", "table": "Table 2.10",
+            "not_reported": ["Mombasa"], "withheld": {},
+        },
+    )
+    db_session.commit()
+
+    mombasa = _get(client, "/api/v1/counties/mombasa-county/comprehensive")["debt"]
+    nairobi = _get(client, "/api/v1/counties/nairobi-county/comprehensive")["debt"]
+    assert mombasa["pending_bills"] is None
+    assert mombasa["pending_bills_absence"] == {
+        "reason": "not_reported", "as_at": "2026-06-30", "table": "Table 2.10",
+    }
+    # Never beside a figure.
+    assert nairobi["pending_bills_absence"] is None
+
+
+def test_no_reason_is_given_for_a_county_the_report_does_not_mention(client, db_session, counties):
+    from seeding.domains.pending_bills.writer import write_pending_bills
+
+    db_session.query(Loan).delete()
+    db_session.commit()
+    write_pending_bills(
+        db_session, [_record(NAIROBI_COB)], **COB_WRITE,
+        county_table={"as_at": "2026-06-30", "table": "Table 2.10",
+                      "not_reported": ["Nandi"], "withheld": {}},
+    )
+    db_session.commit()
+    mombasa = _get(client, "/api/v1/counties/mombasa-county/comprehensive")["debt"]
+    assert mombasa["pending_bills"] is None
+    assert mombasa["pending_bills_absence"] is None

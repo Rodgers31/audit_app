@@ -77,12 +77,20 @@ def county_entity(db_session, seed_country):
     return entity
 
 
-def _bill(entity, doc, lender, amount, fiscal_year, day):
-    # A row is published only when it declares the Treasury BROP — county
-    # rows since #238, national rows since #265
+def _bill(entity, doc, lender, amount, fiscal_year, day, as_at="2025-06-30"):
+    # A row is published only when it declares the publication for its side:
+    # the Treasury BROP for a national line (#265), the Controller of Budget's
+    # year-end report for a county (#238)
     # (services.publication_gate.pending_bills_row_is_published). These
-    # fixtures stand for BROP rows, so they say so.
-    provenance = {"fiscal_year": fiscal_year, "publication": "treasury_brop"}
+    # fixtures stand for such rows, so they say so — and the day they are a
+    # stock on, which the total and the trend require to be one day.
+    county = entity.type == EntityType.COUNTY
+    provenance = {
+        "fiscal_year": fiscal_year,
+        "publication": "cob_cbirr_year_end" if county else "treasury_brop",
+        "category": "county" if county else "mda",
+        "as_at": as_at,
+    }
     return Loan(
         entity_id=entity.id,
         lender=lender,
