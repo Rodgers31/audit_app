@@ -230,7 +230,7 @@ jobs:
           cache-dependency-path: backend/requirements.txt
       - name: Install fixture API and browser dependencies
         run: |
-          pip install -r backend/requirements.txt PyYAML
+          pip install -r backend/requirements.txt PyYAML==6.0.2
           cd frontend
           npm ci
           npx playwright install --with-deps chromium

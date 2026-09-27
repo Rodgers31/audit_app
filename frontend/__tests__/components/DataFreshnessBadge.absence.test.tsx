@@ -192,6 +192,17 @@ describe.each(VARIANTS)('publisher coverage (%s)', (variant) => {
 });
 
 describe('malformed freshness evidence', () => {
+  it.each(['T00:30:00+14:00', 'T23:30:00-02:00'])('accepts and displays a publisher-local date across a UTC day boundary (%s)', (time) => {
+    const qc = client();
+    qc.setQueryData(['data-freshness'], { sources: [{ ...FRESH_RESPONSE.sources[0], last_updated: `${RECENT}${time}` }] });
+    const html = renderToString(wrap(qc, <DataFreshnessBadge sources='COB' variant='banner' />));
+    expect(html).toMatch(/Up to date/);
+    expect(html).not.toMatch(/Freshness unknown/);
+    const expectedDate = new Date(`${RECENT}T00:00:00Z`).toLocaleDateString('en-GB', {
+      timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric',
+    });
+    expect(html).toContain(expectedDate);
+  });
   it.each([null, 'not-a-date', '9999-01-01', '2026-02-31', true, {}, 0])('withholds fresh for invalid date %j', (last_updated) => {
     const qc = client();
     qc.setQueryData(['data-freshness'], { sources: [{ ...FRESH_RESPONSE.sources[0], last_updated }] });

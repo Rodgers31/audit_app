@@ -42,8 +42,9 @@ function isFreshnessStatus(status: unknown): status is FreshnessStatus {
 function isPublicationDate(value: unknown): value is string {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}(?:T[\d:.]+(?:Z|[+-]\d{2}:\d{2})?)?$/.test(value)) return false;
   const stamp = Date.parse(value);
+  const calendar = new Date(`${value.slice(0, 10)}T00:00:00Z`);
   return Number.isFinite(stamp) && stamp <= Date.now() &&
-    new Date(stamp).toISOString().slice(0, 10) === value.slice(0, 10);
+    Number.isFinite(calendar.getTime()) && calendar.toISOString().slice(0, 10) === value.slice(0, 10);
 }
 
 const STATUS_DOT: Record<BadgeState, string> = {
@@ -120,6 +121,13 @@ function relativeTime(dateStr: string): string {
   return `${diffMonths} month${diffMonths === 1 ? '' : 's'} ago`;
 }
 
+function publicationCalendarDate(dateStr: string): string {
+  // A publisher's date does not change when its timestamp crosses a UTC day.
+  return new Date(`${dateStr.slice(0, 10)}T00:00:00Z`).toLocaleDateString('en-GB', {
+    timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric',
+  });
+}
+
 /**
  * Badge showing data source + freshness.
  * Pass one or more source codes (e.g. "COB", "OAG", "CBK/Treasury").
@@ -192,12 +200,7 @@ export default function DataFreshnessBadge({
             {latestDate && (
               <>
                 {' · '}
-                {new Date(latestDate).toLocaleDateString('en-GB', {
-                  timeZone: 'UTC',
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                })}
+                {publicationCalendarDate(latestDate)}
               </>
             )}
           </div>
@@ -232,7 +235,7 @@ export default function DataFreshnessBadge({
         aria-label={`Data freshness status: ${STATUS_LABEL[state]}`}
       />
       <span>
-        Data as of: {latestDate ? new Date(latestDate).toLocaleDateString('en-GB', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+        Data as of: {latestDate ? publicationCalendarDate(latestDate) : '—'}
         {' | '}Source: {sources}
       </span>
     </div>

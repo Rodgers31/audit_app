@@ -2043,7 +2043,6 @@ async def add_cache_headers(request, call_next):
     if (
         request.method == "GET"
         and path.startswith("/api/v1/")
-        and response.status_code == 200
         # Skip auth-scoped or mutation-adjacent endpoints
         and not path.startswith("/api/v1/auth/")
         and not path.startswith("/api/v1/account/")

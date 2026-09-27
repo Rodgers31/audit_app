@@ -22,7 +22,7 @@ publication cycle for the source's update_frequency.
 import logging
 import re
 import sys
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import List, Optional
 
@@ -324,11 +324,21 @@ def _source_publication_date(
         ):
             continue
         try:
-            value = datetime.fromisoformat(raw.replace("Z", "+00:00")).date()
+            published_at = datetime.fromisoformat(raw.replace("Z", "+00:00"))
         except ValueError:
             continue
-        if value <= date.today():
-            dates.append(value)
+        # An offset may put a future instant on yesterday's calendar date.
+        # Treat unzoned publication metadata as UTC for this fail-closed check.
+        published_utc = (
+            published_at.replace(tzinfo=timezone.utc)
+            if published_at.tzinfo is None
+            else published_at.astimezone(timezone.utc)
+        )
+        if (
+            published_utc <= datetime.now(timezone.utc)
+            and published_at.date() <= date.today()
+        ):
+            dates.append(published_at.date())
     return max(dates) if dates else None
 
 

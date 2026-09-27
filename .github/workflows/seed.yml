@@ -238,8 +238,8 @@ jobs:
           # to the browser UA below.
           is_retryable() { [[ "$1" =~ ^(000|408|429)$ || "$1" =~ ^5[0-9][0-9]$ ]]; }
 
-          # $1 = URL. Sets HTTP_CODE, and TIMED_OUT=1 when the verdict is a
-          # primary-UA timeout. Up to 3 attempts per UA; returns by the
+          # $1 = URL. Sets HTTP_CODE and the transport outcome of the latest
+          # completed probe. Up to 3 attempts per UA; returns by the
           # earlier of its own deadline and the job's, whatever the host does.
           #
           # On a transient code, re-probe with the browser UA before
@@ -248,9 +248,8 @@ jobs:
           # (2xx/3xx) means the source is reachable and the block was just our
           # UA, while a genuine 4xx-gone (404/410) revealed past the WAF means
           # the URL migrated and must still surface via the critical-flag
-          # branch — not be masked behind the original transient code. Keep
-          # the primary code when the browser probe is also transient (the
-          # block is real/IP-based, not UA-based) or runs out of time.
+          # branch — not be masked behind the original transient code. Report
+          # the last attempted transport outcome if both UAs fail.
           probe_source() {
             local url=$1 deadline ua attempt left out code rc
             deadline=$(( SECONDS + HC_SOURCE_BUDGET ))
@@ -266,22 +265,17 @@ jobs:
                 out=$(probe_once "$ua" "$url" "$left")
                 code=${out% *}
                 rc=${out#* }
-                if [ "$ua" = "$PRIMARY_UA" ]; then
-                  HTTP_CODE=$code
-                  TIMED_OUT=0
-                  PROBE_ERROR=""
-                  case "$rc" in
-                    0) ;;
-                    7) PROBE_ERROR="connection refused" ;;
-                    18) PROBE_ERROR="incomplete response" ;;
-                    28) PROBE_ERROR="timeout" ;;
-                    *) PROBE_ERROR="transport error $rc" ;;
-                  esac
-                  if [ "$rc" = "28" ]; then TIMED_OUT=1; fi
-                elif ! is_transient "$code"; then
-                  HTTP_CODE=$code
-                  TIMED_OUT=0
-                  PROBE_ERROR=""
+                HTTP_CODE=$code
+                TIMED_OUT=0
+                PROBE_ERROR=""
+                case "$rc" in
+                  0) ;;
+                  7) PROBE_ERROR="connection refused" ;;
+                  18) PROBE_ERROR="incomplete response" ;;
+                  28) PROBE_ERROR="timeout"; TIMED_OUT=1 ;;
+                  *) PROBE_ERROR="transport error $rc" ;;
+                esac
+                if [ "$ua" = "$BROWSER_UA" ] && ! is_transient "$code"; then
                   return 0
                 fi
                 if ! is_retryable "$code"; then break; fi

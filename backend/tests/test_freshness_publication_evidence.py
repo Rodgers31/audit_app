@@ -102,6 +102,12 @@ def test_public_api_responses_cannot_reuse_old_http_bodies_after_invalidation(cl
     assert response.headers["cache-control"] == "no-store"
 
 
+def test_public_api_error_cannot_be_cached_as_the_result_of_a_later_refresh(client):
+    response = client.get("/api/v1/this-route-does-not-exist")
+    assert response.status_code == 404
+    assert response.headers["cache-control"] == "no-store"
+
+
 @pytest.mark.parametrize(
     "publication,publisher",
     [
@@ -225,3 +231,27 @@ def test_no_content_is_not_a_download(client, db_session, seed_country):
         last_verified_at=datetime.now(timezone.utc),
     )
     assert source(client)["last_checked"] is None
+
+
+def test_future_instant_with_an_earlier_local_date_is_not_published(
+    client, db_session, seed_country, seed_entity, seed_fiscal_period
+):
+    future = (datetime.now(timezone.utc) + timedelta(hours=2)).astimezone(
+        timezone(timedelta(hours=-12))
+    )
+    doc = document(
+        db_session, seed_country, meta={"publication_date": future.isoformat()}
+    )
+    db_session.add(
+        BudgetLine(
+            entity_id=seed_entity.id,
+            period_id=seed_fiscal_period.id,
+            category="Total",
+            allocated_amount=100,
+            currency="KES",
+            source_document_id=doc.id,
+            publishable=True,
+        )
+    )
+    db_session.commit()
+    assert source(client)["status"] == "unknown"

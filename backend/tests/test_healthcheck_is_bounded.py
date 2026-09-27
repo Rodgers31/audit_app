@@ -221,6 +221,30 @@ def test_a_stalled_body_after_200_headers_is_a_timeout_not_ok(tmp_path, host):
     assert f"CRITICAL|Stalled Body|{host}/trickle|timeout" in outputs["report"]
 
 
+def test_browser_refusal_after_primary_timeout_reports_the_final_transport_failure(tmp_path):
+    curl = tmp_path / "curl"
+    curl.write_text(
+        "#!/bin/sh\n"
+        "ua=\"\"\n"
+        "while [ \"$#\" -gt 0 ]; do\n"
+        "  if [ \"$1\" = \"-A\" ]; then shift; ua=$1; fi\n"
+        "  shift\n"
+        "done\n"
+        "printf '000'\n"
+        "case \"$ua\" in Mozilla/*) exit 7 ;; *) exit 28 ;; esac\n"
+    )
+    curl.chmod(0o755)
+    stdout, outputs, _ = _run(
+        tmp_path,
+        ["Critical|https://example.invalid/report|true"],
+        env={"PATH": f"{tmp_path}:/usr/bin:/bin", "HC_SOURCE_BUDGET": "8", "HC_RETRY_DELAY": "0"},
+    )
+    assert "[CRITICAL] Critical" in stdout
+    assert "timed out after" not in stdout
+    assert "connection refused" in stdout
+    assert "|connection refused" in outputs["report"]
+
+
 def test_when_the_job_budget_runs_out_the_rest_are_named_and_outputs_still_written(tmp_path, host):
     stdout, outputs, secs = _run(
         tmp_path,
