@@ -224,11 +224,6 @@ const ROUTES: Route[] = [
         useReader: () => usePendingBillsSummary({ enabled: true }),
       },
     },
-    unread: {
-      '["debt","debt-sustainability"]':
-        'prefetched by app/debt/page.tsx but no component calls useDebtSustainability(); ' +
-        'it rides in the document and nothing mounts it, so it cannot refetch either',
-    },
   },
   {
     path: '/budget',

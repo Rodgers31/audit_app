@@ -1,14 +1,19 @@
 /**
  * National Debt — Server Component with SSR data prefetching.
  *
- * Pre-fetches all 7 debt-related API calls in parallel on the server,
- * then passes the dehydrated cache to the client component via
+ * Pre-fetches the 6 queries `DebtPageClient` reads, in parallel on the
+ * server, then passes the dehydrated cache to the client component via
  * HydrationBoundary. Result: zero loading spinners on first paint.
+ *
+ * Only what the client reads: every key here is serialised into the HTML.
+ * `['debt','debt-sustainability']` used to be prefetched too, after its only
+ * reader went in #148, so it rode in every /debt document unread.
+ * `__tests__/debtSsrPrefetch.test.tsx` fails if a prefetched key has no
+ * mounted reader.
  *
  * Mirrors the homepage SSR pattern, including its hourly ISR window below.
  */
 import {
-  getDebtSustainability,
   getDebtTimeline,
   getNationalDebtOverview,
   getNationalLoans,
@@ -75,10 +80,6 @@ export default async function DebtPage() {
         queryClient.prefetchQuery({
           queryKey: ['debt', 'pending-bills-summary'],
           queryFn: () => getPendingBillsSummary(),
-        }),
-        queryClient.prefetchQuery({
-          queryKey: ['debt', 'debt-sustainability'],
-          queryFn: () => getDebtSustainability(),
         }),
       ]),
       new Promise((resolve) => setTimeout(resolve, SSR_TIMEOUT_MS)),
