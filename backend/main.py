@@ -4836,14 +4836,73 @@ FEDERAL_AUDIT_ENTITY_TYPES = [
 ]
 
 
+def select_top_stated_findings(findings: List[dict], n: int) -> List[dict]:
+    """The findings the homepage lists: the ``n`` largest STATED amounts.
+
+    The same rule as the frontend's ``trimFederalAuditsForHome``
+    (``frontend/lib/react-query/useAudits.ts``), and pinned to it by one cases
+    file both test suites read
+    (``frontend/__tests__/fixtures/federalTopStatedFindings.cases.json``):
+
+    - a finding states an amount unless ``amount_numeric`` is null or
+      ``amount_involved`` is exactly ``"KES 0"`` (what this endpoint writes for
+      a stored zero). Unstated findings are left out, never sorted as 0;
+    - largest first; ``sorted`` is stable, so ties keep the API's order, as
+      ``Array.prototype.sort`` does;
+    - if nothing is stated but findings exist, the first one is kept, so the
+      list is not empty. An empty list switches the section to "no findings
+      can be published yet", which would be false.
+
+    Returns a new list and leaves ``findings`` (the cached payload's list) as
+    it was.
+    """
+    stated = [
+        f
+        for f in findings
+        if f.get("amount_involved") != "KES 0" and f.get("amount_numeric") is not None
+    ]
+    top = sorted(stated, key=lambda f: f["amount_numeric"], reverse=True)[:n]
+    if not top and findings:
+        return findings[:1]
+    return top
+
+
 @app.get("/api/v1/audits/federal")
-@cached(key_prefix="audits:federal", ttl=3600)
-async def get_federal_audits():
+async def get_federal_audits(
+    top_findings: Optional[int] = Query(
+        None,
+        ge=1,
+        le=100,
+        description=(
+            "Return only the N largest findings that state an amount "
+            "(see select_top_stated_findings). Every other field still "
+            "describes all findings: total_findings is the report's count, "
+            "not the number of rows returned. Omit for every finding."
+        ),
+    ),
+):
     """Get national/federal government audit findings from the Auditor General.
 
     Returns audit findings for ministries, departments and agencies (MDAs)
     with the overall audit opinion summary.
+
+    ``?top_findings=N`` is for the homepage, which renders 4 of ~800 findings:
+    its client refetch downloaded the whole ~886KB list to throw most of it
+    away (#221). The full payload is computed and cached once under the same
+    key either way, and the trim is applied to a copy on the way out.
     """
+    payload = await _federal_audits_payload()
+    if top_findings is None or not isinstance(payload, dict):
+        return payload
+    return {
+        **payload,
+        "findings": select_top_stated_findings(payload.get("findings") or [], top_findings),
+    }
+
+
+@cached(key_prefix="audits:federal", ttl=3600)
+async def _federal_audits_payload():
+    """The full ``/audits/federal`` response: every publishable finding."""
     if not DATABASE_AVAILABLE:
         raise HTTPException(status_code=503, detail="Database unavailable")
 

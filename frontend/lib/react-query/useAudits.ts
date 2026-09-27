@@ -92,10 +92,19 @@ export function trimFederalAuditsForHome(data: FederalAuditResponse): FederalAud
  */
 export const federalAuditsHomeSummaryKey = () => ['audits', 'federal', 'home-summary'] as const;
 
-/** One declaration of the query, for the server prefetch and the hook alike. */
+/**
+ * One declaration of the query, for the server prefetch and the hook alike.
+ *
+ * The backend applies the same selection (`?top_findings`), so a refetch of a
+ * stale hydrated copy downloads a few KB rather than the ~886KB list. The
+ * result is trimmed again here, which is a no-op on the backend's answer and
+ * keeps the document small if the backend predates the parameter (FastAPI
+ * ignores query parameters it does not declare).
+ */
 export const federalAuditsHomeSummaryQuery = () => ({
   queryKey: federalAuditsHomeSummaryKey(),
-  queryFn: async () => trimFederalAuditsForHome(await getFederalAudits()),
+  queryFn: async () =>
+    trimFederalAuditsForHome(await getFederalAudits({ topFindings: HOME_TOP_FINDINGS })),
 });
 
 // Query keys for audits

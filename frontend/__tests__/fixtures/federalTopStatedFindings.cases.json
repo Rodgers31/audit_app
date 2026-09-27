@@ -1,0 +1,91 @@
+{
+  "_comment": "One contract, read by two test suites: frontend/__tests__/federalTopStatedFindings.test.ts runs trimFederalAuditsForHome (lib/react-query/useAudits.ts) over these cases, and backend/tests/test_federal_audits_top_findings.py runs GET /api/v1/audits/federal?top_findings=N's selection over the same file. Findings are listed in the API's own order. The rule: drop findings whose amount_involved is exactly 'KES 0' or whose amount_numeric is null; sort the rest by amount_numeric, largest first, ties keeping API order; keep the first n; if that leaves nothing but findings exist, keep the first finding in API order.",
+  "cases": [
+    {
+      "name": "production shape: nulls and 'KES 0' dropped, a three-way tie keeps API order",
+      "n": 4,
+      "findings": [
+        { "id": 1, "amount_involved": "", "amount_numeric": null },
+        { "id": 2, "amount_involved": "KES 0", "amount_numeric": 0 },
+        {
+          "id": 3,
+          "amount_involved": "KES 5,000,000,000",
+          "amount_numeric": 5000000000
+        },
+        {
+          "id": 4,
+          "amount_involved": "KES 9.0B",
+          "amount_numeric": 9000000000
+        },
+        {
+          "id": 5,
+          "amount_involved": "KES 1,000,000",
+          "amount_numeric": 1000000
+        },
+        {
+          "id": 6,
+          "amount_involved": "KES 9,000,000,000",
+          "amount_numeric": 9000000000
+        },
+        { "id": 7, "amount_involved": "Not stated", "amount_numeric": null },
+        { "id": 8, "amount_involved": "KES 9B", "amount_numeric": 9000000000 },
+        { "id": 9, "amount_involved": "KES 2B", "amount_numeric": 2000000000 }
+      ],
+      "expected_ids": [4, 6, 8, 3]
+    },
+    {
+      "name": "sorted as numbers, not as strings",
+      "n": 4,
+      "findings": [
+        { "id": 1, "amount_involved": "KES 900", "amount_numeric": 900 },
+        { "id": 2, "amount_involved": "KES 1B", "amount_numeric": 1000000000 },
+        { "id": 3, "amount_involved": "KES 85M", "amount_numeric": 85000000 }
+      ],
+      "expected_ids": [2, 3, 1]
+    },
+    {
+      "name": "a stated zero that is not the literal 'KES 0' is still stated",
+      "n": 4,
+      "findings": [
+        { "id": 1, "amount_involved": "", "amount_numeric": null },
+        { "id": 2, "amount_involved": "KES 0.00", "amount_numeric": 0 },
+        { "id": 3, "amount_involved": "KES 0", "amount_numeric": 0 }
+      ],
+      "expected_ids": [2]
+    },
+    {
+      "name": "findings exist but none states an amount: the first is kept, so the list is not empty",
+      "n": 4,
+      "findings": [
+        { "id": 11, "amount_involved": "", "amount_numeric": null },
+        { "id": 12, "amount_involved": "KES 0", "amount_numeric": 0 },
+        { "id": 13, "amount_involved": "Not stated", "amount_numeric": null }
+      ],
+      "expected_ids": [11]
+    },
+    {
+      "name": "no findings at all",
+      "n": 4,
+      "findings": [],
+      "expected_ids": []
+    },
+    {
+      "name": "fewer stated findings than n",
+      "n": 4,
+      "findings": [
+        {
+          "id": 1,
+          "amount_involved": "KES 5,000,000",
+          "amount_numeric": 5000000
+        },
+        { "id": 2, "amount_involved": "", "amount_numeric": null },
+        {
+          "id": 3,
+          "amount_involved": "KES 7,000,000",
+          "amount_numeric": 7000000
+        }
+      ],
+      "expected_ids": [3, 1]
+    }
+  ]
+}
