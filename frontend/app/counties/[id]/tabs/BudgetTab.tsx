@@ -176,7 +176,7 @@ export default function BudgetTab({ data }: { data: CountyComprehensive }) {
       )}
 
       {/* County Pending Bills Breakdown */}
-      {(countyPendingBills || debt.pending_bills > 0) && (
+      {(countyPendingBills || (debt.pending_bills != null && debt.pending_bills > 0)) && (
         <div className='bg-white dark:bg-surface-base rounded-xl border border-red-200 p-5'>
           <div className='flex items-center gap-2 mb-4'>
             <FileWarning size={16} className='text-red-600' />
@@ -288,7 +288,7 @@ export default function BudgetTab({ data }: { data: CountyComprehensive }) {
             )
           )}
 
-          {!countyPendingBills && debt.pending_bills > 0 && (
+          {!countyPendingBills && debt.pending_bills != null && debt.pending_bills > 0 && (
             <p className='text-xs text-gray-500 dark:text-neutral-muted/80'>
               {t('county.budget.pending_fallback').replace('{amount}', fmtKES(debt.pending_bills))}
             </p>

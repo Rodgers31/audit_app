@@ -224,6 +224,8 @@ export const MESSAGES = {
   'home.debt.insight_risk_unassessed_desc': { en: 'No published debt sustainability rating was received, so none is shown. This is not a finding that the debt position is safe.', sw: 'Hakuna ukadiriaji rasmi wa uendelevu wa deni uliopokelewa, hivyo hakuna unaoonyeshwa. Hii si dalili kwamba hali ya deni ni salama.', plain: 'We did not get the official rating, so we don\u2019t show one. That does not mean it is fine.' },
   'home.debt.cents_of_revenue': { en: 'KES {n} cents', sw: 'Senti {n} za KES', plain: 'KES {n} cents' },
 
+  // Audit opinion terms: retain English terms for Swahili until competent review (#307).
+  // Definitions: https://www.oagkenya.go.ke/faqs/what-do-the-various-audit-opinions-mean/
   // Audit Reports Section
   'home.audits.title': { en: 'Latest Audit Reports', sw: 'Ripoti za Hivi Karibuni za Ukaguzi', plain: 'Latest Audit Reports' },
   'home.audits.subtitle': {
@@ -233,9 +235,9 @@ export const MESSAGES = {
   },
   'home.audits.see_all': { en: 'See all reports', sw: 'Tazama ripoti zote', plain: 'See all reports' },
   'home.audits.clean': { en: 'Clean', sw: 'Safi', plain: 'Clean' },
-  'home.audits.qualified': { en: 'Qualified', sw: 'Ya Kuhitimu', plain: 'Some Issues' },
-  'home.audits.adverse': { en: 'Adverse', sw: 'Mbaya', plain: 'Bad' },
-  'home.audits.disclaimer': { en: 'Disclaimer', sw: 'Kanusho', plain: 'Unable to audit' },
+  'home.audits.qualified': { en: 'Qualified', sw: 'Qualified opinion', plain: 'Opinion with specific exceptions' },
+  'home.audits.adverse': { en: 'Adverse', sw: 'Adverse opinion', plain: 'Accounts materially misstated' },
+  'home.audits.disclaimer': { en: 'Disclaimer', sw: 'Kanusho', plain: 'Insufficient evidence for an opinion' },
   'home.audits.no_reports': { en: 'No audit reports yet', sw: 'Hakuna ripoti za ukaguzi bado', plain: 'No audits yet' },
   'home.audits.loading': { en: 'Loading audits…', sw: 'Inapakia ukaguzi…', plain: 'Loading audits…' },
   'home.audits.report_title': { en: 'Auditor General’s Report', sw: 'Ripoti ya Mkaguzi Mkuu', plain: 'Auditor-General’s Report' },
@@ -292,6 +294,51 @@ export const MESSAGES = {
     sw: 'Chanzo: ripoti {page}',
     plain: 'Source: report {page}',
   },
+  // Derived headline (issue #233): read from the report's own section
+  // headings. Every count is a floor, stated beside what it was read from.
+  'home.audits.modified_title': {
+    en: 'Modified audit opinions found in this report',
+    sw: 'Maoni ya ukaguzi yaliyorekebishwa yaliyopatikana katika ripoti hii',
+    plain: 'Where the Auditor-General did not accept the accounts as they stand',
+  },
+  'home.audits.modified_none': {
+    en: 'No “Basis for … Opinion” section was found among the {read} votes whose opinion could be read.',
+    sw: 'Hakuna sehemu ya “Msingi wa Maoni” iliyopatikana katika mafungu {read} ambayo maoni yake yangeweza kusomwa.',
+    plain: 'We found no section explaining a changed opinion in the {read} votes we could read.',
+  },
+  'home.audits.opinion_votes': {
+    en: '{n} vote(s) · {f} finding(s)',
+    sw: 'mafungu {n} · matokeo {f}',
+    plain: '{n} vote(s) · {f} finding(s)',
+  },
+  'home.audits.modified_coverage': {
+    en: 'Read from the report’s own “Basis for … Opinion” sections. Each line means at least one account audited under that vote received that opinion; the page shows which. The opinion could be read for {read} of the {total} votes with extracted findings, and this site has not yet extracted every section of the report, so these counts are minimums. No vote is shown as clean: one vote covers several separately audited accounts.',
+    sw: 'Imesomwa kutoka sehemu za “Msingi wa Maoni” za ripoti yenyewe. Kila mstari unamaanisha angalau hesabu moja iliyokaguliwa chini ya fungu hilo ilipata maoni hayo; ukurasa unaonyesha ipi. Maoni yangeweza kusomwa kwa mafungu {read} kati ya {total} yenye matokeo yaliyotolewa, na tovuti hii bado haijatoa kila sehemu ya ripoti, kwa hiyo idadi hizi ni za chini kabisa. Hakuna fungu linaloonyeshwa kuwa safi: fungu moja linajumuisha hesabu kadhaa zinazokaguliwa kando.',
+    plain: 'We read these from the report’s own section headings. Each line means at least one account under that vote got that result; the page shows which. We could read {read} of the {total} votes, and we have not read the whole report yet, so the real numbers could be higher. We never call a vote clean, because one vote covers several accounts audited separately.',
+  },
+  'home.audits.stat_votes': { en: 'Votes With Extracted Findings', sw: 'Mafungu Yenye Matokeo Yaliyotolewa', plain: 'Budget votes we have read' },
+  'home.audits.stat_unresolved': { en: 'Unresolved Prior-Year Matters', sw: 'Masuala ya Awali Yasiyotatuliwa', plain: 'Old problems still open' },
+  'home.audits.unit_votes': { en: 'votes', sw: 'mafungu', plain: 'votes' },
+  'home.audits.emphasis_summary': {
+    en: 'Raised on {n} votes ({f} paragraphs). Most frequent: “{title}”, {c} times.',
+    sw: 'Imetajwa katika mafungu {n} (aya {f}). Linalojirudia zaidi: “{title}”, mara {c}.',
+    plain: 'Flagged for {n} votes ({f} times). Most common: “{title}”, {c} times.',
+  },
+  'home.audits.withheld_source_document_has_no_url': {
+    en: '{n} finding(s) held back for lack of a traceable source document.',
+    sw: 'Matokeo {n} yamezuiliwa kwa kukosa hati ya chanzo inayofuatilika.',
+    plain: '{n} finding(s) held back because we cannot point to the report they came from.',
+  },
+  'home.audits.withheld_finding_text_unreadable_cid': {
+    en: '{n} finding(s) held back because the extracted text is unreadable.',
+    sw: 'Matokeo {n} yamezuiliwa kwa sababu maandishi yaliyotolewa hayasomeki.',
+    plain: '{n} finding(s) held back because the text could not be read.',
+  },
+  'home.audits.withheld_no_page_reference': {
+    en: '{n} finding(s) held back for citing no page of the report.',
+    sw: 'Matokeo {n} yamezuiliwa kwa kutotaja ukurasa wa ripoti.',
+    plain: '{n} finding(s) held back because they do not say which page they come from.',
+  },
   'home.audits.cadence_annual': { en: 'annually', sw: 'kila mwaka', plain: 'once a year' },
   'home.audits.cadence_quarterly': { en: 'quarterly', sw: 'kila robo mwaka', plain: 'every three months' },
   'home.audits.cadence_monthly': { en: 'monthly', sw: 'kila mwezi', plain: 'every month' },
@@ -328,11 +375,11 @@ export const MESSAGES = {
   'home.loans.lender': { en: 'Lender', sw: 'Mkopeshaji', plain: 'Who loaned the money' },
   'home.loans.amount': { en: 'Amount', sw: 'Kiasi', plain: 'Amount' },
   'home.loans.header_title': { en: 'National Government Loans', sw: 'Mikopo ya Serikali Kuu', plain: 'Kenya’s Loans' },
-  'home.loans.header_sub': { en: '{n} active loans — {src}', sw: 'Mikopo hai {n} — {src}', plain: '{n} loans — {src}' },
+  'home.loans.header_sub': { en: '{n} creditor and instrument lines — {src}', sw: 'Mistari {n} ya wadai na aina za deni — {src}', plain: '{n} debt register lines — {src}' },
   'home.loans.unavailable': { en: 'Loan data unavailable', sw: 'Data ya mikopo haipatikani', plain: 'Loan data unavailable' },
   'home.loans.outstanding': { en: 'Outstanding Debt', sw: 'Deni Lililobaki', plain: 'Still Owed' },
   'home.loans.annual_service': { en: 'Debt Service', sw: 'Malipo ya Deni', plain: 'Debt Repayments' },
-  'home.loans.see_all_n': { en: 'See all {n} loans →', sw: 'Tazama mikopo yote {n} →', plain: 'See all {n} loans →' },
+  'home.loans.see_all_n': { en: 'See all {n} register lines →', sw: 'Tazama mistari yote {n} ya deni →', plain: 'See all {n} register lines →' },
   'home.loans.type.multilateral': { en: 'Multilateral', sw: 'Ya Kimataifa', plain: 'Multi-country' },
   'home.loans.type.bilateral': { en: 'Bilateral', sw: 'Baina ya Nchi Mbili', plain: 'Country-to-country' },
   'home.loans.type.commercial': { en: 'Commercial', sw: 'Ya Kibiashara', plain: 'Commercial' },
@@ -374,9 +421,9 @@ export const MESSAGES = {
     plain: 'Hover or click a county on the map to see its money and audit info.',
   },
   'home.county_panel.audit_clean': { en: 'Clean', sw: 'Safi', plain: 'Clean' },
-  'home.county_panel.audit_qualified': { en: 'Qualified', sw: 'Ya Kuhitimu', plain: 'Some Issues' },
-  'home.county_panel.audit_adverse': { en: 'Adverse', sw: 'Mbaya', plain: 'Bad' },
-  'home.county_panel.audit_disclaimer': { en: 'Disclaimer', sw: 'Kanusho', plain: 'Unable to audit' },
+  'home.county_panel.audit_qualified': { en: 'Qualified', sw: 'Qualified opinion', plain: 'Opinion with specific exceptions' },
+  'home.county_panel.audit_adverse': { en: 'Adverse', sw: 'Adverse opinion', plain: 'Accounts materially misstated' },
+  'home.county_panel.audit_disclaimer': { en: 'Disclaimer', sw: 'Kanusho', plain: 'Insufficient evidence for an opinion' },
   'home.county_panel.audit_pending': { en: 'Pending', sw: 'Inasubiri', plain: 'Pending' },
   'home.county_panel.sev_critical': { en: 'Critical', sw: 'Muhimu Sana', plain: 'Serious' },
   'home.county_panel.sev_high': { en: 'High', sw: 'Kubwa', plain: 'High' },
@@ -404,9 +451,9 @@ export const MESSAGES = {
     plain: 'Kenya map with all 47 counties. Hover to see details, click to pick one. Colours show audit results.',
   },
   'home.map.legend.clean': { en: 'Clean / A+', sw: 'Safi / A+', plain: 'Clean / A+' },
-  'home.map.legend.qualified': { en: 'Qualified / B', sw: 'Ya Kuhitimu / B', plain: 'Some Issues / B' },
-  'home.map.legend.adverse': { en: 'Adverse / C', sw: 'Mbaya / C', plain: 'Bad / C' },
-  'home.map.legend.disclaimer': { en: 'Disclaimer', sw: 'Kanusho', plain: 'Unable to audit' },
+  'home.map.legend.qualified': { en: 'Qualified / B', sw: 'Qualified opinion / B', plain: 'Opinion with specific exceptions / B' },
+  'home.map.legend.adverse': { en: 'Adverse / C', sw: 'Adverse opinion / C', plain: 'Accounts materially misstated / C' },
+  'home.map.legend.disclaimer': { en: 'Disclaimer', sw: 'Kanusho', plain: 'Insufficient evidence for an opinion' },
   'home.map.legend.pending': { en: 'Audit pending', sw: 'Ukaguzi unasubiri', plain: 'Audit pending' },
 
   // Feature nav cards
@@ -422,11 +469,13 @@ export const MESSAGES = {
     sw: 'Jumuisha kaunti zote 47 kwa sekta — afya, barabara, maji, elimu.',
     plain: 'All 47 counties grouped by area — health, roads, water, schools.',
   },
-  'home.features.missing.title': { en: 'Missing funds tracker', sw: 'Kifuatilia Pesa Zilizopotea', plain: 'Missing money tracker' },
+  // "Unaccounted", never "missing": the page lists only findings the
+  // Auditor-General's report itself heads that way (issue #233).
+  'home.features.missing.title': { en: 'Unaccounted funds', sw: 'Pesa Zisizohesabika', plain: 'Money not accounted for' },
   'home.features.missing.desc': {
-    en: 'Public money flagged as unaccounted-for by the Auditor-General.',
-    sw: 'Pesa za umma zilizoripotiwa kutohesabiwa na Mkaguzi Mkuu.',
-    plain: 'Public money the auditor says is missing.',
+    en: 'Findings the Auditor-General headed as unaccounted for or a loss of funds, each linked to its page.',
+    sw: 'Matokeo ambayo Mkaguzi Mkuu aliyaita pesa zisizohesabika au hasara ya fedha, kila moja na ukurasa wake.',
+    plain: 'Where the auditor’s report says money or assets were not accounted for, with the page.',
   },
   'home.features.sources.title': { en: 'Data sources', sw: 'Vyanzo vya Data', plain: 'Where numbers come from' },
   'home.features.sources.desc': {
@@ -523,9 +572,12 @@ export const MESSAGES = {
   // Rendered on its own when no budget was published at all — an absent figure
   // has no source, and either budget clause would then describe nothing.
   'counties.provenance.rest': {
-    en: 'Pending bills are the audited per-county figures from Table 10 of the National Treasury\'s Budget Review and Outlook Paper. County debt is shown only where a source publishes it; most counties have none, and those show a dash rather than a figure. Audit findings are from the Office of the Auditor-General.',
-    sw: 'Bili ambazo hazijalipwa ni takwimu zilizokaguliwa za kila kaunti kutoka Jedwali la 10 la Karatasi ya Mapitio na Mtazamo wa Bajeti ya Hazina ya Taifa. Deni la kaunti linaonyeshwa pale tu chanzo kinapolichapisha; kaunti nyingi hazina, na hizo zinaonyesha mstari badala ya takwimu. Matokeo ya ukaguzi yanatoka Ofisi ya Mkaguzi Mkuu wa Hesabu.',
-    plain: 'The unpaid-bill numbers are real: they come from the Treasury\'s audited county-by-county table. County debt is shown only when a source publishes it; for most counties nobody does, so you will see a dash instead of a number. The audit findings are real, from the Auditor-General.',
+    // Not "audited" (#238): the Controller of Budget's table says "Source:
+    // County Treasuries" — the counties report the figures and the CoB
+    // compiles them. The Treasury's BROP, the previous source, reprints it.
+    en: 'Pending bills are each county\'s trade payables at 30 June, as the county treasuries reported them to the Controller of Budget, from the table in its full-year County Governments Budget Implementation Review Report. County debt is shown only where a source publishes it; most counties have none, and those show a dash rather than a figure. Audit findings are from the Office of the Auditor-General.',
+    sw: 'Bili ambazo hazijalipwa ni madeni ya kila kaunti kwa wasambazaji hadi tarehe 30 Juni, kama hazina za kaunti zilivyoyaripoti kwa Mdhibiti wa Bajeti, kutoka jedwali la Ripoti yake ya mwaka mzima ya Mapitio ya Utekelezaji wa Bajeti za Serikali za Kaunti. Deni la kaunti linaonyeshwa pale tu chanzo kinapolichapisha; kaunti nyingi hazina, na hizo zinaonyesha mstari badala ya takwimu. Matokeo ya ukaguzi yanatoka Ofisi ya Mkaguzi Mkuu wa Hesabu.',
+    plain: 'The unpaid-bill numbers are what each county told the Controller of Budget it still owed suppliers on 30 June. The Auditor-General has not checked them. County debt is shown only when a source publishes it; for most counties nobody does, so you will see a dash instead of a number. The audit findings are real, from the Auditor-General.',
   },
   'counties.subtitle': {
     en: 'Compare all 47 Kenyan counties on budget, execution, debt, and audit findings.',
@@ -658,9 +710,9 @@ export const MESSAGES = {
 
   // Audit status labels (shared chips on counties list)
   'counties.audit_status.clean': { en: 'Clean', sw: 'Safi', plain: 'Clean' },
-  'counties.audit_status.qualified': { en: 'Qualified', sw: 'Ya Kuhitimu', plain: 'Some Issues' },
-  'counties.audit_status.adverse': { en: 'Adverse', sw: 'Mbaya', plain: 'Bad' },
-  'counties.audit_status.disclaimer': { en: 'Disclaimer', sw: 'Kanusho', plain: 'Unable to audit' },
+  'counties.audit_status.qualified': { en: 'Qualified', sw: 'Qualified opinion', plain: 'Opinion with specific exceptions' },
+  'counties.audit_status.adverse': { en: 'Adverse', sw: 'Adverse opinion', plain: 'Accounts materially misstated' },
+  'counties.audit_status.disclaimer': { en: 'Disclaimer', sw: 'Kanusho', plain: 'Insufficient evidence for an opinion' },
   'counties.audit_status.pending': { en: 'Pending', sw: 'Inasubiri', plain: 'Pending' },
 
   // ══════════════════════════════════════════════════
@@ -951,6 +1003,39 @@ export const MESSAGES = {
   'county.overview.debt_total': { en: 'Total debt', sw: 'Deni jumla', plain: 'Total owed' },
   'county.overview.debt_to_budget': { en: 'Debt-to-budget', sw: 'Deni-kwa-bajeti', plain: 'Debt vs. budget' },
   'county.overview.debt_pending': { en: 'Pending bills', sw: 'Ankara zilizokwama', plain: 'Unpaid bills' },
+  // The day the pending-bills figure is a stock on, and what the report says
+  // about it (#238). {table} and {amount} are filled in by
+  // lib/counties/pendingBillsNotes.
+  'county.overview.pending_as_at': {
+    en: 'As at {date} · Controller of Budget, {table}',
+    sw: 'Hadi {date} · Mdhibiti wa Bajeti, {table}',
+    plain: 'Owed on {date}, as reported to the Controller of Budget ({table})',
+  },
+  'county.overview.pending_absent.not_reported': {
+    en: 'Not reported to the Controller of Budget as at {date} ({table}).',
+    sw: 'Haijaripotiwa kwa Mdhibiti wa Bajeti hadi {date} ({table}).',
+    plain: 'This county did not tell the Controller of Budget what it owed on {date}.',
+  },
+  'county.overview.pending_absent.withheld': {
+    en: 'Not shown: the Controller of Budget\'s row for this county ({table}, {date}) does not add up on its own terms.',
+    sw: 'Haionyeshwi: safu ya Mdhibiti wa Bajeti kwa kaunti hii ({table}, {date}) haijumliki yenyewe.',
+    plain: 'Not shown, because the Controller of Budget\'s own numbers for this county don\'t add up.',
+  },
+  'county.overview.pending_note.cob_marked_inconsistent': {
+    en: 'The Controller of Budget marks this figure as inconsistent with the county\'s own ageing analysis of the same bills ({table}).',
+    sw: 'Mdhibiti wa Bajeti anaonyesha kuwa takwimu hii haiwiani na uchambuzi wa kaunti yenyewe wa umri wa bili hizo hizo ({table}).',
+    plain: 'The Controller of Budget says this county\'s numbers don\'t agree with each other.',
+  },
+  'county.overview.pending_note.assembly_not_printed': {
+    en: 'County Executive only: the report prints no County Assembly figure for this county ({table}).',
+    sw: 'Serikali ya Kaunti pekee: ripoti haionyeshi takwimu ya Bunge la Kaunti kwa kaunti hii ({table}).',
+    plain: 'This covers the county government only. The county assembly\'s unpaid bills are not in the report.',
+  },
+  'county.overview.pending_note.chapter_table_differs': {
+    en: 'The same report\'s county chapter prints {amount} ({chapter_table}); the figure shown is the one that adds up to the report\'s national total ({table}).',
+    sw: 'Sura ya kaunti katika ripoti hiyo hiyo inaonyesha {amount} ({chapter_table}); takwimu inayoonyeshwa ni ile inayojumlika kuwa jumla ya kitaifa ya ripoti ({table}).',
+    plain: 'The same report gives a different number, {amount}, further on. We show the one that adds up with the other counties.',
+  },
   'county.overview.sustain.sustainable': { en: 'Sustainable', sw: 'Endelevu', plain: 'Healthy' },
   'county.overview.sustain.moderate': { en: 'Moderate Risk', sw: 'Hatari ya Wastani', plain: 'Medium Risk' },
   'county.overview.sustain.at_risk': { en: 'At Risk', sw: 'Katika Hatari', plain: 'At Risk' },
@@ -968,10 +1053,33 @@ export const MESSAGES = {
   'county.overview.total_amount_involved': { en: 'Total amount involved', sw: 'Kiasi jumla kinachohusika', plain: 'Total money involved' },
 
   // Missing funds banner
-  'county.overview.missing_unaccounted': { en: 'Unaccounted', sw: 'Haikuhesabika', plain: 'Missing' },
-  'county.overview.cases_oag': { en: 'cases identified by OAG', sw: 'kesi zilizogunduliwa na Mkaguzi Mkuu', plain: 'cases the auditor flagged' },
 
   // Overview profile KPIs
+  'county.revenue.cash_receipts': {
+    en: 'Own-source cash receipts',
+    sw: 'Mapato ya ndani yaliyopokelewa',
+    plain: 'Money the county received from its own sources',
+  },
+  'county.revenue.summary_actual_realised': {
+    en: 'Summary table “Actual Realised”',
+    sw: 'Jedwali la muhtasari “Actual Realised”',
+    plain: 'Amount labelled “Actual Realised” in the summary table',
+  },
+  'county.revenue.amount': {
+    en: '{label}: {amount}',
+    sw: '{label}: {amount}',
+    plain: '{label}: {amount}',
+  },
+  'county.revenue.summary_differs': {
+    en: 'Summary table “Actual Realised”: {amount}; differs from cash receipts',
+    sw: 'Jedwali la muhtasari “Actual Realised”: {amount}; hutofautiana na fedha zilizopokelewa',
+    plain: 'The summary table reports {amount} as “Actual Realised”. This differs from the money received.',
+  },
+  'county.revenue.cash_and_opening_balance': {
+    en: 'Cash receipts and opening balance',
+    sw: 'Fedha zilizopokelewa na salio la mwanzo',
+    plain: 'Money received plus the balance at the start',
+  },
   'county.overview.kpi.total_revenue': { en: 'Total Revenue', sw: 'Mapato Jumla', plain: 'Total Money In' },
   'county.overview.kpi.local_prefix': { en: 'Local:', sw: 'Ya ndani:', plain: 'Local:' },
   'county.overview.kpi.census': { en: 'Census', sw: 'Sensa', plain: 'Census' },
@@ -1049,8 +1157,6 @@ export const MESSAGES = {
   'county.audit.status.resolved': { en: 'Resolved', sw: 'Imeshughulikiwa', plain: 'Fixed' },
   'county.audit.status.pending': { en: 'Pending', sw: 'Inasubiri', plain: 'Waiting' },
   'county.audit.status.open': { en: 'Open', sw: 'Imefunguliwa', plain: 'Open' },
-  'county.audit.missing_unaccounted': { en: 'Missing / Unaccounted', sw: 'Zimepotea / Hazihesabiki', plain: 'Missing Money' },
-  'county.audit.cases_flagged': { en: 'case(s) flagged by the Auditor-General as money that cannot be accounted for.', sw: 'kesi zilizogunduliwa na Mkaguzi Mkuu kama pesa ambazo haziwezi kuthibitishwa.', plain: 'cases the auditor says cannot be explained.' },
   'county.audit.all_findings_title': { en: 'All Audit Findings', sw: 'Matokeo Yote ya Ukaguzi', plain: 'All Audit Findings' },
   'county.audit.category_findings_suffix': { en: 'Findings', sw: 'Matokeo', plain: 'Findings' },
   'county.audit.showing_of': { en: 'Showing 20 of {n} findings', sw: 'Inaonyesha 20 kati ya matokeo {n}', plain: 'Showing 20 of {n} findings' },
@@ -1142,9 +1248,9 @@ export const MESSAGES = {
   'county.acct.table.year': { en: 'Year', sw: 'Mwaka', plain: 'Year' },
   'county.acct.table.opinion': { en: 'Opinion', sw: 'Maoni', plain: 'Result' },
   'county.acct.opinion.unqualified': { en: 'Unqualified', sw: 'Safi', plain: 'Clean' },
-  'county.acct.opinion.qualified': { en: 'Qualified', sw: 'Ya Kuhitimu', plain: 'Some Issues' },
-  'county.acct.opinion.adverse': { en: 'Adverse', sw: 'Mbaya', plain: 'Bad' },
-  'county.acct.opinion.disclaimer': { en: 'Disclaimer', sw: 'Kanusho', plain: 'Unable to Audit' },
+  'county.acct.opinion.qualified': { en: 'Qualified', sw: 'Qualified opinion', plain: 'Opinion with specific exceptions' },
+  'county.acct.opinion.adverse': { en: 'Adverse', sw: 'Adverse opinion', plain: 'Accounts materially misstated' },
+  'county.acct.opinion.disclaimer': { en: 'Disclaimer', sw: 'Kanusho', plain: 'Insufficient evidence for an opinion' },
 
   // Peer comparison
   'county.acct.peer.title': { en: 'Peer Comparison', sw: 'Ulinganisho wa Wenzao', plain: 'Compared to Similar Counties' },
@@ -1198,14 +1304,12 @@ export const MESSAGES = {
 
   // Officials card (extras beyond county.officials.*)
   'county.officials.card_title': { en: 'Who Runs This County', sw: 'Nani Anaongoza Kaunti Hii', plain: 'Who Runs the County' },
-  'county.officials.card_subtitle': { en: 'Elected and appointed offices with direct influence over county finances.', sw: 'Ofisi zilizochaguliwa na kuteuliwa zenye ushawishi wa moja kwa moja juu ya fedha za kaunti.', plain: 'The top people who decide how the county\u2019s money is used.' },
-  'county.officials.official_site': { en: 'Official site', sw: 'Tovuti rasmi', plain: 'Official site' },
-  'county.officials.directory_beta': { en: 'Officials directory in beta — coverage expanding across counties.', sw: 'Orodha ya viongozi bado inajaribiwa — tunaongeza kaunti zaidi.', plain: 'Officials list still growing — we add more counties each week.' },
+  'county.officials.card_subtitle': { en: 'The elected executive, as listed by the Council of Governors.', sw: 'Viongozi waliochaguliwa, kama walivyoorodheshwa na Baraza la Magavana.', plain: 'Who leads the county, from the Council of Governors\u2019 own list.' },
+  'county.officials.source': { en: 'Source', sw: 'Chanzo', plain: 'Where this comes from' },
+  'county.officials.fetched': { en: 'checked', sw: 'imekaguliwa', plain: 'checked' },
+  'county.officials.not_listed': { en: 'Not listed by the Council of Governors', sw: 'Haijaorodheshwa na Baraza la Magavana', plain: 'Not on the Council of Governors list' },
   'county.officials.title.governor': { en: 'Governor', sw: 'Gavana', plain: 'Governor' },
   'county.officials.title.deputy_governor': { en: 'Deputy Governor', sw: 'Naibu Gavana', plain: 'Deputy Governor' },
-  'county.officials.title.cec_finance': { en: 'CEC — Finance', sw: 'CEC — Fedha', plain: 'Finance Chief' },
-  'county.officials.title.assembly_speaker': { en: 'Assembly Speaker', sw: 'Spika wa Bunge', plain: 'Assembly Speaker' },
-  'county.officials.since_word': { en: 'since', sw: 'tangu', plain: 'since' },
 
   // Grade badge tooltips
   'county.grade.health_tooltip': { en: 'Financial health — budget execution, debt, pending bills. Click for methodology.', sw: 'Afya ya kifedha — utekelezaji wa bajeti, deni, ankara. Bonyeza kwa maelezo.', plain: 'Money health — budget, debt, unpaid bills. Click to see how it\u2019s scored.' },
@@ -1217,8 +1321,6 @@ export const MESSAGES = {
   // Role descriptions (full)
   'county.officials.desc.governor': { en: 'Chief executive of the county government. Elected directly by voters every five years.', sw: 'Mkuu wa serikali ya kaunti. Anachaguliwa moja kwa moja na wapiga kura kila baada ya miaka mitano.', plain: 'Leader of the county. Elected every 5 years.' },
   'county.officials.desc.deputy_governor': { en: 'Deputy to the Governor, elected on the same ticket. Steps in when the Governor is away or vacates office.', sw: 'Naibu wa Gavana, anachaguliwa pamoja naye. Huchukua nafasi pale Gavana hayupo.', plain: 'Second-in-command. Takes over if the Governor is away.' },
-  'county.officials.desc.cec_finance': { en: 'County Executive Committee member for Finance — the county-level equivalent of a finance minister. Prepares the budget and oversees spending.', sw: 'Mjumbe wa Kamati Tendaji ya Kaunti wa Fedha — sawa na waziri wa fedha wa kaunti. Huandaa bajeti na husimamia matumizi.', plain: 'In charge of the county\u2019s money — like a finance minister. Writes the budget and watches spending.' },
-  'county.officials.desc.assembly_speaker': { en: 'Presides over the County Assembly (the legislative body). Elected by Assembly members.', sw: 'Mwenyekiti wa Bunge la Kaunti. Huchaguliwa na wabunge.', plain: 'Leads the County Assembly. Chosen by assembly members.' },
 } as const satisfies Record<string, Translation>;
 
 export type TranslationKey = keyof typeof MESSAGES;

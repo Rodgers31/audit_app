@@ -8,16 +8,21 @@
  * projects summary. Pulled into its own chunk so the other five tabs
  * (which many users never open) don't bloat the initial JS payload.
  */
-import { getCountyOfficials } from '@/lib/data/county-officials';
-import UnaccountedFindings from '@/components/accountability/UnaccountedFindings';
 import { useLang } from '@/lib/i18n/LangProvider';
+import UnaccountedFindings from '@/components/accountability/UnaccountedFindings';
 import type { TranslationKey } from '@/lib/i18n/messages';
-import { CountyComprehensive } from '@/types';
+import { CountyComprehensive, OfficialSource } from '@/types';
 import { AlertTriangle, ExternalLink, Scale, TrendingDown, TrendingUp } from 'lucide-react';
 import React from 'react';
 import ModelledDataNote from '@/components/ModelledDataNote';
 import { ABSENT, hasIngestedAudit, fmtKES, fmtLabel, fmtPop, pct, SEVERITY_STYLE } from '../shared';
+import {
+  pendingBillsAbsenceLine,
+  pendingBillsAsAtLine,
+  pendingBillsNoteLines,
+} from '@/lib/counties/pendingBillsNotes';
 import KPI from './KPI';
+import { countyRevenueNotes } from '@/lib/counties/revenueNotes';
 
 /* ═══════════ Circular progress ═══════════ */
 function CircleProgress({
@@ -65,95 +70,76 @@ function CircleProgress({
 }
 
 /* ═══════════ Officials Card — Who Runs This County ═══════════ */
-function OfficialsCard({
-  countyId,
-  fallbackGovernor,
-}: {
-  countyId: string;
-  fallbackGovernor?: string;
-}) {
+/**
+ * Only names a publisher supplied (#231). Both come from the Council of
+ * Governors, read on every nightly seed; the API withholds a name that has
+ * no source behind it.
+ *
+ * This card used to read party, term, deputy governor, CEC Finance, speaker
+ * and website from a hand-typed `lib/data/county-officials.ts`. For Meru it
+ * put the sitting governor beside his impeached predecessor's party and term,
+ * and listed him again as deputy. Rows with no publisher were removed, not
+ * left as "Not yet published": nothing on the nightly will ever fill them.
+ */
+function OfficialsCard({ data }: { data: CountyComprehensive }) {
   const { t } = useLang();
-  const officials = getCountyOfficials(countyId);
-  // The API's governor wins. It now comes from the Council of Governors —
-  // whose membership IS the 47 sitting governors — read on every seed run
-  // and gated on all 47 being listed exactly once. `county-officials.ts` is a
-  // hardcoded list that cannot notice an election, so it is the fallback and
-  // only supplies party and term, which the Council's page does not carry.
-  const governor = fallbackGovernor || officials.governor?.name || null;
-  const rows: Array<{
-    role: string;
-    title: string;
-    name: string | null;
-    tip: string;
-    meta?: string;
-  }> = [
-    {
-      role: 'governor',
-      title: t('county.officials.title.governor'),
-      name: governor,
-      tip: t('county.officials.desc.governor'),
-      meta: officials.governor?.party
-        ? `${officials.governor.party}${officials.governor.term_start ? ` · ${t('county.officials.since_word')} ${officials.governor.term_start}` : ''}`
-        : undefined,
-    },
-    {
-      role: 'deputy_governor',
-      title: t('county.officials.title.deputy_governor'),
-      name: officials.deputy_governor?.name || null,
-      tip: t('county.officials.desc.deputy_governor'),
-    },
-    {
-      role: 'cec_finance',
-      title: t('county.officials.title.cec_finance'),
-      name: officials.cec_finance?.name || null,
-      tip: t('county.officials.desc.cec_finance'),
-    },
-    {
-      role: 'assembly_speaker',
-      title: t('county.officials.title.assembly_speaker'),
-      name: officials.assembly_speaker?.name || null,
-      tip: t('county.officials.desc.assembly_speaker'),
-    },
+  const sources = data.officials_source;
+  const rows: Array<{ role: 'governor' | 'deputy_governor'; name: string | null }> = [
+    { role: 'governor', name: data.governor || null },
+    { role: 'deputy_governor', name: data.deputy_governor || null },
   ];
+  // One link per distinct source page; both roles usually cite the same
+  // publisher but two different pages.
+  const cited = rows
+    .map((r) => ({ role: r.role, src: sources?.[r.role] }))
+    .filter((c): c is { role: typeof c.role; src: OfficialSource } => !!c.src)
+    .filter((c, i, all) => all.findIndex((o) => o.src.source_url === c.src.source_url) === i);
 
   return (
     <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-5'>
-      <div className='flex items-center justify-between mb-3'>
-        <div>
-          <h3 className='text-sm font-semibold text-gray-800 dark:text-neutral-text'>{t('county.officials.card_title')}</h3>
-          <p className='text-xs text-gray-500 dark:text-neutral-muted/80 mt-0.5'>{t('county.officials.card_subtitle')}</p>
-        </div>
-        {officials.website && (
-          <a
-            href={officials.website}
-            target='_blank'
-            rel='noopener noreferrer'
-            className='text-xs text-gov-forest dark:text-emerald-100 hover:underline inline-flex items-center gap-1'>
-            {t('county.officials.official_site')}
-            <ExternalLink size={11} />
-          </a>
-        )}
+      <div className='mb-3'>
+        <h3 className='text-sm font-semibold text-gray-800 dark:text-neutral-text'>{t('county.officials.card_title')}</h3>
+        <p className='text-xs text-gray-500 dark:text-neutral-muted/80 mt-0.5'>{t('county.officials.card_subtitle')}</p>
       </div>
-      <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3'>
+      <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
         {rows.map((r) => (
           <div
             key={r.role}
-            title={r.tip}
+            title={t(`county.officials.desc.${r.role}` as TranslationKey)}
             className='rounded-lg border border-gray-100 dark:border-neutral-border bg-gray-50/60 dark:bg-surface-elevated/70 px-3 py-2.5 hover:border-gov-sage/50 transition-colors'>
             <div className='text-[11px] uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-semibold'>
-              {r.title}
+              {t(`county.officials.title.${r.role}` as TranslationKey)}
             </div>
             <div
               className={`text-sm font-semibold mt-0.5 ${r.name ? 'text-gray-900 dark:text-neutral-text' : 'text-gray-400 dark:text-neutral-muted/80 italic'}`}>
-              {r.name || t('county.officials.not_published')}
+              {r.name || t('county.officials.not_listed')}
             </div>
-            {r.meta && <div className='text-[11px] text-gray-500 dark:text-neutral-muted/80 mt-0.5'>{r.meta}</div>}
           </div>
         ))}
       </div>
-      {!officials.governor && (
-        <p className='text-[11px] text-gray-400 dark:text-neutral-muted/80 mt-3 italic'>
-          {t('county.officials.directory_beta')}
+      {cited.length > 0 && (
+        <p className='text-[11px] text-gray-500 dark:text-neutral-muted/80 mt-3'>
+          {t('county.officials.source')}:{' '}
+          {cited.map(({ role, src: s }, i) => (
+            <React.Fragment key={s.source_url}>
+              {i > 0 && ' · '}
+              <a
+                href={s.source_url}
+                target='_blank'
+                rel='noopener noreferrer'
+                className='text-gov-forest dark:text-emerald-100 hover:underline inline-flex items-center gap-1'>
+                {s.publisher || new URL(s.source_url).hostname} —{' '}
+                {t(`county.officials.title.${role}` as TranslationKey)}
+                <ExternalLink size={10} />
+              </a>
+              {s.fetched_at && (
+                <span>
+                  {' '}
+                  ({t('county.officials.fetched')} {s.fetched_at.slice(0, 10)})
+                </span>
+              )}
+            </React.Fragment>
+          ))}
         </p>
       )}
     </div>
@@ -162,7 +148,7 @@ function OfficialsCard({
 
 /* ═══════════ Tab: Overview ═══════════ */
 export default function OverviewTab({ data }: { data: CountyComprehensive }) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const {
     demographics,
     economic_profile,
@@ -173,6 +159,18 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
     missing_funds,
     revenue,
   } = data;
+
+  // Only beside a figure: a date or a note on an absent figure would describe
+  // nothing.
+  const pendingAsAt =
+    debt.pending_bills != null
+      ? pendingBillsAsAtLine(debt.pending_bills_as_at, debt.pending_bills_source?.table, lang, t)
+      : null;
+  const pendingNotes =
+    debt.pending_bills != null ? pendingBillsNoteLines(debt.pending_bills_notes, t, fmtKES) : [];
+  // And only beside an absence: the report's own reason there is no figure.
+  const pendingAbsent =
+    debt.pending_bills == null ? pendingBillsAbsenceLine(debt.pending_bills_absence, lang, t) : null;
 
   // Provenance comes from the API, which knows whether this period's headline
   // was read from a CoB BIRR table or modelled from the CRA formula. The
@@ -289,6 +287,23 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
                 {fmtKES(debt.pending_bills)}
               </span>
             </div>
+            {/* The day the figure is a stock on and what the report says
+                about it (#238); both come from the API and are absent with
+                the figure. */}
+            {pendingAsAt && (
+              <p className='text-[11px] text-gray-500 dark:text-neutral-muted/80 text-right'>{pendingAsAt}</p>
+            )}
+            {pendingAbsent && (
+              <p className='text-[11px] text-gray-500 dark:text-neutral-muted/80 text-right'>{pendingAbsent}</p>
+            )}
+            {pendingNotes.map((line) => (
+              <p
+                key={line}
+                className='flex items-start gap-1.5 text-[11px] text-amber-800 dark:text-amber-200'>
+                <AlertTriangle size={12} className='mt-0.5 flex-shrink-0' aria-hidden />
+                <span>{line}</span>
+              </p>
+            ))}
           </div>
         </div>
       </div>
@@ -377,13 +392,9 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
             accent='text-emerald-700'
           />
           <KPI
-            label={t('county.overview.kpi.total_revenue')}
+            label={revenue.total_revenue_basis === 'cash_receipts_including_opening_balance' ? t('county.revenue.cash_and_opening_balance') : t('county.overview.kpi.total_revenue')}
             value={fmtKES(revenue.total_revenue)}
-            sub={
-              revenue.local_revenue > 0
-                ? `${t('county.overview.kpi.local_prefix')} ${fmtKES(revenue.local_revenue)}`
-                : undefined
-            }
+            sub={countyRevenueNotes(revenue, fmtKES, t).join(' · ') || undefined}
             accent='text-green-700'
           />
         </div>
@@ -412,7 +423,7 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
       </div>
 
       {/* Who Runs This County — named officials */}
-      <OfficialsCard countyId={data.id} fallbackGovernor={data.governor} />
+      <OfficialsCard data={data} />
 
       {/* The stalled-projects summary card was withdrawn along with the
           Projects tab (credibility audit F6) — it summarised a hand-written

@@ -56,7 +56,8 @@ def _to_decimal(value: Any) -> Optional[Decimal]:
     if value is None:
         return None
     try:
-        return Decimal(str(value))
+        result = Decimal(str(value))
+        return result if result.is_finite() else None
     except (InvalidOperation, ValueError, TypeError):
         return None
 
@@ -75,6 +76,9 @@ def _metadata(item: Dict[str, Any]) -> Dict[str, Any]:
     basis = _basis(item.get("basis"))
     if basis:
         meta["basis"] = basis
+    for key in ("source", "measure", "absent_reason"):
+        if item.get(key) is not None:
+            meta[key] = item[key]
     return meta
 
 

@@ -32,26 +32,14 @@ export interface RevSource {
   basis?: string | null;
   /** The row's own note explaining the figure, e.g. how it was derived. */
   basis_note?: string | null;
+  absent_reason?: string | null;
+  source_absent_reason?: string | null;
+  measure?: string | null;
+  source?: { url?: string; data_url?: string; period?: string; retrieved_at?: string | null; publication_date?: string | null; reconciliation?: string; stated_amount_billion_kes?: string } | null;
 }
 
-/* ─── Provenance ───────────────────────────────────────────────────────────
-
-   Two of the six heads on this page are not figures KRA published:
-
-   * `Other Tax Revenue` is a subtraction — the exchequer total less the heads
-     KRA names — in every year with actuals;
-   * the whole of FY 2022/23 is back-computed out of the FY 2023/24 release's
-     growth rates, and it is the leftmost bar of every sparkline below.
-
-   They rendered as equals under one "Source: KRA Annual Performance" credit.
-   The rows always knew better; the API now carries `basis` so the page can
-   say so where the reader is looking. An absent basis is treated as absence —
-   it earns no badge, and it earns no credit either.
-
-   The headline "How KRA collected KES …" stays unqualified on purpose: KRA
-   does publish the exchequer total, and does collect the taxes in the
-   residual. What is unpublished is the per-head split, which is what the
-   cards and the footnote below are about.                                  */
+// Derived historical values remain labelled. The mixed-basis residual and
+// shares are withheld: departmental Customs includes agency collections.
 const BASIS_LABEL: Record<string, string> = {
   derived: 'Derived',
   residual: 'Residual',
@@ -87,7 +75,7 @@ const SOURCE_DESC: Record<string, string> = {
   'Corporation Tax': "Tax on businesses' profits, paid quarterly by companies.",
   VAT: 'Value-Added Tax — the 16% on most goods and services you buy.',
   'Excise Duty': 'Specific-rate tax on fuel, alcohol, tobacco, airtime, sugar.',
-  'Customs & Import Duty': 'Duties at the port on imported goods plus import VAT.',
+  'Customs & Import Duty': 'Customs departmental collections, including import taxes and agency levies.',
   // `Other Tax Revenue` deliberately has no blurb here. It used to read
   // "Stamp duty, agricultural cess, minor taxes lumped together", which named
   // a cess the row does not cover and read as a measured stream. It is a
@@ -126,8 +114,20 @@ function paletteFor(name: string) {
   return SOURCE_PALETTE[name] ?? FALLBACK_PAL;
 }
 
+/** A metadata object is not evidence that a document link can be opened. */
+function sourceUrl(source?: { data_url?: string; url?: string } | null): string | undefined {
+  for (const candidate of [source?.data_url, source?.url]) {
+    if (typeof candidate !== 'string' || !candidate.trim()) continue;
+    try {
+      const url = new URL(candidate);
+      if (['http:', 'https:'].includes(url.protocol) && url.hostname) return candidate;
+    } catch { /* Try the other locator before reporting absence. */ }
+  }
+  return undefined;
+}
+
 function fmtB(v?: number | null): string {
-  if (v == null || v <= 0) return '—';
+  if (v == null) return '—';
   if (v >= 1000) return `${(v / 1000).toFixed(2)}T`;
   return `${v.toFixed(0)}B`;
 }
@@ -147,7 +147,7 @@ export default function RevenueMix({ revenueBySource }: Props) {
       (revenueBySource ?? []).filter(
         (fy) =>
           (fy.sources ?? []).length > 1 &&
-          fy.sources.some((s) => s.amount != null && s.amount > 0)
+          fy.sources.some((s) => s.amount != null && s.amount >= 0 && !s.absent_reason)
       ),
     [revenueBySource]
   );
@@ -162,13 +162,13 @@ export default function RevenueMix({ revenueBySource }: Props) {
       .filter(
         (s) =>
           s.amount != null &&
-          s.amount > 0 &&
+          s.amount >= 0 &&
+          !s.absent_reason &&
+          !(s.revenue_type === 'Other Tax Revenue' && s.basis !== 'published') &&
           !/^total /i.test(s.revenue_type ?? '')
       )
       // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- sort comparator
       .sort((a, b) => (b.amount ?? 0) - (a.amount ?? 0));
-    // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- reducer accumulator
-    const totalB = list.reduce((s, r) => s + (r.amount ?? 0), 0);
 
     // 3-year series per source for the sparkline
     const seriesFYs = multiSourceActualFYs.slice(-3);
@@ -180,14 +180,14 @@ export default function RevenueMix({ revenueBySource }: Props) {
           const row = (fy.sources ?? []).find((s) => s.revenue_type === r.revenue_type);
           return {
             year: fy.fiscal_year?.replace('FY ', '') ?? '',
-            amount: row?.amount ?? null,
+            amount: row?.absent_reason ? null : row?.amount ?? null,
             // Carried per point: one stream can be published in the latest
             // year and back-computed in the earliest, which is exactly the
             // FY 2022/23 case these bars would otherwise hide.
             basis: row?.basis ?? null,
           };
         })
-        .filter((p) => p.amount != null && p.amount > 0) as {
+        .filter((p) => p.amount != null && p.amount >= 0) as {
         year: string;
         amount: number;
         basis: string | null;
@@ -199,17 +199,16 @@ export default function RevenueMix({ revenueBySource }: Props) {
           : null;
       return {
         key: r.revenue_type,
-        label: r.revenue_type,
+        label: r.measure ?? r.revenue_type,
+        source: r.source,
+        sourceAbsent: r.source_absent_reason,
         // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- the caller filters to fiscal years whose streams all carry amounts, so a null here is unreachable
         amount: r.amount ?? 0,
-        // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- see above — share is computed from the same filtered set
-        share: totalB > 0 ? ((r.amount ?? 0) / totalB) * 100 : 0,
         yoy,
         pal,
         desc: descriptionFor(r),
         basis: r.basis ?? null,
         series,
-        totalB,
       };
     });
   }, [latest, prev, multiSourceActualFYs]);
@@ -261,9 +260,6 @@ export default function RevenueMix({ revenueBySource }: Props) {
 
   if (!latest || rows.length === 0) return null;
 
-  // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- guarded: `rows.length === 0` returns null on the line above, so rows[0] exists
-  const totalB = rows[0]?.totalB ?? 0;
-  const topSource = rows[0];
 
   return (
     <motion.section
@@ -278,13 +274,12 @@ export default function RevenueMix({ revenueBySource }: Props) {
             Where tax revenue comes from
           </div>
           <h3 className='font-display text-xl sm:text-[22px] text-gov-dark dark:text-white leading-tight mt-0.5'>
-            How KRA collected KES {fmtB(totalB)} in {latest.fiscal_year}
+            KRA revenue collections · {latest.fiscal_year}
           </h3>
           <p className='text-[12.5px] text-neutral-muted mt-1 max-w-2xl'>
-            Tax revenue broken down by stream — shares are of{' '}
-            <strong className='font-semibold text-gov-dark dark:text-white'>tax revenue</strong>, excluding
-            non-tax revenue (fees, investment income, A-in-A, and grants).{' '}
-            {topSource?.label} is the single largest — {topSource?.share.toFixed(0)}% of tax revenue.
+            Published collections use different bases. Customs includes agency levies;
+            these lines are not a complete partition of tax or Exchequer revenue.
+            Other Tax Revenue and percentage shares are unavailable until those bases reconcile.
           </p>
         </div>
         {provenance.declared && (
@@ -306,41 +301,22 @@ export default function RevenueMix({ revenueBySource }: Props) {
         )}
       </div>
 
-      {/* Flow bar */}
-      <div className='relative w-full rounded-full h-11 bg-gov-sand/60 border border-neutral-border/30 overflow-hidden flex'>
-        {rows.map((r, i) => {
-          const w = r.share;
-          if (w < 0.3) return null;
-          const isHover = hoverKey === r.key;
-          return (
-            <motion.div
-              key={r.key}
-              initial={{ width: 0 }}
-              animate={{ width: `${w}%` }}
-              transition={{ duration: 0.9, delay: 0.07 * i, ease: [0.22, 1, 0.36, 1] }}
-              onMouseEnter={() => setHoverKey(r.key)}
-              onMouseLeave={() => setHoverKey(null)}
-              className='relative h-full cursor-default'
-              style={{
-                background: `linear-gradient(135deg, ${r.pal.start}, ${r.pal.end})`,
-                filter: isHover ? 'brightness(1.08)' : 'brightness(1)',
-                transform: isHover ? 'scaleY(1.06)' : 'scaleY(1)',
-                transformOrigin: 'center',
-                transition: 'filter .2s, transform .2s',
-              }}>
-              {w > 8 && (
-                <span className='absolute inset-0 flex items-center justify-center px-2 text-[11px] font-bold text-white/95 drop-shadow-sm tabular-nums'>
-                  {w.toFixed(0)}%
-                </span>
-              )}
-            </motion.div>
-          );
-        })}
+      <div className='text-xs text-neutral-muted space-y-1'>
+        {(latest.sources ?? []).filter((s) => s.category === 'total' && s.amount != null).map((s) => (
+          <p key={s.revenue_type}>{s.revenue_type}: KES {fmtB(s.amount)}
+            {s.basis === 'published' ? ' · publisher-stated' : ' · source basis unconfirmed'}
+            {sourceUrl(s.source) ? <a className='underline ml-1' href={sourceUrl(s.source)}>Source version</a> : ' · source version unavailable'}
+            {s.source?.stated_amount_billion_kes && <> · stated KES {s.source.stated_amount_billion_kes}B</>}
+            {s.source?.retrieved_at && <> · retrieved {s.source.retrieved_at.slice(0, 10)}</>}
+            {s.source?.reconciliation && <> · {s.source.reconciliation}</>}
+          </p>
+        ))}
       </div>
 
       {/* Source cards */}
       <div className='mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5'>
         {rows.map((r) => {
+          const documentUrl = sourceUrl(r.source);
           const isHover = hoverKey === r.key;
           const yoyUp = r.yoy != null && r.yoy > 0.5;
           const yoyDown = r.yoy != null && r.yoy < -0.5;
@@ -366,11 +342,7 @@ export default function RevenueMix({ revenueBySource }: Props) {
                   <span className='text-[12px] font-semibold text-gov-dark dark:text-white truncate'>
                     {r.label}
                   </span>
-                  <span
-                    className='text-[11px] font-bold tabular-nums'
-                    style={{ color: r.pal.accent }}>
-                    {r.share.toFixed(1)}%
-                  </span>
+
                 </div>
                 {/* A figure the source did not publish says so beside its own
                     number, not only in a note at the foot of the section. */}
@@ -397,12 +369,19 @@ export default function RevenueMix({ revenueBySource }: Props) {
                     </span>
                   )}
                 </div>
+                {!documentUrl && <p className='text-[11px] text-neutral-muted mt-1'>{r.sourceAbsent || 'Source version and observation date unavailable.'}</p>}
+                {documentUrl && r.source && <p className='text-[11px] text-neutral-muted mt-1'>
+                  <a className='underline' href={documentUrl}>Source version</a>
+                  {r.source.stated_amount_billion_kes && <> · stated KES {r.source.stated_amount_billion_kes}B</>}
+                  {r.source.retrieved_at && <> · retrieved {r.source.retrieved_at.slice(0, 10)}</>}
+                  {r.source.reconciliation && <> · {r.source.reconciliation}</>}
+                </p>}
                 {/* Mini multi-year bar */}
                 {r.series.length > 1 && (
                   <div className='mt-2 flex items-end gap-1 h-6'>
                     {r.series.map((p, i) => {
                       const max = Math.max(...r.series.map((s) => s.amount));
-                      const h = (p.amount / max) * 100;
+                      const h = max > 0 ? (p.amount / max) * 100 : 0;
                       const isLatest = i === r.series.length - 1;
                       // A bar is a quantity claim as much as a printed figure
                       // is. An unpublished year is drawn hollow so the reader
@@ -431,7 +410,7 @@ export default function RevenueMix({ revenueBySource }: Props) {
                               unpublished ? 'border border-dashed border-amber-500/70' : ''
                             }`}
                             style={{
-                              height: `${Math.max(h, 10)}%`,
+                              height: `${p.amount === 0 ? 0 : Math.max(h, 10)}%`,
                               background: unpublished
                                 ? 'transparent'
                                 : isLatest

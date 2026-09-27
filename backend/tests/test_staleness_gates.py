@@ -201,7 +201,8 @@ class TestEveryDomainRecordsProvenance:
     def test_a_domain_that_only_marks_live_still_covers_its_fallback(self):
         """A fetcher that marks live on success but says nothing on failure
         reports 'unknown' exactly when it matters most. Any domain with a
-        fixture fallback must have BOTH calls."""
+        fixture fallback must mark it; an intentionally withheld fetch must
+        instead mark the partial failure explicitly."""
         import pathlib
 
         root = pathlib.Path(__file__).resolve().parents[1] / "seeding" / "domains"
@@ -214,8 +215,12 @@ class TestEveryDomainRecordsProvenance:
                 for path in (root / domain).rglob("*.py")
             )
             has_live = "mark_live(" in sources
-            has_fixture = "mark_fixture(" in sources
-            if has_live and not has_fixture:
+            # Preserve each supported failure path: fallback, partial source
+            # read, and refusal when no trustworthy fixture exists.
+            has_failure = any(marker in sources for marker in (
+                "mark_fixture(", "mark_partial(", "mark_refused("
+            ))
+            if has_live and not has_failure:
                 one_sided.append(domain)
         assert one_sided == [], (
             f"domains that record success but not failure: {one_sided}"

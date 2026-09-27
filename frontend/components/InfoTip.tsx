@@ -173,16 +173,6 @@ const GLOSSARY: Record<string, { title: string; body: string }> = {
     title: 'PFM Act',
     body: 'The Public Finance Management Act (2012) — Kenya\'s main law governing how public money is raised, spent, and accounted for. It sets rules for budgeting, borrowing, and financial reporting at both national and county levels.',
   },
-
-  // ── Sustainability benchmarks ─────────────────────────
-  'imf-threshold': {
-    title: 'IMF Debt Threshold',
-    body: 'The International Monetary Fund recommends that low-income countries like Kenya keep their debt-to-GDP ratio below 55%. Beyond this, a country faces elevated risk of debt distress — difficulty meeting its debt obligations.',
-  },
-  'eac-benchmark': {
-    title: 'EAC Convergence Criteria',
-    body: 'The East African Community (Kenya, Uganda, Tanzania, Rwanda, Burundi, DRC, South Sudan) agreed that member states should keep debt-to-GDP below 50% as part of their economic integration targets.',
-  },
 };
 
 interface InfoTipProps {

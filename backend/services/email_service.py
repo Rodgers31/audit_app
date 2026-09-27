@@ -33,6 +33,10 @@ def generate_unsubscribe_token(email: str) -> str:
 def verify_unsubscribe_token(email: str, token: str) -> bool:
     """Constant-time verification of an unsubscribe token."""
     expected = generate_unsubscribe_token(email)
+    # compare_digest(str, str) rejects non-ASCII. Malformed public input is
+    # an invalid signature, not a server error.
+    if not isinstance(token, str) or len(token) != 64 or not token.isascii():
+        return False
     return hmac.compare_digest(expected, token)
 
 

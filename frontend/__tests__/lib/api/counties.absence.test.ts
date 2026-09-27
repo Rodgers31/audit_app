@@ -12,11 +12,12 @@
  * county was allocated nothing, owes nothing, or received nothing — and none of
  * those are things an absent field says.
  *
- * A zero arriving FROM the API is treated as absence too, deliberately: every
- * one of these fields is a SUM over rows on the backend (budget lines, loans),
+ * A zero budget or debt arriving FROM the API is treated as absence: these
+ * fields are SUMs over rows on the backend (budget lines, loans),
  * so 0.0 is an empty aggregate, not a measured zero. No county is allocated
  * nothing — all 47 receive an equitable share by constitutional formula — so
- * "KES 0" there can only ever mean "nothing ingested".
+ * "KES 0" there can only ever mean "nothing ingested". Money received and
+ * pending bills come from reported figures and retain a source-reported zero.
  */
 import { transformCountyData } from '@/lib/api/counties';
 
@@ -49,7 +50,7 @@ describe('transformCountyData — absent figures stay absent', () => {
     expect(c.moneyReceived).toBeUndefined();
   });
 
-  it('treats an explicit zero as absence, not as a figure', () => {
+  it('preserves reported zero receipts while withholding empty budget and debt sums', () => {
     const c = transformCountyData({
       ...base,
       total_budget: 0,
@@ -59,7 +60,7 @@ describe('transformCountyData — absent figures stay absent', () => {
     } as never);
     expect(c.budget).toBeUndefined();
     expect(c.debt).toBeUndefined();
-    expect(c.moneyReceived).toBeUndefined();
+    expect(c.moneyReceived).toBe(0);
   });
 
   it('still carries published figures through unchanged', () => {
@@ -82,11 +83,22 @@ describe('transformCountyData — absent figures stay absent', () => {
       ...base,
       budget_2025: 9_542_030_000,
       debt: 450_065_025,
-      total_spent: 4_093_530_870,
     } as never);
     expect(c.budget).toBe(9_542_030_000);
     expect(c.debt).toBe(450_065_025);
-    expect(c.moneyReceived).toBe(4_093_530_870);
+  });
+
+  it('never publishes spending as money received (#238)', () => {
+    // `money_received` fell back to `total_spent`, so a county whose receipts
+    // were withheld had its SPENDING shown as what it received, and the map
+    // tooltip's funding gap became budget minus spending.
+    const c = transformCountyData({
+      ...base,
+      budget_2025: 9_542_030_000,
+      money_received: null,
+      total_spent: 4_093_530_870,
+    } as never);
+    expect(c.moneyReceived).toBeUndefined();
   });
 
   it('does not let a null from the API become a zero', () => {
@@ -114,14 +126,14 @@ describe('transformCountyData — absent figures stay absent', () => {
 });
 
 describe('pendingBills: not reported is not zero', () => {
-  // Narok submitted no pending-bills data to the Treasury for FY 2024/25.
-  // The BROP prints an empty row for it and says so in a footnote, so the API
+  // Nandi reported no trade payables to the Controller of Budget at 30 June
+  // 2026. The report prints "-" across its row and says so, so the API
   // returns null. `?? 0` used to turn that into "KSh 0 pending bills", which
   // is a claim the county owes nothing — one nobody has made.
   it('renders absence, not zero, when the API reports none', () => {
     const county = transformCountyData({
-      id: 'narok',
-      name: 'Narok',
+      id: 'nandi',
+      name: 'Nandi',
       pending_bills: null,
     } as never);
 

@@ -160,7 +160,7 @@ def test_the_sustainability_headline_declares_its_basis(
     assert "GGXWDG_NGDP" in d["basis"]
     assert d["source"] == "IMF World Economic Outlook"
     # The threshold verdict is unchanged by the basis switch.
-    assert d["status"] == "above"
+    assert "status" not in d
 
 
 def test_without_imf_rows_the_fallback_basis_is_still_declared(

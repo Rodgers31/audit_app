@@ -45,15 +45,10 @@ const LIVE: DebtSustainabilityResponse = {
     basis:
       'Central government debt / nominal GDP (CBK debt timeline) — not the IMF general-government measure',
     source: 'CBK Annual Reports / National Treasury BPS',
-    threshold_imf: 55.0,
-    threshold_eac: 50.0,
-    status: 'above',
   },
   debt_service_to_revenue: {
     value: 77.6,
     year: 'FY 2026/27',
-    threshold: 30.0,
-    status: 'above',
   },
   external_debt_share: 44.4,
   projections: [
@@ -160,12 +155,12 @@ const BARE = {
 } as const;
 
 describe('DebtSustainabilityResponse describes the real payload', () => {
-  it('carries the headline measures as objects with their own thresholds', () => {
+  it('carries measured ratios without unsupported thresholds', () => {
     // Not bare numbers. A consumer that renders `debt_to_gdp` directly would
     // print "[object Object]" — which is what the old type invited.
     expect(LIVE.debt_to_gdp?.value).toBe(70.0);
-    expect(LIVE.debt_to_gdp?.threshold_imf).toBe(55.0);
-    expect(LIVE.debt_service_to_revenue?.threshold).toBe(30.0);
+    expect(LIVE.debt_to_gdp).not.toHaveProperty('threshold_imf');
+    expect(LIVE.debt_service_to_revenue).not.toHaveProperty('threshold');
   });
 
   it('accepts a fiscal-year label where the year is not a calendar year', () => {

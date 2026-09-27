@@ -1,7 +1,7 @@
 'use client';
 
 import { DebtTimelineEntry } from '@/lib/api/debt';
-import { dsaCitation, dsaHref, dsaIsAlarm, dsaSourceLabel, readDsaRating } from '@/lib/debt/dsaRating';
+import { dsaCitation, dsaHref, dsaIsAlarm, dsaSourceLabel, dsaVintageLabel, readDsaRating } from '@/lib/debt/dsaRating';
 import { toRawKES } from '@/lib/utils';
 import { useLang } from '@/lib/i18n/LangProvider';
 import {
@@ -590,6 +590,7 @@ export default function NationalDebtCard() {
                     className='underline hover:no-underline'>
                     {dsaSourceLabel(dsa)}
                   </a>
+                  <span className='block mt-1'>{dsaVintageLabel(dsa)}</span>
                 </>
               ) : (
                 t('home.debt.insight_risk_unassessed_desc')

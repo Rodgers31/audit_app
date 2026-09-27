@@ -615,9 +615,10 @@ jobs:
           # hollow_run_findings asks the question neither of them asked: did
           # THIS run reach the publisher? Its exemptions are the same two
           # reason slugs the window gate already exempts (no_live_source,
-          # fixture_superseded), so learning_hub and stalled_projects — which
-          # have no publisher — stay green, and a broken fetch cannot exempt
-          # itself. The rule lives in seeding/staleness.py, tested by
+          # fixture_superseded), so learning_hub — which has no publisher —
+          # stays green (stalled_projects did too, until #230 gave it COB),
+          # and a broken fetch cannot exempt itself. The rule lives in
+          # seeding/staleness.py, tested by
           # backend/tests/test_hollow_run_gate.py, which runs THIS step.
           # Every finding is printed; only FAIL-level ones stop the run.
           # partial is WARN on purpose — a secondary series did refresh, and
@@ -934,42 +935,87 @@ jobs:
           "
 
   # ══════════════════════════════════════════════════════════════════
-  # Step 5: Freshness loop (Layer 8) — tell the frontend data changed
+  # Step 5: Freshness loop (Layer 8): clear the API cache, then the pages
   # ══════════════════════════════════════════════════════════════════
-  # A new publication must reach the prerendered pages without a deploy.
-  # The request body is HMAC-SHA256-signed with REVALIDATE_SECRET (same
-  # secret the Next.js /api/revalidate route verifies); the route only
-  # accepts allowlisted paths. Runs only after seed AND validate succeed
-  # on a non-dry run — never revalidate pages onto unvalidated data.
+  # New data has to reach the pages without a deploy (issue #231). Two
+  # caches sit between the database and a reader, and they are cleared in
+  # this order:
+  #   1. The API's response caches (Render). Without this, a regenerated page
+  #      is rebuilt from the pre-seed response, which can be up to 6 hours old.
+  #   2. The prerendered pages (Vercel). Paths come from
+  #      frontend/lib/revalidation/paths.json, the same file the route uses
+  #      as its allowlist, so the two cannot disagree.
+  # Both requests are HMAC-SHA256-signed with REVALIDATE_SECRET. Runs only
+  # after seed AND validate succeed on a non-dry run. Pages are never
+  # revalidated onto unvalidated data.
+  #
+  # This job FAILS if the secret is missing, if either call does not
+  # answer 200, or if any page path is rejected. Before #231 a missing
+  # secret was a warning and a rejected path was ignored, and the loop
+  # stayed open for weeks while the run showed green.
   revalidate:
-    name: Revalidate Frontend Pages
+    name: Refresh API Cache and Pages
     needs: [seed, validate]
     if: success() && github.event.inputs.dry_run != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    env:
+      REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
+      API_BASE_URL: ${{ vars.API_BASE_URL || 'https://audit-app-4pwa.onrender.com' }}
+      REVALIDATE_URL: ${{ vars.REVALIDATE_URL || 'https://www.auditgava.com/api/revalidate' }}
     steps:
-      - name: Call the revalidation webhook
-        env:
-          REVALIDATE_URL: ${{ vars.REVALIDATE_URL || 'https://www.auditgava.com/api/revalidate' }}
-          REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: frontend/lib/revalidation/paths.json
+          sparse-checkout-cone-mode: false
+
+      - name: Require the signing secret
         run: |
           if [ -z "$REVALIDATE_SECRET" ]; then
-            echo "::warning::REVALIDATE_SECRET is not configured — prerendered pages will refresh only on their ISR interval. Set the secret here and in Vercel to close the freshness loop."
-            exit 0
+            echo "::error::REVALIDATE_SECRET is not configured. The seed wrote new data, but the API cache and the prerendered pages will go on serving the old data until TTLs expire or someone deploys. Set the same value in GitHub Actions secrets, in Vercel and in Render (see PR for #231)."
+            exit 1
           fi
-          BODY='{"paths":["/","/audits","/budget","/counties","/debt","/sectors","/transparency","/accountability/missing-funds","/sources"]}'
+
+      - name: Invalidate the API's response caches
+        run: |
+          BODY=$(jq -cn --argjson ts "$(date +%s)" --arg reason "seed run ${{ github.run_id }}" '{ts: $ts, reason: $reason}')
           SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$REVALIDATE_SECRET" -r | cut -d' ' -f1)
-          HTTP=$(curl -sS -o /tmp/revalidate_response.json -w '%{http_code}' \
+          # Render can be slow to answer the first request after idle, so allow retries on connection errors only.
+          HTTP=$(curl -sS --retry 3 --retry-connrefused --max-time 60 \
+            -o /tmp/invalidate_response.json -w '%{http_code}' \
+            -X POST "$API_BASE_URL/api/v1/system/cache/invalidate" \
+            -H "content-type: application/json" \
+            -H "x-revalidate-signature: $SIG" \
+            -d "$BODY")
+          cat /tmp/invalidate_response.json; echo ""
+          if [ "$HTTP" != "200" ] || [ "$(jq -r '.invalidated' /tmp/invalidate_response.json)" != "true" ]; then
+            echo "::error::API cache invalidation failed (HTTP $HTTP). Pages revalidated now would be rebuilt from stale API responses, so stopping here."
+            exit 1
+          fi
+          echo "API caches cleared: $(jq -c '{redis, local: .local.cleared_entries, pid}' /tmp/invalidate_response.json)"
+
+      - name: Revalidate the prerendered pages
+        run: |
+          BODY=$(jq -c '{paths: .paths}' frontend/lib/revalidation/paths.json)
+          SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$REVALIDATE_SECRET" -r | cut -d' ' -f1)
+          HTTP=$(curl -sS --max-time 60 -o /tmp/revalidate_response.json -w '%{http_code}' \
             -X POST "$REVALIDATE_URL" \
             -H "content-type: application/json" \
             -H "x-revalidate-signature: $SIG" \
             -d "$BODY")
-          cat /tmp/revalidate_response.json
-          echo ""
+          cat /tmp/revalidate_response.json; echo ""
           if [ "$HTTP" != "200" ]; then
             echo "::error::Revalidation webhook returned HTTP $HTTP"
             exit 1
           fi
+          REJECTED=$(jq -c '.rejected' /tmp/revalidate_response.json)
+          SENT=$(printf '%s' "$BODY" | jq '.paths | length')
+          DONE=$(jq '.revalidated | length' /tmp/revalidate_response.json)
+          if [ "$REJECTED" != "[]" ] || [ "$SENT" != "$DONE" ]; then
+            echo "::error::The route revalidated $DONE of $SENT paths; rejected $REJECTED. The deployed frontend's allowlist differs from paths.json."
+            exit 1
+          fi
+          echo "Revalidated $DONE page paths."
 
   # ══════════════════════════════════════════════════════════════════
   # Step 6: Summary and notifications

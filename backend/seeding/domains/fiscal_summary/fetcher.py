@@ -653,7 +653,7 @@ def _apply_fiscal_framework(payload, editions):
 
         framework = framework_payload(split, source_url=url, page=edition.table.page)
         framework["source"]["edition"] = f"Budget Summary for the {edition.fiscal_year} Budget"
-        framework["source"]["column"] = (
+        framework["source"]["column_identification"] = (
             "Approved budget (identified by the narrative)"
             if split.identified_by == "approved_budget"
             else "The column printing this row's ordinary revenue (the latest "

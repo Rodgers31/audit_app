@@ -99,6 +99,22 @@ def test_source_modelled_metadata_without_basis_is_not_reported_actual():
     assert summary["total_allocation"] is None, summary
 
 
+@pytest.mark.parametrize("location", ["source", "row"])
+@pytest.mark.parametrize(
+    "dataset", ["enhanced_county_data", "enhanced_county_data.json", "bootstrap_county_model"]
+)
+def test_modelled_dataset_stamp_cannot_publish_through_financial_gate(location, dataset):
+    line = _line()
+    stamp = {"dataset_id": dataset}
+    if location == "source":
+        line.source_document.meta = stamp
+    else:
+        line.provenance = stamp
+    summary = financial_summary([line], _period())
+    assert summary["total_allocation"] is None, summary
+    assert summary["total_spent"] is None, summary
+
+
 @pytest.mark.parametrize("page_ref", ["0", "-1"])
 def test_impossible_or_blank_locator_does_not_publish(page_ref):
     summary = financial_summary([_line(page_ref=page_ref)], _period())

@@ -22,7 +22,16 @@ CLASSIFICATION_CATEGORIES = {"total", "development", "recurrent"}
 #: the county RAISED, stored in the same table because it has the same
 #: target/actual shape; counting it as expenditure would add a county's
 #: revenue to its own spending.
-NON_SECTOR_CATEGORIES = {"total budget", "own source revenue"}
+NON_SECTOR_CATEGORIES = {"total budget", "own source revenue", "revenue receipts"}
+
+#: Where the CBIRR's per-county revenue receipts are stored (one row per
+#: stream, ``subcategory`` naming it, plus ``"Total"``). Money RECEIVED, so it
+#: is in NON_SECTOR_CATEGORIES above and in no spending aggregate.
+#: ``seeding.pdf_parsers.REVENUE_RECEIPTS_CATEGORY`` spells it the same way —
+#: that module is kept free of backend imports so its source digest keys the
+#: parse cache — and tests/test_county_revenue_receipts.py pins the two equal.
+REVENUE_RECEIPTS_CATEGORY = "Revenue Receipts"
+REVENUE_RECEIPTS_TOTAL = "Total"
 
 
 def split_classification_and_sector_lines(budget_lines):

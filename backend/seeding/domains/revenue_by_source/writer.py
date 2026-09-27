@@ -89,6 +89,10 @@ def _apply_updates(
     record: RevenueBySourceRecord,
     source_document_id: int,
 ) -> bool:
+    # An unavailable observation cannot re-label a retained actual with a
+    # fixture/projection's source. Explicit withdrawals are handled below.
+    if row.amount_billion_kes is not None and record.amount_billion_kes is None and not record.metadata.get("absent_reason"):
+        return False
     updated = False
 
     def _set(attr: str, value: object) -> None:
@@ -98,7 +102,7 @@ def _apply_updates(
             updated = True
 
     _set("category", record.category)
-    if record.amount_billion_kes is not None:
+    if record.amount_billion_kes is not None or record.metadata.get("absent_reason"):
         _set("amount_billion_kes", record.amount_billion_kes)
     _set("target_billion_kes", record.target_billion_kes)
     _set("performance_pct", record.performance_pct)

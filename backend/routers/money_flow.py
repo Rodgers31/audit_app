@@ -43,6 +43,27 @@ def _effective_ttl(result: object, ttl: int) -> int:
     return min(ttl, TRANSIENT_FAILURE_TTL) if is_transient_failure(result) else ttl
 
 
+#: Every _cached fallback dict, so the nightly's invalidation can empty them
+#: (issue #231). The usual cache is _redis_cache._memory_cache, which
+#: cache/invalidation.py reaches through RedisCache._instances.
+_fallback_caches: list = []
+
+
+def _clear_fallback_caches() -> int:
+    dropped = sum(len(c) for c in _fallback_caches)
+    for c in _fallback_caches:
+        c.clear()
+    return dropped
+
+
+try:
+    from cache.invalidation import register_local_cache
+
+    register_local_cache("money_flow.fallback", _clear_fallback_caches)
+except Exception as e:  # pragma: no cover - import-time wiring
+    logger.error("Cache invalidation registry unavailable: %s", e)
+
+
 def _cached(key_prefix: str, ttl: int = 1800):
     """Cache decorator with Redis + in-memory fallback."""
     def decorator(fn):
@@ -82,6 +103,7 @@ def _cached(key_prefix: str, ttl: int = 1800):
         # cache is _redis_cache._memory_cache.  That instance is cleared
         # between tests via RedisCache._instances (see main.clear_all_caches).
         wrapper._cache = _mem
+        _fallback_caches.append(_mem)
         return wrapper
     return decorator
 

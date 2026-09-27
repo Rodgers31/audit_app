@@ -227,12 +227,12 @@ const OVERVIEW_HIGH_RISK = {
 };
 
 describe('the headline states why it is alarmed', () => {
-  it('names the anchor and the size of the breach', () => {
+  it('does not compare nominal debt with a present-value anchor', () => {
     mockFiscal.mockReturnValue(ANCHOR_BREACHED);
     mockOverview.mockReturnValue(OVERVIEW_HIGH_RISK);
     render(<SummaryStrip />);
     // 69.3 - 55 = 14.3 points. Stated, so the reader does not have to subtract.
-    expect(screen.getByText(/14\.3 pts above the 55% anchor/i)).toBeInTheDocument();
+    expect(screen.queryByText(/pts above the .* anchor/i)).not.toBeInTheDocument();
   });
 
   it('attributes the distress rating to the IMF rather than asserting it', () => {

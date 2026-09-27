@@ -2,6 +2,7 @@
  * Custom React Query hooks for budget data
  */
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
+import { SSR_HYDRATED_STALE_TIME_MS } from './isr';
 import {
   getBudgetAllocation,
   getBudgetComparison,
@@ -108,7 +109,7 @@ export const useBudgetOverview = (options?: Omit<UseQueryOptions<any>, 'queryKey
   return useQuery({
     queryKey: QUERY_KEYS.overview,
     queryFn: getBudgetOverview,
-    staleTime: 30 * 60 * 1000, // 30 minutes
+    staleTime: SSR_HYDRATED_STALE_TIME_MS, // read from SSR state; see ./isr
     ...options,
   });
 };
@@ -118,7 +119,7 @@ export const useBudgetEnhanced = (options?: Omit<UseQueryOptions<any>, 'queryKey
   return useQuery({
     queryKey: QUERY_KEYS.enhanced,
     queryFn: getBudgetEnhanced,
-    staleTime: 30 * 60 * 1000, // 30 minutes
+    staleTime: SSR_HYDRATED_STALE_TIME_MS, // read from SSR state; see ./isr
     ...options,
   });
 };

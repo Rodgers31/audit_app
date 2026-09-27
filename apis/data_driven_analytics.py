@@ -20,10 +20,26 @@ the direction of 2023-2024, which CBK records as a fall (11,139.7 to 10,925.3
 Bn) and the module drew as a rise, and the external share, which CBK puts at
 46.3% for 2024 against the module's 60%.
 
-What remains reads from files and reports what it finds. Note that the five
+WITHDRAWN 2026-09-26: the ``county_data`` source, which pointed at
+``enhanced_county_data.json``, and the method that totalled it.
+
+    get_actual_county_statistics       sums of budget_2025 and
+                                       debt_outstanding and a mean
+                                       budget_execution_rate, "from actual
+                                       extracted data"
+
+Every field in that file except the Census population is modelled (budget_2025
+is population x KSh 4,500 x a hand-set economic_factor, debt_outstanding is
+15% of it, the execution rate is one of three values read off the same
+factor), so the totals were the model's, labelled as fact. The county-quality
+bonus in ``_calculate_transparency_score`` and the ``county_data`` entry in
+``create_data_driven_config`` went with it. See apis/modernized_api.py and
+backend/tests/test_no_route_reads_the_modelled_county_file.py.
+
+What remains reads from files and reports what it finds. Note that the four
 paths in ``data_sources`` below do not resolve in this repo — ``data/`` exists,
-``data/county/``, ``data/audit/``, ``data/cob/`` and ``data/government/`` do
-not — so these methods currently report absence. That is a separate defect,
+``data/audit/``, ``data/cob/`` and ``data/government/`` do not — so these
+methods currently report absence. That is a separate defect,
 recorded in issue #188 under "the data-driven path is dead, and fails
 silently", and reporting absence is not the same thing as asserting a
 fabricated number.
@@ -45,7 +61,6 @@ class DataDrivenGovernmentAnalytics:
 
     def __init__(self):
         self.data_sources = {
-            "county_data": "../data/county/enhanced_county_data.json",
             "oag_audit": "../data/audit/oag_audit_data.json",
             "cob_reports": "../data/cob/comprehensive_cob_reports_database.json",
             "government_reports": "../data/government/comprehensive_government_reports.json",
@@ -71,53 +86,6 @@ class DataDrivenGovernmentAnalytics:
             except Exception as e:
                 logger.error(f"❌ Failed to load {filename}: {e}")
                 self.cached_data[source_name] = {}
-
-    def get_actual_county_statistics(self) -> Dict[str, Any]:
-        """Get county statistics from actual extracted data."""
-        county_file_data = self.cached_data.get("county_data", {})
-
-        if not county_file_data:
-            logger.warning("⚠️ No county data available, using minimal dataset")
-            return {"total_counties": 47, "data_available": False}
-
-        # Extract the actual county data from the nested structure
-        counties = county_file_data.get("county_data", {})
-
-        if not counties:
-            logger.warning("⚠️ County data structure missing 'county_data' key")
-            return {"total_counties": 47, "data_available": False}
-
-        total_counties = len(counties)
-
-        # Calculate totals from actual data
-        total_budget = sum(county.get("budget_2025", 0) for county in counties.values())
-        total_population = sum(
-            county.get("population", 0) for county in counties.values()
-        )
-        total_debt = sum(
-            county.get("debt_outstanding", 0) for county in counties.values()
-        )
-
-        # Calculate averages
-        avg_budget = total_budget / total_counties if total_counties > 0 else 0
-        avg_execution = (
-            sum(county.get("budget_execution_rate", 0) for county in counties.values())
-            / total_counties
-            if total_counties > 0
-            else 0
-        )
-
-        return {
-            "total_counties": total_counties,
-            "total_county_budget": total_budget,
-            "average_budget_per_county": avg_budget,
-            "total_county_population": total_population,
-            "total_county_debt": total_debt,
-            "average_execution_rate": avg_execution,
-            "data_source": "enhanced_county_data.json",
-            "data_available": True,
-            "last_calculated": datetime.now().isoformat(),
-        }
 
     def get_actual_audit_statistics(self) -> Dict[str, Any]:
         """Get audit statistics from actual OAG data."""
@@ -161,8 +129,6 @@ class DataDrivenGovernmentAnalytics:
         base_score = (available_sources / total_sources) * 100
 
         # Bonus points for data quality
-        if self.cached_data.get("county_data"):
-            base_score += 5
         if self.cached_data.get("oag_audit"):
             base_score += 5
         if self.cached_data.get("cob_reports"):
@@ -190,12 +156,6 @@ def create_data_driven_config() -> Dict[str, Any]:
     """Create configuration file for data-driven analytics."""
     config = {
         "data_sources": {
-            "county_data": {
-                "file": "enhanced_county_data.json",
-                "description": "County-level budget, population, and performance data",
-                "update_frequency": "monthly",
-                "critical": True,
-            },
             "audit_data": {
                 "file": "oag_audit_data.json",
                 "description": "Office of Auditor-General audit queries and findings",
@@ -230,13 +190,6 @@ def main():
     print("=" * 50)
 
     # Test each component
-    print("\n🏛️ COUNTY STATISTICS (from actual data):")
-    county_stats = analytics.get_actual_county_statistics()
-    print(f"Counties: {county_stats['total_counties']}")
-    print(f"Data Available: {county_stats['data_available']}")
-    if county_stats["data_available"]:
-        print(f"Total County Budget: KES {county_stats['total_county_budget']:,}")
-
     print("\n🔍 AUDIT STATISTICS (from OAG data):")
     audit_stats = analytics.get_actual_audit_statistics()
     print(f"Audit Queries: {audit_stats['total_audit_queries']}")
