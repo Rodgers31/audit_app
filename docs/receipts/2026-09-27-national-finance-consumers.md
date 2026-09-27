@@ -65,6 +65,12 @@ Production `/dashboards/national/fiscal-outturns` still has five explicitly abse
 - Session 5's combined production Next build + isolated real FastAPI Chromium run: **11 passed**, including all **3 debt acceptance specs** added here. The temporary component/spec copies were restored from Session 5's tree after the run. Log: `/tmp/session5-browser-combined.log`. This proves integration in the local fixture-backed environment, not the production refresh loop.
 - Independent execution also confirmed a preexisting direct-writer limitation: missing URL **and** null/empty title create a new default-titled document on each call. It reproduces on unchanged main and remains outside this narrowly sourced URL correction; no current production occurrence was established. Record it under the existing source-writer issue, without claiming that all possible malformed-source paths are fixed.
 
+### Draft review follow-up
+
+Copilot's PR #341 overview flagged a missing debt-chart ratio. The actual homepage `CustomTooltip` rendered a bare `%` for a hoverable timeline row with a null ratio, rather than the literal `null%` in the overview. The real `/debt/timeline` route emits null for missing `gdp_ratio` while retaining the row's debt totals. A tooltip render fixture captured the chart's transformed row and Recharts content element: **1 failed / 2 passed** before the fix; **3 passed** afterward, preserving reported zero and 65.9%. The related homepage suites passed **20/20**; TypeScript and focused ESLint passed. The timeline ratio type now reflects the nullable API, and the tooltip shows `—` for absence. `/debt`'s separate debt-service tooltip already checks null.
+
+A controlled endpoint probe found a separate backend zero-loss path: a stored `DebtTimeline.gdp_ratio=0` returned `gdp_ratio: null` from `/debt/timeline` (HTTP 200). This was recorded as [#346](https://github.com/Rodgers31/audit_app/issues/346) after duplicate-issue search; the temporary probe was removed and the backend route was not changed in this draft. No production zero occurrence was established.
+
 ## Remaining release sequence
 
 1. Review and merge/deploy the draft consumer and writer fixes. Production still shows the old debt-page comparison until then.
