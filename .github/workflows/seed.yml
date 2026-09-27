@@ -105,6 +105,7 @@ jobs:
       report: ${{ steps.check.outputs.report }}
       has_failures: ${{ steps.check.outputs.has_failures }}
       unprobed: ${{ steps.check.outputs.unprobed }}
+      critical_reachable: ${{ steps.check.outputs.critical_reachable }}
     steps:
       - name: Check data source URLs
         id: check
@@ -165,6 +166,8 @@ jobs:
           TOTAL=${#SOURCES[@]}
           OK_COUNT=0
           NOT_PROBED=0
+          CRITICAL_TOTAL=0
+          CRITICAL_OK=0
 
           # ── Time budgets (seconds) ────────────────────────────────
           # The job is killed at `timeout-minutes: 5`, and a killed job
@@ -222,16 +225,13 @@ jobs:
               -L --max-time "$3" \
               -A "$1" "$2" 2>/dev/null) || rc=$?
             [[ "$code" =~ ^[0-9]{3}$ ]] || code="000"
-            if [ "$rc" = "28" ]; then code="000"; fi
+            if [ "$rc" != "0" ]; then code="000"; fi
             printf '%s %s' "$code" "$rc"
           }
 
-          # A "transient/blocked" code means the host answered but bot-blocked
-          # or rate-limited us (403/415/429), timed out (000), or had a server
-          # error (5xx). That is NOT a URL migration — the nightly retry
-          # usually clears it — so it never escalates to CRITICAL, even for a
-          # source flagged critical. Only genuine 4xx-gone codes (404/410/…)
-          # honour the per-source critical flag and can page us.
+          # Retry plausible temporary failures within the existing budgets.
+          # Exhaustion is actionable for a critical source in THIS run: it
+          # must not remain a warning forever or qualify as recovery (#294).
           is_transient() { [[ "$1" =~ ^(403|415|429|000)$ || "$1" =~ ^5[0-9][0-9]$ ]]; }
           # What the old `curl --retry` retried: timeouts/resets, 408, 429, 5xx.
           # A 403/415 block is not retried with the same UA — it goes straight
@@ -257,6 +257,7 @@ jobs:
             if [ "$deadline" -gt "$JOB_DEADLINE" ]; then deadline=$JOB_DEADLINE; fi
             HTTP_CODE="000"
             TIMED_OUT=0
+            PROBE_ERROR=""
             for ua in "$PRIMARY_UA" "$BROWSER_UA"; do
               for attempt in 1 2 3; do
                 left=$(( deadline - SECONDS ))
@@ -268,10 +269,19 @@ jobs:
                 if [ "$ua" = "$PRIMARY_UA" ]; then
                   HTTP_CODE=$code
                   TIMED_OUT=0
+                  PROBE_ERROR=""
+                  case "$rc" in
+                    0) ;;
+                    7) PROBE_ERROR="connection refused" ;;
+                    18) PROBE_ERROR="incomplete response" ;;
+                    28) PROBE_ERROR="timeout" ;;
+                    *) PROBE_ERROR="transport error $rc" ;;
+                  esac
                   if [ "$rc" = "28" ]; then TIMED_OUT=1; fi
                 elif ! is_transient "$code"; then
                   HTTP_CODE=$code
                   TIMED_OUT=0
+                  PROBE_ERROR=""
                   return 0
                 fi
                 if ! is_retryable "$code"; then break; fi
@@ -288,6 +298,7 @@ jobs:
 
           for entry in "${SOURCES[@]}"; do
             IFS='|' read -r label url critical <<< "$entry"
+            if [ "$critical" = "true" ]; then CRITICAL_TOTAL=$((CRITICAL_TOTAL + 1)); fi
 
             # Out of job budget: say so for every source still waiting,
             # rather than let the runner kill the job and drop the outputs.
@@ -302,20 +313,11 @@ jobs:
             started=$SECONDS
             probe_source "$url"
 
-            if [[ "$HTTP_CODE" =~ ^[23] ]]; then
+            if [[ "$HTTP_CODE" =~ ^2 ]]; then
               echo "  [OK]   $label ($HTTP_CODE)"
               REPORT="${REPORT}OK|${label}|${url}|${HTTP_CODE}\n"
               OK_COUNT=$((OK_COUNT + 1))
-            elif [ "$TIMED_OUT" = "1" ]; then
-              # Transient like any 000, so never CRITICAL — but named, so the
-              # log says which host hung instead of going silent.
-              echo "  [WARNING] $label → timed out after $((SECONDS - started))s (transient/blocked) ($url)"
-              REPORT="${REPORT}WARNING|${label}|${url}|timeout\n"
-              FAILED_WARN=$((FAILED_WARN + 1))
-            elif is_transient "$HTTP_CODE"; then
-              echo "  [WARNING] $label → HTTP $HTTP_CODE (transient/blocked) ($url)"
-              REPORT="${REPORT}WARNING|${label}|${url}|${HTTP_CODE}\n"
-              FAILED_WARN=$((FAILED_WARN + 1))
+              if [ "$critical" = "true" ]; then CRITICAL_OK=$((CRITICAL_OK + 1)); fi
             else
               severity="WARNING"
               if [ "$critical" = "true" ]; then
@@ -324,8 +326,13 @@ jobs:
               else
                 FAILED_WARN=$((FAILED_WARN + 1))
               fi
-              echo "  [${severity}] $label → HTTP $HTTP_CODE ($url)"
-              REPORT="${REPORT}${severity}|${label}|${url}|${HTTP_CODE}\n"
+              outcome=${PROBE_ERROR:-$HTTP_CODE}
+              if [ "$TIMED_OUT" = "1" ]; then
+                echo "  [${severity}] $label → timed out after $((SECONDS - started))s ($url)"
+              else
+                echo "  [${severity}] $label → HTTP $HTTP_CODE ($outcome) ($url)"
+              fi
+              REPORT="${REPORT}${severity}|${label}|${url}|${outcome}\n"
             fi
           done
 
@@ -349,6 +356,11 @@ jobs:
           # budget never reached have no verdict at all, so the notify job must
           # not read that as "all reachable" and auto-close open outage issues.
           echo "unprobed=$NOT_PROBED" >> "$GITHUB_OUTPUT"
+          if [ "$CRITICAL_TOTAL" -gt 0 ] && [ "$CRITICAL_OK" = "$CRITICAL_TOTAL" ]; then
+            echo "critical_reachable=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "critical_reachable=false" >> "$GITHUB_OUTPUT"
+          fi
 
           # Write to step summary
           echo "## Data Source Health Check" >> $GITHUB_STEP_SUMMARY
@@ -988,7 +1000,7 @@ jobs:
             -H "x-revalidate-signature: $SIG" \
             -d "$BODY")
           cat /tmp/invalidate_response.json; echo ""
-          if [ "$HTTP" != "200" ] || [ "$(jq -r '.invalidated' /tmp/invalidate_response.json)" != "true" ]; then
+          if [ "$HTTP" != "200" ] || ! jq -se 'length == 1 and .[0].invalidated == true' /tmp/invalidate_response.json > /dev/null; then
             echo "::error::API cache invalidation failed (HTTP $HTTP). Pages revalidated now would be rebuilt from stale API responses, so stopping here."
             exit 1
           fi
@@ -1008,21 +1020,24 @@ jobs:
             echo "::error::Revalidation webhook returned HTTP $HTTP"
             exit 1
           fi
-          REJECTED=$(jq -c '.rejected' /tmp/revalidate_response.json)
-          SENT=$(printf '%s' "$BODY" | jq '.paths | length')
-          DONE=$(jq '.revalidated | length' /tmp/revalidate_response.json)
-          if [ "$REJECTED" != "[]" ] || [ "$SENT" != "$DONE" ]; then
-            echo "::error::The route revalidated $DONE of $SENT paths; rejected $REJECTED. The deployed frontend's allowlist differs from paths.json."
+          if ! jq -se --argjson sent "$(printf '%s' "$BODY" | jq '.paths')" '
+            length == 1 and (.[0] |
+            (.rejected | type) == "array" and .rejected == [] and
+            (.revalidated | type) == "array" and
+            (.revalidated | all(type == "string")) and
+            (.revalidated | sort) == ($sent | sort))
+          ' /tmp/revalidate_response.json > /dev/null; then
+            echo "::error::Revalidation receipt must confirm exactly the requested page paths with no rejections."
             exit 1
           fi
-          echo "Revalidated $DONE page paths."
+          echo "Revalidated $(jq '.revalidated | length' /tmp/revalidate_response.json) page paths."
 
   # ══════════════════════════════════════════════════════════════════
   # Step 6: Summary and notifications
   # ══════════════════════════════════════════════════════════════════
   notify:
     name: Post-Run Summary
-    needs: [healthcheck, seed, validate]
+    needs: [healthcheck, seed, validate, revalidate]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -1041,6 +1056,7 @@ jobs:
           echo "| **Health Check** | ${{ needs.healthcheck.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **Seed Status** | ${{ needs.seed.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **Validation** | ${{ needs.validate.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Cache / page refresh** | ${{ needs.revalidate.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "See [seeding guide](https://github.com/${{ github.repository }}/blob/main/docs/seeding-guide.md) for details." >> $GITHUB_STEP_SUMMARY
 
@@ -1095,7 +1111,7 @@ jobs:
               `### Action Required`,
               `1. Check if the URLs load in a browser — if they redirect to a new path, update the fetcher`,
               `2. Look at the [workflow run logs](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for details`,
-              `3. If the site is temporarily down, this issue can be closed — the pipeline retries nightly`,
+              `3. Keep the incident open until a completed probe verifies recovery; the pipeline retries nightly`,
               `4. If the URL has permanently changed, update the source URLs in:`,
               `   - \`backend/seeding/domains/*/fetcher.py\``,
               `   - \`backend/seeding/config.py\``,
@@ -1142,7 +1158,7 @@ jobs:
       - name: Auto-close resolved health-check issues
         # `unprobed == '0'` as well: a run that ran out of budget before
         # reaching a source has not shown that source to be reachable.
-        if: needs.healthcheck.outputs.has_failures == 'false' && needs.healthcheck.outputs.unprobed == '0'
+        if: needs.healthcheck.result == 'success' && needs.healthcheck.outputs.critical_reachable == 'true' && needs.healthcheck.outputs.unprobed == '0'
         uses: actions/github-script@v7
         with:
           script: |
@@ -1165,7 +1181,7 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: issue.number,
-                body: `✅ Resolved — all critical data sources were reachable in the latest run ([logs](${runUrl})). Auto-closing.`,
+                body: `✅ Resolved — all configured critical URLs returned complete HTTP 2xx responses within their probe budgets in the latest run. This confirms URL transport only, not extraction or accepted data publication ([logs](${runUrl})). Auto-closing.`,
               });
               await github.rest.issues.update({
                 owner: context.repo.owner,
@@ -1178,13 +1194,14 @@ jobs:
             }
 
       - name: Create issue on seeding/validation failure
-        if: needs.seed.result == 'failure' || needs.validate.result == 'failure'
+        if: needs.seed.result == 'failure' || needs.validate.result == 'failure' || needs.revalidate.result == 'failure'
         uses: actions/github-script@v7
         # Inputs arrive as env, not `${{ }}` spliced into the script, so
         # backend/tests/test_healthcheck_is_bounded.py can run this script.
         env:
           PIPELINE_SEED_RESULT: ${{ needs.seed.result }}
           PIPELINE_VALIDATE_RESULT: ${{ needs.validate.result }}
+          PIPELINE_REVALIDATE_RESULT: ${{ needs.revalidate.result }}
           HEALTHCHECK_RESULT: ${{ needs.healthcheck.result }}
           HEALTHCHECK_HAS_FAILURES: ${{ needs.healthcheck.outputs.has_failures }}
           HEALTHCHECK_UNPROBED: ${{ needs.healthcheck.outputs.unprobed }}
@@ -1195,6 +1212,7 @@ jobs:
             const failedSteps = [];
             if (env.PIPELINE_SEED_RESULT === 'failure') failedSteps.push('Seeding');
             if (env.PIPELINE_VALIDATE_RESULT === 'failure') failedSteps.push('Validation');
+            if (env.PIPELINE_REVALIDATE_RESULT === 'failure') failedSteps.push('Cache / page refresh');
 
             // This line used to be `has_failures == 'true' && '⚠️ …' || '✅
             // All sources reachable'`. A health check that was cancelled
@@ -1209,6 +1227,8 @@ jobs:
               health = '⚠️ Some sources were unreachable (may be related)';
             } else if (env.HEALTHCHECK_UNPROBED !== '0') {
               health = `❔ Partial — ${env.HEALTHCHECK_UNPROBED || 'some'} source(s) not probed before the health-check budget ran out`;
+            } else if (env.HEALTHCHECK_HAS_FAILURES !== 'false') {
+              health = '❔ Unknown — missing or malformed health-check verdict';
             } else {
               health = '✅ No critical source failures (warnings, if any, are in the health-check job)';
             }

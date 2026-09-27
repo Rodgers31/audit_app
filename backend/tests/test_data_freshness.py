@@ -17,8 +17,8 @@ TODAY = dt.date.today()
 
 
 # ── frequency-aware status ──────────────────────────────────────────────
-def test_status_outdated_when_no_date():
-    assert _freshness_status(None, "Monthly") == "outdated"
+def test_status_unknown_when_no_date():
+    assert _freshness_status(None, "Monthly") == "unknown"
 
 
 def test_monthly_recent_is_fresh():
@@ -57,4 +57,4 @@ def test_freshness_endpoint_exposes_last_checked(client):
         # fields; both may be null on an empty test DB, but the keys must exist.
         assert "last_updated" in s
         assert "last_checked" in s
-        assert s["status"] in {"fresh", "stale", "outdated"}
+        assert s["status"] in {"fresh", "stale", "outdated", "unknown"}

@@ -202,13 +202,13 @@ def test_a_hung_host_is_reported_as_a_timeout_and_the_next_source_still_runs(tmp
         ],
     )
     assert "[OK]   Before (200)" in stdout
-    assert re.search(r"\[WARNING\] Hung Host → timed out after \d+s", stdout), stdout
+    assert re.search(r"\[CRITICAL\] Hung Host → timed out after \d+s", stdout), stdout
     assert "[OK]   After (200)" in stdout, "the source after the hung host was never probed"
-    assert "Total: 3 | OK: 2 | Critical Failures: 0 | Warnings: 1 | Not probed: 0" in stdout
-    # A timeout is transient: named, but not a CRITICAL page.
-    assert outputs.get("has_failures") == "false"
+    assert "Total: 3 | OK: 2 | Critical Failures: 1 | Warnings: 0 | Not probed: 0" in stdout
+    # Exhausted critical timeouts are actionable.
+    assert outputs.get("has_failures") == "true"
     assert outputs.get("unprobed") == "0"
-    assert f"WARNING|Hung Host|{host}/hang|timeout" in outputs.get("report", "")
+    assert f"CRITICAL|Hung Host|{host}/hang|timeout" in outputs.get("report", "")
     # Both UAs and every retry are charged to one source budget (3s here).
     assert secs < int(FAST["HC_SOURCE_BUDGET"]) + 5, f"one hung source took {secs:.1f}s"
 
@@ -217,8 +217,8 @@ def test_a_stalled_body_after_200_headers_is_a_timeout_not_ok(tmp_path, host):
     """curl exits 28 with -w %{http_code} = 200; the old probe scored that [OK]."""
     stdout, outputs, _ = _run(tmp_path, [f"Stalled Body|{host}/trickle|true"])
     assert "[OK]" not in stdout, stdout
-    assert re.search(r"\[WARNING\] Stalled Body → timed out after \d+s", stdout), stdout
-    assert f"WARNING|Stalled Body|{host}/trickle|timeout" in outputs["report"]
+    assert re.search(r"\[CRITICAL\] Stalled Body → timed out after \d+s", stdout), stdout
+    assert f"CRITICAL|Stalled Body|{host}/trickle|timeout" in outputs["report"]
 
 
 def test_when_the_job_budget_runs_out_the_rest_are_named_and_outputs_still_written(tmp_path, host):
@@ -231,7 +231,8 @@ def test_when_the_job_budget_runs_out_the_rest_are_named_and_outputs_still_writt
     assert not_probed and not_probed[-1] == "Last", stdout
     assert outputs.get("unprobed") == str(len(not_probed)), outputs
     assert int(outputs["unprobed"]) >= 3
-    assert outputs.get("has_failures") == "false"
+    assert outputs.get("has_failures") == "true"
+    assert outputs["critical_reachable"] == "false"
     assert "Health Check Summary" in stdout
     assert secs < 5 + 5, f"a 5s job budget took {secs:.1f}s"
 
@@ -248,19 +249,19 @@ def test_healthy_sources_are_ok_and_fast(tmp_path, host):
 
 def test_a_gone_critical_url_still_pages(tmp_path, host):
     stdout, outputs, _ = _run(tmp_path, [f"Moved|{host}/gone|true"])
-    assert f"[CRITICAL] Moved → HTTP 404 ({host}/gone)" in stdout, stdout
+    assert f"[CRITICAL] Moved → HTTP 404 (404) ({host}/gone)" in stdout, stdout
     assert outputs["has_failures"] == "true"
 
 
-def test_a_refused_connection_is_transient_not_a_timeout(tmp_path):
+def test_a_refused_connection_is_actionable_and_distinct_from_a_timeout(tmp_path):
     import socket
 
     with socket.socket() as s:  # a port nothing listens on
         s.bind(("127.0.0.1", 0))
         port = s.getsockname()[1]
     stdout, outputs, secs = _run(tmp_path, [f"Down|http://127.0.0.1:{port}/|true"])
-    assert "[WARNING] Down → HTTP 000 (transient/blocked)" in stdout, stdout
-    assert outputs["has_failures"] == "false"
+    assert "[CRITICAL] Down → HTTP 000 (connection refused)" in stdout, stdout
+    assert outputs["has_failures"] == "true"
     assert secs < int(FAST["HC_SOURCE_BUDGET"]) + 5
 
 
@@ -340,3 +341,33 @@ def test_a_complete_clean_health_check_is_still_green():
 def test_auto_close_needs_every_source_probed():
     cond = _step("notify", "Auto-close resolved health-check issues")["if"]
     assert "needs.healthcheck.outputs.unprobed == '0'" in cond, cond
+
+# #294: critical retry exhaustion is actionable, not permanent "transience".
+def test_exhausted_critical_timeout_pages_and_cannot_claim_recovery(tmp_path, host):
+    _, outputs, _ = _run(tmp_path, [f'Critical|{host}/hang|true'])
+    assert outputs['has_failures'] == 'true'
+    assert outputs['critical_reachable'] == 'false'
+    assert f'CRITICAL|Critical|{host}/hang|timeout' in outputs['report']
+
+
+def test_successful_critical_probe_is_a_recovery_control(tmp_path, host):
+    _, outputs, _ = _run(tmp_path, [f'Critical|{host}/ok|true'])
+    assert outputs['critical_reachable'] == 'true'
+
+
+def test_auto_close_requires_measured_critical_success():
+    cond = _step('notify', 'Auto-close resolved health-check issues')['if']
+    assert "needs.healthcheck.result == 'success'" in cond
+    assert "needs.healthcheck.outputs.critical_reachable == 'true'" in cond
+
+@pytest.mark.parametrize('verdict', ['', 'wat'])
+def test_missing_or_malformed_health_verdict_is_not_success(verdict):
+    line = _health_line(_issue_body(HEALTHCHECK_RESULT='success', HEALTHCHECK_HAS_FAILURES=verdict, HEALTHCHECK_UNPROBED='0'))
+    assert 'Unknown' in line and '✅' not in line
+
+
+def test_refresh_failure_is_in_the_failure_issue():
+    body = _issue_body(PIPELINE_SEED_RESULT='success', PIPELINE_VALIDATE_RESULT='success', PIPELINE_REVALIDATE_RESULT='failure')
+    assert '**Failed Steps:** Cache / page refresh' in body
+    assert 'revalidate' in DOC['jobs']['notify']['needs']
+    assert "needs.revalidate.result == 'failure'" in ISSUE_STEP['if']

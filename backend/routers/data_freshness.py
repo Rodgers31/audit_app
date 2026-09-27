@@ -10,22 +10,23 @@ hardcoded dates):
   publisher released the data), from SourceDocument provenance. This is
   what drives the fresh/stale/outdated status, so a nightly ETL run can
   no longer make a year-old report look "fresh".
-* ``last_checked`` — when our pipeline last fetched/ingested this source
-  (honest "when we last looked"); informational only.
+* ``last_checked`` — latest verified successful download with a recorded
+  checksum; informational only. Registration is not a successful download.
 * ``covers_through`` — the most recent fiscal period / observation year
-  present in the data.
+  present in accepted records from that publisher.
 
 Status is frequency-aware: "fresh" means within roughly one expected
 publication cycle for the source's update_frequency.
 """
 
 import logging
+import re
 import sys
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 from pathlib import Path
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -34,7 +35,7 @@ from services.publication_gate import publishable_audit_criterion
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from provenance import resolve_data_vintage
+from services.source_evidence import downloaded_document_criterion
 
 try:
     from database import get_db
@@ -44,8 +45,6 @@ try:
         DebtTimeline,
         FiscalPeriod,
         GDPData,
-        IngestionJob,
-        IngestionStatus,
         Loan,
         SourceDocument,
     )
@@ -69,10 +68,10 @@ class SourceFreshness(BaseModel):
     source: str
     label: str
     last_updated: Optional[str] = None  # source PUBLICATION date (drives status)
-    last_checked: Optional[str] = None  # when our pipeline last fetched it
+    last_checked: Optional[str] = None  # successful verified download, not registration
     covers_through: Optional[str] = None
     update_frequency: str
-    status: str  # fresh | stale | outdated
+    status: str  # fresh | stale | outdated | unknown
 
 
 class FreshnessResponse(BaseModel):
@@ -80,7 +79,7 @@ class FreshnessResponse(BaseModel):
 
 
 # ── source config (static metadata — NOT coverage) ──────────────
-# `publisher_pattern` is used to match SourceDocument.publisher (ILIKE).
+# `publisher_pattern` selects explicit publisher aliases (no substring matches).
 # `domain` determines which data table we query to learn the latest
 # period covered. `update_frequency` is purely descriptive.
 #
@@ -98,14 +97,14 @@ SOURCE_CONFIG = [
     {
         "source": "OAG",
         "label": "Office of the Auditor General",
-        "publisher_pattern": "Auditor General",
+        "publisher_pattern": "Auditor%General",
         "domain": "audit",
         "update_frequency": "Annually",
     },
     {
         "source": "KNBS",
         "label": "Kenya National Bureau of Statistics",
-        "publisher_pattern": "KNBS",
+        "publisher_pattern": "KNBS|Bureau of Statistics",
         "domain": "economic",
         "update_frequency": "Annually",
     },
@@ -126,7 +125,7 @@ SOURCE_CONFIG = [
     {
         "source": "CRA",
         "label": "Commission on Revenue Allocation",
-        "publisher_pattern": "CRA",
+        "publisher_pattern": "CRA|Revenue Allocation",
         "domain": "budget",
         "update_frequency": "Annually",
     },
@@ -143,9 +142,11 @@ def _freshness_status(last_updated: Optional[date], frequency: str = "") -> str:
     judged against a 45-day window (nor a monthly series given a year's grace).
     """
     if last_updated is None:
-        return "outdated"
+        return "unknown"
     delta = (date.today() - last_updated).days
     cycle = _CYCLE_DAYS.get(frequency, 90)
+    if delta < 0:
+        return "unknown"
     if delta <= cycle:
         return "fresh"
     if delta <= cycle * 2.5:
@@ -156,7 +157,9 @@ def _freshness_status(last_updated: Optional[date], frequency: str = "") -> str:
 # ── per-domain coverage lookups ──────────────────────────────────
 
 
-def _latest_period_label_for_budget(db: Session, publisher_pattern: str) -> Optional[str]:
+def _latest_period_label_for_budget(
+    db: Session, publisher_pattern: str
+) -> Optional[str]:
     """Latest fiscal-period label present in BudgetLine rows whose source
     document was published by the given organisation."""
     return (
@@ -166,69 +169,58 @@ def _latest_period_label_for_budget(db: Session, publisher_pattern: str) -> Opti
             SourceDocument,
             BudgetLine.source_document_id == SourceDocument.id,
         )
-        .filter(SourceDocument.publisher.ilike(f"%{publisher_pattern}%"))
+        .filter(_publisher_criterion(publisher_pattern))
+        .filter(BudgetLine.publishable.is_(True))
         .order_by(FiscalPeriod.start_date.desc())
         .limit(1)
         .scalar()
     )
 
 
-def _latest_period_label_for_audit(db: Session, publisher_pattern: str) -> Optional[str]:
+def _latest_period_label_for_audit(
+    db: Session, publisher_pattern: str
+) -> Optional[str]:
     """Latest fiscal-period label present in Audit rows for a given publisher."""
     return (
         db.query(FiscalPeriod.label)
         .join(Audit, Audit.period_id == FiscalPeriod.id)
         .join(SourceDocument, Audit.source_document_id == SourceDocument.id)
         .filter(publishable_audit_criterion())
-        .filter(SourceDocument.publisher.ilike(f"%{publisher_pattern}%"))
+        .filter(_publisher_criterion(publisher_pattern))
         .order_by(FiscalPeriod.start_date.desc())
         .limit(1)
         .scalar()
     )
 
 
-def _latest_coverage_for_debt(
-    db: Session, publisher_pattern: str
-) -> Optional[str]:
-    """Latest debt observation — prefer Loan.issue_date for a given publisher,
-    fall back to max(DebtTimeline.year) which represents the aggregate
-    national debt series."""
-    loan_date = (
-        db.query(func.max(Loan.issue_date))
-        .join(SourceDocument, Loan.source_document_id == SourceDocument.id)
-        .filter(SourceDocument.publisher.ilike(f"%{publisher_pattern}%"))
+def _latest_coverage_for_debt(db: Session, publisher_pattern: str) -> Optional[str]:
+    """Latest sourced timeline observation. A loan's issue date is a contract
+    date, not the coverage date of the outstanding-debt observation."""
+    timeline_year = (
+        db.query(func.max(DebtTimeline.year))
+        .join(SourceDocument, DebtTimeline.source_document_id == SourceDocument.id)
+        .filter(
+            _publisher_criterion(publisher_pattern), DebtTimeline.publishable.is_(True)
+        )
         .scalar()
     )
-    if loan_date:
-        # Month+year is more truthful than just a year for monthly CBK data
-        dt = loan_date if isinstance(loan_date, datetime) else None
-        if dt is None and hasattr(loan_date, "year"):
-            return f"{loan_date.strftime('%b %Y')}"
-        if dt is not None:
-            return dt.strftime("%b %Y")
-
-    timeline_year = db.query(func.max(DebtTimeline.year)).scalar()
     if timeline_year:
         return str(timeline_year)
     return None
 
 
-def _latest_coverage_for_economic(
-    db: Session, publisher_pattern: str
-) -> Optional[str]:
+def _latest_coverage_for_economic(db: Session, publisher_pattern: str) -> Optional[str]:
     """Latest economic observation — max GDPData.year linked to a publisher's
-    source documents; fall back to the global max year."""
+    source documents; never borrow another publisher's global maximum."""
     year = (
         db.query(func.max(GDPData.year))
         .join(
             SourceDocument,
             GDPData.source_document_id == SourceDocument.id,
         )
-        .filter(SourceDocument.publisher.ilike(f"%{publisher_pattern}%"))
+        .filter(_publisher_criterion(publisher_pattern), GDPData.publishable.is_(True))
         .scalar()
     )
-    if year is None:
-        year = db.query(func.max(GDPData.year)).scalar()
     return str(year) if year else None
 
 
@@ -255,28 +247,89 @@ def _covers_through(db: Session, cfg: dict) -> Optional[str]:
     return None
 
 
-def _source_publication_date(db: Session, publisher_pattern: str) -> Optional[date]:
-    """Latest PUBLICATION date across a publisher's source documents.
+def _publisher_criterion(pattern: str):
+    # Publisher codes must match named organisations, not arbitrary substrings
+    # ("democratic" and "scraped" both contain CRA).
+    aliases = {
+        "Controller of Budget": (
+            "controller of budget",
+            "office of the controller of budget",
+            "office of the controller of budget (ocob)",
+            "cob",
+            "ocob",
+        ),
+        "Auditor%General": ("office of the auditor general", "auditor general", "oag"),
+        "KNBS|Bureau of Statistics": ("knbs", "kenya national bureau of statistics"),
+        "Treasury": (
+            "national treasury",
+            "the national treasury",
+            "kenya national treasury",
+            "national treasury kenya",
+            "national treasury of kenya",
+        ),
+        "Central Bank": ("central bank of kenya", "cbk"),
+        "CRA|Revenue Allocation": ("cra", "commission on revenue allocation"),
+    }
+    name = func.lower(func.trim(func.replace(SourceDocument.publisher, "-", " ")))
+    return name.in_(aliases.get(pattern, (pattern.lower(),)))
 
-    Uses SourceDocument provenance (meta['publication_date'] then fetch_date)
-    via resolve_data_vintage — NOT the ingestion-run time — so reported
-    recency reflects when the publisher actually released the data.
-    """
-    try:
-        ids = [
-            row[0]
-            for row in db.query(SourceDocument.id)
-            .filter(SourceDocument.publisher.ilike(f"%{publisher_pattern}%"))
-            .all()
-        ]
-        vintage = resolve_data_vintage(db, ids)
-        if vintage is not None:
-            return vintage.date() if isinstance(vintage, datetime) else vintage
-    except Exception as exc:  # pragma: no cover - defensive
-        logger.warning(
-            "publication-date lookup failed for %s: %s", publisher_pattern, exc
+
+def _accepted_document_ids(db: Session, domain: str):
+    """Only rows admitted by the domain's publication gate count as coverage."""
+    models = {
+        "budget": (BudgetLine,),
+        "audit": (Audit,),
+        "debt": (Loan, DebtTimeline),
+        "economic": (GDPData,),
+    }[domain]
+    ids = set()
+    for model in models:
+        criterion = (
+            publishable_audit_criterion()
+            if model is Audit
+            else model.publishable.is_(True)
         )
-    return None
+        ids.update(
+            row[0]
+            for row in db.query(model.source_document_id)
+            .filter(criterion)
+            .distinct()
+            .all()
+            if row[0]
+        )
+    return ids
+
+
+def _source_publication_date(
+    db: Session, publisher_pattern: str, domain: str
+) -> Optional[date]:
+    """Explicit publisher dates of accepted data, never registration/fetch dates."""
+    ids = _accepted_document_ids(db, domain)
+    if not ids:
+        return None
+    docs = (
+        db.query(SourceDocument)
+        .filter(_publisher_criterion(publisher_pattern), SourceDocument.id.in_(ids))
+        .all()
+    )
+    dates = []
+    for doc in docs:
+        meta = doc.meta if isinstance(doc.meta, dict) else {}
+        raw = meta.get("publication_date")
+        # Require a complete ISO publication date. Generic provenance fallback
+        # parsing accepts partial/garbage values that cannot certify freshness.
+        if not isinstance(raw, str) or not re.fullmatch(
+            r"\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?)?",
+            raw,
+        ):
+            continue
+        try:
+            value = datetime.fromisoformat(raw.replace("Z", "+00:00")).date()
+        except ValueError:
+            continue
+        if value <= date.today():
+            dates.append(value)
+    return max(dates) if dates else None
 
 
 @router.get("/freshness", response_model=FreshnessResponse)
@@ -291,41 +344,23 @@ async def get_data_freshness(db: Session = Depends(get_db)):
         covers_through: Optional[str] = None
 
         if DATABASE_AVAILABLE and db is not None:
-            # last_checked = when our pipeline last fetched/ingested this
-            # source. IngestionJob.finished_at is most accurate; fall back to
-            # SourceDocument.fetch_date.
-            job = (
-                db.query(func.max(IngestionJob.finished_at))
+            # Successful source-specific transport is distinct from registration,
+            # domain-level jobs (which may concern another publisher), and acceptance.
+            checked = (
+                db.query(func.max(SourceDocument.last_verified_at))
                 .filter(
-                    IngestionJob.domain.ilike(f"%{cfg['domain']}%"),
-                    IngestionJob.status.in_(
-                        [
-                            IngestionStatus.COMPLETED,
-                            IngestionStatus.COMPLETED_WITH_ERRORS,
-                        ]
-                    ),
+                    _publisher_criterion(cfg["publisher_pattern"]),
+                    downloaded_document_criterion(),
                 )
                 .scalar()
             )
-            if job:
-                last_checked_date = job.date() if isinstance(job, datetime) else job
-            if last_checked_date is None:
-                doc_date = (
-                    db.query(func.max(SourceDocument.fetch_date))
-                    .filter(
-                        SourceDocument.publisher.ilike(f"%{cfg['publisher_pattern']}%")
-                    )
-                    .scalar()
+            if checked:
+                last_checked_date = (
+                    checked.date() if isinstance(checked, datetime) else checked
                 )
-                if doc_date:
-                    last_checked_date = (
-                        doc_date.date() if isinstance(doc_date, datetime) else doc_date
-                    )
-
-            # last_updated = the source's PUBLICATION date (drives status),
-            # NOT the ingestion-run time. This stops a nightly ETL run from
-            # making a year-old report read "fresh".
-            last_updated_date = _source_publication_date(db, cfg["publisher_pattern"])
+            last_updated_date = _source_publication_date(
+                db, cfg["publisher_pattern"], cfg["domain"]
+            )
 
             # Derived coverage (stays truthful as the DB grows).
             covers_through = _covers_through(db, cfg)

@@ -19,6 +19,8 @@ interface SourceSummary {
   role: string;
   website?: string | null;
   document_count: number;
+  downloaded_documents?: number;
+  extracted_documents?: number;
   last_fetched: string | null;
   last_seen_at: string | null;
   doc_types: Record<string, number>;
@@ -55,9 +57,9 @@ const HEALTH_STYLE: Record<string, { dot: string; text: string; label: string }>
 };
 
 function fmtRelativeDate(iso: string | null): string {
-  if (!iso) return 'Never';
+  if (!iso) return 'Not verified';
   const then = new Date(iso).getTime();
-  if (!Number.isFinite(then)) return 'Never';
+  if (!Number.isFinite(then)) return 'Not verified';
   const diff = Date.now() - then;
   const days = Math.floor(diff / (24 * 60 * 60 * 1000));
   if (days === 0) return 'Today';
@@ -403,18 +405,22 @@ export default function SourcesPage() {
                   )}
                 </div>
 
+                <p className='text-xs text-gray-500 dark:text-neutral-muted mt-2'>Registration, download and extraction do not establish accepted publication coverage.</p>
                 <div className='flex flex-wrap items-center gap-4 pt-3 border-t border-gray-100 dark:border-neutral-border'>
                   <div>
                     <div className='text-[11px] uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-semibold'>
-                      Documents
+                      Registered documents
                     </div>
                     <div className='text-lg font-bold text-gray-900 dark:text-neutral-text tabular-nums'>
                       {s.document_count.toLocaleString()}
                     </div>
+                    <p className='text-xs text-gray-500 dark:text-neutral-muted'>
+                      {s.downloaded_documents ?? '—'} downloaded · {s.extracted_documents ?? '—'} extracted
+                    </p>
                   </div>
                   <div>
                     <div className='text-[11px] uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-semibold'>
-                      Last fetched
+                      Last verified download
                     </div>
                     <div
                       className={`text-sm font-semibold inline-flex items-center gap-1.5 ${freshnessColor(s.last_fetched)}`}>

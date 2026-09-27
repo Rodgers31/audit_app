@@ -117,3 +117,6 @@ nul
 frontend/test-results/
 frontend/playwright-report/
 
+
+frontend/acceptance-results/
+frontend/acceptance-report/
