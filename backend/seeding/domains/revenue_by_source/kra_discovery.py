@@ -96,8 +96,12 @@ class KraRelease:
     total_bn: Optional[Decimal] = None
     domestic_bn: Optional[Decimal] = None
     exchequer_bn: Optional[Decimal] = None
+    agency_bn: Optional[Decimal] = None
     previous_exchequer_bn: Optional[Decimal] = None
     data_url: Optional[str] = None  # the bundle the figures were read from
+    retrieved_at: Optional[str] = None
+    content_sha256: Optional[str] = None
+    report_url: Optional[str] = None
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -303,6 +307,9 @@ def parse_dashboard_bundle(js: str, *, url: str, data_url: str) -> Optional[KraR
 
     eva = _object_after(data, "exchequerVsAgency:{") or ""
     exchequer = _object_after(eva, "exchequer:{")
+    agency = _object_after(eva, "agency:{")
+    if agency:
+        release.agency_bn = _bn(_field(agency, "collected"))
     if exchequer:
         release.exchequer_bn = _bn(_field(exchequer, "collected"))
         release.previous_exchequer_bn = _bn(_field(exchequer, "previousFYCollection"))
@@ -315,10 +322,6 @@ def parse_dashboard_bundle(js: str, *, url: str, data_url: str) -> Optional[KraR
 
 #: Domestic + Customs must reproduce KRA's stated total within this share.
 TOTAL_TOLERANCE = Decimal("0.01")
-#: The residual (exchequer less the five heads) held 7.8%-9.6% of exchequer
-#: in FY 2022/23-FY 2024/25. Outside 0-20% the heads or the exchequer figure
-#: are not what we think they are.
-RESIDUAL_MAX_SHARE = Decimal("0.20")
 
 
 def validate_release(release: KraRelease) -> List[str]:
@@ -328,11 +331,15 @@ def validate_release(release: KraRelease) -> List[str]:
     has to agree with KRA's own arithmetic to get through.
     """
     problems: List[str] = []
+    for field in ("total_bn", "domestic_bn", "exchequer_bn", "agency_bn", "previous_exchequer_bn"):
+        value = getattr(release, field)
+        if value is not None and (not isinstance(value, Decimal) or not value.is_finite() or value < 0):
+            problems.append(f"{field}: invalid published amount")
     missing = [h for h in PUBLISHED_HEADS if h not in release.heads]
     if missing:
         problems.append(f"heads not found: {missing}")
     for head, fig in release.heads.items():
-        if fig.amount_bn is None or fig.amount_bn <= 0:
+        if not isinstance(fig.amount_bn, Decimal) or not fig.amount_bn.is_finite() or fig.amount_bn < 0:
             problems.append(f"{head}: non-positive amount {fig.amount_bn}")
     if problems:
         return problems
@@ -341,7 +348,6 @@ def validate_release(release: KraRelease) -> List[str]:
         (release.heads[h].amount_bn for h in PUBLISHED_HEADS if h != CUSTOMS_HEAD),
         Decimal("0"),
     )
-    five = domestic_heads + release.heads[CUSTOMS_HEAD].amount_bn
 
     if release.shape == "dashboard":
         # The dashboard states every total, so require them all.
@@ -362,25 +368,12 @@ def validate_release(release: KraRelease) -> List[str]:
                 )
         if release.exchequer_bn is None:
             problems.append("dashboard states no exchequer revenue")
-    if release.exchequer_bn is not None:
-        residual = release.exchequer_bn - five
-        if residual < 0 or residual > RESIDUAL_MAX_SHARE * release.exchequer_bn:
-            problems.append(
-                f"exchequer {release.exchequer_bn} less the five heads {five} "
-                f"leaves {residual}, outside 0-{RESIDUAL_MAX_SHARE:.0%} of exchequer"
-            )
     return problems
 
 
 def residual_bn(release: KraRelease) -> Optional[Decimal]:
-    """Exchequer revenue less the five heads — the same subtraction the
-    fixture's earlier "Other Tax Revenue" rows declare — or ``None`` when the
-    release states no exchequer figure. Never a zero standing in for it."""
-    if release.exchequer_bn is None:
-        return None
-    return release.exchequer_bn - sum(
-        (release.heads[h].amount_bn for h in PUBLISHED_HEADS), Decimal("0")
-    )
+    """No same-basis residual: Customs contains agency levies (#298)."""
+    return None
 
 
 __all__ = [

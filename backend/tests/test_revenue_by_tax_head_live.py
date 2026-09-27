@@ -81,14 +81,14 @@ def test_bundle_yields_kras_own_figures_by_name(release):
 
 def test_release_validates_against_its_own_totals(release):
     assert kd.validate_release(release) == []
-    assert kd.residual_bn(release) == Decimal("216.247")
+    assert kd.residual_bn(release) is None
 
 
 def test_a_misread_head_fails_kras_own_arithmetic():
-    tampered = _bundle().replace("amount:598807e6", "amount:998807e6")
+    tampered = _bundle().replace("amount:598807e6", "amount:1198807e6")
     bad = kd.parse_dashboard_bundle(tampered, url=PAGE_URL, data_url=BUNDLE_URL)
     problems = kd.validate_release(bad)
-    assert problems and "leaves" in problems[0]
+    assert problems and "exceeds" in problems[0]
 
 
 def test_a_dashboard_with_no_exchequer_figure_is_refused(release):
@@ -117,19 +117,19 @@ def test_listing_candidates_are_revenue_results_not_the_publishers_name():
 
 def test_dashboard_overlay_replaces_projections_with_kras_actuals(release):
     out, status = _overlay_kra_release(_before_fixture(), release)
-    assert status == "promoted:5/FY 2025/26 (dashboard, residual)"
+    assert status == "promoted:5/FY 2025/26 (dashboard; residual withheld: incompatible bases)"
     fy = {r["revenue_type"]: r for r in out if r["fiscal_year"] == "FY 2025/26"}
     table = {
         k: (r["basis"], r["amount_billion_kes"], r["target_billion_kes"], r["share_of_total_pct"])
-        for k, r in fy.items()
+        for k, r in fy.items() if r["category"] != "total"
     }
     assert table == {
-        "PAYE": ("published", 598.81, None, 23.3),
-        "Corporation Tax": ("published", 347.07, 365.25, 13.5),
-        "VAT": ("published", 355.26, None, 13.8),
-        "Excise Duty": ("published", 61.85, None, 2.4),
-        "Customs & Import Duty": ("published", 988.78, None, 38.5),
-        "Other Tax Revenue": ("residual", 216.25, None, 8.4),
+        "PAYE": ("published", 598.81, None, None),
+        "Corporation Tax": ("published", 347.07, 365.25, None),
+        "VAT": ("published", 355.26, None, None),
+        "Excise Duty": ("published", 61.85, None, None),
+        "Customs & Import Duty": ("published", 988.78, None, None),
+        "Other Tax Revenue": ("residual", None, None, None),
     }
     # No note may still describe the projection the row used to hold.
     assert not any(r["notes"].startswith("Projected") for r in fy.values())
@@ -177,16 +177,17 @@ def test_a_new_year_from_prose_needs_every_head():
     assert not any(r["fiscal_year"] == "FY 2026/27" for r in out)
 
 
-def test_the_git_fixture_holds_exactly_what_the_release_says(release):
-    """The fixture is the fallback a failed night serves, and the writer
-    re-stamps its basis and target. If it still said "projected" for FY
-    2025/26, one bad night would re-label KRA's published figures."""
+def test_live_overlay_replaces_the_snapshot_residual_and_keeps_source_totals(release):
     current = json.loads(
         (Path(__file__).resolve().parents[1] / "seeding" / "real_data" / "revenue_by_source.json").read_text()
     )
-    out, _ = _overlay_kra_release(_before_fixture(), release)
-    keys = list(current[0])
-    assert current == [{k: r.get(k) for k in keys} for r in out]
+    out, _ = _overlay_kra_release(current, release)
+    rows = {r["revenue_type"]: r for r in out if r["fiscal_year"] == release.fiscal_year}
+    assert rows["Other Tax Revenue"]["amount_billion_kes"] is None
+    assert rows["Total KRA Collections"]["amount_billion_kes"] == 2844
+    assert rows["Total Agency Revenue"]["amount_billion_kes"] == 276.14
+    assert rows["PAYE"]["source"]["stated_amount_billion_kes"] == "598.807"
+
 
 
 # ── End to end: discovery finds FY 2025/26 although the configured URL is
@@ -344,5 +345,5 @@ def test_re_promoting_an_unchanged_published_figure_keeps_its_note():
     out, status = _overlay_kra_breakdown(payload, heads, "FY 2024/25")
     assert status == "promoted:5/FY 2024/25"
     after = {r["revenue_type"]: r["notes"] for r in out if r["fiscal_year"] == "FY 2024/25"}
-    assert after == before
-    assert after["PAYE"] == "KRA Annual Performance FY 2024/25: PAYE collected KES 560.963B, performance 99.0%, growth 3.3%"
+    assert after["PAYE"] == "KRA Annual Revenue Performance FY 2024/25: PAYE collected KES 560.963B"
+    assert "performance" not in after["PAYE"]

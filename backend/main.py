@@ -8417,7 +8417,7 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
     """Extended budget data not in the base overview.
 
     Returns:
-      - revenue_by_source: Tax-type breakdown per FY (PAYE, Corp Tax, VAT, Excise, Customs, Other)
+      - revenue_by_source: separately sourced collections per FY; incompatible residuals withheld
       - economic_context: Budget as % of GDP, per-capita budget, key economic indicators
       - execution_by_sector: revised gross estimates vs actual expenditure per
         sector, from the newest annual CoB NG-BIRR (declared rows only)
@@ -8428,6 +8428,7 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
         PopulationData,
         RevenueBySource,
     )
+    from services.revenue_publication import revenue_source_row
 
     try:
         # ── 1. Revenue by source ──
@@ -8443,39 +8444,7 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
             fy = r.fiscal_year
             if fy not in rev_by_fy:
                 rev_by_fy[fy] = []
-            # Row provenance. Six tax heads render as equals on /budget under
-            # one blanket "Source: KRA Annual Performance" credit, but two of
-            # the six are not KRA-published figures: the whole of FY 2022/23 is
-            # back-computed out of the FY 2023/24 release's growth rates, and
-            # "Other Tax Revenue" is a subtraction in every year. The rows said
-            # so in their own notes; this response did not carry them, so the
-            # blanket credit was the only provenance a reader ever saw.
-            # `basis` is None where nothing was recorded — an omission is
-            # absence, not a claim that the figure was published.
-            meta = r.meta or {}
-            rev_by_fy[fy].append(
-                {
-                    "revenue_type": r.revenue_type,
-                    "category": r.category,
-                    "basis": meta.get("basis"),
-                    "basis_note": meta.get("notes"),
-                    "amount": (
-                        float(r.amount_billion_kes) if r.amount_billion_kes else None
-                    ),
-                    "target": (
-                        float(r.target_billion_kes) if r.target_billion_kes else None
-                    ),
-                    "performance_pct": (
-                        float(r.performance_pct) if r.performance_pct else None
-                    ),
-                    "share_pct": (
-                        float(r.share_of_total_pct) if r.share_of_total_pct else None
-                    ),
-                    "yoy_growth_pct": (
-                        float(r.yoy_growth_pct) if r.yoy_growth_pct else None
-                    ),
-                }
-            )
+            rev_by_fy[fy].append(revenue_source_row(r))
 
         revenue_by_source = [
             {"fiscal_year": fy, "sources": sources}

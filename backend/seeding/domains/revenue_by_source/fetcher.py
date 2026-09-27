@@ -1,11 +1,7 @@
-"""Fetch revenue-by-source payload with live World Bank enrichment.
+"""Fetch observed World Bank headlines and KRA collections.
 
-Strategy:
-1. Try World Bank API for government revenue indicators (total revenue,
-   tax revenue as % of GDP) to get authoritative headline figures.
-2. Load fixture for the detailed tax-type breakdown (PAYE, VAT, Corp Tax,
-   Excise Duty) which is only available from KRA annual reports.
-3. Merge: live headline figures enrich the fixture breakdown.
+The fixture supplies row templates for the KRA overlay. Unobserved fixture
+amounts are never returned for writing over the database's existing evidence.
 """
 
 from __future__ import annotations
@@ -117,17 +113,15 @@ def fetch_revenue_payload(
 
     Strategy:
     1. Fetch headline revenue from World Bank API.
-    2. Load fixture for detailed tax-type breakdown.
-    3. Merge: live headline data supplements fixture detail.
+    2. Load row templates and overlay observed KRA collections.
+    3. Return only this run's observations and explicit withdrawals.
     """
-    from ...freshness import mark_fixture, mark_live, mark_partial
+    from ...freshness import mark_live, mark_partial
 
     live_records: List[Dict[str, Any]] = []
-    wb_reason = "worldbank_disabled"
 
     # Step 1: Try World Bank API
     if settings.enrich_with_worldbank:
-        wb_reason = "worldbank_returned_nothing"
         try:
             live_records = _fetch_wb_revenue(client, settings)
             if live_records:
@@ -136,7 +130,6 @@ def fetch_revenue_payload(
                 )
         except Exception as exc:
             logger.warning("World Bank revenue fetch failed: %s", exc)
-            wb_reason = f"worldbank_unreachable({type(exc).__name__})"
 
     # Step 2: Load fixture
     try:
@@ -176,7 +169,7 @@ def fetch_revenue_payload(
         final_payload = merged
     elif fixture_payload:
         logger.warning(
-            "No live revenue data — using fixture as fallback (data may be stale)"
+            "No World Bank observations — loading templates for the KRA overlay"
         )
         final_payload = fixture_payload
     else:
@@ -188,7 +181,7 @@ def fetch_revenue_payload(
     # DISCOVERED each run (kra_discovery) — the configured
     # ``settings.kra_revenue_url`` is one candidate among several, no longer
     # the only source. Only a release that passes validation against KRA's
-    # own totals replaces anything; otherwise the fixture breakdown stands.
+    # own totals replaces anything; unavailable source observations are withheld from this run.
     try:
         final_payload, kra_status = _apply_kra_live(final_payload, client, settings)
         logger.info("revenue_by_source KRA overlay: %s", kra_status)
@@ -199,9 +192,8 @@ def fetch_revenue_payload(
     # Provenance. The per-tax-head breakdown (PAYE / VAT / Corporation /
     # Excise / Customs) is the figure this domain actually publishes, and it
     # comes ONLY from KRA. World Bank supplies headline totals that do not
-    # touch the breakdown, so a World-Bank-only run is recorded as live with a
-    # detail that says the breakdown is still fixture — the same distinction
-    # fiscal_summary draws for its headline budget. "promoted" says the
+    # touch the breakdown, so a World-Bank-only run is recorded as partial.
+    # "promoted" says the
     # overlay applied; whether it applied the publisher's NEWEST edition is
     # judged separately by seeding/edition_gates.py (#243: this printed
     # "promoted:5/FY 2024/25" and LIVE for eleven weeks after KRA published
@@ -213,18 +205,22 @@ def fetch_revenue_payload(
     elif live_records:
         # PARTIAL, not live. Reported by review on PR #136: the World Bank
         # totals are genuinely fresh, but the per-tax-head breakdown is what
-        # this domain publishes, and it is still the fixture. Recording LIVE
+        # this domain publishes, and it was not observed. Recording LIVE
         # made check_ingestion_freshness report OK, so KRA could stay
         # unavailable indefinitely behind a green nightly.
         mark_partial(
             "revenue_by_source",
             reason=f"kra_overlay_not_promoted({kra_status})",
-            detail=f"World Bank headline totals only; tax-head breakdown still fixture. {detail}",
+            detail=f"World Bank headline totals only; unobserved tax heads not written. {detail}",
         )
     else:
-        mark_fixture("revenue_by_source", reason=wb_reason, detail=detail)
+        mark_partial("revenue_by_source", reason=f"source_unavailable({kra_status})", detail=detail)
 
-    return final_payload
+
+    # A failed publisher request must not write a bundled snapshot over the
+    # existing database. Only this run's observed collections/totals may write.
+    # Stored historical rows remain readable with their own provenance.
+    return [r for r in final_payload if r.get("_revenue_source") == "kra_live" or r in live_records]
 
 
 def _response_text(resp: Any, url: str) -> str:
@@ -307,6 +303,13 @@ def _read_release(client: SeedingHttpClient, url: str, hinted_fy: Optional[str])
             if bundle is not None:
                 release = parse_dashboard_bundle(bundle.text, url=url, data_url=bundle_url)
                 if release is not None:
+                    import hashlib
+                    from datetime import datetime, timezone
+                    import re
+                    report = re.search(r'https://www\.kra\.go\.ke/images/publications/[^"\s]+\.pdf', bundle.text)
+                    release.report_url = report.group(0) if report else None
+                    release.retrieved_at = datetime.now(timezone.utc).isoformat()
+                    release.content_sha256 = hashlib.sha256(bundle.text.encode()).hexdigest()
                     return release
         logger.warning("KRA page %s embeds %s but no release data was read", url, frame)
         return None
@@ -465,27 +468,19 @@ def _stamp_published(
     must not keep the fixture's projection target, or a note describing a
     number it no longer holds.
 
-    A row that is ALREADY published at this amount keeps its note: the
-    fixture's notes on those rows carry more than the prose parse can
-    (performance, growth, target), and re-promoting the same figure every
-    night must not strip them."""
+    Description fields are replaced with the observed release, even when its
+    rounded amount happens to match an older version."""
+    row.pop("absent_reason", None)
+    row["share_of_total_pct"] = None
+    row["source"] = {"url": source_url, "period": row.get("fiscal_year"), "version": "press_release", "publication_date": None}
+    if source_url and row.get("source_url") != source_url:
+        row["notes"] = note
+        row["source_url"] = source_url
     new_amount = _q(amount, places)
-    if row.get("basis") == "published" and row.get("amount_billion_kes") is not None:
-        try:
-            unchanged = abs(float(row["amount_billion_kes"]) - new_amount) < 0.05
-        except (TypeError, ValueError):
-            unchanged = False
-        if unchanged:
-            row["amount_billion_kes"] = new_amount
-            row["data_quality"] = "official"
-            row["_revenue_source"] = "kra_live"
-            return
-    if row.get("basis") == "projected":
-        # The fixture's target, performance and share on a projected row are
-        # house projections, not KRA's; they cannot sit beside a KRA actual.
-        row["target_billion_kes"] = None
-        row["performance_pct"] = None
-        row["share_of_total_pct"] = None
+    # Only describing fields re-read from this release may accompany it.
+    row["target_billion_kes"] = None
+    row["performance_pct"] = None
+    row["yoy_growth_pct"] = None
     row["amount_billion_kes"] = new_amount
     row["basis"] = "published"
     row["notes"] = note
@@ -499,7 +494,11 @@ def _overlay_kra_release(
     payload: List[Dict[str, Any]], release: Any
 ) -> tuple[List[Dict[str, Any]], str]:
     """Overlay a VALIDATED dashboard release onto its own fiscal year. Pure."""
-    from .kra_discovery import PUBLISHED_HEADS, RESIDUAL_HEAD, residual_bn
+    from .kra_discovery import PUBLISHED_HEADS, RESIDUAL_HEAD, validate_release
+
+    problems = validate_release(release)
+    if problems:
+        return payload, f"failed_validation: {problems[0]}"
 
     fy = release.fiscal_year
     label = f"KRA Annual Revenue Performance {fy}"
@@ -518,35 +517,44 @@ def _overlay_kra_release(
         row["target_billion_kes"] = _q(fig.target_bn) if fig.target_bn is not None else None
         row["performance_pct"] = _q(fig.performance_pct, "0.1") if fig.performance_pct is not None else None
         row["yoy_growth_pct"] = _q(fig.growth_pct, "0.1") if fig.growth_pct is not None else None
-        # Share of EXCHEQUER revenue, the base the earlier years' shares use
-        # (FY 2024/25 PAYE 24.1 = 561.0 / 2,323).
-        row["share_of_total_pct"] = (
-            _q(fig.amount_bn / release.exchequer_bn * 100, "0.1")
-            if release.exchequer_bn
-            else None
+        row["share_of_total_pct"] = None
+        row["measure"] = (
+            "Customs departmental collections, including agency levies" if head == "Customs & Import Duty"
+            else "Domestic VAT" if head == "VAT" else "Domestic excise" if head == "Excise Duty" else head
         )
+        row["source"] = {
+            "url": release.url, "data_url": release.data_url, "report_url": release.report_url, "version": "dashboard_bundle",
+            "retrieved_at": release.retrieved_at, "sha256": release.content_sha256,
+            "period": fy, "publication_date": None,
+            "stated_amount_billion_kes": str(fig.amount_bn),
+            "reconciliation": (
+                "Dashboard version; not independently reconciled to the KRA annual PDF. "
+                f"App check: reported total less domestic and Customs collections = "
+                f"KES {release.total_bn - release.domestic_bn - release.heads['Customs & Import Duty'].amount_bn}B."
+            ),
+        }
 
-    residual = residual_bn(release)
-    if residual is not None:
-        row = _row_for(payload, fy, RESIDUAL_HEAD)
-        row["amount_billion_kes"] = _q(residual)
-        row["basis"] = "residual"
-        row["share_of_total_pct"] = _q(residual / release.exchequer_bn * 100, "0.1")
-        row["target_billion_kes"] = None
-        row["performance_pct"] = None
-        row["yoy_growth_pct"] = None
-        row["data_quality"] = "official"
-        row["_revenue_source"] = "kra_live"
-        row["source_url"] = release.url
-        row["notes"] = (
-            f"Residual: Exchequer {_fmt_bn(release.exchequer_bn)}B minus identified "
-            f"tax heads ({label}). Includes withholding tax, capital gains, stamp "
-            f"duty, digital economy and betting taxes."
-        )
-    # else: the release states no exchequer figure — the residual row keeps
-    # whatever it held; it is never set to 0.
-    applied = len(PUBLISHED_HEADS)
-    return payload, f"promoted:{applied}/{fy} (dashboard{', residual' if residual is not None else ''})"
+
+    # Explicit withdrawal also clears existing rows via the writer, rather
+    # than leaving an old fixture residual in place when the new one is absent.
+    from services.revenue_publication import RESIDUAL_REASON
+    residual_row = _row_for(payload, fy, RESIDUAL_HEAD)
+    residual_row.update(amount_billion_kes=None, share_of_total_pct=None,
+                        target_billion_kes=None, performance_pct=None, yoy_growth_pct=None,
+                        basis="residual", absent_reason=RESIDUAL_REASON,
+                        notes=RESIDUAL_REASON, source_url=release.url, _revenue_source="kra_live")
+    # Preserve the publisher's totals as separate measures, never a sum of
+    # departmental heads or a purported tax-only total.
+    for name, value in (("Total KRA Collections", release.total_bn),
+                        ("Total Exchequer Revenue", release.exchequer_bn),
+                        ("Total Agency Revenue", release.agency_bn)):
+        if value is None:
+            continue
+        total_row = _row_for(payload, fy, name)
+        _stamp_published(total_row, float(value), f"KRA dashboard: {name}, {fy}", release.url)
+        total_row.update(category="total", measure=name, share_of_total_pct=None,
+                         source={**row["source"], "stated_amount_billion_kes": str(value)})
+    return payload, f"promoted:{len(PUBLISHED_HEADS)}/{fy} (dashboard; residual withheld: incompatible bases)"
 
 
 def _overlay_kra_breakdown(
