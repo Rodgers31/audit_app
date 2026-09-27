@@ -28,6 +28,7 @@ export interface FiscalYearData {
   total_borrowing: number | null;
   borrowing_pct_of_budget: number | null;
   debt_service_cost: number | null;
+  debt_service_source?: { title?: string; url?: string; page?: string } | null;
   debt_service_per_shilling: number | null;
   debt_ceiling: number | null;
   actual_debt: number | null;

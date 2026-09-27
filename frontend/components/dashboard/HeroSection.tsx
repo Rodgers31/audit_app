@@ -6,10 +6,9 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { useDebtTimeline, useNationalDebtOverview } from '@/lib/react-query/useDebt';
 import { useFiscalSummary } from '@/lib/react-query/useFiscal';
 import { useLang } from '@/lib/i18n/LangProvider';
-import { assessDebtAnchor } from '@/lib/debt/debtAnchor';
 import { registerSourceLabel, summedRegisterRows } from '@/lib/debt/registerScope';
 import { frameworkOf, frameworkUses } from '@/lib/fiscal/framework';
-import { dsaCitation, dsaHref, dsaIsAlarm, dsaSourceLabel, readDsaRating } from '@/lib/debt/dsaRating';
+import { dsaCitation, dsaHref, dsaIsAlarm, dsaSourceLabel, dsaVintageLabel, readDsaRating } from '@/lib/debt/dsaRating';
 import { fmtBillionKES, toRawKES } from '@/lib/utils';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
@@ -172,15 +171,7 @@ export function SummaryStrip() {
   const riskLevel: string | null = dsa?.overall_risk_of_debt_distress ?? null;
   const isHigh = dsaIsAlarm(dsa);
 
-  // Debt against the one published threshold it is formally measured by. The
-  // anchor comes from the API so a change in the law needs no frontend
-  // release. This — not a styling choice — is what turns the headline red:
-  // the figures are only ever marked as alarming while a published figure
-  // exceeds a published threshold, and the card says which and by how much.
-  const anchorPct: number | null = fiscal?.debt_anchor?.anchor_pct_gdp ?? null;
-  const anchor = assessDebtAnchor(typeof gdpPct === 'number' ? gdpPct : null, anchorPct);
-  const breached = anchor.state === 'above';
-  const alarm = breached || isHigh;
+  const alarm = isHigh;
   // `.text-gov-copper` is re-pointed at the lighter accent token under
   // `:root.dark` (globals.css), so this needs no dark: variant to stay legible.
   const figureTone = alarm ? 'text-gov-copper' : '';
@@ -216,7 +207,7 @@ export function SummaryStrip() {
             <p className='mt-2 inline-flex items-start gap-1.5 font-mono text-[11px] font-semibold uppercase leading-snug tracking-[0.06em] text-gov-copper'>
               <AlertTriangle aria-hidden='true' className='mt-px h-3 w-3 shrink-0' />
               <span>
-                Overall risk of debt distress: {dsa.overall_risk_of_debt_distress} · IMF–World Bank DSA
+                Overall risk of debt distress: {dsa.overall_risk_of_debt_distress} · {dsaSourceLabel(dsa)}
               </span>
             </p>
           )}
@@ -242,33 +233,6 @@ export function SummaryStrip() {
           <p className={`figure-value figure-fluid mt-4 leading-none ${figureTone}`} data-figure>
             {typeof gdpPct === 'number' ? `${gdpPct.toFixed(1)}%` : '—'}
           </p>
-          {anchor.state === 'above' && (
-            <>
-              {/* States the breach in points rather than leaving the reader to
-                  subtract 55 from 69.3 themselves. */}
-              <p className='mt-2 inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.06em] text-gov-copper'>
-                <AlertTriangle aria-hidden='true' className='h-3 w-3 shrink-0' />
-                <span>
-                  {anchor.pointsAbove.toFixed(1)} pts above the{' '}
-                  {anchor.anchorPct.toFixed(0)}% anchor
-                </span>
-              </p>
-              {/* Shows the overshoot rather than asserting it. Same vocabulary
-                  as the anchor gauge in the fiscal snapshot card below. */}
-              <div
-                aria-hidden='true'
-                className='relative mt-2 h-1.5 overflow-hidden rounded-full bg-surface-sunken'>
-                <div
-                  className='absolute inset-y-0 left-0 rounded-full bg-gov-copper'
-                  style={{ width: `${Math.min(anchor.ratioPct, 100)}%` }}
-                />
-                <div
-                  className='absolute inset-y-0 w-px bg-gov-dark/60 dark:bg-white/60'
-                  style={{ left: `${anchor.anchorPct}%` }}
-                />
-              </div>
-            </>
-          )}
           <p className='mt-3 text-xs leading-snug text-neutral-muted'>
             {gdpBasis ?? 'Basis not declared by the source'}
             {gdpSource && <span className='block mt-0.5'>Source: {gdpSource}</span>}
@@ -298,6 +262,7 @@ export function SummaryStrip() {
           </div>
           <p className='mt-3 text-xs leading-snug text-neutral-muted'>
             {dsa ? (
+              <>
               <a
                 href={dsaHref(dsa)}
                 title={dsaCitation(dsa)}
@@ -306,6 +271,8 @@ export function SummaryStrip() {
                 className='underline hover:no-underline'>
                 {dsaSourceLabel(dsa)}
               </a>
+              <span className="block mt-1">{dsaVintageLabel(dsa)}</span>
+              </>
             ) : (
               t('home.hero.risk_unassessed_reason')
             )}
@@ -356,44 +323,11 @@ export function KenyanGovCard() {
   const anchor = fiscal?.debt_anchor;
   const anchorLine = anchor?.anchor_pct_gdp ?? 55;
   const debtToGdp = anchor?.debt_to_gdp_pct ?? null;
-  const aboveAnchor =
-    anchor?.above_anchor ?? (debtToGdp != null ? debtToGdp > anchorLine : false);
-  const gaugePct = debtToGdp != null ? Math.min(debtToGdp, 100) : 0;
   const fyLabel = fy?.fiscal_year || '—';
 
-  /* Derive a "fiscal health" tier from debt-to-GDP vs the anchor */
-  const healthTier = !fy
-    ? 'loading'
-    : debtToGdp == null
-      ? 'stable'
-      : debtToGdp > anchorLine + 12
-        ? 'critical'
-        : debtToGdp > anchorLine
-          ? 'warning'
-          : 'stable';
-
-  const tierColors = {
-    critical: {
-      dot: 'bg-gov-copper',
-      ring: 'ring-gov-copper/30',
-      text: 'text-gov-copper',
-      label: t('home.govcard.under_strain'),
-    },
-    warning: {
-      dot: 'bg-gov-gold',
-      ring: 'ring-gov-gold/30',
-      text: 'text-gov-gold',
-      label: t('home.govcard.watch_list'),
-    },
-    stable: {
-      dot: 'bg-emerald-500',
-      ring: 'ring-emerald-500/30',
-      text: 'text-emerald-600',
-      label: t('home.govcard.stable'),
-    },
-    loading: { dot: 'bg-gray-400', ring: 'ring-gray-400/20', text: 'text-gray-400 dark:text-neutral-muted/80', label: '...' },
-  };
-  const tier = tierColors[healthTier];
+  const healthTier = fy ? 'unassessed' : 'loading';
+  const tier = { dot: 'bg-gray-400', ring: 'ring-gray-400/20', text: 'text-neutral-muted',
+    label: fy ? 'Risk not assessed from this ratio' : '...' };
 
   return (
     <div className='ledger-panel overflow-hidden flex flex-col h-full'>
@@ -490,9 +424,9 @@ export function KenyanGovCard() {
               />
               <StatMiniCard
                 label={t('home.govcard.stat_debt_service')}
-                value={fmtFiscal(fy.debt_service_cost, fy.unit)}
+                value={fmtFiscal(fy.debt_service_source?.url ? fy.debt_service_cost : null, fy.unit)}
                 sub={
-                  fy.debt_service_per_shilling == null
+                  !fy.debt_service_source?.url || fy.debt_service_per_shilling == null
                     ? '\u2014'
                     : t('home.govcard.cents_per_kes').replace(
                         '{cents}',
@@ -504,44 +438,10 @@ export function KenyanGovCard() {
               />
             </div>
 
-            {/* Debt-to-GDP vs the PFM Act 2023 anchor (55% of GDP) */}
             <div className='mt-1 px-2 py-3 rounded-lg bg-white/50 dark:bg-surface-elevated border border-gray-100 dark:border-neutral-border'>
-              <div className='flex items-center justify-between mb-2'>
-                <span className='text-[11px] uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-semibold'>
-                  {t('home.govcard.debt_ceiling')}
-                </span>
-                <span
-                  className={`text-xs font-black tabular-nums ${aboveAnchor ? 'text-gov-copper' : 'text-gov-dark dark:text-white'}`}>
-                  {debtToGdp != null ? `${debtToGdp.toFixed(0)}%` : '—'}
-                </span>
-              </div>
-              {/* Bar: debt as % of GDP (0–100), with the 55% anchor marked */}
-              <div className='relative h-2.5 rounded-full bg-gray-100 dark:bg-surface-elevated overflow-hidden'>
-                <div
-                  className='absolute inset-y-0 left-0 rounded-full transition-[width] duration-700 ease-out'
-                  style={{ width: `${gaugePct}%`, backgroundColor: aboveAnchor ? '#C9473D' : '#176B49' }}
-                />
-                {/* 55% PFM Act anchor marker */}
-                <div
-                  className='absolute top-0 bottom-0 w-[2px] bg-gov-dark/50'
-                  style={{ left: `${anchorLine}%`, transform: 'translateX(-1px)' }}
-                />
-              </div>
-              {/* Scale markers */}
-              <div className='flex justify-between mt-1'>
-                <span className='text-[11px] text-gray-400 dark:text-neutral-muted/80'>0%</span>
-                <span className='text-[11px] text-gray-500 dark:text-neutral-muted font-semibold'>
-                  {anchorLine.toFixed(0)}% anchor
-                </span>
-                <span className='text-[11px] text-gray-400 dark:text-neutral-muted/80'>100%</span>
-              </div>
-              <p className='text-[11px] text-neutral-muted mt-1.5 text-center leading-snug'>
-                {aboveAnchor && (
-                  <span className='text-gov-copper font-medium'>
-                    {t('home.govcard.ceiling_breached')} ·{' '}
-                  </span>
-                )}
-                {t('home.govcard.anchor_caption')}
+              <p className='text-xs'>Nominal debt-to-GDP: {debtToGdp != null ? `${debtToGdp.toFixed(1)}%` : '—'}</p>
+              <p className='text-[11px] text-neutral-muted mt-1'>
+                The {anchorLine}% statutory anchor uses present value. A comparable ratio is unavailable.
               </p>
             </div>
 
@@ -605,7 +505,7 @@ export function KenyanGovCard() {
                         key={seg.label}
                         className={`${seg.color} transition-[width] duration-500 first:rounded-l-full last:rounded-r-full`}
                         style={{ width: `${((seg.value / total) * 100).toFixed(1)}%` }}
-                        title={`${seg.label}: KES ${(seg.value / 1000).toFixed(1)}T (${((seg.value / total) * 100).toFixed(0)}%)`}
+                        title={`${seg.label}: KES ${(seg.value / 1000).toFixed(1)}T (${(seg.value / total) * 100 < 0.1 ? '<0.1' : ((seg.value / total) * 100).toFixed(0)}%)`}
                       />
                     ))}
                   </div>
@@ -616,7 +516,7 @@ export function KenyanGovCard() {
                         <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${seg.dot}`} />
                         <span className='text-[11px] text-gray-500 dark:text-neutral-muted/80 truncate'>{seg.label}</span>
                         <span className='text-[11px] font-semibold text-gov-dark dark:text-white tabular-nums ml-auto'>
-                          {((seg.value / total) * 100).toFixed(0)}%
+                          {(seg.value / total) * 100 < 0.1 ? '<0.1' : ((seg.value / total) * 100).toFixed(0)}%
                         </span>
                       </div>
                     ))}

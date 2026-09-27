@@ -34,6 +34,7 @@ https://www.imf.org/external/pubs/ft/dsa/dsalist.pdf):
 from __future__ import annotations
 
 import copy
+from datetime import date, datetime, timezone
 from typing import Any, Dict
 
 #: Joint World Bank-IMF DSA for Kenya, as printed on its first page.
@@ -80,7 +81,20 @@ _KENYA_DSA: Dict[str, Any] = {
 }
 
 
-def kenya_dsa_rating() -> Dict[str, Any]:
+def kenya_dsa_rating(*, today: date | None = None) -> Dict[str, Any]:
     """The declared DSA rating. Each call returns a fresh copy, so a caller
     cannot mutate the declaration."""
-    return copy.deepcopy(_KENYA_DSA)
+    result = copy.deepcopy(_KENYA_DSA)
+    today = today or datetime.now(timezone.utc).date()
+    age = (today - date.fromisoformat(result["latest_confirmed"]["as_of"])).days
+    # This is an app review interval, not an IMF expiry date or a new rating.
+    result["freshness"] = {
+        "evaluated_on": today.isoformat(),
+        "confirmation_age_days": age if age >= 0 else None,
+        "review_after_days": 180,
+        "status": "unknown" if age < 0 else (
+            "confirmation_aging" if age >= 180 else "recent_confirmation"
+        ),
+        "basis": "App review interval; the dated assessment remains historical evidence, not confirmation of the current rating.",
+    }
+    return result

@@ -395,6 +395,10 @@ def seed_debt_sustainability(db_session, seed_country, seed_source_doc):
         total_revenue=2_800_000_000_000,
         tax_revenue=2_200_000_000_000,
         debt_service_cost=1_000_000_000_000,
+        meta={
+            "debt_service_source": {"url": "https://treasury.go.ke/debt.pdf", "page": "p.1"},
+            "revenue_source": {"url": "https://treasury.go.ke/revenue.pdf", "page": "p.2"},
+        },
         # Tier B (#137): a published fiscal row cites a page.
         page_ref="s.3.2, report p.16 (PDF p.37)",
     )
@@ -482,8 +486,8 @@ class TestDebtSustainability:
         assert d2g is not None
         assert d2g["value"] == 61.4
         assert d2g["year"] == 2024
-        assert d2g["threshold_imf"] == 55.0
-        assert d2g["status"] == "above"
+        assert "threshold_imf" not in d2g
+        assert "status" not in d2g
 
     def test_debt_service_to_revenue(self, client, seed_debt_sustainability):
         data = client.get("/api/v1/debt/sustainability").json()
@@ -491,7 +495,7 @@ class TestDebtSustainability:
         assert ds2r is not None
         # 1T / 2.8T * 100 = 35.7%
         assert ds2r["value"] == 35.7
-        assert ds2r["status"] == "above"
+        assert "status" not in ds2r
 
     def test_external_debt_share(self, client, seed_debt_sustainability):
         data = client.get("/api/v1/debt/sustainability").json()

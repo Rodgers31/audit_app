@@ -429,14 +429,19 @@ def _tbill_yield_terms(loan: Dict[str, Any], tbill: Dict[str, Any]) -> Dict[str,
         rate_pct=rate.rate_pct,
         basis="auction_yield",
         label=(
-            f"CBK's 91-day T-bill yield ({rate.cbk_date_text}). The stock also "
+            f"CBK's 91-day T-bill yield (publisher date: {rate.cbk_date_text or 'not stated'}; "
+            "date meaning unconfirmed). The stock also "
             "holds 182- and 364-day bills sold at other auctions and rates."
         ),
         source={
             "publisher": "Central Bank of Kenya",
             "title": tbill["source_title"],
             "url": tbill["source_url"],
-            "as_of": rate.cbk_date.isoformat() if rate.cbk_date else tbill["retrieved_at"],
+            "as_of": None,
+            "publisher_date": rate.cbk_date.isoformat() if rate.cbk_date else None,
+            "publisher_date_text": rate.cbk_date_text,
+            "date_basis": "publisher_date_meaning_unconfirmed",
+            "retrieved_at": tbill["retrieved_at"],
         },
         outstanding_kes=_row_amount_kes(loan),
         cost_label=(

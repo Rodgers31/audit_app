@@ -4,6 +4,7 @@
 import { apiClient } from './axios';
 import { COUNTIES_ENDPOINTS, DEBT_ENDPOINTS, buildUrlWithParams } from './endpoints';
 import { ApiResponse, DebtDataResponse } from './types';
+import type { ImfDsaRating } from '@/lib/debt/dsaRating';
 
 // Get debt data for a county
 export const getCountyDebtData = async (countyId: string): Promise<DebtDataResponse> => {
@@ -118,6 +119,9 @@ export interface FigureSource {
   title: string;
   url: string;
   as_of?: string | null;
+  publisher_date?: string | null;
+  date_basis?: string;
+  retrieved_at?: string | null;
   page?: string | null;
 }
 
@@ -340,18 +344,16 @@ export const getCountyPendingBills = async (countyId: string): Promise<CountyPen
 // the sustainability gauges were withdrawn (credibility audit F5/F10/F26) — so
 // the cost of it being wrong is deferred, not absent.
 
-/** A measure published beside the threshold it is judged against. */
+/** A measured ratio, independent of the separately cited DSA assessment. */
 export interface SustainabilityIndicator {
   value: number;
   /** Calendar year, or a fiscal-year label such as "FY 2026/27". */
   year: number | string;
-  status: 'above' | 'warning' | 'below';
 }
 
 export interface DebtToGdpIndicator extends SustainabilityIndicator {
   year: number;
-  threshold_imf: number;
-  threshold_eac: number;
+  assessment?: string;
   /**
    * Which measure this ratio is, in words. Present since #179 — the same
    * figure and basis as /debt/national's headline, so a reader comparing the
@@ -362,7 +364,9 @@ export interface DebtToGdpIndicator extends SustainabilityIndicator {
 }
 
 export interface DebtServiceIndicator extends SustainabilityIndicator {
-  threshold: number;
+  basis?: string;
+  source_document_id?: number | null;
+  page_ref?: string | null;
 }
 
 /**
@@ -454,8 +458,10 @@ export interface DebtProjection {
 
 export interface DebtSustainabilityResponse {
   status?: string;
+  imf_dsa?: ImfDsaRating;
   debt_to_gdp: DebtToGdpIndicator | null;
   debt_service_to_revenue: DebtServiceIndicator | null;
+  debt_service_to_revenue_absent_reason?: string | null;
   /** External debt as % of total public debt. */
   external_debt_share: number | null;
   /** Empty when no published forecast is seeded — see `projections_absent_reason`. */

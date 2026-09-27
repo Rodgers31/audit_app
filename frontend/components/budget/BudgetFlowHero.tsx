@@ -36,6 +36,7 @@ import { useMemo, useState } from 'react';
 
 import {
   frameworkCitation,
+  fiscalColumnLabel,
   frameworkOf,
   frameworkSources,
   frameworkUses,
@@ -305,6 +306,8 @@ export default function BudgetFlowHero({ data }: Props) {
                 : 'The approved gross budget, on the Controller of Budget basis.'}
             </p>
 
+            <p className='text-xs text-neutral-muted mt-1'>Fiscal framework: {fiscalColumnLabel(data)} · {ff?.source?.edition ?? 'Edition unconfirmed'}</p>
+
             {/*
               Which budget is this? There are several real answers, and the
               commonly quoted one is not this one. Rather than pick silently,
@@ -539,7 +542,7 @@ function FlowBar({
                   {seg.label}
                 </div>
                 <div className='text-sm font-bold text-gov-dark dark:text-white tabular-nums leading-tight'>
-                  KES {fmtT(seg.valueB)} · {seg.share.toFixed(1)}%
+                  KES {fmtT(seg.valueB)} · {seg.share > 0 && seg.share < 0.1 ? '<0.1' : seg.share.toFixed(1)}%
                 </div>
                 <div className='text-[11px] text-neutral-muted leading-snug mt-1'>
                   {seg.note}
@@ -588,7 +591,7 @@ function SegmentLegend({
                 {seg.label}
               </span>
               <span className='block text-[11px] text-neutral-muted tabular-nums'>
-                KES {fmtT(seg.valueB)} · {seg.share.toFixed(1)}%
+                KES {fmtT(seg.valueB)} · {seg.share > 0 && seg.share < 0.1 ? '<0.1' : seg.share.toFixed(1)}%
               </span>
             </span>
           </button>
