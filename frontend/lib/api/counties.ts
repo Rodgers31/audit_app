@@ -172,7 +172,7 @@ export const transformCountyData = (bc: BackendCountyResponse): County => {
     gdp: bc.gdp ?? undefined,
     // Money received, or nothing. It used to fall back to `total_spent`,
     // publishing what a county SPENT as what it received (#238).
-    moneyReceived: publishedAmount(bc.money_received),
+    moneyReceived: reportedAmount(bc.money_received),
     budgetUtilization: bc.budget_utilization ?? undefined,
     revenueCollection: bc.revenue_collection ?? undefined,
     // `?? 0` here published a zero for a county with no figure. The API now

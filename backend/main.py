@@ -780,6 +780,7 @@ def _county_pending_bills_absence(db: Session, entity) -> Optional[Dict[str, Any
     doc_ids = {
         loan.source_document_id
         for loan in db.query(DBLoan)
+        .options(joinedload(DBLoan.entity))
         .filter(DBLoan.debt_category == DebtCategory.PENDING_BILLS)
         .all()
         if loan.source_document_id
@@ -10670,14 +10671,15 @@ def _published_pending_bills(db: Session) -> Tuple[List[tuple], Dict[str, Any]]:
 
     rows = []
     for loan in loans:
-        if not pending_bills_row_is_published(loan):
+        entity_info = entity_map.get(loan.entity_id)
+        if entity_info is None:
+            continue
+        entity_name, entity_type = entity_info
+        if not pending_bills_row_is_published(loan, entity_type=entity_type):
             continue
         amount = pending_bills_row_amount(loan)
         if amount is None:
             continue
-        entity_name, entity_type = entity_map.get(
-            loan.entity_id, ("National Government", "national")
-        )
         rows.append((loan, entity_name, entity_type, amount))
 
     national = [amount for _l, _n, etype, amount in rows if etype != "county"]

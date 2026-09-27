@@ -647,13 +647,20 @@ def _pending_bills_entries(loan: Any) -> list:
     return [entry for entry in entries if isinstance(entry, dict)]
 
 
-def pending_bills_row_is_published(loan: Any) -> bool:
+def _pending_bills_entity_type(loan: Any, entity_type: Any = None) -> Any:
+    if entity_type is None:
+        entity_type = getattr(getattr(loan, "entity", None), "type", None)
+    return getattr(entity_type, "value", entity_type)
+
+
+def pending_bills_row_is_published(loan: Any, *, entity_type: Any = None) -> bool:
     """True for a PENDING_BILLS row read from the publication for its side.
 
     A county row is published when it declares the Controller of Budget's
     year-end report; a national row when it declares the Treasury BROP. Each
     row states its side (``category``) and its publication, both written by
-    the fetcher; neither is inferred from the entity or the lender. So a BROP
+    the fetcher. The attached entity must agree: CoB figures belong to counties,
+    and the BROP's two national aggregates belong to national entities. So a BROP
     county row — every county row written before #238 moved the source — is
     not published, and it does not need deleting to stop being served.
 
@@ -677,8 +684,11 @@ def pending_bills_row_is_published(loan: Any) -> bool:
     category = getattr(loan, "debt_category", None)
     if getattr(category, "value", category) != "pending_bills":
         return False
-    if _is_published_county_row(loan):
+    side = _pending_bills_entity_type(loan, entity_type)
+    if _is_published_county_row(loan, entity_type=side):
         return True
+    if side != "national":
+        return False
     for entry in _pending_bills_entries(loan):
         if (
             entry.get("category") in ("mda", "state_corporation")
@@ -688,7 +698,7 @@ def pending_bills_row_is_published(loan: Any) -> bool:
     return False
 
 
-def _is_published_county_row(loan: Any) -> bool:
+def _is_published_county_row(loan: Any, *, entity_type: Any = None) -> bool:
     """A county row as the CoB fetcher writes it, and nothing looser.
 
     Found by an adversarial pass (#238): the provenance must be the single
@@ -702,7 +712,8 @@ def _is_published_county_row(loan: Any) -> bool:
         return False
     provenance = getattr(loan, "provenance", None)
     return (
-        isinstance(provenance, dict)
+        _pending_bills_entity_type(loan, entity_type) == "county"
+        and isinstance(provenance, dict)
         and provenance.get("category") == "county"
         and provenance.get("publication") == COUNTY_PENDING_BILLS_PUBLICATION
         and pending_bills_row_as_at(loan) is not None
