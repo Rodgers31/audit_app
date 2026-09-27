@@ -12612,7 +12612,7 @@ async def options_counties() -> Response:
 # removed (#252): anyone could start a document download batch with no
 # credentials, and nothing in the repo called them. The admin-gated trigger
 # is POST /api/v1/admin/etl/trigger/{source}; see
-# tests/test_main_write_routes_require_auth.py before adding a write route.
+# tests/test_write_routes_require_auth.py before adding a write route.
 
 
 # Admin endpoints
