@@ -155,3 +155,62 @@ def test_civic_figures_empty_db_is_unavailable_not_zero(client):
     for key in ("nominal_gdp", "national_budget", "public_debt", "equitable_share"):
         assert figs[key]["available"] is False
         assert figs[key]["value"] in (None, 0)
+
+
+# ── The equitable share is not county transfers (#237 consolidation review) ──
+#
+# #260 redefines FiscalSummary.county_allocation as ALL county transfers (the
+# Budget Summary's framework line: FY2026/27 495.5B) instead of the equitable
+# share alone (420.0B). The glossary card renders this figure as "counties were
+# allocated about KES {value} as their equitable share", so it must read the
+# framework's own equitable-share line when a row carries one, and never
+# publish transfers under that label.
+
+
+def _framework_row(fy, county_transfers_b, equitable_share_b, page="Annex Table 2a, PDF p.63"):
+    return FiscalSummary(
+        fiscal_year=fy,
+        appropriated_budget=5485.7,
+        county_allocation=county_transfers_b,
+        page_ref=page,
+        meta={
+            "split_basis": "treasury_fiscal_framework",
+            "fiscal_framework": {
+                "county_transfers_billion": county_transfers_b,
+                "county_equitable_share_billion": equitable_share_b,
+            },
+        },
+    )
+
+
+def test_equitable_share_is_the_framework_line_not_the_transfers(client, db_session, seed_source_doc):
+    row = _framework_row("FY2026/27", 495.5, 420.0)
+    row.source_document_id = seed_source_doc.id
+    db_session.add(row)
+    db_session.commit()
+
+    figs = client.get("/api/v1/learn/civic-figures").json()["figures"]
+    assert figs["equitable_share"]["value"] == 420_000_000_000, figs["equitable_share"]
+    assert figs["equitable_share"]["period"] == "FY2026/27"
+
+
+def test_a_transfers_row_without_a_share_line_is_not_published_as_the_share(
+    client, db_session, seed_source_doc
+):
+    older = FiscalSummary(
+        fiscal_year="FY2022/23",
+        appropriated_budget=3300,
+        county_allocation=370,  # pre-#260 rows: the equitable share itself
+        source_document_id=seed_source_doc.id,
+        page_ref="p. 12",
+    )
+    newer = _framework_row("FY2026/27", 495.5, None)
+    newer.source_document_id = seed_source_doc.id
+    db_session.add_all([older, newer])
+    db_session.commit()
+
+    share = client.get("/api/v1/learn/civic-figures").json()["figures"]["equitable_share"]
+    # Not 495.5B under the equitable-share label; the latest row that states
+    # the share is the older, share-basis one.
+    assert share["value"] == 370_000_000_000, share
+    assert share["period"] == "FY2022/23"

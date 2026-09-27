@@ -39,6 +39,23 @@ class FiscalSummaryRecord:
     #: rather than new spending — the largest single reason the gross figure
     #: and the enacted headline differ. Absent where it could not be proved.
     debt_redemption: float | None = None
+    #: The document ``debt_service_cost`` was read from. NOT the same thing as
+    #: ``budget_basis_source``, which is where the BUDGET figure came from —
+    #: for FY2025/26 that is COB's nine-month report while the debt service is
+    #: the BPS budget estimate. Citing one for the other mis-cites (issue #235).
+    debt_service_source: dict[str, Any] | None = None
+    #: The Budget Summary's fiscal-framework split for this year — one basis,
+    #: its own reconciling total, page and checks. See ``fiscal_framework.py``.
+    #: Absent on a year no edition could supply.
+    fiscal_framework: dict[str, Any] | None = None
+    #: Which basis ``recurrent_spending`` / ``development_spending`` /
+    #: ``county_allocation`` / ``total_borrowing`` are on. ``None`` means
+    #: undeclared, never "the same as the others".
+    split_basis: str | None = None
+    #: Why a year has no split, or no tax split. Carried so the page can say
+    #: so rather than drawing a bare gap.
+    fiscal_framework_absent_reason: str | None = None
+    tax_split_absent_reason: str | None = None
 
 
 def _safe_float(val: Any) -> float | None:
@@ -89,31 +106,43 @@ def _derive_debt_service_per_shilling(
 
 def _derive_borrowing_pct_of_budget(
     total_borrowing: float | None,
-    appropriated_budget: float | None,
+    fiscal_framework: dict[str, Any] | None,
     declared: float | None,
     *,
     label: str,
 ) -> float | None:
-    """Borrowing as a % of the appropriated budget — DERIVED from its inputs,
-    never read as a hand-entered figure.
+    """Borrowing as a % of spending, DERIVED from two figures on ONE basis.
 
-    Same rationale as ``_derive_debt_service_per_shilling``: a stored ratio
-    drifts from its numerator/denominator. Deriving ``total_borrowing /
-    appropriated_budget`` guarantees the published share always matches the
-    budget — so when the budget headline is corrected or refreshed (fixture
-    bless or a live COB overlay), this share updates automatically instead of
-    silently contradicting it. Warns if a declared value diverges by >1pp.
+    ``total_borrowing`` is deficit financing from Treasury's fiscal
+    framework, so its denominator is that framework's own spending total
+    ("Expenditure and Net Lending"), carried in ``fiscal_framework``.
+
+    It used to divide by ``appropriated_budget``. That is the Controller of
+    Budget's GROSS figure, which counts principal redemption and excludes
+    county transfers. Borrowing measured one way over spending measured
+    another is a ratio of two bases, and that is what every row published
+    (FY 2023/24: 918 over the COB gross 4,340 = 21.2, while the fixture
+    itself declared 25.5 = 918 over the BPS 3,600). A row with no spending
+    total on the borrowing's basis gets ``None``, not a mixed ratio. The
+    declared value is never served, because nothing checks it.
     """
-    if not total_borrowing or not appropriated_budget:
-        return declared  # nothing to compute from — keep any declared value
-    computed = round(total_borrowing / appropriated_budget * 100, 1)
-    if declared is not None and abs(declared - computed) > 1.0:
-        logger.warning(
-            "fiscal_summary %s: declared borrowing_pct_of_budget %.1f diverges "
-            "from computed %.1f (borrow=%.0f / budget=%.0f) — serving computed",
-            label, declared, computed, total_borrowing, appropriated_budget,
+    total = (fiscal_framework or {}).get("total_expenditure_billion")
+    if total_borrowing and total:
+        computed = round(total_borrowing / float(total) * 100, 1)
+        if declared is not None and abs(declared - computed) > 1.0:
+            logger.warning(
+                "fiscal_summary %s: declared borrowing_pct_of_budget %.1f diverges "
+                "from computed %.1f (borrow=%.1f / spending=%.1f) — serving computed",
+                label, declared, computed, total_borrowing, float(total),
+            )
+        return computed
+    if total_borrowing:
+        logger.info(
+            "fiscal_summary %s: borrowing share withheld — no spending total on "
+            "the borrowing's basis to divide by",
+            label,
         )
-    return computed
+    return None
 
 
 def parse_fiscal_summary_payload(payload: dict[str, Any]) -> list[FiscalSummaryRecord]:
@@ -138,11 +167,11 @@ def parse_fiscal_summary_payload(payload: dict[str, Any]) -> list[FiscalSummaryR
                 tax_revenue=_safe_float(fy.get("tax_revenue")),
                 non_tax_revenue=_safe_float(fy.get("non_tax_revenue")),
                 total_borrowing=_safe_float(fy.get("total_borrowing")),
-                # DERIVED from total_borrowing / appropriated_budget so it
-                # always matches the budget and auto-updates on re-seed.
+                # DERIVED from total_borrowing over the fiscal framework's own
+                # spending total, so both sides are on one basis.
                 borrowing_pct_of_budget=_derive_borrowing_pct_of_budget(
                     _safe_float(fy.get("total_borrowing")),
-                    _safe_float(fy.get("appropriated_budget")),
+                    fy.get("fiscal_framework"),
                     _safe_float(fy.get("borrowing_pct_of_budget")),
                     label=label,
                 ),
@@ -164,6 +193,15 @@ def parse_fiscal_summary_payload(payload: dict[str, Any]) -> list[FiscalSummaryR
                 budget_basis=fy.get("budget_basis"),
                 debt_redemption=_safe_float(fy.get("debt_redemption")),
                 budget_basis_source=fy.get("budget_basis_source"),
+                debt_service_source=fy.get("debt_service_source"),
+                fiscal_framework=(
+                    fy.get("fiscal_framework")
+                    if isinstance(fy.get("fiscal_framework"), dict)
+                    else None
+                ),
+                split_basis=fy.get("split_basis"),
+                fiscal_framework_absent_reason=fy.get("fiscal_framework_absent_reason"),
+                tax_split_absent_reason=fy.get("tax_split_absent_reason"),
             )
         )
 

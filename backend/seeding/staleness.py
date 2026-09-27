@@ -1421,6 +1421,150 @@ def check_stalled_projects_edition(session) -> List[Finding]:
     return preamble + findings
 
 
+#: The basis a fiscal year's split must declare to count as "has a split".
+#: Spelled here, not imported, so this module stays importable without the
+#: fiscal_summary domain; ``test_fiscal_split_gate.py`` pins the two equal.
+FISCAL_SPLIT_BASIS = "treasury_fiscal_framework"
+FISCAL_SPLIT_LABEL = "Fiscal split vs Treasury Budget Summary"
+
+
+def _fy_key(label: Optional[str]) -> tuple:
+    """``'FY 2026/27'`` -> ``(2026,)``; anything unparseable sorts first."""
+    import re
+
+    m = re.search(r"(\d{4})", label or "")
+    return (int(m.group(1)),) if m else (-1,)
+
+
+def check_fiscal_split_freshness(
+    session, now: Optional[datetime] = None
+) -> List[Finding]:
+    """Is there a Budget Summary on Treasury's listing newer than the newest
+    fiscal year this site can split?
+
+    Every July an enacted budget lands and the site should start showing its
+    borrowing, recurrent / development / county split and tax versus non-tax.
+    If the new edition cannot be read (a layout change, a dead link, a
+    renamed table), nothing fails: the fixture is served, the old year stays
+    "current" on the split, and the page quietly draws last year's shape. A
+    row-count floor cannot see that and neither can ``source_mode``, which
+    stays ``live`` because older editions still parse.
+
+    Judged on the NEWEST run that recorded the listing, never on a window.
+    "The listing carries a year we cannot split" is a statement about now:
+    a union over past runs would stay green for a fortnight after a new
+    edition broke, which is exactly the hole this gate closes. An unreadable
+    listing is WARN, never OK: absence of evidence is not health.
+    """
+    from models import FiscalSummary, IngestionJob
+
+    now = now or datetime.now(timezone.utc)
+    cutoff = now - timedelta(days=MAX_DAYS_SINCE_LIVE)
+    jobs = [
+        j
+        for j in session.query(IngestionJob)
+        .filter(IngestionJob.domain == "fiscal_summary")
+        .filter(IngestionJob.started_at >= cutoff.replace(tzinfo=None))
+        .all()
+        if "budget_summary_listing_newest_fy" in (j.meta or {})
+    ]
+    if not jobs:
+        return [
+            Finding(
+                WARN,
+                FISCAL_SPLIT_LABEL,
+                f"no fiscal_summary run in the last {MAX_DAYS_SINCE_LIVE} days "
+                "recorded what Treasury's Budget Summary listing carries, so "
+                "whether a newer budget is waiting cannot be judged",
+            )
+        ]
+    latest = max(jobs, key=_run_order)
+    meta = latest.meta or {}
+    listed = meta.get("budget_summary_listing_newest_fy")
+    editions = meta.get("budget_summary_editions") or {}
+    findings: List[Finding] = []
+
+    if meta.get("budget_summary_undated_links"):
+        findings.append(
+            Finding(
+                WARN,
+                FISCAL_SPLIT_LABEL,
+                f"{len(meta['budget_summary_undated_links'])} Budget Summary "
+                "link(s) name no fiscal year on the link or on a readable "
+                f"cover, so a newer edition could be among them: "
+                f"{meta['budget_summary_undated_links']}",
+            )
+        )
+    if not listed:
+        findings.append(
+            Finding(
+                WARN,
+                FISCAL_SPLIT_LABEL,
+                "the newest run could not establish any Budget Summary year on "
+                f"the listing (listing: {meta.get('budget_summary_listing_status')})",
+            )
+        )
+        return findings
+
+    if _fy_key(listed) == (-1,):
+        findings.append(
+            Finding(
+                WARN,
+                FISCAL_SPLIT_LABEL,
+                f"the listing's newest Budget Summary year {listed!r} is not a "
+                "fiscal year, so it cannot be compared with what is published",
+            )
+        )
+        return findings
+
+    # A split is the object with its total, not just the label: an empty or
+    # total-less object has nothing a page can draw.
+    split_years = [
+        r.fiscal_year
+        for r in session.query(FiscalSummary).all()
+        if (r.meta or {}).get("split_basis") == FISCAL_SPLIT_BASIS
+        and ((r.meta or {}).get("fiscal_framework") or {}).get("total_expenditure_billion")
+    ]
+    newest_split = max(split_years, key=_fy_key) if split_years else None
+
+    if newest_split is not None and _fy_key(listed) < _fy_key(newest_split):
+        findings.append(
+            Finding(
+                WARN,
+                FISCAL_SPLIT_LABEL,
+                f"the split is published through {newest_split} but the listing's "
+                f"newest Budget Summary is now {listed}: the edition behind the "
+                "newest split has gone from Treasury's listing",
+            )
+        )
+    elif newest_split is None or _fy_key(listed) > _fy_key(newest_split):
+        status = "; ".join(
+            f"{e.get('status')}" + (f" ({e.get('detail')})" if e.get("detail") else "")
+            for u, e in editions.items()
+            if e.get("fiscal_year") == listed
+        )
+        findings.append(
+            Finding(
+                FAIL,
+                FISCAL_SPLIT_LABEL,
+                f"Treasury has published the Budget Summary for {listed}, but "
+                f"the newest fiscal year with a split is {newest_split or 'none'}. "
+                f"The site is drawing borrowing, the spending split and tax vs "
+                f"non-tax for an older budget. Edition status: {status or 'unrecorded'}",
+            )
+        )
+    else:
+        findings.append(
+            Finding(
+                OK,
+                FISCAL_SPLIT_LABEL,
+                f"newest Budget Summary on the listing is {listed}; split "
+                f"published through {newest_split}",
+            )
+        )
+    return findings
+
+
 def run_all(
     session, now: Optional[datetime] = None, counts: Optional[dict] = None
 ) -> List[Finding]:
@@ -1438,6 +1582,7 @@ def run_all(
         + check_ingestion_freshness(session, now)
         + check_county_audit_coverage(session, now)
         + check_stalled_projects_edition(session)
+        + check_fiscal_split_freshness(session, now)
     )
     if counts is not None:
         findings += check_and_record_row_census(session, counts, now=now)
@@ -1468,6 +1613,7 @@ __all__ = [
     "WARN",
     "check_and_record_row_census",
     "check_ingestion_freshness",
+    "check_fiscal_split_freshness",
     "check_row_count_drop",
     "check_series_freshness",
     "check_stalled_projects_edition",

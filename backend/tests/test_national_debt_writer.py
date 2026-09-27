@@ -227,7 +227,12 @@ class TestZombieConsolidation:
         """An identical re-write (same outstanding, same date, same
         category) shouldn't be counted as an update — ``updated``
         tracks real churn, not row touches. Provenance is also not
-        appended, to avoid bloating the JSON column on no-op runs."""
+        appended, to avoid bloating the JSON column on no-op runs.
+
+        The stored rate is NULL, matching a record that carries none. It was
+        ``Decimal("0")`` — the writer's old manufactured zero — and a stored 0
+        against an incoming None is NOT identical: the writer now clears it
+        (issue #235, test_debt_interest_is_published_or_absent)."""
         session.add(
             Loan(
                 entity_id=national_entity.id,
@@ -235,7 +240,7 @@ class TestZombieConsolidation:
                 debt_category=DebtCategory.EXTERNAL_MULTILATERAL,
                 principal=Decimal("1000"),
                 outstanding=Decimal("1000"),
-                interest_rate=Decimal("0"),
+                interest_rate=None,
                 issue_date=datetime(2024, 1, 1),
                 currency="KES",
                 provenance=[{"existing": "entry"}],

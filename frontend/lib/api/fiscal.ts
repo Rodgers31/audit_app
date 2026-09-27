@@ -1,6 +1,7 @@
 /**
  * Fiscal API service — national budget, revenue, borrowing, debt service data
  */
+import type { FiscalFramework } from '@/lib/fiscal/framework';
 import { apiClient } from './axios';
 import { FISCAL_ENDPOINTS } from './endpoints';
 
@@ -34,6 +35,22 @@ export interface FiscalYearData {
   development_spending: number | null;
   recurrent_spending: number | null;
   county_allocation: number | null;
+
+  // ── Which measure each figure is on (issue #237) ───────────────────
+  budget_basis?: string | null;
+  debt_redemption_billion?: number | null;
+  /**
+   * The split and the total it reconciles to, on Treasury's fiscal-framework
+   * basis, in KSh BILLION. Draw breakdowns from this through
+   * lib/fiscal/framework.ts, never against `appropriated_budget` (COB gross,
+   * a different total). Absent for a year no Budget Summary supplies.
+   */
+  fiscal_framework?: FiscalFramework | null;
+  /** "treasury_fiscal_framework" when the split columns above are on it. */
+  split_basis?: string | null;
+  fiscal_framework_absent_reason?: string | null;
+  tax_split_absent_reason?: string | null;
+  page_ref?: string | null;
 }
 
 /**

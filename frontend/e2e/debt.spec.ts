@@ -24,7 +24,7 @@ test('national debt page shows key stats and charts', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /Top 5 Largest Loans/i })).toBeVisible();
 });
 
-test('"Where every KES 100" card uses the fiscal-summary ratio (about KES 65, tax + non-tax revenue)', async ({
+test('"Where every KES 100" card uses the fiscal-summary ratio (about KES 78, tax + non-tax revenue)', async ({
   page,
 }) => {
   await page.goto('/debt');
@@ -33,8 +33,8 @@ test('"Where every KES 100" card uses the fiscal-summary ratio (about KES 65, ta
     page.getByRole('heading', { name: /Where every KES 100 of revenue goes/i }),
   ).toBeVisible();
 
-  // Headline number: seeded values 1900 / 2910 × 100 ≈ 65.3 → rounds to 65
-  await expect(page.getByTestId('debt-headline-kes')).toHaveText('65');
+  // Headline number: FY 2026/27 2315.9 / 2985.7 × 100 = 77.6 → rounds to 78
+  await expect(page.getByTestId('debt-headline-kes')).toHaveText('78');
 
   // Eyebrow includes the "about" honesty hedge
   await expect(page.getByText(/Debt service takes about/i)).toBeVisible();
@@ -44,14 +44,15 @@ test('"Where every KES 100" card uses the fiscal-summary ratio (about KES 65, ta
     page.getByText(/tax & non-tax revenue/i),
   ).toBeVisible();
 
-  // Allocation bar uses the same framing
+  // The breakdown is one fiscal-framework column per KES 100 of the same
+  // revenue (issue #237): 4785.2 / 2985.7 × 100 = 160, and the part above
+  // 100 is shown with what financed it rather than as a computed residual.
   await expect(
-    page.getByText(/Full allocation per KES 100 of revenue/i),
+    page.getByText(/Spending per KES 100 of revenue: 160\.3/i),
   ).toBeVisible();
+  // 21.6 + 1.5 + 37.2 = 60.3 = 160.3 - 100: the parts add up on the page.
   await expect(
-    page.getByText(
-      /Sum exceeds 100 because revenue doesn['’]t fund the whole budget/i,
-    ),
+    page.getByText(/The 60\.3 above 100 is financed by A-i-A \(21\.6\), grants \(1\.5\), net borrowing \(37\.2\)/i),
   ).toBeVisible();
 });
 

@@ -220,3 +220,48 @@ class TestBasisSurvivesTheWrite:
         )
         assert not (row.meta or {}).get("budget_basis")
         assert row.page_ref is None
+
+
+class TestNextYearsBudgetSummaryDoesNotTakeOverCurrent:
+    """Consolidation review of #256 + #260 (should-fix).
+
+    Treasury's Budget Summary for NEXT year appears in June, before the next
+    budget book is read. The fiscal_summary fetcher then writes a row with
+    revenue, borrowing and county transfers (the framework split) and a page
+    reference, but no appropriated budget and no debt service. It passes the
+    three-of-four rule and was published — and as the last published year it
+    became ``current``, so the homepage's budget and debt-service cards and the
+    /debt loans card went blank until the budget book landed.
+    """
+
+    @pytest.fixture()
+    def next_year_summary_only(self, db_session, seed_years, seed_source_doc):
+        row = FiscalSummary(
+            fiscal_year="FY 2027/28",
+            total_revenue=3200e9,
+            total_borrowing=1000e9,
+            county_allocation=520e9,
+            unit="KES",
+            source_document_id=seed_source_doc.id,
+            page_ref="Annex Table 2a, PDF p.63",
+            meta={"split_basis": "treasury_fiscal_framework"},
+        )
+        # the World Bank stub from seed_years would otherwise share the year
+        db_session.delete(seed_years["stub"])
+        db_session.commit()
+        db_session.add(row)
+        db_session.commit()
+        return row
+
+    def test_current_stays_the_year_with_an_enacted_budget(self, db_session, next_year_summary_only):
+        body = fiscal_summary(db_session)
+        assert body["current"]["fiscal_year"] == "FY 2026/27", body["current"]
+        assert body["current"]["appropriated_budget"]
+
+    def test_debt_loans_reads_the_same_current_year(self, db_session, next_year_summary_only):
+        from main import _published_annual_debt_service
+
+        annual = _published_annual_debt_service(db_session)
+        # Whatever it publishes, it is about the year /fiscal/summary calls
+        # current, never next year's budget-summary-only row.
+        assert "FY 2027/28" not in str(annual), annual

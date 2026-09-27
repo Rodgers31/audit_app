@@ -29,6 +29,7 @@ class DebtRecord:
         debt_category: str | None = None,
         interest_rate: Decimal | None = None,
         notes: str | None = None,
+        interest_terms: dict | None = None,
     ):
         self.entity_name = entity_name
         self.entity_type = entity_type
@@ -47,6 +48,9 @@ class DebtRecord:
         self.debt_category = debt_category
         self.interest_rate = interest_rate
         self.notes = notes
+        #: What this row may publish about its rate and annual cost — a
+        #: sourced value or a reason there is none. See ``interest_terms``.
+        self.interest_terms = interest_terms
 
 
 def parse_debt_payload(payload: dict[str, Any]) -> list[DebtRecord]:
@@ -96,9 +100,11 @@ def parse_debt_payload(payload: dict[str, Any]) -> list[DebtRecord]:
             principal = Decimal(str(loan_data["principal"]))
             outstanding = Decimal(str(loan_data["outstanding"]))
 
-            # Parse optional interest rate
+            # Parse optional interest rate. ``is not None``, not truthiness:
+            # a published 0% is a rate, and an absent one is None — the old
+            # ``if loan_data.get(...)`` could not tell them apart.
             interest_rate = None
-            if loan_data.get("interest_rate"):
+            if loan_data.get("interest_rate") is not None:
                 interest_rate = Decimal(str(loan_data["interest_rate"]))
 
             record = DebtRecord(
@@ -119,6 +125,7 @@ def parse_debt_payload(payload: dict[str, Any]) -> list[DebtRecord]:
                 debt_category=loan_data.get("debt_category"),
                 interest_rate=interest_rate,
                 notes=loan_data.get("notes"),
+                interest_terms=loan_data.get("interest_terms"),
             )
 
             records.append(record)

@@ -7,9 +7,9 @@
  * state which threshold, by how much.
  *
  * Absence is not compliance. A missing or unusable ratio must never render as
- * "within the anchor", for the same reason `classifyDebtRisk` refuses to turn
- * a failed API call into a Low risk band: a reassuring default is still a
- * claim. Hence the explicit `unassessed` state rather than a boolean.
+ * "within the anchor", because a reassuring default is still a claim. A failed
+ * API call once rendered on the homepage as a Low risk band for exactly that
+ * reason. Hence the explicit `unassessed` state rather than a boolean.
  */
 
 /**

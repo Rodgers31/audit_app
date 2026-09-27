@@ -515,6 +515,102 @@ def check_external_coverage(
     }
 
 
+#: Stock series -> the series IDS publishes the year's INTEREST PAID under, on
+#: the same counterpart-area dimension. Interest actually paid is a published
+#: figure; a contractual rate per creditor is not something IDS reports, so
+#: this is what the register's "annual cost" can honestly be for external debt.
+INTEREST_SERIES: Dict[str, str] = {
+    "DT.DOD.MLAT.CD": "DT.INT.MLAT.CD",
+    "DT.DOD.BLAT.CD": "DT.INT.BLAT.CD",
+    "DT.DOD.PBND.CD": "DT.INT.PBND.CD",
+    "DT.DOD.PCBK.CD": "DT.INT.PCBK.CD",
+    "DT.DOD.DIMF.CD": "DT.INT.DIMF.CD",
+}
+
+#: Why an external row carries no rate, in words a reader can check.
+EXTERNAL_RATE_ABSENT_REASON = (
+    "World Bank IDS reports the interest Kenya paid this creditor, not the "
+    "interest rate on the loans, and no publisher this site reads gives one."
+)
+
+
+def fetch_interest_paid(
+    client: SeedingHttpClient, year: int
+) -> Tuple[Dict[Tuple[str, str], float], Dict[str, Any]]:
+    """Interest paid in ``year``, per (stock series, creditor name), in USD.
+
+    Gated like the stock pull: per series, the creditor rows must sum to IDS's
+    own ``World`` row to one rounding unit per row, or the whole interest pull
+    is refused. A creditor IDS gives no interest row for is simply absent from
+    the result — not zero. Nobody reported a zero.
+    """
+    paid: Dict[Tuple[str, str], float] = {}
+    checks: Dict[str, Any] = {"year": year, "series": {}}
+    for stock_series, int_series in INTEREST_SERIES.items():
+        rows = _fetch_series(client, int_series, year)
+        world = rows.pop(WORLD_ROW, None)
+        if world is None:
+            raise IdsCreditorError(
+                f"{int_series}: no World row for {year}; the creditor interest "
+                "rows cannot be checked against anything"
+            )
+        world_usd = Decimal(str(world[1]))
+        detail = sum((Decimal(str(v)) for _cid, v in rows.values()), Decimal(0))
+        tolerance = Decimal(len(rows) + 1)
+        if abs(detail - world_usd) > tolerance:
+            raise IdsCreditorError(
+                f"{int_series}: creditor interest rows sum to {detail:,.0f} "
+                f"against IDS's own World total {world_usd:,.0f} — rows are "
+                "missing, so no creditor's interest figure is published"
+            )
+        checks["series"][int_series] = {
+            "world_usd": float(world_usd),
+            "creditor_count": len(rows),
+            "identity": "ok",
+        }
+        for name, (_cid, usd) in rows.items():
+            paid[(stock_series, name)] = usd
+    return paid, checks
+
+
+def _interest_terms_for(
+    creditor: Creditor,
+    year: int,
+    interest: Optional[Dict[Tuple[str, str], float]],
+    interest_unavailable_reason: Optional[str],
+) -> Dict[str, Any]:
+    from .interest_terms import absent_terms, published_cost_terms
+
+    if interest is None:
+        return absent_terms(
+            EXTERNAL_RATE_ABSENT_REASON,
+            "World Bank IDS interest-paid figures were not available on this "
+            f"run ({interest_unavailable_reason or 'not fetched'}).",
+        )
+    usd = interest.get((creditor.series, creditor.name))
+    if usd is None:
+        return absent_terms(
+            EXTERNAL_RATE_ABSENT_REASON,
+            f"World Bank IDS publishes no interest-paid figure for this "
+            f"creditor for {year}.",
+        )
+    int_series = INTEREST_SERIES[creditor.series]
+    return published_cost_terms(
+        cost_kes=float(Decimal(str(usd)) * creditor.usd_kes_rate),
+        label=f"Interest paid in {year}",
+        source={
+            "publisher": "World Bank",
+            "title": (
+                f"International Debt Statistics {year} — Kenya, interest paid "
+                f"by creditor ({int_series})"
+            ),
+            "url": f"{_IDS_BASE}/{int_series}/counterpart-area/all/time/YR{year}",
+            "as_of": str(year),
+        },
+        rate_reason=EXTERNAL_RATE_ABSENT_REASON,
+    )
+
+
 #: creditor series -> the DECT component it belongs to. Built from the
 #: declaration so a row's basis sentence cannot drift from what the gates
 #: actually carried.
@@ -526,7 +622,12 @@ _COMPONENT_OF_SERIES: Dict[str, DectComponent] = {
 }
 
 
-def to_loan_rows(creditors: List[Creditor], year: int) -> List[Dict[str, Any]]:
+def to_loan_rows(
+    creditors: List[Creditor],
+    year: int,
+    interest: Optional[Dict[Tuple[str, str], float]] = None,
+    interest_unavailable_reason: Optional[str] = None,
+) -> List[Dict[str, Any]]:
     """Creditors as loan dicts, in the shape ``national_debt.json`` uses.
 
     Each row carries its OWN source. The payload these rows are merged into is
@@ -569,6 +670,9 @@ def to_loan_rows(creditors: List[Creditor], year: int) -> List[Dict[str, Any]]:
                 "principal": str(c.kes),
                 "outstanding": str(c.kes),
                 "interest_rate": None,
+                "interest_terms": _interest_terms_for(
+                    c, year, interest, interest_unavailable_reason
+                ),
                 "issue_date": f"{year}-12-31",
                 "maturity_date": None,
                 "currency": "KES",
@@ -646,6 +750,25 @@ def fetch_external_creditors(
         coverage["total_kes"] / 1e12,
         f"{coverage['coverage_ratio']:.0%}" if coverage["coverage_ratio"] else "n/a",
     )
+
+    # Interest paid, same year, same creditors. A separate figure from the
+    # stock, so its failure withholds only itself: the register is still
+    # right without it, and every row then says why it has no annual cost.
+    interest: Optional[Dict[Tuple[str, str], float]] = None
+    interest_unavailable_reason: Optional[str] = None
+    try:
+        interest, interest_checks = fetch_interest_paid(client, year)
+        checks["interest"] = interest_checks
+    except Exception as exc:  # noqa: BLE001 - recorded on every row, not swallowed
+        interest_unavailable_reason = f"{type(exc).__name__}: {exc}"[:200]
+        checks["interest"] = {"status": "unavailable", "reason": interest_unavailable_reason}
+        logger.warning(
+            "IDS %s interest-paid pull refused; external rows publish no "
+            "annual cost this run: %s",
+            year,
+            interest_unavailable_reason,
+        )
+
     return {
         "year": year,
         "source_url": (
@@ -658,5 +781,5 @@ def fetch_external_creditors(
         "checks": checks,
         "coverage": coverage,
         "creditors": creditors,
-        "loans": to_loan_rows(creditors, year),
+        "loans": to_loan_rows(creditors, year, interest, interest_unavailable_reason),
     }

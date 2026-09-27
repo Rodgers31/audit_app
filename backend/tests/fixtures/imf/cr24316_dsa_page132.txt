@@ -1,0 +1,33 @@
+# Source:  IMF Country Report No. 24/316 — Kenya: Seventh and Eighth Reviews
+#          Under the EFF and ECF Arrangements … — Debt Sustainability Analysis
+# URL:     https://www.imf.org/-/media/files/publications/cr/2024/english/1kenea2024003-print-pdf.pdf
+# File:    1kenea2024003-print-pdf.pdf, 4,002,830 bytes, 177 pages
+# sha256:  ce092bb1cae04d44379ee993b2cf2f6a55dd5c869673768dca1b55ca73dd631c
+# Extract: `pdftotext -f 132 -l 132 -layout` (poppler), lines 1-24, unedited.
+#          PDF page 132 is the first page of the DSA; the next page is
+#          printed "2". Read 2026-09-26.
+# ---
+                     KENYA
+                     SEVENTH AND EIGHTH REVIEWS UNDER THE EXTENDED
+October 18, 2024
+                     FUND FACILITY AND EXTENDED CREDIT FACILITY
+                     ARRANGEMENTS, REQUESTS FOR REDUCTION OF ACCESS
+                     UNDER THE EXTENDED FUND FACILITY ARRANGEMENT,
+                     AUGMENTATION OF ACCESS UNDER THE EXTENDED
+                     CREDIT FACILITY ARRANGEMENT, AND REQUESTS FOR
+                     REPHASING OF ACCESS UNDER THE ARRANGEMENTS,
+                     MODIFICATIONS OF PERFORMANCE CRITERIA, WAIVERS
+                     OF NONOBSERVANCE OF PERFORMANCE CRITERIA, AND
+                     REVIEW UNDER THE RESILIENCE AND SUSTAINABILITY
+                     FACILITY ARRANGEMENT—DEBT SUSTAINABILITY ANALYSIS
+
+                      Approved By:
+                      Catherine Pattillo (IMF/AFR); Eugenio             Prepared by the staffs of the International
+                      Cerutti (IMF/SPR); and Manuela                    Monetary Fund (IMF) and the International
+                      Francisco and Hassan Zaman (IDA)                  Development Association (IDA)
+
+                                             Joint Bank-Fund Debt Sustainability Analysis
+                            Risk of external debt distress                                     High
+                            Overall risk of debt distress                                      High
+                            Granularity in the risk rating                                  Sustainable
+                            Application of judgment                                             No

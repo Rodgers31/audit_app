@@ -18,8 +18,8 @@ import { render, screen } from '@testing-library/react';
  * 2026-08-30 and rolled back within the hour for exactly this reason.
  *
  * PR #135 review, finding G3 — `risk_level || 'High'` turns an ABSENT risk
- * assessment into the worst band. `classifyDebtRisk` was made to return null
- * precisely so absence stops rendering as a rating.
+ * assessment into the worst band. Absence renders as "not assessed", never
+ * as a rating.
  *
  * Both directions are covered because the deploy happens BEFORE the
  * migration: the same build must read pre-migration billions (no `unit`) and
@@ -50,6 +50,26 @@ const BILLIONS_TIMELINE = [
     gdp_ratio: 65.9,
   },
 ];
+
+/**
+ * `data.debt_sustainability.imf_dsa` as `backend/services/imf_dsa.py`
+ * declares it (IMF Country Report No. 24/316, PDF p. 132).
+ */
+const IMF_DSA = {
+  risk_of_external_debt_distress: 'High',
+  overall_risk_of_debt_distress: 'High',
+  granularity_in_the_risk_rating: 'Sustainable',
+  application_of_judgment: 'No',
+  source: {
+    series: 'IMF Country Report No. 24/316',
+    url: 'https://www.imf.org/-/media/files/publications/cr/2024/english/1kenea2024003-print-pdf.pdf',
+    dsa_date: '2024-10-18',
+    published: '2024-11-01',
+    page: 132,
+    page_label: 'PDF p. 132 (first page of the Debt Sustainability Analysis)',
+  },
+  latest_confirmed: { as_of: '2026-03-31', row: 27 },
+};
 
 const mockOverview = jest.fn();
 const mockTimeline = jest.fn();
@@ -162,10 +182,11 @@ describe('G3 — an absent risk assessment is not a risk band', () => {
     expect(screen.queryByText(/Risk: High/)).toBeNull();
   });
 
-  it('derives a band from the ratio when the API omits the risk level', () => {
-    // Absence of the publisher's own assessment is not absence of evidence:
-    // a real debt-to-GDP reading still supports a band, and suppressing it
-    // would be its own dishonesty.
+  it('does not band debt-to-GDP itself when no rating is published', () => {
+    // #269. RED before the fix: 65.9% went through `classifyDebtRisk`, an
+    // uncited 40/60 banding, and rendered "Risk: High" under the caption
+    // "IMF debt distress classification". The IMF does not rate countries by
+    // nominal debt-to-GDP, and that banding cites no one.
     mockTimeline.mockReturnValue({
       data: { timeline: RAW_KES_TIMELINE },  // gdp_ratio 65.9
       isLoading: false,
@@ -175,21 +196,42 @@ describe('G3 — an absent risk assessment is not a risk band', () => {
       isLoading: false,
     });
     render(<NationalDebtCard />);
-    expect(screen.getByText(/Risk: High/)).toBeInTheDocument();
+    expect(screen.queryByText(/Risk: High/)).toBeNull();
+    expect(screen.getByText(/not assessed/i)).toBeInTheDocument();
   });
 
-  it('still renders a real risk level the API does report', () => {
+  it('does not credit the IMF with the old ratio-derived rating', () => {
+    // #269. RED before the fix: `risk_level: 'High'` was set by the backend
+    // because debt-to-GDP > 65. The card captioned it "IMF debt distress
+    // classification".
+    mockTimeline.mockReturnValue({
+      data: { timeline: RAW_KES_TIMELINE },
+      isLoading: false,
+    });
+    mockOverview.mockReturnValue({
+      data: { data: { debt_sustainability: { risk_level: 'High', debt_to_gdp: 69.3 } } },
+      isLoading: false,
+    });
+    render(<NationalDebtCard />);
+    expect(screen.queryByText(/Risk: High/)).toBeNull();
+    // The card names the IMF elsewhere, correctly, as the basis of its GDP
+    // ratio. What must not appear is a distress rating credited to anyone.
+    expect(screen.queryByText(/debt distress|classification|\bDSA\b/i)).toBeNull();
+  });
+
+  it('renders the rating the IMF publishes, with its date', () => {
     // POSITIVE CONTROL — "never say High" is not the fix.
     mockTimeline.mockReturnValue({
       data: { timeline: RAW_KES_TIMELINE },
       isLoading: false,
     });
     mockOverview.mockReturnValue({
-      data: { data: { debt_sustainability: { risk_level: 'High' } } },
+      data: { data: { debt_sustainability: { imf_dsa: IMF_DSA } } },
       isLoading: false,
     });
     render(<NationalDebtCard />);
-    expect(screen.getByText(/\bHigh\b/)).toBeInTheDocument();
+    expect(screen.getByText(/Risk: High/)).toBeInTheDocument();
+    expect(screen.getByText(/IMF\u2013World Bank DSA, Oct 2024/)).toBeInTheDocument();
   });
 });
 
