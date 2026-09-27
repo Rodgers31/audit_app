@@ -125,6 +125,14 @@ def _write_pending_bills(
             raise ValueError("County edition repeats a county identity")
 
     written: set[tuple[int, str]] = set()
+    # Same URL/date does not identify a correction edition. Fingerprint this
+    # whole batch so a partial same-day replacement cannot be added to rows
+    # retained from an earlier parse (including same-URL reissues).
+    publication_batch = hashlib.sha256(json.dumps(sorted(
+        (record.entity_name, record.category, record.fiscal_year,
+         str(record.total_pending), record.as_at or "", record.source_url or source_url or "")
+        for record in records
+    ), ensure_ascii=False).encode()).hexdigest()
 
     # Get or create the source document
     source_doc = _get_or_create_source_document(
@@ -170,6 +178,7 @@ def _write_pending_bills(
             # national row, the CoB year-end report for a county row. Declared
             # by the fetcher, re-stamped on every write.
             "publication": publication,
+            "publication_batch": publication_batch,
             "fiscal_year": record.fiscal_year,
             "category": record.category,
             "source_url": record.source_url or source_url,

@@ -533,6 +533,7 @@ def _download_and_parse_county_pdf(
         from ...pdf_parsers import CoBQuarterlyReportParser
         from ...cob_cbirr import download_cbirr
         from ...parse_cache import parse_with_cache
+        from .parser import _to_decimal
 
         # The PDF request carries a browser-shaped UA and
         # `Accept: application/pdf` (cob_cbirr.PDF_HEADERS): the CDN rule
@@ -549,7 +550,8 @@ def _download_and_parse_county_pdf(
         # Through the shared CBIRR helper, not get_or_download_pdf directly:
         # stalled_projects reads the same ~50MB file, and the two share one
         # cache entry only if they pass the same server fingerprint (#230).
-        pdf_path = download_cbirr(client, pdf_url, settings).path
+        downloaded = download_cbirr(client, pdf_url, settings)
+        pdf_path = downloaded.path
         download_elapsed = time.monotonic() - download_start
 
         logger.info(
@@ -632,26 +634,18 @@ def _download_and_parse_county_pdf(
             # with — and be overwritten by — the annual report.
             period_label = f"{fy} {sub_period}" if sub_period else fy
 
-            allocated = record.get("allocated", 0)
-            absorbed = record.get("absorbed", 0)
-            if isinstance(allocated, str):
-                try:
-                    allocated = float(allocated.replace(",", ""))
-                except ValueError:
-                    allocated = 0
-            if isinstance(absorbed, str):
-                try:
-                    absorbed = float(absorbed.replace(",", ""))
-                except ValueError:
-                    absorbed = 0
+            allocated = _to_decimal(record.get("allocated"))
+            absorbed = _to_decimal(record.get("absorbed"))
 
             if record.get("amounts_in") != "kes":
                 # Chapter 2 aggregates are printed in KSh millions. The
                 # Chapter 3 revenue tables are printed in shillings, and a
                 # small stream (a KSh 50,000 refund) scaled here would become
                 # KSh 50 billion.
-                allocated = _birr_amount_to_kes(float(allocated))
-                absorbed = _birr_amount_to_kes(float(absorbed))
+                if allocated is not None:
+                    allocated = _birr_amount_to_kes(float(allocated))
+                if absorbed is not None:
+                    absorbed = _birr_amount_to_kes(float(absorbed))
 
             budget_records.append({
                 "entity_slug": entity_slug,
@@ -662,16 +656,19 @@ def _download_and_parse_county_pdf(
                 "end_date": end_iso,
                 "category": record.get("category", "Total"),
                 "subcategory": record.get("subcategory"),
-                "allocated_amount": float(allocated),
+                "allocated_amount": float(allocated) if allocated is not None else None,
                 # IMPORTANT: parser reads "actual_amount" or "actual";
                 # the old "actual_spent" key was silently dropped.
-                "actual_amount": float(absorbed),
+                "actual_amount": float(absorbed) if absorbed is not None else None,
                 "committed_amount": None,
                 "currency": "KES",
                 "source_label": f"Controller of Budget County BIRR FY{period_label}",
                 "source_url": pdf_url,
                 "data_quality": "official",
                 "notes": record.get("notes"),
+                "page_ref": record.get("page_ref"),
+                "artifact_sha256": getattr(downloaded, "sha256", None),
+                "revenue_coverage": record.get("revenue_coverage"),
             })
 
         if dropped_no_fy:

@@ -1,0 +1,3792 @@
+{
+  "source_url": "https://cob.go.ke/download/county-governments-budget-implementation-review-report-for-the-financial-year-2025-26/?wpdmdl=16482",
+  "sha256": "5f5e4f97bbe2752957f284950d0ba90fcff4d47b35fc0ac96a9106ffb59821b3",
+  "units": "KES; actual cash receipts, distinct from adjacent accrual columns",
+  "captions": {
+    "128": "Elgeyo Marakwet",
+    "163": "Garissa",
+    "218": "Kajiado",
+    "564": "Mombasa",
+    "600": "Nairobi City",
+    "815": "Trans Nzoia",
+    "59": "Baringo",
+    "385": "Kwale"
+  },
+  "tables": [
+    {
+      "page_number": 128,
+      "table_index": 0,
+      "headers": [
+        "No",
+        "Revenue Stream",
+        "Targeted Reve-\nnue (Kshs.)",
+        "Actual Re-\nceipts (Kshs.)",
+        "Revenue\nArrears\nin FY\n2025/26\n(Kshs.)",
+        "Total Revenues\n(on an accrual\nbasis) in FY\n2025/26 (Kshs.)",
+        "Revenue\nPerfor-\nmance"
+      ],
+      "rows": [
+        [
+          "",
+          "",
+          "A",
+          "B",
+          "C",
+          "D",
+          "F=D/A*100"
+        ],
+        [
+          "A",
+          "Unspent Balance from FY 2024/25",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "Balance at CRF",
+          "1,556,466,227",
+          "1,556,466,227",
+          "",
+          "1,556,466,227",
+          "100"
+        ],
+        [
+          "",
+          "Sub-Total",
+          "1,556,466,227",
+          "1,556,466,227",
+          "-",
+          "1,556,466,227",
+          "100"
+        ],
+        [
+          "B",
+          "Equitable Share of Revenue Raised Nationally",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "",
+          "5,515,146,712",
+          "5,515,146,712",
+          "",
+          "5,515,146,712",
+          "100"
+        ],
+        [
+          "",
+          "Sub-Total",
+          "5,515,146,712",
+          "5,515,146,712",
+          "-",
+          "5,515,146,712",
+          "100"
+        ],
+        [
+          "C",
+          "Additional Allocations (Including Grants)",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "Unconditional Additional Allocations to County Governments",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "A",
+          "Settlement of Doctors\u2019 Salary\nArrears",
+          "15,685,017",
+          "",
+          "",
+          "",
+          "0"
+        ],
+        [
+          "B",
+          "Community Health Promoters\n(CHPs) Programme",
+          "37,200,000",
+          "",
+          "",
+          "",
+          "0"
+        ],
+        [
+          "2",
+          "Supplement for Construction of\nCounty Headquarters",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "A",
+          "County Aggregation and Indus-\ntrial Parks (CAIPs) Programme",
+          "250,000,000",
+          "",
+          "",
+          "",
+          "0"
+        ]
+      ],
+      "bbox": [
+        0.0,
+        0.0,
+        595.276,
+        841.89
+      ]
+    },
+    {
+      "page_number": 129,
+      "table_index": 0,
+      "headers": [
+        "No",
+        "Revenue Stream",
+        "Targeted Reve-\nnue (Kshs.)",
+        "Actual Re-\nceipts (Kshs.)",
+        "Revenue\nArrears\nin FY\n2025/26\n(Kshs.)",
+        "Total Revenues\n(on an accrual\nbasis) in FY\n2025/26 (Kshs.)",
+        "Revenue\nPerfor-\nmance"
+      ],
+      "rows": [
+        [
+          "",
+          "",
+          "A",
+          "B",
+          "C",
+          "D",
+          "F=D/A*100"
+        ],
+        [
+          "B",
+          "Allocations for 0.5 % of the\nHousing Levy Fund to the\nCounty Rural and Urban Af-\nfordable Housing Committees",
+          "-",
+          "-",
+          "-",
+          "-",
+          "-"
+        ],
+        [
+          "C",
+          "DANIDA",
+          "6,222,000",
+          "6,222,000",
+          "",
+          "6,222,000",
+          "100"
+        ],
+        [
+          "D",
+          "Financing of FLLoCA County\nClimate Institutional Support\n(CCIS) Grant",
+          "1,560,900",
+          "-",
+          "-",
+          "-",
+          "-"
+        ],
+        [
+          "E",
+          "Financing of FLLoCA County\nClimate Resilience Investment\n(CCRI) Grant",
+          "190,057,742",
+          "140,587,417",
+          "-",
+          "140,587,417",
+          "73.97"
+        ],
+        [
+          "3",
+          "Financing of FLLoCA County\nClimate Resilience Investment\n(CCRI) Grant",
+          "15,480,000",
+          "-",
+          "-",
+          "-",
+          "-"
+        ],
+        [
+          "1",
+          "Food Systems Resilience Pro-\nject (FSRP)",
+          "246,153,846",
+          "246,130,310.60",
+          "-",
+          "246,130,310.60",
+          "99.99"
+        ],
+        [
+          "2",
+          "Kenya Devolution Support\nProgramme Phase Two (KDSP\nII) Level I Grant",
+          "72,909,500",
+          "70,503,588.80",
+          "-",
+          "70,503,588.80",
+          "96.70"
+        ],
+        [
+          "3",
+          "Kenya Devolution Support\nProgramme Phase Two(KDSP II)\nLevel 2 Grant",
+          "352,500,000",
+          "148,496,076.10",
+          "-",
+          "148,496,076.10",
+          "42.13"
+        ],
+        [
+          "4",
+          "Kenya Livestock Commerciali-\nsation Project (KelCop)",
+          "65,350,000",
+          "42,672,506.50",
+          "-",
+          "42,672,506.50",
+          "65.30"
+        ],
+        [
+          "5",
+          "Kenya Urban Project (KUSP)-Ur-\nban Institutional Grant (UIG)",
+          "133,202,235",
+          "-",
+          "-",
+          "-",
+          "-"
+        ],
+        [
+          "6",
+          "Kenya Urban Project (KUSP)-Ur-\nban Development Grant (UDG)",
+          "16,770,000",
+          "-",
+          "-",
+          "-",
+          "-"
+        ],
+        [
+          "7",
+          "Kenya Informal Settlement Im-\nprovement Project (KISIP II)",
+          "157,000,000",
+          "-",
+          "-",
+          "-",
+          "-"
+        ],
+        [
+          "8",
+          "Kenya Informal Settlement Im-\nprovement Project (KISIP II)",
+          "1,000,000",
+          "-",
+          "-",
+          "-",
+          "-"
+        ],
+        [
+          "9",
+          "RMLF",
+          "52,755,391",
+          "-",
+          "-",
+          "-",
+          "-"
+        ],
+        [
+          "10",
+          "0.5% of the Affordable Housing\nLevy Fund",
+          "1,987,622",
+          "-",
+          "-",
+          "-",
+          "-"
+        ],
+        [
+          "",
+          "Sub-Total",
+          "1,615,834,253",
+          "654,611,899",
+          "-",
+          "654,611,899",
+          "41"
+        ],
+        [
+          "D",
+          "Ordinary Own Source Revenue (OSR)",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "OSR",
+          "107,429,872",
+          "76,179,655",
+          "-",
+          "76,179,655",
+          "70.91"
+        ],
+        [
+          "",
+          "Sub-Total",
+          "107,429,872",
+          "76,179,655",
+          "-",
+          "76,179,655",
+          "70.91"
+        ],
+        [
+          "E",
+          "Facility Improvement Financing (FIF)",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "FIF",
+          "345,000,000",
+          "322,912,387",
+          "-",
+          "322,912,387",
+          "93.60"
+        ],
+        [
+          "2",
+          "Public Health Services",
+          "5,000,000",
+          "4,019,210",
+          "-",
+          "4,019,210",
+          "80.38"
+        ],
+        [
+          "",
+          "Sub-Total",
+          "345,000,000",
+          "326,931,597",
+          "-",
+          "326,931,597",
+          "88.13"
+        ],
+        [
+          "",
+          "Total",
+          "9,144,877,064",
+          "8,129,336,090",
+          "-",
+          "8,129,336,090",
+          "88.89"
+        ]
+      ],
+      "bbox": [
+        0.0,
+        0.0,
+        595.276,
+        841.89
+      ]
+    },
+    {
+      "page_number": 163,
+      "table_index": 0,
+      "headers": [
+        "No",
+        "Revenue Stream",
+        "Targeted Revenue\n(Kshs.)",
+        "Actual Re-\nceipts (Kshs.)",
+        "Revenue\nArrears in\nFY 2025/26\n(Kshs.)",
+        "Total Revenues\n(on an accrual\nbasis) in FY\n2025/26 (Kshs.)",
+        "Revenue\nPerfor-\nmance"
+      ],
+      "rows": [
+        [
+          "",
+          "",
+          "A",
+          "B",
+          "C",
+          "D",
+          "F=D/A*100"
+        ],
+        [
+          "A",
+          "Unspent Balance from FY 2024/25",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "Balance at CRF",
+          "2,011,923,772",
+          "810,793,554",
+          "",
+          "810,793,554",
+          "40"
+        ],
+        [
+          "2",
+          "County Executive Refunds\nto CRF",
+          "",
+          "158,084",
+          "",
+          "158,084",
+          ""
+        ],
+        [
+          "3",
+          "County Assembly Refunds\nto CRF",
+          "",
+          "7,261",
+          "",
+          "7,261",
+          ""
+        ],
+        [
+          "",
+          "Sub-Total",
+          "2,011,923,772",
+          "810,958,899",
+          "-",
+          "810,958,899",
+          "40"
+        ],
+        [
+          "B",
+          "Equitable Share of Revenue Raised Nationally",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "",
+          "8,877,784,676",
+          "8,877,784,676",
+          "",
+          "8,877,784,676",
+          "100"
+        ],
+        [
+          "",
+          "Sub-Total",
+          "8,877,784,676",
+          "8,877,784,676",
+          "-",
+          "8,877,784,676",
+          "100"
+        ],
+        [
+          "C",
+          "Additional Allocations (Including Grants)",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "Unconditional Additional Allocations to County Governments",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "A",
+          "Road Maintenance Levy Fund\n(RMLF)",
+          "188,410,093",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "B",
+          "Allocations for 20% Share of\nMineral Royalties",
+          "844,692",
+          "844,692",
+          "",
+          "844,692",
+          "100"
+        ],
+        [
+          "2",
+          "Conditional Additional Allocations from the National Government\u2019s",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "A",
+          "Settlement of Doctors\u2019 Salary\nArrears",
+          "32,981,339",
+          "-",
+          "-",
+          "-",
+          "-"
+        ],
+        [
+          "B",
+          "Community Health Promot-\ners (CHPs) Programme",
+          "74,520,000",
+          "-",
+          "-",
+          "-",
+          "-"
+        ],
+        [
+          "E",
+          "Allocations for 0.5 % of the\nHousing Levy Fund to the\nCounty Rural and Urban\nAffordable Housing Commit-\ntees",
+          "1,987,622",
+          "-",
+          "-",
+          "-",
+          "-"
+        ],
+        [
+          "3",
+          "Conditional Allocations\nfrom Loans and Grants",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "Kenya Water, Sanitation\nand Hygiene Programme\n(K-WASH) Grant",
+          "150,000,000",
+          "141,979,713",
+          "",
+          "141,979,713",
+          "95"
+        ],
+        [
+          "2",
+          "Kenya Urban Support Project\n(KUSP) - Urban Institutional\nGrant (UDG)",
+          "626,456,027",
+          "303,270,587",
+          "",
+          "303,270,587",
+          "48"
+        ],
+        [
+          "3",
+          "Kenya Informal Settlement\nImprovement Project (KISIP\nII)",
+          "100,000,000",
+          "26,000,000",
+          "",
+          "26,000,000",
+          "26"
+        ],
+        [
+          "4",
+          "DANIDA Grant-Primary health\ncare in devolved context",
+          "11,322,000",
+          "11,322,000",
+          "",
+          "11,322,000",
+          "100"
+        ],
+        [
+          "5",
+          "Kenya Devolution Support\nProgramme Phase Two (KDSP\nII) Level 2 Grant",
+          "72,909,500",
+          "",
+          "",
+          "-",
+          "-"
+        ],
+        [
+          "6",
+          "Kenya devolution support\nprogram KDSP11 Develop-\nment Grant",
+          "352,500,000",
+          "194,857,710",
+          "",
+          "194,857,710",
+          "55"
+        ]
+      ],
+      "bbox": [
+        0.0,
+        0.0,
+        595.276,
+        841.89
+      ]
+    },
+    {
+      "page_number": 164,
+      "table_index": 0,
+      "headers": [
+        "No",
+        "Revenue Stream",
+        "Targeted Revenue\n(Kshs.)",
+        "Actual Re-\nceipts (Kshs.)",
+        "Revenue\nArrears in\nFY 2025/26\n(Kshs.)",
+        "Total Revenues\n(on an accrual\nbasis) in FY\n2025/26 (Kshs.)",
+        "Revenue\nPerfor-\nmance"
+      ],
+      "rows": [
+        [
+          "",
+          "",
+          "A",
+          "B",
+          "C",
+          "D",
+          "F=D/A*100"
+        ],
+        [
+          "7",
+          "Financing locally led climate\naction program (FLLoCA)\nCounty climate Institutional\nsupport (CCRI",
+          "188,293,356",
+          "199,997,137",
+          "",
+          "199,997,137",
+          "106"
+        ],
+        [
+          "8",
+          "Water and Sanitation Devel-\nopment Project (World Bank)\nWSDP",
+          "150,000,000",
+          "102,000,000",
+          "",
+          "102,000,000",
+          "68"
+        ],
+        [
+          "9",
+          "Food Systems Resilience Pro-\nject \u2013 (FSRP)-IDA",
+          "246,153,846",
+          "246,130,311",
+          "",
+          "246,130,311",
+          "100"
+        ],
+        [
+          "",
+          "Sub-Total",
+          "2,196,378,475",
+          "1,226,402,151",
+          "-",
+          "1,226,402,151",
+          "56"
+        ],
+        [
+          "D",
+          "Ordinary Own Source Revenue (OSR)",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "Land Rates",
+          "18,000,000",
+          "1,801,619",
+          "16,198,381",
+          "18,000,000",
+          "100.00"
+        ],
+        [
+          "2",
+          "Business Permits",
+          "15,000,000",
+          "13,133,781",
+          "1,866,219",
+          "15,000,000",
+          "100.00"
+        ],
+        [
+          "3",
+          "Livestock Cess",
+          "13,050,000",
+          "6,112,300",
+          "-",
+          "6,112,300",
+          "46.84"
+        ],
+        [
+          "4",
+          "Sales of Flowers, Plants,\nFirewood, Produce, etc.",
+          "600,000",
+          "187,500",
+          "412,500",
+          "600,000",
+          "100.00"
+        ],
+        [
+          "5",
+          "Market Entrance /\nGate Fee",
+          "18,000,000",
+          "17,579,428",
+          "-",
+          "17,579,428",
+          "97.66"
+        ],
+        [
+          "6",
+          "Produce Inspection Fee -\nWeight and Measure",
+          "500,000",
+          "3,200",
+          "-",
+          "3,200",
+          "0.64"
+        ],
+        [
+          "7",
+          "Parking",
+          "4,500,000",
+          "1,078,355",
+          "2,000,000",
+          "3,078,355",
+          "68.41"
+        ],
+        [
+          "8",
+          "Miraa Cess",
+          "10,000,000",
+          "9,489,952",
+          "-",
+          "9,489,952",
+          "94.90"
+        ],
+        [
+          "9",
+          "Slaughtering\nAdministration Fee",
+          "1,800,000",
+          "237,647",
+          "1,562,353",
+          "1,800,000",
+          "100.00"
+        ],
+        [
+          "10",
+          "Livestock\nMovement permit",
+          "2,430,000",
+          "2,063,090",
+          "-",
+          "2,063,090",
+          "84.90"
+        ],
+        [
+          "11",
+          "Environment and\nNatural Resources: Quarry/\nmining",
+          "2,120,000",
+          "1,196,000",
+          "-",
+          "1,196,000",
+          "56.42"
+        ],
+        [
+          "12",
+          "Market Stalls Rent",
+          "4,500,000",
+          "2,325,459",
+          "3,000,000",
+          "5,325,459",
+          "118.34"
+        ],
+        [
+          "13",
+          "Buildings Plan\nApproval Fee",
+          "3,500,000",
+          "1,006,064",
+          "-",
+          "1,006,064",
+          "28.74"
+        ],
+        [
+          "14",
+          "Outdoor\nAdvertisement",
+          "5,000,000",
+          "3,200,065",
+          "1,799,935",
+          "5,000,000",
+          "100.00"
+        ],
+        [
+          "15",
+          "Fines and penalties",
+          "500,000",
+          "453,411",
+          "-",
+          "453,411",
+          "90.68"
+        ],
+        [
+          "16",
+          "Right-of-Way /\nWay-Leave Fee",
+          "1,500,000",
+          "1,355,042",
+          "-",
+          "1,355,042",
+          "90.34"
+        ],
+        [
+          "",
+          "Sub-Total",
+          "101,000,000",
+          "61,222,913",
+          "26,839,388",
+          "88,062,301",
+          "87.19"
+        ],
+        [
+          "E",
+          "Facility Improvement Financing (FIF)",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "SHIF/Cost Sharing",
+          "340,000,000.00",
+          "398,618,450",
+          "254,375,573",
+          "652,994,023",
+          "192.06"
+        ],
+        [
+          "2",
+          "Public Health Fees",
+          "9,000,000.00",
+          "3,734,820",
+          "",
+          "3,734,820",
+          "41.50"
+        ],
+        [
+          "",
+          "Sub-Total",
+          "349,000,000",
+          "402,353,270",
+          "254,375,573",
+          "656,728,843.00",
+          "188.17"
+        ],
+        [
+          "",
+          "Total",
+          "13,536,086,923",
+          "11,378,721,908",
+          "242,041,286",
+          "11,659,936,869",
+          "86.14"
+        ]
+      ],
+      "bbox": [
+        0.0,
+        0.0,
+        595.276,
+        841.89
+      ]
+    },
+    {
+      "page_number": 218,
+      "table_index": 0,
+      "headers": [
+        "No",
+        "Revenue Stream",
+        "Targeted Reve-\nnue (Kshs.)",
+        "Actual Re-\nceipts (Kshs.)",
+        "Revenue\nArrears in\nFY 2025/26\n(Kshs.)",
+        "Total Revenues\n(on an accrual\nbasis) in FY\n2025/26 (Kshs.)",
+        "Revenue Per-\nformance"
+      ],
+      "rows": [
+        [
+          "",
+          "",
+          "A",
+          "B",
+          "C",
+          "D",
+          "F=D/A*100"
+        ],
+        [
+          "A",
+          "Unspent Balance from FY 2024/25",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "Balance at CRF",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "2",
+          "County Executive Refunds to\nCRF",
+          "-",
+          "265,000",
+          "-",
+          "265,000",
+          "-"
+        ],
+        [
+          "3",
+          "County Assembly Refunds to\nCRF",
+          "-",
+          "2,354,973",
+          "-",
+          "2,354,973",
+          "-"
+        ],
+        [
+          "",
+          "Sub-Total",
+          "-",
+          "2,619,973",
+          "-",
+          "2,619,973",
+          "-"
+        ],
+        [
+          "B",
+          "Equitable Share of Revenue Raised Nationally",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "Equitable share",
+          "8,894,254,896",
+          "8,894,254,886",
+          "-",
+          "8,894,254,886",
+          "100"
+        ],
+        [
+          "",
+          "Sub-Total",
+          "8,894,254,896",
+          "8,894,254,886",
+          "-",
+          "8,894,254,886",
+          "100"
+        ],
+        [
+          "C",
+          "Additional Allocations (Including Grants)",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "Unconditional Additional Allocations to County Governments",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "A",
+          "Allocations for Court Fines",
+          "-",
+          "-",
+          "",
+          "",
+          ""
+        ],
+        [
+          "B",
+          "Allocations for 20% Share of\nMineral Royalties",
+          "660,242,992",
+          "660,242,991",
+          "-",
+          "660,242,991",
+          "100"
+        ],
+        [
+          "2",
+          "Conditional Additional Allocations from the National Government\u2019s",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "A",
+          "Settlement of Doctors\u2019 Salary\nArrears",
+          "43,495,118",
+          "-",
+          "-",
+          "-",
+          "-"
+        ],
+        [
+          "D",
+          "County Aggregation and Indus-\ntrial Parks (CAIPs) Programme",
+          "250,000,000",
+          "250,000,000",
+          "-",
+          "250,000,000",
+          "100"
+        ],
+        [
+          "E",
+          "Allocations for 0.5 % of the\nHousing Levy Fund to the\nCounty Rural and Urban Af-\nfordable Housing Committees",
+          "1,987,622",
+          "-",
+          "-",
+          "-",
+          "-"
+        ],
+        [
+          "3",
+          "Conditional Allocations from Loans and Grants",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "(IFAD) Loan for the Aquacul-\nture Business Development\nProject (ABDP)",
+          "8,606,000",
+          "-",
+          "-",
+          "-",
+          "-"
+        ],
+        [
+          "3",
+          "Financing of FLLoCA County\nClimate Resilience Investment\n(CCRI) Grant",
+          "136,710,000",
+          "13,671,000",
+          "-",
+          "13,671,000",
+          "10"
+        ],
+        [
+          "4",
+          "Nutrition International Grants",
+          "422,308",
+          "-",
+          "-",
+          "-",
+          "-"
+        ]
+      ],
+      "bbox": [
+        0.0,
+        0.0,
+        595.276,
+        841.89
+      ]
+    },
+    {
+      "page_number": 219,
+      "table_index": 0,
+      "headers": [
+        "No",
+        "Revenue Stream",
+        "Targeted Reve-\nnue (Kshs.)",
+        "Actual Re-\nceipts (Kshs.)",
+        "Revenue\nArrears in\nFY 2025/26\n(Kshs.)",
+        "Total Revenues\n(on an accrual\nbasis) in FY\n2025/26 (Kshs.)",
+        "Revenue Per-\nformance"
+      ],
+      "rows": [
+        [
+          "",
+          "",
+          "A",
+          "B",
+          "C",
+          "D",
+          "F=D/A*100"
+        ],
+        [
+          "5",
+          "Danida Level 1 grants",
+          "5,633,250",
+          "5,633,250",
+          "-",
+          "5,633,250",
+          "100"
+        ],
+        [
+          "6",
+          "Kenya Devolution Support\nProgramme Phase Two (KDSP\nII) Level I Grant",
+          "352,500,000",
+          "70,503,589",
+          "-",
+          "70,503,589",
+          "21.67"
+        ],
+        [
+          "7",
+          "Kenya Devolution Support\nProgramme Phase Two (KDSP\nII) Level 2 Grant",
+          "72,909,500",
+          "-",
+          "-",
+          "-",
+          "-"
+        ],
+        [
+          "8",
+          "Second Kenya Devolution Sup-\nport Programme project 2",
+          "4,506,128",
+          "-",
+          "-",
+          "-",
+          "-"
+        ],
+        [
+          "9",
+          "Kenya Urban Project (KUS-\nP)-Urban Institutional Grant\n(IUG)",
+          "58,309,300",
+          "-",
+          "-",
+          "-",
+          "-"
+        ],
+        [
+          "10",
+          "Kenya Urban Project (KUS-\nP)-Urban Development Grant\n(UDG)",
+          "418,590,989",
+          "418,590,989",
+          "-",
+          "418,590,989",
+          "100"
+        ],
+        [
+          "11",
+          "The Action Foundation",
+          "12,000,000",
+          "-",
+          "-",
+          "-",
+          "-"
+        ],
+        [
+          "12",
+          "National Agricultural Value\nChain Development Project\n(NAVCDP)",
+          "231,250,000",
+          "230,810,027",
+          "-",
+          "230,810,027",
+          "100"
+        ],
+        [
+          "13",
+          "Primary Health Care in\nDevolved Context (PHDC)\nProgramme",
+          "14,616,000",
+          "14,616,000",
+          "-",
+          "14,616,000",
+          "100"
+        ],
+        [
+          "14",
+          "Road Maintenance Levy Fund",
+          "307,376,319",
+          "-",
+          "-",
+          "-",
+          "-"
+        ],
+        [
+          "15",
+          "Kenya Informal Settlement\nImprovement Project (KISIP II)",
+          "65,000,000",
+          "90,000,000",
+          "",
+          "90,000,000",
+          "138"
+        ],
+        [
+          "",
+          "Sub-Total",
+          "2,644,155,526",
+          "1,754,067,846",
+          "-",
+          "1,754,067,846",
+          "66"
+        ],
+        [
+          "D",
+          "Ordinary Own Source Revenue (OSR)",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "Agricultural Produce",
+          "38,764,158",
+          "21,099,262",
+          "-",
+          "21,099,262",
+          "54"
+        ],
+        [
+          "2",
+          "Ballast Cess",
+          "51,180,556",
+          "23,754,635",
+          "-",
+          "23,754,635",
+          "46"
+        ],
+        [
+          "3",
+          "Barter Market",
+          "31,730,658",
+          "21,166,857",
+          "-",
+          "21,166,857",
+          "67"
+        ],
+        [
+          "4",
+          "Bed Occupancy",
+          "73,204,528",
+          "24,869,127",
+          "-",
+          "24,869,127",
+          "34"
+        ],
+        [
+          "5",
+          "Building Plan Approval",
+          "269,866,002",
+          "110,594,001",
+          "-",
+          "110,594,001",
+          "41"
+        ],
+        [
+          "6",
+          "Bus Park fee",
+          "40,240,000",
+          "22,222,912",
+          "-",
+          "22,222,912",
+          "55"
+        ],
+        [
+          "7",
+          "Quarry and Mineral Extraction",
+          "58,277,232",
+          "23,555,838",
+          "-",
+          "23,555,838",
+          "40"
+        ],
+        [
+          "8",
+          "Impounding Fee",
+          "1,039,995",
+          "1,240,000",
+          "-",
+          "1,240,000",
+          "119"
+        ],
+        [
+          "9",
+          "Land Rates",
+          "197,635,457",
+          "41,992,916",
+          "-",
+          "41,992,916",
+          "21"
+        ],
+        [
+          "10",
+          "Livestock Cess",
+          "14,505,050",
+          "14,659,798",
+          "-",
+          "14,659,798",
+          "101"
+        ],
+        [
+          "11",
+          "Market Stall",
+          "3,020,000",
+          "2,446,680",
+          "-",
+          "2,446,680",
+          "81"
+        ],
+        [
+          "12",
+          "Parking fee",
+          "36,128,814",
+          "22,657,384",
+          "-",
+          "22,657,384",
+          "63"
+        ],
+        [
+          "13",
+          "Plot rent",
+          "52,001,242",
+          "18,428,574",
+          "-",
+          "18,428,574",
+          "35"
+        ],
+        [
+          "14",
+          "Trade Licenses",
+          "268,443,701",
+          "182,836,689",
+          "-",
+          "182,836,689",
+          "68"
+        ],
+        [
+          "15",
+          "Sand Fees",
+          "120,000,000",
+          "55,700,000",
+          "-",
+          "55,700,000",
+          "46"
+        ],
+        [
+          "16",
+          "Sign Post Fee & Advert Fee",
+          "80,927,756",
+          "49,091,607",
+          "-",
+          "49,091,607",
+          "61"
+        ],
+        [
+          "17",
+          "Slaughter Fee",
+          "17,500,650",
+          "1,108,586",
+          "-",
+          "1,108,586",
+          "6"
+        ],
+        [
+          "18",
+          "Transit Fee",
+          "45,534,201",
+          "28,934,094",
+          "-",
+          "28,934,094",
+          "64"
+        ]
+      ],
+      "bbox": [
+        0.0,
+        0.0,
+        595.276,
+        841.89
+      ]
+    },
+    {
+      "page_number": 220,
+      "table_index": 0,
+      "headers": [
+        "No R",
+        "evenue Stream",
+        "Targeted Reve-\nnue (Kshs.)",
+        "Actual Re-\nceipts (Kshs.)",
+        "Revenue\nArrears in\nFY 2025/26\n(Kshs.)",
+        "Total Revenues\n(on an accrual\nbasis) in FY\n2025/26 (Kshs.)",
+        "Revenue Per-\nformance"
+      ],
+      "rows": [
+        [
+          "",
+          "",
+          "A",
+          "B",
+          "C",
+          "D",
+          "F=D/A*100"
+        ],
+        [
+          "Sub-Tot",
+          "al",
+          "1,400,000,000",
+          "666,358,960",
+          "-",
+          "666,358,960",
+          "48"
+        ],
+        [
+          "E Facility",
+          "Improvement Financing (FIF)",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1 Facility",
+          "Improvement Fund",
+          "568,471,707",
+          "298,943,771",
+          "-",
+          "298,943,771",
+          "53"
+        ],
+        [
+          "F Other R",
+          "evenues",
+          "568,471,707",
+          "298,943,771",
+          "-",
+          "298,943,771",
+          "53"
+        ],
+        [
+          "Kajiado\n1\nDrinking",
+          "County Alcoholic\nBoard",
+          "40,000,000",
+          "12,601,220",
+          "-",
+          "12,601,220",
+          "32"
+        ],
+        [
+          "Sub-Tot",
+          "al",
+          "40,000,000",
+          "12,601,220",
+          "-",
+          "12,601,220",
+          "32"
+        ],
+        [
+          "Total",
+          "",
+          "13,546,882,119",
+          "11,628,847,386",
+          "-",
+          "11,628,847,386",
+          "86"
+        ]
+      ],
+      "bbox": [
+        0.0,
+        0.0,
+        595.276,
+        841.89
+      ]
+    },
+    {
+      "page_number": 564,
+      "table_index": 0,
+      "headers": [
+        "No",
+        "Revenue Stream",
+        "Annual Targeted\nRevenue (Kshs.)",
+        "Actual Receipts\n(Kshs.)",
+        "Receivables\nin FY 2025/26\n(Kshs.)",
+        "Total Revenues\n(on an accrual\nbasis) in the FY\n2025/26 (Kshs.)",
+        "Revenue\nPerfor-\nmance"
+      ],
+      "rows": [
+        [
+          "",
+          "",
+          "A",
+          "B",
+          "C",
+          "D=B+C",
+          "F=D/A*100"
+        ],
+        [
+          "A",
+          "Unspent Balance from FY 2024/25",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "Balance at CRF",
+          "210,875,072",
+          "182,573,974",
+          "-",
+          "182,573,974",
+          "87"
+        ],
+        [
+          "2",
+          "County Executive Refunds\nto CRF",
+          "8,423,953",
+          "8,423,953",
+          "-",
+          "8,423,953",
+          "100"
+        ],
+        [
+          "3",
+          "County Assembly Refunds\nto CRF",
+          "",
+          "932",
+          "-",
+          "932",
+          ""
+        ],
+        [
+          "",
+          "Sub-Total",
+          "219,299,025",
+          "190,998,859",
+          "-",
+          "190,998,859",
+          "87"
+        ],
+        [
+          "B",
+          "Equitable Share of Revenue Raised Nationally",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "Equitable Share",
+          "8,383,385,281",
+          "8383385281",
+          "-",
+          "8,383,385,281",
+          "100"
+        ],
+        [
+          "",
+          "Sub-Total",
+          "8,383,385,281",
+          "8,383,385,281",
+          "-",
+          "8,383,385,281",
+          "100"
+        ],
+        [
+          "C",
+          "Additional Allocations (Including Grants)",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "Allocations for Court Fines",
+          "1,398,424",
+          "1,398,424",
+          "-",
+          "1,398,424",
+          "100"
+        ]
+      ],
+      "bbox": [
+        0.0,
+        0.0,
+        595.276,
+        841.89
+      ]
+    },
+    {
+      "page_number": 565,
+      "table_index": 0,
+      "headers": [
+        "No",
+        "Revenue Stream",
+        "Annual Targeted\nRevenue (Kshs.)",
+        "Actual Receipts\n(Kshs.)",
+        "Receivables\nin FY 2025/26\n(Kshs.)",
+        "Total Revenues\n(on an accrual\nbasis) in the FY\n2025/26 (Kshs.)",
+        "Revenue\nPerfor-\nmance"
+      ],
+      "rows": [
+        [
+          "",
+          "",
+          "A",
+          "B",
+          "C",
+          "D=B+C",
+          "F=D/A*100"
+        ],
+        [
+          "2",
+          "Allocations for 20% Share\nof Mineral Royalties",
+          "18,830",
+          "18,830",
+          "-",
+          "18,830",
+          "100"
+        ],
+        [
+          "3",
+          "Settlement of Doctors\u2019\nSalary Arrears",
+          "108,971,914",
+          "-",
+          "-",
+          "-",
+          "-"
+        ],
+        [
+          "4",
+          "Community Health Promot-\ners (CHPs) Programme",
+          "71,610,000",
+          "-",
+          "-",
+          "-",
+          "-"
+        ],
+        [
+          "5",
+          "County Aggregation and\nIndustrial Parks (CAIPs)\nProgramme",
+          "133,368,421",
+          "133,368,421",
+          "-",
+          "133,368,421",
+          "100"
+        ],
+        [
+          "6",
+          "Allocations for 0.5 % of the\nHousing Levy Fund to the\nCounty Rural and Urban\nAffordable Housing Com-\nmittees",
+          "1,987,622",
+          "-",
+          "-",
+          "-",
+          "-"
+        ],
+        [
+          "7",
+          "Financing of FLLoCA Coun-\nty Climate Institutional\nSupport (CCIS) Grant",
+          "33,000,000",
+          "33,000,000",
+          "-",
+          "33,000,000",
+          "100"
+        ],
+        [
+          "8",
+          "Kenya Devolution Support\nProgramme Phase Two\n(KDSP II) Level I Grant",
+          "72,909,500",
+          "70,503,589",
+          "-",
+          "70,503,589",
+          "97"
+        ],
+        [
+          "9",
+          "Kenya Devolution Support\nProgramme Phase Two(KD-\nSP II) Level 2 Grant",
+          "352,500,000",
+          "103,939,269",
+          "-",
+          "103,939,269",
+          "29"
+        ],
+        [
+          "10",
+          "National Agricultural Value\nChain Development Project\n(NAVCDP)",
+          "150,000,000",
+          "130,315,790",
+          "-",
+          "130,315,790",
+          "87"
+        ],
+        [
+          "11",
+          "Primary Health Care in\nDevolved Context (PHDC)\nProgramme",
+          "11,373,000",
+          "11,373,000",
+          "-",
+          "11,373,000",
+          "100"
+        ],
+        [
+          "12",
+          "Water & Sanitation Devel-\nopment Project (WSDP)",
+          "500,000,000",
+          "345,000,000",
+          "-",
+          "345,000,000",
+          "69"
+        ],
+        [
+          "13",
+          "Kenya Informal Settlement\nImprovement Project (KISIP\nII)",
+          "245,000,000",
+          "120,882,538",
+          "-",
+          "120,882,538",
+          "49"
+        ],
+        [
+          "14",
+          "Bloomberg Philanthropies\nGrant",
+          "52,000,000",
+          "52,000,000",
+          "-",
+          "52,000,000",
+          "100"
+        ],
+        [
+          "",
+          "Sub-Total",
+          "1,734,137,711",
+          "1,001,799,861",
+          "-",
+          "1,001,799,861",
+          "58"
+        ],
+        [
+          "D",
+          "Ordinary Own Source Revenue (OSR)",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "Ordinary Own Source Reve-\nnue (OSR)",
+          "6,664,567,655",
+          "3,799,700,513",
+          "11,818,407,252",
+          "15,618,107,765",
+          "234"
+        ],
+        [
+          "",
+          "Sub-Total",
+          "6,664,567,655",
+          "3,799,700,513",
+          "11,818,407,252",
+          "15,618,107,765",
+          "234"
+        ],
+        [
+          "E",
+          "Facility Improvement Financing (FIF)",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "SHIF",
+          "1,723,610,328",
+          "2,414,889,970",
+          "2,770,438,808",
+          "5,185,328,778",
+          "301"
+        ],
+        [
+          "2",
+          "Defunct NHIF",
+          "",
+          "",
+          "322,787,353",
+          "322,787,353",
+          ""
+        ],
+        [
+          "",
+          "Sub-Total",
+          "1,723,610,328",
+          "2,414,889,970",
+          "3,093,226,161",
+          "5,508,116,131",
+          "320"
+        ],
+        [
+          "",
+          "Grand Total",
+          "18,725,000,000",
+          "15,790,774,484",
+          "14,911,633,413",
+          "30,702,407,897",
+          "164"
+        ]
+      ],
+      "bbox": [
+        0.0,
+        0.0,
+        595.276,
+        841.89
+      ]
+    },
+    {
+      "page_number": 600,
+      "table_index": 0,
+      "headers": [
+        "No",
+        "Revenue Stream",
+        "Targeted Reve-\nnue (Kshs.)",
+        "Actual Receipts\n(Kshs.)",
+        "Revenue\nArrears in\nFY 2025/26\n(Kshs.)",
+        "Total Revenues\n(in accrual\nbasis) in FY\n2025/26 (Kshs.)",
+        "Revenue\nPerfor-\nmance",
+        ""
+      ],
+      "rows": [
+        [
+          "",
+          "",
+          "A",
+          "B",
+          "C",
+          "D",
+          "F=D/A*100",
+          ""
+        ],
+        [
+          "A",
+          "Unspent Balance from FY 2024/25",
+          "",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "Balance at CRF",
+          "1,000,000,000",
+          "737,746,179",
+          "",
+          "737,746,179",
+          "73.8",
+          ""
+        ],
+        [
+          "",
+          "Sub-Total",
+          "1,000,000,000",
+          "737,746,179",
+          "",
+          "737,746,179",
+          "73.8",
+          ""
+        ],
+        [
+          "B",
+          "Equitable Share of Revenue Raised Nationally",
+          "",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "",
+          "21,417,000,000",
+          "21,417,000,000",
+          "-",
+          "21,417,000,000",
+          "100",
+          ""
+        ],
+        [
+          "",
+          "Sub-Total",
+          "21,417,000,000",
+          "21,417,000,000",
+          "",
+          "21,417,000,000",
+          "100",
+          ""
+        ],
+        [
+          "C",
+          "Additional Allocations (including Grants)",
+          "",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "A",
+          "IDA Credit--Second Ken-\nya Devolution Support Pro-\ngramme KDSP II",
+          "390,000,000",
+          "70,503,589",
+          "-",
+          "70,503,589",
+          "18",
+          ""
+        ],
+        [
+          "B",
+          "DANIDA Grant-Primary Health\nCare in Devolved Context",
+          "35,838,750",
+          "25,653,000",
+          "-",
+          "25,653,000",
+          "71.6",
+          ""
+        ],
+        [
+          "C",
+          "World Bank -Kenya Informal\nSettlement Improvement Pro-\nject II",
+          "200,000,000",
+          "-",
+          "-",
+          "-",
+          "-",
+          ""
+        ],
+        [
+          "",
+          "Sub-Total",
+          "625,838,750",
+          "223,815,962",
+          "-",
+          "223,815,962",
+          "35.8",
+          ""
+        ],
+        [
+          "D",
+          "Ordinary Own Source Revenue (OSR)",
+          "",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "Land Rates",
+          "6,750,000,000",
+          "3,420,311,458",
+          "-",
+          "3,420,311,458",
+          "50.7",
+          ""
+        ],
+        [
+          "2",
+          "Parking fees (total)",
+          "3,000,000,000",
+          "1,803,054,475",
+          "-",
+          "1,803,054,475",
+          "60",
+          ""
+        ],
+        [
+          "3",
+          "Unified/Single Business Per-\nmits",
+          "3,200,000,000",
+          "2,732,360,286",
+          "-",
+          "2,732,360,286",
+          "85.4",
+          ""
+        ],
+        [
+          "4",
+          "Plans and Inspections (Build-\ning Permits)",
+          "3,070,500,000",
+          "1,670,198,667",
+          "-",
+          "1,670,198,667",
+          "54.4",
+          ""
+        ],
+        [
+          "5",
+          "Billboards and advertisements",
+          "1,212,000,000",
+          "748,385,498",
+          "-",
+          "748,385,498",
+          "61.8",
+          ""
+        ],
+        [
+          "6",
+          "House Rents",
+          "606,000,000",
+          "654,275,496",
+          "-",
+          "654,275,496",
+          "108",
+          ""
+        ],
+        [
+          "7",
+          "Fire Inspection Certificates",
+          "36,360,000",
+          "3,949,900",
+          "-",
+          "3,949,900",
+          "10.9",
+          ""
+        ],
+        [
+          "8",
+          "Food Handlers Certificates",
+          "303,000,000",
+          "221,756,854",
+          "-",
+          "221,756,854",
+          "73",
+          ""
+        ],
+        [
+          "9",
+          "Markets",
+          "565,600,000",
+          "110,024,101",
+          "-",
+          "110,024,101",
+          "19.5",
+          ""
+        ],
+        [
+          "10",
+          "Other Incomes",
+          "1,198,590,589",
+          "976,240,233",
+          "-",
+          "976,240,233",
+          "81.5",
+          ""
+        ],
+        [
+          "",
+          "Sub-Total",
+          "19,942,050,589",
+          "12,340,556,969",
+          "-",
+          "12,340,556,969",
+          "61.9",
+          ""
+        ],
+        [
+          "E",
+          "Facility Improvement Financing (FIF)",
+          "",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "Hospital Facilities Improve-\nment Fund",
+          "1,236,000,000",
+          "2,874,784,659",
+          "-",
+          "2,874,784,659",
+          "232.6",
+          ""
+        ],
+        [
+          "",
+          "Sub-Total",
+          "1,236,000,000",
+          "2,874,784,659",
+          "-",
+          "2,874,784,659",
+          "232.6",
+          ""
+        ],
+        [
+          "F",
+          "Appropriations- in- Aid",
+          "",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "Appropriation-in-Aid (AiA) - Liq-\nuor fee",
+          "400,000,000",
+          "316,369,572",
+          "-",
+          "316,369,572",
+          "79",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "566"
+        ]
+      ],
+      "bbox": [
+        0.0,
+        0.0,
+        595.276,
+        841.89
+      ]
+    },
+    {
+      "page_number": 601,
+      "table_index": 0,
+      "headers": [
+        "No",
+        "Revenue Stream",
+        "Targeted Reve-\nnue (Kshs.)",
+        "Actual Receipts\n(Kshs.)",
+        "Revenue\nArrears in\nFY 2025/26\n(Kshs.)",
+        "Total Revenues\n(in accrual\nbasis) in FY\n2025/26 (Kshs.)",
+        "Revenue\nPerfor-\nmance"
+      ],
+      "rows": [
+        [
+          "",
+          "",
+          "A",
+          "B",
+          "C",
+          "D",
+          "F=D/A*100"
+        ],
+        [
+          "Bett\n2\n(Pay",
+          "ing, Lotteries And Gaming\nbill)",
+          "-",
+          "5,255,000",
+          "-",
+          "5,255,000",
+          ""
+        ],
+        [
+          "Sub",
+          "-Total",
+          "400,000,000",
+          "321,624,572",
+          "-",
+          "321,624,572",
+          "80.4"
+        ],
+        [
+          "Oth",
+          "er Revenues",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1 Cou",
+          "rt Fines Grants",
+          "-",
+          "2,454,707",
+          "-",
+          "2,454,707",
+          "-"
+        ],
+        [
+          "2 Min",
+          "ing Royalties",
+          "-",
+          "3,884",
+          "-",
+          "3,884",
+          "-"
+        ],
+        [
+          "Sub",
+          "-Total",
+          "-",
+          "2,458,591",
+          "-",
+          "2,458,591",
+          "-"
+        ],
+        [
+          "Total",
+          "",
+          "44,620,889,339",
+          "37,917,986,931",
+          "-",
+          "37,917,986,931",
+          "85"
+        ]
+      ],
+      "bbox": [
+        0.0,
+        0.0,
+        595.276,
+        841.89
+      ]
+    },
+    {
+      "page_number": 815,
+      "table_index": 0,
+      "headers": [
+        "No",
+        "Revenue Stream",
+        "Targeted Rev-\nenue (Kshs.)",
+        "Actual Re-\nceipts (Kshs.)",
+        "Revenue\nArrears\nin FY\n2025/26\n(Kshs.)",
+        "Total Revenues\n(on an accrual\nbasis) in FY\n2025/26 (Kshs.)",
+        "Revenue\nPerfor-\nmance"
+      ],
+      "rows": [
+        [
+          "",
+          "",
+          "A",
+          "B",
+          "C",
+          "D",
+          "F=D/A*100"
+        ],
+        [
+          "A",
+          "Unspent Balance from FY 2024/25",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "Balance at CRF",
+          "506,795,463",
+          "506,795,463",
+          "-",
+          "506,795,463",
+          "100.00"
+        ],
+        [
+          "2",
+          "County Executive Refunds to\nCRF",
+          "2,661,315",
+          "2,661,315",
+          "-",
+          "2,661,315",
+          "100.00"
+        ],
+        [
+          "3",
+          "County Assembly Refunds to\nCRF",
+          "11,994",
+          "11,994",
+          "",
+          "11,994",
+          "100.00"
+        ],
+        [
+          "",
+          "Sub-Total",
+          "509,468,773",
+          "509,468,773",
+          "-",
+          "509,468,773",
+          "100.00"
+        ],
+        [
+          "B",
+          "Equitable Share of Revenue Raised Nationally",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "Equitable Share",
+          "7,991,120,837",
+          "7,991,120,837",
+          "-",
+          "7,991,120,837",
+          "100.00"
+        ],
+        [
+          "",
+          "Sub-Total",
+          "7,991,120,837",
+          "7,991,120,837",
+          "-",
+          "7,991,120,837",
+          "100.00"
+        ],
+        [
+          "C",
+          "Additional Allocations (Including Grants)",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "2",
+          "Conditional Additional Allocations from the National Government\u2019s",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "A",
+          "Settlement of Doctors\u2019 Salary\nArrears",
+          "46,626,677",
+          "-",
+          "-",
+          "-",
+          "-"
+        ],
+        [
+          "B",
+          "Community Health Promoters\n(CHPs) Programme",
+          "67,200,000",
+          "-",
+          "-",
+          "-",
+          "-"
+        ],
+        [
+          "C",
+          "County Aggregation and Industri-\nal Parks (CAIPs) Programme",
+          "133,368,421",
+          "133,368,421",
+          "-",
+          "133,368,421",
+          "100.00"
+        ],
+        [
+          "D",
+          "Allocations for 0.5 % of the\nHousing Levy Fund to the County\nRural and Urban Affordable\nHousing Committees",
+          "1,987,622",
+          "-",
+          "-",
+          "-",
+          "-"
+        ],
+        [
+          "3",
+          "Conditional Allocations from Loans and Grants",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "Financing of FLLoCA County\nClimate Institutional Support\n(CCIS) Grant",
+          "117,990,003",
+          "117,990,003",
+          "-",
+          "117,990,003",
+          "100.00"
+        ],
+        [
+          "2",
+          "Financing of FLLoCA County\nClimate Resilience Investment\n(CCRI) Grant",
+          "56,770,148",
+          "56,770,148",
+          "-",
+          "56,770,148",
+          "100.00"
+        ],
+        [
+          "3",
+          "Kenya Devolution Support\nProgramme Phase Two (KDSP II)\nLevel I Grant",
+          "72,909,500",
+          "70,503,589",
+          "-",
+          "70,503,589",
+          "96.70"
+        ],
+        [
+          "4",
+          "Kenya Devolution Support\nProgramme Phase Two (KDSP II)\nLevel 2 Grant",
+          "352,500,000",
+          "99,449,905",
+          "-",
+          "99,449,905",
+          "28.21"
+        ],
+        [
+          "5",
+          "Kenya Livestock Commercialisa-\ntion Project (KelCop)",
+          "60,550,000",
+          "25,547,998",
+          "-",
+          "25,547,998",
+          "42.19"
+        ],
+        [
+          "6",
+          "National Agricultural Value\nChain Development Project\n(NAVCDP)",
+          "231,250,000",
+          "231,006,225",
+          "-",
+          "231,006,225",
+          "100.00"
+        ],
+        [
+          "7",
+          "Primary Health Care in Devolved\nContext (PHDC) Programme",
+          "9,282,000",
+          "9,282,000",
+          "-",
+          "9,282,000",
+          "100.00"
+        ],
+        [
+          "8",
+          "Kenya Informal Settlement Im-\nprovement Project (KISIP II)",
+          "3,000,000",
+          "2,066,377",
+          "-",
+          "2,066,377",
+          "68.88"
+        ],
+        [
+          "",
+          "Sub-Total",
+          "1,153,434,371",
+          "745,984,665",
+          "-",
+          "745,984,665",
+          "64.68"
+        ]
+      ],
+      "bbox": [
+        0.0,
+        0.0,
+        595.276,
+        841.89
+      ]
+    },
+    {
+      "page_number": 816,
+      "table_index": 0,
+      "headers": [
+        "No",
+        "Revenue Stream",
+        "Targeted Rev-\nenue (Kshs.)",
+        "Actual Re-\nceipts (Kshs.)",
+        "Revenue\nArrears\nin FY\n2025/26\n(Kshs.)",
+        "Total Revenues\n(on an accrual\nbasis) in FY\n2025/26 (Kshs.)",
+        "Revenue\nPerfor-\nmance"
+      ],
+      "rows": [
+        [
+          "",
+          "",
+          "A",
+          "B",
+          "C",
+          "D F",
+          "=D/A*100"
+        ],
+        [
+          "D Ordin",
+          "ary Own Source Revenue (OSR)",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1 Ordin",
+          "ary Own Source Revenue",
+          "324,970,591",
+          "341,624,020",
+          "-",
+          "341,624,020",
+          "105.12"
+        ],
+        [
+          "Sub-T",
+          "otal",
+          "324,970,591",
+          "341,624,020",
+          "-",
+          "341,624,020",
+          "105 .12"
+        ],
+        [
+          "E Facili",
+          "ty Improvement Financing (FIF)",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1 SHIF",
+          "",
+          "275,029,409",
+          "358,090,125",
+          "-",
+          "358,090,125",
+          "130.20"
+        ],
+        [
+          "2 Defun",
+          "ct NHIF",
+          "-",
+          "-",
+          "-",
+          "-",
+          "-"
+        ],
+        [
+          "Sub-T",
+          "otal",
+          "275,029,409",
+          "358,090,125",
+          "-",
+          "",
+          ""
+        ],
+        [
+          "F Other",
+          "Revenues",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1 Equal",
+          "isation Fund",
+          "12,161,730",
+          "-",
+          "-",
+          "-",
+          "-"
+        ],
+        [
+          "2 FLLO",
+          "CA KFW Unbudgeted",
+          "-",
+          "9,341,923",
+          "-",
+          "9,341,923",
+          "-"
+        ],
+        [
+          "3 FLLO",
+          "CA IDA Unbudgeted",
+          "-",
+          "21,603,073",
+          "-",
+          "21,603,073",
+          "-"
+        ],
+        [
+          "4 KUSP",
+          "Unbudgeted",
+          "-",
+          "26,000,000",
+          "-",
+          "26,000,000",
+          "-"
+        ],
+        [
+          "5 ASDS",
+          "P Unbudgeted",
+          "-",
+          "500,000",
+          "-",
+          "500,000",
+          "-"
+        ],
+        [
+          "Sub-T",
+          "otal",
+          "12,161,730",
+          "57,444,996",
+          "-",
+          "57,444,996",
+          "472.34"
+        ],
+        [
+          "Total",
+          "",
+          "10,266,185,711",
+          "10,003,733,417",
+          "-",
+          "10,003,733,417",
+          "97.44"
+        ]
+      ],
+      "bbox": [
+        0.0,
+        0.0,
+        595.276,
+        841.89
+      ]
+    },
+    {
+      "page_number": 59,
+      "table_index": 0,
+      "headers": [
+        "No",
+        "Revenue Stream",
+        "Annual Targeted\nRevenue (Kshs.)",
+        "Actual Receipts\n(Kshs.)",
+        "Receivables in FY\n2025/26 (Kshs.)",
+        "Total Revenues (on\nan accrual basis) in\nFY 2025/26 (Kshs.)",
+        "Revenue Per-\nformance"
+      ],
+      "rows": [
+        [
+          "",
+          "",
+          "A",
+          "B",
+          "C",
+          "D=B+C",
+          "F=D/A*100"
+        ],
+        [
+          "A",
+          "Unspent Balance from FY 2024/25",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "Balance at CRF",
+          "256,015,880",
+          "272,978,953",
+          "-",
+          "272,978,953",
+          "107"
+        ],
+        [
+          "2",
+          "County Executive\nRefunds to CRF",
+          "-",
+          "92,523,913",
+          "-",
+          "92,523,913",
+          "-"
+        ],
+        [
+          "3",
+          "County Assembly\nRefunds to CRF",
+          "-",
+          "638,770",
+          "-",
+          "638,770",
+          "-"
+        ],
+        [
+          "",
+          "Sub-Total",
+          "256,015,880",
+          "366,141,636",
+          "-",
+          "366,141,636",
+          "143"
+        ],
+        [
+          "B",
+          "Equitable Share of Revenue Raised Nationally",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "Equitable Share",
+          "7,083,683,384",
+          "7,083,683,384",
+          "-",
+          "7,083,683,384",
+          "100"
+        ],
+        [
+          "",
+          "Sub-Total",
+          "7,083,683,384",
+          "7,083,683,384",
+          "-",
+          "7,083,683,384",
+          "100"
+        ],
+        [
+          "C",
+          "Additional Allocations (Including Grants)",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "KDSP Level II recurrent",
+          "72,909,500",
+          "70,503,589",
+          "-",
+          "70,503,589",
+          "96.70"
+        ],
+        [
+          "2",
+          "KDSP Level II Devel-\nopment",
+          "352,500,000",
+          "165,677,540",
+          "-",
+          "165,677,540",
+          "47.00"
+        ],
+        [
+          "3",
+          "Road Maintenance\nLevy Fund (RMLF)",
+          "71,309,824",
+          "71,309,824",
+          "-",
+          "71,309,824",
+          "100"
+        ],
+        [
+          "4",
+          "IDA (World Bank)\nCredit Kenya Urban\nSupport Project (KUSP)\nUrban Institutional\nGrant (UIG)",
+          "32,309,300",
+          "32,309,300",
+          "-",
+          "32,309,300",
+          "100"
+        ],
+        [
+          "5",
+          "IDA (World Bank) Loan\nfor the Food Systems\nResilience Project\n(FSRP)",
+          "70,127,132",
+          "-",
+          "-",
+          "-",
+          "-"
+        ]
+      ],
+      "bbox": [
+        0.0,
+        0.0,
+        595.276,
+        841.89
+      ]
+    },
+    {
+      "page_number": 60,
+      "table_index": 0,
+      "headers": [
+        "No",
+        "Revenue Stream",
+        "Annual Targeted\nRevenue (Kshs.)",
+        "Actual Receipts\n(Kshs.)",
+        "Receivables in FY\n2025/26 (Kshs.)",
+        "Total Revenues (on\nan accrual basis) in\nFY 2025/26 (Kshs.)",
+        "Revenue Per-\nformance",
+        ""
+      ],
+      "rows": [
+        [
+          "",
+          "",
+          "A",
+          "B",
+          "C",
+          "D=B+C",
+          "F=D/A*100",
+          ""
+        ],
+        [
+          "6",
+          "IDA (World Bank)\nEmergency Locust Re-\nsponse Project- ELRP",
+          "90,001",
+          "-",
+          "-",
+          "-",
+          "-",
+          ""
+        ],
+        [
+          "7",
+          "DANIDA Grant to\nfinance Primary\nHealthcare in Devolved\nContext",
+          "8,395,507",
+          "-",
+          "-",
+          "-",
+          "-",
+          ""
+        ],
+        [
+          "8",
+          "Community Health\nPromoters (CHPs)\nProject",
+          "22,410,000",
+          "-",
+          "-",
+          "-",
+          "-",
+          ""
+        ],
+        [
+          "9",
+          "International Fund for\nAgricultural Develop-\nment (IFAD) Loan for\nKenya Livestock Com-\nmercialisation Project\n(KeLCoP)",
+          "39,998,624",
+          "-",
+          "-",
+          "-",
+          "-",
+          ""
+        ],
+        [
+          "10",
+          "County Aggregation\nand Industrial Parks\n(CAIP) Programme",
+          "318",
+          "-",
+          "-",
+          "-",
+          "-",
+          ""
+        ],
+        [
+          "11",
+          "Universal Care Project\n- THS",
+          "814,758",
+          "-",
+          "-",
+          "-",
+          "-",
+          ""
+        ],
+        [
+          "12",
+          "SWEDEN: Agricultural\nSector Development\nSupport Programme\n(ASDSP) II",
+          "4,645",
+          "-",
+          "-",
+          "-",
+          "-",
+          ""
+        ],
+        [
+          "13",
+          "KDSP Grant Phase II",
+          "434",
+          "-",
+          "-",
+          "-",
+          "-",
+          ""
+        ],
+        [
+          "14",
+          "IDA (World Bank)\ncredit (FLLoCA)\nclimate-SPA-Develop-\nment",
+          "227,117,461",
+          "-",
+          "-",
+          "-",
+          "-",
+          ""
+        ],
+        [
+          "15",
+          "Community Health\nPromoters (CHPs)\nProject",
+          "63,810,000",
+          "-",
+          "-",
+          "-",
+          "-",
+          ""
+        ],
+        [
+          "16",
+          "County Aggregation\nand Industrial Parks\n(CAIP) Programme",
+          "250,000,000",
+          "250,000,000",
+          "-",
+          "250,000,000",
+          "100",
+          ""
+        ],
+        [
+          "17",
+          "Kenya Livestock Com-\nmercialisation Project\n(KelCop)",
+          "65,350,000",
+          "27,098,956",
+          "-",
+          "27,098,956",
+          "41.47",
+          ""
+        ],
+        [
+          "18",
+          "Primary Health Care in\na Devolved Community",
+          "8,211,000",
+          "8,211,000",
+          "-",
+          "8,211,000",
+          "100",
+          ""
+        ],
+        [
+          "19",
+          "IDA (World Bank) Loan\nfor the Food Systems\nResilience Project\n(FSRP)",
+          "246,153,846",
+          "244,752,078",
+          "-",
+          "244,752,078",
+          "99.43",
+          ""
+        ],
+        [
+          "20",
+          "IDA (World Bank)\ncredit (FLLoCA)\nclimate-SPA-Develop-\nment",
+          "113,257,951",
+          "113,257,951",
+          "-",
+          "113,257,951",
+          "100",
+          ""
+        ],
+        [
+          "21",
+          "K-WASH Program-Wa-\nter",
+          "143,157,560",
+          "141,979,713",
+          "-",
+          "141,979,713",
+          "99.18",
+          ""
+        ],
+        [
+          "22",
+          "Court Fines",
+          "20,355",
+          "20,355",
+          "-",
+          "20,355",
+          "100",
+          ""
+        ],
+        [
+          "23",
+          "Rehabilitation of Youth\nPolytechnics",
+          "54,766",
+          "-",
+          "-",
+          "-",
+          "-",
+          ""
+        ],
+        [
+          "24",
+          "Settlement of Doctors\nSalary Arrears",
+          "19,263,318",
+          "-",
+          "-",
+          "-",
+          "-",
+          ""
+        ],
+        [
+          "25",
+          "Kenya Informal Set-\ntlement Improvement\nProject (KISIP II)",
+          "-",
+          "26,000,000",
+          "-",
+          "26,000,000",
+          "-",
+          ""
+        ],
+        [
+          "-26",
+          "FLLoCA-County\nClimate Resilience\n-Investment (CCRI)\nGrant",
+          "-",
+          "18,790,279.00",
+          "-",
+          "18,790,279",
+          "-",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "26"
+        ]
+      ],
+      "bbox": [
+        0.0,
+        0.0,
+        595.276,
+        841.89
+      ]
+    },
+    {
+      "page_number": 61,
+      "table_index": 0,
+      "headers": [
+        "No Rev",
+        "enue Stream",
+        "Annual Targeted\nRevenue (Kshs.)",
+        "Actual Receipts\n(Kshs.)",
+        "Receivables in FY\n2025/26 (Kshs.)",
+        "Total Revenues (on\nR\nan accrual basis) in\nFY 2025/26 (Kshs.)",
+        "evenue Per-\nformance"
+      ],
+      "rows": [
+        [
+          "",
+          "",
+          "A",
+          "B",
+          "C",
+          "D=B+C",
+          "F=D/A*100"
+        ],
+        [
+          "Allocat\nthe Ho\n27 in the\nand Ur\nHousin",
+          "ion for .5% of\nusing Levy Fund\nCounty Rural\nban Affordable\ng Committees",
+          "1,987,622",
+          "-",
+          "-",
+          "-",
+          "-"
+        ],
+        [
+          "Sub-To",
+          "tal",
+          "1,809,253,922",
+          "1,169,910,584",
+          "-",
+          "1,169,910,584",
+          "64.66"
+        ],
+        [
+          "D Ordina",
+          "ry Own Source Revenue (OSR)",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "Ordina\n1\nRevenu",
+          "ry Own Source\ne (OSR)",
+          "331,939,770",
+          "237,496,957",
+          "-",
+          "237,496,957",
+          "71.54"
+        ],
+        [
+          "Sub-To",
+          "tal",
+          "331,939,770",
+          "237,496,957",
+          "-",
+          "237,496,957",
+          "71.54"
+        ],
+        [
+          "E Facilit",
+          "y Improvement Financing (FIF)",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "Facility\n1\nFinanc",
+          "Improvement\ning (FIF)",
+          "595,062,330",
+          "320,283,259",
+          "-",
+          "320,283,259",
+          "53.82"
+        ],
+        [
+          "Sub-To",
+          "tal",
+          "595,062,330",
+          "320,283,259",
+          "-",
+          "320,283,259",
+          "53.82"
+        ],
+        [
+          "Grand",
+          "Total",
+          "10,075,955,286",
+          "9,177,515,820",
+          "-",
+          "9,177,515,820",
+          "91.08"
+        ]
+      ],
+      "bbox": [
+        0.0,
+        0.0,
+        595.276,
+        841.89
+      ]
+    },
+    {
+      "page_number": 385,
+      "table_index": 0,
+      "headers": [
+        "No",
+        "Revenue Stream",
+        "Annual Targeted\nRevenue (Kshs.)",
+        "Actual Receipts\n(Kshs.)",
+        "Revenue arrears\nin FY 2025/2026\n(Kshs.)",
+        "Total Revenues\n(on an accrual\nbasis) in the FY\n2025/26 (Kshs.)",
+        "Revenue\nPerfor-\nmance"
+      ],
+      "rows": [
+        [
+          "",
+          "",
+          "A",
+          "B",
+          "C",
+          "D=B+C",
+          "F=D/A*100"
+        ],
+        [
+          "A",
+          "Unspent Balance from FY 2024/25",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "Balance at CRF",
+          "",
+          "447,826,615",
+          "",
+          "447,826,615",
+          ""
+        ],
+        [
+          "2",
+          "County Executive\nRefunds to CRF",
+          "3,003,230,111.47",
+          "994,299,797",
+          "",
+          "994,299,797",
+          ""
+        ],
+        [
+          "3",
+          "County Assembly\nRefunds to CRF",
+          "369,274,521.11",
+          "328,379,560",
+          "",
+          "328,379,560",
+          ""
+        ],
+        [
+          "",
+          "Sub-Total",
+          "3,372,504,632.58",
+          "1,770,505,972",
+          "-",
+          "1,770,505,972",
+          ""
+        ],
+        [
+          "B",
+          "Equitable Share of Revenue Raised Nationally",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "Equitable Share",
+          "9,078,699,643",
+          "9,078,699,643",
+          "-",
+          "9,078,699,643",
+          "100"
+        ],
+        [
+          "",
+          "Sub-Total",
+          "9,078,699,643",
+          "9,078,699,643",
+          "-",
+          "9,078,699,643",
+          "100"
+        ],
+        [
+          "C",
+          "Additional Allocations (Including Grants)",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "Allocation for 0.5%\nof the Housing Levy\nFund to the County\nRural and Urban\nAffordable Housing\nCommittees",
+          "1,987,622.00",
+          "",
+          "",
+          "-",
+          "-"
+        ],
+        [
+          "2",
+          "Settlement of Doc-\ntors\u2019 Salary Arrears\nfor Health Workers",
+          "28,773,123.00",
+          "",
+          "",
+          "-",
+          "-"
+        ],
+        [
+          "3",
+          "Community Health\nPromoters CHPs)\nProject",
+          "52,140,000.00",
+          "48,960,000.00",
+          "",
+          "48,960,000.00",
+          "93.90"
+        ],
+        [
+          "4",
+          "Aggregated Industri-\nal Park Programme\nGrant- CGAAA 2025",
+          "75,263,158.00",
+          "75,263,158.00",
+          "",
+          "75,263,158.00",
+          "100.00"
+        ],
+        [
+          "5",
+          "Aggregated Industri-\nal Park Programme\nGrant- July 2025",
+          "45,182,187.00",
+          "45,182,187.00",
+          "",
+          "45,182,187.00",
+          "100.00"
+        ]
+      ],
+      "bbox": [
+        0.0,
+        0.0,
+        595.276,
+        841.89
+      ]
+    },
+    {
+      "page_number": 386,
+      "table_index": 0,
+      "headers": [
+        "No",
+        "Revenue Stream",
+        "Annual Targeted\nRevenue (Kshs.)",
+        "Actual Receipts\n(Kshs.)",
+        "Revenue arrears\nin FY 2025/2026\n(Kshs.)",
+        "Total Revenues\n(on an accrual\nbasis) in the FY\n2025/26 (Kshs.)",
+        "Revenue\nPerfor-\nmance"
+      ],
+      "rows": [
+        [
+          "",
+          "",
+          "A",
+          "B",
+          "C",
+          "D=B+C",
+          "F=D/A*100"
+        ],
+        [
+          "6",
+          "Road Maintenance\nLevy Fund",
+          "71,758,747.00",
+          "",
+          "",
+          "-",
+          "-"
+        ],
+        [
+          "7",
+          "Allocation for 20%\nshare of Mineral\nRoyalties",
+          "1,166,507,886.00",
+          "1,166,507,886.00",
+          "",
+          "1,166,507,886.00",
+          "100.00"
+        ],
+        [
+          "8",
+          "Primary Healthcare\nin Devolved Context\n(PHDC)-DANIDA",
+          "12,546,000.00",
+          "12,546,000.00",
+          "",
+          "21,540,375.00",
+          "171.69"
+        ],
+        [
+          "9",
+          "Kenya Devolution\nSupport Programme\n(KDSPII)- Level 1\nInstitutional Grant",
+          "72,909,500.00",
+          "",
+          "",
+          "-",
+          "-"
+        ],
+        [
+          "10",
+          "Kenya Devolution\nSupport Programme\n(KDSP II)- Level II\nDevelopment",
+          "352,500,000.00",
+          "255,307,630.00",
+          "",
+          "255,307,630.00",
+          "72.43"
+        ],
+        [
+          "11",
+          "National Agricultural\nValue Chain De-\nvelopment Project\n(NAVCDP)",
+          "231,250,000.00",
+          "293,395,271.00",
+          "",
+          "293,395,271.00",
+          "126.87"
+        ],
+        [
+          "12",
+          "Water and Sanita-\ntion Development\nProject (WSDP)",
+          "450,000,000.00",
+          "717,436,049.00",
+          "",
+          "1,059,436,049.00",
+          "235.43"
+        ],
+        [
+          "13",
+          "Kenya Water and\nSanitation and\nHygiene(K-WASH)\nProgramme",
+          "160,000,000.00",
+          "142,263,673.00",
+          "",
+          "142,263,673.00",
+          "88.91"
+        ],
+        [
+          "14",
+          "Kenya Informal\nSettlement Improve-\nment Project KISIP II",
+          "130,822,492.00",
+          "96,023,944.00",
+          "",
+          "96,023,944.00",
+          "73.40"
+        ],
+        [
+          "15",
+          "Financing Local-\nly-Led Climate\nAction (FLLoCA)-In-\nstitutional Grant",
+          "11,000,000.00",
+          "",
+          "",
+          "-",
+          "-"
+        ],
+        [
+          "16",
+          "Kenya Urban Sup-\nport Programme-Ur-\nban Institutional\nGrant UIG",
+          "35,000,000.00",
+          "32,309,300.00",
+          "",
+          "32,309,300.00",
+          "92.31"
+        ],
+        [
+          "17",
+          "Kenya Urban Sup-\nport Programme-Ur-\nban Development\nGrant UDG",
+          "95,951,655.00",
+          "120,262,310.00",
+          "",
+          "120,262,310.00",
+          "125.34"
+        ],
+        [
+          "18",
+          "United Nations\nFund for Population\nServices",
+          "-",
+          "",
+          "",
+          "-",
+          ""
+        ],
+        [
+          "19",
+          "County Climate\nChange Resilient\nInvestment CCCRI)",
+          "140,837,000.00",
+          "126,753,746.00",
+          "",
+          "126,753,746.00",
+          "90.00"
+        ],
+        [
+          "20",
+          "World Bank Loan\nfor County Climate\nInstitutional Support\n(CCRI) Grant",
+          "68,590,804.00",
+          "35,667,380.00",
+          "",
+          "35,667,380.00",
+          "52.00"
+        ]
+      ],
+      "bbox": [
+        0.0,
+        0.0,
+        595.276,
+        841.89
+      ]
+    },
+    {
+      "page_number": 387,
+      "table_index": 0,
+      "headers": [
+        "No",
+        "Revenue Stream",
+        "Annual Targeted\nRevenue (Kshs.)",
+        "Actual Receipts\n(Kshs.)",
+        "Revenue arrears\nin FY 2025/2026\n(Kshs.)",
+        "Total Revenues\n(on an accrual\nbasis) in the FY\n2025/26 (Kshs.)",
+        "Revenue\nPerfor-\nmance"
+      ],
+      "rows": [
+        [
+          "",
+          "",
+          "A",
+          "B",
+          "C",
+          "D=B+C",
+          "F=D/A*100"
+        ],
+        [
+          "21",
+          "Kwale County\nBiashara Revolving\nFund",
+          "51,595,400.00",
+          "",
+          "",
+          "-",
+          "-"
+        ],
+        [
+          "",
+          "Sub-Total",
+          "3,254,615,574",
+          "3,167,878,534",
+          "",
+          "3,518,872,909",
+          "108.12"
+        ],
+        [
+          "D",
+          "Ordinary Own Source Revenue (OSR)",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "Cess",
+          "74,141,200",
+          "65,956,066",
+          "",
+          "65,956,066",
+          "88.96"
+        ],
+        [
+          "2",
+          "Land/Poll Rate",
+          "88,600,000",
+          "69,217,446",
+          "",
+          "80,056,771",
+          "90.36"
+        ],
+        [
+          "3",
+          "Single/Business\nPermits",
+          "154,982,200",
+          "100,416,341",
+          "",
+          "108,205,661",
+          "69.82"
+        ],
+        [
+          "4",
+          "Property Rent",
+          "12,618,360",
+          "5,242,317",
+          "",
+          "10,711,267",
+          "84.89"
+        ],
+        [
+          "5",
+          "Parking Fees",
+          "57,621,420",
+          "28,751,900",
+          "",
+          "28,751,900",
+          "49.9"
+        ],
+        [
+          "6",
+          "Market Fees",
+          "14,565,080",
+          "11,574,140",
+          "",
+          "11,574,140",
+          "79.46"
+        ],
+        [
+          "7",
+          "Advertising",
+          "33,208,350",
+          "27,498,450",
+          "",
+          "31,717,450",
+          "95.51"
+        ],
+        [
+          "8",
+          "Public Health Ser-\nvice Fees",
+          "10,309,800",
+          "8,448,535",
+          "",
+          "8,448,535",
+          "81.95"
+        ],
+        [
+          "9",
+          "Physical Planning\nand Development",
+          "25,260,000",
+          "13,423,307",
+          "",
+          "13,423,307",
+          "53.14"
+        ],
+        [
+          "10",
+          "Hire Of County\nAssets",
+          "18,167,200",
+          "1,306,800",
+          "",
+          "6,582,800",
+          "36.23"
+        ],
+        [
+          "11",
+          "Conservancy Admin-\nistration",
+          "7,140,000",
+          "4,235,726",
+          "",
+          "4,385,726",
+          "61.42"
+        ],
+        [
+          "12",
+          "Administration Con-\ntrol fees",
+          "26,410,910",
+          "18,430,435",
+          "",
+          "18,430,435",
+          "69.78"
+        ],
+        [
+          "13",
+          "Proceeds from the\nsale of assets",
+          "-",
+          "-",
+          "",
+          "-",
+          ""
+        ],
+        [
+          "14",
+          "Park Fees",
+          "772,207",
+          "740,000",
+          "",
+          "740,000",
+          "95.83"
+        ],
+        [
+          "15",
+          "Other Fines, Penal-\nties, And Forfeiture\nFees",
+          "451,000",
+          "209,800",
+          "",
+          "209,800",
+          "46.52"
+        ],
+        [
+          "16",
+          "Miscellaneous\nReceipts",
+          "12,616,779",
+          "12,287,251",
+          "",
+          "12,287,251",
+          "97.39"
+        ],
+        [
+          "",
+          "Sub-Total",
+          "536,864,506",
+          "367,738,513",
+          "",
+          "401,481,109",
+          "74.78"
+        ],
+        [
+          "E",
+          "Facility Improvement Financing (FIF)",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "1",
+          "SHIF",
+          "467,495,295.00",
+          "483,394,506.00",
+          "-",
+          "483,394,506.00",
+          "103.4"
+        ],
+        [
+          "",
+          "Sub-Total",
+          "467,495,295.00",
+          "483,394,506.00",
+          "",
+          "483,394,506.00",
+          "103.4"
+        ],
+        [
+          "F",
+          "Income brought forward from the previous budget.",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "Grand Total",
+          "16,710,179,651",
+          "14,808,402,850",
+          "",
+          "15,252,954,139",
+          "91.28"
+        ]
+      ],
+      "bbox": [
+        0.0,
+        0.0,
+        595.276,
+        841.89
+      ]
+    }
+  ]
+}

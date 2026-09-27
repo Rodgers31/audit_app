@@ -112,10 +112,15 @@ def _write_brop(db_session, *, with_counties=True):
 
 
 def _write_cob(db_session, amount, as_at):
-    """A county payload the CoB fetcher builds, through parser and writer."""
+    """Complete synthetic coverage through the real parser and writer.
+
+    Nairobi pins the source value; the other 46 test-only zero amounts make
+    this a complete population control, not a claim about those counties.
+    """
     from seeding.domains.pending_bills.fetcher import county_payables_payload
     from seeding.domains.pending_bills.parser import parse_pending_bills_payload
     from seeding.domains.pending_bills.writer import write_pending_bills
+    from seeding.pdf_parsers import KENYAN_COUNTIES
 
     year = int(as_at[:4])
     entry = {
@@ -126,7 +131,16 @@ def _write_cob(db_session, amount, as_at):
         "as_at": as_at, "fiscal_year": f"FY {year - 1}/{str(year)[2:]}",
         "table": "Table 2.10", "page": 52,
     }
-    payload = county_payables_payload([entry], "https://cob.go.ke/download/cbirr/?wpdmdl=1")
+    entries = [entry]
+    country_id = db_session.query(Entity).first().country_id
+    for name in KENYAN_COUNTIES:
+        if name == "Nairobi":
+            continue
+        db_session.add(Entity(country_id=country_id, type=EntityType.COUNTY,
+                              canonical_name=f"{name} County", slug=f"test-{name.lower()}"))
+        entries.append({**entry, "county": name, "total_millions": "0"})
+    db_session.flush()
+    payload = county_payables_payload(entries, "https://cob.go.ke/download/cbirr/?wpdmdl=1")
     write_pending_bills(
         db_session, parse_pending_bills_payload(payload),
         source_url=payload["source_url"], source_title=payload["source_title"],
@@ -304,16 +318,12 @@ FIXTURE_PROV = {"source": "cob_pending_bills_etl", "publication": None, "fiscal_
 
 def test_rows_already_written_from_the_fixture_are_not_counted(client, db_session, entities):
     """Loans 385-395 in production: no declaration, so not published."""
-    national, nairobi = entities
-    db_session.add_all([
-        _loan(national, "Pending Bills — State Corporations (National Government — State Corporations)",
-              404_300_000_000, {**STAMPED, "category": "state_corporation"}),
-        _loan(national, "Pending Bills — MDAs (National Government — MDAs)",
-              121_600_000_000, {**STAMPED, "category": "mda"}),
-        _loan(national, "Pending Bills — MDAs (Ministry of Health)", 89_700_000_000, FIXTURE_PROV),
-        _loan(nairobi, "Pending Bills — County Governments (Nairobi County)",
-              NAIROBI_COB_2025, COB_STAMPED),
-    ])
+    national, _nairobi = entities
+    _write_brop(db_session)
+    _write_cob(db_session, NAIROBI_COB_2025, "2025-06-30")
+    db_session.add(_loan(
+        national, "Pending Bills — MDAs (Ministry of Health)", 89_700_000_000, FIXTURE_PROV
+    ))
     db_session.commit()
 
     body = _get(client, "/api/v1/pending-bills")
@@ -345,7 +355,8 @@ def test_no_total_without_a_published_national_figure(client, db_session, entiti
 
     pb = _get(client, "/api/v1/pending-bills")["summary"]
     assert pb["national_total"] is None
-    assert pb["county_total"] == NAIROBI_COB_2025
+    assert pb["county_total"] is None
+    assert pb["reported_county_sum"] == NAIROBI_COB_2025
     assert pb["total_pending"] is None
     assert _get(client, "/api/v1/pending-bills/summary")["total_pending_amount"] is None
 
@@ -361,8 +372,9 @@ def test_no_total_across_two_dates_even_within_one_fiscal_year_label(client, db_
     db_session.commit()
 
     pb = _get(client, "/api/v1/pending-bills")["summary"]
-    assert pb["national_total"] == 121_600_000_000
-    assert pb["county_total"] == NAIROBI_COB_2025
+    assert pb["national_total"] is None  # Only one national component.
+    assert pb["county_total"] is None  # Only one county.
+    assert pb["reported_county_sum"] == NAIROBI_COB_2025
     assert pb["total_pending"] is None
 
 
@@ -380,10 +392,9 @@ def test_no_total_when_a_row_states_no_date(client, db_session, entities):
     db_session.commit()
 
     pb = _get(client, "/api/v1/pending-bills")["summary"]
-    assert pb["national_total"] == 121_600_000_000
-    # Both halves published — the total is withheld for the missing date,
-    # not because one half is absent.
-    assert pb["county_total"] == NAIROBI_COB_2025
+    assert pb["national_total"] is None
+    assert pb["county_total"] is None
+    assert pb["reported_county_sum"] == NAIROBI_COB_2025
     assert pb["total_pending"] is None
 
 

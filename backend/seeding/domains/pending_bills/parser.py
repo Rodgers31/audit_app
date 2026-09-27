@@ -100,18 +100,13 @@ def parse_pending_bills_payload(
             fiscal_year = item.get("fiscal_year", "")
 
             # Support both extractor format and loans-like format
-            total = _to_decimal(
-                item.get("total_pending")
-                or item.get("outstanding")
-                or item.get("principal")
-            )
+            total = _to_decimal(next(
+                (item[key] for key in ("total_pending", "outstanding", "principal") if key in item),
+                None,
+            ))
             eligible = _to_decimal(item.get("eligible_pending"))
             ineligible = _to_decimal(item.get("ineligible_pending"))
 
-            if total is None and item.get("printed_zero") is True:
-                # A zero the publication PRINTS is a figure. Every other
-                # zero or blank here is a missing amount.
-                total = Decimal(0)
             if total is None or (total <= 0 and item.get("printed_zero") is not True):
                 logger.debug(
                     f"Skipping record {idx} ({entity_name}): " f"zero or missing amount"
@@ -181,10 +176,10 @@ def parse_pending_bills_payload(
 
 def _to_decimal(value: Any) -> Optional[Decimal]:
     """Safely convert a value to Decimal."""
-    if value is None:
+    if value is None or isinstance(value, bool):
         return None
     try:
         d = Decimal(str(value).replace(",", "").strip())
-        return d if d > 0 else None
+        return d if d.is_finite() and d >= 0 else None
     except Exception:
         return None

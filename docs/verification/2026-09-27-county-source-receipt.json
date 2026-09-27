@@ -1,0 +1,4385 @@
+{
+  "kind": "offline_source_preflight",
+  "production_published": false,
+  "cbirr_sha256": "5f5e4f97bbe2752957f284950d0ba90fcff4d47b35fc0ac96a9106ffb59821b3",
+  "brop_sha256": "39c2e290ecdb6be0d8768344514711a5b0c6a350f0416ed81e529cded60def24",
+  "budget_records": 428,
+  "revenue_counties_reconciled": 37,
+  "county_count": 47,
+  "national_pending_bills": {
+    "as_at_date": "2026-06-30",
+    "total": "475500000000",
+    "state_corporations": "365600000000",
+    "mdas": "109900000000",
+    "as_at_stated": true,
+    "paragraph": 20
+  },
+  "county_pending_reported_sum_kes": "172526690000.00",
+  "county_pending_count": 46,
+  "combined_pending_total_kes": null,
+  "combined_pending_absent_reason": "county_amounts_incomplete",
+  "projects_edition": {
+    "title": "County Governments Budget Implementation Review Report",
+    "fiscal_year": "FY2025/26",
+    "period": "annual",
+    "published": "August 2026",
+    "pages": 935,
+    "captions_found": 20,
+    "chapters_found": 47,
+    "national_summary": {
+      "sentence": "County Governments reported 189 stalled projects valued at Kshs.10.51 billion, of which Kshs.4.21 billion",
+      "source_page": 44,
+      "count": 189,
+      "value_kes": 10510000000.0,
+      "paid_kes": 4210000000.0
+    },
+    "table_2_6": {
+      "total": {
+        "printed": {
+          "label": "Total",
+          "count": "189",
+          "value": "10,508.01",
+          "paid": "4,206.15"
+        },
+        "count": 189,
+        "value_kes": 10508010000.0,
+        "paid_kes": 4206149999.9999995,
+        "source_page": 45
+      },
+      "unit_kes": 1000000.0,
+      "page": 44,
+      "table_no": "2.6"
+    },
+    "kind": "edition",
+    "unplaced_captions": []
+  },
+  "coverage": [
+    {
+      "county": "Baringo",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "10075.96",
+      "budget_expenditure_million_kes": "7665.52",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          59,
+          60,
+          61
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "9177515820"
+      },
+      "pending_bills": {
+        "county": "Baringo",
+        "page": 51,
+        "cob_marked_inconsistent": false,
+        "total_millions": "870.23",
+        "executive_millions": "805.53",
+        "assembly_millions": "64.70",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "10075.96",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.15",
+        "chapter_page": 75,
+        "chapter_total_millions": "870.23",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [
+          {
+            "table_no": "3.11",
+            "caption_page": 70,
+            "as_of": "2026-06-30",
+            "reported_by": null
+          }
+        ],
+        "reconciliation": {
+          "status": "agrees_with_gaps",
+          "rows": 23,
+          "estimated_value_kes_sum": 163319185.0,
+          "estimated_value_rows": 23,
+          "amount_paid_kes_sum": 83693748.6,
+          "amount_paid_rows": 19,
+          "rows_numbered": 23,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 23,
+              "cob": 23,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 163319185.0,
+              "cob": 163320000.0,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 83693748.6,
+              "cob": 83690000.0,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 163319185.0,
+              "cob": 163319185.0,
+              "cob_source": "table total row",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 83693748.6,
+              "cob": 83693749.0,
+              "cob_source": "table total row",
+              "agrees": true
+            },
+            {
+              "check": "count",
+              "rows": 23,
+              "cob": 23,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 163319185.0,
+              "cob": 163320000.0,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 83693748.6,
+              "cob": 83690000.0,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Bomet",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "10853.28",
+      "budget_expenditure_million_kes": "8718.28",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          77,
+          78,
+          79
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "9769344780"
+      },
+      "pending_bills": {
+        "county": "Bomet",
+        "page": 51,
+        "cob_marked_inconsistent": true,
+        "total_millions": "1431.39",
+        "executive_millions": "1391.39",
+        "assembly_millions": "40.00",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "10853.28",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.31",
+        "chapter_page": 91,
+        "chapter_total_millions": "1436.84",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [],
+        "reconciliation": {
+          "status": "unverifiable",
+          "rows": 0,
+          "estimated_value_kes_sum": null,
+          "estimated_value_rows": 0,
+          "amount_paid_kes_sum": null,
+          "amount_paid_rows": 0,
+          "rows_numbered": 0,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 0,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Bungoma",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "17433.20",
+      "budget_expenditure_million_kes": "14537.39",
+      "revenue": {
+        "status": "withheld",
+        "reason": "no_supported_revenue_table",
+        "pages": [],
+        "total_kes": null
+      },
+      "pending_bills": {
+        "county": "Bungoma",
+        "page": 51,
+        "cob_marked_inconsistent": true,
+        "total_millions": "3125.74",
+        "executive_millions": "3121.24",
+        "assembly_millions": "4.50",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "17433.20",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.47",
+        "chapter_page": 109,
+        "chapter_total_millions": "3125.73",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [],
+        "reconciliation": {
+          "status": "unverifiable",
+          "rows": 0,
+          "estimated_value_kes_sum": null,
+          "estimated_value_rows": 0,
+          "amount_paid_kes_sum": null,
+          "amount_paid_rows": 0,
+          "rows_numbered": 0,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 0,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Busia",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "11159.48",
+      "budget_expenditure_million_kes": "7276.62",
+      "revenue": {
+        "status": "withheld",
+        "reason": "no_supported_revenue_table",
+        "pages": [],
+        "total_kes": null
+      },
+      "pending_bills": {
+        "county": "Busia",
+        "page": 51,
+        "cob_marked_inconsistent": false,
+        "total_millions": "2594.37",
+        "executive_millions": "2070.93",
+        "assembly_millions": "523.44",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "11159.48",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.63",
+        "chapter_page": 125,
+        "chapter_total_millions": "2594.37",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [],
+        "reconciliation": {
+          "status": "unverifiable",
+          "rows": 0,
+          "estimated_value_kes_sum": null,
+          "estimated_value_rows": 0,
+          "amount_paid_kes_sum": null,
+          "amount_paid_rows": 0,
+          "rows_numbered": 0,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 0,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Elgeyo Marakwet",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "9144.87",
+      "budget_expenditure_million_kes": "6061.49",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          128,
+          129
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "8129336090"
+      },
+      "pending_bills": {
+        "county": "Elgeyo Marakwet",
+        "page": 51,
+        "cob_marked_inconsistent": false,
+        "total_millions": "238.71",
+        "executive_millions": "238.71",
+        "assembly_millions": null,
+        "executive_printed": true,
+        "assembly_printed": false,
+        "budget_millions": "9144.87",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.80",
+        "chapter_page": 142,
+        "chapter_total_millions": "236.30",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [
+          {
+            "table_no": "3.76",
+            "caption_page": 139,
+            "as_of": "2026-06-30",
+            "reported_by": null
+          }
+        ],
+        "reconciliation": {
+          "status": "disagrees",
+          "rows": 1,
+          "estimated_value_kes_sum": 52739516.0,
+          "estimated_value_rows": 1,
+          "amount_paid_kes_sum": 14787937.0,
+          "amount_paid_rows": 1,
+          "rows_numbered": 1,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 1,
+              "cob": 2,
+              "cob_source": "county summary sentence",
+              "agrees": false
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 52739516.0,
+              "cob": 98730000.0,
+              "cob_source": "county summary sentence",
+              "agrees": false
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 14787937.0,
+              "cob": 60780000.0,
+              "cob_source": "county summary sentence",
+              "agrees": false
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 52739516.0,
+              "cob": 98739516.0,
+              "cob_source": "table total row",
+              "agrees": false
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 14787937.0,
+              "cob": 60787937.0,
+              "cob_source": "table total row",
+              "agrees": false
+            },
+            {
+              "check": "count",
+              "rows": 1,
+              "cob": 2,
+              "cob_source": "Table 2.6",
+              "agrees": false
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 52739516.0,
+              "cob": 98730000.0,
+              "cob_source": "Table 2.6",
+              "agrees": false
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 14787937.0,
+              "cob": 60780000.0,
+              "cob_source": "Table 2.6",
+              "agrees": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Embu",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "9395.13",
+      "budget_expenditure_million_kes": "6932.91",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          145,
+          146
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "8123169295"
+      },
+      "pending_bills": {
+        "county": "Embu",
+        "page": 51,
+        "cob_marked_inconsistent": false,
+        "total_millions": "1624.98",
+        "executive_millions": "1547.54",
+        "assembly_millions": "77.44",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "9395.13",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.93",
+        "chapter_page": 160,
+        "chapter_total_millions": "1624.98",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [],
+        "reconciliation": {
+          "status": "unverifiable",
+          "rows": 0,
+          "estimated_value_kes_sum": null,
+          "estimated_value_rows": 0,
+          "amount_paid_kes_sum": null,
+          "amount_paid_rows": 0,
+          "rows_numbered": 0,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 0,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Garissa",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "13536.09",
+      "budget_expenditure_million_kes": "10640.38",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          163,
+          164
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "11378721908"
+      },
+      "pending_bills": {
+        "county": "Garissa",
+        "page": 52,
+        "cob_marked_inconsistent": false,
+        "total_millions": "1485.65",
+        "executive_millions": "1386.55",
+        "assembly_millions": "99.10",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "13536.09",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.110",
+        "chapter_page": 179,
+        "chapter_total_millions": "1485.65",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [
+          {
+            "table_no": "3.106",
+            "caption_page": 175,
+            "as_of": "2026-06-30",
+            "reported_by": null
+          }
+        ],
+        "reconciliation": {
+          "status": "agrees",
+          "rows": 4,
+          "estimated_value_kes_sum": 283540197.0,
+          "estimated_value_rows": 4,
+          "amount_paid_kes_sum": 38652052.0,
+          "amount_paid_rows": 4,
+          "rows_numbered": 4,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 4,
+              "cob": 4,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 283540197.0,
+              "cob": 283540000.0,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 38652052.0,
+              "cob": 38650000.0,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 283540197.0,
+              "cob": 283540197.0,
+              "cob_source": "table total row",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 38652052.0,
+              "cob": 38652052.0,
+              "cob_source": "table total row",
+              "agrees": true
+            },
+            {
+              "check": "count",
+              "rows": 4,
+              "cob": 4,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 283540197.0,
+              "cob": 283540000.0,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 38652052.0,
+              "cob": 38650000.0,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Homa Bay",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "13601.46",
+      "budget_expenditure_million_kes": "10244.80",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          182,
+          183
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "11029018806"
+      },
+      "pending_bills": {
+        "county": "Homa Bay",
+        "page": 52,
+        "cob_marked_inconsistent": false,
+        "total_millions": "1118.01",
+        "executive_millions": "813.96",
+        "assembly_millions": "304.05",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "13601.46",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.126",
+        "chapter_page": 195,
+        "chapter_total_millions": "1118.02",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [],
+        "reconciliation": {
+          "status": "unverifiable",
+          "rows": 0,
+          "estimated_value_kes_sum": null,
+          "estimated_value_rows": 0,
+          "amount_paid_kes_sum": null,
+          "amount_paid_rows": 0,
+          "rows_numbered": 0,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 0,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Isiolo",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "7202.84",
+      "budget_expenditure_million_kes": "5349.05",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          199,
+          200,
+          201
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "7100404489"
+      },
+      "pending_bills": {
+        "county": "Isiolo",
+        "page": 52,
+        "cob_marked_inconsistent": false,
+        "total_millions": "1672.46",
+        "executive_millions": "1479.92",
+        "assembly_millions": "192.54",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "7202.84",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.142",
+        "chapter_page": 214,
+        "chapter_total_millions": "1672.46",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [
+          {
+            "table_no": "3.138",
+            "caption_page": 210,
+            "as_of": "2026-06-30",
+            "reported_by": null
+          }
+        ],
+        "reconciliation": {
+          "status": "agrees_with_gaps",
+          "rows": 7,
+          "estimated_value_kes_sum": 1769477607.0,
+          "estimated_value_rows": 7,
+          "amount_paid_kes_sum": 1135316583.0,
+          "amount_paid_rows": 4,
+          "rows_numbered": 7,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 7,
+              "cob": 7,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 1769477607.0,
+              "cob": 1770000000.0,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 1135316583.0,
+              "cob": 1140000000.0,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 1769477607.0,
+              "cob": 1769477607.0,
+              "cob_source": "table total row",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 1135316583.0,
+              "cob": 1135316583.0,
+              "cob_source": "table total row",
+              "agrees": true
+            },
+            {
+              "check": "count",
+              "rows": 7,
+              "cob": 7,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 1769477607.0,
+              "cob": 1769480000.0,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 1135316583.0,
+              "cob": 1135320000.0,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Kajiado",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "13546.89",
+      "budget_expenditure_million_kes": "9892.81",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          218,
+          219,
+          220
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "11628847386"
+      },
+      "pending_bills": {
+        "county": "Kajiado",
+        "page": 52,
+        "cob_marked_inconsistent": false,
+        "total_millions": "2555.43",
+        "executive_millions": "2485.08",
+        "assembly_millions": "70.35",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "13546.89",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.158",
+        "chapter_page": 232,
+        "chapter_total_millions": "2545.93",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [],
+        "reconciliation": {
+          "status": "unverifiable",
+          "rows": 0,
+          "estimated_value_kes_sum": null,
+          "estimated_value_rows": 0,
+          "amount_paid_kes_sum": null,
+          "amount_paid_rows": 0,
+          "rows_numbered": 0,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 0,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Kakamega",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "17497.11",
+      "budget_expenditure_million_kes": "13981.97",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          236,
+          237
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "16738492420"
+      },
+      "pending_bills": {
+        "county": "Kakamega",
+        "page": 52,
+        "cob_marked_inconsistent": false,
+        "total_millions": "2808.81",
+        "executive_millions": "2216.61",
+        "assembly_millions": "592.20",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "17497.11",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.174",
+        "chapter_page": 253,
+        "chapter_total_millions": "2808.81",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [
+          {
+            "table_no": "3.170",
+            "caption_page": 248,
+            "as_of": "2026-06-30",
+            "reported_by": null
+          }
+        ],
+        "reconciliation": {
+          "status": "disagrees",
+          "rows": 10,
+          "estimated_value_kes_sum": 243519356.0,
+          "estimated_value_rows": 10,
+          "amount_paid_kes_sum": 218133603.0,
+          "amount_paid_rows": 10,
+          "rows_numbered": 10,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 10,
+              "cob": 26,
+              "cob_source": "county summary sentence",
+              "agrees": false
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 243519356.0,
+              "cob": 848950000.0,
+              "cob_source": "county summary sentence",
+              "agrees": false
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 218133603.0,
+              "cob": 218980000.0,
+              "cob_source": "county summary sentence",
+              "agrees": false
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 243519356.0,
+              "cob": 241277062.0,
+              "cob_source": "table total row",
+              "agrees": false
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 218133603.0,
+              "cob": 216697416.0,
+              "cob_source": "table total row",
+              "agrees": false
+            },
+            {
+              "check": "count",
+              "rows": 10,
+              "cob": 26,
+              "cob_source": "Table 2.6",
+              "agrees": false
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 243519356.0,
+              "cob": 848950000.0,
+              "cob_source": "Table 2.6",
+              "agrees": false
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 218133603.0,
+              "cob": 218980000.0,
+              "cob_source": "Table 2.6",
+              "agrees": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Kericho",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "10491.81",
+      "budget_expenditure_million_kes": "8362.97",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          256,
+          257,
+          258
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "9258125117"
+      },
+      "pending_bills": {
+        "county": "Kericho",
+        "page": 52,
+        "cob_marked_inconsistent": false,
+        "total_millions": "1483.04",
+        "executive_millions": "1437.19",
+        "assembly_millions": "45.85",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "10491.81",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.191",
+        "chapter_page": 272,
+        "chapter_total_millions": "1483.04",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [
+          {
+            "table_no": "3.187",
+            "caption_page": 268,
+            "as_of": "2026-06-30",
+            "reported_by": null
+          }
+        ],
+        "reconciliation": {
+          "status": "agrees",
+          "rows": 6,
+          "estimated_value_kes_sum": 280325251.32,
+          "estimated_value_rows": 6,
+          "amount_paid_kes_sum": 95394674.22,
+          "amount_paid_rows": 6,
+          "rows_numbered": 6,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 6,
+              "cob": 6,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 280325251.32,
+              "cob": 280320000.0,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 95394674.22,
+              "cob": 95390000.0,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "count",
+              "rows": 6,
+              "cob": 6,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 280325251.32,
+              "cob": 280320000.0,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 95394674.22,
+              "cob": 95390000.0,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Kiambu",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "27202.74",
+      "budget_expenditure_million_kes": "18538.80",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          275,
+          276,
+          277
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "21877475266"
+      },
+      "pending_bills": {
+        "county": "Kiambu",
+        "page": 52,
+        "cob_marked_inconsistent": false,
+        "total_millions": "5800.13",
+        "executive_millions": "5602.56",
+        "assembly_millions": "197.57",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "27202.74",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.208",
+        "chapter_page": 293,
+        "chapter_total_millions": "5800.13",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [
+          {
+            "table_no": "3.204",
+            "caption_page": 289,
+            "as_of": "2026-06-30",
+            "reported_by": null
+          }
+        ],
+        "reconciliation": {
+          "status": "agrees",
+          "rows": 2,
+          "estimated_value_kes_sum": 91670660.0,
+          "estimated_value_rows": 2,
+          "amount_paid_kes_sum": 16499556.0,
+          "amount_paid_rows": 2,
+          "rows_numbered": 2,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 2,
+              "cob": 2,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 91670660.0,
+              "cob": 91670000.0,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 16499556.0,
+              "cob": 16500000.0,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 91670660.0,
+              "cob": 91670660.0,
+              "cob_source": "table total row",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 16499556.0,
+              "cob": 16499556.0,
+              "cob_source": "table total row",
+              "agrees": true
+            },
+            {
+              "check": "count",
+              "rows": 2,
+              "cob": 2,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 91670660.0,
+              "cob": 91670000.0,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 16499556.0,
+              "cob": 16500000.0,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Kilifi",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "20480.85",
+      "budget_expenditure_million_kes": "17049.44",
+      "revenue": {
+        "status": "withheld",
+        "reason": "no_grand_total",
+        "pages": [
+          312,
+          313,
+          314
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": null
+      },
+      "pending_bills": {
+        "county": "Kilifi",
+        "page": 52,
+        "cob_marked_inconsistent": true,
+        "total_millions": "8091.52",
+        "executive_millions": "7817.40",
+        "assembly_millions": "274.12",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "20480.85",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.238",
+        "chapter_page": 327,
+        "chapter_total_millions": "8091.52",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [
+          {
+            "table_no": "3.234",
+            "caption_page": 322,
+            "as_of": "2026-06-30",
+            "reported_by": null
+          }
+        ],
+        "reconciliation": {
+          "status": "disagrees",
+          "rows": 9,
+          "estimated_value_kes_sum": 143346252.0,
+          "estimated_value_rows": 9,
+          "amount_paid_kes_sum": 43255522.0,
+          "amount_paid_rows": 7,
+          "rows_numbered": 9,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 9,
+              "cob": 10,
+              "cob_source": "county summary sentence",
+              "agrees": false
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 143346252.0,
+              "cob": 143350000.0,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 43255522.0,
+              "cob": 43260000.0,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "count",
+              "rows": 9,
+              "cob": 10,
+              "cob_source": "Table 2.6",
+              "agrees": false
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 143346252.0,
+              "cob": 143350000.0,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 43255522.0,
+              "cob": 43260000.0,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Kirinyaga",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "8541.37",
+      "budget_expenditure_million_kes": "7249.80",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          296,
+          297
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "8171979260"
+      },
+      "pending_bills": {
+        "county": "Kirinyaga",
+        "page": 52,
+        "cob_marked_inconsistent": false,
+        "total_millions": "564.47",
+        "executive_millions": "564.47",
+        "assembly_millions": null,
+        "executive_printed": true,
+        "assembly_printed": false,
+        "budget_millions": "8541.37",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.223",
+        "chapter_page": 309,
+        "chapter_total_millions": "564.47",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [],
+        "reconciliation": {
+          "status": "unverifiable",
+          "rows": 0,
+          "estimated_value_kes_sum": null,
+          "estimated_value_rows": 0,
+          "amount_paid_kes_sum": null,
+          "amount_paid_rows": 0,
+          "rows_numbered": 0,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 0,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Kisii",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "20160.90",
+      "budget_expenditure_million_kes": "12765.24",
+      "revenue": {
+        "status": "withheld",
+        "reason": "unreadable_receipts_cell",
+        "pages": [
+          330,
+          331,
+          332
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": null
+      },
+      "pending_bills": {
+        "county": "Kisii",
+        "page": 52,
+        "cob_marked_inconsistent": false,
+        "total_millions": "1247.70",
+        "executive_millions": "1225.73",
+        "assembly_millions": "21.97",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "20160.90",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.253",
+        "chapter_page": 346,
+        "chapter_total_millions": "1247.70",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [],
+        "reconciliation": {
+          "status": "unverifiable",
+          "rows": 0,
+          "estimated_value_kes_sum": null,
+          "estimated_value_rows": 0,
+          "amount_paid_kes_sum": null,
+          "amount_paid_rows": 0,
+          "rows_numbered": 0,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 0,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Kisumu",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "16982.00",
+      "budget_expenditure_million_kes": "10095.00",
+      "revenue": {
+        "status": "withheld",
+        "reason": "no_grand_total",
+        "pages": [
+          349,
+          350,
+          351
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": null
+      },
+      "pending_bills": {
+        "county": "Kisumu",
+        "page": 52,
+        "cob_marked_inconsistent": true,
+        "total_millions": "850.47",
+        "executive_millions": "850.47",
+        "assembly_millions": null,
+        "executive_printed": true,
+        "assembly_printed": false,
+        "budget_millions": "16982.00",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.267",
+        "chapter_page": 364,
+        "chapter_total_millions": "850.47",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [],
+        "reconciliation": {
+          "status": "unverifiable",
+          "rows": 0,
+          "estimated_value_kes_sum": null,
+          "estimated_value_rows": 0,
+          "amount_paid_kes_sum": null,
+          "amount_paid_rows": 0,
+          "rows_numbered": 0,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 0,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Kitui",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "14753.53",
+      "budget_expenditure_million_kes": "11867.25",
+      "revenue": {
+        "status": "withheld",
+        "reason": "streams_do_not_sum_to_grand_total (out by 1,286,750,892.25)",
+        "pages": [
+          367,
+          368,
+          369
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": null
+      },
+      "pending_bills": {
+        "county": "Kitui",
+        "page": 52,
+        "cob_marked_inconsistent": false,
+        "total_millions": "494.96",
+        "executive_millions": "449.50",
+        "assembly_millions": "45.46",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "14753.53",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.282",
+        "chapter_page": 382,
+        "chapter_total_millions": "494.96",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [],
+        "reconciliation": {
+          "status": "unverifiable",
+          "rows": 0,
+          "estimated_value_kes_sum": null,
+          "estimated_value_rows": 0,
+          "amount_paid_kes_sum": null,
+          "amount_paid_rows": 0,
+          "rows_numbered": 0,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 0,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Kwale",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "16710.18",
+      "budget_expenditure_million_kes": "11473.13",
+      "revenue": {
+        "status": "withheld",
+        "reason": "streams_do_not_sum_to_grand_total (out by 59,814,318.00)",
+        "pages": [
+          385,
+          386,
+          387
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": null
+      },
+      "pending_bills": {
+        "county": "Kwale",
+        "page": 52,
+        "cob_marked_inconsistent": false,
+        "total_millions": "310.94",
+        "executive_millions": "239.51",
+        "assembly_millions": "71.43",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "16710.18",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.298",
+        "chapter_page": 400,
+        "chapter_total_millions": "310.94",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [
+          {
+            "table_no": "3.294",
+            "caption_page": 397,
+            "as_of": "2026-06-30",
+            "reported_by": null
+          }
+        ],
+        "reconciliation": {
+          "status": "agrees",
+          "rows": 3,
+          "estimated_value_kes_sum": 461425126.0,
+          "estimated_value_rows": 3,
+          "amount_paid_kes_sum": 242255864.0,
+          "amount_paid_rows": 3,
+          "rows_numbered": 3,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 3,
+              "cob": 3,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 461425126.0,
+              "cob": 461430000.0,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 242255864.0,
+              "cob": 242260000.0,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 461425126.0,
+              "cob": 461425126.0,
+              "cob_source": "table total row",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 242255864.0,
+              "cob": 242255863.0,
+              "cob_source": "table total row",
+              "agrees": true
+            },
+            {
+              "check": "count",
+              "rows": 3,
+              "cob": 3,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 461425126.0,
+              "cob": 461430000.0,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 242255864.0,
+              "cob": 242260000.0,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Laikipia",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "9768.88",
+      "budget_expenditure_million_kes": "6749.88",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          404,
+          405
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "9186891397"
+      },
+      "pending_bills": {
+        "county": "Laikipia",
+        "page": 52,
+        "cob_marked_inconsistent": true,
+        "total_millions": "983.14",
+        "executive_millions": "886.42",
+        "assembly_millions": "96.72",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "9768.88",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.313",
+        "chapter_page": null,
+        "chapter_total_millions": null,
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [],
+        "reconciliation": {
+          "status": "unverifiable",
+          "rows": 0,
+          "estimated_value_kes_sum": null,
+          "estimated_value_rows": 0,
+          "amount_paid_kes_sum": null,
+          "amount_paid_rows": 0,
+          "rows_numbered": 0,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 0,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Lamu",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "5592.56",
+      "budget_expenditure_million_kes": "4274.88",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          420,
+          421,
+          422
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "5288678543.97"
+      },
+      "pending_bills": {
+        "county": "Lamu",
+        "page": 52,
+        "cob_marked_inconsistent": false,
+        "total_millions": "1.30",
+        "executive_millions": "1.30",
+        "assembly_millions": null,
+        "executive_printed": true,
+        "assembly_printed": false,
+        "budget_millions": "5592.56",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.329",
+        "chapter_page": 436,
+        "chapter_total_millions": "1.31",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [
+          {
+            "table_no": "3.325",
+            "caption_page": 431,
+            "as_of": "2026-06-30",
+            "reported_by": null
+          }
+        ],
+        "reconciliation": {
+          "status": "disagrees",
+          "rows": 3,
+          "estimated_value_kes_sum": 366132994.0,
+          "estimated_value_rows": 3,
+          "amount_paid_kes_sum": 183731211.0,
+          "amount_paid_rows": 3,
+          "rows_numbered": 3,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 3,
+              "cob": 4,
+              "cob_source": "county summary sentence",
+              "agrees": false
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 366132994.0,
+              "cob": 366130000.0,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 183731211.0,
+              "cob": 183730000.0,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "count",
+              "rows": 3,
+              "cob": 4,
+              "cob_source": "Table 2.6",
+              "agrees": false
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 366132994.0,
+              "cob": 366130000.0,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 183731211.0,
+              "cob": 183730000.0,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Machakos",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "15193.59",
+      "budget_expenditure_million_kes": "11407.10",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          438,
+          439,
+          440
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "14230737987"
+      },
+      "pending_bills": {
+        "county": "Machakos",
+        "page": 52,
+        "cob_marked_inconsistent": false,
+        "total_millions": "4493.50",
+        "executive_millions": "4286.50",
+        "assembly_millions": "207.00",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "15193.59",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.344",
+        "chapter_page": 459,
+        "chapter_total_millions": "4493.49",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [
+          {
+            "table_no": "3.340",
+            "caption_page": 453,
+            "as_of": "2026-06-30",
+            "reported_by": null
+          }
+        ],
+        "reconciliation": {
+          "status": "agrees",
+          "rows": 22,
+          "estimated_value_kes_sum": 891580637.92,
+          "estimated_value_rows": 22,
+          "amount_paid_kes_sum": 314262161.46,
+          "amount_paid_rows": 22,
+          "rows_numbered": 22,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 22,
+              "cob": 22,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 891580637.92,
+              "cob": 891580000.0,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 314262161.46,
+              "cob": 314260000.0,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 891580637.92,
+              "cob": 891580638.0,
+              "cob_source": "table total row",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 314262161.46,
+              "cob": 314262161.0,
+              "cob_source": "table total row",
+              "agrees": true
+            },
+            {
+              "check": "count",
+              "rows": 22,
+              "cob": 22,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 891580637.92,
+              "cob": 891580000.0,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 314262161.46,
+              "cob": 314260000.0,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Makueni",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "12862.92",
+      "budget_expenditure_million_kes": "11337.71",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          462,
+          463,
+          464
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "12355522486"
+      },
+      "pending_bills": {
+        "county": "Makueni",
+        "page": 52,
+        "cob_marked_inconsistent": true,
+        "total_millions": "424.25",
+        "executive_millions": "273.80",
+        "assembly_millions": "150.45",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "12862.92",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.360",
+        "chapter_page": 479,
+        "chapter_total_millions": "424.24",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [],
+        "reconciliation": {
+          "status": "unverifiable",
+          "rows": 0,
+          "estimated_value_kes_sum": null,
+          "estimated_value_rows": 0,
+          "amount_paid_kes_sum": null,
+          "amount_paid_rows": 0,
+          "rows_numbered": 0,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 0,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Mandera",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "15092.73",
+      "budget_expenditure_million_kes": "13550.47",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          482,
+          483,
+          484
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "14011801938"
+      },
+      "pending_bills": {
+        "county": "Mandera",
+        "page": 52,
+        "cob_marked_inconsistent": false,
+        "total_millions": "3825.00",
+        "executive_millions": "3799.00",
+        "assembly_millions": "26.00",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "15092.73",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.375",
+        "chapter_page": 497,
+        "chapter_total_millions": "3825.00",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [],
+        "reconciliation": {
+          "status": "unverifiable",
+          "rows": 0,
+          "estimated_value_kes_sum": null,
+          "estimated_value_rows": 0,
+          "amount_paid_kes_sum": null,
+          "amount_paid_rows": 0,
+          "rows_numbered": 0,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 0,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Marsabit",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "11033.90",
+      "budget_expenditure_million_kes": "9667.19",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          500,
+          501
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "9556672474.96"
+      },
+      "pending_bills": {
+        "county": "Marsabit",
+        "page": 52,
+        "cob_marked_inconsistent": true,
+        "total_millions": "1427.60",
+        "executive_millions": "1337.20",
+        "assembly_millions": "90.40",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "11033.90",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.391",
+        "chapter_page": 517,
+        "chapter_total_millions": "1427.65",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [],
+        "reconciliation": {
+          "status": "unverifiable",
+          "rows": 0,
+          "estimated_value_kes_sum": null,
+          "estimated_value_rows": 0,
+          "amount_paid_kes_sum": null,
+          "amount_paid_rows": 0,
+          "rows_numbered": 0,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 0,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Meru",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "15124.98",
+      "budget_expenditure_million_kes": "13892.85",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          520,
+          521,
+          522
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "13981377637"
+      },
+      "pending_bills": {
+        "county": "Meru",
+        "page": 52,
+        "cob_marked_inconsistent": false,
+        "total_millions": "1901.80",
+        "executive_millions": "1857.60",
+        "assembly_millions": "44.20",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "15124.98",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.409",
+        "chapter_page": 542,
+        "chapter_total_millions": "1901.76",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [
+          {
+            "table_no": "3.405",
+            "caption_page": 537,
+            "as_of": "2026-06-30",
+            "reported_by": null
+          }
+        ],
+        "reconciliation": {
+          "status": "agrees",
+          "rows": 1,
+          "estimated_value_kes_sum": 34739340.0,
+          "estimated_value_rows": 1,
+          "amount_paid_kes_sum": 22349710.0,
+          "amount_paid_rows": 1,
+          "rows_numbered": 1,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 1,
+              "cob": 1,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 34739340.0,
+              "cob": 34740000.0,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 22349710.0,
+              "cob": 22350000.0,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 34739340.0,
+              "cob": 34739340.0,
+              "cob_source": "table total row",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 22349710.0,
+              "cob": 22349710.0,
+              "cob_source": "table total row",
+              "agrees": true
+            },
+            {
+              "check": "count",
+              "rows": 1,
+              "cob": 1,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 34739340.0,
+              "cob": 34740000.0,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 22349710.0,
+              "cob": 22350000.0,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Migori",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "11972.11",
+      "budget_expenditure_million_kes": "9914.96",
+      "revenue": {
+        "status": "withheld",
+        "reason": "a_section_has_two_subtotals",
+        "pages": [
+          546,
+          547,
+          548,
+          549
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": null
+      },
+      "pending_bills": {
+        "county": "Migori",
+        "page": 52,
+        "cob_marked_inconsistent": true,
+        "total_millions": "1029.96",
+        "executive_millions": "356.30",
+        "assembly_millions": "673.66",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "11972.11",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.423",
+        "chapter_page": 561,
+        "chapter_total_millions": "1029.71",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [],
+        "reconciliation": {
+          "status": "unverifiable",
+          "rows": 0,
+          "estimated_value_kes_sum": null,
+          "estimated_value_rows": 0,
+          "amount_paid_kes_sum": null,
+          "amount_paid_rows": 0,
+          "rows_numbered": 0,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 0,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Mombasa",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "18725.00",
+      "budget_expenditure_million_kes": "13641.31",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          564,
+          565
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "15790774484"
+      },
+      "pending_bills": {
+        "county": "Mombasa",
+        "page": 52,
+        "cob_marked_inconsistent": false,
+        "total_millions": "3844.59",
+        "executive_millions": "3791.45",
+        "assembly_millions": "53.14",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "18725.00",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.439",
+        "chapter_page": 579,
+        "chapter_total_millions": "3844.58",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [],
+        "reconciliation": {
+          "status": "unverifiable",
+          "rows": 0,
+          "estimated_value_kes_sum": null,
+          "estimated_value_rows": 0,
+          "amount_paid_kes_sum": null,
+          "amount_paid_rows": 0,
+          "rows_numbered": 0,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 0,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Murang'a",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "12130.58",
+      "budget_expenditure_million_kes": "9485.25",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          582,
+          583,
+          584
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "10511561102"
+      },
+      "pending_bills": {
+        "county": "Murang'a",
+        "page": 52,
+        "cob_marked_inconsistent": true,
+        "total_millions": "1479.90",
+        "executive_millions": "1405.00",
+        "assembly_millions": "74.90",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "12130.58",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.454",
+        "chapter_page": 597,
+        "chapter_total_millions": "1479.94",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [],
+        "reconciliation": {
+          "status": "unverifiable",
+          "rows": 0,
+          "estimated_value_kes_sum": null,
+          "estimated_value_rows": 0,
+          "amount_paid_kes_sum": null,
+          "amount_paid_rows": 0,
+          "rows_numbered": 0,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 0,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Nairobi",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "44620.89",
+      "budget_expenditure_million_kes": "33102.83",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          600,
+          601
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "37917986931"
+      },
+      "pending_bills": {
+        "county": "Nairobi",
+        "page": 52,
+        "cob_marked_inconsistent": false,
+        "total_millions": "86899.38",
+        "executive_millions": "85782.37",
+        "assembly_millions": "1117.01",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "44620.89",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.470",
+        "chapter_page": 620,
+        "chapter_total_millions": "86899.38",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [
+          {
+            "table_no": "3.466",
+            "caption_page": 611,
+            "as_of": "2026-06-30",
+            "reported_by": null
+          }
+        ],
+        "reconciliation": {
+          "status": "disagrees",
+          "rows": 57,
+          "estimated_value_kes_sum": 2218407262.0,
+          "estimated_value_rows": 56,
+          "amount_paid_kes_sum": 208878336.0,
+          "amount_paid_rows": 8,
+          "rows_numbered": 57,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 57,
+              "cob": 57,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 2218407262.0,
+              "cob": 2240000000.0,
+              "cob_source": "county summary sentence",
+              "agrees": false
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 208878336.0,
+              "cob": 208880000.0,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "count",
+              "rows": 57,
+              "cob": 57,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 2218407262.0,
+              "cob": 2235270000.0,
+              "cob_source": "Table 2.6",
+              "agrees": false
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 208878336.0,
+              "cob": 208880000.0,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Nakuru",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "25649.10",
+      "budget_expenditure_million_kes": "19283.21",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          624,
+          625
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "24534866512"
+      },
+      "pending_bills": {
+        "county": "Nakuru",
+        "page": 52,
+        "cob_marked_inconsistent": true,
+        "total_millions": "3137.67",
+        "executive_millions": "3005.52",
+        "assembly_millions": "132.15",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "25649.10",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.486",
+        "chapter_page": 641,
+        "chapter_total_millions": "3137.68",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [
+          {
+            "table_no": "3.482",
+            "caption_page": 638,
+            "as_of": "2026-06-30",
+            "reported_by": null
+          }
+        ],
+        "reconciliation": {
+          "status": "agrees",
+          "rows": 3,
+          "estimated_value_kes_sum": 60648144.0,
+          "estimated_value_rows": 3,
+          "amount_paid_kes_sum": 40934709.0,
+          "amount_paid_rows": 3,
+          "rows_numbered": 3,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 3,
+              "cob": 3,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 60648144.0,
+              "cob": 60650000.0,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 40934709.0,
+              "cob": 40930000.0,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 60648144.0,
+              "cob": 60648144.0,
+              "cob_source": "table total row",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 40934709.0,
+              "cob": 40934709.0,
+              "cob_source": "table total row",
+              "agrees": true
+            },
+            {
+              "check": "count",
+              "rows": 3,
+              "cob": 3,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 60648144.0,
+              "cob": 60650000.0,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 40934709.0,
+              "cob": 40930000.0,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Nandi",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "11404.54",
+      "budget_expenditure_million_kes": "8941.04",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          644,
+          645,
+          646
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "10574982033.09"
+      },
+      "pending_bills": {
+        "county": "Nandi",
+        "page": 52,
+        "cob_marked_inconsistent": false,
+        "total_millions": null,
+        "executive_millions": null,
+        "assembly_millions": null,
+        "executive_printed": false,
+        "assembly_printed": false,
+        "budget_millions": "11404.54",
+        "status": "not_reported",
+        "withheld_reason": null,
+        "chapter_table": null,
+        "chapter_page": null,
+        "chapter_total_millions": null,
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [
+          {
+            "table_no": "3.499",
+            "caption_page": 656,
+            "as_of": "2026-06-30",
+            "reported_by": null
+          }
+        ],
+        "reconciliation": {
+          "status": "agrees_with_gaps",
+          "rows": 6,
+          "estimated_value_kes_sum": 23002616.0,
+          "estimated_value_rows": 6,
+          "amount_paid_kes_sum": null,
+          "amount_paid_rows": 0,
+          "rows_numbered": 6,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 6,
+              "cob": 6,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 23002616.0,
+              "cob": 23000000.0,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": 4190000.0000000005,
+              "cob_source": "county summary sentence",
+              "agrees": null
+            },
+            {
+              "check": "count",
+              "rows": 6,
+              "cob": 6,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 23002616.0,
+              "cob": 23000000.0,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": 4190000.0000000005,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Narok",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "17231.06",
+      "budget_expenditure_million_kes": "11901.88",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          661,
+          662,
+          663
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "15228059242"
+      },
+      "pending_bills": {
+        "county": "Narok",
+        "page": 52,
+        "cob_marked_inconsistent": true,
+        "total_millions": "4245.69",
+        "executive_millions": "4170.78",
+        "assembly_millions": "74.92",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "17231.06",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.513",
+        "chapter_page": 674,
+        "chapter_total_millions": "4188.69",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [],
+        "reconciliation": {
+          "status": "unverifiable",
+          "rows": 0,
+          "estimated_value_kes_sum": null,
+          "estimated_value_rows": 0,
+          "amount_paid_kes_sum": null,
+          "amount_paid_rows": 0,
+          "rows_numbered": 0,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 0,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Nyamira",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "8646.30",
+      "budget_expenditure_million_kes": "7009.26",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          676,
+          677
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "8103874187"
+      },
+      "pending_bills": {
+        "county": "Nyamira",
+        "page": 52,
+        "cob_marked_inconsistent": false,
+        "total_millions": "357.68",
+        "executive_millions": "357.68",
+        "assembly_millions": null,
+        "executive_printed": true,
+        "assembly_printed": false,
+        "budget_millions": "8646.30",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.527",
+        "chapter_page": 690,
+        "chapter_total_millions": "357.68",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [],
+        "reconciliation": {
+          "status": "disagrees",
+          "rows": 0,
+          "estimated_value_kes_sum": null,
+          "estimated_value_rows": 0,
+          "amount_paid_kes_sum": null,
+          "amount_paid_rows": 0,
+          "rows_numbered": 0,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 0,
+              "cob": 1,
+              "cob_source": "county summary sentence",
+              "agrees": false
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": null,
+              "cob": 34380000.0,
+              "cob_source": "county summary sentence",
+              "agrees": null
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": 26620000.0,
+              "cob_source": "county summary sentence",
+              "agrees": null
+            },
+            {
+              "check": "count",
+              "rows": 0,
+              "cob": 1,
+              "cob_source": "Table 2.6",
+              "agrees": false
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": null,
+              "cob": 34380000.0,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": 26620000.0,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Nyandarua",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "9698.26",
+      "budget_expenditure_million_kes": "7439.62",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          693,
+          694
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "8494074742"
+      },
+      "pending_bills": {
+        "county": "Nyandarua",
+        "page": 52,
+        "cob_marked_inconsistent": false,
+        "total_millions": "2190.50",
+        "executive_millions": "2053.87",
+        "assembly_millions": "136.63",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "9698.26",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.543",
+        "chapter_page": 710,
+        "chapter_total_millions": "2190.50",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [],
+        "reconciliation": {
+          "status": "unverifiable",
+          "rows": 0,
+          "estimated_value_kes_sum": null,
+          "estimated_value_rows": 0,
+          "amount_paid_kes_sum": null,
+          "amount_paid_rows": 0,
+          "rows_numbered": 0,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 0,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Nyeri",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "9441.73",
+      "budget_expenditure_million_kes": "7881.02",
+      "revenue": {
+        "status": "withheld",
+        "reason": "streams_do_not_sum_to_grand_total (out by 746,508,377)",
+        "pages": [
+          712,
+          713
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": null
+      },
+      "pending_bills": {
+        "county": "Nyeri",
+        "page": 52,
+        "cob_marked_inconsistent": true,
+        "total_millions": "572.06",
+        "executive_millions": "507.71",
+        "assembly_millions": "64.35",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "9441.73",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.557",
+        "chapter_page": 726,
+        "chapter_total_millions": "572.07",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [],
+        "reconciliation": {
+          "status": "unverifiable",
+          "rows": 0,
+          "estimated_value_kes_sum": null,
+          "estimated_value_rows": 0,
+          "amount_paid_kes_sum": null,
+          "amount_paid_rows": 0,
+          "rows_numbered": 0,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 0,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Samburu",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "8105.18",
+      "budget_expenditure_million_kes": "7283.25",
+      "revenue": {
+        "status": "withheld",
+        "reason": "a_section_has_two_subtotals",
+        "pages": [
+          729,
+          730
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": null
+      },
+      "pending_bills": {
+        "county": "Samburu",
+        "page": 52,
+        "cob_marked_inconsistent": false,
+        "total_millions": "117.25",
+        "executive_millions": "117.25",
+        "assembly_millions": null,
+        "executive_printed": true,
+        "assembly_printed": false,
+        "budget_millions": "8105.18",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.574",
+        "chapter_page": 745,
+        "chapter_total_millions": "117.25",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [
+          {
+            "table_no": "3.570",
+            "caption_page": 741,
+            "as_of": "2026-06-30",
+            "reported_by": null
+          }
+        ],
+        "reconciliation": {
+          "status": "agrees",
+          "rows": 1,
+          "estimated_value_kes_sum": 116951010.0,
+          "estimated_value_rows": 1,
+          "amount_paid_kes_sum": 107790785.0,
+          "amount_paid_rows": 1,
+          "rows_numbered": 1,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 1,
+              "cob": 1,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 116951010.0,
+              "cob": 116950000.0,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 107790785.0,
+              "cob": 107790000.0,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 116951010.0,
+              "cob": 116951010.0,
+              "cob_source": "table total row",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 107790785.0,
+              "cob": 107790785.0,
+              "cob_source": "table total row",
+              "agrees": true
+            },
+            {
+              "check": "count",
+              "rows": 1,
+              "cob": 1,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 116951010.0,
+              "cob": 116950000.0,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 107790785.0,
+              "cob": 107790000.0,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Siaya",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "13377.98",
+      "budget_expenditure_million_kes": "7504.73",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          748,
+          749,
+          750
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "10500430395"
+      },
+      "pending_bills": {
+        "county": "Siaya",
+        "page": 52,
+        "cob_marked_inconsistent": false,
+        "total_millions": "1276.89",
+        "executive_millions": "1171.21",
+        "assembly_millions": "105.68",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "13377.98",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.588",
+        "chapter_page": 761,
+        "chapter_total_millions": "1276.88",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [],
+        "reconciliation": {
+          "status": "disagrees",
+          "rows": 0,
+          "estimated_value_kes_sum": null,
+          "estimated_value_rows": 0,
+          "amount_paid_kes_sum": null,
+          "amount_paid_rows": 0,
+          "rows_numbered": 0,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 0,
+              "cob": 1,
+              "cob_source": "county summary sentence",
+              "agrees": false
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": null,
+              "cob": 1880000.0,
+              "cob_source": "county summary sentence",
+              "agrees": null
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": 3720000.0,
+              "cob_source": "county summary sentence",
+              "agrees": null
+            },
+            {
+              "check": "count",
+              "rows": 0,
+              "cob": 1,
+              "cob_source": "Table 2.6",
+              "agrees": false
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": null,
+              "cob": 1880000.0,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": 3720000.0,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Taita Taveta",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "8297.52",
+      "budget_expenditure_million_kes": "7064.78",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          765,
+          766
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "7531702137"
+      },
+      "pending_bills": {
+        "county": "Taita Taveta",
+        "page": 52,
+        "cob_marked_inconsistent": false,
+        "total_millions": "2296.71",
+        "executive_millions": "2255.72",
+        "assembly_millions": "40.99",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "8297.52",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.603",
+        "chapter_page": 779,
+        "chapter_total_millions": "2296.71",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [],
+        "reconciliation": {
+          "status": "unverifiable",
+          "rows": 0,
+          "estimated_value_kes_sum": null,
+          "estimated_value_rows": 0,
+          "amount_paid_kes_sum": null,
+          "amount_paid_rows": 0,
+          "rows_numbered": 0,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 0,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Tana River",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "10237.38",
+      "budget_expenditure_million_kes": "8078.13",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          782,
+          783
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "9469455135"
+      },
+      "pending_bills": {
+        "county": "Tana River",
+        "page": 52,
+        "cob_marked_inconsistent": false,
+        "total_millions": "1771.28",
+        "executive_millions": "1771.28",
+        "assembly_millions": null,
+        "executive_printed": true,
+        "assembly_printed": false,
+        "budget_millions": "10237.38",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.617",
+        "chapter_page": 795,
+        "chapter_total_millions": "1771.28",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [],
+        "reconciliation": {
+          "status": "unverifiable",
+          "rows": 0,
+          "estimated_value_kes_sum": null,
+          "estimated_value_rows": 0,
+          "amount_paid_kes_sum": null,
+          "amount_paid_rows": 0,
+          "rows_numbered": 0,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 0,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Tharaka Nithi",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "7777.00",
+      "budget_expenditure_million_kes": "6097.32",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          798,
+          799
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "6702458032"
+      },
+      "pending_bills": {
+        "county": "Tharaka Nithi",
+        "page": 52,
+        "cob_marked_inconsistent": true,
+        "total_millions": "858.58",
+        "executive_millions": "757.28",
+        "assembly_millions": "101.29",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "7777.00",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.632",
+        "chapter_page": 812,
+        "chapter_total_millions": "863.39",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [
+          {
+            "table_no": "3.628",
+            "caption_page": 808,
+            "as_of": "2026-06-30",
+            "reported_by": null
+          }
+        ],
+        "reconciliation": {
+          "status": "disagrees",
+          "rows": 1,
+          "estimated_value_kes_sum": 689341000.0,
+          "estimated_value_rows": 1,
+          "amount_paid_kes_sum": 105887119.0,
+          "amount_paid_rows": 1,
+          "rows_numbered": 1,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 1,
+              "cob": 1,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 689341000.0,
+              "cob": 689340000.0,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 105887119.0,
+              "cob": 105850000.0,
+              "cob_source": "county summary sentence",
+              "agrees": false
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 689341000.0,
+              "cob": 689341000.0,
+              "cob_source": "table total row",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 105887119.0,
+              "cob": 105887119.0,
+              "cob_source": "table total row",
+              "agrees": true
+            },
+            {
+              "check": "count",
+              "rows": 1,
+              "cob": 1,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 689341000.0,
+              "cob": 689340000.0,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 105887119.0,
+              "cob": 105850000.0,
+              "cob_source": "Table 2.6",
+              "agrees": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Trans Nzoia",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "10266.19",
+      "budget_expenditure_million_kes": "8879.10",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          815,
+          816
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "10003733417"
+      },
+      "pending_bills": {
+        "county": "Trans Nzoia",
+        "page": 52,
+        "cob_marked_inconsistent": false,
+        "total_millions": "2374.07",
+        "executive_millions": "2283.99",
+        "assembly_millions": "90.08",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "10266.19",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.648",
+        "chapter_page": 829,
+        "chapter_total_millions": "2374.07",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [
+          {
+            "table_no": "3.644",
+            "caption_page": 825,
+            "as_of": "2026-06-30",
+            "reported_by": null
+          }
+        ],
+        "reconciliation": {
+          "status": "disagrees",
+          "rows": 1,
+          "estimated_value_kes_sum": 874.0,
+          "estimated_value_rows": 1,
+          "amount_paid_kes_sum": 94.52,
+          "amount_paid_rows": 1,
+          "rows_numbered": 1,
+          "unit_conflicts": [
+            "estimated_value_kes"
+          ],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 1,
+              "cob": 1,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 874.0,
+              "cob": 874000000.0,
+              "cob_source": "county summary sentence",
+              "agrees": false
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 94.52,
+              "cob": 794520000.0,
+              "cob_source": "county summary sentence",
+              "agrees": false
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 874.0,
+              "cob": 874.0,
+              "cob_source": "table total row",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 94.52,
+              "cob": 794.52,
+              "cob_source": "table total row",
+              "agrees": false
+            },
+            {
+              "check": "count",
+              "rows": 1,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 874.0,
+              "cob": 874000000.0,
+              "cob_source": "Table 2.6",
+              "agrees": false
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 94.52,
+              "cob": 794520000.0,
+              "cob_source": "Table 2.6",
+              "agrees": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Turkana",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "19236.19",
+      "budget_expenditure_million_kes": "15004.55",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          832,
+          833
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "17218989961"
+      },
+      "pending_bills": {
+        "county": "Turkana",
+        "page": 52,
+        "cob_marked_inconsistent": true,
+        "total_millions": "3077.49",
+        "executive_millions": "2824.62",
+        "assembly_millions": "252.87",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "19236.19",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.662",
+        "chapter_page": 845,
+        "chapter_total_millions": "3107.49",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [
+          {
+            "table_no": "3.658",
+            "caption_page": 842,
+            "as_of": "2026-06-30",
+            "reported_by": null
+          }
+        ],
+        "reconciliation": {
+          "status": "agrees",
+          "rows": 4,
+          "estimated_value_kes_sum": 572380000.0,
+          "estimated_value_rows": 4,
+          "amount_paid_kes_sum": 328900000.0,
+          "amount_paid_rows": 4,
+          "rows_numbered": 4,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 4,
+              "cob": 4,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 572380000.0,
+              "cob": 572380000.0,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 328900000.0,
+              "cob": 328900000.0,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 572380000.0,
+              "cob": 572380000.0,
+              "cob_source": "table total row",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 328900000.0,
+              "cob": 328900000.0,
+              "cob_source": "table total row",
+              "agrees": true
+            },
+            {
+              "check": "count",
+              "rows": 4,
+              "cob": 4,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 572380000.0,
+              "cob": 572380000.0,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 328900000.0,
+              "cob": 328900000.0,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Uasin Gishu",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "17427.22",
+      "budget_expenditure_million_kes": "11098.46",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          847,
+          848
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "16632355381"
+      },
+      "pending_bills": {
+        "county": "Uasin Gishu",
+        "page": 52,
+        "cob_marked_inconsistent": false,
+        "total_millions": "1153.72",
+        "executive_millions": "1153.72",
+        "assembly_millions": null,
+        "executive_printed": true,
+        "assembly_printed": false,
+        "budget_millions": "17427.22",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.678",
+        "chapter_page": 861,
+        "chapter_total_millions": "1481.44",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [
+          {
+            "table_no": "3.674",
+            "caption_page": 857,
+            "as_of": "2026-06-30",
+            "reported_by": null
+          }
+        ],
+        "reconciliation": {
+          "status": "agrees_with_gaps",
+          "rows": 4,
+          "estimated_value_kes_sum": 466917013.0,
+          "estimated_value_rows": 3,
+          "amount_paid_kes_sum": 129581994.0,
+          "amount_paid_rows": 4,
+          "rows_numbered": 4,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 4,
+              "cob": 4,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 466917013.0,
+              "cob": 466920000.0,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 129581994.0,
+              "cob": 129580000.00000001,
+              "cob_source": "county summary sentence",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 466917013.0,
+              "cob": 466917013.0,
+              "cob_source": "table total row",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 129581994.0,
+              "cob": 129581994.0,
+              "cob_source": "table total row",
+              "agrees": true
+            },
+            {
+              "check": "count",
+              "rows": 4,
+              "cob": 4,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": 466917013.0,
+              "cob": 466920000.0,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": 129581994.0,
+              "cob": 129580000.00000001,
+              "cob_source": "Table 2.6",
+              "agrees": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Vihiga",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "7926.21",
+      "budget_expenditure_million_kes": "7079.06",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          864,
+          865,
+          866
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "7376161521"
+      },
+      "pending_bills": {
+        "county": "Vihiga",
+        "page": 52,
+        "cob_marked_inconsistent": false,
+        "total_millions": "811.24",
+        "executive_millions": "790.57",
+        "assembly_millions": "20.67",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "7926.21",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.694",
+        "chapter_page": 879,
+        "chapter_total_millions": "810.64",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [],
+        "reconciliation": {
+          "status": "unverifiable",
+          "rows": 0,
+          "estimated_value_kes_sum": null,
+          "estimated_value_rows": 0,
+          "amount_paid_kes_sum": null,
+          "amount_paid_rows": 0,
+          "rows_numbered": 0,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 0,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "Wajir",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "13638.52",
+      "budget_expenditure_million_kes": "12305.36",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          882,
+          883,
+          884
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "12915131062"
+      },
+      "pending_bills": {
+        "county": "Wajir",
+        "page": 52,
+        "cob_marked_inconsistent": false,
+        "total_millions": "3304.84",
+        "executive_millions": "3107.32",
+        "assembly_millions": "197.52",
+        "executive_printed": true,
+        "assembly_printed": true,
+        "budget_millions": "13638.52",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.709",
+        "chapter_page": 895,
+        "chapter_total_millions": "3304.83",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [],
+        "reconciliation": {
+          "status": "unverifiable",
+          "rows": 0,
+          "estimated_value_kes_sum": null,
+          "estimated_value_rows": 0,
+          "amount_paid_kes_sum": null,
+          "amount_paid_rows": 0,
+          "rows_numbered": 0,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 0,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "county": "West Pokot",
+      "period": "FY2025/26",
+      "budget_allocation_million_kes": "8986.20",
+      "budget_expenditure_million_kes": "8000.31",
+      "revenue": {
+        "status": "reconciled",
+        "reason": null,
+        "pages": [
+          898,
+          899,
+          900
+        ],
+        "basis": "cash_receipts_including_opening_balance",
+        "total_kes": "8623742083"
+      },
+      "pending_bills": {
+        "county": "West Pokot",
+        "page": 52,
+        "cob_marked_inconsistent": false,
+        "total_millions": "301.59",
+        "executive_millions": "301.59",
+        "assembly_millions": null,
+        "executive_printed": true,
+        "assembly_printed": false,
+        "budget_millions": "8986.20",
+        "status": "reported",
+        "withheld_reason": null,
+        "chapter_table": "Table 3.724",
+        "chapter_page": 913,
+        "chapter_total_millions": "301.59",
+        "as_at": "2026-06-30",
+        "fiscal_year": "FY 2025/26",
+        "table": "Table 2.10",
+        "printed_total_millions": "172526.69"
+      },
+      "stalled_projects": {
+        "tables": [],
+        "reconciliation": {
+          "status": "unverifiable",
+          "rows": 0,
+          "estimated_value_kes_sum": null,
+          "estimated_value_rows": 0,
+          "amount_paid_kes_sum": null,
+          "amount_paid_rows": 0,
+          "rows_numbered": 0,
+          "unit_conflicts": [],
+          "column_shift": [],
+          "checks": [
+            {
+              "check": "count",
+              "rows": 0,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "estimated_value_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            },
+            {
+              "check": "amount_paid_kes",
+              "rows": null,
+              "cob": null,
+              "cob_source": "Table 2.6",
+              "agrees": null
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "receipt_written_at": "2026-09-27T20:25:56.736277+00:00",
+  "live_head_metadata": {
+    "observed_at": "2026-09-27T20:22:16.088799+00:00",
+    "scope": "Live HEAD metadata only; does not prove cached-byte equality",
+    "cbirr": {
+      "url": "https://cob.go.ke/download/county-governments-budget-implementation-review-report-for-the-financial-year-2025-26/?wpdmdl=16482",
+      "fingerprint": "content-disposition=attachment;filename=\"CGBIRR FY 2025_26 August 2026 Final 5.pdf\""
+    },
+    "brop": {
+      "url": "https://www.treasury.go.ke/sites/default/files/BROP%20-%20Budget%20Review%20Outlook%20Paper/2026%20Budget%20Review%20and%20Outlook%20Paper....pdf",
+      "fingerprint": "etag=\"6a9fd8ce-3520a5\"; last-modified=Tue, 08 Sep 2026 09:43:42 GMT; content-length=3481765"
+    }
+  },
+  "extraction_stack": {
+    "pdfplumber": "0.11.10",
+    "pdfminer.six": "20260107"
+  },
+  "baseline_same_artifact": {
+    "git_ref": "dc58685bb72007a5654863bfbeee912cfd6b89e3",
+    "cbirr_sha256": "5f5e4f97bbe2752957f284950d0ba90fcff4d47b35fc0ac96a9106ffb59821b3",
+    "budget_records": 357,
+    "reconciled_counties": 26,
+    "cash_totals_kes": {
+      "Bomet": "9769344780",
+      "Embu": "8123169295",
+      "Homa Bay": "11029018806",
+      "Kericho": "9258125117",
+      "Kiambu": "21877475266",
+      "Kirinyaga": "8171979260",
+      "Laikipia": "9186891397",
+      "Lamu": "5288678543.97",
+      "Machakos": "14230737987",
+      "Makueni": "12355522486",
+      "Mandera": "14011801938",
+      "Mombasa": "15790774484",
+      "Nakuru": "24534866512",
+      "Nandi": "10574982033.09",
+      "Narok": "15228059242",
+      "Nyamira": "8103874187",
+      "Nyandarua": "8494074742",
+      "Siaya": "10500430395",
+      "Taita Taveta": "7531702137",
+      "Tana River": "9469455135",
+      "Tharaka Nithi": "6702458032",
+      "Turkana": "17218989961",
+      "Uasin Gishu": "16632355381",
+      "Vihiga": "7376161521",
+      "Wajir": "12915131062",
+      "West Pokot": "8623742083"
+    },
+    "newly_reconciled_counties": [
+      "Baringo",
+      "Elgeyo Marakwet",
+      "Garissa",
+      "Isiolo",
+      "Kajiado",
+      "Kakamega",
+      "Marsabit",
+      "Meru",
+      "Murang'a",
+      "Nairobi",
+      "Trans Nzoia"
+    ],
+    "previously_reconciled_now_withheld": []
+  }
+}

@@ -10639,15 +10639,13 @@ def _published_pending_bills(db: Session) -> Tuple[List[tuple], Dict[str, Any]]:
 
     Returns ``(rows, totals)``. Each row is ``(loan, entity_name, entity_type,
     amount)``. ``totals`` holds ``national``, ``county`` and ``total``, each
-    None when nothing is published for it, and ``unpublished`` — rows present
-    but withheld, and ``as_at`` — the one date every published row is a stock
-    on, or None. ``total`` is the two halves added only when BOTH are published
-    and every row states the SAME as-at date: 172.5B of county bills is not
-    "the total" on a night the national lines are withheld, and county bills
-    at 30 June 2026 added to national bills at 30 June 2025 is a sum of two
-    days, not a stock. Until the national half is read from the 2026 BROP
-    (stated at 30 June 2026) the total is null and the halves are published
-    apart.
+    None unless its population is complete: the two national categories or
+    all 47 distinct counties, each side from one writer publication batch.
+    ``reported_county_sum`` labels the available rows without certifying a
+    complete county total. ``unpublished`` counts rows present but withheld.
+    ``total`` adds the complete halves only when every row states the same
+    as-at date. Different publication batches, partial updates and stocks
+    stated a year apart cannot produce a combined total.
     """
     from models import DebtCategory
 
@@ -10681,10 +10679,40 @@ def _published_pending_bills(db: Session) -> Tuple[List[tuple], Dict[str, Any]]:
             continue
         rows.append((loan, entity_name, entity_type, amount))
 
-    national = [amount for _l, _n, etype, amount in rows if etype != "county"]
-    county = [amount for _l, _n, etype, amount in rows if etype == "county"]
-    national_total = sum(national) if national else None
-    county_total = sum(county) if county else None
+    from services.county_identity import OFFICIAL_COUNTY_CODES, official_county_code
+
+    national_rows = [r for r in rows if r[2] != "county"]
+    county_rows = [r for r in rows if r[2] == "county"]
+
+    def one_edition(side_rows):
+        # A same-title source document can be updated in place to another
+        # artifact URL. Its ID alone cannot prove these rows came together.
+        editions = [
+            (loan.source_document_id, _pending_bills_provenance(loan).get("source_url"),
+             pending_bills_row_as_at(loan), _pending_bills_provenance(loan).get("publication_batch"))
+            for loan, *_ in side_rows
+        ]
+        return bool(editions) and all(
+            item[0] is not None
+            and all(isinstance(v, str) and v.strip() for v in item[1:])
+            and re.fullmatch(r"[0-9a-f]{64}", item[3]) is not None
+            and item == editions[0] for item in editions
+        )
+
+    national_complete = (
+        len(national_rows) == 2
+        and {_pending_bills_provenance(r[0]).get("category") for r in national_rows}
+        == {"mda", "state_corporation"}
+        and one_edition(national_rows)
+    )
+    county_codes = {official_county_code(name) for _loan, name, _type, _amount in county_rows}
+    county_complete = (
+        len(county_rows) == len(OFFICIAL_COUNTY_CODES)
+        and county_codes == set(OFFICIAL_COUNTY_CODES)
+        and one_edition(county_rows)
+    )
+    national_total = sum(r[3] for r in national_rows) if national_complete else None
+    county_total = sum(r[3] for r in county_rows) if county_complete else None
     as_at_dates = {pending_bills_row_as_at(loan) for loan, *_rest in rows}
     one_day = len(as_at_dates) == 1 and None not in as_at_dates
     total = (
@@ -10692,10 +10720,25 @@ def _published_pending_bills(db: Session) -> Tuple[List[tuple], Dict[str, Any]]:
         if national_total is not None and county_total is not None and one_day
         else None
     )
+    total_absent_reason = (
+        "incomplete_national_publication" if not national_complete
+        else "incomplete_county_publication" if not county_complete
+        else "national_and_county_stated_at_different_dates" if not one_day
+        else None
+    )
     return rows, {
         "national": national_total,
         "county": county_total,
         "total": total,
+        "total_absent_reason": total_absent_reason,
+        "coverage": {
+            "national_components": len(national_rows), "national_expected": 2,
+            "national_complete": national_complete,
+            "county_count": len(county_rows), "county_expected": len(OFFICIAL_COUNTY_CODES),
+            "county_complete": county_complete,
+            "missing_counties": [name for code, name in OFFICIAL_COUNTY_CODES.items() if code not in county_codes],
+        },
+        "reported_county_sum": sum(r[3] for r in county_rows) if county_rows else None,
         "as_at": next(iter(as_at_dates)) if one_day else None,
         "national_as_at": _one_as_at(
             loan for loan, _n, etype, _a in rows if etype != "county"
@@ -10825,6 +10868,9 @@ async def get_pending_bills(
                 "total_pending": totals["total"],
                 "national_total": totals["national"],
                 "county_total": totals["county"],
+                "total_absent_reason": totals["total_absent_reason"],
+                "coverage": totals["coverage"],
+                "reported_county_sum": totals["reported_county_sum"],
                 # The day each figure is a stock on; ``as_at`` only when both
                 # halves share one, which is also when ``total_pending`` is set.
                 "as_at": totals["as_at"],
@@ -11108,13 +11154,12 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
     # (BROP) and the county lines (CoB) can be stated a year apart, and
     # bucketing them by fiscal year drew two bars — national at 30 June 2025,
     # counties at 30 June 2026 — that read as a fall from 525.9B to 172.5B.
-    # Both halves present means both at one date, the rule the total follows.
+    # Both halves must also contain a complete population from one edition.
     trend_map: Dict[str, float] = {}
     trend_unattributed = 0.0
     trend_absent_reason = None
-    both_halves = totals["national"] is not None and totals["county"] is not None
-    if both_halves and totals["as_at"] is None:
-        trend_absent_reason = "national_and_county_stated_at_different_dates"
+    if totals["total_absent_reason"]:
+        trend_absent_reason = totals["total_absent_reason"]
     else:
         for loan, _name, _type, amount in rows:
             fy = _normalised_fiscal_year(_pending_bills_provenance(loan).get("fiscal_year"))
@@ -11128,12 +11173,15 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
     # published row carries the split. The BROP prints none; the 308.1B /
     # 97.3B production served was the fixture's alone (#265).
     def _split_total(key: str) -> Optional[float]:
+        from services.fiscal_outturns import finite_number
+
+        if totals["total"] is None:
+            return None
         values = [
-            float(_pending_bills_provenance(loan)[key])
+            finite_number(_pending_bills_provenance(loan).get(key))
             for loan, *_rest in rows
-            if _pending_bills_provenance(loan).get(key) is not None
         ]
-        return sum(values) if values else None
+        return sum(values) if all(value is not None for value in values) else None
 
     return {
         "status": "success",
@@ -11141,6 +11189,9 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
         # Null unless national and county are both published and stated at
         # one date — the same figure /pending-bills prints.
         "total_pending_amount": totals["total"],
+        "total_absent_reason": totals["total_absent_reason"],
+        "coverage": totals["coverage"],
+        "reported_county_sum": totals["reported_county_sum"],
         "as_at": totals["as_at"],
         "national_as_at": totals["national_as_at"],
         "county_as_at": totals["county_as_at"],

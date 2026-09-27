@@ -387,6 +387,7 @@ def _brop_result_to_payload(
                 "category": "state_corporation",
                 "fiscal_year": fy_label,
                 "total_pending": str(nb.state_corporations),
+                "printed_zero": nb.state_corporations == 0,
                 "as_at": stated_as_at,
                 "notes": f"{cited} aggregate as at {as_at}",
             }
@@ -398,6 +399,7 @@ def _brop_result_to_payload(
                 "category": "mda",
                 "fiscal_year": fy_label,
                 "total_pending": str(nb.mdas),
+                "printed_zero": nb.mdas == 0,
                 "as_at": stated_as_at,
                 "notes": f"{cited} aggregate as at {as_at}",
             }

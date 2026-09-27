@@ -221,8 +221,9 @@ def _apply_line(
         ("committed_amount", record.committed_amount),
         ("currency", currency),
         ("source_document_id", source_document_id),
+        ("page_ref", record.page_ref),
     ):
-        if value is None:
+        if value is None and record.data_quality != "official":
             continue
         if isinstance(value, Decimal):
             current = getattr(line, attr)
@@ -392,6 +393,15 @@ def persist_budget_records(
 
         source.status = DocumentStatus.AVAILABLE
         source.last_seen_at = now
+        if record.artifact_sha256:
+            source.meta = {**(source.meta or {}), "sha256": record.artifact_sha256}
+        elif record.data_quality == "official" and "sha256" in (source.meta or {}):
+            # A replacement at the same URL may no longer identify its bytes.
+            # The old digest remains on historical row provenance, but cannot
+            # describe this document's current values without a fresh assertion.
+            meta = dict(source.meta)
+            meta.pop("sha256")
+            source.meta = meta
         sources_by_url[url] = source
 
     # ── 3. Bulk-load + ensure fiscal periods ─────────────────────
@@ -494,6 +504,12 @@ def persist_budget_records(
             provenance_entry["data_quality"] = record.data_quality
         if record.source_label:
             provenance_entry["source_label"] = record.source_label
+        if record.artifact_sha256:
+            provenance_entry["artifact_sha256"] = record.artifact_sha256
+        if record.page_ref:
+            provenance_entry["page_ref"] = record.page_ref
+        if record.revenue_coverage:
+            provenance_entry["revenue_coverage"] = record.revenue_coverage
         provenance_entry["ingested_at"] = datetime.now(timezone.utc).isoformat()
 
         record_hash = _record_hash(record, currency)
@@ -519,6 +535,7 @@ def persist_budget_records(
                     "committed_amount": record.committed_amount,
                     "source_document_id": source.id,
                     "notes": record.notes,
+                    "page_ref": record.page_ref,
                     "provenance": [provenance_entry] if provenance_entry else [],
                     "source_hash": record_hash,
                 }
@@ -527,9 +544,12 @@ def persist_budget_records(
         else:
             if _apply_line(existing, record, currency, source.id, record_hash):
                 stats.updated += 1
-            # Update notes independently — _apply_line skips None values
-            # but we *do* want to overwrite stale notes with new ones.
-            if record.notes and existing.notes != record.notes:
+            # Official replacements withdraw omitted notes just as they
+            # withdraw omitted amounts/page references. Keeping the old note
+            # could attach a superseded accounting basis to the new figures.
+            if (
+                record.notes or record.data_quality == "official"
+            ) and existing.notes != record.notes:
                 existing.notes = record.notes
                 stats.updated += 1
 
@@ -550,6 +570,9 @@ def persist_budget_records(
                         e.get("dataset_id"),
                         e.get("data_quality"),
                         e.get("source_label"),
+                        e.get("artifact_sha256"),
+                        e.get("page_ref"),
+                        e.get("revenue_coverage"),
                     )
 
                 new_key = _dedupe_key(provenance_entry)

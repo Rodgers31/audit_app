@@ -1,0 +1,48 @@
+county,period,allocated_million_kes,expenditure_million_kes,revenue_status,revenue_total_kes,revenue_basis,revenue_pdf_pages,revenue_withheld_reason,pending_bills_as_at,pending_bills_status,pending_bills_kes,pending_bills_pdf_page,pending_bills_absent_reason,project_reconciliation,pending_assembly_reported,pending_cob_marked_inconsistent,publisher_county_aggregate_million_kes
+Baringo,FY2025/26,10075.96,7665.52,reconciled,9177515820,cash_receipts_including_opening_balance,59;60;61,,2026-06-30,reported,870230000.00,51,,agrees_with_gaps,True,False,172526.69
+Bomet,FY2025/26,10853.28,8718.28,reconciled,9769344780,cash_receipts_including_opening_balance,77;78;79,,2026-06-30,reported,1431390000.00,51,,unverifiable,True,True,172526.69
+Bungoma,FY2025/26,17433.20,14537.39,withheld,,,,no_supported_revenue_table,2026-06-30,reported,3125740000.00,51,,unverifiable,True,True,172526.69
+Busia,FY2025/26,11159.48,7276.62,withheld,,,,no_supported_revenue_table,2026-06-30,reported,2594370000.00,51,,unverifiable,True,False,172526.69
+Elgeyo Marakwet,FY2025/26,9144.87,6061.49,reconciled,8129336090,cash_receipts_including_opening_balance,128;129,,2026-06-30,reported,238710000.00,51,,disagrees,False,False,172526.69
+Embu,FY2025/26,9395.13,6932.91,reconciled,8123169295,cash_receipts_including_opening_balance,145;146,,2026-06-30,reported,1624980000.00,51,,unverifiable,True,False,172526.69
+Garissa,FY2025/26,13536.09,10640.38,reconciled,11378721908,cash_receipts_including_opening_balance,163;164,,2026-06-30,reported,1485650000.00,52,,agrees,True,False,172526.69
+Homa Bay,FY2025/26,13601.46,10244.80,reconciled,11029018806,cash_receipts_including_opening_balance,182;183,,2026-06-30,reported,1118010000.00,52,,unverifiable,True,False,172526.69
+Isiolo,FY2025/26,7202.84,5349.05,reconciled,7100404489,cash_receipts_including_opening_balance,199;200;201,,2026-06-30,reported,1672460000.00,52,,agrees_with_gaps,True,False,172526.69
+Kajiado,FY2025/26,13546.89,9892.81,reconciled,11628847386,cash_receipts_including_opening_balance,218;219;220,,2026-06-30,reported,2555430000.00,52,,unverifiable,True,False,172526.69
+Kakamega,FY2025/26,17497.11,13981.97,reconciled,16738492420,cash_receipts_including_opening_balance,236;237,,2026-06-30,reported,2808810000.00,52,,disagrees,True,False,172526.69
+Kericho,FY2025/26,10491.81,8362.97,reconciled,9258125117,cash_receipts_including_opening_balance,256;257;258,,2026-06-30,reported,1483040000.00,52,,agrees,True,False,172526.69
+Kiambu,FY2025/26,27202.74,18538.80,reconciled,21877475266,cash_receipts_including_opening_balance,275;276;277,,2026-06-30,reported,5800130000.00,52,,agrees,True,False,172526.69
+Kilifi,FY2025/26,20480.85,17049.44,withheld,,cash_receipts_including_opening_balance,312;313;314,no_grand_total,2026-06-30,reported,8091520000.00,52,,disagrees,True,True,172526.69
+Kirinyaga,FY2025/26,8541.37,7249.80,reconciled,8171979260,cash_receipts_including_opening_balance,296;297,,2026-06-30,reported,564470000.00,52,,unverifiable,False,False,172526.69
+Kisii,FY2025/26,20160.90,12765.24,withheld,,cash_receipts_including_opening_balance,330;331;332,unreadable_receipts_cell,2026-06-30,reported,1247700000.00,52,,unverifiable,True,False,172526.69
+Kisumu,FY2025/26,16982.00,10095.00,withheld,,cash_receipts_including_opening_balance,349;350;351,no_grand_total,2026-06-30,reported,850470000.00,52,,unverifiable,False,True,172526.69
+Kitui,FY2025/26,14753.53,11867.25,withheld,,cash_receipts_including_opening_balance,367;368;369,"streams_do_not_sum_to_grand_total (out by 1,286,750,892.25)",2026-06-30,reported,494960000.00,52,,unverifiable,True,False,172526.69
+Kwale,FY2025/26,16710.18,11473.13,withheld,,cash_receipts_including_opening_balance,385;386;387,"streams_do_not_sum_to_grand_total (out by 59,814,318.00)",2026-06-30,reported,310940000.00,52,,agrees,True,False,172526.69
+Laikipia,FY2025/26,9768.88,6749.88,reconciled,9186891397,cash_receipts_including_opening_balance,404;405,,2026-06-30,reported,983140000.00,52,,unverifiable,True,True,172526.69
+Lamu,FY2025/26,5592.56,4274.88,reconciled,5288678543.97,cash_receipts_including_opening_balance,420;421;422,,2026-06-30,reported,1300000.00,52,,disagrees,False,False,172526.69
+Machakos,FY2025/26,15193.59,11407.10,reconciled,14230737987,cash_receipts_including_opening_balance,438;439;440,,2026-06-30,reported,4493500000.00,52,,agrees,True,False,172526.69
+Makueni,FY2025/26,12862.92,11337.71,reconciled,12355522486,cash_receipts_including_opening_balance,462;463;464,,2026-06-30,reported,424250000.00,52,,unverifiable,True,True,172526.69
+Mandera,FY2025/26,15092.73,13550.47,reconciled,14011801938,cash_receipts_including_opening_balance,482;483;484,,2026-06-30,reported,3825000000.00,52,,unverifiable,True,False,172526.69
+Marsabit,FY2025/26,11033.90,9667.19,reconciled,9556672474.96,cash_receipts_including_opening_balance,500;501,,2026-06-30,reported,1427600000.00,52,,unverifiable,True,True,172526.69
+Meru,FY2025/26,15124.98,13892.85,reconciled,13981377637,cash_receipts_including_opening_balance,520;521;522,,2026-06-30,reported,1901800000.00,52,,agrees,True,False,172526.69
+Migori,FY2025/26,11972.11,9914.96,withheld,,cash_receipts_including_opening_balance,546;547;548;549,a_section_has_two_subtotals,2026-06-30,reported,1029960000.00,52,,unverifiable,True,True,172526.69
+Mombasa,FY2025/26,18725.00,13641.31,reconciled,15790774484,cash_receipts_including_opening_balance,564;565,,2026-06-30,reported,3844590000.00,52,,unverifiable,True,False,172526.69
+Murang'a,FY2025/26,12130.58,9485.25,reconciled,10511561102,cash_receipts_including_opening_balance,582;583;584,,2026-06-30,reported,1479900000.00,52,,unverifiable,True,True,172526.69
+Nairobi,FY2025/26,44620.89,33102.83,reconciled,37917986931,cash_receipts_including_opening_balance,600;601,,2026-06-30,reported,86899380000.00,52,,disagrees,True,False,172526.69
+Nakuru,FY2025/26,25649.10,19283.21,reconciled,24534866512,cash_receipts_including_opening_balance,624;625,,2026-06-30,reported,3137670000.00,52,,agrees,True,True,172526.69
+Nandi,FY2025/26,11404.54,8941.04,reconciled,10574982033.09,cash_receipts_including_opening_balance,644;645;646,,2026-06-30,not_reported,,52,,agrees_with_gaps,False,False,172526.69
+Narok,FY2025/26,17231.06,11901.88,reconciled,15228059242,cash_receipts_including_opening_balance,661;662;663,,2026-06-30,reported,4245690000.00,52,,unverifiable,True,True,172526.69
+Nyamira,FY2025/26,8646.30,7009.26,reconciled,8103874187,cash_receipts_including_opening_balance,676;677,,2026-06-30,reported,357680000.00,52,,disagrees,False,False,172526.69
+Nyandarua,FY2025/26,9698.26,7439.62,reconciled,8494074742,cash_receipts_including_opening_balance,693;694,,2026-06-30,reported,2190500000.00,52,,unverifiable,True,False,172526.69
+Nyeri,FY2025/26,9441.73,7881.02,withheld,,cash_receipts_including_opening_balance,712;713,"streams_do_not_sum_to_grand_total (out by 746,508,377)",2026-06-30,reported,572060000.00,52,,unverifiable,True,True,172526.69
+Samburu,FY2025/26,8105.18,7283.25,withheld,,cash_receipts_including_opening_balance,729;730,a_section_has_two_subtotals,2026-06-30,reported,117250000.00,52,,agrees,False,False,172526.69
+Siaya,FY2025/26,13377.98,7504.73,reconciled,10500430395,cash_receipts_including_opening_balance,748;749;750,,2026-06-30,reported,1276890000.00,52,,disagrees,True,False,172526.69
+Taita Taveta,FY2025/26,8297.52,7064.78,reconciled,7531702137,cash_receipts_including_opening_balance,765;766,,2026-06-30,reported,2296710000.00,52,,unverifiable,True,False,172526.69
+Tana River,FY2025/26,10237.38,8078.13,reconciled,9469455135,cash_receipts_including_opening_balance,782;783,,2026-06-30,reported,1771280000.00,52,,unverifiable,False,False,172526.69
+Tharaka Nithi,FY2025/26,7777.00,6097.32,reconciled,6702458032,cash_receipts_including_opening_balance,798;799,,2026-06-30,reported,858580000.00,52,,disagrees,True,True,172526.69
+Trans Nzoia,FY2025/26,10266.19,8879.10,reconciled,10003733417,cash_receipts_including_opening_balance,815;816,,2026-06-30,reported,2374070000.00,52,,disagrees,True,False,172526.69
+Turkana,FY2025/26,19236.19,15004.55,reconciled,17218989961,cash_receipts_including_opening_balance,832;833,,2026-06-30,reported,3077490000.00,52,,agrees,True,True,172526.69
+Uasin Gishu,FY2025/26,17427.22,11098.46,reconciled,16632355381,cash_receipts_including_opening_balance,847;848,,2026-06-30,reported,1153720000.00,52,,agrees_with_gaps,False,False,172526.69
+Vihiga,FY2025/26,7926.21,7079.06,reconciled,7376161521,cash_receipts_including_opening_balance,864;865;866,,2026-06-30,reported,811240000.00,52,,unverifiable,True,False,172526.69
+Wajir,FY2025/26,13638.52,12305.36,reconciled,12915131062,cash_receipts_including_opening_balance,882;883;884,,2026-06-30,reported,3304840000.00,52,,unverifiable,True,False,172526.69
+West Pokot,FY2025/26,8986.20,8000.31,reconciled,8623742083,cash_receipts_including_opening_balance,898;899;900,,2026-06-30,reported,301590000.00,52,,unverifiable,False,False,172526.69
