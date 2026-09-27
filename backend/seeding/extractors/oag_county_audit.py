@@ -504,13 +504,15 @@ def _delegate_rows_at_current_md5(session, doc) -> int:
     work is current: ``meta.get(...) == doc.md5`` alone reads None == None
     as "current" and would skip a document nobody has ever extracted. A
     re-issued volume moves the md5, the stamp no longer matches, and the
-    read happens as it must.
+    read happens as it must. So does a change to the walk itself: the stamp
+    carries the walk's version, and an md5-only check here would keep a
+    fixed walk from ever reaching these volumes.
     """
     from models import Extraction
 
-    if not doc.md5:
-        return 0
-    if (doc.meta or {}).get("extracted_md5") != doc.md5:
+    from .oag_blue_book import extraction_is_current
+
+    if not extraction_is_current(doc):
         return 0
     return (
         session.query(Extraction)
@@ -655,6 +657,23 @@ def extract_county_audit(session, doc, settings) -> dict:
     volume = _county_volume_dispatch(session, doc, settings)
     if volume is not None:
         return volume
+
+    if _has_delegate_rows(session, doc):
+        # The Blue Book walk extracted this volume before, at other bytes or
+        # with an older walk. It is consolidated (that is how the walk came
+        # to own it), and the walk reads the pages itself. Reading them here
+        # first as well cost 101.3s and 74.2s for documents 2395 and 2396.
+        from .oag_blue_book import extract_blue_book
+
+        logger.info(
+            "oag_county_audit: %s is owned by %s and not current — "
+            "handing it back",
+            doc.url or doc.id,
+            DELEGATE_EXTRACTOR_ID,
+        )
+        stats = extract_blue_book(session, doc, settings)
+        stats["shape"] = "consolidated"
+        return stats
 
     pages = read_pages(doc.file_path)
 

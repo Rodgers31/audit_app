@@ -288,17 +288,21 @@ class TestSegment:
         found = self._one_chapter("Basis for Qualified Opinion\n1. Cash\ntext\n")
         assert found[0][1].sub_section is None
 
-    def test_the_national_walk_is_unchanged_by_default(self):
-        """The keyword arguments must not move the national Blue Book: by
-        default a 4-digit number is not a finding and an Appendix line ends
-        the chapter."""
+    def test_the_national_walk_stops_only_at_an_appendix_heading(self):
+        """The national default keeps ``stop_at_appendix``, which the county
+        volumes turn off, but only the end matter's HEADING ends a chapter.
+        A finding that opens a line with "Appendix A ..." does not (six such
+        lines in the FY2024/25 national book each cut a chapter short). A
+        number that does not continue the sequence is still body text."""
         pages = [
             PageText(1, "Basis for Qualified Opinion\n1. First\ntext\n1000. Not a finding\n"
-                        "2. Second\nAppendix A tables\n3. After the appendix", "pdfplumber"),
+                        "2. Second\nAppendix A tables\n3. After the appendix\n"
+                        "Appendix B: Qualified Opinion\n4. An appendix row", "pdfplumber"),
         ]
         found, _ = bb.segment_chapter(pages, 1011, "Vote", 1, 1, 0)
-        assert [f.paragraph_no for f in found] == [1, 2]
+        assert [f.paragraph_no for f in found] == [1, 2, 3]
         assert "1000. Not a finding" in found[0].finding_text
+        assert "Appendix A tables" in found[1].finding_text
 
 
 class TestProvenanceGates:
@@ -452,6 +456,49 @@ class TestExtractionRows:
         )
         stats = cv.extract_county_volume(db_session, doc, None, known_counties=self.KNOWN)
         assert stats["reason"] == "already_extracted" and stats["skipped"] == 4
+
+    def test_a_reissued_volume_keeps_the_findings_it_published(
+        self, db_session, doc, seed_entity, monkeypatch
+    ):
+        """New bytes at the URL, and an audit citing one of the old rows.
+
+        ``audits.extraction_id`` is a foreign key. Deleting every old row
+        before writing the new ones fails on it, so a re-issued volume whose
+        findings had been published could never be re-extracted.
+        """
+        from datetime import datetime, timezone
+
+        from models import Audit, Extraction, FiscalPeriod, Severity
+
+        self._run(db_session, doc, monkeypatch)
+        row = (
+            db_session.query(Extraction)
+            .filter_by(source_document_id=doc.id)
+            .order_by(Extraction.id)
+            .first()
+        )
+        period = FiscalPeriod(
+            country_id=doc.country_id, label="FY2024/25",
+            start_date=datetime(2024, 7, 1, tzinfo=timezone.utc),
+            end_date=datetime(2025, 6, 30, tzinfo=timezone.utc),
+        )
+        db_session.add(period)
+        db_session.flush()
+        audit = Audit(
+            entity_id=seed_entity.id, period_id=period.id,
+            finding_text=row.extracted_json["finding_text"],
+            severity=Severity.WARNING, source_document_id=doc.id,
+            extraction_id=row.id,
+        )
+        db_session.add(audit)
+        db_session.flush()
+        doc.md5 = "b" * 32  # re-issued
+
+        self._run(db_session, doc, monkeypatch)
+        db_session.flush()
+
+        assert db_session.get(Audit, audit.id).extraction_id == row.id
+        assert db_session.query(Extraction).filter_by(source_document_id=doc.id).count() == 4
 
     def test_a_year_page_contradicting_the_title_page_refuses(self, db_session, doc, monkeypatch):
         doc.meta = {"oag_discovery": {"fiscal_year": "2023/2024", "kind": "executives"}}

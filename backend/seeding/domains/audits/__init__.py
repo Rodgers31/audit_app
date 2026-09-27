@@ -57,6 +57,23 @@ logger = logging.getLogger("seeding.audits")
 _MAX_NEW_DOCUMENTS_PER_RUN = 3
 
 
+def _extracted_something(ext_stats: dict) -> bool:
+    """Did the parser write or change rows, rather than skip a current document?
+
+    Fails towards committing: stats that do not say "skipped" are treated as
+    work, because an unneeded commit costs a round trip and a missed one costs
+    the night's re-extraction.
+    """
+    if not ext_stats:
+        return False
+    if ext_stats.get("skipped_unchanged") or ext_stats.get("reason") in (
+        "already_extracted",
+        "already_extracted_by_delegate",
+    ):
+        return False
+    return True
+
+
 def _known_document_urls(session: Session, dataset: SourceDataset) -> List[str]:
     """URLs already registered in source_documents for this dataset."""
     from models import SourceDocument
@@ -446,8 +463,15 @@ def run(
                         "skipped": load_stats.skipped,
                     }
                 metadata["documents"].append(doc_stat)
+                ext = doc_stat.get("extractions") or {}
+                if not is_volume and _extracted_something(ext):
+                    # Bank it, as each volume is banked below. A change to the
+                    # Blue Book walk re-reads the national book and the two
+                    # FY2020/21 volumes once, before the county start budget
+                    # applies. Rolled back by a timeout, that re-read would
+                    # be repeated every night.
+                    session.commit()
                 if is_volume:
-                    ext = doc_stat.get("extractions") or {}
                     if ext.get("reason") == "already_extracted":
                         volume_report["already_current"].append(label)
                     else:

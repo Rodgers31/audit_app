@@ -61,6 +61,7 @@ from .oag_blue_book import (
     BlueBookFinding,
     PageText,
     read_pages,
+    replace_extractions,
     segment_chapter,
     severity_for,
 )
@@ -422,6 +423,12 @@ def read_head(pdf_path, n: int = HEAD_PAGES) -> List[PageText]:
         ) from exc
 
 
+def county_volume_row_key(payload: dict) -> tuple:
+    """What makes two extractions of one volume the same finding: chapter,
+    paragraph and title. Not the page, which a re-issue can move."""
+    return (payload.get("chapter_no"), payload.get("paragraph_no"), payload.get("title"))
+
+
 def already_extracted(session, doc) -> int:
     """Rows this extractor holds for the document's CURRENT bytes; 0 if unknown.
 
@@ -511,27 +518,6 @@ def extract_county_volume(session, doc, settings, *, known_counties: Dict[str, s
     findings, rejected = segment_volume(pages, split)
     printed = printed_page_numbers(pages)
 
-    # Re-issued bytes: rows from the old md5 describe a document that no
-    # longer exists at the URL. Replace them, as the Blue Book walk does.
-    stale = (
-        session.query(Extraction)
-        .filter(
-            Extraction.source_document_id == doc.id,
-            Extraction.extractor == EXTRACTOR_ID,
-        )
-        .count()
-    )
-    if stale:
-        logger.warning(
-            "Re-extracting county volume %s: md5 changed (%d old rows replaced)",
-            doc.id,
-            stale,
-        )
-        session.query(Extraction).filter(
-            Extraction.source_document_id == doc.id,
-            Extraction.extractor == EXTRACTOR_ID,
-        ).delete()
-
     created = 0
     per_chapter: Dict[int, int] = {}
     rows: List = []
@@ -551,17 +537,37 @@ def extract_county_volume(session, doc, settings, *, known_counties: Dict[str, s
         # No source_hash inside the payload: the loader hashes the payload
         # onto audits.source_hash, and a hash stored inside the thing it
         # hashes could never be re-checked against it.
-        row = Extraction(
-            source_document_id=doc.id,
-            page_number=f.pdf_page,
-            extracted_json=payload,
-            extractor=EXTRACTOR_ID,
-            confidence=0.90 if f.method == "pdfplumber" else 0.60,
+        rows.append(
+            Extraction(
+                source_document_id=doc.id,
+                page_number=f.pdf_page,
+                extracted_json=payload,
+                extractor=EXTRACTOR_ID,
+                confidence=0.90 if f.method == "pdfplumber" else 0.60,
+            )
         )
-        session.add(row)
-        rows.append(row)
         created += 1
         per_chapter[ch.no] = per_chapter.get(ch.no, 0) + 1
+
+    # Re-issued bytes: rows from the old md5 describe a document that no
+    # longer exists at the URL. They are reconciled, not deleted wholesale:
+    # audits.extraction_id is a foreign key, so a row a published finding
+    # cites keeps its id when the finding survives (the Blue Book walk does
+    # the same).
+    replaced = replace_extractions(
+        session, doc, EXTRACTOR_ID, rows, key=county_volume_row_key
+    )
+    if replaced["kept"] + replaced["updated"] + replaced["removed"]:
+        logger.warning(
+            "Re-extracted county volume %s (md5 changed): %d kept, %d updated, "
+            "%d new, %d removed with %d audit row(s)",
+            doc.id,
+            replaced["kept"],
+            replaced["updated"],
+            replaced["inserted"],
+            replaced["removed"],
+            replaced["audits_removed"],
+        )
 
     empty = sorted(set(resolved) - set(per_chapter))
     meta = dict(doc.meta or {})
@@ -607,7 +613,7 @@ def extract_county_volume(session, doc, settings, *, known_counties: Dict[str, s
         # Created in this transaction and not yet committed. The loader may
         # skip its per-row existence check for exactly these. The caller pops
         # this before the stats reach the job metadata.
-        "fresh_extraction_ids": [r.id for r in rows],
+        "fresh_extraction_ids": replaced["fresh_extraction_ids"],
     }
 
 
@@ -621,6 +627,7 @@ __all__ = [
     "VolumeSplit",
     "already_extracted",
     "canonical_county",
+    "county_volume_row_key",
     "county_from_auditee",
     "extract_county_volume",
     "finding_to_extracted_json",

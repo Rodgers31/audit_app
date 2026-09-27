@@ -252,3 +252,63 @@ class TestNationalCandidates:
         )
         assert keep == [f"{UP}/2026/05/AUDITOR-GENERALS-REPORT-ON-NATIONAL-GOVERNMENT-2024-2025.pdf"]
         assert [why for _u, why in rejected] == ["popular_report"]
+
+
+NATIONAL = f"{UP}/2026/05/AUDITOR-GENERALS-REPORT-ON-NATIONAL-GOVERNMENT-2024-2025.pdf"
+
+
+class TestNationalReExtractionIsBanked:
+    """The national Blue Book runs before the county pass and outside its
+    start budget. A walk change re-reads it (and the FY2020/21 volumes) once.
+    The CLI commits once, at the end, and rolls the whole domain back on a
+    timeout, so without a commit here a first night that ran out of time
+    would lose the re-extraction, and every later night would repeat it."""
+
+    @pytest.fixture()
+    def national(self, harness, monkeypatch):
+        from models import DocumentStatus, DocumentType, SourceDocument
+
+        session = harness["session"]
+        session.add(
+            SourceDocument(
+                country_id=session.query(SourceDocument).first().country_id,
+                publisher="Office of the Auditor-General",
+                title="blue-book.pdf", url=NATIONAL, fetch_date=datetime(2026, 5, 1),
+                doc_type=DocumentType.AUDIT, status=DocumentStatus.AVAILABLE,
+            )
+        )
+        session.commit()
+        harness["commits"].clear()
+
+        def national_parser(session, doc, settings):
+            return {"created": 1398, "updated": 2, "removed": 329,
+                    "skipped_unchanged": False, "fresh_extraction_ids": []}
+
+        county = __import__("seeding.extractors", fromlist=["get_parser"]).get_parser
+
+        monkeypatch.setattr(
+            "seeding.extractors.get_parser",
+            lambda pid: national_parser if pid == "oag_blue_book" else county(pid),
+        )
+        return harness
+
+    def test_a_re_extracted_national_book_is_committed_before_the_county_pass(
+        self, national
+    ):
+        _run(national["session"], budget=150)
+        # The first fetch is the national book; a commit must follow it
+        # before the second fetch (the first county volume).
+        assert national["fetched"][0] == NATIONAL
+        assert national["commits"][0] == 1
+
+    def test_an_unchanged_national_book_is_not_a_reason_to_commit(
+        self, national, monkeypatch
+    ):
+        """POSITIVE CONTROL: a skip did no work, so there is nothing to bank."""
+        monkeypatch.setattr(
+            "seeding.extractors.get_parser",
+            lambda pid: (lambda s, d, st: {"created": 0, "skipped_unchanged": True})
+            if pid == "oag_blue_book" else None,
+        )
+        _run(national["session"], budget=150)
+        assert 1 not in national["commits"]
