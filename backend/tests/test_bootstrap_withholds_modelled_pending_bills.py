@@ -94,6 +94,7 @@ class TestTheApiGate:
 
         return SimpleNamespace(
             debt_category=SimpleNamespace(value=category),
+            entity=SimpleNamespace(type="county"),
             outstanding=amount,
             principal=amount,
             provenance=(
@@ -116,6 +117,7 @@ class TestTheApiGate:
 
         return SimpleNamespace(
             debt_category=SimpleNamespace(value="pending_bills"),
+            entity=SimpleNamespace(type="county"),
             outstanding=amount,
             principal=amount,
             provenance={
