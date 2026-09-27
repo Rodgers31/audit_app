@@ -182,12 +182,17 @@ export interface PendingBillEntry {
 
 export interface PendingBillsSummary {
   // Each null when nothing is published for it; the total is null unless
-  // national and county are both published from one BROP edition (#265).
+  // national and county are both published and stated at one date — the
+  // national half is the Treasury BROP's, the county half the Controller of
+  // Budget's year-end report (#265, #238).
   total_pending: number | null;
   national_total: number | null;
   county_total: number | null;
   record_count: number;
-  as_at_date?: string;
+  /** ISO date both halves are stated at; null when they differ. */
+  as_at?: string | null;
+  national_as_at?: string | null;
+  county_as_at?: string | null;
 }
 
 export interface PendingBillsResponse {
@@ -236,8 +241,10 @@ export interface PendingBillsSummaryResponse {
   }[];
   trend: {
     year: string;
-    amount: number;
+    total_amount: number;
   }[];
+  /** Why ``trend`` is empty when the halves are stated at different dates. */
+  trend_absent_reason?: string | null;
 }
 
 export const getPendingBillsSummary = async (): Promise<PendingBillsSummaryResponse> => {
