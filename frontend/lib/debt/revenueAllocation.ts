@@ -10,8 +10,7 @@
  * The numerator is total debt service (interest + principal redemptions).
  *
  * We do NOT floor — we round to nearest. 56.65 → 57, not 56. Flooring would
- * silently understate the burden by up to ~1 percentage point and change
- * thresholds (e.g. the IMF 30% ceiling badge).
+ * silently understate the burden by up to ~1 percentage point.
  */
 export interface FiscalCurrent {
   fiscal_year?: string;
@@ -22,6 +21,27 @@ export interface FiscalCurrent {
   development_spending?: number;
   county_allocation?: number;
   appropriated_budget?: number;
+  /**
+   * The document THIS YEAR'S DEBT SERVICE was read from. Not
+   * `budget_basis_source`, which is where the budget came from — for some
+   * years a different document.
+   */
+  debt_service_source?: {
+    title?: string | null;
+    publisher?: string | null;
+    url?: string | null;
+    page?: string | null;
+  } | null;
+  /**
+   * Where the BUDGET figure came from. Declared here only so a row carrying it
+   * type-checks; `fiscalSourceLine` deliberately does not read it.
+   */
+  budget_basis_source?: {
+    title?: string | null;
+    publisher?: string | null;
+    url?: string | null;
+    page?: string | null;
+  } | null;
 }
 
 export interface RevenueAllocation {
@@ -35,6 +55,24 @@ export interface RevenueAllocation {
   countiesPerRev: number;
   borrowingPerRev: number;
   fiscalYear?: string;
+}
+
+/**
+ * Which document a fiscal year's debt-service figure comes from, in words,
+ * read off the row. Replaces a hardcoded "aligned with the Treasury APDMR
+ * series while FY2025/26 remains budgeted": a literal pinned to one year,
+ * shown against FY2026/27, whose debt service comes from the approved
+ * Programme Based Budget and not the APDMR (issue #235). The document's own
+ * title says whether it is a budget or an outturn.
+ */
+export function fiscalSourceLine(c: FiscalCurrent | null | undefined): string {
+  const fy = c?.fiscal_year;
+  const src = c?.debt_service_source;
+  if (!fy) return 'The fiscal year of these figures is not recorded.';
+  if (!src?.title) return `The source document for ${fy}'s debt-service figure is not recorded.`;
+  const who = src.publisher ? `${src.publisher}, ` : '';
+  const where = src.page ? ` (${src.page})` : '';
+  return `${fy} debt service is from ${who}${src.title}${where}.`;
 }
 
 export function computeRevenueAllocation(
@@ -98,4 +136,20 @@ export function computeRevenueAllocation(
  */
 export function formatHeadlineKes(debtServicePerRev: number): number {
   return Math.round(debtServicePerRev);
+}
+
+/**
+ * The worked arithmetic under the headline, in trillions of shillings.
+ *
+ * The page used to print `(ds / 1000).toFixed(3)` + "T", which assumed the
+ * figures were in billions. They are raw KES (the stage1 3a unit migration),
+ * so it rendered "KSh 2315900000.000T" — hidden only because the card is not
+ * drawn while the current year lacks a recurrent/development split.
+ */
+export function ratioWorking(a: RevenueAllocation): string {
+  const t = (kes: number) => (kes / 1e12).toFixed(3);
+  return (
+    `total debt service of about KSh ${t(a.ds)}T divided by tax & non-tax revenue of about ` +
+    `KSh ${t(a.rev)}T (${t(a.ds)} ÷ ${t(a.rev)} × 100 ≈ ${a.debtServicePerRev.toFixed(1)})`
+  );
 }
