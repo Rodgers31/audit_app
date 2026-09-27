@@ -348,7 +348,11 @@ def _get_or_create_source_document(
     BROP.
     """
     title = source_title or "COB Pending Bills Report"
-    publisher = publisher or "Office of the Controller of Budget (OCOB)"
+    # The default names a NEW document only. Used to overwrite, it relabelled
+    # the Treasury's BROP as the Controller of Budget's on any call that did not
+    # declare a publisher (review of #262; #271 fixed the same defect in
+    # revenue_by_source).
+    declared = publisher
 
     doc = (
         session.query(SourceDocument)
@@ -359,8 +363,8 @@ def _get_or_create_source_document(
         .first()
     )
     if doc:
-        if doc.publisher != publisher:
-            doc.publisher = publisher
+        if declared and doc.publisher != declared:
+            doc.publisher = declared
         if source_url and doc.url != source_url:
             doc.url = source_url
         return doc
@@ -375,7 +379,7 @@ def _get_or_create_source_document(
     logger.info(f"Creating source document: {title}")
     doc = SourceDocument(
         country_id=kenya.id,
-        publisher=publisher,
+        publisher=declared or "Office of the Controller of Budget (OCOB)",
         title=title,
         doc_type=DocumentType.REPORT,
         url=source_url,

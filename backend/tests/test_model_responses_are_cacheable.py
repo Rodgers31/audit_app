@@ -483,12 +483,16 @@ def representative_rows(db_session, seed_entity, seed_fiscal_period, seed_source
                 # Declared as the fetcher stamps a BROP national line; the
                 # publication gate withholds any pending-bills row that does
                 # not declare its publication (#265).
+                # Stated at the SAME day as the county row below, as the 2026
+                # BROP and the CoB year-end report both are: only then does
+                # /pending-bills/summary build its one-date total and trend,
+                # which are branches the sweep must reach (review of #282).
                 provenance={
-                    "fiscal_year": "FY 2024/25",
+                    "fiscal_year": "FY 2025/26",
                     "source": "cob_pending_bills_etl",
                     "publication": "treasury_brop",
                     "category": "mda",
-                    "as_at": "2025-06-30",
+                    "as_at": "2026-06-30",
                 },
                 **fact,
             ),
