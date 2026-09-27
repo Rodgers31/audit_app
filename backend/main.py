@@ -23,13 +23,12 @@ from services.publication_gate import (
     count_withheld_by_reason,
     county_debt_instrument_failure,
     county_pending_bills,
-    file_source_provenance_failure,
     loan_is_modelled_fixture,
     log_withheld_audits,
-    missing_funds_provenance_failure,
     publishable_audit_criterion,
 )
 from seeding.source_registry import next_expected_window
+from services.audit_derived import derive_federal_headline, derive_unaccounted_cases
 from services.trust_guards import (
     check_budget_sectors,
     check_coverage_staleness,
@@ -1822,40 +1821,6 @@ def _redis_cache_instances():
         # Fall back to the named singletons rather than clearing nothing.
         if redis_cache is not None:
             yield redis_cache
-
-
-def _parse_missing_funds_amount(raw: Any) -> Optional[float]:
-    """KES amount, or None when it cannot be read.
-
-    Returns None — never 0.0 — for a missing or malformed value.
-    Reported by review on PR #135: this used to fall back to 0.0, so a
-    case that passed the provenance gate but carried an unreadable amount
-    was published with ``amount: 0`` and summed into the totals. That is
-    the manufactured zero this endpoint exists to remove, recreated for a
-    SOURCED case, which is the worst version of it — the citation makes
-    the zero look confirmed.
-    """
-    if isinstance(raw, bool):  # a bool is an int; never a money value
-        return None
-    if isinstance(raw, (int, float)):
-        return float(raw)
-    if not isinstance(raw, str):
-        return None
-    s = raw.upper().replace("KES", "").replace(",", "").strip()
-    mult = 1.0
-    if s.endswith("B"):
-        mult = 1e9
-        s = s[:-1]
-    elif s.endswith("M"):
-        mult = 1e6
-        s = s[:-1]
-    elif s.endswith("K"):
-        mult = 1e3
-        s = s[:-1]
-    try:
-        return float(s) * mult
-    except ValueError:
-        return None
 
 
 def _declared_row_unit(rows, default: str = "billion_kes") -> str:
@@ -3796,59 +3761,15 @@ async def get_county_comprehensive(
             grade = _health["grade"] if _health else None
 
             # --- Missing funds ---
-            # Same publication gate as /accountability/missing-funds: a case
-            # that names a county but resolves to no source document is not
-            # served here either (AUDIT_FINDINGS F5.3). The stored rows are
-            # retained; they are withheld from the response with a reason.
-            _raw_missing_cases = meta.get("missing_funds_cases") or []
-            if not isinstance(_raw_missing_cases, list):
-                _raw_missing_cases = []
-            _missing_doc_ids = set()
-            for _c in _raw_missing_cases:
-                if isinstance(_c, dict) and _c.get("source_document_id") not in (None, ""):
-                    try:
-                        _missing_doc_ids.add(int(_c["source_document_id"]))
-                    except (TypeError, ValueError):
-                        continue
-            _missing_docs = {}
-            if _missing_doc_ids:
-                _missing_docs = {
-                    d.id: d
-                    for d in db.query(DBSourceDocument)
-                    .filter(DBSourceDocument.id.in_(_missing_doc_ids))
-                    .all()
-                }
-            missing_funds_cases = []
-            missing_funds_withheld = {}
-            for _c in _raw_missing_cases:
-                if not isinstance(_c, dict):
-                    continue
-                _fail = missing_funds_provenance_failure(_c, _missing_docs)
-                if _fail:
-                    missing_funds_withheld[_fail] = (
-                        missing_funds_withheld.get(_fail, 0) + 1
-                    )
-                    continue
-                missing_funds_cases.append(_c)
-
-            # The stored ``missing_funds`` metric is a modelled figure with no
-            # extraction behind it, and it disagreed with its own case list by
-            # 8.2x. Publish a total only when it is the sum of sourced cases.
-            missing_funds_total = (
-                sum(
-                    _parse_kes_amount_str(_c.get("amount")) or 0.0
-                    for _c in missing_funds_cases
-                )
-                if missing_funds_cases
-                else None
-            )
-            if missing_funds_withheld:
-                logger.warning(
-                    "county %s: withheld %d unsourced missing-funds case(s) (%s)",
-                    county_id,
-                    sum(missing_funds_withheld.values()),
-                    ", ".join(f"{k}={v}" for k, v in sorted(missing_funds_withheld.items())),
-                )
+            # The same derivation as /accountability/missing-funds (issue
+            # #233): findings the Auditor-General titled "Unaccounted …" or
+            # "Loss of Funds", with their page. These used to be hand-written
+            # cases on entity.meta that cited no document and were withheld
+            # on every request. No total: no matched finding carries an
+            # extracted amount, and a stored one may be the account balance.
+            _unaccounted = derive_unaccounted_cases(db, entity_ids=[entity.id])
+            missing_funds_cases = _unaccounted["cases"]
+            missing_funds_withheld = _unaccounted["withheld"]
 
             # --- Stalled projects ---
             stalled_projects = meta.get("stalled_projects") or []
@@ -4071,10 +3992,12 @@ async def get_county_comprehensive(
                 "health_history": health_history,
                 # Missing funds
                 "missing_funds": {
-                    "total_amount": missing_funds_total,
+                    "basis": "oag_finding_title",
+                    "total_amount": None,
+                    "total_amount_reason": "no_amount_extracted",
                     "cases_count": len(missing_funds_cases),
                     "cases": missing_funds_cases,
-                    "reason": None if missing_funds_cases else "awaiting_sourced_data",
+                    "reason": None if missing_funds_cases else "no_matching_findings",
                     "withheld": {
                         "count": sum(missing_funds_withheld.values()),
                         "by_reason": missing_funds_withheld,
@@ -4690,30 +4613,6 @@ async def get_available_fiscal_years(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-def _parse_kes_amount_str(value) -> "float | None":
-    """Parse 'KES 981.3B' / '1.2T' / '500M' / '5K' into a number, else None.
-
-    Used for the OAG report's authoritative questioned total so the headline
-    is the report's own figure rather than a naive sum of finding amounts.
-    """
-    if not value:
-        return None
-    cleaned = str(value).upper().replace("KES", "").strip()
-    mult = 1.0
-    if cleaned.endswith("T"):
-        mult, cleaned = 1_000_000_000_000, cleaned[:-1]
-    elif cleaned.endswith("B"):
-        mult, cleaned = 1_000_000_000, cleaned[:-1]
-    elif cleaned.endswith("M"):
-        mult, cleaned = 1_000_000, cleaned[:-1]
-    elif cleaned.endswith("K"):
-        mult, cleaned = 1_000, cleaned[:-1]
-    try:
-        return float(cleaned.replace(",", "").strip()) * mult
-    except (ValueError, TypeError):
-        return None
-
-
 # The Blue Book covers ministries, state departments, commissions and
 # independent offices (Article 229). The federal panel must show all of
 # them; "Top Ministries" below stays MINISTRY-only by design.
@@ -4725,14 +4624,73 @@ FEDERAL_AUDIT_ENTITY_TYPES = [
 ]
 
 
+def select_top_stated_findings(findings: List[dict], n: int) -> List[dict]:
+    """The findings the homepage lists: the ``n`` largest STATED amounts.
+
+    The same rule as the frontend's ``trimFederalAuditsForHome``
+    (``frontend/lib/react-query/useAudits.ts``), and pinned to it by one cases
+    file both test suites read
+    (``frontend/__tests__/fixtures/federalTopStatedFindings.cases.json``):
+
+    - a finding states an amount unless ``amount_numeric`` is null or
+      ``amount_involved`` is exactly ``"KES 0"`` (what this endpoint writes for
+      a stored zero). Unstated findings are left out, never sorted as 0;
+    - largest first; ``sorted`` is stable, so ties keep the API's order, as
+      ``Array.prototype.sort`` does;
+    - if nothing is stated but findings exist, the first one is kept, so the
+      list is not empty. An empty list switches the section to "no findings
+      can be published yet", which would be false.
+
+    Returns a new list and leaves ``findings`` (the cached payload's list) as
+    it was.
+    """
+    stated = [
+        f
+        for f in findings
+        if f.get("amount_involved") != "KES 0" and f.get("amount_numeric") is not None
+    ]
+    top = sorted(stated, key=lambda f: f["amount_numeric"], reverse=True)[:n]
+    if not top and findings:
+        return findings[:1]
+    return top
+
+
 @app.get("/api/v1/audits/federal")
-@cached(key_prefix="audits:federal", ttl=3600)
-async def get_federal_audits():
+async def get_federal_audits(
+    top_findings: Optional[int] = Query(
+        None,
+        ge=1,
+        le=100,
+        description=(
+            "Return only the N largest findings that state an amount "
+            "(see select_top_stated_findings). Every other field still "
+            "describes all findings: total_findings is the report's count, "
+            "not the number of rows returned. Omit for every finding."
+        ),
+    ),
+):
     """Get national/federal government audit findings from the Auditor General.
 
-    Returns audit findings for ministries, departments and agencies (MDAs)
-    with the overall audit opinion summary.
+    Returns audit findings for ministries, departments and agencies (MDAs),
+    plus a ``headline`` derived from the latest report's extracted findings.
+
+    ``?top_findings=N`` is for the homepage, which renders 4 of ~800 findings:
+    its client refetch downloaded the whole ~886KB list to throw most of it
+    away (#221). The full payload is computed and cached once under the same
+    key either way, and the trim is applied to a copy on the way out.
     """
+    payload = await _federal_audits_payload()
+    if top_findings is None or not isinstance(payload, dict):
+        return payload
+    return {
+        **payload,
+        "findings": select_top_stated_findings(payload.get("findings") or [], top_findings),
+    }
+
+
+@cached(key_prefix="audits:federal", ttl=3600)
+async def _federal_audits_payload():
+    """The full ``/audits/federal`` response: every publishable finding."""
     if not DATABASE_AVAILABLE:
         raise HTTPException(status_code=503, detail="Database unavailable")
 
@@ -4850,46 +4808,6 @@ async def get_federal_audits():
                     }
                 )
 
-            # Load the audit opinion summary + report metadata from the JSON.
-            opinion_summary = {}
-            report_meta = {}
-            # The same parent.parent/"apis" bug bootstrap had: in the container
-            # that resolved to /apis, so this file was silently never read.
-            # One definition now, in bootstrap. Bound outside the try so the
-            # handler below can still name it if the import itself fails.
-            nat_path = None
-            try:
-                import json
-
-                from bootstrap import NATIONAL_AUDIT_PATH as nat_path
-
-                if nat_path.exists():
-                    with open(nat_path) as f:
-                        nat_data = json.load(f)
-                    opinion_summary = nat_data.get("audit_opinion_summary", {})
-                    report_meta = nat_data.get("metadata", {})
-            except Exception:
-                logging.exception(
-                    "could not read %s; its figures are withheld", nat_path
-                )
-                opinion_summary, report_meta = {}, {}
-
-            # Provenance-or-nothing applies to a file exactly as it does to a
-            # row. This file holds the same 24 amounts as the quarantined
-            # audits rows (sum KES 3,313,000,000,000, 22 of 24 identical) and
-            # cites only "https://www.oagkenya.go.ke" — a homepage, not a
-            # document. Gating the database while serving this would leave the
-            # same fabricated dataset reachable through its second copy.
-            _file_failure = file_source_provenance_failure(report_meta)
-            if _file_failure:
-                logger.warning(
-                    "/audits/federal: withholding every figure from "
-                    "oag_national_audit_data.json — %s",
-                    _file_failure,
-                )
-                opinion_summary = {}
-                report_meta = {}
-
             _withheld_federal = count_withheld_audits(
                 db, entity_types=FEDERAL_AUDIT_ENTITY_TYPES
             )
@@ -4969,26 +4887,34 @@ async def get_federal_audits():
                     .first()
                 )
 
-            # The OAG report's own metadata (from the source JSON) is the
-            # authoritative fiscal year + title + date for the federal report
-            # — NOT the global FISCAL_LABEL the audits happen to be attached
-            # to in the DB (audit §3.8). Fall back to DB-derived values.
-            report_fy = report_meta.get("fiscal_year") or latest_period_label
+            # Report metadata comes from the database alone. It used to prefer
+            # `backend/data/reference/oag_national_audit_data.json`, which the
+            # publication gate withheld on every request for citing the OAG
+            # homepage rather than a document (issue #233).
+            report_fy = latest_period_label
             # No literal fallback: naming a report when nothing resolves to
             # one asserts a document exists that a reader cannot reach.
             derived_report_title = (
-                report_meta.get("report_title")
-                or (latest_source.title if latest_source and latest_source.title else None)
-                or opinion_summary.get("report_title")
-                or None
+                latest_source.title if latest_source and latest_source.title else None
             )
-            derived_report_date = report_meta.get("report_date") or (
+            derived_report_date = (
                 latest_source.fetch_date.date().isoformat()
                 if latest_source and latest_source.fetch_date
                 else None
             )
-            derived_fiscal_years_covered = (
-                [report_fy] if report_meta.get("fiscal_year") else fiscal_years_covered
+            derived_fiscal_years_covered = fiscal_years_covered
+            # Opinion, recurring-issue and emphasis counts, derived from the
+            # extracted findings of the SAME report named above, each with the
+            # page it came from. None when that report has no extraction-backed
+            # finding — the page then says so instead of rendering zeros.
+            headline = (
+                derive_federal_headline(
+                    db,
+                    source_document_id=latest_source.id,
+                    entity_types=FEDERAL_AUDIT_ENTITY_TYPES,
+                )
+                if latest_source is not None
+                else None
             )
             # The sitting Auditor-General is a public officeholder, not a
             # computed figure. Prefer the publisher name from the latest
@@ -5012,25 +4938,14 @@ async def get_federal_audits():
                 "fiscal_year": report_fy,
                 "fiscal_years_covered": derived_fiscal_years_covered,
                 "report_date": derived_report_date,
-                # "Qualified" is an audit opinion attributed to the
-                # Auditor-General. Defaulting it made the page assert one even
-                # when the file was unreadable.
-                "opinion_type": opinion_summary.get("opinion_type") or None,
                 "total_findings": len(findings),
-                # Headline "Amount Questioned" = the OAG report's own
-                # authoritative questioned total, NOT a naive sum of every
-                # finding's amount (which conflated debt-service stock, asset
-                # valuations etc. and produced the misleading ~3.3T).
-                "total_amount_questioned": _parse_kes_amount_str(
-                    opinion_summary.get("total_amount_questioned", "")
-                ),
-                # The label is a second copy of the same figure. Nulling only
-                # the number would leave "KES 981.3B" rendering from here —
-                # the frontend falls back to it (AuditReportsSection:205-207).
-                "total_amount_questioned_label": (
-                    opinion_summary.get("total_amount_questioned") or None
-                ),
-                "total_amount_questioned_reason": _file_failure or None,
+                # The report's own questioned total. Nothing extracts it: the
+                # figure used to come from a hand-written file citing only the
+                # OAG homepage, withheld on every request (issue #233). Null
+                # with a reason; the coverage-stated partial below is the only
+                # money figure this response offers.
+                "total_amount_questioned": None,
+                "total_amount_questioned_reason": "not_extracted",
                 # Transparency only: the raw sum across all finding amounts.
                 # NOT the questioned headline (see above).
                 "total_amount_in_findings": (
@@ -5081,24 +4996,14 @@ async def get_federal_audits():
                         datetime.datetime.now(datetime.timezone.utc).date(),
                     )
                 ),
-                # Prose, but it quotes the quarantined figures: "Unexplained
-                # Consolidated Fund balance differences of KES 156.8 billion".
-                # Dropping the numeric fields alone leaves the numbers on the
-                # page.
-                "basis_for_qualification": opinion_summary.get(
-                    "basis_for_qualification"
-                )
-                or [],
-                "emphasis_of_matter": opinion_summary.get("emphasis_of_matter") or [],
-                "key_statistics": opinion_summary.get("key_statistics") or {},
-                "ministries_with_adverse_findings": opinion_summary.get(
-                    "ministries_with_adverse_findings"
+                # Opinion distribution and headline counts derived from the
+                # extracted findings (services/audit_derived.py). Every count
+                # is a floor, stated beside the number of votes it could be
+                # read for; no vote is ever called clean.
+                "headline": headline,
+                "headline_reason": (
+                    None if headline else "no_extraction_backed_findings"
                 ),
-                "ministries_with_clean_findings": opinion_summary.get(
-                    "ministries_with_clean_findings"
-                ),
-                # Why the block above is empty, when it is.
-                "opinion_summary_reason": _file_failure or None,
                 "findings": findings,
                 "top_ministries": [
                     {"ministry": name, "finding_count": count}
@@ -6247,139 +6152,49 @@ async def get_county_summary(county_id: str):
 @app.get("/api/v1/accountability/missing-funds")
 @cached(key_prefix="accountability:missing-funds", ttl=600)
 async def get_national_missing_funds():
-    """National roll-up of missing-funds cases across all counties.
+    """Findings the Auditor-General titled "Unaccounted …" or "Loss of Funds".
 
-    A case is served only if it resolves to a *(source document, page)*
-    pair whose document has a URL a reader can open. A case that names a
-    county but cannot be traced to a published report is withheld — it is
-    counted and reported under ``withheld``, never silently dropped, and
-    never rendered as a zero.
+    Derived from extracted OAG findings (issue #233), in the report's own
+    words and with the page each came from. This used to read hand-written
+    cases off ``entity.meta["missing_funds_cases"]`` (from
+    ``oag_audit_data.json``), none of which cited a document, so the page was
+    permanently empty.
 
-    When nothing qualifies, ``total_amount`` is ``None`` (not ``0``) and
-    ``reason`` says why, so the page can say "not yet published" instead of
-    showing an unaccounted-for total of zero.
+    ``total_amount`` is always ``None`` with ``total_amount_reason``: no
+    matched finding carries an extracted amount, and where the loader does
+    store one it is the paragraph's only KES figure — often the balance under
+    discussion, not the sum unaccounted for. The match is on titles only, so
+    the list is a floor; ``basis`` says so machine-readably.
     """
     if not DATABASE_AVAILABLE:
         raise HTTPException(status_code=503, detail="Database unavailable")
 
-    published: List[Dict[str, Any]] = []
-    withheld_by_reason: Dict[str, int] = {}
-    county_totals: Dict[str, Dict[str, Any]] = {}
-    status_totals: Dict[str, float] = {}
-
     with next(get_db()) as db:
-        counties = (
-            db.query(DBEntity).filter(DBEntity.type == EntityType.COUNTY).all()
-        )
+        derived = derive_unaccounted_cases(db)
 
-        # Resolve every referenced document once, so the gate checks the real
-        # row rather than trusting an id that may point at nothing.
-        referenced_ids = set()
-        for county in counties:
-            for case in (county.meta or {}).get("missing_funds_cases") or []:
-                if isinstance(case, dict) and case.get("source_document_id") not in (None, ""):
-                    try:
-                        referenced_ids.add(int(case["source_document_id"]))
-                    except (TypeError, ValueError):
-                        continue
-        docs: Dict[int, Any] = {}
-        if referenced_ids:
-            docs = {
-                d.id: d
-                for d in db.query(DBSourceDocument)
-                .filter(DBSourceDocument.id.in_(referenced_ids))
-                .all()
-            }
-
-        for county in counties:
-            meta = county.meta or {}
-            cases = meta.get("missing_funds_cases") or []
-            if not isinstance(cases, list):
-                continue
-            county_name = (county.canonical_name or "").replace(" County", "").strip()
-            county_amount = 0.0
-            county_published = 0
-
-            for case in cases:
-                if not isinstance(case, dict):
-                    withheld_by_reason["malformed_case"] = (
-                        withheld_by_reason.get("malformed_case", 0) + 1
-                    )
-                    continue
-
-                failure = missing_funds_provenance_failure(case, docs)
-                if failure is not None:
-                    withheld_by_reason[failure] = withheld_by_reason.get(failure, 0) + 1
-                    continue
-
-                doc = docs[int(case["source_document_id"])]
-                amount = _parse_missing_funds_amount(case.get("amount"))
-                if amount is None:
-                    # Sourced but unreadable. Withheld with its own reason
-                    # rather than published as 0 (PR #135 review): a reader
-                    # cannot tell "we could not read this figure" from "the
-                    # figure is nothing", and the citation makes the second
-                    # reading look authoritative.
-                    withheld_by_reason["amount_unreadable"] = (
-                        withheld_by_reason.get("amount_unreadable", 0) + 1
-                    )
-                    continue
-                status = (case.get("status") or "unknown").lower()
-                published.append(
-                    {
-                        "case_id": case.get("case_id"),
-                        "county": case.get("county") or county_name,
-                        "county_id": meta.get("county_code"),
-                        "amount": amount,
-                        "amount_label": case.get("amount"),
-                        "period": case.get("period"),
-                        "status": status,
-                        "description": case.get("description", ""),
-                        "source": {
-                            "document_id": doc.id,
-                            "title": doc.title,
-                            "publisher": doc.publisher,
-                            "url": doc.url,
-                            "page": case.get("page_ref") or case.get("page_number"),
-                        },
-                    }
-                )
-                county_amount += amount
-                county_published += 1
-                status_totals[status] = status_totals.get(status, 0.0) + amount
-
-            if county_published:
-                county_totals[county_name] = {
-                    "county": county_name,
-                    "cases": county_published,
-                    "amount": county_amount,
-                }
-
+    cases = derived["cases"]
+    withheld_by_reason = derived["withheld"]
     withheld_total = sum(withheld_by_reason.values())
     if withheld_total:
-        # Fail loud: an omission this large must be visible in the log, not
-        # inferred from a page that renders nothing.
         logger.warning(
-            "missing-funds: withheld %d unsourced case(s) from the public "
-            "response (%s); %d published",
+            "missing-funds: withheld %d matching finding(s) (%s); %d published",
             withheld_total,
             ", ".join(f"{k}={v}" for k, v in sorted(withheld_by_reason.items())),
-            len(published),
+            len(cases),
         )
-
-    published.sort(key=lambda c: c["amount"], reverse=True)
-    top_counties = sorted(
-        county_totals.values(), key=lambda c: c["amount"], reverse=True
-    )[:10]
-
+    county_cases = [c for c in cases if c["entity_type"] == "county"]
     return {
-        "total_amount": (sum(c["amount"] for c in published) if published else None),
-        "total_cases": len(published),
-        "affected_counties": len(county_totals),
-        "by_status": status_totals,
-        "top_counties": top_counties,
-        "cases": published,
-        "reason": None if published else "awaiting_sourced_data",
+        "basis": "oag_finding_title",
+        "total_amount": None,
+        "total_amount_reason": "no_amount_extracted",
+        "total_cases": len(cases),
+        "affected_counties": len({c["entity"] for c in county_cases}),
+        "affected_national_entities": len(
+            {c["entity"] for c in cases if c["entity_type"] != "county"}
+        ),
+        "fiscal_years": sorted({c["fiscal_year"] for c in cases if c["fiscal_year"]}, reverse=True),
+        "cases": cases,
+        "reason": None if cases else "no_matching_findings",
         "withheld": {"count": withheld_total, "by_reason": withheld_by_reason},
     }
 

@@ -44,9 +44,11 @@ import bootstrap
 # backend package so they ship in the image, and a path spelled out again in
 # a test is a path that goes stale the next time they move.
 _APIS = bootstrap.DATA_DIR
+# The two OAG audit fixtures in the table above were retired in issue #233:
+# their supersession checks passed on a production clone, the API now derives
+# what they supplied from extracted findings, and bootstrap no longer reads
+# them. This list is what bootstrap reads TODAY.
 _FIXTURES = [
-    "oag_audit_data.json",
-    "oag_national_audit_data.json",
     "enhanced_county_data.json",
 ]
 
@@ -95,19 +97,24 @@ class TestTheBootstrapDeclaresItsInputs:
         assert set(prov["stale_files"]) == expected
         assert prov["is_stale"] is bool(expected)
 
-    def test_the_year_old_oag_fixture_is_currently_flagged(self):
+    def test_the_year_old_county_fixture_is_currently_flagged(self):
         """POSITIVE CONTROL. If this ever passes vacuously — because every file
         was refreshed, or the threshold was raised to hide them — the assertion
-        above is still true but no longer proves anything."""
+        above is still true but no longer proves anything.
+
+        It named ``oag_audit_data.json`` until that file was retired (#233);
+        ``enhanced_county_data.json`` declares 2025-08-24, over a year old."""
         from bootstrap import bootstrap_provenance
 
         prov = bootstrap_provenance()
-        oag = next(f for f in prov["files"] if f["file"] == "oag_audit_data.json")
-        assert oag["age_days"] > 180, (
-            f"oag_audit_data.json is {oag['age_days']} days old; if it was "
-            "genuinely refreshed, delete this test with the commit that did it"
+        county = next(
+            f for f in prov["files"] if f["file"] == "enhanced_county_data.json"
         )
-        assert "oag_audit_data.json" in prov["stale_files"]
+        assert county["age_days"] > 180, (
+            f"enhanced_county_data.json is {county['age_days']} days old; if it "
+            "was genuinely refreshed, delete this test with the commit that did it"
+        )
+        assert "enhanced_county_data.json" in prov["stale_files"]
 
 
 class TestTheDeclarationIsHonest:
@@ -144,8 +151,9 @@ class TestTheDeclarationIsHonest:
 
 
 class TestTheDeclaredDateCannotDrift:
-    """``oag_audit_data.json`` carries no metadata, so its date is declared in
-    code. A declaration nothing checks is how the original defect happened.
+    """A file that carries no metadata has its date declared in code (this was
+    ``oag_audit_data.json`` until #233 retired it). A declaration nothing
+    checks is how the original defect happened.
 
     The check is against the file's CONTENT, not ``git log``. The first
     version compared with ``git log -1 --format=%ad -- <file>``, passed
@@ -168,7 +176,17 @@ class TestTheDeclaredDateCannotDrift:
             for name, spec in _FIXTURE_DECLARATIONS.items()
             if spec.get("content_sha256")
         }
-        assert pinned, "no fixture is content-pinned — this check is vacuous"
+        # Vacuous only if some file NEEDS a pin and has none. Since #233 retired
+        # oag_audit_data.json — the one file with no date of its own — every
+        # declared file states its own date, so an empty pin set is correct.
+        undated = [
+            name
+            for name, spec in _FIXTURE_DECLARATIONS.items()
+            if not spec.get("date_field")
+        ]
+        assert set(undated) <= set(pinned), (
+            f"{sorted(set(undated) - set(pinned))} state no date and are not pinned"
+        )
 
         for name, spec in pinned.items():
             actual = hashlib.sha256((_APIS / name).read_bytes()).hexdigest()

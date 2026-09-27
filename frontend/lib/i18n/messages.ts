@@ -277,6 +277,51 @@ export const MESSAGES = {
     sw: 'Chanzo: ripoti {page}',
     plain: 'Source: report {page}',
   },
+  // Derived headline (issue #233): read from the report's own section
+  // headings. Every count is a floor, stated beside what it was read from.
+  'home.audits.modified_title': {
+    en: 'Modified audit opinions found in this report',
+    sw: 'Maoni ya ukaguzi yaliyorekebishwa yaliyopatikana katika ripoti hii',
+    plain: 'Where the Auditor-General did not accept the accounts as they stand',
+  },
+  'home.audits.modified_none': {
+    en: 'No “Basis for … Opinion” section was found among the {read} votes whose opinion could be read.',
+    sw: 'Hakuna sehemu ya “Msingi wa Maoni” iliyopatikana katika mafungu {read} ambayo maoni yake yangeweza kusomwa.',
+    plain: 'We found no section explaining a changed opinion in the {read} votes we could read.',
+  },
+  'home.audits.opinion_votes': {
+    en: '{n} vote(s) · {f} finding(s)',
+    sw: 'mafungu {n} · matokeo {f}',
+    plain: '{n} vote(s) · {f} finding(s)',
+  },
+  'home.audits.modified_coverage': {
+    en: 'Read from the report’s own “Basis for … Opinion” sections. Each line means at least one account audited under that vote received that opinion; the page shows which. The opinion could be read for {read} of the {total} votes with extracted findings, and this site has not yet extracted every section of the report, so these counts are minimums. No vote is shown as clean: one vote covers several separately audited accounts.',
+    sw: 'Imesomwa kutoka sehemu za “Msingi wa Maoni” za ripoti yenyewe. Kila mstari unamaanisha angalau hesabu moja iliyokaguliwa chini ya fungu hilo ilipata maoni hayo; ukurasa unaonyesha ipi. Maoni yangeweza kusomwa kwa mafungu {read} kati ya {total} yenye matokeo yaliyotolewa, na tovuti hii bado haijatoa kila sehemu ya ripoti, kwa hiyo idadi hizi ni za chini kabisa. Hakuna fungu linaloonyeshwa kuwa safi: fungu moja linajumuisha hesabu kadhaa zinazokaguliwa kando.',
+    plain: 'We read these from the report’s own section headings. Each line means at least one account under that vote got that result; the page shows which. We could read {read} of the {total} votes, and we have not read the whole report yet, so the real numbers could be higher. We never call a vote clean, because one vote covers several accounts audited separately.',
+  },
+  'home.audits.stat_votes': { en: 'Votes With Extracted Findings', sw: 'Mafungu Yenye Matokeo Yaliyotolewa', plain: 'Budget votes we have read' },
+  'home.audits.stat_unresolved': { en: 'Unresolved Prior-Year Matters', sw: 'Masuala ya Awali Yasiyotatuliwa', plain: 'Old problems still open' },
+  'home.audits.unit_votes': { en: 'votes', sw: 'mafungu', plain: 'votes' },
+  'home.audits.emphasis_summary': {
+    en: 'Raised on {n} votes ({f} paragraphs). Most frequent: “{title}”, {c} times.',
+    sw: 'Imetajwa katika mafungu {n} (aya {f}). Linalojirudia zaidi: “{title}”, mara {c}.',
+    plain: 'Flagged for {n} votes ({f} times). Most common: “{title}”, {c} times.',
+  },
+  'home.audits.withheld_source_document_has_no_url': {
+    en: '{n} finding(s) held back for lack of a traceable source document.',
+    sw: 'Matokeo {n} yamezuiliwa kwa kukosa hati ya chanzo inayofuatilika.',
+    plain: '{n} finding(s) held back because we cannot point to the report they came from.',
+  },
+  'home.audits.withheld_finding_text_unreadable_cid': {
+    en: '{n} finding(s) held back because the extracted text is unreadable.',
+    sw: 'Matokeo {n} yamezuiliwa kwa sababu maandishi yaliyotolewa hayasomeki.',
+    plain: '{n} finding(s) held back because the text could not be read.',
+  },
+  'home.audits.withheld_no_page_reference': {
+    en: '{n} finding(s) held back for citing no page of the report.',
+    sw: 'Matokeo {n} yamezuiliwa kwa kutotaja ukurasa wa ripoti.',
+    plain: '{n} finding(s) held back because they do not say which page they come from.',
+  },
   'home.audits.cadence_annual': { en: 'annually', sw: 'kila mwaka', plain: 'once a year' },
   'home.audits.cadence_quarterly': { en: 'quarterly', sw: 'kila robo mwaka', plain: 'every three months' },
   'home.audits.cadence_monthly': { en: 'monthly', sw: 'kila mwezi', plain: 'every month' },
@@ -407,11 +452,13 @@ export const MESSAGES = {
     sw: 'Jumuisha kaunti zote 47 kwa sekta — afya, barabara, maji, elimu.',
     plain: 'All 47 counties grouped by area — health, roads, water, schools.',
   },
-  'home.features.missing.title': { en: 'Missing funds tracker', sw: 'Kifuatilia Pesa Zilizopotea', plain: 'Missing money tracker' },
+  // "Unaccounted", never "missing": the page lists only findings the
+  // Auditor-General's report itself heads that way (issue #233).
+  'home.features.missing.title': { en: 'Unaccounted funds', sw: 'Pesa Zisizohesabika', plain: 'Money not accounted for' },
   'home.features.missing.desc': {
-    en: 'Public money flagged as unaccounted-for by the Auditor-General.',
-    sw: 'Pesa za umma zilizoripotiwa kutohesabiwa na Mkaguzi Mkuu.',
-    plain: 'Public money the auditor says is missing.',
+    en: 'Findings the Auditor-General headed as unaccounted for or a loss of funds, each linked to its page.',
+    sw: 'Matokeo ambayo Mkaguzi Mkuu aliyaita pesa zisizohesabika au hasara ya fedha, kila moja na ukurasa wake.',
+    plain: 'Where the auditor’s report says money or assets were not accounted for, with the page.',
   },
   'home.features.sources.title': { en: 'Data sources', sw: 'Vyanzo vya Data', plain: 'Where numbers come from' },
   'home.features.sources.desc': {
@@ -764,6 +811,17 @@ export const MESSAGES = {
   'county.sources.title': { en: 'Data sources for this county', sw: 'Vyanzo vya data kwa kaunti hii', plain: 'Where these numbers come from' },
 
   // Missing funds
+  'county.unaccounted.heading': {
+    en: '{n} finding(s) the Auditor-General headed as unaccounted for or a loss of funds',
+    sw: 'Matokeo {n} ambayo Mkaguzi Mkuu aliyaita pesa zisizohesabika au hasara ya fedha',
+    plain: '{n} finding(s) where the Auditor-General says money or assets were not accounted for',
+  },
+  'county.unaccounted.no_total': {
+    en: 'In the report’s own words, with the page each comes from. No total is shown: the sum involved is not extracted from these findings.',
+    sw: 'Kwa maneno ya ripoti yenyewe, pamoja na ukurasa wa kila moja. Hakuna jumla inayoonyeshwa: kiasi husika hakijatolewa kutoka matokeo haya.',
+    plain: 'Quoted from the report, with the page. We show no total because we could not read the amount from these findings.',
+  },
+  'county.unaccounted.see_all': { en: 'See all counties and votes', sw: 'Tazama kaunti na mafungu yote', plain: 'See the full list' },
   'county.missing.title': { en: 'Missing Funds', sw: 'Pesa Zilizopotea', plain: 'Missing Money' },
   'county.missing.none': { en: 'No missing-funds cases flagged.', sw: 'Hakuna kesi za pesa zilizopotea.', plain: 'No missing money reported.' },
 
@@ -942,8 +1000,6 @@ export const MESSAGES = {
   'county.overview.total_amount_involved': { en: 'Total amount involved', sw: 'Kiasi jumla kinachohusika', plain: 'Total money involved' },
 
   // Missing funds banner
-  'county.overview.missing_unaccounted': { en: 'Unaccounted', sw: 'Haikuhesabika', plain: 'Missing' },
-  'county.overview.cases_oag': { en: 'cases identified by OAG', sw: 'kesi zilizogunduliwa na Mkaguzi Mkuu', plain: 'cases the auditor flagged' },
 
   // Overview profile KPIs
   'county.overview.kpi.total_revenue': { en: 'Total Revenue', sw: 'Mapato Jumla', plain: 'Total Money In' },
@@ -1023,8 +1079,6 @@ export const MESSAGES = {
   'county.audit.status.resolved': { en: 'Resolved', sw: 'Imeshughulikiwa', plain: 'Fixed' },
   'county.audit.status.pending': { en: 'Pending', sw: 'Inasubiri', plain: 'Waiting' },
   'county.audit.status.open': { en: 'Open', sw: 'Imefunguliwa', plain: 'Open' },
-  'county.audit.missing_unaccounted': { en: 'Missing / Unaccounted', sw: 'Zimepotea / Hazihesabiki', plain: 'Missing Money' },
-  'county.audit.cases_flagged': { en: 'case(s) flagged by the Auditor-General as money that cannot be accounted for.', sw: 'kesi zilizogunduliwa na Mkaguzi Mkuu kama pesa ambazo haziwezi kuthibitishwa.', plain: 'cases the auditor says cannot be explained.' },
   'county.audit.all_findings_title': { en: 'All Audit Findings', sw: 'Matokeo Yote ya Ukaguzi', plain: 'All Audit Findings' },
   'county.audit.category_findings_suffix': { en: 'Findings', sw: 'Matokeo', plain: 'Findings' },
   'county.audit.showing_of': { en: 'Showing 20 of {n} findings', sw: 'Inaonyesha 20 kati ya matokeo {n}', plain: 'Showing 20 of {n} findings' },

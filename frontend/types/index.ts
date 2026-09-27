@@ -112,10 +112,16 @@ export interface CountyComprehensive {
     by_severity: Record<string, number>;
     findings: AuditFinding[];
   };
+  /** Findings the Auditor-General titled "Unaccounted …" / "Loss of Funds"
+   *  (issue #233). Never a money total: `total_amount` is always null. */
   missing_funds: {
-    total_amount: number;
+    basis?: 'oag_finding_title';
+    total_amount: null;
+    total_amount_reason?: 'no_amount_extracted';
     cases_count: number;
-    cases: any[];
+    cases: UnaccountedCase[];
+    reason?: string | null;
+    withheld?: { count: number; by_reason: Record<string, number> };
   };
   stalled_projects: {
     count: number;
@@ -350,4 +356,27 @@ export interface TooltipData {
     y: number;
   };
   visible: boolean;
+}
+
+/** One finding from backend/services/audit_derived.py::derive_unaccounted_cases. */
+export interface UnaccountedCase {
+  finding_id: number;
+  entity: string;
+  entity_type: string | null;
+  /** The Auditor-General's own heading for the finding. */
+  title: string;
+  /** The finding's text after its title, in the report's words. May be empty
+   *  when the extractor captured only the heading. */
+  excerpt: string;
+  /** The report section it sits under, e.g. "Basis for Adverse Opinion". */
+  heading: string | null;
+  fiscal_year: string | null;
+  page_ref: string | null;
+  source: {
+    document_id: number;
+    title: string | null;
+    publisher: string | null;
+    url: string | null;
+    page_url: string | null;
+  };
 }

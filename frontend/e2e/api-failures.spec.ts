@@ -13,7 +13,7 @@ const PAGES_WITH_DATA = [
   '/counties',
   '/counties/001',
   '/sources',
-  '/accountability/missing-funds',
+  '/accountability/unaccounted-funds',
   '/debt',
   '/budget',
 ];

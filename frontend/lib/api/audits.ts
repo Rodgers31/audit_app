@@ -151,6 +151,39 @@ export interface FederalAuditFinding {
   source_url?: string | null;
 }
 
+/** A count with the page a reader can open to check it. */
+interface PageCited {
+  page_ref: string | null;
+  source_url: string | null;
+}
+
+export type ModifiedOpinion = 'Adverse' | 'Disclaimer' | 'Qualified';
+
+/** backend/services/audit_derived.py::derive_federal_headline. Every count
+ *  is a floor: the opinion could only be read for `entities_opinion_read` of
+ *  `entities_with_findings` votes. No vote is ever reported as clean. */
+export interface FederalAuditHeadline {
+  basis: 'extracted_section_headings';
+  source_document: { id: number; title: string | null; url: string | null };
+  entities_with_findings: number;
+  /** Rows of the report's "unresolved prior-year issues" tables that the
+   *  extractor read as findings; excluded from every count here. */
+  excluded_table_rows: number;
+  entities_opinion_read: number;
+  /** Only the opinions actually found — a missing category is absent, never 0. */
+  modified_opinions: { opinion: ModifiedOpinion; entities: number; findings: number }[];
+  entities: ({ entity: string; opinion: ModifiedOpinion; findings: number } & PageCited)[];
+  recurring_prior_year: ({ entities: number; findings: number } & PageCited) | null;
+  emphasis_of_matter:
+    | ({
+        entities: number;
+        findings: number;
+        most_common_title: string | null;
+        most_common_findings: number | null;
+      } & PageCited)
+    | null;
+}
+
 export interface FederalAuditResponse {
   /** All four describe one document. Each is null when nothing resolves to
    *  a report a reader could open. */
@@ -158,39 +191,26 @@ export interface FederalAuditResponse {
   auditor_general: string | null;
   fiscal_year: string | null;
   report_date: string | null;
-  opinion_type: string | null;
   total_findings: number;
-  // Authoritative OAG questioned total (parsed from the report), or null
-  // when the report carries no figure. NOT a naive sum of finding amounts.
+  // The report's own questioned total. Nothing extracts it, so it is null
+  // with `total_amount_questioned_reason: "not_extracted"` (issue #233).
+  // NOT a naive sum of finding amounts.
   total_amount_questioned: number | null;
-  total_amount_questioned_label: string | null;
-  /** Why the questioned total is absent, e.g. source_url_is_a_homepage_not_a_document. */
   total_amount_questioned_reason?: string | null;
-  /** Set when the whole opinion summary is withheld for lack of provenance. */
-  opinion_summary_reason?: string | null;
-  /** Findings excluded for lack of a resolvable source document. */
+  /** Findings excluded by the publication gate. */
   withheld_findings?: number;
+  /** The same count, by the gate's reason slug. Sums to withheld_findings. */
+  withheld_findings_by_reason?: Record<string, number>;
   // Transparency only: raw sum across all finding amounts (not "questioned").
   total_amount_in_findings?: number;
   /** How many findings the `total_amount_in_findings` sum covers. A
    *  partial sum with no denominator cannot be told apart from a total. */
   findings_with_amount: number;
   by_severity: Record<string, number>;
-  basis_for_qualification: string[];
-  emphasis_of_matter: string[];
-  // May be {} when the OAG opinion summary is unavailable, so every field is
-  // optional and the UI must fall back to an honest "—", never a fabricated
-  // number (audit §3.3).
-  key_statistics?: {
-    total_ministries_audited?: number;
-    total_findings?: number;
-    critical_findings?: number;
-    significant_findings?: number;
-    minor_findings?: number;
-    total_amount_flagged_kes?: number;
-    response_rate_to_previous_queries?: string;
-    recurring_issues_from_prior_year?: number;
-  };
+  /** Derived from the latest report's extracted findings; null when that
+   *  report has none (`headline_reason` says so). */
+  headline: FederalAuditHeadline | null;
+  headline_reason?: 'no_extraction_backed_findings' | null;
   findings: FederalAuditFinding[];
   top_ministries: { ministry: string; finding_count: number }[];
   /** Why `findings` is empty, when it is: "awaiting_sourced_data" (rows
@@ -212,8 +232,18 @@ export interface FederalAuditResponse {
   last_updated: string | null;
 }
 
-export const getFederalAudits = async (): Promise<FederalAuditResponse> => {
-  const response = await apiClient.get<FederalAuditResponse>(AUDITS_ENDPOINTS.FEDERAL);
+/**
+ * `topFindings` asks for only the N largest findings that state an amount;
+ * every summary field still describes all of them (`total_findings` is the
+ * report's count). See `select_top_stated_findings` in backend/main.py.
+ */
+export const getFederalAudits = async (params?: {
+  topFindings?: number;
+}): Promise<FederalAuditResponse> => {
+  const url = buildUrlWithParams(AUDITS_ENDPOINTS.FEDERAL, {
+    top_findings: params?.topFindings,
+  });
+  const response = await apiClient.get<FederalAuditResponse>(url);
   return response.data;
 };
 
