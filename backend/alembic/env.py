@@ -21,6 +21,7 @@ if load_dotenv is not None:
         if env_path.exists():
             load_dotenv(env_path.as_posix(), override=False)
 
+from db_url import with_explicit_driver
 from models import Base
 
 # this is the Alembic Config object, which provides
@@ -112,6 +113,7 @@ def run_migrations_offline() -> None:
             url = f"postgresql://{auth}{host}:{port}/{name}?sslmode={sslmode}"
         else:
             url = config.get_main_option("sqlalchemy.url")
+    url = with_explicit_driver(url)
     if "%" in url:
         url = url.replace("%", "%%")
     context.configure(
@@ -150,6 +152,8 @@ def run_migrations_online() -> None:
             database_url = f"postgresql://{auth}{host}:{port}/{name}?sslmode={sslmode}"
         else:
             database_url = config.get_main_option("sqlalchemy.url")
+    # Name the driver so a SQLAlchemy upgrade cannot switch it (issue #228)
+    database_url = with_explicit_driver(database_url)
     # Escape % to avoid ConfigParser interpolation errors
     if "%" in database_url:
         database_url = database_url.replace("%", "%%")
