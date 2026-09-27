@@ -29,6 +29,7 @@ from production on the one axis that hid this.
 
 from __future__ import annotations
 
+import datetime
 import logging
 import re
 
@@ -248,6 +249,441 @@ class TestSerialisationFailureIsReportable:
         )
 
 
+# ── The route sweep ───────────────────────────────────────────────────────
+#
+# Issue #266 is why this is more than "call every route once". The sweep used
+# to seed only ``PopulationData``, so most routes answered from their
+# empty/no_data branch — and a 200 was counted as "exercised". GET
+# /api/v1/pending-bills put a datetime into ``last_updated`` ONLY on its
+# database branch, the sweep never reached that branch, and the endpoint ran
+# uncached with this guard green.
+#
+# So the sweep now seeds representative rows, sweeps, wipes every table and
+# sweeps again. A route whose seeded answer is the same as its empty-database
+# answer never reached a branch that reads rows, whatever its status code, and
+# is reported. The set of such routes must equal ``_EMPTY_BRANCH_ALLOWLIST``
+# exactly — an unexplained empty route fails, and so does an allowlist entry
+# that has since become reachable.
+
+#: What each ``{param}`` in a cached route's path is filled with. A new path
+#: parameter name fails the sweep until someone decides what it should be.
+#: ``047`` is COUNTY_MAPPING's code for Mombasa, the county
+#: ``representative_rows`` seeds under its production name.
+_SWEEP_PATH_PARAMS = {"county_id": "047", "country_id": "1"}
+
+#: Query strings a route needs to get past validation to its handler body.
+_SWEEP_QUERY = {
+    "/api/v1/audit/money-flow/national": "year=FY2024/25",
+    "/api/v1/money-flow/all-counties": "year=FY2024/25",
+}
+
+#: Cached routes that answer from an empty branch EVEN WITH representative
+#: rows seeded, and why no seed can change that. Every entry is a route this
+#: guard cannot vouch for, so each needs a reason a reviewer can check.
+_EMPTY_BRANCH_ALLOWLIST = {
+    "/api/v1/counties/{county_id}/financial": (
+        "has no database branch. get_county_financial_data only proxies "
+        "InternalAPIClient (httpx to ENHANCED_COUNTY_API_BASE), so it answers "
+        "the same with or without rows; the test network guard refuses the "
+        "call and it 404s"
+    ),
+}
+
+#: Which branch each pending-bills route must have answered from, per
+#: scenario. Those two routes read the ``pending_bills`` table when it has
+#: rows and fall back to ``Loan(debt_category=PENDING_BILLS)`` when it does
+#: not. One seed reaches one of the two, so the sweep runs once per branch and
+#: checks it reached the one it meant to.
+_SCENARIOS = {
+    "pending_bills_table": {
+        "/api/v1/pending-bills/summary": "pending_bills_table",
+        "/api/v1/pending-bills/counties/{county_id}": "pending_bills_table",
+    },
+    "pending_bills_from_loans": {
+        "/api/v1/pending-bills/summary": "loans_table_fallback",
+        "/api/v1/pending-bills/counties/{county_id}": "loans_table_fallback",
+    },
+}
+
+_NO_DATA_MARKERS = (
+    ("status", "no_data"),
+    ("data_source", "none"),
+    ("data_source", "database_empty"),
+)
+
+#: ``generated_at`` and friends differ between any two requests; they are not
+#: evidence that a route read a row.
+_TIMESTAMP = re.compile(
+    r"\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})?"
+)
+
+
+@pytest.fixture()
+def representative_rows(db_session, seed_entity, seed_fiscal_period, seed_source_doc):
+    """One row, or a few, behind every branch a cached route builds from rows.
+
+    The county is named "<Name> County" because several county handlers match
+    ``canonical_name == f"{name} County"`` and nothing else (the conftest
+    "Nairobi" entity reaches none of them). Fact rows carry a page locator,
+    a document with a URL and ``publishable``, because the publication gates
+    drop anything less before the handler's populated branch is reached.
+    """
+    from models import (
+        Audit,
+        BillType,
+        BudgetLine,
+        DebtCategory,
+        DebtTimeline,
+        EconomicIndicator,
+        Entity,
+        EntityType,
+        FigureBasis,
+        FiscalSummary,
+        GDPData,
+        Loan,
+        PendingBill,
+        PopulationData,
+        RevenueBySource,
+        Severity,
+    )
+
+    country_id = seed_entity.country_id
+    period_id = seed_fiscal_period.id
+    doc_id = seed_source_doc.id
+    fact = dict(source_document_id=doc_id, publishable=True, page_ref="p. 12")
+
+    national = Entity(
+        country_id=country_id,
+        type=EntityType.NATIONAL,
+        canonical_name="National Government",
+        slug="national-government",
+    )
+    county = Entity(
+        country_id=country_id,
+        type=EntityType.COUNTY,
+        canonical_name="Mombasa County",
+        slug="mombasa-county",
+        meta={
+            "county_code": _SWEEP_PATH_PARAMS["county_id"],
+            "missing_funds_cases": [
+                {
+                    "case_id": "MF-1",
+                    "source_document_id": doc_id,
+                    "page_ref": "p. 12",
+                    "amount": "KES 1.5B",
+                    "status": "Under investigation",
+                    "period": "FY2024/25",
+                    "description": "probe case",
+                }
+            ],
+        },
+    )
+    ministry = Entity(
+        country_id=country_id,
+        type=EntityType.MINISTRY,
+        canonical_name="Ministry of Health",
+        slug="ministry-of-health",
+    )
+    db_session.add_all([national, county, ministry])
+    db_session.flush()
+
+    db_session.add_all(
+        [
+            PopulationData(entity_id=None, year=2019, total_population=47_564_296),
+            GDPData(
+                entity_id=None,
+                year=2024,
+                gdp_value=16_000_000_000_000,
+                source_document_id=doc_id,
+            ),
+            EconomicIndicator(
+                indicator_type="total_national_gdp",
+                indicator_date=datetime.datetime(2024, 12, 31),
+                value=16_000_000,
+            ),
+            EconomicIndicator(
+                indicator_type="inflation_rate",
+                indicator_date=datetime.datetime(2025, 6, 30),
+                value=4.1,
+            ),
+            # ── debt ──
+            Loan(
+                entity_id=national.id,
+                lender="World Bank IDA",
+                debt_category=DebtCategory.EXTERNAL_MULTILATERAL,
+                principal=1.2e12,
+                outstanding=9.6e11,
+                interest_rate=1.25,
+                issue_date=datetime.datetime(2020, 1, 1),
+                maturity_date=datetime.datetime(2045, 1, 1),
+                currency="KES",
+                basis=FigureBasis.ACTUAL,
+                **fact,
+            ),
+            Loan(
+                entity_id=national.id,
+                lender="Treasury Bond FXD1/2024/10",
+                debt_category=DebtCategory.DOMESTIC_BONDS,
+                principal=6.0e12,
+                outstanding=4.8e12,
+                interest_rate=16.0,
+                issue_date=datetime.datetime(2024, 1, 1),
+                maturity_date=datetime.datetime(2034, 1, 1),
+                currency="KES",
+                basis=FigureBasis.ACTUAL,
+                **fact,
+            ),
+            DebtTimeline(
+                year=2023,
+                external=5.0e12,
+                domestic=5.1e12,
+                total=10.1e12,
+                gdp=14.8e12,
+                gdp_ratio=68.2,
+                unit="KES",
+                source_document_id=doc_id,
+            ),
+            DebtTimeline(
+                year=2024,
+                external=5.2e12,
+                domestic=5.8e12,
+                total=11.0e12,
+                gdp=16.0e12,
+                gdp_ratio=68.8,
+                unit="KES",
+                source_document_id=doc_id,
+            ),
+            FiscalSummary(
+                fiscal_year="2024/25",
+                appropriated_budget=4.0e12,
+                total_revenue=3.0e12,
+                tax_revenue=2.6e12,
+                non_tax_revenue=0.4e12,
+                total_borrowing=0.9e12,
+                debt_service_cost=1.2e12,
+                development_spending=0.7e12,
+                recurrent_spending=2.5e12,
+                county_allocation=0.4e12,
+                **fact,
+            ),
+            RevenueBySource(
+                fiscal_year="FY2024/25",
+                revenue_type="VAT",
+                category="tax",
+                amount_billion_kes=800,
+                meta={"basis": "published"},
+                **fact,
+            ),
+            # ── pending bills: both branches' source rows ──
+            # The two Loan rows are what GET /pending-bills reads — the branch
+            # #266 hid in. A county one exercises the county/national split.
+            Loan(
+                entity_id=national.id,
+                lender="MDA pending bills",
+                debt_category=DebtCategory.PENDING_BILLS,
+                principal=5e11,
+                outstanding=5e11,
+                issue_date=datetime.datetime(2025, 6, 30),
+                currency="KES",
+                provenance={"fiscal_year": "2024/25"},
+                **fact,
+            ),
+            Loan(
+                entity_id=county.id,
+                lender="Mombasa County pending bills",
+                debt_category=DebtCategory.PENDING_BILLS,
+                principal=1e11,
+                outstanding=1e11,
+                issue_date=datetime.datetime(2025, 6, 30),
+                currency="KES",
+                provenance={"fiscal_year": "2024/25"},
+                **fact,
+            ),
+            PendingBill(
+                entity_id=county.id,
+                bill_type=BillType.SUPPLIER_ARREARS,
+                amount=1e11,
+                fiscal_year="2024/25",
+                aging_days=200,
+                **fact,
+            ),
+            # ── budgets: county sector lines, and a national line with a
+            # commitment (execution_by_sector reads only those) ──
+            BudgetLine(
+                entity_id=county.id,
+                period_id=period_id,
+                category="Health",
+                allocated_amount=1e10,
+                actual_spent=6e9,
+                currency="KES",
+                line_type="component",
+                basis=FigureBasis.ACTUAL,
+                **fact,
+            ),
+            BudgetLine(
+                entity_id=county.id,
+                period_id=period_id,
+                category="Education",
+                allocated_amount=2e10,
+                actual_spent=1.5e10,
+                currency="KES",
+                line_type="component",
+                basis=FigureBasis.ACTUAL,
+                **fact,
+            ),
+            BudgetLine(
+                entity_id=national.id,
+                period_id=period_id,
+                category="Health",
+                allocated_amount=2e11,
+                actual_spent=1e11,
+                committed_amount=1.5e11,
+                currency="KES",
+                line_type="component",
+                basis=FigureBasis.ACTUAL,
+                **fact,
+            ),
+            # ── audits: county findings across two years, and a ministry
+            # finding for the federal report ──
+            Audit(
+                entity_id=county.id,
+                period_id=period_id,
+                finding_text="Irregular expenditure of KES 1,000,000",
+                severity=Severity.CRITICAL,
+                query_type="Irregular Expenditure",
+                amount=1_000_000,
+                audit_year=2022,
+                audit_opinion="Qualified Opinion",
+                **fact,
+            ),
+            Audit(
+                entity_id=county.id,
+                period_id=period_id,
+                finding_text="Irregular expenditure of KES 2,500,000",
+                severity=Severity.CRITICAL,
+                query_type="Irregular Expenditure",
+                amount=2_500_000,
+                audit_year=2023,
+                audit_opinion="Qualified Opinion",
+                **fact,
+            ),
+            Audit(
+                entity_id=ministry.id,
+                period_id=period_id,
+                finding_text="Unsupported payments of KES 1,000,000",
+                severity=Severity.CRITICAL,
+                query_type="Unsupported Expenditure",
+                amount=1_000_000,
+                audit_year=2024,
+                **fact,
+            ),
+        ]
+    )
+    db_session.commit()
+
+
+def _wipe(db_session):
+    from models import Base
+
+    for table in reversed(Base.metadata.sorted_tables):
+        db_session.execute(table.delete())
+    db_session.commit()
+
+
+def _cached_get_routes(app):
+    return [
+        r
+        for r in TestNoCachedRouteSilentlyFailsToSerialise._walk(app.routes)
+        if "GET" in (getattr(r, "methods", None) or set())
+        and TestNoCachedRouteSilentlyFailsToSerialise._is_cached(
+            getattr(r, "endpoint", None)
+        )
+    ]
+
+
+def _url_for(path):
+    def fill(m):
+        name = m.group(1)
+        assert name in _SWEEP_PATH_PARAMS, (
+            f"{path} has a path parameter {{{name}}} the sweep has no value for. "
+            "Add one to _SWEEP_PATH_PARAMS that resolves to a seeded row."
+        )
+        return _SWEEP_PATH_PARAMS[name]
+
+    url = re.sub(r"\{(\w+)(:[^}]+)?\}", fill, path)
+    return f"{url}?{_SWEEP_QUERY[path]}" if path in _SWEEP_QUERY else url
+
+
+def _sweep(client, redis_client, caplog, routes):
+    """Request every route once with every cache empty.
+
+    Returns ``{path: (status, body, normalised_text, refusals)}``. A refusal
+    is read from the cache's own ``unserialisable_values`` counter, on every
+    RedisCache instance (routers/money_flow.py keeps a private one), and from
+    its log line, so neither channel going quiet can hide one.
+    """
+    import main
+    from cache.redis_cache import RedisCache
+
+    answers = {}
+    for route in sorted(routes, key=lambda r: r.path):
+        main.clear_all_caches()
+        redis_client.store.clear()
+        caplog.clear()
+        before = {id(c): c._unserialisable_values for c in RedisCache._instances}
+        with caplog.at_level(logging.ERROR, logger="cache.redis_cache"):
+            resp = client.get(_url_for(route.path))
+        refusals = [
+            c._last_unserialisable
+            for c in RedisCache._instances
+            if c._unserialisable_values > before.get(id(c), 0)
+        ] or [
+            r.getMessage()
+            for r in caplog.records
+            if "serialis" in r.getMessage().lower()
+            or "not JSON serializable" in r.getMessage()
+        ]
+        try:
+            body = resp.json()
+        except ValueError:
+            body = None
+        answers[route.path] = (
+            resp.status_code,
+            body,
+            _TIMESTAMP.sub("<ts>", resp.text),
+            refusals,
+        )
+    return answers
+
+
+def _empty_branch_reason(seeded, empty):
+    """Why a seeded answer is not evidence of a populated branch, or None."""
+    status, body, text, _ = seeded
+    if status != 200:
+        return f"HTTP {status}"
+    if isinstance(body, dict):
+        for key, value in _NO_DATA_MARKERS:
+            if body.get(key) == value:
+                return f'{key}="{value}"'
+    if (status, text) == (empty[0], empty[2]):
+        return "same body as on an empty database: the seed never reached it"
+    return None
+
+
+def _report(seeded, empty_reasons):
+    width = max(len(p) for p in seeded)
+    lines = []
+    for path in sorted(seeded):
+        if path in empty_reasons:
+            verdict = f"EMPTY  {empty_reasons[path]}"
+            if path in _EMPTY_BRANCH_ALLOWLIST:
+                verdict += "  [allowlisted]"
+        else:
+            verdict = "populated"
+        lines.append(f"  {path:<{width}}  {verdict}")
+    return "\n".join(lines)
+
+
 class TestNoCachedRouteSilentlyFailsToSerialise:
     """The durable guard: this catches the NEXT model-returning endpoint.
 
@@ -281,56 +717,138 @@ class TestNoCachedRouteSilentlyFailsToSerialise:
             fn = getattr(fn, "__wrapped__", None)
         return False
 
+    @pytest.mark.parametrize("scenario", sorted(_SCENARIOS))
     def test_no_cached_endpoint_fails_to_serialise(
-        self, client, db_session, redis_client, seeded_population, caplog
+        self,
+        client,
+        db_session,
+        redis_client,
+        representative_rows,
+        caplog,
+        monkeypatch,
+        scenario,
     ):
         import main
+        from models import PendingBill
 
-        main.redis_cache.client = redis_client
+        monkeypatch.setattr(main.redis_cache, "client", redis_client)
 
-        routes = [
-            r
-            for r in self._walk(main.app.routes)
-            if "GET" in (getattr(r, "methods", None) or set())
-            and self._is_cached(getattr(r, "endpoint", None))
-        ]
+        routes = _cached_get_routes(main.app)
         assert len(routes) >= 30, (
             f"only {len(routes)} cached routes found — the route walk broke "
             "and this guard is inspecting almost nothing"
         )
+        live = {r.path for r in routes}
+        stale_config = (set(_SWEEP_QUERY) | set(_EMPTY_BRANCH_ALLOWLIST)) - live
+        assert not stale_config, (
+            f"sweep configuration names routes that are not cached GET routes: "
+            f"{sorted(stale_config)}"
+        )
 
-        failures, exercised = [], []
-        for route in sorted(routes, key=lambda r: r.path):
-            url = re.sub(r"\{(\w+)(:[^}]+)?\}", "1", route.path)
-            redis_client.store.clear()
-            caplog.clear()
-            with caplog.at_level(logging.ERROR, logger="cache.redis_cache"):
-                resp = client.get(url)
-            if resp.status_code == 200:
-                exercised.append(route.path)
-            for record in caplog.records:
-                if "serialis" in record.getMessage().lower() or (
-                    "not JSON serializable" in record.getMessage()
-                ):
-                    failures.append((route.path, record.getMessage()))
+        if scenario == "pending_bills_from_loans":
+            db_session.query(PendingBill).delete()
+            db_session.commit()
 
-        # The four model-returning routes must be among those actually driven,
-        # or this sweep would be green because it never reached them.
-        must_reach = {
-            "/api/v1/audit/summary",
-            "/api/v1/audit/trends",
-            "/api/v1/economic/summary",
-            "/api/v1/economic/population/latest",
+        seeded = _sweep(client, redis_client, caplog, routes)
+        _wipe(db_session)
+        empty = _sweep(client, redis_client, caplog, routes)
+
+        refusals = [
+            (f"{p} ({state})", m)
+            for state, answers in (("seeded", seeded), ("empty", empty))
+            for p, (*_, found) in answers.items()
+            for m in found
+        ]
+        assert (
+            not refusals
+        ), "cached endpoints whose value cannot be stored:\n" + "\n".join(
+            f"  {p}\n     {m}" for p, m in refusals
+        )
+
+        empty_reasons = {
+            p: reason
+            for p in seeded
+            if (reason := _empty_branch_reason(seeded[p], empty[p])) is not None
         }
-        missed = must_reach - set(exercised)
-        assert not missed, (
-            f"these routes never returned 200, so the sweep did not test "
-            f"them: {sorted(missed)}"
+        report = _report(seeded, empty_reasons)
+        print(f"\ncached-route sweep, scenario {scenario}:\n{report}")
+
+        unexplained = set(empty_reasons) - set(_EMPTY_BRANCH_ALLOWLIST)
+        assert not unexplained, (
+            f"{len(unexplained)} cached route(s) answered from an empty branch "
+            "with representative rows seeded, so this sweep never tested the "
+            "branch that serialises real data — the gap issue #266 fell "
+            "through. Seed what they read in representative_rows, or allowlist "
+            "them with a reason.\n" + report
+        )
+        reachable_now = set(_EMPTY_BRANCH_ALLOWLIST) - set(empty_reasons)
+        assert not reachable_now, (
+            f"allowlisted route(s) now reach a populated branch: "
+            f"{sorted(reachable_now)}. Remove them from _EMPTY_BRANCH_ALLOWLIST "
+            "so the guard covers them.\n" + report
         )
 
-        assert not failures, "cached endpoints whose value cannot be stored:\n" + "\n".join(
-            f"  {p}\n     {m}" for p, m in failures
-        )
+        for path, expected in _SCENARIOS[scenario].items():
+            got = seeded[path][1].get("data_source")
+            assert got == expected, (
+                f"scenario {scenario!r} was meant to drive {path} through its "
+                f"{expected!r} branch, but it answered from {got!r}"
+            )
+
+    def test_the_sweep_sees_a_refusal_on_a_populated_branch_only(
+        self, client, db_session, redis_client, representative_rows, caplog, monkeypatch
+    ):
+        """POSITIVE CONTROL — the shape of #266, on a route mounted for this test.
+
+        It returns a datetime only when a PENDING_BILLS loan exists. The sweep
+        must report the refusal when rows are seeded, and must classify the
+        same route as empty-branch once they are gone. A sweep that could not
+        do both would be green on #266 for the reason it used to be.
+        """
+        import main
+        from database import get_db
+        from fastapi import Depends
+        from models import DebtCategory, Loan
+
+        monkeypatch.setattr(main.redis_cache, "client", redis_client)
+        path = "/api/v1/__sweep_positive_control__"
+
+        @main.cached(key_prefix="sweep_positive_control", ttl=60)
+        async def probe(db=Depends(get_db)):
+            rows = (
+                db.query(Loan)
+                .filter(Loan.debt_category == DebtCategory.PENDING_BILLS)
+                .all()
+            )
+            if not rows:
+                return {"status": "no_data", "last_updated": None}
+            return {
+                "status": "success",
+                "last_updated": max(r.updated_at for r in rows),
+            }
+
+        main.app.add_api_route(path, probe, methods=["GET"])
+        try:
+            routes = [r for r in _cached_get_routes(main.app) if r.path == path]
+            assert len(routes) == 1, "the route walk did not find the mounted probe"
+
+            seeded = _sweep(client, redis_client, caplog, routes)
+            _wipe(db_session)
+            empty = _sweep(client, redis_client, caplog, routes)
+        finally:
+            main.app.router.routes[:] = [
+                r for r in main.app.router.routes if getattr(r, "path", None) != path
+            ]
+
+        assert seeded[path][0] == 200
+        assert (
+            _empty_branch_reason(seeded[path], empty[path]) is None
+        ), "the seeded answer should count as populated"
+        assert any(
+            "datetime" in m for m in seeded[path][3]
+        ), f"the sweep did not see the datetime refusal: {seeded[path][3]!r}"
+        assert empty[path][3] == [], "the empty branch is serialisable"
+        assert _empty_branch_reason(empty[path], empty[path]) == 'status="no_data"'
 
 
 class TestCachedAndUncachedBodiesAreIdentical:
