@@ -26,6 +26,10 @@ from .parser import BudgetRecord
 
 logger = logging.getLogger("seeding.counties_budget.writer")
 
+#: For creating a document whose row declares no publisher. Never used to
+#: correct an existing one (issue #276).
+_DEFAULT_PUBLISHER = "Controller of Budget"
+
 
 @dataclass
 class PersistenceStats:
@@ -34,6 +38,23 @@ class PersistenceStats:
     updated: int = 0
     skipped: int = 0
     errors: List[str] = field(default_factory=list)
+
+
+def _correct_declared_publisher(source: SourceDocument, record: BudgetRecord) -> None:
+    """Relabel an existing document whose publisher the row contradicts.
+
+    Every budget document was created as "Controller of Budget" whatever its
+    URL, and the refresh below rewrote title and meta but never the publisher,
+    so a wrong label was permanent (issue #276). Only a declaration corrects a
+    document: an undeclared row at the same URL must not reset it to the
+    default on every run.
+    """
+    if record.publisher and source.publisher != record.publisher:
+        logger.info(
+            "Relabelled source document %s publisher %r -> %r",
+            source.id, source.publisher, record.publisher,
+        )
+        source.publisher = record.publisher
 
 
 def _ensure_source_document(
@@ -66,7 +87,7 @@ def _ensure_source_document(
     if source is None:
         source = SourceDocument(
             country_id=country_id,
-            publisher="Controller of Budget",
+            publisher=record.publisher or _DEFAULT_PUBLISHER,
             title=record.source_label or settings.dataset_title("budgets"),
             url=url,
             file_path=None,
@@ -89,6 +110,7 @@ def _ensure_source_document(
             meta["source_label"] = record.source_label
             source.title = record.source_label
         source.meta = meta
+        _correct_declared_publisher(source, record)
 
     source.status = DocumentStatus.AVAILABLE
     source.last_seen_at = now
@@ -342,7 +364,7 @@ def persist_budget_records(
                 initial_meta["source_label"] = record.source_label
             source = SourceDocument(
                 country_id=entity.country_id,
-                publisher="Controller of Budget",
+                publisher=record.publisher or _DEFAULT_PUBLISHER,
                 title=record.source_label or settings.dataset_title("budgets"),
                 url=url,
                 file_path=None,
@@ -364,6 +386,7 @@ def persist_budget_records(
                 meta["source_label"] = record.source_label
                 source.title = record.source_label
             source.meta = meta
+            _correct_declared_publisher(source, record)
 
         source.status = DocumentStatus.AVAILABLE
         source.last_seen_at = now
