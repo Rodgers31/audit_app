@@ -14,6 +14,7 @@ from models import (
     Loan,
     SourceDocument,
 )
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 if TYPE_CHECKING:
@@ -69,12 +70,18 @@ def _get_or_create_source_document(
         session.query(SourceDocument)
         .filter(
             (
-                SourceDocument.url == record.source_url
+                # CBK's listing contains literal spaces while the existing
+                # bulletin URL stores %20. They identify the same artifact.
+                # Do not unquote reserved characters (e.g. %2F), which can
+                # identify a different resource, or match by an edition title.
+                func.replace(SourceDocument.url, " ", "%20")
+                == record.source_url.replace(" ", "%20")
                 if record.source_url
                 else SourceDocument.title == record.source_title
             ),
             SourceDocument.doc_type == DocumentType.LOAN,
         )
+        .order_by(SourceDocument.id)
         .first()
     )
 

@@ -95,6 +95,10 @@ function pct(val: number | null | undefined): string {
   return `${val.toFixed(1)}%`;
 }
 
+function sourceText(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
 /* ═══════════════════════════════════════════════════════
    Animated number — counts up on mount, tabular-nums
    ═══════════════════════════════════════════════════════ */
@@ -296,7 +300,12 @@ export default function NationalDebtPage() {
     const hasData = Object.keys(api).length > 0;
     const totalDebt = api.total_outstanding ?? api.total_debt ?? null;
     const gdp = api.gdp ?? null;
-    const gdpRatio = api.debt_to_gdp_ratio ?? (gdp && totalDebt ? (totalDebt / gdp) * 100 : null);
+    // The API declares the ratio's measure and observation year. The register
+    // total and GDP can be from different periods; they cannot fill its absence.
+    const gdpRatio =
+      typeof api.debt_to_gdp_ratio === 'number' &&
+      Number.isFinite(api.debt_to_gdp_ratio) && api.debt_to_gdp_ratio >= 0
+        ? api.debt_to_gdp_ratio : null;
     const summary = api.summary || {};
     const categories = api.categories || {};
     const population = fetchedPopulation || api.population || null;
@@ -311,6 +320,12 @@ export default function NationalDebtPage() {
       totalDebt,
       gdp,
       gdpRatio,
+      gdpRatioYear:
+        typeof api.debt_to_gdp_year === 'number' && Number.isInteger(api.debt_to_gdp_year) &&
+        api.debt_to_gdp_year >= 1000 && api.debt_to_gdp_year <= 9999
+          ? api.debt_to_gdp_year : null,
+      gdpRatioBasis: sourceText(api.debt_to_gdp_basis),
+      gdpRatioSource: sourceText(api.debt_to_gdp_source),
       summary,
       categories,
       loanCount: api.loan_count ?? null,
@@ -585,29 +600,19 @@ export default function NationalDebtPage() {
                 Debt-to-GDP
                 <InfoTip term='debt-to-gdp' size={11} />
               </div>
-              <div className='flex items-baseline gap-2'>
-                <span className='text-2xl sm:text-3xl font-bold text-white tabular-nums'>
-                  {pct(d.gdpRatio)}
-                </span>
-                <span className='text-[11px] text-white/50'>vs PFM Act 55%</span>
+              <div className='text-2xl sm:text-3xl font-bold text-white tabular-nums'>
+                {d.gdpRatio != null ? pct(d.gdpRatio) : 'Not published'}
               </div>
-              {d.gdpRatio != null && (
-                <div className='mt-2 h-1.5 w-full rounded-full bg-white/10 overflow-hidden'>
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${Math.min(d.gdpRatio, 100)}%` }}
-                    transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-                    className='h-full rounded-full'
-                    style={{
-                      background:
-                        d.gdpRatio >= 60
-                          ? 'linear-gradient(90deg,#D9A441,#C94A4A)'
-                          : d.gdpRatio >= 40
-                            ? '#D9A441'
-                            : '#4A7C5C',
-                    }}
-                  />
-                </div>
+              {d.gdpRatio != null ? (
+                <p className='text-[11px] text-white/70 mt-1'>
+                  <span className='block'>Nominal debt · {d.gdpRatioBasis || 'Basis unavailable'}</span>
+                  <span className='block mt-1'>
+                    {d.gdpRatioSource || 'Source unavailable'} ·{' '}
+                    {d.gdpRatioYear != null ? `Observation: ${d.gdpRatioYear}` : 'Observation year unavailable'}
+                  </span>
+                </p>
+              ) : (
+                <p className='text-[11px] text-white/70 mt-1'>No debt-to-GDP observation received.</p>
               )}
             </div>
             <div className='rounded-xl bg-white/8 backdrop-blur border border-white/15 p-4'>

@@ -357,7 +357,7 @@ export default function NationalDebtCard() {
                 <InfoTip term='debt-to-gdp' size={11} />
               </div>
             }
-            value={`${gdpRatio}%`}
+            value={gdpRatio != null ? `${gdpRatio}%` : '—'}
             sub={
               gdpComparison
                 ? t('home.debt.from_year_sub')

@@ -376,6 +376,7 @@ export const MESSAGES = {
   'home.loans.amount': { en: 'Amount', sw: 'Kiasi', plain: 'Amount' },
   'home.loans.header_title': { en: 'National Government Loans', sw: 'Mikopo ya Serikali Kuu', plain: 'Kenya’s Loans' },
   'home.loans.header_sub': { en: '{n} creditor and instrument lines — {src}', sw: 'Mistari {n} ya wadai na aina za deni — {src}', plain: '{n} debt register lines — {src}' },
+  'home.loans.source_label': { en: 'Source', sw: 'Chanzo', plain: 'Source' },
   'home.loans.unavailable': { en: 'Loan data unavailable', sw: 'Data ya mikopo haipatikani', plain: 'Loan data unavailable' },
   'home.loans.outstanding': { en: 'Outstanding Debt', sw: 'Deni Lililobaki', plain: 'Still Owed' },
   'home.loans.annual_service': { en: 'Debt Service', sw: 'Malipo ya Deni', plain: 'Debt Repayments' },

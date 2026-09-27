@@ -102,6 +102,16 @@ beforeEach(() => {
 });
 
 describe('external/domestic tiles — while the two sources disagree', () => {
+  it('does not print null% when neither source supplies a debt-to-GDP observation', () => {
+    mockOverview.mockReturnValue({
+      data: { data: { ...LIVE_OVERVIEW.data, debt_to_gdp_ratio: null } },
+      isLoading: false,
+    });
+    const { container } = render(<NationalDebtCard />);
+    expect(screen.getByText('KES 11.86T')).toBeInTheDocument();
+    expect(container).not.toHaveTextContent('null%');
+  });
+
   it('shows the register sum the creditor cards add up to, not the re-split', () => {
     render(<NationalDebtCard />);
     expect(screen.getByText('KES 4.80T')).toBeInTheDocument();
