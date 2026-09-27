@@ -4964,7 +4964,9 @@ async def _federal_audits_payload():
                             FEDERAL_AUDIT_ENTITY_TYPES
                         )
                     )
-                    .order_by(DBSourceDocument.fetch_date.desc())
+                    .join(DBFiscalPeriod, DBAudit.period_id == DBFiscalPeriod.id)
+                    .filter(DBFiscalPeriod.label == latest_period_label)
+                    .order_by(DBFiscalPeriod.start_date.desc(), DBSourceDocument.fetch_date.desc(), DBSourceDocument.id.desc())
                     .first()
                 )
 
@@ -6269,9 +6271,9 @@ async def get_national_missing_funds():
         "total_amount": None,
         "total_amount_reason": "no_amount_extracted",
         "total_cases": len(cases),
-        "affected_counties": len({c["entity"] for c in county_cases}),
+        "affected_counties": len({c["entity_id"] for c in county_cases}),
         "affected_national_entities": len(
-            {c["entity"] for c in cases if c["entity_type"] != "county"}
+            {c["entity_id"] for c in cases if c["entity_type"] != "county"}
         ),
         "fiscal_years": sorted({c["fiscal_year"] for c in cases if c["fiscal_year"]}, reverse=True),
         "cases": cases,

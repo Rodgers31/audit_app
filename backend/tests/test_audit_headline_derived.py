@@ -83,7 +83,7 @@ class _Seeder:
                 "pdf_page": page,
                 "paragraph_no": no,
                 "finding_text": text,
-                "entity_name": entity.canonical_name,
+                "entity_name": f"County Executive of {entity.canonical_name.removesuffix(' County')}" if entity.type == EntityType.COUNTY else entity.canonical_name,
             },
         )
         self.db.add(ext)
@@ -386,7 +386,7 @@ class TestUnaccountedFindings:
         ]
         assert d["total_cases"] == 2
         assert d["affected_counties"] == 2
-        narok = next(c for c in d["cases"] if c["entity"] == "Narok County")
+        narok = next(c for c in d["cases"] if c["county_name"] == "Narok County")
         assert narok["source"]["page_url"] == f"{COUNTY_URL}#page=322"
         assert narok["fiscal_year"] == "FY2020/21"
         assert narok["heading"] == "Basis for Adverse Opinion"

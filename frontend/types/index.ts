@@ -375,7 +375,10 @@ export interface TooltipData {
 /** One finding from backend/services/audit_derived.py::derive_unaccounted_cases. */
 export interface UnaccountedCase {
   finding_id: number;
-  entity: string;
+  entity: string | null;
+  entity_id?: number;
+  county_name?: string | null;
+  county_slug?: string | null;
   entity_type: string | null;
   /** The Auditor-General's own heading for the finding. */
   title: string;

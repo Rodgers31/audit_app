@@ -215,29 +215,41 @@ test.describe('Keyboard navigation', () => {
 });
 
 test.describe('Form / filter persistence', () => {
-  test('search input on /accountability/missing-funds is reactive', async ({ page, request }) => {
-    // The tracker publishes a case only when it traces to a source document
-    // (AUDIT_FINDINGS F5.3), and offers no search box when there is nothing to
-    // search. Skip rather than assert UI that should not exist in that state.
-    const api = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-    const res = await request.get(`${api}/api/v1/accountability/missing-funds`);
-    if (res.ok() && (await res.json()).total_cases === 0) {
-      test.skip(true, 'no sourced cases published yet — no search UI to exercise');
-    }
+  test('search input on /accountability/unaccounted-funds is reactive', async ({ page }) => {
+    await page.route('**/api/v1/accountability/missing-funds*', (route) => route.fulfill({
+      json: {
+        basis: 'oag_finding_title', total_amount: null, total_cases: 1,
+        affected_counties: 1, affected_national_entities: 0, fiscal_years: ['FY2020/21'],
+        withheld: { count: 0, by_reason: {} },
+        cases: [{ finding_id: 1, entity: 'Example County Assembly', entity_type: 'county',
+          county_name: 'Example County', county_slug: 'example-county',
+          title: 'Unaccounted test assets', excerpt: 'Synthetic test fixture.',
+          heading: 'Basis for Qualified Opinion', fiscal_year: 'FY2020/21', page_ref: 'p.38',
+          source: { document_id: 1, title: 'Test report', url: 'https://example.org/report.pdf',
+            page_url: 'https://example.org/report.pdf#page=38' } }],
+      },
+    }));
 
-    await page.goto('/accountability/missing-funds');
+    await page.goto('/accountability/unaccounted-funds');
     await waitForAppReady(page);
 
     const search = page.getByPlaceholder(/Search by county|Tafuta/i);
     await expect(search).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('Example County Assembly', { exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Example County Assembly', exact: true })).toHaveAttribute(
+      'href', '/counties/example-county'
+    );
+    await expect(page.locator('article a[target="_blank"]')).toHaveAttribute(
+      'href', 'https://example.org/report.pdf#page=38'
+    );
 
     await search.fill('zzzz-no-match');
     await expect(
-      page.getByText(/No cases match your filter|Hakuna kesi/i)
+      page.getByText(/No findings match your search/i)
     ).toBeVisible({ timeout: 5_000 });
 
     await search.fill('');
     // Cases return after clearing — assert at least one case card or "total" number reappears
-    await expect(page.getByText(/Total flagged|Jumla/i).first()).toBeVisible();
+    await expect(page.locator('article').first()).toBeVisible();
   });
 });

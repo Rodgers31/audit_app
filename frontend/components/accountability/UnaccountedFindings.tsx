@@ -27,6 +27,7 @@ export default function UnaccountedFindings({ cases }: { cases: UnaccountedCase[
       <ul className='space-y-1'>
         {cases.map((c) => (
           <li key={c.finding_id} className='text-xs text-red-900/90 dark:text-red-100/90 flex flex-wrap items-baseline gap-x-1.5'>
+            <span>{c.entity ?? "Audited institution not identified"}:</span>
             <span className='font-medium'>“{c.title}”</span>
             {c.fiscal_year && <span className='text-red-700/80 dark:text-red-200/70'>· {c.fiscal_year}</span>}
             {c.source.page_url && c.page_ref && (

@@ -51,7 +51,8 @@ export default function MissingFundsPage() {
     if (!q) return cases;
     return cases.filter(
       (c) =>
-        c.entity.toLowerCase().includes(q) ||
+        (c.entity ?? "").toLowerCase().includes(q) ||
+        (c.county_name ?? "").toLowerCase().includes(q) ||
         c.title.toLowerCase().includes(q) ||
         c.excerpt.toLowerCase().includes(q) ||
         (c.fiscal_year || '').toLowerCase().includes(q)
@@ -171,14 +172,14 @@ export default function MissingFundsPage() {
               filtered.map((c) => (
                 <article key={c.finding_id} className='p-5'>
                   <div className='flex items-center gap-2 mb-1.5 flex-wrap text-xs'>
-                    {c.entity_type === 'county' ? (
+                    {c.entity_type === 'county' && c.county_slug ? (
                       <Link
-                        href={`/counties?search=${encodeURIComponent(c.entity.replace(/ County$/, ''))}`}
+                        href={`/counties/${encodeURIComponent(c.county_slug)}`}
                         className='text-sm font-bold text-gray-900 dark:text-neutral-text hover:text-gov-forest hover:underline'>
-                        {c.entity}
+                        {c.entity ?? "Audited institution not identified"}
                       </Link>
                     ) : (
-                      <span className='text-sm font-bold text-gray-900 dark:text-neutral-text'>{c.entity}</span>
+                      <span className='text-sm font-bold text-gray-900 dark:text-neutral-text'>{c.entity ?? "Audited institution not identified"}</span>
                     )}
                     {c.fiscal_year && (
                       <span className='text-gray-500 dark:text-neutral-muted/80'>· {c.fiscal_year}</span>
@@ -220,9 +221,12 @@ export default function MissingFundsPage() {
 
         {settled && data.withheld.count > 0 && (
           <p className='text-xs text-gray-500 dark:text-neutral-muted/80'>
-            {data.withheld.count} more matching finding{data.withheld.count === 1 ? ' is' : 's are'} held
-            back because {data.withheld.count === 1 ? 'it does' : 'they do'} not trace to a page of a
-            published report.
+            {data.withheld.count} matching findings are withheld from publication.
+            {Object.entries(data.withheld.by_reason).filter(([, n]) => n > 0).map(([reason, n]) => (
+              <span key={reason} className='block'>
+                {n}: {({ source_document_has_no_url: 'Source document is not available', finding_text_unreadable_cid: 'Extracted text is unreadable', no_page_reference: 'Report page is not identified' } as Record<string, string>)[reason] ?? 'Publication requirements are not met'}.
+              </span>
+            ))}
           </p>
         )}
 

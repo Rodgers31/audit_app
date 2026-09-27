@@ -52,6 +52,7 @@ from sqlalchemy import or_
 
 from models import Audit, Entity, EntityType, Extraction, FiscalPeriod, SourceDocument
 from services.publication_gate import publishable_audit_criterion
+from services.audit_citations import (audited_institution, page_number as _page_number, report_page_url as page_url)
 
 #: Most severe first — the order a reader should meet them in.
 MODIFIED_OPINIONS = ("Adverse", "Disclaimer", "Qualified")
@@ -97,18 +98,6 @@ def is_unresolved_prior_year(title: Any) -> bool:
 def is_unaccounted_title(title: Any) -> bool:
     return bool(UNACCOUNTED_TITLE_RE.search(_norm(title)))
 
-
-def _page_number(page_ref: Any) -> Optional[int]:
-    digits = re.sub(r"[^0-9]", "", str(page_ref or ""))
-    return int(digits) if digits else None
-
-
-def page_url(doc_url: Optional[str], page_ref: Any) -> Optional[str]:
-    """Deep link to the page, or None when either half is missing."""
-    page = _page_number(page_ref)
-    if not doc_url or page is None:
-        return None
-    return f"{doc_url}#page={page}"
 
 
 def _payload(extraction: Optional[Extraction]) -> Dict[str, Any]:
@@ -369,7 +358,10 @@ def derive_unaccounted_cases(
         cases.append(
             {
                 "finding_id": audit.id,
-                "entity": entity.canonical_name,
+                "entity": audited_institution(j, county_name=entity.canonical_name if entity.type == EntityType.COUNTY else None, document_meta=doc.meta),
+                "entity_id": entity.id,
+                "county_name": entity.canonical_name if entity.type == EntityType.COUNTY else None,
+                "county_slug": entity.slug if entity.type == EntityType.COUNTY else None,
                 "entity_type": entity.type.value if entity.type else None,
                 "title": title,
                 "excerpt": excerpt[:600],
@@ -387,7 +379,7 @@ def derive_unaccounted_cases(
         )
 
     # Newest report first, then alphabetically within it.
-    cases.sort(key=lambda c: c["entity"])
+    cases.sort(key=lambda c: c["entity"] or "")
     cases.sort(key=lambda c: c["fiscal_year"] or "", reverse=True)
     return {
         "cases": cases,

@@ -16,7 +16,10 @@ import type { UnaccountedCase } from '@/types';
 // extractor lost (p.39, paragraph 52 has it) — synthetic, not a real case.
 const NAROK: UnaccountedCase = {
   finding_id: 2996,
-  entity: 'Narok County',
+  entity: 'County Executive of Narok',
+  county_name: 'Narok County',
+  county_slug: 'narok-county',
+  entity_id: 30,
   entity_type: 'county',
   title: 'Unaccounted Expenditure on Transfers to Polytechnics',
   excerpt: 'The statement of receipts and payments reflects an expenditure of Kshs.727,165,8…',
@@ -97,6 +100,7 @@ describe('the unaccounted-funds page', () => {
     expect(await screen.findByText('“Unaccounted Expenditure on Transfers to Polytechnics”')).toBeInTheDocument();
     const link = screen.getByRole('link', { name: /report p\.322/ });
     expect(link).toHaveAttribute('href', NAROK.source.page_url);
+    expect(screen.getByRole('link', { name: 'County Executive of Narok' })).toHaveAttribute('href', '/counties/narok-county');
     expect(screen.getByText('Basis for Adverse Opinion')).toBeInTheDocument();
     expect(screen.getByText(/From the FY2024\/25 and FY2020\/21 reports/)).toBeInTheDocument();
   });
@@ -107,6 +111,16 @@ describe('the unaccounted-funds page', () => {
     expect(screen.getByText('Not stated here')).toBeInTheDocument();
     expect(screen.queryByText(/KES\s*\d/)).toBeNull();
     expect(document.body.textContent).not.toMatch(/missing/i);
+  });
+
+  it('uses the actual withholding reason, including unreadable text', async () => {
+    mockGet.mockResolvedValueOnce({ data: {
+      total_cases: 0, cases: [], affected_counties: 0, affected_national_entities: 0,
+      total_amount: null, fiscal_years: [], withheld: { count: 1, by_reason: { finding_text_unreadable_cid: 1 } },
+    } });
+    renderPage();
+    expect(await screen.findByText(/Extracted text is unreadable/)).toBeInTheDocument();
+    expect(screen.queryByText(/do not trace to a page/)).toBeNull();
   });
 
   it('says so when only the heading was extracted', async () => {
@@ -122,6 +136,7 @@ describe('the county-tab list', () => {
     expect(screen.getByText('“Unaccounted Expenditure on Transfers to Polytechnics”')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /report p\.322/ })).toHaveAttribute('href', NAROK.source.page_url);
     expect(screen.queryByText(/KES/)).toBeNull();
+    expect(screen.getByText('County Executive of Narok:')).toBeInTheDocument();
   });
 
   it('renders nothing when the county has no such finding', () => {

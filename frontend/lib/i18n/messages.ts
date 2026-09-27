@@ -224,6 +224,8 @@ export const MESSAGES = {
   'home.debt.insight_risk_unassessed_desc': { en: 'No published debt sustainability rating was received, so none is shown. This is not a finding that the debt position is safe.', sw: 'Hakuna ukadiriaji rasmi wa uendelevu wa deni uliopokelewa, hivyo hakuna unaoonyeshwa. Hii si dalili kwamba hali ya deni ni salama.', plain: 'We did not get the official rating, so we don\u2019t show one. That does not mean it is fine.' },
   'home.debt.cents_of_revenue': { en: 'KES {n} cents', sw: 'Senti {n} za KES', plain: 'KES {n} cents' },
 
+  // Audit opinion terms: retain English terms for Swahili until competent review (#307).
+  // Definitions: https://www.oagkenya.go.ke/faqs/what-do-the-various-audit-opinions-mean/
   // Audit Reports Section
   'home.audits.title': { en: 'Latest Audit Reports', sw: 'Ripoti za Hivi Karibuni za Ukaguzi', plain: 'Latest Audit Reports' },
   'home.audits.subtitle': {
@@ -233,9 +235,9 @@ export const MESSAGES = {
   },
   'home.audits.see_all': { en: 'See all reports', sw: 'Tazama ripoti zote', plain: 'See all reports' },
   'home.audits.clean': { en: 'Clean', sw: 'Safi', plain: 'Clean' },
-  'home.audits.qualified': { en: 'Qualified', sw: 'Ya Kuhitimu', plain: 'Some Issues' },
-  'home.audits.adverse': { en: 'Adverse', sw: 'Mbaya', plain: 'Bad' },
-  'home.audits.disclaimer': { en: 'Disclaimer', sw: 'Kanusho', plain: 'Unable to audit' },
+  'home.audits.qualified': { en: 'Qualified', sw: 'Qualified opinion', plain: 'Opinion with specific exceptions' },
+  'home.audits.adverse': { en: 'Adverse', sw: 'Adverse opinion', plain: 'Accounts materially misstated' },
+  'home.audits.disclaimer': { en: 'Disclaimer', sw: 'Kanusho', plain: 'Insufficient evidence for an opinion' },
   'home.audits.no_reports': { en: 'No audit reports yet', sw: 'Hakuna ripoti za ukaguzi bado', plain: 'No audits yet' },
   'home.audits.loading': { en: 'Loading audits…', sw: 'Inapakia ukaguzi…', plain: 'Loading audits…' },
   'home.audits.report_title': { en: 'Auditor General’s Report', sw: 'Ripoti ya Mkaguzi Mkuu', plain: 'Auditor-General’s Report' },
@@ -419,9 +421,9 @@ export const MESSAGES = {
     plain: 'Hover or click a county on the map to see its money and audit info.',
   },
   'home.county_panel.audit_clean': { en: 'Clean', sw: 'Safi', plain: 'Clean' },
-  'home.county_panel.audit_qualified': { en: 'Qualified', sw: 'Ya Kuhitimu', plain: 'Some Issues' },
-  'home.county_panel.audit_adverse': { en: 'Adverse', sw: 'Mbaya', plain: 'Bad' },
-  'home.county_panel.audit_disclaimer': { en: 'Disclaimer', sw: 'Kanusho', plain: 'Unable to audit' },
+  'home.county_panel.audit_qualified': { en: 'Qualified', sw: 'Qualified opinion', plain: 'Opinion with specific exceptions' },
+  'home.county_panel.audit_adverse': { en: 'Adverse', sw: 'Adverse opinion', plain: 'Accounts materially misstated' },
+  'home.county_panel.audit_disclaimer': { en: 'Disclaimer', sw: 'Kanusho', plain: 'Insufficient evidence for an opinion' },
   'home.county_panel.audit_pending': { en: 'Pending', sw: 'Inasubiri', plain: 'Pending' },
   'home.county_panel.sev_critical': { en: 'Critical', sw: 'Muhimu Sana', plain: 'Serious' },
   'home.county_panel.sev_high': { en: 'High', sw: 'Kubwa', plain: 'High' },
@@ -449,9 +451,9 @@ export const MESSAGES = {
     plain: 'Kenya map with all 47 counties. Hover to see details, click to pick one. Colours show audit results.',
   },
   'home.map.legend.clean': { en: 'Clean / A+', sw: 'Safi / A+', plain: 'Clean / A+' },
-  'home.map.legend.qualified': { en: 'Qualified / B', sw: 'Ya Kuhitimu / B', plain: 'Some Issues / B' },
-  'home.map.legend.adverse': { en: 'Adverse / C', sw: 'Mbaya / C', plain: 'Bad / C' },
-  'home.map.legend.disclaimer': { en: 'Disclaimer', sw: 'Kanusho', plain: 'Unable to audit' },
+  'home.map.legend.qualified': { en: 'Qualified / B', sw: 'Qualified opinion / B', plain: 'Opinion with specific exceptions / B' },
+  'home.map.legend.adverse': { en: 'Adverse / C', sw: 'Adverse opinion / C', plain: 'Accounts materially misstated / C' },
+  'home.map.legend.disclaimer': { en: 'Disclaimer', sw: 'Kanusho', plain: 'Insufficient evidence for an opinion' },
   'home.map.legend.pending': { en: 'Audit pending', sw: 'Ukaguzi unasubiri', plain: 'Audit pending' },
 
   // Feature nav cards
@@ -705,9 +707,9 @@ export const MESSAGES = {
 
   // Audit status labels (shared chips on counties list)
   'counties.audit_status.clean': { en: 'Clean', sw: 'Safi', plain: 'Clean' },
-  'counties.audit_status.qualified': { en: 'Qualified', sw: 'Ya Kuhitimu', plain: 'Some Issues' },
-  'counties.audit_status.adverse': { en: 'Adverse', sw: 'Mbaya', plain: 'Bad' },
-  'counties.audit_status.disclaimer': { en: 'Disclaimer', sw: 'Kanusho', plain: 'Unable to audit' },
+  'counties.audit_status.qualified': { en: 'Qualified', sw: 'Qualified opinion', plain: 'Opinion with specific exceptions' },
+  'counties.audit_status.adverse': { en: 'Adverse', sw: 'Adverse opinion', plain: 'Accounts materially misstated' },
+  'counties.audit_status.disclaimer': { en: 'Disclaimer', sw: 'Kanusho', plain: 'Insufficient evidence for an opinion' },
   'counties.audit_status.pending': { en: 'Pending', sw: 'Inasubiri', plain: 'Pending' },
 
   // ══════════════════════════════════════════════════
@@ -1185,9 +1187,9 @@ export const MESSAGES = {
   'county.acct.table.year': { en: 'Year', sw: 'Mwaka', plain: 'Year' },
   'county.acct.table.opinion': { en: 'Opinion', sw: 'Maoni', plain: 'Result' },
   'county.acct.opinion.unqualified': { en: 'Unqualified', sw: 'Safi', plain: 'Clean' },
-  'county.acct.opinion.qualified': { en: 'Qualified', sw: 'Ya Kuhitimu', plain: 'Some Issues' },
-  'county.acct.opinion.adverse': { en: 'Adverse', sw: 'Mbaya', plain: 'Bad' },
-  'county.acct.opinion.disclaimer': { en: 'Disclaimer', sw: 'Kanusho', plain: 'Unable to Audit' },
+  'county.acct.opinion.qualified': { en: 'Qualified', sw: 'Qualified opinion', plain: 'Opinion with specific exceptions' },
+  'county.acct.opinion.adverse': { en: 'Adverse', sw: 'Adverse opinion', plain: 'Accounts materially misstated' },
+  'county.acct.opinion.disclaimer': { en: 'Disclaimer', sw: 'Kanusho', plain: 'Insufficient evidence for an opinion' },
 
   // Peer comparison
   'county.acct.peer.title': { en: 'Peer Comparison', sw: 'Ulinganisho wa Wenzao', plain: 'Compared to Similar Counties' },
