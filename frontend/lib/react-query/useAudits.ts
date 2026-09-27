@@ -5,6 +5,7 @@ import { useInfiniteQuery, useQuery, UseQueryOptions } from '@tanstack/react-que
 import type {
   AuditDashboardSummary,
   AuditTrendsData,
+  FederalAuditFinding,
   FederalAuditResponse,
   FindingsFilters,
   FindingsListData,
@@ -29,20 +30,73 @@ import {
 import { AuditFilters, AuditReportResponse } from '../api/types';
 
 /**
- * Cache key for the national-government audit findings.
+ * How many findings the homepage's `AuditReportsSection` lists: the largest
+ * ones that state an amount.
+ */
+export const HOME_TOP_FINDINGS = 4;
+
+/**
+ * The findings `AuditReportsSection` lists — the largest STATED figures.
+ * Findings that state none (a null amount, or the API's "KES 0") are excluded
+ * rather than sorted as 0: with the honest null they would compare as NaN and
+ * scramble the order. The sort is stable, so ties keep the API's order.
+ *
+ * Shared by the component and by `trimFederalAuditsForHome`, so the rows the
+ * homepage ships and the rows it renders are one computation, not two.
+ */
+export function topStatedFindings(
+  findings: FederalAuditFinding[],
+  n: number = HOME_TOP_FINDINGS
+): FederalAuditFinding[] {
+  return (
+    [...findings]
+      .filter((f) => f.amount_involved !== 'KES 0' && f.amount_numeric != null)
+      // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- sort comparator
+      .sort((a, b) => (b.amount_numeric ?? 0) - (a.amount_numeric ?? 0))
+      .slice(0, n)
+  );
+}
+
+/**
+ * The national audit response cut down to what the homepage renders.
+ *
+ * `/api/v1/audits/federal` is ~886KB, almost all of it `findings` (813 rows
+ * averaging ~1.1KB). `AuditReportsSection` reads from that list only the
+ * `topStatedFindings` and whether the list is empty; every figure it prints
+ * comes from the summary fields, which pass through untouched. Prefetched
+ * whole, the list was dehydrated into the homepage document and made it a
+ * 1.31MB file (#221 finding #4).
+ *
+ * Emptiness is preserved on purpose: when findings exist but none states an
+ * amount, one is kept, so the section still shows its "no stated figures"
+ * list rather than the "nothing can be published yet" empty state, which
+ * would be a different — and false — statement.
+ */
+export function trimFederalAuditsForHome(data: FederalAuditResponse): FederalAuditResponse {
+  const top = topStatedFindings(data.findings ?? []);
+  const findings = top.length > 0 || !data.findings?.length ? top : data.findings.slice(0, 1);
+  return { ...data, findings };
+}
+
+/**
+ * Cache key for the homepage's TRIMMED national audit summary.
+ *
+ * Deliberately not the full response's key: a trimmed list cached under a
+ * name that promises every finding would hand any future reader 4 rows while
+ * `total_findings` says 813. One key, one shape.
  *
  * Exported as a factory because `app/page.tsx` prefetches this query on the
- * server and `useFederalAudits` reads it on the client — two copies of one
- * contract if the key is written out twice. It was written out twice: the
- * homepage held the literal `['audits','federal']` and matched only by
- * coincidence. That coincidence is what failed on `/counties` (#222) and on
- * the `/audits` half of #224, and this key is the one guarding the 886KB
- * payload, so it is the expensive one to get wrong.
- *
- * `QUERY_KEYS.federal` is this same call, so the hook and the prefetch
- * resolve to one definition rather than two equal ones.
+ * server and `useFederalAuditsHomeSummary` reads it on the client — two copies
+ * of one contract if the key is written out twice, which is how `/counties`
+ * (#222) and `/audits` (#224) drifted.
  */
-export const federalAuditsKey = () => ['audits', 'federal'] as const;
+export const federalAuditsHomeSummaryKey = () => ['audits', 'federal', 'home-summary'] as const;
+
+/** One declaration of the query, for the server prefetch and the hook alike. */
+export const federalAuditsHomeSummaryQuery = () => ({
+  queryKey: federalAuditsHomeSummaryKey(),
+  queryFn: async () => trimFederalAuditsForHome(await getFederalAudits()),
+});
 
 // Query keys for audits
 const QUERY_KEYS = {
@@ -59,7 +113,6 @@ const QUERY_KEYS = {
   ) => ['audits', 'county', countyId, 'list', params] as const,
   statistics: ['audits', 'statistics'] as const,
   fiscalYears: ['audits', 'fiscal-years'] as const,
-  federal: federalAuditsKey(),
 };
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -249,13 +302,12 @@ export const useCountyAuditList = (
   });
 };
 
-// Federal / national government audit findings
-export const useFederalAudits = (
+// The homepage's national audit summary — see `trimFederalAuditsForHome`.
+export const useFederalAuditsHomeSummary = (
   options?: Omit<UseQueryOptions<FederalAuditResponse>, 'queryKey' | 'queryFn'>
 ) => {
   return useQuery({
-    queryKey: QUERY_KEYS.federal,
-    queryFn: getFederalAudits,
+    ...federalAuditsHomeSummaryQuery(),
     staleTime: 15 * 60 * 1000, // 15 minutes
     ...options,
   });
