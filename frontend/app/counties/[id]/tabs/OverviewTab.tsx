@@ -10,6 +10,7 @@
  */
 import { getCountyOfficials } from '@/lib/data/county-officials';
 import { useLang } from '@/lib/i18n/LangProvider';
+import UnaccountedFindings from '@/components/accountability/UnaccountedFindings';
 import type { TranslationKey } from '@/lib/i18n/messages';
 import { CountyComprehensive } from '@/types';
 import { AlertTriangle, ExternalLink, Scale, TrendingDown, TrendingUp } from 'lucide-react';
@@ -345,21 +346,7 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
       </div>
 
       {/* Missing funds banner */}
-      {(missing_funds.total_amount > 0 || missing_funds.cases_count > 0) && (
-        <div className='bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-4'>
-          <div className='w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0'>
-            <AlertTriangle size={20} className='text-red-600' />
-          </div>
-          <div>
-            <div className='text-sm font-semibold text-red-900'>
-              {fmtKES(missing_funds.total_amount)} {t('county.overview.missing_unaccounted')}
-            </div>
-            <div className='text-xs text-red-700'>
-              {missing_funds.cases_count} {t('county.overview.cases_oag')}
-            </div>
-          </div>
-        </div>
-      )}
+      <UnaccountedFindings cases={missing_funds.cases} />
 
       {/* About this county */}
       <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-5'>

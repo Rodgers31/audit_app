@@ -25,7 +25,7 @@ const ALLOWED_PATHS = new Set([
   '/counties/compare',
   '/debt',
   '/transparency',
-  '/accountability/missing-funds',
+  '/accountability/unaccounted-funds',
   '/sources',
 ]);
 

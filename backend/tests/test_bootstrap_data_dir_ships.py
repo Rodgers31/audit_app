@@ -61,7 +61,7 @@ class TestTheDiagnosisIsAccurate:
     ):
         """"absent from the repo" was false and sent you to the wrong place."""
         monkeypatch.setattr(bootstrap, "DATA_DIR", tmp_path / "nowhere")
-        for attr in ("AUDIT_DATA_PATH", "NATIONAL_AUDIT_PATH", "COUNTY_DATA_PATH"):
+        for attr in ("COUNTY_DATA_PATH",):
             monkeypatch.setattr(
                 bootstrap,
                 attr,

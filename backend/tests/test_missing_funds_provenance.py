@@ -5,6 +5,11 @@ Kisumu from ``backend/data/reference/oag_audit_data.json`` — a file carrying n
 document title or page reference — under an on-page assurance that every case
 traced to a published audit report.
 
+Since issue #233 the endpoint no longer reads these cases at all — it lists
+extracted findings the Auditor-General titled "Unaccounted …" (see
+tests/test_audit_headline_derived.py). The gate function itself remains in
+``services.publication_gate`` and is still pinned here.
+
 These tests pin the gate in BOTH directions. A gate that only ever rejects is
 indistinguishable from a broken endpoint, so the sourced case below is the
 positive control: it must publish.
@@ -14,7 +19,7 @@ from __future__ import annotations
 
 import pytest
 
-from main import missing_funds_provenance_failure
+from services.publication_gate import missing_funds_provenance_failure
 
 
 class FakeDoc:

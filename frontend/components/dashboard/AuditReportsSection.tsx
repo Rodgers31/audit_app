@@ -3,6 +3,7 @@
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { useLang } from '@/lib/i18n/LangProvider';
 import type { TranslationKey } from '@/lib/i18n/messages';
+import type { ModifiedOpinion } from '@/lib/api/audits';
 import { topStatedFindings, useFederalAuditsHomeSummary } from '@/lib/react-query/useAudits';
 import { motion } from 'framer-motion';
 import {
@@ -145,7 +146,23 @@ export default function AuditReportsSection() {
     );
   }
 
-  const stats = data.key_statistics;
+  const headline = data.headline;
+  const OPINION_KEY: Record<ModifiedOpinion, TranslationKey> = {
+    Adverse: 'home.audits.adverse',
+    Disclaimer: 'home.audits.disclaimer',
+    Qualified: 'home.audits.qualified',
+  };
+  // One line per gate reason, each saying what is actually wrong with those
+  // rows. A single "held back for lack of a traceable source document" line
+  // used to count the unreadable-text row under a reason it did not have.
+  const WITHHELD_KEY: Record<string, TranslationKey> = {
+    source_document_has_no_url: 'home.audits.withheld_source_document_has_no_url',
+    finding_text_unreadable_cid: 'home.audits.withheld_finding_text_unreadable_cid',
+    no_page_reference: 'home.audits.withheld_no_page_reference',
+  };
+  const withheldLines = Object.entries(data.withheld_findings_by_reason ?? {})
+    .filter(([reason, n]) => n > 0 && WITHHELD_KEY[reason])
+    .map(([reason, n]) => t(WITHHELD_KEY[reason]).replace('{n}', String(n)));
 
   // Zero publishable findings is a real state that deserves a real empty
   // state — not an empty donut over a bare button. Everything rendered
@@ -213,29 +230,69 @@ export default function AuditReportsSection() {
       </div>
 
       {/* ════════ OPINION BANNER ════════ */}
-      {/* The opinion, its basis and the signature all describe one document.
-          When that document is not traceable, asserting any of them — least of
-          all the hardcoded "Material misstatements identified across multiple
-          ministries" this used to fall back to — attributes a finding to the
-          Auditor-General that no source supports. */}
-      {data.opinion_type || data.basis_for_qualification?.length ? (
+      {/* Derived from the report's own "Basis for … Opinion" section headings
+          (issue #233), each vote linked to the page it was found on. There is
+          no single "national opinion": the report is a compilation of
+          separately audited accounts, so this shows what was found and how
+          much of the report it could be read from — never a clean bill. */}
+      {headline && headline.entities_opinion_read > 0 ? (
         <div className='mx-6 sm:mx-8 mb-5 rounded-xl bg-gov-copper/[0.06] border border-gov-copper/15 px-5 py-4'>
           <div className='flex items-center gap-2 mb-2'>
             <Scale className='w-4 h-4 text-gov-copper' />
             <span className='text-xs font-bold uppercase tracking-wider text-gov-copper'>
-              {t('home.audits.opinion_label')} {data.opinion_type}
+              {t('home.audits.modified_title')}
             </span>
           </div>
-          {data.basis_for_qualification?.[0] && (
+          {headline.modified_opinions.length === 0 ? (
             <p className='text-sm text-gov-dark/80 dark:text-white/80 leading-relaxed'>
-              {data.basis_for_qualification[0]}
+              {t('home.audits.modified_none').replace('{read}', String(headline.entities_opinion_read))}
             </p>
+          ) : (
+            <>
+              <ul className='flex flex-wrap gap-x-5 gap-y-1 mb-2'>
+                {headline.modified_opinions.map((m) => (
+                  <li key={m.opinion} className='text-sm text-gov-dark dark:text-white'>
+                    <span className='font-semibold'>{t(OPINION_KEY[m.opinion])}</span>{' '}
+                    <span className='text-neutral-muted tabular-nums'>
+                      {t('home.audits.opinion_votes')
+                        .replace('{n}', String(m.entities))
+                        .replace('{f}', String(m.findings))}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <ul className='space-y-0.5'>
+                {headline.entities.map((e) => (
+                  <li
+                    key={`${e.entity}-${e.opinion}`}
+                    className='text-xs text-gov-dark/80 dark:text-white/80 flex flex-wrap items-baseline gap-x-1.5'>
+                    <span>{shortMinistry(e.entity)}</span>
+                    <span className='text-neutral-muted'>— {t(OPINION_KEY[e.opinion])}</span>
+                    {e.source_url && e.page_ref && (
+                      <a
+                        href={e.source_url}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                        className='inline-flex items-center gap-0.5 text-gov-forest dark:text-emerald-100 hover:underline'>
+                        {e.page_ref}
+                        <ExternalLink className='w-2.5 h-2.5' />
+                      </a>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
-          {data.auditor_general && (
-            <p className='text-[11px] text-neutral-muted mt-2 italic'>
-              {t('home.audits.signed_by').replace('{name}', data.auditor_general)}
+          <p className='text-[11px] text-neutral-muted mt-2 leading-relaxed'>
+            {t('home.audits.modified_coverage')
+              .replace('{read}', String(headline.entities_opinion_read))
+              .replace('{total}', String(headline.entities_with_findings))}
+          </p>
+          {withheldLines.map((line) => (
+            <p key={line} className='text-[11px] text-neutral-muted mt-1'>
+              {line}
             </p>
-          )}
+          ))}
         </div>
       ) : (
         <div className='mx-6 sm:mx-8 mb-5 rounded-xl bg-neutral-surface/60 dark:bg-surface-elevated border border-neutral-border/40 px-5 py-4'>
@@ -250,13 +307,11 @@ export default function AuditReportsSection() {
             a page of a published report. This is not a finding that the
             national accounts are clean.
           </p>
-          {typeof data.withheld_findings === 'number' && data.withheld_findings > 0 && (
-            <p className='text-[11px] text-neutral-muted mt-2'>
-              {data.withheld_findings} finding
-              {data.withheld_findings === 1 ? '' : 's'} held back for lack of a
-              traceable source document.
+          {withheldLines.map((line) => (
+            <p key={line} className='text-[11px] text-neutral-muted mt-2'>
+              {line}
             </p>
-          )}
+          ))}
         </div>
       )}
 
@@ -265,37 +320,45 @@ export default function AuditReportsSection() {
         {([
           {
             icon: Building2,
-            labelKey: 'home.audits.stat_ministries' as TranslationKey,
-            // Authoritative count only; never fall back to the findings
-            // count (which inflated this to "25"). Honest "—" when absent.
-            value: stats?.total_ministries_audited ?? '—',
+            labelKey: 'home.audits.stat_votes' as TranslationKey,
+            // Votes with at least one publishable extracted finding in this
+            // report. Not "audited": every vote is audited, and a vote the
+            // extractor found nothing under is not evidence of anything.
+            value: headline?.entities_with_findings ?? '—',
+            unit: null,
+            href: null,
             accent: 'text-gov-forest dark:text-emerald-100',
           },
           {
             icon: SearchX,
             labelKey: 'home.audits.stat_amount' as TranslationKey,
-            // Authoritative OAG questioned total; fall back to the report's
-            // own label string, then an em-dash — never a fabricated sum.
+            // The report's own questioned total; nothing extracts it, so the
+            // honest answer is an em-dash — never a fabricated sum.
             value:
               data.total_amount_questioned != null
                 ? `KES ${fmtKES(data.total_amount_questioned)}`
-                : data.total_amount_questioned_label || '—',
+                : '—',
+            unit: null,
+            href: null,
             accent: 'text-gov-copper',
           },
           {
             icon: ShieldAlert,
             labelKey: 'home.audits.stat_critical' as TranslationKey,
-            // Prefer the OAG report's own critical count (the severity-band
-            // tally over-counts because seed maps "high" -> CRITICAL).
-            value: stats?.critical_findings ?? sev.CRITICAL ?? '—',
+            value: sev.CRITICAL ?? '—',
+            unit: null,
+            href: null,
             accent: 'text-gov-copper',
           },
           {
             icon: RotateCcw,
-            labelKey: 'home.audits.stat_recurring' as TranslationKey,
-            // Honest "—" when unavailable: a fake "0" reads as "no recurring
-            // issues", the opposite of the truth when the figure is missing.
-            value: stats?.recurring_issues_from_prior_year ?? '—',
+            labelKey: 'home.audits.stat_unresolved' as TranslationKey,
+            // Votes whose report carries the Auditor-General's own
+            // "Unresolved Prior Year Matters" paragraph. Honest "—" when
+            // unavailable: a fake "0" reads as "nothing recurs".
+            value: headline?.recurring_prior_year?.entities ?? '—',
+            unit: headline?.recurring_prior_year ? t('home.audits.unit_votes') : null,
+            href: headline?.recurring_prior_year?.source_url ?? null,
             accent: 'text-gov-gold',
           },
         ] as const).map((s) => (
@@ -317,6 +380,18 @@ export default function AuditReportsSection() {
             <span className={`text-lg font-bold ${s.accent} tabular-nums leading-none`}>
               {s.value}
             </span>
+            {s.unit && ' '}
+            {s.unit && (
+              <span className='text-[11px] text-neutral-muted'>
+                {s.href ? (
+                  <a href={s.href} target='_blank' rel='noopener noreferrer' className='hover:underline'>
+                    {s.unit}
+                  </a>
+                ) : (
+                  s.unit
+                )}
+              </span>
+            )}
           </div>
         ))}
       </div>
@@ -361,11 +436,17 @@ export default function AuditReportsSection() {
                   {t('home.audits.empty_title')}
                 </p>
               </div>
-              {withheld > 0 && (
-                <p className='text-xs text-neutral-muted leading-relaxed'>
-                  {t('home.audits.empty_withheld').replace('{n}', String(withheld))}
-                </p>
-              )}
+              {withheldLines.length > 0
+                ? withheldLines.map((line) => (
+                    <p key={line} className='text-xs text-neutral-muted leading-relaxed'>
+                      {line}
+                    </p>
+                  ))
+                : withheld > 0 && (
+                    <p className='text-xs text-neutral-muted leading-relaxed'>
+                      {t('home.audits.empty_withheld').replace('{n}', String(withheld))}
+                    </p>
+                  )}
               {windowSentence && (
                 <p className='text-xs text-neutral-muted leading-relaxed'>{windowSentence}</p>
               )}
@@ -472,18 +553,31 @@ export default function AuditReportsSection() {
           )}
 
           {/* ── Emphasis of Matter ── */}
-          {data.emphasis_of_matter?.[0] && (
+          {headline?.emphasis_of_matter?.most_common_title && (
             <div className='mt-4 rounded-xl bg-gov-gold/[0.07] dark:bg-gov-gold/[0.12] border border-gov-gold/15 dark:border-gov-gold/30 px-4 py-3 flex items-start gap-2.5'>
               <AlertTriangle className='w-4 h-4 text-gov-gold flex-shrink-0 mt-0.5' />
               <div className='min-w-0'>
                 <p className='text-[11px] font-bold uppercase tracking-wider text-gov-gold mb-1'>
                   {t('home.audits.emphasis')}
                 </p>
-                <p className='text-xs text-gov-dark/70 dark:text-white/70 leading-relaxed line-clamp-2'>
-                  {data.emphasis_of_matter[0]}
+                <p className='text-xs text-gov-dark/70 dark:text-white/70 leading-relaxed'>
+                  {t('home.audits.emphasis_summary')
+                    .replace('{n}', String(headline.emphasis_of_matter.entities))
+                    .replace('{f}', String(headline.emphasis_of_matter.findings))
+                    .replace('{title}', headline.emphasis_of_matter.most_common_title)
+                    .replace('{c}', String(headline.emphasis_of_matter.most_common_findings ?? ''))}
                 </p>
+                {headline.emphasis_of_matter.source_url && headline.emphasis_of_matter.page_ref && (
+                  <a
+                    href={headline.emphasis_of_matter.source_url}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='inline-flex items-center gap-1 text-xs text-gov-forest dark:text-emerald-100 hover:underline mt-1'>
+                    <ExternalLink className='w-3 h-3' />
+                    {t('home.audits.source_page').replace('{page}', headline.emphasis_of_matter.page_ref)}
+                  </a>
+                )}
               </div>
-              <ChevronRight className='w-4 h-4 text-gov-gold/40 flex-shrink-0 mt-0.5' />
             </div>
           )}
         </div>
