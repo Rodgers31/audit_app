@@ -25,6 +25,7 @@ from services.publication_gate import (
     county_pending_bills,
     county_pending_bills_row_is_published,
     pending_bills_row_amount,
+    pending_bills_row_is_published,
     file_source_provenance_failure,
     loan_is_modelled_fixture,
     log_withheld_audits,
@@ -10511,220 +10512,190 @@ async def get_national_debt():
     }
 
 
+def _pending_bills_provenance(loan) -> Dict[str, Any]:
+    """A pending-bills row's provenance as a dict, whichever shape it is stored in."""
+    raw = loan.provenance
+    if isinstance(raw, list):
+        return raw[0] if raw and isinstance(raw[0], dict) else {}
+    return raw if isinstance(raw, dict) else {}
+
+
+def _published_pending_bills(db: Session) -> Tuple[List[tuple], Dict[str, Any]]:
+    """The pending-bills rows a reader may publish, and the totals they make.
+
+    One rule for every row, national or county: it declares the Treasury BROP
+    (:func:`pending_bills_row_is_published`) and carries a real amount
+    (:func:`pending_bills_row_amount`). ``/pending-bills`` and the debt page's
+    ``/pending-bills/summary`` both read through here, so they cannot disagree.
+
+    National rows used to be summed whatever wrote them. Production served
+    ``national_total`` 931.3B: the BROP's two para-18 lines (404.3B State
+    Corporations + 121.6B MDAs = the 525.9B it prints) plus eleven ministry and
+    state-corporation rows from the git fixture (405.4B) — members of those two
+    lines, counted a second time (#265).
+
+    Returns ``(rows, totals)``. Each row is ``(loan, entity_name, entity_type,
+    amount)``. ``totals`` holds ``national``, ``county`` and ``total``, each
+    None when nothing is published for it, and ``unpublished`` — rows present
+    but withheld. ``total`` is the two halves added only when BOTH are
+    published from ONE BROP edition: 176.9B of county bills is not "the total"
+    on a night the national lines are withheld, and two editions are two as-at
+    dates.
+    """
+    from models import DebtCategory
+
+    loans = (
+        db.query(DBLoan)
+        .filter(DBLoan.debt_category == DebtCategory.PENDING_BILLS)
+        .order_by(DBLoan.id)
+        .all()
+    )
+    # Batch-load all entity names in ONE query (avoid N+1 with remote DB)
+    entity_map: Dict[int, tuple] = {}
+    unique_eids = list({l.entity_id for l in loans if l.entity_id})
+    if unique_eids:
+        for eid, ename, etype in (
+            db.query(DBEntity.id, DBEntity.canonical_name, DBEntity.type)
+            .filter(DBEntity.id.in_(unique_eids))
+            .all()
+        ):
+            entity_map[eid] = (ename, etype.value if etype else "national")
+
+    rows = []
+    for loan in loans:
+        if not pending_bills_row_is_published(loan):
+            continue
+        amount = pending_bills_row_amount(loan)
+        if amount is None:
+            continue
+        entity_name, entity_type = entity_map.get(
+            loan.entity_id, ("National Government", "national")
+        )
+        rows.append((loan, entity_name, entity_type, amount))
+
+    national = [amount for _l, _n, etype, amount in rows if etype != "county"]
+    county = [amount for _l, _n, etype, amount in rows if etype == "county"]
+    national_total = sum(national) if national else None
+    county_total = sum(county) if county else None
+    editions = {
+        _normalised_fiscal_year(_pending_bills_provenance(loan).get("fiscal_year"))
+        for loan, *_rest in rows
+    }
+    one_edition = len(editions) == 1 and None not in editions
+    total = (
+        national_total + county_total
+        if national_total is not None and county_total is not None and one_edition
+        else None
+    )
+    return rows, {
+        "national": national_total,
+        "county": county_total,
+        "total": total,
+        "unpublished": len(loans) - len(rows),
+    }
+
+
 @app.get("/api/v1/pending-bills")
 @cached(key_prefix="pending_bills:summary", ttl=NIGHTLY_REFRESH_TTL)
 async def get_pending_bills(
     db: Session = Depends(get_db),
 ):
-    """Get government pending bills summary.
+    """Government pending bills, as the National Treasury publishes them.
 
-    Pending bills are verified unpaid invoices owed by the government
-    to suppliers and contractors. These are real obligations tracked
-    by the Controller of Budget (COB).
+    Pending bills are verified unpaid invoices owed by the government to
+    suppliers and contractors. They are read from ONE publication, the
+    Treasury's annual Budget Review and Outlook Paper: para 18 for the National
+    Government (State Corporations and MDAs), Table 10 for the counties. A row
+    is served only when it declares that publication — see
+    :func:`_published_pending_bills`.
 
-    Data sources (in priority order):
-      1. Database (from COB ETL extraction via seeding pipeline)
-      2. Live COB report scraping (if DB empty and pdfplumber available)
-      3. Returns empty with metadata explaining how to populate
-
-    Source: Office of the Controller of Budget
-      - https://cob.go.ke/publications/pending-bills/
-      - https://cob.go.ke/publications/national-government-budget-implementation-review-reports/
+    There used to be a second strategy: with no rows in the database, scrape
+    the Controller of Budget live, on the request path, and serve its national
+    rows ungated. It was a second publication for the same figure (#265) and is
+    gone; an empty table answers ``no_data``.
     """
-    from decimal import Decimal as D
-
-    # Strategy 1: Read from database (loans with debt_category = PENDING_BILLS)
     try:
-        from models import DebtCategory
+        rows, totals = _published_pending_bills(db)
+    except SQLAlchemyError:
+        # A failed read is not "nothing published". This used to catch every
+        # exception and fall through to the no-data answer, so a dead database
+        # and an empty table looked the same.
+        logging.exception("pending-bills: database read failed")
+        raise HTTPException(status_code=503, detail="Pending bills are unavailable")
 
-        pending_loans = (
-            db.query(DBLoan)
-            .filter(DBLoan.debt_category == DebtCategory.PENDING_BILLS)
-            .all()
+    if rows:
+        bills = []
+        for loan, entity_name, entity_type, amount in rows:
+            provenance = _pending_bills_provenance(loan)
+            # A more descriptive name than the entity: the provenance's own
+            # name if it carries one, else the lender field.
+            display_name = (
+                provenance.get("entity_name")
+                or provenance.get("mda_name")
+                or loan.lender
+                or entity_name
+            )
+            bills.append(
+                {
+                    "entity_name": display_name,
+                    "entity_type": entity_type,
+                    "lender": loan.lender,
+                    "total_pending": amount,
+                    "eligible_pending": provenance.get("eligible_pending"),
+                    "ineligible_pending": provenance.get("ineligible_pending"),
+                    "fiscal_year": provenance.get("fiscal_year", ""),
+                    "category": provenance.get("category", "mda"),
+                    "notes": provenance.get("notes"),
+                }
+            )
+
+        # The source is the published rows' document, never an unpublished
+        # row's — the fixture's cited a COB URL that resolves to a template.
+        first = rows[0][0]
+        source_url = _pending_bills_provenance(first).get("source_url")
+        source_title = "National Treasury — Budget Review and Outlook Paper"
+        if first.source_document_id:
+            sdoc = (
+                db.query(DBSourceDocument)
+                .filter(DBSourceDocument.id == first.source_document_id)
+                .first()
+            )
+            if sdoc:
+                source_title = sdoc.title or source_title
+                source_url = sdoc.url or source_url
+
+        last_updated = max(
+            (l.updated_at or l.created_at for l, *_rest in rows if l.updated_at or l.created_at),
+            default=None,
         )
+        return {
+            "status": "success",
+            "data_source": "database",
+            # A string: a datetime here made the whole response unserialisable
+            # for the cache, so every request re-ran the query.
+            "last_updated": last_updated.isoformat() if last_updated else None,
+            "pending_bills": bills,
+            "summary": {
+                # Each null, not 0, when nothing is published for it — and the
+                # total null unless both halves are (see _published_pending_bills).
+                "total_pending": totals["total"],
+                "national_total": totals["national"],
+                "county_total": totals["county"],
+                "record_count": len(bills),
+            },
+            "source": source_title,
+            "source_url": source_url,
+            "currency": "KES",
+            "_meta": _response_meta(unit="kes", entity_scope="all"),
+            "explanation": (
+                "Pending bills are verified but unpaid government invoices "
+                "to suppliers and contractors. Unlike formal loans, they "
+                "carry no interest but represent real obligations. "
+                "The National Treasury publishes them each year in the "
+                "Budget Review and Outlook Paper."
+            ),
+        }
 
-        if pending_loans:
-            bills = []
-            total_amount = D("0")
-            national_total = D("0")
-            county_total = D("0")
-
-            # Batch-load all entity names in ONE query (avoid N+1 with remote DB)
-            unique_eids = list({l.entity_id for l in pending_loans if l.entity_id})
-            entity_map: Dict[int, tuple] = {}
-            if unique_eids:
-                for eid, ename, etype in (
-                    db.query(DBEntity.id, DBEntity.canonical_name, DBEntity.type)
-                    .filter(DBEntity.id.in_(unique_eids))
-                    .all()
-                ):
-                    entity_map[eid] = (ename, etype.value if etype else "national")
-
-            county_rows = 0
-            for loan in pending_loans:
-                entity_name, entity_type = entity_map.get(
-                    loan.entity_id, ("National Government", "national")
-                )
-                # County rows through the same gate as every county page:
-                # the Treasury BROP, declared on the row, or nothing.
-                if entity_type == "county" and not county_pending_bills_row_is_published(
-                    loan
-                ):
-                    continue
-
-                if entity_type == "county":
-                    _amt = pending_bills_row_amount(loan)
-                    if _amt is None:
-                        continue
-                    outstanding = D(str(_amt))
-                else:
-                    outstanding = loan.outstanding or loan.principal or D("0")
-                total_amount += outstanding
-
-                if entity_type == "county":
-                    county_total += outstanding
-                    county_rows += 1
-                else:
-                    national_total += outstanding
-
-                # provenance can be a dict or list — normalize to dict
-                raw_prov = loan.provenance
-                if isinstance(raw_prov, list):
-                    provenance = (
-                        raw_prov[0]
-                        if raw_prov and isinstance(raw_prov[0], dict)
-                        else {}
-                    )
-                elif isinstance(raw_prov, dict):
-                    provenance = raw_prov
-                else:
-                    provenance = {}
-
-                # Use a more descriptive name for national entities.
-                # provenance may have an "entity_name" or "mda_name" from the
-                # COB report; fall back to the lender field, then entity table.
-                display_name = (
-                    provenance.get("entity_name")
-                    or provenance.get("mda_name")
-                    or loan.lender
-                    or entity_name
-                )
-
-                bills.append(
-                    {
-                        "entity_name": display_name,
-                        "entity_type": entity_type,
-                        "lender": loan.lender,
-                        "total_pending": float(outstanding),
-                        "eligible_pending": provenance.get("eligible_pending"),
-                        "ineligible_pending": provenance.get("ineligible_pending"),
-                        "fiscal_year": provenance.get("fiscal_year", ""),
-                        "category": provenance.get("category", "mda"),
-                        "notes": provenance.get("notes"),
-                    }
-                )
-
-            # Determine source info from provenance of first record.
-            # provenance is JSONB and can be a dict OR a list of dicts —
-            # the per-loan loop above normalizes it, but this summary
-            # lookup didn't, so a list here raised "'list' object has no
-            # attribute 'get'" and dumped the whole DB strategy into the
-            # (much slower) live-extraction fallback on every request.
-            raw_first = pending_loans[0].provenance
-            if isinstance(raw_first, list):
-                first_prov = raw_first[0] if raw_first and isinstance(raw_first[0], dict) else {}
-            elif isinstance(raw_first, dict):
-                first_prov = raw_first
-            else:
-                first_prov = {}
-            source_url = first_prov.get("source_url", "https://cob.go.ke/publications/")
-
-            # Get source document if available
-            source_title = "Controller of Budget Reports"
-            if pending_loans[0].source_document_id:
-                sdoc = (
-                    db.query(DBSourceDocument)
-                    .filter(DBSourceDocument.id == pending_loans[0].source_document_id)
-                    .first()
-                )
-                if sdoc:
-                    source_title = sdoc.title or source_title
-                    source_url = sdoc.url or source_url
-
-            return {
-                "status": "success",
-                "data_source": "database",
-                "last_updated": max(
-                    (l.updated_at or l.created_at for l in pending_loans),
-                    default=None,
-                ),
-                "pending_bills": bills,
-                "summary": {
-                    "total_pending": float(total_amount),
-                    "national_total": float(national_total),
-                    # null, not 0, when no county figure is published.
-                    "county_total": float(county_total) if county_rows else None,
-                    "record_count": len(bills),
-                },
-                "source": source_title,
-                "source_url": source_url,
-                "currency": "KES",
-                "_meta": _response_meta(unit="kes", entity_scope="all"),
-                "explanation": (
-                    "Pending bills are verified but unpaid government invoices "
-                    "to suppliers and contractors. Unlike formal loans, they "
-                    "carry no interest but represent real obligations. "
-                    "The Controller of Budget tracks and reports these in "
-                    "quarterly budget implementation review reports."
-                ),
-            }
-
-    except Exception as e:
-        logging.warning(f"DB pending bills query failed: {e}")
-
-    # Strategy 2: Try live COB extraction
-    try:
-        import asyncio
-
-        from etl.pending_bills_extractor import PendingBillsExtractor
-
-        extractor = PendingBillsExtractor()
-        data = await extractor.extract_all()
-
-        # County figures come from the Treasury BROP rows, through the gate
-        # every county page reads — never from a live scrape that bypasses it.
-        _live_rows = [
-            r
-            for r in data.get("pending_bills", []) or []
-            if str(r.get("entity_type", "")).strip().lower() != "county"
-        ]
-        if _live_rows or data.get("summary", {}).get("total_national"):
-            summary = data.get("summary", {})
-            return {
-                "status": "success",
-                "data_source": "live_cob_extraction",
-                "last_updated": data.get("extracted_at"),
-                "pending_bills": _live_rows,
-                "summary": {
-                    "total_pending": summary.get("total_national"),
-                    "national_total": summary.get("total_national"),
-                    "county_total": None,
-                    "record_count": len(_live_rows),
-                    "as_at_date": summary.get("as_at_date"),
-                },
-                "source": data.get("source_title", "Controller of Budget Reports"),
-                "source_url": data.get("source_url", "https://cob.go.ke/publications/"),
-                "currency": "KES",
-                "explanation": (
-                    "Pending bills are verified but unpaid government invoices "
-                    "to suppliers and contractors. This data was extracted live "
-                    "from COB reports."
-                ),
-            }
-    except Exception as e:
-        logging.warning(f"Live COB extraction failed: {e}")
-
-    # Strategy 3: Return empty with guidance
     return {
         "status": "no_data",
         "data_source": "none",
@@ -10736,31 +10707,17 @@ async def get_pending_bills(
             "county_total": None,
             "record_count": 0,
         },
-        "source": "Controller of Budget (https://cob.go.ke/publications/pending-bills/)",
-        "source_url": "https://cob.go.ke/publications/pending-bills/",
+        # Rows that exist but do not declare the BROP — written before the
+        # declaration existed, or from the fixture. Not a figure; a count.
+        "unpublished_row_count": totals["unpublished"],
+        "source": "National Treasury — Budget Review and Outlook Paper",
+        "source_url": "https://www.treasury.go.ke/budget-review-and-outlook-paper/",
         "currency": "KES",
         "explanation": (
-            "Pending bills data is not yet populated. Run the seeding "
-            "pipeline: python -m seeding.cli seed --domain pending_bills. "
-            "This will fetch data from COB reports at "
-            "https://cob.go.ke/publications/pending-bills/"
+            "No pending-bills figure read from the Treasury's Budget Review "
+            "and Outlook Paper is held. Run the seeding pipeline: "
+            "python -m seeding.cli seed --domain pending_bills."
         ),
-        "how_to_populate": {
-            "option_1": "Run: python -m seeding.cli seed --domain pending_bills",
-            "option_2": (
-                "Set SEED_PENDING_BILLS_DATASET_URL to a JSON fixture "
-                "and run the seeder"
-            ),
-            "option_3": (
-                "Enable Playwright (PLAYWRIGHT_ENABLED=1) for COB PDF "
-                "download + extraction"
-            ),
-            "data_sources": [
-                "https://cob.go.ke/publications/pending-bills/",
-                "https://cob.go.ke/publications/national-government-budget-implementation-review-reports/",
-                "https://www.treasury.go.ke/pending-bills/",
-            ],
-        },
     }
 
 
@@ -11033,66 +10990,47 @@ def _attach_per_capita(db: Session, counties: List[Dict[str, Any]]) -> None:
 
 
 def _pending_bills_summary_from_loans(db: Session) -> dict:
-    """Fallback: build summary from Loan table where debt_category = PENDING_BILLS."""
-    from models import DebtCategory
+    """Fallback: build summary from the published PENDING_BILLS loan rows.
 
-    pending_loans = (
-        db.query(DBLoan)
-        .filter(DBLoan.debt_category == DebtCategory.PENDING_BILLS)
-        .all()
-    )
-    if not pending_loans:
+    Every figure here is built from :func:`_published_pending_bills` — the
+    same rows, and the same total, ``/pending-bills`` serves.
+    """
+    rows, totals = _published_pending_bills(db)
+    if not rows:
+        reason = (
+            "no_row_declares_the_treasury_brop"
+            if totals["unpublished"]
+            else "no_pending_bills_rows"
+        )
         return {
             "status": "no_data",
-            "total_pending_amount": 0,
+            # Absent, not zero: withheld rows are not a total of nothing.
+            "total_pending_amount": None,
+            "eligible_total": None,
+            "ineligible_total": None,
             "breakdown_by_type": {},
-            "breakdown_by_type_absent_reason": "no_pending_bills_rows",
+            "breakdown_by_type_absent_reason": reason,
             "top_counties_by_amount": [],
             "aging_buckets": None,
-            "aging_buckets_absent_reason": "no_pending_bills_rows",
+            "aging_buckets_absent_reason": reason,
             "trend": [],
             "trend_unattributed_amount": 0,
             "currency": "KES",
             "note": "No pending bills data. Run: python -m seeding.cli seed --domain pending_bills",
         }
 
-    # Group by entity — batch-load all entity names in ONE query (avoid N+1)
-    unique_eids = list({l.entity_id for l in pending_loans if l.entity_id})
-    entity_name_map = {}
-    county_ids: set = set()
-    if unique_eids:
-        entity_rows = (
-            db.query(DBEntity.id, DBEntity.canonical_name, DBEntity.type)
-            .filter(DBEntity.id.in_(unique_eids))
-            .all()
-        )
-        entity_name_map = {eid: name for eid, name, _t in entity_rows}
-        county_ids = {eid for eid, _n, t in entity_rows if t == EntityType.COUNTY}
-
-    # A county's rows count only when they are the Treasury BROP's — the gate
-    # every county page reads through. National rows are not this gate's.
-    pending_loans = [
-        l
-        for l in pending_loans
-        if l.entity_id not in county_ids or county_pending_bills_row_is_published(l)
-    ]
-    total = sum(float(l.outstanding or l.principal or 0) for l in pending_loans)
-
     # Counties only. This ranked every entity with a pending-bills row under
     # the key ``top_counties_by_amount`` — the national government's two
     # aggregates and eleven ministries sat above Nairobi on the debt page's
     # "top counties" list.
     county_totals: Dict[int, Dict[str, Any]] = {}
-    for l in pending_loans:
-        eid = l.entity_id
-        if eid not in county_ids:
+    for loan, entity_name, entity_type, amount in rows:
+        if entity_type != "county":
             continue
-        amount = pending_bills_row_amount(l)
-        if amount is None:
-            continue
+        eid = loan.entity_id
         if eid not in county_totals:
             county_totals[eid] = {
-                "county": entity_name_map.get(eid, f"Entity {eid}"),
+                "county": entity_name,
                 "entity_id": eid,
                 "amount": 0,
             }
@@ -11106,11 +11044,9 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
     # actually says something. Rows it does not are ``unclassified``, not
     # ``supplier_arrears`` — see :data:`_BILL_TYPE_UNCLASSIFIED`.
     breakdown_by_type: Dict[str, float] = {}
-    for l in pending_loans:
-        bt = _bill_type_from_lender(l.lender)
-        breakdown_by_type[bt] = breakdown_by_type.get(bt, 0) + float(
-            l.outstanding or l.principal or 0
-        )
+    for loan, _name, _type, amount in rows:
+        bt = _bill_type_from_lender(loan.lender)
+        breakdown_by_type[bt] = breakdown_by_type.get(bt, 0) + amount
     breakdown_by_type_absent_reason = (
         "loans_table_carries_no_bill_type"
         if set(breakdown_by_type) <= {_BILL_TYPE_UNCLASSIFIED}
@@ -11124,30 +11060,33 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
     # why.
     trend_map: Dict[str, float] = {}
     trend_unattributed = 0.0
-    for l in pending_loans:
-        prov = l.provenance if isinstance(l.provenance, dict) else {}
-        amount = float(l.outstanding or l.principal or 0)
-        fy = _normalised_fiscal_year(prov.get("fiscal_year"))
+    for loan, _name, _type, amount in rows:
+        fy = _normalised_fiscal_year(_pending_bills_provenance(loan).get("fiscal_year"))
         if fy is None:
             trend_unattributed += amount
             continue
         trend_map[fy] = trend_map.get(fy, 0) + amount
     trend = [{"year": k, "total_amount": v} for k, v in sorted(trend_map.items())]
 
-    # Eligible / Ineligible totals from provenance
-    eligible_total = 0.0
-    ineligible_total = 0.0
-    for l in pending_loans:
-        prov = l.provenance if isinstance(l.provenance, dict) else {}
-        eligible_total += float(prov.get("eligible_pending") or 0)
-        ineligible_total += float(prov.get("ineligible_pending") or 0)
+    # Eligible / Ineligible totals from provenance — null, not 0, when no
+    # published row carries the split. The BROP prints none; the 308.1B /
+    # 97.3B production served was the fixture's alone (#265).
+    def _split_total(key: str) -> Optional[float]:
+        values = [
+            float(_pending_bills_provenance(loan)[key])
+            for loan, *_rest in rows
+            if _pending_bills_provenance(loan).get(key) is not None
+        ]
+        return sum(values) if values else None
 
     return {
         "status": "success",
         "data_source": "loans_table_fallback",
-        "total_pending_amount": total,
-        "eligible_total": eligible_total,
-        "ineligible_total": ineligible_total,
+        # Null unless national and county are both published from one BROP
+        # edition — the same figure /pending-bills prints.
+        "total_pending_amount": totals["total"],
+        "eligible_total": _split_total("eligible_pending"),
+        "ineligible_total": _split_total("ineligible_pending"),
         "breakdown_by_type": breakdown_by_type,
         "breakdown_by_type_absent_reason": breakdown_by_type_absent_reason,
         "top_counties_by_amount": top_counties,

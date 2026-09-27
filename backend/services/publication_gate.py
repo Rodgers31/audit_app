@@ -623,14 +623,25 @@ def loan_is_modelled_fixture(loan: Any) -> bool:
     return False
 
 
-#: The one publication county pending bills are read from: the National
-#: Treasury's Budget Review and Outlook Paper, per-county table. Written onto
-#: each row's provenance by the pending_bills fetcher, never inferred.
-COUNTY_PENDING_BILLS_PUBLICATION = "treasury_brop"
+#: The one publication pending bills are read from, national and county: the
+#: National Treasury's Budget Review and Outlook Paper — para 18 for the
+#: National Government's two lines (State Corporations, MDAs), Table 10 for the
+#: counties. Written onto each row's provenance by the pending_bills fetcher,
+#: never inferred.
+PENDING_BILLS_PUBLICATION = "treasury_brop"
+COUNTY_PENDING_BILLS_PUBLICATION = PENDING_BILLS_PUBLICATION
 
 
-def county_pending_bills_row_is_published(loan: Any) -> bool:
+def pending_bills_row_is_published(loan: Any) -> bool:
     """True for a PENDING_BILLS row read from the Treasury BROP.
+
+    National rows go through the same test (#265). The pending-bills fixture
+    wrote eleven per-ministry and state-corporation rows (405.4B — Ministry of
+    Health 89.7B, KeNHA 42.3B, ...) beside the BROP's two national lines, under
+    lenders that never collide with the BROP's, and every reader summed all
+    thirteen: 931.3B against the 525.9B the BROP prints. The BROP's lines
+    already cover every MDA and state corporation, so the fixture's rows were
+    not more detail, they were the same bills counted again.
 
     The declaration, not the row's shape. A fixture row and a BROP row look
     identical in the loans table — same category, same lender key, a
@@ -648,9 +659,13 @@ def county_pending_bills_row_is_published(loan: Any) -> bool:
     entries = provenance if isinstance(provenance, list) else [provenance]
     return any(
         isinstance(entry, dict)
-        and entry.get("publication") == COUNTY_PENDING_BILLS_PUBLICATION
+        and entry.get("publication") == PENDING_BILLS_PUBLICATION
         for entry in entries
     )
+
+
+#: #238 named the gate for the county half; it is the same test for both.
+county_pending_bills_row_is_published = pending_bills_row_is_published
 
 
 def pending_bills_row_amount(loan: Any) -> Optional[float]:

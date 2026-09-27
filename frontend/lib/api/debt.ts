@@ -181,9 +181,11 @@ export interface PendingBillEntry {
 }
 
 export interface PendingBillsSummary {
-  total_pending: number;
-  national_total: number;
-  county_total: number;
+  // Each null when nothing is published for it; the total is null unless
+  // national and county are both published from one BROP edition (#265).
+  total_pending: number | null;
+  national_total: number | null;
+  county_total: number | null;
   record_count: number;
   as_at_date?: string;
 }
@@ -213,7 +215,7 @@ export const getPendingBills = async (): Promise<PendingBillsResponse> => {
 
 // Enhanced pending bills summary (breakdown by type, aging, top counties, trend)
 export interface PendingBillsSummaryResponse {
-  total_pending_amount: number;
+  total_pending_amount: number | null;
   breakdown_by_type: {
     type: string;
     amount: number;

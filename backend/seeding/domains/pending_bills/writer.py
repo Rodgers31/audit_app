@@ -15,7 +15,7 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from models import DebtCategory, DocumentType, Entity, EntityType, Loan, SourceDocument
-from services.publication_gate import COUNTY_PENDING_BILLS_PUBLICATION
+from services.publication_gate import PENDING_BILLS_PUBLICATION
 from sqlalchemy.orm import Session
 
 if TYPE_CHECKING:
@@ -57,23 +57,25 @@ def write_pending_bills(
         logger.info("No pending bills records to write")
         return created, updated
 
-    # County figures come from ONE publication, the Treasury BROP's per-county
-    # table. Any other payload — the git-tracked fixture the fetcher falls
-    # back to when the BROP is unreachable — does not write county rows. The
-    # fixture carries seven invented county figures (Nairobi 98.7B, …) under
-    # the same lender key the BROP uses, so one failed fetch used to OVERWRITE
-    # the published figure and serve the invention as sourced.
-    if publication != COUNTY_PENDING_BILLS_PUBLICATION:
-        skipped = [r for r in records if _is_county_record(r)]
-        if skipped:
-            logger.warning(
-                "pending bills: not writing %d county record(s) from a %s "
-                "payload — county pending bills are read from the Treasury "
-                "BROP only",
-                len(skipped),
-                publication or "fixture",
-            )
-        records = [r for r in records if not _is_county_record(r)]
+    # Pending bills come from ONE publication, the Treasury BROP — para 18 for
+    # the National Government, Table 10 for the counties. Any other payload
+    # writes nothing. The git fixture the fetcher falls back to when the BROP
+    # is unreachable carries invented figures on both sides:
+    #
+    # * seven counties (Nairobi 98.7B, ...) under the same lender key the BROP
+    #   uses, so one failed fetch OVERWROTE the published figure (#238);
+    # * eleven ministries and state corporations (405.4B) under lender keys the
+    #   BROP never uses, so they were ADDED beside its two national lines and
+    #   stayed there — 931.3B served against the 525.9B the BROP prints, the
+    #   same bills counted twice (#265).
+    if publication != PENDING_BILLS_PUBLICATION:
+        logger.warning(
+            "pending bills: not writing %d record(s) from a %s payload — "
+            "pending bills are read from the Treasury BROP only",
+            len(records),
+            publication or "fixture",
+        )
+        return created, updated
 
     # Get or create the source document
     source_doc = _get_or_create_source_document(
@@ -105,8 +107,8 @@ def write_pending_bills(
 
         provenance = {
             "source": "cob_pending_bills_etl",
-            # Which publication this figure was read from; None for a fixture.
-            # Declared by the fetcher, re-stamped on every write.
+            # Which publication this figure was read from — only the BROP
+            # reaches here. Declared by the fetcher, re-stamped on every write.
             "publication": publication,
             "fiscal_year": record.fiscal_year,
             "category": record.category,
@@ -149,7 +151,7 @@ def write_pending_bills(
             created += 1
             logger.debug(f"Created: {lender_name} = {record.total_pending}")
 
-    if not dry_run and publication == COUNTY_PENDING_BILLS_PUBLICATION:
+    if not dry_run:
         _retire_counties_this_edition_does_not_report(session, records)
 
     if not dry_run:
@@ -196,7 +198,7 @@ def _retire_counties_this_edition_does_not_report(
     )
     for loan in rows:
         prov = loan.provenance if isinstance(loan.provenance, dict) else None
-        if not prov or prov.get("publication") != COUNTY_PENDING_BILLS_PUBLICATION:
+        if not prov or prov.get("publication") != PENDING_BILLS_PUBLICATION:
             continue
         if prov.get("fiscal_year") == edition:
             continue
