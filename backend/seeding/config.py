@@ -336,17 +336,18 @@ class SeedingSettings(BaseSettings):
     treasury_brop_url: Optional[str] = Field(
         default=(
             "https://www.treasury.go.ke/sites/default/files/"
-            "2025-Budget-Review-and-Outlook-Paper-1.pdf"
+            "BROP%20-%20Budget%20Review%20Outlook%20Paper/"
+            "2026%20Budget%20Review%20and%20Outlook%20Paper....pdf"
         ),
         description=(
-            "Direct URL to the latest National Treasury Budget Review "
-            "and Outlook Paper (BROP) PDF. The pending_bills domain "
-            "extracts paragraph 18 (national aggregate) and Table 10 "
-            "(per-county breakdown) from this document. The path "
-            "changes each year — set ``SEED_TREASURY_BROP_URL`` to the "
-            "new release URL when the next BROP drops, or set to None "
-            "to skip live fetch and use the fixture. Auto-discovery "
-            "from the Treasury landing page is a planned follow-up."
+            "Fallback URL for the National Treasury Budget Review and "
+            "Outlook Paper (BROP) PDF, used only when discovery on "
+            "``treasury_brop_page_url`` fails. The pending_bills domain "
+            "reads the national pending-bills paragraph from it (para 18 "
+            "in 2025, para 20 in 2026). Set ``SEED_TREASURY_BROP_URL`` to "
+            "override, or None to skip the live fetch and use the fixture. "
+            "An out-of-date value is reported: a paper older than the one "
+            "due records the domain PARTIAL (brop_edition_behind)."
         ),
     )
     live_pdf_fetch_enabled: bool = Field(
@@ -373,6 +374,33 @@ class SeedingSettings(BaseSettings):
             "Page cap per PDF for the OCR path. OCR costs ~2-5s/page; "
             "the audit-opinion sections OAG reports lead with fit inside "
             "the first ~30 pages."
+        ),
+    )
+    audits_county_start_budget_seconds: int = Field(
+        default=240,
+        ge=0,
+        description=(
+            "The audits domain starts a NEW OAG combined county volume "
+            "(download + extract + load) only while it has run for less than "
+            "this. A volume costs roughly 14-60s to read (measured locally "
+            "across the FY2021/22-FY2024/25 volumes, 217-688 pages), plus a "
+            "first load that confirms each new finding against the database "
+            "one round trip at a time (~0.1s each on production, ~500-1,300 "
+            "findings a volume). Started at 239s with the download cap below, "
+            "the worst case still ends inside domain_timeout_seconds (600s). "
+            "Volumes left over are recorded as deferred in the job metadata "
+            "and taken, newest fiscal year first, by the next run."
+        ),
+    )
+    audits_volume_download_timeout_seconds: float = Field(
+        default=120.0,
+        ge=1.0,
+        description=(
+            "Total wall-clock cap for downloading one combined county volume "
+            "(7-34MB). Lower than pdf_download_timeout_seconds because the "
+            "audits domain may start a volume late in its budget. Downloads "
+            "are resumable, so a slow night banks its bytes and the next "
+            "run continues."
         ),
     )
     counties_budget_prefer_live_source: bool = Field(

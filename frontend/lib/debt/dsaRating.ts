@@ -22,10 +22,12 @@ export interface ImfDsaRating {
     url: string;
     /** ISO date printed on the DSA itself. */
     dsa_date: string;
+    published?: string;
     page: number;
     page_label?: string;
   };
   latest_confirmed?: { as_of: string; title?: string; url?: string; row?: number };
+  freshness?: { status: 'recent_confirmation' | 'confirmation_aging' | 'unknown'; evaluated_on: string };
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -81,6 +83,19 @@ export function readDsaRating(debtSustainability: unknown): ImfDsaRating | null 
 /** Link text: "IMF–World Bank DSA, Oct 2024". */
 export function dsaSourceLabel(r: ImfDsaRating): string {
   return `IMF–World Bank DSA, ${monthYear(r.source.dsa_date)}`;
+}
+
+/** Always visible beside the assessment; a retrieval cannot renew this evidence. */
+export function dsaVintageLabel(r: ImfDsaRating): string {
+  const published = r.source.published && dayMonthYear(r.source.published);
+  const confirmed = r.latest_confirmed?.as_of && dayMonthYear(r.latest_confirmed.as_of);
+  return [
+    published ? `Published ${published}.` : 'Publication date unavailable.',
+    confirmed ? `Latest confirmed by the IMF register as of ${confirmed}.` : 'Latest status unconfirmed.',
+    r.freshness?.status === 'recent_confirmation'
+      ? 'Dated assessment; current status may differ.'
+      : 'Confirmation needs review; current status unverified.',
+  ].join(' ');
 }
 
 /** Opens the PDF at the page the rating is printed on. */

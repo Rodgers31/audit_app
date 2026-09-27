@@ -326,6 +326,9 @@ export interface FindingDetailItem {
   id: number;
   entity_id: number;
   county_name: string | null;
+  county_slug?: string | null;
+  audited_entity_name?: string | null;
+  page_ref?: string | null;
   period_id: number;
   finding_text: string;
   severity: string;

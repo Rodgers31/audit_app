@@ -119,6 +119,34 @@ def _derive_fiscal_year_dates(fy: str) -> Tuple[Optional[str], Optional[str]]:
     return f"{start_year}-07-01", f"{end_year}-06-30"
 
 
+#: Last month of each part-year period, counted from the July the FY opens.
+_SUB_PERIOD_END_MONTH_OFFSET = {"Q1": 2, "H1": 5, "Q2": 5, "Q3": 8, "9M": 8}
+
+
+def _derive_period_dates(
+    fy: str, sub_period: Optional[str]
+) -> Tuple[Optional[str], Optional[str]]:
+    """ISO start/end dates for a fiscal year, cut short by a sub-period.
+
+    ``("2025/26", "9M")`` -> ``("2025-07-01", "2026-03-31")``. A full-year
+    report (``sub_period`` None) runs to June 30. A sub-period this does not
+    know yields ``(None, None)`` rather than a guessed end date.
+    """
+    import calendar
+
+    start_iso, end_iso = _derive_fiscal_year_dates(fy)
+    if not start_iso or not sub_period:
+        return start_iso, end_iso
+    offset = _SUB_PERIOD_END_MONTH_OFFSET.get(sub_period.upper())
+    if offset is None:
+        return None, None
+    start_year = int(start_iso[:4])
+    month_index = 6 + offset  # 0-based months from January of the start year
+    year, month = start_year + month_index // 12, month_index % 12 + 1
+    last_day = calendar.monthrange(year, month)[1]
+    return start_iso, f"{year}-{month:02d}-{last_day:02d}"
+
+
 #: Libraries whose version changes what the CoB parse returns, even though
 #: none of our own source moved. Fed into the parse cache's key.
 _PDF_STACK = ("pdfplumber", "pdfminer.six")
@@ -503,18 +531,13 @@ def _download_and_parse_county_pdf(
     """Download a COB county BIRR PDF, parse it, return budget records."""
     try:
         from ...pdf_parsers import CoBQuarterlyReportParser
-        from ...pdf_download import get_or_download_pdf
+        from ...cob_cbirr import download_cbirr
         from ...parse_cache import parse_with_cache
 
-        # Use a browser-shaped UA for the PDF download — the same CDN
-        # rule that rejects the HTML landing with 415 can block `*/*`
-        # downloads too. `Accept: application/pdf` is what real browsers
-        # send on direct-PDF clicks.
-        pdf_headers = {
-            "User-Agent": _BROWSER_UA,
-            "Accept": "application/pdf,*/*;q=0.8",
-        }
-        # get_or_download_pdf enforces a TOTAL wall-clock cap on the transfer
+        # The PDF request carries a browser-shaped UA and
+        # `Accept: application/pdf` (cob_cbirr.PDF_HEADERS): the CDN rule
+        # that rejects the HTML landing with 415 can block `*/*` downloads
+        # too. get_or_download_pdf enforces a TOTAL wall-clock cap on the transfer
         # (not httpx's per-chunk timeout, which a slow-but-steady 48MB body
         # never trips) and reuses a cached copy across runs. So a slow-CDN
         # night either reuses the last good download or bails to the fixture,
@@ -523,15 +546,10 @@ def _download_and_parse_county_pdf(
         # still points at the real culprit (CDN vs parser).
         logger.info("Starting COB county BIRR PDF download: %s", pdf_url)
         download_start = time.monotonic()
-        pdf_path = get_or_download_pdf(
-            client,
-            pdf_url,
-            cache_dir=Path(settings.cache_path) / "pdfs",
-            ttl_seconds=settings.pdf_cache_ttl_seconds,
-            max_seconds=settings.pdf_download_timeout_seconds,
-            max_bytes=settings.pdf_download_max_bytes,
-            headers=pdf_headers,
-        )
+        # Through the shared CBIRR helper, not get_or_download_pdf directly:
+        # stalled_projects reads the same ~50MB file, and the two share one
+        # cache entry only if they pass the same server fingerprint (#230).
+        pdf_path = download_cbirr(client, pdf_url, settings).path
         download_elapsed = time.monotonic() - download_start
 
         logger.info(
@@ -602,12 +620,17 @@ def _download_and_parse_county_pdf(
         for record in parsed_records:
             county = record.get("county", "Unknown")
             entity_slug = slugify_entity(county)
-            fy = record.get("fiscal_year", "")
+            fy = record.get("fiscal_year") or ""
+            sub_period = record.get("quarter")
 
-            start_iso, end_iso = _derive_fiscal_year_dates(fy)
+            start_iso, end_iso = _derive_period_dates(fy, sub_period)
             if not start_iso or not end_iso:
                 dropped_no_fy += 1
                 continue
+            # "2025/26 9M": the report's own period, sub-period and all. A
+            # nine-month CBIRR filed under the bare year would share a period
+            # with — and be overwritten by — the annual report.
+            period_label = f"{fy} {sub_period}" if sub_period else fy
 
             allocated = record.get("allocated", 0)
             absorbed = record.get("absorbed", 0)
@@ -622,14 +645,19 @@ def _download_and_parse_county_pdf(
                 except ValueError:
                     absorbed = 0
 
-            allocated = _birr_amount_to_kes(float(allocated))
-            absorbed = _birr_amount_to_kes(float(absorbed))
+            if record.get("amounts_in") != "kes":
+                # Chapter 2 aggregates are printed in KSh millions. The
+                # Chapter 3 revenue tables are printed in shillings, and a
+                # small stream (a KSh 50,000 refund) scaled here would become
+                # KSh 50 billion.
+                allocated = _birr_amount_to_kes(float(allocated))
+                absorbed = _birr_amount_to_kes(float(absorbed))
 
             budget_records.append({
                 "entity_slug": entity_slug,
                 "entity": f"{county} County",
                 "fiscal_year": fy,
-                "period_label": fy,
+                "period_label": period_label,
                 "start_date": start_iso,
                 "end_date": end_iso,
                 "category": record.get("category", "Total"),
@@ -640,11 +668,7 @@ def _download_and_parse_county_pdf(
                 "actual_amount": float(absorbed),
                 "committed_amount": None,
                 "currency": "KES",
-                "source_label": (
-                    f"Controller of Budget County BIRR {fy}"
-                    if fy
-                    else "Controller of Budget County BIRR"
-                ),
+                "source_label": f"Controller of Budget County BIRR FY{period_label}",
                 "source_url": pdf_url,
                 "data_quality": "official",
                 "notes": record.get("notes"),

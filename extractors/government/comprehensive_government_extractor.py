@@ -60,7 +60,8 @@ it withdrew the six methods that typed in the national debt. Nothing in the
 repo has served them since. The other three do resolve:
 ``/counties/{county_name}`` at ``apis/modernized_api.py:228``,
 ``/audit/queries`` at ``:286``, and ``/analytics/summary`` at
-``apis/county_analytics_api.py:371``.
+``apis/county_analytics_api.py:371`` — since withdrawn with that module, whose
+routes ranked named counties on modelled figures.
 
 ``backend/tests/test_advertised_endpoints_are_served.py`` now checks every
 advertised path against the routes this repo registers, so a list that outlives

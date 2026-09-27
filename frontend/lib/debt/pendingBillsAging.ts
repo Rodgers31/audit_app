@@ -178,8 +178,9 @@ export function agingDistributionSupport(
 /**
  * What to tell the reader in place of the chart.
  *
- * Says what IS known (the total is real — it comes from the Treasury's Budget
- * Review and Outlook Paper) and what is not, without implying a schedule for
+ * Says what IS known (the figures are published — the Treasury's Budget Review
+ * and Outlook Paper for the National Government, the Controller of Budget's
+ * year-end report for the counties) and what is not, without implying a schedule for
  * fixing it. The previous copy on /debt promised "a richer breakdown will
  * appear once the pending_bills seed lands", which reads as a delivery date
  * for a dataset nobody has committed to publishing.

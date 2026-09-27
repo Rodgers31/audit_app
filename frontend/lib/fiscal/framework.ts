@@ -27,6 +27,13 @@
 
 export const FISCAL_FRAMEWORK_BASIS = 'treasury_fiscal_framework';
 
+/** Preserve a declared vintage; older payloads cannot be dated by year alone. */
+export function fiscalColumnLabel(row: { fiscal_framework?: FiscalFramework | null }): string {
+  const column = row.fiscal_framework?.source?.column;
+  return column && ['Actual', 'Preliminary', 'Supplementary I', 'Approved'].includes(column)
+    ? column : 'Vintage unconfirmed';
+}
+
 export interface FiscalFramework {
   basis: string;
   identified_by?: 'approved_budget' | 'revenue_column' | string;

@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, time, timezone
-from typing import Optional
+from typing import Collection, Optional
 
 from models import (
     Audit,
@@ -35,6 +35,7 @@ from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.orm import Session
 
 from ...config import SeedingSettings
+from ...extractors import oag_county_volume
 from ...extractors.oag_blue_book import EXTRACTOR_ID, source_hash_of
 from ...types import DomainRunContext
 from ...utils import normalize_fiscal_label, slugify_entity
@@ -42,6 +43,11 @@ from .writer import PersistenceStats
 import re
 
 logger = logging.getLogger("seeding.audits.loader")
+
+#: Extractors whose rows share the Blue Book payload shape and load here. The
+#: county-volume extractor reuses the Blue Book's chapter walk, so its rows
+#: carry the same finding fields plus the chapter and volume they came from.
+LOADED_EXTRACTORS = (EXTRACTOR_ID, oag_county_volume.EXTRACTOR_ID)
 
 _SEVERITY_MAP = {
     "CRITICAL": Severity.CRITICAL,
@@ -207,8 +213,23 @@ def load_blue_book_extractions(
     doc: SourceDocument,
     settings: SeedingSettings,
     context: DomainRunContext,
+    *,
+    fresh_extraction_ids: Collection[int] = (),
 ) -> PersistenceStats:
-    """Extractions of ``doc`` → audit rows, provenance columns populated."""
+    """Extractions of ``doc`` → audit rows, provenance columns populated.
+
+    ``fresh_extraction_ids`` are extractions the caller created in THIS
+    transaction, not yet committed. For those, the per-row confirming SELECT
+    below is skipped. It guards against another writer inserting an audit
+    for the same extraction mid-loop, and for these rows that cannot happen.
+    The rows are invisible to every other transaction until commit, the only
+    code that writes an audit for an extraction first SELECTs it, and
+    ``audits.extraction_id`` is a foreign key, so no audit can name an
+    extraction its writer cannot see. The saving is not small. A combined
+    county volume creates 500-1,300 findings, at ~0.1s a round trip to
+    production.
+    """
+    fresh = set(fresh_extraction_ids)
     stats = PersistenceStats()
     # Lookup caches for this document. Scoped per call, not module-level, so
     # nothing leaks between documents or between runs.
@@ -220,7 +241,7 @@ def load_blue_book_extractions(
             select(Extraction).where(
                 and_(
                     Extraction.source_document_id == doc.id,
-                    Extraction.extractor == EXTRACTOR_ID,
+                    Extraction.extractor.in_(LOADED_EXTRACTORS),
                 )
             )
         )
@@ -228,7 +249,9 @@ def load_blue_book_extractions(
         .all()
     )
     if not extractions:
-        logger.info("No %s extractions for document %s", EXTRACTOR_ID, doc.id)
+        logger.info(
+            "No %s extractions for document %s", "/".join(LOADED_EXTRACTORS), doc.id
+        )
         return stats
 
     # One round trip for all of this document's audit rows, not one per
@@ -306,11 +329,20 @@ def load_blue_book_extractions(
         amount = amounts[0] if len(amounts) == 1 else None
         vote = payload.get("vote")
         para = payload.get("paragraph_no")
-        reference = f"OAG-BB-{fy}-V{vote}-P{para}"
+        county_volume = payload.get("schema") == oag_county_volume.SCHEMA
+        if county_volume:
+            # The executives and assemblies volumes BOTH number their chapters
+            # 1..47, so "V1" alone names two different auditees. The FY2020/21
+            # rows loaded under that form share 28 references between the two
+            # volumes on production. E/A keeps each one unique.
+            role = "E" if payload.get("volume_kind") == "executives" else "A"
+            reference = f"OAG-CV-{fy}-{role}{payload.get('chapter_no')}-P{para}"
+        else:
+            reference = f"OAG-BB-{fy}-V{vote}-P{para}"
         page_ref = f"p.{payload.get('pdf_page')}"
 
         prov_entry = {
-            "source": "oag_blue_book",
+            "source": ext.extractor,
             "reference": reference,
             "source_url": doc.url,
             "source_md5": doc.md5,
@@ -325,6 +357,13 @@ def load_blue_book_extractions(
             "extraction_id": ext.id,
             "extraction_method": payload.get("extraction_method"),
         }
+        if county_volume:
+            prov_entry.update(
+                volume_kind=payload.get("volume_kind"),
+                chapter_no=payload.get("chapter_no"),
+                auditee=payload.get("auditee"),
+                fiscal_year_sources=payload.get("fiscal_year_sources"),
+            )
 
         # Read from the batch. A HIT is final — the snapshot was taken after
         # this session's own flush, and nothing else rewrites an audit's
@@ -345,7 +384,7 @@ def load_blue_book_extractions(
         # semantics of the predicate it replaced, which `IN (NULL)` does not
         # have.
         existing = existing_by_extraction.get(ext.id)
-        if existing is None:
+        if existing is None and ext.id not in fresh:
             existing = session.execute(
                 select(Audit).where(Audit.extraction_id == ext.id)
             ).scalar_one_or_none()

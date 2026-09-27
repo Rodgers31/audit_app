@@ -122,11 +122,27 @@ const cardFor = (head: string) => {
 };
 
 describe('RevenueMix — per-row provenance', () => {
-  it('marks the residual head as a residual, not a measured stream', () => {
+  it('keeps a publisher-reported zero in the latest year and sparkline', () => {
+    render(<RevenueMix revenueBySource={[
+      { fiscal_year: 'FY 2024/25', sources: [
+        { revenue_type: 'PAYE', amount: 12, basis: 'published' },
+        { revenue_type: 'VAT', amount: 8, basis: 'published' },
+      ] },
+      { fiscal_year: 'FY 2025/26', sources: [
+        { revenue_type: 'PAYE', amount: 0, basis: 'published' },
+        { revenue_type: 'VAT', amount: 0, basis: 'published' },
+      ] },
+    ]} />);
+    expect(within(cardFor('PAYE')).getByText('KES 0B')).toBeInTheDocument();
+    expect(screen.getByText('KRA revenue collections · FY 2025/26')).toBeInTheDocument();
+    const zeroBar = within(cardFor('PAYE')).getAllByTestId('spark-bar').find((bar) => bar.dataset.year === '2025/26');
+    expect(zeroBar).toHaveStyle({ height: '0%' });
+  });
+
+  it('withholds the incompatible residual even from an older API', () => {
     render(<RevenueMix revenueBySource={SERIES} />);
-    const card = cardFor('Other Tax Revenue');
-    expect(card).toHaveAttribute('data-basis', 'residual');
-    expect(within(card).getByText(/residual/i)).toBeInTheDocument();
+    expect(screen.queryByText('Other Tax Revenue')).not.toBeInTheDocument();
+    expect(screen.getByText(/Other Tax Revenue and percentage shares are unavailable/)).toBeInTheDocument();
   });
 
   it('does not mark the KRA-published heads', () => {
@@ -138,14 +154,9 @@ describe('RevenueMix — per-row provenance', () => {
     }
   });
 
-  it("describes the residual from its own note, not the hardcoded blurb", () => {
-    // The blurb said "Stamp duty, agricultural cess, minor taxes lumped
-    // together". The row says withholding tax, capital gains, betting and
-    // digital-economy taxes, and says nothing about agricultural cess.
+  it('does not describe the withdrawn residual as a set of measured taxes', () => {
     render(<RevenueMix revenueBySource={SERIES} />);
-    const card = cardFor('Other Tax Revenue');
-    expect(card.textContent).toMatch(/withholding tax/i);
-    expect(card.textContent).not.toMatch(/agricultural cess/i);
+    expect(screen.queryByText(/Includes withholding tax/)).not.toBeInTheDocument();
   });
 
   it('names the charted years that are not published figures', () => {
@@ -226,12 +237,11 @@ describe('RevenueMix — the section credit follows the rows', () => {
 });
 
 describe('RevenueMix — nothing is dropped or zeroed to achieve this', () => {
-  it('still renders all six heads and their amounts', () => {
+  it('keeps the five observed collection lines without inventing a total', () => {
     render(<RevenueMix revenueBySource={SERIES} />);
     for (const [head] of HEADS) expect(screen.getByText(head)).toBeInTheDocument();
-    expect(screen.getByText('Other Tax Revenue')).toBeInTheDocument();
-    // The residual keeps its real figure — labelled, not withheld or zeroed.
-    expect(cardFor('Other Tax Revenue').textContent).toMatch(/181/);
+    expect(screen.queryByText('Other Tax Revenue')).not.toBeInTheDocument();
+    expect(screen.queryByText(/How KRA collected KES/)).not.toBeInTheDocument();
   });
 
   it('keeps FY 2022/23 in the sparkline rather than withholding it', () => {

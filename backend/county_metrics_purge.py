@@ -64,7 +64,7 @@ def purge_modelled_county_metrics(session: Session) -> Dict[str, int]:
 
         budget_2025, per_capita_budget      Controller of Budget, CBIRR
         revenue_2024, local_revenue         CBIRR own-source revenue table
-        pending_bills, pending_bills_ratio  Treasury BROP Table 10
+        pending_bills, pending_bills_ratio  CoB year-end CBIRR payables table
         population                          KNBS 2019 Census, Table 2.2
         debt_outstanding, debt_to_budget…   withheld: no publisher
         missing_funds                       withheld: no source document

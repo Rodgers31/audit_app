@@ -74,7 +74,7 @@ PUBLIC_WRITE_ROUTES = {
     ),
     ("POST", "/api/v1/newsletter/subscribe"): (
         "Newsletter sign-up needs no account by design (NewsletterBanner). "
-        "Writes at most one newsletter_subscribers row per email; sends nothing."
+        "Creates at most one subscriber and welcome email per normalized address; signed proof is required to reverse an opt-out."
     ),
     ("POST", "/api/v1/newsletter/unsubscribe-verify"): (
         "Called from the emailed unsubscribe link; the handler 403s unless "
@@ -84,18 +84,7 @@ PUBLIC_WRITE_ROUTES = {
 
 # Open to anonymous callers, and NOT safe. Tolerated so this test can land
 # without a product change; each needs a decision, then removal from here.
-KNOWN_UNGATED_WRITE_ROUTES = {
-    ("POST", "/api/v1/newsletter/send-welcome"): (
-        "Emails a welcome message to any address in the body. It does not "
-        "check the address is a subscriber, so anyone can make the server "
-        "mail arbitrary addresses. Called by lib/api/auth.ts after subscribe."
-    ),
-    ("POST", "/api/v1/newsletter/unsubscribe"): (
-        "Unsubscribes any email with no proof of ownership. No frontend code "
-        "calls it (unsubscribeNewsletter in lib/api/auth.ts has no caller); "
-        "the unsubscribe page uses the token-verified /unsubscribe-verify."
-    ),
-}
+KNOWN_UNGATED_WRITE_ROUTES: dict = {}
 
 # Write routes that authenticate the CALLER by a request signature instead of
 # a user session. Tolerated while absent (the cache-invalidation route lands

@@ -375,11 +375,11 @@ export const MESSAGES = {
   'home.loans.lender': { en: 'Lender', sw: 'Mkopeshaji', plain: 'Who loaned the money' },
   'home.loans.amount': { en: 'Amount', sw: 'Kiasi', plain: 'Amount' },
   'home.loans.header_title': { en: 'National Government Loans', sw: 'Mikopo ya Serikali Kuu', plain: 'Kenya’s Loans' },
-  'home.loans.header_sub': { en: '{n} active loans — {src}', sw: 'Mikopo hai {n} — {src}', plain: '{n} loans — {src}' },
+  'home.loans.header_sub': { en: '{n} creditor and instrument lines — {src}', sw: 'Mistari {n} ya wadai na aina za deni — {src}', plain: '{n} debt register lines — {src}' },
   'home.loans.unavailable': { en: 'Loan data unavailable', sw: 'Data ya mikopo haipatikani', plain: 'Loan data unavailable' },
   'home.loans.outstanding': { en: 'Outstanding Debt', sw: 'Deni Lililobaki', plain: 'Still Owed' },
   'home.loans.annual_service': { en: 'Debt Service', sw: 'Malipo ya Deni', plain: 'Debt Repayments' },
-  'home.loans.see_all_n': { en: 'See all {n} loans →', sw: 'Tazama mikopo yote {n} →', plain: 'See all {n} loans →' },
+  'home.loans.see_all_n': { en: 'See all {n} register lines →', sw: 'Tazama mistari yote {n} ya deni →', plain: 'See all {n} register lines →' },
   'home.loans.type.multilateral': { en: 'Multilateral', sw: 'Ya Kimataifa', plain: 'Multi-country' },
   'home.loans.type.bilateral': { en: 'Bilateral', sw: 'Baina ya Nchi Mbili', plain: 'Country-to-country' },
   'home.loans.type.commercial': { en: 'Commercial', sw: 'Ya Kibiashara', plain: 'Commercial' },
@@ -572,9 +572,12 @@ export const MESSAGES = {
   // Rendered on its own when no budget was published at all — an absent figure
   // has no source, and either budget clause would then describe nothing.
   'counties.provenance.rest': {
-    en: 'Pending bills are the audited per-county figures from Table 10 of the National Treasury\'s Budget Review and Outlook Paper. County debt is shown only where a source publishes it; most counties have none, and those show a dash rather than a figure. Audit findings are from the Office of the Auditor-General.',
-    sw: 'Bili ambazo hazijalipwa ni takwimu zilizokaguliwa za kila kaunti kutoka Jedwali la 10 la Karatasi ya Mapitio na Mtazamo wa Bajeti ya Hazina ya Taifa. Deni la kaunti linaonyeshwa pale tu chanzo kinapolichapisha; kaunti nyingi hazina, na hizo zinaonyesha mstari badala ya takwimu. Matokeo ya ukaguzi yanatoka Ofisi ya Mkaguzi Mkuu wa Hesabu.',
-    plain: 'The unpaid-bill numbers are real: they come from the Treasury\'s audited county-by-county table. County debt is shown only when a source publishes it; for most counties nobody does, so you will see a dash instead of a number. The audit findings are real, from the Auditor-General.',
+    // Not "audited" (#238): the Controller of Budget's table says "Source:
+    // County Treasuries" — the counties report the figures and the CoB
+    // compiles them. The Treasury's BROP, the previous source, reprints it.
+    en: 'Pending bills are each county\'s trade payables at 30 June, as the county treasuries reported them to the Controller of Budget, from the table in its full-year County Governments Budget Implementation Review Report. County debt is shown only where a source publishes it; most counties have none, and those show a dash rather than a figure. Audit findings are from the Office of the Auditor-General.',
+    sw: 'Bili ambazo hazijalipwa ni madeni ya kila kaunti kwa wasambazaji hadi tarehe 30 Juni, kama hazina za kaunti zilivyoyaripoti kwa Mdhibiti wa Bajeti, kutoka jedwali la Ripoti yake ya mwaka mzima ya Mapitio ya Utekelezaji wa Bajeti za Serikali za Kaunti. Deni la kaunti linaonyeshwa pale tu chanzo kinapolichapisha; kaunti nyingi hazina, na hizo zinaonyesha mstari badala ya takwimu. Matokeo ya ukaguzi yanatoka Ofisi ya Mkaguzi Mkuu wa Hesabu.',
+    plain: 'The unpaid-bill numbers are what each county told the Controller of Budget it still owed suppliers on 30 June. The Auditor-General has not checked them. County debt is shown only when a source publishes it; for most counties nobody does, so you will see a dash instead of a number. The audit findings are real, from the Auditor-General.',
   },
   'counties.subtitle': {
     en: 'Compare all 47 Kenyan counties on budget, execution, debt, and audit findings.',
@@ -1000,6 +1003,39 @@ export const MESSAGES = {
   'county.overview.debt_total': { en: 'Total debt', sw: 'Deni jumla', plain: 'Total owed' },
   'county.overview.debt_to_budget': { en: 'Debt-to-budget', sw: 'Deni-kwa-bajeti', plain: 'Debt vs. budget' },
   'county.overview.debt_pending': { en: 'Pending bills', sw: 'Ankara zilizokwama', plain: 'Unpaid bills' },
+  // The day the pending-bills figure is a stock on, and what the report says
+  // about it (#238). {table} and {amount} are filled in by
+  // lib/counties/pendingBillsNotes.
+  'county.overview.pending_as_at': {
+    en: 'As at {date} · Controller of Budget, {table}',
+    sw: 'Hadi {date} · Mdhibiti wa Bajeti, {table}',
+    plain: 'Owed on {date}, as reported to the Controller of Budget ({table})',
+  },
+  'county.overview.pending_absent.not_reported': {
+    en: 'Not reported to the Controller of Budget as at {date} ({table}).',
+    sw: 'Haijaripotiwa kwa Mdhibiti wa Bajeti hadi {date} ({table}).',
+    plain: 'This county did not tell the Controller of Budget what it owed on {date}.',
+  },
+  'county.overview.pending_absent.withheld': {
+    en: 'Not shown: the Controller of Budget\'s row for this county ({table}, {date}) does not add up on its own terms.',
+    sw: 'Haionyeshwi: safu ya Mdhibiti wa Bajeti kwa kaunti hii ({table}, {date}) haijumliki yenyewe.',
+    plain: 'Not shown, because the Controller of Budget\'s own numbers for this county don\'t add up.',
+  },
+  'county.overview.pending_note.cob_marked_inconsistent': {
+    en: 'The Controller of Budget marks this figure as inconsistent with the county\'s own ageing analysis of the same bills ({table}).',
+    sw: 'Mdhibiti wa Bajeti anaonyesha kuwa takwimu hii haiwiani na uchambuzi wa kaunti yenyewe wa umri wa bili hizo hizo ({table}).',
+    plain: 'The Controller of Budget says this county\'s numbers don\'t agree with each other.',
+  },
+  'county.overview.pending_note.assembly_not_printed': {
+    en: 'County Executive only: the report prints no County Assembly figure for this county ({table}).',
+    sw: 'Serikali ya Kaunti pekee: ripoti haionyeshi takwimu ya Bunge la Kaunti kwa kaunti hii ({table}).',
+    plain: 'This covers the county government only. The county assembly\'s unpaid bills are not in the report.',
+  },
+  'county.overview.pending_note.chapter_table_differs': {
+    en: 'The same report\'s county chapter prints {amount} ({chapter_table}); the figure shown is the one that adds up to the report\'s national total ({table}).',
+    sw: 'Sura ya kaunti katika ripoti hiyo hiyo inaonyesha {amount} ({chapter_table}); takwimu inayoonyeshwa ni ile inayojumlika kuwa jumla ya kitaifa ya ripoti ({table}).',
+    plain: 'The same report gives a different number, {amount}, further on. We show the one that adds up with the other counties.',
+  },
   'county.overview.sustain.sustainable': { en: 'Sustainable', sw: 'Endelevu', plain: 'Healthy' },
   'county.overview.sustain.moderate': { en: 'Moderate Risk', sw: 'Hatari ya Wastani', plain: 'Medium Risk' },
   'county.overview.sustain.at_risk': { en: 'At Risk', sw: 'Katika Hatari', plain: 'At Risk' },
@@ -1019,6 +1055,31 @@ export const MESSAGES = {
   // Missing funds banner
 
   // Overview profile KPIs
+  'county.revenue.cash_receipts': {
+    en: 'Own-source cash receipts',
+    sw: 'Mapato ya ndani yaliyopokelewa',
+    plain: 'Money the county received from its own sources',
+  },
+  'county.revenue.summary_actual_realised': {
+    en: 'Summary table “Actual Realised”',
+    sw: 'Jedwali la muhtasari “Actual Realised”',
+    plain: 'Amount labelled “Actual Realised” in the summary table',
+  },
+  'county.revenue.amount': {
+    en: '{label}: {amount}',
+    sw: '{label}: {amount}',
+    plain: '{label}: {amount}',
+  },
+  'county.revenue.summary_differs': {
+    en: 'Summary table “Actual Realised”: {amount}; differs from cash receipts',
+    sw: 'Jedwali la muhtasari “Actual Realised”: {amount}; hutofautiana na fedha zilizopokelewa',
+    plain: 'The summary table reports {amount} as “Actual Realised”. This differs from the money received.',
+  },
+  'county.revenue.cash_and_opening_balance': {
+    en: 'Cash receipts and opening balance',
+    sw: 'Fedha zilizopokelewa na salio la mwanzo',
+    plain: 'Money received plus the balance at the start',
+  },
   'county.overview.kpi.total_revenue': { en: 'Total Revenue', sw: 'Mapato Jumla', plain: 'Total Money In' },
   'county.overview.kpi.local_prefix': { en: 'Local:', sw: 'Ya ndani:', plain: 'Local:' },
   'county.overview.kpi.census': { en: 'Census', sw: 'Sensa', plain: 'Census' },

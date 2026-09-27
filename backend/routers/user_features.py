@@ -5,9 +5,7 @@ Endpoints:
   GET              /api/v1/user/alerts        — Get data alerts
   PATCH            /api/v1/user/alerts/:id    — Mark alert as read
   POST             /api/v1/newsletter/subscribe   — Subscribe (no auth)
-  POST             /api/v1/newsletter/unsubscribe — Unsubscribe
-  POST             /api/v1/newsletter/send-welcome — Trigger welcome email
-  GET              /api/v1/newsletter/unsubscribe-verify — Verify token & unsubscribe
+  POST              /api/v1/newsletter/unsubscribe-verify — Verify token & unsubscribe
 """
 
 from __future__ import annotations
@@ -16,10 +14,12 @@ from typing import List, Optional
 
 from database import get_db
 from supabase_auth import get_current_db_user as get_current_user
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from models import DataAlert, NewsletterSubscriber, User, WatchlistItem
 from pydantic import ConfigDict, BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
+from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 
 router = APIRouter(tags=["user-features"])
 
@@ -60,6 +60,7 @@ class AlertOut(BaseModel):
 
 class NewsletterRequest(BaseModel):
     email: EmailStr
+    token: Optional[str] = None
 
 
 class NewsletterResponse(BaseModel):
@@ -215,12 +216,41 @@ def mark_all_read(
 # ── Newsletter ──────────────────────────────────────────────────────
 
 
+def _newsletter_key_ready():
+    from config.settings import SigningKeyUnavailable
+    from services.email_service import _hmac_key
+
+    try:
+        _hmac_key()
+    except SigningKeyUnavailable:
+        raise HTTPException(
+            status_code=503, detail="Newsletter signing is not configured."
+        )
+
+
 @router.post("/api/v1/newsletter/subscribe", response_model=NewsletterResponse)
-def subscribe_newsletter(body: NewsletterRequest, db: Session = Depends(get_db)):
-    """Subscribe an email to the monthly newsletter (no account required)."""
-    existing = db.query(NewsletterSubscriber).filter_by(email=body.email).first()
+def subscribe_newsletter(
+    body: NewsletterRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    """Create one subscription. Retries never enqueue another welcome email."""
+    from services.email_service import send_welcome_email, verify_unsubscribe_token
+
+    _newsletter_key_ready()
+    email = body.email.lower()
+    existing = (
+        db.query(NewsletterSubscriber)
+        .filter(func.lower(NewsletterSubscriber.email) == email)
+        .first()
+    )
     if existing:
         if existing.unsubscribed_at:
+            if not body.token or not verify_unsubscribe_token(email, body.token):
+                raise HTTPException(
+                    status_code=403,
+                    detail="A signed newsletter link is required to resubscribe.",
+                )
             existing.unsubscribed_at = None
             db.commit()
             return NewsletterResponse(
@@ -230,46 +260,22 @@ def subscribe_newsletter(body: NewsletterRequest, db: Session = Depends(get_db))
             status="already_subscribed", message="This email is already subscribed."
         )
 
-    subscriber = NewsletterSubscriber(email=body.email)
-    db.add(subscriber)
-    db.commit()
+    db.add(NewsletterSubscriber(email=email))
+    try:
+        db.commit()
+    except IntegrityError:
+        # The unique email constraint arbitrates simultaneous signup retries.
+        db.rollback()
+        if not db.query(NewsletterSubscriber).filter_by(email=email).first():
+            raise
+        return NewsletterResponse(
+            status="already_subscribed", message="This email is already subscribed."
+        )
+    background_tasks.add_task(send_welcome_email, email)
     return NewsletterResponse(
         status="subscribed",
         message="You're subscribed! Look out for our monthly digest.",
     )
-
-
-@router.post("/api/v1/newsletter/unsubscribe", response_model=NewsletterResponse)
-def unsubscribe_newsletter(body: NewsletterRequest, db: Session = Depends(get_db)):
-    """Unsubscribe from the newsletter."""
-    from datetime import datetime, timezone
-
-    existing = db.query(NewsletterSubscriber).filter_by(email=body.email).first()
-    if not existing:
-        return NewsletterResponse(
-            status="not_found", message="Email not found in subscriber list."
-        )
-    existing.unsubscribed_at = datetime.now(timezone.utc)
-    db.commit()
-    return NewsletterResponse(
-        status="unsubscribed", message="You've been unsubscribed. Sorry to see you go!"
-    )
-
-
-# ── Welcome email & token-verified unsubscribe ─────────────────────
-
-
-@router.post("/api/v1/newsletter/send-welcome", response_model=NewsletterResponse)
-def send_welcome(body: NewsletterRequest):
-    """Trigger a welcome email for a new subscriber (best-effort, never blocks)."""
-    import threading
-
-    from services.email_service import send_welcome_email
-
-    # Fire-and-forget so the frontend is never blocked by SMTP latency
-    threading.Thread(target=send_welcome_email, args=(body.email,), daemon=True).start()
-
-    return NewsletterResponse(status="ok", message="Welcome email queued.")
 
 
 class UnsubscribeVerifyRequest(BaseModel):
@@ -284,12 +290,17 @@ def unsubscribe_verify(body: UnsubscribeVerifyRequest, db: Session = Depends(get
 
     from services.email_service import verify_unsubscribe_token
 
+    _newsletter_key_ready()
     if not verify_unsubscribe_token(body.email, body.token):
         raise HTTPException(
             status_code=403, detail="Invalid or expired unsubscribe link."
         )
 
-    existing = db.query(NewsletterSubscriber).filter_by(email=body.email).first()
+    existing = (
+        db.query(NewsletterSubscriber)
+        .filter(func.lower(NewsletterSubscriber.email) == body.email.lower())
+        .first()
+    )
     if not existing:
         return NewsletterResponse(
             status="not_found", message="Email not found in subscriber list."

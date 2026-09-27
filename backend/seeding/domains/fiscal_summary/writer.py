@@ -93,6 +93,9 @@ def _budget_basis_meta(record) -> dict[str, Any]:
     ds_source = getattr(record, "debt_service_source", None)
     if isinstance(ds_source, dict):
         out["debt_service_source"] = ds_source
+    revenue_source = getattr(record, "revenue_source", None)
+    if isinstance(revenue_source, dict):
+        out["revenue_source"] = revenue_source
     basis = getattr(record, "budget_basis", None)
     if basis:
         out["budget_basis"] = basis
