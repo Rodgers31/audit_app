@@ -15,15 +15,20 @@ unspent budget, not unpaid obligations).
 Treasury's annual **Budget Review and Outlook Paper** (BROP),
 published every September/October, is the cleanest live source:
 
-* **Paragraph 18** carries the national aggregate split — total
-  National Government pending bills, broken into State Corporations
-  and MDAs. Three numbers in narrative prose; we extract via regex.
+* **The national pending-bills paragraph** carries the national aggregate
+  split — total National Government pending bills, broken into State
+  Corporations and MDAs. Three numbers in narrative prose. It is found by what
+  it says, not by its number: it was para 18 in 2025, para 19 in the 2026
+  draft and para 20 in the 2026 final, and its wording changed with it.
 * **Table 10** ("County Governments Pending Bills as at 30th June
   YYYY") carries 47 per-county rows with County Executive
   {Recurrent, Development, Sub-Total} + County Assembly
   {Recurrent, Development, Sub-Total} + Total. We extract via
   text-mode parsing because pdfplumber's ``extract_tables`` returns
-  31 columns of misaligned soup on this layout.
+  31 columns of misaligned soup on this layout. The pending_bills fetcher
+  no longer reads it: it reprints the Controller of Budget's table, and
+  counties come from the CoB's year-end report (#238). In 2026 it is Table 11,
+  stated at 31st March, with no row numbers, and this parser does not match it.
 
 Caveats
 -------
@@ -56,27 +61,41 @@ from ...pdf_parsers import KENYAN_COUNTIES
 logger = logging.getLogger(__name__)
 
 
-# Para 18 anchor + capture pattern. Real text:
-#   "The total outstanding National Government pending bills as at
-#    30th June 2025 amounted to KSh 525.9 billion. These comprise of
-#    KSh 404.3 billion (76.9 percent) and KSh 121.6 billion (23.1
-#    percent) for the State Corporations and MDAs, respectively."
-# Three "X billion" numbers in order: total, SOEs, MDAs. We require
-# the trailing "State Corporations and MDAs" anchor AFTER the third
-# number to make sure we're in the right paragraph (not catching a
-# random three-billion-figure narrative elsewhere).
-_NATIONAL_PARA_RE = re.compile(
-    r"total\s+outstanding\s+National\s+Government\s+pending\s+bills"
-    r".{0,200}?"
-    r"(?P<total>[\d,]+\.?\d*)\s*billion"
-    r".{0,300}?"
-    r"(?P<soes>[\d,]+\.?\d*)\s*billion"
-    r".{0,200}?"
-    r"(?P<mdas>[\d,]+\.?\d*)\s*billion"
-    r".{0,200}?"
-    r"State\s+Corporations\s+and\s+MDAs",
-    re.IGNORECASE | re.DOTALL,
+#: Where the national pending-bills paragraph starts. The rest of it is read
+#: by content, because the paper rewords it: 2025 para 18 ended "for the State
+#: Corporations and MDAs, respectively", 2026 para 20 ends "for the State
+#: Corporations (SCs) and Ministries/State Departments/other government entities
+#: respectively", and "as at" became "as of".
+_NATIONAL_ANCHOR_RE = re.compile(
+    r"total\s+outstanding\s+National\s+Government\s+pending\s+bills",
+    re.IGNORECASE,
 )
+
+#: The paragraph's own number, printed just before the anchor: "20. The total".
+_PARAGRAPH_NUMBER_RE = re.compile(r"(?:^|\n)\s*(\d{1,3})\.\s+The\s+$", re.IGNORECASE)
+
+#: The start of the NEXT numbered paragraph, which ends this one. Para 21
+#: follows para 20 on the same page and carries billions of its own.
+_NEXT_PARAGRAPH_RE = re.compile(r"\n\s*\d{1,3}\.\s+[A-Z]")
+
+#: A shilling figure in billions: "KSh 475.5 billion", "KSh. 109.9 billion".
+_KSH_BILLION_RE = re.compile(
+    r"(?:KSh|Kshs?|KES)\.?\s*(?P<amount>\d[\d,]*(?:\.\d+)?)\s*billion",
+    re.IGNORECASE,
+)
+
+#: What each half of the split is called. "State Corporations (SCs)" and
+#: "Ministries/State Departments/other government entities" each match twice;
+#: consecutive matches of one kind count once.
+_HALF_LABEL_RE = re.compile(
+    r"(?P<sc>State\s+Corporations|State[\s-]+Owned\s+Enterprises|\bSCs\b|\bSOEs\b)"
+    r"|(?P<mda>\bMDAs\b|Ministries|State\s+Departments)",
+    re.IGNORECASE,
+)
+
+#: The halves are each printed to 0.1B, so their sum may miss the printed
+#: total by 0.1B through rounding and no more.
+_NATIONAL_TOLERANCE_KES = Decimal("100000000")
 
 # "as at 30th June 2025" → date(2025, 6, 30) — gives the records a
 # stable measurement date for the writer's natural key.
@@ -128,6 +147,9 @@ class NationalPendingBills:
     #: national + county total is published only when both halves STATE one
     #: day.
     as_at_stated: bool = False
+    #: The paragraph's number in this edition (18 in 2025, 20 in 2026), for
+    #: the citation; None when it is not printed before the anchor.
+    paragraph: Optional[int] = None
 
 
 @dataclass(frozen=True)
@@ -210,47 +232,118 @@ def _detect_brop_fiscal_year(pdf: pdfplumber.PDF) -> str:
     return "FY ?"
 
 
+class BropNationalUnreconciled(ValueError):
+    """The paragraph's two halves do not add up to the total it prints.
+
+    Raised rather than skipped: a paragraph that was found but does not add
+    up is a misread (or a misprint), and either way not a figure to publish.
+    """
+
+
+def _half_labels(text: str) -> List[str]:
+    """``"sc"``/``"mda"`` for each label in ``text``, in order, repeats folded."""
+    labels: List[str] = []
+    for m in _HALF_LABEL_RE.finditer(text):
+        kind = "sc" if m.group("sc") else "mda"
+        if not labels or labels[-1] != kind:
+            labels.append(kind)
+    return labels
+
+
+def _read_national_paragraph(
+    text: str, anchor: "re.Match[str]", fy_label: str,
+) -> Optional[NationalPendingBills]:
+    """The split in the paragraph starting at ``anchor``, or None.
+
+    The paragraph runs to the next numbered paragraph. Its first three
+    shilling-billion figures are the total and the two halves; which half is
+    which is read from the labels, not assumed from the order:
+
+    * "KSh A (..) and KSh B (..) for the State Corporations and MDAs,
+      respectively" — nothing labels A before B, so the labels after B map to
+      A and B in order (2025, 2026);
+    * "KSh A for MDAs and KSh B for State Corporations" — each figure is
+      followed by its own label.
+
+    Anything else — fewer than three figures, a label missing, the same half
+    named twice — is None: a figure it cannot label is not guessed.
+    """
+    start = anchor.start()
+    nxt = _NEXT_PARAGRAPH_RE.search(text, anchor.end())
+    body = text[start:nxt.start() if nxt else start + 1500]
+
+    figures = list(_KSH_BILLION_RE.finditer(body))[:3]
+    if len(figures) < 3:
+        return None
+    total_m, first_m, second_m = figures
+
+    between = body[first_m.end():second_m.start()]
+    tail = body[second_m.end():]
+    sentence_end = re.search(r"\.(?:\s|$)", tail)
+    if sentence_end:
+        tail = tail[:sentence_end.start()]
+    if _half_labels(between):
+        labels = _half_labels(between)[:1] + _half_labels(tail)[:1]
+    else:
+        labels = _half_labels(tail)[:2]
+    if sorted(labels) != ["mda", "sc"]:
+        return None
+    halves = dict(zip(labels, (first_m, second_m)))
+
+    total = _parse_kes_billion(total_m.group("amount"))
+    soes = _parse_kes_billion(halves["sc"].group("amount"))
+    mdas = _parse_kes_billion(halves["mda"].group("amount"))
+    if total is None or soes is None or mdas is None:
+        return None
+    if abs(soes + mdas - total) > _NATIONAL_TOLERANCE_KES:
+        raise BropNationalUnreconciled(
+            f"the national pending-bills paragraph prints a total of "
+            f"KSh {total_m.group('amount')} billion but its halves are "
+            f"KSh {halves['sc'].group('amount')} billion (State Corporations) + "
+            f"KSh {halves['mda'].group('amount')} billion (MDAs) = "
+            f"{(soes + mdas) / Decimal(1_000_000_000):,} billion"
+        )
+
+    # The paragraph's own date, printed before its first figure — not any
+    # date on the page: a page can carry another paragraph "as at 31st March".
+    date_match = _AS_AT_RE.search(body[:total_m.start()])
+    if date_match:
+        as_at = date(
+            int(date_match.group("year")),
+            _MONTHS[date_match.group("month").lower()],
+            int(date_match.group("day")),
+        )
+    else:
+        as_at = _infer_fy_end_date(fy_label)
+    number = _PARAGRAPH_NUMBER_RE.search(text[max(0, start - 16):start])
+    return NationalPendingBills(
+        as_at_date=as_at,
+        total=total,
+        state_corporations=soes,
+        mdas=mdas,
+        as_at_stated=date_match is not None,
+        paragraph=int(number.group(1)) if number else None,
+    )
+
+
 def _detect_national_paragraph(
     pdf: pdfplumber.PDF, fy_label: str,
 ) -> Optional[NationalPendingBills]:
-    """Walk pages for the para-18 anchor + extract the 3 amounts.
+    """The national pending-bills split, from the paragraph that states it.
 
-    The as-at date normally lives in the paragraph itself ("as at
-    30th June YYYY"). When the regex misses it (e.g. a rephrasing in
-    a future BROP), we infer June 30 of the FY's second calendar
-    year — BROPs are constitutionally tied to the FY end, so this is
-    a correct semantic default, not a sentinel. The previous
-    placeholder ``date(2000, 6, 30)`` would have produced a wrong
-    natural key in the writer.
+    Found by its opening words wherever it falls, not by its number, and read
+    across a page break: the pages are joined before the search.
+
+    The as-at date normally lives in the paragraph itself ("as of 30th June
+    2026"). When it does not, June 30 of the FY's second calendar year is used
+    as a natural key only — ``as_at_stated`` stays False, so it is never
+    published as the figure's date.
     """
-    for page in pdf.pages[:30]:
-        text = page.extract_text() or ""
-        m = _NATIONAL_PARA_RE.search(text)
-        if not m:
-            continue
-        total = _parse_kes_billion(m.group("total"))
-        soes = _parse_kes_billion(m.group("soes"))
-        mdas = _parse_kes_billion(m.group("mdas"))
-        if total is None or soes is None or mdas is None:
-            continue
-        # The paragraph's own date, not any date on the page: a page can
-        # carry another paragraph "as at 31st March".
-        date_match = _AS_AT_RE.search(m.group(0))
-        if date_match:
-            as_at = date(
-                int(date_match.group("year")),
-                _MONTHS[date_match.group("month").lower()],
-                int(date_match.group("day")),
-            )
-        else:
-            as_at = _infer_fy_end_date(fy_label)
-        return NationalPendingBills(
-            as_at_date=as_at,
-            total=total,
-            state_corporations=soes,
-            mdas=mdas,
-            as_at_stated=date_match is not None,
-        )
+    text = "\n".join((page.extract_text() or "") for page in pdf.pages[:40])
+    for anchor in _NATIONAL_ANCHOR_RE.finditer(text):
+        national = _read_national_paragraph(text, anchor, fy_label)
+        if national is not None:
+            return national
     return None
 
 
@@ -594,8 +687,15 @@ def _check_county_table(
     return checks
 
 
-def parse_brop_pdf(pdf_path: Path, *, strict: bool = True) -> BropParseResult:
+def parse_brop_pdf(
+    pdf_path: Path, *, strict: bool = True, counties: bool = True,
+) -> BropParseResult:
     """Parse a BROP PDF and return the structured pending-bills data.
+
+    ``counties=False`` skips the county table altogether: the pending_bills
+    fetcher reads counties from the Controller of Budget (#238), and a county
+    table this parser cannot read whole must not cost it the national
+    paragraph. With ``counties=False`` the national paragraph is required.
 
     ``strict`` runs the Table 10 completeness and reconciliation checks and
     raises :class:`BropTableIncomplete` if either fails. It defaults to on,
@@ -604,34 +704,45 @@ def parse_brop_pdf(pdf_path: Path, *, strict: bool = True) -> BropParseResult:
     ``strict=False``; the checks themselves are tested directly against
     ``_check_county_table``.
     """
+    county_rows: List[CountyPendingBill] = []
+    not_reporting: List[str] = []
+    printed_total: Optional[Decimal] = None
     with pdfplumber.open(pdf_path) as pdf:
         fy_label = _detect_brop_fiscal_year(pdf)
         national = _detect_national_paragraph(pdf, fy_label)
-        counties, not_reporting, printed_total = _parse_county_table(pdf)
-    if national is None and not counties:
+        if counties:
+            county_rows, not_reporting, printed_total = _parse_county_table(pdf)
+    if national is None and not county_rows:
         raise ValueError(
-            f"No pending-bills data found in {pdf_path.name} — "
-            "neither the para-18 anchor nor the county table matched"
+            f"No pending-bills data found in {pdf_path.name} — the national "
+            "pending-bills paragraph (\"The total outstanding National Government "
+            "pending bills ...\") was not found or could not be read"
+            + ("" if not counties else ", and no county table matched")
         )
-    if strict and (counties or not_reporting):
-        for check in _check_county_table(counties, not_reporting, printed_total):
+    if strict and (county_rows or not_reporting):
+        for check in _check_county_table(county_rows, not_reporting, printed_total):
             logger.info("BROP Table 10 check: %s", check)
     logger.info(
-        "BROP parser extracted national=%s + %d counties (%d did not submit) "
-        "(FY %s) from %s",
-        "yes" if national else "no", len(counties), len(not_reporting),
+        "BROP parser extracted national=%s%s (%s) from %s",
+        f"yes (para {national.paragraph}, as at {national.as_at_date})"
+        if national else "no",
+        (
+            f" + {len(county_rows)} counties ({len(not_reporting)} did not submit)"
+            if counties else ""
+        ),
         fy_label, pdf_path.name,
     )
     return BropParseResult(
         fiscal_year_label=fy_label,
         national=national,
-        counties=counties,
+        counties=county_rows,
         counties_not_reporting=not_reporting,
         printed_total=printed_total,
     )
 
 
 __all__ = [
+    "BropNationalUnreconciled",
     "BropParseResult",
     "BropTableIncomplete",
     "CountyPendingBill",

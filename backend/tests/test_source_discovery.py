@@ -306,5 +306,5 @@ class TestDraftDocumentsAreNotPublishable:
 
         from seeding.domains.pending_bills import fetcher
 
-        source = inspect.getsource(fetcher._discover_brop_url)
+        source = inspect.getsource(fetcher._discover_brop)
         assert 'must_not_match=("draft",)' in source
