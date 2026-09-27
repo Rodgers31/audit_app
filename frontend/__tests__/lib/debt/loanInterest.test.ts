@@ -153,9 +153,6 @@ describe('ratioWorking', () => {
       total_revenue: 2_985_700_000_000,
       debt_service_cost: 2_315_900_000_000,
       debt_service_per_shilling: 77.6,
-      recurrent_spending: 2_850_000_000_000,
-      development_spending: 672_000_000_000,
-      county_allocation: 420_000_000_000,
     })!;
     const w = ratioWorking(a);
     expect(w).toContain('KSh 2.316T');
