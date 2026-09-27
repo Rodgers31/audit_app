@@ -141,6 +141,84 @@ TABLE_RULES: List[TableRule] = [
     ),
 ]
 
+@dataclass(frozen=True)
+class SeriesRule:
+    """How old the newest OBSERVATION of one national series may get.
+
+    ``TableRule("Economic indicators")`` asks when any row was last
+    *created*, across every series in the table. That cannot see a single
+    series freezing: the World Bank pull creates rows every January, so a
+    monthly inflation series could stop for a year behind a green table.
+    This asks the reader's question instead — how old is the figure the page
+    would show — by the observation's own ``indicator_date``.
+    """
+
+    label: str
+    indicator_type: str
+    max_age_days: int
+    level: str = WARN
+    note: str = ""
+
+
+SERIES_RULES: List[SeriesRule] = [
+    SeriesRule(
+        label="Monthly inflation (CBK 12-month CPI)",
+        indicator_type="inflation_rate_12m",
+        # KNBS publishes month M on the last day of M, and rows are dated at
+        # month end — so the newest row is 0-31 days old in steady state.
+        # 60d means a whole monthly release was missed.
+        max_age_days=60,
+        note="KNBS monthly CPI, published at month end",
+    ),
+]
+
+
+def check_series_freshness(session, now: Optional[datetime] = None) -> List[Finding]:
+    """Is the newest observation of each national series inside its cadence?"""
+    from sqlalchemy import func
+
+    from models import EconomicIndicator
+
+    now = now or datetime.now(timezone.utc)
+    findings: List[Finding] = []
+    for rule in SERIES_RULES:
+        newest = (
+            session.query(func.max(EconomicIndicator.indicator_date))
+            .filter(
+                EconomicIndicator.indicator_type == rule.indicator_type,
+                EconomicIndicator.entity_id.is_(None),
+            )
+            .scalar()
+        )
+        age = _age_days(newest, now)
+        if age is None:
+            findings.append(
+                Finding(
+                    rule.level,
+                    rule.label,
+                    f"no national {rule.indicator_type} rows at all",
+                )
+            )
+        elif age > rule.max_age_days:
+            findings.append(
+                Finding(
+                    rule.level,
+                    rule.label,
+                    f"newest observation is {age:.0f} days old (limit "
+                    f"{rule.max_age_days}d for {rule.note}); newest={newest}",
+                )
+            )
+        else:
+            findings.append(
+                Finding(
+                    OK,
+                    rule.label,
+                    f"newest observation {age:.0f}d old (limit {rule.max_age_days}d)",
+                )
+            )
+    return findings
+
+
 # A domain must have reached its publisher at least this recently. Generous
 # because a slow CDN legitimately costs a few nights of resumed downloading.
 MAX_DAYS_SINCE_LIVE = 14
@@ -990,13 +1068,15 @@ def run_all(
     """Every gate. ``counts`` enables the row-count regression check.
 
     Omitting ``counts`` skips the row-count regression check (the table,
-    ingestion and publisher-edition gates always run). It is optional
+    series, ingestion and publisher-edition gates always run). It is optional
     because ``run_all`` has callers that have no count to offer, NOT because
     that check is — the nightly passes the counts it already computed for
     its own floors.
     """
-    findings = check_table_freshness(session, now) + check_ingestion_freshness(
-        session, now
+    findings = (
+        check_table_freshness(session, now)
+        + check_series_freshness(session, now)
+        + check_ingestion_freshness(session, now)
     )
     if counts is not None:
         findings += check_and_record_row_census(session, counts, now=now)
@@ -1018,12 +1098,15 @@ __all__ = [
     "ROW_CENSUS_WINDOW_DAYS",
     "ROW_DROP_MIN_ABSOLUTE",
     "ROW_DROP_TOLERANCE",
+    "SERIES_RULES",
+    "SeriesRule",
     "TABLE_RULES",
     "TableRule",
     "WARN",
     "check_and_record_row_census",
     "check_ingestion_freshness",
     "check_row_count_drop",
+    "check_series_freshness",
     "check_table_freshness",
     "hollow_run_findings",
     "in_publication_lull",

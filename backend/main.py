@@ -8584,52 +8584,67 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
         ]
 
         # ── 2. Economic context ──
-        # Get GDP (in million KES)
-        gdp_row = (
-            db.query(EconomicIndicator)
-            .filter(EconomicIndicator.indicator_type == "total_national_gdp")
-            .order_by(EconomicIndicator.indicator_date.desc())
-            .first()
-        )
-        gdp_million = float(gdp_row.value) if gdp_row else None
+        # Every figure is the NEWEST NATIONAL row of its series, and every
+        # caption comes from that row's own declared provenance. Until #232
+        # growth and unemployment were read out of
+        # `db.query(EconomicIndicator).all()` — no ORDER BY, no entity scope,
+        # last write wins — so the year shown was whatever the planner
+        # returned last (production served unemployment 5.7, a 2021/2022
+        # value, against a newest observation of 5.4), and the inflation
+        # caption was the literal "KNBS Consumer Price Index" under a World
+        # Bank annual average.
+        def _latest_national(indicator_type: str):
+            return (
+                db.query(EconomicIndicator)
+                .filter(
+                    EconomicIndicator.indicator_type == indicator_type,
+                    EconomicIndicator.entity_id.is_(None),
+                    EconomicIndicator.value.isnot(None),
+                )
+                .order_by(
+                    EconomicIndicator.indicator_date.desc(),
+                    EconomicIndicator.id.desc(),
+                )
+                .first()
+            )
+
+        def _provenance(row) -> dict:
+            # `source_label` is DECLARED by the writer, never inferred. A row
+            # without one gets no caption rather than a guessed one: losing a
+            # credit is the safe direction, manufacturing one is not.
+            meta = row.meta if row is not None and isinstance(row.meta, dict) else {}
+            return {
+                "value": float(row.value) if row is not None else None,
+                "as_of": (
+                    row.indicator_date.isoformat()
+                    if row is not None and row.indicator_date
+                    else None
+                ),
+                "source": meta.get("source_label") or None,
+                "measure": meta.get("measure") or None,
+            }
+
+        gdp = _provenance(_latest_national("total_national_gdp"))
+        gdp_million = gdp["value"]
         gdp_billion = gdp_million / 1000 if gdp_million else None  # Convert to billions
+        growth = _provenance(_latest_national("gdp_growth_rate"))
+        unemployment = _provenance(_latest_national("unemployment_rate"))
 
-        # Get other economic indicators
-        econ_rows = db.query(EconomicIndicator).all()
-        econ_map = {}
-        for e in econ_rows:
-            econ_map[e.indicator_type] = float(e.value) if e.value else None
-
-        # Inflation (CPI): read the CANONICAL ``inflation_rate`` series — the
-        # same maintained series /economic/summary uses (seeded by bootstrap,
-        # the economic_indicators domain, and auto_seeder) — taking the latest
-        # observation by date. The legacy ``inflation_rate_cpi`` key was written
-        # ONLY by the hardcoded MVP seeder and was frozen at Jan-2024 = 6.3%, so
-        # the budget page contradicted the rest of the site with a stale figure
-        # (audit §3.10). Reading the maintained series makes this self-update and
-        # stay consistent; the legacy key is a fallback only if the series is
-        # absent. Kenyan CPI is published by KNBS, not CBK.
-        inflation_row = (
-            db.query(EconomicIndicator)
-            .filter(EconomicIndicator.indicator_type == "inflation_rate")
-            .order_by(EconomicIndicator.indicator_date.desc())
-            .first()
-        ) or (
-            db.query(EconomicIndicator)
-            .filter(EconomicIndicator.indicator_type == "inflation_rate_cpi")
-            .order_by(EconomicIndicator.indicator_date.desc())
-            .first()
-        )
-        inflation_pct = (
-            float(inflation_row.value)
-            if inflation_row and inflation_row.value is not None
-            else econ_map.get("inflation_rate") or econ_map.get("inflation_rate_cpi")
-        )
-        inflation_as_of = (
-            inflation_row.indicator_date.isoformat()
-            if inflation_row and inflation_row.indicator_date
-            else None
-        )
+        # Inflation: KNBS's headline is the 12-month rate, published monthly
+        # (CBK table, `inflation_rate_12m`). The World Bank's `inflation_rate`
+        # is an annual AVERAGE a year behind. Take whichever is newer — on a
+        # tie the monthly headline — and caption it with its own measure, so
+        # a fallback to the annual series reads as what it is. The legacy
+        # `inflation_rate_cpi` key is the last resort only.
+        monthly = _latest_national("inflation_rate_12m")
+        annual = _latest_national("inflation_rate")
+        if monthly is not None and (
+            annual is None or monthly.indicator_date >= annual.indicator_date
+        ):
+            inflation_row = monthly
+        else:
+            inflation_row = annual or _latest_national("inflation_rate_cpi")
+        inflation = _provenance(inflation_row)
 
         # Kenya's population, not the sum of every row in the table. This was
         # `func.sum(PopulationData.total_population)` over the whole table —
@@ -8660,11 +8675,18 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
 
         economic_context = {
             "gdp_billion_kes": gdp_billion,
-            "gdp_growth_pct": econ_map.get("gdp_growth_rate"),
-            "inflation_pct": inflation_pct,
-            "inflation_as_of": inflation_as_of,
-            "inflation_source": "KNBS Consumer Price Index",
-            "unemployment_pct": econ_map.get("unemployment_rate"),
+            "gdp_as_of": gdp["as_of"],
+            "gdp_source": gdp["source"],
+            "gdp_growth_pct": growth["value"],
+            "gdp_growth_as_of": growth["as_of"],
+            "gdp_growth_source": growth["source"],
+            "inflation_pct": inflation["value"],
+            "inflation_as_of": inflation["as_of"],
+            "inflation_source": inflation["source"],
+            "inflation_measure": inflation["measure"],
+            "unemployment_pct": unemployment["value"],
+            "unemployment_as_of": unemployment["as_of"],
+            "unemployment_source": unemployment["source"],
             "total_population": total_pop,
             # Say which year the population describes, so a per-capita figure
             # can be checked rather than assumed current.
