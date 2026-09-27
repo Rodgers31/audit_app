@@ -22,6 +22,8 @@ import { motion } from 'framer-motion';
 import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
 import { useMemo } from 'react';
 
+import { FISCAL_FRAMEWORK_BASIS } from '@/lib/fiscal/framework';
+
 export interface FiscalHistoryRow {
   fiscal_year: string;
   appropriated_budget?: number | null;
@@ -29,6 +31,8 @@ export interface FiscalHistoryRow {
   total_borrowing?: number | null;
   debt_service_cost?: number | null;
   county_allocation?: number | null;
+  /** Which basis total_borrowing is on; see lib/fiscal/framework.ts. */
+  split_basis?: string | null;
 }
 
 interface Props {
@@ -121,7 +125,16 @@ export default function FiscalTrendStrip({ history }: Props) {
 
       <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5'>
         {CARDS.map((c) => {
-          const values = sorted.map((r) => ({
+          // Borrowing is deficit financing on Treasury's fiscal framework
+          // (issue #237). A year that does not declare that basis carries a
+          // legacy figure measured another way, and one sparkline must not
+          // compare the two, so such years are left out of this card.
+          const rows =
+            c.key === 'total_borrowing'
+              ? sorted.filter((r) => r.split_basis === FISCAL_FRAMEWORK_BASIS)
+              : sorted;
+          if (rows.length < 2) return null;
+          const values = rows.map((r) => ({
             year: r.fiscal_year.replace('FY ', ''),
             value: (r[c.key] as number | null) ?? 0,
           }));

@@ -99,6 +99,8 @@ export const DEBT_ENDPOINTS = {
   // the shape: backend/main.py `get_debt_broader`.
   BROADER: '/debt/broader',
   LOANS: '/debt/loans',
+  // Treasury's Annual Public Debt Reports, read off Treasury's listing page.
+  ANNUAL_REPORTS: '/debt/annual-reports',
   BREAKDOWN: '/debt/breakdown',
   BREAKDOWN_BY_COUNTY: (countyId: string) => `/debt/breakdown/${countyId}`,
   TIMELINE: '/debt/timeline',

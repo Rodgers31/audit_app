@@ -184,30 +184,28 @@ def fetch_revenue_payload(
             "No revenue data available from either live API or fixture"
         )
 
-    # Step 4: live KRA per-tax-head overlay (opt-in via settings.kra_revenue_url).
-    # Refreshes the PAYE/VAT/Corporation/Excise/Customs breakdown from KRA's FY
-    # revenue results — but only if the parse passes the plausibility +
-    # reconciliation gate; otherwise the fixture breakdown stands.
-    kra_status = "url_not_configured"
-    if settings.kra_revenue_url:
-        try:
-            final_payload, kra_status = _apply_kra_overlay(
-                final_payload, client, settings
-            )
-            logger.info("revenue_by_source KRA overlay: %s", kra_status)
-        except Exception as exc:
-            kra_status = f"error({type(exc).__name__})"
-            logger.warning("KRA revenue overlay skipped: %s", exc)
+    # Step 4: live KRA per-tax-head overlay. The newest ANNUAL release is
+    # DISCOVERED each run (kra_discovery) — the configured
+    # ``settings.kra_revenue_url`` is one candidate among several, no longer
+    # the only source. Only a release that passes validation against KRA's
+    # own totals replaces anything; otherwise the fixture breakdown stands.
+    try:
+        final_payload, kra_status = _apply_kra_live(final_payload, client, settings)
+        logger.info("revenue_by_source KRA overlay: %s", kra_status)
+    except Exception as exc:
+        kra_status = f"error({type(exc).__name__})"
+        logger.warning("KRA revenue overlay skipped: %s", exc)
 
     # Provenance. The per-tax-head breakdown (PAYE / VAT / Corporation /
     # Excise / Customs) is the figure this domain actually publishes, and it
     # comes ONLY from KRA. World Bank supplies headline totals that do not
     # touch the breakdown, so a World-Bank-only run is recorded as live with a
     # detail that says the breakdown is still fixture — the same distinction
-    # fiscal_summary draws for its headline budget. Note the KRA overlay has
-    # never executed in production: SEED_KRA_REVENUE_URL was read from `vars.`
-    # while stored as a *secret*, so it was empty from 2026-06-14 until
-    # c6e9d68. This instrumentation is what will show whether that fix works.
+    # fiscal_summary draws for its headline budget. "promoted" says the
+    # overlay applied; whether it applied the publisher's NEWEST edition is
+    # judged separately by seeding/edition_gates.py (#243: this printed
+    # "promoted:5/FY 2024/25" and LIVE for eleven weeks after KRA published
+    # FY 2025/26).
     kra_promoted = kra_status.startswith("promoted")
     detail = f"World Bank: {len(live_records)} record(s); KRA overlay: {kra_status}"
     if kra_promoted:
@@ -229,9 +227,7 @@ def fetch_revenue_payload(
     return final_payload
 
 
-def _fetch_kra_text(client: SeedingHttpClient, url: str) -> str:
-    """Fetch the KRA revenue source (PDF or HTML) and return plain text."""
-    resp = client.get(url, raise_for_status=True)
+def _response_text(resp: Any, url: str) -> str:
     ctype = (resp.headers.get("content-type") or "").lower()
     if "pdf" in ctype or url.lower().endswith(".pdf"):
         import tempfile
@@ -263,61 +259,343 @@ def _fetch_kra_text(client: SeedingHttpClient, url: str) -> str:
     return _re.sub(r"<[^>]+>", " ", resp.text)
 
 
-def _apply_kra_overlay(
+# ─────────────────────────────────────────────────────────────────────────
+# Discovery of KRA's newest annual release (#243)
+# ─────────────────────────────────────────────────────────────────────────
+
+
+def _get_or_none(client: SeedingHttpClient, url: str) -> Optional[Any]:
+    """GET ``url``; ``None`` for a 4xx/5xx or a transport error. Probing a
+    slug that does not exist yet is normal, not a failure."""
+    try:
+        resp = client.get(url, raise_for_status=False)
+    except Exception as exc:
+        logger.info("KRA candidate unreachable (%s): %s", url, exc)
+        return None
+    status = getattr(resp, "status_code", 200)
+    if status >= 400:
+        logger.info("KRA candidate %s -> HTTP %s", url, status)
+        return None
+    return resp
+
+
+def _read_release(client: SeedingHttpClient, url: str, hinted_fy: Optional[str]):
+    """Read one candidate page as a KraRelease (dashboard or prose), or None."""
+    from urllib.parse import urljoin
+
+    from .kra_discovery import (
+        HeadFigure,
+        KraRelease,
+        iframe_src,
+        module_script_src,
+        parse_dashboard_bundle,
+    )
+    from .kra_parser import extract_kra_fiscal_year, extract_kra_revenue_by_type_from_text
+
+    resp = _get_or_none(client, url)
+    if resp is None:
+        return None
+    html = resp.text if "pdf" not in (resp.headers.get("content-type") or "").lower() else ""
+    frame = iframe_src(html)
+    if frame:
+        frame_url = urljoin(url, frame)
+        shell = _get_or_none(client, frame_url)
+        script = module_script_src(shell.text) if shell is not None else None
+        if script:
+            bundle_url = urljoin(frame_url, script)
+            bundle = _get_or_none(client, bundle_url)
+            if bundle is not None:
+                release = parse_dashboard_bundle(bundle.text, url=url, data_url=bundle_url)
+                if release is not None:
+                    return release
+        logger.warning("KRA page %s embeds %s but no release data was read", url, frame)
+        return None
+
+    text = _response_text(resp, url)
+    heads = extract_kra_revenue_by_type_from_text(text)
+    fy = extract_kra_fiscal_year(text) or hinted_fy
+    if not heads or not fy:
+        return None
+    return KraRelease(
+        fiscal_year=fy,
+        url=url,
+        shape="press_release",
+        heads={k: HeadFigure(amount_bn=v) for k, v in heads.items()},
+    )
+
+
+def discover_kra_releases(
+    client: SeedingHttpClient, settings: SeedingSettings, today: Optional[Any] = None
+) -> tuple[List[Any], Optional[str], Optional[str]]:
+    """Every readable annual release candidate, plus the newest FY the
+    publisher is SEEN to have (for the edition gate) and where.
+
+    An annual-performance slug that answers 200 counts as seen even if its
+    data cannot be read — that is exactly the case the gate must go red on.
+    """
+    from datetime import date as _date
+
+    from .kra_discovery import LISTING_URL, fy_from_text, listing_candidates, slug_candidates
+
+    today = today or _date.today()
+    releases: List[Any] = []
+    seen: List[tuple[str, str]] = []
+
+    for fy, url in slug_candidates(today):
+        if _get_or_none(client, url) is None:
+            continue
+        seen.append((fy, url))
+        release = _read_release(client, url, fy)
+        if release is not None:
+            releases.append(release)
+
+    listing = _get_or_none(client, LISTING_URL)
+    if listing is not None:
+        # The three newest July-September revenue releases: enough to cover a
+        # year whose result KRA posts as several near-duplicate releases.
+        for _published, _title, url in listing_candidates(listing.text)[:3]:
+            release = _read_release(client, url, None)
+            if release is not None and len(release.heads) >= 4:
+                releases.append(release)
+                seen.append((release.fiscal_year, url))
+
+    if settings.kra_revenue_url:
+        release = _read_release(client, settings.kra_revenue_url, fy_from_text(settings.kra_revenue_url))
+        if release is not None:
+            releases.append(release)
+            seen.append((release.fiscal_year, settings.kra_revenue_url))
+
+    newest_seen = max(seen, key=lambda t: t[0]) if seen else (None, None)
+    return releases, newest_seen[0], newest_seen[1]
+
+
+def _apply_kra_live(
     payload: List[Dict[str, Any]],
     client: SeedingHttpClient,
     settings: SeedingSettings,
 ) -> tuple[List[Dict[str, Any]], str]:
-    """Fetch KRA results, extract the per-head breakdown, and overlay it onto the
-    matched fiscal year's tax rows — only if it passes the validation gate.
-    Returns ``(payload, status)``. Safe-by-construction: any failure / empty /
-    non-reconciling parse leaves the payload unchanged.
-    """
-    from .kra_parser import (
-        extract_kra_fiscal_year,
-        extract_kra_revenue_by_type_from_text,
-    )
+    """Discover, validate and overlay the newest KRA annual release."""
+    from ...freshness import record_publisher_edition
+    from .kra_discovery import DATASET, validate_release
 
-    text = _fetch_kra_text(client, settings.kra_revenue_url)
-    by_type = {k: float(v) for k, v in extract_kra_revenue_by_type_from_text(text).items()}
-    fy = extract_kra_fiscal_year(text)
-    return _overlay_kra_breakdown(payload, by_type, fy)
+    releases, newest_fy, newest_url = discover_kra_releases(client, settings)
+    if newest_fy:
+        record_publisher_edition(
+            "revenue_by_source", dataset=DATASET, edition=newest_fy, url=newest_url
+        )
+    if not releases:
+        return payload, "no_release_found"
+
+    # Newest FY first; within a FY prefer the structured dashboard to prose.
+    releases.sort(key=lambda r: (r.fiscal_year, r.shape == "dashboard"), reverse=True)
+    reasons: List[str] = []
+    for release in releases:
+        problems = validate_release(release)
+        if problems:
+            reasons.append(f"{release.fiscal_year} {release.shape}: {problems[0]}")
+            logger.warning(
+                "KRA %s release %s refused: %s", release.fiscal_year, release.url, problems
+            )
+            continue
+        if release.shape == "dashboard":
+            out, status = _overlay_kra_release(payload, release)
+        else:
+            by_type = {k: float(v.amount_bn) for k, v in release.heads.items()}
+            out, status = _overlay_kra_breakdown(
+                payload, by_type, release.fiscal_year, source_url=release.url
+            )
+        if not status.startswith("promoted"):
+            reasons.append(f"{release.fiscal_year} {release.shape}: {status}")
+            continue
+        if newest_fy and release.fiscal_year != newest_fy:
+            # An OLDER edition promoted while KRA's newest failed. The first
+            # live run of this code did exactly that — the FY 2025/26 bundle
+            # read no heads, FY 2024/25's prose promoted, and the run called
+            # itself LIVE. It must not read as success: the status no longer
+            # starts with "promoted", so the domain records PARTIAL.
+            return out, (
+                f"newest_edition_not_promoted({newest_fy}: "
+                f"{'; '.join(reasons) or 'no readable release'}); older {status}"
+            )
+        return out, status
+    return payload, "failed_validation: " + "; ".join(reasons)
+
+
+def _q(value: Any, places: str = "0.01") -> float:
+    """Half-up to the column's scale (amounts are NUMERIC(15,2)), so the live
+    overlay and the fixture it refreshes round the same figure the same way —
+    float ``round(355.255, 2)`` gives 355.25, the column would store 355.26."""
+    from decimal import ROUND_HALF_UP, Decimal
+
+    return float(Decimal(str(value)).quantize(Decimal(places), rounding=ROUND_HALF_UP))
+
+
+def _fmt_bn(value: Any) -> str:
+    return f"{float(value):,.3f}".rstrip("0").rstrip(".")
+
+
+def _row_for(payload: List[Dict[str, Any]], fiscal_year: str, revenue_type: str) -> Dict[str, Any]:
+    """The payload row for (FY, head), created if the FY has none yet — a
+    release for a year the fixture never listed must land on ITS year."""
+    for r in payload:
+        if r.get("fiscal_year") == fiscal_year and r.get("revenue_type") == revenue_type:
+            return r
+    row: Dict[str, Any] = {
+        "fiscal_year": fiscal_year,
+        "revenue_type": revenue_type,
+        "category": "tax",
+        "amount_billion_kes": None,
+        "target_billion_kes": None,
+        "performance_pct": None,
+        "share_of_total_pct": None,
+        "yoy_growth_pct": None,
+    }
+    payload.append(row)
+    return row
+
+
+def _stamp_published(
+    row: Dict[str, Any],
+    amount: float,
+    note: str,
+    source_url: Optional[str],
+    places: str = "0.01",
+) -> None:
+    """Set a published amount and EVERYTHING that describes it. A promoted row
+    must not keep the fixture's projection target, or a note describing a
+    number it no longer holds.
+
+    A row that is ALREADY published at this amount keeps its note: the
+    fixture's notes on those rows carry more than the prose parse can
+    (performance, growth, target), and re-promoting the same figure every
+    night must not strip them."""
+    new_amount = _q(amount, places)
+    if row.get("basis") == "published" and row.get("amount_billion_kes") is not None:
+        try:
+            unchanged = abs(float(row["amount_billion_kes"]) - new_amount) < 0.05
+        except (TypeError, ValueError):
+            unchanged = False
+        if unchanged:
+            row["amount_billion_kes"] = new_amount
+            row["data_quality"] = "official"
+            row["_revenue_source"] = "kra_live"
+            return
+    if row.get("basis") == "projected":
+        # The fixture's target, performance and share on a projected row are
+        # house projections, not KRA's; they cannot sit beside a KRA actual.
+        row["target_billion_kes"] = None
+        row["performance_pct"] = None
+        row["share_of_total_pct"] = None
+    row["amount_billion_kes"] = new_amount
+    row["basis"] = "published"
+    row["notes"] = note
+    row["data_quality"] = "official"
+    row["_revenue_source"] = "kra_live"
+    if source_url:
+        row["source_url"] = source_url
+
+
+def _overlay_kra_release(
+    payload: List[Dict[str, Any]], release: Any
+) -> tuple[List[Dict[str, Any]], str]:
+    """Overlay a VALIDATED dashboard release onto its own fiscal year. Pure."""
+    from .kra_discovery import PUBLISHED_HEADS, RESIDUAL_HEAD, residual_bn
+
+    fy = release.fiscal_year
+    label = f"KRA Annual Revenue Performance {fy}"
+    for head in PUBLISHED_HEADS:
+        fig = release.heads[head]
+        row = _row_for(payload, fy, head)
+        bits = [f"{label}: {head} collected KES {_fmt_bn(fig.amount_bn)}B"]
+        if fig.target_bn is not None:
+            bits[0] += f" vs target {_fmt_bn(fig.target_bn)}B"
+        if fig.performance_pct is not None:
+            bits.append(f"performance {fig.performance_pct}%")
+        if fig.growth_pct is not None:
+            bits.append(f"growth {fig.growth_pct}%")
+        _stamp_published(row, float(fig.amount_bn), ", ".join(bits), release.url)
+        # KRA's own statements for this head, or nothing — never the fixture's.
+        row["target_billion_kes"] = _q(fig.target_bn) if fig.target_bn is not None else None
+        row["performance_pct"] = _q(fig.performance_pct, "0.1") if fig.performance_pct is not None else None
+        row["yoy_growth_pct"] = _q(fig.growth_pct, "0.1") if fig.growth_pct is not None else None
+        # Share of EXCHEQUER revenue, the base the earlier years' shares use
+        # (FY 2024/25 PAYE 24.1 = 561.0 / 2,323).
+        row["share_of_total_pct"] = (
+            _q(fig.amount_bn / release.exchequer_bn * 100, "0.1")
+            if release.exchequer_bn
+            else None
+        )
+
+    residual = residual_bn(release)
+    if residual is not None:
+        row = _row_for(payload, fy, RESIDUAL_HEAD)
+        row["amount_billion_kes"] = _q(residual)
+        row["basis"] = "residual"
+        row["share_of_total_pct"] = _q(residual / release.exchequer_bn * 100, "0.1")
+        row["target_billion_kes"] = None
+        row["performance_pct"] = None
+        row["yoy_growth_pct"] = None
+        row["data_quality"] = "official"
+        row["_revenue_source"] = "kra_live"
+        row["source_url"] = release.url
+        row["notes"] = (
+            f"Residual: Exchequer {_fmt_bn(release.exchequer_bn)}B minus identified "
+            f"tax heads ({label}). Includes withholding tax, capital gains, stamp "
+            f"duty, digital economy and betting taxes."
+        )
+    # else: the release states no exchequer figure — the residual row keeps
+    # whatever it held; it is never set to 0.
+    applied = len(PUBLISHED_HEADS)
+    return payload, f"promoted:{applied}/{fy} (dashboard{', residual' if residual is not None else ''})"
 
 
 def _overlay_kra_breakdown(
     payload: List[Dict[str, Any]],
     by_type: Dict[str, float],
     fiscal_year: Optional[str],
+    *,
+    source_url: Optional[str] = None,
 ) -> tuple[List[Dict[str, Any]], str]:
-    """Validate ``by_type`` and overlay it onto the tax rows of ``fiscal_year``
-    (or the latest fixture FY if none parsed). Pure; no network. Returns
-    ``(payload, status)``."""
+    """Validate ``by_type`` (read from a press release's prose) and overlay it
+    onto the tax rows of ``fiscal_year``. Pure; no network. Returns
+    ``(payload, status)``.
+
+    It used to fall back to the NEWEST fixture year when the release's year
+    was not in the payload, which would have stamped a FY 2026/27 release onto
+    FY 2025/26 rows (#243). A release lands on its own year or not at all.
+    """
     if not by_type:
         return payload, "no_live_value"
+    if not fiscal_year:
+        return payload, "no_fiscal_year"
 
     tax_rows = [
         r
         for r in payload
         if str(r.get("category", "tax")).lower() == "tax" and r.get("fiscal_year")
     ]
-    if not tax_rows:
-        return payload, "no_fixture"
-
-    target_fy = fiscal_year
-    if target_fy not in {r["fiscal_year"] for r in tax_rows}:
-        target_fy = max(r["fiscal_year"] for r in tax_rows)  # fall back to latest
-    fy_rows = [r for r in tax_rows if r["fiscal_year"] == target_fy]
+    fy_rows = [r for r in tax_rows if r["fiscal_year"] == fiscal_year]
 
     def _amt(r: Dict[str, Any]) -> float:
+        # Amounts only. A projected row's target is a house projection, and
+        # reconciling KRA's actuals against it refused FY 2025/26 (2,352B vs
+        # a projected 2,815B) for being unlike a guess.
         v = r.get("amount_billion_kes")
-        if v is None:
-            v = r.get("target_billion_kes")
         try:
             return float(v) if v is not None else 0.0
         except (TypeError, ValueError):
             return 0.0
 
     expected_total = sum(_amt(r) for r in fy_rows) or None
+    if expected_total is None:
+        # A year the payload does not list, or lists only as projections:
+        # nothing measured to reconcile the prose against, so require the
+        # complete set of heads instead.
+        from .kra_discovery import PUBLISHED_HEADS
+
+        missing = [h for h in PUBLISHED_HEADS if h not in by_type]
+        if missing:
+            return payload, f"failed_validation: new year {fiscal_year} lacks {missing}"
 
     from services.trust_guards import check_revenue_breakdown
 
@@ -333,18 +611,26 @@ def _overlay_kra_breakdown(
     applied = 0
     for rtype, amount in by_type.items():
         rec = by_name.get(rtype)
-        if rec is not None:
-            rec["amount_billion_kes"] = round(amount, 1)
-            rec["data_quality"] = "official"
-            rec["_revenue_source"] = "kra_live"
-            # Re-base the row along with its amount. The fixture's ``basis``
-            # (and its ``notes``, which this overlay does not rewrite)
-            # describes the figure the fixture carried; the number here is
-            # KRA's own, freshly parsed from the release. Leaving the old
-            # basis would caption a published collection as a projection or a
-            # derivation — the page reads this field to decide what to tell
-            # the reader about the figure.
-            rec["basis"] = "published"
-            applied += 1
+        if rec is None and expected_total is not None:
+            continue  # a measured year: only refresh heads it already lists
+        if rec is None:
+            rec = _row_for(payload, fiscal_year, rtype)
+        # Re-base the row along with its amount — and its note: the fixture's
+        # ``basis`` and ``notes`` describe the figure the fixture carried; the
+        # number here is KRA's own, freshly parsed from the release. Leaving
+        # the old basis would caption a published collection as a projection
+        # or a derivation — the page reads this field to decide what to tell
+        # the reader about the figure.
+        _stamp_published(
+            rec,
+            amount,
+            f"KRA Annual Revenue Performance {fiscal_year}: {rtype} collected "
+            f"KES {_fmt_bn(amount)}B",
+            source_url,
+            # One decimal, as this path has always stored the prose figures
+            # (FY 2024/25 PAYE 560.963 -> 561.0); unchanged by #243.
+            places="0.1",
+        )
+        applied += 1
 
-    return payload, (f"promoted:{applied}/{target_fy}" if applied else "no_match")
+    return payload, (f"promoted:{applied}/{fiscal_year}" if applied else "no_match")

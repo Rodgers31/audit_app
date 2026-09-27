@@ -18,6 +18,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import httpx  # For internal API calls
 import uvicorn
 from config.settings import settings
+from services.imf_dsa import kenya_dsa_rating
 from services.publication_gate import (
     count_withheld_audits,
     count_withheld_by_reason,
@@ -8061,7 +8062,13 @@ async def get_budget_overview():
                 if sum(1 for v in key_fields if v > 0) >= 3:
                     fiscal_years.append(entry)
 
-            latest = fiscal_years[-1] if fiscal_years else {}
+            # The latest year with an enacted budget, as /fiscal/summary picks
+            # it (_current_fiscal_year): next year's Budget Summary arrives
+            # before its budget book and must not become the headline year.
+            latest = next(
+                (e for e in reversed(fiscal_years) if e["appropriated_budget"] > 0),
+                fiscal_years[-1] if fiscal_years else {},
+            )
 
             # ── Top / bottom utilization counties (same FY scope) ──
             util_q = (
@@ -8410,17 +8417,15 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
     Returns:
       - revenue_by_source: Tax-type breakdown per FY (PAYE, Corp Tax, VAT, Excise, Customs, Other)
       - economic_context: Budget as % of GDP, per-capita budget, key economic indicators
-      - execution_by_sector: Allocated → Spent pipeline per sector from CoB NG-BIRR reports
+      - execution_by_sector: revised gross estimates vs actual expenditure per
+        sector, from the newest annual CoB NG-BIRR (declared rows only)
     """
     from models import (
-        BudgetLine,
         EconomicIndicator,
-        Entity,
         FiscalSummary,
         PopulationData,
         RevenueBySource,
     )
-    from sqlalchemy import func
 
     try:
         # ── 1. Revenue by source ──
@@ -8476,52 +8481,67 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
         ]
 
         # ── 2. Economic context ──
-        # Get GDP (in million KES)
-        gdp_row = (
-            db.query(EconomicIndicator)
-            .filter(EconomicIndicator.indicator_type == "total_national_gdp")
-            .order_by(EconomicIndicator.indicator_date.desc())
-            .first()
-        )
-        gdp_million = float(gdp_row.value) if gdp_row else None
+        # Every figure is the NEWEST NATIONAL row of its series, and every
+        # caption comes from that row's own declared provenance. Until #232
+        # growth and unemployment were read out of
+        # `db.query(EconomicIndicator).all()` — no ORDER BY, no entity scope,
+        # last write wins — so the year shown was whatever the planner
+        # returned last (production served unemployment 5.7, a 2021/2022
+        # value, against a newest observation of 5.4), and the inflation
+        # caption was the literal "KNBS Consumer Price Index" under a World
+        # Bank annual average.
+        def _latest_national(indicator_type: str):
+            return (
+                db.query(EconomicIndicator)
+                .filter(
+                    EconomicIndicator.indicator_type == indicator_type,
+                    EconomicIndicator.entity_id.is_(None),
+                    EconomicIndicator.value.isnot(None),
+                )
+                .order_by(
+                    EconomicIndicator.indicator_date.desc(),
+                    EconomicIndicator.id.desc(),
+                )
+                .first()
+            )
+
+        def _provenance(row) -> dict:
+            # `source_label` is DECLARED by the writer, never inferred. A row
+            # without one gets no caption rather than a guessed one: losing a
+            # credit is the safe direction, manufacturing one is not.
+            meta = row.meta if row is not None and isinstance(row.meta, dict) else {}
+            return {
+                "value": float(row.value) if row is not None else None,
+                "as_of": (
+                    row.indicator_date.isoformat()
+                    if row is not None and row.indicator_date
+                    else None
+                ),
+                "source": meta.get("source_label") or None,
+                "measure": meta.get("measure") or None,
+            }
+
+        gdp = _provenance(_latest_national("total_national_gdp"))
+        gdp_million = gdp["value"]
         gdp_billion = gdp_million / 1000 if gdp_million else None  # Convert to billions
+        growth = _provenance(_latest_national("gdp_growth_rate"))
+        unemployment = _provenance(_latest_national("unemployment_rate"))
 
-        # Get other economic indicators
-        econ_rows = db.query(EconomicIndicator).all()
-        econ_map = {}
-        for e in econ_rows:
-            econ_map[e.indicator_type] = float(e.value) if e.value else None
-
-        # Inflation (CPI): read the CANONICAL ``inflation_rate`` series — the
-        # same maintained series /economic/summary uses (seeded by bootstrap,
-        # the economic_indicators domain, and auto_seeder) — taking the latest
-        # observation by date. The legacy ``inflation_rate_cpi`` key was written
-        # ONLY by the hardcoded MVP seeder and was frozen at Jan-2024 = 6.3%, so
-        # the budget page contradicted the rest of the site with a stale figure
-        # (audit §3.10). Reading the maintained series makes this self-update and
-        # stay consistent; the legacy key is a fallback only if the series is
-        # absent. Kenyan CPI is published by KNBS, not CBK.
-        inflation_row = (
-            db.query(EconomicIndicator)
-            .filter(EconomicIndicator.indicator_type == "inflation_rate")
-            .order_by(EconomicIndicator.indicator_date.desc())
-            .first()
-        ) or (
-            db.query(EconomicIndicator)
-            .filter(EconomicIndicator.indicator_type == "inflation_rate_cpi")
-            .order_by(EconomicIndicator.indicator_date.desc())
-            .first()
-        )
-        inflation_pct = (
-            float(inflation_row.value)
-            if inflation_row and inflation_row.value is not None
-            else econ_map.get("inflation_rate") or econ_map.get("inflation_rate_cpi")
-        )
-        inflation_as_of = (
-            inflation_row.indicator_date.isoformat()
-            if inflation_row and inflation_row.indicator_date
-            else None
-        )
+        # Inflation: KNBS's headline is the 12-month rate, published monthly
+        # (CBK table, `inflation_rate_12m`). The World Bank's `inflation_rate`
+        # is an annual AVERAGE a year behind. Take whichever is newer — on a
+        # tie the monthly headline — and caption it with its own measure, so
+        # a fallback to the annual series reads as what it is. The legacy
+        # `inflation_rate_cpi` key is the last resort only.
+        monthly = _latest_national("inflation_rate_12m")
+        annual = _latest_national("inflation_rate")
+        if monthly is not None and (
+            annual is None or monthly.indicator_date >= annual.indicator_date
+        ):
+            inflation_row = monthly
+        else:
+            inflation_row = annual or _latest_national("inflation_rate_cpi")
+        inflation = _provenance(inflation_row)
 
         # Kenya's population, not the sum of every row in the table. This was
         # `func.sum(PopulationData.total_population)` over the whole table —
@@ -8552,11 +8572,18 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
 
         economic_context = {
             "gdp_billion_kes": gdp_billion,
-            "gdp_growth_pct": econ_map.get("gdp_growth_rate"),
-            "inflation_pct": inflation_pct,
-            "inflation_as_of": inflation_as_of,
-            "inflation_source": "KNBS Consumer Price Index",
-            "unemployment_pct": econ_map.get("unemployment_rate"),
+            "gdp_as_of": gdp["as_of"],
+            "gdp_source": gdp["source"],
+            "gdp_growth_pct": growth["value"],
+            "gdp_growth_as_of": growth["as_of"],
+            "gdp_growth_source": growth["source"],
+            "inflation_pct": inflation["value"],
+            "inflation_as_of": inflation["as_of"],
+            "inflation_source": inflation["source"],
+            "inflation_measure": inflation["measure"],
+            "unemployment_pct": unemployment["value"],
+            "unemployment_as_of": unemployment["as_of"],
+            "unemployment_source": unemployment["source"],
             "total_population": total_pop,
             # Say which year the population describes, so a per-capita figure
             # can be checked rather than assumed current.
@@ -8593,80 +8620,14 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
         }
 
         # ── 3. Budget execution by sector ──
-        # Query national-government budget execution data from the
-        # CoB Annual NG-BIRR reports.  These rows are identified by
-        # having an entity with slug 'national-government' AND
-        # committed_amount populated.
-        # County-level rows (from counties_budget seeder) don't have
-        # committed_amount and are for allocation-only display.
+        # Declared-expenditure rows from the newest ANNUAL COB NG-BIRR — see
+        # services/budget_execution.py for why rows are selected by what they
+        # declare, not by which column happens to be filled (#241).
+        from services.budget_execution import execution_by_sector as _exec
 
-        national_entity = (
-            db.query(Entity.id).filter(Entity.slug == "national-government").scalar()
-        )
-
-        # The execution pipeline below is scoped to ONE national period; surface
-        # its fiscal-year label so the UI can show which FY the execution figures
-        # cover. CoB NG-BIRR execution lags the page's selected FY (audit §2.3),
-        # so it must be labelled with its own FY, not the page's.
-        execution_fiscal_year = None
-        if national_entity:
-            # Scope to latest national FY to avoid summing across all periods
-            _nat_pid = _latest_national_period(db)
-            if _nat_pid:
-                execution_fiscal_year = (
-                    db.query(DBFiscalPeriod.label)
-                    .filter(DBFiscalPeriod.id == _nat_pid)
-                    .scalar()
-                )
-            sector_q = (
-                db.query(
-                    BudgetLine.category,
-                    func.sum(BudgetLine.allocated_amount).label("allocated"),
-                    func.sum(BudgetLine.actual_spent).label("spent"),
-                )
-                .filter(BudgetLine.entity_id == national_entity)
-                .filter(BudgetLine.committed_amount.isnot(None))
-                .filter(BudgetLine.allocated_amount > 0)
-            )
-            if _nat_pid:
-                sector_q = sector_q.filter(BudgetLine.period_id == _nat_pid)
-            sector_pipeline = sector_q.group_by(BudgetLine.category).all()
-        else:
-            sector_pipeline = []
-
-        # Normalize sector names (reuse the mapping from overview)
-        execution_by_sector_raw: dict = {}
-        for row in sector_pipeline:
-            raw = str(row.category or "").strip().lower()
-            clean = SECTOR_NORMALIZE.get(raw, "Other")
-            if raw == "total budget":
-                continue
-            if clean not in execution_by_sector_raw:
-                execution_by_sector_raw[clean] = {
-                    "allocated": 0,
-                    "spent": 0,
-                }
-            execution_by_sector_raw[clean]["allocated"] += float(row.allocated or 0)
-            execution_by_sector_raw[clean]["spent"] += float(row.spent or 0)
-
-        execution_by_sector = []
-        for sector in SECTOR_ORDER:
-            if sector in execution_by_sector_raw:
-                d = execution_by_sector_raw[sector]
-                alloc = d["allocated"]
-                spent = d["spent"]
-                unspent = alloc - spent
-                execution_by_sector.append(
-                    {
-                        "sector": sector,
-                        "allocated": alloc,
-                        "spent": spent,
-                        "unspent": unspent,
-                        "execution_rate": (
-                            round((spent / alloc) * 100, 1) if alloc else 0
-                        ),
-                    }
-                )
+        execution = _exec(db)
+        execution_by_sector = execution["rows"]
+        execution_fiscal_year = execution["fiscal_year"]
 
         return {
             "_meta": {
@@ -8679,6 +8640,13 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
             "economic_context": economic_context,
             "execution_by_sector": execution_by_sector,
             "execution_fiscal_year": execution_fiscal_year,
+            # Where the execution figures come from, what they measure, how
+            # much of the ministerial budget they cover, and what they leave
+            # out — each null when there is nothing to publish.
+            "execution_source": execution["source"],
+            "execution_measure": execution["measure"],
+            "execution_coverage": execution["coverage"],
+            "execution_excludes": execution["excludes"],
         }
 
     except HTTPException:
@@ -8872,6 +8840,150 @@ async def get_debt_timeline(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+def _fiscal_row_to_dict(r) -> dict:
+    return {
+        "fiscal_year": r.fiscal_year,
+        # The row's declared unit (stage1 3a): "KES" = raw KES.
+        "unit": r.unit,
+        "appropriated_budget": (
+            float(r.appropriated_budget) if r.appropriated_budget else None
+        ),
+        "total_revenue": float(r.total_revenue) if r.total_revenue else None,
+        "tax_revenue": float(r.tax_revenue) if r.tax_revenue else None,
+        "non_tax_revenue": (
+            float(r.non_tax_revenue) if r.non_tax_revenue else None
+        ),
+        "total_borrowing": (
+            float(r.total_borrowing) if r.total_borrowing else None
+        ),
+        "borrowing_pct_of_budget": (
+            float(r.borrowing_pct_of_budget)
+            if r.borrowing_pct_of_budget
+            else None
+        ),
+        "debt_service_cost": (
+            float(r.debt_service_cost) if r.debt_service_cost else None
+        ),
+        "debt_service_per_shilling": (
+            float(r.debt_service_per_shilling)
+            if r.debt_service_per_shilling
+            else None
+        ),
+        "debt_ceiling": float(r.debt_ceiling) if r.debt_ceiling else None,
+        "actual_debt": float(r.actual_debt) if r.actual_debt else None,
+        "debt_ceiling_usage_pct": (
+            float(r.debt_ceiling_usage_pct)
+            if r.debt_ceiling_usage_pct
+            else None
+        ),
+        "development_spending": (
+            float(r.development_spending) if r.development_spending else None
+        ),
+        "recurrent_spending": (
+            float(r.recurrent_spending) if r.recurrent_spending else None
+        ),
+        "county_allocation": (
+            float(r.county_allocation) if r.county_allocation else None
+        ),
+        # WHICH measure the budget is: "cob_gross" (gross ministerial
+        # + Consolidated Fund Services) vs the Budget Policy Statement
+        # figure the series used to carry. Two legitimate numbers 12%
+        # apart, so the basis travels with the value.
+        "budget_basis": (r.meta or {}).get("budget_basis"),
+        "budget_basis_source": (r.meta or {}).get("budget_basis_source"),
+        # The document debt_service_cost was read from — which can differ
+        # from budget_basis_source's, so it travels separately (issue #235).
+        "debt_service_source": (r.meta or {}).get("debt_service_source"),
+        # Billions KES of the gross budget that is redemption of
+        # maturing debt. Lets the page say why the gross figure and the
+        # enacted headline differ, instead of just asserting they do.
+        "debt_redemption_billion": (r.meta or {}).get("debt_redemption_billion"),
+        # The split and the total it reconciles to, on ONE basis
+        # (Treasury's fiscal framework, "Expenditure and Net
+        # Lending"). NOT appropriated_budget: that is COB gross, which
+        # counts principal redemption and excludes county transfers,
+        # so a split drawn against it does not add up. Money in KSh
+        # billion, as the key names say. See fiscal_framework.py.
+        "fiscal_framework": (r.meta or {}).get("fiscal_framework"),
+        "split_basis": (r.meta or {}).get("split_basis"),
+        "fiscal_framework_absent_reason": (r.meta or {}).get(
+            "fiscal_framework_absent_reason"
+        ),
+        "tax_split_absent_reason": (r.meta or {}).get("tax_split_absent_reason"),
+        "page_ref": r.page_ref,
+    }
+
+
+def _fiscal_has_enacted_budget(fy: dict) -> bool:
+    """A budget read from an enacted Budget Estimates document.
+
+    Distinguishes a fiscal year that has genuinely begun and whose
+    budget Parliament has approved from a World Bank back-fill stub.
+    Both may carry a single populated field; only one of them is the
+    most authoritative figure we hold.
+    """
+    source = fy.get("budget_basis_source") or {}
+    return bool(
+        (fy.get("appropriated_budget") or 0) > 0
+        and fy.get("budget_basis")
+        and source.get("url")
+        and fy.get("page_ref")
+    )
+
+def _select_fiscal_years(all_fiscal_years: List[dict]) -> List[dict]:
+    """The fiscal years /fiscal/summary publishes, oldest first.
+
+    Shared with /debt/loans, whose annual debt-service figure must be the SAME
+    year and value the fiscal summary calls current.
+    """
+    # Only include years with substantially complete data —
+    # World Bank back-fill years often only have 1-2 fields.
+    #
+    # ...with one exception, added 2026-08-29. A fiscal year that has just
+    # STARTED has an enacted budget and no actuals: no revenue outturn, no
+    # debt-service outturn, no execution. Requiring three populated fields
+    # therefore hid FY2026/27 behind FY2025/26 from 1 July until COB's
+    # first quarterly report in mid-November — every year, by construction.
+    # The exception is deliberately narrow: the row must carry a declared
+    # budget basis, a source URL and a page reference, i.e. it must be
+    # traceable to the Budget Estimates document it came from. A World Bank
+    # stub has none of those and is still excluded.
+    return [
+        fy
+        for fy in all_fiscal_years
+        if sum(
+            1
+            for k in (
+                "appropriated_budget",
+                "total_revenue",
+                "total_borrowing",
+                "county_allocation",
+            )
+            if (fy.get(k) or 0) > 0
+        )
+        >= 3
+        or _fiscal_has_enacted_budget(fy)
+    ]
+
+
+def _current_fiscal_year(fiscal_years: List[dict]) -> Optional[dict]:
+    """The year /fiscal/summary calls current: the latest published year that
+    carries an appropriated (enacted) budget, else the latest published year.
+
+    Treasury's Budget Summary for NEXT year appears in June, before the next
+    budget book is read. The row it produces (revenue, borrowing, county
+    transfers, a page reference; no appropriated budget or debt service)
+    passes the three-of-four rule and is published in the history, but it
+    must not become current: the homepage's budget and debt-service cards and
+    the /debt loans card would read "Not published" for the weeks until the
+    budget book lands. Shared with /debt/loans so both name the same year.
+    """
+    for fy in reversed(fiscal_years):
+        if (fy.get("appropriated_budget") or 0) > 0:
+            return fy
+    return fiscal_years[-1] if fiscal_years else None
+
+
 @app.get("/api/v1/fiscal/summary")
 @cached(key_prefix="fiscal:summary", ttl=NIGHTLY_REFRESH_TTL)
 async def get_fiscal_summary(db: Session = Depends(get_db)):
@@ -8927,111 +9039,9 @@ async def get_fiscal_summary(db: Session = Depends(get_db)):
                 "withheld": withheld,
             }
 
-        def _row_to_dict(r: FSModel) -> dict:
-            return {
-                "fiscal_year": r.fiscal_year,
-                # The row's declared unit (stage1 3a): "KES" = raw KES.
-                "unit": r.unit,
-                "appropriated_budget": (
-                    float(r.appropriated_budget) if r.appropriated_budget else None
-                ),
-                "total_revenue": float(r.total_revenue) if r.total_revenue else None,
-                "tax_revenue": float(r.tax_revenue) if r.tax_revenue else None,
-                "non_tax_revenue": (
-                    float(r.non_tax_revenue) if r.non_tax_revenue else None
-                ),
-                "total_borrowing": (
-                    float(r.total_borrowing) if r.total_borrowing else None
-                ),
-                "borrowing_pct_of_budget": (
-                    float(r.borrowing_pct_of_budget)
-                    if r.borrowing_pct_of_budget
-                    else None
-                ),
-                "debt_service_cost": (
-                    float(r.debt_service_cost) if r.debt_service_cost else None
-                ),
-                "debt_service_per_shilling": (
-                    float(r.debt_service_per_shilling)
-                    if r.debt_service_per_shilling
-                    else None
-                ),
-                "debt_ceiling": float(r.debt_ceiling) if r.debt_ceiling else None,
-                "actual_debt": float(r.actual_debt) if r.actual_debt else None,
-                "debt_ceiling_usage_pct": (
-                    float(r.debt_ceiling_usage_pct)
-                    if r.debt_ceiling_usage_pct
-                    else None
-                ),
-                "development_spending": (
-                    float(r.development_spending) if r.development_spending else None
-                ),
-                "recurrent_spending": (
-                    float(r.recurrent_spending) if r.recurrent_spending else None
-                ),
-                "county_allocation": (
-                    float(r.county_allocation) if r.county_allocation else None
-                ),
-                # WHICH measure the budget is: "cob_gross" (gross ministerial
-                # + Consolidated Fund Services) vs the Budget Policy Statement
-                # figure the series used to carry. Two legitimate numbers 12%
-                # apart, so the basis travels with the value.
-                "budget_basis": (r.meta or {}).get("budget_basis"),
-                "budget_basis_source": (r.meta or {}).get("budget_basis_source"),
-                # Billions KES of the gross budget that is redemption of
-                # maturing debt. Lets the page say why the gross figure and the
-                # enacted headline differ, instead of just asserting they do.
-                "debt_redemption_billion": (r.meta or {}).get("debt_redemption_billion"),
-                "page_ref": r.page_ref,
-            }
-
-        all_fiscal_years = [_row_to_dict(r) for r in rows]
-
-        def _has_enacted_budget(fy: dict) -> bool:
-            """A budget read from an enacted Budget Estimates document.
-
-            Distinguishes a fiscal year that has genuinely begun and whose
-            budget Parliament has approved from a World Bank back-fill stub.
-            Both may carry a single populated field; only one of them is the
-            most authoritative figure we hold.
-            """
-            source = fy.get("budget_basis_source") or {}
-            return bool(
-                (fy.get("appropriated_budget") or 0) > 0
-                and fy.get("budget_basis")
-                and source.get("url")
-                and fy.get("page_ref")
-            )
-
-        # Only include years with substantially complete data —
-        # World Bank back-fill years often only have 1-2 fields.
-        #
-        # ...with one exception, added 2026-08-29. A fiscal year that has just
-        # STARTED has an enacted budget and no actuals: no revenue outturn, no
-        # debt-service outturn, no execution. Requiring three populated fields
-        # therefore hid FY2026/27 behind FY2025/26 from 1 July until COB's
-        # first quarterly report in mid-November — every year, by construction.
-        # The exception is deliberately narrow: the row must carry a declared
-        # budget basis, a source URL and a page reference, i.e. it must be
-        # traceable to the Budget Estimates document it came from. A World Bank
-        # stub has none of those and is still excluded.
-        fiscal_years = [
-            fy
-            for fy in all_fiscal_years
-            if sum(
-                1
-                for k in (
-                    "appropriated_budget",
-                    "total_revenue",
-                    "total_borrowing",
-                    "county_allocation",
-                )
-                if (fy.get(k) or 0) > 0
-            )
-            >= 3
-            or _has_enacted_budget(fy)
-        ]
-        latest = fiscal_years[-1] if fiscal_years else all_fiscal_years[-1]
+        all_fiscal_years = [_fiscal_row_to_dict(r) for r in rows]
+        fiscal_years = _select_fiscal_years(all_fiscal_years)
+        latest = _current_fiscal_year(fiscal_years) or all_fiscal_years[-1]
 
         # Source info
         source_title = "National Treasury BPS & Controller of Budget Reports"
@@ -9190,7 +9200,31 @@ async def get_civic_figures(db: Session = Depends(get_db)):
             return None
 
         budget_row = _latest_fs("appropriated_budget")
-        share_row = _latest_fs("county_allocation")
+
+        def _equitable_share_billion(r):
+            """The row's county EQUITABLE SHARE in KSh bn, or None.
+
+            Since #237 a row with a fiscal-framework split stores ALL county
+            transfers in ``county_allocation`` (FY2026/27: 495.5B), and the
+            equitable share on its own line of the framework (420.0B). Rows
+            without a split (``split_basis`` unset) still hold the equitable
+            share in ``county_allocation``. Transfers are never published under
+            the equitable-share label.
+            """
+            meta = r.meta or {}
+            framework = meta.get("fiscal_framework") or {}
+            share = framework.get("county_equitable_share_billion")
+            if share is not None:
+                return float(share) if float(share) > 0 else None
+            if meta.get("split_basis"):
+                return None
+            v = r.county_allocation
+            return float(v) if v and float(v) > 0 else None
+
+        share_row = next(
+            (r for r in reversed(fs_rows) if _equitable_share_billion(r) is not None),
+            None,
+        )
         figures["national_budget"] = _figure(
             value=_fs_to_kes(budget_row.appropriated_budget) if budget_row else None,
             period=budget_row.fiscal_year if budget_row else None,
@@ -9202,7 +9236,7 @@ async def get_civic_figures(db: Session = Depends(get_db)):
             ),
         )
         figures["equitable_share"] = _figure(
-            value=_fs_to_kes(share_row.county_allocation) if share_row else None,
+            value=_fs_to_kes(_equitable_share_billion(share_row)) if share_row else None,
             period=share_row.fiscal_year if share_row else None,
             source="Division of Revenue Act / CRA",
             as_of=(
@@ -9249,6 +9283,110 @@ async def get_civic_figures(db: Session = Depends(get_db)):
         return {"status": "error", "data_source": "database", "figures": figures}
 
     return {"status": "success", "data_source": "database", "figures": figures}
+
+
+#: Why the register publishes no single "annual service" total. The rows are
+#: on different bases — World Bank interest actually PAID in a calendar year
+#: for external creditors, balance x a CBK rate (modelled) for two domestic
+#: rows, nothing for the rest — so their sum is not a figure any publisher
+#: states. It used to be 1,022.4Bn: three April-2025 fixture rates times three
+#: balances, beside 45 rows of manufactured zeros (issue #235).
+LOANS_TOTAL_SERVICE_ABSENT_REASON = (
+    "The register's rows are on different bases (interest paid in a calendar "
+    "year, modelled cost, or none published), so their sum is not a published "
+    "figure. See annual_debt_service for the published debt-service total."
+)
+
+
+def _loan_interest_fields(loan) -> Dict[str, Any]:
+    """Rate and annual cost for one register row — only what it DECLARES.
+
+    Read from the interest declaration on the row's newest provenance entry,
+    never from ``Loan.interest_rate``: that column held the fixture's 2025
+    rates and the writer's manufactured zeros, and cannot say where its value
+    came from. A row with no valid declaration publishes neither figure, with
+    the reason. See seeding/domains/national_debt/interest_terms.py.
+    """
+    from seeding.domains.national_debt.interest_terms import terms_from_provenance
+
+    t = terms_from_provenance(loan.provenance)
+    rate = t["rate_pct"]
+    return {
+        # Kept a "12.34%" string for existing readers; null when absent.
+        "interest_rate": f"{rate:.2f}%" if rate is not None else None,
+        "interest_rate_pct": rate,
+        "interest_rate_basis": t["rate_basis"],
+        "interest_rate_label": t["rate_label"],
+        "interest_rate_source": t["rate_source"],
+        "interest_rate_absent_reason": t["rate_absent_reason"],
+        "annual_service_cost": t["annual_cost_kes"],
+        "annual_service_basis": t["annual_cost_basis"],
+        "annual_service_label": t["annual_cost_label"],
+        "annual_service_source": t["annual_cost_source"],
+        "annual_service_absent_reason": t["annual_cost_absent_reason"],
+    }
+
+
+def _loan_status(loan) -> Optional[str]:
+    """"active"/"matured" from a maturity date, or None when there is none.
+
+    Every row without a maturity date — the aggregate buckets and all 45 IDS
+    creditors — used to be reported "matured", i.e. repaid.
+    """
+    if not loan.maturity_date:
+        return None
+    now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+    return "active" if loan.maturity_date > now else "matured"
+
+
+def _published_annual_debt_service(db) -> Dict[str, Any]:
+    """The current fiscal year's published debt service, as /fiscal/summary has it.
+
+    Same gate and same year-selection as that endpoint (the helpers are
+    shared), so the homepage loans card and the /debt revenue card cannot name
+    different years or different numbers for one thing.
+    """
+    from models import FiscalSummary as FSModel
+    from services.publication_gate import publishable_fiscal_summaries
+
+    rows = publishable_fiscal_summaries(
+        db.query(FSModel).order_by(FSModel.fiscal_year.asc()).all()
+    )
+    years = _select_fiscal_years([_fiscal_row_to_dict(r) for r in rows])
+    current = _current_fiscal_year(years)
+    # The debt-service figure's OWN source. Not budget_basis_source: that is
+    # where the budget came from, and for some years it is a different
+    # document from the one the debt service was read off.
+    source = (current or {}).get("debt_service_source") or {}
+    if not current or current.get("debt_service_cost") is None or not source.get("url"):
+        return {
+            "value_kes": None,
+            "absent_reason": (
+                "No published fiscal year carries a debt-service figure."
+                if not current
+                else (
+                    f"{current['fiscal_year']} has no debt-service figure."
+                    if current.get("debt_service_cost") is None
+                    else f"{current['fiscal_year']}'s debt-service figure does "
+                    "not record the document it came from, so it is not published here."
+                )
+            ),
+        }
+    return {
+        "value_kes": current["debt_service_cost"],
+        "fiscal_year": current["fiscal_year"],
+        "measure": (
+            "Total debt service: interest plus principal redemptions, "
+            "domestic and external"
+        ),
+        "source": {
+            "publisher": source.get("publisher"),
+            "title": source.get("title"),
+            "url": source.get("url"),
+            "page": source.get("page"),
+        },
+        "absent_reason": None,
+    }
 
 
 @app.get("/api/v1/debt/top-loans")
@@ -9306,7 +9444,6 @@ async def get_top_loans(limit: int = 10, db: Session = Depends(get_db)):
         for loan in top:
             outstanding = float(loan.outstanding or 0)
             principal = float(loan.principal or 0)
-            rate = float(loan.interest_rate or 0) / 100
             result_loans.append(
                 {
                     "lender": loan.lender,
@@ -9317,7 +9454,6 @@ async def get_top_loans(limit: int = 10, db: Session = Depends(get_db)):
                     "outstanding": str(outstanding),
                     "outstanding_numeric": outstanding,
                     "principal_numeric": principal,
-                    "interest_rate": f"{float(loan.interest_rate or 0):.2f}%",
                     "issue_date": (
                         loan.issue_date.strftime("%Y-%m-%d") if loan.issue_date else ""
                     ),
@@ -9327,16 +9463,8 @@ async def get_top_loans(limit: int = 10, db: Session = Depends(get_db)):
                         else ""
                     ),
                     "currency": loan.currency,
-                    "status": (
-                        "active"
-                        if loan.maturity_date
-                        and loan.maturity_date
-                        > datetime.datetime.now(datetime.timezone.utc).replace(
-                            tzinfo=None
-                        )
-                        else "matured"
-                    ),
-                    "annual_service_cost": round(outstanding * rate, 2),
+                    "status": _loan_status(loan),
+                    **_loan_interest_fields(loan),
                 }
             )
 
@@ -9386,8 +9514,12 @@ async def get_national_loans(db: Session = Depends(get_db)):
             return {
                 "loans": [],
                 "total_loans": 0,
-                "total_outstanding": 0,
-                "total_annual_service_cost": 0,
+                # null, not 0: an empty register has no total, and a KES 0
+                # debt figure is a claim about Kenya, not about our database.
+                "total_outstanding": None,
+                "total_annual_service_cost": None,
+                "total_annual_service_cost_absent_reason": "No national entity found — run seeder",
+                "annual_debt_service": _published_annual_debt_service(db),
                 "source": "No national entity found — run seeder",
                 "source_url": "",
                 "last_updated": "",
@@ -9414,8 +9546,12 @@ async def get_national_loans(db: Session = Depends(get_db)):
             return {
                 "loans": [],
                 "total_loans": 0,
-                "total_outstanding": 0,
-                "total_annual_service_cost": 0,
+                # null, not 0: an empty register has no total, and a KES 0
+                # debt figure is a claim about Kenya, not about our database.
+                "total_outstanding": None,
+                "total_annual_service_cost": None,
+                "total_annual_service_cost_absent_reason": "No loan records in database — run seeder",
+                "annual_debt_service": _published_annual_debt_service(db),
                 "source": "No loan records in database — run seeder",
                 "source_url": "",
                 "last_updated": "",
@@ -9423,16 +9559,11 @@ async def get_national_loans(db: Session = Depends(get_db)):
 
         national_loans = []
         total_outstanding = 0.0
-        total_annual_service = 0.0
 
         for loan in loans:
             outstanding = float(loan.outstanding or 0)
             principal = float(loan.principal or 0)
-            rate = float(loan.interest_rate or 0)
-            annual_cost = round(outstanding * (rate / 100), 2)
-
             total_outstanding += outstanding
-            total_annual_service += annual_cost
 
             national_loans.append(
                 {
@@ -9444,7 +9575,6 @@ async def get_national_loans(db: Session = Depends(get_db)):
                     "outstanding": str(outstanding),
                     "outstanding_numeric": outstanding,
                     "principal_numeric": principal,
-                    "interest_rate": f"{rate:.2f}%",
                     "issue_date": (
                         loan.issue_date.strftime("%Y-%m-%d") if loan.issue_date else ""
                     ),
@@ -9454,16 +9584,8 @@ async def get_national_loans(db: Session = Depends(get_db)):
                         else ""
                     ),
                     "currency": loan.currency,
-                    "status": (
-                        "active"
-                        if loan.maturity_date
-                        and loan.maturity_date
-                        > datetime.datetime.now(datetime.timezone.utc).replace(
-                            tzinfo=None
-                        )
-                        else "matured"
-                    ),
-                    "annual_service_cost": annual_cost,
+                    "status": _loan_status(loan),
+                    **_loan_interest_fields(loan),
                 }
             )
 
@@ -9495,7 +9617,9 @@ async def get_national_loans(db: Session = Depends(get_db)):
             "loans": national_loans,
             "total_loans": len(national_loans),
             "total_outstanding": total_outstanding,
-            "total_annual_service_cost": total_annual_service,
+            "total_annual_service_cost": None,
+            "total_annual_service_cost_absent_reason": LOANS_TOTAL_SERVICE_ABSENT_REASON,
+            "annual_debt_service": _published_annual_debt_service(db),
             "source": source_title,
             "source_url": source_url,
             "last_updated": last_updated,
@@ -9545,6 +9669,22 @@ def _latest_imf_debt_to_gdp(db):
     except Exception as exc:  # pragma: no cover - defensive
         logging.warning("IMF debt-to-GDP lookup failed: %s", exc)
         return None
+
+
+@app.get("/api/v1/debt/annual-reports")
+async def get_annual_debt_reports():
+    """Treasury's Annual Public Debt Reports, read off Treasury's own listing.
+
+    Replaces four literal links in the budget page, all of which 404'd once
+    Treasury moved to Drupal (issue #235). Unavailable means unavailable: the
+    response then carries the listing URL, never a remembered list.
+    """
+    from services.treasury_debt_reports import fetch_annual_debt_reports
+
+    return {
+        "_meta": _response_meta(unit="none", entity_scope="national"),
+        **(await fetch_annual_debt_reports()),
+    }
 
 
 @app.get("/api/v1/debt/instruments")
@@ -10122,22 +10262,14 @@ async def get_national_debt():
                                 for cat, data in categories.items()
                                 if data["count"] > 0
                             },
+                            # The risk rating is the joint Bank-Fund DSA's,
+                            # verbatim and cited. It used to be "High" above
+                            # an unsourced 65% debt-to-GDP, with a sentence
+                            # attributing that to the IMF (issue #269). No
+                            # figure computed here feeds it.
                             "debt_sustainability": {
-                                "risk_level": (
-                                    "High"
-                                    if debt_to_gdp_ratio > 65
-                                    else (
-                                        "Moderate"
-                                        if debt_to_gdp_ratio > 0
-                                        else "Unknown"
-                                    )
-                                ),
                                 "debt_to_gdp": debt_to_gdp_ratio,
-                                "assessment": (
-                                    "Kenya's debt remains elevated. The IMF classifies Kenya at high risk of debt distress."
-                                    if debt_to_gdp_ratio > 65
-                                    else "Seed GDP data for full sustainability assessment."
-                                ),
+                                "imf_dsa": kenya_dsa_rating(),
                             },
                         },
                         "currency": "KES",
@@ -10182,7 +10314,8 @@ async def get_national_debt():
             "debt_to_gdp_ratio": None,
             "summary": {},
             "categories": {},
-            "debt_sustainability": {},
+            # Not our figure, so an empty register does not withhold it.
+            "debt_sustainability": {"imf_dsa": kenya_dsa_rating()},
         },
         "currency": "KES",
         "source": "Central Bank of Kenya / National Treasury",

@@ -1349,72 +1349,52 @@ def _load_national_gdp_series() -> "list[tuple[int, int]]":
 NATIONAL_POPULATION = 47_564_296  # Census 2019 (KNBS)
 
 
+#: Indicator keys a live seeding domain owns. Bootstrap must not write them:
+#: see ``_seed_economic_indicators``.
+_LIVE_OWNED_INDICATORS = ("inflation_rate", "unemployment_rate")
+
+
 def _seed_economic_indicators(
     session: Session,
     *,
     source_document_id: int,
 ) -> None:
-    """Seed key economic indicators that the /economic/summary endpoint needs."""
-    # Source: KNBS Economic Survey 2025 + CBK Monthly Economic Indicators
+    """Seed the economic indicators no live source owns (the KNBS CPI index).
+
+    ``inflation_rate`` and ``unemployment_rate`` used to be literals here,
+    written on every backend start and every Sunday. The economic_indicators
+    domain's World Bank pull writes the same keys at the same ``YYYY-12-31``
+    dates, so each writer overwrote the other — and this one was wrong:
+    ``inflation_rate`` 2024-12-31 = 6.6 is December **2023**'s figure (CBK
+    gives Dec 2024 as 12-month 2.99, annual average 4.50). The update path
+    also changed ``value`` without ``meta``, leaving a bootstrap number under
+    World Bank provenance (issue #232). A live domain owns those keys now;
+    bootstrap writes none of them and removes the rows it created before.
+    """
+    # Rows this function CREATED carry meta.bootstrap. A row it merely
+    # overwrote got its meta from the live writer, so it has no flag and the
+    # next nightly restores the live value — it is not deleted here.
+    stale = [
+        row
+        for row in session.query(EconomicIndicator)
+        .filter(
+            EconomicIndicator.indicator_type.in_(_LIVE_OWNED_INDICATORS),
+            EconomicIndicator.entity_id.is_(None),
+        )
+        .all()
+        if isinstance(row.meta, dict) and row.meta.get("bootstrap") is True
+    ]
+    for row in stale:
+        session.delete(row)
+    if stale:
+        logger.info(
+            "Deleted %d bootstrap economic-indicator rows now owned by the "
+            "economic_indicators domain",
+            len(stale),
+        )
+
+    # Source: KNBS Consumer Price Index releases
     indicators = [
-        # Inflation rates (KNBS CPI releases)
-        {
-            "type": "inflation_rate",
-            "date": datetime(2024, 12, 31),
-            "value": Decimal("6.6"),
-            "unit": "percent",
-            "source": "KNBS CPI December 2024",
-        },
-        {
-            "type": "inflation_rate",
-            "date": datetime(2024, 6, 30),
-            "value": Decimal("4.6"),
-            "unit": "percent",
-            "source": "KNBS CPI June 2024",
-        },
-        {
-            "type": "inflation_rate",
-            "date": datetime(2023, 12, 31),
-            "value": Decimal("6.6"),
-            "unit": "percent",
-            "source": "KNBS CPI December 2023",
-        },
-        {
-            "type": "inflation_rate",
-            "date": datetime(2023, 6, 30),
-            "value": Decimal("7.9"),
-            "unit": "percent",
-            "source": "KNBS CPI June 2023",
-        },
-        {
-            "type": "inflation_rate",
-            "date": datetime(2025, 1, 31),
-            "value": Decimal("3.3"),
-            "unit": "percent",
-            "source": "KNBS CPI January 2025",
-        },
-        # Unemployment rates (KNBS Labour Force Survey)
-        {
-            "type": "unemployment_rate",
-            "date": datetime(2024, 12, 31),
-            "value": Decimal("5.4"),
-            "unit": "percent",
-            "source": "KNBS QLFS Q4 2024",
-        },
-        {
-            "type": "unemployment_rate",
-            "date": datetime(2023, 12, 31),
-            "value": Decimal("5.6"),
-            "unit": "percent",
-            "source": "KNBS QLFS Q4 2023",
-        },
-        {
-            "type": "unemployment_rate",
-            "date": datetime(2022, 12, 31),
-            "value": Decimal("5.7"),
-            "unit": "percent",
-            "source": "KNBS QLFS Q4 2022",
-        },
         # CPI index values
         {
             "type": "CPI",

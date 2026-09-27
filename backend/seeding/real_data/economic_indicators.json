@@ -1,35 +1,5 @@
 [
   {
-    "indicator_type": "inflation_rate",
-    "date": "2025-01-31",
-    "value": 3.3,
-    "unit": "percent",
-    "source_url": "https://www.knbs.or.ke/consumer-price-indices/",
-    "source": "KNBS Consumer Price Index January 2025",
-    "data_quality": "official",
-    "notes": "Annual inflation rate (year-on-year CPI change). Source: KNBS CPI Release."
-  },
-  {
-    "indicator_type": "inflation_rate",
-    "date": "2024-12-31",
-    "value": 3.0,
-    "unit": "percent",
-    "source_url": "https://www.knbs.or.ke/consumer-price-indices/",
-    "source": "KNBS Consumer Price Index December 2024",
-    "data_quality": "official",
-    "notes": "Annual inflation rate. Source: KNBS CPI Release."
-  },
-  {
-    "indicator_type": "inflation_rate",
-    "date": "2024-01-31",
-    "value": 6.3,
-    "unit": "percent",
-    "source_url": "https://www.knbs.or.ke/consumer-price-indices/",
-    "source": "KNBS Consumer Price Index January 2024",
-    "data_quality": "official",
-    "notes": "Annual inflation rate from KNBS"
-  },
-  {
     "indicator_type": "unemployment_rate",
     "date": "2024-12-31",
     "value": 5.4,
