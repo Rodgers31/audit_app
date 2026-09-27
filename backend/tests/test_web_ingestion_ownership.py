@@ -42,6 +42,8 @@ async def test_web_scheduler_never_schedules_deep_parsing(monkeypatch):
     import main
 
     scheduler = Mock()
+    # Capability presence is exercised separately with real isolated packages.
+    monkeypatch.setattr(main, "_discovery_pipeline_class", lambda: Mock())
     original = main.importlib.import_module
     monkeypatch.setattr(
         main.importlib,

@@ -7055,10 +7055,24 @@ _etl_executor = concurrent.futures.ThreadPoolExecutor(
 )
 
 
+def _discovery_pipeline_class():
+    """Resolve the capability from this process's actual import path.
+
+    Backend-only images intentionally omit the root legacy ETL package. The
+    dedicated seed runner discovers sources through its own domain fetchers.
+    """
+    try:
+        module = importlib.import_module("etl.kenya_pipeline")
+        pipeline = getattr(module, "KenyaDataPipeline")
+        if not callable(pipeline) or not callable(getattr(pipeline, "discover_budget_documents", None)):
+            raise TypeError("Missing discovery entry point")
+        return pipeline
+    except (ImportError, AttributeError, TypeError) as exc:
+        raise RuntimeError("Legacy discovery unavailable in this deployment; use the dedicated seeding runner.") from exc
+
+
 async def _discover(source_key: str) -> List[Dict[str, Any]]:
-    sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-    kp_mod = importlib.import_module("etl.kenya_pipeline")
-    KenyaDataPipeline = getattr(kp_mod, "KenyaDataPipeline")
+    KenyaDataPipeline = _discovery_pipeline_class()
     pipeline = KenyaDataPipeline()
     # discover_budget_documents is synchronous (requests-based) – run in dedicated pool
     loop = asyncio.get_event_loop()
@@ -7107,6 +7121,7 @@ async def _ingest_batch(
 async def _run_job(source_key: str, job_type: str = "light") -> Dict[str, Any]:
     if job_type != "light":
         raise ValueError("Deep ingestion is owned by the dedicated seeding runner")
+    _discovery_pipeline_class()  # Refuse before artifacts or network side effects.
     start = datetime.datetime.now()
     art_dir = _artifact_dir()
     known_path = os.path.join(_known_dir(), f"known_{source_key}.txt")
@@ -7252,6 +7267,10 @@ async def run_etl_job(
             status_code=409,
             detail="Deep ingestion is owned by the dedicated seeding runner (.github/workflows/seed.yml).",
         )
+    try:
+        _discovery_pipeline_class()
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     import uuid as _uuid
 
     job_id = f"{source}_{job}_{_uuid.uuid4().hex[:8]}"
@@ -7318,42 +7337,47 @@ async def _setup_etl_scheduler():
     def jitter(base_seconds: int, spread: int = 900) -> int:
         return max(60, base_seconds + random.randint(-spread, spread))
 
-    # Discovery only. Deep PDF ingestion belongs to seed.yml, outside the web worker.
-    # OAG: light weekly
-    scheduler.add_job(
-        _run_job,
-        args=["oag", "light"],
-        trigger="interval",
-        seconds=jitter(7 * 24 * 3600),
-        id="etl_oag_light",
-        max_instances=1,
-        coalesce=True,
-        misfire_grace_time=3600,
-    )
+    try:
+        _discovery_pipeline_class()
+    except RuntimeError as exc:
+        logger.info("%s Skipping legacy discovery schedules.", exc)
+    else:
+        # Discovery only. Deep PDF ingestion belongs to seed.yml, outside the web worker.
+        # OAG: light weekly
+        scheduler.add_job(
+            _run_job,
+            args=["oag", "light"],
+            trigger="interval",
+            seconds=jitter(7 * 24 * 3600),
+            id="etl_oag_light",
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=3600,
+        )
 
-    # COB: lightweight discovery weekly
-    scheduler.add_job(
-        _run_job,
-        args=["cob", "light"],
-        trigger="interval",
-        seconds=jitter(7 * 24 * 3600),
-        id="etl_cob_light",
-        max_instances=1,
-        coalesce=True,
-        misfire_grace_time=3600,
-    )
+        # COB: lightweight discovery weekly
+        scheduler.add_job(
+            _run_job,
+            args=["cob", "light"],
+            trigger="interval",
+            seconds=jitter(7 * 24 * 3600),
+            id="etl_cob_light",
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=3600,
+        )
 
-    # Treasury: lightweight discovery twice weekly (~3.5 days)
-    scheduler.add_job(
-        _run_job,
-        args=["treasury", "light"],
-        trigger="interval",
-        seconds=jitter(int(3.5 * 24 * 3600)),
-        id="etl_treasury_light",
-        max_instances=1,
-        coalesce=True,
-        misfire_grace_time=3600,
-    )
+        # Treasury: lightweight discovery twice weekly (~3.5 days)
+        scheduler.add_job(
+            _run_job,
+            args=["treasury", "light"],
+            trigger="interval",
+            seconds=jitter(int(3.5 * 24 * 3600)),
+            id="etl_treasury_light",
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=3600,
+        )
 
     scheduler.start()
 
