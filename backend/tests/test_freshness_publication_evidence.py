@@ -1,6 +1,6 @@
 """Discovery and a successful fetch are not publication acceptance."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 import pytest
 from models import DocumentType, SourceDocument, BudgetLine
@@ -255,3 +255,54 @@ def test_future_instant_with_an_earlier_local_date_is_not_published(
     )
     db_session.commit()
     assert source(client)["status"] == "unknown"
+
+
+@pytest.mark.parametrize(
+    "published_at,expected_date,expected_status",
+    [
+        ("2026-09-28T00:30:00+03:00", "2026-09-28", "fresh"),
+        ("2026-09-28T02:00:00+03:00", None, "unknown"),
+    ],
+)
+def test_publisher_midnight_uses_the_instant_before_judging_its_local_date(
+    client,
+    db_session,
+    seed_country,
+    seed_entity,
+    seed_fiscal_period,
+    monkeypatch,
+    published_at,
+    expected_date,
+    expected_status,
+):
+    from routers import data_freshness
+
+    class FrozenDate(date):
+        @classmethod
+        def today(cls):
+            return date(2026, 9, 27)
+
+    class FrozenDateTime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            fixed = datetime(2026, 9, 27, 22, 0, tzinfo=timezone.utc)
+            return fixed.astimezone(tz) if tz else fixed.replace(tzinfo=None)
+
+    monkeypatch.setattr(data_freshness, "date", FrozenDate)
+    monkeypatch.setattr(data_freshness, "datetime", FrozenDateTime)
+    doc = document(db_session, seed_country, meta={"publication_date": published_at})
+    db_session.add(
+        BudgetLine(
+            entity_id=seed_entity.id,
+            period_id=seed_fiscal_period.id,
+            category="Total",
+            allocated_amount=100,
+            currency="KES",
+            source_document_id=doc.id,
+            publishable=True,
+        )
+    )
+    db_session.commit()
+    result = source(client)
+    assert result["last_updated"] == expected_date
+    assert result["status"] == expected_status

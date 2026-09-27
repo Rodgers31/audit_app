@@ -136,7 +136,9 @@ SOURCE_CONFIG = [
 _CYCLE_DAYS = {"Monthly": 45, "Quarterly": 135, "Annually": 400}
 
 
-def _freshness_status(last_updated: Optional[date], frequency: str = "") -> str:
+def _freshness_status(
+    last_updated: Optional[date], frequency: str = "", *, verified_instant: bool = False
+) -> str:
     """Frequency-aware status: fresh within ~1 publication cycle, stale within
     ~2.5 cycles, outdated beyond — so an annually-published report is not
     judged against a 45-day window (nor a monthly series given a year's grace).
@@ -145,7 +147,10 @@ def _freshness_status(last_updated: Optional[date], frequency: str = "") -> str:
         return "unknown"
     delta = (date.today() - last_updated).days
     cycle = _CYCLE_DAYS.get(frequency, 90)
-    if delta < 0:
+    # A verified publisher timestamp can fall on tomorrow's local calendar
+    # date after its UTC instant has already passed. Unverified dates retain
+    # the strict future-date refusal.
+    if delta < 0 and not (verified_instant and delta == -1):
         return "unknown"
     if delta <= cycle:
         return "fresh"
@@ -334,10 +339,7 @@ def _source_publication_date(
             if published_at.tzinfo is None
             else published_at.astimezone(timezone.utc)
         )
-        if (
-            published_utc <= datetime.now(timezone.utc)
-            and published_at.date() <= date.today()
-        ):
+        if published_utc <= datetime.now(timezone.utc):
             dates.append(published_at.date())
     return max(dates) if dates else None
 
@@ -387,7 +389,11 @@ async def get_data_freshness(db: Session = Depends(get_db)):
                 ),
                 covers_through=covers_through,
                 update_frequency=cfg["update_frequency"],
-                status=_freshness_status(last_updated_date, cfg["update_frequency"]),
+                status=_freshness_status(
+                    last_updated_date,
+                    cfg["update_frequency"],
+                    verified_instant=last_updated_date is not None,
+                ),
             )
         )
 
