@@ -9,6 +9,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import QueuePool
 
+from db_url import with_explicit_driver
+
 load_dotenv()
 
 
@@ -34,7 +36,7 @@ def _build_db_url_from_env() -> str:
 
 
 # Database configuration with connection pooling
-DATABASE_URL = _build_db_url_from_env()
+DATABASE_URL = with_explicit_driver(_build_db_url_from_env())
 
 # Enhanced engine configuration for production
 engine = create_engine(
