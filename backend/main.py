@@ -7049,7 +7049,7 @@ def _save_known_hashes(path: str, mapping: Dict[str, str]) -> None:
 
 # ---- ETL job tracking --------------------------------------------------------
 _etl_jobs: Dict[str, Dict[str, Any]] = {}  # job_id -> status dict
-_etl_lock = asyncio.Lock()  # Only allow ONE ETL deep job at a time
+_etl_lock = asyncio.Lock()  # Serialize web discovery jobs
 _etl_executor = concurrent.futures.ThreadPoolExecutor(
     max_workers=2, thread_name_prefix="etl"
 )
@@ -7105,6 +7105,8 @@ async def _ingest_batch(
 
 
 async def _run_job(source_key: str, job_type: str = "light") -> Dict[str, Any]:
+    if job_type != "light":
+        raise ValueError("Deep ingestion is owned by the dedicated seeding runner")
     start = datetime.datetime.now()
     art_dir = _artifact_dir()
     known_path = os.path.join(_known_dir(), f"known_{source_key}.txt")
@@ -7236,7 +7238,7 @@ async def run_etl_job(
     job: str = Query("light", pattern="^(light|deep)$"),
     _actor=Depends(_require_admin),
 ):
-    """Manually trigger an ETL job for a source (light or deep).
+    """Manually trigger lightweight discovery; deep ingestion returns 409.
 
     Returns immediately with a job_id. The ETL runs in the background.
     Check progress via GET /api/v1/admin/etl/status.
@@ -7245,6 +7247,11 @@ async def run_etl_job(
     which only checks that an ``Authorization: Bearer <anything>`` header
     is present and never verifies it (#252).
     """
+    if job != "light":
+        raise HTTPException(
+            status_code=409,
+            detail="Deep ingestion is owned by the dedicated seeding runner (.github/workflows/seed.yml).",
+        )
     import uuid as _uuid
 
     job_id = f"{source}_{job}_{_uuid.uuid4().hex[:8]}"
@@ -7257,7 +7264,7 @@ async def run_etl_job(
     }
 
     async def _bg():
-        async with _etl_lock:  # Only one ETL deep job at a time
+        async with _etl_lock:  # Serialize web discovery jobs
             try:
                 _etl_jobs[job_id]["status"] = "running"
                 result = await _run_job(source, job)
@@ -7311,7 +7318,8 @@ async def _setup_etl_scheduler():
     def jitter(base_seconds: int, spread: int = 900) -> int:
         return max(60, base_seconds + random.randint(-spread, spread))
 
-    # OAG: light weekly, deep monthly
+    # Discovery only. Deep PDF ingestion belongs to seed.yml, outside the web worker.
+    # OAG: light weekly
     scheduler.add_job(
         _run_job,
         args=["oag", "light"],
@@ -7322,18 +7330,8 @@ async def _setup_etl_scheduler():
         coalesce=True,
         misfire_grace_time=3600,
     )
-    scheduler.add_job(
-        _run_job,
-        args=["oag", "deep"],
-        trigger="interval",
-        seconds=jitter(30 * 24 * 3600),
-        id="etl_oag_deep",
-        max_instances=1,
-        coalesce=True,
-        misfire_grace_time=3600,
-    )
 
-    # COB: light weekly, deep biweekly
+    # COB: lightweight discovery weekly
     scheduler.add_job(
         _run_job,
         args=["cob", "light"],
@@ -7344,34 +7342,14 @@ async def _setup_etl_scheduler():
         coalesce=True,
         misfire_grace_time=3600,
     )
-    scheduler.add_job(
-        _run_job,
-        args=["cob", "deep"],
-        trigger="interval",
-        seconds=jitter(14 * 24 * 3600),
-        id="etl_cob_deep",
-        max_instances=1,
-        coalesce=True,
-        misfire_grace_time=3600,
-    )
 
-    # Treasury: light twice weekly (~3.5 days), deep weekly
+    # Treasury: lightweight discovery twice weekly (~3.5 days)
     scheduler.add_job(
         _run_job,
         args=["treasury", "light"],
         trigger="interval",
         seconds=jitter(int(3.5 * 24 * 3600)),
         id="etl_treasury_light",
-        max_instances=1,
-        coalesce=True,
-        misfire_grace_time=3600,
-    )
-    scheduler.add_job(
-        _run_job,
-        args=["treasury", "deep"],
-        trigger="interval",
-        seconds=jitter(7 * 24 * 3600),
-        id="etl_treasury_deep",
         max_instances=1,
         coalesce=True,
         misfire_grace_time=3600,
