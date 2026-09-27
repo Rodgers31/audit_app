@@ -93,7 +93,9 @@ const TABS: { id: Tab; labelKey: TranslationKey; icon: React.ElementType }[] = [
   // source is OAG audit reports, for which no extractor exists yet"), and all
   // 25 records have amount_paid/contracted_amount equal to an exact whole
   // percent drawn only from {20,30,40,50,60}. Publishing a case number asserts
-  // that a document exists. Restore this tab only behind a real OAG extractor.
+  // that a document exists. The fixture was deleted in #230 and the API now
+  // carries COB's own per-county tables with a page citation on every row;
+  // re-enabling this tab on that data is an open decision for the maintainer.
 ];
 
 /** Tiny inline SVG sparkline — renders a trend without pulling in a chart lib.

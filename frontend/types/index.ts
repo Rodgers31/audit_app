@@ -7,21 +7,58 @@ export interface AuditIssue {
   status: 'open' | 'resolved' | 'pending';
 }
 
+/** The Auditor-General's own words about an unfinished project, with the
+ * report, paragraph and page they come from. Attached to a COB row only when
+ * the heading shares distinctive name terms with it (`match`). */
+export interface OagStalledFinding {
+  speaker: 'Auditor-General';
+  report: string | null;
+  source_url: string;
+  page: string | null;
+  paragraph: number | string | null;
+  fiscal_period: string | null;
+  audit_year: number | null;
+  heading: string | null;
+  text: string;
+  audit_id: number;
+  match?: { shared_terms: string[]; score: number };
+}
+
+/** One row of a county's "Stalled Projects" table in the Controller of
+ * Budget's County Budget Implementation Review Report, as reported by the
+ * county treasury (or assembly) to COB. The backend publishes a row only when
+ * it carries source_url, source_page, as_of and reported_by
+ * (backend/services/stalled_projects.py). Figures COB left blank ("-") or
+ * that could not be read against the table's own header are null, never 0;
+ * `cells` holds every cell exactly as printed. */
 export interface StalledProject {
-  project_name: string;
-  sector: string;
-  contracted_amount: number;
-  amount_paid: number;
-  completion_pct: number;
-  start_year: number;
-  expected_completion: number;
-  status: 'stalled' | 'delayed';
-  reason: string;
-  oag_reference: string;
+  project_name: string | null;
+  row_no: string | null;
+  sector?: string | null;
+  location?: string | null;
+  completion_pct: number | null;
+  reason?: string | null;
+  action?: string | null;
+  group?: string | null;
+  estimated_value_kes: number | null;
+  amount_paid_kes: number | null;
+  cells: Record<string, string>;
+  flags: string[];
+  source_url: string;
+  source_page: number;
+  as_of: string;
+  reported_by: string;
+  publisher: string;
+  table_caption: string | null;
+  table_no: string | null;
+  oag_corroboration: OagStalledFinding[];
 }
 
 export interface AuditFinding {
   id: number;
+  audited_entity_name?: string | null;
+  source_url?: string | null;
+  page_ref?: string | null;
   finding: string;
   severity: 'info' | 'warning' | 'critical';
   category: string;
@@ -31,6 +68,26 @@ export interface AuditFinding {
   audit_year?: string;
   reference?: string;
   recommendation?: string;
+}
+
+/** Each measure keeps the source table's basis and fiscal period. */
+export interface CountyRevenue {
+  total_revenue: number | null;
+  total_revenue_target: number | null;
+  equitable_share: number | null;
+  equitable_share_target: number | null;
+  additional_allocations: number | null;
+  local_revenue: number | null;
+  own_source_target: number | null;
+  local_revenue_basis?: 'cash_receipts' | 'summary_table_actual_realised' | null;
+  total_revenue_basis?: 'cash_receipts_including_opening_balance' | null;
+  summary_table_own_source_revenue?: number | null;
+  own_source_disagreement?: { summary_table: number; county_revenue_table: number } | null;
+  streams: Array<{ stream: string; target: number | null; actual: number }>;
+  fiscal_year: string | null;
+  source: string | null;
+  sources?: Array<{ id: number | null; url: string | null; page_ref: string | null; measure: string }>;
+  total_revenue_absent_reason: string | null;
 }
 
 export interface CountyComprehensive {
@@ -80,14 +137,28 @@ export interface CountyComprehensive {
      *  reader as a CRA model. */
     source?: BudgetSource;
   };
-  revenue: {
-    total_revenue: number;
-    local_revenue: number;
-    equitable_share: number;
-  };
+  revenue: CountyRevenue;
   debt: {
     total_debt: number;
-    pending_bills: number;
+    /** null when no publication states this county's pending bills — Nandi
+     *  reported none to the Controller of Budget at 30 June 2026. */
+    pending_bills: number | null;
+    /** ISO date the figure is a stock on; null exactly when the figure is. */
+    pending_bills_as_at?: string | null;
+    pending_bills_source?: {
+      publisher: string;
+      title: string;
+      table: string | null;
+      url: string | null;
+    } | null;
+    /** What the report says about the figure, as codes the page words. */
+    pending_bills_notes?: Array<{ code: string } & Record<string, unknown>>;
+    /** Why there is NO figure, when the report says why; null otherwise. */
+    pending_bills_absence?: {
+      reason: 'not_reported' | 'withheld';
+      as_at: string;
+      table: string | null;
+    } | null;
     debt_to_budget_ratio: number;
     /** null when the population or the debt is unknown. */
     per_capita_debt: number | null;
@@ -118,10 +189,38 @@ export interface CountyComprehensive {
     cases: any[];
   };
   stalled_projects: {
-    count: number;
-    total_contracted_value: number;
-    total_amount_paid: number;
+    /** null when no evidence-backed row exists — unknown, not zero. */
+    count: number | null;
+    total_contracted_value: number | null;
+    /** How many rows the total covers; rows with no printed figure are left out. */
+    total_contracted_value_rows: number;
+    total_amount_paid: number | null;
+    total_amount_paid_rows: number;
     projects: StalledProject[];
+    reason: 'no_evidence_backed_source' | 'no_table_in_edition' | 'table_unreadable' | null;
+    source: {
+      publisher: string;
+      title: string | null;
+      fiscal_year: string | null;
+      period: string | null;
+      published: string | null;
+      as_of: string | null;
+      url: string;
+      wpdmdl: number | null;
+      sha256: string | null;
+      reported_by: string;
+    } | null;
+    /** COB's own words about this county: its summary sentence, a statement
+     * that it reported nothing, and its line in Table 2.6 — verbatim. */
+    cob_statements: Record<string, unknown> | null;
+    reconciliation: {
+      status: 'agrees' | 'agrees_with_gaps' | 'disagrees' | 'unverifiable';
+      checks: { check: string; rows: number | null; cob: number | null; cob_source: string; agrees: boolean | null }[];
+      [key: string]: unknown;
+    } | null;
+    withheld_fields: { field: string; why: string; detail: string }[];
+    oag_findings: OagStalledFinding[];
+    withheld: { count: number; by_reason: Record<string, number> };
   };
   financial_summary: {
     health_score: number;
@@ -181,7 +280,8 @@ export interface County {
   moneyReceived?: number; // Total grants/transfers received — undefined when withheld
   budgetUtilization?: number; // Percentage of budget used
   auditIssues?: AuditIssue[];
-  revenueCollection?: number; // Local revenue collected
+  revenueCollection?: number; // Measure described by revenue.local_revenue_basis
+  revenue?: CountyRevenue;
   pendingBills?: number; // Outstanding payments
   developmentBudget?: number; // Capital/development budget
   recurrentBudget?: number; // Operational budget

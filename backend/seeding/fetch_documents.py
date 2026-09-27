@@ -50,6 +50,7 @@ def fetch_document(
     title: str,
     doc_type: DocumentType,
     dataset_id: Optional[str] = None,
+    max_seconds: Optional[float] = None,
 ) -> SourceDocument:
     """Download ``url`` and return its up-to-date ``SourceDocument`` row.
 
@@ -92,8 +93,18 @@ def fetch_document(
             client,
             url,
             cache_dir=cache_dir,
-            ttl_seconds=settings.cache_ttl_seconds,
-            max_seconds=settings.pdf_download_timeout_seconds,
+            # The PDF lifetime (30 days), as every other PDF fetcher uses. This
+            # passed cache_ttl_seconds (one day, meant for HTTP responses), so
+            # nightlies ~24h apart hit the cache only when the scheduler started
+            # early: run 35947298790 logged ages 86,199-86,345s.
+            ttl_seconds=settings.pdf_cache_ttl_seconds,
+            # A caller that starts a download late in its budget passes a
+            # tighter cap. Resumable, so a short cap banks progress.
+            max_seconds=(
+                max_seconds
+                if max_seconds is not None
+                else settings.pdf_download_timeout_seconds
+            ),
             max_bytes=settings.pdf_download_max_bytes,
         )
     except PdfDownloadError as exc:

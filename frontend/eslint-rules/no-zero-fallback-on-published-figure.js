@@ -20,6 +20,12 @@
  * Escape hatch: if a zero really is correct for a field, say so at the call
  * site with `// eslint-disable-next-line local/no-zero-fallback-on-published-figure`
  * and a reason. The point is that it becomes a decision someone wrote down.
+ *
+ * This rule binds TypeScript only. Its Python half — the API, the seeders and
+ * the ETL, where issue #207 found `.get("total_missing_funds", 0)` — is
+ * `backend/tests/test_no_zero_fallback_on_published_figure.py`, with the same
+ * vocabulary (plus a few words it needed) and a `# zero-fallback-ok: <reason>`
+ * escape hatch.
  */
 'use strict';
 
