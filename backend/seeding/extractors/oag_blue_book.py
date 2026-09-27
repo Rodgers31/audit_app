@@ -157,6 +157,7 @@ class BlueBookResult:
     votes_seen: int
     rejected_cid: int  # findings rejected for failing text integrity
     ocr_pages: int
+    skipped_votes: List[int] = field(default_factory=list)
 
 
 # ── severity mapping (OAG structure -> app enum) ─────────────────────
@@ -448,6 +449,7 @@ def parse_blue_book(pages: List[PageText], source_url: str) -> BlueBookResult:
     # start - 1 (TOC order is document order).
     all_findings: List[BlueBookFinding] = []
     rejected = 0
+    skipped_votes = []
     last_printed = len(pages) - offset
     for i, (vote, entity, start_printed) in enumerate(toc):
         end_printed = (
@@ -457,6 +459,7 @@ def parse_blue_book(pages: List[PageText], source_url: str) -> BlueBookResult:
         # number must appear in the first lines of the start page.
         idx = offset + start_printed - 1
         if idx >= len(pages):
+            skipped_votes.append(vote)
             continue
         head = "\n".join(pages[idx].text.split("\n")[:3])
         m = _VOTE_RE.search(head)
@@ -469,6 +472,7 @@ def parse_blue_book(pages: List[PageText], source_url: str) -> BlueBookResult:
             # skipped for lacking a marker this document class never has.
             confirmed = _entity_in_head(entity, head)
         if not confirmed:
+            skipped_votes.append(vote)
             logger.warning(
                 "TOC says vote %s starts on printed page %s but the page "
                 "header does not confirm it — skipping this chapter rather "
@@ -484,7 +488,7 @@ def parse_blue_book(pages: List[PageText], source_url: str) -> BlueBookResult:
         rejected += rej
 
     ocr_pages = sum(1 for p in pages if p.method == "ocr")
-    return BlueBookResult(fy, all_findings, len(toc), rejected, ocr_pages)
+    return BlueBookResult(fy, all_findings, len(toc), rejected, ocr_pages, skipped_votes)
 
 
 # ── PDF I/O (thin, impure shell around the pure parser) ──────────────
@@ -632,7 +636,13 @@ def blue_book_row_key(payload: dict) -> tuple:
     return (payload.get("vote"), payload.get("paragraph_no"), payload.get("title"))
 
 
-def replace_extractions(session, doc, extractor_id: str, rows: list, key) -> dict:
+def replace_extractions(session, doc, extractor_id: str, rows: list, key, *, review=None) -> dict:
+    """Atomically reconcile a validated candidate, preserving evidence on failure."""
+    with session.begin_nested():
+        return _replace_extractions(session, doc, extractor_id, rows, key, review=review)
+
+
+def _replace_extractions(session, doc, extractor_id: str, rows: list, key, *, review=None) -> dict:
     """Make ``doc``'s rows from ``extractor_id`` exactly ``rows``.
 
     ``audits.extraction_id`` is a foreign key, so the old way (delete every
@@ -644,9 +654,9 @@ def replace_extractions(session, doc, extractor_id: str, rows: list, key) -> dic
       the audit that cites it keeps citing it, and the loader then rewrites
       that audit from the new payload.
     * a new row with no old match is inserted.
-    * an old row with no new match was never a finding under the current walk
-      (a prior-year table row, say). The audits loaded from it are deleted,
-      then the row.
+    * revisions and retirements require a source-checked review bound to the
+      exact old rows, incoming rows and source file (reconciliation.py).
+      Automatic runs preserve existing evidence when these disagree.
 
     Audits are the only facts loaded from these rows. If any other table
     cites a row that would be removed, nothing is changed and
@@ -660,6 +670,9 @@ def replace_extractions(session, doc, extractor_id: str, rows: list, key) -> dic
     from models import Audit, Base, Extraction
     from sqlalchemy import func, select
 
+    from .reconciliation import validate_candidates, require_review, row_changed
+
+    validate_candidates(doc, extractor_id, rows, key)
     old = (
         session.query(Extraction)
         .filter(
@@ -684,6 +697,9 @@ def replace_extractions(session, doc, extractor_id: str, rows: list, key) -> dic
     vanished = [r for group in by_key.values() for r in group]
     vanished_ids = [r.id for r in vanished]
 
+    # Other domains may cite either a retired row or a revised payload. This
+    # function owns neither decision on their behalf, even with a review.
+    affected_ids = vanished_ids + [r.id for r, new in matched if row_changed(r, new)]
     # Refuse before changing anything.
     for table in Base.metadata.sorted_tables:
         if table.name == Audit.__tablename__:
@@ -697,14 +713,16 @@ def replace_extractions(session, doc, extractor_id: str, rows: list, key) -> dic
                     .select_from(table)
                     .where(fk.parent.in_(chunk))
                 ).scalar_one()
-                for chunk in _chunks(vanished_ids)
+                for chunk in _chunks(affected_ids)
             )
             if cited:
                 raise ExtractionStillReferenced(
                     f"{table.name}.{fk.parent.name} cites {cited} of the "
-                    f"{len(vanished_ids)} {extractor_id} row(s) document {doc.id} "
-                    "no longer yields; nothing was replaced"
+                    f"{len(affected_ids)} {extractor_id} row(s) document {doc.id} "
+                    "would change; nothing was replaced"
                 )
+
+    require_review(session, doc, extractor_id, old, rows, matched, vanished, review)
 
     # Through the ORM, not a bulk DELETE: a bulk delete leaves the deleted
     # audits live in the session, where the loader would meet them again.
@@ -747,7 +765,7 @@ def replace_extractions(session, doc, extractor_id: str, rows: list, key) -> dic
     }
 
 
-def extract_blue_book(session, doc, settings) -> dict:
+def extract_blue_book(session, doc, settings, *, review=None) -> dict:
     """Extract ``doc`` (a fetched Blue Book) into ``extractions`` rows.
 
     One row per finding, ``page_number`` = 1-based PDF page. Idempotent: when
@@ -809,6 +827,13 @@ def extract_blue_book(session, doc, settings) -> dict:
             f"row(s) exist (toc entries: {result.votes_seen}); rows kept"
         )
 
+    from .reconciliation import IncompleteExtraction
+
+    if result.rejected_cid or any(p.method == "rejected" for p in pages):
+        raise IncompleteExtraction(f"document {doc.id}: unreadable source text; rows kept")
+    if result.skipped_votes:
+        raise IncompleteExtraction(f"document {doc.id}: skipped chapters {result.skipped_votes}; rows kept")
+
     rows = [
         Extraction(
             source_document_id=doc.id,
@@ -820,7 +845,7 @@ def extract_blue_book(session, doc, settings) -> dict:
         for f in result.findings
     ]
     replaced = replace_extractions(
-        session, doc, EXTRACTOR_ID, rows, key=blue_book_row_key
+        session, doc, EXTRACTOR_ID, rows, key=blue_book_row_key, review=review
     )
     if existing:
         logger.warning(
@@ -838,6 +863,7 @@ def extract_blue_book(session, doc, settings) -> dict:
             replaced["audits_removed"],
         )
 
+    doc_meta.update(doc.meta or {})  # Keep the accepted reconciliation receipt.
     doc_meta["extracted_md5"] = doc.md5
     doc_meta["extractor_version"] = EXTRACTOR_VERSION
     doc_meta["extraction_stats"] = {

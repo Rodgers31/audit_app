@@ -449,7 +449,7 @@ def already_extracted(session, doc) -> int:
     )
 
 
-def extract_county_volume(session, doc, settings, *, known_counties: Dict[str, str]) -> dict:
+def extract_county_volume(session, doc, settings, *, known_counties: Dict[str, str], review=None) -> dict:
     """Extract a combined county volume into ``extractions`` rows.
 
     One row per finding, ``page_number`` = the 1-based PDF page it starts on.
@@ -549,13 +549,28 @@ def extract_county_volume(session, doc, settings, *, known_counties: Dict[str, s
         created += 1
         per_chapter[ch.no] = per_chapter.get(ch.no, 0) + 1
 
+    from .reconciliation import IncompleteExtraction
+
+    # First ingestion may retain usable chapters, with its coverage reported.
+    # A re-read with any unresolved chapter/text must not replace known evidence.
+    held = session.query(Extraction).filter_by(
+        source_document_id=doc.id, extractor=EXTRACTOR_ID
+    ).count()
+    partial = bool(refused or rejected or len(resolved) != len(split.toc)
+                   or any(p.method == "rejected" for p in pages))
+    if held and partial:
+        raise IncompleteExtraction(
+            f"document {doc.id}: incomplete county volume; rows kept; "
+            f"refused={refused}, rejected={rejected}"
+        )
+
     # Re-issued bytes: rows from the old md5 describe a document that no
     # longer exists at the URL. They are reconciled, not deleted wholesale:
     # audits.extraction_id is a foreign key, so a row a published finding
     # cites keeps its id when the finding survives (the Blue Book walk does
     # the same).
     replaced = replace_extractions(
-        session, doc, EXTRACTOR_ID, rows, key=county_volume_row_key
+        session, doc, EXTRACTOR_ID, rows, key=county_volume_row_key, review=review
     )
     if replaced["kept"] + replaced["updated"] + replaced["removed"]:
         logger.warning(
@@ -571,7 +586,8 @@ def extract_county_volume(session, doc, settings, *, known_counties: Dict[str, s
 
     empty = sorted(set(resolved) - set(per_chapter))
     meta = dict(doc.meta or {})
-    meta["extracted_md5"] = doc.md5
+    if not partial:
+        meta["extracted_md5"] = doc.md5
     meta["extraction_stats"] = {
         "extractor": EXTRACTOR_ID,
         "findings": created,
@@ -606,6 +622,7 @@ def extract_county_volume(session, doc, settings, *, known_counties: Dict[str, s
         "skipped": 0,
         "rejected_cid": rejected,
         "shape": "county_volume",
+        "partial": partial,
         "fiscal_year": fiscal_year,
         "volume_kind": kind,
         "chapters": len(per_chapter),
