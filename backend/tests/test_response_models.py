@@ -45,7 +45,7 @@ def test_entity_detail_response():
     from main import EntityDetailResponse
 
     edr = EntityDetailResponse(
-        entity={"id": 1, "name": "Treasury"},
+        entity={"id": 1, "canonical_name": "Treasury", "type": "ministry", "meta": {"unknown_claim": "retired"}},
         financial_time_series=[{"year": 2024, "amount": 1e12}],
         recent_budget_lines=[],
         audit_findings=[],
@@ -53,6 +53,7 @@ def test_entity_detail_response():
     )
     data = edr.model_dump()
     assert len(data["financial_time_series"]) == 1
+    assert data["entity"]["meta"] == {}
 
 
 def test_budget_line_response():

@@ -1108,11 +1108,11 @@ def initialize_reference_data(
         period = _ensure_fiscal_period(session, country.id)
 
         for county_name, info in county_records.items():
-            county_code = None
-            if code_lookup:
-                county_code = code_lookup.get(county_name)
-            if not county_code:
-                county_code = info.get("county_code")
+            from services.county_identity import official_county_code
+
+            county_code = official_county_code(county_name)
+            if county_code is None:
+                raise ValueError(f"Unrecognized county identity: {county_name!r}")
             canonical_name = f"{county_name} County"
             entity = (
                 session.query(Entity)

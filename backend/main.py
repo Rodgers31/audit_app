@@ -18,6 +18,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import httpx  # For internal API calls
 import uvicorn
 from config.settings import settings
+from services.audit_derived import derive_unaccounted_cases
 from services.imf_dsa import kenya_dsa_rating
 from services.publication_gate import (
     count_withheld_audits,
@@ -56,7 +57,8 @@ from services.trust_guards import (
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+from services.entity_publication import public_entity_metadata
 from sqlalchemy import or_, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
@@ -188,12 +190,12 @@ def _resolve_fy_metrics(meta: dict, fiscal_year: Optional[str] = None) -> dict:
     only FY2024/25 was ingested), we return the most recent FY's metrics rather
     than returning empty values.
     """
-    all_metrics = (meta or {}).get("metrics") or {}
+    all_metrics = public_entity_metadata(meta).get("metrics", {})
     if not isinstance(all_metrics, dict):
         return {}
     key = _fy_metrics_key(fiscal_year)
     result = all_metrics.get(key)
-    if result:
+    if isinstance(result, dict) and result:
         return result
     # Fallback: latest available FY (sorted descending)
     sorted_keys = sorted(all_metrics.keys(), reverse=True)
@@ -1328,7 +1330,10 @@ def _entity_period_budget_query(db, entity_id: int, period_id: Optional[int] = N
     return q
 
 
-# County ID to Name mapping
+from services.county_identity import official_county_code, legacy_county_route_id
+
+# Historical route IDs: retain bookmarks. Use official_county_code for a code.
+# These identifiers must NEVER be passed to a writer as official county codes.
 COUNTY_MAPPING = {
     "001": "Nairobi",
     "002": "Kwale",
@@ -1733,26 +1738,40 @@ class CountryResponse(BaseModel):
 
 
 class EntityFinancialSummary(BaseModel):
-    total_allocation: float
-    total_spent: float
-    execution_rate: float
+    total_allocation: Optional[float] = None
+    total_spent: Optional[float] = None
+    execution_rate: Optional[float] = None
+    fiscal_period: Optional[Dict[str, Any]] = None
+    accounting_basis: Optional[str] = None
+    currency: Optional[str] = None
+    sources: List[Dict[str, Any]] = []
+    absent_reasons: Dict[str, str] = {}
+    budget_lines_count: int = 0
 
 
-class EntityResponse(BaseModel):
+class EntityProfileResponse(BaseModel):
     id: int
     canonical_name: str
     type: str
     slug: Optional[str] = None
     country: Optional[str] = None
-    code: Optional[str] = None
     meta: Dict[str, Any] = {}
+    created_at: Optional[str] = None
+
+    @field_validator("meta", mode="before")
+    @classmethod
+    def publish_metadata(cls, value):
+        return public_entity_metadata(value)
+
+
+class EntityResponse(EntityProfileResponse):
+    code: Optional[str] = None
     financial_summary: Optional[EntityFinancialSummary] = None
     audit_findings_count: int = 0
-    created_at: Optional[str] = None
 
 
 class EntityDetailResponse(BaseModel):
-    entity: Dict[str, Any]
+    entity: EntityProfileResponse
     financial_time_series: List[Dict[str, Any]]
     recent_budget_lines: List[Dict[str, Any]]
     audit_findings: List[Dict[str, Any]]
@@ -1867,7 +1886,7 @@ async def _startup_sequence() -> None:
     # Reference county data. Failure leaves the service NOT-ready —
     # visible on /health/ready — instead of crash-looping the process.
     try:
-        await asyncio.to_thread(initialize_reference_data, NAME_TO_ID_MAPPING)
+        await asyncio.to_thread(initialize_reference_data)
     except Exception:  # pragma: no cover - surfaced via readiness + logs
         logger.exception("Failed to initialize reference data")
         return
@@ -3260,6 +3279,11 @@ async def get_counties(fiscal_year: Optional[str] = None):
             )
             gdp_map = {g.entity_id: g for g in gdp_rows}
 
+            from services.entity_financials import (
+                financial_summary,
+                publish_county_budget,
+            )
+
             # ── BUILD RESULTS from pre-loaded data ──
             results = []
             for e in entities:
@@ -3374,9 +3398,14 @@ async def get_counties(fiscal_year: Optional[str] = None):
                 # county_financial_health. The formula this replaces was a piecewise
                 # transform of utilisation alone, so the "health" score printed the
                 # Budget Utilisation figure a second time.
+                from services.entity_financials import financial_summary
+
+                _published_budget = financial_summary(
+                    budget_lines, budget_lines[0].period if budget_lines else None
+                )
                 _health = county_financial_health(
-                    total_allocated=total_allocated,
-                    total_spent=total_spent,
+                    total_allocated=_published_budget["total_allocation"],
+                    total_spent=_published_budget["total_spent"],
                     pending_bills=pending_bills,
                     audit_status=audit_status,
                     own_source_target=county_own_source_target(budget_lines),
@@ -3399,7 +3428,7 @@ async def get_counties(fiscal_year: Optional[str] = None):
                 money_received = None
 
                 name = e.canonical_name.replace(" County", "")
-                county_id = NAME_TO_ID_MAPPING.get(name, e.slug)
+                county_id = legacy_county_route_id(e.canonical_name) or e.slug
                 coords = COUNTY_COORDINATES.get(county_id or "", [36.8219, -1.2921])
 
                 last_audit_date = None
@@ -3410,7 +3439,7 @@ async def get_counties(fiscal_year: Optional[str] = None):
                     {
                         "id": county_id or str(e.id),
                         "name": name,
-                        "code": county_id or "",
+                        "code": official_county_code(e.canonical_name),
                         "coordinates": coords,
                         # The census, or nothing. A 0 here is not a
                         # smaller number than Lamu's 143,920 — it is the
@@ -3471,6 +3500,10 @@ async def get_counties(fiscal_year: Optional[str] = None):
                         },
                     }
                 )
+
+                rows = bl_by_entity.get(e.id, [])
+                period = rows[0].period if rows else None
+                publish_county_budget(results[-1], financial_summary(rows, period))
 
             return results
 
@@ -3566,6 +3599,12 @@ async def get_county_fiscal_years():
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+@app.get("/api/v1/counties/code/{code}")
+async def get_county_by_official_code(code: str, fiscal_year: Optional[str] = None):
+    """Official KNBS/constitutional code; historical numeric URLs stay stable."""
+    return await get_county_details(county_id=f"code:{code}", fiscal_year=fiscal_year)
+
+
 @app.get("/api/v1/counties/{county_id}")
 @cached(key_prefix="county", ttl=1800)  # Cache for 30 minutes
 async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
@@ -3573,24 +3612,17 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
     if DATABASE_AVAILABLE:
         try:
             with next(get_db()) as db:
-                name = _resolve_county_name(county_id, db=db)
+                e = _resolve_county_entity(db, county_id)
                 # Unknown id → 404. Previously an unresolvable id skipped
                 # the name filter and q.first() served the FIRST county's
                 # data (Mombasa) under any garbage id with a 200.
-                if not name:
+                if not e:
                     raise HTTPException(
                         status_code=404,
                         detail=f"County '{county_id}' not found",
                     )
-                e = (
-                    db.query(DBEntity)
-                    .filter(
-                        DBEntity.type == EntityType.COUNTY,
-                        DBEntity.canonical_name == f"{name} County",
-                    )
-                    .first()
-                )
                 if e:
+                    name = e.canonical_name.removesuffix(" County")
                     # Resolve fiscal period — same logic as list endpoint
                     period_ids = None
                     if fiscal_year:
@@ -3742,9 +3774,14 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                     # county_financial_health. The formula this replaces was a piecewise
                     # transform of utilisation alone, so the "health" score printed the
                     # Budget Utilisation figure a second time.
+                    from services.entity_financials import financial_summary
+
+                    _published_budget = financial_summary(
+                        budget_lines, budget_lines[0].period if budget_lines else None
+                    )
                     _health = county_financial_health(
-                        total_allocated=total_allocated,
-                        total_spent=total_spent,
+                        total_allocated=_published_budget["total_allocation"],
+                        total_spent=_published_budget["total_spent"],
                         pending_bills=pending_bills,
                         audit_status=audit_status,
                         own_source_target=county_own_source_target(budget_lines),
@@ -3773,7 +3810,9 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                         pass
 
                     cname = (e.canonical_name or "").replace(" County", "")
-                    coords = COUNTY_COORDINATES.get(county_id, [36.8219, -1.2921])
+                    coords = COUNTY_COORDINATES.get(
+                        legacy_county_route_id(e.canonical_name)
+                    )
 
                     last_audit_date = None
                     if latest_audit and latest_audit.created_at:
@@ -3791,10 +3830,10 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                                 )
                             )
 
-                    return {
+                    payload = {
                         "id": county_id,
                         "name": cname,
-                        "code": county_id,
+                        "code": official_county_code(e.canonical_name),
                         "coordinates": coords,
                         # Absent stays absent — same rule as the list
                         # endpoint above and the comprehensive one below.
@@ -3837,6 +3876,18 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                         "audit_issues": audit_issues,
                         "audit_findings_count": len(audits),
                     }
+                    from services.entity_financials import (
+                        financial_summary,
+                        publish_county_budget,
+                    )
+
+                    return publish_county_budget(
+                        payload,
+                        financial_summary(
+                            budget_lines,
+                            budget_lines[0].period if budget_lines else None,
+                        ),
+                    )
         except HTTPException:
             # Deliberate 404s (unknown county id) must reach the client,
             # not be swallowed into the fallback path below.
@@ -3912,7 +3963,7 @@ async def get_county_comprehensive(
             if not county_name:
                 county_name = COUNTY_MAPPING.get(county_id, "")
 
-            meta = entity.meta or {}
+            meta = public_entity_metadata(entity.meta)
             metrics = _resolve_fy_metrics(meta)
 
             # --- Population ---
@@ -4220,9 +4271,14 @@ async def get_county_comprehensive(
             # The formula this replaces was a piecewise transform of
             # utilisation alone, and returned 0.0 — grade "C" — for a county
             # with no budget data at all.
+            from services.entity_financials import financial_summary
+
+            _published_budget = financial_summary(
+                budget_lines, budget_lines[0].period if budget_lines else None
+            )
             _health = county_financial_health(
-                total_allocated=total_allocated,
-                total_spent=total_spent,
+                total_allocated=_published_budget["total_allocation"],
+                total_spent=_published_budget["total_spent"],
                 pending_bills=pending_bills,
                 audit_status=audit_status,
                 own_source_target=county_own_source_target(budget_lines),
@@ -4247,8 +4303,9 @@ async def get_county_comprehensive(
             # date and reporter are published (issue #230).
             # OAG findings about unfinished projects corroborate COB's rows
             # (or stand alone), in the Auditor-General's own words.
+            _stored_meta = entity.meta if isinstance(entity.meta, dict) else {}
             stalled_block = build_stalled_projects_block(
-                meta.get("stalled_projects"),
+                _stored_meta.get("stalled_projects"),
                 oag_findings=stalled_oag_findings(audits, _extracted),
             )
 
@@ -4264,7 +4321,9 @@ async def get_county_comprehensive(
             revenue_receipts = county_revenue_receipts(budget_lines)
 
             # --- Coordinates ---
-            coords = COUNTY_COORDINATES.get(county_id, [36.8219, -1.2921])
+            coords = COUNTY_COORDINATES.get(
+                legacy_county_route_id(entity.canonical_name)
+            )
 
             # --- Per-capita stats ---
             # The census row, or nothing — the rule the four sibling county
@@ -4295,69 +4354,22 @@ async def get_county_comprehensive(
                 else None
             )
 
-            # --- Health history (last ~6 completed FYs, oldest → newest) ---
-            # Aggregates allocated + spent per fiscal period and applies the same
-            # scoring formula used for the current-FY health_score, so sparklines
-            # stay consistent with the hero badge. Excludes in-progress periods —
-            # plotting a mid-year partial execution would paint a misleading crash.
-            from sqlalchemy import func as _sqlfunc2
-            from datetime import datetime as _dt
-            _now = _dt.utcnow()
-            # Per period through the shared split rule: summing every row
-            # counted a CBIRR period's Total, Recurrent and Development (and
-            # its revenue rows) as four budgets. Part-year reports ("FY2025/26
-            # 9M") are not completed years whatever their end date, so they
-            # stay out of a completed-years trend.
-            _periods: Dict[int, Any] = {}
-            for _bl, _fp in (
-                db.query(DBBudgetLine, DBFiscalPeriod)
-                .join(DBFiscalPeriod, DBBudgetLine.period_id == DBFiscalPeriod.id)
-                .filter(
-                    DBBudgetLine.entity_id == entity.id,
-                    DBBudgetLine.category != "Total Budget",
-                    DBFiscalPeriod.end_date < _now,
-                )
-                .all()
-            ):
-                if " " in (_fp.label or "").strip():
-                    continue
-                _periods.setdefault(_fp.id, (_fp, []))[1].append(_bl)
-            fy_rows = []
-            for _fp, _lines in sorted(
-                _periods.values(), key=lambda p: p[0].start_date, reverse=True
-            )[:6]:
-                _alloc, _spent, _s, _c = _split_classification_and_sector_lines(_lines)
-                fy_rows.append((_fp.label, _fp.start_date, _alloc, _spent))
+            # A budget execution rate alone is not a historical health index.
+            # Dated audit/OSR/pending-bill components are not assembled here.
+            # Keep the health sparkline absent and publish the budget history
+            # under its own measure, using the same dated accounting contract.
+            from services.entity_financials import entity_financial_series
 
-            def _grade_for(score: float) -> str:
-                if score >= 85: return "A"
-                if score >= 70: return "B+"
-                if score >= 55: return "B"
-                if score >= 40: return "B-"
-                return "C"
-
+            today = datetime.datetime.now(datetime.timezone.utc).date().isoformat()
+            completed_budgets = [
+                summary
+                for summary in entity_financial_series(db, [entity.id]).get(entity.id, [])
+                if summary["fiscal_period"]
+                and summary["fiscal_period"]["end_date"]
+                and summary["fiscal_period"]["end_date"][:10] < today
+            ]
+            budget_execution_history = list(reversed(completed_budgets[:6]))
             health_history = []
-            for label, _sd, alloc, spent in reversed(fy_rows):
-                alloc_f = float(alloc or 0)
-                spent_f = float(spent or 0)
-                if alloc_f <= 0 or spent_f <= 0:
-                    # Skip periods with no execution — they'd plot as 0 and
-                    # distort the trend. Allocated-only years aren't "graded".
-                    continue
-                util = spent_f / alloc_f * 100
-                if util <= 95:
-                    hs = min(util, 95)
-                elif util <= 100:
-                    hs = 90
-                else:
-                    hs = max(0.0, 80 - (util - 100))
-                health_history.append(
-                    {
-                        "fy": label,
-                        "score": round(hs, 1),
-                        "grade": _grade_for(hs),
-                    }
-                )
 
             response = {
                 "id": county_id,
@@ -4494,6 +4506,8 @@ async def get_county_comprehensive(
                 },
                 # Health score over time (oldest → newest)
                 "health_history": health_history,
+                "health_history_absent_reason": "dated_health_components_unavailable",
+                "budget_execution_history": budget_execution_history,
                 # Missing funds
                 "missing_funds": {
                     "basis": "oag_finding_title",
@@ -4567,6 +4581,18 @@ async def get_county_comprehensive(
                 },
             }
 
+            from services.entity_financials import (
+                financial_summary,
+                publish_county_budget,
+            )
+
+            publish_county_budget(
+                response,
+                financial_summary(
+                    budget_lines, budget_lines[0].period if budget_lines else None
+                ),
+                comprehensive=True,
+            )
             return response
 
     except HTTPException:
@@ -11211,141 +11237,49 @@ async def get_pending_bills_by_county(county_id: str, db: Session = Depends(get_
 
 
 def _resolve_county_name(county_id: str, db: "Optional[Session]" = None) -> Optional[str]:
-    """Resolve any ID shape to a short county name (e.g. "Mombasa").
-
-    Endpoints that only need a name (to call downstream InternalAPIClient
-    or build a canonical_name filter) use this helper. It tries the fast
-    COUNTY_MAPPING dict first, then falls back to a quick DB lookup for
-    raw row ids / slugs. Returns None if the id cannot be resolved.
-
-    When called from within an endpoint that already holds an open
-    ``with next(get_db())`` session, pass ``db=<that session>`` so we
-    reuse it instead of opening (and leaking) a second connection.
-    """
-    if not county_id:
-        return None
-
-    # Fast path: direct COUNTY_MAPPING lookup (zero-padded codes)
-    direct = COUNTY_MAPPING.get(county_id)
-    if direct:
-        return direct
-
-    # Numeric shapes: try zero-padding to match COUNTY_MAPPING keys
-    cid = str(county_id).strip()
-    if cid.isdigit():
-        padded = cid.zfill(3)
-        if padded in COUNTY_MAPPING:
-            return COUNTY_MAPPING[padded]
-
-    # Fallback to DB for raw DB ids / slugs / names
+    """Resolve a legacy route, explicit official code, entity PK or slug."""
+    cid = str(county_id or "").strip()
+    if cid in COUNTY_MAPPING:
+        return COUNTY_MAPPING[cid]
     if not DATABASE_AVAILABLE:
         return None
-    try:
-        if db is not None:
-            entity = _resolve_county_entity(db, county_id)
-            if entity:
-                name = (entity.canonical_name or "").replace(" County", "").strip()
-                return name or None
-            return None
-        with next(get_db()) as _db:
-            entity = _resolve_county_entity(_db, county_id)
-            if entity:
-                name = (entity.canonical_name or "").replace(" County", "").strip()
-                return name or None
-    except Exception as e:
-        logging.warning(f"_resolve_county_name fallback failed for {county_id}: {e}")
-    return None
+    if db is not None:
+        entity = _resolve_county_entity(db, cid)
+        return entity.canonical_name.removesuffix(" County") if entity else None
+    with next(get_db()) as session:
+        entity = _resolve_county_entity(session, cid)
+        return entity.canonical_name.removesuffix(" County") if entity else None
 
 
 def _resolve_county_entity(db: Session, county_id: str):
-    """Resolve a county by numeric ID, zero-padded code, slug, or name.
+    """Resolve identifiers without interchanging their namespaces.
 
-    The codebase exposes three ID shapes for counties:
-      * raw DB row id (``4``)
-      * 3-digit county code (``001``..``047``) used in COUNTY_MAPPING
-      * slug (``nairobi-county``) or short name (``Nairobi``)
-
-    Different endpoints return different shapes, so we normalise here.
+    ``001`` is the legacy Nairobi URL, ``code:001`` is official Mombasa,
+    unpadded ``4`` is an Entity primary key, and slugs keep their identity.
     """
-    if not county_id:
-        return None
-    cid = str(county_id).strip()
+    from services.county_identity import resolve_official_county_entity
 
-    # 1. 3-digit county code via COUNTY_MAPPING (e.g. "047" → "Mombasa").
-    #    Must precede the raw-DB-id branch: the /counties list endpoint
-    #    returns these zero-padded codes as `id`, and if we treated "047"
-    #    as DB row id=47 we'd resolve to a completely different county.
-    code_candidate = cid.zfill(3) if cid.isdigit() else cid
-    mapped = COUNTY_MAPPING.get(code_candidate) or COUNTY_MAPPING.get(cid)
-    if mapped:
-        entity = (
-            db.query(DBEntity)
-            .filter(
-                DBEntity.type == EntityType.COUNTY,
-                or_(
-                    DBEntity.canonical_name == mapped,
-                    DBEntity.canonical_name == f"{mapped} County",
-                    DBEntity.slug == f"{mapped.lower().replace(' ', '-')}-county",
-                ),
-            )
-            .first()
+    cid = str(county_id or "").strip()
+    if cid.startswith("code:"):
+        return resolve_official_county_entity(db, cid[5:])
+    if cid in COUNTY_MAPPING:
+        return resolve_official_county_entity(
+            db, official_county_code(COUNTY_MAPPING[cid])
         )
-        if entity:
-            return entity
-
-    # 2. Raw numeric DB id (falls through only when the code didn't match,
-    #    so long-form ids like "123" for a non-county row still resolve).
     if cid.isdigit():
-        entity = (
+        return (
             db.query(DBEntity)
             .filter(DBEntity.id == int(cid), DBEntity.type == EntityType.COUNTY)
             .first()
         )
-        if entity:
-            return entity
-
-    # 3. Slug
     entity = (
         db.query(DBEntity)
         .filter(DBEntity.slug == cid.lower(), DBEntity.type == EntityType.COUNTY)
         .first()
     )
-    if entity:
+    if entity is not None:
         return entity
-
-    # 4. 3-digit code via COUNTY_MAPPING → resolve to either
-    #    "Nairobi" or "Nairobi County" in the DB
-    code = cid.zfill(3) if cid.isdigit() else cid
-    mapped = COUNTY_MAPPING.get(code) or COUNTY_MAPPING.get(cid)
-    if mapped:
-        entity = (
-            db.query(DBEntity)
-            .filter(
-                DBEntity.type == EntityType.COUNTY,
-                or_(
-                    DBEntity.canonical_name == mapped,
-                    DBEntity.canonical_name == f"{mapped} County",
-                    DBEntity.slug == f"{mapped.lower().replace(' ', '-')}-county",
-                ),
-            )
-            .first()
-        )
-        if entity:
-            return entity
-
-    # 4. Case-insensitive name match
-    entity = (
-        db.query(DBEntity)
-        .filter(
-            or_(
-                DBEntity.canonical_name.ilike(cid),
-                DBEntity.canonical_name.ilike(f"{cid} County"),
-            ),
-            DBEntity.type == EntityType.COUNTY,
-        )
-        .first()
-    )
-    return entity
+    return resolve_official_county_entity(db, official_county_code(cid))
 
 
 # ── Debt — Broader (IMF General Government) ────────────────────────────
@@ -12133,21 +12067,29 @@ async def get_entities(
             .all()
         )
 
+        from services.entity_financials import (
+            entity_financial_series,
+            financial_summary,
+        )
+
+        series_by_entity = entity_financial_series(
+            db, [entity.id for entity in entities]
+        )
+        county_period_ids = _latest_county_actuals_period_ids(db) or []
         enriched_entities: List[Dict[str, Any]] = []
         for entity in entities:
-            total_allocation = (
-                db.query(func.sum(DBBudgetLine.allocated_amount))
-                .filter(DBBudgetLine.entity_id == entity.id)
-                .scalar()
-                or 0
-            )
-
-            total_spent = (
-                db.query(func.sum(DBBudgetLine.actual_spent))
-                .filter(DBBudgetLine.entity_id == entity.id)
-                .scalar()
-                or 0
-            )
+            series = series_by_entity.get(entity.id, [])
+            if entity.type == EntityType.COUNTY:
+                summary = next(
+                    (
+                        item
+                        for item in series
+                        if item["fiscal_period"]["id"] in county_period_ids
+                    ),
+                    financial_summary([]),
+                )
+            else:
+                summary = series[0] if series else financial_summary([])
 
             audit_count = (
                 db.query(func.count(DBAudit.id))
@@ -12161,16 +12103,12 @@ async def get_entities(
                 entity.type.value if hasattr(entity.type, "value") else entity.type
             )
 
-            fy_metrics = _resolve_fy_metrics(entity.meta or {})
+            fy_metrics = _resolve_fy_metrics(public_entity_metadata(entity.meta))
             code_value = (
-                fy_metrics.get("county_code") if isinstance(fy_metrics, dict) else None
+                official_county_code(entity.canonical_name)
+                if entity.type == EntityType.COUNTY
+                else None
             )
-            execution_rate = (
-                (float(total_spent) / float(total_allocation) * 100)
-                if float(total_allocation) > 0
-                else 0.0
-            )
-
             enriched_entities.append(
                 {
                     "id": entity.id,
@@ -12183,12 +12121,8 @@ async def get_entities(
                         else None
                     ),
                     "code": code_value,
-                    "meta": entity.meta or {},
-                    "financial_summary": {
-                        "total_allocation": float(total_allocation),
-                        "total_spent": float(total_spent),
-                        "execution_rate": execution_rate,
-                    },
+                    "meta": public_entity_metadata(entity.meta),
+                    "financial_summary": summary,
                     "audit_findings_count": int(audit_count),
                     "created_at": (
                         entity.created_at.isoformat()
@@ -12218,19 +12152,10 @@ async def get_entity(entity_id: int, db: Session = Depends(get_db)):
         if not entity:
             raise HTTPException(status_code=404, detail="Entity not found")
 
-        # Get financial time series by fiscal period
-        budget_summary = (
-            db.query(
-                DBFiscalPeriod,
-                func.sum(DBBudgetLine.allocated_amount).label("total_allocation"),
-                func.sum(DBBudgetLine.actual_spent).label("total_spent"),
-                func.count(DBBudgetLine.id).label("budget_lines_count"),
-            )
-            .join(DBBudgetLine, DBBudgetLine.period_id == DBFiscalPeriod.id)
-            .filter(DBBudgetLine.entity_id == entity_id)
-            .group_by(DBFiscalPeriod.id)
-            .order_by(DBFiscalPeriod.start_date.desc())
-            .all()
+        from services.entity_financials import entity_financial_series
+
+        financial_time_series = entity_financial_series(db, [entity_id]).get(
+            entity_id, []
         )
 
         # Get recent budget lines
@@ -12269,33 +12194,7 @@ async def get_entity(entity_id: int, db: Session = Depends(get_db)):
         entity_type_value = (
             entity.type.value if hasattr(entity.type, "value") else entity.type
         )
-        entity_meta = entity.meta or {}
-
-        financial_time_series = []
-        for period, total_allocation, total_spent, budget_lines_count in budget_summary:
-            execution_rate = (
-                (float(total_spent or 0) / float(total_allocation or 1) * 100)
-                if total_allocation
-                else 0
-            )
-            financial_time_series.append(
-                {
-                    "fiscal_period": {
-                        "id": period.id,
-                        "label": period.label,
-                        "start_date": (
-                            period.start_date.isoformat() if period.start_date else None
-                        ),
-                        "end_date": (
-                            period.end_date.isoformat() if period.end_date else None
-                        ),
-                    },
-                    "total_allocation": float(total_allocation or 0),
-                    "total_spent": float(total_spent or 0),
-                    "execution_rate": execution_rate,
-                    "budget_lines_count": budget_lines_count,
-                }
-            )
+        entity_meta = public_entity_metadata(entity.meta)
 
         recent_budget_lines_payload = []
         for bl in recent_budget_lines:
@@ -12304,9 +12203,15 @@ async def get_entity(entity_id: int, db: Session = Depends(get_db)):
                     "id": bl.id,
                     "category": bl.category,
                     "subcategory": bl.subcategory,
-                    "allocated_amount": float(bl.allocated_amount or 0),
-                    "actual_spent": float(bl.actual_spent or 0),
-                    "committed_amount": float(bl.committed_amount or 0),
+                    "allocated_amount": float(bl.allocated_amount)
+                    if bl.allocated_amount is not None
+                    else None,
+                    "actual_spent": float(bl.actual_spent)
+                    if bl.actual_spent is not None
+                    else None,
+                    "committed_amount": float(bl.committed_amount)
+                    if bl.committed_amount is not None
+                    else None,
                     "currency": bl.currency,
                     "period_label": bl.period.label if bl.period else None,
                     "source_document_id": bl.source_document_id,
@@ -12509,7 +12414,9 @@ async def search(
         entity_type_value = e.type.value if hasattr(e.type, "value") else e.type
         fy_metrics = _resolve_fy_metrics(e.meta or {})
         code_value = (
-            fy_metrics.get("county_code") if isinstance(fy_metrics, dict) else None
+            official_county_code(e.canonical_name)
+            if e.type == EntityType.COUNTY
+            else None
         )
         results["entities"].append(
             {
@@ -12911,108 +12818,38 @@ async def get_top_spenders(
 
 @app.get("/api/v1/etl/kenya/sources")
 async def get_kenya_data_sources():
-    """Get available Kenya government data sources with real-time status."""
-    if not ETL_AVAILABLE:
-        raise HTTPException(status_code=503, detail="ETL pipeline not available")
+    """Source catalogue; no live checker is installed in the serving image.
 
-    try:
-        # Test real-time connection status
-        import os
-        import sys
-
-        sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-
-        from etl_test_runner import SimpleKenyaETL
-
-        etl = SimpleKenyaETL()
-
-        # Quick connection test
-        treasury_status = etl.test_treasury_connection()
-
-        sources = [
+    This route used an unshipped developer script and fabricated success when
+    it failed. Absence of a measurement stays unknown. The persisted pipeline
+    observations are available separately through /data/freshness; reachability
+    and the time a document was fetched are different measurements.
+    """
+    catalogue = (
+        (
+            "Kenya National Treasury",
+            "https://treasury.go.ke",
+            ["budget", "expenditure_report", "debt_report"],
+        ),
+        ("Office of Auditor General", "https://oagkenya.go.ke", ["audit_report"]),
+        ("Controller of Budget", "https://cob.go.ke", ["budget_implementation_review"]),
+    )
+    return {
+        "sources": [
             {
-                "name": "Kenya National Treasury",
-                "url": "https://treasury.go.ke",
-                "document_types": [
-                    "budget",
-                    "expenditure_report",
-                    "debt_report",
-                    "financial_statements",
-                ],
-                "last_fetch": treasury_status.get("timestamp", "2024-01-15T10:30:00Z"),
-                "status": (
-                    "active" if treasury_status.get("accessible", False) else "error"
-                ),
-                "live_test_results": {
-                    "response_code": treasury_status.get("status_code"),
-                    "pdf_documents_found": treasury_status.get(
-                        "pdf_documents_found", 0
-                    ),
-                    "page_title": treasury_status.get("page_title", ""),
-                    "sample_documents": treasury_status.get("sample_pdfs", [])[:3],
-                },
-            },
-            {
-                "name": "Office of Auditor General",
-                "url": "https://oagkenya.go.ke",
-                "document_types": [
-                    "audit_report",
-                    "special_audits",
-                    "compliance_reports",
-                ],
-                "last_fetch": "2024-01-10T14:20:00Z",
-                "status": "timeout_issues",
-                "note": "Site occasionally experiences timeouts but contains valuable audit reports",
-            },
-            {
-                "name": "Controller of Budget",
-                "url": "https://cob.go.ke",
-                "document_types": ["budget_implementation_review", "quarterly_reports"],
-                "last_fetch": "2024-01-12T09:15:00Z",
-                "status": "pending_test",
-            },
-        ]
-
-        return {
-            "sources": sources,
-            "real_time_test": True,
-            "test_timestamp": treasury_status.get("timestamp"),
-            "summary": {
-                "total_sources": len(sources),
-                "active_sources": len([s for s in sources if s["status"] == "active"]),
-                "total_pdf_documents": treasury_status.get("pdf_documents_found", 0),
-            },
-        }
-
-    except Exception as e:
-        # Fall back to static data if real-time test fails
-        return {
-            "sources": [
-                {
-                    "name": "Kenya National Treasury",
-                    "url": "https://treasury.go.ke",
-                    "document_types": ["budget", "expenditure_report", "debt_report"],
-                    "last_fetch": "2024-01-15T10:30:00Z",
-                    "status": "active",
-                },
-                {
-                    "name": "Office of Auditor General",
-                    "url": "https://oagkenya.go.ke",
-                    "document_types": ["audit_report"],
-                    "last_fetch": "2024-01-10T14:20:00Z",
-                    "status": "active",
-                },
-                {
-                    "name": "Controller of Budget",
-                    "url": "https://cob.go.ke",
-                    "document_types": ["budget_implementation_review"],
-                    "last_fetch": "2024-01-12T09:15:00Z",
-                    "status": "active",
-                },
-            ],
-            "real_time_test": False,
-            "error": str(e),
-        }
+                "name": name,
+                "url": url,
+                "document_types": document_types,
+                "status": "unknown",
+                "last_fetch": None,
+                "checked_at": None,
+            }
+            for name, url, document_types in catalogue
+        ],
+        "real_time_test": False,
+        "error": "live_check_unavailable",
+        "freshness_url": "/api/v1/data/freshness",
+    }
 
 
 if __name__ == "__main__":

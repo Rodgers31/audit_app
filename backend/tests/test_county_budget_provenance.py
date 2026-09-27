@@ -41,6 +41,8 @@ def county_reported_and_projected(db_session, seed_country, seed_source_doc):
     shows by default). FY2025/26 is the CRA equitable-share projection:
     modelled sector rows with modelled spend and no classification.
     """
+    seed_source_doc.publisher = "Controller of Budget"
+    seed_source_doc.title = "County Budget Implementation Review Report FY2024/25"
     entity = Entity(
         id=530,
         country_id=seed_country.id,
@@ -136,8 +138,9 @@ def test_comprehensive_reports_cra_provenance_for_the_projection_period(
     """
     detail = _comprehensive(client, county_reported_and_projected.id, "2025/26")
 
-    assert detail["budget"]["total_allocated"] == pytest.approx(3_208_000_000)
-    assert detail["budget"]["source"] == "cra_model"
+    assert detail["budget"]["total_allocated"] is None
+    assert detail["budget"]["source"] is None
+    assert detail["budget"]["absent_reasons"]["total_allocation"] == "no_reported_total"
 
 
 def test_prose_label_agrees_with_the_provenance_code(
@@ -155,8 +158,7 @@ def test_prose_label_agrees_with_the_provenance_code(
     assert not reported.lower().startswith("modelled")
 
     projected = _comprehensive(client, eid, "2025/26")["data_sources"]["budget"]
-    assert projected.lower().startswith("modelled")
-    assert "CRA" in projected
+    assert projected is None
 
 
 # ── /counties (list, compare, map) ────────────────────────────────────────

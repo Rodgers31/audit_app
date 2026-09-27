@@ -134,6 +134,17 @@ GATES: dict[str, dict] = {
             "backend/tests/test_bootstrap_withholds_modelled_pending_bills.py",
         ),
     },
+    "backend/services/entity_financials.py": {
+        "reason": (
+            "names the file only to refuse its provenance stamp in source "
+            "or row metadata; financial_summary withholds these modelled "
+            "budget figures and does not read the file"
+        ),
+        "proven_by": (
+            "backend/tests/test_entity_financial_adversarial.py",
+            "backend/tests/test_entity_financial_accounting.py",
+        ),
+    },
 }
 
 #: Route modules that still reach the file, and why they are not fixed here.

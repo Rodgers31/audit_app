@@ -252,6 +252,25 @@ export interface CountyComprehensive {
   /** Per-FY health scores, oldest → newest. Only periods with actual
    * execution are included; allocated-only years are skipped. */
   health_history?: Array<{ fy: string; score: number; grade: string }>;
+  health_history_absent_reason?: 'dated_health_components_unavailable';
+  /** Completed periods of budget execution; this is not a health score. */
+  budget_execution_history?: Array<{
+    fiscal_period: { id: number; label: string; start_date: string; end_date: string };
+    total_allocation: number | null;
+    total_spent: number | null;
+    execution_rate: number | null;
+    accounting_basis: string | null;
+    currency: string | null;
+    sources: Array<{
+      id: number | null;
+      title: string | null;
+      publisher: string | null;
+      url: string | null;
+      page_refs: string[];
+    }>;
+    absent_reasons: Record<string, string>;
+    budget_lines_count: number;
+  }>;
   data_sources: Record<string, string>;
 }
 

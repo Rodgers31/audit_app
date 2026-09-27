@@ -172,12 +172,86 @@ def _main_source() -> str:
 
 
 class TestAbsenceIsNotZero:
-    # The three tests that pinned ``_parse_missing_funds_amount`` and its
-    # caller went with them in issue #233: /accountability/missing-funds now
-    # lists extracted findings and publishes no amount at all
-    # (``total_amount`` is always None with a reason), so there is no parsed
-    # figure left that could be manufactured as 0. That contract is pinned in
-    # tests/test_audit_headline_derived.py.
+    # The retired amount parser is removed; verify the current public routes.
+    @pytest.mark.parametrize("stored_amount", [None, 0, 5000])
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "/api/v1/accountability/missing-funds",
+            "/api/v1/counties/1/comprehensive",
+        ],
+    )
+    def test_the_caller_withholds_rather_than_publishing_the_none(
+        self, client, db_session, seed_entity, seed_source_doc,
+        seed_fiscal_period, stored_amount, path,
+    ):
+        """An extracted finding is evidence of a finding, not a quantified loss.
+
+        The current reader publishes extracted cases rather than retired metadata.
+        Missing, zero, and nonzero paragraph balances cannot establish a loss
+        total. A readable source-backed case must survive while its unknown
+        monetary total stays absent.
+        """
+        from models import Audit, DocumentType, Extraction, Severity
+
+        seed_entity.canonical_name = "Nairobi County"
+        seed_source_doc.title = "County Assembly of Nairobi audit report"
+        seed_source_doc.publisher = "Office of the Auditor-General"
+        seed_source_doc.url = "https://www.oagkenya.go.ke/synthetic-test-report.pdf"
+        seed_source_doc.doc_type = DocumentType.AUDIT
+        title = "Unaccounted expenditure"
+        text = f"{title} The Assembly did not provide supporting records."
+        extraction = Extraction(
+            source_document_id=seed_source_doc.id,
+            extractor="oag_county_volume",
+            page_number=23,
+            extracted_json={
+                "title": title,
+                "finding_text": text,
+                "entity_name": "County Assembly of Nairobi",
+                "volume_kind": "assemblies",
+                "pdf_page": 23,
+            },
+        )
+        db_session.add(extraction)
+        db_session.flush()
+        audit = Audit(
+            entity_id=seed_entity.id,
+            period_id=seed_fiscal_period.id,
+            source_document_id=seed_source_doc.id,
+            extraction_id=extraction.id,
+            page_ref="p.23",
+            finding_text=text,
+            severity=Severity.WARNING,
+            amount=stored_amount,
+        )
+        db_session.add(audit)
+        seed_entity.meta = {
+            "missing_funds_cases": [{
+                "case_id": "RETIRED_UNREADABLE_AMOUNT",
+                "description": "Retired metadata claim",
+                "amount": "not reported",
+                "source_document_id": seed_source_doc.id,
+                "page_ref": "p.23",
+            }],
+        }
+        db_session.commit()
+
+        response = client.get(path)
+        assert response.status_code == 200, response.text
+        payload = response.json()
+        data = payload["missing_funds"] if path.endswith("comprehensive") else payload
+        assert data["total_amount"] is None
+        assert data["total_amount_reason"] == "no_amount_extracted"
+        assert data["reason"] is None
+        assert data["withheld"]["count"] == 0
+        assert len(data["cases"]) == 1
+        case = data["cases"][0]
+        assert case["finding_id"] == audit.id
+        assert case["source"]["page_url"].endswith("#page=23")
+        assert "amount" not in case
+        assert "RETIRED_UNREADABLE_AMOUNT" not in response.text
+
 
     def test_a_peer_with_no_amount_does_not_pull_the_region_average_down(self):
         """RED before the fix: ``float(pa.amount or 0)`` summed an unknown as

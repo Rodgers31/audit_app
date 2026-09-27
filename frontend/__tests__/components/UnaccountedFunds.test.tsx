@@ -137,10 +137,21 @@ describe('the county-tab list', () => {
     expect(screen.getByRole('link', { name: /report p\.322/ })).toHaveAttribute('href', NAROK.source.page_url);
     expect(screen.queryByText(/KES/)).toBeNull();
     expect(screen.getByText('County Executive of Narok:')).toBeInTheDocument();
+    expect(screen.getByText(/1 finding\(s\) the Auditor-General headed/)).toBeInTheDocument();
+    expect(document.body.textContent).not.toContain('county.unaccounted.');
   });
 
   it('renders nothing when the county has no such finding', () => {
     const { container } = render(<UnaccountedFindings cases={[]} />);
     expect(container).toBeEmptyDOMElement();
+  });
+});
+
+it('keeps old links usable through the canonical unaccounted-funds route', async () => {
+  const config = require('../../next.config.js');
+  await expect(config.redirects()).resolves.toContainEqual({
+    source: '/accountability/missing-funds',
+    destination: '/accountability/unaccounted-funds',
+    permanent: true,
   });
 });

@@ -181,6 +181,21 @@ def _finding_text_is_readable():
     )
 
 
+def retired_audit_fixture_criterion():
+    """Unextracted rows from the retired hand-written audit fixtures.
+
+    Match stored origin, not a deployment-specific document ID. Genuine
+    extractions remain subject to the ordinary publication/evidence rules.
+    Storage is retained pending the reviewed cleanup in #319.
+    """
+    fixture_docs = select(SourceDocument.id).where(
+        SourceDocument.meta["source"].as_string().in_(
+            ("oag_national_audit_data.json", "oag_audit_data.json")
+        )
+    )
+    return sa_and(Audit.extraction_id.is_(None), Audit.source_document_id.in_(fixture_docs))
+
+
 def publishable_audit_criterion():
     """SQL criterion: this finding resolves to a document a reader can open.
 
@@ -208,6 +223,7 @@ def publishable_audit_criterion():
     imply.
     """
     return sa_and(
+        ~retired_audit_fixture_criterion(),
         _source_document_is_resolvable(),
         # Text integrity. Audit 902 — the row previously described as "the
         # single genuine extraction" — is 89.6% ``(cid:NN)`` glyph codes ending
@@ -248,7 +264,9 @@ def count_withheld_by_reason(db, entity_id=None, entity_types=None) -> dict:
     shape, and the values always sum to :func:`count_withheld_audits`.
     """
     def _count(criterion):
-        q = db.query(func.count(Audit.id)).filter(criterion)
+        q = db.query(func.count(Audit.id)).filter(
+            criterion, ~retired_audit_fixture_criterion()
+        )
         if entity_id is not None:
             q = q.filter(Audit.entity_id == entity_id)
         if entity_types is not None:
@@ -309,7 +327,9 @@ def count_withheld_audits(db, entity_id=None, entity_types=None) -> int:
     dishonesty. Pass ``entity_id`` for one entity, or ``entity_types`` (a list
     of ``EntityType``) to match an endpoint's own entity filter.
     """
-    q = db.query(func.count(Audit.id)).filter(~publishable_audit_criterion())
+    q = db.query(func.count(Audit.id)).filter(
+        ~publishable_audit_criterion(), ~retired_audit_fixture_criterion()
+    )
     if entity_id is not None:
         q = q.filter(Audit.entity_id == entity_id)
     if entity_types is not None:
@@ -359,9 +379,10 @@ def backfill_publishable_audits(session) -> Dict[str, int]:
     readable = _finding_text_is_readable()
     located = _has_page_locator_criterion(Audit.page_ref)
 
-    no_url = ~resolvable
-    unreadable = sa_and(resolvable, ~readable)
-    unlocated = sa_and(resolvable, readable, ~located)
+    retired = retired_audit_fixture_criterion()
+    no_url = sa_and(~retired, ~resolvable)
+    unreadable = sa_and(~retired, resolvable, ~readable)
+    unlocated = sa_and(~retired, resolvable, readable, ~located)
 
     # The counts describe the TABLE, so they are read, not inferred from how
     # many rows this particular call happened to write. Previously they were
@@ -437,6 +458,12 @@ def backfill_publishable_audits(session) -> Dict[str, int]:
         update(Audit)
         .where(unlocated, _needs(False, "no_page_reference"))
         .values(publishable=False, quarantine_reason="no_page_reference")
+        .execution_options(synchronize_session=False)
+    )
+    session.execute(
+        update(Audit)
+        .where(retired, _needs(False, "retired_legacy_fixture"))
+        .values(publishable=False, quarantine_reason="retired_legacy_fixture")
         .execution_options(synchronize_session=False)
     )
     session.flush()

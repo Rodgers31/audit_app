@@ -235,7 +235,7 @@ SCANNED_MODULES = python_modules()
 QUARANTINE_ISSUE = "#240"
 QUARANTINE: dict[str, int] = {
     "backend/bootstrap.py": 1,
-    "backend/main.py": 24,
+    "backend/main.py": 18,  # #331 removes six historical zero fallbacks.
     "backend/services/live_data_fetcher.py": 2,
     "etl/knbs_parser.py": 2,
     "etl/pending_bills_extractor.py": 1,

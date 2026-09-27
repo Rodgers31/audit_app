@@ -85,6 +85,8 @@ def baringo(db_session, seed_country, seed_source_doc, periods):
     classification rows *alongside* the modelled sector split of the same
     money. FY2025/26 is the CRA equitable-share projection: sector rows only.
     """
+    seed_source_doc.publisher = "Controller of Budget"
+    seed_source_doc.title = "County Budget Implementation Review Report FY2024/25"
     reported, projected = periods
     entity = Entity(
         id=540,
@@ -188,12 +190,9 @@ def test_projection_period_is_still_labelled_a_model(client, baringo):
     ).json()
     allocated = _stage(payload, "Allocated")
 
-    assert allocated["amount"] == pytest.approx(3_208_000_000)
-    assert payload.get("budget_source") == "cra_model"
-    assert "CRA" in (allocated.get("source") or "")
-    assert "Controller of Budget" not in (allocated.get("source") or "").replace(
-        "not Controller of Budget", ""
-    )
+    assert allocated["amount"] is None
+    assert payload.get("budget_source") is None
+    assert allocated.get("source") is None
 
 
 def test_money_flow_provenance_agrees_with_the_county_page(client, baringo):
@@ -273,8 +272,9 @@ def test_batched_feed_labels_each_county_from_its_own_rows(
     assert cbirr.get("budget_source") == "cob_cbirr"
     assert "Controller of Budget" in (_stage(cbirr, "Allocated").get("source") or "")
 
-    assert modelled.get("budget_source") == "cra_model"
-    assert "CRA" in (_stage(modelled, "Allocated").get("source") or "")
+    assert modelled.get("budget_source") is None
+    assert _stage(modelled, "Allocated")["amount"] is None
+    assert _stage(modelled, "Allocated").get("source") is None
 
 
 def test_batched_feed_agrees_with_the_per_county_endpoint(client, baringo):
@@ -316,10 +316,9 @@ def test_national_aggregate_spanning_both_sources_says_so(
     payload = client.get("/api/v1/audit/money-flow/national?year=FY2024/25").json()
     allocated = _stage(payload, "Allocated")
 
-    assert allocated["amount"] == pytest.approx(COB_TOTAL_ALLOCATED + 1_600_000_000)
-    assert payload.get("budget_source") == "mixed"
-    source = allocated.get("source") or ""
-    assert "Controller of Budget" in source and "CRA" in source
+    assert allocated["amount"] is None
+    assert payload.get("budget_source") is None
+    assert allocated.get("source") is None
 
 
 def test_national_aggregate_with_no_periods_claims_no_source(client, baringo):
