@@ -354,6 +354,12 @@ export default function NationalDebtPage() {
         ...y,
         appropriated_budget: toRawKES(y.appropriated_budget, y.unit),
         total_revenue: toRawKES(y.total_revenue, y.unit),
+        // The same figure in billions, so the revenue card can check it IS
+        // the fiscal framework's ordinary revenue (which is in billions).
+        total_revenue_billion:
+          toRawKES(y.total_revenue, y.unit) == null
+            ? null
+            : toRawKES(y.total_revenue, y.unit)! / 1e9,
         tax_revenue: toRawKES(y.tax_revenue, y.unit),
         non_tax_revenue: toRawKES(y.non_tax_revenue, y.unit),
         total_borrowing: toRawKES(y.total_borrowing, y.unit),
@@ -809,9 +815,18 @@ export default function NationalDebtPage() {
                     How this is calculated
                   </summary>
                   <div className='mt-2 pl-5 text-[11px] text-neutral-muted leading-relaxed space-y-2'>
+                    {/* `ds` and `rev` are RAW KES here (normalised above).
+                        This divided them by 1,000 and labelled the result
+                        trillions, which would have printed ~2315884392.206T
+                        — unseen only because the card never rendered for
+                        a year without a split (#237). */}
                     <p>
                       Calculated as {taxAllocation.fiscalYear}{' '}
-                      {ratioWorking(taxAllocation)}.{' '}
+                      {ratioWorking(taxAllocation)}, the Treasury APDMR
+                      definition. It counts principal repaid on maturing
+                      loans as well as interest; the bar below counts interest
+                      only, because principal is refinanced rather than
+                      spent.{' '}
                       {fiscalSourceLine(fiscal?.current)}
                     </p>
                     <p>
@@ -874,108 +889,81 @@ export default function NationalDebtPage() {
               </div>
             </div>
 
-            {/* Breakdown bar */}
-            <div className='px-6 sm:px-8 pb-6 sm:pb-8 pt-4 border-t border-neutral-border/30'>
-              <div className='flex items-center justify-between mb-2 gap-3'>
-                <span className='text-xs font-semibold text-gov-dark dark:text-white'>
-                  Full allocation per KES 100 of revenue
-                </span>
-                <span className='text-[11px] text-neutral-muted text-right'>
-                  Sum exceeds 100 because revenue doesn&rsquo;t
-                  fund the whole budget — the shortfall is borrowed.
-                </span>
+            {/* Breakdown bar — one column of Treasury's fiscal framework,
+                per KES 100 of the same revenue (issue #237). No residual:
+                the part above 100 is shown with what financed it. */}
+            {taxAllocation.breakdown == null ? (
+              <div className='px-6 sm:px-8 pb-6 sm:pb-8 pt-4 border-t border-neutral-border/30 text-[11px] text-neutral-muted'>
+                How {taxAllocation.fiscalYear} spending divides is not published on the
+                same basis as this revenue figure, so the breakdown is withheld rather
+                than drawn from mixed measures.
               </div>
-              <div className='flex w-full h-10 rounded-lg overflow-hidden shadow-sm border border-neutral-border/30'>
-                {[
-                  {
-                    key: 'ds',
-                    val: taxAllocation.debtServicePerRev,
-                    color: 'bg-gov-copper',
-                    label: 'Debt service',
-                  },
-                  {
-                    key: 'rec',
-                    val: taxAllocation.recPerRev,
-                    color: 'bg-gov-forest',
-                    label: 'Recurrent',
-                  },
-                  {
-                    key: 'dev',
-                    val: taxAllocation.devPerRev,
-                    color: 'bg-gov-sage',
-                    label: 'Development',
-                  },
-                  {
-                    key: 'counties',
-                    val: taxAllocation.countiesPerRev,
-                    color: 'bg-gov-gold',
-                    label: 'Counties',
-                  },
-                ].map((seg) => {
-                  const sumAllocated =
-                    taxAllocation.debtServicePerRev +
-                    taxAllocation.recPerRev +
-                    taxAllocation.devPerRev +
-                    taxAllocation.countiesPerRev +
-                    taxAllocation.borrowingPerRev;
-                  const w = sumAllocated > 0 ? (seg.val / sumAllocated) * 100 : 0;
-                  return (
-                    <div
-                      key={seg.key}
-                      className={`${seg.color} flex items-center justify-center text-white text-[11px] font-bold`}
-                      style={{ width: `${w}%` }}
-                      title={`${seg.label}: KES ${seg.val.toFixed(1)} per 100 of revenue`}>
-                      {w > 10 ? `${seg.val.toFixed(0)}` : ''}
-                    </div>
-                  );
-                })}
-                {taxAllocation.borrowingPerRev > 0 && (
-                  <div
-                    className='bg-neutral-muted/30 flex items-center justify-center text-gov-dark dark:text-white text-[11px] font-bold border-l-2 border-dashed border-gov-copper/40'
-                    style={{
-                      width: `${
-                        (taxAllocation.borrowingPerRev /
-                          (taxAllocation.debtServicePerRev +
-                            taxAllocation.recPerRev +
-                            taxAllocation.devPerRev +
-                            taxAllocation.countiesPerRev +
-                            taxAllocation.borrowingPerRev)) *
-                        100
-                      }%`,
-                    }}
-                    title={`Borrowing: KES ${taxAllocation.borrowingPerRev.toFixed(1)} per 100 of revenue`}>
-                    {taxAllocation.borrowingPerRev > 10
-                      ? `+${taxAllocation.borrowingPerRev.toFixed(0)}`
-                      : '+'}
-                  </div>
-                )}
-              </div>
-              <div className='grid grid-cols-2 sm:grid-cols-5 gap-x-3 gap-y-1.5 mt-3 text-[11px]'>
-                {[
-                  { color: 'bg-gov-copper', label: 'Debt service', val: taxAllocation.debtServicePerRev },
-                  { color: 'bg-gov-forest', label: 'Recurrent', val: taxAllocation.recPerRev },
-                  { color: 'bg-gov-sage', label: 'Development', val: taxAllocation.devPerRev },
-                  { color: 'bg-gov-gold', label: 'Counties', val: taxAllocation.countiesPerRev },
-                  ...(taxAllocation.borrowingPerRev > 0
-                    ? [
-                        {
-                          color: 'bg-neutral-muted/30',
-                          label: 'Borrowing (shortfall)',
-                          val: taxAllocation.borrowingPerRev,
-                        },
-                      ]
+            ) : (
+              (() => {
+                const b = taxAllocation.breakdown!;
+                const segs = [
+                  { key: 'int', val: b.interestPerRev, color: 'bg-gov-copper', label: 'Interest on debt' },
+                  { key: 'rec', val: b.recPerRev, color: 'bg-gov-forest', label: 'Recurrent (ex-interest)' },
+                  { key: 'dev', val: b.devPerRev, color: 'bg-gov-sage', label: 'Development' },
+                  { key: 'cty', val: b.countiesPerRev, color: 'bg-gov-gold', label: 'Counties' },
+                  { key: 'con', val: b.contingencyPerRev, color: 'bg-neutral-muted/50', label: 'Contingency fund' },
+                ];
+                const financed = [
+                  { label: 'A-i-A', val: b.aiaPerRev },
+                  { label: 'grants', val: b.grantsPerRev },
+                  { label: 'net borrowing', val: b.borrowingPerRev },
+                  ...(Math.abs(b.cashAdjustmentPerRev) >= 0.05
+                    ? [{ label: 'cash-basis adjustment & statistical discrepancy', val: b.cashAdjustmentPerRev }]
                     : []),
-                ].map((row) => (
-                  <div key={row.label} className='flex items-center gap-1.5'>
-                    <span className={`w-2.5 h-2.5 rounded-sm ${row.color}`} />
-                    <span className='text-neutral-muted truncate'>{row.label}</span>
-                    <span className='ml-auto font-bold text-gov-dark dark:text-white tabular-nums'>
-                      {row.val.toFixed(0)}
-                    </span>
+                ];
+                return (
+                  <div className='px-6 sm:px-8 pb-6 sm:pb-8 pt-4 border-t border-neutral-border/30'>
+                    <div className='flex items-center justify-between mb-2 gap-3'>
+                      <span className='text-xs font-semibold text-gov-dark dark:text-white'>
+                        Spending per KES 100 of revenue: {b.spendingPerRev.toFixed(1)}
+                      </span>
+                      <span className='text-[11px] text-neutral-muted text-right'>
+                        The {Math.max(b.spendingPerRev - 100, 0).toFixed(1)} above 100 is
+                        financed by{' '}
+                        {financed.map((f) => `${f.label} (${f.val.toFixed(1)})`).join(', ')}.
+                      </span>
+                    </div>
+                    <div className='flex w-full h-10 rounded-lg overflow-hidden shadow-sm border border-neutral-border/30'>
+                      {segs.map((seg) => {
+                        const w = (seg.val / b.spendingPerRev) * 100;
+                        return (
+                          <div
+                            key={seg.key}
+                            className={`${seg.color} flex items-center justify-center text-white text-[11px] font-bold`}
+                            style={{ width: `${w}%` }}
+                            title={`${seg.label}: KES ${seg.val.toFixed(1)} per 100 of revenue`}>
+                            {w > 10 ? `${seg.val.toFixed(0)}` : ''}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className='grid grid-cols-2 sm:grid-cols-5 gap-x-3 gap-y-1.5 mt-3 text-[11px]'>
+                      {segs.map((row) => (
+                        <div key={row.key} className='flex items-center gap-1.5'>
+                          <span className={`w-2.5 h-2.5 rounded-sm ${row.color}`} />
+                          <span className='text-neutral-muted truncate'>{row.label}</span>
+                          <span className='ml-auto font-bold text-gov-dark dark:text-white tabular-nums'>
+                            {/* One decimal: the legend must visibly sum to the total above. */}
+                            {row.val.toFixed(1)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className='mt-3 text-[11px] text-neutral-muted leading-relaxed'>
+                      Treasury fiscal framework, {fiscal?.current?.fiscal_framework?.source?.edition ?? 'Budget Summary'},{' '}
+                      {fiscal?.current?.fiscal_framework?.source?.page}. Interest is the debt
+                      line here because it is the part inside spending; the headline
+                      above also counts principal repaid.
+                    </p>
                   </div>
-                ))}
-              </div>
-            </div>
+                );
+              })()
+            )}
           </div>
         </motion.section>
       )}

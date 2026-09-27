@@ -9040,6 +9040,18 @@ def _fiscal_row_to_dict(r) -> dict:
         # maturing debt. Lets the page say why the gross figure and the
         # enacted headline differ, instead of just asserting they do.
         "debt_redemption_billion": (r.meta or {}).get("debt_redemption_billion"),
+        # The split and the total it reconciles to, on ONE basis
+        # (Treasury's fiscal framework, "Expenditure and Net
+        # Lending"). NOT appropriated_budget: that is COB gross, which
+        # counts principal redemption and excludes county transfers,
+        # so a split drawn against it does not add up. Money in KSh
+        # billion, as the key names say. See fiscal_framework.py.
+        "fiscal_framework": (r.meta or {}).get("fiscal_framework"),
+        "split_basis": (r.meta or {}).get("split_basis"),
+        "fiscal_framework_absent_reason": (r.meta or {}).get(
+            "fiscal_framework_absent_reason"
+        ),
+        "tax_split_absent_reason": (r.meta or {}).get("tax_split_absent_reason"),
         "page_ref": r.page_ref,
     }
 
