@@ -623,17 +623,39 @@ def loan_is_modelled_fixture(loan: Any) -> bool:
     return False
 
 
-#: The one publication pending bills are read from, national and county: the
-#: National Treasury's Budget Review and Outlook Paper — para 18 for the
-#: National Government's two lines (State Corporations, MDAs), Table 10 for the
-#: counties. Written onto each row's provenance by the pending_bills fetcher,
-#: never inferred.
-PENDING_BILLS_PUBLICATION = "treasury_brop"
-COUNTY_PENDING_BILLS_PUBLICATION = PENDING_BILLS_PUBLICATION
+#: Where each half of pending bills is read from. Written onto every row's
+#: provenance by the pending_bills fetcher, never inferred.
+#:
+#: * National Government (State Corporations, MDAs): the National Treasury's
+#:   Budget Review and Outlook Paper, which is where they are first published.
+#: * Counties: the Controller of Budget's full-year County Governments Budget
+#:   Implementation Review Report, table of trade payables at 30 June. The BROP
+#:   used to be the county source too, but its county table is a reprint of
+#:   this one — BROP 2025 Table 10 is the CoB's FY 2024/25 Table 2.9 row for
+#:   row, less Narok's 6,151.50m, and BROP 2026 Table 11 is the CoB's
+#:   nine-month table (31 March 2026) verbatim, printed after the CoB had
+#:   published 30 June 2026 (#238).
+NATIONAL_PENDING_BILLS_PUBLICATION = "treasury_brop"
+COUNTY_PENDING_BILLS_PUBLICATION = "cob_cbirr_year_end"
+#: #265's name for the national publication, kept for its callers.
+PENDING_BILLS_PUBLICATION = NATIONAL_PENDING_BILLS_PUBLICATION
+
+
+def _pending_bills_entries(loan: Any) -> list:
+    provenance = getattr(loan, "provenance", None)
+    entries = provenance if isinstance(provenance, list) else [provenance]
+    return [entry for entry in entries if isinstance(entry, dict)]
 
 
 def pending_bills_row_is_published(loan: Any) -> bool:
-    """True for a PENDING_BILLS row read from the Treasury BROP.
+    """True for a PENDING_BILLS row read from the publication for its side.
+
+    A county row is published when it declares the Controller of Budget's
+    year-end report; a national row when it declares the Treasury BROP. Each
+    row states its side (``category``) and its publication, both written by
+    the fetcher; neither is inferred from the entity or the lender. So a BROP
+    county row — every county row written before #238 moved the source — is
+    not published, and it does not need deleting to stop being served.
 
     National rows go through the same test (#265). The pending-bills fixture
     wrote eleven per-ministry and state-corporation rows (405.4B — Ministry of
@@ -643,29 +665,115 @@ def pending_bills_row_is_published(loan: Any) -> bool:
     already cover every MDA and state corporation, so the fixture's rows were
     not more detail, they were the same bills counted again.
 
-    The declaration, not the row's shape. A fixture row and a BROP row look
+    The declaration, not the row's shape. A fixture row and a sourced row look
     identical in the loans table — same category, same lender key, a
     ``cob_pending_bills_etl`` source — so "sourced" used to mean only "not
     bootstrap's modelled 8%", and the pending-bills fixture's invented county
-    figures passed. A row that does not say it came from the BROP is not
+    figures passed. A row that does not declare its publication is not
     published, including rows written before the declaration existed: the
-    nightly re-stamps every BROP row, so that is one run of absence, never a
-    borrowed figure.
+    nightly re-stamps every sourced row, so that is one run of absence, never
+    a borrowed figure.
+    """
+    category = getattr(loan, "debt_category", None)
+    if getattr(category, "value", category) != "pending_bills":
+        return False
+    if _is_published_county_row(loan):
+        return True
+    for entry in _pending_bills_entries(loan):
+        if (
+            entry.get("category") in ("mda", "state_corporation")
+            and entry.get("publication") == NATIONAL_PENDING_BILLS_PUBLICATION
+        ):
+            return True
+    return False
+
+
+def _is_published_county_row(loan: Any) -> bool:
+    """A county row as the CoB fetcher writes it, and nothing looser.
+
+    Found by an adversarial pass (#238): the provenance must be the single
+    dict the writer writes — the retirement sweep reads only that shape, so a
+    list-shaped row would never be retired and would be summed beside its
+    successor — and it must state the day the figure is a stock on, since the
+    page prints that date beside it.
     """
     category = getattr(loan, "debt_category", None)
     if getattr(category, "value", category) != "pending_bills":
         return False
     provenance = getattr(loan, "provenance", None)
-    entries = provenance if isinstance(provenance, list) else [provenance]
-    return any(
-        isinstance(entry, dict)
-        and entry.get("publication") == PENDING_BILLS_PUBLICATION
-        for entry in entries
+    return (
+        isinstance(provenance, dict)
+        and provenance.get("category") == "county"
+        and provenance.get("publication") == COUNTY_PENDING_BILLS_PUBLICATION
+        and pending_bills_row_as_at(loan) is not None
     )
 
 
-#: #238 named the gate for the county half; it is the same test for both.
-county_pending_bills_row_is_published = pending_bills_row_is_published
+
+
+def county_pending_bills_row_is_published(loan: Any) -> bool:
+    """The county half of :func:`pending_bills_row_is_published`, alone."""
+    return _is_published_county_row(loan)
+
+
+def pending_bills_row_as_at(loan: Any) -> Optional[str]:
+    """The ISO date a published row's figure is stated at, or None.
+
+    Declared by the fetcher from the publication itself — the CoB table's
+    caption, the BROP's paragraph — never derived from a fiscal-year label:
+    "FY 2025/26" is a year, and the county and national figures are only
+    comparable when they are stocks on the same day.
+    """
+    from datetime import date
+
+    for entry in _pending_bills_entries(loan):
+        value = entry.get("as_at")
+        if isinstance(value, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+            try:
+                date.fromisoformat(value)  # "2026-99-99" is not a day
+            except ValueError:
+                continue
+            return value
+    return None
+
+
+#: Why a published county figure carries a note. Each is a fact the report
+#: states about itself, read by the parser; the API passes the codes and the
+#: page words them.
+_COUNTY_PENDING_BILLS_NOTE_CODES = (
+    "cob_marked_inconsistent",
+    "assembly_not_printed",
+    "chapter_table_differs",
+)
+
+
+def county_pending_bills_details(loans: Iterable[Any]) -> Dict[str, Any]:
+    """The as-at date, source and notes behind a county's published figure.
+
+    ``{"as_at", "fiscal_year", "table", "source_url", "notes"}``, each None (or
+    an empty list) when no published row carries it. ``notes`` are dicts with
+    a ``code`` from :data:`_COUNTY_PENDING_BILLS_NOTE_CODES` and the figures
+    the note quotes.
+    """
+    details: Dict[str, Any] = {
+        "as_at": None, "fiscal_year": None, "table": None,
+        "source_url": None, "notes": [],
+    }
+    for loan in loans or []:
+        if not _is_published_county_row(loan):
+            continue
+        if pending_bills_row_amount(loan) is None:
+            continue
+        for entry in _pending_bills_entries(loan):
+            if entry.get("publication") != COUNTY_PENDING_BILLS_PUBLICATION:
+                continue
+            details["as_at"] = details["as_at"] or pending_bills_row_as_at(loan)
+            for key in ("fiscal_year", "table", "source_url"):
+                details[key] = details[key] or entry.get(key)
+            for note in entry.get("reader_notes") or []:
+                if isinstance(note, dict) and note.get("code") in _COUNTY_PENDING_BILLS_NOTE_CODES:
+                    details["notes"].append(dict(note))
+    return details
 
 
 def pending_bills_row_amount(loan: Any) -> Optional[float]:
@@ -694,14 +802,14 @@ def pending_bills_row_amount(loan: Any) -> Optional[float]:
 
 
 def county_pending_bills(loans: Iterable[Any]) -> Optional[float]:
-    """A county's pending bills from the Treasury BROP, or None if it has none.
+    """A county's pending bills from the CoB's year-end report, or None.
 
     ``None`` means "not published", and the caller must render it as absence
-    rather than as zero. The distinction is the whole point here: Narok did
-    not submit pending-bills data for FY 2024/25 — the BROP says so in its own
-    footnote, and prints an empty row for it — so Narok's pending bills are
-    unknown. A zero would say the county owes nothing, which is a different
-    claim and one nobody has made.
+    rather than as zero. The distinction is the whole point here: Nandi did
+    not report trade payables at 30 June 2026 — the CoB says so, and prints
+    "-" across its row with a "0" in the ratio column — so Nandi's pending
+    bills are unknown. A zero would say the county owes nothing, which is a
+    different claim and one nobody has made.
 
     Modelled rows are excluded rather than used as a fallback. A fallback
     chain whose every rung is the same fixture is not a fallback, and until
@@ -716,7 +824,9 @@ def county_pending_bills(loans: Iterable[Any]) -> Optional[float]:
     total = 0.0
     found = False
     for loan in loans or []:
-        if not county_pending_bills_row_is_published(loan):
+        # The county side only: a row on a county entity declaring a national
+        # line is not the county's figure (adversarial pass, #238).
+        if not _is_published_county_row(loan):
             continue
         amount = pending_bills_row_amount(loan)
         if amount is None:

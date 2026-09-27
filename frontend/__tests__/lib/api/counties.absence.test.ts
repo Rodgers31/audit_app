@@ -125,14 +125,14 @@ describe('transformCountyData — absent figures stay absent', () => {
 });
 
 describe('pendingBills: not reported is not zero', () => {
-  // Narok submitted no pending-bills data to the Treasury for FY 2024/25.
-  // The BROP prints an empty row for it and says so in a footnote, so the API
+  // Nandi reported no trade payables to the Controller of Budget at 30 June
+  // 2026. The report prints "-" across its row and says so, so the API
   // returns null. `?? 0` used to turn that into "KSh 0 pending bills", which
   // is a claim the county owes nothing — one nobody has made.
   it('renders absence, not zero, when the API reports none', () => {
     const county = transformCountyData({
-      id: 'narok',
-      name: 'Narok',
+      id: 'nandi',
+      name: 'Nandi',
       pending_bills: null,
     } as never);
 

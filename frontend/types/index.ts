@@ -103,7 +103,25 @@ export interface CountyComprehensive {
   };
   debt: {
     total_debt: number;
-    pending_bills: number;
+    /** null when no publication states this county's pending bills — Nandi
+     *  reported none to the Controller of Budget at 30 June 2026. */
+    pending_bills: number | null;
+    /** ISO date the figure is a stock on; null exactly when the figure is. */
+    pending_bills_as_at?: string | null;
+    pending_bills_source?: {
+      publisher: string;
+      title: string;
+      table: string | null;
+      url: string | null;
+    } | null;
+    /** What the report says about the figure, as codes the page words. */
+    pending_bills_notes?: Array<{ code: string } & Record<string, unknown>>;
+    /** Why there is NO figure, when the report says why; null otherwise. */
+    pending_bills_absence?: {
+      reason: 'not_reported' | 'withheld';
+      as_at: string;
+      table: string | null;
+    } | null;
     debt_to_budget_ratio: number;
     /** null when the population or the debt is unknown. */
     per_capita_debt: number | null;

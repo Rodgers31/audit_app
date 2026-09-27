@@ -1754,6 +1754,525 @@ class CoBQuarterlyReportParser:
         return self._report_period()[0]
 
 
+# --------------------------------------------------------------------------
+# county trade payables (pending bills) at the fiscal year end
+# --------------------------------------------------------------------------
+#
+# The Controller of Budget's full-year County Governments Budget Implementation
+# Review Report prints one table of every county's trade payables ("previously
+# termed pending bills") at 30 June: Table 2.10 in the FY 2025/26 edition,
+# Table 2.9 ("Pending Bills for the Counties") in FY 2024/25. The Treasury's
+# Budget Review and Outlook Paper reprints it: BROP 2025 Table 10 is the
+# FY 2024/25 table row for row, less Narok, and BROP 2026 Table 11 is the
+# nine-month edition's verbatim (#238). This reads the original.
+#
+# Only a fiscal-year-end table is read. The quarterly editions print the same
+# table at 30 September, 31 December and 31 March, but the stock is seasonal
+# (183.0B, 177.5B, 156.8B, 172.5B through FY 2025/26), and they print "0.00"
+# where the annual prints "-", so a county that sent nothing reads as a county
+# that owes nothing.
+
+
+class NotAYearEndTable(PDFParserError):
+    """The report's county payables table is not stated at 30 June."""
+
+
+_MONTHS = {
+    m: i
+    for i, m in enumerate(
+        ("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"),
+        start=1,
+    )
+}
+
+_DAY_MONTH_YEAR_RE = re.compile(
+    r"(?P<day>\d{1,2})(?:st|nd|rd|th)?\s+(?P<month>[A-Za-z]{3,9})\.?,?\s+(?P<year>20\d{2})"
+)
+_MONTH_DAY_YEAR_RE = re.compile(
+    r"(?P<month>[A-Za-z]{3,9})\.?\s+(?P<day>\d{1,2})(?:st|nd|rd|th)?,?\s+(?P<year>20\d{2})"
+)
+
+
+def parse_caption_date(text: str):
+    """The date a table caption states: "30 June 2026", "30th June 2025",
+    "30 Jun 2026", "30 June, 2026", "June 30, 2025". None when it names none."""
+    from datetime import date
+
+    for pattern in (_DAY_MONTH_YEAR_RE, _MONTH_DAY_YEAR_RE):
+        m = pattern.search(text or "")
+        if not m:
+            continue
+        month = _MONTHS.get(m.group("month")[:3].lower())
+        if month is None:
+            continue
+        try:
+            return date(int(m.group("year")), month, int(m.group("day")))
+        except ValueError:
+            continue
+    return None
+
+
+#: A List of Tables entry: "Table 2.10: Trade Payables for the Counties as of
+#: 30 June 2026 .......17" (dot leaders in FY 2025/26, dashes in FY 2024/25).
+_TOC_ENTRY_RE = re.compile(
+    r"^\s*Table\s+(?P<num>\d+\.\d+)\s*:\s*(?P<title>.+?)\s*[.\-–— ]{3,}\s*(?P<page>\d{1,4})\s*$"
+)
+_COUNTIES_PAYABLES_TITLE_RE = re.compile(
+    r"^(?:Trade\s+Payables|Pending\s+Bills)\s+for\s+the\s+Counties\s+as\s+(?:of|at)\s+(?P<date>.+)$",
+    re.IGNORECASE,
+)
+#: "Baringo County Trade Payables as of 30 June 2026". "County Executive trade
+#: payables Ageing Analysis" does not match: nothing may sit between "County"
+#: and the table's name.
+_COUNTY_PAYABLES_TITLE_RE = re.compile(
+    r"^(?P<county>.+?)\s+County\s+(?:Trade\s+Payables|Pending\s+Bills)\s+as\s+(?:of|at)\s+(?P<date>.+)$",
+    re.IGNORECASE,
+)
+
+
+def payables_toc_entries(text: str) -> Dict[str, Any]:
+    """The payables tables a report's List of Tables names, with printed pages.
+
+    Returns ``{"counties": (num, date, page) | None, "county": {name: (num,
+    date, page)}}``. The List of Tables is read instead of the whole document
+    because it is the cheap way to find ~50 pages among ~900: pdfplumber takes
+    ~0.15s a page, and the nightly budget has no room for a full walk.
+    """
+    found: Dict[str, Any] = {"counties": None, "county": {}}
+    for line in (text or "").splitlines():
+        m = _TOC_ENTRY_RE.match(line)
+        if not m:
+            continue
+        title, num, page = m.group("title"), m.group("num"), int(m.group("page"))
+        whole = _COUNTIES_PAYABLES_TITLE_RE.match(title)
+        if whole:
+            # The latest-dated one: a report that also lists last year's
+            # county table must not have it read as this year's.
+            entry = (num, parse_caption_date(whole.group("date")), page)
+            current = found["counties"]
+            if current is None or (
+                entry[1] is not None and (current[1] is None or entry[1] > current[1])
+            ):
+                found["counties"] = entry
+            continue
+        one = _COUNTY_PAYABLES_TITLE_RE.match(title)
+        if one:
+            county = canonical_county_label(one.group("county"))
+            if _county_key(county) in {_county_key(c) for c in KENYAN_COUNTIES}:
+                found["county"].setdefault(
+                    county, (num, parse_caption_date(one.group("date")), page)
+                )
+    return found
+
+
+#: Row sums are printed to the cent (FY 2025/26) or the tenth (FY 2024/25) of
+#: a million; 0.5 absorbs the tenth-rounding and nothing a misread would make.
+_PAYABLES_ROW_TOLERANCE_MILLIONS = Decimal("0.5")
+#: More rows than this failing their own arithmetic is a misread table.
+_PAYABLES_MAX_WITHHELD_ROWS = 3
+
+_PAYABLES_COLUMNS = (
+    "executive_recurrent", "executive_development", "executive",
+    "assembly_recurrent", "assembly_development", "assembly",
+    "total", "budget", "pct_of_budget",
+)
+
+
+def _millions_cell(cell: Optional[str]) -> Tuple[bool, Optional[Decimal]]:
+    """``(printed, value)`` for a KSh-million cell.
+
+    ``(False, None)`` for "-" or blank — nothing printed, which in this table
+    is absence, never zero: Nandi's row is "-" in every column and "0" in the
+    ratio column, and the report says Nandi did not report. ``(True, None)``
+    for text that is not a number, so a misread cannot pass as a nil.
+    """
+    s = (cell or "").replace("\n", " ").strip()
+    if s in ("", "-", "–", "—"):
+        return False, None
+    s = s.replace(",", "").replace(" ", "")
+    if not re.fullmatch(r"\d+(?:\.\d+)?", s):
+        return True, None
+    return True, Decimal(s)
+
+
+def _is_payables_summary_table(table: List[List[Optional[str]]]) -> bool:
+    if not table or len(table[0]) not in (10, 11):
+        return False
+    header = " ".join((c or "") for c in table[0]).replace("\n", " ").lower()
+    return "grand" in header and "county" in header and "assembly" in header
+
+
+def county_payables_rows(
+    tables: List[Tuple[int, List[List[Optional[str]]]]],
+) -> Tuple[Dict[str, Dict[str, Any]], Optional[Dict[str, Optional[Decimal]]]]:
+    """Read the county payables table from its pages' raw pdfplumber tables.
+
+    ``tables`` is ``[(pdf_page, table), ...]`` in page order. Returns ``(rows,
+    printed_total)``: one entry per county, and the table's own Total row. Only
+    tables with this table's header are read, so the ageing analysis that
+    follows it on the same page is not.
+    """
+    rows: Dict[str, Dict[str, Any]] = {}
+    printed_total: Optional[Dict[str, Optional[Decimal]]] = None
+    known = {_county_key(c): c for c in KENYAN_COUNTIES}
+    for page, table in tables:
+        if not _is_payables_summary_table(table):
+            continue
+        for raw in table:
+            cells = [(c or "").replace("\n", " ").strip() for c in raw]
+            if len(cells) == 11:
+                # FY 2024/25 p.58: the budget column is split in two.
+                cells = cells[:8] + [cells[8] or cells[9]] + [cells[10]]
+            label = cells[0]
+            marked = "*" in label
+            key = _county_key(label.replace("*", ""))
+            values = [_millions_cell(c) for c in cells[1:10]]
+            if key == "total":
+                printed_total = {
+                    col: value for col, (_p, value) in zip(_PAYABLES_COLUMNS, values)
+                }
+                continue
+            if key not in known:
+                continue
+            county = known[key]
+            if county in rows:
+                raise CountyTableIncomplete(
+                    f"{county} appears twice in the county payables table"
+                )
+            rows[county] = {
+                "county": county,
+                "page": page,
+                "cob_marked_inconsistent": marked,
+                "cells": dict(zip(_PAYABLES_COLUMNS, values)),
+            }
+    return rows, printed_total
+
+
+def classify_payables_row(row: Dict[str, Any]) -> Dict[str, Any]:
+    """What one county's row lets us publish.
+
+    * ``reported`` — a Grand Total that is a number and equals its Executive
+      plus Assembly sub-totals;
+    * ``not_reported`` — nothing printed in the Grand Total (Nandi, FY 2025/26);
+    * ``withheld`` — something printed that cannot be read, or that its own
+      sub-totals contradict.
+    """
+    cells = row["cells"]
+    total_printed, total = cells["total"]
+    exec_printed, executive = cells["executive"]
+    asm_printed, assembly = cells["assembly"]
+    out = {
+        "county": row["county"],
+        "page": row["page"],
+        "cob_marked_inconsistent": row["cob_marked_inconsistent"],
+        "total_millions": None,
+        "executive_millions": str(executive) if executive is not None else None,
+        "assembly_millions": str(assembly) if assembly is not None else None,
+        "executive_printed": exec_printed,
+        "assembly_printed": asm_printed,
+        "budget_millions": (
+            str(cells["budget"][1]) if cells["budget"][1] is not None else None
+        ),
+        "status": "reported",
+        "withheld_reason": None,
+    }
+    if not total_printed:
+        if exec_printed or asm_printed:
+            out.update(status="withheld", withheld_reason="sub-totals printed with no total")
+        else:
+            out["status"] = "not_reported"
+        return out
+    if total is None:
+        out.update(status="withheld", withheld_reason="total is not a number")
+        return out
+    if not exec_printed and not asm_printed:
+        out.update(status="withheld", withheld_reason="a total with no sub-totals")
+        return out
+    if (exec_printed and executive is None) or (asm_printed and assembly is None):
+        out.update(status="withheld", withheld_reason="a sub-total is not a number")
+        return out
+    parts = (executive or Decimal(0)) + (assembly or Decimal(0))
+    if abs(parts - total) > _PAYABLES_ROW_TOLERANCE_MILLIONS:
+        out.update(
+            status="withheld",
+            withheld_reason=f"Executive + Assembly = {parts} but the total is {total}",
+        )
+        return out
+    out["total_millions"] = str(total)
+    return out
+
+
+def check_payables_against_printed_total(
+    rows: Dict[str, Dict[str, Any]],
+    printed_total: Optional[Dict[str, Optional[Decimal]]],
+    source: str,
+) -> None:
+    """Refuse a county payables table that is not whole.
+
+    All 47 counties, each once, and the Grand, Executive and Assembly columns
+    summed to the table's own Total row. A county whose row was withheld still
+    counts towards the sum — if its cells are numbers — so a withheld row
+    cannot hide a misread column.
+    """
+    missing = [c for c in KENYAN_COUNTIES if c not in rows]
+    if missing:
+        raise CountyTableIncomplete(
+            f"{len(missing)} of {len(KENYAN_COUNTIES)} counties missing from the "
+            f"county payables table in {source}: {', '.join(missing)}"
+        )
+    if printed_total is None:
+        raise CountyTableIncomplete(
+            f"the county payables table in {source} has no Total row to check against"
+        )
+    # Rows that contradict their own sub-totals. One or two are the CoB's
+    # typos and are withheld on their own; most of the table is a column
+    # mapping misread — a phantom empty column shifts every row AND the Total
+    # row alike, so the column sums below still agree (adversarial pass,
+    # #238). Refuse it rather than publish nothing and call it a success.
+    broken = [
+        county for county, row in rows.items()
+        if classify_payables_row(row)["status"] == "withheld"
+    ]
+    if len(broken) > _PAYABLES_MAX_WITHHELD_ROWS:
+        raise CountyTableIncomplete(
+            f"{len(broken)} county rows in {source} do not add up on their own "
+            f"terms ({', '.join(sorted(broken)[:5])}...) — the columns are "
+            "misread, not the report"
+        )
+    for col in ("total", "executive", "assembly"):
+        printed = printed_total.get(col)
+        if printed is None:
+            raise CountyTableIncomplete(
+                f"the county payables Total row in {source} prints no {col} figure"
+            )
+        parsed = sum(
+            (r["cells"][col][1] or Decimal(0)) for r in rows.values()
+        )
+        if abs(parsed - printed) > _COUNTY_TOTAL_TOLERANCE_MILLIONS:
+            raise CountyTableIncomplete(
+                f"county payables {col} rows sum to {parsed:,} but the table "
+                f"prints {printed:,} (out by {parsed - printed:+,}) in {source}"
+            )
+
+
+_SPACED_THOUSANDS_RE = re.compile(r"(\d),\s+(\d)")
+_SHILLINGS_RE = re.compile(r"\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?")
+_SHILLINGS_OR_NIL_RE = re.compile(
+    r"[-–]?(?:\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)|(?<!\S)[-–](?!\S)"
+)
+#: The closing block's label: its formula, "e=a-c*b", which the report often
+#: breaks across lines ("e=a-" / "c*b") so only its start is required — or, in
+#: tables that print no formula (Nairobi, Kiambu, Turkana), a row label that
+#: begins "Outstanding Trade Payables".
+_CLOSING_FORMULA_RE = re.compile(
+    r"(?<![A-Za-z])[eE]\s*=\s*a\s*-|^\s*Outstanding\s+trade", re.IGNORECASE
+)
+_STEP_HEADER_RE = re.compile(r"(?<![A-Za-z])a\s+b\s+c\s+d(?![A-Za-z])")
+
+
+def chapter_closing_total(text: str) -> Optional[Decimal]:
+    """The closing Total of one county's chapter payables table, in shillings.
+
+    ``text`` runs from the table's caption to its "Source:" line. Only the
+    FY 2025/26 layout is read: blocks lettered a to e down the page, the
+    closing one labelled with its formula, "e=a-c*b", and its Total row the
+    first after that label. The FY 2024/25 tables run the same steps ACROSS
+    the page, and a "last Total row" rule read Nairobi's County Assembly
+    (650.60m) as the county's closing balance. A layout this does not
+    recognise returns None — no cross-check, never a guess.
+    """
+    # Printed in millions: the figure would be read as shillings.
+    if re.search(r"million", text or "", re.IGNORECASE):
+        return None
+    lines = (text or "").splitlines()
+    marker = next(
+        (i for i, line in enumerate(lines) if _CLOSING_FORMULA_RE.search(line)), None
+    )
+    # "a b c d e=a-b-c+d" is a header row: the steps run across the page, the
+    # layout this cannot read.
+    if marker is None or _STEP_HEADER_RE.search(lines[marker]):
+        return None
+    # The row-wise layout has the opening balance, the amount paid and the
+    # other blocks ABOVE the closing one. A marker with fewer than two Total
+    # rows above it is a column header, and the first Total below it would be
+    # one entity's figure, not the county's.
+    if sum(1 for line in lines[:marker] if _is_total_row(line)) < 2:
+        return None
+    for line in lines[marker:]:
+        if not _is_total_row(line):
+            continue
+        rest = _SPACED_THOUSANDS_RE.sub(r"\1,\2", line.split("Total", 1)[1])
+        cells = _SHILLINGS_OR_NIL_RE.findall(rest)
+        # Development, Recurrent, Total — three cells, or it is not this layout.
+        if len(cells) != 3:
+            return None
+        closing = cells[-1]
+        # A nil, or a negative balance, is not a closing stock to compare.
+        if closing.startswith(("-", "–")):
+            return None
+        return Decimal(closing.replace(",", ""))
+    return None
+
+
+def _is_total_row(line: str) -> bool:
+    """A "Total" row — not a "Sub-Total", and not a "Total (Kshs.)" header."""
+    return bool(
+        re.search(r"\bTotal\b", line)
+        and not re.search(r"Total\s*\(", line)
+        and not re.search(r"sub\s*-?\s*total", line, re.IGNORECASE)
+    )
+
+
+def fiscal_year_ending(as_at) -> str:
+    """"FY 2025/26" for a year ending 30 June 2026."""
+    return f"FY {as_at.year - 1}/{str(as_at.year)[2:]}"
+
+
+def cbirr_year_end_trade_payables(pdf_path: Path) -> List[Dict[str, Any]]:
+    """Every county's trade payables at 30 June, from a full-year CBIRR.
+
+    Returns one dict per county (47), JSON-safe so the result can be cached by
+    ``parse_cache``: amounts as decimal strings in KSh millions, the table's
+    date as ISO. Raises :class:`NotAYearEndTable` when the table is dated
+    anything but 30 June, and :class:`CountyTableIncomplete` when it is not
+    whole.
+
+    Each county also carries the closing Total of its own chapter table
+    (Chapter 3, printed in shillings), so a reader can be told when the report
+    disagrees with itself: Uasin Gishu's Table 2.10 row is KSh 1,153.72m and
+    its chapter table KSh 1,481.44m. Table 2.10 is published, because it is
+    the one that sums to the report's printed total.
+    """
+    from datetime import date as _date
+
+    pdf_path = Path(pdf_path)
+    if not pdf_path.exists():
+        raise PDFNotFoundError(f"PDF file not found: {pdf_path}")
+    source = pdf_path.name
+    with pdfplumber.open(pdf_path) as pdf:
+        n_pages = len(pdf.pages)
+
+        def page_text(pdf_page: int) -> str:
+            if not 1 <= pdf_page <= n_pages:
+                return ""
+            page = pdf.pages[pdf_page - 1]
+            try:
+                return page.extract_text() or ""
+            finally:
+                page.flush_cache()
+
+        toc_text = "\n".join(page_text(p) for p in range(1, min(40, n_pages) + 1))
+        toc = payables_toc_entries(toc_text)
+        if toc["counties"] is None:
+            raise TableNotFoundError(
+                f"no county trade payables table in the List of Tables of {source}"
+            )
+        num, as_at, printed_page = toc["counties"]
+        if as_at is None or (as_at.month, as_at.day) != (6, 30):
+            raise NotAYearEndTable(
+                f"Table {num} in {source} is stated as at {as_at}, not 30 June"
+            )
+
+        # The List of Tables prints report page numbers; find the PDF page the
+        # caption is actually on, and with it the offset for every other entry.
+        caption = f"Table {num}:"
+        summary_page = None
+        for candidate in range(printed_page, min(printed_page + 80, n_pages) + 1):
+            text = page_text(candidate)
+            if caption in text and not _TOC_ENTRY_RE.search(
+                next((ln for ln in text.splitlines() if caption in ln), "")
+            ):
+                summary_page = candidate
+                break
+        if summary_page is None:
+            raise TableNotFoundError(f"{caption} not found in the body of {source}")
+        offset = summary_page - printed_page
+
+        tables: List[Tuple[int, List[List[Optional[str]]]]] = []
+        for p in range(summary_page, min(summary_page + 3, n_pages + 1)):
+            page = pdf.pages[p - 1]
+            try:
+                tables.extend((p, t) for t in page.extract_tables())
+            finally:
+                page.flush_cache()
+        rows, printed_total = county_payables_rows(tables)
+        check_payables_against_printed_total(rows, printed_total, source)
+
+        results: Dict[str, Dict[str, Any]] = {
+            county: classify_payables_row(row) for county, row in rows.items()
+        }
+
+        for county, (c_num, c_date, c_printed) in toc["county"].items():
+            entry = results.get(county)
+            if entry is None:
+                continue
+            entry["chapter_table"] = f"Table {c_num}"
+            if c_date != as_at:
+                continue
+            c_caption = f"Table {c_num}:"
+            expected = c_printed + offset
+            for p in (expected, expected + 1, expected - 1, expected + 2, expected - 2):
+                text = page_text(p)
+                at = text.find(c_caption)
+                if at < 0:
+                    continue
+                block = text[at:] + "\n" + page_text(p + 1)
+                end = block.find("Source:")
+                closing = chapter_closing_total(block[: end if end > 0 else None])
+                if closing is not None:
+                    entry["chapter_page"] = p
+                    entry["chapter_total_millions"] = str(
+                        (closing / Decimal(1_000_000)).quantize(Decimal("0.01"))
+                    )
+                break
+            else:
+                logger.info(
+                    "county payables: %s's chapter table %s not found near PDF page %d",
+                    county, c_num, expected,
+                )
+
+    fiscal_year = fiscal_year_ending(as_at)
+    out: List[Dict[str, Any]] = []
+    for county in KENYAN_COUNTIES:
+        entry = results[county]
+        entry.setdefault("chapter_table", None)
+        entry.setdefault("chapter_page", None)
+        entry.setdefault("chapter_total_millions", None)
+        entry.update(
+            as_at=as_at.isoformat() if isinstance(as_at, _date) else str(as_at),
+            fiscal_year=fiscal_year,
+            table=f"Table {num}",
+            printed_total_millions=str(printed_total["total"]),
+        )
+        out.append(entry)
+    logger.info(
+        "county payables: %s Table %s as at %s — %d reported, %d not reported, "
+        "%d withheld, %d marked inconsistent by the CoB",
+        source, num, as_at,
+        sum(1 for e in out if e["status"] == "reported"),
+        sum(1 for e in out if e["status"] == "not_reported"),
+        sum(1 for e in out if e["status"] == "withheld"),
+        sum(1 for e in out if e["cob_marked_inconsistent"]),
+    )
+    return out
+
+
+class CbirrYearEndPayablesParser:
+    """:func:`cbirr_year_end_trade_payables` as a bound ``parse``.
+
+    ``parse_cache`` keys an entry on the source file that defines the parse
+    function. A lambda in the fetcher would be keyed on the FETCHER, so a fix
+    here would go on serving the cached pre-fix parse; a method defined in
+    this module is keyed on this module.
+    """
+
+    def __init__(self, pdf_path: Path):
+        self.pdf_path = Path(pdf_path)
+
+    def parse(self) -> List[Dict[str, Any]]:
+        return cbirr_year_end_trade_payables(self.pdf_path)
+
+
 class OAGAuditReportParser:
     """Parser for Office of Auditor General audit reports."""
 

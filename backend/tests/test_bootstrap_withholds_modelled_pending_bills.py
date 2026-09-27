@@ -1,10 +1,11 @@
-"""Bootstrap writes no county money, and only the Treasury BROP publishes pending bills.
+"""Bootstrap writes no county money, and only a declared source publishes pending bills.
 
 ``enhanced_county_data.json`` sets every county's pending bills at a flat 8%
 of a budget that is itself population x KSh 4,500 — the same ratio for all 47
 counties, which is what a formula looks like, not a set of measurements. The
 `pending_bills` domain publishes the real per-county figures from the
-Treasury's Budget Review and Outlook Paper.
+Controller of Budget's year-end County Governments Budget Implementation
+Review Report (the Treasury's BROP until #238 found it reprints that table).
 
 This started as a deferral ("write the modelled figure only where the BROP has
 none"), then became "write the debt row but not the pending-bills row". As of
@@ -15,7 +16,7 @@ catching. Bootstrap keeps the reference skeleton.
 
 The gate changed with it. "Sourced" used to mean "not bootstrap's modelled
 row", and the pending-bills FIXTURE's invented county figures passed that
-test. A row is now published only when it declares the BROP.
+test. A row is now published only when it declares its side's publication.
 """
 
 import pytest
@@ -100,8 +101,10 @@ class TestTheApiGate:
                 if modelled
                 else {
                     "source": "cob_pending_bills_etl",
-                    "publication": "treasury_brop",
-                    "notes": "Treasury BROP Table 10",
+                    "publication": "cob_cbirr_year_end",
+                    "category": "county",
+                    "as_at": "2026-06-30",
+                    "notes": "Controller of Budget CBIRR FY 2025/26, Table 2.10",
                 }
             ),
         )
