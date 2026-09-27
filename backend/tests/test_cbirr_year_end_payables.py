@@ -581,6 +581,7 @@ class TestTheGateFoundByTheAdversarialPass:
 
         return SimpleNamespace(
             debt_category=SimpleNamespace(value="pending_bills"),
+            entity=SimpleNamespace(type="county"),
             outstanding=amount, principal=amount, provenance=provenance,
         )
 
@@ -606,8 +607,15 @@ class TestTheGateFoundByTheAdversarialPass:
         national = {"publication": "treasury_brop", "category": "mda", "as_at": "2026-06-30"}
         assert county_pending_bills([self._row(national)]) is None
 
+    def test_a_declaration_without_an_entity_is_withheld(self):
+        from services.publication_gate import county_pending_bills
 
-def test_the_national_date_is_the_paragraphs_own_or_none():
+        row = self._row(dict(self.COB))
+        row.entity = None
+        assert county_pending_bills([row]) is None
+
+
+def test_the_national_date_must_be_stated_in_its_own_paragraph():
     """The page's other "as at 31st March" date, or a date inferred from the
     fiscal year, was stamped as the national figure's day, and would have let
     a national and a county figure of different days be added up."""
@@ -629,14 +637,19 @@ def test_the_national_date_is_the_paragraphs_own_or_none():
     pdf.pages = [page]
     national = brop_parser._detect_national_paragraph(pdf, "FY 2025/26")
     assert national.as_at_stated is False
-    payload = _brop_result_to_payload(
-        SimpleNamespace(fiscal_year_label="FY 2025/26", national=national, counties=[]),
-        "https://t/brop.pdf",
-    )
-    assert [r["as_at"] for r in payload["pending_bills"]] == [None, None]
+    with pytest.raises(ValueError, match="no stated as-at date"):
+        _brop_result_to_payload(
+            SimpleNamespace(fiscal_year_label="FY 2025/26", national=national, counties=[]),
+            "https://t/brop.pdf",
+        )
 
     page.extract_text.return_value = para.replace(
         "pending bills amounted", "pending bills as of 30th June 2026 amounted"
     )
     stated = brop_parser._detect_national_paragraph(pdf, "FY 2025/26")
     assert (stated.as_at_stated, stated.as_at_date) == (True, date(2026, 6, 30))
+    payload = _brop_result_to_payload(
+        SimpleNamespace(fiscal_year_label="FY 2025/26", national=stated, counties=[]),
+        "https://t/brop.pdf",
+    )
+    assert [r["as_at"] for r in payload["pending_bills"]] == ["2026-06-30"] * 2
