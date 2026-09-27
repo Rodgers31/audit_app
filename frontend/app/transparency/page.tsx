@@ -33,9 +33,9 @@ const SSR_TIMEOUT_MS = 5000;
  * prefetched ever painted, so the prerendered document held no money-flow
  * figures and could age from one deploy to the next without misleading
  * anyone. The waterfall and the KPI cards are now what the reader sees first,
- * so they have to be kept current. React Query still background-refreshes
- * past each hook's 10-minute staleTime, so the hour bounds how stale the
- * FIRST PAINT can be, not what the reader ends up with.
+ * so they have to be kept current. The three hooks' staleTime is the same
+ * hour (`SSR_HYDRATED_STALE_TIME_MS`), so a document served inside its window
+ * is not re-downloaded after hydration; one served STALE past it is.
  */
 export const revalidate = 3600;
 

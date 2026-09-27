@@ -2,6 +2,7 @@
  * Custom React Query hooks for audit data
  */
 import { useInfiniteQuery, useQuery, UseQueryOptions } from '@tanstack/react-query';
+import { SSR_HYDRATED_STALE_TIME_MS } from './isr';
 import type {
   AuditDashboardSummary,
   AuditTrendsData,
@@ -317,7 +318,7 @@ export const useFederalAuditsHomeSummary = (
 ) => {
   return useQuery({
     ...federalAuditsHomeSummaryQuery(),
-    staleTime: 15 * 60 * 1000, // 15 minutes
+    staleTime: SSR_HYDRATED_STALE_TIME_MS, // read from SSR state; see ./isr
     ...options,
   });
 };
@@ -330,7 +331,7 @@ export const useAuditDashboardSummary = (
   return useQuery({
     queryKey: auditDashboardSummaryKey(),
     queryFn: getAuditDashboardSummary,
-    staleTime: 15 * 60 * 1000,
+    staleTime: SSR_HYDRATED_STALE_TIME_MS, // read from SSR state; see ./isr
     ...options,
   });
 };
@@ -342,7 +343,7 @@ export const useAuditTrends = (
   return useQuery({
     queryKey: auditTrendsKey(params),
     queryFn: () => getAuditTrends(params),
-    staleTime: 15 * 60 * 1000,
+    staleTime: SSR_HYDRATED_STALE_TIME_MS, // read from SSR state; see ./isr
     ...options,
   });
 };
@@ -353,7 +354,7 @@ export const useRecurringFindings = (
   return useQuery({
     queryKey: auditRecurringFindingsKey(),
     queryFn: getRecurringFindings,
-    staleTime: 15 * 60 * 1000,
+    staleTime: SSR_HYDRATED_STALE_TIME_MS, // read from SSR state; see ./isr
     ...options,
   });
 };
@@ -365,7 +366,7 @@ export const useAuditFindings = (
   return useQuery({
     queryKey: auditFindingsKey(filters),
     queryFn: () => getAuditFindings(filters),
-    staleTime: 5 * 60 * 1000,
+    staleTime: SSR_HYDRATED_STALE_TIME_MS, // read from SSR state; see ./isr
     ...options,
   });
 };
