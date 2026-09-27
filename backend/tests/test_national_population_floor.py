@@ -391,9 +391,14 @@ class TestTheWriterRefusesIt:
     def test_82_is_refused(self, seeder_db):
         """The exact payload that produced id=69.
 
-        ``census_year`` absent means the writer stamps ``datetime.now().year``,
-        which is why id=69's year equals the year it was created.
+        The homepage scrape stamped ``census_year`` with the current year itself
+        (run live on 2026-09-26 it returned ``{'national_population': 82,
+        'census_year': 2026}``), which is why id=69's year equals the year it
+        was created. The year is stated here so that this reaches the floor:
+        a payload with no year is now refused before it (issue #204).
         """
+        from datetime import datetime
+
         session, module = seeder_db
 
         self._run(
@@ -402,7 +407,7 @@ class TestTheWriterRefusesIt:
             {
                 "fetch_success": True,
                 "national_population": ID_69,
-                "census_year": None,
+                "census_year": datetime.now().year,
                 "counties": [],
                 "source": "KNBS homepage scrape",
             },
@@ -436,7 +441,7 @@ class TestTheWriterRefusesIt:
             {
                 "fetch_success": True,
                 "national_population": ID_69,
-                "census_year": None,
+                "census_year": this_year,
                 "counties": [],
             },
         )

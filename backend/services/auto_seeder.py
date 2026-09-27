@@ -48,11 +48,11 @@ logger = logging.getLogger("auto_seeder")
 #:
 #: This writer produced population_data id=69 — National Government, year 2026,
 #: total_population 82, no source document (issue #190). Its national branch
-#: takes whatever ``fetch_all_population_data`` hands back, and one of that
-#: function's three sources is a regex over the KNBS homepage that matches a
-#: bare number next to the word "population" with no plausibility check. Kenya's
-#: 1948 census counted 5.4 million; nothing below this floor is a national
-#: population, and a row that fails it is dropped loudly rather than stored.
+#: takes whatever ``fetch_all_population_data`` hands back. The 82 was the
+#: KNBS homepage's population *density*, read by a regex that #204 removed.
+#: Kenya's 1948 census counted 5.4 million; nothing below this floor is a
+#: national population, and a row that fails it is dropped loudly rather than
+#: stored.
 MIN_NATIONAL_POPULATION = 5_000_000
 
 # Refresh schedule configuration (hours between refreshes)
@@ -543,11 +543,23 @@ class AutoSeeder:
             )
             return
 
+        # A figure whose vintage the source did not state is refused, not filed
+        # under today's date. `or datetime.now().year` here is what made
+        # population_data id=69's year equal the year it was written (#204).
+        census_year = population_data.get("census_year")
+        if not census_year:
+            logger.error(
+                "[AUTO-SEEDER] Refusing population data with no stated year "
+                "(national=%s, %d county record(s)). Source: %s",
+                population_data.get("national_population"),
+                len(population_data.get("counties") or []),
+                population_data.get("source", "unknown"),
+            )
+            return
+
         with SessionLocal() as db:
             records_created = 0
             records_updated = 0
-
-            census_year = population_data.get("census_year") or datetime.now().year
 
             # Update county populations
             for county_pop in population_data.get("counties", []):
