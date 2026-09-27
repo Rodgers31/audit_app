@@ -33,12 +33,26 @@ export interface AuditFinding {
   recommendation?: string;
 }
 
+/** Where an official's name came from. */
+export interface OfficialSource {
+  publisher: string | null;
+  source_url: string;
+  fetched_at: string | null;
+}
+
 export interface CountyComprehensive {
   id: string;
   name: string;
   slug: string;
   coordinates: [number, number];
-  governor?: string;
+  /** null unless a publisher supplied it (the Council of Governors); see
+   *  `officials_source`. A name nobody can check is withheld (#231). */
+  governor?: string | null;
+  deputy_governor?: string | null;
+  officials_source?: {
+    governor: OfficialSource | null;
+    deputy_governor: OfficialSource | null;
+  };
   demographics: {
     /** null when the county has no PopulationData row. The endpoint used to
      *  fall back to bootstrap's un-sourced copy in entity.meta, and to 0 when

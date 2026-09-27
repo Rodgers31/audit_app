@@ -1815,12 +1815,37 @@ except Exception as e:
     logger.warning(f"Could not register data freshness router: {e}")
 
 try:
+    from routers.cache_invalidation import router as cache_invalidation_router
+
+    app.include_router(cache_invalidation_router)
+    logger.info("Cache invalidation registered at /api/v1/system/cache/invalidate")
+except Exception as e:
+    # ERROR, not warning: without this route the nightly's call 404s and the
+    # job fails, and this line is where to look.
+    logger.error(f"Could not register cache invalidation router: {e}")
+
+try:
     from routers.data_provenance import router as data_provenance_router
 
     app.include_router(data_provenance_router)
     logger.info("Data provenance router registered at /api/v1/provenance")
 except Exception as e:
     logger.warning(f"Could not register data provenance router: {e}")
+
+
+# Cross-worker cache invalidation (issue #231). The nightly's signed call
+# lands on one gunicorn worker and bumps a marker file; every other worker
+# clears its own in-process caches on the next request it serves. One
+# os.stat per request. See cache/invalidation.py.
+@app.middleware("http")
+async def sync_cache_generation(request: Request, call_next):
+    try:
+        from cache.invalidation import sync_generation
+
+        sync_generation()
+    except Exception as e:  # never fail a request over a freshness signal
+        logger.error(f"cache generation sync failed: {e}")
+    return await call_next(request)
 
 
 # Request logging middleware.
@@ -1877,6 +1902,31 @@ def clear_all_caches():
                 rc.client.flushdb()
             except Exception:
                 pass
+
+
+def _clear_endpoint_mem_caches() -> int:
+    dropped = sum(len(c) for c in _all_mem_caches)
+    for c in _all_mem_caches:
+        c.clear()
+    return dropped
+
+
+def _clear_internal_api_cache() -> int:
+    dropped = len(InternalAPIClient._cache)
+    InternalAPIClient._cache.clear()
+    return dropped
+
+
+# The nightly's signed invalidation call (issue #231) clears these in every
+# worker. _peers_cache is deliberately absent: it holds live World Bank / IMF
+# figures, not anything the seed writes. See cache/invalidation.py.
+try:
+    from cache.invalidation import register_local_cache
+
+    register_local_cache("main.endpoint_memory", _clear_endpoint_mem_caches)
+    register_local_cache("main.internal_api_client", _clear_internal_api_cache)
+except Exception as e:  # pragma: no cover - import-time wiring
+    logger.error(f"Cache invalidation registry unavailable: {e}")
 
 
 def _redis_cache_instances():
@@ -3533,6 +3583,25 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+def _official_source(meta: Dict[str, Any], role: str) -> Optional[Dict[str, Any]]:
+    """Where ``role``'s name came from, or None when nothing says."""
+    prov = meta.get(f"{role}_provenance")
+    if not isinstance(prov, dict) or not prov.get("source_url"):
+        return None
+    return {
+        "publisher": prov.get("source"),
+        "source_url": prov.get("source_url"),
+        "fetched_at": prov.get("fetched_at"),
+    }
+
+
+def _sourced_official(meta: Dict[str, Any], role: str) -> Optional[str]:
+    name = meta.get(role)
+    if not name or _official_source(meta, role) is None:
+        return None
+    return name
+
+
 @app.get("/api/v1/counties/{county_id}/comprehensive")
 @cached(key_prefix="county:comprehensive", ttl=1800)
 async def get_county_comprehensive(
@@ -4000,8 +4069,19 @@ async def get_county_comprehensive(
                         else None
                     ),
                 },
-                # Governor
-                "governor": meta.get("governor", ""),
+                # Officials: published only with a publisher behind them
+                # (issue #231). bootstrap writes a governor from
+                # enhanced_county_data.json with no provenance; the
+                # county_officials domain writes both roles from the
+                # Council of Governors with provenance. A name without
+                # provenance is one nobody can check, and an election can
+                # have made it wrong, so it is withheld.
+                "governor": _sourced_official(meta, "governor"),
+                "deputy_governor": _sourced_official(meta, "deputy_governor"),
+                "officials_source": {
+                    role: _official_source(meta, role)
+                    for role in ("governor", "deputy_governor")
+                },
                 # Economic profile
                 #
                 # county_type, infrastructure_level and revenue_potential are

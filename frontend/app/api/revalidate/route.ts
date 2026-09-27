@@ -9,25 +9,16 @@
  * mis-signed requests are rejected; an unconfigured secret disables the
  * endpoint loudly (503) rather than open (no-silent-fallbacks).
  *
- * Body: {"paths": ["/", "/audits", ...]} — only known app routes are
- * accepted; anything else is reported back as rejected, never silently
- * dropped.
+ * Body: {"paths": ["/", "/audits", ...]}. Only paths in
+ * lib/revalidation/paths.json are accepted. The workflow builds its body from
+ * that same file, so the two cannot drift apart (issue #231). Anything else
+ * comes back in `rejected`, and the workflow fails the job if that list is
+ * not empty.
  */
 import { createHmac, timingSafeEqual } from 'crypto';
 import { revalidatePath } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
-
-const ALLOWED_PATHS = new Set([
-  '/',
-  '/audits',
-  '/budget',
-  '/counties',
-  '/counties/compare',
-  '/debt',
-  '/transparency',
-  '/accountability/unaccounted-funds',
-  '/sources',
-]);
+import { REVALIDATE_PATHS, revalidateType } from '@/lib/revalidation/paths';
 
 export async function POST(req: NextRequest) {
   const secret = process.env.REVALIDATE_SECRET;
@@ -60,8 +51,10 @@ export async function POST(req: NextRequest) {
   const revalidated: string[] = [];
   const rejected: string[] = [];
   for (const p of paths) {
-    if (typeof p === 'string' && ALLOWED_PATHS.has(p)) {
-      revalidatePath(p);
+    if (typeof p === 'string' && REVALIDATE_PATHS.has(p)) {
+      const type = revalidateType(p);
+      if (type) revalidatePath(p, type);
+      else revalidatePath(p);
       revalidated.push(p);
     } else {
       rejected.push(String(p));
