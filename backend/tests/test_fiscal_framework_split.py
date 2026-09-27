@@ -439,12 +439,29 @@ def _split_row(db_session, fy):
         FiscalSummary(
             fiscal_year=fy,
             unit="KES",
+            page_ref="PDF p.11",
             meta={"split_basis": "treasury_fiscal_framework", "fiscal_framework": {"total_expenditure_billion": 4785.2}},
         )
     )
 
 
 class TestSplitGate:
+    @pytest.mark.parametrize("page_ref", [None, "", "   ", "0", "-1"])
+    def test_unpublishable_split_cannot_report_current(self, db_session, page_ref):
+        from models import FiscalSummary
+        from seeding.staleness import FAIL, check_fiscal_split_freshness
+
+        _split_row(db_session, "FY 2025/26")
+        _split_row(db_session, "FY 2026/27")
+        db_session.flush()
+        row = db_session.query(FiscalSummary).filter_by(fiscal_year="FY 2026/27").one()
+        row.page_ref = page_ref
+        db_session.add(_job(1, "FY 2026/27"))
+        db_session.commit()
+        [finding] = check_fiscal_split_freshness(db_session, now=NOW)
+        assert finding.level == FAIL
+        assert "newest fiscal year with a split is FY 2025/26" in finding.message
+
     def test_red_when_a_newer_budget_summary_is_listed(self, db_session):
         from seeding.staleness import FAIL, check_fiscal_split_freshness
 

@@ -154,8 +154,9 @@ def write_fiscal_summary_records(
         # WHICH measure it is publishing — "no number without provenance"
         # applies to a number's definition, not only its value.
         basis_meta = _budget_basis_meta(record)
+        fields["meta"] = basis_meta
+        fields["page_ref"] = None
         if basis_meta:
-            fields["meta"] = basis_meta
             # The budget's own page first; a year whose budget is not sourced
             # yet (a new edition landing before the budget books) cites the
             # annex page its split came from.

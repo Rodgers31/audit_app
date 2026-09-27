@@ -1517,11 +1517,13 @@ def check_fiscal_split_freshness(
         )
         return findings
 
+    from services.publication_gate import publishable_fiscal_summaries
+
     # A split is the object with its total, not just the label: an empty or
     # total-less object has nothing a page can draw.
     split_years = [
         r.fiscal_year
-        for r in session.query(FiscalSummary).all()
+        for r in publishable_fiscal_summaries(session.query(FiscalSummary).all())
         if (r.meta or {}).get("split_basis") == FISCAL_SPLIT_BASIS
         and ((r.meta or {}).get("fiscal_framework") or {}).get("total_expenditure_billion")
     ]
