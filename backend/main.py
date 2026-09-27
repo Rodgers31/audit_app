@@ -10706,10 +10706,15 @@ def _published_pending_bills(db: Session) -> Tuple[List[tuple], Dict[str, Any]]:
         and one_edition(national_rows)
     )
     county_codes = {official_county_code(name) for _loan, name, _type, _amount in county_rows}
+    qualified_counties = [
+        name for loan, name, _type, _amount in county_rows
+        if _pending_bills_provenance(loan).get("reader_notes")
+    ]
     county_complete = (
         len(county_rows) == len(OFFICIAL_COUNTY_CODES)
         and county_codes == set(OFFICIAL_COUNTY_CODES)
         and one_edition(county_rows)
+        and not qualified_counties
     )
     national_total = sum(r[3] for r in national_rows) if national_complete else None
     county_total = sum(r[3] for r in county_rows) if county_complete else None
@@ -10737,6 +10742,7 @@ def _published_pending_bills(db: Session) -> Tuple[List[tuple], Dict[str, Any]]:
             "county_count": len(county_rows), "county_expected": len(OFFICIAL_COUNTY_CODES),
             "county_complete": county_complete,
             "missing_counties": [name for code, name in OFFICIAL_COUNTY_CODES.items() if code not in county_codes],
+            "qualified_counties": qualified_counties,
         },
         "reported_county_sum": sum(r[3] for r in county_rows) if county_rows else None,
         "as_at": next(iter(as_at_dates)) if one_day else None,

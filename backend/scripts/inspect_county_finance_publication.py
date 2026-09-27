@@ -28,6 +28,19 @@ def checked_pdf(path: Path, expected: str) -> str:
     return digest
 
 
+def _county_rows(rows: list[dict], label: str, *, complete: bool) -> dict[str, dict]:
+    """Check the extracted population before a dictionary can hide repeats."""
+    names = [row["county"] for row in rows]
+    expected = set(KENYAN_COUNTIES)
+    if len(names) != len(set(names)):
+        raise ValueError(f"{label} has duplicate county rows")
+    if (complete and (len(rows) != len(expected) or set(names) != expected)) or (
+        not complete and not set(names) <= expected
+    ):
+        raise ValueError(f"{label} cannot account for all 47 counties")
+    return {row["county"]: row for row in rows}
+
+
 def inspect(cbirr: Path, brop: Path, cbirr_sha256: str, brop_sha256: str) -> dict:
     checked_pdf(cbirr, cbirr_sha256)
     checked_pdf(brop, brop_sha256)
@@ -36,12 +49,17 @@ def inspect(cbirr: Path, brop: Path, cbirr_sha256: str, brop_sha256: str) -> dic
     pending = cbirr_year_end_trade_payables(cbirr)
     projects = CbirrStalledProjectsParser(cbirr).parse()
     national = parse_brop_pdf(brop, counties=False)
-    totals = {r["county"]: r for r in budgets if r["category"] == "Total"}
-    cash = {r["county"]: r for r in budgets if r["category"] == "Revenue Receipts" and r["subcategory"] == "Total"}
-    payables = {r["county"]: r for r in pending}
+    totals = _county_rows([r for r in budgets if r["category"] == "Total"],
+                          "budget totals", complete=True)
+    cash = _county_rows([r for r in budgets if r["category"] == "Revenue Receipts"
+                         and r["subcategory"] == "Total"], "cash totals", complete=False)
+    payables = _county_rows(pending, "trade payables", complete=True)
     stalled = {r["county"]: r for r in projects if r.get("kind") == "county"}
-    if set(totals) != set(KENYAN_COUNTIES) or set(payables) != set(KENYAN_COUNTIES):
-        raise ValueError("Preflight cannot account for all 47 counties")
+    if cash.keys() != {
+        county for county, state in parser.revenue_coverage.items()
+        if state.get("status") == "reconciled"
+    }:
+        raise ValueError("Cash total rows disagree with reconciliation coverage")
     coverage = []
     for county in KENYAN_COUNTIES:
         row = totals[county]

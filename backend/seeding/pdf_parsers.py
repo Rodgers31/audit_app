@@ -894,6 +894,9 @@ class _RevenueSection:
     subtotals: int = 0
     target_unreadable: bool = False
     receipts_observed: bool = False
+    blank_items: bool = False
+    blank_subtotal: bool = False
+    nil_heading: bool = False
 
     @property
     def target(self) -> Decimal:
@@ -905,7 +908,7 @@ class _RevenueSection:
 
 
 def _revenue_rows(tables: List[ExtractedTable]):
-    """``(kind, lettered, label, target, actual, observed)`` for each meaningful row.
+    """``(kind, lettered, label, target, actual, observed, blank)`` per row.
 
     kind is ``header`` (a section or sub-section title), ``item``, ``sub`` or
     ``grand``. Columns are found per table from its own header, because the
@@ -934,7 +937,7 @@ def _revenue_rows(tables: List[ExtractedTable]):
                 # The header printed again inside the body. Its first cell can
                 # still carry a section letter ("B | Equitable Share | Annual…").
                 lettered = bool(_SECTION_LETTER_RE.match((row[0] or "").strip()))
-                yield ("header", lettered and target_col >= 2, label, None, None, False)
+                yield ("header", lettered and target_col >= 2, label, None, None, False, False)
                 continue
             if re.fullmatch(r"[A-Za-z]?", (row[target_col] or "").strip()) and re.fullmatch(
                 r"[A-Za-z]", (row[actual_col] or "").strip()
@@ -947,14 +950,13 @@ def _revenue_rows(tables: List[ExtractedTable]):
             observed = actual is not None and bool(
                 (row[actual_col] or "").strip().strip("-–.")
             )
+            blank = (row[actual_col] or "").strip() in ("", ".")
             if re.search(r"sub[- ]?to[- ]?tal", label):
-                yield ("sub", False, label, target, actual, observed)
+                yield ("sub", False, label, target, actual, observed, blank)
                 continue
             if re.fullmatch(r"(grand\s*)?total", label):
-                # A Grand Total cell that printed nothing is not a printed
-                # nil: read as 0 it reconciled 0 against 0 and published a
-                # county that received nothing.
-                yield ("grand", False, label, target, actual if observed else None, observed)
+                # Blank, dot and dash are unobserved totals, never reported zero.
+                yield ("grand", False, label, target, actual if observed else None, observed, blank)
                 continue
             has_numbers = any((c or "").strip() for c in row[target_col:])
             lettered = bool(_SECTION_LETTER_RE.match((row[0] or "").strip())) and (
@@ -977,7 +979,7 @@ def _revenue_rows(tables: List[ExtractedTable]):
                 stream_label,
             )))
             if aggregate_heading and has_amount_cells and actual is None:
-                yield ("item", False, label, target, None, False)
+                yield ("item", False, label, target, None, False, blank)
                 continue
             if not has_numbers or (lettered and (not has_amount_cells or aggregate_heading)):
                 yield (
@@ -987,9 +989,10 @@ def _revenue_rows(tables: List[ExtractedTable]):
                     target if has_numbers else None,
                     actual if has_numbers else None,
                     observed,
+                    blank if has_numbers else False,
                 )
             else:
-                yield ("item", False, label, target, actual, observed)
+                yield ("item", False, label, target, actual, observed, blank)
 
 
 def county_revenue_receipts(
@@ -1033,7 +1036,7 @@ def county_revenue_receipts(
     lettered = any(r[1] for r in rows if r[0] == "header")
     sections: List[_RevenueSection] = []
     current: Optional[_RevenueSection] = None
-    for kind, is_lettered, label, target, actual, observed in rows:
+    for kind, is_lettered, label, target, actual, observed, blank in rows:
         if kind == "header":
             stream = _revenue_stream(label)
             closed = current is not None and current.actual_sub is not None
@@ -1064,6 +1067,8 @@ def county_revenue_receipts(
                     current.target_items += target or Decimal(0)
                     current.target_unreadable = target is None
                     current.receipts_observed = observed
+                    current.blank_items = blank
+                    current.nil_heading = actual == 0 and not observed and not blank
             continue
         if current is None:
             continue
@@ -1078,9 +1083,11 @@ def county_revenue_receipts(
             current.target_sub = target
             current.target_unreadable = target is None
             current.receipts_observed = observed
+            current.blank_subtotal = blank
         elif kind == "item" and actual is not None:
             current.actual_items += actual
             current.receipts_observed = current.receipts_observed or observed
+            current.blank_items = current.blank_items or blank
             if target is None:
                 current.target_unreadable = True
             else:
@@ -1090,6 +1097,17 @@ def county_revenue_receipts(
         return None, "no_sections"
     if any(s.subtotals > 1 for s in sections):
         return None, "a_section_has_two_subtotals"
+    if any(
+        (s.blank_subtotal and not (s.nil_heading and s.actual_items == 0))
+        or (s.actual_sub is None and s.blank_items and not s.nil_heading)
+        for s in sections
+    ):
+        # A section subtotal can substantiate blank constituent item cells.
+        # Without that printed subtotal, a positive Grand Total elsewhere
+        # cannot turn a missing stream receipt into zero. A printed dash on
+        # the section heading is independent evidence of a nil stream even
+        # when its subtotal cell is blank (Vihiga PDF p.864).
+        return None, "unobserved_receipts_cell"
     if sum(1 for s in sections if s.stream == "Equitable Share") != 1:
         return None, "equitable_share_not_exactly_one_section"
     if any(s.actual < 0 for s in sections):

@@ -149,3 +149,39 @@ def test_unobserved_grand_total_cannot_become_a_printed_zero(missing):
     ], (0, 0, 0, 0))
     streams, _why = county_revenue_receipts([table])
     assert streams is None
+
+
+@pytest.mark.parametrize("kind", ["item", "subtotal"])
+def test_blank_receipt_cannot_certify_a_stream_in_positive_grand_total(kind):
+    rows = [
+        ["A", "Equitable Share", "", ""],
+        ["1", "Equitable Share", "50", "" if kind == "item" else "50"],
+    ]
+    if kind == "subtotal":
+        rows.append(["", "Sub-Total", "50", ""])
+    rows += [
+        ["B", "Own Source Revenue", "", ""],
+        ["1", "Own Source Revenue", "100", "100"],
+        ["", "Grand Total", "100", "100"],
+    ]
+    table = ExtractedTable(1, 0,
+        ["No", "Revenue Stream", "Annual Target", "Actual Receipts"],
+        rows, (0, 0, 0, 0))
+    streams, _why = county_revenue_receipts([table])
+    assert streams is None
+
+
+def test_printed_nil_heading_supports_blank_subtotal_when_grand_reconciles():
+    # Vihiga PDF 864 has a dash on its opening-balance heading, a blank
+    # subtotal receipt, and a positive total equal to the other streams.
+    table = ExtractedTable(1, 0,
+        ["No", "Revenue Stream", "Annual Target", "Actual Receipts"], [
+            ["A", "Unspent Balance from FY 2023/24", "21", "-"],
+            ["", "Sub-Total", "21", ""],
+            ["B", "Equitable Share", "100", "100"],
+            ["", "Sub-Total", "100", "100"],
+            ["", "Grand Total", "121", "100"],
+        ], (0, 0, 0, 0))
+    streams, why = county_revenue_receipts([table])
+    assert why == ""
+    assert streams["Total"][1] == 100

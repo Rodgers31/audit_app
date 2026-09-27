@@ -100,6 +100,44 @@ def test_complete_same_day_editions_publish_and_preserve_a_county_zero(
     assert totals["total"] == 300_046_000_000
 
 
+def test_unreported_assembly_prevents_complete_county_total_without_hiding_rows(
+    client, db_session, publication_entities,
+):
+    _write(db_session, _national_payload())
+    payload = _county_payload()
+    payload["pending_bills"][0]["reader_notes"] = [
+        {"code": "assembly_not_printed", "table": "Table 2.10"}
+    ]
+    _write(db_session, payload)
+    rows, totals = _published(db_session)
+    assert len(rows) == 49
+    assert totals["reported_county_sum"] == 46_000_000
+    assert totals["coverage"]["county_complete"] is False
+    assert totals["county"] is None
+    assert totals["total"] is None
+    from main import clear_all_caches
+    clear_all_caches()
+    public = client.get("/api/v1/pending-bills").json()["summary"]
+    assert public["county_total"] is None
+    assert public["reported_county_sum"] == 46_000_000
+    assert public["coverage"]["qualified_counties"] == ["Baringo County"]
+
+
+def test_all_unreported_entries_fail_the_source_gate_before_retirement(
+    db_session, publication_entities,
+):
+    from seeding.domains.pending_bills.fetcher import CountyPayablesUnavailable
+
+    _complete(db_session)
+    before = [(loan.id, loan.provenance) for loan in db_session.query(Loan).all()]
+    entries = [dict(county=name, status="not_reported", as_at=DAY)
+               for name in KENYAN_COUNTIES]
+    with pytest.raises(CountyPayablesUnavailable, match="no county's figure could be read"):
+        check_county_payables_entries(entries, COB)
+    after = [(loan.id, loan.provenance) for loan in db_session.query(Loan).all()]
+    assert after == before
+
+
 def test_one_national_half_cannot_certify_a_combined_total(
     db_session, publication_entities,
 ):

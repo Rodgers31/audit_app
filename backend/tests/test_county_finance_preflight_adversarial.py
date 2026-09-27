@@ -87,6 +87,26 @@ def test_complete_positive_control_still_marks_no_production_publication(tmp_pat
     assert all(r["revenue"]["status"] == "withheld" for r in receipt["coverage"])
 
 
+@pytest.mark.parametrize("duplicate", ["budget_total", "cash_total", "payables"])
+def test_duplicate_county_evidence_cannot_disappear_in_preflight_dictionaries(
+    tmp_path, monkeypatch, duplicate,
+):
+    _parser, budgets, pending = _extractors(monkeypatch)
+    if duplicate == "budget_total":
+        budgets.append(dict(budgets[0]))
+    elif duplicate == "cash_total":
+        budgets.extend([
+            dict(county=KENYAN_COUNTIES[0], category="Revenue Receipts",
+                 subcategory="Total", absorbed=Decimal(1)),
+            dict(county=KENYAN_COUNTIES[0], category="Revenue Receipts",
+                 subcategory="Total", absorbed=Decimal(2)),
+        ])
+    else:
+        pending.append(dict(pending[0]))
+    with pytest.raises(ValueError, match="duplicate|unique|exactly"):
+        preflight.inspect(*_files(tmp_path))
+
+
 def test_artifact_changed_during_extraction_refuses(tmp_path, monkeypatch):
     parser, budgets, _ = _extractors(monkeypatch)
     args = _files(tmp_path)

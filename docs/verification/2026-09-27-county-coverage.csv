@@ -34,7 +34,7 @@ Nandi,FY2025/26,11404.54,8941.04,reconciled,10574982033.09,cash_receipts_includi
 Narok,FY2025/26,17231.06,11901.88,reconciled,15228059242,cash_receipts_including_opening_balance,661;662;663,,2026-06-30,reported,4245690000.00,52,,unverifiable,True,True,172526.69
 Nyamira,FY2025/26,8646.30,7009.26,reconciled,8103874187,cash_receipts_including_opening_balance,676;677,,2026-06-30,reported,357680000.00,52,,disagrees,False,False,172526.69
 Nyandarua,FY2025/26,9698.26,7439.62,reconciled,8494074742,cash_receipts_including_opening_balance,693;694,,2026-06-30,reported,2190500000.00,52,,unverifiable,True,False,172526.69
-Nyeri,FY2025/26,9441.73,7881.02,withheld,,cash_receipts_including_opening_balance,712;713,"streams_do_not_sum_to_grand_total (out by 746,508,377)",2026-06-30,reported,572060000.00,52,,unverifiable,True,True,172526.69
+Nyeri,FY2025/26,9441.73,7881.02,withheld,,cash_receipts_including_opening_balance,712;713,unobserved_receipts_cell,2026-06-30,reported,572060000.00,52,,unverifiable,True,True,172526.69
 Samburu,FY2025/26,8105.18,7283.25,withheld,,cash_receipts_including_opening_balance,729;730,a_section_has_two_subtotals,2026-06-30,reported,117250000.00,52,,agrees,False,False,172526.69
 Siaya,FY2025/26,13377.98,7504.73,reconciled,10500430395,cash_receipts_including_opening_balance,748;749;750,,2026-06-30,reported,1276890000.00,52,,disagrees,True,False,172526.69
 Taita Taveta,FY2025/26,8297.52,7064.78,reconciled,7531702137,cash_receipts_including_opening_balance,765;766,,2026-06-30,reported,2296710000.00,52,,unverifiable,True,False,172526.69

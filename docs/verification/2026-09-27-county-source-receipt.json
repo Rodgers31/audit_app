@@ -3210,7 +3210,7 @@
       "budget_expenditure_million_kes": "7881.02",
       "revenue": {
         "status": "withheld",
-        "reason": "streams_do_not_sum_to_grand_total (out by 746,508,377)",
+        "reason": "unobserved_receipts_cell",
         "pages": [
           712,
           713
@@ -4317,7 +4317,7 @@
       }
     }
   ],
-  "receipt_written_at": "2026-09-27T20:25:56.736277+00:00",
+  "receipt_written_at": "2026-09-27T23:40:54.665555+00:00",
   "live_head_metadata": {
     "observed_at": "2026-09-27T20:22:16.088799+00:00",
     "scope": "Live HEAD metadata only; does not prove cached-byte equality",
