@@ -97,6 +97,19 @@ KNOWN_UNGATED_WRITE_ROUTES = {
     ),
 }
 
+# Write routes that authenticate the CALLER by a request signature instead of
+# a user session. Tolerated while absent (the cache-invalidation route lands
+# with the freshness PR, #231), and while present
+# test_signed_write_routes_refuse_an_unsigned_request proves the handler turns
+# away anyone without the signature before it does any work.
+SIGNED_WRITE_ROUTES = {
+    ("POST", "/api/v1/system/cache/invalidate"): (
+        "Called by the nightly seed after seed+validate. HMAC-SHA256 of the raw "
+        "body with REVALIDATE_SECRET in x-revalidate-signature, and a ts within "
+        "300s; 503 when the secret is unset (routers/cache_invalidation.py)."
+    ),
+}
+
 # Write routes that another open PR removes. Tolerated while present, not
 # required, so this test stays green whichever PR merges first. Delete the
 # entry once the route is gone from main. Empty since #253 and this change
@@ -149,6 +162,7 @@ def test_every_write_route_verifies_the_caller():
         if (method, path) not in PUBLIC_WRITE_ROUTES
         and (method, path) not in KNOWN_UNGATED_WRITE_ROUTES
         and (method, path) not in REMOVED_BY_OPEN_PR
+        and (method, path) not in SIGNED_WRITE_ROUTES
         and not AUTH_DEPENDENCIES.intersection(_dependency_calls(dependant))
     )
     assert open_routes == [], (
@@ -304,3 +318,29 @@ def test_unverified_bearer_cannot_start_admin_etl_run(client):
     # it was reached even if the background task never ran.
     assert main._etl_jobs == jobs_before, "the handler queued an ETL job"
     assert run_job.await_count == 0
+
+
+@pytest.mark.parametrize("method, path", sorted(SIGNED_WRITE_ROUTES))
+def test_signed_write_routes_refuse_an_unsigned_request(client, monkeypatch, method, path):
+    """A signed route is exempt from the session rule only if it checks the signature."""
+    if (method, path) not in {(m, p) for m, p, _, _ in _mounted_write_routes()}:
+        pytest.skip(f"{method} {path} is not mounted on this tree")
+    import importlib
+
+    handler_module = importlib.import_module("routers.cache_invalidation")
+    ran = []
+    monkeypatch.setattr(handler_module, "invalidate_all", lambda *a, **k: ran.append(1) or {})
+
+    # Secret configured: no signature, and a wrong one, are both refused.
+    monkeypatch.setenv("REVALIDATE_SECRET", "test-secret-not-a-real-one")
+    body = b'{"ts": 0, "reason": "probe"}'
+    unsigned = client.request(method, path, content=body)
+    wrong = client.request(method, path, content=body, headers={"x-revalidate-signature": "0" * 64})
+    # Secret unset: the endpoint is disabled rather than open.
+    monkeypatch.delenv("REVALIDATE_SECRET")
+    disabled = client.request(method, path, content=body)
+
+    assert unsigned.status_code == 401, unsigned.text
+    assert wrong.status_code == 401, wrong.text
+    assert disabled.status_code == 503, disabled.text
+    assert ran == [], "an unsigned request reached invalidate_all()"

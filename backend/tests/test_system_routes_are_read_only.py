@@ -11,10 +11,13 @@ route is removed.
 
 THE RULE. ``/api/v1/system/*`` is a read-only namespace: status pages read
 it, nothing writes through it. A route there that accepts anything but
-GET/HEAD fails ``test_system_namespace_registers_only_reads``. If a write
-route is ever needed here, put it behind ``require_admin`` (or the signed
-scheme in ``routers/cache_invalidation.py`` once that lands) and change this
-test to check for that dependency; do not widen the method set.
+GET/HEAD fails ``test_system_namespace_registers_only_reads``, unless it
+authenticates by request signature and is listed in
+``test_write_routes_require_auth.SIGNED_WRITE_ROUTES``, where
+``test_signed_write_routes_refuse_an_unsigned_request`` proves it refuses an
+unsigned caller (the nightly's ``POST /api/v1/system/cache/invalidate``). Any
+other write route here goes behind ``require_admin``; do not widen the method
+set.
 """
 
 from __future__ import annotations
@@ -72,10 +75,14 @@ def _served_routes(application):
 
 
 def _system_writers(application):
+    from tests.test_write_routes_require_auth import SIGNED_WRITE_ROUTES
+
+    signed = {(m, p) for m, p in SIGNED_WRITE_ROUTES}
     return sorted(
         f"{sorted(methods - READ_METHODS)} {path}"
         for path, methods in _served_routes(application)
-        if path.startswith(SYSTEM_PREFIX) and methods - READ_METHODS
+        if path.startswith(SYSTEM_PREFIX)
+        and {(m, path) for m in methods - READ_METHODS} - signed
     )
 
 
