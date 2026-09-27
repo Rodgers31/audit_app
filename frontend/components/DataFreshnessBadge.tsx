@@ -201,7 +201,7 @@ export default function DataFreshnessBadge({
           className={`inline-block w-2 h-2 rounded-full ${STATUS_DOT[state]}`}
           aria-label={`Data freshness status: ${STATUS_LABEL[state]}`}
         />
-        Source: {sources}
+        <span>{STATUS_LABEL[state]} · Source: {sources}</span>
       </div>
     );
   }

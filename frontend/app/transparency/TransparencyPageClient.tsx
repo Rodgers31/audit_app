@@ -21,6 +21,7 @@ import FiscalYearPicker from '@/components/budget/FiscalYearPicker';
 import PageShell from '@/components/layout/PageShell';
 import ResponsiveTable from '@/components/ui/ResponsiveTable';
 import { useCountyFiscalYears } from '@/lib/react-query';
+import { SSR_HYDRATED_STALE_TIME_MS } from '@/lib/react-query/isr';
 import { useAllCountiesMoneyFlow, useNationalMoneyFlow } from '@/lib/react-query/useMoneyFlow';
 import { transparencyYearOptions } from '@/lib/utils';
 import { MoneyFlowData } from '@/types';
@@ -260,7 +261,7 @@ export default function TransparencyPage() {
   // (FY2025/26 9M, FY2025/26 H1, FY2021/22, FY2020/21) carry no county budget
   // rows, so clicking them emptied the page. Labels arrive bare ("2024/25") so
   // `selectedYear` and the picker buttons compare equal (F37).
-  const { data: fiscalYearsMeta } = useCountyFiscalYears();
+  const { data: fiscalYearsMeta } = useCountyFiscalYears({ staleTime: SSR_HYDRATED_STALE_TIME_MS });
   const { years, default: defaultYear } = useMemo(
     () => transparencyYearOptions(fiscalYearsMeta),
     [fiscalYearsMeta]

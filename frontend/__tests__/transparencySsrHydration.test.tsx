@@ -39,6 +39,7 @@ import React from 'react';
 import { renderToString } from 'react-dom/server';
 
 import TransparencyPageClient from '@/app/transparency/TransparencyPageClient';
+import { SSR_HYDRATED_STALE_TIME_MS } from '@/lib/react-query/isr';
 import { transparencySsrQueries } from '@/lib/react-query/transparencySsrPrefetch';
 import { countyFiscalYearsKey, useCountyFiscalYears } from '@/lib/react-query/useCounties';
 import {
@@ -256,7 +257,10 @@ describe('/transparency SSR hydration — the queries the page reads', () => {
   it('serves the fiscal-year list, which is what chooses the other two keys', async () => {
     const wrapper = hydratedWrapper(await serverState());
 
-    const { result } = renderHook(() => useCountyFiscalYears(), { wrapper });
+    const { result } = renderHook(
+      () => useCountyFiscalYears({ staleTime: SSR_HYDRATED_STALE_TIME_MS }),
+      { wrapper }
+    );
 
     expect(result.current.isLoading).toBe(false);
     expect(transparencyYearOptions(result.current.data).default).toBe(DEFAULT_YEAR);
@@ -267,7 +271,7 @@ describe('/transparency SSR hydration — the queries the page reads', () => {
 
     renderHook(
       () => {
-        useCountyFiscalYears();
+        useCountyFiscalYears({ staleTime: SSR_HYDRATED_STALE_TIME_MS });
         useNationalMoneyFlow(DEFAULT_YEAR);
         useAllCountiesMoneyFlow(DEFAULT_YEAR);
         return null;

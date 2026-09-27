@@ -34,7 +34,7 @@ import React, { isValidElement, ReactElement, ReactNode } from 'react';
 
 import { useCompareCounties } from '@/app/counties/compare/ComparePageClient';
 import { getQueryClient } from '@/lib/react-query/getQueryClient';
-import { ISR_REVALIDATE_SECONDS } from '@/lib/react-query/isr';
+import { ISR_REVALIDATE_SECONDS, SSR_HYDRATED_STALE_TIME_MS } from '@/lib/react-query/isr';
 import {
   AUDIT_FINDINGS_INITIAL_FILTERS,
   auditDashboardSummaryKey,
@@ -182,7 +182,7 @@ const ROUTES: Route[] = [
     load: () => import('@/app/transparency/page') as never,
     readers: {
       '["counties","fiscal-years"]': {
-        useReader: () => useCountyFiscalYears(),
+        useReader: () => useCountyFiscalYears({ staleTime: SSR_HYDRATED_STALE_TIME_MS }),
       },
       '["money-flow","national","2024/25"]': {
         useReader: () => useNationalMoneyFlow('2024/25'),

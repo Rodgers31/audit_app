@@ -68,6 +68,7 @@ describe.each(VARIANTS)('DataFreshnessBadge (%s) with no measurement', (variant)
     expect(screen.queryByText(/up to date/i)).not.toBeInTheDocument();
     expect(container.innerHTML).not.toMatch(/up to date/i);
     expect(container.innerHTML).not.toMatch(/emerald/);
+    expect(screen.getByText(/checking data freshness/i)).toBeVisible();
   });
 
   it('does not say "Up to date" when the request failed', async () => {
@@ -83,9 +84,7 @@ describe.each(VARIANTS)('DataFreshnessBadge (%s) with no measurement', (variant)
 
     expect(container.innerHTML).not.toMatch(/up to date/i);
     expect(container.innerHTML).not.toMatch(/emerald/);
-    if (variant === 'banner') {
-      expect(screen.getByText(/freshness unknown/i)).toBeInTheDocument();
-    }
+    expect(screen.getByText(/freshness unknown/i)).toBeVisible();
   }, 8000);
 
   it('does not say "Up to date" when the response has no entry for the source', () => {
@@ -95,9 +94,7 @@ describe.each(VARIANTS)('DataFreshnessBadge (%s) with no measurement', (variant)
 
     expect(container.innerHTML).not.toMatch(/up to date/i);
     expect(container.innerHTML).not.toMatch(/emerald/);
-    if (variant === 'banner') {
-      expect(screen.getByText(/freshness unknown/i)).toBeInTheDocument();
-    }
+    expect(screen.getByText(/freshness unknown/i)).toBeVisible();
   });
 
   it('does not treat a status it does not recognise as fresh', () => {
@@ -109,12 +106,14 @@ describe.each(VARIANTS)('DataFreshnessBadge (%s) with no measurement', (variant)
 
     expect(container.innerHTML).not.toMatch(/up to date/i);
     expect(container.innerHTML).not.toMatch(/emerald/);
+    expect(screen.getByText(/freshness unknown/i)).toBeVisible();
   });
 
   it('server-renders no "Up to date" when there is no data', () => {
     const html = renderToString(wrap(client(), <DataFreshnessBadge sources='COB/Treasury' variant={variant} />));
 
     expect(visibleText(html)).not.toMatch(/up to date/i);
+    expect(visibleText(html)).toMatch(/checking data freshness/i);
     expect(html).not.toMatch(/up to date/i); // nor in aria-label / title
     expect(html).not.toMatch(/emerald/);
     expect(get).not.toHaveBeenCalled();

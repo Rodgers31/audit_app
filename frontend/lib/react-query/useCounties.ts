@@ -217,7 +217,7 @@ export const useCountyFiscalYears = (
   return useQuery({
     queryKey: countyFiscalYearsKey(),
     queryFn: getCountyFiscalYears,
-    staleTime: SSR_HYDRATED_STALE_TIME_MS, // read from SSR state; see ./isr
+    staleTime: 30 * 60 * 1000,
     ...options,
   });
 };
