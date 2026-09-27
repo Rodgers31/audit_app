@@ -290,15 +290,11 @@ _EMPTY_BRANCH_ALLOWLIST = {
 }
 
 #: Which branch each pending-bills route must have answered from, per
-#: scenario. Those two routes read the ``pending_bills`` table when it has
-#: rows and fall back to ``Loan(debt_category=PENDING_BILLS)`` when it does
-#: not. One seed reaches one of the two, so the sweep runs once per branch and
-#: checks it reached the one it meant to.
+#: scenario. Those two routes used to read a ``pending_bills`` table first and
+#: fall back to ``Loan(debt_category=PENDING_BILLS)``; nothing ever wrote the
+#: table and #137 P6 removed it, so the loan rows the publication gate admits
+#: are the only branch left. The sweep still checks it reached that branch.
 _SCENARIOS = {
-    "pending_bills_table": {
-        "/api/v1/pending-bills/summary": "pending_bills_table",
-        "/api/v1/pending-bills/counties/{county_id}": "pending_bills_table",
-    },
     "pending_bills_from_loans": {
         "/api/v1/pending-bills/summary": "loans_table_fallback",
         "/api/v1/pending-bills/counties/{county_id}": "loans_table_fallback",
@@ -330,7 +326,6 @@ def representative_rows(db_session, seed_entity, seed_fiscal_period, seed_source
     """
     from models import (
         Audit,
-        BillType,
         BudgetLine,
         DebtCategory,
         DebtTimeline,
@@ -341,7 +336,6 @@ def representative_rows(db_session, seed_entity, seed_fiscal_period, seed_source
         FiscalSummary,
         GDPData,
         Loan,
-        PendingBill,
         PopulationData,
         RevenueBySource,
         Severity,
@@ -485,7 +479,16 @@ def representative_rows(db_session, seed_entity, seed_fiscal_period, seed_source
                 outstanding=5e11,
                 issue_date=datetime.datetime(2025, 6, 30),
                 currency="KES",
-                provenance={"fiscal_year": "2024/25"},
+                # Declared as the fetcher stamps a BROP national line; the
+                # publication gate withholds any pending-bills row that does
+                # not declare its publication (#265).
+                provenance={
+                    "fiscal_year": "FY 2024/25",
+                    "source": "cob_pending_bills_etl",
+                    "publication": "treasury_brop",
+                    "category": "mda",
+                    "as_at": "2025-06-30",
+                },
                 **fact,
             ),
             Loan(
@@ -494,17 +497,18 @@ def representative_rows(db_session, seed_entity, seed_fiscal_period, seed_source
                 debt_category=DebtCategory.PENDING_BILLS,
                 principal=1e11,
                 outstanding=1e11,
-                issue_date=datetime.datetime(2025, 6, 30),
+                issue_date=datetime.datetime(2026, 6, 30),
                 currency="KES",
-                provenance={"fiscal_year": "2024/25"},
-                **fact,
-            ),
-            PendingBill(
-                entity_id=county.id,
-                bill_type=BillType.SUPPLIER_ARREARS,
-                amount=1e11,
-                fiscal_year="2024/25",
-                aging_days=200,
+                # Declared as the fetcher stamps a CoB year-end county row
+                # (#238): a single dict with the side, the publication and the
+                # day the figure is a stock on.
+                provenance={
+                    "fiscal_year": "FY 2025/26",
+                    "source": "cob_pending_bills_etl",
+                    "publication": "cob_cbirr_year_end",
+                    "category": "county",
+                    "as_at": "2026-06-30",
+                },
                 **fact,
             ),
             # ── budgets: county sector lines, and a national line with a
@@ -729,7 +733,6 @@ class TestNoCachedRouteSilentlyFailsToSerialise:
         scenario,
     ):
         import main
-        from models import PendingBill
 
         monkeypatch.setattr(main.redis_cache, "client", redis_client)
 
@@ -744,10 +747,6 @@ class TestNoCachedRouteSilentlyFailsToSerialise:
             f"sweep configuration names routes that are not cached GET routes: "
             f"{sorted(stale_config)}"
         )
-
-        if scenario == "pending_bills_from_loans":
-            db_session.query(PendingBill).delete()
-            db_session.commit()
 
         seeded = _sweep(client, redis_client, caplog, routes)
         _wipe(db_session)

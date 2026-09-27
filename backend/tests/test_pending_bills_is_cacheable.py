@@ -101,7 +101,17 @@ def pending_bills(db_session, seed_country, seed_source_doc):
             issue_date=datetime(2025, 1, 1),
             currency="KES",
             source_document_id=seed_source_doc.id,
-            provenance={"fiscal_year": "FY 2024/25"},
+            # Declared the way the pending_bills fetcher stamps a BROP
+            # national line: since #265/#238 only rows that declare their
+            # publication are published, and an undeclared row would leave
+            # this test on the no-data branch it exists to get past.
+            provenance={
+                "fiscal_year": "FY 2024/25",
+                "source": "cob_pending_bills_etl",
+                "publication": "treasury_brop",
+                "category": "mda",
+                "as_at": "2025-06-30",
+            },
             created_at=UPDATED_AT,
             updated_at=UPDATED_AT,
         )
