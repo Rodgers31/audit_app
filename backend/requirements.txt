@@ -6,7 +6,11 @@ uvicorn[standard]>=0.32.0
 # worker recycling (--max-requests), proper SIGTERM handling, and a
 # single supervisor process so OOM restarts are clean.
 gunicorn>=23.0.0
-sqlalchemy>=2.0.23
+# <2.1: SQLAlchemy 2.1 resolves a bare postgresql:// URL to psycopg (v3), which
+# is not installed, and it broke migrations, seeding and app boot (issue #228).
+# db_url.py now names psycopg2 explicitly; lift this cap only after the suite
+# and a migration run pass on 2.1.
+sqlalchemy>=2.0.23,<2.1
 alembic>=1.12.1
 pydantic>=2.10.2
 pydantic-settings>=2.6.1
