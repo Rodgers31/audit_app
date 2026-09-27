@@ -114,14 +114,48 @@ export interface CountyComprehensive {
      *  reader as a CRA model. */
     source?: BudgetSource;
   };
+  /**
+   * What the county received, from the Controller of Budget's CBIRR county
+   * revenue table (#238). `total_revenue` is that table's Grand Total of
+   * actual receipts and `streams` are the rows it is the sum of — both null /
+   * empty when the county's table did not reconcile. `local_revenue` is
+   * own-source revenue (CBIRR Table 2.1), the figure the list and map print;
+   * it is not one of the streams.
+   */
   revenue: {
-    total_revenue: number;
-    local_revenue: number;
-    equitable_share: number;
+    total_revenue: number | null;
+    total_revenue_target: number | null;
+    equitable_share: number | null;
+    equitable_share_target: number | null;
+    additional_allocations: number | null;
+    local_revenue: number | null;
+    own_source_target: number | null;
+    streams: Array<{ stream: string; target: number | null; actual: number }>;
+    fiscal_year: string | null;
+    source: string | null;
+    total_revenue_absent_reason: string | null;
   };
   debt: {
     total_debt: number;
-    pending_bills: number;
+    /** null when no publication states this county's pending bills — Nandi
+     *  reported none to the Controller of Budget at 30 June 2026. */
+    pending_bills: number | null;
+    /** ISO date the figure is a stock on; null exactly when the figure is. */
+    pending_bills_as_at?: string | null;
+    pending_bills_source?: {
+      publisher: string;
+      title: string;
+      table: string | null;
+      url: string | null;
+    } | null;
+    /** What the report says about the figure, as codes the page words. */
+    pending_bills_notes?: Array<{ code: string } & Record<string, unknown>>;
+    /** Why there is NO figure, when the report says why; null otherwise. */
+    pending_bills_absence?: {
+      reason: 'not_reported' | 'withheld';
+      as_at: string;
+      table: string | null;
+    } | null;
     debt_to_budget_ratio: number;
     /** null when the population or the debt is unknown. */
     per_capita_debt: number | null;

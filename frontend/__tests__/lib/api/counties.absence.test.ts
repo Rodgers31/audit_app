@@ -82,11 +82,22 @@ describe('transformCountyData — absent figures stay absent', () => {
       ...base,
       budget_2025: 9_542_030_000,
       debt: 450_065_025,
-      total_spent: 4_093_530_870,
     } as never);
     expect(c.budget).toBe(9_542_030_000);
     expect(c.debt).toBe(450_065_025);
-    expect(c.moneyReceived).toBe(4_093_530_870);
+  });
+
+  it('never publishes spending as money received (#238)', () => {
+    // `money_received` fell back to `total_spent`, so a county whose receipts
+    // were withheld had its SPENDING shown as what it received, and the map
+    // tooltip's funding gap became budget minus spending.
+    const c = transformCountyData({
+      ...base,
+      budget_2025: 9_542_030_000,
+      money_received: null,
+      total_spent: 4_093_530_870,
+    } as never);
+    expect(c.moneyReceived).toBeUndefined();
   });
 
   it('does not let a null from the API become a zero', () => {
@@ -114,14 +125,14 @@ describe('transformCountyData — absent figures stay absent', () => {
 });
 
 describe('pendingBills: not reported is not zero', () => {
-  // Narok submitted no pending-bills data to the Treasury for FY 2024/25.
-  // The BROP prints an empty row for it and says so in a footnote, so the API
+  // Nandi reported no trade payables to the Controller of Budget at 30 June
+  // 2026. The report prints "-" across its row and says so, so the API
   // returns null. `?? 0` used to turn that into "KSh 0 pending bills", which
   // is a claim the county owes nothing — one nobody has made.
   it('renders absence, not zero, when the API reports none', () => {
     const county = transformCountyData({
-      id: 'narok',
-      name: 'Narok',
+      id: 'nandi',
+      name: 'Nandi',
       pending_bills: null,
     } as never);
 

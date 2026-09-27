@@ -15,6 +15,10 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from models import DebtCategory, DocumentType, Entity, EntityType, Loan, SourceDocument
+from services.publication_gate import (
+    COUNTY_PENDING_BILLS_PUBLICATION,
+    NATIONAL_PENDING_BILLS_PUBLICATION,
+)
 from sqlalchemy.orm import Session
 
 if TYPE_CHECKING:
@@ -29,9 +33,18 @@ def write_pending_bills(
     source_url: str | None = None,
     source_title: str | None = None,
     dry_run: bool = False,
+    publication: str | None = None,
+    publisher: str | None = None,
+    county_table: dict | None = None,
 ) -> tuple[int, int]:
     """
     Write pending bills records to the loans table.
+
+    ``county_table`` (county payloads only) is what the report says about the
+    counties it gives no figure for — ``{"as_at", "table", "not_reported",
+    "withheld"}`` — kept on the report's source document, because a county
+    with no figure has no row to keep it on, and "not reported to the CoB at
+    30 June 2026" is a different thing to tell a reader than a bare dash.
 
     Each record becomes a Loan row with debt_category = PENDING_BILLS.
     Uses upsert logic: if a matching loan already exists (by entity +
@@ -54,8 +67,57 @@ def write_pending_bills(
         logger.info("No pending bills records to write")
         return created, updated
 
+    # Each half of pending bills comes from ONE publication: the National
+    # Government's from the Treasury BROP, the counties' from the Controller of
+    # Budget's year-end CBIRR (#238). A payload writes only the side its
+    # publication is the source for, and any other payload writes nothing. The
+    # git fixture the fetcher falls back to carries invented figures on both
+    # sides:
+    #
+    # * seven counties (Nairobi 98.7B, ...) under the same lender key the
+    #   county rows use, so one failed fetch OVERWROTE the published figure
+    #   (#238);
+    # * eleven ministries and state corporations (405.4B) under lender keys the
+    #   BROP never uses, so they were ADDED beside its two national lines and
+    #   stayed there — 931.3B served against the 525.9B the BROP prints, the
+    #   same bills counted twice (#265).
+    if publication == NATIONAL_PENDING_BILLS_PUBLICATION:
+        writes_county = False
+    elif publication == COUNTY_PENDING_BILLS_PUBLICATION:
+        writes_county = True
+    else:
+        logger.warning(
+            "pending bills: not writing %d record(s) from a %s payload — "
+            "national pending bills are read from the Treasury BROP and county "
+            "pending bills from the Controller of Budget's year-end report only",
+            len(records),
+            publication or "fixture",
+        )
+        return created, updated
+    off_side = [r for r in records if _is_county_record(r) != writes_county]
+    if off_side:
+        logger.warning(
+            "pending bills: not writing %d %s record(s) from a %s payload — it "
+            "is not the source for that side",
+            len(off_side),
+            "national" if writes_county else "county",
+            publication,
+        )
+    records = [r for r in records if _is_county_record(r) == writes_county]
+    if not records:
+        return created, updated
+
+    written: set[tuple[int, str]] = set()
+
     # Get or create the source document
-    source_doc = _get_or_create_source_document(session, source_url, source_title)
+    source_doc = _get_or_create_source_document(
+        session, source_url, source_title, publisher=publisher
+    )
+    if writes_county and source_doc is not None and not dry_run:
+        source_doc.meta = {
+            **(source_doc.meta if isinstance(source_doc.meta, dict) else {}),
+            "county_payables": dict(county_table) if county_table else None,
+        }
 
     for record in records:
         entity = _get_or_create_entity(session, record.entity_name, record.entity_type)
@@ -68,6 +130,7 @@ def write_pending_bills(
 
         # Build a deterministic lender name based on category
         lender_name = _build_lender_name(record)
+        written.add((entity.id, lender_name))
 
         # Look for existing loan with same entity + lender
         existing = (
@@ -82,6 +145,10 @@ def write_pending_bills(
 
         provenance = {
             "source": "cob_pending_bills_etl",
+            # Which publication this figure was read from — the BROP for a
+            # national row, the CoB year-end report for a county row. Declared
+            # by the fetcher, re-stamped on every write.
+            "publication": publication,
             "fiscal_year": record.fiscal_year,
             "category": record.category,
             "source_url": record.source_url or source_url,
@@ -93,6 +160,16 @@ def write_pending_bills(
             provenance["ineligible_pending"] = float(record.ineligible_pending)
         if record.notes:
             provenance["notes"] = record.notes
+        # The day the figure is a stock on, the table and page it is printed
+        # on, and what the report says about it — each read by the parser.
+        if record.as_at:
+            provenance["as_at"] = record.as_at
+        if record.source_table:
+            provenance["table"] = record.source_table
+        if record.source_page:
+            provenance["page"] = record.source_page
+        if record.reader_notes:
+            provenance["reader_notes"] = [dict(n) for n in record.reader_notes]
 
         if existing:
             if not dry_run:
@@ -123,6 +200,12 @@ def write_pending_bills(
             created += 1
             logger.debug(f"Created: {lender_name} = {record.total_pending}")
 
+    if not dry_run and writes_county:
+        editions = {r.fiscal_year for r in records}
+        _retire_county_rows_not_written(
+            session, written, editions.pop() if len(editions) == 1 else None
+        )
+
     if not dry_run:
         session.flush()
 
@@ -130,6 +213,59 @@ def write_pending_bills(
         f"Pending bills write complete: " f"{created} created, {updated} updated"
     )
     return created, updated
+
+
+def _is_county_record(record: PendingBillRecord) -> bool:
+    """A record about a county, however the payload spelled its category."""
+    category = (record.category or "").strip().lower()
+    entity_type = (record.entity_type or "").strip().lower()
+    return category == "county" or entity_type == "county"
+
+
+def _retire_county_rows_not_written(
+    session: Session, written: set[tuple[int, str]], edition: str | None
+) -> int:
+    """Stop publishing every county row this write did not make.
+
+    A county payload is the whole of one report's table, so a county row it
+    did not write is not that report's figure. The upsert key is (entity,
+    lender), so a county the report states is overwritten in place; one it
+    does not — Nandi reported at 30 June 2025 and not at 30 June 2026, or a
+    row the parser now withholds on a re-read of the SAME edition — would keep
+    its old figure, stamped as current, and be served and summed beside
+    everyone's new one. The row is kept (it was published once) but no longer
+    declares a publication.
+    """
+    retired = 0
+    rows = (
+        session.query(Loan)
+        .join(Entity, Entity.id == Loan.entity_id)
+        .filter(
+            Entity.type == EntityType.COUNTY,
+            Loan.debt_category == DebtCategory.PENDING_BILLS,
+        )
+        .all()
+    )
+    for loan in rows:
+        prov = loan.provenance if isinstance(loan.provenance, dict) else None
+        if not prov or prov.get("publication") != COUNTY_PENDING_BILLS_PUBLICATION:
+            continue
+        if (loan.entity_id, loan.lender) in written:
+            continue
+        loan.provenance = {
+            **prov,
+            "publication": None,
+            "superseded_by_edition": edition,
+        }
+        retired += 1
+    if retired:
+        logger.warning(
+            "pending bills: %d county row(s) are no longer published — the %s "
+            "report does not state them",
+            retired,
+            edition,
+        )
+    return retired
 
 
 def _build_lender_name(record: PendingBillRecord) -> str:
@@ -203,9 +339,20 @@ def _get_or_create_source_document(
     session: Session,
     source_url: str | None,
     source_title: str | None,
+    publisher: str | None = None,
 ) -> SourceDocument | None:
-    """Get or create source document for COB pending bills report."""
+    """Get or create the source document a pending-bills payload came from.
+
+    ``publisher`` is the payload's own declaration. It used to be hardcoded to
+    the Controller of Budget, which named the wrong office for the Treasury's
+    BROP.
+    """
     title = source_title or "COB Pending Bills Report"
+    # The default names a NEW document only. Used to overwrite, it relabelled
+    # the Treasury's BROP as the Controller of Budget's on any call that did not
+    # declare a publisher (review of #262; #271 fixed the same defect in
+    # revenue_by_source).
+    declared = publisher
 
     doc = (
         session.query(SourceDocument)
@@ -216,6 +363,10 @@ def _get_or_create_source_document(
         .first()
     )
     if doc:
+        if declared and doc.publisher != declared:
+            doc.publisher = declared
+        if source_url and doc.url != source_url:
+            doc.url = source_url
         return doc
 
     from models import Country
@@ -228,7 +379,7 @@ def _get_or_create_source_document(
     logger.info(f"Creating source document: {title}")
     doc = SourceDocument(
         country_id=kenya.id,
-        publisher="Office of the Controller of Budget (OCOB)",
+        publisher=declared or "Office of the Controller of Budget (OCOB)",
         title=title,
         doc_type=DocumentType.REPORT,
         url=source_url,

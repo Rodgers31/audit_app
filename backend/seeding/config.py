@@ -336,17 +336,18 @@ class SeedingSettings(BaseSettings):
     treasury_brop_url: Optional[str] = Field(
         default=(
             "https://www.treasury.go.ke/sites/default/files/"
-            "2025-Budget-Review-and-Outlook-Paper-1.pdf"
+            "BROP%20-%20Budget%20Review%20Outlook%20Paper/"
+            "2026%20Budget%20Review%20and%20Outlook%20Paper....pdf"
         ),
         description=(
-            "Direct URL to the latest National Treasury Budget Review "
-            "and Outlook Paper (BROP) PDF. The pending_bills domain "
-            "extracts paragraph 18 (national aggregate) and Table 10 "
-            "(per-county breakdown) from this document. The path "
-            "changes each year — set ``SEED_TREASURY_BROP_URL`` to the "
-            "new release URL when the next BROP drops, or set to None "
-            "to skip live fetch and use the fixture. Auto-discovery "
-            "from the Treasury landing page is a planned follow-up."
+            "Fallback URL for the National Treasury Budget Review and "
+            "Outlook Paper (BROP) PDF, used only when discovery on "
+            "``treasury_brop_page_url`` fails. The pending_bills domain "
+            "reads the national pending-bills paragraph from it (para 18 "
+            "in 2025, para 20 in 2026). Set ``SEED_TREASURY_BROP_URL`` to "
+            "override, or None to skip the live fetch and use the fixture. "
+            "An out-of-date value is reported: a paper older than the one "
+            "due records the domain PARTIAL (brop_edition_behind)."
         ),
     )
     live_pdf_fetch_enabled: bool = Field(

@@ -234,9 +234,8 @@ SCANNED_MODULES = python_modules()
 # that owns it. Every site is listed in that issue.
 QUARANTINE_ISSUE = "#240"
 QUARANTINE: dict[str, int] = {
-    "backend/bootstrap.py": 2,
-    "backend/main.py": 28,
-    "backend/seeding/domains/stalled_projects/writer.py": 2,
+    "backend/bootstrap.py": 1,
+    "backend/main.py": 24,
     "backend/services/live_data_fetcher.py": 2,
     "etl/knbs_parser.py": 2,
     "etl/pending_bills_extractor.py": 1,

@@ -340,11 +340,11 @@ def _county_reference_data_superseded(session: Session) -> Tuple[bool, str]:
     ``BudgetLine`` rows and nothing else. The file writes four surfaces, so
     three of them have no live path at all today:
 
-    ``BudgetLine``      via ``_upsert_budget_lines``. This one IS superseded in
-        practice — the Controller of Budget and Government of Kenya documents
-        own all 2,000 county lines and none traces to this file.
-    ``Loan``            via ``_upsert_county_debt`` — county debt and pending
-        bills, both modelled as fixed percentages of a modelled budget.
+    ``BudgetLine``      formerly written here (modelled sector split); no
+        longer written — the counties_budget domain owns county budget lines.
+    ``Loan``            formerly written here (modelled county debt and
+        pending bills); no longer written — pending bills are the pending_bills
+        domain's (national: Treasury BROP; counties: CoB year-end CBIRR).
     ``PopulationData``  via ``_upsert_population``.
     ``entity.meta``     ``metrics`` (read by /counties for revenue, transfers,
         development budget and pending bills), plus ``economic_profile``,
@@ -846,201 +846,6 @@ def _ensure_source_document(
     return document
 
 
-# --- Typical Kenya county budget sector split (COB averages) ---
-# These percentages approximate how county budgets are distributed
-# Source: Controller of Budget county reports 2022-2024
-COUNTY_BUDGET_SECTORS = [
-    # util_bias: sector-specific offset (percentage points) added to the county's
-    # base execution rate so that different sectors show varied utilization.
-    # Recurrent-heavy sectors (admin, assembly) tend to absorb budget easily;
-    # development-heavy sectors (roads, water) typically underspend.
-    {
-        "category": "Health",
-        "development_pct": 0.08,
-        "recurrent_pct": 0.17,
-        "util_bias": +2,
-    },
-    {
-        "category": "Education & Training",
-        "development_pct": 0.04,
-        "recurrent_pct": 0.06,
-        "util_bias": +1,
-    },
-    {
-        "category": "Roads & Transport",
-        "development_pct": 0.10,
-        "recurrent_pct": 0.03,
-        "util_bias": -6,
-    },
-    {
-        "category": "Agriculture & Livestock",
-        "development_pct": 0.05,
-        "recurrent_pct": 0.04,
-        "util_bias": -4,
-    },
-    {
-        "category": "Water & Sanitation",
-        "development_pct": 0.06,
-        "recurrent_pct": 0.02,
-        "util_bias": -8,
-    },
-    {
-        "category": "Public Administration",
-        "development_pct": 0.02,
-        "recurrent_pct": 0.18,
-        "util_bias": +5,
-    },
-    {
-        "category": "County Assembly",
-        "development_pct": 0.01,
-        "recurrent_pct": 0.08,
-        "util_bias": +7,
-    },
-    {
-        "category": "Trade & Enterprise",
-        "development_pct": 0.02,
-        "recurrent_pct": 0.01,
-        "util_bias": -3,
-    },
-    {
-        "category": "Lands & Urban Planning",
-        "development_pct": 0.02,
-        "recurrent_pct": 0.01,
-        "util_bias": -5,
-    },
-]
-# Remaining ~6% dev + ~1% recurrent = "Other" catch-all
-
-
-def _upsert_budget_lines(
-    session: Session,
-    *,
-    entity_id: int,
-    entity_name: str,
-    period_id: int,
-    source_document_id: int,
-    total_allocated: Decimal,
-    execution_rate: Decimal,
-    pending_bills: Decimal,
-) -> None:
-    """Create multiple BudgetLine rows per county — one per sector."""
-    import hashlib
-
-    provenance = [
-        {
-            "source": "bootstrap",
-            "dataset": COUNTY_DATA_PATH.name,
-            "period": FISCAL_LABEL,
-        }
-    ]
-
-    # Development is typically ~40% of county budgets, recurrent ~60%
-    dev_total = total_allocated * Decimal("0.40")
-    rec_total = total_allocated * Decimal("0.60")
-
-    allocated_so_far = Decimal("0")
-    for idx, sector in enumerate(COUNTY_BUDGET_SECTORS):
-        cat = sector["category"]
-        alloc = (
-            dev_total * Decimal(str(sector["development_pct"] / 0.40))
-            + rec_total * Decimal(str(sector["recurrent_pct"] / 0.60))
-        ).quantize(Decimal("0.01"))
-        # Scale alloc so dev_pct + rec_pct share of total makes sense
-        alloc = (
-            total_allocated
-            * Decimal(str(sector["development_pct"] + sector["recurrent_pct"]))
-        ).quantize(Decimal("0.01"))
-
-        # --- Per-sector utilization variance ---
-        # Deterministic jitter in [-3, +3] based on county name + sector index
-        seed_bytes = f"{entity_name}:{idx}".encode()
-        jitter = (int(hashlib.md5(seed_bytes).hexdigest()[:8], 16) % 7) - 3  # -3..+3
-        bias = sector.get("util_bias", 0)
-        sector_rate = execution_rate + Decimal(str(bias + jitter))
-        # Clamp to [40, 100] so values stay plausible
-        sector_rate = max(Decimal("40"), min(Decimal("100"), sector_rate))
-        actual = (alloc * sector_rate / Decimal("100")).quantize(Decimal("0.01"))
-        committed = (
-            (pending_bills * alloc / total_allocated).quantize(Decimal("0.01"))
-            if total_allocated > 0
-            else Decimal("0")
-        )
-        allocated_so_far += alloc
-
-        existing = (
-            session.query(BudgetLine)
-            .filter(
-                BudgetLine.entity_id == entity_id,
-                BudgetLine.period_id == period_id,
-                BudgetLine.category == cat,
-            )
-            .first()
-        )
-        if existing:
-            existing.allocated_amount = alloc
-            existing.actual_spent = actual
-            existing.committed_amount = committed
-            existing.currency = "KES"
-            existing.source_document_id = source_document_id
-            existing.provenance = provenance
-            session.add(existing)
-        else:
-            session.add(
-                BudgetLine(
-                    entity_id=entity_id,
-                    period_id=period_id,
-                    category=cat,
-                    allocated_amount=alloc,
-                    actual_spent=actual,
-                    committed_amount=committed,
-                    currency="KES",
-                    source_document_id=source_document_id,
-                    provenance=provenance,
-                )
-            )
-
-    # "Other" catch-all for the remainder
-    remainder = total_allocated - allocated_so_far
-    if remainder > 0:
-        # Give "Other" a slight negative bias + its own jitter
-        seed_bytes = f"{entity_name}:other".encode()
-        jitter = (int(hashlib.md5(seed_bytes).hexdigest()[:8], 16) % 7) - 3
-        other_rate = execution_rate + Decimal(str(-2 + jitter))
-        other_rate = max(Decimal("40"), min(Decimal("100"), other_rate))
-        actual_rem = (remainder * other_rate / Decimal("100")).quantize(Decimal("0.01"))
-        existing = (
-            session.query(BudgetLine)
-            .filter(
-                BudgetLine.entity_id == entity_id,
-                BudgetLine.period_id == period_id,
-                BudgetLine.category == "Other",
-            )
-            .first()
-        )
-        if existing:
-            existing.allocated_amount = remainder
-            existing.actual_spent = actual_rem
-            existing.committed_amount = Decimal("0")
-            existing.currency = "KES"
-            existing.source_document_id = source_document_id
-            existing.provenance = provenance
-            session.add(existing)
-        else:
-            session.add(
-                BudgetLine(
-                    entity_id=entity_id,
-                    period_id=period_id,
-                    category="Other",
-                    allocated_amount=remainder,
-                    actual_spent=actual_rem,
-                    committed_amount=Decimal("0"),
-                    currency="KES",
-                    source_document_id=source_document_id,
-                    provenance=provenance,
-                )
-            )
-
-
 def _upsert_population(
     session: Session,
     *,
@@ -1074,107 +879,6 @@ def _upsert_population(
             meta={"source": "Kenya Census 2019", "bootstrap": True},
         )
     )
-
-
-def _upsert_county_debt(
-    session: Session,
-    *,
-    entity_id: int,
-    county_name: str,
-    debt_outstanding: float,
-    pending_bills: float,
-    source_document_id: int,
-) -> None:
-    """Create Loan rows for county-level debt (outstanding + pending bills)."""
-    provenance = [{"source": "bootstrap", "dataset": COUNTY_DATA_PATH.name}]
-
-    if debt_outstanding and debt_outstanding > 0:
-        existing = (
-            session.query(Loan)
-            .filter(
-                Loan.entity_id == entity_id,
-                Loan.lender == "County Government Debt",
-            )
-            .first()
-        )
-        if existing:
-            existing.principal = Decimal(str(debt_outstanding))
-            existing.outstanding = Decimal(str(debt_outstanding))
-            existing.provenance = provenance
-            session.add(existing)
-        else:
-            session.add(
-                Loan(
-                    entity_id=entity_id,
-                    lender="County Government Debt",
-                    debt_category=DebtCategory.OTHER,
-                    principal=Decimal(str(debt_outstanding)),
-                    outstanding=Decimal(str(debt_outstanding)),
-                    interest_rate=Decimal("0"),
-                    issue_date=FISCAL_START,
-                    maturity_date=None,
-                    currency="KES",
-                    source_document_id=source_document_id,
-                    provenance=provenance,
-                )
-            )
-
-    # THE MODELLED PENDING-BILLS FIGURE IS NOT PUBLISHED AT ALL.
-    #
-    # It is not a measurement. Every one of the 47 is exactly 8% of a budget
-    # that is itself population x KSh 4,500 — the same ratio for the whole
-    # country, which is what a formula looks like, not a set of observations.
-    #
-    # An earlier version of this deferred only where the Treasury BROP had a
-    # real figure, so that "a county the parse has not reached keeps the only
-    # figure it has". That reasoning was wrong: the figure it kept was a
-    # fabrication, and the one county it applied to — Narok — is precisely
-    # the county the BROP reports as having submitted nothing. Publishing 8%
-    # of a modelled budget for the one county that told the Treasury nothing
-    # is the worst case, not the safe one.
-    #
-    # So nothing is written. Where the BROP has a figure the API serves it;
-    # where it does not, county_pending_bills() returns None and the UI shows
-    # absence. See services/publication_gate.py.
-    if pending_bills and pending_bills > 0:
-        logger.info(
-            "%s: not writing the modelled pending-bills figure (%.0f) — it is "
-            "8%% of a modelled budget, not a published one",
-            county_name,
-            pending_bills,
-        )
-        pending_bills = 0.0
-
-    if pending_bills and pending_bills > 0:
-        existing = (
-            session.query(Loan)
-            .filter(
-                Loan.entity_id == entity_id,
-                Loan.lender == "Pending Bills",
-            )
-            .first()
-        )
-        if existing:
-            existing.principal = Decimal(str(pending_bills))
-            existing.outstanding = Decimal(str(pending_bills))
-            existing.provenance = provenance
-            session.add(existing)
-        else:
-            session.add(
-                Loan(
-                    entity_id=entity_id,
-                    lender="Pending Bills",
-                    debt_category=DebtCategory.PENDING_BILLS,
-                    principal=Decimal(str(pending_bills)),
-                    outstanding=Decimal(str(pending_bills)),
-                    interest_rate=Decimal("0"),
-                    issue_date=FISCAL_START,
-                    maturity_date=None,
-                    currency="KES",
-                    source_document_id=source_document_id,
-                    provenance=provenance,
-                )
-            )
 
 
 def _map_severity(level: str) -> Severity:
@@ -2076,35 +1780,19 @@ def initialize_reference_data(
                 },
             )
 
-            allocated = _parse_decimal(info.get("budget_2025"))
-            execution_rate = _parse_decimal(info.get("budget_execution_rate"))
-            committed = _parse_decimal(info.get("pending_bills"))
-            _upsert_budget_lines(
-                session,
-                entity_id=entity.id,
-                entity_name=county_name,
-                period_id=period.id,
-                source_document_id=budget_doc.id,
-                total_allocated=allocated,
-                execution_rate=execution_rate,
-                pending_bills=committed,
-            )
+            # County money is NOT written here. Budget lines (modelled as
+            # population x KSh 4,500, split into sectors), county debt (a flat
+            # 15% of that) and pending bills (8%) all came out of this loop on
+            # a fresh database, where they competed with — and in a period
+            # without live rows, stood in for — the Controller of Budget's
+            # CBIRR. The counties_budget and pending_bills domains own county
+            # money; this loop keeps the reference skeleton.
 
             # Seed PopulationData table (Census 2019)
             _upsert_population(
                 session,
                 entity_id=entity.id,
                 population=int(info.get("population", 0)),
-                source_document_id=budget_doc.id,
-            )
-
-            # Seed Loan table (county debt + pending bills)
-            _upsert_county_debt(
-                session,
-                entity_id=entity.id,
-                county_name=county_name,
-                debt_outstanding=float(info.get("debt_outstanding", 0)),
-                pending_bills=float(info.get("pending_bills", 0)),
                 source_document_id=budget_doc.id,
             )
 
