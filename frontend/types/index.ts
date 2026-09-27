@@ -56,6 +56,9 @@ export interface StalledProject {
 
 export interface AuditFinding {
   id: number;
+  audited_entity_name?: string | null;
+  source_url?: string | null;
+  page_ref?: string | null;
   finding: string;
   severity: 'info' | 'warning' | 'critical';
   category: string;

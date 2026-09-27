@@ -44,6 +44,7 @@ from services.county_budget import (
     REVENUE_RECEIPTS_CATEGORY,
     REVENUE_RECEIPTS_TOTAL,
 )
+from services.audit_citations import audited_institution, extraction_payload, report_page_url
 from services.trust_guards import (
     check_budget_sectors,
     check_coverage_staleness,
@@ -4004,11 +4005,16 @@ async def get_county_comprehensive(
                 for _ext in db.query(_DBExtraction).filter(
                     _DBExtraction.id.in_(_ext_ids)
                 ):
-                    _extracted[_ext.id] = _ext.extracted_json or {}
-                    _title = (_ext.extracted_json or {}).get("title")
+                    _extracted[_ext.id] = extraction_payload(_ext.extracted_json)
+                    _title = _extracted[_ext.id].get("title")
                     if _title:
                         _finding_titles[_ext.id] = str(_title)
 
+            _audit_docs = {
+                d.id: d for d in db.query(DBSourceDocument).filter(
+                    DBSourceDocument.id.in_({a.source_document_id for a in audits})
+                )
+            }
             audit_findings = []
             by_severity = {"info": 0, "warning": 0, "critical": 0}
             # `0.0` here reads as "the Auditor-General questioned nothing".
@@ -4071,6 +4077,14 @@ async def get_county_comprehensive(
                     {
                         "id": a.id,
                         "finding": a.finding_text,
+                        "audited_entity_name": audited_institution(
+                            _extracted.get(a.extraction_id), county_name=entity.canonical_name,
+                            document_meta=_audit_docs[a.source_document_id].meta if a.source_document_id in _audit_docs else None,
+                        ),
+                        "page_ref": a.page_ref,
+                        "source_url": report_page_url(
+                            _audit_docs[a.source_document_id].url if a.source_document_id in _audit_docs else None, a.page_ref,
+                        ),
                         "severity": sev,
                         "category": category,
                         "status": status,
