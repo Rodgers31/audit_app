@@ -3,6 +3,7 @@
  */
 import { AccountabilityScorecard, CountyComprehensive } from '@/types';
 import { useInfiniteQuery, useQuery, UseQueryOptions } from '@tanstack/react-query';
+import { SSR_HYDRATED_STALE_TIME_MS } from './isr';
 import {
   getCounties,
   getCountyFiscalYears,
@@ -77,7 +78,7 @@ export const useCounties = (
   return useQuery({
     queryKey: QUERY_KEYS.countiesFiltered(filters),
     queryFn: () => getCounties(filters),
-    staleTime: 30 * 60 * 1000, // 30 minutes — county list rarely changes
+    staleTime: SSR_HYDRATED_STALE_TIME_MS, // read from SSR state; see ./isr
     ...options,
   });
 };
@@ -216,7 +217,7 @@ export const useCountyFiscalYears = (
   return useQuery({
     queryKey: countyFiscalYearsKey(),
     queryFn: getCountyFiscalYears,
-    staleTime: 30 * 60 * 1000,
+    staleTime: SSR_HYDRATED_STALE_TIME_MS, // read from SSR state; see ./isr
     ...options,
   });
 };

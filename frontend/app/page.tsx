@@ -5,8 +5,9 @@
  * the dehydrated cache to the client component via HydrationBoundary.
  * Result: zero loading spinners on first paint, no waterfall.
  *
- * On subsequent client-side navigations React Query serves from its
- * in-memory cache (staleTime 10min–1hr) so no extra fetches occur.
+ * Every hook reading this state keeps it fresh for at least the ISR window
+ * (`SSR_HYDRATED_STALE_TIME_MS`, lib/react-query/isr.ts), so a cached copy of
+ * this page does not re-download after hydration what it just rendered.
  *
  * COLD-START NOTE: If the Render backend is sleeping, SSR prefetches
  * will fail within the SSR_TIMEOUT. The page still renders (loading

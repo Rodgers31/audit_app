@@ -212,8 +212,18 @@ export interface FederalAuditResponse {
   last_updated: string | null;
 }
 
-export const getFederalAudits = async (): Promise<FederalAuditResponse> => {
-  const response = await apiClient.get<FederalAuditResponse>(AUDITS_ENDPOINTS.FEDERAL);
+/**
+ * `topFindings` asks for only the N largest findings that state an amount;
+ * every summary field still describes all of them (`total_findings` is the
+ * report's count). See `select_top_stated_findings` in backend/main.py.
+ */
+export const getFederalAudits = async (params?: {
+  topFindings?: number;
+}): Promise<FederalAuditResponse> => {
+  const url = buildUrlWithParams(AUDITS_ENDPOINTS.FEDERAL, {
+    top_findings: params?.topFindings,
+  });
+  const response = await apiClient.get<FederalAuditResponse>(url);
   return response.data;
 };
 
