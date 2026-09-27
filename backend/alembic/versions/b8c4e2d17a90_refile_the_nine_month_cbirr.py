@@ -4,6 +4,14 @@ Revision ID: b8c4e2d17a90
 Revises: a2f7c1b48d90
 Create Date: 2026-09-26
 
+DO NOT MERGE UNTIL THE PENDING-BILLS CODE IS DEPLOYED. Merging applies this
+(ci.yml run-migrations, before the manual deploy). It creates a second county
+period starting 2025-07-01 ("FY2025/26 9M"), and the code on main before that
+PR orders county periods by start date only (_latest_county_period), so in 2 of
+4 row orderings it would pick the part-year and publish the category over-sum
+that PR fixes (consolidation review, 2026-09-27). It ships in one chain with
+62a9f4131819 and ea1645a4c0b5, which has the same requirement.
+
 Issue #238 §2. Measured against a ``pg_dump`` of production taken 2026-09-26
 (stamped ``a2f7c1b48d90``).
 
