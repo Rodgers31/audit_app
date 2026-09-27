@@ -8172,7 +8172,13 @@ async def get_budget_overview():
                 if sum(1 for v in key_fields if v > 0) >= 3:
                     fiscal_years.append(entry)
 
-            latest = fiscal_years[-1] if fiscal_years else {}
+            # The latest year with an enacted budget, as /fiscal/summary picks
+            # it (_current_fiscal_year): next year's Budget Summary arrives
+            # before its budget book and must not become the headline year.
+            latest = next(
+                (e for e in reversed(fiscal_years) if e["appropriated_budget"] > 0),
+                fiscal_years[-1] if fiscal_years else {},
+            )
 
             # ── Top / bottom utilization counties (same FY scope) ──
             util_q = (
@@ -9109,6 +9115,24 @@ def _select_fiscal_years(all_fiscal_years: List[dict]) -> List[dict]:
     ]
 
 
+def _current_fiscal_year(fiscal_years: List[dict]) -> Optional[dict]:
+    """The year /fiscal/summary calls current: the latest published year that
+    carries an appropriated (enacted) budget, else the latest published year.
+
+    Treasury's Budget Summary for NEXT year appears in June, before the next
+    budget book is read. The row it produces (revenue, borrowing, county
+    transfers, a page reference; no appropriated budget or debt service)
+    passes the three-of-four rule and is published in the history, but it
+    must not become current: the homepage's budget and debt-service cards and
+    the /debt loans card would read "Not published" for the weeks until the
+    budget book lands. Shared with /debt/loans so both name the same year.
+    """
+    for fy in reversed(fiscal_years):
+        if (fy.get("appropriated_budget") or 0) > 0:
+            return fy
+    return fiscal_years[-1] if fiscal_years else None
+
+
 @app.get("/api/v1/fiscal/summary")
 @cached(key_prefix="fiscal:summary", ttl=NIGHTLY_REFRESH_TTL)
 async def get_fiscal_summary(db: Session = Depends(get_db)):
@@ -9166,7 +9190,7 @@ async def get_fiscal_summary(db: Session = Depends(get_db)):
 
         all_fiscal_years = [_fiscal_row_to_dict(r) for r in rows]
         fiscal_years = _select_fiscal_years(all_fiscal_years)
-        latest = fiscal_years[-1] if fiscal_years else all_fiscal_years[-1]
+        latest = _current_fiscal_year(fiscal_years) or all_fiscal_years[-1]
 
         # Source info
         source_title = "National Treasury BPS & Controller of Budget Reports"
@@ -9478,7 +9502,7 @@ def _published_annual_debt_service(db) -> Dict[str, Any]:
         db.query(FSModel).order_by(FSModel.fiscal_year.asc()).all()
     )
     years = _select_fiscal_years([_fiscal_row_to_dict(r) for r in rows])
-    current = years[-1] if years else None
+    current = _current_fiscal_year(years)
     # The debt-service figure's OWN source. Not budget_basis_source: that is
     # where the budget came from, and for some years it is a different
     # document from the one the debt service was read off.
