@@ -1,0 +1,82 @@
+{
+  "verified_at": "2026-09-27T20:11:50.007379+00:00",
+  "base_commit": "dc58685bb72007a5654863bfbeee912cfd6b89e3",
+  "production_writes": false,
+  "backend_core": {
+    "command": "cd backend && python -m pytest tests --ignore=tests/integration -q",
+    "passed": 5362,
+    "skipped": 24,
+    "failed": 0,
+    "warnings": 33,
+    "duration_seconds": 117.35
+  },
+  "critical_lint": {
+    "command": "python -m flake8 backend tools/verify_population_docker_contexts.py tools/verify_sourced_record_cleanup.py --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=venv,__pycache__,.git",
+    "exit_code": 0
+  },
+  "root_regressions": {
+    "original_failed": 6,
+    "current_passed": 6
+  },
+  "independent_population_ownership": {
+    "original_main_failed": 33,
+    "current_passed": 33,
+    "status_scenarios_passed": 9
+  },
+  "docker": [
+    {
+      "context": "backend",
+      "excluded_decoys": 27,
+      "retained_public_files": [
+        "main.py",
+        "nested/.env.example",
+        "config/secrets.py"
+      ]
+    },
+    {
+      "context": "root",
+      "excluded_decoys": 27,
+      "retained_public_files": [
+        "main.py",
+        "nested/.env.example",
+        "backend/config/secrets.py",
+        "config/certs/knbs_trust_store.pem"
+      ]
+    }
+  ],
+  "cleanup": {
+    "passed": 25,
+    "receipt": "cleanup-rehearsal.json",
+    "scope": "captured before-images with synthetic PostgreSQL schema/FK controls; not full production restore"
+  },
+  "implementation_sha256": {
+    "backend/bootstrap.py": "734f040a7cbac432571e8d9fb77c9ae06275aeb87f6ae33fcfe7a3816c1cd1a9",
+    "backend/services/auto_seeder.py": "926ee5c77162a113206331369924b0653f1d489eda494c2b3501fbd0853d676c",
+    "backend/services/live_data_fetcher.py": "82749f3e0e75d0834f6186ce6e98df132d4c3d17283e2a0a0e58e75a781dd510",
+    "backend/seeding/config.py": "d80a0f3c06a5732a332e6438133a903e3ce32e91b0566ad091773dc1b5023696",
+    "backend/seeding/domains/population/__init__.py": "03994554fed6bbb2e9c24b6e0f8aac3b05b44f6733d59961bc60ef38de53a4cc",
+    "backend/seeding/domains/population/parser.py": "ef9e51cee7a0c4d7d0444da4e259f3483cc3661df2639e1e1df19cfd89b877f5",
+    "backend/seeding/domains/population/writer.py": "d1966fa51182a95f42272bb98a4ed43a165fb53bb69772b9251e274c32eb2c4e",
+    "backend/seeding/domains/population/census_counties.py": "2852aa78f292da12af643f9e52cad666cbad7c59785b4dd611c38cb8fe00cd53",
+    "backend/seeding/domains/population/fetcher.py": "cdf792dfe1b8aae5b2e0ef628cbab40392ce8f94896381d11964a393fa7ea896",
+    "backend/seeding/domains/real_data_fetcher.py": "711ab462e5faedb8f6871e349b2b63f9dd1f494ddccb6072cc18c6ffcf8efaed",
+    ".dockerignore": "31c10186a03b783c75fcb20ec98885e78fe41599a8dec2c142daf74b2f3872d1",
+    "backend/.dockerignore": "ca17f8e8bc733f79e48117505710874fb998b88dd1e887fd86b1c285c6f5b68c",
+    "tools/verify_population_docker_contexts.py": "972d88877471c606f8eae4ba268c93cfe62e3585d5f060e2bad6c247750af343"
+  },
+  "retained_local_receipts": [
+    "/tmp/codex-session2-ownership/ownership-red.log",
+    "/tmp/codex-session2-ownership/ownership-green.log",
+    "/tmp/codex-session2-ownership/population-baseline-results.log",
+    "/tmp/codex-session2-ownership/domain-status-red-valid-control.log",
+    "/tmp/codex-session2-ownership/backend-core-clean.log",
+    "/tmp/codex-session2-ownership/docker-red.log",
+    "/tmp/codex-session2-ownership/docker-root-red.log"
+  ],
+  "limitations": [
+    "No merge, deployment, production seed, data correction or cleanup",
+    "Full external PostgreSQL integration suite excluded; focused PostgreSQL cleanup checks recorded separately",
+    "No full production Docker image built; actual ignore behavior verified with disposable scratch contexts",
+    "Source-refresh/configuration/backup/authorization prerequisites remain before stored cleanup; recapture after future shared writes"
+  ]
+}

@@ -8,6 +8,8 @@
 **/.env.*
 !**/.env.example
 **/*.pem
+# Public KNBS CA bundle used by the dedicated ingestion owner.
+!config/certs/knbs_trust_store.pem
 **/*.key
 **/*.p12
 **/*.pfx

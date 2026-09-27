@@ -19,8 +19,8 @@ async def test_weekly_tick_never_dispatches_heavy_domains(monkeypatch):
     monkeypatch.setattr(module.asyncio, "sleep", AsyncMock())
     await seeder._check_and_refresh()
     names = [call.args[0] for call in run.call_args_list]
-    assert "population" in names  # The scheduler actually ran.
-    assert not {"audits", "budgets", "counties_budget"}.intersection(names)
+    assert "economic" in names  # The scheduler actually ran.
+    assert not {"population", "audits", "budgets", "counties_budget"}.intersection(names)
 
 
 @pytest.mark.asyncio
@@ -82,3 +82,15 @@ async def test_direct_job_execution_cannot_bypass_web_guard(monkeypatch):
     with pytest.raises(ValueError, match="dedicated"):
         await main._run_job("oag", "deep")
     discover.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_boot_dispatch_preserves_unrelated_domains(monkeypatch):
+    seeder = module.AutoSeeder()
+    run = AsyncMock()
+    monkeypatch.setattr(seeder, "_seed_domain", run)
+    monkeypatch.setattr(module.asyncio, "sleep", AsyncMock())
+    await seeder.seed_all_domains()
+    assert [c.args[0] for c in run.call_args_list] == [
+        "counties", "national_entity", "debt", "economic"
+    ]

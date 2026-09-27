@@ -1,0 +1,155 @@
+{
+  "verified_at": "2026-09-27T20:07:31.294614+00:00",
+  "passed": true,
+  "production_writes": false,
+  "input_sha256": {
+    "cleanup-current-manifest.json": "6a3c003d258d4340bfd827fd699f080ac083aacfa4dd73e068f89a8c6bf7bb00",
+    "cleanup-after-codes-manifest.json": "dddf59d990e1be928c5eeb204343686fc4c3a3a7b39402245f8fa29742e96aa2",
+    "county-code-proposal.json": "02bb6f462d2b2e5c1c78c5cab00b5ca4c364c3df19bac245e664c54b23a871fd",
+    "county-codes.sql": "035c1221afee18b7575c4b3b387339c0ee3425cf9ffd3701370e4aa5814d6d17",
+    "county-code-recovery.sql": "ce723d0a0b2e7184a7f9b502467fa620c24b574b56a177b0a0bb4a7074a1bf29",
+    "tools/verify_sourced_record_cleanup.py": "2395657cc8545cdbd4a58df7bd19fc6a3f82811ce8761d0673418a9b19234842",
+    "tools/prepare_legacy_evidence_cleanup.py": "20f8d36b8705bbd565388d98033da59974108c460fe76e7d796c1a29b39c8982"
+  },
+  "checks": [
+    {
+      "name": "captured audit and document before-images loaded exactly",
+      "passed": true
+    },
+    {
+      "name": "default cleanup script rolls back",
+      "passed": true
+    },
+    {
+      "name": "current cleanup changes only approved metadata keys and 25 audit rows",
+      "passed": true,
+      "county_rows": 47,
+      "retired_audit_rows": 25,
+      "synthetic_budget_rows_unchanged": 2
+    },
+    {
+      "name": "default recovery script rolls back",
+      "passed": true
+    },
+    {
+      "name": "current cleanup recovery restores exact complete baseline",
+      "passed": true
+    },
+    {
+      "name": "default county code script rolls back",
+      "passed": true
+    },
+    {
+      "name": "county code correction changes exactly four cells; IDs and FKs preserved",
+      "passed": true
+    },
+    {
+      "name": "stale pre-code cleanup manifest refuses corrected cells",
+      "passed": true,
+      "expected_error": "ERROR:  Entity snapshot drift: refresh manifest and review again\nCONTEXT:  PL/pgSQL function inline_code_block line 3 at RAISE",
+      "transaction_unchanged": true
+    },
+    {
+      "name": "projected cleanup keeps corrected cells and FK controls",
+      "passed": true
+    },
+    {
+      "name": "projected cleanup recovery restores exact post-code state",
+      "passed": true
+    },
+    {
+      "name": "default county code recovery rolls back",
+      "passed": true
+    },
+    {
+      "name": "county code recovery restores exact baseline",
+      "passed": true
+    },
+    {
+      "name": "cleanup refuses metadata drift",
+      "passed": true,
+      "expected_error": "ERROR:  Entity snapshot drift: refresh manifest and review again\nCONTEXT:  PL/pgSQL function inline_code_block line 3 at RAISE",
+      "transaction_unchanged": true
+    },
+    {
+      "name": "cleanup refuses source-document drift",
+      "passed": true,
+      "expected_error": "ERROR:  Retired source document drift: refresh provenance and review again\nCONTEXT:  PL/pgSQL function inline_code_block line 3 at RAISE",
+      "transaction_unchanged": true
+    },
+    {
+      "name": "cleanup refuses audit row drift",
+      "passed": true,
+      "expected_error": "ERROR:  Audit snapshot drift: refresh manifest and review again\nCONTEXT:  PL/pgSQL function inline_code_block line 6 at RAISE",
+      "transaction_unchanged": true
+    },
+    {
+      "name": "cleanup refuses new inbound audit FK",
+      "passed": true,
+      "expected_error": "ERROR:  Audit references changed: review relationships before cleanup or recovery\nCONTEXT:  PL/pgSQL function inline_code_block line 6 at RAISE",
+      "transaction_unchanged": true
+    },
+    {
+      "name": "county code forward refuses changed code cell",
+      "passed": true,
+      "expected_error": "ERROR:  Expected four metadata cells changed; regenerate and review\nCONTEXT:  PL/pgSQL function inline_code_block line 14 at RAISE",
+      "transaction_unchanged": true
+    },
+    {
+      "name": "county code forward guards all 47 identities",
+      "passed": true,
+      "expected_error": "ERROR:  County identity snapshot changed; regenerate and review\nCONTEXT:  PL/pgSQL function inline_code_block line 6 at RAISE",
+      "transaction_unchanged": true
+    },
+    {
+      "name": "cleanup recovery refuses newer metadata",
+      "passed": true,
+      "expected_error": "ERROR:  Post-cleanup entity drift: do not overwrite newer data\nCONTEXT:  PL/pgSQL function inline_code_block line 3 at RAISE",
+      "transaction_unchanged": true
+    },
+    {
+      "name": "cleanup recovery refuses newer source document",
+      "passed": true,
+      "expected_error": "ERROR:  Retired source document drift: refresh provenance and review again\nCONTEXT:  PL/pgSQL function inline_code_block line 3 at RAISE",
+      "transaction_unchanged": true
+    },
+    {
+      "name": "cleanup recovery refuses new inbound audit FK",
+      "passed": true,
+      "expected_error": "ERROR:  Audit references changed: review relationships before cleanup or recovery\nCONTEXT:  PL/pgSQL function inline_code_block line 6 at RAISE",
+      "transaction_unchanged": true
+    },
+    {
+      "name": "cleanup recovery refuses occupied audit ID",
+      "passed": true,
+      "expected_error": "ERROR:  Audit IDs occupied: reconcile manually\nCONTEXT:  PL/pgSQL function inline_code_block line 6 at RAISE",
+      "transaction_unchanged": true
+    },
+    {
+      "name": "county code recovery refuses newer code cell",
+      "passed": true,
+      "expected_error": "ERROR:  Post-correction code cells changed; do not overwrite newer data\nCONTEXT:  PL/pgSQL function inline_code_block line 14 at RAISE",
+      "transaction_unchanged": true
+    },
+    {
+      "name": "county code recovery refuses changed county identity",
+      "passed": true,
+      "expected_error": "ERROR:  County identity snapshot changed; regenerate and review\nCONTEXT:  PL/pgSQL function inline_code_block line 6 at RAISE",
+      "transaction_unchanged": true
+    },
+    {
+      "name": "county code recovery preserves unrelated newer metadata",
+      "passed": true
+    }
+  ],
+  "scope": "Disposable local PostgreSQL; captured complete cleanup before-images, synthetic schema and related FK controls",
+  "limitations": [
+    "Not a full production schema/data restore, production execution, or authorization.",
+    "Synthetic related budget rows prove preservation for the exercised FKs; no claim about all production tables.",
+    "Current and projected manifests remain unapproved and must be recaptured after shared source refreshes.",
+    "County-code recovery changes only four paths and intentionally preserves unrelated newer metadata."
+  ],
+  "database": "sourced_cleanup_rehearsal_6a41d1c046ca48aaba556e2f8cffbd0c",
+  "postgres_version": "PostgreSQL 17.11 (Debian 17.11-1.pgdg13+2) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit",
+  "disposable_database_removed": true
+}

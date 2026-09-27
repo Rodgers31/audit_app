@@ -1,0 +1,294 @@
+{
+  "checked_at": "2026-09-27T19:57:16.133125+00:00",
+  "source": "Production PostgreSQL BEGIN READ ONLY; transaction_read_only=on; INSERT refused before SELECTs",
+  "counties_checked": 47,
+  "proposed_edits": [
+    {
+      "entity_id": 4,
+      "canonical_name": "Mombasa County",
+      "slug": "mombasa-county",
+      "edits": [
+        {
+          "path": [
+            "metrics",
+            "FY2024/25",
+            "county_code"
+          ],
+          "before": "047",
+          "after": "001"
+        },
+        {
+          "path": [
+            "metrics",
+            "FY2025/26",
+            "county_code"
+          ],
+          "before": "047",
+          "after": "001"
+        }
+      ]
+    },
+    {
+      "entity_id": 3,
+      "canonical_name": "Nairobi County",
+      "slug": "nairobi-county",
+      "edits": [
+        {
+          "path": [
+            "metrics",
+            "FY2024/25",
+            "county_code"
+          ],
+          "before": "001",
+          "after": "047"
+        },
+        {
+          "path": [
+            "metrics",
+            "FY2025/26",
+            "county_code"
+          ],
+          "before": "001",
+          "after": "047"
+        }
+      ]
+    }
+  ],
+  "identities": [
+    {
+      "id": 3,
+      "canonical_name": "Nairobi County",
+      "slug": "nairobi-county"
+    },
+    {
+      "id": 4,
+      "canonical_name": "Mombasa County",
+      "slug": "mombasa-county"
+    },
+    {
+      "id": 5,
+      "canonical_name": "Kwale County",
+      "slug": "kwale-county"
+    },
+    {
+      "id": 6,
+      "canonical_name": "Kilifi County",
+      "slug": "kilifi-county"
+    },
+    {
+      "id": 7,
+      "canonical_name": "Tana River County",
+      "slug": "tana-river-county"
+    },
+    {
+      "id": 8,
+      "canonical_name": "Lamu County",
+      "slug": "lamu-county"
+    },
+    {
+      "id": 9,
+      "canonical_name": "Taita Taveta County",
+      "slug": "taita-taveta-county"
+    },
+    {
+      "id": 10,
+      "canonical_name": "Garissa County",
+      "slug": "garissa-county"
+    },
+    {
+      "id": 11,
+      "canonical_name": "Wajir County",
+      "slug": "wajir-county"
+    },
+    {
+      "id": 12,
+      "canonical_name": "Mandera County",
+      "slug": "mandera-county"
+    },
+    {
+      "id": 13,
+      "canonical_name": "Marsabit County",
+      "slug": "marsabit-county"
+    },
+    {
+      "id": 14,
+      "canonical_name": "Isiolo County",
+      "slug": "isiolo-county"
+    },
+    {
+      "id": 15,
+      "canonical_name": "Meru County",
+      "slug": "meru-county"
+    },
+    {
+      "id": 16,
+      "canonical_name": "Tharaka Nithi County",
+      "slug": "tharaka-nithi-county"
+    },
+    {
+      "id": 17,
+      "canonical_name": "Embu County",
+      "slug": "embu-county"
+    },
+    {
+      "id": 18,
+      "canonical_name": "Kitui County",
+      "slug": "kitui-county"
+    },
+    {
+      "id": 19,
+      "canonical_name": "Machakos County",
+      "slug": "machakos-county"
+    },
+    {
+      "id": 20,
+      "canonical_name": "Makueni County",
+      "slug": "makueni-county"
+    },
+    {
+      "id": 21,
+      "canonical_name": "Nyandarua County",
+      "slug": "nyandarua-county"
+    },
+    {
+      "id": 22,
+      "canonical_name": "Nyeri County",
+      "slug": "nyeri-county"
+    },
+    {
+      "id": 23,
+      "canonical_name": "Kirinyaga County",
+      "slug": "kirinyaga-county"
+    },
+    {
+      "id": 24,
+      "canonical_name": "Murang'a County",
+      "slug": "muranga-county"
+    },
+    {
+      "id": 25,
+      "canonical_name": "Kiambu County",
+      "slug": "kiambu-county"
+    },
+    {
+      "id": 26,
+      "canonical_name": "Turkana County",
+      "slug": "turkana-county"
+    },
+    {
+      "id": 27,
+      "canonical_name": "West Pokot County",
+      "slug": "west-pokot-county"
+    },
+    {
+      "id": 28,
+      "canonical_name": "Samburu County",
+      "slug": "samburu-county"
+    },
+    {
+      "id": 29,
+      "canonical_name": "Trans Nzoia County",
+      "slug": "trans-nzoia-county"
+    },
+    {
+      "id": 30,
+      "canonical_name": "Uasin Gishu County",
+      "slug": "uasin-gishu-county"
+    },
+    {
+      "id": 31,
+      "canonical_name": "Elgeyo Marakwet County",
+      "slug": "elgeyo-marakwet-county"
+    },
+    {
+      "id": 32,
+      "canonical_name": "Nandi County",
+      "slug": "nandi-county"
+    },
+    {
+      "id": 33,
+      "canonical_name": "Baringo County",
+      "slug": "baringo-county"
+    },
+    {
+      "id": 34,
+      "canonical_name": "Laikipia County",
+      "slug": "laikipia-county"
+    },
+    {
+      "id": 35,
+      "canonical_name": "Nakuru County",
+      "slug": "nakuru-county"
+    },
+    {
+      "id": 36,
+      "canonical_name": "Narok County",
+      "slug": "narok-county"
+    },
+    {
+      "id": 37,
+      "canonical_name": "Kajiado County",
+      "slug": "kajiado-county"
+    },
+    {
+      "id": 38,
+      "canonical_name": "Kericho County",
+      "slug": "kericho-county"
+    },
+    {
+      "id": 39,
+      "canonical_name": "Bomet County",
+      "slug": "bomet-county"
+    },
+    {
+      "id": 40,
+      "canonical_name": "Kakamega County",
+      "slug": "kakamega-county"
+    },
+    {
+      "id": 41,
+      "canonical_name": "Vihiga County",
+      "slug": "vihiga-county"
+    },
+    {
+      "id": 42,
+      "canonical_name": "Bungoma County",
+      "slug": "bungoma-county"
+    },
+    {
+      "id": 43,
+      "canonical_name": "Busia County",
+      "slug": "busia-county"
+    },
+    {
+      "id": 44,
+      "canonical_name": "Siaya County",
+      "slug": "siaya-county"
+    },
+    {
+      "id": 45,
+      "canonical_name": "Kisumu County",
+      "slug": "kisumu-county"
+    },
+    {
+      "id": 46,
+      "canonical_name": "Homa Bay County",
+      "slug": "homa-bay-county"
+    },
+    {
+      "id": 47,
+      "canonical_name": "Migori County",
+      "slug": "migori-county"
+    },
+    {
+      "id": 48,
+      "canonical_name": "Kisii County",
+      "slug": "kisii-county"
+    },
+    {
+      "id": 49,
+      "canonical_name": "Nyamira County",
+      "slug": "nyamira-county"
+    }
+  ]
+}
