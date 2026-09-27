@@ -629,9 +629,12 @@ export default function NationalDebtPage() {
               </div>
               <p className='text-[11px] text-white/50 mt-1'>
                 {/* Was "Based on IMF debt-sustainability thresholds". The 40/60
-                    cutoffs are this site's own banding (DEBT_RISK_THRESHOLDS
-                    in lib/utils, which cites no source); the IMF publishes no
-                    threshold at those values, so the band says what it is. */}
+                    cutoffs are this site's own banding (the riskBand memo
+                    above; the shared DEBT_RISK_THRESHOLDS constant they once
+                    came from was deleted in #279 because it cited no source).
+                    The IMF publishes no threshold at those values, so the band
+                    says what it is. The IMF-World Bank rating itself is shown,
+                    cited, on the homepage (#269). */}
                 {riskBand
                   ? 'Our banding of debt-to-GDP (40% / 60%) — not an IMF rating'
                   : 'No debt-to-GDP ratio available to classify against'}
