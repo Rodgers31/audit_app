@@ -331,6 +331,7 @@ def representative_rows(db_session, seed_entity, seed_fiscal_period, seed_source
         DebtTimeline,
         EconomicIndicator,
         Entity,
+        Extraction,
         EntityType,
         FigureBasis,
         FiscalSummary,
@@ -582,6 +583,46 @@ def representative_rows(db_session, seed_entity, seed_fiscal_period, seed_source
                 **fact,
             ),
         ]
+    )
+    # ── an extracted "Unaccounted …" finding. Since the audit-headline work
+    # (#233), /accountability/missing-funds lists the findings the
+    # Auditor-General titled "Unaccounted …"/"Loss of Funds", read through their
+    # extraction rows, instead of Entity.meta cases. The older path ignores this
+    # row, so the sweep reaches the populated branch either way.
+    unaccounted = Extraction(
+        source_document_id=doc_id,
+        extractor="oag_blue_book",
+        page_number=12,
+        extracted_json={
+            "title": "Unaccounted for Imprests",
+            "heading": "Basis for Qualified Opinion",
+            "pdf_page": 12,
+            "paragraph_no": 7,
+            "finding_text": (
+                "Unaccounted for Imprests. Imprests of KES 3,000,000 issued "
+                "during the year had not been surrendered or accounted for "
+                "at the time of audit."
+            ),
+        },
+    )
+    db_session.add(unaccounted)
+    db_session.flush()
+    db_session.add(
+        Audit(
+            entity_id=ministry.id,
+            period_id=period_id,
+            extraction_id=unaccounted.id,
+            finding_text=(
+                "Unaccounted for Imprests. Imprests of KES 3,000,000 issued "
+                "during the year had not been surrendered or accounted for "
+                "at the time of audit."
+            ),
+            severity=Severity.CRITICAL,
+            query_type="Basis for Qualified Opinion",
+            amount=3_000_000,
+            audit_year=2024,
+            **fact,
+        )
     )
     db_session.commit()
 
