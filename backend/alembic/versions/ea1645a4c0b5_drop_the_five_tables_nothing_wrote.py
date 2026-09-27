@@ -37,8 +37,8 @@ nowhere.
 
 FAILS CLOSED
 ------------
-The upgrade counts rows first and refuses (raising, so the transaction rolls
-back and nothing is dropped) if any of the five holds one. A row appearing
+The upgrade locks all present tables before counting and refuses (raising, so
+the transaction rolls back and nothing is dropped) if any of the five holds one. A row appearing
 there would mean a writer this analysis did not find. It would not mean the
 data is disposable. It uses plain ``DROP TABLE`` with no ``CASCADE``, so an
 inbound foreign key added later makes the drop fail rather than silently
@@ -69,7 +69,7 @@ down_revision = "62a9f4131819"
 branch_labels = None
 depends_on = None
 
-#: Dropped in this order; none references another, so order is cosmetic.
+#: None references another; locks are acquired in sorted name order.
 TABLES = (
     "pending_bills",
     "fiscal_years",
@@ -85,12 +85,17 @@ ENUM_TYPES = ("billtype",)
 def upgrade() -> None:
     bind = op.get_bind()
 
-    present = [
+    present = sorted(
         t
         for t in TABLES
         if bind.execute(text("SELECT to_regclass(:t)"), {"t": f"public.{t}"}).scalar()
         is not None
-    ]
+    )
+    if present:
+        bind.execute(text(
+            "LOCK TABLE " + ", ".join(f"public.{table}" for table in present)
+            + " IN ACCESS EXCLUSIVE MODE"
+        ))
     holding = {}
     for table in present:
         n = bind.execute(text(f"SELECT count(*) FROM public.{table}")).scalar()
