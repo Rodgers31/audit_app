@@ -172,13 +172,16 @@ def load_census_population(
         )
     ).scalars():
         code = official_county_code(entity.canonical_name)
+        if code is None:
+            continue
         if code in entities:
             duplicates.add(code)
         entities[code] = entity
     unresolved = sorted(
         c.county
         for c in result.counties
-        if official_county_code(c.county) not in entities
+        if official_county_code(c.county) is None
+        or official_county_code(c.county) not in entities
         or official_county_code(c.county) in duplicates
     )
     if unresolved:

@@ -38,6 +38,9 @@ def _apply_record(model: PopulationData, record: PopulationRecord) -> bool:
         "page_ref": None,
         "extraction_id": None,
         "source_hash": None,
+        # This accepted publisher observation has its own confidence; do not
+        # retain the previous census/fixture value used by the API filter.
+        "confidence": 1.0,
         "basis": None,
         "confidence_score": None,
         "publishable": False,
@@ -82,6 +85,12 @@ def persist_population_records(
                 )
                 for value in (record.male_population, record.female_population)
             )
+            or sum(
+                value
+                for value in (record.male_population, record.female_population)
+                if type(value) is int
+            )
+            > record.total_population
         ):
             stats.skipped += 1
             stats.errors.append("Invalid national population observation")
@@ -112,6 +121,7 @@ def persist_population_records(
                 total_population=record.total_population,
                 male_population=record.male_population,
                 female_population=record.female_population,
+                confidence=1.0,
                 meta=record.meta or {},
             )
             session.add(model)

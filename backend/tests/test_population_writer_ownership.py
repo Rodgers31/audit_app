@@ -249,6 +249,35 @@ def test_generic_writer_refuses_malformed_observations_without_mutation(
     assert stats.errors
 
 
+def test_generic_writer_refuses_sex_components_exceeding_total_without_mutation(
+    db_session, population_seed
+):
+    row = population_seed(national=True)
+    before = _snapshot(row)
+    record = PopulationRecord(
+        level="national",
+        entity_slug=None,
+        entity_name="Kenya",
+        year=2019,
+        total_population=50_000_000,
+        male_population=30_000_000,
+        female_population=30_000_000,
+        meta={
+            "dataset_id": "SP.POP.TOTL",
+            "source_url": "https://data.worldbank.org/indicator/SP.POP.TOTL?locations=KE",
+        },
+    )
+
+    stats = persist_population_records(
+        db_session, [record], DomainRunContext(None, False)
+    )
+
+    assert _snapshot(row) == before
+    assert stats.updated == stats.created == 0
+    assert stats.skipped == 1
+    assert stats.errors
+
+
 @pytest.mark.parametrize(
     "total,year",
     [(True, "2019"), (-1, "2019"), (52_000_000.25, "2019"), (52_000_000, 2019.25)],
@@ -317,6 +346,7 @@ def test_worldbank_update_replaces_stale_observation_and_evidence(
     db_session, population_seed, monkeypatch, tmp_path, include_sexes
 ):
     row = population_seed(national=True)
+    row.confidence = 0.25
     values = {"SP.POP.TOTL": 52_000_000}
     if include_sexes:
         values.update(
@@ -357,7 +387,53 @@ def test_worldbank_update_replaces_stale_observation_and_evidence(
     assert row.extraction_id is None
     assert row.page_ref is None
     assert row.source_hash is None
+    assert float(row.confidence) == 1.0
     assert row.publishable is False
+
+
+def test_census_writer_quarantines_unrecognized_source_and_entity_codes(
+    db_session, seed_country, tmp_path, monkeypatch
+):
+    unknown = Entity(
+        country_id=seed_country.id,
+        type=EntityType.COUNTY,
+        canonical_name="Unknown County",
+        slug="unknown-county",
+    )
+    db_session.add(unknown)
+    pdf_path = tmp_path / "census.pdf"
+    pdf_path.write_bytes(b"synthetic invalid census result")
+    doc = SourceDocument(
+        country_id=seed_country.id,
+        publisher=census_counties.PUBLISHER,
+        title=census_counties.CENSUS_TITLE,
+        url=census_counties.CENSUS_VOLUME_I_URL,
+        file_path=str(pdf_path),
+        fetch_date=datetime.now(timezone.utc),
+        doc_type=DocumentType.REPORT,
+    )
+    db_session.add(doc)
+    db_session.flush()
+    monkeypatch.setattr(census_counties, "fetch_document", lambda *a, **k: doc)
+    monkeypatch.setattr(
+        census_counties,
+        "read_census_counties",
+        lambda _: CensusPopulation(
+            counties=[CountyPopulation("Lost County", 100, 100, 0, 200, 17)],
+            national_total=200,
+            page=17,
+            checks=[],
+        ),
+    )
+
+    stats = census_counties.load_census_population(
+        db_session, None, _settings(tmp_path), country_id=seed_country.id
+    )
+    db_session.flush()
+
+    assert stats.quarantine_reason == "county_entities_unresolved"
+    assert stats.processed == stats.created == stats.updated == 0
+    assert db_session.query(PopulationData).count() == 0
 
 
 @pytest.mark.parametrize(
