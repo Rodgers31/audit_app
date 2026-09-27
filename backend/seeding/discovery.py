@@ -65,8 +65,11 @@ _HREF_RE = re.compile(r"""href\s*=\s*["']([^"']+\.pdf)["']""", re.IGNORECASE)
 #   /Budget Books/Budget books 2026-2027/FY 2026 2027 Programme Based ...
 #   /Budget Books/Budget Estimates 2020 -2021/...
 #   .../FY-2025-26 PBB Supplementary I 1011-2151.pdf
+#
+# The Budget Summary listing adds an UNDERSCORE ("FY 2026_27",
+# "FY-2023_24"). Without it the enacted edition parsed to None (issue #237).
 _FY_RANGE_RE = re.compile(
-    r"(?<![\d])((?:19|20)\d{2})\s*[-/ ]\s*((?:19|20)?\d{2})(?![\d])"
+    r"(?<![\d])((?:19|20)\d{2})\s*[-/ _]\s*((?:19|20)?\d{2})(?![\d])"
 )
 
 

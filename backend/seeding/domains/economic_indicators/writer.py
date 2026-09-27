@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Dict, Iterable, Optional
+from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 from models import Country, DocumentType, EconomicIndicator, Entity, SourceDocument
 from sqlalchemy import and_, select
@@ -16,6 +16,8 @@ from ...types import DomainRunContext
 from .parser import EconomicIndicatorRecord
 
 logger = logging.getLogger("seeding.economic_indicators.writer")
+
+_DEFAULT_PUBLISHER = "Kenya National Bureau of Statistics"
 
 
 @dataclass
@@ -65,12 +67,23 @@ def _ensure_source_document(
     record: EconomicIndicatorRecord,
 ) -> SourceDocument:
     url = record.source_url or settings.economic_indicators_dataset_url
+    # The row declares who published it. This was a literal "Kenya National
+    # Bureau of Statistics" for every URL, so each World Bank API document
+    # was filed under KNBS (issue #232). Undeclared rows (the fixture) keep
+    # the old default, which is what the fixture's own `source` text cites.
+    publisher = (
+        str(record.metadata.get("publisher") or "").strip()
+        or _DEFAULT_PUBLISHER
+    )
     stmt = select(SourceDocument).where(SourceDocument.url == url)
     source = session.execute(stmt).scalar_one_or_none()
+    if source is not None and record.metadata.get("publisher"):
+        if source.publisher != publisher:
+            source.publisher = publisher
     if source is None:
         source = SourceDocument(
             country_id=country_id,
-            publisher="Kenya National Bureau of Statistics",
+            publisher=publisher,
             title=settings.dataset_title("economic_indicators"),
             url=url,
             file_path=None,
@@ -174,4 +187,66 @@ def persist_economic_records(
     return stats
 
 
-__all__ = ["PersistenceStats", "persist_economic_records"]
+#: A sweep that wants to delete more than this many rows of one type in one
+#: run is more likely a malformed source than that many stale rows. The first
+#: production run removes five in total (verified on a 2026-09-26 clone).
+MAX_SUPERSEDED_PER_TYPE = 12
+
+
+def remove_superseded_rows(
+    session: Session, coverage: Dict[str, Set[str]]
+) -> Tuple[List[Tuple[str, str, float]], List[str]]:
+    """Delete national rows a live source has proven cannot be right.
+
+    ``coverage`` is :attr:`..fetcher.EconomicPayload.coverage`: for each type
+    a live source delivered THIS run, the dates it delivered. A national row
+    of that type, inside the delivered span, at a date the source did not
+    deliver, was written by something other than the owner — bootstrap's
+    literal ``inflation_rate`` 2024-06-30 = 4.6, the fixture's 12-month 3.3
+    filed in the annual-average series at 2025-01-31, or a CBK month that has
+    since failed the cross-check.
+
+    Returns ``(removed, errors)``: ``(type, date, value)`` per deleted row,
+    and one error per type whose sweep was REFUSED for exceeding
+    :data:`MAX_SUPERSEDED_PER_TYPE` — nothing of that type is deleted, and
+    the refusal reaches the job row rather than a log line.
+
+    An empty coverage (live sources down) deletes nothing: the sweep only
+    ever acts on evidence gathered in the same run.
+    """
+    from .fetcher import superseded_by_live
+
+    removed: List[Tuple[str, str, float]] = []
+    errors: List[str] = []
+    if not coverage:
+        return removed, errors
+    rows = session.execute(
+        select(EconomicIndicator).where(
+            EconomicIndicator.indicator_type.in_(sorted(coverage)),
+            EconomicIndicator.entity_id.is_(None),
+        )
+    ).scalars()
+    doomed: Dict[str, List[EconomicIndicator]] = {}
+    for row in list(rows):
+        day = row.indicator_date.date().isoformat()
+        if superseded_by_live(row.indicator_type, day, coverage):
+            doomed.setdefault(row.indicator_type, []).append(row)
+    for kind, victims in sorted(doomed.items()):
+        if len(victims) > MAX_SUPERSEDED_PER_TYPE:
+            msg = (
+                f"Refused to remove {len(victims)} superseded {kind} rows "
+                f"(limit {MAX_SUPERSEDED_PER_TYPE}); the live source's coverage "
+                "looks malformed"
+            )
+            logger.error(msg)
+            errors.append(msg)
+            continue
+        for row in victims:
+            day = row.indicator_date.date().isoformat()
+            removed.append((kind, day, float(row.value)))
+            logger.info("Removed superseded %s %s = %s", kind, day, row.value)
+            session.delete(row)
+    return removed, errors
+
+
+__all__ = ["PersistenceStats", "persist_economic_records", "remove_superseded_rows"]

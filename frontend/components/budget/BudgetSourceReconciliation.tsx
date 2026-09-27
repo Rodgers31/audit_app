@@ -15,6 +15,7 @@
  *                   when fresh BIRR data isn't yet available.
  */
 
+import { useAnnualDebtReports } from '@/lib/react-query/useDebt';
 import { motion } from 'framer-motion';
 import {
   BookOpen,
@@ -41,33 +42,10 @@ interface Props {
 }
 
 /**
- * Per-FY links to the authoritative Treasury debt-management document.
- * The "debt service as % of revenue" headline on this page is taken from the
- * corresponding row of the linked report; keeping these visible means a
- * reader can trace any headline number back to a primary PDF.
+ * How many of Treasury's Annual Public Debt Reports to list, newest first.
+ * The rest are one click away on Treasury's own listing page.
  */
-const APDMR_BY_FY: Array<{ fy: string; title: string; url: string }> = [
-  {
-    fy: 'FY 2022/23',
-    title: 'Annual Public Debt Report 2022/2023',
-    url: 'https://www.treasury.go.ke/wp-content/uploads/2024/01/Annual-Public-Debt-Report-2022-2023-Sept-2023.pdf',
-  },
-  {
-    fy: 'FY 2023/24',
-    title: 'Annual Public Debt Management Report 2023/2024',
-    url: 'https://www.treasury.go.ke/wp-content/uploads/2024/11/Annual-Public-Debt-Management-Report-.pdf',
-  },
-  {
-    fy: 'FY 2024/25',
-    title: 'Annual Public Debt Report 2024/2025',
-    url: 'https://www.treasury.go.ke/wp-content/uploads/2025/11/Annual-Public-Debt-Report-2024-2025.pdf',
-  },
-  {
-    fy: 'FY 2025/26',
-    title: '2025 Budget Policy Statement (budgeted; APDMR due Nov 2026)',
-    url: 'https://www.treasury.go.ke/wp-content/uploads/2025/02/2025-Budget-Policy-Statement...pdf',
-  },
-];
+const REPORTS_SHOWN = 6;
 
 function fmtDate(iso?: string | null): string {
   if (!iso) return '—';
@@ -88,6 +66,12 @@ export default function BudgetSourceReconciliation({
   fiscalPeriod,
 }: Props) {
   const qualityLabel = meta?.data_quality ?? 'estimated';
+  // Discovered from Treasury's listing page, not written here. The four
+  // literal links this replaced all returned 404 on 2026-09-26 — Treasury
+  // moved from WordPress to Drupal — and the list stopped at FY2025/26
+  // (issue #235).
+  const { data: apdr, isLoading: apdrLoading, isError: apdrError } = useAnnualDebtReports();
+  const apdrReports = apdr?.status === 'success' ? apdr.reports : [];
   const notes = meta?.quality_notes ?? [];
 
   return (
@@ -203,40 +187,59 @@ export default function BudgetSourceReconciliation({
           <div className='flex-1 min-w-0'>
             <div className='flex items-baseline justify-between flex-wrap gap-x-3 gap-y-0.5'>
               <span className='text-sm font-semibold text-gov-dark dark:text-white'>
-                Debt-service headline: source by fiscal year
+                Annual Public Debt Reports
               </span>
               <span className='text-[11px] uppercase tracking-wider text-gov-copper/80 font-semibold'>
-                Treasury APDMR
+                National Treasury
               </span>
             </div>
             <p className='text-[11.5px] text-neutral-muted mt-1 leading-relaxed'>
-              &quot;Debt service as % of revenue&quot; on this page follows the National
-              Treasury <em>Annual Public Debt Management Report</em>: interest +
-              principal redemptions (domestic + external), divided by tax + non-tax
-              revenue. Click an FY to open the primary source.
+              Treasury&rsquo;s yearly account of public debt and its cost, listed as Treasury
+              publishes them. Each links to the report on treasury.go.ke.
             </p>
-            <ul className='mt-2.5 grid grid-cols-1 sm:grid-cols-2 gap-1.5'>
-              {APDMR_BY_FY.map((r) => (
-                <li key={r.fy}>
-                  <a
-                    href={r.url}
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    className='group flex items-center justify-between gap-2 rounded-md border border-neutral-border/40 bg-white dark:bg-surface-base px-2.5 py-1.5 text-[11px] hover:border-gov-copper/50 hover:bg-gov-copper/5 transition-colors'>
-                    <span className='flex items-center gap-2 min-w-0'>
-                      <span className='font-semibold text-gov-dark dark:text-white tabular-nums flex-shrink-0'>
-                        {r.fy.replace('FY ', '')}
+            {apdrLoading ? (
+              <p className='mt-2.5 text-[11px] text-neutral-muted'>Reading Treasury&rsquo;s listing…</p>
+            ) : apdrReports.length > 0 ? (
+              <ul className='mt-2.5 grid grid-cols-1 sm:grid-cols-2 gap-1.5' data-testid='apdr-links'>
+                {apdrReports.slice(0, REPORTS_SHOWN).map((r) => (
+                  <li key={r.fiscal_year}>
+                    <a
+                      href={r.url}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      className='group flex items-center justify-between gap-2 rounded-md border border-neutral-border/40 bg-white dark:bg-surface-base px-2.5 py-1.5 text-[11px] hover:border-gov-copper/50 hover:bg-gov-copper/5 transition-colors'>
+                      <span className='flex items-center gap-2 min-w-0'>
+                        <span className='font-semibold text-gov-dark dark:text-white tabular-nums flex-shrink-0'>
+                          {r.fiscal_year.replace('FY ', '')}
+                        </span>
+                        <span className='text-neutral-muted truncate'>{r.title}</span>
                       </span>
-                      <span className='text-neutral-muted truncate'>{r.title}</span>
-                    </span>
-                    <ExternalLink
-                      size={11}
-                      className='text-neutral-muted group-hover:text-gov-copper flex-shrink-0'
-                    />
-                  </a>
-                </li>
-              ))}
-            </ul>
+                      <ExternalLink
+                        size={11}
+                        className='text-neutral-muted group-hover:text-gov-copper flex-shrink-0'
+                      />
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              // Unavailable is said, not hidden, and the reader still gets the
+              // one link that cannot go stale.
+              <p className='mt-2.5 text-[11px] text-neutral-muted' data-testid='apdr-unavailable'>
+                Treasury&rsquo;s report listing could not be read just now
+                {apdrError ? '' : apdr?.reason ? ` (${apdr.reason.split(':')[0]})` : ''}.
+              </p>
+            )}
+            <a
+              href={apdr?.listing_url ?? 'https://www.treasury.go.ke/annual-debt-management-reports-0'}
+              target='_blank'
+              rel='noopener noreferrer'
+              className='mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-gov-forest dark:text-emerald-300 hover:underline'>
+              {apdrReports.length > REPORTS_SHOWN
+                ? `All ${apdrReports.length} reports on treasury.go.ke`
+                : 'Treasury’s list of Annual Public Debt Reports'}
+              <ExternalLink size={11} />
+            </a>
           </div>
         </div>
       </div>

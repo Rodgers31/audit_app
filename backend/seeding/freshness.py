@@ -96,6 +96,55 @@ def _store() -> Dict[str, dict]:
 def reset(domain: str) -> None:
     """Clear any recorded mode for ``domain`` (called before each run)."""
     _store().pop(domain, None)
+    _store().pop(_edition_key(domain), None)
+
+
+# ─────────────────────────────────────────────────────────────────────────
+# The publisher's newest edition, as seen by this run
+# ─────────────────────────────────────────────────────────────────────────
+#
+# ``source_mode`` answers "did this run reach the publisher?". It cannot
+# answer "does the publisher have something NEWER than we hold?", and the two
+# come apart exactly when it matters: on 2026-09-24 revenue_by_source reported
+# LIVE ("KRA overlay: promoted:5/FY 2024/25") while KRA had published FY
+# 2025/26 eleven weeks earlier (#243), and national_budget reported LIVE while
+# the panel it feeds was empty (#241). Both reached a publisher; neither held
+# its current edition.
+#
+# So a fetcher that DISCOVERS editions records what it saw, whether or not the
+# parse then succeeds, and ``seeding.edition_gates`` compares it with the
+# database. Recorded separately from the mode so a failed parse still leaves
+# the evidence that a newer edition exists — which is the case the gate is for.
+
+
+def _edition_key(domain: str) -> str:
+    return f"{domain}::publisher_edition"
+
+
+def record_publisher_edition(
+    domain: str,
+    *,
+    dataset: str,
+    edition: str,
+    url: Optional[str] = None,
+) -> None:
+    """Record the newest edition of ``dataset`` the publisher lists.
+
+    ``edition`` is a canonical fiscal-year label ("FY 2025/26"). Call it as
+    soon as discovery succeeds — before downloading or parsing — so a run that
+    fails afterwards still says what it failed to ingest.
+    """
+    _store()[_edition_key(domain)] = {
+        "dataset": dataset,
+        "edition": edition,
+        "url": url,
+    }
+    logger.info("%s: publisher lists %s %s (%s)", domain, dataset, edition, url or "-")
+
+
+def get_publisher_edition(domain: str) -> Optional[dict]:
+    """What :func:`record_publisher_edition` saw this run, or ``None``."""
+    return _store().get(_edition_key(domain))
 
 
 def mark_live(domain: str, *, detail: Optional[str] = None) -> None:
@@ -196,10 +245,12 @@ __all__ = [
     "REFUSED",
     "UNKNOWN",
     "get",
+    "get_publisher_edition",
     "is_stale",
     "mark_fixture",
     "mark_live",
     "mark_partial",
     "mark_refused",
+    "record_publisher_edition",
     "reset",
 ]

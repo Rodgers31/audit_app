@@ -185,20 +185,6 @@ def generate_api_testing_guide():
             "body": None,
         },
         {
-            "method": "POST",
-            "endpoint": "/api/v1/etl/kenya/start",
-            "description": "Start Kenya ETL pipeline",
-            "params": None,
-            "body": None,
-        },
-        {
-            "method": "GET",
-            "endpoint": "/api/v1/etl/status/{job_id}",
-            "description": "Get ETL job status",
-            "params": "job_id (path): ETL job ID",
-            "body": None,
-        },
-        {
             "method": "GET",
             "endpoint": "/api/v1/etl/kenya/sources",
             "description": "Get Kenya ETL data sources status",
@@ -241,7 +227,6 @@ def generate_api_testing_guide():
     print()
     print("   Main Backend:")
     print("   • GET /api/v1/countries")
-    print("   • POST /api/v1/etl/kenya/start")
     print("   • GET /api/v1/analytics/top_spenders")
     print()
     print("4. 📊 EXPECTED RESPONSE FORMATS:")

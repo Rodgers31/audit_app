@@ -332,6 +332,12 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
                     job.meta["source_fallback_reason"] = provenance["reason"]
                 if provenance.get("detail"):
                     job.meta["source_detail"] = provenance["detail"]
+                # What the publisher lists as its newest edition, when the domain
+                # discovers editions — read by seeding.edition_gates, which goes
+                # red when that is newer than what the database holds.
+                edition = freshness.get_publisher_edition(domain)
+                if edition:
+                    job.meta["publisher_edition"] = edition
 
                 if result and result.errors:
                     job.status = IngestionStatus.COMPLETED_WITH_ERRORS
@@ -456,6 +462,15 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
                                 failed_job.status = IngestionStatus.FAILED
                                 failed_job.finished_at = datetime.now(timezone.utc)
                                 failed_job.errors = [str(exc)]
+                                # A run that discovered a newer edition and then
+                                # failed is the case the edition gate exists
+                                # for; keep what it saw.
+                                edition = freshness.get_publisher_edition(domain)
+                                if edition:
+                                    failed_job.meta = {
+                                        **(failed_job.meta or {}),
+                                        "publisher_edition": edition,
+                                    }
                                 error_session.commit()
                     except Exception:  # pragma: no cover
                         pass

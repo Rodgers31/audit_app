@@ -102,6 +102,11 @@ export const MESSAGES = {
   'home.hero.risk_suffix': { en: 'Risk', sw: 'Hatari', plain: 'Risk' },
   'home.hero.risk_unassessed': { en: 'Risk not assessed', sw: 'Hatari haijatathminiwa', plain: 'Risk not rated yet' },
   'home.hero.risk_unassessed_value': { en: 'Not assessed', sw: 'Haijatathminiwa', plain: 'Not rated yet' },
+  'home.hero.risk_unassessed_reason': {
+    en: 'No published debt sustainability rating was received, so none is shown.',
+    sw: 'Hakuna ukadiriaji rasmi wa uendelevu wa deni uliopokelewa, hivyo hakuna unaoonyeshwa.',
+    plain: 'We did not get the official rating, so we don\u2019t show one.',
+  },
 
   // KenyanGovCard
   'home.govcard.title': { en: 'Kenyan Government', sw: 'Serikali ya Kenya', plain: 'Kenya Government' },
@@ -128,6 +133,13 @@ export const MESSAGES = {
   'home.govcard.seg_development': { en: 'Development', sw: 'Maendeleo', plain: 'Projects' },
   'home.govcard.seg_counties': { en: 'Counties', sw: 'Kaunti', plain: 'Counties' },
   'home.govcard.seg_other': { en: 'Other', sw: 'Nyingine', plain: 'Other' },
+  'home.govcard.seg_interest': { en: 'Interest on Debt', sw: 'Riba ya Deni', plain: 'Interest on loans' },
+  'home.govcard.seg_contingency': { en: 'Contingency', sw: 'Dharura', plain: 'Emergency fund' },
+  'home.govcard.framework_total': {
+    en: 'Of KES {total} spending · Treasury fiscal framework',
+    sw: 'Kati ya matumizi ya KES {total} · mfumo wa fedha wa Hazina',
+    plain: 'Out of KES {total} of spending · Treasury budget summary',
+  },
   'home.govcard.ceiling_breached': { en: 'Above the 55%-of-GDP anchor on a nominal basis', sw: 'Juu ya nanga ya 55% ya Pato la Taifa kwa msingi wa kawaida', plain: 'Above the 55% safe limit, measured the simple way' },
   // The anchor is set in PRESENT-VALUE terms; the ratio charted against it is
   // nominal. Present value is lower than nominal for a portfolio with
@@ -143,7 +155,9 @@ export const MESSAGES = {
   'home.govcard.stat_borrowed': { en: 'Borrowed', sw: 'Iliyokopwa', plain: 'Borrowed' },
   'home.govcard.stat_debt_service': { en: 'Debt Service', sw: 'Huduma ya Deni', plain: 'Debt Payments' },
   'home.govcard.tax_nontax': { en: 'Tax + non-tax', sw: 'Kodi + zisizo-kodi', plain: 'Taxes + other' },
-  'home.govcard.pct_of_budget': { en: '{pct}% of budget', sw: '{pct}% ya bajeti', plain: '{pct}% of budget' },
+  // The share is borrowing over Treasury's spending total (issue #237), not
+  // over the gross budget headline beside it, so "of budget" would misname it.
+  'home.govcard.pct_of_budget': { en: '{pct}% of spending', sw: '{pct}% ya matumizi', plain: '{pct}% of spending' },
   'home.govcard.cents_per_kes': { en: '{cents}¢/KES', sw: '{cents}¢/KES', plain: '{cents}¢ per KES' },
   'home.govcard.usage': { en: 'Usage', sw: 'Matumizi', plain: 'Used' },
 
@@ -199,14 +213,15 @@ export const MESSAGES = {
     sw: 'Mgawanyiko wa deni la ndani na nje',
     plain: 'Split between home and abroad',
   },
+  // Followed by the DSA's own source label, e.g. "IMF–World Bank DSA, Oct 2024".
   'home.debt.insight_risk_desc': {
-    en: 'IMF debt distress classification',
-    sw: 'Uainishaji wa tatizo la deni wa IMF',
-    plain: 'Ranked by the IMF',
+    en: 'Overall risk of debt distress',
+    sw: 'Hatari ya jumla ya tatizo la deni',
+    plain: 'Overall chance of a debt crisis',
   },
   'home.debt.insight_risk_label': { en: 'Risk: {level}', sw: 'Hatari: {level}', plain: 'Risk: {level}' },
   'home.debt.insight_risk_unassessed': { en: 'Risk: not assessed', sw: 'Hatari: haijatathminiwa', plain: 'Risk: we can\u2019t say yet' },
-  'home.debt.insight_risk_unassessed_desc': { en: 'No debt-to-GDP reading is available, so no risk band can be stated. This is not a finding that the debt position is safe.', sw: 'Hakuna kipimo cha deni-kwa-Pato, hivyo hakuna kiwango cha hatari kinachoweza kutajwa. Hii si dalili kwamba hali ya deni ni salama.', plain: 'We don\u2019t have the debt-to-GDP number, so we can\u2019t rate the risk. That does not mean it is fine.' },
+  'home.debt.insight_risk_unassessed_desc': { en: 'No published debt sustainability rating was received, so none is shown. This is not a finding that the debt position is safe.', sw: 'Hakuna ukadiriaji rasmi wa uendelevu wa deni uliopokelewa, hivyo hakuna unaoonyeshwa. Hii si dalili kwamba hali ya deni ni salama.', plain: 'We did not get the official rating, so we don\u2019t show one. That does not mean it is fine.' },
   'home.debt.cents_of_revenue': { en: 'KES {n} cents', sw: 'Senti {n} za KES', plain: 'KES {n} cents' },
 
   // Audit Reports Section
@@ -316,7 +331,7 @@ export const MESSAGES = {
   'home.loans.header_sub': { en: '{n} active loans — {src}', sw: 'Mikopo hai {n} — {src}', plain: '{n} loans — {src}' },
   'home.loans.unavailable': { en: 'Loan data unavailable', sw: 'Data ya mikopo haipatikani', plain: 'Loan data unavailable' },
   'home.loans.outstanding': { en: 'Outstanding Debt', sw: 'Deni Lililobaki', plain: 'Still Owed' },
-  'home.loans.annual_service': { en: 'Annual Service Cost', sw: 'Gharama ya Kila Mwaka', plain: 'Cost Per Year' },
+  'home.loans.annual_service': { en: 'Debt Service', sw: 'Malipo ya Deni', plain: 'Debt Repayments' },
   'home.loans.see_all_n': { en: 'See all {n} loans →', sw: 'Tazama mikopo yote {n} →', plain: 'See all {n} loans →' },
   'home.loans.type.multilateral': { en: 'Multilateral', sw: 'Ya Kimataifa', plain: 'Multi-country' },
   'home.loans.type.bilateral': { en: 'Bilateral', sw: 'Baina ya Nchi Mbili', plain: 'Country-to-country' },

@@ -510,6 +510,65 @@ def december_series(rows: List[PublicDebtMonth]) -> Dict[int, PublicDebtMonth]:
 
 
 # ---------------------------------------------------------------------------
+# 3. Key Rates box — the published Treasury-bill yield
+# ---------------------------------------------------------------------------
+
+#: The page carrying CBK's "Key Rates" box. /rates/government-securities/
+#: 301s here; fetching the destination avoids depending on the redirect.
+KEY_RATES_URL = "https://www.centralbank.go.ke/project/government-securities/"
+TBILL_91_LABEL = "91-Day T-Bill"
+
+
+@dataclass(frozen=True)
+class KeyRate:
+    label: str
+    rate_pct: float
+    #: The date CBK prints beside the rate, verbatim and parsed. Not
+    #: interpreted: CBK does not say whether it is the auction or value date.
+    cbk_date_text: str
+    cbk_date: Optional[date]
+
+
+def parse_key_rate(page_html: str, label: str, url: str = KEY_RATES_URL) -> KeyRate:
+    """One row of CBK's Key Rates box, by its exact label.
+
+    The box is a plain ``<table class="tg">`` — not a DataTables table, so the
+    register helpers above (which need ``<tr id=...>``) do not see it. Matched
+    on the header "Key Rates" and then on the row label, exactly: a near-miss
+    like "182-Day T-Bill" must not stand in for the 91-day rate.
+    """
+    for table_html in _iter_tables(page_html):
+        if "key rates" not in " ".join(_headers_of(table_html)).lower():
+            continue
+        for row_html in re.findall(r"<tr[^>]*>(.*?)</tr>", table_html, re.S):
+            cells = [
+                _strip_tags(c) for c in re.findall(r"<td[^>]*>(.*?)</td>", row_html, re.S)
+            ]
+            if len(cells) < 3 or cells[0].strip().lower() != label.lower():
+                continue
+            text = cells[1].strip()
+            if not text.endswith("%"):
+                raise CbkTableError(f"{url}: {label!r} is {text!r}, not a percentage")
+            rate = _num(text[:-1])
+            if rate is None or not (0 < rate < 100):
+                raise CbkTableError(f"{url}: {label!r} is {text!r}, not a rate")
+            return KeyRate(label, rate, cells[2].strip(), _dmy(cells[2]))
+        raise CbkTableError(f"{url}: the Key Rates box has no {label!r} row")
+    raise CbkTableError(f"{url}: no table headed 'Key Rates'")
+
+
+def fetch_tbill_91d_yield(client: SeedingHttpClient) -> Dict[str, Any]:
+    """CBK's published 91-day Treasury-bill yield, with its provenance."""
+    rate = parse_key_rate(_get_html(client, KEY_RATES_URL), TBILL_91_LABEL)
+    return {
+        "rate": rate,
+        "source_url": KEY_RATES_URL,
+        "source_title": "CBK — Key Rates (91-Day T-Bill)",
+        "retrieved_at": datetime.utcnow().date().isoformat(),
+    }
+
+
+# ---------------------------------------------------------------------------
 # Fetching
 # ---------------------------------------------------------------------------
 

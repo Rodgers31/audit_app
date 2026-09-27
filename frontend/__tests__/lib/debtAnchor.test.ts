@@ -3,8 +3,8 @@
  * published threshold, so the condition that drives it has to be exactly
  * right in both directions.
  *
- * The trap this guards is the same one `classifyDebtRisk` was written to
- * close: a failed request returns `debt_to_gdp_ratio: 0`, and a naive
+ * The trap this guards is the one the old `classifyDebtRisk` (removed in
+ * #269) was fixed for: a failed request returns `debt_to_gdp_ratio: 0`, and a naive
  * `ratio > anchor` boolean reads that as FALSE — "within the anchor" — so an
  * outage on the national accounts renders as quiet reassurance. Absence is
  * not compliance, which is why this returns a three-state result rather than
