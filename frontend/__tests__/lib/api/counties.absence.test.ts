@@ -197,3 +197,18 @@ describe('fiscal grade: no score means no grade', () => {
     expect(county.fiscal_grade).toBe('C');
   });
 });
+
+it('preserves source-reported budget zero in the explicit accounting contract', () => {
+  const c = transformCountyData({ ...base, total_budget: 0,
+    financial_summary: { total_allocation: 0, accounting_basis: 'reported_total' },
+  } as never);
+  expect(c.budget).toBe(0);
+  expect(c.totalBudget).toBe(0);
+});
+
+it('does not recover an explicitly absent summary from an older flat budget field', () => {
+  const c = transformCountyData({ ...base, total_budget: 500, budget_2025: 500,
+    financial_summary: { total_allocation: null },
+  } as never);
+  expect(c.budget).toBeUndefined();
+});

@@ -1,0 +1,82 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+________________ test_all_47_public_codes_match_primary_source _________________
+
+client = <starlette.testclient.TestClient object at 0x10df6d550>
+db_session = <sqlalchemy.orm.session.Session object at 0x10df6da90>
+seed_country = <models.Country object at 0x10df6fe00>
+
+    def test_all_47_public_codes_match_primary_source(client, db_session, seed_country):
+        fixture = json.loads((Path(__file__).parent / "fixtures/knbs_county_codes.json").read_text())
+        for code, name in fixture["counties"].items():
+            # Use the historic display aliases handled by the app.
+            name = name.replace("/", " ").replace("-", " ").replace("Nairobi City", "Nairobi")
+            db_session.add(Entity(country_id=seed_country.id, canonical_name=name + " County",
+                                  type=EntityType.COUNTY, slug=name.lower().replace(" ", "-")))
+        db_session.commit()
+        rows = client.get("/api/v1/counties?limit=50").json()
+        assert len(rows) == 47
+        expected = {name.replace("/", " ").replace("-", " ").replace("Nairobi City", "Nairobi"): code
+                    for code, name in fixture["counties"].items()}
+>       assert {r["name"]: r["code"] for r in rows} == expected
+E       AssertionError: assert {'Baringo': '...': '040', ...} == {'Baringo': '...': '040', ...}
+E
+E         Omitting 45 identical items, use -vv to show
+E         Differing items:
+E         {'Mombasa': '047'} != {'Mombasa': '001'}
+E         {'Nairobi': '001'} != {'Nairobi': '047'}
+E         Use -v to get more diff
+
+backend/tests/test_county_identity_contract.py:20: AssertionError
+----------------------------- Captured stderr call -----------------------------
+2026-09-27 03:51:46,876 - httpx - INFO - HTTP Request: GET http://testserver/api/v1/counties?limit=50 "HTTP/1.1 200 OK"
+------------------------------ Captured log call -------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/v1/counties?limit=50 "HTTP/1.1 200 OK"
+_______ test_official_code_does_not_change_legacy_links_or_foreign_keys ________
+
+client = <starlette.testclient.TestClient object at 0x10df74cd0>
+db_session = <sqlalchemy.orm.session.Session object at 0x10e374910>
+seed_country = <models.Country object at 0x10e375590>
+
+    def test_official_code_does_not_change_legacy_links_or_foreign_keys(client, db_session, seed_country):
+        entities = []
+        for name, pk, route in [("Nairobi", 101, "001"), ("Mombasa", 102, "047")]:
+            entity = Entity(id=pk, country_id=seed_country.id, canonical_name=name + " County", type=EntityType.COUNTY,
+                            slug=name.lower() + "-" + route, meta={"metrics": {"FY2024/25": {"county_code": route}}})
+            db_session.add(entity)
+            entities.append(entity)
+        db_session.commit()
+        from main import _resolve_county_entity
+        for entity, route, code in zip(entities, ["001", "047"], ["047", "001"]):
+            assert _resolve_county_entity(db_session, route).id == entity.id
+            assert _resolve_county_entity(db_session, entity.slug).id == entity.id
+            listing = client.get("/api/v1/entities?entity_type=county").json()
+>           assert next(row for row in listing if row["id"] == entity.id)["code"] == code
+E           AssertionError: assert '001' == '047'
+E
+E             - 047
+E             + 001
+
+backend/tests/test_county_identity_contract.py:39: AssertionError
+----------------------------- Captured stderr call -----------------------------
+2026-09-27 03:51:46,957 - httpx - INFO - HTTP Request: GET http://testserver/api/v1/entities?entity_type=county "HTTP/1.1 200 OK"
+------------------------------ Captured log call -------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/v1/entities?entity_type=county "HTTP/1.1 200 OK"
+=============================== warnings summary ===============================
+../../../../Documents/projects/audit_app/backend/.venv313/lib/python3.13/site-packages/fastapi/testclient.py:1
+  /Users/roger/Documents/projects/audit_app/backend/.venv313/lib/python3.13/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+backend/database.py:64
+  /Users/roger/.codex/worktrees/4eb9/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+backend/models.py:23
+  /Users/roger/.codex/worktrees/4eb9/audit_app/backend/models.py:23: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/test_county_identity_contract.py::test_all_47_public_codes_match_primary_source
+FAILED backend/tests/test_county_identity_contract.py::test_official_code_does_not_change_legacy_links_or_foreign_keys
+2 failed, 3 warnings in 0.21s

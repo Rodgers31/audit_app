@@ -391,7 +391,7 @@ def comprehensive_counties(db_session, seed_country, seed_source_doc, period):
             BudgetLine(
                 entity_id=entity.id,
                 period_id=period.id,
-                category="Health",
+                category="Total",
                 allocated_amount=8_000_000,
                 actual_spent=6_000_000,
                 currency="KES",
