@@ -38,8 +38,9 @@ def _apply_record(model: PopulationData, record: PopulationRecord) -> bool:
         "page_ref": None,
         "extraction_id": None,
         "source_hash": None,
-        # This accepted publisher observation has its own confidence; do not
-        # retain the previous census/fixture value used by the API filter.
+        # Local ingestion confidence for an accepted direct publisher value,
+        # not a statistical confidence interval for the population estimate.
+        # Do not retain the previous source value used by the API filter.
         "confidence": 1.0,
         "basis": None,
         "confidence_score": None,
