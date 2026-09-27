@@ -189,7 +189,9 @@ jobs:
         run: |
           cd backend
           python -m pip install --upgrade pip
-          pip install alembic sqlalchemy psycopg2-binary
+          # Take the SQLAlchemy spec from requirements.txt: an unpinned install
+          # pulled 2.1, which needs psycopg v3 for postgresql:// URLs (issue #228).
+          pip install alembic psycopg2-binary "$(grep -iE '^sqlalchemy' requirements.txt)"
 
       - name: Run Alembic migrations
         run: |
