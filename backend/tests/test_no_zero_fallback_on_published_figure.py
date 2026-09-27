@@ -248,7 +248,11 @@ QUARANTINE: dict[str, int] = {
 def test_the_sweep_is_not_empty():
     scanned = {_rel(m) for m in SCANNED_MODULES}
     assert "backend/main.py" in scanned, "the sweep does not reach the shipping API"
-    assert "apis/county_analytics_api.py" in scanned, "the sweep misses the #207 file"
+    # apis/county_analytics_api.py, the #207 file, was withdrawn with its
+    # routes (#278); the sweep must still reach the apis/ layer it lived in.
+    assert any(p.startswith("apis/") for p in scanned), (
+        "the sweep misses apis/, where the #207 fallbacks lived"
+    )
 
 
 def test_the_detector_catches_the_payload_it_was_written_for():
