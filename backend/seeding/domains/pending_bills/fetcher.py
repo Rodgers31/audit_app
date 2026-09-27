@@ -1,9 +1,12 @@
 """Fetchers for pending bills: national from the BROP, counties from the CoB.
 
 National Government (``fetch_pending_bills_payload``), in order:
-1. If live_pdf_fetch_enabled AND treasury_brop_url is configured,
-   download and parse the BROP PDF — the para-18 national aggregate.
-   Its county table is not used: it reprints the Controller of Budget's.
+1. If live_pdf_fetch_enabled, discover the newest FINAL BROP on Treasury's
+   listing (the configured ``treasury_brop_url`` is the fallback), download
+   it and read the national pending-bills paragraph (para 18 in 2025, para 20
+   in 2026). Its county table is not read: it reprints the Controller of
+   Budget's. A run that read an older paper than the publisher has out is
+   recorded PARTIAL, not LIVE (``brop_edition_behind``).
 2. If pending_bills_dataset_url is configured, load from that
    fixture / API (the writer writes none of it).
 3. Otherwise, run the live ETL extractor against COB website.
@@ -30,6 +33,8 @@ import asyncio
 import logging
 import re
 import tempfile
+from dataclasses import dataclass, field
+from datetime import date, timedelta
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -47,16 +52,42 @@ BROP_PUBLICATION = "treasury_brop"
 BROP_PUBLISHER = "National Treasury"
 
 
-def _discover_brop_url(client, settings):
-    """Newest Budget Review and Outlook Paper on Treasury's listing page.
+@dataclass(frozen=True)
+class BropDiscovery:
+    """The paper discovery chose, and any newer one it could not match."""
+
+    url: str
+    published: date
+    #: Non-draft links on the listing that look like a BROP, dated to a later
+    #: year than ``url``, but which discovery's match did not accept. Empty
+    #: when discovery is keeping up. This is how the 2026 paper looked to the
+    #: literal "budget-review-and-outlook-paper" match: there, and invisible.
+    newer_unmatched: List[str] = field(default_factory=list)
+
+
+#: A link that names itself a Budget Review and Outlook Paper in any spelling,
+#: for the newer-than-chosen check. Broader than discovery's own match on
+#: purpose: it is what discovery would miss.
+_BROP_LIKE_RE = re.compile(r"(?:^|-)brop(?:-|$)|budget-review|outlook-paper")
+
+
+def _today() -> date:
+    return date.today()
+
+
+def _discover_brop(client, settings) -> Optional[BropDiscovery]:
+    """Newest FINAL Budget Review and Outlook Paper on Treasury's listing page.
 
     Returns None on any failure so the caller falls back to the configured
     URL — discovery is an improvement on the hardcoded path, never a new
     single point of failure.
     """
-    from datetime import date, timedelta
-
-    from ...discovery import discover_latest_pdf
+    from ...discovery import (
+        discover_latest_pdf,
+        find_pdf_links,
+        parse_document_date,
+        separator_insensitive,
+    )
 
     page_url = getattr(
         settings,
@@ -73,6 +104,12 @@ def _discover_brop_url(client, settings):
         response.text,
         page_url,
         must_match=("budget-review-and-outlook-paper",),
+        # Every paper to 2025 was hyphenated ("2025-Budget-Review-and-Outlook-
+        # Paper-1.pdf"); the 2026 final is "2026%20Budget%20Review%20and%20
+        # Outlook%20Paper....pdf" in a "BROP%20-%20Budget%20Review%20Outlook%20
+        # Paper" folder. The literal match could not see it, and the 2025
+        # paper stayed "newest" for as long as the listing linked both.
+        normalise_separators=True,
         # A DRAFT may not back a published figure. Decided 2026-08-29.
         #
         # Treasury publishes drafts for public comment beside the finals on
@@ -88,11 +125,69 @@ def _discover_brop_url(client, settings):
         #
         # Preferring last year's FINAL over this year's DRAFT is the correct
         # trade: the staleness gate reports an ageing BROP loudly, whereas a
-        # draft-sourced figure looks exactly like a real one.
+        # draft-sourced figure looks exactly like a real one. With
+        # normalise_separators, "Draft%202027" and "DRAFT_2027" are refused
+        # the same as "Draft-2027".
         must_not_match=("draft",),
         not_before=date.today() - timedelta(days=730),
     )
-    return found.url if found else None
+    if not found:
+        return None
+
+    newer: List[str] = []
+    for absolute, href in find_pdf_links(response.text, page_url):
+        folded = separator_insensitive(absolute)
+        if absolute == found.url or "draft" in folded or not _BROP_LIKE_RE.search(folded):
+            continue
+        published, _how = parse_document_date(href.rsplit("/", 1)[-1])
+        if published is None:
+            published, _how = parse_document_date(absolute)
+        if published is not None and published.year > found.published.year:
+            newer.append(absolute)
+    return BropDiscovery(found.url, found.published, newer)
+
+
+#: The day after which a paper stated at 30 June of the same year is overdue.
+#: The PFM Act 2012 (s.26) has the Treasury submit the BROP to Cabinet by 30
+#: September; the 2025 paper's PDF was created on 8 October 2025 and the 2026
+#: paper's on 7 September 2026. On 1 November, last year's paper is late.
+_BROP_OVERDUE_AFTER = (10, 31)
+
+
+def _newest_due_as_at(today: date) -> date:
+    """The 30 June whose paper should be out by ``today``."""
+    year = today.year if (today.month, today.day) > _BROP_OVERDUE_AFTER else today.year - 1
+    return date(year, 6, 30)
+
+
+def brop_edition_behind(
+    as_at: date, discovery: Optional[BropDiscovery], today: date
+) -> List[str]:
+    """Why the paper read is older than the one the publisher has out, if it is.
+
+    Two independent signs, either enough:
+
+    * the listing links a newer non-draft paper discovery did not match — the
+      2026 incident, visible the day the paper appeared;
+    * the paper's national figure is stated before the newest 30 June whose
+      paper is due — which still fires if the listing loses the link, or the
+      listing is unreachable and the configured URL was used.
+    """
+    reasons: List[str] = []
+    if discovery is not None and discovery.newer_unmatched:
+        reasons.append(
+            f"the listing links a newer paper than the one read "
+            f"({discovery.url.rsplit('/', 1)[-1]}): "
+            + ", ".join(u.rsplit("/", 1)[-1] for u in discovery.newer_unmatched)
+        )
+    due = _newest_due_as_at(today)
+    if as_at < due:
+        reasons.append(
+            f"the national figure is stated at {as_at.isoformat()}, but the paper "
+            f"stated at {due.isoformat()} was due by {_BROP_OVERDUE_AFTER[1]} "
+            f"October {due.year}"
+        )
+    return reasons
 
 
 def fetch_pending_bills_payload(
@@ -114,14 +209,16 @@ def fetch_pending_bills_payload(
     # ``None`` is defensive — older settings instances may not have
     # the field if a stale module is imported.
     brop_url = getattr(settings, "treasury_brop_url", None)
+    discovery: Optional[BropDiscovery] = None
     if settings.live_pdf_fetch_enabled:
         # Prefer the CURRENT edition off Treasury's listing page. The
-        # configured default is a hardcoded 2025 path: it works until the
+        # configured default is a hardcoded path: it works until the
         # next BROP drops, then silently keeps re-parsing last year's
         # document with nothing to show the data stopped advancing.
         # Discovery is attempted first and the hardcoded value becomes the
         # fallback, not the other way round.
-        discovered = _discover_brop_url(client, settings)
+        discovery = _discover_brop(client, settings)
+        discovered = discovery.url if discovery else None
         if discovered and discovered != brop_url:
             logger.info(
                 "Using DISCOVERED BROP %s (configured default was %s)",
@@ -140,15 +237,28 @@ def fetch_pending_bills_payload(
                     "(%d records)",
                     len(payload.get("pending_bills") or []),
                 )
-                from ...freshness import mark_live
+                from ...freshness import mark_live, mark_partial
 
-                mark_live(
-                    "pending_bills",
-                    detail=(
-                        f"Treasury BROP, "
-                        f"{len(payload.get('pending_bills') or [])} records"
-                    ),
-                )
+                as_at = date.fromisoformat(payload["summary"]["as_at_date"])
+                behind = brop_edition_behind(as_at, discovery, _today())
+                if behind:
+                    # Written all the same — it is the newest paper this run
+                    # could read, and a final — but not reported as current.
+                    logger.error("BROP edition behind the publisher: %s", "; ".join(behind))
+                    mark_partial(
+                        "pending_bills",
+                        reason="brop_edition_behind",
+                        detail="; ".join(behind)[:400],
+                    )
+                else:
+                    mark_live(
+                        "pending_bills",
+                        detail=(
+                            f"Treasury BROP {payload['summary'].get('fiscal_year')}, "
+                            f"national stated at {as_at.isoformat()}, "
+                            f"{len(payload.get('pending_bills') or [])} records"
+                        ),
+                    )
                 return payload
             logger.warning(
                 "BROP fetch returned no pending bills, trying fixture"
@@ -227,7 +337,11 @@ def _fetch_from_treasury_brop(
             tmp_path = Path(tmp.name)
 
         logger.info("Downloaded BROP PDF (%d bytes) to %s", len(content), tmp_path)
-        result = parse_brop_pdf(tmp_path)
+        # Counties are not read from the BROP (#238), so its county table is
+        # not parsed at all: one this parser cannot read whole must not cost
+        # the national paragraph, and with counties off that paragraph is
+        # required.
+        result = parse_brop_pdf(tmp_path, counties=False)
 
         return _brop_result_to_payload(result, brop_url)
     finally:
@@ -259,6 +373,11 @@ def _brop_result_to_payload(
         # Stamped only when the paragraph printed it — see
         # NationalPendingBills.as_at_stated.
         stated_as_at = as_at if getattr(nb, "as_at_stated", False) else None
+        paragraph = getattr(nb, "paragraph", None)
+        cited = (
+            f"Treasury BROP para {paragraph}" if paragraph
+            else "Treasury BROP national pending-bills paragraph"
+        )
         pending_bills.append(
             {
                 "entity_name": "National Government — State Corporations",
@@ -267,7 +386,7 @@ def _brop_result_to_payload(
                 "fiscal_year": fy_label,
                 "total_pending": str(nb.state_corporations),
                 "as_at": stated_as_at,
-                "notes": f"Treasury BROP para-18 aggregate as at {as_at}",
+                "notes": f"{cited} aggregate as at {as_at}",
             }
         )
         pending_bills.append(
@@ -278,7 +397,7 @@ def _brop_result_to_payload(
                 "fiscal_year": fy_label,
                 "total_pending": str(nb.mdas),
                 "as_at": stated_as_at,
-                "notes": f"Treasury BROP para-18 aggregate as at {as_at}",
+                "notes": f"{cited} aggregate as at {as_at}",
             }
         )
 

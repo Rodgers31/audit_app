@@ -30,7 +30,7 @@ import re
 from dataclasses import dataclass
 from datetime import date
 from typing import Iterable, List, Optional
-from urllib.parse import urljoin
+from urllib.parse import unquote, urljoin
 
 logger = logging.getLogger("seeding.discovery")
 
@@ -166,6 +166,17 @@ def find_pdf_links(html: str, base_url: str) -> List[tuple[str, str]]:
     return out
 
 
+def separator_insensitive(text: str) -> str:
+    """``text`` lowercased, percent-decoded, every run of non-alphanumerics one "-".
+
+    "2026%20Budget%20Review%20and%20Outlook%20Paper", "2026 Budget Review and
+    Outlook Paper", "2026_Budget_Review_and_Outlook_Paper" and
+    "2026-Budget-Review-and-Outlook-Paper" all become
+    "2026-budget-review-and-outlook-paper".
+    """
+    return re.sub(r"[^a-z0-9]+", "-", unquote(text or "").lower())
+
+
 def discover_latest_pdf(
     html: str,
     base_url: str,
@@ -173,6 +184,7 @@ def discover_latest_pdf(
     must_match: Iterable[str] = (),
     must_not_match: Iterable[str] = (),
     not_before: Optional[date] = None,
+    normalise_separators: bool = False,
 ) -> Optional[DiscoveredDocument]:
     """Newest PDF on ``html`` whose URL contains all of ``must_match``.
 
@@ -181,16 +193,26 @@ def discover_latest_pdf(
     filter even when individual filenames are inconsistent — CBK's older
     bulletins are named "June 2004.pdf" with no "bulletin" in them at all.
 
+    ``normalise_separators`` compares both sides through
+    :func:`separator_insensitive`, for a publisher that names one series with
+    hyphens one year and ``%20`` the next. The Treasury's 2026 Budget Review
+    and Outlook Paper is ``2026%20Budget%20Review%20and%20Outlook%20Paper``;
+    every earlier one was hyphenated, and a literal "budget-review-and-outlook-
+    paper" kept discovery on the 2025 paper. Off by default: it widens
+    ``must_not_match`` as much as ``must_match``, which each caller should
+    choose.
+
     ``not_before`` rejects candidates older than a floor, so a listing that
     has lost its recent entries fails loudly instead of quietly seeding a
     decade-old document.
     """
-    must = [m.lower() for m in must_match]
-    must_not = [m.lower() for m in must_not_match]
+    fold = separator_insensitive if normalise_separators else str.lower
+    must = [fold(m) for m in must_match]
+    must_not = [fold(m) for m in must_not_match]
 
     candidates: List[DiscoveredDocument] = []
     for absolute, href in find_pdf_links(html, base_url):
-        low = absolute.lower()
+        low = fold(absolute)
         if any(m not in low for m in must):
             continue
         if any(m in low for m in must_not):
@@ -245,4 +267,5 @@ __all__ = [
     "find_pdf_links",
     "parse_document_date",
     "parse_fiscal_year",
+    "separator_insensitive",
 ]
