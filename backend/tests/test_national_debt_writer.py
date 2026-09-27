@@ -249,6 +249,7 @@ class TestZombieConsolidation:
             outstanding="1000",
             issue_date_iso="2024-01-01",
         )
+        source_doc.url = record.source_url
         created, updated = write_debt_records(
             session, [record], dataset_id="national-debt", job_id=3
         )

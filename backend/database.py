@@ -6,6 +6,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
+if __package__:
+    from .db_url import with_explicit_driver
+else:
+    from db_url import with_explicit_driver
+
 load_dotenv()
 
 
@@ -42,8 +47,9 @@ def _build_db_url_from_env() -> str:
     return "postgresql://postgres:password@localhost:5432/audit_app"
 
 
-# Database configuration
-DATABASE_URL = _build_db_url_from_env()
+# Database configuration. The driver is named explicitly so a SQLAlchemy
+# upgrade cannot switch it underneath us (issue #228) - see db_url.py.
+DATABASE_URL = with_explicit_driver(_build_db_url_from_env())
 
 engine = create_engine(
     DATABASE_URL,

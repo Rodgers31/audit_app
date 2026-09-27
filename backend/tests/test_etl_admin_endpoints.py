@@ -9,7 +9,7 @@ Covers:
   GET  /api/v1/admin/etl/health
   GET  /api/v1/admin/ingestion-jobs
   GET  /api/v1/admin/ingestion-jobs/stats/summary
-  GET  /api/v1/etl/status/{job_id}
+  GET  /api/v1/etl/status/{job_id}  (removed, #252)
   GET  /api/v1/etl/kenya/sources
   GET  /api/v1/storage/status
   GET  /api/v1/docs/resolve
@@ -102,11 +102,15 @@ class TestIngestionJobStats:
 
 
 class TestETLJobStatus:
-    """Tests for GET /api/v1/etl/status/{job_id}."""
+    """GET /api/v1/etl/status/{job_id} was removed with POST /etl/kenya/start (#252).
 
-    def test_returns_status_for_id(self, client):
+    It only polled jobs kenya/start created, and answered "completed" with
+    invented counts for any job_id.
+    """
+
+    def test_route_is_gone(self, client):
         response = client.get("/api/v1/etl/status/test-job-123")
-        assert response.status_code in (200, 404, 500)
+        assert response.status_code == 404
 
 
 class TestETLKenyaSources:
