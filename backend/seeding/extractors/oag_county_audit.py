@@ -504,13 +504,15 @@ def _delegate_rows_at_current_md5(session, doc) -> int:
     work is current: ``meta.get(...) == doc.md5`` alone reads None == None
     as "current" and would skip a document nobody has ever extracted. A
     re-issued volume moves the md5, the stamp no longer matches, and the
-    read happens as it must.
+    read happens as it must. So does a change to the walk itself: the stamp
+    carries the walk's version, and an md5-only check here would keep a
+    fixed walk from ever reaching these volumes.
     """
     from models import Extraction
 
-    if not doc.md5:
-        return 0
-    if (doc.meta or {}).get("extracted_md5") != doc.md5:
+    from .oag_blue_book import extraction_is_current
+
+    if not extraction_is_current(doc):
         return 0
     return (
         session.query(Extraction)
@@ -519,6 +521,81 @@ def _delegate_rows_at_current_md5(session, doc) -> int:
             Extraction.extractor == DELEGATE_EXTRACTOR_ID,
         )
         .count()
+    )
+
+
+def _has_delegate_rows(session, doc) -> bool:
+    """Has the Blue Book walk ever extracted this document, at any md5?"""
+    from models import Extraction
+
+    return (
+        session.query(Extraction.id)
+        .filter(
+            Extraction.source_document_id == doc.id,
+            Extraction.extractor == DELEGATE_EXTRACTOR_ID,
+        )
+        .first()
+        is not None
+    )
+
+
+def _county_volume_dispatch(session, doc, settings) -> Optional[dict]:
+    """Route a FY2021/22-onwards combined volume to ``oag_county_volume``.
+
+    Returns the stats when it did, None to fall through to the paths below.
+
+    A volume the Blue Book walk already owns (the two FY2020/21 volumes,
+    documents 2395 and 2396, 1,498 published findings) stays with it. Moving it
+    would re-extract under a second extractor id beside the rows its published
+    findings point at. Only the front matter is read to decide. That is 12 pages
+    rather than 555, so a document that turns out to be single-entity costs
+    almost nothing extra.
+    """
+    from .oag_county_volume import (
+        already_extracted,
+        extract_county_volume,
+        looks_like_county_volume,
+        read_head,
+    )
+
+    done = already_extracted(session, doc)
+    if done:
+        logger.info(
+            "oag_county_audit: %s already extracted as a county volume at md5 %s "
+            "(%d rows) — skipping the page read",
+            doc.url or doc.id,
+            doc.md5,
+            done,
+        )
+        return {
+            "created": 0,
+            "skipped": done,
+            "rejected_cid": 0,
+            "reason": "already_extracted",
+            "shape": "county_volume",
+        }
+    if _has_delegate_rows(session, doc):
+        return None
+    discovered = ((doc.meta or {}).get("oag_discovery") or {}).get("kind")
+    if discovered not in ("executives", "assemblies"):
+        # Discovery has not classified it, so read enough to decide. Opening
+        # a volume costs 12-19s of CPU however few pages are read, which is
+        # why a document discovery already calls a volume skips this.
+        # extract_county_volume re-checks the shape on the full read.
+        try:
+            head = read_head(doc.file_path)
+        except CountyAuditError:
+            # The full read below meets the same file and quarantines it with
+            # the same reason. Nothing is hidden by deferring to it.
+            return None
+        if not looks_like_county_volume(head):
+            return None
+    logger.info(
+        "oag_county_audit: %s is a combined county volume — splitting per county",
+        doc.url or doc.id,
+    )
+    return extract_county_volume(
+        session, doc, settings, known_counties=_known_counties(session)
     )
 
 
@@ -576,6 +653,27 @@ def extract_county_audit(session, doc, settings) -> dict:
             "reason": "already_extracted_by_delegate",
             "shape": "consolidated",
         }
+
+    volume = _county_volume_dispatch(session, doc, settings)
+    if volume is not None:
+        return volume
+
+    if _has_delegate_rows(session, doc):
+        # The Blue Book walk extracted this volume before, at other bytes or
+        # with an older walk. It is consolidated (that is how the walk came
+        # to own it), and the walk reads the pages itself. Reading them here
+        # first as well cost 101.3s and 74.2s for documents 2395 and 2396.
+        from .oag_blue_book import extract_blue_book
+
+        logger.info(
+            "oag_county_audit: %s is owned by %s and not current — "
+            "handing it back",
+            doc.url or doc.id,
+            DELEGATE_EXTRACTOR_ID,
+        )
+        stats = extract_blue_book(session, doc, settings)
+        stats["shape"] = "consolidated"
+        return stats
 
     pages = read_pages(doc.file_path)
 

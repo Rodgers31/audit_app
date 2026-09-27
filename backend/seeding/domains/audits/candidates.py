@@ -76,6 +76,38 @@ def classify_county_audit_candidate(url: str) -> Tuple[bool, str]:
     return True, "unclassified_kept"
 
 
+#: Documents on the NATIONAL dataset that are positively not the Blue Book.
+#: Document 2393, "Auditor-Generals-Popular-Report-on-National-Government-
+#: 2023-2024.pdf", is a plain-language digest with no vote chapters. Handed to
+#: the Blue Book walk every night, it logged "Blue Book structure not
+#: recognised (toc=4 entries, offset=None)". The walk was right to refuse it.
+#: The defect was offering it.
+_NOT_THE_BLUE_BOOK = (
+    (re.compile(r"popular[-_\s]*report", re.I), "popular_report"),
+    (re.compile(r"summary[-_\s]*report", re.I), "summary_report"),
+)
+
+
+def split_national_audit_candidates(
+    urls: Sequence[str],
+) -> Tuple[List[str], List[Tuple[str, str]]]:
+    """``(keep, [(url, why_rejected), ...])`` for the national dataset.
+
+    Conservative in the same way as the county filter: only a name that
+    positively identifies a non-report is dropped.
+    """
+    keep: List[str] = []
+    rejected: List[Tuple[str, str]] = []
+    for url in urls:
+        name = (url or "").rsplit("/", 1)[-1]
+        why = next((w for pat, w in _NOT_THE_BLUE_BOOK if pat.search(name)), None)
+        if why:
+            rejected.append((url, why))
+        else:
+            keep.append(url)
+    return keep, rejected
+
+
 def split_county_audit_candidates(
     urls: Sequence[str],
 ) -> Tuple[List[str], List[Tuple[str, str]]]:

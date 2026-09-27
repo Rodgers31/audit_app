@@ -439,7 +439,12 @@ class TestDelegatedVolumeIsNotReRead:
     """
 
     @staticmethod
-    def _doc(db_session, *, md5, extracted_md5, delegate_rows):
+    def _doc(db_session, *, md5, extracted_md5, delegate_rows, version="current"):
+        """``version``: the walk version stamped beside ``extracted_md5``.
+
+        "current" stamps this code's version. None stamps none, as every
+        document extracted before the version existed carries.
+        """
         from datetime import datetime, timezone
 
         from models import Country, DocumentType, Extraction, SourceDocument
@@ -461,6 +466,15 @@ class TestDelegatedVolumeIsNotReRead:
             md5=md5,
             meta={"extracted_md5": extracted_md5} if extracted_md5 else {},
         )
+        if extracted_md5 and version is not None:
+            from seeding.extractors import oag_blue_book as bb
+
+            doc.meta = {
+                **doc.meta,
+                "extractor_version": (
+                    bb.EXTRACTOR_VERSION if version == "current" else version
+                ),
+            }
         db_session.add(doc)
         db_session.flush()
         for n in range(delegate_rows):
@@ -537,8 +551,9 @@ class TestDelegatedVolumeIsNotReRead:
 
         mod.extract_county_audit(db_session, doc, SeedingSettings())
 
-        assert len(reads) == 1, "a republished volume was skipped"
-        assert delegations == [doc.id]
+        # Handed to the delegate, which reads the pages itself.
+        assert delegations == [doc.id], "a republished volume was skipped"
+        assert reads == []
 
     def test_a_volume_with_no_md5_is_still_re_read(self, db_session, monkeypatch):
         """Fail closed: absent md5 is not evidence the work is current.
@@ -557,7 +572,49 @@ class TestDelegatedVolumeIsNotReRead:
 
         mod.extract_county_audit(db_session, doc, SeedingSettings())
 
-        assert len(reads) == 1, "skipped a volume with no md5 to compare"
+        assert delegations == [doc.id], "skipped a volume with no md5 to compare"
+        assert reads == []
+
+    def test_a_volume_an_older_walk_extracted_is_handed_back_to_it(
+        self, db_session, monkeypatch
+    ):
+        """Same bytes, older walk: the delegate must see it again.
+
+        The fast path above compared md5 only, so a fixed walk never reached
+        documents 2395 and 2396. It skipped them here, before
+        ``extract_blue_book`` could compare its version.
+        """
+        from seeding.config import SeedingSettings
+        from seeding.extractors import oag_county_audit as mod
+
+        _reads, delegations = self._spy_on_read(monkeypatch)
+        doc = self._doc(
+            db_session, md5=self.MD5, extracted_md5=self.MD5, delegate_rows=986,
+            version=None,
+        )
+
+        mod.extract_county_audit(db_session, doc, SeedingSettings())
+
+        assert delegations == [doc.id]
+
+    def test_a_volume_the_delegate_owns_is_not_read_twice(
+        self, db_session, monkeypatch
+    ):
+        """The delegate reads the pages itself. Reading them here first to
+        re-learn that the volume is consolidated doubled the cost (101.3s and
+        74.2s of reading for 2395 and 2396) on every re-extraction."""
+        from seeding.config import SeedingSettings
+        from seeding.extractors import oag_county_audit as mod
+
+        reads, delegations = self._spy_on_read(monkeypatch)
+        doc = self._doc(
+            db_session, md5=self.MD5, extracted_md5=self.MD5, delegate_rows=986,
+            version=None,
+        )
+
+        mod.extract_county_audit(db_session, doc, SeedingSettings())
+
+        assert reads == []
         assert delegations == [doc.id]
 
     def test_a_volume_the_delegate_never_touched_is_read(
