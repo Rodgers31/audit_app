@@ -510,9 +510,10 @@ class CountyPayablesUnavailable(RuntimeError):
 def year_end_cbirr_links(html: str) -> List[str]:
     """Full-year county CBIRR download links on a COB listing, newest first.
 
-    Newest by WPDM id, which only ever grows. A quarterly edition is never
-    returned: the county page publishes the stock at 30 June only, and the
-    parser refuses any table stated at another date as well.
+    Prefer the fiscal edition named in the slug. Upload IDs break ties only:
+    re-uploading an old report must not make it the newest fiscal edition.
+    The writer independently checks the parsed as-at date before any mutation.
+    Quarterly reports remain excluded.
     """
     from ...cob_discovery import _WPDM_RE
 
@@ -525,7 +526,15 @@ def year_end_cbirr_links(html: str) -> List[str]:
         if _SUB_PERIOD_SLUG_RE.search(slug.split("?")[0]):
             continue
         found[url] = max(found.get(url, 0), int(m.group("id")))
-    return [url for url, _id in sorted(found.items(), key=lambda kv: kv[1], reverse=True)]
+
+    def edition(item):
+        match = re.search(
+            r"(?:fy-|financial-year-)(20\d{2})-(\d{2}|20\d{2})(?:/|[-?])",
+            item[0].lower(),
+        )
+        return (int(match.group(1)) if match else -1, item[1])
+
+    return [url for url, _id in sorted(found.items(), key=edition, reverse=True)]
 
 
 def _reader_notes(entry: Dict[str, Any]) -> List[Dict[str, Any]]:
