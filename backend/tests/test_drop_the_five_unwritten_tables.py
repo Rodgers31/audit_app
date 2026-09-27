@@ -39,9 +39,15 @@ class _Bind:
 
     def __init__(self, tables):
         self.tables = tables
+        self.locked = set()
+        self.events = []
 
     def execute(self, statement, params=None):
         sql = str(statement)
+        self.events.append(sql)
+        if sql.startswith("LOCK TABLE "):
+            self.locked.update(re.findall(r"public\.(\w+)", sql))
+            return _Result(None)
         if "to_regclass" in sql:
             name = params["t"].split(".", 1)[1]
             return _Result(name if name in self.tables else None)
@@ -134,3 +140,29 @@ def test_the_downgrade_recreates_every_table_it_dropped_with_rls():
     assert created == FIVE
     assert rls == FIVE
     assert any(s.startswith("CREATE TYPE public.billtype") for s in op.executed)
+
+
+def test_all_present_tables_are_exclusively_locked_before_any_count():
+    op = _Op({t: 0 for t in FIVE})
+    _migration(op).upgrade()
+    first_count = next(i for i, sql in enumerate(op.bind.events) if "count(*)" in sql)
+    locks = [sql for sql in op.bind.events[:first_count] if sql.startswith("LOCK TABLE ")]
+    assert locks
+    assert all("ACCESS EXCLUSIVE MODE" in sql for sql in locks)
+    names = [name for sql in locks for name in re.findall(r"public\.(\w+)", sql)]
+    assert names == sorted(FIVE)
+
+
+def test_committed_insert_while_waiting_for_lock_prevents_every_drop():
+    op = _Op({t: 0 for t in FIVE})
+    original = op.bind.execute
+
+    def insert_before_lock(statement, params=None):
+        if str(statement).startswith("LOCK TABLE "):
+            op.bind.tables["pending_bills"] = 1
+        return original(statement, params)
+
+    op.bind.execute = insert_before_lock
+    with pytest.raises(RuntimeError, match="pending_bills=1"):
+        _migration(op).upgrade()
+    assert _dropped(op.executed) == set()
