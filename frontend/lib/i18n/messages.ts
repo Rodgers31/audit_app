@@ -1226,14 +1226,12 @@ export const MESSAGES = {
 
   // Officials card (extras beyond county.officials.*)
   'county.officials.card_title': { en: 'Who Runs This County', sw: 'Nani Anaongoza Kaunti Hii', plain: 'Who Runs the County' },
-  'county.officials.card_subtitle': { en: 'Elected and appointed offices with direct influence over county finances.', sw: 'Ofisi zilizochaguliwa na kuteuliwa zenye ushawishi wa moja kwa moja juu ya fedha za kaunti.', plain: 'The top people who decide how the county\u2019s money is used.' },
-  'county.officials.official_site': { en: 'Official site', sw: 'Tovuti rasmi', plain: 'Official site' },
-  'county.officials.directory_beta': { en: 'Officials directory in beta — coverage expanding across counties.', sw: 'Orodha ya viongozi bado inajaribiwa — tunaongeza kaunti zaidi.', plain: 'Officials list still growing — we add more counties each week.' },
+  'county.officials.card_subtitle': { en: 'The elected executive, as listed by the Council of Governors.', sw: 'Viongozi waliochaguliwa, kama walivyoorodheshwa na Baraza la Magavana.', plain: 'Who leads the county, from the Council of Governors\u2019 own list.' },
+  'county.officials.source': { en: 'Source', sw: 'Chanzo', plain: 'Where this comes from' },
+  'county.officials.fetched': { en: 'checked', sw: 'imekaguliwa', plain: 'checked' },
+  'county.officials.not_listed': { en: 'Not listed by the Council of Governors', sw: 'Haijaorodheshwa na Baraza la Magavana', plain: 'Not on the Council of Governors list' },
   'county.officials.title.governor': { en: 'Governor', sw: 'Gavana', plain: 'Governor' },
   'county.officials.title.deputy_governor': { en: 'Deputy Governor', sw: 'Naibu Gavana', plain: 'Deputy Governor' },
-  'county.officials.title.cec_finance': { en: 'CEC — Finance', sw: 'CEC — Fedha', plain: 'Finance Chief' },
-  'county.officials.title.assembly_speaker': { en: 'Assembly Speaker', sw: 'Spika wa Bunge', plain: 'Assembly Speaker' },
-  'county.officials.since_word': { en: 'since', sw: 'tangu', plain: 'since' },
 
   // Grade badge tooltips
   'county.grade.health_tooltip': { en: 'Financial health — budget execution, debt, pending bills. Click for methodology.', sw: 'Afya ya kifedha — utekelezaji wa bajeti, deni, ankara. Bonyeza kwa maelezo.', plain: 'Money health — budget, debt, unpaid bills. Click to see how it\u2019s scored.' },
@@ -1245,8 +1243,6 @@ export const MESSAGES = {
   // Role descriptions (full)
   'county.officials.desc.governor': { en: 'Chief executive of the county government. Elected directly by voters every five years.', sw: 'Mkuu wa serikali ya kaunti. Anachaguliwa moja kwa moja na wapiga kura kila baada ya miaka mitano.', plain: 'Leader of the county. Elected every 5 years.' },
   'county.officials.desc.deputy_governor': { en: 'Deputy to the Governor, elected on the same ticket. Steps in when the Governor is away or vacates office.', sw: 'Naibu wa Gavana, anachaguliwa pamoja naye. Huchukua nafasi pale Gavana hayupo.', plain: 'Second-in-command. Takes over if the Governor is away.' },
-  'county.officials.desc.cec_finance': { en: 'County Executive Committee member for Finance — the county-level equivalent of a finance minister. Prepares the budget and oversees spending.', sw: 'Mjumbe wa Kamati Tendaji ya Kaunti wa Fedha — sawa na waziri wa fedha wa kaunti. Huandaa bajeti na husimamia matumizi.', plain: 'In charge of the county\u2019s money — like a finance minister. Writes the budget and watches spending.' },
-  'county.officials.desc.assembly_speaker': { en: 'Presides over the County Assembly (the legislative body). Elected by Assembly members.', sw: 'Mwenyekiti wa Bunge la Kaunti. Huchaguliwa na wabunge.', plain: 'Leads the County Assembly. Chosen by assembly members.' },
 } as const satisfies Record<string, Translation>;
 
 export type TranslationKey = keyof typeof MESSAGES;
