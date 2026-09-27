@@ -66,6 +66,7 @@ class QuestionService:
 
         # Randomize and limit
         if len(all_questions) > limit:
+            # nondeterminism-ok: which quiz questions to show; a selection of questions, not a figure
             return random.sample(all_questions, limit)
         else:
             return all_questions
@@ -337,6 +338,7 @@ class QuestionService:
                     "id": category_enum.value,
                     "name": info["name"],
                     "description": info["description"],
+                    # zero-fallback-ok: count_dict is a GROUP BY count; a category absent from it has no questions, so 0 is the true count
                     "question_count": count_dict.get(category_enum, 0),
                 }
             )

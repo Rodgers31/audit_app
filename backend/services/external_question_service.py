@@ -321,6 +321,7 @@ class KenyaGovernmentQuestionSource(ExternalQuestionSource):
             params = {
                 "amount": min(limit, 50),  # API limit is 50
                 "type": "multiple",  # Multiple choice questions
+                # nondeterminism-ok: request parameter asking the Open Trivia API for a difficulty; not published
                 "difficulty": random.choice(["easy", "medium", "hard"]),
             }
 
@@ -348,6 +349,7 @@ class KenyaGovernmentQuestionSource(ExternalQuestionSource):
 
                 # Create options A, B, C, D
                 all_answers = incorrect_answers + [correct_answer]
+                # nondeterminism-ok: quiz answer order, shuffled so the correct letter varies; not a figure
                 random.shuffle(all_answers)
 
                 correct_index = all_answers.index(correct_answer)
@@ -417,6 +419,7 @@ class WorldBankSource(ExternalQuestionSource):
 
             questions = []
             for i in range(min(limit, len(indicators) * 3)):
+                # nondeterminism-ok: which quiz question to ask next; not a figure
                 indicator = random.choice(indicators)
 
                 # Generate a question about this indicator
@@ -473,8 +476,10 @@ class WorldBankSource(ExternalQuestionSource):
             },
         ]
 
+        # nondeterminism-ok: which quiz question to ask next; not a figure
         template = random.choice(questions_templates)
         all_answers = [template["correct"]] + template["incorrect"]
+        # nondeterminism-ok: quiz answer order, shuffled so the correct letter varies; not a figure
         random.shuffle(all_answers)
 
         correct_index = all_answers.index(template["correct"])
@@ -564,6 +569,7 @@ class KenyaGovernmentSource(ExternalQuestionSource):
         ]
 
         # Return random selection up to the limit
+        # nondeterminism-ok: which quiz questions to show; a selection of questions, not a figure
         selected = random.sample(kenya_questions, min(limit, len(kenya_questions)))
         logger.info(f"Generated {len(selected)} Kenya-specific questions")
         return selected
@@ -611,6 +617,7 @@ class QuestionAggregatorService:
                 continue
 
         # Shuffle and limit total
+        # nondeterminism-ok: which quiz questions to show; a selection of questions, not a figure
         random.shuffle(all_questions)
         return all_questions[:total_limit]
 
