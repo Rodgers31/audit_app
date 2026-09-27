@@ -64,7 +64,7 @@ def audited_institution(raw, *, county_name=None, document_meta=None):
         if isinstance(n, str) and n.strip()
     ]
     if county_name is None:
-        return names[0] if names else None
+        return names[0] if names and len({name.casefold() for name in names}) == 1 else None
     doc_meta = document_meta if isinstance(document_meta, dict) else {}
     stats = doc_meta.get("extraction_stats")
     stats = stats if isinstance(stats, dict) else {}
