@@ -16,6 +16,7 @@ import type { TranslationKey } from '@/lib/i18n/messages';
 import type { BudgetSource } from '@/types';
 import { compareCountiesKey } from '@/lib/react-query/useCounties';
 import { useQuery } from '@tanstack/react-query';
+import { SSR_HYDRATED_STALE_TIME_MS } from '@/lib/react-query/isr';
 import { Loader2, Plus, X } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -203,11 +204,11 @@ function CompareRow({ label, values, highlight, sublabel }: RowProps) {
  * cache and render the same provenance note — a hand-written second copy of
  * the key is how `/counties` stranded its payload in the HTML (#222).
  */
-function useCompareCounties() {
+export function useCompareCounties() {
   return useQuery<CountySummary[]>({
     queryKey: compareCountiesKey(),
     queryFn: async () => (await api.get<CountySummary[]>('/counties?limit=50')).data,
-    staleTime: 15 * 60 * 1000,
+    staleTime: SSR_HYDRATED_STALE_TIME_MS, // read from SSR state; see ./isr
   });
 }
 

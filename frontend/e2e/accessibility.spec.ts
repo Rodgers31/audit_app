@@ -13,7 +13,7 @@ const PAGES = [
   '/counties',
   '/counties/001',
   '/sources',
-  '/accountability/missing-funds',
+  '/accountability/unaccounted-funds',
   '/counties/compare?ids=047,001',
   '/debt',
   '/budget',

@@ -868,7 +868,7 @@ jobs:
             echo "::warning::REVALIDATE_SECRET is not configured — prerendered pages will refresh only on their ISR interval. Set the secret here and in Vercel to close the freshness loop."
             exit 0
           fi
-          BODY='{"paths":["/","/audits","/budget","/counties","/debt","/sectors","/transparency","/accountability/missing-funds","/sources"]}'
+          BODY='{"paths":["/","/audits","/budget","/counties","/debt","/sectors","/transparency","/accountability/unaccounted-funds","/sources"]}'
           SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$REVALIDATE_SECRET" -r | cut -d' ' -f1)
           HTTP=$(curl -sS -o /tmp/revalidate_response.json -w '%{http_code}' \
             -X POST "$REVALIDATE_URL" \

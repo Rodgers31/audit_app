@@ -32,10 +32,9 @@ const SSR_TIMEOUT_MS = 5000;
  * and could age from one deploy to the next without misleading anyone. Now
  * the summary tiles, the trend chart and the first page of findings are baked
  * into the HTML and are what the reader sees first — so they have to be kept
- * current. React Query still background-refreshes on the client once the
- * hydrated entries pass their staleTime (15min for summary/trends/recurring,
- * 5min for findings), so the hour bounds how stale the *first paint* can be,
- * not what the reader ends up with.
+ * current. The four hooks' staleTime is the same hour
+ * (`SSR_HYDRATED_STALE_TIME_MS`), so a document served inside its window is
+ * not re-downloaded after hydration; one served STALE past it is.
  */
 export const revalidate = 3600;
 

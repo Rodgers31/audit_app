@@ -447,67 +447,66 @@ def test_no_row_failing_the_predicate_appears_anywhere(client, db_session, senti
 
 # ── Stage 0.2: the same fabricated dataset, stored in a second place ───────
 #
-# Gating the database closed one door. The identical figures also live in
-# backend/data/reference/oag_national_audit_data.json (24 amounts, sum 3,313,000,000,000 — the
-# same sum as the quarantined rows, 22 of 24 amounts byte-identical), whose
-# only citation is the bare domain "https://www.oagkenya.go.ke". These parse
-# the files rather than hardcoding numbers, so re-seeding cannot stale them.
-
-# See the note in test_bootstrap_is_observable: bootstrap owns this path.
-from bootstrap import DATA_DIR as APIS_DIR
-
-
-def _kes(value):
-    """Parse 'KES 981.3B' / '1.2T' / '500M' into a float, else None."""
-    if not value:
-        return None
-    s = str(value).upper().replace("KES", "").strip()
-    mult = 1.0
-    for suffix, m in (("T", 1e12), ("B", 1e9), ("M", 1e6), ("K", 1e3)):
-        if s.endswith(suffix):
-            mult, s = m, s[:-1]
-            break
-    try:
-        return float(s.replace(",", "").strip()) * mult
-    except (ValueError, TypeError):
-        return None
+# Gating the database closed one door. The identical figures also lived in
+# two hand-written files, backend/data/reference/oag_national_audit_data.json
+# (24 amounts, sum 3,313,000,000,000 — the same sum as the quarantined rows,
+# 22 of 24 byte-identical) and oag_audit_data.json, whose only citation was
+# the bare domain "https://www.oagkenya.go.ke".
+#
+# Issue #233 deleted both files: nothing reads them any more, and the API
+# derives the headline from extracted findings instead. Their figures are
+# frozen here — every KES amount >= 1M the old parser found in them at
+# origin/main 5328d12, 35 values — so this guard keeps looking for them on
+# every public endpoint rather than passing by finding nothing to look for.
+_RETIRED_FILE_AMOUNTS = (
+    "45000000.0",
+    "85000000.0",
+    "120000000.0",
+    "300000000.0",
+    "450000000.0",
+    "650000000.0",
+    "800000000.0",
+    "950000000.0",
+    "1200000000.0",
+    "1400000000.0",
+    "1800000000.0",
+    "2100000000.0",
+    "2500000000.0",
+    "2700000000.0",
+    "2900000000.0",
+    "3200000000.0",
+    "3400000000.0",
+    "4600000000.0",
+    "4800000000.0",
+    "5300000000.0",
+    "6200000000.0",
+    "7200000000.0",
+    "8400000000.0",
+    "8675000000.0",
+    "8700000000.0",
+    "9100000000.0",
+    "12300000000.0",
+    "28300000000.0",
+    "34200000000.000004",
+    "47800000000.0",
+    "156800000000.0",
+    "589700000000.0",
+    "981300000000.0",
+    "1170000000000.0",
+    "1200000000000.0",
+)
 
 
 def _static_file_amounts():
-    """Every KES figure in either hardcoded OAG file, parsed from the files."""
-    amounts: set[Decimal] = set()
-    for name in ("oag_national_audit_data.json", "oag_audit_data.json"):
-        path = APIS_DIR / name
-        if not path.exists():
-            continue
-        blob = json.loads(path.read_text())
-
-        def walk(node):
-            if isinstance(node, dict):
-                for k, v in node.items():
-                    if isinstance(v, str) and (
-                        "amount" in k.lower() or "questioned" in k.lower()
-                    ):
-                        if (n := _kes(v)) and n >= 1_000_000:
-                            amounts.add(Decimal(str(n)))
-                    else:
-                        walk(v)
-            elif isinstance(node, list):
-                for v in node:
-                    walk(v)
-
-        walk(blob)
-    return amounts
+    """Every KES figure the two retired OAG files held (see above)."""
+    return {Decimal(v) for v in _RETIRED_FILE_AMOUNTS}
 
 
-def test_the_static_files_still_hold_the_fabricated_figures(client):
-    """Anti-vacuity for the two tests below: if the files were emptied or
-    deleted, those tests would pass by finding nothing to look for."""
+def test_the_retired_file_figures_are_still_looked_for(client):
+    """Anti-vacuity for the leak test above: an emptied list would pass by
+    finding nothing to look for."""
     amounts = _static_file_amounts()
-    assert len(amounts) >= 20, (
-        f"expected the hardcoded OAG files to still hold their figures "
-        f"(retain, never delete); found {len(amounts)}"
-    )
+    assert len(amounts) == 35, f"expected the 35 frozen figures, found {len(amounts)}"
 
 
 def _iter_strings(node, field):
