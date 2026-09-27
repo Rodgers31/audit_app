@@ -10425,13 +10425,20 @@ async def get_pending_bills(
                     source_title = sdoc.title or source_title
                     source_url = sdoc.url or source_url
 
+            # ISO string, not the datetime: @cached serialises with json.dumps
+            # and refused a datetime on every call, so this endpoint never
+            # cached. ``isoformat()`` is what FastAPI's encoder already put
+            # on the wire, so clients see the same value.
+            _latest = max(
+                (l.updated_at or l.created_at for l in pending_loans
+                 if (l.updated_at or l.created_at) is not None),
+                default=None,
+            )
+
             return {
                 "status": "success",
                 "data_source": "database",
-                "last_updated": max(
-                    (l.updated_at or l.created_at for l in pending_loans),
-                    default=None,
-                ),
+                "last_updated": _latest.isoformat() if _latest else None,
                 "pending_bills": bills,
                 "summary": {
                     "total_pending": float(total_amount),
