@@ -214,8 +214,11 @@ class TestEveryDomainRecordsProvenance:
                 for path in (root / domain).rglob("*.py")
             )
             has_live = "mark_live(" in sources
-            has_fixture = "mark_fixture(" in sources
-            if has_live and not has_fixture:
+            # A domain with no fixture records its failures as refusals
+            # (stalled_projects since #230: the only fixture it ever had was
+            # invented). Either call says "this run did not publish".
+            has_failure = "mark_fixture(" in sources or "mark_refused(" in sources
+            if has_live and not has_failure:
                 one_sided.append(domain)
         assert one_sided == [], (
             f"domains that record success but not failure: {one_sided}"
