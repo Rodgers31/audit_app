@@ -21,8 +21,8 @@ have left the defect in the repo. See that module's docstring for the evidence:
 budget was KSh 73.0 Bn, 51.0 Bn and 24.0 Bn, and in one of them Turkana
 received exactly the figures Nairobi had held in another.
 
-This file ships: ``Dockerfile:26`` copies ``extractors/`` into the production
-image.
+This file ships: ``etl/Dockerfile:20`` copies the repo root, ``extractors/``
+included, into the published ETL image.
 
 What survives fetches and parses. ``extract_cob_reports_with_retry`` walks
 seven COB URLs with retry, HTTP fallback and SSL handling;
