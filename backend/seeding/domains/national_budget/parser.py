@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger("seeding.national_budget.parser")
 
@@ -28,6 +28,11 @@ class NationalBudgetRecord:
     source_url: Optional[str]
     data_quality: Optional[str]
     notes: Optional[str]
+    page_ref: Optional[str] = None
+    # Declared provenance merged into the BudgetLine's provenance entry —
+    # e.g. ``{"measure": "expenditure", …}`` from the annual NG-BIRR. The
+    # execution panel reads the declaration; it never infers the measure.
+    provenance_extra: Dict[str, Any] = field(default_factory=dict)
 
 
 def _to_decimal(val: Any) -> Optional[Decimal]:
@@ -65,6 +70,8 @@ def parse_national_budget_payload(
             source_url=item.get("source_url"),
             data_quality=item.get("data_quality"),
             notes=item.get("notes"),
+            page_ref=item.get("page_ref"),
+            provenance_extra=dict(item.get("provenance_extra") or {}),
         )
         records.append(record)
 

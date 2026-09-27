@@ -40,9 +40,13 @@ def run(
                 .model_copy(update={"finished_at": datetime.now(timezone.utc)})
             )
 
-    records = parser.parse_economic_payload(payload)
+    records = parser.parse_economic_payload(payload.records)
     stats = writer.persist_economic_records(session, records, settings, context)
+    errors.extend(payload.errors)
     errors.extend(stats.errors)
+    session.flush()
+    removed, sweep_errors = writer.remove_superseded_rows(session, payload.coverage)
+    errors.extend(sweep_errors)
 
     finished_at = datetime.now(timezone.utc)
 
@@ -57,6 +61,9 @@ def run(
         errors=errors,
         metadata={
             "skipped": stats.skipped,
+            "superseded_rows_removed": [
+                {"indicator_type": k, "date": d, "value": v} for k, d, v in removed
+            ],
             "source_url": settings.economic_indicators_dataset_url,
         },
     )
