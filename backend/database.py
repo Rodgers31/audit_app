@@ -6,7 +6,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-from db_url import with_explicit_driver
+if __package__:
+    from .db_url import with_explicit_driver
+else:
+    from db_url import with_explicit_driver
 
 load_dotenv()
 

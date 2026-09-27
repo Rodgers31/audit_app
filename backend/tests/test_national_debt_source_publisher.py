@@ -217,3 +217,50 @@ def test_a_row_with_its_own_source_does_not_inherit_the_payloads_publisher():
     ids, foreign = parse_debt_payload(payload)
     assert ids.publisher == "World Bank"
     assert foreign.publisher is None
+
+
+def test_a_row_repeating_the_payload_url_keeps_its_publisher():
+    payload = _payload()
+    payload["loans"][0]["source_url"] = payload["source_url"]
+    assert parse_debt_payload(payload)[0].publisher == CBK
+
+
+def test_live_bulletin_rows_carry_their_own_citation(db_session, national):
+    from datetime import date
+    from seeding.domains.national_debt.cbk_bulletin import _build_loan_records
+
+    url = "https://www.centralbank.go.ke/uploads/statistical_bulletin/new.pdf"
+    loans = _build_loan_records(
+        measurement_date=date(2026, 6, 1), fiscal_year_start=2025,
+        values=[Decimal(10)] * 7, source_url=url,
+    )
+    records = parse_debt_payload({
+        "loans": loans, "source_url": "https://treasury.go.ke/old.pdf",
+        "source_title": "Older Treasury document", "publisher": TREASURY_DEFAULT,
+    })
+    assert records
+    assert all(r.source_url == url and r.publisher == CBK for r in records)
+    write_debt_records(db_session, records, dataset_id="t", job_id=None)
+    docs = db_session.query(SourceDocument).filter(SourceDocument.url == url).all()
+    assert docs and all(d.publisher == CBK for d in docs)
+
+
+def test_revised_bulletin_with_same_title_repoints_every_loan(db_session, national):
+    from datetime import date
+    from seeding.domains.national_debt.cbk_bulletin import _build_loan_records
+
+    urls = ["https://www.centralbank.go.ke/original.pdf",
+            "https://www.centralbank.go.ke/revised.pdf"]
+    for value, url in enumerate(urls, start=1):
+        loans = _build_loan_records(
+            measurement_date=date(2025, 7, 1), fiscal_year_start=2025,
+            values=[Decimal(value)] * 7, source_url=url,
+        )
+        records = parse_debt_payload({"loans": loans})
+        write_debt_records(db_session, records, dataset_id="t", job_id=None)
+        db_session.flush()
+        stored = db_session.query(Loan).all()
+        assert len(stored) == len(records)
+        assert {loan.outstanding for loan in stored} == {Decimal(value * 1_000_000)}
+        cited = {db_session.get(SourceDocument, loan.source_document_id).url for loan in stored}
+        assert cited == {url}
