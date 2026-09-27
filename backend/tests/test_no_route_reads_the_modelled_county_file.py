@@ -54,7 +54,8 @@ is ever published", for the reasons under BLIND SPOTS.
 THE RULE. A module "reaches" the file if it holds a string constant naming
 ``enhanced_county_data`` (docstrings excluded, comments are not constants), or
 imports a repo module that reaches it. A module that registers a route with a
-decorator (``@app.get``, ``@router.post``, ``@bp.route`` ...) may not reach it,
+decorator (``@app.get``, ``@router.post``, ``@bp.route`` ...) or a registration
+call (``add_api_route``, ``add_url_rule``) may not reach it,
 except through a module in ``GATES``, where the walk stops. Each gate names the
 tests that prove it withholds what the file models.
 
@@ -151,6 +152,9 @@ KNOWN_OFFENDERS: dict[str, str] = {
 HTTP_DECORATORS = frozenset(
     {"get", "post", "put", "patch", "delete", "head", "options", "route", "api_route"}
 )
+#: The same registration without a decorator: ``app.add_api_route("/x", fn)``
+#: (FastAPI/Starlette) and ``app.add_url_rule("/x", view_func=fn)`` (Flask).
+HTTP_REGISTRATION_CALLS = frozenset({"add_api_route", "add_route", "add_url_rule"})
 
 
 # --------------------------------------------------------------------------
@@ -182,6 +186,12 @@ def names_the_file(tree: ast.AST) -> bool:
 
 def registers_a_route(tree: ast.AST) -> bool:
     for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr in HTTP_REGISTRATION_CALLS
+        ):
+            return True
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             for dec in node.decorator_list:
                 if (
@@ -464,14 +474,19 @@ def test_the_detector_stops_at_a_gate_and_ignores_prose(tmp_path):
             "backend/bootstrap.py": 'PATH = "enhanced_county_data.json"\ndef load():\n    return {}\n',
             # Mentions it in a docstring and a comment only.
             "apis/prose.py": '"""Once read enhanced_county_data.json."""\nfrom fastapi import FastAPI\napp = FastAPI()\n# enhanced_county_data.json is gone\n\n@app.get("/")\ndef root():\n    """Not from enhanced_county_data.json."""\n    return {}\n',
+            # Registers its route without a decorator.
+            "apis/no_decorator.py": 'import json\nfrom fastapi import FastAPI\napp = FastAPI()\ndata = json.load(open("enhanced_county_data.json"))\ndef ranking():\n    return sorted(data)\napp.add_api_route("/rankings", ranking)\n',
             # Reads the file but serves nothing: a script, not a publisher.
             "tools/report.py": 'import json\nprint(json.load(open("enhanced_county_data.json")))\n',
         },
     )
-    assert graph.offending_routes({"backend/bootstrap.py"}) == {}
+    assert graph.offending_routes({"backend/bootstrap.py"}) == {
+        "apis/no_decorator.py": ["apis/no_decorator.py"]
+    }
     # And without the gate declared, main.py is caught — the gate is doing the work.
     assert graph.offending_routes(set()) == {
-        "backend/main.py": ["backend/main.py", "backend/bootstrap.py"]
+        "apis/no_decorator.py": ["apis/no_decorator.py"],
+        "backend/main.py": ["backend/main.py", "backend/bootstrap.py"],
     }
 
 
