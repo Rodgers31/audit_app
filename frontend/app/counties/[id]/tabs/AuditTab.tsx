@@ -393,6 +393,7 @@ export default function AuditTab({ data }: { data: CountyComprehensive }) {
                   )}
                 </div>
 
+                <p className='text-xs font-medium mb-1'>{f.audited_entity_name ?? 'Audited institution not identified'}</p>
                 {/* Finding text */}
                 <p className='text-sm text-gray-800 dark:text-neutral-text leading-relaxed mb-1.5'>{f.finding}</p>
 
@@ -414,6 +415,12 @@ export default function AuditTab({ data }: { data: CountyComprehensive }) {
                   />
                 </div>
               </button>
+              {f.source_url && (
+                <a href={f.source_url} target='_blank' rel='noopener noreferrer'
+                  className='block px-4 pb-3 text-xs text-gov-forest dark:text-emerald-100 underline'>
+                  Source report{f.page_ref ? `, ${f.page_ref}` : ''}
+                </a>
+              )}
 
               <AnimatePresence>
                 {open && (

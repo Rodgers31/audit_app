@@ -235,8 +235,10 @@ def test_total_revenue_is_what_the_county_received(client, cbirr_period):
     assert revenue["total_revenue"] == 26_035_120_532
     assert revenue["equitable_share"] == 14_242_390_384
     assert revenue["additional_allocations"] == 59_060_570
-    # Own-source is Table 2.1's figure — the one the list and map print.
-    assert revenue["local_revenue"] == 10_789_420_000
+    # Cash includes the chapter's liquor AiA; preserve Table 2.1 separately.
+    assert revenue["local_revenue"] == 10_995_923_399
+    assert revenue["summary_table_own_source_revenue"] == 10_789_420_000
+    assert revenue["local_revenue_basis"] == "cash_receipts"
     assert revenue["total_revenue"] != revenue["local_revenue"]
     assert revenue["fiscal_year"] == "FY2025/26 9M"
     assert sum(s["actual"] for s in revenue["streams"]) == revenue["total_revenue"]
@@ -315,18 +317,17 @@ def contradicting_report(db_session, seed_country, seed_source_doc):
     db_session.commit()
 
 
-def test_a_report_that_contradicts_itself_publishes_neither_total(
+def test_distinct_summary_measure_does_not_erase_reconciled_cash_receipts(
     client, contradicting_report
 ):
     """RED before #238: total_revenue was the 21.13B own-source figure."""
     revenue = _comprehensive(client, "mombasa-county")["revenue"]
 
-    assert revenue["local_revenue"] == 21_126_230_000
-    assert revenue["total_revenue"] is None
-    assert revenue["equitable_share"] is None
-    assert revenue["total_revenue_absent_reason"] == (
-        "cbirr_tables_disagree_on_own_source_revenue"
-    )
+    assert revenue["local_revenue"] == 6_214_590_000
+    assert revenue["summary_table_own_source_revenue"] == 21_126_230_000
+    assert revenue["total_revenue"] == 15_790_780_000
+    assert revenue["equitable_share"] == 8_383_390_000
+    assert revenue["total_revenue_absent_reason"] is None
     assert revenue["own_source_disagreement"] == {
         "summary_table": 21_126_230_000,
         "county_revenue_table": 6_214_590_000,
@@ -431,11 +432,17 @@ class TestTheBlockChecksWhatItPublishes:
         assert self._block(self.GOOD)["total_revenue"] == 1_100e6
 
     def test_without_table_2_1_the_contradiction_check_cannot_run(self):
-        assert self._block(self.GOOD, local=None)["total_revenue"] is None
+        result = self._block(self.GOOD, local=None)
+        assert result["total_revenue"] == 1_100e6
+        assert result["summary_table_own_source_revenue"] is None
+        assert result["own_source_disagreement"] is None
 
     @pytest.mark.parametrize("local", [float("nan"), float("inf"), True])
     def test_a_non_figure_own_source_is_not_agreement(self, local):
-        assert self._block(self.GOOD, local=local)["total_revenue"] is None
+        result = self._block(self.GOOD, local=local)
+        assert result["total_revenue"] == 1_100e6
+        assert result["summary_table_own_source_revenue"] is None
+        assert result["own_source_disagreement"] is None
 
     def test_streams_that_do_not_sum_to_the_total_are_withheld(self):
         receipts = dict(self.GOOD, Total={"target": 2.0, "actual": 9_000e6})
@@ -489,3 +496,22 @@ def test_a_revenue_table_that_raises_costs_that_county_only(monkeypatch):
 
     assert parser._extract_county_revenue_receipts() == []
     assert called, "the extractor was never reached — the test proves nothing"
+
+
+def test_cash_receipts_and_summary_measure_remain_distinct_on_every_county_view(
+    client, contradicting_report
+):
+    listing = client.get("/api/v1/counties").json()[0]
+    detail = client.get("/api/v1/counties/047").json()
+    comprehensive = _comprehensive(client, "mombasa-county")
+    for row in [listing, detail]:
+        assert row["revenue_collection"] == 6_214_590_000
+        assert row["revenue"]["local_revenue_basis"] == "cash_receipts"
+        assert row["revenue"]["summary_table_own_source_revenue"] == 21_126_230_000
+        assert row["revenue"]["own_source_disagreement"] is not None
+    assert comprehensive["revenue"]["local_revenue"] == 6_214_590_000
+    assert comprehensive["revenue"]["total_revenue"] == 15_790_780_000
+    assert (
+        comprehensive["revenue"]["total_revenue_basis"]
+        == "cash_receipts_including_opening_balance"
+    )

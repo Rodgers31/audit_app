@@ -595,11 +595,16 @@ export default function AuditFindingsPage() {
                       className='border-b border-gov-dark/5 hover:bg-gov-forest/[0.03] transition-colors'
                       title={f.finding_text}>
                       <td className='py-2.5 pr-3'>
-                        <Link
-                          href={`/counties/${f.entity_id}`}
-                          className='text-gov-forest dark:text-emerald-100 font-medium hover:underline'>
-                          {f.county_name || `County ${f.entity_id}`}
-                        </Link>
+                        <span className='block font-medium'>
+                          {f.audited_entity_name ?? 'Audited institution not identified'}
+                        </span>
+                        {f.county_slug && f.county_name && (
+                          <Link
+                            href={`/counties/${encodeURIComponent(f.county_slug)}`}
+                            className='text-gov-forest dark:text-emerald-100 hover:underline'>
+                            {f.county_name}
+                          </Link>
+                        )}
                       </td>
                       <td className='py-2.5 pr-3 font-mono text-xs'>{f.audit_year || '—'}</td>
                       <td className='py-2.5 pr-3'>
@@ -640,7 +645,7 @@ export default function AuditFindingsPage() {
                             target='_blank'
                             rel='noopener noreferrer'
                             className='inline-flex items-center text-gov-sage hover:text-gov-forest dark:text-emerald-100 transition-colors'
-                            title='View OAG source report'>
+                            title={f.page_ref ? `View OAG source report, ${f.page_ref}` : 'View OAG source report'}>
                             <FileText className='w-4 h-4' />
                           </a>
                         ) : (

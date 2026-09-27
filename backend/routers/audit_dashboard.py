@@ -25,6 +25,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from cache.redis_cache import cached
 from services.audit_opinions import opinion_facet, opinion_facet_by_year
 from services.oag_report_sections import canonical_section
+from services.audit_citations import audited_institution, report_page_url
 from services.publication_gate import (
     count_withheld_audits,
     publishable_audit_criterion,
@@ -175,6 +176,9 @@ class FindingDetail(BaseModel):
     id: int
     entity_id: int
     county_name: Optional[str] = None
+    county_slug: Optional[str] = None
+    audited_entity_name: Optional[str] = None
+    page_ref: Optional[str] = None
     period_id: int
     finding_text: str
     severity: str
@@ -743,12 +747,14 @@ async def get_audit_findings(
         query = (
             db.query(
                 Audit,
-                Entity.canonical_name,
-                SourceDocument.url.label("doc_url"),
+                Entity,
+                SourceDocument,
+                Extraction.extracted_json,
                 confidence_sub.c.avg_confidence,
             )
             .join(Entity, Audit.entity_id == Entity.id)
             .outerjoin(SourceDocument, Audit.source_document_id == SourceDocument.id)
+            .outerjoin(Extraction, Audit.extraction_id == Extraction.id)
             .outerjoin(
                 confidence_sub,
                 Audit.source_document_id == confidence_sub.c.source_document_id,
@@ -774,19 +780,24 @@ async def get_audit_findings(
         rows = query.order_by(desc(Audit.audit_year), desc(Audit.id)).offset(offset).limit(limit).all()
 
         items = []
-        for a, county_name, doc_url, avg_conf in rows:
+        for a, entity, doc, extracted_json, avg_conf in rows:
+            county_name = entity.canonical_name if entity.type.value == "county" else None
+            doc_url = doc.url if doc else None
             # The document the finding was extracted from, else a reference
             # that is itself a link, else nothing. external_reference is an
             # internal key ("OAG-BB-2024/2025-V2091-P11"); this used to be
             # pasted onto oagkenya.go.ke/wp-content/uploads/, which 404s, and
             # it outranked the real document URL on every production finding.
-            source_url = _openable_url(doc_url) or _openable_url(a.external_reference)
+            source_url = report_page_url(_openable_url(doc_url) or _openable_url(a.external_reference), a.page_ref)
 
             items.append(
                 FindingDetail(
                     id=a.id,
                     entity_id=a.entity_id,
                     county_name=county_name,
+                    county_slug=entity.slug if county_name else None,
+                    audited_entity_name=audited_institution(extracted_json, county_name=county_name, document_meta=doc.meta if doc else None),
+                    page_ref=a.page_ref,
                     period_id=a.period_id,
                     finding_text=a.finding_text,
                     severity=a.severity.value if hasattr(a.severity, "value") else str(a.severity),

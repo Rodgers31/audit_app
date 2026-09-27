@@ -4,6 +4,7 @@
 import { County } from '@/types';
 import { DollarSign } from 'lucide-react';
 import { formatCurrency } from './auditUtils';
+import { countyRevenueNotes } from '@/lib/counties/revenueNotes';
 
 interface FinancialOverviewProps {
   county: County;
@@ -31,12 +32,13 @@ export default function FinancialOverview({ county }: FinancialOverviewProps) {
           </div>
         </div>
         <div className='p-4 bg-purple-50 rounded-xl border border-purple-200'>
-          <div className='text-sm text-purple-600 font-medium mb-1'>Revenue Collected</div>
+          <div className='text-sm text-purple-600 font-medium mb-1'>{county.revenue?.local_revenue_basis === 'cash_receipts' ? 'Own-source cash receipts' : 'Own-source revenue (summary)'}</div>
           <div className='text-xl font-bold text-purple-700'>
             {county.revenueCollection != null
               ? formatCurrency(county.revenueCollection)
               : '—'}
           </div>
+          {county.revenue && <p className='mt-2 text-xs text-purple-800'>{countyRevenueNotes(county.revenue, formatCurrency).join(' · ')}</p>}
         </div>
         <div className='p-4 bg-red-50 rounded-xl border border-red-200'>
           <div className='text-sm text-red-600 font-medium mb-1'>Pending Bills</div>

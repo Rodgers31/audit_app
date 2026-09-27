@@ -44,6 +44,7 @@ from services.county_budget import (
     REVENUE_RECEIPTS_CATEGORY,
     REVENUE_RECEIPTS_TOTAL,
 )
+from services.audit_citations import audited_institution, extraction_payload, report_page_url
 from services.trust_guards import (
     check_budget_sectors,
     check_coverage_staleness,
@@ -563,32 +564,91 @@ def county_debt_total(loans) -> Optional[float]:
 OWN_SOURCE_REVENUE_CATEGORY = "own source revenue"
 
 
+def _revenue_amount(value):
+    from decimal import Decimal
+    import math
+
+    if isinstance(value, bool) or not isinstance(value, (int, float, Decimal)):
+        return None
+    number = float(value)
+    return number if math.isfinite(number) and number >= 0 else None
+
+
+def _county_own_source_summary(budget_lines) -> Optional[float]:
+    """The summary's 'Actual Realised' measure, not necessarily cash."""
+    rows = [
+        line
+        for line in budget_lines or []
+        if (line.category or "").strip().lower() == OWN_SOURCE_REVENUE_CATEGORY
+    ]
+    return _revenue_amount(rows[0].actual_spent) if len(rows) == 1 else None
+
+
 def county_own_source_revenue(budget_lines) -> Optional[float]:
-    """What a county actually collected itself, or None if unpublished.
+    """Cash receipts where the chapter states them; keep the basis in the block."""
+    return _county_revenue_for_lines(budget_lines)["local_revenue"]
 
-    Read from the CBIRR's "Own Source Revenue Collection" table
-    (``actual_spent`` on the Own Source Revenue row; ``allocated_amount`` is
-    the target). This is rates, licences, park fees, hospital charges — NOT
-    the county's budget, most of which is the equitable share.
 
-    It replaces ``metrics["revenue_2024"]``, which was exactly 0.85 x a
-    modelled budget for all 47 counties and was published under the label
-    "Revenue Collected". The real figures are about a tenth of that: KSh 53.9B
-    collected across all 47 counties in the first nine months of FY 2025/26,
-    against budgets of KSh 633.3B.
+def county_own_source_target(budget_lines) -> Optional[float]:
+    """The target from the same table and streams as the published amount."""
+    return _county_revenue_for_lines(budget_lines)["own_source_target"]
 
-    None rather than 0.0 when the county has no such row, because a county
-    that collected nothing and a county nobody has published are different
-    claims.
-    """
-    for line in budget_lines or []:
-        if (line.category or "").strip().lower() != OWN_SOURCE_REVENUE_CATEGORY:
-            continue
-        amount = line.actual_spent
-        if amount is None:
-            continue
-        return float(amount)
-    return None
+
+def _county_revenue_for_lines(budget_lines):
+    cash = [
+        line
+        for line in budget_lines or []
+        if line.category == REVENUE_RECEIPTS_CATEGORY
+    ]
+    summaries = [
+        line
+        for line in budget_lines or []
+        if (line.category or "").strip().lower() == OWN_SOURCE_REVENUE_CATEGORY
+    ]
+
+    def context(line):
+        return tuple(
+            getattr(line, key, None)
+            for key in ("entity_id", "period_id", "currency", "source_document_id")
+        )
+
+    reason = None
+    if cash and (
+        len({context(line) for line in cash}) != 1
+        or len({line.subcategory for line in cash}) != len(cash)
+    ):
+        reason = "ambiguous_revenue_receipt_rows"
+    # Cash sets the publication period. A summary from another document or
+    # period cannot be presented as a disagreement within that same report.
+    comparable = [
+        line for line in summaries if not cash or context(line) == context(cash[0])
+    ]
+    if len(comparable) != 1:
+        comparable = []
+    publication_rows = cash if cash else comparable
+    period = getattr(publication_rows[0], "period", None) if publication_rows else None
+    block = county_revenue_block(
+        None if reason else county_revenue_receipts(cash),
+        local_revenue=_county_own_source_summary(comparable),
+        own_source_target=_county_own_source_target_summary(comparable),
+        fiscal_year=period.label if period else None,
+    )
+    if reason:
+        block["total_revenue_absent_reason"] = reason
+    block["sources"] = [
+        {
+            "id": getattr(line, "source_document_id", None),
+            "url": getattr(getattr(line, "source_document", None), "url", None),
+            "page_ref": getattr(line, "page_ref", None),
+            "measure": "cash_receipts"
+            if line.category == REVENUE_RECEIPTS_CATEGORY
+            else "summary_table_actual_realised",
+        }
+        for line in [*(cash if not reason else []), *comparable]
+        if line.category != REVENUE_RECEIPTS_CATEGORY
+        or line.subcategory == REVENUE_RECEIPTS_TOTAL
+    ]
+    return block
 
 
 def county_revenue_receipts(budget_lines) -> Optional[Dict[str, Dict[str, float]]]:
@@ -604,15 +664,9 @@ def county_revenue_receipts(budget_lines) -> Optional[Dict[str, Dict[str, float]
     for line in budget_lines or []:
         if (line.category or "") != REVENUE_RECEIPTS_CATEGORY or not line.subcategory:
             continue
-        if line.actual_spent is None:
-            continue
         out[line.subcategory] = {
-            "target": (
-                float(line.allocated_amount)
-                if line.allocated_amount is not None
-                else None
-            ),
-            "actual": float(line.actual_spent),
+            "target": _revenue_amount(line.allocated_amount),
+            "actual": _revenue_amount(line.actual_spent),
         }
     return out if REVENUE_RECEIPTS_TOTAL in out else None
 
@@ -641,10 +695,8 @@ _OWN_SOURCE_STREAMS = (
 #: ._REVENUE_TOLERANCE_KES), re-checked on the rows as stored.
 _REVENUE_STREAMS_TOLERANCE = 1000
 
-#: How far the two may differ before the county table is withheld. Measured on
-#: the FY2025/26 CBIRR: Lamu and Narok differ by 0.18% and 0.79% and pass;
-#: Makueni, Nakuru, Tharaka Nithi and Mombasa differ by 10.7% to 70.6% and are
-#: withheld; the other 20 agree to within 0.01%.
+#: Flag a material difference between independently labelled measures.
+#: Agreement is not evidence that both tables use the same accounting basis.
 _OWN_SOURCE_AGREEMENT = 0.01
 
 
@@ -655,23 +707,12 @@ def county_revenue_block(
     own_source_target: Optional[float],
     fiscal_year: Optional[str],
 ) -> Dict[str, Any]:
-    """The ``revenue`` object of ``/counties/{id}/comprehensive``.
+    """Publish reconciled cash receipts and retain the summary measure.
 
-    ``total_revenue`` is the CBIRR's own Grand Total of actual receipts, and
-    ``streams`` are the rows it is the sum of — published only when they add
-    up. ``local_revenue`` stays the own-source figure every other page shows
-    (CBIRR Table 2.1), and is NOT one of the streams: Table 2.1 and the county
-    table differ on what they count as own-source (Nairobi's liquor A-i-A is in
-    the second and not the first), so presenting it as a part would make the
-    parts stop summing.
+    The chapter's Grand Total includes the opening balance. Its own-source
+    components and targets share that table's basis. A differing summary
+    measure is disclosed separately, never added to these cash streams.
     """
-    # The report's two own-source figures must agree before its revenue table
-    # is published beside Table 2.1's. Of the 26 counties whose FY2025/26
-    # table reconciles, 20 agree to within 0.01% and two within 1%; Mombasa's
-    # Table 2.1 says 21,126.23M and its own revenue table 6,214.59M. Printing both on one page
-    # ("total 15.79B, local 21.13B") is a contradiction the site cannot
-    # resolve, so the revenue table is withheld and both figures are shown.
-    #
     # Table 2.1's "FIF/AiA" column carries a county's A-i-A stream for some
     # counties and not others (Nairobi's is FIF alone: 9,440.57M ordinary +
     # 1,348.85M FIF = its 10,789.42M exactly, with the 206.51M liquor A-i-A
@@ -683,29 +724,31 @@ def county_revenue_block(
             isinstance(v, (int, float))
             and not isinstance(v, bool)
             and math.isfinite(v)
+            and v >= 0
         )
 
-    # What the block publishes must be what the parser proved: a positive
-    # Total that the streams add up to, every value a real number, and a
-    # Table 2.1 figure to check the own-source streams against. Rows that
-    # outlived a re-parse, a NaN from the database, or a missing Table 2.1 row
-    # would each publish a total nothing vouches for.
+    local_revenue = local_revenue if _figure(local_revenue) else None
+    own_source_target = own_source_target if _figure(own_source_target) else None
+    # Missing cells are absent; a printed, reconciled zero remains zero.
     withheld_reason = None
+    if receipts:
+        if not isinstance(receipts, dict) or not all(
+            isinstance(v, dict) for v in receipts.values()
+        ):
+            receipts, withheld_reason = None, "invalid_revenue_rows"
     if receipts:
         total = receipts.get(REVENUE_RECEIPTS_TOTAL, {}).get("actual")
         streams_actual = [
-            v["actual"] for k, v in receipts.items() if k != REVENUE_RECEIPTS_TOTAL
+            v.get("actual") for k, v in receipts.items() if k != REVENUE_RECEIPTS_TOTAL
         ]
         if (
             not _figure(total)
-            or total <= 0
+            or total < 0
             or not streams_actual
             or not all(_figure(v) for v in streams_actual)
             or abs(sum(streams_actual) - total) > _REVENUE_STREAMS_TOLERANCE
         ):
             receipts, withheld_reason = None, "cbirr_revenue_streams_do_not_sum_to_total"
-        elif not _figure(local_revenue):
-            receipts, withheld_reason = None, "no_table_2_1_own_source_figure_to_check_against"
 
     disagreement = None
     if receipts and local_revenue is not None:
@@ -720,15 +763,39 @@ def county_revenue_block(
                 "summary_table": local_revenue,
                 "county_revenue_table": with_aia,
             }
-            receipts = None
+            # The chapter explicitly labels cash receipts. Preserve those
+            # supported amounts and disclose the competing summary measure.
+
+    summary_own_source = local_revenue
+    summary_own_source_target = own_source_target
+    if receipts:
+        own_streams = [
+            receipts[name]["actual"] for name in _OWN_SOURCE_STREAMS if name in receipts
+        ]
+        local_revenue = sum(own_streams) if own_streams else None
+        own_targets = [
+            receipts[name].get("target")
+            for name in _OWN_SOURCE_STREAMS
+            if name in receipts
+        ]
+        own_source_target = (
+            _revenue_amount(sum(own_targets))
+            if own_targets and all(_figure(v) for v in own_targets)
+            else None
+        )
 
     def _stream(name: str, key: str) -> Optional[float]:
-        return (receipts or {}).get(name, {}).get(key)
+        value = (receipts or {}).get(name, {}).get(key)
+        return value if _figure(value) else None
 
     streams = [
-        {"stream": name, "target": vals["target"], "actual": vals["actual"]}
+        {"stream": name, "target": _stream(name, "target"), "actual": vals["actual"]}
         for name, vals in sorted(
-            ((k, v) for k, v in (receipts or {}).items() if k != REVENUE_RECEIPTS_TOTAL),
+            (
+                (k, v)
+                for k, v in (receipts or {}).items()
+                if k != REVENUE_RECEIPTS_TOTAL
+            ),
             key=lambda kv: (
                 _REVENUE_STREAM_ORDER.index(kv[0])
                 if kv[0] in _REVENUE_STREAM_ORDER
@@ -743,6 +810,19 @@ def county_revenue_block(
         "equitable_share_target": _stream("Equitable Share", "target"),
         "additional_allocations": _stream("Additional Allocations", "actual"),
         "local_revenue": local_revenue,
+        "local_revenue_basis": "cash_receipts"
+        if receipts
+        else "summary_table_actual_realised"
+        if local_revenue is not None
+        else None,
+        "summary_table_own_source_revenue": summary_own_source,
+        "summary_table_own_source_target": summary_own_source_target,
+        "summary_table_basis": "publisher_label_actual_realised"
+        if summary_own_source is not None
+        else None,
+        "total_revenue_basis": "cash_receipts_including_opening_balance"
+        if receipts
+        else None,
         "own_source_target": own_source_target,
         "streams": streams,
         "fiscal_year": fiscal_year,
@@ -755,11 +835,7 @@ def county_revenue_block(
         "total_revenue_absent_reason": (
             None
             if receipts
-            else (
-                "cbirr_tables_disagree_on_own_source_revenue"
-                if disagreement
-                else withheld_reason or "no_reconciled_cbirr_revenue_table"
-            )
+            else (withheld_reason or "no_reconciled_cbirr_revenue_table")
         ),
         "own_source_disagreement": disagreement,
     }
@@ -952,7 +1028,7 @@ def county_financial_health(
     ``budget_absorption``  spent vs allocated (Controller of Budget). Scored
         symmetrically about 100 — under-spending is a failure to deliver and
         over-spending is a failure to budget, so both cost the same.
-    ``own_source_revenue`` realised vs target (CBIRR Table 2.1). Capped at
+    ``own_source_revenue`` amount vs target from the same CBIRR table. Capped at
         100 so a lowballed target cannot buy a high score.
     ``pending_bills``      pending bills as a share of budget, inverted.
     ``audit_opinion``      the Auditor-General's opinion.
@@ -987,7 +1063,7 @@ def county_financial_health(
                 "name": "own_source_revenue",
                 "score": round(min(100.0, max(0.0, performance)), 1),
                 "observed": round(performance, 1),
-                "basis": "realised vs target, CBIRR own-source revenue table",
+                "basis": "own-source revenue vs target from the same CBIRR table",
             }
         )
 
@@ -1048,20 +1124,14 @@ def county_financial_health(
     }
 
 
-def county_own_source_target(budget_lines) -> Optional[float]:
-    """The county's own-source revenue TARGET, or None.
-
-    The CBIRR prints target and realised side by side; the realised figure is
-    what gets published as revenue, and the pair is what makes a revenue
-    PERFORMANCE component possible.
-    """
-    for line in budget_lines or []:
-        if (line.category or "").strip().lower() != OWN_SOURCE_REVENUE_CATEGORY:
-            continue
-        if line.allocated_amount is None:
-            continue
-        return float(line.allocated_amount)
-    return None
+def _county_own_source_target_summary(budget_lines) -> Optional[float]:
+    """Target from the single unambiguous summary row, if reported."""
+    rows = [
+        line
+        for line in budget_lines or []
+        if (line.category or "").strip().lower() == OWN_SOURCE_REVENUE_CATEGORY
+    ]
+    return _revenue_amount(rows[0].allocated_amount) if len(rows) == 1 else None
 
 
 #: How many of a county's audit findings to surface as its key challenges.
@@ -3331,9 +3401,7 @@ async def get_counties(fiscal_year: Optional[str] = None):
                         # and the compare page all read. Absent sorts last
                         # and renders as an em dash; a zero sorted first
                         # and divided into per-capita budget.
-                        "population": (
-                            pop_data.total_population if pop_data else None
-                        ),
+                        "population": (pop_data.total_population if pop_data else None),
                         "budget_2025": total_allocated,
                         "total_budget": total_allocated,
                         "total_spent": total_spent,
@@ -3359,6 +3427,7 @@ async def get_counties(fiscal_year: Optional[str] = None):
                         "sector_breakdown": sector_breakdown,
                         "money_received": money_received,
                         "revenue_collection": revenue_collection,
+                        "revenue": _county_revenue_for_lines(budget_lines),
                         "pending_bills": pending_bills,
                         "debt": total_debt,
                         "total_debt": total_debt,
@@ -3711,9 +3780,7 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                         "coordinates": coords,
                         # Absent stays absent — same rule as the list
                         # endpoint above and the comprehensive one below.
-                        "population": (
-                            pop_data.total_population if pop_data else None
-                        ),
+                        "population": (pop_data.total_population if pop_data else None),
                         "budget_2025": total_allocated,
                         "total_budget": total_allocated,
                         "total_spent": total_spent,
@@ -3739,6 +3806,7 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                         "sector_breakdown": sector_breakdown,
                         "money_received": money_received,
                         "revenue_collection": revenue_collection,
+                        "revenue": _county_revenue_for_lines(budget_lines),
                         "pending_bills": pending_bills,
                         "debt": total_debt,
                         "total_debt": total_debt,
@@ -3836,7 +3904,6 @@ async def get_county_comprehensive(
                 _sector_lines,
                 _class_by_cat,
             ) = _split_classification_and_sector_lines(budget_lines)
-
 
             # Provenance for the headline budget: does it come from parsed CoB
             # BIRR classification rows, or from the modelled sector/projection
@@ -4004,11 +4071,16 @@ async def get_county_comprehensive(
                 for _ext in db.query(_DBExtraction).filter(
                     _DBExtraction.id.in_(_ext_ids)
                 ):
-                    _extracted[_ext.id] = _ext.extracted_json or {}
-                    _title = (_ext.extracted_json or {}).get("title")
+                    _extracted[_ext.id] = extraction_payload(_ext.extracted_json)
+                    _title = _extracted[_ext.id].get("title")
                     if _title:
                         _finding_titles[_ext.id] = str(_title)
 
+            _audit_docs = {
+                d.id: d for d in db.query(DBSourceDocument).filter(
+                    DBSourceDocument.id.in_({a.source_document_id for a in audits})
+                )
+            }
             audit_findings = []
             by_severity = {"info": 0, "warning": 0, "critical": 0}
             # `0.0` here reads as "the Auditor-General questioned nothing".
@@ -4071,6 +4143,14 @@ async def get_county_comprehensive(
                     {
                         "id": a.id,
                         "finding": a.finding_text,
+                        "audited_entity_name": audited_institution(
+                            _extracted.get(a.extraction_id), county_name=entity.canonical_name,
+                            document_meta=_audit_docs[a.source_document_id].meta if a.source_document_id in _audit_docs else None,
+                        ),
+                        "page_ref": a.page_ref,
+                        "source_url": report_page_url(
+                            _audit_docs[a.source_document_id].url if a.source_document_id in _audit_docs else None, a.page_ref,
+                        ),
                         "severity": sev,
                         "category": category,
                         "status": status,
@@ -4358,12 +4438,7 @@ async def get_county_comprehensive(
                     "source": _budget_source,
                 },
                 # Revenue — see county_revenue_block.
-                "revenue": county_revenue_block(
-                    revenue_receipts,
-                    local_revenue=local_revenue,
-                    own_source_target=county_own_source_target(budget_lines),
-                    fiscal_year=budget_fy_label,
-                ),
+                "revenue": _county_revenue_for_lines(budget_lines),
                 # Debt
                 "debt": {
                     "total_debt": total_debt,
@@ -4372,7 +4447,8 @@ async def get_county_comprehensive(
                     # says about it, both from the rows behind it; null / []
                     # when no figure is published (#238).
                     **_county_pending_bills_fields(
-                        loans, pending_bills,
+                        loans,
+                        pending_bills,
                         absence=(
                             _county_pending_bills_absence(db, entity)
                             if pending_bills is None

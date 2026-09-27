@@ -414,9 +414,14 @@ def run(
                 doc_stat = {"dataset": dataset_id, "doc_id": doc.id, "url": url}
                 if parser is not None:
                     try:
-                        ext_stats = parser(session, doc, settings)
-                        fresh_ids = ext_stats.pop("fresh_extraction_ids", None) or ()
+                        from ...extractors.reconciliation import extract_and_load
+
+                        ext_stats, load_stats = extract_and_load(
+                            session, doc, settings, context, parser, load_blue_book_extractions
+                        )
                         doc_stat["extractions"] = ext_stats
+                        if ext_stats.get("partial"):
+                            errors.append(f"document {doc.id}: partial extraction; coverage incomplete")
                     except QuarantinedDocument as exc:
                         # A document the parser deliberately refused — a
                         # thematic or performance audit with no auditee, say.
@@ -440,6 +445,9 @@ def run(
                             volume_report["failed"].append(f"{label}: {exc}")
                         continue
                     except Exception as exc:
+                        from ...extractors.reconciliation import record_failed_attempt
+
+                        doc_stat["extraction_attempt"] = record_failed_attempt(doc, exc)
                         errors.append(f"extract failed for doc {doc.id}: {exc}")
                         logger.exception("Extraction failed for doc %s", doc.id)
                         metadata["documents"].append(doc_stat)
@@ -448,10 +456,6 @@ def run(
                                 f"{label}: {type(exc).__name__}: {str(exc)[:160]}"
                             )
                         continue
-                    load_stats = load_blue_book_extractions(
-                        session, doc, settings, context,
-                        fresh_extraction_ids=fresh_ids,
-                    )
                     processed += load_stats.processed
                     created += load_stats.created
                     updated += load_stats.updated

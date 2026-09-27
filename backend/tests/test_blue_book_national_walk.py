@@ -432,13 +432,25 @@ def _findings(db_session, doc):
     )
 
 
+
+def _reviewed_extract(db, doc):
+    """Explicit fixture review of the obsolete prior-year table rows."""
+    from seeding.extractors.reconciliation import ReconciliationRequired
+    try:
+        return bb.extract_blue_book(db, doc, SeedingSettings())
+    except ReconciliationRequired as exc:
+        return bb.extract_blue_book(db, doc, SeedingSettings(), review={
+            "proposal": exc.proposal, "source_complete": True,
+            "reason": "Checked PAGES fixture: prior-year table rows are not findings.",
+        })
+
 class TestReExtraction:
     def test_an_older_walk_is_re_read_although_the_bytes_did_not_move(
         self, db_session, national_doc
     ):
         _published(db_session, national_doc)
 
-        stats = bb.extract_blue_book(db_session, national_doc, SeedingSettings())
+        stats = _reviewed_extract(db_session, national_doc)
 
         assert national_doc._test_reads, "skipped on md5 alone"
         assert not stats.get("skipped_unchanged")
@@ -451,10 +463,10 @@ class TestReExtraction:
         self, db_session, national_doc
     ):
         """POSITIVE CONTROL: the version stamp must not re-read every night."""
-        bb.extract_blue_book(db_session, national_doc, SeedingSettings())
+        _reviewed_extract(db_session, national_doc)
         national_doc._test_reads.clear()
 
-        stats = bb.extract_blue_book(db_session, national_doc, SeedingSettings())
+        stats = _reviewed_extract(db_session, national_doc)
 
         assert national_doc._test_reads == []
         assert stats["skipped_unchanged"] is True
@@ -475,7 +487,7 @@ class TestReExtraction:
         national_doc.meta = meta
         db_session.flush()
 
-        bb.extract_blue_book(db_session, national_doc, SeedingSettings())
+        _reviewed_extract(db_session, national_doc)
 
         assert national_doc._test_reads
 
@@ -489,7 +501,7 @@ class TestReExtraction:
         )
         audit_id = before[para52].id
 
-        stats = bb.extract_blue_book(db_session, national_doc, SeedingSettings())
+        stats = _reviewed_extract(db_session, national_doc)
         _load(db_session, national_doc, stats.get("fresh_extraction_ids", ()))
         db_session.flush()
 
@@ -503,7 +515,7 @@ class TestReExtraction:
     ):
         _published(db_session, national_doc)
 
-        stats = bb.extract_blue_book(db_session, national_doc, SeedingSettings())
+        stats = _reviewed_extract(db_session, national_doc)
         _load(db_session, national_doc, stats.get("fresh_extraction_ids", ()))
         db_session.flush()
 
@@ -523,7 +535,7 @@ class TestReExtraction:
     ):
         _published(db_session, national_doc)
 
-        stats = bb.extract_blue_book(db_session, national_doc, SeedingSettings())
+        stats = _reviewed_extract(db_session, national_doc)
         _load(db_session, national_doc, stats.get("fresh_extraction_ids", ()))
         db_session.flush()
 
@@ -552,7 +564,7 @@ class TestReExtraction:
         national_doc.md5 = "0000000000000000000000000000beef"
         db_session.flush()
 
-        bb.extract_blue_book(db_session, national_doc, SeedingSettings())
+        _reviewed_extract(db_session, national_doc)
         db_session.flush()
 
         assert _findings(db_session, national_doc) == [
@@ -580,7 +592,7 @@ class TestReExtraction:
         db_session.flush()
 
         with pytest.raises(bb.ExtractionStillReferenced, match="poverty_indices"):
-            bb.extract_blue_book(db_session, national_doc, SeedingSettings())
+            _reviewed_extract(db_session, national_doc)
         assert db_session.get(Extraction, table_row.id) is not None
 
     def test_a_re_read_that_finds_nothing_keeps_every_row(
@@ -594,7 +606,7 @@ class TestReExtraction:
         monkeypatch.setattr(bb, "read_pages", lambda _p, **_kw: [TOC])
 
         with pytest.raises(bb.EmptyReExtraction):
-            bb.extract_blue_book(db_session, national_doc, SeedingSettings())
+            _reviewed_extract(db_session, national_doc)
 
         assert _findings(db_session, national_doc) == [
             (1071, 52), (1109, 1), (1109, 8),
@@ -611,12 +623,12 @@ class TestReExtraction:
         is not equal to 0.9. Compared raw, every surviving row of documents
         2395 and 2396 (1,498, byte-identical) was counted and written as
         "updated" on the prod clone."""
-        bb.extract_blue_book(db_session, national_doc, SeedingSettings())
+        _reviewed_extract(db_session, national_doc)
         db_session.commit()
         db_session.expire_all()
         national_doc.meta = {**national_doc.meta, "extractor_version": 1}
         db_session.flush()
 
-        stats = bb.extract_blue_book(db_session, national_doc, SeedingSettings())
+        stats = _reviewed_extract(db_session, national_doc)
 
         assert (stats["kept"], stats["updated"], stats["created"]) == (5, 0, 0)

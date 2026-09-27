@@ -6,6 +6,7 @@ import {
   BudgetSource,
   County,
   CountyComprehensive,
+  CountyRevenue,
 } from '@/types';
 import type { CountyFiscalYears } from '@/lib/utils';
 import { apiClient } from './axios';
@@ -41,6 +42,7 @@ interface BackendCountyResponse {
   /** Withheld (null) by the API since #238: it was the budget under another name. */
   money_received?: number | null;
   revenue_collection?: number;
+  revenue?: CountyRevenue;
   pending_bills?: number | null;
   // Debt
   debt?: number;
@@ -175,6 +177,7 @@ export const transformCountyData = (bc: BackendCountyResponse): County => {
     moneyReceived: reportedAmount(bc.money_received),
     budgetUtilization: bc.budget_utilization ?? undefined,
     revenueCollection: bc.revenue_collection ?? undefined,
+    revenue: bc.revenue,
     // `?? 0` here published a zero for a county with no figure. The API now
     // returns null when nobody has published one — Nandi reported no trade
     // payables to the Controller of Budget at 30 June 2026, and the report

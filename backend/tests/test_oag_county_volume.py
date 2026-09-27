@@ -448,14 +448,13 @@ class TestExtractionRows:
         assert "source_hash" not in first.extracted_json
         assert sorted(stats["fresh_extraction_ids"]) == sorted(r.id for r in rows)
 
-    def test_a_second_run_reads_nothing(self, db_session, doc, monkeypatch):
-        self._run(db_session, doc, monkeypatch)
-        assert doc.meta["extracted_md5"] == doc.md5  # the first run's stamp
-        monkeypatch.setattr(
-            cv, "read_pages", lambda *a, **k: pytest.fail("re-read an extracted volume")
-        )
-        stats = cv.extract_county_volume(db_session, doc, None, known_counties=self.KNOWN)
-        assert stats["reason"] == "already_extracted" and stats["skipped"] == 4
+    def test_partial_first_run_is_not_cached_as_complete(self, db_session, doc, monkeypatch):
+        from seeding.extractors.reconciliation import IncompleteExtraction
+        stats = self._run(db_session, doc, monkeypatch)
+        assert stats["partial"] is True
+        assert doc.meta.get("extracted_md5") != doc.md5
+        with pytest.raises(IncompleteExtraction):
+            self._run(db_session, doc, monkeypatch)
 
     def test_a_reissued_volume_keeps_the_findings_it_published(
         self, db_session, doc, seed_entity, monkeypatch
@@ -494,7 +493,11 @@ class TestExtractionRows:
         db_session.flush()
         doc.md5 = "b" * 32  # re-issued
 
-        self._run(db_session, doc, monkeypatch)
+        # This fixture deliberately cannot attribute 11 chapters. A re-read
+        # must fail visibly while preserving all previously published rows.
+        from seeding.extractors.reconciliation import IncompleteExtraction
+        with pytest.raises(IncompleteExtraction, match="incomplete county volume"):
+            self._run(db_session, doc, monkeypatch)
         db_session.flush()
 
         assert db_session.get(Audit, audit.id).extraction_id == row.id

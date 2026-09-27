@@ -56,6 +56,9 @@ export interface StalledProject {
 
 export interface AuditFinding {
   id: number;
+  audited_entity_name?: string | null;
+  source_url?: string | null;
+  page_ref?: string | null;
   finding: string;
   severity: 'info' | 'warning' | 'critical';
   category: string;
@@ -65,6 +68,26 @@ export interface AuditFinding {
   audit_year?: string;
   reference?: string;
   recommendation?: string;
+}
+
+/** Each measure keeps the source table's basis and fiscal period. */
+export interface CountyRevenue {
+  total_revenue: number | null;
+  total_revenue_target: number | null;
+  equitable_share: number | null;
+  equitable_share_target: number | null;
+  additional_allocations: number | null;
+  local_revenue: number | null;
+  own_source_target: number | null;
+  local_revenue_basis?: 'cash_receipts' | 'summary_table_actual_realised' | null;
+  total_revenue_basis?: 'cash_receipts_including_opening_balance' | null;
+  summary_table_own_source_revenue?: number | null;
+  own_source_disagreement?: { summary_table: number; county_revenue_table: number } | null;
+  streams: Array<{ stream: string; target: number | null; actual: number }>;
+  fiscal_year: string | null;
+  source: string | null;
+  sources?: Array<{ id: number | null; url: string | null; page_ref: string | null; measure: string }>;
+  total_revenue_absent_reason: string | null;
 }
 
 export interface CountyComprehensive {
@@ -114,27 +137,7 @@ export interface CountyComprehensive {
      *  reader as a CRA model. */
     source?: BudgetSource;
   };
-  /**
-   * What the county received, from the Controller of Budget's CBIRR county
-   * revenue table (#238). `total_revenue` is that table's Grand Total of
-   * actual receipts and `streams` are the rows it is the sum of — both null /
-   * empty when the county's table did not reconcile. `local_revenue` is
-   * own-source revenue (CBIRR Table 2.1), the figure the list and map print;
-   * it is not one of the streams.
-   */
-  revenue: {
-    total_revenue: number | null;
-    total_revenue_target: number | null;
-    equitable_share: number | null;
-    equitable_share_target: number | null;
-    additional_allocations: number | null;
-    local_revenue: number | null;
-    own_source_target: number | null;
-    streams: Array<{ stream: string; target: number | null; actual: number }>;
-    fiscal_year: string | null;
-    source: string | null;
-    total_revenue_absent_reason: string | null;
-  };
+  revenue: CountyRevenue;
   debt: {
     total_debt: number;
     /** null when no publication states this county's pending bills — Nandi
@@ -277,7 +280,8 @@ export interface County {
   moneyReceived?: number; // Total grants/transfers received — undefined when withheld
   budgetUtilization?: number; // Percentage of budget used
   auditIssues?: AuditIssue[];
-  revenueCollection?: number; // Local revenue collected
+  revenueCollection?: number; // Measure described by revenue.local_revenue_basis
+  revenue?: CountyRevenue;
   pendingBills?: number; // Outstanding payments
   developmentBudget?: number; // Capital/development budget
   recurrentBudget?: number; // Operational budget

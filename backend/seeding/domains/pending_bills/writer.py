@@ -10,7 +10,8 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-from datetime import datetime, timezone
+from functools import wraps
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
@@ -27,7 +28,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger("seeding.pending_bills.writer")
 
 
-def write_pending_bills(
+def _write_pending_bills(
     session: Session,
     records: list[PendingBillRecord],
     source_url: str | None = None,
@@ -107,6 +108,22 @@ def write_pending_bills(
     if not records:
         return created, updated
 
+    if writes_county:
+        _require_forward_county_edition(session, records, county_table)
+        # Resolve the whole county edition before creating its source or
+        # retiring any prior figure. A skipped identity is not a missing row
+        # in the publisher's table, and may not erase a known county amount.
+        county_entities = []
+        for record in records:
+            if (record.entity_type or "").strip().lower() != "county":
+                raise ValueError("County publication requires county entity types")
+            entity = _get_or_create_entity(session, record.entity_name, "county")
+            if entity is None:
+                raise ValueError(f"Unresolved county identity: {record.entity_name}")
+            county_entities.append(entity)
+        if len({entity.id for entity in county_entities}) != len(county_entities):
+            raise ValueError("County edition repeats a county identity")
+
     written: set[tuple[int, str]] = set()
 
     # Get or create the source document
@@ -119,8 +136,12 @@ def write_pending_bills(
             "county_payables": dict(county_table) if county_table else None,
         }
 
-    for record in records:
-        entity = _get_or_create_entity(session, record.entity_name, record.entity_type)
+    for index, record in enumerate(records):
+        entity = (
+            county_entities[index]
+            if writes_county
+            else _get_or_create_entity(session, record.entity_name, record.entity_type)
+        )
         if not entity:
             logger.warning(
                 f"Could not resolve entity: {record.entity_name} "
@@ -215,6 +236,77 @@ def write_pending_bills(
     return created, updated
 
 
+@wraps(_write_pending_bills)
+def write_pending_bills(session: Session, *args, **kwargs) -> tuple[int, int]:
+    """Keep an edition atomic even when the domain catches a write failure.
+
+    Release the savepoint into the caller's transaction on success; never
+    commit it here. A malformed late record cannot leave earlier rows dirty.
+    """
+    with session.begin_nested():
+        return _write_pending_bills(session, *args, **kwargs)
+
+
+def _require_forward_county_edition(session, records, county_table):
+    """Validate the report's stock date before touching documents or loan rows.
+
+    Upload IDs and retrieval times are not edition dates. Reject the whole
+    incoming table (so the domain records PARTIAL) instead of overwriting a
+    subset and retiring current rows from the rest of the counties.
+    """
+
+    def as_day(value):
+        if not isinstance(value, str):
+            raise ValueError("County pending bills require an ISO as-at date")
+        try:
+            parsed = date.fromisoformat(value)
+        except ValueError as exc:
+            raise ValueError("Invalid county pending-bills as-at date") from exc
+        if parsed.isoformat() != value or (parsed.month, parsed.day) != (6, 30):
+            raise ValueError(
+                "County pending bills require the stated 30 June stock date"
+            )
+        return parsed
+
+    dates = {as_day(record.as_at) for record in records}
+    if len(dates) != 1:
+        raise ValueError("County pending-bills records mix edition dates")
+    incoming = dates.pop()
+    if county_table is not None and not isinstance(county_table, dict):
+        raise ValueError("County pending-bills table must be an object")
+    if county_table is not None and as_day(county_table.get("as_at")) != incoming:
+        raise ValueError(
+            "County pending-bills table and records disagree on as-at date"
+        )
+    # Serialize county writers even when no loan rows exist yet. PostgreSQL
+    # holds these locks through the writer's caller-owned transaction.
+    session.query(Entity).filter(Entity.type == EntityType.COUNTY).order_by(
+        Entity.id
+    ).with_for_update().all()
+    rows = (
+        session.query(Loan)
+        .join(Entity, Entity.id == Loan.entity_id)
+        .filter(
+            Entity.type == EntityType.COUNTY,
+            Loan.debt_category == DebtCategory.PENDING_BILLS,
+        )
+        .all()
+    )
+    for row in rows:
+        entries = (
+            row.provenance if isinstance(row.provenance, list) else [row.provenance]
+        )
+        for entry in entries:
+            if (
+                isinstance(entry, dict)
+                and entry.get("publication") == COUNTY_PENDING_BILLS_PUBLICATION
+            ):
+                if incoming < as_day(entry.get("as_at")):
+                    raise ValueError(
+                        f"Stale county edition {incoming}: published row {row.id} is dated {entry['as_at']}"
+                    )
+
+
 def _is_county_record(record: PendingBillRecord) -> bool:
     """A record about a county, however the payload spelled its category."""
     category = (record.category or "").strip().lower()
@@ -293,7 +385,11 @@ def _get_or_create_entity(
         "ministry": EntityType.MINISTRY,
         "agency": EntityType.AGENCY,
     }
-    entity_type_enum = type_mapping.get(entity_type.lower())
+    entity_type_enum = (
+        type_mapping.get(entity_type.strip().lower())
+        if isinstance(entity_type, str)
+        else None
+    )
     if not entity_type_enum:
         logger.warning(f"Unknown entity type: {entity_type}")
         return None
@@ -307,7 +403,7 @@ def _get_or_create_entity(
         return entity
 
     # For aggregate records, use "National Government" or "Kenya" entity
-    if "national" in name.lower() or entity_type == "national":
+    if entity_type_enum == EntityType.NATIONAL:
         entity = (
             session.query(Entity)
             .filter(
@@ -319,10 +415,13 @@ def _get_or_create_entity(
             return entity
 
     # For county aggregates, try generic county entity
-    if entity_type == "county":
+    if entity_type_enum == EntityType.COUNTY:
         entity = (
             session.query(Entity)
-            .filter(Entity.canonical_name.ilike(f"%{name.split('—')[0].strip()}%"))
+            .filter(
+                Entity.type == EntityType.COUNTY,
+                Entity.canonical_name.in_([name.strip(), f"{name.strip()} County"]),
+            )
             .first()
         )
         if entity:
