@@ -110,8 +110,9 @@ jobs:
         id: check
         run: |
           #!/usr/bin/env bash
-          # No set -e or pipefail — this script must always exit 0
-          # so it never blocks seeding. Failures are reported via outputs.
+          # Actions runs this step with `bash -eo pipefail`, so every command
+          # that may fail is guarded; the script must always exit 0 so it never
+          # blocks seeding. Failures are reported via outputs.
 
           # ── Data source registry ──────────────────────────────────
           # Each entry: "LABEL|URL|CRITICAL"
@@ -274,6 +275,10 @@ jobs:
                   return 0
                 fi
                 if ! is_retryable "$code"; then break; fi
+                # No wait after the last attempt: it only delayed the next UA
+                # (or source), so a fast failure (refused, DNS) cost 18s and a
+                # runner-wide DNS outage overran the job budget.
+                if [ "$attempt" -ge 3 ]; then break; fi
                 if [ $(( deadline - SECONDS )) -le "$HC_RETRY_DELAY" ]; then return 0; fi
                 sleep "$HC_RETRY_DELAY"
               done
