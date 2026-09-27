@@ -946,8 +946,13 @@ export default function NationalDebtPage() {
 
       {/* ═══════════ SECTION 7 — PENDING BILLS AGING ═══════════ */}
       {pb && (() => {
-        const nationalPct = pb.total > 0 ? (pb.national / pb.total) * 100 : 0;
-        const countyPct = pb.total > 0 ? (pb.county / pb.total) * 100 : 0;
+        // No split without a total: the API withholds it unless national and
+        // county are both published from one BROP edition, and a half over
+        // nothing is not a share.
+        const splitOf = (part: number | null) =>
+          pb.total != null && pb.total > 0 && part != null ? (part / pb.total) * 100 : 0;
+        const nationalPct = splitOf(pb.national);
+        const countyPct = splitOf(pb.county);
         const buckets = pendingBillsSummary?.aging_buckets || [];
         // Whether an aging distribution may be DRAWN at all. This used to draw
         // the chart unconditionally and append a caveat under it — a solid bar

@@ -35,8 +35,9 @@ from ...http_client import SeedingHttpClient
 logger = logging.getLogger("seeding.pending_bills.fetcher")
 
 #: What a Treasury Budget Review and Outlook Paper payload declares itself as.
-#: ``services.publication_gate.COUNTY_PENDING_BILLS_PUBLICATION`` is the same
-#: string; it is the only publication county pending bills are read from.
+#: ``services.publication_gate.PENDING_BILLS_PUBLICATION`` is the same string;
+#: it is the only publication pending bills — national or county — are read
+#: from, and the only payload the writer writes.
 BROP_PUBLICATION = "treasury_brop"
 BROP_PUBLISHER = "National Treasury"
 
@@ -161,7 +162,10 @@ def fetch_pending_bills_payload(
     if _fresh_get("pending_bills").get("mode") != "live":
         mark_fixture("pending_bills", reason="brop_unavailable")
 
-    # Strategy 2: Configured fixture / API URL
+    # Strategy 2: Configured fixture / API URL. Its payload declares no
+    # publication, so the writer writes none of it (#238 counties, #265
+    # national): a night the BROP is unreachable leaves the published rows as
+    # they are, and freshness reports the fallback.
     dataset_url = getattr(settings, "pending_bills_dataset_url", None)
     if dataset_url:
         logger.info("Fetching pending bills from configured URL: %s", dataset_url)
@@ -184,7 +188,12 @@ def fetch_pending_bills_payload(
     logger.info(
         "No pending_bills_dataset_url configured. Running live COB extraction..."
     )
-    return _run_live_extraction()
+    payload = _run_live_extraction()
+    # Not the BROP either, whatever it says about itself.
+    if isinstance(payload, dict):
+        payload.pop("publication", None)
+        payload.pop("publisher", None)
+    return payload
 
 
 def _fetch_from_treasury_brop(
