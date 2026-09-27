@@ -8312,17 +8312,15 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
     Returns:
       - revenue_by_source: Tax-type breakdown per FY (PAYE, Corp Tax, VAT, Excise, Customs, Other)
       - economic_context: Budget as % of GDP, per-capita budget, key economic indicators
-      - execution_by_sector: Allocated → Spent pipeline per sector from CoB NG-BIRR reports
+      - execution_by_sector: revised gross estimates vs actual expenditure per
+        sector, from the newest annual CoB NG-BIRR (declared rows only)
     """
     from models import (
-        BudgetLine,
         EconomicIndicator,
-        Entity,
         FiscalSummary,
         PopulationData,
         RevenueBySource,
     )
-    from sqlalchemy import func
 
     try:
         # ── 1. Revenue by source ──
@@ -8378,52 +8376,67 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
         ]
 
         # ── 2. Economic context ──
-        # Get GDP (in million KES)
-        gdp_row = (
-            db.query(EconomicIndicator)
-            .filter(EconomicIndicator.indicator_type == "total_national_gdp")
-            .order_by(EconomicIndicator.indicator_date.desc())
-            .first()
-        )
-        gdp_million = float(gdp_row.value) if gdp_row else None
+        # Every figure is the NEWEST NATIONAL row of its series, and every
+        # caption comes from that row's own declared provenance. Until #232
+        # growth and unemployment were read out of
+        # `db.query(EconomicIndicator).all()` — no ORDER BY, no entity scope,
+        # last write wins — so the year shown was whatever the planner
+        # returned last (production served unemployment 5.7, a 2021/2022
+        # value, against a newest observation of 5.4), and the inflation
+        # caption was the literal "KNBS Consumer Price Index" under a World
+        # Bank annual average.
+        def _latest_national(indicator_type: str):
+            return (
+                db.query(EconomicIndicator)
+                .filter(
+                    EconomicIndicator.indicator_type == indicator_type,
+                    EconomicIndicator.entity_id.is_(None),
+                    EconomicIndicator.value.isnot(None),
+                )
+                .order_by(
+                    EconomicIndicator.indicator_date.desc(),
+                    EconomicIndicator.id.desc(),
+                )
+                .first()
+            )
+
+        def _provenance(row) -> dict:
+            # `source_label` is DECLARED by the writer, never inferred. A row
+            # without one gets no caption rather than a guessed one: losing a
+            # credit is the safe direction, manufacturing one is not.
+            meta = row.meta if row is not None and isinstance(row.meta, dict) else {}
+            return {
+                "value": float(row.value) if row is not None else None,
+                "as_of": (
+                    row.indicator_date.isoformat()
+                    if row is not None and row.indicator_date
+                    else None
+                ),
+                "source": meta.get("source_label") or None,
+                "measure": meta.get("measure") or None,
+            }
+
+        gdp = _provenance(_latest_national("total_national_gdp"))
+        gdp_million = gdp["value"]
         gdp_billion = gdp_million / 1000 if gdp_million else None  # Convert to billions
+        growth = _provenance(_latest_national("gdp_growth_rate"))
+        unemployment = _provenance(_latest_national("unemployment_rate"))
 
-        # Get other economic indicators
-        econ_rows = db.query(EconomicIndicator).all()
-        econ_map = {}
-        for e in econ_rows:
-            econ_map[e.indicator_type] = float(e.value) if e.value else None
-
-        # Inflation (CPI): read the CANONICAL ``inflation_rate`` series — the
-        # same maintained series /economic/summary uses (seeded by bootstrap,
-        # the economic_indicators domain, and auto_seeder) — taking the latest
-        # observation by date. The legacy ``inflation_rate_cpi`` key was written
-        # ONLY by the hardcoded MVP seeder and was frozen at Jan-2024 = 6.3%, so
-        # the budget page contradicted the rest of the site with a stale figure
-        # (audit §3.10). Reading the maintained series makes this self-update and
-        # stay consistent; the legacy key is a fallback only if the series is
-        # absent. Kenyan CPI is published by KNBS, not CBK.
-        inflation_row = (
-            db.query(EconomicIndicator)
-            .filter(EconomicIndicator.indicator_type == "inflation_rate")
-            .order_by(EconomicIndicator.indicator_date.desc())
-            .first()
-        ) or (
-            db.query(EconomicIndicator)
-            .filter(EconomicIndicator.indicator_type == "inflation_rate_cpi")
-            .order_by(EconomicIndicator.indicator_date.desc())
-            .first()
-        )
-        inflation_pct = (
-            float(inflation_row.value)
-            if inflation_row and inflation_row.value is not None
-            else econ_map.get("inflation_rate") or econ_map.get("inflation_rate_cpi")
-        )
-        inflation_as_of = (
-            inflation_row.indicator_date.isoformat()
-            if inflation_row and inflation_row.indicator_date
-            else None
-        )
+        # Inflation: KNBS's headline is the 12-month rate, published monthly
+        # (CBK table, `inflation_rate_12m`). The World Bank's `inflation_rate`
+        # is an annual AVERAGE a year behind. Take whichever is newer — on a
+        # tie the monthly headline — and caption it with its own measure, so
+        # a fallback to the annual series reads as what it is. The legacy
+        # `inflation_rate_cpi` key is the last resort only.
+        monthly = _latest_national("inflation_rate_12m")
+        annual = _latest_national("inflation_rate")
+        if monthly is not None and (
+            annual is None or monthly.indicator_date >= annual.indicator_date
+        ):
+            inflation_row = monthly
+        else:
+            inflation_row = annual or _latest_national("inflation_rate_cpi")
+        inflation = _provenance(inflation_row)
 
         # Kenya's population, not the sum of every row in the table. This was
         # `func.sum(PopulationData.total_population)` over the whole table —
@@ -8454,11 +8467,18 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
 
         economic_context = {
             "gdp_billion_kes": gdp_billion,
-            "gdp_growth_pct": econ_map.get("gdp_growth_rate"),
-            "inflation_pct": inflation_pct,
-            "inflation_as_of": inflation_as_of,
-            "inflation_source": "KNBS Consumer Price Index",
-            "unemployment_pct": econ_map.get("unemployment_rate"),
+            "gdp_as_of": gdp["as_of"],
+            "gdp_source": gdp["source"],
+            "gdp_growth_pct": growth["value"],
+            "gdp_growth_as_of": growth["as_of"],
+            "gdp_growth_source": growth["source"],
+            "inflation_pct": inflation["value"],
+            "inflation_as_of": inflation["as_of"],
+            "inflation_source": inflation["source"],
+            "inflation_measure": inflation["measure"],
+            "unemployment_pct": unemployment["value"],
+            "unemployment_as_of": unemployment["as_of"],
+            "unemployment_source": unemployment["source"],
             "total_population": total_pop,
             # Say which year the population describes, so a per-capita figure
             # can be checked rather than assumed current.
@@ -8495,80 +8515,14 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
         }
 
         # ── 3. Budget execution by sector ──
-        # Query national-government budget execution data from the
-        # CoB Annual NG-BIRR reports.  These rows are identified by
-        # having an entity with slug 'national-government' AND
-        # committed_amount populated.
-        # County-level rows (from counties_budget seeder) don't have
-        # committed_amount and are for allocation-only display.
+        # Declared-expenditure rows from the newest ANNUAL COB NG-BIRR — see
+        # services/budget_execution.py for why rows are selected by what they
+        # declare, not by which column happens to be filled (#241).
+        from services.budget_execution import execution_by_sector as _exec
 
-        national_entity = (
-            db.query(Entity.id).filter(Entity.slug == "national-government").scalar()
-        )
-
-        # The execution pipeline below is scoped to ONE national period; surface
-        # its fiscal-year label so the UI can show which FY the execution figures
-        # cover. CoB NG-BIRR execution lags the page's selected FY (audit §2.3),
-        # so it must be labelled with its own FY, not the page's.
-        execution_fiscal_year = None
-        if national_entity:
-            # Scope to latest national FY to avoid summing across all periods
-            _nat_pid = _latest_national_period(db)
-            if _nat_pid:
-                execution_fiscal_year = (
-                    db.query(DBFiscalPeriod.label)
-                    .filter(DBFiscalPeriod.id == _nat_pid)
-                    .scalar()
-                )
-            sector_q = (
-                db.query(
-                    BudgetLine.category,
-                    func.sum(BudgetLine.allocated_amount).label("allocated"),
-                    func.sum(BudgetLine.actual_spent).label("spent"),
-                )
-                .filter(BudgetLine.entity_id == national_entity)
-                .filter(BudgetLine.committed_amount.isnot(None))
-                .filter(BudgetLine.allocated_amount > 0)
-            )
-            if _nat_pid:
-                sector_q = sector_q.filter(BudgetLine.period_id == _nat_pid)
-            sector_pipeline = sector_q.group_by(BudgetLine.category).all()
-        else:
-            sector_pipeline = []
-
-        # Normalize sector names (reuse the mapping from overview)
-        execution_by_sector_raw: dict = {}
-        for row in sector_pipeline:
-            raw = str(row.category or "").strip().lower()
-            clean = SECTOR_NORMALIZE.get(raw, "Other")
-            if raw == "total budget":
-                continue
-            if clean not in execution_by_sector_raw:
-                execution_by_sector_raw[clean] = {
-                    "allocated": 0,
-                    "spent": 0,
-                }
-            execution_by_sector_raw[clean]["allocated"] += float(row.allocated or 0)
-            execution_by_sector_raw[clean]["spent"] += float(row.spent or 0)
-
-        execution_by_sector = []
-        for sector in SECTOR_ORDER:
-            if sector in execution_by_sector_raw:
-                d = execution_by_sector_raw[sector]
-                alloc = d["allocated"]
-                spent = d["spent"]
-                unspent = alloc - spent
-                execution_by_sector.append(
-                    {
-                        "sector": sector,
-                        "allocated": alloc,
-                        "spent": spent,
-                        "unspent": unspent,
-                        "execution_rate": (
-                            round((spent / alloc) * 100, 1) if alloc else 0
-                        ),
-                    }
-                )
+        execution = _exec(db)
+        execution_by_sector = execution["rows"]
+        execution_fiscal_year = execution["fiscal_year"]
 
         return {
             "_meta": {
@@ -8581,6 +8535,13 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
             "economic_context": economic_context,
             "execution_by_sector": execution_by_sector,
             "execution_fiscal_year": execution_fiscal_year,
+            # Where the execution figures come from, what they measure, how
+            # much of the ministerial budget they cover, and what they leave
+            # out — each null when there is nothing to publish.
+            "execution_source": execution["source"],
+            "execution_measure": execution["measure"],
+            "execution_coverage": execution["coverage"],
+            "execution_excludes": execution["excludes"],
         }
 
     except HTTPException:

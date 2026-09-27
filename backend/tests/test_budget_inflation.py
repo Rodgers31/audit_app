@@ -52,7 +52,10 @@ def test_budget_inflation_uses_canonical_series_not_stale_cpi(client, seed_infla
     # Latest `inflation_rate` (3.3, Jan-2025) — NOT the stale `inflation_rate_cpi` 6.3.
     assert ec["inflation_pct"] == 3.3
     assert ec["inflation_as_of"].startswith("2025-01")
-    assert ec["inflation_source"] == "KNBS Consumer Price Index"
+    # These rows declare no source, so none is claimed. This line used to pin
+    # the literal "KNBS Consumer Price Index", which is how a World Bank
+    # annual average reached the page credited to KNBS (issue #232).
+    assert ec["inflation_source"] is None
 
 
 def test_budget_inflation_falls_back_to_legacy_key(client, db_session):
