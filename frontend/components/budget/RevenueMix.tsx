@@ -114,6 +114,18 @@ function paletteFor(name: string) {
   return SOURCE_PALETTE[name] ?? FALLBACK_PAL;
 }
 
+/** A metadata object is not evidence that a document link can be opened. */
+function sourceUrl(source?: { data_url?: string; url?: string } | null): string | undefined {
+  for (const candidate of [source?.data_url, source?.url]) {
+    if (typeof candidate !== 'string' || !candidate.trim()) continue;
+    try {
+      const url = new URL(candidate);
+      if (['http:', 'https:'].includes(url.protocol) && url.hostname) return candidate;
+    } catch { /* Try the other locator before reporting absence. */ }
+  }
+  return undefined;
+}
+
 function fmtB(v?: number | null): string {
   if (v == null) return '—';
   if (v >= 1000) return `${(v / 1000).toFixed(2)}T`;
@@ -293,7 +305,7 @@ export default function RevenueMix({ revenueBySource }: Props) {
         {(latest.sources ?? []).filter((s) => s.category === 'total' && s.amount != null).map((s) => (
           <p key={s.revenue_type}>{s.revenue_type}: KES {fmtB(s.amount)}
             {s.basis === 'published' ? ' · publisher-stated' : ' · source basis unconfirmed'}
-            {s.source?.url ? <a className='underline ml-1' href={s.source.data_url || s.source.url}>Source version</a> : ' · source version unavailable'}
+            {sourceUrl(s.source) ? <a className='underline ml-1' href={sourceUrl(s.source)}>Source version</a> : ' · source version unavailable'}
             {s.source?.stated_amount_billion_kes && <> · stated KES {s.source.stated_amount_billion_kes}B</>}
             {s.source?.retrieved_at && <> · retrieved {s.source.retrieved_at.slice(0, 10)}</>}
             {s.source?.reconciliation && <> · {s.source.reconciliation}</>}
@@ -304,6 +316,7 @@ export default function RevenueMix({ revenueBySource }: Props) {
       {/* Source cards */}
       <div className='mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5'>
         {rows.map((r) => {
+          const documentUrl = sourceUrl(r.source);
           const isHover = hoverKey === r.key;
           const yoyUp = r.yoy != null && r.yoy > 0.5;
           const yoyDown = r.yoy != null && r.yoy < -0.5;
@@ -356,9 +369,9 @@ export default function RevenueMix({ revenueBySource }: Props) {
                     </span>
                   )}
                 </div>
-                {!r.source && <p className='text-[11px] text-neutral-muted mt-1'>{r.sourceAbsent || 'Source version and observation date unavailable.'}</p>}
-                {r.source && <p className='text-[11px] text-neutral-muted mt-1'>
-                  <a className='underline' href={r.source.data_url || r.source.url}>Source version</a>
+                {!documentUrl && <p className='text-[11px] text-neutral-muted mt-1'>{r.sourceAbsent || 'Source version and observation date unavailable.'}</p>}
+                {documentUrl && r.source && <p className='text-[11px] text-neutral-muted mt-1'>
+                  <a className='underline' href={documentUrl}>Source version</a>
                   {r.source.stated_amount_billion_kes && <> · stated KES {r.source.stated_amount_billion_kes}B</>}
                   {r.source.retrieved_at && <> · retrieved {r.source.retrieved_at.slice(0, 10)}</>}
                   {r.source.reconciliation && <> · {r.source.reconciliation}</>}

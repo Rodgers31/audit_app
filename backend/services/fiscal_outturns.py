@@ -2,6 +2,9 @@
 from math import isfinite
 from urllib.parse import urlsplit
 
+# Vintages the fiscal-framework parser can identify from publisher headers.
+KNOWN_COLUMNS = frozenset({"Actual", "Preliminary", "Supplementary I", "Approved"})
+
 
 def finite_number(value, *, nonnegative=True):
     if value is None or isinstance(value, (bool, str)):
@@ -39,10 +42,11 @@ def fiscal_outturn(row):
     framework = framework if isinstance(framework, dict) else {}
     source = framework.get("source")
     source = source if isinstance(source, dict) else {}
+    column = source.get("column")
     result = {
         "period": row.fiscal_year, "revenue": None, "expenditure": None,
         "balance": None, "financing": None, "source": source or None,
-        "column": source.get("column") or "Vintage unconfirmed",
+        "column": column if isinstance(column, str) and column in KNOWN_COLUMNS else "Vintage unconfirmed",
         "basis": "treasury_fiscal_framework",
         "measure": "Revenue includes A-i-A; expenditure and net lending includes county transfers and contingency; balance includes grants.",
         "absent_reason": "No complete, reconciled fiscal-framework column with a source is available.",

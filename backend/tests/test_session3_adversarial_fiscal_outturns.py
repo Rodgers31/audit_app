@@ -123,3 +123,43 @@ def test_unknown_header_is_not_inferred_from_old_fiscal_year():
     row = outturn({"fiscal_framework": payload})
     assert row["column"] == "Vintage unconfirmed"
     assert row["balance"] == -880.5
+
+
+@pytest.mark.parametrize("column", [
+    None, "", "   ", "Vintage unconfirmed", True, 1, ["Actual"],
+    {"label": "Actual"}, "revenue_column", "actual",
+    "The column printing this row's ordinary revenue", "Supplementary",
+])
+def test_stored_unknown_vintage_is_not_published_as_a_confirmed_label(column):
+    """Legacy JSON can bypass today's parser; it cannot certify its own label."""
+    data = framework()
+    data["source"]["column"] = column
+    row = outturn({"fiscal_framework": data})
+    assert row["column"] == "Vintage unconfirmed"
+    # An unknown vintage does not invalidate independently reconciled amounts.
+    assert row["balance"] == -880.5
+    assert row["absent_reason"] is None
+
+
+def test_stored_missing_vintage_does_not_guess_from_period():
+    data = framework()
+    del data["source"]["column"]
+    row = outturn({"fiscal_framework": data})
+    assert row["column"] == "Vintage unconfirmed"
+    assert row["balance"] == -880.5
+
+
+@pytest.mark.parametrize("fy,revenue,label", [
+    ("FY 2023/24", 2288.9, "Actual"),
+    ("FY 2024/25", 2420.2, "Preliminary"),
+    ("FY 2025/26", 2784.4, "Supplementary I"),
+    ("FY 2026/27", 2985.7, "Approved"),
+])
+def test_all_parser_identified_vintages_survive_publication(fy, revenue, label):
+    """Use captured publisher headers, including Suppl.1, as positive controls."""
+    split = ff.split_for_fiscal_year(edition(), fy, known_ordinary_revenue=revenue)
+    data = ff.framework_payload(split, source_url="https://treasury.go.ke/book.pdf", page=63)
+    row = fiscal_outturn(SimpleNamespace(meta={"fiscal_framework": data}, fiscal_year=fy))
+    assert row["column"] == label
+    assert row["balance"] is not None
+    assert row["absent_reason"] is None
