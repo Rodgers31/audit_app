@@ -23,7 +23,31 @@ Those figures disagree with backend/seeding/real_data/debt_timeline.json, which
 carries CBK figures cited to the PDF page — including the direction of the
 2023-2024 move and which half of the debt is larger.
 
-The nine routes below served no invented figure and are unchanged. They read
+WITHDRAWN 2026-09-26: two routes that served the modelled county file as fact
+about named counties.
+
+    GET /counties/{county_name}   the file's whole record for one county,
+                                  missing_funds and audit_rating included,
+                                  as "detailed county information from
+                                  actual data"
+    GET /counties/statistics      totals of its budget_2025 and
+                                  debt_outstanding and the mean of its
+                                  budget_execution_rate, "calculated from
+                                  actual county data files"
+
+Every field in backend/data/reference/enhanced_county_data.json except the
+Census population is modelled. budget_2025 is population x KSh 4,500 x a
+hand-set economic_factor; missing_funds is 2% of that and debt_outstanding
+15%; audit_rating and budget_execution_rate take three values each, read off
+economic_factor. An audit grade no auditor issued and a "missing funds" figure
+nobody measured, published against a named county government, is the #183
+defect, actionable under the Defamation Act (Cap 36). Both routes served 503
+only because the path they read resolves to nothing (issue #188): one path edit
+from publishing the model. backend/tests/
+test_no_route_reads_the_modelled_county_file.py now fails any route module
+that can reach the file, and pins the arithmetic above.
+
+The seven routes below served no invented figure and are unchanged. They read
 from ``DataDrivenGovernmentAnalytics``, whose five data-source paths do not
 resolve in this repo, so several of them currently report absence. That is a
 separate defect (issue #188, "the data-driven path is dead, and fails
@@ -210,64 +234,6 @@ async def refresh_data(background_tasks: BackgroundTasks):
     }
 
 
-# County Government Endpoints
-
-
-@app.get("/counties/statistics")
-async def get_county_statistics():
-    """Get county statistics from actual extracted data."""
-    county_stats = analytics.get_actual_county_statistics()
-
-    return {
-        "status": "success",
-        "data": county_stats,
-        "calculation_note": "Statistics calculated from actual county data files",
-    }
-
-
-@app.get("/counties/{county_name}")
-async def get_county_details(county_name: str):
-    """Get detailed county information from actual data."""
-    county_file_data = analytics.cached_data.get("county_data", {})
-
-    if not county_file_data:
-        raise HTTPException(
-            status_code=503,
-            detail="County data not available. Please check data sources.",
-        )
-
-    # Access the nested county_data structure
-    county_data = county_file_data.get("county_data", {})
-
-    if not county_data:
-        raise HTTPException(
-            status_code=503,
-            detail="County data structure invalid. Missing county_data key.",
-        )
-
-    # Find matching county (case-insensitive)
-    matching_county = None
-    for county in county_data.keys():
-        if county.lower() == county_name.lower():
-            matching_county = county
-            break
-
-    if not matching_county:
-        available_counties = list(county_data.keys())
-        raise HTTPException(
-            status_code=404,
-            detail=f"County '{county_name}' not found. Available: {', '.join(available_counties[:10])}...",
-        )
-
-    county_info = county_data[matching_county]
-
-    return {
-        "status": "success",
-        "data": county_info,
-        "data_source": "enhanced_county_data.json",
-    }
-
-
 # Audit Oversight Endpoints
 
 
@@ -350,7 +316,7 @@ async def get_transparency_metrics():
                 [k for k, v in analytics.cached_data.items() if v]
             ),
             "total_data_sources": len(analytics.data_sources),
-            "quality_bonuses": "Applied for county, audit, and COB data",
+            "quality_bonuses": "Applied for audit and COB data",
         },
         "recommendations": [
             "Ensure regular data updates",

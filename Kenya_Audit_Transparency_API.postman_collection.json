@@ -61,34 +61,6 @@
           }
         },
         {
-          "name": "Get County Statistics",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8004/counties/statistics",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "8004",
-              "path": ["counties", "statistics"]
-            }
-          }
-        },
-        {
-          "name": "Get Specific County Data",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8004/counties/Nakuru",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "8004",
-              "path": ["counties", "Nakuru"]
-            }
-          }
-        },
-        {
           "name": "Get Audit Overview",
           "request": {
             "method": "GET",

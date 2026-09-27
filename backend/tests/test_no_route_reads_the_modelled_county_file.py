@@ -137,17 +137,10 @@ GATES: dict[str, dict] = {
 }
 
 #: Route modules that still reach the file, and why they are not fixed here.
-KNOWN_OFFENDERS: dict[str, str] = {
-    "apis/modernized_api.py": (
-        "GET /counties/{county_name} returns the file's whole record for a named "
-        "county (missing_funds and audit_rating included) and GET "
-        "/counties/statistics totals its modelled budget and debt, both through "
-        "apis/data_driven_analytics.py. Not deployed, and its data path "
-        "(../data/county/enhanced_county_data.json) resolves to nothing today "
-        "(issue #188), so it serves 503; it is one path edit from serving the "
-        "model as fact. Withdraw those two routes and delete this entry"
-    ),
-}
+#: Empty since apis/modernized_api.py withdrew GET /counties/{county_name} and
+#: GET /counties/statistics, which served the file's record for a named county
+#: and totals of its modelled budget and debt.
+KNOWN_OFFENDERS: dict[str, str] = {}
 
 HTTP_DECORATORS = frozenset(
     {"get", "post", "put", "patch", "delete", "head", "options", "route", "api_route"}
@@ -441,9 +434,9 @@ def test_the_detector_catches_the_route_it_was_written_for(tmp_path):
 
 
 def test_the_detector_follows_imports_to_the_reader(tmp_path):
-    """The shape ``apis/modernized_api.py`` has: the route never names the file,
-    its helper does. Sibling import, backend-rooted package import, and a
-    relative import all reach it."""
+    """The shape ``apis/modernized_api.py`` had before its county routes were
+    withdrawn: the route never names the file, its helper does. Sibling import,
+    backend-rooted package import, and a relative import all reach it."""
     route = 'from fastapi import APIRouter\nrouter = APIRouter()\n{imp}\n\n@router.get("/x")\ndef x():\n    return helper()\n'
     reader = 'import json\nPATH = "../data/county/enhanced_county_data.json"\ndef helper():\n    return json.load(open(PATH))\n'
     graph = _tree(
