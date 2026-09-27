@@ -331,16 +331,25 @@ def test_signed_write_routes_refuse_an_unsigned_request(client, monkeypatch, met
     ran = []
     monkeypatch.setattr(handler_module, "invalidate_all", lambda *a, **k: ran.append(1) or {})
 
+    # A FRESH timestamp, so the only thing that can refuse these is the
+    # signature check. (A stale ts is refused by the replay check too, which
+    # would let this test pass with the signature check removed.)
+    import json
+    import time
+
+    body = json.dumps({"ts": int(time.time()), "reason": "probe"}).encode()
+
     # Secret configured: no signature, and a wrong one, are both refused.
     monkeypatch.setenv("REVALIDATE_SECRET", "test-secret-not-a-real-one")
-    body = b'{"ts": 0, "reason": "probe"}'
     unsigned = client.request(method, path, content=body)
     wrong = client.request(method, path, content=body, headers={"x-revalidate-signature": "0" * 64})
     # Secret unset: the endpoint is disabled rather than open.
     monkeypatch.delenv("REVALIDATE_SECRET")
     disabled = client.request(method, path, content=body)
 
-    assert unsigned.status_code == 401, unsigned.text
-    assert wrong.status_code == 401, wrong.text
+    for response in (unsigned, wrong):
+        assert response.status_code == 401, response.text
+        assert response.json()["detail"]["error"] == "invalid_signature", response.text
     assert disabled.status_code == 503, disabled.text
+    assert disabled.json()["detail"]["error"] == "invalidation_not_configured", disabled.text
     assert ran == [], "an unsigned request reached invalidate_all()"
