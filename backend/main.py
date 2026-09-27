@@ -10875,131 +10875,19 @@ async def get_pending_bills(
 @app.get("/api/v1/pending-bills/summary")
 @cached(key_prefix="pending_bills:summary_enhanced", ttl=NIGHTLY_REFRESH_TTL)
 async def get_pending_bills_summary(db: Session = Depends(get_db)):
-    """Get pending bills summary with breakdown by type, aging, and county.
+    """Get pending bills summary: total, breakdown by type, top counties, trend.
 
-    Returns total_pending_amount, breakdown_by_type, top_counties_by_amount,
-    aging_buckets, and trend data.
+    Pending bills are ``Loan`` rows with ``debt_category = PENDING_BILLS``,
+    written by ``seeding/domains/pending_bills/writer.py``. There used to be a
+    ``pending_bills`` table read first, with this path as its fallback; nothing
+    ever wrote that table, so production always served this path and the
+    table branch ran only under test fixtures (issue #137 P6).
     """
-    from models import BillType, PendingBill
-
     try:
-        bills = db.query(PendingBill).all()
-
-        if not bills:
-            # Fallback: derive summary from Loan table (PENDING_BILLS category)
-            return _pending_bills_summary_from_loans(db)
-
-        total_pending = sum(float(b.amount or 0) for b in bills)
-
-        # Breakdown by type
-        breakdown_by_type = {}
-        for b in bills:
-            bt = b.bill_type.value if b.bill_type else "other"
-            breakdown_by_type[bt] = breakdown_by_type.get(bt, 0) + float(b.amount or 0)
-
-        # Top counties by amount — batch-load entities to avoid N+1
-        unique_eids = list({b.entity_id for b in bills if b.entity_id})
-        entity_map: Dict[int, tuple] = {}
-        if unique_eids:
-            for eid, ename, etype in (
-                db.query(DBEntity.id, DBEntity.canonical_name, DBEntity.type)
-                .filter(DBEntity.id.in_(unique_eids))
-                .all()
-            ):
-                entity_map[eid] = (ename, etype.value if etype else "unknown")
-
-        county_totals: Dict[int, Dict[str, Any]] = {}
-        for b in bills:
-            eid = b.entity_id
-            if eid not in county_totals:
-                ename, etype = entity_map.get(eid, (f"Entity {eid}", "unknown"))
-                county_totals[eid] = {
-                    "county": ename,
-                    "entity_id": eid,
-                    "amount": 0,
-                    "entity_type": etype,
-                }
-            county_totals[eid]["amount"] += float(b.amount or 0)
-
-        # Per-capita, with a reason attached whenever it is absent.
-        top_counties = sorted(
-            county_totals.values(), key=lambda x: x["amount"], reverse=True
-        )[:15]
-        _attach_per_capita(db, top_counties)
-
-        # Aging buckets. ``aging_days`` is nullable, and ``or 0`` used to file
-        # every undated bill under "0-30d" — see :data:`_AGING_BUCKETS`.
-        aging_buckets = _empty_aging_buckets()
-        for b in bills:
-            aging_buckets[_aging_bucket(b.aging_days)] += float(b.amount or 0)
-
-        # Trend by fiscal year, on CANONICAL labels — same rule as the loans
-        # fallback below, which drew one year as two points because it keyed
-        # off the raw string. ``PendingBill``'s natural key is
-        # (entity, bill_type, fiscal_year), so two spellings survive as two
-        # rows here too and the defect has the same shape.
-        trend_map: Dict[str, float] = {}
-        trend_unattributed = 0.0
-        for b in bills:
-            amount = float(b.amount or 0)
-            fy = _normalised_fiscal_year(b.fiscal_year)
-            if fy is None:
-                trend_unattributed += amount
-                continue
-            trend_map[fy] = trend_map.get(fy, 0) + amount
-        trend = [{"year": k, "total_amount": v} for k, v in sorted(trend_map.items())]
-
-        # Eligible / Ineligible totals
-        eligible_total = sum(float(b.eligible_amount or 0) for b in bills)
-        ineligible_total = sum(float(b.ineligible_amount or 0) for b in bills)
-
-        return {
-            "status": "success",
-            "data_source": "pending_bills_table",
-            "_meta": _response_meta(unit="kes", entity_scope="all"),
-            "total_pending_amount": total_pending,
-            "eligible_total": eligible_total,
-            "ineligible_total": ineligible_total,
-            "breakdown_by_type": breakdown_by_type,
-            "top_counties_by_amount": top_counties,
-            "aging_buckets": aging_buckets,
-            "aging_buckets_absent_reason": None,
-            "trend": trend,
-            "trend_unattributed_amount": trend_unattributed,
-            "currency": "KES",
-        }
-
+        return _pending_bills_summary_from_loans(db)
     except Exception as e:
         logging.error(f"Pending bills summary failed: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
-
-
-#: Aging buckets, and the bucket for a bill whose age nobody recorded.
-#:
-#: ``days = b.aging_days or 0`` filed every undated bill under "0-30d" — an
-#: assertion that a bill of unknown age is less than a month old, which is the
-#: most reassuring reading available and rests on nothing. Its mirror image
-#: lived in the loans fallback, which asserted the most alarming reading (see
-#: :func:`_pending_bills_summary_from_loans`). Neither is a measurement.
-_AGING_BUCKETS = ("0-30d", "31-90d", "91-180d", "180d+", "unknown")
-
-
-def _empty_aging_buckets() -> Dict[str, float]:
-    return {bucket: 0 for bucket in _AGING_BUCKETS}
-
-
-def _aging_bucket(aging_days) -> str:
-    """Which bucket a bill belongs in, including "I was never told"."""
-    if aging_days is None:
-        return "unknown"
-    days = int(aging_days)
-    if days <= 30:
-        return "0-30d"
-    if days <= 90:
-        return "31-90d"
-    if days <= 180:
-        return "91-180d"
-    return "180d+"
 
 
 #: Bill-type keywords, matched against a lender string. Weak evidence, but not
@@ -11138,7 +11026,7 @@ def _attach_per_capita(db: Session, counties: List[Dict[str, Any]]) -> None:
 
 
 def _pending_bills_summary_from_loans(db: Session) -> dict:
-    """Fallback: build summary from the published PENDING_BILLS loan rows.
+    """Build the summary from the published PENDING_BILLS loan rows.
 
     Every figure here is built from :func:`_published_pending_bills` — the
     same rows, and the same total, ``/pending-bills`` serves.
@@ -11266,7 +11154,7 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
         "trend_absent_reason": trend_absent_reason,
         "trend_unattributed_amount": trend_unattributed,
         "currency": "KES",
-        "note": "Derived from loans table. Seed pending_bills table for richer data.",
+        "note": "Derived from loans table (debt_category = PENDING_BILLS).",
     }
 
 
@@ -11274,8 +11162,6 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
 @cached(key_prefix="pending_bills:county", ttl=NIGHTLY_REFRESH_TTL)
 async def get_pending_bills_by_county(county_id: str, db: Session = Depends(get_db)):
     """Get pending bills breakdown for a specific county by type and aging."""
-    from models import BillType, PendingBill
-
     try:
         # Resolve county entity
         entity = _resolve_county_entity(db, county_id)
@@ -11284,90 +11170,53 @@ async def get_pending_bills_by_county(county_id: str, db: Session = Depends(get_
                 status_code=404, detail=f"County '{county_id}' not found"
             )
 
-        bills = db.query(PendingBill).filter(PendingBill.entity_id == entity.id).all()
+        # Pending bills are Loan rows in the PENDING_BILLS category; see
+        # get_pending_bills_summary for why there is no pending_bills table.
+        from models import DebtCategory
 
-        if not bills:
-            # Fallback to loans table
-            from models import DebtCategory
-
-            pending_loans = [
-                l
-                for l in (
-                    db.query(DBLoan)
-                    .filter(
-                        DBLoan.entity_id == entity.id,
-                        DBLoan.debt_category == DebtCategory.PENDING_BILLS,
-                    )
-                    .all()
+        pending_loans = [
+            l
+            for l in (
+                db.query(DBLoan)
+                .filter(
+                    DBLoan.entity_id == entity.id,
+                    DBLoan.debt_category == DebtCategory.PENDING_BILLS,
                 )
-                if county_pending_bills_row_is_published(l)
-            ]
-            # The same figure the county page prints beside this card, and
-            # null — not 0 — for a county the CoB year-end report has no
-            # figure for.
-            total = county_pending_bills(pending_loans)
-            # The same two assertions the national fallback used to make, on
-            # the page that never carried the debt page's disclaimer: 100% of
-            # this county's arrears declared over 180 days old, and 100%
-            # declared supplier arrears, from a table holding neither fact.
-            by_type: Dict[str, float] = {}
-            for l in pending_loans:
-                bt = _bill_type_from_lender(l.lender)
-                by_type[bt] = by_type.get(bt, 0) + (pending_bills_row_amount(l) or 0.0)
-            return {
-                "status": "success" if pending_loans else "no_data",
-                "data_source": "loans_table_fallback" if pending_loans else "none",
-                "county": entity.canonical_name,
-                "county_id": county_id,
-                "total_pending": total,
-                "breakdown_by_type": by_type,
-                "breakdown_by_type_absent_reason": (
-                    "loans_table_carries_no_bill_type"
-                    if by_type and set(by_type) <= {_BILL_TYPE_UNCLASSIFIED}
-                    else None
-                ),
-                "aging_buckets": None,
-                "aging_buckets_absent_reason": (
-                    "loans_table_carries_no_aging_data"
-                    if pending_loans
-                    else "no_pending_bills_rows"
-                ),
-                "bills": [],
-                "currency": "KES",
-            }
-
-        total_pending = sum(float(b.amount or 0) for b in bills)
-
-        # Breakdown by type
-        by_type: Dict[str, float] = {}
-        for b in bills:
-            bt = b.bill_type.value if b.bill_type else "other"
-            by_type[bt] = by_type.get(bt, 0) + float(b.amount or 0)
-
-        # Aging buckets — same rule as the summary endpoint.
-        aging = _empty_aging_buckets()
-        for b in bills:
-            aging[_aging_bucket(b.aging_days)] += float(b.amount or 0)
-
-        bill_details = [
-            {
-                "bill_type": b.bill_type.value if b.bill_type else "other",
-                "amount": float(b.amount or 0),
-                "fiscal_year": b.fiscal_year,
-                "aging_days": b.aging_days,
-            }
-            for b in bills
+                .all()
+            )
+            if county_pending_bills_row_is_published(l)
         ]
-
+        # The same figure the county page prints beside this card, and
+        # null — not 0 — for a county the CoB year-end report has no
+        # figure for.
+        total = county_pending_bills(pending_loans)
+        # The same two assertions the national fallback used to make, on
+        # the page that never carried the debt page's disclaimer: 100% of
+        # this county's arrears declared over 180 days old, and 100%
+        # declared supplier arrears, from a table holding neither fact.
+        by_type: Dict[str, float] = {}
+        for l in pending_loans:
+            bt = _bill_type_from_lender(l.lender)
+            by_type[bt] = by_type.get(bt, 0) + (pending_bills_row_amount(l) or 0.0)
         return {
-            "status": "success",
-            "data_source": "pending_bills_table",
+            "status": "success" if pending_loans else "no_data",
+            "data_source": "loans_table_fallback" if pending_loans else "none",
             "county": entity.canonical_name,
             "county_id": county_id,
-            "total_pending": total_pending,
+            "total_pending": total,
             "breakdown_by_type": by_type,
-            "aging_buckets": aging,
-            "bills": bill_details,
+            "breakdown_by_type_absent_reason": (
+                "loans_table_carries_no_bill_type"
+                if by_type and set(by_type) <= {_BILL_TYPE_UNCLASSIFIED}
+                else None
+            ),
+            "aging_buckets": None,
+            "aging_buckets_absent_reason": (
+                "loans_table_carries_no_aging_data"
+                if pending_loans
+                else "no_pending_bills_rows"
+            ),
+            "bills": [],
             "currency": "KES",
         }
 
