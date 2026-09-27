@@ -17,12 +17,13 @@ closes every run by publishing this alongside the counts it actually made::
 
 ``/national/issues``, ``/national/ministries`` and ``/national/debt`` were the
 three routes PR #191 deleted when it withdrew the six methods that typed in the
-national debt. The extractor kept advertising them. The other three resolve:
-``/counties/{county_name}`` at ``apis/modernized_api.py:228``,
+national debt. The extractor kept advertising them. The other three resolved
+then: ``/counties/{county_name}`` at ``apis/modernized_api.py:228``,
 ``/audit/queries`` at ``apis/modernized_api.py:286``, ``/analytics/summary`` at
-``apis/county_analytics_api.py:371`` (that module has since been withdrawn:
-its routes ranked named counties on modelled figures — see
-``test_no_route_reads_the_modelled_county_file.py``).
+``apis/county_analytics_api.py:371``. Only ``/audit/queries`` still does. The
+other two have since been withdrawn because they served named counties a file
+whose every figure but population is modelled — see
+``test_no_route_reads_the_modelled_county_file.py``.
 
 WHY THIS NEEDS A RULE OF ITS OWN. #195 removed the ``coverage_analysis`` block
 from the same file — "Complete - All 47 counties covered", ``transparency_score:
@@ -277,16 +278,17 @@ results = {
     blob = "\n".join(findings)
     for gone in ("/national/issues", "/national/ministries", "/national/debt"):
         assert gone in blob, f"{gone} was deleted by #191 and must be flagged: {findings}"
-    # Withdrawn with apis/county_analytics_api.py, which served it from a file
-    # whose every figure but population is modelled.
-    assert "/analytics/summary" in blob, (
-        f"/analytics/summary is no longer served and must be flagged: {findings}"
-    )
-    for alive in ("/counties/{name}", "/audit/queries"):
-        assert alive not in blob, (
-            f"{alive} does resolve today and must not be flagged: {findings}"
+    # Withdrawn from apis/county_analytics_api.py and apis/modernized_api.py,
+    # which served them from a file whose every figure but population is
+    # modelled.
+    for withdrawn in ("/analytics/summary", "/counties/{name}"):
+        assert withdrawn in blob, (
+            f"{withdrawn} is no longer served and must be flagged: {findings}"
         )
-    assert len(findings) == 4, f"expected exactly four findings, got: {findings}"
+    assert "/audit/queries" not in blob, (
+        f"/audit/queries does resolve today and must not be flagged: {findings}"
+    )
+    assert len(findings) == 5, f"expected exactly five findings, got: {findings}"
 
     # An empty suppression buys nothing.
     unreasoned = '{"endpoints": ["/national/debt"]}  # endpoint-ok:'
