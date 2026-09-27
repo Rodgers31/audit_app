@@ -1,0 +1,967 @@
+{
+  "metadata": {
+    "listing_url": "https://www.oagkenya.go.ke/county-executives-assemblies-reports/",
+    "listing_fiscal_years": [
+      "2016/2017",
+      "2017/2018",
+      "2018/2019",
+      "2019/2020",
+      "2020/2021",
+      "2021/2022",
+      "2022/2023",
+      "2023/2024",
+      "2024/2025"
+    ],
+    "volumes_by_fiscal_year": {
+      "2024/2025": [
+        "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf",
+        "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf"
+      ],
+      "2023/2024": [
+        "https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf",
+        "https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf"
+      ],
+      "2022/2023": [
+        "https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf",
+        "https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf"
+      ],
+      "2021/2022": [
+        "https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf",
+        "https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf"
+      ]
+    },
+    "documents_discovered": 103,
+    "sitemap_unplaced": 13,
+    "sitemap_not_county_audit": 200,
+    "errors": []
+  },
+  "documents": [
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/11/County-Assemby-of-Garissa-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Garissa",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/11/County-Assembly-of-Marsabit-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Marsabit",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/11/County-Assembly-of-Machakos-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Machakos",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/11/County-Assembly-of-Kitui-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Kitui",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/11/County-Assembly-of-Muranga-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Muranga",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/11/County-Assembly-of-Kisumu-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Kisumu",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/11/County-Assembly-of-Nyeri-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Nyeri",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/11/County-Assembly-of-Kisii-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Kisii",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/11/County-Assembly-of-Laikipia-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Laikipia",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/11/County-Assembly-of-Bungoma-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Bungoma",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/11/County-Assembly-of-Kajiado-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Kajiado",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/11/County-Assembly-of-Homa-Bay-2021-2022-1.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Homa Bay",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/11/County-Assembly-of-Bomet-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Bomet",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/11/County-Assembly-of-Mandera-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Mandera",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/11/County-Assembly-of-Nyamira-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Nyamira",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/11/County-Assembly-of-Nairobi-City-2021-2022-.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Nairobi City",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/11/County-Assembly-of-Turkana-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Turkana",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/11/County-Assembly-of-Elgeyo-Marakwet-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Elgeyo Marakwet",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/11/County-Assembly-of-Trans-Nzoia-2021-2022-.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Trans Nzoia",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/11/County-Assembly-of-Lamu-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Lamu",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/11/County-Assembly-of-Busia-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Busia",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/11/County-Assembly-of-Isiolo-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Isiolo",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/11/County-Assembly-of-Kericho-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Kericho",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/11/County-Assembly-of-Kiambu-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Kiambu",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/11/County-Assembly-of-Samburu-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Samburu",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/11/County-Assembly-of-Migori-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Migori",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/11/County-Assembly-of-Wajir-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Wajir",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/11/County-Assembly-of-Makueni-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Makueni",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/11/County-Assembly-of-Mombasa-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Mombasa",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/11/County-Assembly-of-Kilifi-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Kilifi",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Wajir-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Wajir",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Turkana-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Turkana",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Trans-Nzoia-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Trans Nzoia",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Samburu-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Samburu",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Nyeri-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Nyeri",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Nyandarua-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Nyandarua",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Nyamira-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Nyamira",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Nairobi-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Nairobi",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Muranga-2021-2022-1.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Muranga",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Mombasa-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Mombasa",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Migori-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Migori",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Mandera-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Mandera",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Makueni-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Makueni",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Machakos-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Machakos",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Lamu-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Lamu",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Laikipia-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Laikipia",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Kisumu-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Kisumu",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Kisii-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Kisii",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Kirinyaga-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Kirinyaga",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Kilifi-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Kilifi",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Kiambu-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Kiambu",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Kericho-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Kericho",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Kakamega-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Kakamega",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Kajiado-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Kajiado",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Isiolo-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Isiolo",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Homa-Bay-2021-2022-.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Homa Bay",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Garissa-2021-2022-.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Garissa",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Elgeyo-Marakwet-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Elgeyo Marakwet",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Busia-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Busia",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Bungoma-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Bungoma",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/10/County-Executive-of-Bomet-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Bomet",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Assembly-of-Uasin-Gishu-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Uasin Gishu",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Assembly-of-Taita-Taveta-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Taita Taveta",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Assembly-of-Meru-2021-2022-1.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Meru",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Assembly-of-Tharaka-Nithi-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Tharaka Nithi",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Assembly-of-Narok-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Narok",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Assembly-of-Siaya-2021-2022-.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Siaya",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Assembly-of-Kwale-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Kwale",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Assembly-of-Vihiga-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Vihiga",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Assembly-of-Kakamega-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Kakamega",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Assembly-of-Meru-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Meru",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Assembly-of-Tana-River-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Tana River",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Assembly-of-Kirinyaga-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Kirinyaga",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Assembly-of-West-Pokot-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "West Pokot",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Assembly-of-Baringo-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Baringo",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Assembly-of-Nandi-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Nandi",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Assembly-of-Nakuru-2021-2022-1.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Nakuru",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Executive-of-Meru-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Meru",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Executive-of-Nandi-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Nandi",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Executive-of-Marsabit-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Marsabit",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Executive-of-Tana-River-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Tana River",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Executive-of-Baringo-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Baringo",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Executive-of-West-Pokot-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "West Pokot",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Executive-of-Vihiga-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Vihiga",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Executive-of-Nakuru-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Nakuru",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Executive-of-Taita-Taveta-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Taita Taveta",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Executive-of-Embu-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Embu",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Executive-of-Kwale-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Kwale",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Executive-of-Kitui-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Kitui",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Executive-of-Tharaka-Nithi-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Tharaka Nithi",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Executive-of-Narok-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Narok",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Executive-of-Siaya-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Siaya",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/08/County-Executive-of-Uasin-Gishu-2021-2022.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "single_entity",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": "Uasin Gishu",
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "assemblies",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": null,
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf",
+      "fiscal_year": "2021/2022",
+      "kind": "executives",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "entity": null,
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf",
+      "fiscal_year": "2022/2023",
+      "kind": "assemblies",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2022-2023-county-government-audit-reports/",
+      "entity": null,
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf",
+      "fiscal_year": "2022/2023",
+      "kind": "executives",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2022-2023-county-government-audit-reports/",
+      "entity": null,
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2025/04/Auditor-Generals-summary-Report-on-County-Governments-2023-2024.pdf",
+      "fiscal_year": "2023/2024",
+      "kind": "summary",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2023-2024-county-government-audit-reports/",
+      "entity": null,
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf",
+      "fiscal_year": "2023/2024",
+      "kind": "executives",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2023-2024-county-government-audit-reports/",
+      "entity": null,
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf",
+      "fiscal_year": "2023/2024",
+      "kind": "assemblies",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2023-2024-county-government-audit-reports/",
+      "entity": null,
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf",
+      "fiscal_year": "2024/2025",
+      "kind": "assemblies",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2024-2025-county-government-audit-reports/",
+      "entity": null,
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf",
+      "fiscal_year": "2024/2025",
+      "kind": "executives",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2024-2025-county-government-audit-reports/",
+      "entity": null,
+      "note": null
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-SUMMARY-REPORT-ON-COUNTY-GOVERNMENTS-2024-2025.pdf",
+      "fiscal_year": "2024/2025",
+      "kind": "summary",
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2024-2025-county-government-audit-reports/",
+      "entity": null,
+      "note": null
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "scope": "read-only preserved 2026-09-26 local production snapshot",
+  "required_years": [
+    "2021/2022",
+    "2022/2023",
+    "2023/2024",
+    "2024/2025"
+  ],
+  "method": "Publicly eligible county audits with audit_year in [2022,2023,2024,2025]; joined county Entity; publishable flag and current publication criterion. Zero eligible rows implies zero before count for each institution/county cell. Required years come from the separate 2026-09-27 discovery receipt, not a stored baseline listing.",
+  "eligible_county_findings": 0
+}

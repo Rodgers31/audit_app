@@ -1,0 +1,28 @@
+{
+  "scope": "disposable_local_clone",
+  "started_at": "2026-09-27 20:26:00.379723+00:00",
+  "county_volumes": {
+    "discovered": 8,
+    "processed": [
+      "2024/2025 executives: 1269 finding(s)",
+      "2024/2025 assemblies: 582 finding(s)",
+      "2023/2024 executives: 1047 finding(s)",
+      "2023/2024 assemblies: 541 finding(s)",
+      "2022/2023 executives: 1041 finding(s)",
+      "2022/2023 assemblies: 513 finding(s)",
+      "2021/2022 executives: 1082 finding(s)",
+      "2021/2022 assemblies: 532 finding(s)"
+    ],
+    "already_current": [],
+    "deferred": [],
+    "failed": [],
+    "partial": []
+  },
+  "coverage_verdict": [
+    "OK",
+    "every fiscal year OAG lists from 2021/2022 has published, attributed findings for all 47 executives and 47 assemblies (listing read 2026-09-27); this measures finding presence, not extraction completeness"
+  ],
+  "prior_audit_rows": 2338,
+  "after_audit_rows": 8945,
+  "prior_audits_unchanged": true
+}

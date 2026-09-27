@@ -456,6 +456,26 @@ class TestExtractionRows:
         with pytest.raises(IncompleteExtraction):
             self._run(db_session, doc, monkeypatch)
 
+    @pytest.mark.parametrize("unreadable_body", [False, True])
+    def test_unreadable_front_matter_does_not_force_endless_retry(
+        self, db_session, doc, monkeypatch, unreadable_body
+    ):
+        # The actual FY2024/25 books have an image cover and blank PDF p.9.
+        # Every chapter still resolves. An unreadable page IN a chapter is
+        # a different case and must keep the extraction partial.
+        pages = [PageText(1, "", "rejected")] + [
+            PageText(p.page_number + 1, p.text, p.method) for p in self.PAGES
+        ]
+        if unreadable_body:
+            pages[-1] = PageText(pages[-1].page_number, "", "rejected")
+        monkeypatch.setattr(cv, "read_pages", lambda *a, **k: pages)
+        known = {cv._letters(n): n for n in ["Mombasa", "Taita Taveta", "Atlantis", *_FILLER]}
+        stats = cv.extract_county_volume(db_session, doc, None, known_counties=known)
+        assert stats["partial"] is unreadable_body
+        if not unreadable_body:
+            assert doc.meta["extracted_md5"] == doc.md5
+            assert cv.extract_county_volume(db_session, doc, None, known_counties=known)["reason"] == "already_extracted"
+
     def test_a_reissued_volume_keeps_the_findings_it_published(
         self, db_session, doc, seed_entity, monkeypatch
     ):

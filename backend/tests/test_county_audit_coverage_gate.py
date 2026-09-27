@@ -35,7 +35,7 @@ def db(db_session):
     for i in range(47):
         db_session.add(
             Entity(country_id=country.id, type=EntityType.COUNTY,
-                   canonical_name=f"County {i}", slug=f"county-{i}")
+                   canonical_name=f"Example{chr(65 + i // 26)}{chr(65 + i % 26)} County", slug=f"county-{i}")
         )
     db_session.add(
         Entity(country_id=country.id, type=EntityType.MINISTRY,
@@ -51,9 +51,9 @@ def _counties(session):
     return session.query(Entity).filter(Entity.type == EntityType.COUNTY).all()
 
 
-def _findings(session, audit_year, entities, publishable=True):
+def _findings(session, audit_year, entities, publishable=True, roles=("executives", "assemblies")):
     from models import (
-        Audit, DocumentStatus, DocumentType, FiscalPeriod, Severity, SourceDocument,
+        Audit, DocumentStatus, DocumentType, Extraction, FiscalPeriod, Severity, SourceDocument,
     )
 
     doc = SourceDocument(
@@ -69,11 +69,18 @@ def _findings(session, audit_year, entities, publishable=True):
     session.add_all([doc, period])
     session.flush()
     for e in entities:
-        session.add(
-            Audit(entity_id=e.id, period_id=period.id, finding_text="x",
-                  severity=Severity.WARNING, source_document_id=doc.id,
-                  audit_year=audit_year, page_ref="p.1", publishable=publishable)
-        )
+        for role in roles:
+            auditee = f"County {'Executive' if role == 'executives' else 'Assembly'} of {e.canonical_name.removesuffix(' County')}"
+            ext = Extraction(source_document_id=doc.id, page_number=1,
+                extractor="oag_county_volume", confidence=0.9,
+                extracted_json={"fiscal_year": f"{audit_year - 1}/{audit_year}",
+                    "entity_name": auditee, "auditee": auditee,
+                    "volume_kind": role, "pdf_page": 1})
+            session.add(ext)
+            session.flush()
+            session.add(Audit(entity_id=e.id, period_id=period.id, finding_text="x",
+                severity=Severity.WARNING, source_document_id=doc.id,
+                extraction_id=ext.id, audit_year=audit_year, page_ref="p.1", publishable=publishable))
     session.flush()
 
 
@@ -82,8 +89,10 @@ def _audits_run(session, listing, when=datetime(2026, 9, 26, 2, 30), dry_run=Fal
     from models import IngestionJob, IngestionStatus
 
     meta = {"oag_county_discovery": {"listing_fiscal_years": listing}} if key else {}
-    if volumes is not None:
-        meta["county_volumes"] = volumes
+    meta["county_volumes"] = volumes if volumes is not None else {
+        "discovered": 8, "processed": [f"{year}/{year+1} {role}" for year in range(2021, 2025) for role in ("executives", "assemblies")],
+        "already_current": [], "deferred": [], "failed": [], "partial": [],
+    }
     session.add(
         IngestionJob(domain="audits", status=IngestionStatus.COMPLETED, dry_run=dry_run,
                      started_at=when, meta=meta)
@@ -178,7 +187,7 @@ class TestTheBacklogIsNamed:
 
     def test_a_clean_run_stays_ok(self, db):
         self._covered(db)
-        _audits_run(db, LISTING, volumes={"discovered": 8, "deferred": [], "failed": []})
+        _audits_run(db, LISTING, volumes={"discovered": 8, "processed": [f"{year}/{year+1} {role}" for year in range(2021, 2025) for role in ("executives", "assemblies")], "already_current": [], "deferred": [], "failed": []})
         assert _only(check_county_audit_coverage(db)).level == OK
 
 
@@ -216,3 +225,51 @@ class TestWiring:
             for f in staleness.run_all(db, now=datetime(2026, 9, 26, tzinfo=timezone.utc))
         }
         assert (COUNTY_AUDIT_LABEL, FAIL) in labels
+
+
+class TestUntrustedCoverageMetadata:
+    @pytest.mark.parametrize("bad", [[1], "broken", True, 42,
+        {"oag_county_discovery": [1]},
+        {"oag_county_discovery": {"listing_fiscal_years": "2024/2025"}},
+        {"oag_county_discovery": {"listing_fiscal_years": [None]}},
+        {"oag_county_discovery": {"listing_fiscal_years": ["2024/2030"]}},
+        {"oag_county_discovery": {"listing_fiscal_years": LISTING}, "county_volumes": [1]},
+    ])
+    def test_malformed_latest_run_is_not_healthy(self, db, bad):
+        from models import IngestionJob
+
+        for year in (2022, 2023, 2024, 2025):
+            _findings(db, year, _counties(db))
+        _audits_run(db, LISTING, when=datetime(2026, 9, 25))
+        _audits_run(db, LISTING)
+        db.query(IngestionJob).order_by(IngestionJob.id.desc()).first().meta = bad
+        db.flush()
+        assert any(f.level != OK for f in check_county_audit_coverage(db))
+
+    def test_executive_findings_cannot_stand_in_for_assemblies(self, db):
+        _findings(db, 2025, _counties(db), roles=("executives",))
+        _audits_run(db, ["2024/2025"], volumes={"discovered": 1, "deferred": [], "failed": []})
+        assert any(f.level != OK for f in check_county_audit_coverage(db))
+
+    def test_partial_extraction_is_not_a_complete_volume(self, db):
+        from models import IngestionJob
+
+        _findings(db, 2025, _counties(db))
+        _audits_run(db, ["2024/2025"], volumes={"discovered": 2, "deferred": [], "failed": []})
+        job = db.query(IngestionJob).one()
+        job.meta = {**job.meta, "documents": [{"extractions": {"partial": True}}]}
+        db.flush()
+        assert any(f.level != OK for f in check_county_audit_coverage(db))
+
+
+@pytest.mark.parametrize("bad", [[1], "broken", 17, True,
+    {"source_mode": ["live"]}, {"source_mode": "refused", "source_fallback_reason": ["why"]}])
+def test_full_validation_reaches_county_gate_with_malformed_job_metadata(db, bad):
+    from models import IngestionJob
+
+    _audits_run(db, LISTING)
+    db.query(IngestionJob).one().meta = bad
+    db.flush()
+    findings = staleness.run_all(db, now=datetime(2026, 9, 26, tzinfo=timezone.utc))
+    assert any(f.label == COUNTY_AUDIT_LABEL and f.level != OK for f in findings)
+    assert not any(f.label == "audits ingestion" and f.level == OK for f in findings)

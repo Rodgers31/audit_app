@@ -1,0 +1,3794 @@
+{
+  "listing_years": [
+    "2016/2017",
+    "2017/2018",
+    "2018/2019",
+    "2019/2020",
+    "2020/2021",
+    "2021/2022",
+    "2022/2023",
+    "2023/2024",
+    "2024/2025"
+  ],
+  "required_years": [
+    "2021/2022",
+    "2022/2023",
+    "2023/2024",
+    "2024/2025"
+  ],
+  "listing_read_at": "2026-09-27T20:26:00.379723",
+  "listing_job_id": 3142,
+  "county_count": 47,
+  "expected_county_count": 47,
+  "cells": [
+    {
+      "county_id": 3,
+      "county": "Nairobi County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 34,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 3,
+      "county": "Nairobi County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 19,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 4,
+      "county": "Mombasa County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 22,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 4,
+      "county": "Mombasa County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 2,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 5,
+      "county": "Kwale County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 8,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 5,
+      "county": "Kwale County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 25,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 6,
+      "county": "Kilifi County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 16,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 6,
+      "county": "Kilifi County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 4,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 7,
+      "county": "Tana River County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 21,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 7,
+      "county": "Tana River County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 11,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 8,
+      "county": "Lamu County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 21,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 8,
+      "county": "Lamu County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 11,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 9,
+      "county": "Taita Taveta County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 23,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 9,
+      "county": "Taita Taveta County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 14,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 10,
+      "county": "Garissa County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 23,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 10,
+      "county": "Garissa County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 7,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 11,
+      "county": "Wajir County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 24,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 11,
+      "county": "Wajir County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 15,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 12,
+      "county": "Mandera County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 19,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 12,
+      "county": "Mandera County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 5,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 13,
+      "county": "Marsabit County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 29,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 13,
+      "county": "Marsabit County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 16,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 14,
+      "county": "Isiolo County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 32,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 14,
+      "county": "Isiolo County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 9,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 15,
+      "county": "Meru County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 18,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 15,
+      "county": "Meru County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 11,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 16,
+      "county": "Tharaka Nithi County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 31,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 16,
+      "county": "Tharaka Nithi County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 16,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 17,
+      "county": "Embu County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 23,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 17,
+      "county": "Embu County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 22,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 18,
+      "county": "Kitui County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 36,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 18,
+      "county": "Kitui County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 12,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 19,
+      "county": "Machakos County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 24,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 19,
+      "county": "Machakos County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 10,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 20,
+      "county": "Makueni County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 17,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 20,
+      "county": "Makueni County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 8,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 21,
+      "county": "Nyandarua County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 27,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 21,
+      "county": "Nyandarua County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 8,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 22,
+      "county": "Nyeri County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 14,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 22,
+      "county": "Nyeri County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 6,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 23,
+      "county": "Kirinyaga County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 16,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 23,
+      "county": "Kirinyaga County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 7,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 24,
+      "county": "Murang'a County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 19,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 24,
+      "county": "Murang'a County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 11,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 25,
+      "county": "Kiambu County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 33,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 25,
+      "county": "Kiambu County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 16,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 26,
+      "county": "Turkana County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 19,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 26,
+      "county": "Turkana County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 20,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 27,
+      "county": "West Pokot County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 20,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 27,
+      "county": "West Pokot County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 16,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 28,
+      "county": "Samburu County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 18,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 28,
+      "county": "Samburu County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 8,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 29,
+      "county": "Trans Nzoia County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 23,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 29,
+      "county": "Trans Nzoia County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 10,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 30,
+      "county": "Uasin Gishu County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 15,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 30,
+      "county": "Uasin Gishu County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 9,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 31,
+      "county": "Elgeyo Marakwet County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 16,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 31,
+      "county": "Elgeyo Marakwet County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 8,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 32,
+      "county": "Nandi County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 14,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 32,
+      "county": "Nandi County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 16,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 33,
+      "county": "Baringo County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 34,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 33,
+      "county": "Baringo County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 12,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 34,
+      "county": "Laikipia County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 15,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 34,
+      "county": "Laikipia County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 8,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 35,
+      "county": "Nakuru County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 53,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 35,
+      "county": "Nakuru County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 10,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 36,
+      "county": "Narok County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 25,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 36,
+      "county": "Narok County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 13,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 37,
+      "county": "Kajiado County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 24,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 37,
+      "county": "Kajiado County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 10,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 38,
+      "county": "Kericho County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 26,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 38,
+      "county": "Kericho County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 5,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 39,
+      "county": "Bomet County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 23,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 39,
+      "county": "Bomet County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 14,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 40,
+      "county": "Kakamega County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 15,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 40,
+      "county": "Kakamega County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 11,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 41,
+      "county": "Vihiga County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 21,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 41,
+      "county": "Vihiga County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 17,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 42,
+      "county": "Bungoma County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 24,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 42,
+      "county": "Bungoma County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 3,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 43,
+      "county": "Busia County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 14,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 43,
+      "county": "Busia County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 6,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 44,
+      "county": "Siaya County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 32,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 44,
+      "county": "Siaya County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 11,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 45,
+      "county": "Kisumu County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 25,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 45,
+      "county": "Kisumu County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 7,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 46,
+      "county": "Homa Bay County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 25,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 46,
+      "county": "Homa Bay County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 17,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 47,
+      "county": "Migori County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 26,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 47,
+      "county": "Migori County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 18,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 48,
+      "county": "Kisii County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 28,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 48,
+      "county": "Kisii County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 10,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 49,
+      "county": "Nyamira County",
+      "fiscal_year": "2021/2022",
+      "institution": "executives",
+      "findings": 17,
+      "source_document_ids": [
+        2447
+      ]
+    },
+    {
+      "county_id": 49,
+      "county": "Nyamira County",
+      "fiscal_year": "2021/2022",
+      "institution": "assemblies",
+      "findings": 8,
+      "source_document_ids": [
+        2448
+      ]
+    },
+    {
+      "county_id": 3,
+      "county": "Nairobi County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 42,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 3,
+      "county": "Nairobi County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 27,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 4,
+      "county": "Mombasa County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 19,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 4,
+      "county": "Mombasa County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 4,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 5,
+      "county": "Kwale County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 7,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 5,
+      "county": "Kwale County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 6,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 6,
+      "county": "Kilifi County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 21,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 6,
+      "county": "Kilifi County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 8,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 7,
+      "county": "Tana River County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 27,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 7,
+      "county": "Tana River County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 13,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 8,
+      "county": "Lamu County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 31,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 8,
+      "county": "Lamu County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 13,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 9,
+      "county": "Taita Taveta County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 12,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 9,
+      "county": "Taita Taveta County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 6,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 10,
+      "county": "Garissa County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 14,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 10,
+      "county": "Garissa County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 6,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 11,
+      "county": "Wajir County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 21,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 11,
+      "county": "Wajir County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 7,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 12,
+      "county": "Mandera County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 16,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 12,
+      "county": "Mandera County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 7,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 13,
+      "county": "Marsabit County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 31,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 13,
+      "county": "Marsabit County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 9,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 14,
+      "county": "Isiolo County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 15,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 14,
+      "county": "Isiolo County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 14,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 15,
+      "county": "Meru County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 18,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 15,
+      "county": "Meru County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 8,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 16,
+      "county": "Tharaka Nithi County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 19,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 16,
+      "county": "Tharaka Nithi County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 10,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 17,
+      "county": "Embu County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 25,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 17,
+      "county": "Embu County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 17,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 18,
+      "county": "Kitui County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 25,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 18,
+      "county": "Kitui County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 11,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 19,
+      "county": "Machakos County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 29,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 19,
+      "county": "Machakos County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 12,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 20,
+      "county": "Makueni County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 25,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 20,
+      "county": "Makueni County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 16,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 21,
+      "county": "Nyandarua County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 16,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 21,
+      "county": "Nyandarua County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 12,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 22,
+      "county": "Nyeri County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 9,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 22,
+      "county": "Nyeri County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 11,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 23,
+      "county": "Kirinyaga County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 12,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 23,
+      "county": "Kirinyaga County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 6,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 24,
+      "county": "Murang'a County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 28,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 24,
+      "county": "Murang'a County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 8,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 25,
+      "county": "Kiambu County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 55,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 25,
+      "county": "Kiambu County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 18,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 26,
+      "county": "Turkana County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 18,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 26,
+      "county": "Turkana County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 15,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 27,
+      "county": "West Pokot County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 22,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 27,
+      "county": "West Pokot County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 11,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 28,
+      "county": "Samburu County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 19,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 28,
+      "county": "Samburu County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 13,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 29,
+      "county": "Trans Nzoia County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 18,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 29,
+      "county": "Trans Nzoia County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 8,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 30,
+      "county": "Uasin Gishu County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 16,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 30,
+      "county": "Uasin Gishu County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 12,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 31,
+      "county": "Elgeyo Marakwet County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 20,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 31,
+      "county": "Elgeyo Marakwet County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 7,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 32,
+      "county": "Nandi County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 16,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 32,
+      "county": "Nandi County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 9,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 33,
+      "county": "Baringo County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 25,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 33,
+      "county": "Baringo County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 9,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 34,
+      "county": "Laikipia County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 11,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 34,
+      "county": "Laikipia County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 14,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 35,
+      "county": "Nakuru County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 30,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 35,
+      "county": "Nakuru County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 10,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 36,
+      "county": "Narok County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 24,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 36,
+      "county": "Narok County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 11,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 37,
+      "county": "Kajiado County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 25,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 37,
+      "county": "Kajiado County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 12,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 38,
+      "county": "Kericho County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 21,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 38,
+      "county": "Kericho County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 7,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 39,
+      "county": "Bomet County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 18,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 39,
+      "county": "Bomet County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 9,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 40,
+      "county": "Kakamega County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 15,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 40,
+      "county": "Kakamega County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 10,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 41,
+      "county": "Vihiga County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 24,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 41,
+      "county": "Vihiga County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 20,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 42,
+      "county": "Bungoma County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 31,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 42,
+      "county": "Bungoma County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 4,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 43,
+      "county": "Busia County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 17,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 43,
+      "county": "Busia County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 5,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 44,
+      "county": "Siaya County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 23,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 44,
+      "county": "Siaya County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 12,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 45,
+      "county": "Kisumu County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 43,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 45,
+      "county": "Kisumu County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 8,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 46,
+      "county": "Homa Bay County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 16,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 46,
+      "county": "Homa Bay County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 11,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 47,
+      "county": "Migori County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 23,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 47,
+      "county": "Migori County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 21,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 48,
+      "county": "Kisii County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 22,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 48,
+      "county": "Kisii County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 12,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 49,
+      "county": "Nyamira County",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "findings": 27,
+      "source_document_ids": [
+        2445
+      ]
+    },
+    {
+      "county_id": 49,
+      "county": "Nyamira County",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "findings": 14,
+      "source_document_ids": [
+        2446
+      ]
+    },
+    {
+      "county_id": 3,
+      "county": "Nairobi County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 45,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 3,
+      "county": "Nairobi County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 11,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 4,
+      "county": "Mombasa County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 16,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 4,
+      "county": "Mombasa County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 7,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 5,
+      "county": "Kwale County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 11,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 5,
+      "county": "Kwale County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 7,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 6,
+      "county": "Kilifi County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 23,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 6,
+      "county": "Kilifi County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 6,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 7,
+      "county": "Tana River County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 30,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 7,
+      "county": "Tana River County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 16,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 8,
+      "county": "Lamu County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 20,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 8,
+      "county": "Lamu County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 5,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 9,
+      "county": "Taita Taveta County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 15,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 9,
+      "county": "Taita Taveta County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 12,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 10,
+      "county": "Garissa County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 19,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 10,
+      "county": "Garissa County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 10,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 11,
+      "county": "Wajir County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 20,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 11,
+      "county": "Wajir County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 13,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 12,
+      "county": "Mandera County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 20,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 12,
+      "county": "Mandera County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 10,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 13,
+      "county": "Marsabit County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 24,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 13,
+      "county": "Marsabit County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 14,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 14,
+      "county": "Isiolo County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 17,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 14,
+      "county": "Isiolo County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 14,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 15,
+      "county": "Meru County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 18,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 15,
+      "county": "Meru County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 8,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 16,
+      "county": "Tharaka Nithi County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 18,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 16,
+      "county": "Tharaka Nithi County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 12,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 17,
+      "county": "Embu County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 19,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 17,
+      "county": "Embu County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 10,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 18,
+      "county": "Kitui County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 19,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 18,
+      "county": "Kitui County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 12,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 19,
+      "county": "Machakos County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 23,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 19,
+      "county": "Machakos County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 12,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 20,
+      "county": "Makueni County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 9,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 20,
+      "county": "Makueni County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 12,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 21,
+      "county": "Nyandarua County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 29,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 21,
+      "county": "Nyandarua County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 15,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 22,
+      "county": "Nyeri County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 21,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 22,
+      "county": "Nyeri County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 16,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 23,
+      "county": "Kirinyaga County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 14,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 23,
+      "county": "Kirinyaga County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 5,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 24,
+      "county": "Murang'a County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 11,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 24,
+      "county": "Murang'a County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 9,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 25,
+      "county": "Kiambu County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 31,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 25,
+      "county": "Kiambu County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 13,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 26,
+      "county": "Turkana County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 20,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 26,
+      "county": "Turkana County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 10,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 27,
+      "county": "West Pokot County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 21,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 27,
+      "county": "West Pokot County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 9,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 28,
+      "county": "Samburu County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 14,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 28,
+      "county": "Samburu County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 19,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 29,
+      "county": "Trans Nzoia County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 29,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 29,
+      "county": "Trans Nzoia County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 7,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 30,
+      "county": "Uasin Gishu County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 33,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 30,
+      "county": "Uasin Gishu County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 16,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 31,
+      "county": "Elgeyo Marakwet County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 24,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 31,
+      "county": "Elgeyo Marakwet County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 10,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 32,
+      "county": "Nandi County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 22,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 32,
+      "county": "Nandi County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 14,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 33,
+      "county": "Baringo County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 25,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 33,
+      "county": "Baringo County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 7,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 34,
+      "county": "Laikipia County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 21,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 34,
+      "county": "Laikipia County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 11,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 35,
+      "county": "Nakuru County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 38,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 35,
+      "county": "Nakuru County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 7,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 36,
+      "county": "Narok County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 31,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 36,
+      "county": "Narok County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 15,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 37,
+      "county": "Kajiado County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 21,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 37,
+      "county": "Kajiado County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 12,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 38,
+      "county": "Kericho County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 23,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 38,
+      "county": "Kericho County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 6,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 39,
+      "county": "Bomet County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 21,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 39,
+      "county": "Bomet County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 10,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 40,
+      "county": "Kakamega County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 15,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 40,
+      "county": "Kakamega County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 11,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 41,
+      "county": "Vihiga County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 26,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 41,
+      "county": "Vihiga County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 18,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 42,
+      "county": "Bungoma County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 21,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 42,
+      "county": "Bungoma County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 6,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 43,
+      "county": "Busia County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 31,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 43,
+      "county": "Busia County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 13,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 44,
+      "county": "Siaya County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 20,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 44,
+      "county": "Siaya County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 12,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 45,
+      "county": "Kisumu County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 39,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 45,
+      "county": "Kisumu County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 11,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 46,
+      "county": "Homa Bay County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 23,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 46,
+      "county": "Homa Bay County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 25,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 47,
+      "county": "Migori County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 20,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 47,
+      "county": "Migori County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 12,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 48,
+      "county": "Kisii County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 23,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 48,
+      "county": "Kisii County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 17,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 49,
+      "county": "Nyamira County",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "findings": 14,
+      "source_document_ids": [
+        2443
+      ]
+    },
+    {
+      "county_id": 49,
+      "county": "Nyamira County",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "findings": 14,
+      "source_document_ids": [
+        2444
+      ]
+    },
+    {
+      "county_id": 3,
+      "county": "Nairobi County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 40,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 3,
+      "county": "Nairobi County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 10,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 4,
+      "county": "Mombasa County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 17,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 4,
+      "county": "Mombasa County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 3,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 5,
+      "county": "Kwale County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 16,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 5,
+      "county": "Kwale County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 6,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 6,
+      "county": "Kilifi County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 29,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 6,
+      "county": "Kilifi County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 14,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 7,
+      "county": "Tana River County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 33,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 7,
+      "county": "Tana River County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 10,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 8,
+      "county": "Lamu County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 16,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 8,
+      "county": "Lamu County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 9,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 9,
+      "county": "Taita Taveta County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 18,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 9,
+      "county": "Taita Taveta County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 6,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 10,
+      "county": "Garissa County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 22,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 10,
+      "county": "Garissa County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 15,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 11,
+      "county": "Wajir County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 38,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 11,
+      "county": "Wajir County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 10,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 12,
+      "county": "Mandera County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 25,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 12,
+      "county": "Mandera County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 8,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 13,
+      "county": "Marsabit County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 27,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 13,
+      "county": "Marsabit County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 15,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 14,
+      "county": "Isiolo County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 39,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 14,
+      "county": "Isiolo County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 17,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 15,
+      "county": "Meru County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 25,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 15,
+      "county": "Meru County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 7,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 16,
+      "county": "Tharaka Nithi County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 19,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 16,
+      "county": "Tharaka Nithi County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 14,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 17,
+      "county": "Embu County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 35,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 17,
+      "county": "Embu County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 13,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 18,
+      "county": "Kitui County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 15,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 18,
+      "county": "Kitui County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 5,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 19,
+      "county": "Machakos County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 16,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 19,
+      "county": "Machakos County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 7,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 20,
+      "county": "Makueni County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 9,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 20,
+      "county": "Makueni County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 4,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 21,
+      "county": "Nyandarua County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 24,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 21,
+      "county": "Nyandarua County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 14,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 22,
+      "county": "Nyeri County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 11,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 22,
+      "county": "Nyeri County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 16,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 23,
+      "county": "Kirinyaga County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 21,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 23,
+      "county": "Kirinyaga County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 9,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 24,
+      "county": "Murang'a County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 23,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 24,
+      "county": "Murang'a County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 11,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 25,
+      "county": "Kiambu County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 46,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 25,
+      "county": "Kiambu County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 22,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 26,
+      "county": "Turkana County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 17,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 26,
+      "county": "Turkana County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 15,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 27,
+      "county": "West Pokot County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 29,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 27,
+      "county": "West Pokot County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 11,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 28,
+      "county": "Samburu County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 39,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 28,
+      "county": "Samburu County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 27,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 29,
+      "county": "Trans Nzoia County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 24,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 29,
+      "county": "Trans Nzoia County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 11,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 30,
+      "county": "Uasin Gishu County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 47,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 30,
+      "county": "Uasin Gishu County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 22,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 31,
+      "county": "Elgeyo Marakwet County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 32,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 31,
+      "county": "Elgeyo Marakwet County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 10,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 32,
+      "county": "Nandi County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 32,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 32,
+      "county": "Nandi County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 12,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 33,
+      "county": "Baringo County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 25,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 33,
+      "county": "Baringo County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 14,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 34,
+      "county": "Laikipia County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 15,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 34,
+      "county": "Laikipia County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 21,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 35,
+      "county": "Nakuru County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 23,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 35,
+      "county": "Nakuru County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 17,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 36,
+      "county": "Narok County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 25,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 36,
+      "county": "Narok County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 14,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 37,
+      "county": "Kajiado County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 22,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 37,
+      "county": "Kajiado County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 8,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 38,
+      "county": "Kericho County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 51,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 38,
+      "county": "Kericho County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 12,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 39,
+      "county": "Bomet County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 44,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 39,
+      "county": "Bomet County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 9,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 40,
+      "county": "Kakamega County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 22,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 40,
+      "county": "Kakamega County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 13,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 41,
+      "county": "Vihiga County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 22,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 41,
+      "county": "Vihiga County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 13,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 42,
+      "county": "Bungoma County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 37,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 42,
+      "county": "Bungoma County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 8,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 43,
+      "county": "Busia County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 37,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 43,
+      "county": "Busia County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 16,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 44,
+      "county": "Siaya County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 37,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 44,
+      "county": "Siaya County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 12,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 45,
+      "county": "Kisumu County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 28,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 45,
+      "county": "Kisumu County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 15,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 46,
+      "county": "Homa Bay County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 18,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 46,
+      "county": "Homa Bay County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 12,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 47,
+      "county": "Migori County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 23,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 47,
+      "county": "Migori County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 17,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 48,
+      "county": "Kisii County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 26,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 48,
+      "county": "Kisii County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 14,
+      "source_document_ids": [
+        2442
+      ]
+    },
+    {
+      "county_id": 49,
+      "county": "Nyamira County",
+      "fiscal_year": "2024/2025",
+      "institution": "executives",
+      "findings": 30,
+      "source_document_ids": [
+        2441
+      ]
+    },
+    {
+      "county_id": 49,
+      "county": "Nyamira County",
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies",
+      "findings": 14,
+      "source_document_ids": [
+        2442
+      ]
+    }
+  ],
+  "unattributed_findings": 0,
+  "counties_by_year": {
+    "2021": 47,
+    "2024": 47,
+    "2022": 47,
+    "2023": 47,
+    "2025": 47
+  },
+  "run_gaps": []
+}

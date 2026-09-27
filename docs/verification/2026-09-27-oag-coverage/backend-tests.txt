@@ -1,0 +1,155 @@
+........................................................................ [  1%]
+........................................................................ [  2%]
+........................................................................ [  3%]
+........................................................................ [  5%]
+........................................................................ [  6%]
+...................................................s.................... [  7%]
+........................................................................ [  9%]
+........................................................................ [ 10%]
+........................................................................ [ 11%]
+........................................................................ [ 13%]
+........................................................................ [ 14%]
+........................................................................ [ 15%]
+........................................................................ [ 17%]
+........................................................................ [ 18%]
+........................................................................ [ 19%]
+................................................................s....... [ 21%]
+........................................................................ [ 22%]
+........................................................................ [ 23%]
+........................................................................ [ 25%]
+......................................s................................. [ 26%]
+........................................................................ [ 27%]
+........................................................................ [ 28%]
+........................................................................ [ 30%]
+........................................................................ [ 31%]
+........................................................................ [ 32%]
+........................................................................ [ 34%]
+........................................................................ [ 35%]
+........................................................................ [ 36%]
+........................................................................ [ 38%]
+........................................................................ [ 39%]
+........................................................................ [ 40%]
+........................................................................ [ 42%]
+........................................................................ [ 43%]
+........................................................................ [ 44%]
+........................................................................ [ 46%]
+........................................................................ [ 47%]
+........................................................................ [ 48%]
+........................................................................ [ 50%]
+........................................................................ [ 51%]
+........................................................................ [ 52%]
+........................................................................ [ 53%]
+........................................................................ [ 55%]
+........................................................................ [ 56%]
+........................................................................ [ 57%]
+........................................................................ [ 59%]
+........................................................................ [ 60%]
+........................................................................ [ 61%]
+....................s................................................... [ 63%]
+........................................................................ [ 64%]
+........................................................................ [ 65%]
+........................................................................ [ 67%]
+........................................................................ [ 68%]
+.............................................s.......................... [ 69%]
+........................................................................ [ 71%]
+........................................................................ [ 72%]
+........................................................................ [ 73%]
+........................................................................ [ 75%]
+........................................................................ [ 76%]
+........................................................................ [ 77%]
+........................................................................ [ 78%]
+........................................................................ [ 80%]
+........................................................................ [ 81%]
+........................................................................ [ 82%]
+........................................................................ [ 84%]
+.............................ssssssssssss............................... [ 85%]
+........................................................................ [ 86%]
+........................................................................ [ 88%]
+........................................................................ [ 89%]
+........................................................................ [ 90%]
+........................................................................ [ 92%]
+........................................................................ [ 93%]
+........................................................................ [ 94%]
+........................................................................ [ 96%]
+........................................................................ [ 97%]
+........................................................................ [ 98%]
+......................s.............s...s.........ss.....s.s..........   [100%]
+=============================== warnings summary ===============================
+../../../../../Documents/projects/audit_app/backend/.venv313/lib/python3.13/site-packages/fastapi/testclient.py:1
+  /Users/roger/Documents/projects/audit_app/backend/.venv313/lib/python3.13/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+database.py:64
+  /Users/roger/.codex/worktrees/cceb/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+models.py:23
+  /Users/roger/.codex/worktrees/cceb/audit_app/backend/models.py:23: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+../../../../../Documents/projects/audit_app/backend/.venv313/lib/python3.13/site-packages/pythonjsonlogger/jsonlogger.py:11
+  /Users/roger/Documents/projects/audit_app/backend/.venv313/lib/python3.13/site-packages/pythonjsonlogger/jsonlogger.py:11: DeprecationWarning: pythonjsonlogger.jsonlogger has been moved to pythonjsonlogger.json
+    warnings.warn(
+
+../../../../../Documents/projects/audit_app/backend/.venv313/lib/python3.13/site-packages/fuzzywuzzy/fuzz.py:11
+  /Users/roger/Documents/projects/audit_app/backend/.venv313/lib/python3.13/site-packages/fuzzywuzzy/fuzz.py:11: UserWarning: Using slow pure-python SequenceMatcher. Install python-Levenshtein to remove this warning
+    warnings.warn('Using slow pure-python SequenceMatcher. Install python-Levenshtein to remove this warning')
+
+tests/test_alembic_has_one_head.py::test_the_guard_reads_the_real_migrations
+tests/test_alembic_has_one_head.py::test_alembic_has_exactly_one_head
+tests/test_alembic_has_one_head.py::test_every_revision_walks_back_to_base
+  /Users/roger/Documents/projects/audit_app/backend/.venv313/lib/python3.13/site-packages/alembic/config.py:612: DeprecationWarning: No path_separator found in configuration; falling back to legacy splitting on spaces, commas, and colons for prepend_sys_path.  Consider adding path_separator=os to Alembic config.
+    util.warn_deprecated(
+
+tests/test_budget_scoping.py: 5 warnings
+tests/test_county_period_totals_match_publication.py: 2 warnings
+tests/test_credibility_regressions.py: 2 warnings
+tests/test_model_responses_are_cacheable.py: 1 warning
+tests/test_unit_safety.py: 3 warnings
+  /Users/roger/.codex/worktrees/cceb/audit_app/backend/main.py:8312: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    _fp = db.query(DBFiscalPeriod).get(county_period_id)
+
+tests/test_debt_instrument_writer.py::test_endpoint_survives_the_table_not_existing
+tests/test_models.py::TestCountryModel::test_country_unique_iso_code
+tests/test_models.py::TestEntityModel::test_entity_unique_slug
+  /Users/roger/.codex/worktrees/cceb/audit_app/backend/conftest.py:202: SAWarning: transaction already deassociated from connection
+    transaction.rollback()
+
+tests/test_debt_timeline_row_provenance.py::test_two_series_persist_as_two_source_documents
+  /Users/roger/.codex/worktrees/cceb/audit_app/backend/tests/test_debt_timeline_row_provenance.py:51: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    doc_2013 = db_session.query(SourceDocument).get(rows[2013].source_document_id)
+
+tests/test_debt_timeline_row_provenance.py::test_two_series_persist_as_two_source_documents
+  /Users/roger/.codex/worktrees/cceb/audit_app/backend/tests/test_debt_timeline_row_provenance.py:52: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    doc_2025 = db_session.query(SourceDocument).get(rows[2025].source_document_id)
+
+tests/test_debt_timeline_row_provenance.py::test_a_row_without_its_own_source_falls_back_to_the_payload_document
+  /Users/roger/.codex/worktrees/cceb/audit_app/backend/tests/test_debt_timeline_row_provenance.py:82: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    doc = db_session.query(SourceDocument).get(row.source_document_id)
+
+tests/test_external_creditor_reconciliation.py::test_ids_creditor_rows_persist_with_world_bank_provenance
+  /Users/roger/.codex/worktrees/cceb/audit_app/backend/tests/test_external_creditor_reconciliation.py:175: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    doc = db_session.query(SourceDocument).get(loan.source_document_id)
+
+tests/test_no_manufactured_zeros_when_source_unavailable.py::test_the_derivation_covers_everything_the_old_hand_list_did
+  /Users/roger/Documents/projects/audit_app/backend/.venv313/lib/python3.13/site-packages/fastapi/openapi/utils.py:252: UserWarning: Duplicate Operation ID root__get for function root at /Users/roger/.codex/worktrees/cceb/audit_app/backend/main.py
+    warnings.warn(message, stacklevel=1)
+
+tests/test_no_manufactured_zeros_when_source_unavailable.py::test_the_derivation_covers_everything_the_old_hand_list_did
+  /Users/roger/Documents/projects/audit_app/backend/.venv313/lib/python3.13/site-packages/fastapi/openapi/utils.py:252: UserWarning: Duplicate Operation ID health_health_get for function health at /Users/roger/.codex/worktrees/cceb/audit_app/backend/main.py
+    warnings.warn(message, stacklevel=1)
+
+tests/test_no_manufactured_zeros_when_source_unavailable.py::test_the_derivation_covers_everything_the_old_hand_list_did
+  /Users/roger/Documents/projects/audit_app/backend/.venv313/lib/python3.13/site-packages/fastapi/openapi/utils.py:252: UserWarning: Duplicate Operation ID health_live_health_live_get for function health_live at /Users/roger/.codex/worktrees/cceb/audit_app/backend/main.py
+    warnings.warn(message, stacklevel=1)
+
+tests/test_no_manufactured_zeros_when_source_unavailable.py::test_the_derivation_covers_everything_the_old_hand_list_did
+  /Users/roger/Documents/projects/audit_app/backend/.venv313/lib/python3.13/site-packages/fastapi/openapi/utils.py:252: UserWarning: Duplicate Operation ID health_ready_health_ready_get for function health_ready at /Users/roger/.codex/worktrees/cceb/audit_app/backend/main.py
+    warnings.warn(message, stacklevel=1)
+
+tests/test_tls_chain.py::TestItRefuses::test_no_context_is_built_when_the_chain_cannot_be_completed
+  /Users/roger/.codex/worktrees/cceb/audit_app/backend/seeding/tls_chain.py:73: CryptographyDeprecationWarning: Parsed a serial number which wasn't positive (i.e., it was negative or zero), which is disallowed by RFC 5280. Loading this certificate will cause an exception in a future release of cryptography.
+    for cert in x509.load_pem_x509_certificates(handle.read()):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+5446 passed, 24 skipped, 33 warnings in 109.46s (0:01:49)

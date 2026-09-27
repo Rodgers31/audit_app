@@ -1,0 +1,79 @@
+{
+  "scope": "disposable_local_clone",
+  "volume": {
+    "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf",
+    "fiscal_year": "2021/2022",
+    "kind": "executives",
+    "found_on": "year_page",
+    "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+    "entity": null,
+    "note": null
+  },
+  "document_id": 2447,
+  "sha256": "0cc278f2ac0cc11be86b03dea6f7f7c97710c3f3903145716f403292967387fe",
+  "md5": "cda52424386d5ab6afae21a4dc9dcde7",
+  "extracted": {
+    "created": 1082,
+    "skipped": 0,
+    "rejected_cid": 0,
+    "shape": "county_volume",
+    "partial": false,
+    "fiscal_year": "2021/2022",
+    "volume_kind": "executives",
+    "chapters": 47,
+    "refused": []
+  },
+  "loaded": {
+    "processed": 1082,
+    "created": 1082,
+    "updated": 0,
+    "skipped": 0,
+    "errors": []
+  },
+  "document_metadata": {
+    "dataset_id": "oag_county_audits",
+    "extracted_md5": "cda52424386d5ab6afae21a4dc9dcde7",
+    "oag_discovery": {
+      "kind": "executives",
+      "note": null,
+      "entity": null,
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "fiscal_year": "2021/2022"
+    },
+    "extraction_stats": {
+      "pages": 546,
+      "partial": false,
+      "refused": [],
+      "findings": 1082,
+      "extractor": "oag_county_volume",
+      "ocr_pages": 0,
+      "fiscal_year": "2021/2022",
+      "volume_kind": "executives",
+      "rejected_cid": 0,
+      "contents_entries": 47,
+      "missing_counties": [],
+      "unreadable_pages": [
+        4,
+        7,
+        8,
+        9,
+        545
+      ],
+      "chapters_attributed": 47,
+      "fiscal_year_sources": [
+        "filename",
+        "oag_year_page",
+        "title_page"
+      ],
+      "chapters_with_no_finding": [],
+      "unreadable_chapter_pages": []
+    },
+    "last_extraction_attempt": {
+      "status": "complete"
+    }
+  },
+  "outcome": "completed",
+  "wall_seconds": 50.239,
+  "max_rss_bytes": 5413994496
+}

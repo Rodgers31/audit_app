@@ -1,0 +1,29 @@
+{
+  "scope": "disposable_local_clone",
+  "started_at": "2026-09-27 20:11:44.903139+00:00",
+  "county_volumes": {
+    "discovered": 8,
+    "processed": [
+      "2024/2025 executives: 1269 finding(s)",
+      "2024/2025 assemblies: 582 finding(s)",
+      "2023/2024 executives: 1047 finding(s)",
+      "2023/2024 assemblies: 541 finding(s)",
+      "2022/2023 executives: 1041 finding(s)",
+      "2022/2023 assemblies: 513 finding(s)"
+    ],
+    "already_current": [],
+    "deferred": [],
+    "failed": [],
+    "partial": [
+      "2021/2022 executives",
+      "2021/2022 assemblies"
+    ]
+  },
+  "coverage_verdict": [
+    "WARN",
+    "newest audits run: partial 2021/2022 executives; partial 2021/2022 assemblies; document 2447: partial extraction; document 2448: partial extraction; newest audits run status is failed; document 2447: stored partial extraction; document 2448: stored partial extraction"
+  ],
+  "prior_audit_rows": 2338,
+  "after_audit_rows": 8945,
+  "prior_audits_unchanged": false
+}

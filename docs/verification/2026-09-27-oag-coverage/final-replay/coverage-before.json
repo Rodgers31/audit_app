@@ -1,0 +1,17 @@
+{
+  "listing_years": [],
+  "required_years": [],
+  "listing_read_at": null,
+  "listing_job_id": null,
+  "county_count": 47,
+  "expected_county_count": 47,
+  "cells": [],
+  "unattributed_findings": 0,
+  "counties_by_year": {
+    "2021": 47
+  },
+  "run_gaps": [
+    "newest audits run has no valid county listing",
+    "newest audits run has no valid volume outcome report"
+  ]
+}

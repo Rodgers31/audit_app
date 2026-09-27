@@ -1,0 +1,79 @@
+{
+  "scope": "disposable_local_clone",
+  "volume": {
+    "url": "https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf",
+    "fiscal_year": "2022/2023",
+    "kind": "executives",
+    "found_on": "year_page",
+    "listed_at": "https://www.oagkenya.go.ke/2022-2023-county-government-audit-reports/",
+    "entity": null,
+    "note": null
+  },
+  "document_id": 2445,
+  "sha256": "e873eb8a2f5b24366b4b847e529c832ef42d2aea02702a015597c6c406f9b953",
+  "md5": "f49345102b734ddc4825110e44ef9113",
+  "extracted": {
+    "created": 1041,
+    "skipped": 0,
+    "rejected_cid": 0,
+    "shape": "county_volume",
+    "partial": false,
+    "fiscal_year": "2022/2023",
+    "volume_kind": "executives",
+    "chapters": 47,
+    "refused": []
+  },
+  "loaded": {
+    "processed": 1041,
+    "created": 1041,
+    "updated": 0,
+    "skipped": 0,
+    "errors": []
+  },
+  "document_metadata": {
+    "dataset_id": "oag_county_audits",
+    "extracted_md5": "f49345102b734ddc4825110e44ef9113",
+    "oag_discovery": {
+      "kind": "executives",
+      "note": null,
+      "entity": null,
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2022-2023-county-government-audit-reports/",
+      "fiscal_year": "2022/2023"
+    },
+    "extraction_stats": {
+      "pages": 504,
+      "partial": false,
+      "refused": [],
+      "findings": 1041,
+      "extractor": "oag_county_volume",
+      "ocr_pages": 0,
+      "fiscal_year": "2022/2023",
+      "volume_kind": "executives",
+      "rejected_cid": 0,
+      "contents_entries": 47,
+      "missing_counties": [],
+      "unreadable_pages": [
+        1,
+        4,
+        10,
+        14,
+        503
+      ],
+      "chapters_attributed": 47,
+      "fiscal_year_sources": [
+        "filename",
+        "oag_year_page",
+        "title_page"
+      ],
+      "chapters_with_no_finding": [],
+      "unreadable_chapter_pages": []
+    },
+    "last_extraction_attempt": {
+      "status": "complete"
+    }
+  },
+  "outcome": "completed",
+  "wall_seconds": 40.44,
+  "max_rss_bytes": 3744186368
+}
