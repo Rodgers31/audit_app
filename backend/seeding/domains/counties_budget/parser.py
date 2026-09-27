@@ -38,6 +38,9 @@ class BudgetRecord:
     data_quality: str = "unknown"
     source_label: Optional[str] = None
     notes: Optional[str] = None
+    # Who published ``source_url``, when the payload declares it. Labels the
+    # SourceDocument; undeclared rows are filed under the CoB (issue #276).
+    publisher: Optional[str] = None
 
 
 def _iter_records(payload: Any) -> Iterable[Dict[str, Any]]:
@@ -83,6 +86,13 @@ def _to_date(value: Any) -> Optional[date]:
         return datetime.fromisoformat(str(value)).date()
     except ValueError:
         return None
+
+
+def _declared(value: Any) -> Optional[str]:
+    """A declared label, or None when the row declares nothing usable."""
+    if not isinstance(value, str):
+        return None
+    return value.strip() or None
 
 
 def parse_budget_payload(payload: Dict[str, Any]) -> List[BudgetRecord]:
@@ -146,6 +156,7 @@ def parse_budget_payload(payload: Dict[str, Any]) -> List[BudgetRecord]:
                 or raw.get("source_title")
             ),
             notes=raw.get("notes"),
+            publisher=_declared(raw.get("publisher")),
         )
         normalized.append(record)
 
