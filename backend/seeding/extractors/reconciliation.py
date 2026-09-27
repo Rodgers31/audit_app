@@ -27,6 +27,45 @@ class IncompleteExtraction(ValueError):
     pass
 
 
+def lock_reconciliation_source(session, doc):
+    """Serialize one source through the caller's transaction, including loading.
+
+    Lock the stable parent before entering a savepoint: an empty extraction
+    set has no rows to lock, and begin_nested() flushes pending ORM changes.
+    SQLite's no-op write also starts a real transaction before its savepoint.
+    """
+    from models import Extraction, SourceDocument
+    from sqlalchemy import select, update
+
+    if any(
+        isinstance(row, Extraction)
+        for row in session.new | session.dirty | session.deleted
+    ):
+        raise IncompleteExtraction(
+            "reconciliation requires unchanged stored extractions; pass detached candidates"
+        )
+    with session.no_autoflush:
+        dialect = session.get_bind().dialect.name
+        if dialect == "sqlite":
+            result = session.execute(
+                update(SourceDocument)
+                .where(SourceDocument.id == doc.id)
+                .values(id=SourceDocument.id)
+                .execution_options(synchronize_session=False)
+            )
+            found = result.rowcount == 1
+        elif dialect == "postgresql":
+            found = session.execute(
+                select(SourceDocument.id)
+                .where(SourceDocument.id == doc.id)
+                .with_for_update()
+            ).scalar_one_or_none() is not None
+        else:
+            raise IncompleteExtraction(f"unsupported reconciliation database: {dialect}")
+        if not found:
+            raise IncompleteExtraction("reconciliation source no longer exists")
+
+
 def _digest(value):
     return hashlib.sha256(
         json.dumps(value, sort_keys=True, ensure_ascii=False, allow_nan=False).encode()
@@ -190,7 +229,9 @@ def require_review(session, doc, extractor_id, old, rows, matched, vanished, rev
 
 def extract_and_load(session, doc, settings, context, parser, loader):
     """One source is one transaction: a loader failure cannot bank a replacement."""
+    lock_reconciliation_source(session, doc)
     with session.begin_nested():
+        session.refresh(doc)
         stats = parser(session, doc, settings)
         fresh = stats.pop("fresh_extraction_ids", None) or ()
         loaded = loader(session, doc, settings, context, fresh_extraction_ids=fresh)

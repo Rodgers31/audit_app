@@ -32,6 +32,20 @@ describe('the as-at line', () => {
     expect(line).toMatch(/^Hadi 30 /);
     expect(line).toContain('Mdhibiti wa Bajeti');
   });
+
+  it.each(['2026-02-29', '2026-02-30', '2026-04-31', '1900-02-29'])(
+    'rejects impossible calendar date %s without shifting the reported day', (iso) => {
+      expect(formatAsAt(iso, 'en')).toBeNull();
+      expect(pendingBillsAsAtLine(iso, 'Table 2.10', 'en', en)).toBeNull();
+      expect(pendingBillsAbsenceLine({ reason: 'not_reported', as_at: iso }, 'en', en)).toBeNull();
+    }
+  );
+
+  it.each(['2024-02-29', '2000-02-29'])(
+    'preserves the real leap day %s', (iso) => {
+      expect(formatAsAt(iso, 'en')).toBe(`29 February ${iso.slice(0, 4)}`);
+    }
+  );
 });
 
 describe('the notes', () => {

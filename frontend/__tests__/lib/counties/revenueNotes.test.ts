@@ -1,5 +1,8 @@
 import { countyRevenueNotes } from '@/lib/counties/revenueNotes';
 import type { CountyRevenue } from '@/types';
+import { MESSAGES, type TranslationKey } from '@/lib/i18n/messages';
+
+const en = (key: TranslationKey) => MESSAGES[key].en;
 
 const receipt: CountyRevenue = {
   total_revenue: 15790774484, total_revenue_target: null,
@@ -13,14 +16,25 @@ const receipt: CountyRevenue = {
 };
 
 test('both card consumers retain period and separately labelled cash and summary measures', () => {
-  expect(countyRevenueNotes(receipt, String)).toEqual([
+  expect(countyRevenueNotes(receipt, String, en)).toEqual([
     'FY2025/26', 'Own-source cash receipts: 6214590483',
     'Summary table “Actual Realised”: 21126230000; differs from cash receipts',
   ]);
 });
 
 test('printed zero remains a figure; absence does not become cash', () => {
-  expect(countyRevenueNotes({ ...receipt, local_revenue: 0, own_source_disagreement: null }, String)).toContain('Own-source cash receipts: 0');
-  expect(countyRevenueNotes({ ...receipt, local_revenue: null, own_source_disagreement: null }, String)).toEqual(['FY2025/26']);
-  expect(countyRevenueNotes({ ...receipt, local_revenue_basis: 'summary_table_actual_realised', own_source_disagreement: null }, String)[1]).toBe('Summary table “Actual Realised”: 6214590483');
+  expect(countyRevenueNotes({ ...receipt, local_revenue: 0, own_source_disagreement: null }, String, en)).toContain('Own-source cash receipts: 0');
+  expect(countyRevenueNotes({ ...receipt, local_revenue: null, own_source_disagreement: null }, String, en)).toEqual(['FY2025/26']);
+  expect(countyRevenueNotes({ ...receipt, local_revenue_basis: 'summary_table_actual_realised', own_source_disagreement: null }, String, en)[1]).toBe('Summary table “Actual Realised”: 6214590483');
+});
+
+test.each(['en', 'sw', 'plain'] as const)('labels all revenue bases in %s without altering values or period', (lang) => {
+  const translate = (key: TranslationKey) => MESSAGES[key][lang];
+  const notes = countyRevenueNotes(receipt, String, translate);
+  expect(notes[0]).toBe('FY2025/26');
+  expect(notes[1]).toBe(`${MESSAGES['county.revenue.cash_receipts'][lang]}: 6214590483`);
+  expect(notes[2]).toBe(MESSAGES['county.revenue.summary_differs'][lang].replace('{amount}', '21126230000'));
+  expect(notes.join(' ')).not.toMatch(/\{\w+\}/);
+  expect(countyRevenueNotes({ ...receipt, local_revenue: 0, own_source_disagreement: null }, String, translate)[1]).toContain(': 0');
+  expect(countyRevenueNotes({ ...receipt, local_revenue: null, own_source_disagreement: null }, String, translate)).toEqual(['FY2025/26']);
 });

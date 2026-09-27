@@ -425,9 +425,9 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
             accent='text-emerald-700'
           />
           <KPI
-            label={revenue.total_revenue_basis === 'cash_receipts_including_opening_balance' ? 'Cash receipts and opening balance' : t('county.overview.kpi.total_revenue')}
+            label={revenue.total_revenue_basis === 'cash_receipts_including_opening_balance' ? t('county.revenue.cash_and_opening_balance') : t('county.overview.kpi.total_revenue')}
             value={fmtKES(revenue.total_revenue)}
-            sub={countyRevenueNotes(revenue, fmtKES).join(' · ') || undefined}
+            sub={countyRevenueNotes(revenue, fmtKES, t).join(' · ') || undefined}
             accent='text-green-700'
           />
         </div>

@@ -94,6 +94,7 @@ def records(day, amount):
             source_page=1,
             source_table="Synthetic test table",
         )
+        # counties-literal-ok: Synthetic race fixtures in a required empty localhost test database; never a public ranking.
         for name in ("Mombasa County", "Nairobi County")
     ]
 

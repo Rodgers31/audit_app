@@ -40,6 +40,12 @@ export function formatAsAt(iso: string | null | undefined, lang: Lang): string |
   if (typeof iso !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null;
   const when = new Date(`${iso}T00:00:00Z`);
   if (Number.isNaN(when.getTime())) return null;
+  const [year, month, day] = iso.split('-').map(Number);
+  // Date accepts and rolls forward some impossible days (e.g. 30 February).
+  // A source date must describe the exact calendar day the publisher gave.
+  if (when.getUTCFullYear() !== year || when.getUTCMonth() + 1 !== month || when.getUTCDate() !== day) {
+    return null;
+  }
   return when.toLocaleDateString(lang === 'sw' ? 'sw-KE' : 'en-GB', {
     day: 'numeric',
     month: 'long',

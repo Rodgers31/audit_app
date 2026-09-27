@@ -997,6 +997,31 @@ export const MESSAGES = {
   'county.overview.cases_oag': { en: 'cases identified by OAG', sw: 'kesi zilizogunduliwa na Mkaguzi Mkuu', plain: 'cases the auditor flagged' },
 
   // Overview profile KPIs
+  'county.revenue.cash_receipts': {
+    en: 'Own-source cash receipts',
+    sw: 'Mapato ya ndani yaliyopokelewa',
+    plain: 'Money the county received from its own sources',
+  },
+  'county.revenue.summary_actual_realised': {
+    en: 'Summary table “Actual Realised”',
+    sw: 'Jedwali la muhtasari “Actual Realised”',
+    plain: 'Amount labelled “Actual Realised” in the summary table',
+  },
+  'county.revenue.amount': {
+    en: '{label}: {amount}',
+    sw: '{label}: {amount}',
+    plain: '{label}: {amount}',
+  },
+  'county.revenue.summary_differs': {
+    en: 'Summary table “Actual Realised”: {amount}; differs from cash receipts',
+    sw: 'Jedwali la muhtasari “Actual Realised”: {amount}; hutofautiana na fedha zilizopokelewa',
+    plain: 'The summary table reports {amount} as “Actual Realised”. This differs from the money received.',
+  },
+  'county.revenue.cash_and_opening_balance': {
+    en: 'Cash receipts and opening balance',
+    sw: 'Fedha zilizopokelewa na salio la mwanzo',
+    plain: 'Money received plus the balance at the start',
+  },
   'county.overview.kpi.total_revenue': { en: 'Total Revenue', sw: 'Mapato Jumla', plain: 'Total Money In' },
   'county.overview.kpi.local_prefix': { en: 'Local:', sw: 'Ya ndani:', plain: 'Local:' },
   'county.overview.kpi.census': { en: 'Census', sw: 'Sensa', plain: 'Census' },

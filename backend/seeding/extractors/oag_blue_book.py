@@ -638,7 +638,11 @@ def blue_book_row_key(payload: dict) -> tuple:
 
 def replace_extractions(session, doc, extractor_id: str, rows: list, key, *, review=None) -> dict:
     """Atomically reconcile a validated candidate, preserving evidence on failure."""
+    from .reconciliation import lock_reconciliation_source
+
+    lock_reconciliation_source(session, doc)
     with session.begin_nested():
+        session.refresh(doc)
         return _replace_extractions(session, doc, extractor_id, rows, key, review=review)
 
 
@@ -680,6 +684,8 @@ def _replace_extractions(session, doc, extractor_id: str, rows: list, key, *, re
             Extraction.extractor == extractor_id,
         )
         .order_by(Extraction.id)
+        .populate_existing()
+        .with_for_update()
         .all()
     )
     by_key: Dict[tuple, list] = {}
