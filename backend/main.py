@@ -23,6 +23,8 @@ from services.publication_gate import (
     count_withheld_by_reason,
     county_debt_instrument_failure,
     county_pending_bills,
+    county_pending_bills_row_is_published,
+    pending_bills_row_amount,
     file_source_provenance_failure,
     loan_is_modelled_fixture,
     log_withheld_audits,
@@ -30,6 +32,10 @@ from services.publication_gate import (
     publishable_audit_criterion,
 )
 from seeding.source_registry import next_expected_window
+from services.county_budget import (
+    REVENUE_RECEIPTS_CATEGORY,
+    REVENUE_RECEIPTS_TOTAL,
+)
 from services.trust_guards import (
     check_budget_sectors,
     check_coverage_staleness,
@@ -314,11 +320,59 @@ def _latest_county_period(db) -> Optional[int]:
         .join(DBFiscalPeriod, DBBudgetLine.period_id == DBFiscalPeriod.id)
         .filter(DBEntity.type == EntityType.COUNTY)
         .filter(DBBudgetLine.category != "Total Budget")
-        .order_by(DBFiscalPeriod.start_date.desc())
+        # A full year and its part-year report ("FY2025/26" and "FY2025/26
+        # 9M") share a start date. Ordering on start_date alone left the
+        # choice to the planner; the later end date — the full year — wins.
+        .order_by(
+            DBFiscalPeriod.start_date.desc(),
+            DBFiscalPeriod.end_date.desc(),
+            DBFiscalPeriod.id.desc(),
+        )
         .limit(1)
         .first()
     )
     return row[0] if row else None
+
+
+def _county_period_rollup(db, period_id: Optional[int]):
+    """Every county's budget in one period, each through the shared split rule.
+
+    Returns ``(per_county, sector_lines)``: ``per_county`` maps entity id to
+    ``(canonical_name, allocated, spent)``, and ``sector_lines`` are the
+    additive sector rows across all counties.
+
+    ``/budget/overview`` and ``/countries/{id}/summary`` summed every county
+    row in the period except the literal category "Total Budget". A period
+    holding the Controller of Budget's CBIRR aggregates carries Total,
+    Recurrent, Development and Own Source Revenue side by side — one budget
+    described three ways plus the county's own revenue — so that sum was
+    633.30 + 398.97 + 234.33 + 100.13 = KSh 1,366.7B against a published
+    633.30B. Going through ``split_classification_and_sector_lines`` per
+    county is the rule ``GET /counties`` and money-flow already use, so all
+    three now publish the same total for the same period.
+    """
+    if not period_id:
+        # No period is not "every period": summed across years, one county
+        # would carry several budgets as one.
+        return {}, []
+    q = (
+        db.query(DBBudgetLine, DBEntity.canonical_name)
+        .join(DBEntity, DBBudgetLine.entity_id == DBEntity.id)
+        .filter(DBEntity.type == EntityType.COUNTY)
+        .filter(DBBudgetLine.period_id == period_id)
+    )
+    lines_by_entity: Dict[int, List[Any]] = {}
+    names: Dict[int, str] = {}
+    for line, name in q.all():
+        lines_by_entity.setdefault(line.entity_id, []).append(line)
+        names[line.entity_id] = name
+    per_county: Dict[int, Tuple[str, float, float]] = {}
+    sector_lines: List[Any] = []
+    for entity_id, lines in lines_by_entity.items():
+        allocated, spent, sectors, _cls = _split_classification_and_sector_lines(lines)
+        per_county[entity_id] = (names[entity_id], allocated, spent)
+        sector_lines.extend(sectors)
+    return per_county, sector_lines
 
 
 def _latest_national_period(db) -> Optional[int]:
@@ -528,6 +582,207 @@ def county_own_source_revenue(budget_lines) -> Optional[float]:
             continue
         return float(amount)
     return None
+
+
+def county_revenue_receipts(budget_lines) -> Optional[Dict[str, Dict[str, float]]]:
+    """``{stream: {"target", "actual"}}`` from the CBIRR revenue table, or None.
+
+    Only counties whose Chapter 3 "Revenue Performance" table reconciled to its
+    own Grand Total have these rows at all (``seeding.pdf_parsers
+    .county_revenue_receipts``), so the presence of ``"Total"`` is the proof
+    that the streams add up to it. None without it: a county with a partial
+    set of streams is not a county with a smaller revenue.
+    """
+    out: Dict[str, Dict[str, float]] = {}
+    for line in budget_lines or []:
+        if (line.category or "") != REVENUE_RECEIPTS_CATEGORY or not line.subcategory:
+            continue
+        if line.actual_spent is None:
+            continue
+        out[line.subcategory] = {
+            "target": (
+                float(line.allocated_amount)
+                if line.allocated_amount is not None
+                else None
+            ),
+            "actual": float(line.actual_spent),
+        }
+    return out if REVENUE_RECEIPTS_TOTAL in out else None
+
+
+#: The order the CBIRR prints its revenue streams in.
+_REVENUE_STREAM_ORDER = (
+    "Balance Brought Forward",
+    "Equitable Share",
+    "Equalisation Fund",
+    "Additional Allocations",
+    "Own Source Revenue",
+    "Facility Improvement Financing",
+    "Appropriations in Aid",
+    "Other Revenue",
+)
+
+
+#: The revenue streams that are own-source revenue in the CBIRR's county
+#: tables — what Table 2.1 reports as "Total OSR" (ordinary + FIF/AiA).
+_OWN_SOURCE_STREAMS = (
+    "Own Source Revenue",
+    "Facility Improvement Financing",
+    "Appropriations in Aid",
+)
+#: The parser's own reconciliation tolerance (seeding.pdf_parsers
+#: ._REVENUE_TOLERANCE_KES), re-checked on the rows as stored.
+_REVENUE_STREAMS_TOLERANCE = 1000
+
+#: How far the two may differ before the county table is withheld. Measured on
+#: the FY2025/26 CBIRR: Lamu and Narok differ by 0.18% and 0.79% and pass;
+#: Makueni, Nakuru, Tharaka Nithi and Mombasa differ by 10.7% to 70.6% and are
+#: withheld; the other 20 agree to within 0.01%.
+_OWN_SOURCE_AGREEMENT = 0.01
+
+
+def county_revenue_block(
+    receipts: Optional[Dict[str, Dict[str, float]]],
+    *,
+    local_revenue: Optional[float],
+    own_source_target: Optional[float],
+    fiscal_year: Optional[str],
+) -> Dict[str, Any]:
+    """The ``revenue`` object of ``/counties/{id}/comprehensive``.
+
+    ``total_revenue`` is the CBIRR's own Grand Total of actual receipts, and
+    ``streams`` are the rows it is the sum of — published only when they add
+    up. ``local_revenue`` stays the own-source figure every other page shows
+    (CBIRR Table 2.1), and is NOT one of the streams: Table 2.1 and the county
+    table differ on what they count as own-source (Nairobi's liquor A-i-A is in
+    the second and not the first), so presenting it as a part would make the
+    parts stop summing.
+    """
+    # The report's two own-source figures must agree before its revenue table
+    # is published beside Table 2.1's. Of the 26 counties whose FY2025/26
+    # table reconciles, 20 agree to within 0.01% and two within 1%; Mombasa's
+    # Table 2.1 says 21,126.23M and its own revenue table 6,214.59M. Printing both on one page
+    # ("total 15.79B, local 21.13B") is a contradiction the site cannot
+    # resolve, so the revenue table is withheld and both figures are shown.
+    #
+    # Table 2.1's "FIF/AiA" column carries a county's A-i-A stream for some
+    # counties and not others (Nairobi's is FIF alone: 9,440.57M ordinary +
+    # 1,348.85M FIF = its 10,789.42M exactly, with the 206.51M liquor A-i-A
+    # left out), so agreement with or without that stream counts.
+    import math
+
+    def _figure(v) -> bool:
+        return (
+            isinstance(v, (int, float))
+            and not isinstance(v, bool)
+            and math.isfinite(v)
+        )
+
+    # What the block publishes must be what the parser proved: a positive
+    # Total that the streams add up to, every value a real number, and a
+    # Table 2.1 figure to check the own-source streams against. Rows that
+    # outlived a re-parse, a NaN from the database, or a missing Table 2.1 row
+    # would each publish a total nothing vouches for.
+    withheld_reason = None
+    if receipts:
+        total = receipts.get(REVENUE_RECEIPTS_TOTAL, {}).get("actual")
+        streams_actual = [
+            v["actual"] for k, v in receipts.items() if k != REVENUE_RECEIPTS_TOTAL
+        ]
+        if (
+            not _figure(total)
+            or total <= 0
+            or not streams_actual
+            or not all(_figure(v) for v in streams_actual)
+            or abs(sum(streams_actual) - total) > _REVENUE_STREAMS_TOLERANCE
+        ):
+            receipts, withheld_reason = None, "cbirr_revenue_streams_do_not_sum_to_total"
+        elif not _figure(local_revenue):
+            receipts, withheld_reason = None, "no_table_2_1_own_source_figure_to_check_against"
+
+    disagreement = None
+    if receipts and local_revenue is not None:
+        def _sum(names) -> float:
+            return sum(receipts[n]["actual"] for n in names if n in receipts)
+
+        with_aia = _sum(_OWN_SOURCE_STREAMS)
+        without_aia = _sum(_OWN_SOURCE_STREAMS[:2])
+        tolerance = max(abs(local_revenue) * _OWN_SOURCE_AGREEMENT, 1_000_000)
+        if all(abs(c - local_revenue) > tolerance for c in (with_aia, without_aia)):
+            disagreement = {
+                "summary_table": local_revenue,
+                "county_revenue_table": with_aia,
+            }
+            receipts = None
+
+    def _stream(name: str, key: str) -> Optional[float]:
+        return (receipts or {}).get(name, {}).get(key)
+
+    streams = [
+        {"stream": name, "target": vals["target"], "actual": vals["actual"]}
+        for name, vals in sorted(
+            ((k, v) for k, v in (receipts or {}).items() if k != REVENUE_RECEIPTS_TOTAL),
+            key=lambda kv: (
+                _REVENUE_STREAM_ORDER.index(kv[0])
+                if kv[0] in _REVENUE_STREAM_ORDER
+                else len(_REVENUE_STREAM_ORDER)
+            ),
+        )
+    ]
+    return {
+        "total_revenue": _stream(REVENUE_RECEIPTS_TOTAL, "actual"),
+        "total_revenue_target": _stream(REVENUE_RECEIPTS_TOTAL, "target"),
+        "equitable_share": _stream("Equitable Share", "actual"),
+        "equitable_share_target": _stream("Equitable Share", "target"),
+        "additional_allocations": _stream("Additional Allocations", "actual"),
+        "local_revenue": local_revenue,
+        "own_source_target": own_source_target,
+        "streams": streams,
+        "fiscal_year": fiscal_year,
+        "source": (
+            "Controller of Budget — County Budget Implementation Review Report, "
+            "county revenue performance table (actual receipts)"
+            if receipts
+            else None
+        ),
+        "total_revenue_absent_reason": (
+            None
+            if receipts
+            else (
+                "cbirr_tables_disagree_on_own_source_revenue"
+                if disagreement
+                else withheld_reason or "no_reconciled_cbirr_revenue_table"
+            )
+        ),
+        "own_source_disagreement": disagreement,
+    }
+
+
+def county_debt_provenance_label(loans, total_debt: Optional[float]) -> str:
+    """``data_sources.debt`` for a county, from the rows actually published.
+
+    Keyed on each row's declared publication, never on a document's title or
+    publisher column — the BROP's source document carried the Controller of
+    Budget as publisher for months.
+    """
+    brop = [loan for loan in loans or [] if county_pending_bills_row_is_published(loan)]
+    if brop:
+        prov = brop[0].provenance if isinstance(brop[0].provenance, dict) else {}
+        fy = prov.get("fiscal_year")
+        pending = (
+            "Pending bills: National Treasury — Budget Review and Outlook Paper"
+            + (f" ({fy})" if fy else "")
+            + ", county pending-bills table"
+        )
+    else:
+        pending = "Pending bills: not reported for this county in the Treasury BROP"
+    debt = (
+        "County debt: not published — no county borrowing figure is traced to "
+        "a publication"
+        if total_debt is None
+        else "County debt: loan rows with a source document"
+    )
+    return f"{pending}. {debt}."
 
 
 #: Grade bands for the financial-health index. Ours, not a publisher's, and
@@ -2426,31 +2681,11 @@ async def get_country_summary(country_id: int):
                 # Scope to latest county fiscal period
                 _county_pid = _latest_county_period(db)
 
-                # Total budget allocation (county-only, latest FY)
-                alloc_q = (
-                    db.query(func.sum(DBBudgetLine.allocated_amount))
-                    .join(DBEntity, DBBudgetLine.entity_id == DBEntity.id)
-                    .filter(
-                        DBEntity.type == EntityType.COUNTY,
-                        DBBudgetLine.category != "Total Budget",
-                    )
-                )
-                if _county_pid:
-                    alloc_q = alloc_q.filter(DBBudgetLine.period_id == _county_pid)
-                total_allocation = float(alloc_q.scalar() or 0)
-
-                # Total actual spending (same scope)
-                spent_q = (
-                    db.query(func.sum(DBBudgetLine.actual_spent))
-                    .join(DBEntity, DBBudgetLine.entity_id == DBEntity.id)
-                    .filter(
-                        DBEntity.type == EntityType.COUNTY,
-                        DBBudgetLine.category != "Total Budget",
-                    )
-                )
-                if _county_pid:
-                    spent_q = spent_q.filter(DBBudgetLine.period_id == _county_pid)
-                total_spent = float(spent_q.scalar() or 0)
+                # County budgets in the latest period, one rule for all
+                # (see _county_period_rollup for the double count this was).
+                _per_county, _ = _county_period_rollup(db, _county_pid)
+                total_allocation = sum(a for _n, a, _s in _per_county.values())
+                total_spent = sum(sp for _n, _a, sp in _per_county.values())
 
                 # Total *national* debt (only sovereign-level loans)
                 from models import EntityType as _ET
@@ -3035,17 +3270,12 @@ async def get_counties(fiscal_year: Optional[str] = None):
 
                 total_debt = county_debt_total(loans)
 
-                # Sourced rows only. The meta fallback that used to sit here
-                # served bootstrap's modelled figure — 8% of a modelled budget
-                # — for every county, while the Treasury's real per-county
-                # figures sat unused in the loans table. It reported KSh 20.3B
-                # across the 46 counties that have one, against the BROP's
-                # published 176.9B.
-                pending_bills = sum(
-                    float(bl.allocated_amount or 0)
-                    for bl in budget_lines
-                    if bl.category and "pending" in bl.category.lower()
-                ) or county_pending_bills(loans)
+                # The Treasury BROP's per-county figure, through the one reader
+                # every endpoint shares (services/publication_gate.py). A rung
+                # summing any budget line whose category mentioned "pending"
+                # used to sit in front of it here and nowhere else, so the list
+                # and the detail page could answer differently for one county.
+                pending_bills = county_pending_bills(loans)
 
                 latest_audit = audits[0] if audits else None
 
@@ -3092,9 +3322,14 @@ async def get_counties(fiscal_year: Optional[str] = None):
                 # Own-source revenue as the Controller of Budget reports it.
                 # The meta rungs behind it were a flat 0.85 x budget.
                 revenue_collection = county_own_source_revenue(budget_lines)
-                money_received = float(
-                    metrics.get("transfers_received", total_allocated)
-                )
+                # Withheld. This was ``metrics["transfers_received"]`` falling
+                # back to ``total_allocated`` — the budget, published as money
+                # received — and bootstrap no longer writes that metric, so it
+                # was the budget for all 47. What a county received is on the
+                # detail page as ``revenue.total_revenue``, with its period; a
+                # nine-month receipts figure here would be read against the
+                # annual budget as a "funding gap".
+                money_received = None
 
                 name = e.canonical_name.replace(" County", "")
                 county_id = NAME_TO_ID_MAPPING.get(name, e.slug)
@@ -3391,11 +3626,8 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                     loans = db.query(DBLoan).filter(DBLoan.entity_id == e.id).all()
                     total_debt = county_debt_total(loans)
 
-                    pending_bills = sum(
-                        float(bl.allocated_amount or 0)
-                        for bl in budget_lines
-                        if bl.category and "pending" in bl.category.lower()
-                    ) or county_pending_bills(loans)
+                    # Same reader as the list and /comprehensive.
+                    pending_bills = county_pending_bills(loans)
 
                     # Display-grade audits only — this endpoint previously
                     # served the fabricated fixture findings (template
@@ -3458,9 +3690,8 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                     metrics = _resolve_fy_metrics(meta, fiscal_year)
                     # Absent stays absent — see county_own_source_revenue.
                     revenue_collection = county_own_source_revenue(budget_lines)
-                    money_received = float(
-                        metrics.get("transfers_received", total_allocated)
-                    )
+                    # Withheld — see the same field in GET /counties.
+                    money_received = None
 
                     gdp_data = None
                     try:
@@ -3493,10 +3724,6 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                                     "recurrent_budget", total_allocated - dev_from_meta
                                 )
                             )
-
-                    if not pending_bills:
-                        # Absent, not zero — see services/publication_gate.py.
-                        pending_bills = county_pending_bills(loans)
 
                     return {
                         "id": county_id,
@@ -3968,8 +4195,12 @@ async def get_county_comprehensive(
             # Own-source revenue as the Controller of Budget reports it. Both
             # meta rungs this replaces were the same figure: 0.85 x a modelled
             # budget, four times what the 47 counties actually collect.
-            revenue_2024 = county_own_source_revenue(budget_lines)
-            local_revenue = revenue_2024
+            local_revenue = county_own_source_revenue(budget_lines)
+            # What the county RECEIVED, stream by stream, from the same
+            # report's Chapter 3 revenue table. total_revenue used to be the
+            # own-source figure above under another name, and equitable_share
+            # the budget minus it — a residual nobody published.
+            revenue_receipts = county_revenue_receipts(budget_lines)
 
             # --- Coordinates ---
             coords = COUNTY_COORDINATES.get(county_id, [36.8219, -1.2921])
@@ -4011,24 +4242,31 @@ async def get_county_comprehensive(
             from sqlalchemy import func as _sqlfunc2
             from datetime import datetime as _dt
             _now = _dt.utcnow()
-            fy_rows = (
-                db.query(
-                    DBFiscalPeriod.label,
-                    DBFiscalPeriod.start_date,
-                    _sqlfunc2.coalesce(_sqlfunc2.sum(DBBudgetLine.allocated_amount), 0),
-                    _sqlfunc2.coalesce(_sqlfunc2.sum(DBBudgetLine.actual_spent), 0),
-                )
-                .join(DBBudgetLine, DBBudgetLine.period_id == DBFiscalPeriod.id)
+            # Per period through the shared split rule: summing every row
+            # counted a CBIRR period's Total, Recurrent and Development (and
+            # its revenue rows) as four budgets. Part-year reports ("FY2025/26
+            # 9M") are not completed years whatever their end date, so they
+            # stay out of a completed-years trend.
+            _periods: Dict[int, Any] = {}
+            for _bl, _fp in (
+                db.query(DBBudgetLine, DBFiscalPeriod)
+                .join(DBFiscalPeriod, DBBudgetLine.period_id == DBFiscalPeriod.id)
                 .filter(
                     DBBudgetLine.entity_id == entity.id,
                     DBBudgetLine.category != "Total Budget",
                     DBFiscalPeriod.end_date < _now,
                 )
-                .group_by(DBFiscalPeriod.id, DBFiscalPeriod.label, DBFiscalPeriod.start_date)
-                .order_by(DBFiscalPeriod.start_date.desc())
-                .limit(6)
                 .all()
-            )
+            ):
+                if " " in (_fp.label or "").strip():
+                    continue
+                _periods.setdefault(_fp.id, (_fp, []))[1].append(_bl)
+            fy_rows = []
+            for _fp, _lines in sorted(
+                _periods.values(), key=lambda p: p[0].start_date, reverse=True
+            )[:6]:
+                _alloc, _spent, _s, _c = _split_classification_and_sector_lines(_lines)
+                fy_rows.append((_fp.label, _fp.start_date, _alloc, _spent))
 
             def _grade_for(score: float) -> str:
                 if score >= 85: return "A"
@@ -4131,16 +4369,13 @@ async def get_county_comprehensive(
                     # described to the reader as a CRA model.
                     "source": _budget_source,
                 },
-                # Revenue
-                "revenue": {
-                    "total_revenue": revenue_2024,
-                    "local_revenue": local_revenue,
-                    "equitable_share": (
-                        total_allocated - local_revenue
-                        if local_revenue
-                        else total_allocated
-                    ),
-                },
+                # Revenue — see county_revenue_block.
+                "revenue": county_revenue_block(
+                    revenue_receipts,
+                    local_revenue=local_revenue,
+                    own_source_target=county_own_source_target(budget_lines),
+                    fiscal_year=budget_fy_label,
+                ),
                 # Debt
                 "debt": {
                     "total_debt": total_debt,
@@ -4249,10 +4484,11 @@ async def get_county_comprehensive(
                     # Only the sector split and projection periods are modelled.
                     "budget": _budget_provenance_label,
                     "audit": "Office of the Auditor General - County Government Audit Reports",
-                    "debt": (
-                        "Modelled — county debt and pending-bill rows are not "
-                        "traced to a county or National Treasury publication"
-                    ),
+                    # From the rows this response published, not asserted.
+                    # It read "Modelled — … not traced to a county or National
+                    # Treasury publication" for every county while the pending
+                    # bills beside it were the Treasury BROP's own figures.
+                    "debt": county_debt_provenance_label(loans, total_debt),
                     "population": "Kenya National Bureau of Statistics (KNBS) Census 2019",
                 },
             }
@@ -6710,6 +6946,13 @@ async def get_sector_spending():
         for eid, pid, category, alloc_raw, spent_raw in all_lines:
             if (eid, pid) not in valid_pairs:
                 continue
+            # Sector rows only. The CBIRR's Total / Recurrent / Development
+            # restate the whole budget and its revenue rows are money
+            # received; bucketed as sectors they landed in "Other" and were
+            # added to the total three or four times over.
+            _cat_key = (category or "").strip().lower()
+            if _cat_key in _CLASSIFICATION_CATEGORIES or _cat_key in _NON_SECTOR_CATEGORIES:
+                continue
             counties_seen_set.add(eid)
             county_name = entity_id_to_name.get(eid, "")
             bucket = _sector_bucket(category or "")
@@ -7973,26 +8216,15 @@ async def get_budget_utilization_summary(fiscal_year: str = None):
                 else:
                     period_id = _latest_county_period(db)
 
-                util_q = (
-                    db.query(
-                        DBEntity.canonical_name,
-                        func.sum(DBBudgetLine.allocated_amount).label("allocated"),
-                        func.sum(DBBudgetLine.actual_spent).label("spent"),
-                    )
-                    .join(DBBudgetLine, DBBudgetLine.entity_id == DBEntity.id)
-                    .filter(DBEntity.type == EntityType.COUNTY)
-                    .filter(DBBudgetLine.category != "Total Budget")
-                )
-                if period_id:
-                    util_q = util_q.filter(DBBudgetLine.period_id == period_id)
-                rows = util_q.group_by(DBEntity.canonical_name).all()
+                # One rule per county — see _county_period_rollup.
+                per_county, _ = _county_period_rollup(db, period_id)
                 entities = []
-                for row in rows:
-                    alloc = float(row[1] or 0)
-                    spent = float(row[2] or 0)
+                for name, alloc, spent in per_county.values():
+                    alloc = float(alloc or 0)
+                    spent = float(spent or 0)
                     entities.append(
                         {
-                            "entity": row[0],
+                            "entity": name,
                             "allocated": alloc,
                             "spent": spent,
                             "utilization": (
@@ -8082,31 +8314,24 @@ async def get_budget_overview():
                 _fp = db.query(DBFiscalPeriod).get(county_period_id)
                 period_label = _fp.label if _fp else None
 
-            # ── Sector allocations (county-only, latest FY) ─────
-            sector_q = (
-                db.query(
-                    DBBudgetLine.category,
-                    func.sum(DBBudgetLine.allocated_amount).label("allocated"),
-                    func.sum(DBBudgetLine.actual_spent).label("spent"),
-                )
-                .join(DBEntity, DBBudgetLine.entity_id == DBEntity.id)
-                .filter(DBEntity.type == EntityType.COUNTY)
-                .filter(DBBudgetLine.category != "Total Budget")
-            )
-            if county_period_id:
-                sector_q = sector_q.filter(DBBudgetLine.period_id == county_period_id)
-            sector_rows = sector_q.group_by(DBBudgetLine.category).all()
+            # ── County totals and sectors (county-only, latest FY) ─────
+            # Totals per county through the shared split rule, sectors from
+            # the additive sector rows only — see _county_period_rollup.
+            per_county, sector_lines = _county_period_rollup(db, county_period_id)
             merged: dict = {}
-            for cat, alloc, spent in sector_rows:
+            for bl in sector_lines:
+                cat = bl.category
                 key = SECTOR_NORMALIZE.get(str(cat or "").strip().lower(), "Other")
-                if key == "Other" and str(cat or "").strip().lower() == "total budget":
-                    continue  # skip the aggregate row
                 entry = merged.setdefault(key, {"allocated": 0.0, "spent": 0.0})
-                entry["allocated"] += float(alloc or 0)
-                entry["spent"] += float(spent or 0)
+                entry["allocated"] += float(bl.allocated_amount or 0)
+                entry["spent"] += float(bl.actual_spent or 0)
 
-            total_allocated = sum(v["allocated"] for v in merged.values())
-            total_spent = sum(v["spent"] for v in merged.values())
+            total_allocated = sum(a for _n, a, _s in per_county.values())
+            total_spent = sum(sp for _n, _a, sp in per_county.values())
+            # Shares are of the sector rows' own sum: where a period carries
+            # both the CBIRR total and a modelled sector split, the two need
+            # not agree, and percentages of the wrong base would not add to 100.
+            sector_total = sum(v["allocated"] for v in merged.values())
 
             sectors = []
             for name in SECTOR_ORDER:
@@ -8119,8 +8344,8 @@ async def get_budget_overview():
                         "allocated": v["allocated"],
                         "spent": v["spent"],
                         "percentage": (
-                            round(v["allocated"] / total_allocated * 100, 1)
-                            if total_allocated > 0
+                            round(v["allocated"] / sector_total * 100, 1)
+                            if sector_total > 0
                             else 0
                         ),
                         "utilization": (
@@ -8174,21 +8399,8 @@ async def get_budget_overview():
             latest = fiscal_years[-1] if fiscal_years else {}
 
             # ── Top / bottom utilization counties (same FY scope) ──
-            util_q = (
-                db.query(
-                    DBEntity.canonical_name,
-                    func.sum(DBBudgetLine.allocated_amount).label("a"),
-                    func.sum(DBBudgetLine.actual_spent).label("s"),
-                )
-                .join(DBBudgetLine, DBBudgetLine.entity_id == DBEntity.id)
-                .filter(DBEntity.type == EntityType.COUNTY)
-                .filter(DBBudgetLine.category != "Total Budget")
-            )
-            if county_period_id:
-                util_q = util_q.filter(DBBudgetLine.period_id == county_period_id)
-            util_rows = util_q.group_by(DBEntity.canonical_name).all()
             county_utils = []
-            for name, a, s in util_rows:
+            for name, a, s in per_county.values():
                 a_f = float(a or 0)
                 s_f = float(s or 0)
                 if a_f > 0:
@@ -10348,16 +10560,30 @@ async def get_pending_bills(
                 ):
                     entity_map[eid] = (ename, etype.value if etype else "national")
 
+            county_rows = 0
             for loan in pending_loans:
-                outstanding = loan.outstanding or loan.principal or D("0")
-                total_amount += outstanding
-
                 entity_name, entity_type = entity_map.get(
                     loan.entity_id, ("National Government", "national")
                 )
+                # County rows through the same gate as every county page:
+                # the Treasury BROP, declared on the row, or nothing.
+                if entity_type == "county" and not county_pending_bills_row_is_published(
+                    loan
+                ):
+                    continue
+
+                if entity_type == "county":
+                    _amt = pending_bills_row_amount(loan)
+                    if _amt is None:
+                        continue
+                    outstanding = D(str(_amt))
+                else:
+                    outstanding = loan.outstanding or loan.principal or D("0")
+                total_amount += outstanding
 
                 if entity_type == "county":
                     county_total += outstanding
+                    county_rows += 1
                 else:
                     national_total += outstanding
 
@@ -10436,7 +10662,8 @@ async def get_pending_bills(
                 "summary": {
                     "total_pending": float(total_amount),
                     "national_total": float(national_total),
-                    "county_total": float(county_total),
+                    # null, not 0, when no county figure is published.
+                    "county_total": float(county_total) if county_rows else None,
                     "record_count": len(bills),
                 },
                 "source": source_title,
@@ -10464,18 +10691,25 @@ async def get_pending_bills(
         extractor = PendingBillsExtractor()
         data = await extractor.extract_all()
 
-        if data.get("pending_bills") or data.get("summary", {}).get("grand_total"):
+        # County figures come from the Treasury BROP rows, through the gate
+        # every county page reads — never from a live scrape that bypasses it.
+        _live_rows = [
+            r
+            for r in data.get("pending_bills", []) or []
+            if str(r.get("entity_type", "")).strip().lower() != "county"
+        ]
+        if _live_rows or data.get("summary", {}).get("total_national"):
             summary = data.get("summary", {})
             return {
                 "status": "success",
                 "data_source": "live_cob_extraction",
                 "last_updated": data.get("extracted_at"),
-                "pending_bills": data.get("pending_bills", []),
+                "pending_bills": _live_rows,
                 "summary": {
-                    "total_pending": summary.get("grand_total", 0),
-                    "national_total": summary.get("total_national", 0),
-                    "county_total": summary.get("total_county", 0),
-                    "record_count": len(data.get("pending_bills", [])),
+                    "total_pending": summary.get("total_national"),
+                    "national_total": summary.get("total_national"),
+                    "county_total": None,
+                    "record_count": len(_live_rows),
                     "as_at_date": summary.get("as_at_date"),
                 },
                 "source": data.get("source_title", "Controller of Budget Reports"),
@@ -10496,9 +10730,10 @@ async def get_pending_bills(
         "data_source": "none",
         "pending_bills": [],
         "summary": {
-            "total_pending": 0,
-            "national_total": 0,
-            "county_total": 0,
+            # Absent, not zero: nothing has been published here.
+            "total_pending": None,
+            "national_total": None,
+            "county_total": None,
             "record_count": 0,
         },
         "source": "Controller of Budget (https://cob.go.ke/publications/pending-bills/)",
@@ -10821,32 +11056,50 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
             "note": "No pending bills data. Run: python -m seeding.cli seed --domain pending_bills",
         }
 
-    total = sum(float(l.outstanding or l.principal or 0) for l in pending_loans)
-
     # Group by entity — batch-load all entity names in ONE query (avoid N+1)
     unique_eids = list({l.entity_id for l in pending_loans if l.entity_id})
     entity_name_map = {}
+    county_ids: set = set()
     if unique_eids:
         entity_rows = (
-            db.query(DBEntity.id, DBEntity.canonical_name)
+            db.query(DBEntity.id, DBEntity.canonical_name, DBEntity.type)
             .filter(DBEntity.id.in_(unique_eids))
             .all()
         )
-        entity_name_map = {eid: name for eid, name in entity_rows}
+        entity_name_map = {eid: name for eid, name, _t in entity_rows}
+        county_ids = {eid for eid, _n, t in entity_rows if t == EntityType.COUNTY}
 
-    entity_totals: Dict[int, Dict[str, Any]] = {}
+    # A county's rows count only when they are the Treasury BROP's — the gate
+    # every county page reads through. National rows are not this gate's.
+    pending_loans = [
+        l
+        for l in pending_loans
+        if l.entity_id not in county_ids or county_pending_bills_row_is_published(l)
+    ]
+    total = sum(float(l.outstanding or l.principal or 0) for l in pending_loans)
+
+    # Counties only. This ranked every entity with a pending-bills row under
+    # the key ``top_counties_by_amount`` — the national government's two
+    # aggregates and eleven ministries sat above Nairobi on the debt page's
+    # "top counties" list.
+    county_totals: Dict[int, Dict[str, Any]] = {}
     for l in pending_loans:
         eid = l.entity_id
-        if eid not in entity_totals:
-            entity_totals[eid] = {
+        if eid not in county_ids:
+            continue
+        amount = pending_bills_row_amount(l)
+        if amount is None:
+            continue
+        if eid not in county_totals:
+            county_totals[eid] = {
                 "county": entity_name_map.get(eid, f"Entity {eid}"),
                 "entity_id": eid,
                 "amount": 0,
             }
-        entity_totals[eid]["amount"] += float(l.outstanding or l.principal or 0)
+        county_totals[eid]["amount"] += amount
 
     top_counties = sorted(
-        entity_totals.values(), key=lambda x: x["amount"], reverse=True
+        county_totals.values(), key=lambda x: x["amount"], reverse=True
     )[:15]
 
     # Bill type, inferred from the lender string where the lender string
@@ -10935,15 +11188,21 @@ async def get_pending_bills_by_county(county_id: str, db: Session = Depends(get_
             # Fallback to loans table
             from models import DebtCategory
 
-            pending_loans = (
-                db.query(DBLoan)
-                .filter(
-                    DBLoan.entity_id == entity.id,
-                    DBLoan.debt_category == DebtCategory.PENDING_BILLS,
+            pending_loans = [
+                l
+                for l in (
+                    db.query(DBLoan)
+                    .filter(
+                        DBLoan.entity_id == entity.id,
+                        DBLoan.debt_category == DebtCategory.PENDING_BILLS,
+                    )
+                    .all()
                 )
-                .all()
-            )
-            total = sum(float(l.outstanding or l.principal or 0) for l in pending_loans)
+                if county_pending_bills_row_is_published(l)
+            ]
+            # The same figure the county page prints beside this card, and
+            # null — not 0 — for a county the BROP has no figure for.
+            total = county_pending_bills(pending_loans)
             # The same two assertions the national fallback used to make, on
             # the page that never carried the debt page's disclaimer: 100% of
             # this county's arrears declared over 180 days old, and 100%
@@ -10951,9 +11210,7 @@ async def get_pending_bills_by_county(county_id: str, db: Session = Depends(get_
             by_type: Dict[str, float] = {}
             for l in pending_loans:
                 bt = _bill_type_from_lender(l.lender)
-                by_type[bt] = by_type.get(bt, 0) + float(
-                    l.outstanding or l.principal or 0
-                )
+                by_type[bt] = by_type.get(bt, 0) + (pending_bills_row_amount(l) or 0.0)
             return {
                 "status": "success" if pending_loans else "no_data",
                 "data_source": "loans_table_fallback" if pending_loans else "none",

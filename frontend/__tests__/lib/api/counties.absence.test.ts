@@ -82,11 +82,22 @@ describe('transformCountyData — absent figures stay absent', () => {
       ...base,
       budget_2025: 9_542_030_000,
       debt: 450_065_025,
-      total_spent: 4_093_530_870,
     } as never);
     expect(c.budget).toBe(9_542_030_000);
     expect(c.debt).toBe(450_065_025);
-    expect(c.moneyReceived).toBe(4_093_530_870);
+  });
+
+  it('never publishes spending as money received (#238)', () => {
+    // `money_received` fell back to `total_spent`, so a county whose receipts
+    // were withheld had its SPENDING shown as what it received, and the map
+    // tooltip's funding gap became budget minus spending.
+    const c = transformCountyData({
+      ...base,
+      budget_2025: 9_542_030_000,
+      money_received: null,
+      total_spent: 4_093_530_870,
+    } as never);
+    expect(c.moneyReceived).toBeUndefined();
   });
 
   it('does not let a null from the API become a zero', () => {

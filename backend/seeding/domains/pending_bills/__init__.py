@@ -84,6 +84,8 @@ def run(
             records=records,
             source_url=payload.get("source_url"),
             source_title=payload.get("source_title"),
+            publication=payload.get("publication"),
+            publisher=payload.get("publisher"),
             dry_run=context.dry_run,
         )
     except Exception as exc:

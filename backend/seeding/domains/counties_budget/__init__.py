@@ -57,6 +57,7 @@ def run(
         errors=errors,
         metadata={
             "skipped": stats.skipped,
+            "superseded": stats.superseded,
             "source_url": settings.budgets_dataset_url,
         },
     )

@@ -119,6 +119,34 @@ def _derive_fiscal_year_dates(fy: str) -> Tuple[Optional[str], Optional[str]]:
     return f"{start_year}-07-01", f"{end_year}-06-30"
 
 
+#: Last month of each part-year period, counted from the July the FY opens.
+_SUB_PERIOD_END_MONTH_OFFSET = {"Q1": 2, "H1": 5, "Q2": 5, "Q3": 8, "9M": 8}
+
+
+def _derive_period_dates(
+    fy: str, sub_period: Optional[str]
+) -> Tuple[Optional[str], Optional[str]]:
+    """ISO start/end dates for a fiscal year, cut short by a sub-period.
+
+    ``("2025/26", "9M")`` -> ``("2025-07-01", "2026-03-31")``. A full-year
+    report (``sub_period`` None) runs to June 30. A sub-period this does not
+    know yields ``(None, None)`` rather than a guessed end date.
+    """
+    import calendar
+
+    start_iso, end_iso = _derive_fiscal_year_dates(fy)
+    if not start_iso or not sub_period:
+        return start_iso, end_iso
+    offset = _SUB_PERIOD_END_MONTH_OFFSET.get(sub_period.upper())
+    if offset is None:
+        return None, None
+    start_year = int(start_iso[:4])
+    month_index = 6 + offset  # 0-based months from January of the start year
+    year, month = start_year + month_index // 12, month_index % 12 + 1
+    last_day = calendar.monthrange(year, month)[1]
+    return start_iso, f"{year}-{month:02d}-{last_day:02d}"
+
+
 #: Libraries whose version changes what the CoB parse returns, even though
 #: none of our own source moved. Fed into the parse cache's key.
 _PDF_STACK = ("pdfplumber", "pdfminer.six")
@@ -602,12 +630,17 @@ def _download_and_parse_county_pdf(
         for record in parsed_records:
             county = record.get("county", "Unknown")
             entity_slug = slugify_entity(county)
-            fy = record.get("fiscal_year", "")
+            fy = record.get("fiscal_year") or ""
+            sub_period = record.get("quarter")
 
-            start_iso, end_iso = _derive_fiscal_year_dates(fy)
+            start_iso, end_iso = _derive_period_dates(fy, sub_period)
             if not start_iso or not end_iso:
                 dropped_no_fy += 1
                 continue
+            # "2025/26 9M": the report's own period, sub-period and all. A
+            # nine-month CBIRR filed under the bare year would share a period
+            # with — and be overwritten by — the annual report.
+            period_label = f"{fy} {sub_period}" if sub_period else fy
 
             allocated = record.get("allocated", 0)
             absorbed = record.get("absorbed", 0)
@@ -622,14 +655,19 @@ def _download_and_parse_county_pdf(
                 except ValueError:
                     absorbed = 0
 
-            allocated = _birr_amount_to_kes(float(allocated))
-            absorbed = _birr_amount_to_kes(float(absorbed))
+            if record.get("amounts_in") != "kes":
+                # Chapter 2 aggregates are printed in KSh millions. The
+                # Chapter 3 revenue tables are printed in shillings, and a
+                # small stream (a KSh 50,000 refund) scaled here would become
+                # KSh 50 billion.
+                allocated = _birr_amount_to_kes(float(allocated))
+                absorbed = _birr_amount_to_kes(float(absorbed))
 
             budget_records.append({
                 "entity_slug": entity_slug,
                 "entity": f"{county} County",
                 "fiscal_year": fy,
-                "period_label": fy,
+                "period_label": period_label,
                 "start_date": start_iso,
                 "end_date": end_iso,
                 "category": record.get("category", "Total"),
@@ -640,11 +678,7 @@ def _download_and_parse_county_pdf(
                 "actual_amount": float(absorbed),
                 "committed_amount": None,
                 "currency": "KES",
-                "source_label": (
-                    f"Controller of Budget County BIRR {fy}"
-                    if fy
-                    else "Controller of Budget County BIRR"
-                ),
+                "source_label": f"Controller of Budget County BIRR FY{period_label}",
                 "source_url": pdf_url,
                 "data_quality": "official",
                 "notes": record.get("notes"),

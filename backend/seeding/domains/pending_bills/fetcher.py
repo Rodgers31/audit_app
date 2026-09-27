@@ -34,6 +34,12 @@ from ...http_client import SeedingHttpClient
 
 logger = logging.getLogger("seeding.pending_bills.fetcher")
 
+#: What a Treasury Budget Review and Outlook Paper payload declares itself as.
+#: ``services.publication_gate.COUNTY_PENDING_BILLS_PUBLICATION`` is the same
+#: string; it is the only publication county pending bills are read from.
+BROP_PUBLICATION = "treasury_brop"
+BROP_PUBLISHER = "National Treasury"
+
 
 def _discover_brop_url(client, settings):
     """Newest Budget Review and Outlook Paper on Treasury's listing page.
@@ -161,12 +167,18 @@ def fetch_pending_bills_payload(
         logger.info("Fetching pending bills from configured URL: %s", dataset_url)
         from ...utils import load_json_resource
 
-        return load_json_resource(
+        payload = load_json_resource(
             url=dataset_url,
             client=client,
             logger=logger,
             label="pending_bills",
         )
+        # Only the BROP path above may declare the BROP. A dataset that says
+        # it is one is not believed.
+        if isinstance(payload, dict):
+            payload.pop("publication", None)
+            payload.pop("publisher", None)
+        return payload
 
     # Strategy 3: Live ETL extraction
     logger.info(
@@ -305,6 +317,10 @@ def _brop_result_to_payload(
         "summary": summary,
         "source_url": brop_url,
         "source_title": source_title,
+        # Declared here, where it is known, and never inferred downstream from
+        # a title or URL. The writer and every reader key on it.
+        "publication": BROP_PUBLICATION,
+        "publisher": BROP_PUBLISHER,
     }
 
 
