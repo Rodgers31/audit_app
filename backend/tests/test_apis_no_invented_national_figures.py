@@ -92,10 +92,10 @@ WHAT IS NOT A FIGURE, and why each exemption is safe:
 * slice bounds (``rankings[:5]``) and the ``ndigits`` of ``round(x, 2)`` — list
   length and display precision are structure, not quantity.
 
-EXTENDED TO ``extractors/`` 2026-09-07 (issue #193), and that root is the one
-that matters. ``apis/`` and ``analysis/`` do not ship; ``Dockerfile:26`` does
-``COPY extractors/ /app/extractors/``, so everything this sweep now reads is in
-the production image. It caught 21 figures in
+EXTENDED TO ``extractors/`` 2026-09-07 (issue #193). It ships:
+``etl/Dockerfile:20`` copies the repo root, ``extractors/`` included, into the
+published ETL image. (The web image carries none of the three roots:
+``backend/Dockerfile.prod`` builds from ``backend/``.) It caught 21 figures in
 ``extractors/government/comprehensive_government_extractor.py`` — a national
 database typed in whole, including a debt block repeating #188's defects
 independently (10.2T, 67.8% of GDP, a 59.8% external share) and a

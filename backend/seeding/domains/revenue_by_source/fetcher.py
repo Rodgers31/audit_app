@@ -20,20 +20,26 @@ from ...utils import load_json_resource
 logger = logging.getLogger("seeding.revenue_by_source.fetcher")
 
 _WB_BASE = "https://api.worldbank.org/v2/country/KEN/indicator"
+_WB_PUBLISHER = "World Bank"
 
-# World Bank revenue indicators
+# World Bank revenue indicators. ``wb_name`` is the series name the World Bank
+# gives it (api.worldbank.org/v2/indicator/{code}), used to title the source
+# document so it is not filed as a KRA report (issue #267).
 _WB_REVENUE_INDICATORS = {
     "GC.REV.TOTL.CN": {
         "revenue_type": "Total Government Revenue",
         "description": "Total revenue in current LCU (KES)",
+        "wb_name": "Total revenue (current LCU)",
     },
     "GC.TAX.TOTL.CN": {
         "revenue_type": "Total Tax Revenue",
         "description": "Total tax revenue in current LCU (KES)",
+        "wb_name": "Tax revenue (current LCU)",
     },
     "GC.TAX.TOTL.GD.ZS": {
         "revenue_type": "Tax Revenue % of GDP",
         "description": "Tax revenue as share of GDP",
+        "wb_name": "Tax revenue (% of GDP)",
     },
 }
 
@@ -84,6 +90,14 @@ def _fetch_wb_revenue(
                         "source_url": (
                             f"https://data.worldbank.org/indicator/"
                             f"{indicator_code}?locations=KE"
+                        ),
+                        # Who published it, declared by the only code that
+                        # knows. The writer otherwise files the document under
+                        # its KRA default (issue #267).
+                        "publisher": _WB_PUBLISHER,
+                        "source_title": (
+                            f"World Bank: {meta['wb_name']}, Kenya "
+                            f"[{indicator_code}]"
                         ),
                         "data_quality": "official",
                     })

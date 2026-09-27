@@ -30,7 +30,8 @@ interchangeable between processes.
 A county is a named public body. Its budget and its execution rate are
 statements of fact about it, and an attributed failing more so — the same
 concern issues #182/#183 raised about rankings, in its stronger form. This file
-ships: ``Dockerfile:26`` copies ``extractors/`` into the production image.
+ships: ``etl/Dockerfile:20`` copies the repo root, ``extractors/`` included,
+into the published ETL image.
 
 What survives fetches and parses. ``extract_cob_consolidated_reports`` reads
 the COB publication pages; ``_extract_budget_implementation_data``,
