@@ -102,6 +102,11 @@ export const MESSAGES = {
   'home.hero.risk_suffix': { en: 'Risk', sw: 'Hatari', plain: 'Risk' },
   'home.hero.risk_unassessed': { en: 'Risk not assessed', sw: 'Hatari haijatathminiwa', plain: 'Risk not rated yet' },
   'home.hero.risk_unassessed_value': { en: 'Not assessed', sw: 'Haijatathminiwa', plain: 'Not rated yet' },
+  'home.hero.risk_unassessed_reason': {
+    en: 'No published debt sustainability rating was received, so none is shown.',
+    sw: 'Hakuna ukadiriaji rasmi wa uendelevu wa deni uliopokelewa, hivyo hakuna unaoonyeshwa.',
+    plain: 'We did not get the official rating, so we don\u2019t show one.',
+  },
 
   // KenyanGovCard
   'home.govcard.title': { en: 'Kenyan Government', sw: 'Serikali ya Kenya', plain: 'Kenya Government' },
@@ -199,14 +204,15 @@ export const MESSAGES = {
     sw: 'Mgawanyiko wa deni la ndani na nje',
     plain: 'Split between home and abroad',
   },
+  // Followed by the DSA's own source label, e.g. "IMF–World Bank DSA, Oct 2024".
   'home.debt.insight_risk_desc': {
-    en: 'IMF debt distress classification',
-    sw: 'Uainishaji wa tatizo la deni wa IMF',
-    plain: 'Ranked by the IMF',
+    en: 'Overall risk of debt distress',
+    sw: 'Hatari ya jumla ya tatizo la deni',
+    plain: 'Overall chance of a debt crisis',
   },
   'home.debt.insight_risk_label': { en: 'Risk: {level}', sw: 'Hatari: {level}', plain: 'Risk: {level}' },
   'home.debt.insight_risk_unassessed': { en: 'Risk: not assessed', sw: 'Hatari: haijatathminiwa', plain: 'Risk: we can\u2019t say yet' },
-  'home.debt.insight_risk_unassessed_desc': { en: 'No debt-to-GDP reading is available, so no risk band can be stated. This is not a finding that the debt position is safe.', sw: 'Hakuna kipimo cha deni-kwa-Pato, hivyo hakuna kiwango cha hatari kinachoweza kutajwa. Hii si dalili kwamba hali ya deni ni salama.', plain: 'We don\u2019t have the debt-to-GDP number, so we can\u2019t rate the risk. That does not mean it is fine.' },
+  'home.debt.insight_risk_unassessed_desc': { en: 'No published debt sustainability rating was received, so none is shown. This is not a finding that the debt position is safe.', sw: 'Hakuna ukadiriaji rasmi wa uendelevu wa deni uliopokelewa, hivyo hakuna unaoonyeshwa. Hii si dalili kwamba hali ya deni ni salama.', plain: 'We did not get the official rating, so we don\u2019t show one. That does not mean it is fine.' },
   'home.debt.cents_of_revenue': { en: 'KES {n} cents', sw: 'Senti {n} za KES', plain: 'KES {n} cents' },
 
   // Audit Reports Section
