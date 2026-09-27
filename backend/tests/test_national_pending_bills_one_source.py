@@ -154,6 +154,59 @@ def _national_rows(body):
     return [r for r in body["pending_bills"] if r["entity_type"] != "county"]
 
 
+@pytest.mark.parametrize("wrong_side", ["county", "national"])
+def test_public_totals_reject_declarations_for_the_wrong_entity(
+    client, db_session, entities, wrong_side
+):
+    national, county = entities
+    _write_brop(db_session)
+    _write_cob(db_session, NAIROBI_COB_2025, "2025-06-30")
+    before = _get(client, "/api/v1/pending-bills")["summary"]
+    entity, provenance = (
+        (county, {**STAMPED, "category": "mda"}) if wrong_side == "county"
+        else (national, COB_STAMPED)
+    )
+    db_session.add(_loan(entity, "Wrong-side declaration", 7_000_000_000, provenance))
+    db_session.commit()
+    body = _get(client, "/api/v1/pending-bills")
+    assert body["summary"]["county_total"] == before["county_total"]
+    assert body["summary"]["national_total"] == before["national_total"]
+    assert body["summary"]["total_pending"] == before["total_pending"]
+
+
+def test_brop_without_a_stated_date_preserves_published_rows(
+    client, db_session, entities, monkeypatch
+):
+    from dataclasses import replace
+    from types import SimpleNamespace
+    from seeding import freshness
+    from seeding.config import SeedingSettings
+    from seeding.domains.pending_bills import fetcher
+    from seeding.domains.pending_bills.parser import parse_pending_bills_payload
+    from seeding.domains.pending_bills.writer import write_pending_bills
+
+    _write_brop(db_session)
+    before = [(r.id, r.outstanding, r.provenance) for r in db_session.query(Loan).all()]
+    undated = replace(_brop_national(), as_at_stated=False)
+    parsed = SimpleNamespace(national=undated, counties=[], fiscal_year_label="FY 2024/25")
+    monkeypatch.setattr(fetcher, "_fetch_from_treasury_brop",
+                        lambda *args: fetcher._brop_result_to_payload(parsed, BROP_URL))
+    settings = SeedingSettings(live_pdf_fetch_enabled=True, treasury_brop_url=BROP_URL,
+                               pending_bills_dataset_url=FIXTURE_PATH.as_uri())
+    freshness.reset("pending_bills")
+    http = MagicMock()
+    http.get.return_value.text = "<html></html>"
+    payload = fetcher.fetch_pending_bills_payload(http, settings)
+    write_pending_bills(db_session, parse_pending_bills_payload(payload),
+                       source_url=payload.get("source_url", BROP_URL),
+                       source_title=payload.get("source_title", "Test"),
+                       publication=payload.get("publication"), publisher=payload.get("publisher"))
+    db_session.flush()
+    after = [(r.id, r.outstanding, r.provenance) for r in db_session.query(Loan).all()]
+    assert after == before
+    assert freshness.get("pending_bills")["mode"] != "live"
+
+
 # --------------------------------------------------------------------------
 # the national rows add up to the BROP's printed para-18 total
 # --------------------------------------------------------------------------

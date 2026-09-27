@@ -551,3 +551,45 @@ def test_no_reason_is_given_for_a_county_the_report_does_not_mention(client, db_
     mombasa = _get(client, "/api/v1/counties/mombasa-county/comprehensive")["debt"]
     assert mombasa["pending_bills"] is None
     assert mombasa["pending_bills_absence"] is None
+
+
+@pytest.mark.parametrize("entity_count", [1, 10, 47])
+def test_absence_query_count(db_session, seed_country, seed_source_doc, entity_count):
+    from types import SimpleNamespace
+    from sqlalchemy import event
+    from main import _county_pending_bills_absence
+
+    country_id, doc_id = seed_country.id, seed_source_doc.id
+    seed_source_doc.meta = {"county_payables": {
+        "as_at": "2026-06-30", "not_reported": ["Nandi"], "table": "2.10",
+    }}
+    for i in range(entity_count):
+        eid = i + 1000
+        db_session.add(Entity(
+            id=eid, country_id=country_id, type=EntityType.COUNTY,
+            canonical_name=f"County {i}", slug=f"county-{i}",
+        ))
+        db_session.flush()
+        db_session.add(Loan(
+            entity_id=eid, lender=f"County bills {i}",
+            debt_category=DebtCategory.PENDING_BILLS,
+            principal=10, outstanding=10, currency="KES", source_document_id=doc_id,
+            issue_date=datetime(2026, 6, 30, tzinfo=timezone.utc), provenance=COB,
+        ))
+    db_session.commit()
+    db_session.expunge_all()
+    statements = []
+
+    def record(conn, cursor, statement, parameters, context, executemany):
+        if statement.lstrip().upper().startswith("SELECT"):
+            statements.append(statement)
+
+    event.listen(db_session.bind, "before_cursor_execute", record)
+    try:
+        result = _county_pending_bills_absence(
+            db_session, SimpleNamespace(canonical_name="Nandi County")
+        )
+    finally:
+        event.remove(db_session.bind, "before_cursor_execute", record)
+    assert result["reason"] == "not_reported"
+    assert len(statements) == 2, statements

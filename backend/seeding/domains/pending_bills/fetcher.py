@@ -369,10 +369,12 @@ def _brop_result_to_payload(
 
     if result.national:
         nb = result.national
+        if not getattr(nb, "as_at_stated", False):
+            raise ValueError("BROP national pending bills have no stated as-at date")
         as_at = nb.as_at_date.isoformat()
         # Stamped only when the paragraph printed it — see
         # NationalPendingBills.as_at_stated.
-        stated_as_at = as_at if getattr(nb, "as_at_stated", False) else None
+        stated_as_at = as_at
         paragraph = getattr(nb, "paragraph", None)
         cited = (
             f"Treasury BROP para {paragraph}" if paragraph

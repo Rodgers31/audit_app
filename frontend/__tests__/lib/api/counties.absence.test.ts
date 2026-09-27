@@ -12,11 +12,12 @@
  * county was allocated nothing, owes nothing, or received nothing — and none of
  * those are things an absent field says.
  *
- * A zero arriving FROM the API is treated as absence too, deliberately: every
- * one of these fields is a SUM over rows on the backend (budget lines, loans),
+ * A zero budget or debt arriving FROM the API is treated as absence: these
+ * fields are SUMs over rows on the backend (budget lines, loans),
  * so 0.0 is an empty aggregate, not a measured zero. No county is allocated
  * nothing — all 47 receive an equitable share by constitutional formula — so
- * "KES 0" there can only ever mean "nothing ingested".
+ * "KES 0" there can only ever mean "nothing ingested". Money received and
+ * pending bills come from reported figures and retain a source-reported zero.
  */
 import { transformCountyData } from '@/lib/api/counties';
 
@@ -49,7 +50,7 @@ describe('transformCountyData — absent figures stay absent', () => {
     expect(c.moneyReceived).toBeUndefined();
   });
 
-  it('treats an explicit zero as absence, not as a figure', () => {
+  it('preserves reported zero receipts while withholding empty budget and debt sums', () => {
     const c = transformCountyData({
       ...base,
       total_budget: 0,
@@ -59,7 +60,7 @@ describe('transformCountyData — absent figures stay absent', () => {
     } as never);
     expect(c.budget).toBeUndefined();
     expect(c.debt).toBeUndefined();
-    expect(c.moneyReceived).toBeUndefined();
+    expect(c.moneyReceived).toBe(0);
   });
 
   it('still carries published figures through unchanged', () => {
