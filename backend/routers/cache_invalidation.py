@@ -22,6 +22,7 @@ import hashlib
 import hmac
 import json
 import logging
+import math
 import os
 import time
 
@@ -57,9 +58,12 @@ async def invalidate_caches(request: Request):
         ts = body["ts"]
         if isinstance(ts, bool) or not isinstance(ts, (int, float)):
             raise TypeError("ts must be a number")
-    except (ValueError, KeyError, TypeError) as exc:
+        ts = float(ts)
+        if not math.isfinite(ts):
+            raise ValueError("ts must be finite")
+    except (ValueError, KeyError, TypeError, OverflowError) as exc:
         raise _refuse(400, "malformed_body", detail=str(exc))
-    skew = abs(time.time() - float(ts))
+    skew = abs(time.time() - ts)
     if skew > MAX_SKEW_SECONDS:
         raise _refuse(401, "stale_request", skew_seconds=int(skew))
 

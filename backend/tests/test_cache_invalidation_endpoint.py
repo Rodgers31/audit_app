@@ -135,6 +135,40 @@ def test_stale_signed_request_is_refused(client, configured):
     assert res.json()["detail"]["error"] == "stale_request"
 
 
+@pytest.mark.parametrize(
+    "raw",
+    [
+        b'{"ts":NaN}',
+        b'{"ts":Infinity}',
+        b'{"ts":-Infinity}',
+        b'{"ts":1e9999}',
+        b'{"ts":' + b"9" * 400 + b"}",
+    ],
+    ids=["nan", "infinity", "negative-infinity", "exponent-overflow", "integer-overflow"],
+)
+def test_nonfinite_signed_timestamp_is_malformed_and_clears_nothing(
+    client, configured, monkeypatch, raw
+):
+    from routers import cache_invalidation
+
+    calls = []
+
+    def record_invalidation():
+        calls.append(True)
+        return {}
+
+    monkeypatch.setattr(cache_invalidation, "invalidate_all", record_invalidation)
+    signature = hmac.new(SECRET.encode(), raw, hashlib.sha256).hexdigest()
+    res = client.post(
+        URL,
+        content=raw,
+        headers={"content-type": "application/json", "x-revalidate-signature": signature},
+    )
+    assert res.status_code == 400, res.text
+    assert res.json()["detail"]["error"] == "malformed_body"
+    assert calls == []
+
+
 def test_unconfigured_secret_is_503_not_open(client, monkeypatch, tmp_path):
     monkeypatch.delenv("REVALIDATE_SECRET", raising=False)
     monkeypatch.setenv("CACHE_GENERATION_FILE", str(tmp_path / "g"))
