@@ -38,10 +38,9 @@ from services.trust_guards import (
     check_plausible_total,
     reconcile_debt_totals,
 )
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Query, Request
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.security import HTTPBearer
 from pydantic import BaseModel
 from sqlalchemy import or_, text
 from sqlalchemy.exc import SQLAlchemyError
@@ -1297,63 +1296,8 @@ def transform_county_data_for_frontend(backend_data: Dict, county_id: str) -> Di
 # Add ETL module to path
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "etl"))
 
-# Instead of importing ETL modules directly (which have dependency issues),
-# we'll create a simple ETL function that works independently
+# Only GET /api/v1/etl/kenya/sources still reads this flag.
 ETL_AVAILABLE = True
-
-
-def run_simple_kenya_etl():
-    """Simple Kenya ETL function that doesn't rely on complex imports."""
-    import json
-
-    import requests
-    from bs4 import BeautifulSoup
-
-    results = {
-        "documents_fetched": 0,
-        "documents_processed": 0,
-        "entities_found": [],
-        "sources_checked": [],
-    }
-
-    # Test Kenya Treasury website
-    try:
-        response = requests.get("https://treasury.go.ke", timeout=10)
-        if response.status_code == 200:
-            results["sources_checked"].append(
-                {
-                    "source": "Kenya National Treasury",
-                    "status": "accessible",
-                    "status_code": response.status_code,
-                }
-            )
-            results["documents_fetched"] += 1
-        else:
-            results["sources_checked"].append(
-                {
-                    "source": "Kenya National Treasury",
-                    "status": "error",
-                    "status_code": response.status_code,
-                }
-            )
-    except Exception as e:
-        results["sources_checked"].append(
-            {
-                "source": "Kenya National Treasury",
-                "status": "unreachable",
-                "error": str(e),
-            }
-        )
-
-    # Mock some entities that would be extracted
-    results["entities_found"] = [
-        {"name": "Ministry of Health", "type": "ministry", "code": "MOH"},
-        {"name": "Ministry of Education", "type": "ministry", "code": "MOE"},
-        {"name": "National Treasury", "type": "ministry", "code": "NT"},
-    ]
-    results["documents_processed"] = len(results["entities_found"])
-
-    return results
 
 
 # Supabase-verified auth dependency (legacy HS256 auth.py was removed —
@@ -1427,23 +1371,6 @@ class BudgetLineResponse(BaseModel):
     period_label: Optional[str] = None
     source_document_id: Optional[int] = None
     created_at: Optional[str] = None
-
-
-class ETLJobResponse(BaseModel):
-    job_id: str
-    status: str
-    country: str
-    started_at: str
-    completed_at: Optional[str] = None
-    documents_processed: int
-    errors: List[str]
-
-
-class ETLStatusResponse(BaseModel):
-    job_id: str
-    status: str
-    progress: Dict[str, Any]
-    last_updated: str
 
 
 class AuditListItem(BaseModel):
@@ -1853,10 +1780,6 @@ async def log_requests(request: Request, call_next):
         process_time = (datetime.datetime.now() - start_time).total_seconds()
         logger.error(f"ERROR {method} {url} - {str(e)} - {process_time:.3f}s")
         raise
-
-
-# Helper functions for provenance tracking
-security = HTTPBearer()
 
 
 # Cache decorator helper
@@ -7334,19 +7257,26 @@ async def _run_job(source_key: str, job_type: str = "light") -> Dict[str, Any]:
     return summary
 
 
-from fastapi.security import HTTPAuthorizationCredentials
+# ``require_admin`` is shared with the routers in ``backend/routers/`` —
+# importing here lets us put the etl endpoints defined directly on
+# ``app`` behind the same auth gate as the rest of /admin.
+from supabase_auth import require_admin as _require_admin
 
 
 @app.post("/api/v1/admin/etl/run")
 async def run_etl_job(
     source: str = Query(..., pattern="^(oag|cob|treasury)$"),
     job: str = Query("light", pattern="^(light|deep)$"),
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    _actor=Depends(_require_admin),
 ):
     """Manually trigger an ETL job for a source (light or deep).
 
     Returns immediately with a job_id. The ETL runs in the background.
     Check progress via GET /api/v1/admin/etl/status.
+
+    Gated on ``require_admin``. It used to depend on a bare ``HTTPBearer()``,
+    which only checks that an ``Authorization: Bearer <anything>`` header
+    is present and never verifies it (#252).
     """
     import uuid as _uuid
 
@@ -7377,12 +7307,6 @@ async def run_etl_job(
         "status": "started",
         "message": "ETL job running in background. Check /api/v1/admin/etl/status for progress.",
     }
-
-
-# ``require_admin`` is shared with the routers in ``backend/routers/`` —
-# importing here lets us put the etl-jobs endpoint defined directly on
-# ``app`` behind the same auth gate as the rest of /admin.
-from supabase_auth import require_admin as _require_admin
 
 
 @app.get("/api/v1/admin/etl/status")
@@ -12684,99 +12608,11 @@ async def options_counties() -> Response:
     return Response(status_code=204)
 
 
-@app.post("/api/v1/etl/treasury/run-batch")
-async def run_treasury_batch():
-    """Run the targeted batch: latest 10 QEBR + 3 ABP + 5 Circulars."""
-    try:
-        # Lazy import to avoid heavy cost on app start
-        sys.path.append(os.path.join(os.path.dirname(__file__), "..", "etl"))
-        kp_mod = importlib.import_module("kenya_pipeline")
-        KenyaDataPipeline = getattr(kp_mod, "KenyaDataPipeline")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"ETL import failed: {e}")
-
-    pipeline = KenyaDataPipeline()
-    docs = pipeline.discover_budget_documents("treasury")
-    # Use selector for targeted batch
-    if hasattr(pipeline, "select_treasury_batch"):
-        batch = pipeline.select_treasury_batch(docs)
-    else:
-        batch = docs[:18]
-
-    processed = 0
-    successful = 0
-    doc_ids: List[Any] = []
-    for d in batch:
-        try:
-            res = await pipeline.download_and_process_document(d)
-            processed += 1
-            if res:
-                successful += 1
-                doc_ids.append(res.get("document_id"))
-        except Exception as e:
-            logger.error(f"Batch doc failed: {e}")
-        # gentle pacing
-        await asyncio.sleep(2)
-
-    return {
-        "requested": {
-            "qebr": 10,
-            "abp": 3,
-            "circulars": 5,
-        },
-        "processed": processed,
-        "successful": successful,
-        "document_ids": doc_ids,
-    }
-
-
-@app.post("/api/v1/etl/cob/run-batch")
-async def run_cob_batch(limit: int = 25):
-    """Run a COB batch across national and consolidated county BIRR pages.
-    Default limit is 25 recent items to validate nested lists from 2014+.
-    """
-    try:
-        sys.path.append(os.path.join(os.path.dirname(__file__), "..", "etl"))
-        kp_mod = importlib.import_module("kenya_pipeline")
-        KenyaDataPipeline = getattr(kp_mod, "KenyaDataPipeline")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"ETL import failed: {e}")
-
-    pipeline = KenyaDataPipeline()
-    docs = pipeline.discover_budget_documents("cob")
-
-    # Prefer items that look like BIRR PDFs and include FY in title
-    def score(d: Dict[str, Any]) -> tuple:
-        t = (d.get("title") or "").lower()
-        fy = 1 if re.search(r"fy\s*20\d{2}|20\d{2}\s*[/–-]\s*20\d{2}", t) else 0
-        birr = 1 if ("budget" in t and ("implementation" in t or "review" in t)) else 0
-        nat = 1 if "national" in t else 0
-        cty = 1 if "county" in t or "consolidated" in t else 0
-        return (fy + birr + nat + cty, t)
-
-    ranked = sorted(docs, key=score, reverse=True)
-
-    processed = 0
-    successful = 0
-    doc_ids: List[Any] = []
-    for d in ranked[: max(1, min(limit, 50))]:
-        try:
-            res = await pipeline.download_and_process_document(d)
-            processed += 1
-            if res:
-                successful += 1
-                doc_ids.append(res.get("document_id"))
-        except Exception as e:
-            logger.error(f"COB batch doc failed: {e}")
-        await asyncio.sleep(2)
-
-    return {
-        "requested": {"limit": limit},
-        "discovered": len(docs),
-        "processed": processed,
-        "successful": successful,
-        "document_ids": doc_ids,
-    }
+# POST /api/v1/etl/treasury/run-batch and /api/v1/etl/cob/run-batch were
+# removed (#252): anyone could start a document download batch with no
+# credentials, and nothing in the repo called them. The admin-gated trigger
+# is POST /api/v1/admin/etl/trigger/{source}; see
+# tests/test_main_write_routes_require_auth.py before adding a write route.
 
 
 # Admin endpoints
@@ -12814,49 +12650,9 @@ async def get_top_spenders(
     return {"top_spenders": []}
 
 
-# ETL Pipeline Endpoints
-@app.post("/api/v1/etl/kenya/start", response_model=ETLJobResponse)
-async def start_kenya_etl(background_tasks: BackgroundTasks):
-    """Start ETL pipeline for Kenya government data."""
-    if not ETL_AVAILABLE:
-        raise HTTPException(status_code=503, detail="ETL pipeline not available")
-
-    import datetime
-    import uuid
-
-    job_id = str(uuid.uuid4())
-
-    # Start ETL in background
-    background_tasks.add_task(run_kenya_etl_pipeline, job_id)
-
-    return ETLJobResponse(
-        job_id=job_id,
-        status="started",
-        country="Kenya",
-        started_at=datetime.datetime.now().isoformat(),
-        documents_processed=0,
-        errors=[],
-    )
-
-
-@app.get("/api/v1/etl/status/{job_id}", response_model=ETLStatusResponse)
-async def get_etl_status(job_id: str):
-    """Get status of ETL job."""
-    if not ETL_AVAILABLE:
-        raise HTTPException(status_code=503, detail="ETL pipeline not available")
-
-    # TODO: Implement job status tracking (could use Redis or database)
-    return ETLStatusResponse(
-        job_id=job_id,
-        status="completed",
-        progress={
-            "documents_fetched": 15,
-            "documents_processed": 12,
-            "entities_created": 25,
-            "budget_lines_created": 150,
-        },
-        last_updated=datetime.datetime.now().isoformat(),
-    )
+# POST /api/v1/etl/kenya/start was removed (#252) for the same reason, with
+# GET /api/v1/etl/status/{job_id}: that only polled jobs kenya/start made,
+# and answered "completed" with invented counts for any job_id.
 
 
 @app.get("/api/v1/etl/kenya/sources")
@@ -12963,37 +12759,6 @@ async def get_kenya_data_sources():
             "real_time_test": False,
             "error": str(e),
         }
-
-
-async def run_kenya_etl_pipeline(job_id: str):
-    """Background task to run Kenya ETL pipeline with real data."""
-    try:
-        # Import and run our working ETL
-        import os
-        import sys
-
-        sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-
-        from etl_test_runner import SimpleKenyaETL
-
-        # Run the real ETL pipeline
-        etl = SimpleKenyaETL()
-        results = etl.run_full_pipeline()
-
-        print(f"ETL Job {job_id}: Successfully processed real Kenya government data")
-        print(
-            f"ETL Job {job_id}: Found {results['sources_accessible']} accessible sources"
-        )
-        print(
-            f"ETL Job {job_id}: Extracted {results['entities_extracted']} government entities"
-        )
-        print(f"ETL Job {job_id}: Processed {results['documents_processed']} documents")
-
-        return results
-
-    except Exception as e:
-        print(f"ETL Job {job_id} failed: {str(e)}")
-        return {"error": str(e)}
 
 
 if __name__ == "__main__":
