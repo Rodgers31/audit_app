@@ -9325,7 +9325,31 @@ async def get_civic_figures(db: Session = Depends(get_db)):
             return None
 
         budget_row = _latest_fs("appropriated_budget")
-        share_row = _latest_fs("county_allocation")
+
+        def _equitable_share_billion(r):
+            """The row's county EQUITABLE SHARE in KSh bn, or None.
+
+            Since #237 a row with a fiscal-framework split stores ALL county
+            transfers in ``county_allocation`` (FY2026/27: 495.5B), and the
+            equitable share on its own line of the framework (420.0B). Rows
+            without a split (``split_basis`` unset) still hold the equitable
+            share in ``county_allocation``. Transfers are never published under
+            the equitable-share label.
+            """
+            meta = r.meta or {}
+            framework = meta.get("fiscal_framework") or {}
+            share = framework.get("county_equitable_share_billion")
+            if share is not None:
+                return float(share) if float(share) > 0 else None
+            if meta.get("split_basis"):
+                return None
+            v = r.county_allocation
+            return float(v) if v and float(v) > 0 else None
+
+        share_row = next(
+            (r for r in reversed(fs_rows) if _equitable_share_billion(r) is not None),
+            None,
+        )
         figures["national_budget"] = _figure(
             value=_fs_to_kes(budget_row.appropriated_budget) if budget_row else None,
             period=budget_row.fiscal_year if budget_row else None,
@@ -9337,7 +9361,7 @@ async def get_civic_figures(db: Session = Depends(get_db)):
             ),
         )
         figures["equitable_share"] = _figure(
-            value=_fs_to_kes(share_row.county_allocation) if share_row else None,
+            value=_fs_to_kes(_equitable_share_billion(share_row)) if share_row else None,
             period=share_row.fiscal_year if share_row else None,
             source="Division of Revenue Act / CRA",
             as_of=(
