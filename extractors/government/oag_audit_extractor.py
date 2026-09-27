@@ -26,7 +26,8 @@ seeded on the clock and so varied *within* one run. Counties are named public
 bodies, and a fabricated finding against one — an amount, a severity, a case
 id, a date it was raised — is a statement of fact about that body, which is the
 issue #182/#183 concern in its stronger form. Unlike those, this file ships:
-``Dockerfile:26`` copies ``extractors/`` into the production image.
+``etl/Dockerfile:20`` copies the repo root, ``extractors/`` included, into the
+published ETL image.
 
 What survives reads the OAG website and reports what it finds there:
 ``extract_oag_audit_reports`` and the five ``_extract``/``_categorize`` helpers

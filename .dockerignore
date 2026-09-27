@@ -1,4 +1,4 @@
-# Root build context — used by ./Dockerfile and ./etl/Dockerfile (CI: "Build & Push ETL").
+# Root build context — used by ./etl/Dockerfile (CI: "Build & Push ETL").
 # etl/Dockerfile does `COPY . /app/` in a SINGLE stage, so anything left here
 # ships inside a published image. Secrets first.
 
@@ -11,7 +11,14 @@
 **/*.key
 **/*.p12
 **/*.pfx
+# Every secrets.* file stays out — secrets.local.json, secrets.prod.env,
+# secrets.sops.yaml, secrets.bak ... — except the one that is code:
+# backend/config/secrets.py is the secret-manager lookup config/settings.py
+# imports, and stripping it breaks `import main` for anything built from this
+# context. An allow-list of six extensions (as first proposed in #249) shipped
+# every other secrets.* variant.
 **/secrets.*
+!backend/config/secrets.py
 **/service-account*.json
 
 # ---- Version control ----
