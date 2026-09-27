@@ -24,6 +24,7 @@ from ...config import SeedingSettings
 from ...types import DomainRunContext
 from ...utils import compute_hash
 from .parser import NationalBudgetRecord
+from .sector_expenditure import EXPENDITURE_MEASURE
 
 logger = logging.getLogger("seeding.national_budget.writer")
 
@@ -34,6 +35,7 @@ class PersistenceStats:
     created: int = 0
     updated: int = 0
     skipped: int = 0
+    superseded: int = 0
     errors: list[str] = field(default_factory=list)
 
 
@@ -171,6 +173,7 @@ def _apply_line(
         ("currency", currency),
         ("source_document_id", source_document_id),
         ("notes", record.notes),
+        ("page_ref", record.page_ref),
     ):
         if value is None:
             continue
@@ -197,6 +200,8 @@ def persist_national_budget_records(
     context: DomainRunContext,
 ) -> PersistenceStats:
     stats = PersistenceStats()
+    # (entity_id, period_id) pairs that received verified EXPENDITURE rows.
+    expenditure_periods: set[tuple[int, int]] = set()
 
     for record in records:
         stats.processed += 1
@@ -229,6 +234,11 @@ def persist_national_budget_records(
         }
         if context.job_id is not None:
             provenance_entry["ingestion_job_id"] = context.job_id
+        # Declared measure (and its evidence) travels with the row.
+        provenance_entry.update(record.provenance_extra)
+        declares_measure = "measure" in record.provenance_extra
+        if record.provenance_extra.get("measure") == EXPENDITURE_MEASURE:
+            expenditure_periods.add((entity.id, period.id))
 
         record_hash = _record_hash(record, currency)
 
@@ -244,6 +254,7 @@ def persist_national_budget_records(
                 committed_amount=record.committed_amount,
                 source_document_id=source.id,
                 notes=record.notes,
+                page_ref=record.page_ref,
                 provenance=[provenance_entry] if provenance_entry else [],
                 source_hash=record_hash,
             )
@@ -267,11 +278,79 @@ def persist_national_budget_records(
 
             if provenance_entry:
                 provenance = list(existing.provenance or [])
-                if provenance_entry not in provenance:
+                if declares_measure:
+                    # One CURRENT declaration, and it is the last entry — the
+                    # endpoint reads ``provenance[-1]["measure"]``. Older
+                    # declarations (e.g. the exchequer proxy this row held
+                    # before) are dropped rather than left to contradict it.
+                    provenance = [
+                        e
+                        for e in provenance
+                        if not (isinstance(e, dict) and "measure" in e)
+                    ]
+                    provenance.append(provenance_entry)
+                    if provenance != list(existing.provenance or []):
+                        existing.provenance = provenance
+                elif provenance_entry not in provenance:
                     provenance.append(provenance_entry)
                     existing.provenance = provenance
 
+    stats.superseded += _retire_superseded_lines(session, expenditure_periods)
     return stats
 
 
-__all__ = ["PersistenceStats", "persist_national_budget_records"]
+def current_measure(line: BudgetLine) -> Optional[str]:
+    """The measure a row DECLARES — its last provenance entry's ``measure`` —
+    or ``None`` when it declares nothing. Never inferred from the amounts or
+    the notes."""
+    provenance = line.provenance or []
+    if not isinstance(provenance, list) or not provenance:
+        return None
+    last = provenance[-1]
+    return last.get("measure") if isinstance(last, dict) else None
+
+
+def _retire_superseded_lines(
+    session: Session, periods: set[tuple[int, int]]
+) -> int:
+    """Delete rows in a period that now carries verified expenditure, when the
+    row does not itself declare expenditure.
+
+    Before #241 the annual FY 2025/26 report was parsed for Exchequer Issues
+    and written under category/subcategory keys ("Education"/"Recurrent") that
+    the expenditure rows ("Education"/"Recurrent & Development") do not
+    overwrite. Left in place, every endpoint that sums a period's national
+    lines (``_latest_national_period`` callers in main.py) would add the
+    exchequer proxies on top of the expenditure totals. Only this domain
+    writes national-government lines, and these rows are its own superseded
+    output for the same report.
+    """
+    retired = 0
+    for entity_id, period_id in periods:
+        lines = session.execute(
+            select(BudgetLine).where(
+                and_(
+                    BudgetLine.entity_id == entity_id,
+                    BudgetLine.period_id == period_id,
+                )
+            )
+        ).scalars()
+        for line in list(lines):
+            if current_measure(line) == EXPENDITURE_MEASURE:
+                continue
+            logger.info(
+                "Retiring superseded BudgetLine %s (%s / %s, measure=%s)",
+                line.id, line.category, line.subcategory, current_measure(line),
+            )
+            session.delete(line)
+            retired += 1
+    if retired:
+        session.flush()
+    return retired
+
+
+__all__ = [
+    "PersistenceStats",
+    "current_measure",
+    "persist_national_budget_records",
+]

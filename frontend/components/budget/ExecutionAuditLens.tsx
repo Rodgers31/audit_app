@@ -23,16 +23,46 @@ import { useMemo, useState } from 'react';
 
 export interface ExecutionRow {
   sector: string;
-  allocated: number; // KES (absolute, in KES not billions from backend)
-  spent: number;
+  allocated: number; // KES — revised gross estimates (see ExecutionMeasure)
+  spent: number; // KES — actual expenditure
   unspent: number;
   execution_rate: number; // %
+  /** Page of the COB report the row's Sector Summary is on, e.g. "p.94". */
+  page_ref?: string | null;
+}
+
+/** The document the rows come from (`execution_source`). */
+export interface ExecutionSource {
+  publisher?: string | null;
+  title?: string | null;
+  url?: string | null;
+}
+
+/** How much of the ministerial budget the rows cover (`execution_coverage`). */
+export interface ExecutionCoverage {
+  sectors_expected?: number;
+  sectors_reported?: number;
+  sectors_missing?: string[];
+  sector_expenditure_bn?: string | null;
+  mda_expenditure_bn?: string | null;
+  /** null = not checked; false = the sectors do not sum to the report's MDA total. */
+  reconciles?: boolean | null;
+}
+
+/** What the rows leave out (`execution_excludes`). */
+export interface ExecutionExcludes {
+  label: string;
+  description: string;
+  expenditure_bn: string;
 }
 
 interface Props {
   rows: ExecutionRow[];
   /** FY the CoB execution figures actually cover (may lag the page's selected FY). */
   fiscalYear?: string;
+  source?: ExecutionSource | null;
+  coverage?: ExecutionCoverage | null;
+  excludes?: ExecutionExcludes | null;
 }
 
 const SECTOR_TONE: Record<string, { start: string; end: string; base: string }> = {
@@ -48,6 +78,15 @@ const SECTOR_TONE: Record<string, { start: string; end: string; base: string }> 
   'Defense & Security': { start: '#576573', end: '#303944', base: '#414D59' },
   Energy: { start: '#C99641', end: '#8C6621', base: '#AC7E31' },
   Other: { start: '#9AA3AE', end: '#6B7280', base: '#838C99' },
+  // COB's ten national sectors, as the annual NG-BIRR names them (#241).
+  'Agriculture, Rural and Urban Development': { start: '#6AA38B', end: '#3A7058', base: '#4E8770' },
+  'Energy, Infrastructure and ICT': { start: '#C99641', end: '#8C6621', base: '#AC7E31' },
+  'Environment Protection, Water, and Natural Resources': { start: '#5B9774', end: '#2F6B4A', base: '#417F5E' },
+  'General Economic and Commercial Affairs': { start: '#B66F4B', end: '#7B4628', base: '#96593B' },
+  'Governance, Justice, Law and Order': { start: '#7B8591', end: '#3F4754', base: '#5B6672' },
+  'National Security': { start: '#576573', end: '#303944', base: '#414D59' },
+  'Public Administration and International Relations': { start: '#5088A8', end: '#2F5A70', base: '#3E6B84' },
+  'Social Protection, Culture and Recreation': { start: '#C37A94', end: '#8A4B62', base: '#A46278' },
 };
 
 const FALLBACK = { start: '#6B7280', end: '#3F4754', base: '#4B5563' };
@@ -77,7 +116,15 @@ function commentary(rate: number, sector: string): string {
   return `Critical under-execution. This is money Parliament approved that did not reach citizens. Typically indicates chronic procurement failure, litigation-blocked projects, or severe in-year funding cuts by the National Treasury.`;
 }
 
-export default function ExecutionAuditLens({ rows, fiscalYear }: Props) {
+/** KSh-billion strings from the API ("1982.52") → "1.98T" / "62.4B". */
+function fmtBn(bn?: string | null): string | null {
+  if (bn == null) return null;
+  const v = Number(bn);
+  if (!Number.isFinite(v)) return null;
+  return fmtB(v * 1_000_000_000);
+}
+
+export default function ExecutionAuditLens({ rows, fiscalYear, source, coverage, excludes }: Props) {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const sorted = useMemo(() => {
@@ -123,8 +170,39 @@ export default function ExecutionAuditLens({ rows, fiscalYear }: Props) {
           </p>
           {fiscalYear && (
             <p className='text-[11px] text-gov-copper/90 mt-1.5 font-medium'>
-              Execution figures cover {fiscalYear} — the latest published by the Controller of
-              Budget — and may lag the fiscal year selected above.
+              Actual expenditure against revised gross estimates for the whole of {fiscalYear} —
+              the latest full-year report from the Controller of Budget — and may lag the fiscal
+              year selected above.
+            </p>
+          )}
+          {/* What the rows cover and what they leave out. Stated, because a
+              total over ministries alone reads as the whole budget otherwise. */}
+          {(coverage || excludes) && (
+            <p className='text-[11px] text-neutral-muted mt-1 max-w-2xl' data-testid='execution-coverage'>
+              {coverage?.sectors_reported != null && coverage?.sectors_expected != null && (
+                <>
+                  Ministerial spending, {coverage.sectors_reported} of {coverage.sectors_expected}{' '}
+                  sectors
+                  {coverage.sectors_missing && coverage.sectors_missing.length > 0 && (
+                    <> (not shown: {coverage.sectors_missing.join(', ')} — figures did not reconcile)</>
+                  )}
+                  {/* In billions, as COB prints them: at trillion precision a
+                      2.77B gap rounds to "2.21T vs 2.22T" and reads as noise. */}
+                  {coverage.reconciles === false && coverage.mda_expenditure_bn && coverage.sector_expenditure_bn && (
+                    <>
+                      ; the sectors sum to KES {coverage.sector_expenditure_bn}B against the
+                      report&apos;s ministerial total of KES {coverage.mda_expenditure_bn}B
+                    </>
+                  )}
+                  .{' '}
+                </>
+              )}
+              {excludes && fmtBn(excludes.expenditure_bn) && (
+                <>
+                  Excludes {excludes.label} (KES {fmtBn(excludes.expenditure_bn)} spent:{' '}
+                  {excludes.description}).
+                </>
+              )}
             </p>
           )}
         </div>
@@ -171,7 +249,9 @@ export default function ExecutionAuditLens({ rows, fiscalYear }: Props) {
                         background: `linear-gradient(180deg, ${tone.start}, ${tone.end})`,
                       }}
                     />
-                    <span className='text-[12px] sm:text-[13px] font-semibold text-gov-dark dark:text-white truncate'>
+                    <span
+                      title={r.sector}
+                      className='text-[12px] sm:text-[13px] font-semibold text-gov-dark dark:text-white truncate'>
                       {r.sector}
                     </span>
                   </div>
@@ -242,7 +322,17 @@ export default function ExecutionAuditLens({ rows, fiscalYear }: Props) {
       </div>
 
       <div className='mt-4 pt-3 border-t border-neutral-border/30 flex items-center justify-between text-[11px] text-neutral-muted'>
-        <span>Source: Controller of Budget · Quarterly Budget Implementation Review</span>
+        <span data-testid='execution-source'>
+          Source:{' '}
+          {source?.url ? (
+            <a href={source.url} target='_blank' rel='noopener noreferrer' className='underline'>
+              {source.publisher ?? 'Controller of Budget'} · {source.title ?? 'Budget Implementation Review'}
+            </a>
+          ) : (
+            <>Controller of Budget · Budget Implementation Review</>
+          )}
+          {' '}· sector summaries, Section 4
+        </span>
         <div className='flex items-center gap-3'>
           <span className='inline-flex items-center gap-1'>
             <span className='w-2 h-2 rounded-sm bg-green-500' /> ≥80%

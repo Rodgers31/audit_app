@@ -8520,17 +8520,15 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
     Returns:
       - revenue_by_source: Tax-type breakdown per FY (PAYE, Corp Tax, VAT, Excise, Customs, Other)
       - economic_context: Budget as % of GDP, per-capita budget, key economic indicators
-      - execution_by_sector: Allocated → Spent pipeline per sector from CoB NG-BIRR reports
+      - execution_by_sector: revised gross estimates vs actual expenditure per
+        sector, from the newest annual CoB NG-BIRR (declared rows only)
     """
     from models import (
-        BudgetLine,
         EconomicIndicator,
-        Entity,
         FiscalSummary,
         PopulationData,
         RevenueBySource,
     )
-    from sqlalchemy import func
 
     try:
         # ── 1. Revenue by source ──
@@ -8703,80 +8701,14 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
         }
 
         # ── 3. Budget execution by sector ──
-        # Query national-government budget execution data from the
-        # CoB Annual NG-BIRR reports.  These rows are identified by
-        # having an entity with slug 'national-government' AND
-        # committed_amount populated.
-        # County-level rows (from counties_budget seeder) don't have
-        # committed_amount and are for allocation-only display.
+        # Declared-expenditure rows from the newest ANNUAL COB NG-BIRR — see
+        # services/budget_execution.py for why rows are selected by what they
+        # declare, not by which column happens to be filled (#241).
+        from services.budget_execution import execution_by_sector as _exec
 
-        national_entity = (
-            db.query(Entity.id).filter(Entity.slug == "national-government").scalar()
-        )
-
-        # The execution pipeline below is scoped to ONE national period; surface
-        # its fiscal-year label so the UI can show which FY the execution figures
-        # cover. CoB NG-BIRR execution lags the page's selected FY (audit §2.3),
-        # so it must be labelled with its own FY, not the page's.
-        execution_fiscal_year = None
-        if national_entity:
-            # Scope to latest national FY to avoid summing across all periods
-            _nat_pid = _latest_national_period(db)
-            if _nat_pid:
-                execution_fiscal_year = (
-                    db.query(DBFiscalPeriod.label)
-                    .filter(DBFiscalPeriod.id == _nat_pid)
-                    .scalar()
-                )
-            sector_q = (
-                db.query(
-                    BudgetLine.category,
-                    func.sum(BudgetLine.allocated_amount).label("allocated"),
-                    func.sum(BudgetLine.actual_spent).label("spent"),
-                )
-                .filter(BudgetLine.entity_id == national_entity)
-                .filter(BudgetLine.committed_amount.isnot(None))
-                .filter(BudgetLine.allocated_amount > 0)
-            )
-            if _nat_pid:
-                sector_q = sector_q.filter(BudgetLine.period_id == _nat_pid)
-            sector_pipeline = sector_q.group_by(BudgetLine.category).all()
-        else:
-            sector_pipeline = []
-
-        # Normalize sector names (reuse the mapping from overview)
-        execution_by_sector_raw: dict = {}
-        for row in sector_pipeline:
-            raw = str(row.category or "").strip().lower()
-            clean = SECTOR_NORMALIZE.get(raw, "Other")
-            if raw == "total budget":
-                continue
-            if clean not in execution_by_sector_raw:
-                execution_by_sector_raw[clean] = {
-                    "allocated": 0,
-                    "spent": 0,
-                }
-            execution_by_sector_raw[clean]["allocated"] += float(row.allocated or 0)
-            execution_by_sector_raw[clean]["spent"] += float(row.spent or 0)
-
-        execution_by_sector = []
-        for sector in SECTOR_ORDER:
-            if sector in execution_by_sector_raw:
-                d = execution_by_sector_raw[sector]
-                alloc = d["allocated"]
-                spent = d["spent"]
-                unspent = alloc - spent
-                execution_by_sector.append(
-                    {
-                        "sector": sector,
-                        "allocated": alloc,
-                        "spent": spent,
-                        "unspent": unspent,
-                        "execution_rate": (
-                            round((spent / alloc) * 100, 1) if alloc else 0
-                        ),
-                    }
-                )
+        execution = _exec(db)
+        execution_by_sector = execution["rows"]
+        execution_fiscal_year = execution["fiscal_year"]
 
         return {
             "_meta": {
@@ -8789,6 +8721,13 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
             "economic_context": economic_context,
             "execution_by_sector": execution_by_sector,
             "execution_fiscal_year": execution_fiscal_year,
+            # Where the execution figures come from, what they measure, how
+            # much of the ministerial budget they cover, and what they leave
+            # out — each null when there is nothing to publish.
+            "execution_source": execution["source"],
+            "execution_measure": execution["measure"],
+            "execution_coverage": execution["coverage"],
+            "execution_excludes": execution["excludes"],
         }
 
     except HTTPException:
