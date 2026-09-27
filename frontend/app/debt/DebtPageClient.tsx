@@ -886,7 +886,8 @@ export default function NationalDebtPage() {
                 <div className='flex items-center gap-2 text-[11px]'>
                   <span className='inline-block w-3 h-3 rounded-full bg-gov-copper' />
                   <span className='text-neutral-muted'>
-                    Filled = shillings lost to debt service before anything else is funded
+                    Filled = total debt service per KES 100 of revenue (interest plus
+                    principal repaid; most principal is refinanced, not spent)
                   </span>
                 </div>
               </div>
