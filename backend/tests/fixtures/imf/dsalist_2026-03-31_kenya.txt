@@ -1,0 +1,17 @@
+# Source:  IMF — List of LIC DSAs for PRGT-Eligible Countries, As of March 31, 2026
+# URL:     https://www.imf.org/external/pubs/ft/dsa/dsalist.pdf
+# File:    dsalist.pdf, 64,885 bytes, 1 page (PDF ModDate 2026-04-08)
+# sha256:  3ffd7c5992cdf24117db851e664d60b81476f8de2a77d1d7e0d482658c354bad
+# Extract: `pdftotext -layout` (poppler) — the title and column-header lines,
+#          and the Kenya row, unedited. Read 2026-09-26.
+# ---
+                                                List of LIC DSAs for PRGT-Eligible Countries
+                                                            As of March 31, 2026
+
+
+                                                                                    Per recent DSA publication
+
+                                                     Latest publication      Risk of external        Debt sustainability        Joint with the
+Count   Country
+                                                            date             debt distress 1/          assessment 2/             World Bank
+27      Kenya 4/                                         11/1/2024                 High                  Sustainable                 Yes

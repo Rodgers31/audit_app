@@ -1,5 +1,6 @@
 'use client';
 
+import { frameworkOf, frameworkSources, frameworkUses } from '@/lib/fiscal/framework';
 import { toRawKES } from '@/lib/utils';
 /**
  * Budget & Spending — redesigned page
@@ -253,16 +254,14 @@ export default function BudgetSpendingPage() {
   // Derived from the data, so the page moves itself forward the moment the
   // FY2026/27 series lands — no date to remember to change.
   const newestFYWithFlow = useMemo(() => {
+    // "Complete" = the flow hero can draw it: a fiscal-framework split that
+    // reconciles on both sides (issue #237). The old test counted populated
+    // columns, which a split on a different basis from the total satisfied.
     const complete = (r: any) =>
       r &&
       r.appropriated_budget != null &&
-      r.tax_revenue != null &&
-      r.non_tax_revenue != null &&
-      r.total_borrowing != null &&
-      r.debt_service_cost != null &&
-      r.recurrent_spending != null &&
-      r.development_spending != null &&
-      r.county_allocation != null;
+      frameworkUses(frameworkOf(r)) != null &&
+      frameworkSources(frameworkOf(r)) != null;
     if (complete(currentFiscal)) return currentFiscal!.fiscal_year;
     for (let i = fiscalHistory.length - 1; i >= 0; i--) {
       if (complete(fiscalHistory[i])) return fiscalHistory[i].fiscal_year;
@@ -318,6 +317,16 @@ export default function BudgetSpendingPage() {
     (overview as any)?._meta?.fiscal_period ?? (overview as any)?.fiscal_period ?? null;
   const viewingCurrentFY =
     !selectedFY || !overviewFY || fyKey(selectedFY) === fyKey(overviewFY);
+
+  // The execution-by-sector panel is NOT from the overview: it carries its own
+  // fiscal year — the newest ANNUAL COB report (#241). Gate it on that. The
+  // county overview moves to a new FY as soon as COB's first quarterly county
+  // report lands, months before the annual national one, so gating on the
+  // overview would show an FY2025/26 panel under FY2026/27 and hide it under
+  // FY2025/26 — the mismatch the comment above exists to prevent.
+  const executionFY = (enhanced as any)?.execution_fiscal_year ?? null;
+  const viewingExecutionFY =
+    !selectedFY || !executionFY || fyKey(selectedFY) === fyKey(executionFY);
 
   const countyUtil = overview?.county_utilization ?? {};
   const executionBySector = enhanced?.execution_by_sector ?? [];
@@ -407,6 +416,7 @@ export default function BudgetSpendingPage() {
           debt_service_cost: selectedFiscal?.debt_service_cost ?? null,
           development_spending: selectedFiscal?.development_spending ?? null,
           county_allocation: selectedFiscal?.county_allocation ?? null,
+          fiscal_framework: selectedFiscal?.fiscal_framework ?? null,
           // `sectors` (the county-sector outer ring) was withdrawn — F11.
         }}
       />
@@ -415,10 +425,13 @@ export default function BudgetSpendingPage() {
       <RevenueMix revenueBySource={revenueBySource as any} />
 
       {/* ─── 5. The audit lens: execution by sector ─── */}
-      {viewingCurrentFY && (
+      {viewingExecutionFY && (
         <ExecutionAuditLens
           rows={executionBySector as any}
-          fiscalYear={(enhanced as any)?.execution_fiscal_year ?? undefined}
+          fiscalYear={executionFY ?? undefined}
+          source={(enhanced as any)?.execution_source ?? null}
+          coverage={(enhanced as any)?.execution_coverage ?? null}
+          excludes={(enhanced as any)?.execution_excludes ?? null}
         />
       )}
 

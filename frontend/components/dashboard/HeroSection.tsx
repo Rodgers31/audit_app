@@ -8,7 +8,9 @@ import { useFiscalSummary } from '@/lib/react-query/useFiscal';
 import { useLang } from '@/lib/i18n/LangProvider';
 import { assessDebtAnchor } from '@/lib/debt/debtAnchor';
 import { registerSourceLabel, summedRegisterRows } from '@/lib/debt/registerScope';
-import { classifyDebtRisk, fmtBillionKES, toRawKES } from '@/lib/utils';
+import { frameworkOf, frameworkUses } from '@/lib/fiscal/framework';
+import { dsaCitation, dsaHref, dsaIsAlarm, dsaSourceLabel, readDsaRating } from '@/lib/debt/dsaRating';
+import { fmtBillionKES, toRawKES } from '@/lib/utils';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
   AlertTriangle,
@@ -160,12 +162,15 @@ export function SummaryStrip() {
       ? (publishedTotalKES / 1_000_000_000_000).toFixed(2)
       : null;
 
-  // Trust the backend's risk_level when present (canonical source); fall back
-  // to the centralized classifier so thresholds stay consistent across the UI.
-  const riskLevel: string | null =
-    apiData?.debt_sustainability?.risk_level ||
-    (typeof gdpPct === 'number' ? classifyDebtRisk(gdpPct) : null);
-  const isHigh = riskLevel === 'High';
+  // The risk rating is the joint IMF–World Bank DSA's, quoted with its date
+  // and page, or it is absent (issue #269). It used to be `risk_level`, which
+  // the backend set to "High" whenever debt-to-GDP was above an unsourced
+  // 65%. When that was missing, the ratio was banded here at an uncited
+  // 40/60. Neither was the IMF's, and the site banding the ratio itself is
+  // not a substitute for the IMF's rating.
+  const dsa = readDsaRating(apiData?.debt_sustainability);
+  const riskLevel: string | null = dsa?.overall_risk_of_debt_distress ?? null;
+  const isHigh = dsaIsAlarm(dsa);
 
   // Debt against the one published threshold it is formally measured by. The
   // anchor comes from the API so a change in the law needs no frontend
@@ -175,9 +180,6 @@ export function SummaryStrip() {
   const anchorPct: number | null = fiscal?.debt_anchor?.anchor_pct_gdp ?? null;
   const anchor = assessDebtAnchor(typeof gdpPct === 'number' ? gdpPct : null, anchorPct);
   const breached = anchor.state === 'above';
-  // The IMF's own words for the debt position, used verbatim rather than
-  // paraphrased into something more dramatic than the source supports.
-  const imfAssessment: string | null = apiData?.debt_sustainability?.assessment ?? null;
   const alarm = breached || isHigh;
   // `.text-gov-copper` is re-pointed at the lighter accent token under
   // `:root.dark` (globals.css), so this needs no dark: variant to stay legible.
@@ -205,14 +207,17 @@ export function SummaryStrip() {
             <span className='mr-2 text-sm tracking-[0.08em] text-neutral-muted'>KES</span>
             {totalT == null ? '—' : `${totalT}T`}
           </p>
-          {/* The alarm is the IMF's classification of this debt position, in
-              the IMF's own words — not an adjective of ours. Carries a text
-              cue as well as the colour, so the warning does not depend on
-              seeing red (WCAG 1.4.1). */}
-          {isHigh && imfAssessment && (
+          {/* The alarm is the DSA's rating row, printed as the DSA prints it:
+              label and value verbatim. It is not an adjective of ours. The
+              citation link sits in the Risk Level cell beside this one. There
+              is a text cue as well as the colour, so the warning does not
+              depend on seeing red (WCAG 1.4.1). */}
+          {dsa && isHigh && (
             <p className='mt-2 inline-flex items-start gap-1.5 font-mono text-[11px] font-semibold uppercase leading-snug tracking-[0.06em] text-gov-copper'>
               <AlertTriangle aria-hidden='true' className='mt-px h-3 w-3 shrink-0' />
-              <span>High risk of debt distress · IMF</span>
+              <span>
+                Overall risk of debt distress: {dsa.overall_risk_of_debt_distress} · IMF–World Bank DSA
+              </span>
             </p>
           )}
           <div className='mt-3 text-xs leading-snug text-neutral-muted'>
@@ -278,14 +283,33 @@ export function SummaryStrip() {
           <p className='figure-label'>{t('home.hero.risk_level')}</p>
           <p className={`mt-4 font-mono text-3xl font-semibold uppercase leading-none tracking-[0.04em] ${isHigh ? 'text-gov-copper' : riskLevel ? 'text-gov-gold' : 'text-neutral-muted'}`}>
             {riskLevel
-              ? `${riskLevel} ${t('home.hero.risk_suffix')}`
+              ? /^in debt distress$/i.test(riskLevel)
+                ? riskLevel
+                : `${riskLevel} ${t('home.hero.risk_suffix')}`
               : t('home.hero.risk_unassessed_value')}
           </p>
-          <div className='mt-4 flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.08em] text-neutral-muted'>
+          {/* The four ratings of the IMF–World Bank LIC Debt Sustainability
+              Framework, which is the scale the value above is on. */}
+          <div className='mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] uppercase tracking-[0.08em] text-neutral-muted'>
             <span className='inline-flex items-center gap-1'><span className='h-2 w-2 bg-emerald-600' />Low</span>
             <span className='inline-flex items-center gap-1'><span className='h-2 w-2 bg-gov-gold' />Moderate</span>
             <span className='inline-flex items-center gap-1'><span className='h-2 w-2 bg-gov-copper' />High</span>
+            <span className='inline-flex items-center gap-1'><span className='h-2 w-2 bg-gov-copper' />In distress</span>
           </div>
+          <p className='mt-3 text-xs leading-snug text-neutral-muted'>
+            {dsa ? (
+              <a
+                href={dsaHref(dsa)}
+                title={dsaCitation(dsa)}
+                target='_blank'
+                rel='noopener noreferrer'
+                className='underline hover:no-underline'>
+                {dsaSourceLabel(dsa)}
+              </a>
+            ) : (
+              t('home.hero.risk_unassessed_reason')
+            )}
+          </p>
         </div>
       </div>
     </section>
@@ -523,64 +547,56 @@ export function KenyanGovCard() {
 
             {/* ── Where the Money Goes — budget breakdown bar ── */}
             {(() => {
-              // Every part is normalised to billions on the declared unit, and
-              // every part must be PRESENT. A stacked bar drawn from a partial
-              // breakdown is not a partial answer — the missing component is
-              // silently absorbed into "Other", which then reads as real
-              // unallocated slack. That is a fabricated composition, so the
-              // section is withheld instead. This is the ordinary case for a
-              // fiscal year the Controller of Budget has not yet reported on.
-              const debtSvc = fiscalBillions(fy.debt_service_cost, fy.unit);
-              const development = fiscalBillions(fy.development_spending, fy.unit);
-              const county = fiscalBillions(fy.county_allocation, fy.unit);
-              const recurrent = fiscalBillions(fy.recurrent_spending, fy.unit);
-              const total = fiscalBillions(fy.appropriated_budget, fy.unit);
-              if (
-                debtSvc == null ||
-                development == null ||
-                county == null ||
-                recurrent == null ||
-                total == null
-              ) {
-                return null;
-              }
-              // Recurrent spending in Kenya's budget INCLUDES debt service
-              // (Consolidated Fund Services). Separate it out to avoid double-counting.
-              const recurrentExclDebt = Math.max(recurrent - debtSvc, 0);
-              if (total <= 0) return null;
-              // "Other" captures any remaining slice (e.g. contingency, unallocated)
-              const accounted = debtSvc + recurrentExclDebt + development + county;
-              const other = Math.max(total - accounted, 0);
+              // One column of Treasury's fiscal framework, drawn against that
+              // column's own total (issue #237). This used to draw against
+              // appropriated_budget (COB gross — counts principal redemption,
+              // excludes counties), subtract interest-PLUS-principal from a
+              // recurrent figure holding interest only, and push the gap into
+              // "Other". Every segment is now a printed line; the parts sum to
+              // the total; absent or unreconciled -> withheld, never zeros.
+              // The framework is already in KSh billion.
+              const uses = frameworkUses(frameworkOf(fy));
+              if (!uses) return null;
+              const total = uses.total;
 
               const segments = [
                 {
                   label: t('home.govcard.seg_recurrent'),
-                  value: recurrentExclDebt,
+                  value: uses.recurrentExInterest,
                   color: 'bg-gov-forest',
                   dot: 'bg-gov-forest',
                 },
                 {
-                  label: t('home.govcard.seg_debt_service'),
-                  value: debtSvc,
+                  label: t('home.govcard.seg_interest'),
+                  value: uses.interest,
                   color: 'bg-gov-copper',
                   dot: 'bg-gov-copper',
                 },
                 {
                   label: t('home.govcard.seg_development'),
-                  value: development,
+                  value: uses.development,
                   color: 'bg-gov-gold',
                   dot: 'bg-gov-gold',
                 },
-                { label: t('home.govcard.seg_counties'), value: county, color: 'bg-[#0D7377]', dot: 'bg-[#0D7377]' },
-                ...(other > total * 0.01
-                  ? [{ label: t('home.govcard.seg_other'), value: other, color: 'bg-gray-300', dot: 'bg-gray-300' }]
-                  : []),
-              ];
+                { label: t('home.govcard.seg_counties'), value: uses.counties, color: 'bg-[#0D7377]', dot: 'bg-[#0D7377]' },
+                {
+                  label: t('home.govcard.seg_contingency'),
+                  value: uses.contingency,
+                  color: 'bg-gray-300',
+                  dot: 'bg-gray-300',
+                },
+              ].filter((seg) => seg.value > 0);
 
               return (
                 <div className='px-2 py-2.5 rounded-lg bg-white/50 dark:bg-surface-elevated border border-gray-100 dark:border-neutral-border'>
                   <span className='text-[11px] uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-semibold block mb-2'>
                     {t('home.govcard.where_money_goes')}
+                  </span>
+                  <span className='text-[11px] text-gray-500 dark:text-neutral-muted/80 block -mt-1.5 mb-2'>
+                    {t('home.govcard.framework_total').replace(
+                      '{total}',
+                      total >= 1000 ? `${(total / 1000).toFixed(2)}T` : `${total.toFixed(0)}B`
+                    )}
                   </span>
                   {/* Stacked horizontal bar */}
                   <div className='flex h-3 rounded-full overflow-hidden gap-[1px]'>

@@ -5,8 +5,6 @@
  *  formatCurrency  – KES with T / B / M / plain formatting
  *  formatPercentage – decimal + % suffix
  *  formatNumber     – thousands separator
- *  getDebtRiskColor – color class for debt/GDP ratio
- *  getDebtRiskLevel – text label for debt/GDP ratio
  *  cn               – tailwind-merge wrapper
  */
 
@@ -16,8 +14,6 @@ import {
   formatKesWords,
   formatNumber,
   formatPercentage,
-  getDebtRiskColor,
-  getDebtRiskLevel,
 } from '@/lib/utils';
 
 // ── formatCurrency ──────────────────────────────────────────────────────
@@ -91,46 +87,6 @@ describe('formatNumber', () => {
 
   it('handles zero', () => {
     expect(formatNumber(0)).toBe('0');
-  });
-});
-
-// ── getDebtRiskColor ────────────────────────────────────────────────────
-
-describe('getDebtRiskColor', () => {
-  it('returns brand-500 for low ratio (<40)', () => {
-    expect(getDebtRiskColor(30)).toBe('text-brand-500');
-  });
-
-  it('returns caution for moderate ratio (40–59)', () => {
-    expect(getDebtRiskColor(55)).toBe('text-caution');
-  });
-
-  it('returns risk for high ratio (>=60)', () => {
-    expect(getDebtRiskColor(75)).toBe('text-risk');
-  });
-
-  it('boundary: exactly 40 is moderate', () => {
-    expect(getDebtRiskColor(40)).toBe('text-caution');
-  });
-
-  it('boundary: exactly 60 is high risk', () => {
-    expect(getDebtRiskColor(60)).toBe('text-risk');
-  });
-});
-
-// ── getDebtRiskLevel ────────────────────────────────────────────────────
-
-describe('getDebtRiskLevel', () => {
-  it('returns Low Risk for ratio <40', () => {
-    expect(getDebtRiskLevel(20)).toBe('Low Risk');
-  });
-
-  it('returns Moderate Risk for ratio 40–59', () => {
-    expect(getDebtRiskLevel(50)).toBe('Moderate Risk');
-  });
-
-  it('returns High Risk for ratio >=60', () => {
-    expect(getDebtRiskLevel(85)).toBe('High Risk');
   });
 });
 

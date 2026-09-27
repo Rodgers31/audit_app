@@ -16,6 +16,14 @@ import { render, screen } from '@testing-library/react';
  * (non-high) styling: an outage presented as a reassuring rating.
  *
  * Both unit directions are covered because the deploy precedes the migration.
+ *
+ * Issue #269. The risk rating and the "· IMF" chip used to come from
+ * `risk_level` / `assessment`, which the backend derived from debt-to-GDP > 65
+ * with a sentence attributing the result to the IMF. When those were missing,
+ * the tile fell back to `classifyDebtRisk`, an uncited 40/60 banding. The
+ * strip now shows a rating only when it is the joint Bank-Fund DSA's
+ * (`debt_sustainability.imf_dsa`), with its date and a link to the page it is
+ * printed on.
  */
 
 const RAW_KES_ROW = {
@@ -89,6 +97,35 @@ describe('F1 — the headline must respect the declared unit', () => {
   });
 });
 
+/**
+ * `/api/v1/debt/national` → `data.debt_sustainability.imf_dsa`, as
+ * `backend/services/imf_dsa.py` declares it (IMF Country Report No. 24/316,
+ * PDF p. 132).
+ */
+const IMF_DSA = {
+  framework: 'Joint World Bank-IMF Debt Sustainability Framework for Low-Income Countries',
+  risk_of_external_debt_distress: 'High',
+  overall_risk_of_debt_distress: 'High',
+  granularity_in_the_risk_rating: 'Sustainable',
+  application_of_judgment: 'No',
+  source: {
+    publisher: 'International Monetary Fund and International Development Association (World Bank)',
+    title: 'Kenya: Seventh and Eighth Reviews Under the Extended Fund Facility and Extended Credit Facility Arrangements — Debt Sustainability Analysis',
+    series: 'IMF Country Report No. 24/316',
+    url: 'https://www.imf.org/-/media/files/publications/cr/2024/english/1kenea2024003-print-pdf.pdf',
+    dsa_date: '2024-10-18',
+    published: '2024-11-01',
+    page: 132,
+    page_label: 'PDF p. 132 (first page of the Debt Sustainability Analysis)',
+  },
+  latest_confirmed: {
+    title: 'List of LIC DSAs for PRGT-Eligible Countries — As of March 31, 2026',
+    url: 'https://www.imf.org/external/pubs/ft/dsa/dsalist.pdf',
+    as_of: '2026-03-31',
+    row: 27,
+  },
+};
+
 describe('G3 — a blank risk badge is not an assessment', () => {
   it('says "not assessed" when no band can be established', () => {
     mockTimeline.mockReturnValue({
@@ -98,12 +135,73 @@ describe('G3 — a blank risk badge is not an assessment', () => {
     expect(screen.getByText(/not assessed/i)).toBeInTheDocument();
   });
 
-  it('still renders a band that can be established', () => {
+  it('renders the rating the IMF publishes', () => {
+    mockTimeline.mockReturnValue({ data: { timeline: [RAW_KES_ROW] } });
+    mockOverview.mockReturnValue({
+      data: { debt_to_gdp_ratio: 69.3, debt_sustainability: { imf_dsa: IMF_DSA } },
+    });
+    render(<SummaryStrip />);
+    // Match the risk VALUE node exactly. The cell also renders a legend
+    // beneath it, so a loose /High/ matches twice.
+    expect(screen.getByText(/^High Risk$/i)).toBeInTheDocument();
+  });
+});
+
+describe('#269 — the risk rating is the IMF\u2019s, or it is absent', () => {
+  it('does not band debt-to-GDP itself', () => {
+    // RED before the fix: 65.9% fell through `classifyDebtRisk` into the
+    // uncited 40/60 banding and rendered "High Risk".
     mockTimeline.mockReturnValue({ data: { timeline: [RAW_KES_ROW] } });
     render(<SummaryStrip />);
-    // Match the risk VALUE node exactly. The redesigned cell also renders a
-    // Low/Moderate/High legend beneath it, so a loose /High/ matches twice.
-    expect(screen.getByText(/^High Risk$/i)).toBeInTheDocument();
+    expect(screen.queryByText(/^High Risk$/i)).toBeNull();
+    expect(screen.getByText(/not assessed/i)).toBeInTheDocument();
+  });
+
+  it('does not credit the IMF with the old ratio-derived rating', () => {
+    // RED before the fix: this is the payload production served on
+    // 2026-09-26. `risk_level` was "High" because 69.3 > 65, and the chip
+    // read "High risk of debt distress · IMF".
+    mockOverview.mockReturnValue({
+      data: {
+        debt_to_gdp_ratio: 69.3,
+        debt_sustainability: {
+          risk_level: 'High',
+          debt_to_gdp: 69.3,
+          assessment: 'Kenya\u2019s debt remains elevated. The IMF classifies Kenya at high risk of debt distress.',
+        },
+      },
+    });
+    render(<SummaryStrip />);
+    expect(screen.queryByText(/debt distress/i)).toBeNull();
+    expect(screen.queryByText(/\bIMF\b/)).toBeNull();
+    expect(screen.getByText(/not assessed/i)).toBeInTheDocument();
+  });
+
+  it('withholds a rating that arrives without its citation', () => {
+    // A rating with no page and no date could come from anywhere.
+    mockOverview.mockReturnValue({
+      data: {
+        debt_to_gdp_ratio: 69.3,
+        debt_sustainability: {
+          imf_dsa: { ...IMF_DSA, source: { ...IMF_DSA.source, url: undefined, page: undefined } },
+        },
+      },
+    });
+    render(<SummaryStrip />);
+    expect(screen.queryByText(/debt distress/i)).toBeNull();
+    expect(screen.getByText(/not assessed/i)).toBeInTheDocument();
+  });
+
+  it('quotes the rating and links to the page it is printed on', () => {
+    mockOverview.mockReturnValue({
+      data: { debt_to_gdp_ratio: 69.3, debt_sustainability: { imf_dsa: IMF_DSA } },
+    });
+    render(<SummaryStrip />);
+    expect(screen.getByText(/Overall risk of debt distress: High/)).toBeInTheDocument();
+    const link = screen.getByRole('link', { name: /IMF\u2013World Bank DSA, Oct 2024/ });
+    // #page=132 opens the PDF at the DSA's first page.
+    expect(link).toHaveAttribute('href', `${IMF_DSA.source.url}#page=132`);
+    expect(link.getAttribute('title')).toMatch(/Country Report No\. 24\/316.*p\. 132/);
   });
 });
 
@@ -124,10 +222,7 @@ const OVERVIEW_HIGH_RISK = {
   data: {
     total_outstanding: 13_552_833_964_464,
     debt_to_gdp_ratio: 69.3,
-    debt_sustainability: {
-      risk_level: 'High',
-      assessment: 'Kenya\u2019s debt remains elevated. The IMF classifies Kenya at high risk of debt distress.',
-    },
+    debt_sustainability: { debt_to_gdp: 69.3, imf_dsa: IMF_DSA },
   },
 };
 
@@ -144,7 +239,8 @@ describe('the headline states why it is alarmed', () => {
     mockFiscal.mockReturnValue(ANCHOR_BREACHED);
     mockOverview.mockReturnValue(OVERVIEW_HIGH_RISK);
     render(<SummaryStrip />);
-    expect(screen.getByText(/high risk of debt distress · imf/i)).toBeInTheDocument();
+    expect(screen.getByText(/Overall risk of debt distress: High/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /IMF\u2013World Bank DSA, Oct 2024/ })).toBeInTheDocument();
   });
 
   it('colours the two debt figures only while the threshold is exceeded', () => {
@@ -165,7 +261,9 @@ describe('the headline states why it is alarmed', () => {
       data: {
         total_outstanding: 5_000_000_000_000,
         debt_to_gdp_ratio: 41.2,
-        debt_sustainability: { risk_level: 'Low', assessment: 'Comfortable.' },
+        debt_sustainability: {
+          imf_dsa: { ...IMF_DSA, overall_risk_of_debt_distress: 'Low', risk_of_external_debt_distress: 'Low' },
+        },
       },
     });
     const { container } = render(<SummaryStrip />);

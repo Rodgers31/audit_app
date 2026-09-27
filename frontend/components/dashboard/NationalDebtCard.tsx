@@ -1,7 +1,8 @@
 'use client';
 
 import { DebtTimelineEntry } from '@/lib/api/debt';
-import { classifyDebtRisk, toRawKES } from '@/lib/utils';
+import { dsaCitation, dsaHref, dsaIsAlarm, dsaSourceLabel, readDsaRating } from '@/lib/debt/dsaRating';
+import { toRawKES } from '@/lib/utils';
 import { useLang } from '@/lib/i18n/LangProvider';
 import {
   useDebtTimeline,
@@ -208,15 +209,15 @@ export default function NationalDebtCard() {
   const gdpRatio = apiData?.debt_to_gdp_ratio ?? lastYear?.gdpRatio ?? null;
 
   // Absence is not a risk band. This was `|| 'High'`, so an API that reported
-  // no assessment rendered the WORST rating — a claim about the public
-  // finances manufactured from a missing field. Reported as G3 on PR #135,
-  // alongside the same defect in `classifyDebtRisk`, which now returns null
-  // rather than a default so callers must handle absence explicitly.
+  // no assessment rendered the WORST rating. That was a claim about the
+  // public finances manufactured from a missing field (G3 on PR #135).
   //
-  // Order: the publisher's own assessment, else one derived from the
-  // debt-to-GDP ratio, else nothing.
-  const riskLevel: 'Low' | 'Moderate' | 'High' | null =
-    sustainability.risk_level ?? classifyDebtRisk(gdpRatio);
+  // The rating is the joint IMF–World Bank DSA's, cited, or nothing (issue
+  // #269). The fallback of banding debt-to-GDP at an uncited 40/60 is gone.
+  // So is the backend's `risk_level`, which was debt-to-GDP > 65 and was
+  // captioned here as the IMF's classification.
+  const dsa = readDsaRating(sustainability);
+  const riskLevel: string | null = dsa?.overall_risk_of_debt_distress ?? null;
   // External vs domestic split.
   //
   // `summary.external_debt` is NOT the sum of the external creditors this site
@@ -561,14 +562,14 @@ export default function NationalDebtCard() {
             }
             desc={t('home.debt.insight_split')}
           />
-          {/* A null band renders "not assessed" in neutral styling, and drops
-              the `highlight` emphasis — the alarm treatment is for a stated
-              risk, not for a missing reading. */}
+          {/* The alarm treatment (copper icon, highlight) is for a rating of
+              High or In debt distress. A lower rating renders neutral, and a
+              missing one renders "not assessed". */}
           <InsightPill
             icon={
               <AlertTriangle
                 className={`w-4 h-4 ${
-                  riskLevel ? 'text-gov-copper' : 'text-neutral-muted'
+                  dsaIsAlarm(dsa) ? 'text-gov-copper' : 'text-neutral-muted'
                 }`}
               />
             }
@@ -578,11 +579,23 @@ export default function NationalDebtCard() {
                 : t('home.debt.insight_risk_unassessed')
             }
             desc={
-              riskLevel
-                ? t('home.debt.insight_risk_desc')
-                : t('home.debt.insight_risk_unassessed_desc')
+              dsa ? (
+                <>
+                  {t('home.debt.insight_risk_desc')} ·{' '}
+                  <a
+                    href={dsaHref(dsa)}
+                    title={dsaCitation(dsa)}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='underline hover:no-underline'>
+                    {dsaSourceLabel(dsa)}
+                  </a>
+                </>
+              ) : (
+                t('home.debt.insight_risk_unassessed_desc')
+              )
             }
-            highlight={riskLevel != null}
+            highlight={dsaIsAlarm(dsa)}
           />
         </div>
       </div>
@@ -643,7 +656,7 @@ function InsightPill({
 }: {
   icon: React.ReactNode;
   title: string;
-  desc: string;
+  desc: React.ReactNode;
   highlight?: boolean;
 }) {
   return (

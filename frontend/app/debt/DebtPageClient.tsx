@@ -19,10 +19,14 @@ import {
 import { buildDebtServiceSeries, yearMissingRevenue } from '@/lib/debt/debtServiceSeries';
 import { useFiscalSummary } from '@/lib/react-query/useFiscal';
 import { apiClient } from '@/lib/api/axios';
+import type { NationalLoan } from '@/lib/api/debt';
 import {
   computeRevenueAllocation,
+  fiscalSourceLine,
   formatHeadlineKes,
+  ratioWorking,
 } from '@/lib/debt/revenueAllocation';
+import { annualCostCell, rateCell, sortLoans } from '@/lib/debt/loanInterest';
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 import {
   AlertTriangle,
@@ -156,6 +160,53 @@ function Sparkline({
 }
 
 /* ═══════════════════════════════════════════════════════
+   Register cells — a figure, its basis tag, or "—" with the reason.
+   See lib/debt/loanInterest for the rules (issue #235).
+   ═══════════════════════════════════════════════════════ */
+
+function FigureText({
+  cell,
+  kind,
+  className = '',
+}: {
+  cell: ReturnType<typeof rateCell>;
+  kind: 'rate' | 'kes';
+  className?: string;
+}) {
+  if (cell.value == null) {
+    return (
+      <span className={`${className} text-neutral-muted`} title={cell.title} aria-label={`Not published: ${cell.title}`}>
+        —
+      </span>
+    );
+  }
+  return (
+    <span className={className} title={cell.title}>
+      {kind === 'rate' ? `${cell.value.toFixed(2)}%` : fmtKES(cell.value)}
+      {cell.tag && (
+        <span className='ml-1 text-[10px] font-normal text-neutral-muted'>{cell.tag}</span>
+      )}
+    </span>
+  );
+}
+
+function RateTd({ loan }: { loan: NationalLoan }) {
+  return (
+    <td className='px-4 py-3 text-xs text-right'>
+      <FigureText cell={rateCell(loan)} kind='rate' className='text-gov-copper tabular-nums' />
+    </td>
+  );
+}
+
+function CostTd({ loan }: { loan: NationalLoan }) {
+  return (
+    <td className='px-4 py-3 text-xs text-right'>
+      <FigureText cell={annualCostCell(loan)} kind='kes' className='text-neutral-muted tabular-nums' />
+    </td>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
    MAIN PAGE
    ═══════════════════════════════════════════════════════ */
 
@@ -274,24 +325,12 @@ export default function NationalDebtPage() {
     };
   }, [overview, fetchedPopulation]);
 
-  const loans = useMemo(() => {
-    if (!loansResp?.loans) return [];
-    const arr = [...loansResp.loans];
-    if (loanSort === 'rate') {
-      arr.sort((a, b) => {
-        const rA = parseFloat((a.interest_rate || '0').replace('%', ''));
-        const rB = parseFloat((b.interest_rate || '0').replace('%', ''));
-        return rB - rA;
-      });
-    } else if (loanSort === 'service') {
-      // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- sort comparator
-      arr.sort((a, b) => (b.annual_service_cost || 0) - (a.annual_service_cost || 0));
-    } else {
-      // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- sort comparator
-      arr.sort((a, b) => (b.outstanding_numeric || 0) - (a.outstanding_numeric || 0));
-    }
-    return arr;
-  }, [loansResp, loanSort]);
+  // Absent rates and costs sort LAST. The old comparator read them as 0,
+  // which ranked "no publisher gives a rate" as "the cheapest loan".
+  const loans = useMemo(
+    () => (loansResp?.loans ? sortLoans(loansResp.loans, loanSort) : []),
+    [loansResp, loanSort]
+  );
 
   // Normalise both series to RAW KES once, on each row's declared unit
   // (raw KES since the stage1 3a migration; bare billions from an older
@@ -315,6 +354,12 @@ export default function NationalDebtPage() {
         ...y,
         appropriated_budget: toRawKES(y.appropriated_budget, y.unit),
         total_revenue: toRawKES(y.total_revenue, y.unit),
+        // The same figure in billions, so the revenue card can check it IS
+        // the fiscal framework's ordinary revenue (which is in billions).
+        total_revenue_billion:
+          toRawKES(y.total_revenue, y.unit) == null
+            ? null
+            : toRawKES(y.total_revenue, y.unit)! / 1e9,
         tax_revenue: toRawKES(y.tax_revenue, y.unit),
         non_tax_revenue: toRawKES(y.non_tax_revenue, y.unit),
         total_borrowing: toRawKES(y.total_borrowing, y.unit),
@@ -583,8 +628,15 @@ export default function NationalDebtPage() {
                 </span>
               </div>
               <p className='text-[11px] text-white/50 mt-1'>
+                {/* Was "Based on IMF debt-sustainability thresholds". The 40/60
+                    cutoffs are this site's own banding (the riskBand memo
+                    above; the shared DEBT_RISK_THRESHOLDS constant they once
+                    came from was deleted in #279 because it cited no source).
+                    The IMF publishes no threshold at those values, so the band
+                    says what it is. The IMF-World Bank rating itself is shown,
+                    cited, on the homepage (#269). */}
                 {riskBand
-                  ? 'Based on IMF debt-sustainability thresholds'
+                  ? 'Our banding of debt-to-GDP (40% / 60%) — not an IMF rating'
                   : 'No debt-to-GDP ratio available to classify against'}
               </p>
             </div>
@@ -745,15 +797,15 @@ export default function NationalDebtPage() {
                   out of every <span className='font-bold'>KES 100</span> collected in
                   tax &amp; non-tax revenue
                 </div>
-                <div className='mt-4 flex items-center gap-2 text-xs text-neutral-muted'>
-                  <span className='inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gov-copper/10 text-gov-copper font-semibold'>
-                    <AlertTriangle size={12} />
-                    Above IMF 30% ceiling
-                  </span>
-                </div>
+                {/* An "Above IMF 30% ceiling" pill sat here, unconditionally.
+                    No IMF threshold applies to this ratio: it is TOTAL debt
+                    service (domestic + external, interest + principal) over
+                    revenue, and the IMF-World Bank LIC-DSF debt-service-to-
+                    revenue thresholds (14/18/23% by debt-carrying capacity)
+                    are for EXTERNAL public debt service only. A comparison
+                    that cannot be made honestly is not made (issue #235). */}
                 <p className='text-[11px] text-neutral-muted mt-3 leading-relaxed max-w-sm'>
-                  Source: National Treasury fiscal summary{' '}
-                  {taxAllocation.fiscalYear}. Uses tax &amp; non-tax
+                  {fiscalSourceLine(fiscal?.current)} Uses tax &amp; non-tax
                   revenue; debt figure includes total debt service
                   (interest + principal redemptions).
                 </p>
@@ -766,17 +818,19 @@ export default function NationalDebtPage() {
                     How this is calculated
                   </summary>
                   <div className='mt-2 pl-5 text-[11px] text-neutral-muted leading-relaxed space-y-2'>
+                    {/* `ds` and `rev` are RAW KES here (normalised above).
+                        This divided them by 1,000 and labelled the result
+                        trillions, which would have printed ~2315884392.206T
+                        — unseen only because the card never rendered for
+                        a year without a split (#237). */}
                     <p>
-                      Calculated as {taxAllocation.fiscalYear} total
-                      debt service of about KSh{' '}
-                      {(taxAllocation.ds / 1000).toFixed(3)}T divided by
-                      tax &amp; non-tax revenue of about KSh{' '}
-                      {(taxAllocation.rev / 1000).toFixed(3)}T (
-                      {(taxAllocation.ds / 1000).toFixed(3)} ÷{' '}
-                      {(taxAllocation.rev / 1000).toFixed(3)} × 100 ≈{' '}
-                      {taxAllocation.debtServicePerRev.toFixed(1)}). This
-                      keeps the published ratio aligned with the Treasury
-                      APDMR series while FY2025/26 remains budgeted.
+                      Calculated as {taxAllocation.fiscalYear}{' '}
+                      {ratioWorking(taxAllocation)}, the Treasury APDMR
+                      definition. It counts principal repaid on maturing
+                      loans as well as interest; the bar below counts interest
+                      only, because principal is refinanced rather than
+                      spent.{' '}
+                      {fiscalSourceLine(fiscal?.current)}
                     </p>
                     <p>
                       Different official debt-service measures may give
@@ -832,114 +886,88 @@ export default function NationalDebtPage() {
                 <div className='flex items-center gap-2 text-[11px]'>
                   <span className='inline-block w-3 h-3 rounded-full bg-gov-copper' />
                   <span className='text-neutral-muted'>
-                    Filled = shillings lost to debt service before anything else is funded
+                    Filled = total debt service per KES 100 of revenue (interest plus
+                    principal repaid; most principal is refinanced, not spent)
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Breakdown bar */}
-            <div className='px-6 sm:px-8 pb-6 sm:pb-8 pt-4 border-t border-neutral-border/30'>
-              <div className='flex items-center justify-between mb-2 gap-3'>
-                <span className='text-xs font-semibold text-gov-dark dark:text-white'>
-                  Full allocation per KES 100 of revenue
-                </span>
-                <span className='text-[11px] text-neutral-muted text-right'>
-                  Sum exceeds 100 because revenue doesn&rsquo;t
-                  fund the whole budget — the shortfall is borrowed.
-                </span>
+            {/* Breakdown bar — one column of Treasury's fiscal framework,
+                per KES 100 of the same revenue (issue #237). No residual:
+                the part above 100 is shown with what financed it. */}
+            {taxAllocation.breakdown == null ? (
+              <div className='px-6 sm:px-8 pb-6 sm:pb-8 pt-4 border-t border-neutral-border/30 text-[11px] text-neutral-muted'>
+                How {taxAllocation.fiscalYear} spending divides is not published on the
+                same basis as this revenue figure, so the breakdown is withheld rather
+                than drawn from mixed measures.
               </div>
-              <div className='flex w-full h-10 rounded-lg overflow-hidden shadow-sm border border-neutral-border/30'>
-                {[
-                  {
-                    key: 'ds',
-                    val: taxAllocation.debtServicePerRev,
-                    color: 'bg-gov-copper',
-                    label: 'Debt service',
-                  },
-                  {
-                    key: 'rec',
-                    val: taxAllocation.recPerRev,
-                    color: 'bg-gov-forest',
-                    label: 'Recurrent',
-                  },
-                  {
-                    key: 'dev',
-                    val: taxAllocation.devPerRev,
-                    color: 'bg-gov-sage',
-                    label: 'Development',
-                  },
-                  {
-                    key: 'counties',
-                    val: taxAllocation.countiesPerRev,
-                    color: 'bg-gov-gold',
-                    label: 'Counties',
-                  },
-                ].map((seg) => {
-                  const sumAllocated =
-                    taxAllocation.debtServicePerRev +
-                    taxAllocation.recPerRev +
-                    taxAllocation.devPerRev +
-                    taxAllocation.countiesPerRev +
-                    taxAllocation.borrowingPerRev;
-                  const w = sumAllocated > 0 ? (seg.val / sumAllocated) * 100 : 0;
-                  return (
-                    <div
-                      key={seg.key}
-                      className={`${seg.color} flex items-center justify-center text-white text-[11px] font-bold`}
-                      style={{ width: `${w}%` }}
-                      title={`${seg.label}: KES ${seg.val.toFixed(1)} per 100 of revenue`}>
-                      {w > 10 ? `${seg.val.toFixed(0)}` : ''}
-                    </div>
-                  );
-                })}
-                {taxAllocation.borrowingPerRev > 0 && (
-                  <div
-                    className='bg-neutral-muted/30 flex items-center justify-center text-gov-dark dark:text-white text-[11px] font-bold border-l-2 border-dashed border-gov-copper/40'
-                    style={{
-                      width: `${
-                        (taxAllocation.borrowingPerRev /
-                          (taxAllocation.debtServicePerRev +
-                            taxAllocation.recPerRev +
-                            taxAllocation.devPerRev +
-                            taxAllocation.countiesPerRev +
-                            taxAllocation.borrowingPerRev)) *
-                        100
-                      }%`,
-                    }}
-                    title={`Borrowing: KES ${taxAllocation.borrowingPerRev.toFixed(1)} per 100 of revenue`}>
-                    {taxAllocation.borrowingPerRev > 10
-                      ? `+${taxAllocation.borrowingPerRev.toFixed(0)}`
-                      : '+'}
-                  </div>
-                )}
-              </div>
-              <div className='grid grid-cols-2 sm:grid-cols-5 gap-x-3 gap-y-1.5 mt-3 text-[11px]'>
-                {[
-                  { color: 'bg-gov-copper', label: 'Debt service', val: taxAllocation.debtServicePerRev },
-                  { color: 'bg-gov-forest', label: 'Recurrent', val: taxAllocation.recPerRev },
-                  { color: 'bg-gov-sage', label: 'Development', val: taxAllocation.devPerRev },
-                  { color: 'bg-gov-gold', label: 'Counties', val: taxAllocation.countiesPerRev },
-                  ...(taxAllocation.borrowingPerRev > 0
-                    ? [
-                        {
-                          color: 'bg-neutral-muted/30',
-                          label: 'Borrowing (shortfall)',
-                          val: taxAllocation.borrowingPerRev,
-                        },
-                      ]
+            ) : (
+              (() => {
+                const b = taxAllocation.breakdown!;
+                const segs = [
+                  { key: 'int', val: b.interestPerRev, color: 'bg-gov-copper', label: 'Interest on debt' },
+                  { key: 'rec', val: b.recPerRev, color: 'bg-gov-forest', label: 'Recurrent (ex-interest)' },
+                  { key: 'dev', val: b.devPerRev, color: 'bg-gov-sage', label: 'Development' },
+                  { key: 'cty', val: b.countiesPerRev, color: 'bg-gov-gold', label: 'Counties' },
+                  { key: 'con', val: b.contingencyPerRev, color: 'bg-neutral-muted/50', label: 'Contingency fund' },
+                ];
+                const financed = [
+                  { label: 'A-i-A', val: b.aiaPerRev },
+                  { label: 'grants', val: b.grantsPerRev },
+                  { label: 'net borrowing', val: b.borrowingPerRev },
+                  ...(Math.abs(b.cashAdjustmentPerRev) >= 0.05
+                    ? [{ label: 'cash-basis adjustment & statistical discrepancy', val: b.cashAdjustmentPerRev }]
                     : []),
-                ].map((row) => (
-                  <div key={row.label} className='flex items-center gap-1.5'>
-                    <span className={`w-2.5 h-2.5 rounded-sm ${row.color}`} />
-                    <span className='text-neutral-muted truncate'>{row.label}</span>
-                    <span className='ml-auto font-bold text-gov-dark dark:text-white tabular-nums'>
-                      {row.val.toFixed(0)}
-                    </span>
+                ];
+                return (
+                  <div className='px-6 sm:px-8 pb-6 sm:pb-8 pt-4 border-t border-neutral-border/30'>
+                    <div className='flex items-center justify-between mb-2 gap-3'>
+                      <span className='text-xs font-semibold text-gov-dark dark:text-white'>
+                        Spending per KES 100 of revenue: {b.spendingPerRev.toFixed(1)}
+                      </span>
+                      <span className='text-[11px] text-neutral-muted text-right'>
+                        The {Math.max(b.spendingPerRev - 100, 0).toFixed(1)} above 100 is
+                        financed by{' '}
+                        {financed.map((f) => `${f.label} (${f.val.toFixed(1)})`).join(', ')}.
+                      </span>
+                    </div>
+                    <div className='flex w-full h-10 rounded-lg overflow-hidden shadow-sm border border-neutral-border/30'>
+                      {segs.map((seg) => {
+                        const w = (seg.val / b.spendingPerRev) * 100;
+                        return (
+                          <div
+                            key={seg.key}
+                            className={`${seg.color} flex items-center justify-center text-white text-[11px] font-bold`}
+                            style={{ width: `${w}%` }}
+                            title={`${seg.label}: KES ${seg.val.toFixed(1)} per 100 of revenue`}>
+                            {w > 10 ? `${seg.val.toFixed(0)}` : ''}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className='grid grid-cols-2 sm:grid-cols-5 gap-x-3 gap-y-1.5 mt-3 text-[11px]'>
+                      {segs.map((row) => (
+                        <div key={row.key} className='flex items-center gap-1.5'>
+                          <span className={`w-2.5 h-2.5 rounded-sm ${row.color}`} />
+                          <span className='text-neutral-muted truncate'>{row.label}</span>
+                          <span className='ml-auto font-bold text-gov-dark dark:text-white tabular-nums'>
+                            {/* One decimal: the legend must visibly sum to the total above. */}
+                            {row.val.toFixed(1)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className='mt-3 text-[11px] text-neutral-muted leading-relaxed'>
+                      Treasury fiscal framework, {fiscal?.current?.fiscal_framework?.source?.edition ?? 'Budget Summary'},{' '}
+                      {fiscal?.current?.fiscal_framework?.source?.page}. Interest is the debt
+                      line here because it is the part inside spending; the headline
+                      above also counts principal repaid.
+                    </p>
                   </div>
-                ))}
-              </div>
-            </div>
+                );
+              })()
+            )}
           </div>
         </motion.section>
       )}
@@ -1070,9 +1098,10 @@ export default function NationalDebtPage() {
                     <h3 className='text-sm font-semibold text-gov-dark dark:text-white'>
                       Aging — how long bills have gone unpaid
                     </h3>
-                    <p className='text-[11px] text-neutral-muted mt-0.5'>
-                      Bills older than 180 days are referred to the Pending Bills Verification Committee.
-                    </p>
+                    {/* "Bills older than 180 days are referred to the Pending
+                        Bills Verification Committee" was here. The committee's
+                        mandate is national bills accumulated 1 June 2005 –
+                        30 June 2022; there is no 180-day referral rule. */}
                   </div>
                 </div>
                 <ResponsiveContainer width='100%' height={220}>
@@ -1138,9 +1167,7 @@ export default function NationalDebtPage() {
                   <AlertTriangle size={14} className='text-gov-gold flex-shrink-0 mt-0.5' />
                   <span>
                     <span className='font-semibold text-gov-dark dark:text-white'>Not published:</span>{' '}
-                    {agingUnsupportedNote(agingSupport.reason)} Bills older than 180 days are
-                    referred to the Pending Bills Verification Committee, so the split matters —
-                    it is simply not in the source.
+                    {agingUnsupportedNote(agingSupport.reason)}
                   </span>
                 </div>
               </div>
@@ -1296,7 +1323,8 @@ export default function NationalDebtPage() {
                 The full loan register
               </h2>
               <p className='text-sm text-neutral-muted mt-1'>
-                Every active loan facility, sortable by what matters most to you.
+                Every row of the register — one per external creditor, one per domestic
+                instrument — sortable by what matters most to you.
               </p>
             </div>
             <div className='inline-flex rounded-lg bg-white/70 dark:bg-surface-elevated border border-white/70 p-1 text-xs'>
@@ -1326,7 +1354,7 @@ export default function NationalDebtPage() {
                   <th className='text-left px-4 py-3 font-semibold'>Type</th>
                   <th className='text-right px-4 py-3 font-semibold'>Outstanding</th>
                   <th className='text-right px-4 py-3 font-semibold'>Rate</th>
-                  <th className='text-right px-4 py-3 font-semibold'>Annual cost</th>
+                  <th className='text-right px-4 py-3 font-semibold'>Annual interest</th>
                   <th className='text-left px-4 py-3 font-semibold'>Maturity</th>
                 </tr>
               </thead>
@@ -1344,14 +1372,12 @@ export default function NationalDebtPage() {
                     <td className='px-4 py-3 text-sm font-semibold text-gov-dark dark:text-white text-right tabular-nums'>
                       {fmtKES(l.outstanding_numeric)}
                     </td>
-                    <td className='px-4 py-3 text-xs text-gov-copper text-right tabular-nums'>
-                      {l.interest_rate || '—'}
-                    </td>
-                    <td className='px-4 py-3 text-xs text-neutral-muted text-right tabular-nums'>
-                      {fmtKES(l.annual_service_cost)}
-                    </td>
+                    <RateTd loan={l} />
+                    <CostTd loan={l} />
                     <td className='px-4 py-3 text-xs text-neutral-muted'>
-                      {l.maturity_date || 'Revolving'}
+                      {/* No maturity date is unknown, not "Revolving" — these are
+                          aggregate buckets and IDS creditor totals (F24). */}
+                      {l.maturity_date || '—'}
                     </td>
                   </tr>
                 ))}
@@ -1377,24 +1403,30 @@ export default function NationalDebtPage() {
                     </div>
                     <div>
                       <span className='text-neutral-muted block text-[11px] uppercase'>Rate</span>
-                      <span className='font-semibold text-gov-copper tabular-nums'>
-                        {l.interest_rate || '—'}
-                      </span>
+                      <FigureText cell={rateCell(l)} kind='rate' className='font-semibold text-gov-copper tabular-nums' />
                     </div>
                     <div>
-                      <span className='text-neutral-muted block text-[11px] uppercase'>Annual cost</span>
-                      <span className='font-semibold text-gov-dark dark:text-white tabular-nums'>
-                        {fmtKES(l.annual_service_cost)}
-                      </span>
+                      <span className='text-neutral-muted block text-[11px] uppercase'>Annual interest</span>
+                      <FigureText cell={annualCostCell(l)} kind='kes' className='font-semibold text-gov-dark dark:text-white tabular-nums' />
                     </div>
                     <div>
                       <span className='text-neutral-muted block text-[11px] uppercase'>Maturity</span>
-                      <span className='text-gov-dark dark:text-white'>{l.maturity_date || 'Revolving'}</span>
+                      <span className='text-gov-dark dark:text-white'>{l.maturity_date || '—'}</span>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
+
+            <p className='px-4 py-3 text-[11px] text-neutral-muted border-t border-neutral-border/20 leading-relaxed'>
+              <span className='font-semibold text-gov-dark dark:text-white'>How to read the rate and interest columns.</span>{' '}
+              External rows show the interest Kenya actually paid each creditor in the year World Bank
+              IDS reports (&ldquo;paid&rdquo;); IDS gives no rate per creditor. Treasury bonds show the
+              average coupon of the bonds in CBK&rsquo;s register and bills show CBK&rsquo;s 91-day
+              yield; their interest is <em>modelled</em> as balance × that rate, not published.
+              &ldquo;—&rdquo; means no publisher gives the figure; hover for why. These columns do not
+              add up to a total: they are on different bases and different years.
+            </p>
 
             {loans.length > 10 && (
               <button
@@ -1422,8 +1454,9 @@ export default function NationalDebtPage() {
           <li>• National Treasury — Budget Policy Statement, Budget Review &amp; Outlook</li>
           <li>• Office of the Controller of Budget — Budget Implementation Review Reports</li>
           <li>
-            • Peer comparison: IMF World Economic Outlook, World Bank International Debt Statistics
+            • World Bank International Debt Statistics — external debt and interest paid, by creditor
           </li>
+          <li>• IMF World Economic Outlook — debt-to-GDP</li>
         </ul>
       </div>
     </PageShell>

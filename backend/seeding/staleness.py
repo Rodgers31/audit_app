@@ -141,6 +141,84 @@ TABLE_RULES: List[TableRule] = [
     ),
 ]
 
+@dataclass(frozen=True)
+class SeriesRule:
+    """How old the newest OBSERVATION of one national series may get.
+
+    ``TableRule("Economic indicators")`` asks when any row was last
+    *created*, across every series in the table. That cannot see a single
+    series freezing: the World Bank pull creates rows every January, so a
+    monthly inflation series could stop for a year behind a green table.
+    This asks the reader's question instead — how old is the figure the page
+    would show — by the observation's own ``indicator_date``.
+    """
+
+    label: str
+    indicator_type: str
+    max_age_days: int
+    level: str = WARN
+    note: str = ""
+
+
+SERIES_RULES: List[SeriesRule] = [
+    SeriesRule(
+        label="Monthly inflation (CBK 12-month CPI)",
+        indicator_type="inflation_rate_12m",
+        # KNBS publishes month M on the last day of M, and rows are dated at
+        # month end — so the newest row is 0-31 days old in steady state.
+        # 60d means a whole monthly release was missed.
+        max_age_days=60,
+        note="KNBS monthly CPI, published at month end",
+    ),
+]
+
+
+def check_series_freshness(session, now: Optional[datetime] = None) -> List[Finding]:
+    """Is the newest observation of each national series inside its cadence?"""
+    from sqlalchemy import func
+
+    from models import EconomicIndicator
+
+    now = now or datetime.now(timezone.utc)
+    findings: List[Finding] = []
+    for rule in SERIES_RULES:
+        newest = (
+            session.query(func.max(EconomicIndicator.indicator_date))
+            .filter(
+                EconomicIndicator.indicator_type == rule.indicator_type,
+                EconomicIndicator.entity_id.is_(None),
+            )
+            .scalar()
+        )
+        age = _age_days(newest, now)
+        if age is None:
+            findings.append(
+                Finding(
+                    rule.level,
+                    rule.label,
+                    f"no national {rule.indicator_type} rows at all",
+                )
+            )
+        elif age > rule.max_age_days:
+            findings.append(
+                Finding(
+                    rule.level,
+                    rule.label,
+                    f"newest observation is {age:.0f} days old (limit "
+                    f"{rule.max_age_days}d for {rule.note}); newest={newest}",
+                )
+            )
+        else:
+            findings.append(
+                Finding(
+                    OK,
+                    rule.label,
+                    f"newest observation {age:.0f}d old (limit {rule.max_age_days}d)",
+                )
+            )
+    return findings
+
+
 # A domain must have reached its publisher at least this recently. Generous
 # because a slow CDN legitimately costs a few nights of resumed downloading.
 MAX_DAYS_SINCE_LIVE = 14
@@ -984,21 +1062,175 @@ def hollow_run_findings(jobs: Iterable) -> List[Finding]:
     return findings
 
 
+#: The basis a fiscal year's split must declare to count as "has a split".
+#: Spelled here, not imported, so this module stays importable without the
+#: fiscal_summary domain; ``test_fiscal_split_gate.py`` pins the two equal.
+FISCAL_SPLIT_BASIS = "treasury_fiscal_framework"
+FISCAL_SPLIT_LABEL = "Fiscal split vs Treasury Budget Summary"
+
+
+def _fy_key(label: Optional[str]) -> tuple:
+    """``'FY 2026/27'`` -> ``(2026,)``; anything unparseable sorts first."""
+    import re
+
+    m = re.search(r"(\d{4})", label or "")
+    return (int(m.group(1)),) if m else (-1,)
+
+
+def check_fiscal_split_freshness(
+    session, now: Optional[datetime] = None
+) -> List[Finding]:
+    """Is there a Budget Summary on Treasury's listing newer than the newest
+    fiscal year this site can split?
+
+    Every July an enacted budget lands and the site should start showing its
+    borrowing, recurrent / development / county split and tax versus non-tax.
+    If the new edition cannot be read (a layout change, a dead link, a
+    renamed table), nothing fails: the fixture is served, the old year stays
+    "current" on the split, and the page quietly draws last year's shape. A
+    row-count floor cannot see that and neither can ``source_mode``, which
+    stays ``live`` because older editions still parse.
+
+    Judged on the NEWEST run that recorded the listing, never on a window.
+    "The listing carries a year we cannot split" is a statement about now:
+    a union over past runs would stay green for a fortnight after a new
+    edition broke, which is exactly the hole this gate closes. An unreadable
+    listing is WARN, never OK: absence of evidence is not health.
+    """
+    from models import FiscalSummary, IngestionJob
+
+    now = now or datetime.now(timezone.utc)
+    cutoff = now - timedelta(days=MAX_DAYS_SINCE_LIVE)
+    jobs = [
+        j
+        for j in session.query(IngestionJob)
+        .filter(IngestionJob.domain == "fiscal_summary")
+        .filter(IngestionJob.started_at >= cutoff.replace(tzinfo=None))
+        .all()
+        if "budget_summary_listing_newest_fy" in (j.meta or {})
+    ]
+    if not jobs:
+        return [
+            Finding(
+                WARN,
+                FISCAL_SPLIT_LABEL,
+                f"no fiscal_summary run in the last {MAX_DAYS_SINCE_LIVE} days "
+                "recorded what Treasury's Budget Summary listing carries, so "
+                "whether a newer budget is waiting cannot be judged",
+            )
+        ]
+    latest = max(jobs, key=_run_order)
+    meta = latest.meta or {}
+    listed = meta.get("budget_summary_listing_newest_fy")
+    editions = meta.get("budget_summary_editions") or {}
+    findings: List[Finding] = []
+
+    if meta.get("budget_summary_undated_links"):
+        findings.append(
+            Finding(
+                WARN,
+                FISCAL_SPLIT_LABEL,
+                f"{len(meta['budget_summary_undated_links'])} Budget Summary "
+                "link(s) name no fiscal year on the link or on a readable "
+                f"cover, so a newer edition could be among them: "
+                f"{meta['budget_summary_undated_links']}",
+            )
+        )
+    if not listed:
+        findings.append(
+            Finding(
+                WARN,
+                FISCAL_SPLIT_LABEL,
+                "the newest run could not establish any Budget Summary year on "
+                f"the listing (listing: {meta.get('budget_summary_listing_status')})",
+            )
+        )
+        return findings
+
+    if _fy_key(listed) == (-1,):
+        findings.append(
+            Finding(
+                WARN,
+                FISCAL_SPLIT_LABEL,
+                f"the listing's newest Budget Summary year {listed!r} is not a "
+                "fiscal year, so it cannot be compared with what is published",
+            )
+        )
+        return findings
+
+    from services.publication_gate import publishable_fiscal_summaries
+
+    # A split is the object with its total, not just the label: an empty or
+    # total-less object has nothing a page can draw.
+    split_years = [
+        r.fiscal_year
+        for r in publishable_fiscal_summaries(session.query(FiscalSummary).all())
+        if (r.meta or {}).get("split_basis") == FISCAL_SPLIT_BASIS
+        and ((r.meta or {}).get("fiscal_framework") or {}).get("total_expenditure_billion")
+    ]
+    newest_split = max(split_years, key=_fy_key) if split_years else None
+
+    if newest_split is not None and _fy_key(listed) < _fy_key(newest_split):
+        findings.append(
+            Finding(
+                WARN,
+                FISCAL_SPLIT_LABEL,
+                f"the split is published through {newest_split} but the listing's "
+                f"newest Budget Summary is now {listed}: the edition behind the "
+                "newest split has gone from Treasury's listing",
+            )
+        )
+    elif newest_split is None or _fy_key(listed) > _fy_key(newest_split):
+        status = "; ".join(
+            f"{e.get('status')}" + (f" ({e.get('detail')})" if e.get("detail") else "")
+            for u, e in editions.items()
+            if e.get("fiscal_year") == listed
+        )
+        findings.append(
+            Finding(
+                FAIL,
+                FISCAL_SPLIT_LABEL,
+                f"Treasury has published the Budget Summary for {listed}, but "
+                f"the newest fiscal year with a split is {newest_split or 'none'}. "
+                f"The site is drawing borrowing, the spending split and tax vs "
+                f"non-tax for an older budget. Edition status: {status or 'unrecorded'}",
+            )
+        )
+    else:
+        findings.append(
+            Finding(
+                OK,
+                FISCAL_SPLIT_LABEL,
+                f"newest Budget Summary on the listing is {listed}; split "
+                f"published through {newest_split}",
+            )
+        )
+    return findings
+
+
 def run_all(
     session, now: Optional[datetime] = None, counts: Optional[dict] = None
 ) -> List[Finding]:
     """Every gate. ``counts`` enables the row-count regression check.
 
-    Omitting ``counts`` runs the two original gates only. It is optional
+    Omitting ``counts`` skips the row-count regression check (the table,
+    series, ingestion and publisher-edition gates always run). It is optional
     because ``run_all`` has callers that have no count to offer, NOT because
-    the third gate is — the nightly passes the counts it already computed for
+    that check is — the nightly passes the counts it already computed for
     its own floors.
     """
-    findings = check_table_freshness(session, now) + check_ingestion_freshness(
-        session, now
+    findings = (
+        check_table_freshness(session, now)
+        + check_series_freshness(session, now)
+        + check_ingestion_freshness(session, now)
+        + check_fiscal_split_freshness(session, now)
     )
     if counts is not None:
         findings += check_and_record_row_census(session, counts, now=now)
+    # Is the publisher AHEAD of what we publish? (#241, #243)
+    from .edition_gates import check_publisher_editions
+
+    findings += check_publisher_editions(session)
     return findings
 
 
@@ -1013,12 +1245,16 @@ __all__ = [
     "ROW_CENSUS_WINDOW_DAYS",
     "ROW_DROP_MIN_ABSOLUTE",
     "ROW_DROP_TOLERANCE",
+    "SERIES_RULES",
+    "SeriesRule",
     "TABLE_RULES",
     "TableRule",
     "WARN",
     "check_and_record_row_census",
+    "check_fiscal_split_freshness",
     "check_ingestion_freshness",
     "check_row_count_drop",
+    "check_series_freshness",
     "check_table_freshness",
     "hollow_run_findings",
     "in_publication_lull",
