@@ -85,6 +85,9 @@ _HEADING_RE = re.compile(
 _FINDING_START_RE = re.compile(r"^(\d{1,3})\.\s+(\S.*)$")
 _AMOUNT_RE = re.compile(r"Kshs?\.?\s*([\d][\d,]*(?:\.\d+)?)", re.IGNORECASE)
 _NO_ISSUE_RE = re.compile(r"^There (?:was|were) no material issue", re.IGNORECASE)
+# The header of the table an "Unresolved Prior Year Matters" finding lists last
+# year's issues in: "No. Audit Issues for 2023/2024", "No. Audit Issue".
+_PRIOR_ISSUES_TABLE_RE = re.compile(r"^No\.?\s+Audit\s+Issues?\b", re.IGNORECASE)
 # Appendices (summary tables of opinions per MDA) follow the last chapter.
 # Their numbered table rows are not findings — a chapter ends here.
 _APPENDIX_RE = re.compile(r"^Appendix\s+[A-Z0-9]", re.IGNORECASE)
@@ -208,8 +211,44 @@ def segment_chapter(
     start_printed: int,
     end_printed: int,
     offset: int,
+    *,
+    finding_start_re=None,
+    stop_at_appendix: bool = True,
+    max_number_step: int = 1,
+    skip_prior_issue_tables: bool = False,
 ) -> Tuple[List[BlueBookFinding], int]:
-    """Findings for one vote's chapter. Returns (findings, rejected_cid)."""
+    """Findings for one vote's chapter. Returns (findings, rejected_cid).
+
+    The keyword arguments exist for the consolidated COUNTY volumes
+    (``oag_county_volume``), whose layout breaks three assumptions this walk
+    makes about the national book. Their defaults are the national behaviour,
+    unchanged:
+
+    * ``finding_start_re``: county volumes number paragraphs continuously
+      across all 47 chapters, past 1,000 (FY2024/25 executives reaches 1323),
+      so the three-digit pattern silently merged every later finding into the
+      one before it.
+    * ``stop_at_appendix``: county findings cite "Appendix VI to the financial
+      statements ..." at the start of a line, and the national rule reads that
+      as the end of the chapter, dropping everything after it (40 findings in
+      one FY2024/25 chapter). A county chapter's end is already fixed by the
+      next chapter's heading, so the county caller turns this off.
+    * ``max_number_step``: OAG's own numbering skips (1266, 1147 and 798
+      appear nowhere in their volumes). With a strict ``prev + 1`` rule,
+      every paragraph after the skip is lost. A step of up to this many is
+      accepted. Numbered list items inside a finding are still refused,
+      because they go backwards.
+    * ``skip_prior_issue_tables``: an "Unresolved Prior Year Matters" finding
+      lists last year's issues as a table numbered 1, 2, 3 under a
+      "No. Audit Issues for ..." header. Where the running paragraph numbers
+      are low, those rows pass the continuity rule as body-less "findings",
+      and the real findings after them then look like steps backwards and are
+      dropped (FY2024/25 assemblies, Mombasa, p.14). With this on, numbered
+      lines continuing the table's own 1, 2, 3 sequence stay in the finding's
+      body. The first number that breaks the sequence, or any heading, ends
+      the table.
+    """
+    finding_start_re = finding_start_re or _FINDING_START_RE
     lines: List[Tuple[int, str, str]] = []  # (pdf_page_1based, line, method)
     for printed in range(start_printed, end_printed + 1):
         idx = offset + printed - 1
@@ -232,6 +271,7 @@ def segment_chapter(
     sub_section: Optional[str] = None
     cur: Optional[dict] = None
     prev_no: Optional[int] = None
+    table_next: Optional[int] = None  # next row number while inside a table
 
     def flush() -> None:
         nonlocal cur, rejected
@@ -281,7 +321,29 @@ def segment_chapter(
     for pdf_page, line, method in lines:
         if not line:
             continue
-        if _APPENDIX_RE.match(line):
+        if skip_prior_issue_tables and cur is not None:
+            if _PRIOR_ISSUES_TABLE_RE.match(line):
+                table_next = 1
+                cur["lines"].append(line)
+                continue
+            if table_next is not None:
+                row = _FINDING_START_RE.match(line) or finding_start_re.match(line)
+                if row and int(row.group(1)) == table_next:
+                    table_next += 1
+                    cur["lines"].append(line)
+                    continue
+                structural = (
+                    row
+                    or _HEADING_RE.match(line)
+                    or _SUBREPORT_RE.match(line)
+                    or _OPINION_RE.match(line)
+                )
+                if not structural:
+                    # A row that wrapped onto a second line. Still the table.
+                    cur["lines"].append(line)
+                    continue
+                table_next = None
+        if stop_at_appendix and _APPENDIX_RE.match(line):
             break  # appendix tables are not findings
         if _SUBREPORT_RE.match(line):
             flush()
@@ -295,14 +357,14 @@ def segment_chapter(
             flush()
             heading = line
             continue
-        m = _FINDING_START_RE.match(line)
+        m = finding_start_re.match(line)
         if m:
             no = int(m.group(1))
             title = m.group(2).strip()
             # Paragraph numbering is continuous within a chapter. Accepting
             # only prev+1 (or the very first number seen) rejects numbered
             # list items inside a finding body masquerading as findings.
-            is_next = prev_no is not None and no == prev_no + 1
+            is_next = prev_no is not None and prev_no < no <= prev_no + max_number_step
             is_first = prev_no is None
             if (is_next or is_first) and title and not title[0].islower():
                 flush()
@@ -393,13 +455,25 @@ def parse_blue_book(pages: List[PageText], source_url: str) -> BlueBookResult:
 
 # ── PDF I/O (thin, impure shell around the pure parser) ──────────────
 def read_pages(
-    pdf_path: Path, *, ocr_enabled: bool, ocr_max_pages: int = 30
+    pdf_path: Path,
+    *,
+    ocr_enabled: bool,
+    ocr_max_pages: int = 30,
+    visible_only: bool = False,
 ) -> List[PageText]:
     """Per-page text with OCR fallback for unmappable-font pages.
 
     A page whose embedded text is empty or >20% ``(cid:`` is re-read via
     OCR (pdf2image + pytesseract) when enabled; if it still fails the
     integrity check it is marked ``rejected`` and contributes nothing.
+
+    ``visible_only`` drops glyphs drawn outside the page's box before reading.
+    The FY2021/22 county volumes carry the PREVIOUS page's entire text
+    positioned off-canvas (x from -523) on every odd page from 17 onward: 262
+    of 546 pages in volume 1. pdfplumber reads invisible glyphs like any
+    others, so each such page came back as two pages' text interleaved, with a
+    "2 3" footer. Off by default, so the national Blue Book reads exactly as
+    before.
     """
     import pdfplumber
 
@@ -407,7 +481,8 @@ def read_pages(
     ocr_used = 0
     with pdfplumber.open(pdf_path) as pdf:
         for i, page in enumerate(pdf.pages):
-            text = page.extract_text() or ""
+            source = page.within_bbox(page.bbox) if visible_only else page
+            text = source.extract_text() or ""
             method = "pdfplumber"
             if not text.strip() or cid_ratio(text) > CID_REJECT_RATIO:
                 if ocr_enabled and ocr_used < ocr_max_pages:
