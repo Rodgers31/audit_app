@@ -16,6 +16,11 @@ import { AlertTriangle, ExternalLink, Scale, TrendingDown, TrendingUp } from 'lu
 import React from 'react';
 import ModelledDataNote from '@/components/ModelledDataNote';
 import { ABSENT, hasIngestedAudit, fmtKES, fmtLabel, fmtPop, pct, SEVERITY_STYLE } from '../shared';
+import {
+  pendingBillsAbsenceLine,
+  pendingBillsAsAtLine,
+  pendingBillsNoteLines,
+} from '@/lib/counties/pendingBillsNotes';
 import KPI from './KPI';
 
 /* ═══════════ Circular progress ═══════════ */
@@ -142,7 +147,7 @@ function OfficialsCard({ data }: { data: CountyComprehensive }) {
 
 /* ═══════════ Tab: Overview ═══════════ */
 export default function OverviewTab({ data }: { data: CountyComprehensive }) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const {
     demographics,
     economic_profile,
@@ -153,6 +158,18 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
     missing_funds,
     revenue,
   } = data;
+
+  // Only beside a figure: a date or a note on an absent figure would describe
+  // nothing.
+  const pendingAsAt =
+    debt.pending_bills != null
+      ? pendingBillsAsAtLine(debt.pending_bills_as_at, debt.pending_bills_source?.table, lang, t)
+      : null;
+  const pendingNotes =
+    debt.pending_bills != null ? pendingBillsNoteLines(debt.pending_bills_notes, t, fmtKES) : [];
+  // And only beside an absence: the report's own reason there is no figure.
+  const pendingAbsent =
+    debt.pending_bills == null ? pendingBillsAbsenceLine(debt.pending_bills_absence, lang, t) : null;
 
   // Provenance comes from the API, which knows whether this period's headline
   // was read from a CoB BIRR table or modelled from the CRA formula. The
@@ -269,6 +286,23 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
                 {fmtKES(debt.pending_bills)}
               </span>
             </div>
+            {/* The day the figure is a stock on and what the report says
+                about it (#238); both come from the API and are absent with
+                the figure. */}
+            {pendingAsAt && (
+              <p className='text-[11px] text-gray-500 dark:text-neutral-muted/80 text-right'>{pendingAsAt}</p>
+            )}
+            {pendingAbsent && (
+              <p className='text-[11px] text-gray-500 dark:text-neutral-muted/80 text-right'>{pendingAbsent}</p>
+            )}
+            {pendingNotes.map((line) => (
+              <p
+                key={line}
+                className='flex items-start gap-1.5 text-[11px] text-amber-800 dark:text-amber-200'>
+                <AlertTriangle size={12} className='mt-0.5 flex-shrink-0' aria-hidden />
+                <span>{line}</span>
+              </p>
+            ))}
           </div>
         </div>
       </div>
@@ -360,9 +394,18 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
             label={t('county.overview.kpi.total_revenue')}
             value={fmtKES(revenue.total_revenue)}
             sub={
-              revenue.local_revenue > 0
-                ? `${t('county.overview.kpi.local_prefix')} ${fmtKES(revenue.local_revenue)}`
-                : undefined
+              // Receipts are for the report's period (a nine-month CBIRR is
+              // not a year), so the period travels with the figure.
+              [
+                revenue.fiscal_year && revenue.total_revenue != null
+                  ? revenue.fiscal_year
+                  : null,
+                revenue.local_revenue != null
+                  ? `${t('county.overview.kpi.local_prefix')} ${fmtKES(revenue.local_revenue)}`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(' · ') || undefined
             }
             accent='text-green-700'
           />
