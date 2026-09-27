@@ -311,6 +311,38 @@ class TestInferEntityCoversAll47:
         hint = parser.infer_entity("Kwale County Executive 2023/24", pages)
         assert hint is not None and hint["canonical_name"] == "Kwale County", hint
 
+    # The three below were added in the consolidation review of #245. The
+    # title case above passes because the title names Kwale; with no county in
+    # the title, the page-one fallback took the first county in COUNTY_NAMES'
+    # order that the text mentioned, not the first the text names, and it
+    # matched only the straight-apostrophe spelling of Murang'a.
+
+    def test_page_one_attribution_takes_the_county_named_first(self, parser):
+        pages = [{"text": "County Executive of Kwale. Kwale borders Mombasa to the north-east."}]
+        hint = parser.infer_entity("Report of the Auditor-General 2023/24", pages)
+        assert hint is not None and hint["canonical_name"] == "Kwale County", hint
+
+    @pytest.mark.parametrize("spelling", ["Murang\u2019a", "Muranga", "MURANG\u2019A"])
+    def test_muranga_is_recognised_however_it_is_spelled(self, parser, spelling):
+        hint = parser.infer_entity(
+            f"Report of the Auditor-General on the County Executive of {spelling}", []
+        )
+        assert hint is not None and hint["canonical_name"] == "Murang'a County", hint
+
+    @pytest.mark.parametrize(
+        "spelling, county",
+        [("Elgeyo-Marakwet", "Elgeyo Marakwet"), ("Tharaka-Nithi", "Tharaka Nithi"),
+         ("Taita-Taveta", "Taita Taveta")],
+    )
+    def test_hyphenated_county_names_are_recognised(self, parser, spelling, county):
+        hint = parser.infer_entity(f"County Executive of {spelling} 2023/24", [])
+        assert hint is not None and hint["canonical_name"] == f"{county} County", hint
+
+    def test_a_muranga_report_naming_nairobi_later_stays_muranga(self, parser):
+        pages = [{"text": "County Executive of Murang\u2019a — funds transferred to Nairobi."}]
+        hint = parser.infer_entity("Report of the Auditor-General 2023/24", pages)
+        assert hint is not None and hint["canonical_name"] == "Murang'a County", hint
+
     def test_the_roster_is_all_47(self):
         from etl.audit_parser import COUNTY_NAMES
         from etl.entity_resolver import COUNTY_NAMES as RESOLVER_COUNTY_NAMES

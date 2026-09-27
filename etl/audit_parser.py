@@ -419,33 +419,45 @@ class AuditParser:
     # ------------------------------------------------------------------
     # Existing helpers (unchanged)
     # ------------------------------------------------------------------
+    @staticmethod
+    def _first_county_named(text: str) -> Optional[str]:
+        """The county the text names FIRST, or None.
+
+        Not the first of ``COUNTY_NAMES`` that the text mentions: a Kwale
+        report whose first page reads "Kwale borders Mombasa" was attributed
+        to Mombasa, which comes earlier in the list. Curly apostrophes and the
+        apostrophe-less spelling ("Muranga") are read as Murang'a, and a hyphen
+        as a space ("Elgeyo-Marakwet", "Tharaka-Nithi").
+        """
+        folded = (
+            (text or "").lower().replace("\u2019", "'").replace("\u2018", "'").replace("-", " ")
+        )
+        best: Optional[tuple] = None
+        for county in COUNTY_NAMES:
+            spellings = {county.lower(), county.lower().replace("'", "")}
+            for spelling in spellings:
+                at = folded.find(spelling)
+                if at != -1 and (best is None or at < best[0]):
+                    best = (at, county)
+        return best[1] if best else None
+
     def infer_entity(
         self, title: str, pages: List[Dict[str, Any]]
     ) -> Optional[Dict[str, Any]]:
-        # Prefer title-based inference
-        text = title or ""
-        for county in COUNTY_NAMES:
-            if county.lower() in text.lower():
+        # Prefer title-based inference, then the first page's text.
+        candidates = [(title or "", 0.9)]
+        if pages:
+            candidates.append((pages[0].get("text", ""), 0.6))
+        for text, confidence in candidates:
+            county = self._first_county_named(text)
+            if county:
                 return {
                     "canonical_name": f"{county} County",
                     "type": "county",
-                    "confidence": 0.9,
+                    "confidence": confidence,
                     "raw_name": county,
                     "category": "counties",
                 }
-
-        # Fallback: first page text
-        if pages:
-            page_text = pages[0].get("text", "")
-            for county in COUNTY_NAMES:
-                if county.lower() in page_text.lower():
-                    return {
-                        "canonical_name": f"{county} County",
-                        "type": "county",
-                        "confidence": 0.6,
-                        "raw_name": county,
-                        "category": "counties",
-                    }
         return None
 
     def classify_severity(self, text: str, amount_kes: Optional[float]) -> str:

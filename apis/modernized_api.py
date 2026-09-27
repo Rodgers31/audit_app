@@ -48,7 +48,7 @@ test_no_route_reads_the_modelled_county_file.py now fails any route module
 that can reach the file, and pins the arithmetic above.
 
 The seven routes below served no invented figure and are unchanged. They read
-from ``DataDrivenGovernmentAnalytics``, whose five data-source paths do not
+from ``DataDrivenGovernmentAnalytics``, whose four data-source paths do not
 resolve in this repo, so several of them currently report absence. That is a
 separate defect (issue #188, "the data-driven path is dead, and fails
 silently"); a route that returns empty is not a route that asserts a fabricated
