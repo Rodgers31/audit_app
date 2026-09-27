@@ -18,6 +18,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import httpx  # For internal API calls
 import uvicorn
 from config.settings import settings
+from services.imf_dsa import kenya_dsa_rating
 from services.publication_gate import (
     count_withheld_audits,
     count_withheld_by_reason,
@@ -10362,22 +10363,14 @@ async def get_national_debt():
                                 for cat, data in categories.items()
                                 if data["count"] > 0
                             },
+                            # The risk rating is the joint Bank-Fund DSA's,
+                            # verbatim and cited. It used to be "High" above
+                            # an unsourced 65% debt-to-GDP, with a sentence
+                            # attributing that to the IMF (issue #269). No
+                            # figure computed here feeds it.
                             "debt_sustainability": {
-                                "risk_level": (
-                                    "High"
-                                    if debt_to_gdp_ratio > 65
-                                    else (
-                                        "Moderate"
-                                        if debt_to_gdp_ratio > 0
-                                        else "Unknown"
-                                    )
-                                ),
                                 "debt_to_gdp": debt_to_gdp_ratio,
-                                "assessment": (
-                                    "Kenya's debt remains elevated. The IMF classifies Kenya at high risk of debt distress."
-                                    if debt_to_gdp_ratio > 65
-                                    else "Seed GDP data for full sustainability assessment."
-                                ),
+                                "imf_dsa": kenya_dsa_rating(),
                             },
                         },
                         "currency": "KES",
@@ -10422,7 +10415,8 @@ async def get_national_debt():
             "debt_to_gdp_ratio": None,
             "summary": {},
             "categories": {},
-            "debt_sustainability": {},
+            # Not our figure, so an empty register does not withhold it.
+            "debt_sustainability": {"imf_dsa": kenya_dsa_rating()},
         },
         "currency": "KES",
         "source": "Central Bank of Kenya / National Treasury",
