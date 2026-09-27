@@ -51,6 +51,16 @@ EXTRACTOR_ID = "cog_governors"
 SOURCE_URL = "https://cog.go.ke/current-governors/"
 PUBLISHER = "Council of Governors"
 
+#: Same publisher, same markup, one entry per sitting deputy governor.
+DEPUTIES_SOURCE_URL = "https://cog.go.ke/current-deputy-governors/"
+
+#: Fewest deputies a page may list before it is treated as having changed
+#: shape. Deputies, unlike governors, may be ABSENT: the seat is vacant
+#: after an elevation, an impeachment or a death until a nominee is approved.
+#: The page listed 46 of 47 on 2026-09-26 (Homa Bay absent). A handful of
+#: simultaneous vacancies is plausible; seven or more is not.
+DEPUTIES_MIN_LISTED = 40
+
 #: The 47, spelled as this project spells them.
 from .knbs_census_population import KENYAN_COUNTIES  # noqa: E402  (single source)
 
@@ -103,6 +113,9 @@ class GovernorsError(Exception):
 class Governors:
     by_county: Dict[str, str]
     checks: List[str] = field(default_factory=list)
+    #: Counties the page did not list. Always empty for governors, which
+    #: must list all 47.
+    missing: List[str] = field(default_factory=list)
 
 
 def _county_key(label: str) -> str:
@@ -135,8 +148,9 @@ def clean_name(raw: str) -> Optional[str]:
     return name
 
 
-def parse_governors(html: str) -> Governors:
-    """Extract county -> governor from the Council of Governors page."""
+def _parse_pairs(html: str, source_url: str) -> Dict[str, str]:
+    """county -> name for every block on a Council page, with the pairing
+    gates applied. Completeness is the caller's rule."""
     by_county: Dict[str, str] = {}
     seen_names: Dict[str, str] = {}
     canonical = {_county_key(c): c for c in KENYAN_COUNTIES}
@@ -170,9 +184,15 @@ def parse_governors(html: str) -> Governors:
     if not by_county:
         raise GovernorsError(
             "no_governors_found",
-            f"{SOURCE_URL} yielded no county/name pairs; the page's markup "
+            f"{source_url} yielded no county/name pairs; the page's markup "
             "has probably changed",
         )
+    return by_county
+
+
+def parse_governors(html: str) -> Governors:
+    """Extract county -> governor from the Council of Governors page."""
+    by_county = _parse_pairs(html, SOURCE_URL)
 
     missing = sorted(set(KENYAN_COUNTIES) - set(by_county))
     if missing:
@@ -189,3 +209,25 @@ def parse_governors(html: str) -> Governors:
             f"{len(set(by_county.values()))} distinct governors, one per county",
         ],
     )
+
+
+def parse_deputy_governors(html: str) -> Governors:
+    """Extract county -> deputy governor from the Council's deputies page.
+
+    Same pairing gates as ``parse_governors``. A county that is not listed is
+    returned in ``missing`` rather than failing the parse, because the seat
+    may be vacant. A page listing fewer than ``DEPUTIES_MIN_LISTED`` is
+    refused as a shape change.
+    """
+    by_county = _parse_pairs(html, DEPUTIES_SOURCE_URL)
+    missing = sorted(set(KENYAN_COUNTIES) - set(by_county))
+    if len(by_county) < DEPUTIES_MIN_LISTED:
+        raise GovernorsError(
+            "too_few_deputies",
+            f"{len(by_county)} of {len(KENYAN_COUNTIES)} listed, below the "
+            f"floor of {DEPUTIES_MIN_LISTED}; not listed: {', '.join(missing)}",
+        )
+    checks = [f"{len(by_county)} of {len(KENYAN_COUNTIES)} counties list a deputy"]
+    if missing:
+        checks.append(f"not listed (seat vacant or page behind): {', '.join(missing)}")
+    return Governors(by_county=by_county, checks=checks, missing=missing)

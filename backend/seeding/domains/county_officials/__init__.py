@@ -22,10 +22,13 @@ from sqlalchemy.orm import Session
 
 from ...config import SeedingSettings
 from ...extractors.cog_governors import (
+    DEPUTIES_SOURCE_URL,
     EXTRACTOR_ID,
     PUBLISHER,
     SOURCE_URL,
+    Governors,
     GovernorsError,
+    parse_deputy_governors,
     parse_governors,
 )
 from ...freshness import mark_fixture, mark_live
@@ -48,18 +51,23 @@ _HTML_HEADERS = {
 }
 
 
-def _ensure_source_document(session: Session, country_id: int):
+def _ensure_source_document(
+    session: Session,
+    country_id: int,
+    url: str = SOURCE_URL,
+    title: str = "Council of Governors — Current Governors",
+):
     from models import SourceDocument
 
     doc = session.execute(
-        select(SourceDocument).where(SourceDocument.url == SOURCE_URL)
+        select(SourceDocument).where(SourceDocument.url == url)
     ).scalar_one_or_none()
     now = datetime.now(timezone.utc)
     if doc is None:
         doc = SourceDocument(
             country_id=country_id,
-            title="Council of Governors — Current Governors",
-            url=SOURCE_URL,
+            title=title,
+            url=url,
             publisher=PUBLISHER,
             doc_type=DocumentType.REPORT,
             fetch_date=now,
@@ -70,6 +78,67 @@ def _ensure_source_document(session: Session, country_id: int):
         doc.fetch_date = now
     session.flush()
     return doc
+
+
+def _fetch_deputies(client):
+    """(parsed deputies, None) or (None, (reason, detail))."""
+    try:
+        response = client.get(
+            DEPUTIES_SOURCE_URL, headers=_HTML_HEADERS, raise_for_status=True
+        )
+        return parse_deputy_governors(response.text), None
+    except GovernorsError as exc:
+        return None, (f"cog_{exc.reason}", str(exc))
+    except Exception as exc:  # noqa: BLE001 - network path
+        return None, ("source_unreachable", f"{type(exc).__name__}: {exc}")
+
+
+def _write_deputies(
+    session: Session,
+    country_id: int,
+    entities: Dict[str, Entity],
+    governors: Governors,
+    deputies: Governors,
+) -> List[str]:
+    """Store each listed deputy with provenance, and REMOVE the stored deputy
+    of any county the Council no longer lists. Keeping it would show last
+    year's name for a seat that is now vacant.
+
+    A deputy with the same name as the county's governor is dropped. That is
+    what an elevation looks like while one page lags the other (Meru, 2024),
+    and showing one person in both roles is wrong either way.
+    """
+    doc = _ensure_source_document(
+        session,
+        country_id,
+        url=DEPUTIES_SOURCE_URL,
+        title="Council of Governors — Current Deputy Governors",
+    )
+    provenance = {
+        "source": PUBLISHER,
+        "source_url": DEPUTIES_SOURCE_URL,
+        "source_document_id": doc.id,
+        "extractor": EXTRACTOR_ID,
+        "fetched_at": doc.fetch_date.isoformat() if doc.fetch_date else None,
+    }
+    checks: List[str] = []
+    for county_label, entity in entities.items():
+        county = county_label.removesuffix(" County")
+        name = deputies.by_county.get(county)
+        if name and name == governors.by_county.get(county):
+            checks.append(f"dropped: {county} lists {name} as governor and deputy")
+            name = None
+        meta = dict(entity.meta or {})
+        if name:
+            meta["deputy_governor"] = name
+            meta["deputy_governor_provenance"] = provenance
+        else:
+            meta.pop("deputy_governor", None)
+            meta.pop("deputy_governor_provenance", None)
+        entity.meta = meta
+        session.add(entity)
+    session.flush()
+    return checks
 
 
 @register_domain("county_officials")
@@ -100,6 +169,9 @@ def run(
                 SOURCE_URL, headers=_HTML_HEADERS, raise_for_status=True
             )
             governors = parse_governors(response.text)
+            # Deputies are fetched only once the governors have parsed, and
+            # their failure never blocks the governors. See _write_deputies.
+            deputies, deputies_failure = _fetch_deputies(client)
         except GovernorsError as exc:
             # A shape change, not a network failure: record the reason and
             # leave every county's name as it was rather than writing part of
@@ -198,6 +270,23 @@ def run(
         entity.meta = meta
         session.add(entity)
     session.flush()
+
+    if deputies is not None:
+        deputy_checks = _write_deputies(
+            session, country.id, entities, governors, deputies
+        )
+        metadata["deputies"] = len(deputies.by_county) - sum(
+            1 for c in deputy_checks if c.startswith("dropped:")
+        )
+        metadata["deputy_checks"] = deputies.checks + deputy_checks
+    else:
+        reason, detail = deputies_failure
+        metadata["deputies_quarantine_reason"] = reason
+        # An error, so the job reads COMPLETED_WITH_ERRORS and the nightly
+        # prints [WARN]. Stored deputies are left as the last good run wrote
+        # them, with that run's fetched_at.
+        errors.append(f"deputy governors not updated ({reason}): {detail}")
+        logger.warning("deputy governors not updated (%s): %s", reason, detail)
 
     mark_live(
         "county_officials",

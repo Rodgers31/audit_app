@@ -316,3 +316,38 @@ describe('transparencySsrQueries', () => {
     ]);
   });
 });
+
+/* ── no unsourced unit-cost conversions (#231) ──────────────────────── */
+
+describe('/transparency — no "≈ N schools" conversions', () => {
+  // `fundingImpact()` divided Auditor-General amounts by KES 10M (school),
+  // 3M (classroom), 500K (borehole) and 2M (health post). None of the four
+  // had a source or a vintage, and a borehole in Kenya costs several times
+  // 500K. It turned a documented figure into an invented one beside it.
+  const CONVERSION = /≈\s*[\d,]+\s*(schools?|classrooms?|boreholes?|health posts?)/i;
+
+  it('renders the flagged amounts without converting them into things', async () => {
+    getNationalMoneyFlow.mockResolvedValue({
+      ...NATIONAL,
+      stages: NATIONAL.stages.map((s) =>
+        s.stage === 'Flagged' ? { ...s, amount: 12_000_000_000 } : s
+      ),
+    });
+    const state = await serverState();
+    const Wrapper = hydratedWrapper(state);
+
+    const html = renderToString(
+      <Wrapper>
+        <TransparencyPageClient />
+      </Wrapper>
+    );
+
+    // Guard the guard: the flagged figures are on the page, so an absent
+    // conversion is not just an absent row.
+    expect(html).toContain('Nairobi');
+    expect(html).toContain('KES 3.00B');
+    // React separates adjacent text with `<!-- -->`, which is how the table
+    // cell rendered: "≈ <!-- -->1000 classrooms". Match the text a reader sees.
+    expect(html.replace(/<!-- -->/g, '')).not.toMatch(CONVERSION);
+  });
+});
