@@ -66,13 +66,14 @@ def _get_or_create_source_document(
     session: Session, record: DebtRecord
 ) -> SourceDocument:
     """Get or create source document for the debt bulletin."""
-    # Use source URL or title as unique identifier
-    source_identifier = record.source_url or record.source_title or "Unknown Source"
-
     doc = (
         session.query(SourceDocument)
         .filter(
-            SourceDocument.title == record.source_title,
+            (
+                SourceDocument.url == record.source_url
+                if record.source_url
+                else SourceDocument.title == record.source_title
+            ),
             SourceDocument.doc_type == DocumentType.LOAN,
         )
         .first()

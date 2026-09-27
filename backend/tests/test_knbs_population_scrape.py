@@ -307,3 +307,34 @@ def test_a_figure_with_its_year_still_lands(production_rows):
     )
 
     assert (2025, 57_532_493) in [(y, p) for _, y, p in _table(session)]
+
+
+@pytest.mark.parametrize("year", [None, 2025])
+def test_document_year_survives_parser_fetcher_and_boot_writer(
+    monkeypatch, production_rows, year
+):
+    from etl.knbs_parser import KNBSParser
+
+    session, module = production_rows
+    before = _table(session)
+    parser = KNBSParser()
+    monkeypatch.setattr(parser, "_download_pdf", lambda url: b"pdf")
+    monkeypatch.setattr(parser, "_extract_text_from_pdf", lambda pdf:
+                        "Kenya population: 57,532,493 persons. This is the national population total.")
+    monkeypatch.setattr(parser, "_extract_tables_from_pdf", lambda pdf: [])
+
+    class Documents:
+        def discover_documents(self):
+            return [{"title": "Population survey", "type": "economic_survey",
+                     "url": "https://knbs.or.ke/survey.pdf", "year": year}]
+
+    seeder = module.AutoSeeder()
+    seeder.aggregator.knbs._extractor = Documents()
+    seeder.aggregator.knbs._parser = parser
+    fetched = asyncio.run(seeder.aggregator.knbs.fetch_population_data())
+    assert fetched["census_year"] == year
+    asyncio.run(seeder._seed_population_live())
+    if year is None:
+        assert _table(session) == before
+    else:
+        assert (year, 57_532_493) in [(y, p) for _, y, p in _table(session)]

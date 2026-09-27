@@ -127,7 +127,11 @@ def parse_debt_payload(payload: dict[str, Any]) -> list[DebtRecord]:
                 source_title=loan_data.get("source_title") or source_title,
                 publisher=(
                     _declared(loan_data.get("publisher"))
-                    or (None if loan_data.get("source_url") else payload_publisher)
+                    or (
+                        payload_publisher
+                        if (loan_data.get("source_url") or source_url) == source_url
+                        else None
+                    )
                 ),
                 debt_category=loan_data.get("debt_category"),
                 interest_rate=interest_rate,

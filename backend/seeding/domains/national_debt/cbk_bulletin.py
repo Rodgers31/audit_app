@@ -269,6 +269,9 @@ def _build_loan_records(
                 "issue_date": issue_date_iso,
                 "maturity_date": None,
                 "currency": "KES",
+                "source_url": source_url,
+                "source_title": "CBK Statistical Bulletin — domestic debt",
+                "publisher": "Central Bank of Kenya",
                 "notes": (
                     f"CBK Statistical Bulletin Table 4.1.4 "
                     f"(month-end {measurement_date.isoformat()}); "

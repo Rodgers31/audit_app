@@ -118,7 +118,7 @@ class PopulationData:
     """Data class for population data."""
 
     total_population: int
-    year: int
+    year: Optional[int]
     county: Optional[str] = None
     male_population: Optional[int] = None
     female_population: Optional[int] = None
@@ -660,7 +660,7 @@ class KNBSParser:
                         )
                         return PopulationData(
                             total_population=population,
-                            year=year or datetime.now().year,
+                            year=year,
                             county=county,
                         )
                 except Exception as e:
