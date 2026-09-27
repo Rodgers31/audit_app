@@ -49,6 +49,18 @@ const nextConfig = {
   },
   // Proxy API requests through Next.js to avoid CORS preflight overhead
   // Browser → Next.js (:3000/api/v1/*) → FastAPI (:8000/api/v1/*)
+  // The unaccounted-funds page lists findings the Auditor-General's report
+  // itself heads "Unaccounted" or "Loss of Funds" (issue #233). "Missing" is
+  // not the report's word, so the page left that URL; old links still land.
+  async redirects() {
+    return [
+      {
+        source: '/accountability/missing-funds',
+        destination: '/accountability/unaccounted-funds',
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
     // eslint-disable-next-line no-console

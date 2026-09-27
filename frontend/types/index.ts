@@ -113,9 +113,13 @@ export interface CountyComprehensive {
     findings: AuditFinding[];
   };
   missing_funds: {
-    total_amount: number;
+    basis?: 'oag_finding_title';
+    total_amount: null;
+    total_amount_reason?: 'no_amount_extracted';
     cases_count: number;
-    cases: any[];
+    cases: UnaccountedCase[];
+    reason?: string | null;
+    withheld?: { count: number; by_reason: Record<string, number> };
   };
   stalled_projects: {
     count: number;
@@ -133,6 +137,25 @@ export interface CountyComprehensive {
   /** Per-FY health scores, oldest → newest. Only periods with actual
    * execution are included; allocated-only years are skipped. */
   health_history?: Array<{ fy: string; score: number; grade: string }>;
+  health_history_absent_reason?: 'dated_health_components_unavailable';
+  /** Completed periods of budget execution; this is not a health score. */
+  budget_execution_history?: Array<{
+    fiscal_period: { id: number; label: string; start_date: string; end_date: string };
+    total_allocation: number | null;
+    total_spent: number | null;
+    execution_rate: number | null;
+    accounting_basis: string | null;
+    currency: string | null;
+    sources: Array<{
+      id: number | null;
+      title: string | null;
+      publisher: string | null;
+      url: string | null;
+      page_refs: string[];
+    }>;
+    absent_reasons: Record<string, string>;
+    budget_lines_count: number;
+  }>;
   data_sources: Record<string, string>;
 }
 
@@ -350,4 +373,29 @@ export interface TooltipData {
     y: number;
   };
   visible: boolean;
+}
+/** One finding from backend/services/audit_derived.py::derive_unaccounted_cases. */
+export interface UnaccountedCase {
+  finding_id: number;
+  entity: string | null;
+  entity_id?: number;
+  county_name?: string | null;
+  county_slug?: string | null;
+  entity_type: string | null;
+  /** The Auditor-General's own heading for the finding. */
+  title: string;
+  /** The finding's text after its title, in the report's words. May be empty
+   *  when the extractor captured only the heading. */
+  excerpt: string;
+  /** The report section it sits under, e.g. "Basis for Adverse Opinion". */
+  heading: string | null;
+  fiscal_year: string | null;
+  page_ref: string | null;
+  source: {
+    document_id: number;
+    title: string | null;
+    publisher: string | null;
+    url: string | null;
+    page_url: string | null;
+  };
 }

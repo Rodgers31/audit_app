@@ -779,6 +779,17 @@ export const MESSAGES = {
   'county.sources.title': { en: 'Data sources for this county', sw: 'Vyanzo vya data kwa kaunti hii', plain: 'Where these numbers come from' },
 
   // Missing funds
+  'county.unaccounted.heading': {
+    en: '{n} finding(s) the Auditor-General headed as unaccounted for or a loss of funds',
+    sw: 'Matokeo {n} ambayo Mkaguzi Mkuu aliyaita pesa zisizohesabika au hasara ya fedha',
+    plain: '{n} finding(s) where the Auditor-General says money or assets were not accounted for',
+  },
+  'county.unaccounted.no_total': {
+    en: 'In the report’s own words, with the page each comes from. No total is shown: the sum involved is not extracted from these findings.',
+    sw: 'Kwa maneno ya ripoti yenyewe, pamoja na ukurasa wa kila moja. Hakuna jumla inayoonyeshwa: kiasi husika hakijatolewa kutoka matokeo haya.',
+    plain: 'Quoted from the report, with the page. We show no total because we could not read the amount from these findings.',
+  },
+  'county.unaccounted.see_all': { en: 'See all counties and votes', sw: 'Tazama kaunti na mafungu yote', plain: 'See the full list' },
   'county.missing.title': { en: 'Missing Funds', sw: 'Pesa Zilizopotea', plain: 'Missing Money' },
   'county.missing.none': { en: 'No missing-funds cases flagged.', sw: 'Hakuna kesi za pesa zilizopotea.', plain: 'No missing money reported.' },
 

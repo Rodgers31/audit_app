@@ -19,7 +19,7 @@ from services.county_budget import (
     BUDGET_PROVENANCE_STAGE_LABELS,
 )
 from services.publication_gate import publishable_audit_criterion
-from services.entity_financials import financial_summary
+from services.entity_financials import financial_summary, summary_budget_source
 
 from database import get_db
 from models import Audit, BudgetLine, Entity, EntityType, FiscalPeriod
@@ -286,7 +286,7 @@ def _money_flow_for_entity(
         summary = financial_summary(budget_lines, budget_lines[0].period)
         allocated = summary["total_allocation"]
         spent = summary["total_spent"]
-        budget_source = "cob_cbirr" if allocated is not None else None
+        budget_source = summary_budget_source(summary)
         # "Committed" = procurement encumbrances (contracts awarded but
         # not yet paid out). This is NOT the same as "exchequer release"
         # — Treasury disbursements aren't currently captured in the COB
@@ -491,7 +491,11 @@ async def national_money_flow(
                 if spending and all(v is not None for v in spending)
                 else None
             )
-            budget_source = "cob_cbirr" if allocated is not None else None
+            budget_source = (
+                "cob_cbirr"
+                if allocated is not None and all(summary_budget_source(s) == "cob_cbirr" for s in summaries)
+                else None
+            )
             source_urls = {source["url"] for s in summaries for source in s["sources"]}
             source_doc_url = (
                 next(iter(source_urls))
@@ -652,7 +656,7 @@ async def all_counties_money_flow(
         alloc, spent = summary["total_allocation"], summary["total_spent"]
         budget_map[eid] = {
             "allocated": alloc,
-            "source": "cob_cbirr" if alloc is not None else None,
+            "source": summary_budget_source(summary),
             "spent": spent,
             "committed": None,
         }

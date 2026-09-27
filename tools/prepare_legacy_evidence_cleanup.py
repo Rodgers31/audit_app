@@ -17,15 +17,17 @@ def render(manifest):
     ) != len(audits):
         raise ValueError("duplicate row ids")
     for e in entities:
-        assert e["after"] == {
+        if e["after"] != {
             k: v for k, v in e["before"].items() if k not in e["remove_keys"]
-        }
+        }:
+            raise ValueError("entity after-image must only remove the approved keys")
     for a in audits:
-        assert (
+        if not (
             a["source_document_id"] == 1836
             and a["extraction_id"] is None
             and a["page_ref"] is None
-        )
+        ):
+            raise ValueError("audit must be an unlinked row from the retired fixture")
     document = manifest["retired_source_document"]
     if (
         document["id"] != 1836

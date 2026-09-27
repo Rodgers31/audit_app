@@ -41,6 +41,8 @@ def county_reported_and_projected(db_session, seed_country, seed_source_doc):
     shows by default). FY2025/26 is the CRA equitable-share projection:
     modelled sector rows with modelled spend and no classification.
     """
+    seed_source_doc.publisher = "Controller of Budget"
+    seed_source_doc.title = "County Budget Implementation Review Report FY2024/25"
     entity = Entity(
         id=530,
         country_id=seed_country.id,

@@ -338,6 +338,8 @@ def county_with_full_cob_shape(db_session, seed_country, seed_source_doc):
     """The shape a real CoB BIRR period has: a Total row, the two economic
     classification rows, a sub-row under Recurrent, and modelled sector rows
     that restate the same money."""
+    seed_source_doc.publisher = "Controller of Budget"
+    seed_source_doc.title = "County Budget Implementation Review Report FY2024/25"
     period = FiscalPeriod(
         id=4900, country_id=seed_country.id, label="FY2024/25",
         start_date=datetime(2024, 7, 1), end_date=datetime(2025, 6, 30),

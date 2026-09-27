@@ -85,6 +85,8 @@ def baringo(db_session, seed_country, seed_source_doc, periods):
     classification rows *alongside* the modelled sector split of the same
     money. FY2025/26 is the CRA equitable-share projection: sector rows only.
     """
+    seed_source_doc.publisher = "Controller of Budget"
+    seed_source_doc.title = "County Budget Implementation Review Report FY2024/25"
     reported, projected = periods
     entity = Entity(
         id=540,

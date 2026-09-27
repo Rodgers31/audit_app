@@ -11,7 +11,7 @@ Session 1, 27 September 2026. No production mutation, deployment or merge is aut
 
 There are no frontend consumers of raw entity metadata. County identity/search consumes the code; officeholder pages consume the sourced name/provenance. Financial, population, project and audit evidence use their dedicated publication paths. Unknown keys, including future keys and nested extras, are private by default. Both response models validate metadata, in addition to the handlers. Malformed metadata must not hide an otherwise valid entity.
 
-Main's comprehensive/legacy missing-funds routes stop reading retired claim arrays. #325 supplies the extracted unaccounted-finding reader; #327 supplies the sourced project reader. Resolve integration in favor of those dedicated readers while retaining the hostile-metadata regressions. The metadata filter is not permission to erase any `Audit` or extraction.
+The comprehensive and national missing-funds routes use the extracted unaccounted-finding reader shared with #325, including its citation-based display. Retired metadata claim arrays remain excluded. #327 supplies the sourced project reader. Resolve integration in favor of those dedicated readers while retaining the hostile-metadata regressions. The metadata filter is not permission to erase any `Audit` or extraction.
 
 `/etl/kenya/sources` is a source catalogue with explicit unknown health, null timestamps, and `live_check_unavailable`. The unshipped developer checker is no longer imported. Measured pipeline observations are available through `/data/freshness`. Repository search found no frontend consumer of the retired live-check response.
 
@@ -71,3 +71,10 @@ Attribution/headline/UI corrections are preserved in `codex/audit-attribution-af
 Transplant commits `2e11db6` (#325 correction) and `e93a669` (#327 correction) individually after those prerequisites land. The main containment commit is `4bdaaf3`. The disposable combined rehearsal ends at `03c0ca3`; its last one-line integration resolution preserves the project reader as described above. This local rehearsal is a receipt, not a release branch.
 
 Backend GitHub CI does not run for prerequisite-branch targets. Main-targeted CI after transplant/retargeting remains a release gate in addition to the local receipts.
+
+## Review corrections, 2026-09-27
+
+- The cleanup renderer uses explicit validation in normal and optimized Python. Five invalid snapshots were rejected before either SQL file was written; the valid manifest generates identical review-only SQL in both modes.
+- `budget_execution_history` uses the same dated financial summaries as the entity API, including authoritative totals, source documents, reported zero and missing spending. `health_history` is empty with `dated_health_components_unavailable`: the old utilization-only grade was not the current composite and cannot be presented as historical health.
+- Money-flow and county budget responses derive CoB attribution from the selected document's publisher and report series. A Treasury total remains a Treasury-sourced figure. Non-CoB and mixed-publisher totals retain document evidence without receiving a CoB code.
+- Both missing-funds routes read extracted, publication-gated findings. No raw metadata fallback or inferred monetary total is restored. Shared source-reader and UI files match #325 so either PR remains usable independently.

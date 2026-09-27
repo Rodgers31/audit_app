@@ -6,7 +6,7 @@ from decimal import Decimal, InvalidOperation
 from models import BudgetLine
 from sqlalchemy.orm import joinedload
 
-from services.county_budget import CLASSIFICATION_CATEGORIES
+from services.county_budget import CLASSIFICATION_CATEGORIES, BUDGET_PROVENANCE_LABELS
 from services.publication_gate import _has_page_locator
 
 
@@ -195,12 +195,32 @@ def entity_financial_series(db, entity_ids):
     return result
 
 
+def summary_budget_source(summary):
+    """A classification row cannot establish who published its report.
+
+    Keep the existing CBIRR code only when the selected document identifies
+    both the publisher and report series. Other publishers retain their exact
+    document metadata in ``sources`` without inheriting a CoB attribution.
+    """
+    if summary["total_allocation"] is None or not summary["sources"]:
+        return None
+    for source in summary["sources"]:
+        publisher = " ".join((source.get("publisher") or "").casefold().split())
+        title = " ".join((source.get("title") or "").casefold().split())
+        if publisher not in {"controller of budget", "office of the controller of budget"}:
+            return None
+        if not ("county" in title and "budget implementation review" in title) and "cbirr" not in title:
+            return None
+    return "cob_cbirr"
+
+
 def publish_county_budget(payload, summary, *, comprehensive=False):
     """Use the same accounting contract for county map, list and detail figures."""
     allocation, spent, rate = (
         summary[key] for key in ("total_allocation", "total_spent", "execution_rate")
     )
     valid = allocation is not None
+    source_code = summary_budget_source(summary)
     published = {
         "total_allocated": allocation,
         "total_spent": spent,
@@ -212,6 +232,13 @@ def publish_county_budget(payload, summary, *, comprehensive=False):
     }
     if comprehensive:
         payload["budget"].update(published)
+        payload["budget"]["source"] = source_code
+        payload["data_sources"]["budget"] = (
+            BUDGET_PROVENANCE_LABELS.get(source_code) or "; ".join(
+                " — ".join(value for value in (source.get("publisher"), source.get("title")) if value)
+                for source in summary["sources"]
+            ) or None
+        ) if valid else None
         payload["budget"]["per_capita_budget"] = (
             round(allocation / payload["demographics"]["population"], 2)
             if allocation is not None and payload["demographics"].get("population")
@@ -244,6 +271,7 @@ def publish_county_budget(payload, summary, *, comprehensive=False):
             payload["data_sources"]["budget"] = None
     else:
         payload.update(
+            budget_source=source_code,
             financial_summary=summary,
             total_budget=allocation,
             budget_2025=allocation,
