@@ -7308,6 +7308,7 @@ async def _setup_etl_scheduler():
 
     # Per-source intervals with jitter seconds
     def jitter(base_seconds: int, spread: int = 900) -> int:
+        # nondeterminism-ok: scheduler jitter spreads job start times; never published
         return max(60, base_seconds + random.randint(-spread, spread))
 
     # OAG: light weekly, deep monthly
@@ -9833,6 +9834,7 @@ async def get_national_debt():
                         ],
                         "domestic_overdraft": ["Central Bank", "CBK", "Overdraft"],
                         "pending_bills": ["Pending Bill", "Arrears"],
+                        # counties-literal-ok: lender-name keywords for classify_loan below, not a verdict on these counties; "County" is the catch-all term
                         "county_guaranteed": [
                             "County",
                             "Nairobi",
