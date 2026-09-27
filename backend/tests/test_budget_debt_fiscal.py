@@ -329,11 +329,16 @@ def seed_pending_bills(db_session, seed_country, seed_source_doc):
     db_session.add(county)
     db_session.flush()
 
-    for day, (lender, amount, fy) in enumerate(
+    # Declared as the pending_bills fetcher stamps a county row since #238:
+    # the Controller of Budget's year-end report, the county side, and the day
+    # the figure is a stock on. An undeclared row is withheld (the fixture's
+    # invented county figures used to pass as sourced), and the writer retires
+    # the previous edition's rows, so a county holds one as-at date.
+    for day, (lender, amount) in enumerate(
         [
-            ("Pending Bills — Suppliers (Nairobi County)", 500_000_000, "FY2024/25"),
-            ("Pending Bills — Salary Arrears (Nairobi County)", 200_000_000, "FY2024/25"),
-            ("Pending Bills — Pension Arrears (Nairobi County)", 100_000_000, "FY2023/24"),
+            ("Pending Bills — Suppliers (Nairobi County)", 500_000_000),
+            ("Pending Bills — Salary Arrears (Nairobi County)", 200_000_000),
+            ("Pending Bills — Pension Arrears (Nairobi County)", 100_000_000),
         ],
         start=1,
     ):
@@ -344,10 +349,16 @@ def seed_pending_bills(db_session, seed_country, seed_source_doc):
                 debt_category=DebtCategory.PENDING_BILLS,
                 principal=amount,
                 outstanding=amount,
-                issue_date=datetime(2025, 1, day),
+                issue_date=datetime(2026, 6, day),
                 currency="KES",
                 source_document_id=seed_source_doc.id,
-                provenance={"fiscal_year": fy},
+                provenance={
+                    "fiscal_year": "FY2025/26",
+                    "source": "cob_pending_bills_etl",
+                    "publication": "cob_cbirr_year_end",
+                    "category": "county",
+                    "as_at": "2026-06-30",
+                },
             )
         )
 
@@ -410,7 +421,12 @@ class TestPendingBillsSummary:
         data = client.get("/api/v1/pending-bills/summary").json()
         assert data["status"] == "success"
         assert data["data_source"] == "loans_table_fallback"
-        assert data["total_pending_amount"] == 800_000_000  # 500M + 200M + 100M
+        # Only the county half is published here, so there is no total: a
+        # grand total needs the national BROP lines stated on the same day
+        # (see _published_pending_bills). The county figure is in top_counties.
+        assert data["total_pending_amount"] is None
+        assert data["county_as_at"] == "2026-06-30"
+        assert data["top_counties_by_amount"][0]["amount"] == 800_000_000  # 500M + 200M + 100M
         # Typed only where the lender string says so; the rest is unclassified.
         assert data["breakdown_by_type"]["salary"] == 200_000_000
         assert data["breakdown_by_type"]["pension"] == 100_000_000
@@ -430,7 +446,9 @@ class TestPendingBillsSummary:
 
     def test_trend_has_entries(self, client, seed_pending_bills):
         data = client.get("/api/v1/pending-bills/summary").json()
-        assert [p["year"] for p in data["trend"]] == ["FY2023/24", "FY2024/25"]
+        assert [(p["year"], p["total_amount"]) for p in data["trend"]] == [
+            ("FY2025/26", 800_000_000)
+        ]
 
     def test_top_counties(self, client, seed_pending_bills):
         data = client.get("/api/v1/pending-bills/summary").json()
