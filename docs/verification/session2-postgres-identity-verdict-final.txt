@@ -1,0 +1,3 @@
+{"case": "correct_control", "passed": true, "exit": 0, "success_claim": true, "last_stderr": []}
+{"case": "wrong_county_200", "passed": true, "exit": 1, "success_claim": false, "last_stderr": ["AssertionError: ('audits', '3', {'county_name': 'Mombasa'})"]}
+{"case": "failed_pytest", "passed": true, "exit": 1, "success_claim": false, "last_stderr": ["AssertionError: 1"]}

@@ -21,6 +21,7 @@ import FiscalYearPicker from '@/components/budget/FiscalYearPicker';
 import PageShell from '@/components/layout/PageShell';
 import ResponsiveTable from '@/components/ui/ResponsiveTable';
 import { useCountyFiscalYears } from '@/lib/react-query';
+import { SSR_HYDRATED_STALE_TIME_MS } from '@/lib/react-query/isr';
 import { useAllCountiesMoneyFlow, useNationalMoneyFlow } from '@/lib/react-query/useMoneyFlow';
 import { transparencyYearOptions } from '@/lib/utils';
 import { MoneyFlowData } from '@/types';
@@ -52,13 +53,11 @@ function fmtKES(n: number | null | undefined): string {
   return `KES ${n.toLocaleString()}`;
 }
 
-function fundingImpact(amount: number): string {
-  if (amount >= 5e9) return `${Math.floor(amount / 10e6)} schools`;
-  if (amount >= 1e9) return `${Math.floor(amount / 3e6)} classrooms`;
-  if (amount >= 100e6) return `${Math.floor(amount / 500e3)} boreholes`;
-  if (amount >= 10e6) return `${Math.floor(amount / 2e6)} health posts`;
-  return '';
-}
+// `fundingImpact()` used to sit here, turning a questioned amount into
+// "≈ N schools / classrooms / boreholes / health posts" at KES 10M / 3M /
+// 500K / 2M each. No source or vintage could be found for any of the four,
+// so it was removed rather than cited (#231). Restore only with a published
+// unit cost, its source and its year shown beside the conversion.
 
 /**
  * The calendar year the in-progress Kenyan fiscal year began in (FY runs
@@ -262,7 +261,7 @@ export default function TransparencyPage() {
   // (FY2025/26 9M, FY2025/26 H1, FY2021/22, FY2020/21) carry no county budget
   // rows, so clicking them emptied the page. Labels arrive bare ("2024/25") so
   // `selectedYear` and the picker buttons compare equal (F37).
-  const { data: fiscalYearsMeta } = useCountyFiscalYears();
+  const { data: fiscalYearsMeta } = useCountyFiscalYears({ staleTime: SSR_HYDRATED_STALE_TIME_MS });
   const { years, default: defaultYear } = useMemo(
     () => transparencyYearOptions(fiscalYearsMeta),
     [fiscalYearsMeta]
@@ -515,7 +514,7 @@ export default function TransparencyPage() {
                   : insights.flagged == null
                     ? 'No Auditor-General report for this year traces to a source document yet. This is not a finding that nothing was questioned.'
                     : insights.flagged > 0
-                      ? `≈ ${fundingImpact(insights.flagged) || 'irregular expenditure'}`
+                      ? "Amounts questioned in the Auditor-General's reports for this year"
                       : 'The published report questioned no amount for this period'
               }
               accent={isProjectedFY ? 'gray' : 'red'}
@@ -728,14 +727,10 @@ export default function TransparencyPage() {
                       <SortHeader label='Efficiency' field='efficiency' />
                       <SortHeader label='Flagged' field='flagged' />
                       <SortHeader label='Gap' field='gap' />
-                      <th className='py-3 pr-4 font-semibold text-gov-dark/60 dark:text-white/60 text-xs uppercase tracking-wider hidden lg:table-cell'>
-                        Impact
-                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {sortedRows.map((row, i) => {
-                      const impact = row.flagged_amount ? fundingImpact(row.flagged_amount) : '';
                       return (
                         <tr
                           key={row.county_id}
@@ -781,13 +776,6 @@ export default function TransparencyPage() {
                               </span>
                             ) : (
                               <span className='text-gray-300 dark:text-neutral-muted/60 text-xs'>—</span>
-                            )}
-                          </td>
-                          <td className='py-3 pr-4 hidden lg:table-cell'>
-                            {impact && (
-                              <span className='text-[11px] text-gov-dark/40 dark:text-white/40 italic'>
-                                ≈ {impact}
-                              </span>
                             )}
                           </td>
                         </tr>

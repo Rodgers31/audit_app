@@ -61,34 +61,6 @@
           }
         },
         {
-          "name": "Get County Statistics",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8004/counties/statistics",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "8004",
-              "path": ["counties", "statistics"]
-            }
-          }
-        },
-        {
-          "name": "Get Specific County Data",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8004/counties/Nakuru",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "8004",
-              "path": ["counties", "Nakuru"]
-            }
-          }
-        },
-        {
           "name": "Get Audit Overview",
           "request": {
             "method": "GET",
@@ -360,43 +332,6 @@
               "host": ["localhost"],
               "port": "8000",
               "path": ["api", "v1", "analytics", "top_spenders"]
-            }
-          }
-        },
-        {
-          "name": "Start Kenya ETL Pipeline",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{}"
-            },
-            "url": {
-              "raw": "http://localhost:8000/api/v1/etl/kenya/start",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "8000",
-              "path": ["api", "v1", "etl", "kenya", "start"]
-            }
-          }
-        },
-        {
-          "name": "Get ETL Job Status",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8000/api/v1/etl/status/job123",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "8000",
-              "path": ["api", "v1", "etl", "status", "job123"]
             }
           }
         },

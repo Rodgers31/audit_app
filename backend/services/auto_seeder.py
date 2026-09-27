@@ -48,22 +48,23 @@ logger = logging.getLogger("auto_seeder")
 #:
 #: This writer produced population_data id=69 — National Government, year 2026,
 #: total_population 82, no source document (issue #190). Its national branch
-#: takes whatever ``fetch_all_population_data`` hands back, and one of that
-#: function's three sources is a regex over the KNBS homepage that matches a
-#: bare number next to the word "population" with no plausibility check. Kenya's
-#: 1948 census counted 5.4 million; nothing below this floor is a national
-#: population, and a row that fails it is dropped loudly rather than stored.
+#: takes whatever ``fetch_all_population_data`` hands back. The 82 was the
+#: KNBS homepage's population *density*, read by a regex that #204 removed.
+#: Kenya's 1948 census counted 5.4 million; nothing below this floor is a
+#: national population, and a row that fails it is dropped loudly rather than
+#: stored.
 MIN_NATIONAL_POPULATION = 5_000_000
 
+# Request-serving workers own only these lightweight refreshes. PDF registry
+# jobs (audits, counties_budget, pending_bills, stalled_projects) belong to the
+# dedicated .github/workflows/seed.yml runner with its bounded CLI budgets.
+# A thread or coroutine timeout cannot bound a parser's memory in this process.
 # Refresh schedule configuration (hours between refreshes)
 REFRESH_SCHEDULE = {
     "debt": 24,  # Daily - CBK updates monthly but we check daily
     "population": 720,  # Monthly - Census data changes rarely
     "economic": 168,  # Weekly - GDP/CPI updated quarterly/monthly
-    "counties": 168,  # Weekly - Budget implementation updates
-    "budgets": 168,  # Weekly - Treasury releases
-    "audits": 168,  # Weekly - OAG releases
-    "counties_budget": 168,  # Weekly — CoB CBIRR releases
+    "counties": 168,  # Weekly - County reference refresh
 }
 
 # Kenya's 47 counties - Official codes (ISO 3166-2:KE)
@@ -182,22 +183,6 @@ class AutoSeeder:
             await self.seed_all_domains()
         except Exception as exc:
             logger.warning(f"[AUTO-SEEDER] Initial seed failed (non-critical): {exc}")
-
-        # Backfill last_refresh ONLY for REFRESH_SCHEDULE domains that
-        # aren't boot-seeded (registry-only: budgets, audits,
-        # counties_budget). Without this they have last_refresh=None
-        # forever and the hourly tick re-runs the registry pipeline
-        # (pdfplumber + pandas + HTTP scrapes) every hour — which OOMs
-        # a 512 MB worker on Render.
-        #
-        # Boot-seeded domains are deliberately excluded: if their seed
-        # raised, last_refresh stays None and the hourly tick retries
-        # them on next iteration — that's the existing transient-failure
-        # behaviour and we don't want to suppress it.
-        boot_time = datetime.now(timezone.utc)
-        for domain in REFRESH_SCHEDULE:
-            if domain not in self._BOOT_DOMAINS:
-                self.last_refresh.setdefault(domain, boot_time)
 
         await self._refresh_loop()
 
@@ -319,59 +304,12 @@ class AutoSeeder:
             await self._seed_population_live()
         elif domain == "economic":
             await self._seed_economic_live()
-        elif domain in ("counties_budget", "audits", "budgets"):
-            # Delegate to the seeding-registry domain so the CoB CBIRR and
-            # OAG audit data used by the Follow-the-Money waterfall stay
-            # current without a manual CLI run.
-            await self._seed_registry_domain(
-                "counties_budget" if domain == "budgets" else domain
-            )
+        else:
+            raise ValueError(f"{domain} is owned by the dedicated seeding runner")
 
     async def _seed_registry_domain(self, domain_name: str):
-        """Run a registry-based seeding domain (counties_budget, audits).
-
-        Delegates to the same pipeline the CLI uses so CoB CBIRR and OAG
-        audit data refresh on the same schedule as the rest of the
-        Follow-the-Money waterfall, without requiring a manual run.
-        """
-        logger.info(
-            "[AUTO-SEEDER] Running registry domain %s via seeding pipeline",
-            domain_name,
-        )
-        try:
-            from seeding.config import get_settings
-            from seeding.registries import REGISTRY, load_builtin_domains
-            from seeding.types import DomainRunContext
-
-            load_builtin_domains()
-            runner = REGISTRY.get(domain_name)
-            if runner is None:
-                logger.warning(
-                    "[AUTO-SEEDER] Registry domain %s not registered", domain_name
-                )
-                return
-
-            settings = get_settings()
-            loop = asyncio.get_running_loop()
-
-            def _run() -> None:
-                with SessionLocal() as db:
-                    ctx = DomainRunContext(
-                        since=None, dry_run=False, job_id=None
-                    )
-                    runner(db, settings, ctx)
-                    db.commit()
-
-            await loop.run_in_executor(None, _run)
-            logger.info(
-                "[AUTO-SEEDER] Registry domain %s refresh complete", domain_name
-            )
-        except Exception as exc:
-            logger.warning(
-                "[AUTO-SEEDER] Registry domain %s refresh failed: %s",
-                domain_name,
-                exc,
-            )
+        """Refuse even direct calls: heavy jobs must never share the web worker."""
+        raise ValueError(f"{domain_name} is owned by the dedicated seeding runner")
 
     async def _seed_counties_live(self):
         """
@@ -543,11 +481,23 @@ class AutoSeeder:
             )
             return
 
+        # A figure whose vintage the source did not state is refused, not filed
+        # under today's date. `or datetime.now().year` here is what made
+        # population_data id=69's year equal the year it was written (#204).
+        census_year = population_data.get("census_year")
+        if not census_year:
+            logger.error(
+                "[AUTO-SEEDER] Refusing population data with no stated year "
+                "(national=%s, %d county record(s)). Source: %s",
+                population_data.get("national_population"),
+                len(population_data.get("counties") or []),
+                population_data.get("source", "unknown"),
+            )
+            return
+
         with SessionLocal() as db:
             records_created = 0
             records_updated = 0
-
-            census_year = population_data.get("census_year") or datetime.now().year
 
             # Update county populations
             for county_pop in population_data.get("counties", []):
@@ -781,6 +731,10 @@ class AutoSeeder:
             # non-empty means data is going stale; ≥3 has already alerted.
             "consecutive_failures": dict(self._consecutive_failures),
             "next_refresh": self._get_next_refresh_times(),
+            "external_job_owner": {
+                "domains": ["audits", "counties_budget", "pending_bills", "stalled_projects"],
+                "runner": ".github/workflows/seed.yml (seeding.cli)",
+            },
         }
 
     def _get_next_refresh_times(self) -> Dict[str, str]:

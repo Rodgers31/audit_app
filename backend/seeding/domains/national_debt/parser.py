@@ -29,6 +29,7 @@ class DebtRecord:
         debt_category: str | None = None,
         interest_rate: Decimal | None = None,
         notes: str | None = None,
+        interest_terms: dict | None = None,
     ):
         self.entity_name = entity_name
         self.entity_type = entity_type
@@ -47,6 +48,16 @@ class DebtRecord:
         self.debt_category = debt_category
         self.interest_rate = interest_rate
         self.notes = notes
+        #: What this row may publish about its rate and annual cost — a
+        #: sourced value or a reason there is none. See ``interest_terms``.
+        self.interest_terms = interest_terms
+
+
+def _declared(value: Any) -> str | None:
+    """A declared label, or None when the payload declares nothing usable."""
+    if not isinstance(value, str):
+        return None
+    return value.strip() or None
 
 
 def parse_debt_payload(payload: dict[str, Any]) -> list[DebtRecord]:
@@ -81,6 +92,9 @@ def parse_debt_payload(payload: dict[str, Any]) -> list[DebtRecord]:
     loans_data = payload.get("loans", [])
     source_url = payload.get("source_url")
     source_title = payload.get("source_title", "National Treasury Debt Bulletin")
+    # Who published the payload's own source. It belongs to ``source_url``, so
+    # a row inherits it only when it inherits that URL too (issue #274).
+    payload_publisher = _declared(payload.get("publisher"))
 
     logger.info(f"Parsing {len(loans_data)} debt records")
 
@@ -96,9 +110,11 @@ def parse_debt_payload(payload: dict[str, Any]) -> list[DebtRecord]:
             principal = Decimal(str(loan_data["principal"]))
             outstanding = Decimal(str(loan_data["outstanding"]))
 
-            # Parse optional interest rate
+            # Parse optional interest rate. ``is not None``, not truthiness:
+            # a published 0% is a rate, and an absent one is None — the old
+            # ``if loan_data.get(...)`` could not tell them apart.
             interest_rate = None
-            if loan_data.get("interest_rate"):
+            if loan_data.get("interest_rate") is not None:
                 interest_rate = Decimal(str(loan_data["interest_rate"]))
 
             record = DebtRecord(
@@ -115,10 +131,18 @@ def parse_debt_payload(payload: dict[str, Any]) -> list[DebtRecord]:
                 # without this they persisted as if CBK had published them.
                 source_url=loan_data.get("source_url") or source_url,
                 source_title=loan_data.get("source_title") or source_title,
-                publisher=loan_data.get("publisher"),
+                publisher=(
+                    _declared(loan_data.get("publisher"))
+                    or (
+                        payload_publisher
+                        if (loan_data.get("source_url") or source_url) == source_url
+                        else None
+                    )
+                ),
                 debt_category=loan_data.get("debt_category"),
                 interest_rate=interest_rate,
                 notes=loan_data.get("notes"),
+                interest_terms=loan_data.get("interest_terms"),
             )
 
             records.append(record)

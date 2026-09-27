@@ -1,0 +1,6 @@
+PASS: older writer blocks, then rejects after newer edition commits
+PASS: rolled-back newer edition leaves prior edition eligible for correction
+PASS: two same-date corrections serialize and the later correction persists
+PASS: newer writer follows and replaces committed same-date correction
+PASS: late-record error rolls back the savepoint even if outer caller commits
+PostgreSQL concurrency verification: five scenarios passed; four observed lock waits.

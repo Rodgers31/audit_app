@@ -1,15 +1,20 @@
+'use client';
+
 /**
  * Financial overview section for audit reports
  */
 import { County } from '@/types';
 import { DollarSign } from 'lucide-react';
 import { formatCurrency } from './auditUtils';
+import { countyOwnSourceRevenueLabel, countyRevenueNotes } from '@/lib/counties/revenueNotes';
+import { useLang } from '@/lib/i18n/LangProvider';
 
 interface FinancialOverviewProps {
   county: County;
 }
 
 export default function FinancialOverview({ county }: FinancialOverviewProps) {
+  const { t } = useLang();
   return (
     <div>
       <h5 className='text-lg font-semibold text-gray-900 dark:text-neutral-text mb-4 flex items-center gap-2'>
@@ -31,12 +36,13 @@ export default function FinancialOverview({ county }: FinancialOverviewProps) {
           </div>
         </div>
         <div className='p-4 bg-purple-50 rounded-xl border border-purple-200'>
-          <div className='text-sm text-purple-600 font-medium mb-1'>Revenue Collected</div>
+          <div className='text-sm text-purple-600 font-medium mb-1'>{countyOwnSourceRevenueLabel(county.revenue, t)}</div>
           <div className='text-xl font-bold text-purple-700'>
             {county.revenueCollection != null
               ? formatCurrency(county.revenueCollection)
               : '—'}
           </div>
+          {county.revenue && <p className='mt-2 text-xs text-purple-800'>{countyRevenueNotes(county.revenue, formatCurrency, t).join(' · ')}</p>}
         </div>
         <div className='p-4 bg-red-50 rounded-xl border border-red-200'>
           <div className='text-sm text-red-600 font-medium mb-1'>Pending Bills</div>

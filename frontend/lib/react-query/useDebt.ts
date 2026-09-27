@@ -22,6 +22,9 @@ import {
   getPendingBills,
   getPendingBillsSummary,
   getTopLoans,
+  getAnnualDebtReports,
+  AnnualDebtReportsResponse,
+  NationalLoansResponse,
   PendingBillsResponse,
   PendingBillsSummaryResponse,
 } from '../api/debt';
@@ -38,6 +41,7 @@ const QUERY_KEYS = {
   comparison: (countyIds: string[]) => ['debt', 'comparison', countyIds] as const,
   topLoans: (limit: number) => ['debt', 'top-loans', limit] as const,
   nationalLoans: ['debt', 'national-loans'] as const,
+  annualReports: ['debt', 'annual-reports'] as const,
   pendingBills: ['debt', 'pending-bills'] as const,
   pendingBillsSummary: ['debt', 'pending-bills-summary'] as const,
   countyPendingBills: (countyId: string) => ['debt', 'pending-bills', 'county', countyId] as const,
@@ -179,7 +183,9 @@ export const useDebtRiskAssessment = (
 };
 
 // Get national government individual loans
-export const useNationalLoans = (options?: Omit<UseQueryOptions<any>, 'queryKey' | 'queryFn'>) => {
+export const useNationalLoans = (
+  options?: Omit<UseQueryOptions<NationalLoansResponse>, 'queryKey' | 'queryFn'>
+) => {
   return useQuery({
     queryKey: QUERY_KEYS.nationalLoans,
     queryFn: getNationalLoans,
@@ -238,6 +244,18 @@ export const useDebtSustainability = (
     queryKey: QUERY_KEYS.debtSustainability,
     queryFn: getDebtSustainability,
     staleTime: 60 * 60 * 1000,
+    ...options,
+  });
+};
+
+// Treasury's Annual Public Debt Reports, discovered from Treasury's listing.
+export const useAnnualDebtReports = (
+  options?: Omit<UseQueryOptions<AnnualDebtReportsResponse>, 'queryKey' | 'queryFn'>
+) => {
+  return useQuery({
+    queryKey: QUERY_KEYS.annualReports,
+    queryFn: getAnnualDebtReports,
+    staleTime: 12 * 60 * 60 * 1000,
     ...options,
   });
 };

@@ -69,7 +69,7 @@ from ...http_client import SeedingHttpClient
 from ...utils import load_json_resource
 from .cbk_bulletin import fetch_domestic_debt_from_cbk_bulletin
 from .cbk_web_tables import check_bond_coverage, fetch_bond_register, partition_ambiguous
-from .cbk_web_tables import fetch_public_debt_monthly
+from .cbk_web_tables import fetch_public_debt_monthly, fetch_tbill_91d_yield
 from .wb_ids_creditors import fetch_external_creditors
 from .wb_ids import fetch_external_debt_from_wb_ids
 
@@ -347,22 +347,185 @@ def _published_bond_stock_kes(payload: Dict[str, Any]) -> float | None:
     return total or None
 
 
+#: Why a row with no publisher's rate carries none. Kept as data so a test can
+#: hold the page to exactly these sentences.
+NO_PUBLISHED_RATE_REASON = (
+    "No publisher this site reads gives an interest rate or an interest-paid "
+    "figure for this facility."
+)
+FIXTURE_ONLY_RATE_REASON = (
+    "Live sources were not fetched on this run, and the April 2025 fixture's "
+    "rates are not published."
+)
+
+
+def _strip_fixture_rates(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Remove the fixture's interest rates before anything can persist them.
+
+    The fixture carries April-2025 rates (14.5% bonds, 16% bills, 1.25% World
+    Bank ...). Nothing ever refreshed them: overlays carry no rate and the
+    writer kept whatever was stored. CBK's 91-day yield was 8.778% the day
+    this was measured, against the fixture's 16%. A rate either comes from a
+    live publisher on this run, with its source, or is absent — see
+    ``interest_terms``.
+    """
+    loans = []
+    for loan in payload.get("loans", []):
+        loan = dict(loan)
+        loan["interest_rate"] = None
+        loan.pop("interest_terms", None)
+        loans.append(loan)
+    return {**payload, "loans": loans}
+
+
+def _bond_coupon_terms(
+    loan: Dict[str, Any], bond_register: Dict[str, Any]
+) -> Dict[str, Any] | None:
+    """Face-weighted coupon over the CBK register, applied to the bond row.
+
+    Arithmetic on published coupons, and the register sees only part of the
+    stock (auction issues since 2007), so its coverage goes into the label
+    rather than a footnote nobody reads.
+    """
+    from .interest_terms import published_rate_terms
+
+    priced = [
+        s
+        for s in bond_register.get("securities", [])
+        if s.get("coupon_rate") is not None and (s.get("face_value_kes") or 0) > 0
+    ]
+    face = sum(float(s["face_value_kes"]) for s in priced)
+    if not priced or face <= 0:
+        return None
+    rate = sum(float(s["face_value_kes"]) * float(s["coupon_rate"]) for s in priced) / face
+    coverage = (bond_register.get("coverage") or {}).get("coverage_ratio")
+    coverage_text = f", {coverage:.0%} of the bond stock" if coverage else ""
+    return published_rate_terms(
+        rate_pct=rate,
+        basis="coupon_weighted_average",
+        label=(
+            f"Average coupon of the {len(priced)} bonds in CBK's register, "
+            f"weighted by face value{coverage_text}"
+        ),
+        source={
+            "publisher": "Central Bank of Kenya",
+            "title": bond_register.get("source_title") or "CBK — Issues of Treasury Bonds",
+            "url": bond_register.get("source_url"),
+            "as_of": bond_register.get("as_of"),
+        },
+        outstanding_kes=_row_amount_kes(loan),
+        cost_label=(
+            "Modelled: balance × the register's average coupon. The register "
+            "does not cover the whole stock."
+        ),
+    )
+
+
+def _tbill_yield_terms(loan: Dict[str, Any], tbill: Dict[str, Any]) -> Dict[str, Any]:
+    from .interest_terms import published_rate_terms
+
+    rate = tbill["rate"]
+    return published_rate_terms(
+        rate_pct=rate.rate_pct,
+        basis="auction_yield",
+        label=(
+            f"CBK's 91-day T-bill yield (publisher date: {rate.cbk_date_text or 'not stated'}; "
+            "date meaning unconfirmed). The stock also "
+            "holds 182- and 364-day bills sold at other auctions and rates."
+        ),
+        source={
+            "publisher": "Central Bank of Kenya",
+            "title": tbill["source_title"],
+            "url": tbill["source_url"],
+            "as_of": None,
+            "publisher_date": rate.cbk_date.isoformat() if rate.cbk_date else None,
+            "publisher_date_text": rate.cbk_date_text,
+            "date_basis": "publisher_date_meaning_unconfirmed",
+            "retrieved_at": tbill["retrieved_at"],
+        },
+        outstanding_kes=_row_amount_kes(loan),
+        cost_label=(
+            "Modelled: balance × the 91-day yield. Not a published interest "
+            "figure for the bill stock."
+        ),
+    )
+
+
+def _declare_interest_terms(
+    payload: Dict[str, Any],
+    bond_register: Dict[str, Any] | None,
+    tbill: Dict[str, Any] | None,
+    default_reason: str = NO_PUBLISHED_RATE_REASON,
+) -> Dict[str, Any]:
+    """Give every row an interest declaration — a sourced value or a reason.
+
+    Rows the IDS pull built already carry theirs. Domestic rows get CBK's
+    figures where CBK publishes one this run; every other row is declared
+    absent with ``default_reason``, so no row reaches the writer undeclared.
+    """
+    from .interest_terms import absent_terms, validate_terms
+
+    declared: List[Dict[str, Any]] = []
+    counts: Dict[str, int] = {}
+    for loan in payload.get("loans", []):
+        loan = dict(loan)
+        terms = loan.get("interest_terms")
+        category = loan.get("debt_category") or ""
+        if terms is None and category == "domestic_bonds" and bond_register:
+            if "treasury bond" in _lender_key(loan):
+                terms = _bond_coupon_terms(loan, bond_register)
+        if terms is None and category == "domestic_bills" and tbill:
+            terms = _tbill_yield_terms(loan, tbill)
+        if terms is None or validate_terms(terms):
+            if terms is not None:
+                logger.warning(
+                    "Interest terms for %s failed validation and are withheld: %s",
+                    loan.get("lender"), validate_terms(terms),
+                )
+            terms = absent_terms(default_reason)
+        loan["interest_terms"] = terms
+        # The column mirrors the declaration and nothing else: a published
+        # rate, or NULL. Never the fixture's, never a manufactured 0.
+        # Rounded to the column's precision (Numeric(5,2)) so the writer's
+        # change check compares like with like instead of seeing a new rate
+        # on every run. The declaration keeps the full figure.
+        loan["interest_rate"] = (
+            round(terms["rate_pct"], 2) if terms["rate_pct"] is not None else None
+        )
+        declared.append(loan)
+        kind = (
+            f"cost:{terms['annual_cost_basis']}"
+            if terms["annual_cost_kes"] is not None
+            else "cost:absent"
+        )
+        counts[kind] = counts.get(kind, 0) + 1
+
+    meta = dict(payload.get("metadata", {}))
+    meta["interest_terms_declared"] = counts
+    logger.info("Interest declarations: %s", counts)
+    return {**payload, "loans": declared, "metadata": meta}
+
+
 def fetch_debt_payload(
     client: SeedingHttpClient, settings: SeedingSettings
 ) -> dict[str, Any]:
     """Return a debt payload combining fixture baseline with live WB IDS."""
 
     # ── Baseline: fixture ──────────────────────────────────────────
-    payload = load_json_resource(
-        url=settings.national_debt_dataset_url,
-        client=client,
-        logger=logger,
-        label="national_debt",
+    payload = _strip_fixture_rates(
+        load_json_resource(
+            url=settings.national_debt_dataset_url,
+            client=client,
+            logger=logger,
+            label="national_debt",
+        )
     )
 
     if not settings.live_pdf_fetch_enabled:
         logger.info("Live fetch disabled; using fixture for national debt")
-        return _drop_subsumed_rows(payload)
+        return _declare_interest_terms(
+            _drop_subsumed_rows(payload), None, None, FIXTURE_ONLY_RATE_REASON
+        )
 
     # ── Overlay: World Bank IDS per-creditor external debt ─────────
     try:
@@ -598,6 +761,17 @@ def fetch_debt_payload(
 
     if bond_register:
         payload = {**payload, "bond_register": bond_register}
+
+    # ── Declare: what each row may publish about its interest ──────
+    # After the register (the bond coupon comes from it) and after every
+    # overlay (overlays replace whole row dicts, which is how a fixture rate
+    # once survived beside a live balance).
+    tbill = None
+    try:
+        tbill = fetch_tbill_91d_yield(client)
+    except Exception as exc:  # noqa: BLE001 - the row then declares why
+        logger.warning("CBK 91-day T-bill yield unavailable: %s", exc)
+    payload = _declare_interest_terms(payload, bond_register, tbill)
 
     # Provenance: "live" requires that an authoritative overlay actually
     # landed. A fixture baseline with no overlay is fixture data, however

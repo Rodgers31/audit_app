@@ -1,0 +1,95 @@
+{
+  "confirmed_at": "2026-09-27",
+  "unit": "billion_kes",
+  "period": "2025-07-01/2026-06-30",
+  "official_page": "https://www.kra.go.ke/annual-revenue-performance-fy-2025-2026",
+  "dashboard": {
+    "source_url": "https://krarevenue2526testingdashboard.bolt.host/assets/index-n9eGcpF_.js",
+    "sha256": "f3cf2fd1075f4af3eb0aafb92ed6c8a1e336437b2603a9dc67a28283561d03d7",
+    "source_last_updated_label": "June 2026",
+    "publication_date": null,
+    "total": "2844",
+    "exchequer": "2568",
+    "agency": "276.139",
+    "domestic": "1851",
+    "customs": "988.780",
+    "paye": "598.807",
+    "domestic_vat": "355.255",
+    "corporation_tax": "347.066",
+    "domestic_excise": "61.845"
+  },
+  "publisher_pdf": {
+    "source_url": "https://www.kra.go.ke/images/publications/FY25-26_Annual-Revenue-Performance_.pdf",
+    "sha256": "1eca29e68c9e203e4d84a15f5cc6fed2aa075893f7d586d2209e6750a24d52a4",
+    "publication_date": null,
+    "pdf_pages_one_based": {
+      "total": 3,
+      "exchequer": 10,
+      "agency": 11,
+      "domestic_and_customs": 12,
+      "domestic_tax_heads": 13
+    },
+    "total": "2844",
+    "exchequer": "2568",
+    "agency": "276.135",
+    "domestic": "1851",
+    "customs": "988.757",
+    "paye": "598.803",
+    "domestic_vat": "355.255",
+    "corporation_tax": "347.066",
+    "domestic_excise": "61.844"
+  },
+  "reconciliation": {
+    "dashboard_domestic_plus_customs": "2839.780",
+    "dashboard_unreconciled_difference_from_total": "4.220",
+    "dashboard_exchequer_plus_agency": "2844.139",
+    "dashboard_naive_exchequer_minus_heads": "216.247",
+    "customs_exchequer_component": null,
+    "valid_other_tax_revenue": null,
+    "note": "The sources corroborate the release but disagree on several exact amounts. Neither source provides the Exchequer component of Customs; an Other Tax Revenue residual cannot be reconciled.",
+    "dashboard_minus_pdf": {
+      "agency": "0.004",
+      "customs": "0.023",
+      "paye": "0.004",
+      "domestic_excise": "0.001"
+    },
+    "version_caution": "Both artifacts express these figures in billion KES to three decimals. Differences of 0.004 or 0.023 billion are not rounding of an identical value to the displayed precision. No publisher revision date or revision explanation was located; do not assume which artifact supersedes the other. The 0.139 billion difference between dashboard total and Exchequer plus agency may reflect rounding of trillion-denominated totals; the 4.220 billion domestic-plus-Customs gap is unreconciled."
+  },
+  "customs_agency_basis_evidence": {
+    "customs_press_release": {
+      "source_url": "https://www.kra.go.ke/news-center/press-release/2238-customs-surpasses-revenue-target,-records-remarkable-kshs-3-5-billion-average-daily-collection",
+      "publication_date": "2025-07-17",
+      "period": "FY 2024/25",
+      "paragraphs": "1-5 after the title",
+      "customs": "879.329",
+      "non_oil_customs": "541.053",
+      "oil_customs": "338.276",
+      "road_maintenance_levy_in_customs": "119.662",
+      "note": "Customs department collection is 541.053 + 338.276 = 879.329 billion; its performance narrative includes Road Maintenance Levy, an agency levy."
+    },
+    "audited_annual_report": {
+      "source_url": "https://www.kra.go.ke/images/publications/KRA-AUDITED-FIN-STMTS-FY2024-25.pdf",
+      "title": "Kenya Revenue Authority Annual Report and Financial Statements for the year ended 30 June 2025",
+      "sha256": "c90d51af6b81ccbc8996299aa3d80dbf4fc1a426c653a5916f6f60ee4b684040",
+      "pages": [
+        {"pdf_page": 31, "printed_page": "xxix", "content": "Revenue Performance: total 2.572 trillion, Exchequer 2.323 trillion, agency 248.28 billion KES."},
+        {"pdf_page": 44, "printed_page": "xlii", "content": "Customs 879.329 billion and Domestic Taxes 1.688 trillion KES."},
+        {"pdf_page": 45, "printed_page": "xliii", "content": "Department totals and tax heads: PAYE 560.963, Corporation Tax 304.803, Domestic Excise 69.385, Domestic VAT 327.336 billion KES."},
+        {"pdf_page": 80, "printed_page": "15", "content": "Note 6(a): Road Maintenance Levy and Petroleum Development Levy commissions are income earned from agency revenue collections. Table amounts are commission income in KES thousands, not underlying levy collections; they must not be subtracted from Customs collections."}
+      ],
+      "customs_agency_allocation": null
+    }
+  },
+  "production_read_only_receipt": {
+    "confirmed_at": "2026-09-27",
+    "url": "https://www.auditgava.com/api/v1/budget/enhanced",
+    "status_code": 200,
+    "other_tax_revenue_actuals": {
+      "FY 2022/23": "174.6",
+      "FY 2023/24": "222.4",
+      "FY 2024/25": "181.2",
+      "FY 2025/26": null
+    },
+    "note": "FY2025/26 is still projected in the live API. This receipt does not prove database row IDs, extraction rows or production adoption of source changes."
+  }
+}

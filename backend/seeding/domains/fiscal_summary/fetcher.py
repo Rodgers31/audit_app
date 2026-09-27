@@ -80,6 +80,8 @@ def fetch_fiscal_summary_payload(
     estimates_applied = False
     revenue_status = "not_attempted"
     revenue_applied = False
+    framework_status = "not_attempted"
+    framework_applied = False
 
     # Try World Bank enrichment
     if settings.enrich_with_worldbank and settings.live_pdf_fetch_enabled:
@@ -194,6 +196,20 @@ def fetch_fiscal_summary_payload(
             revenue_status = f"error({type(exc).__name__})"
             logger.warning("Treasury revenue estimates step skipped: %s", exc)
 
+        # The split — borrowing, recurrent / development / counties, tax
+        # versus non-tax — from the Budget Summary's Annex Table 2a. Runs
+        # LAST: each past year's column is found by the ordinary revenue the
+        # step above just published for it, so that step has to have run.
+        try:
+            editions, listing_facts = _fetch_budget_summary_editions(client, settings)
+            payload["_run_facts"] = listing_facts
+            payload, framework_status = _apply_fiscal_framework(payload, editions)
+            framework_applied = framework_status.startswith("applied=")
+            logger.info("fiscal_summary Treasury fiscal framework: %s", framework_status)
+        except Exception as exc:
+            framework_status = f"error({type(exc).__name__})"
+            logger.warning("Treasury fiscal framework step skipped: %s", exc)
+
     # Provenance, graded by WHAT actually moved. "live" is reserved for a run
     # in which a publisher replaced the headline budget; a World-Bank-only run
     # is still live data but says so precisely, because a mode of "live" on
@@ -202,9 +218,10 @@ def fetch_fiscal_summary_payload(
 
     detail = (
         f"COB overlay: {cob_status}; Treasury estimates: {estimates_status}; "
-        f"Treasury revenue: {revenue_status}; World Bank: {wb_years} year(s)"
+        f"Treasury revenue: {revenue_status}; "
+        f"Treasury fiscal framework: {framework_status}; World Bank: {wb_years} year(s)"
     )
-    if estimates_applied or cob_promoted or revenue_applied:
+    if estimates_applied or cob_promoted or revenue_applied or framework_applied:
         # A headline budget figure was actually replaced from a publisher.
         mark_live("fiscal_summary", detail=detail)
     elif wb_applied:
@@ -440,6 +457,245 @@ def _apply_revenue_estimates(payload, series):
     if not applied:
         return payload, f"none_applied({refused})"
     return payload, f"applied={applied}" + (f" refused={refused}" if refused else "")
+
+
+#: Key names of the facts the freshness gate reads off the ingestion job.
+#: ``seeding/staleness.py`` imports these rather than spelling them again.
+LISTING_NEWEST_FY_FACT = "budget_summary_listing_newest_fy"
+LISTING_EDITIONS_FACT = "budget_summary_editions"
+
+
+def _fetch_budget_summary_editions(client, settings):
+    """Read EVERY Budget Summary on Treasury's listing, not just the newest.
+
+    Returns ``(editions, facts)``. ``editions`` is ``[(url, Edition)]``,
+    newest fiscal year first, holding only the editions that could be read.
+    ``facts`` records what the listing carried, including the ones that could
+    not, and becomes the ingestion job's metadata for the freshness gate.
+
+    Why every edition: one edition carries the split for its own year and
+    for the settled years before it. When FY 2027/28's edition lands and
+    cannot be read, FY 2026/27's own edition still supplies FY 2026/27, so
+    one bad document costs one year and not the series. The gate reports
+    the unread year either way.
+
+    Why the facts are recorded even on failure: "a newer Budget Summary
+    exists than the newest year with a split" has to be sayable when the
+    newer one is exactly what failed to parse.
+    """
+    from pathlib import Path
+
+    from ...discovery import find_pdf_links, parse_fiscal_year
+    from ...parse_cache import parse_with_cache
+    from ...pdf_download import get_or_download_pdf
+    from ..counties_budget.fetcher import _pdf_stack_versions
+    from .fiscal_framework import (
+        FiscalFrameworkError,
+        edition_fiscal_year,
+        extract_page_texts,
+        read_edition,
+    )
+
+    page_url = settings.treasury_budget_summary_page_url
+    facts: Dict[str, Any] = {
+        "budget_summary_listing_url": page_url,
+        LISTING_NEWEST_FY_FACT: None,
+        LISTING_EDITIONS_FACT: {},
+    }
+    try:
+        response = client.get(page_url, raise_for_status=True)
+    except Exception as exc:
+        facts["budget_summary_listing_status"] = f"unreachable({type(exc).__name__})"
+        return [], facts
+    facts["budget_summary_listing_status"] = "read"
+
+    links = []
+    for absolute, _href in find_pdf_links(response.text, page_url):
+        low = absolute.lower()
+        if "budget" not in low or "summary" not in low:
+            continue
+        # Same exclusions as the revenue step: a draft is not a published
+        # figure and a supplementary revises the year mid-flight.
+        if any(x in low for x in ("draft", "supplementary", "supp-")):
+            continue
+        links.append(absolute)
+
+    editions = []
+    for url in links:
+        link_fy = parse_fiscal_year(url)
+        entry: Dict[str, Any] = {"fiscal_year": link_fy}
+        facts[LISTING_EDITIONS_FACT][url] = entry
+        try:
+            pdf_path = get_or_download_pdf(
+                client,
+                url,
+                cache_dir=Path(settings.cache_path) / "pdfs",
+                ttl_seconds=settings.pdf_cache_ttl_seconds,
+                max_seconds=settings.pdf_download_timeout_seconds,
+                max_bytes=settings.pdf_download_max_bytes,
+            )
+            records = parse_with_cache(
+                pdf_path,
+                cache_dir=Path(settings.cache_path) / "pdfs",
+                kind="budget_summary_pages",
+                parse_fn=lambda p=pdf_path: extract_page_texts(p),
+                enabled=settings.parse_cache_enabled,
+                key_extra=_pdf_stack_versions(),
+            )
+        except Exception as exc:
+            entry["status"] = f"unreadable({type(exc).__name__})"
+            continue
+        pages = [r.get("text") or "" for r in sorted(records, key=lambda r: r["page"])]
+        try:
+            entry["fiscal_year"] = edition_fiscal_year(pages, fiscal_year=link_fy)
+            edition = read_edition(pages, fiscal_year=entry["fiscal_year"])
+        except FiscalFrameworkError as exc:
+            entry["status"] = f"refused:{exc.reason}"
+            entry["detail"] = exc.detail
+            continue
+        entry["status"] = "read"
+        entry["annex_page"] = edition.table.page
+        entry["approved_column_score"] = list(edition.narrative_score)
+        editions.append((url, edition))
+
+    # Newest year the LISTING names, readable or not. A dead link or an
+    # unparseable edition still counts: it is a budget Treasury has
+    # published and the site does not yet carry.
+    years = [e["fiscal_year"] for e in facts[LISTING_EDITIONS_FACT].values() if e.get("fiscal_year")]
+    facts[LISTING_NEWEST_FY_FACT] = max(years) if years else None
+    facts["budget_summary_undated_links"] = sorted(
+        u for u, e in facts[LISTING_EDITIONS_FACT].items() if not e.get("fiscal_year")
+    )
+    editions.sort(key=lambda pair: pair[1].fiscal_year, reverse=True)
+    return editions, facts
+
+
+def _apply_fiscal_framework(payload, editions):
+    """Write each fiscal year's gated split onto its row. Pure; idempotent.
+
+    For every row, editions are tried newest first and the first one that
+    yields a gated column wins:
+
+    * the edition's OWN year takes the column the narrative identifies (the
+      approved budget);
+    * any other year takes the column printing the ordinary revenue that
+      ``revenue_estimates`` published for it from the SAME document. A row
+      whose revenue came from elsewhere is not joined, because it is a
+      different vintage.
+
+    What is written, all on the fiscal-framework basis, with the total it
+    reconciles to (``fiscal_framework.total_expenditure_billion``):
+
+    * ``recurrent_spending``, ``development_spending``, ``county_allocation``
+      (county TRANSFERS: the equitable share plus conditional allocations,
+      because that is what reconciles; the equitable share alone is carried
+      in the object), and ``total_borrowing`` (total deficit financing);
+    * ``tax_revenue`` / ``non_tax_revenue`` only when their sum IS the row's
+      ``total_revenue``. A split that does not add up to the total it is
+      shown beside is withheld, with the reason on the row;
+    * ``total_revenue`` itself only for the edition's own year, and only
+      when no revenue is there yet. That is the year ``revenue_estimates``
+      refuses without a hand-entered BPS figure, which is next year's
+      situation by construction.
+
+    A row no edition can supply keeps what it had, and records why.
+    """
+    from decimal import Decimal
+
+    from .fiscal_framework import (
+        FISCAL_FRAMEWORK_BASIS,
+        FiscalFrameworkError,
+        framework_payload,
+        split_for_fiscal_year,
+    )
+
+    fiscal_years = payload.setdefault("fiscal_years", [])
+    if not editions:
+        return payload, "no_editions_read"
+
+    # An edition may describe a year the payload does not have yet. Create it
+    # the way the budget books do; the API still withholds it until it can
+    # cite a page.
+    earliest = min((str(r.get("fiscal_year")) for r in fiscal_years), default="")
+    for _url, edition in editions:
+        if edition.fiscal_year >= earliest and not any(
+            r.get("fiscal_year") == edition.fiscal_year for r in fiscal_years
+        ):
+            fiscal_years.append({"fiscal_year": edition.fiscal_year})
+    fiscal_years.sort(key=lambda r: str(r.get("fiscal_year", "")))
+
+    applied, refused = [], {}
+    for row in fiscal_years:
+        fy = row.get("fiscal_year")
+        reasons = []
+        for url, edition in editions:
+            revenue_url = (row.get("revenue_source") or {}).get("url")
+            same_document = revenue_url == url and row.get("total_revenue") is not None
+            if fy != edition.fiscal_year and not same_document:
+                continue
+            try:
+                split = split_for_fiscal_year(
+                    edition,
+                    fy,
+                    known_ordinary_revenue=(
+                        float(row["total_revenue"]) if same_document else None
+                    ),
+                )
+            except FiscalFrameworkError as exc:
+                reasons.append(f"{edition.fiscal_year} edition: {exc.reason}")
+                continue
+            break
+        else:
+            if reasons:
+                refused[fy] = reasons
+                row["fiscal_framework_absent_reason"] = "; ".join(reasons)
+            continue
+
+        framework = framework_payload(split, source_url=url, page=edition.table.page)
+        framework["source"]["edition"] = f"Budget Summary for the {edition.fiscal_year} Budget"
+        framework["source"]["column_identification"] = (
+            "Approved budget (identified by the narrative)"
+            if split.identified_by == "approved_budget"
+            else "The column printing this row's ordinary revenue (the latest "
+            f"vintage the {edition.fiscal_year} edition prints for {fy})"
+        )
+        v = split.values
+        row["fiscal_framework"] = framework
+        row["split_basis"] = FISCAL_FRAMEWORK_BASIS
+        row["recurrent_spending"] = float(v["recurrent"])
+        row["development_spending"] = float(v["development"])
+        row["county_allocation"] = float(v["county_transfers"])
+        row["total_borrowing"] = float(v["total_financing"])
+        row.pop("fiscal_framework_absent_reason", None)
+
+        ordinary = v["ordinary_revenue"]
+        if row.get("total_revenue") is None and fy == edition.fiscal_year:
+            row["total_revenue"] = float(ordinary)
+            row["revenue_basis"] = "ordinary_revenue_excl_aia"
+            row["revenue_source"] = {
+                **framework["source"],
+                "measure": "Ordinary Revenue (tax + non-tax, excluding A-i-A and grants)",
+            }
+            row["_revenue_source"] = "treasury_budget_summary_annex_live"
+        if split.tax_split_ok:
+            total = row.get("total_revenue")
+            if total is not None and abs(Decimal(str(total)) - ordinary) <= Decimal("0.05"):
+                row["tax_revenue"] = float(v["tax_revenue"])
+                row["non_tax_revenue"] = float(v["non_tax_revenue"])
+                row.pop("tax_split_absent_reason", None)
+            else:
+                row["tax_split_absent_reason"] = (
+                    f"the split sums to ordinary revenue {ordinary}B but the row "
+                    f"publishes {total}B, so it is not shown against it"
+                )
+        else:
+            row["tax_split_absent_reason"] = split.tax_split_reason
+        applied.append(fy)
+
+    status = f"applied={applied}" if applied else "none_applied"
+    if refused:
+        status += f" refused={refused}"
+    return payload, status
 
 
 def _apply_budget_estimates(

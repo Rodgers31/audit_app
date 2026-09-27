@@ -1,0 +1,57 @@
+{
+  "checked_at": "2026-09-27",
+  "source": "https://www.auditgava.com/api/v1/entities?entity_type=county&limit=100",
+  "counties_checked": 47,
+  "proposed_edits": [
+    {
+      "entity_id": 4,
+      "canonical_name": "Mombasa County",
+      "slug": "mombasa-county",
+      "edits": [
+        {
+          "path": [
+            "metrics",
+            "FY2024/25",
+            "county_code"
+          ],
+          "before": "047",
+          "after": "001"
+        },
+        {
+          "path": [
+            "metrics",
+            "FY2025/26",
+            "county_code"
+          ],
+          "before": "047",
+          "after": "001"
+        }
+      ]
+    },
+    {
+      "entity_id": 3,
+      "canonical_name": "Nairobi County",
+      "slug": "nairobi-county",
+      "edits": [
+        {
+          "path": [
+            "metrics",
+            "FY2024/25",
+            "county_code"
+          ],
+          "before": "001",
+          "after": "047"
+        },
+        {
+          "path": [
+            "metrics",
+            "FY2025/26",
+            "county_code"
+          ],
+          "before": "001",
+          "after": "047"
+        }
+      ]
+    }
+  ]
+}

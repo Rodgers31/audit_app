@@ -172,38 +172,86 @@ def _main_source() -> str:
 
 
 class TestAbsenceIsNotZero:
+    # The retired amount parser is removed; verify the current public routes.
+    @pytest.mark.parametrize("stored_amount", [None, 0, 5000])
     @pytest.mark.parametrize(
-        "raw",
-        [None, "", "   ", "n/a", "unknown", "KES", [], {}, True, False, "abc"],
-    )
-    def test_an_unreadable_amount_is_none_not_zero(self, raw):
-        """RED before the fix: every one of these became ``0.0`` and was
-        published as a real figure on a SOURCED case — the worst version of a
-        manufactured zero, because the citation makes it look confirmed.
-
-        ``True``/``False`` are in the list because a bool is an int in Python,
-        so ``float(True) == 1.0`` would have published KES 1.
-        """
-        from main import _parse_missing_funds_amount
-
-        assert _parse_missing_funds_amount(raw) is None, repr(raw)
-
-    @pytest.mark.parametrize(
-        "raw,expected",
+        "path",
         [
-            ("KES 1.5B", 1.5e9), ("2.4M", 2.4e6), ("900K", 9.0e5),
-            ("1,234", 1234.0), (5000, 5000.0), (12.5, 12.5),
+            "/api/v1/accountability/missing-funds",
+            "/api/v1/counties/1/comprehensive",
         ],
     )
-    def test_a_readable_amount_still_parses(self, raw, expected):
-        """POSITIVE CONTROL — returning None must not become the answer for
-        everything."""
-        from main import _parse_missing_funds_amount
+    def test_the_caller_withholds_rather_than_publishing_the_none(
+        self, client, db_session, seed_entity, seed_source_doc,
+        seed_fiscal_period, stored_amount, path,
+    ):
+        """An extracted finding is evidence of a finding, not a quantified loss.
 
-        assert _parse_missing_funds_amount(raw) == pytest.approx(expected)
+        The current reader publishes extracted cases rather than retired metadata.
+        Missing, zero, and nonzero paragraph balances cannot establish a loss
+        total. A readable source-backed case must survive while its unknown
+        monetary total stays absent.
+        """
+        from models import Audit, DocumentType, Extraction, Severity
 
-    def test_the_caller_withholds_rather_than_publishing_the_none(self):
-        assert 'withheld_by_reason["amount_unreadable"]' in _main_source()
+        seed_entity.canonical_name = "Nairobi County"
+        seed_source_doc.title = "County Assembly of Nairobi audit report"
+        seed_source_doc.publisher = "Office of the Auditor-General"
+        seed_source_doc.url = "https://www.oagkenya.go.ke/synthetic-test-report.pdf"
+        seed_source_doc.doc_type = DocumentType.AUDIT
+        title = "Unaccounted expenditure"
+        text = f"{title} The Assembly did not provide supporting records."
+        extraction = Extraction(
+            source_document_id=seed_source_doc.id,
+            extractor="oag_county_volume",
+            page_number=23,
+            extracted_json={
+                "title": title,
+                "finding_text": text,
+                "entity_name": "County Assembly of Nairobi",
+                "volume_kind": "assemblies",
+                "pdf_page": 23,
+            },
+        )
+        db_session.add(extraction)
+        db_session.flush()
+        audit = Audit(
+            entity_id=seed_entity.id,
+            period_id=seed_fiscal_period.id,
+            source_document_id=seed_source_doc.id,
+            extraction_id=extraction.id,
+            page_ref="p.23",
+            finding_text=text,
+            severity=Severity.WARNING,
+            amount=stored_amount,
+        )
+        db_session.add(audit)
+        seed_entity.meta = {
+            "missing_funds_cases": [{
+                "case_id": "RETIRED_UNREADABLE_AMOUNT",
+                "description": "Retired metadata claim",
+                "amount": "not reported",
+                "source_document_id": seed_source_doc.id,
+                "page_ref": "p.23",
+            }],
+        }
+        db_session.commit()
+
+        response = client.get(path)
+        assert response.status_code == 200, response.text
+        payload = response.json()
+        data = payload["missing_funds"] if path.endswith("comprehensive") else payload
+        assert data["total_amount"] is None
+        assert data["total_amount_reason"] == "no_amount_extracted"
+        assert data["reason"] is None
+        assert data["withheld"]["count"] == 0
+        assert len(data["cases"]) == 1
+        case = data["cases"][0]
+        assert case["finding_id"] == audit.id
+        assert case["source"]["page_url"].endswith("#page=23")
+        assert "amount" not in case
+        assert "RETIRED_UNREADABLE_AMOUNT" not in response.text
+
 
     def test_a_peer_with_no_amount_does_not_pull_the_region_average_down(self):
         """RED before the fix: ``float(pa.amount or 0)`` summed an unknown as

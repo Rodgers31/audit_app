@@ -45,13 +45,19 @@ class RevenueBySourceRecord:
     yoy_growth_pct: Optional[Decimal]
     source_url: Optional[str]
     metadata: Dict[str, Any] = field(default_factory=dict)
+    # Who published ``source_url``, and what the document is called, when the
+    # fetcher declares it. Used to label the SourceDocument; kept out of
+    # ``metadata`` because that is row provenance served by the API.
+    publisher: Optional[str] = None
+    source_title: Optional[str] = None
 
 
 def _to_decimal(value: Any) -> Optional[Decimal]:
     if value is None:
         return None
     try:
-        return Decimal(str(value))
+        result = Decimal(str(value))
+        return result if result.is_finite() else None
     except (InvalidOperation, ValueError, TypeError):
         return None
 
@@ -70,7 +76,17 @@ def _metadata(item: Dict[str, Any]) -> Dict[str, Any]:
     basis = _basis(item.get("basis"))
     if basis:
         meta["basis"] = basis
+    for key in ("source", "measure", "absent_reason"):
+        if item.get(key) is not None:
+            meta[key] = item[key]
     return meta
+
+
+def _declared(value: Any) -> Optional[str]:
+    """A declared label, or None when the row declares nothing usable."""
+    if not isinstance(value, str):
+        return None
+    return value.strip() or None
 
 
 def parse_revenue_payload(payload: List[Dict[str, Any]]) -> List[RevenueBySourceRecord]:
@@ -98,6 +114,8 @@ def parse_revenue_payload(payload: List[Dict[str, Any]]) -> List[RevenueBySource
             yoy_growth_pct=_to_decimal(item.get("yoy_growth_pct")),
             source_url=item.get("source_url"),
             metadata=_metadata(item),
+            publisher=_declared(item.get("publisher")),
+            source_title=_declared(item.get("source_title")),
         )
         records.append(record)
 

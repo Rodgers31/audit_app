@@ -3,7 +3,7 @@ Tests for FiscalSummary-backed and dashboard endpoint scoping.
 
 Verifies that:
  - /dashboards/national/fiscal-outturns uses FiscalSummary (not BudgetLine)
-   and excludes years with incomplete data.
+   and retains explicit gaps for years without a reconciled source column.
  - /dashboards/national/sector-ceilings filters by entity type matching the
    period scope (national-only when national period is used).
  - /budget/enhanced execution_by_sector is period-scoped for the national entity.
@@ -22,7 +22,7 @@ def seed_fiscal_and_budget(db_session, seed_country, seed_source_doc):
     Creates:
     - 2 FiscalSummary rows (national-scope, in billions KES):
         FY2023/24: complete (revenue + spending)
-        FY2022/23: incomplete (no spending → should be filtered from outturns)
+        FY2022/23: incomplete (no framework column → explicit missing values)
     - 1 national entity with BudgetLines in FY2023/24
     - 1 county entity with BudgetLines in FY2023/24
     """
@@ -44,6 +44,17 @@ def seed_fiscal_and_budget(db_session, seed_country, seed_source_doc):
         source_document_id=seed_source_doc.id,
         # Tier B (#137): a published fiscal row cites a page.
         page_ref="s.3.2, report p.16 (PDF p.37)",
+        meta={"fiscal_framework": {
+            "basis": "treasury_fiscal_framework",
+            "source": {"url": "https://www.treasury.go.ke/test-framework.pdf", "page": 37, "column": "Actual"},
+            "total_revenue_incl_aia_billion": 2450,
+            "total_expenditure_billion": 3200,
+            "grants_billion": 50,
+            "fiscal_deficit_incl_grants_billion": 700,
+            "total_financing_billion": 680,
+            "adjustment_to_cash_basis_billion": 20,
+            "statistical_discrepancy_billion": 0,
+        }},
     )
     fs_incomplete = FiscalSummary(
         fiscal_year="FY2022/23",
@@ -52,7 +63,7 @@ def seed_fiscal_and_budget(db_session, seed_country, seed_source_doc):
         tax_revenue=1600e9,
         non_tax_revenue=566e9,
         total_borrowing=600e9,
-        # No spending data → should be excluded from fiscal-outturns
+        # No framework source → retain a gap, without substituting aggregates
         development_spending=None,
         recurrent_spending=None,
         county_allocation=370e9,
@@ -106,7 +117,10 @@ def seed_fiscal_and_budget(db_session, seed_country, seed_source_doc):
                 category=cat,
                 allocated_amount=alloc,
                 actual_spent=spent,
-                committed_amount=alloc,  # marks as NG-BIRR data
+                committed_amount=alloc,
+                # What marks these as annual NG-BIRR execution rows is the
+                # measure they DECLARE (#241) — not a filled-in column.
+                provenance=[{"measure": "expenditure", "period": "annual"}],
                 **common,
             )
         )
@@ -157,18 +171,22 @@ class TestFiscalOutturnsScoping:
         # (or ~921B which is billion-scale but the wrong value).
         fy2324 = next((s for s in series if "2023/24" in s["period"]), None)
         assert fy2324 is not None, "FY2023/24 missing from series"
-        # Revenue should match FiscalSummary.total_revenue = 2400 (billion)
-        assert fy2324["revenue"] == pytest.approx(2400, rel=0.01)
+        # The source column includes A-i-A; legacy total_revenue is a different basis.
+        assert fy2324["revenue"] == 2450
+        assert fy2324["expenditure"] == 3200
+        assert fy2324["balance"] == -700
+        assert fy2324["financing"] == 680
+        assert fy2324["column"] == "Actual"
 
-    def test_excludes_incomplete_years(self, client, seed_fiscal_and_budget):
-        """Years with zero revenue or zero expenditure should be excluded."""
+    def test_retains_incomplete_years_as_explicit_gaps(self, client, seed_fiscal_and_budget):
+        """An absent source column must not become a synthetic outturn."""
         resp = client.get("/api/v1/dashboards/national/fiscal-outturns")
         series = resp.json()["series"]
-        # FY2022/23 has no spending data → should be excluded
         fy2223 = next((s for s in series if "2022/23" in s["period"]), None)
-        assert (
-            fy2223 is None
-        ), f"FY2022/23 should be excluded (no spending data) but got: {fy2223}"
+        assert fy2223 is not None
+        assert fy2223["revenue"] is None
+        assert fy2223["expenditure"] is None
+        assert fy2223["absent_reason"]
 
     def test_no_county_budgetline_mixing(self, client, seed_fiscal_and_budget):
         """Revenue figures should not include any BudgetLine allocated_amount values."""
@@ -181,7 +199,7 @@ class TestFiscalOutturnsScoping:
             revenue = entry["revenue"]
             # County total = 7.7B actual KES; national total = 921B actual KES
             # These would appear as large numbers if leaked
-            assert revenue < 10_000, (
+            assert revenue is None or revenue < 10_000, (
                 f"Revenue {revenue} looks like BudgetLine data (actual KES), "
                 "not FiscalSummary (billions)"
             )

@@ -1,0 +1,39 @@
+Session 2 PostgreSQL harness: independent cleanup and verdict receipt
+Executed: 2026-09-27
+Target: /tmp/audit-app-session2-327/backend/scripts/verify_county_editions_postgres.py
+Runtime: /Users/roger/Documents/projects/audit_app/backend/.venv313/bin/python
+
+Scope and method
+- Executed the actual race(), write(), and assert_state() function definitions
+  extracted with Python AST, without running the harness's database setup.
+- Cleanup tests used real ThreadPoolExecutor worker threads, fake sessions,
+  and a fake observer/lock-release event, each in a bounded subprocess.
+- No PostgreSQL connection or production access occurred in these checks.
+- These checks supplement, and do not replace, the parent's real PostgreSQL 17
+  concurrency scenarios or the other reviewer's shared URL/schema guard checks.
+
+Failure cleanup: 4/4 passed
+1. No observed lock: race raised AssertionError; session_exit preceded worker_exit.
+2. Observer exception: race propagated RuntimeError; session_exit preceded worker_exit.
+3. Competitor did not signal start: race raised AssertionError; session_exit
+   preceded worker_exit.
+4. Wrong competitor result: race raised AssertionError after the lock owner had
+   committed/released the worker; both worker and session exited.
+All four subprocesses completed within the 3-second test limit. No false success
+or executor shutdown hang occurred with the corrected context-manager order.
+
+State verdict controls: 5/5 passed
+- Empty state, wrong amount, wrong date, and wrong publication each raised
+  AssertionError.
+- The expected two-county state passed as a positive control.
+
+Payload control: passed
+- write(..., payload=[]) forwarded [] unchanged; it did not substitute generated
+  records.
+
+Earlier URL guard check found query host/dbname overrides; reported to parent.
+Parent subsequently fixed shared URL/schema guards and reported independent
+34/34 guard checks. This receipt does not claim an additional rerun of those
+later changes.
+
+No product code or harness implementation was edited during this review.

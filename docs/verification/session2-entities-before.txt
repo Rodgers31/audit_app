@@ -1,0 +1,203 @@
+FFFFFFFF                                                                 [100%]
+=================================== FAILURES ===================================
+_________ test_totals_do_not_include_components_revenue_or_other_years _________
+
+client = <starlette.testclient.TestClient object at 0x10c1e5550>
+accounts = (<models.Entity object at 0x10c3f1400>, [<models.FiscalPeriod object at 0x10c3f1550>, <models.FiscalPeriod object at 0x10c5e07d0>])
+
+    def test_totals_do_not_include_components_revenue_or_other_years(client, accounts):
+        entity, periods = accounts
+        summary, series = summaries(client, entity)
+>       assert summary["total_allocation"] == 100
+E       assert 315.0 == 100
+
+backend/tests/test_entity_financial_accounting.py:41: AssertionError
+----------------------------- Captured stderr call -----------------------------
+2026-09-27 03:49:28,803 - httpx - INFO - HTTP Request: GET http://testserver/api/v1/entities?entity_type=county "HTTP/1.1 200 OK"
+2026-09-27 03:49:28,817 - httpx - INFO - HTTP Request: GET http://testserver/api/v1/entities/1 "HTTP/1.1 200 OK"
+------------------------------ Captured log call -------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/v1/entities?entity_type=county "HTTP/1.1 200 OK"
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/v1/entities/1 "HTTP/1.1 200 OK"
+______________________ test_missing_spending_is_not_zero _______________________
+
+client = <starlette.testclient.TestClient object at 0x10c1e8cd0>
+accounts = (<models.Entity object at 0x10c693b10>, [<models.FiscalPeriod object at 0x10c693ed0>, <models.FiscalPeriod object at 0x10c6b2520>])
+
+    def test_missing_spending_is_not_zero(client, accounts):
+        summary, series = summaries(client, accounts[0])
+        for value in [summary, *series]:
+>           assert value["total_spent"] is None
+E           assert 0.0 is None
+
+backend/tests/test_entity_financial_accounting.py:52: AssertionError
+----------------------------- Captured stderr call -----------------------------
+2026-09-27 03:49:28,890 - httpx - INFO - HTTP Request: GET http://testserver/api/v1/entities?entity_type=county "HTTP/1.1 200 OK"
+2026-09-27 03:49:28,897 - httpx - INFO - HTTP Request: GET http://testserver/api/v1/entities/1 "HTTP/1.1 200 OK"
+------------------------------ Captured log call -------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/v1/entities?entity_type=county "HTTP/1.1 200 OK"
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/v1/entities/1 "HTTP/1.1 200 OK"
+_______________________ test_reported_zero_is_preserved ________________________
+
+client = <starlette.testclient.TestClient object at 0x10c5e1810>
+accounts = (<models.Entity object at 0x10c8e5310>, [<models.FiscalPeriod object at 0x10c7ed480>, <models.FiscalPeriod object at 0x10c804cb0>])
+db_session = <sqlalchemy.orm.session.Session object at 0x10c8e4b90>
+
+    def test_reported_zero_is_preserved(client, accounts, db_session):
+        entity, _ = accounts
+        for line in db_session.query(BudgetLine).all():
+            if line.category == "Total":
+                line.actual_spent = 0
+        db_session.flush()
+        summary, series = summaries(client, entity)
+>       assert summary["total_allocation"] == 100
+E       assert 315.0 == 100
+
+backend/tests/test_entity_financial_accounting.py:66: AssertionError
+----------------------------- Captured stderr call -----------------------------
+2026-09-27 03:49:28,927 - httpx - INFO - HTTP Request: GET http://testserver/api/v1/entities?entity_type=county "HTTP/1.1 200 OK"
+2026-09-27 03:49:28,935 - httpx - INFO - HTTP Request: GET http://testserver/api/v1/entities/1 "HTTP/1.1 200 OK"
+------------------------------ Captured log call -------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/v1/entities?entity_type=county "HTTP/1.1 200 OK"
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/v1/entities/1 "HTTP/1.1 200 OK"
+________________ test_zero_total_is_not_replaced_by_components _________________
+
+client = <starlette.testclient.TestClient object at 0x10c7edba0>
+accounts = (<models.Entity object at 0x10c7edf30>, [<models.FiscalPeriod object at 0x10c6bf790>, <models.FiscalPeriod object at 0x10c6bf8a0>])
+db_session = <sqlalchemy.orm.session.Session object at 0x10c7ee060>
+
+    def test_zero_total_is_not_replaced_by_components(client, accounts, db_session):
+        for line in db_session.query(BudgetLine).all():
+            if line.category == "Total":
+                line.allocated_amount = line.actual_spent = 0
+        db_session.flush()
+        summary, _ = summaries(client, accounts[0])
+>       assert summary["total_allocation"] == 0
+E       assert 165.0 == 0
+
+backend/tests/test_entity_financial_accounting.py:77: AssertionError
+----------------------------- Captured stderr call -----------------------------
+2026-09-27 03:49:28,968 - httpx - INFO - HTTP Request: GET http://testserver/api/v1/entities?entity_type=county "HTTP/1.1 200 OK"
+2026-09-27 03:49:28,976 - httpx - INFO - HTTP Request: GET http://testserver/api/v1/entities/1 "HTTP/1.1 200 OK"
+------------------------------ Captured log call -------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/v1/entities?entity_type=county "HTTP/1.1 200 OK"
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/v1/entities/1 "HTTP/1.1 200 OK"
+___________________ test_complete_classification_is_additive ___________________
+
+client = <starlette.testclient.TestClient object at 0x10c7ef100>
+accounts = (<models.Entity object at 0x10c7efa80>, [<models.FiscalPeriod object at 0x10c82cd50>, <models.FiscalPeriod object at 0x10c5ed050>])
+db_session = <sqlalchemy.orm.session.Session object at 0x10c7eefd0>
+
+    def test_complete_classification_is_additive(client, accounts, db_session):
+        db_session.query(BudgetLine).filter(BudgetLine.category == "Total").delete()
+        for line in db_session.query(BudgetLine).all():
+            line.actual_spent = line.allocated_amount / 2
+        db_session.flush()
+        summary, _ = summaries(client, accounts[0])
+>       assert summary["total_allocation"] == 100
+E       assert 165.0 == 100
+
+backend/tests/test_entity_financial_accounting.py:87: AssertionError
+----------------------------- Captured stderr call -----------------------------
+2026-09-27 03:49:29,004 - httpx - INFO - HTTP Request: GET http://testserver/api/v1/entities?entity_type=county "HTTP/1.1 200 OK"
+2026-09-27 03:49:29,016 - httpx - INFO - HTTP Request: GET http://testserver/api/v1/entities/1 "HTTP/1.1 200 OK"
+------------------------------ Captured log call -------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/v1/entities?entity_type=county "HTTP/1.1 200 OK"
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/v1/entities/1 "HTTP/1.1 200 OK"
+________________ test_incomplete_classification_withholds_total ________________
+
+client = <starlette.testclient.TestClient object at 0x10c8f4290>
+accounts = (<models.Entity object at 0x10c8f5b50>, [<models.FiscalPeriod object at 0x10c8332f0>, <models.FiscalPeriod object at 0x10c833110>])
+db_session = <sqlalchemy.orm.session.Session object at 0x10c807bf0>
+
+    def test_incomplete_classification_withholds_total(client, accounts, db_session):
+        db_session.query(BudgetLine).filter(BudgetLine.category.in_(["Total", "Development"])).delete()
+        db_session.flush()
+        summary, _ = summaries(client, accounts[0])
+>       assert summary["total_allocation"] is None
+E       assert 105.0 is None
+
+backend/tests/test_entity_financial_accounting.py:97: AssertionError
+----------------------------- Captured stderr call -----------------------------
+2026-09-27 03:49:29,049 - httpx - INFO - HTTP Request: GET http://testserver/api/v1/entities?entity_type=county "HTTP/1.1 200 OK"
+2026-09-27 03:49:29,058 - httpx - INFO - HTTP Request: GET http://testserver/api/v1/entities/1 "HTTP/1.1 200 OK"
+------------------------------ Captured log call -------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/v1/entities?entity_type=county "HTTP/1.1 200 OK"
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/v1/entities/1 "HTTP/1.1 200 OK"
+________ test_conflicting_sources_are_not_summed_or_arbitrarily_chosen _________
+
+client = <starlette.testclient.TestClient object at 0x10c9058c0>
+accounts = (<models.Entity object at 0x10c9067a0>, [<models.FiscalPeriod object at 0x10c8f1710>, <models.FiscalPeriod object at 0x10c8f2890>])
+db_session = <sqlalchemy.orm.session.Session object at 0x10c905d00>
+seed_country = <models.Country object at 0x10c906470>
+
+    def test_conflicting_sources_are_not_summed_or_arbitrarily_chosen(client, accounts, db_session, seed_country):
+        entity, periods = accounts
+        source = SourceDocument(country_id=seed_country.id, title="Other report", publisher="Controller of Budget",
+                                url="https://cob.go.ke/other.pdf", fetch_date=datetime(2026, 9, 27), doc_type=DocumentType.BUDGET)
+        db_session.add(source)
+        db_session.flush()
+        db_session.add(BudgetLine(entity_id=entity.id, period_id=periods[1].id, category="Total",
+                                 allocated_amount=150, currency="KES", page_ref="p.5", source_document_id=source.id))
+        db_session.flush()
+        summary, _ = summaries(client, entity)
+>       assert summary["total_allocation"] is None
+E       assert 465.0 is None
+
+backend/tests/test_entity_financial_accounting.py:111: AssertionError
+----------------------------- Captured stderr call -----------------------------
+2026-09-27 03:49:29,088 - httpx - INFO - HTTP Request: GET http://testserver/api/v1/entities?entity_type=county "HTTP/1.1 200 OK"
+2026-09-27 03:49:29,095 - httpx - INFO - HTTP Request: GET http://testserver/api/v1/entities/1 "HTTP/1.1 200 OK"
+------------------------------ Captured log call -------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/v1/entities?entity_type=county "HTTP/1.1 200 OK"
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/v1/entities/1 "HTTP/1.1 200 OK"
+_____________ test_newer_projection_does_not_replace_county_report _____________
+
+client = <starlette.testclient.TestClient object at 0x10c9079b0>
+accounts = (<models.Entity object at 0x10c8d4380>, [<models.FiscalPeriod object at 0x10c823e10>, <models.FiscalPeriod object at 0x10c8ba090>])
+db_session = <sqlalchemy.orm.session.Session object at 0x10c907ac0>
+seed_country = <models.Country object at 0x10c8d4160>
+seed_source_doc = <models.SourceDocument object at 0x10c86a550>
+
+    def test_newer_projection_does_not_replace_county_report(client, accounts, db_session, seed_country, seed_source_doc):
+        entity, _ = accounts
+        period = FiscalPeriod(country_id=seed_country.id, label="FY2026/27", start_date=datetime(2026,7,1), end_date=datetime(2027,6,30))
+        db_session.add(period)
+        db_session.flush()
+        db_session.add(BudgetLine(entity_id=entity.id, period_id=period.id, category="Health", allocated_amount=900,
+                                 actual_spent=800, currency="KES", source_document_id=seed_source_doc.id))
+        db_session.flush()
+        summary, _ = summaries(client, entity)
+>       assert summary["total_allocation"] == 100
+E       assert 1215.0 == 100
+
+backend/tests/test_entity_financial_accounting.py:125: AssertionError
+----------------------------- Captured stderr call -----------------------------
+2026-09-27 03:49:29,124 - httpx - INFO - HTTP Request: GET http://testserver/api/v1/entities?entity_type=county "HTTP/1.1 200 OK"
+2026-09-27 03:49:29,131 - httpx - INFO - HTTP Request: GET http://testserver/api/v1/entities/1 "HTTP/1.1 200 OK"
+------------------------------ Captured log call -------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/v1/entities?entity_type=county "HTTP/1.1 200 OK"
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/v1/entities/1 "HTTP/1.1 200 OK"
+=============================== warnings summary ===============================
+../../../../Documents/projects/audit_app/backend/.venv313/lib/python3.13/site-packages/fastapi/testclient.py:1
+  /Users/roger/Documents/projects/audit_app/backend/.venv313/lib/python3.13/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+backend/database.py:64
+  /Users/roger/.codex/worktrees/4eb9/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+backend/models.py:23
+  /Users/roger/.codex/worktrees/4eb9/audit_app/backend/models.py:23: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/test_entity_financial_accounting.py::test_totals_do_not_include_components_revenue_or_other_years
+FAILED backend/tests/test_entity_financial_accounting.py::test_missing_spending_is_not_zero
+FAILED backend/tests/test_entity_financial_accounting.py::test_reported_zero_is_preserved
+FAILED backend/tests/test_entity_financial_accounting.py::test_zero_total_is_not_replaced_by_components
+FAILED backend/tests/test_entity_financial_accounting.py::test_complete_classification_is_additive
+FAILED backend/tests/test_entity_financial_accounting.py::test_incomplete_classification_withholds_total
+FAILED backend/tests/test_entity_financial_accounting.py::test_conflicting_sources_are_not_summed_or_arbitrarily_chosen
+FAILED backend/tests/test_entity_financial_accounting.py::test_newer_projection_does_not_replace_county_report
+8 failed, 3 warnings in 0.47s

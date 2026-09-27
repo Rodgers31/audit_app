@@ -17,13 +17,18 @@ import { Activity, Building2, Gauge, TrendingUp, Users } from 'lucide-react';
 export interface EconomicContext {
   fiscal_year?: string;
   gdp_billion_kes?: number;
-  gdp_growth_pct?: number;
+  gdp_as_of?: string | null;
+  gdp_source?: string | null;
+  gdp_growth_pct?: number | null;
+  gdp_growth_as_of?: string | null;
+  gdp_growth_source?: string | null;
   budget_to_gdp_pct?: number;
   revenue_to_gdp_pct?: number;
-  inflation_pct?: number;
-  inflation_as_of?: string;
-  inflation_source?: string;
-  unemployment_pct?: number;
+  inflation_pct?: number | null;
+  inflation_as_of?: string | null;
+  inflation_source?: string | null;
+  inflation_measure?: string | null;
+  unemployment_pct?: number | null;
   per_capita_budget_kes?: number;
   per_capita_revenue_kes?: number;
   total_population?: number;
@@ -39,34 +44,46 @@ function fmtT(billionKES?: number): string {
   return `${billionKES.toFixed(0)}B`;
 }
 
-function pct(v?: number): string {
+function pct(v?: number | null): string {
   if (v == null) return '—';
   return `${v.toFixed(1)}%`;
+}
+
+function asOf(iso: string | null | undefined, opts: Intl.DateTimeFormatOptions): string | null {
+  if (!iso || Number.isNaN(Date.parse(iso))) return null;
+  return new Date(iso).toLocaleDateString('en-GB', { timeZone: 'UTC', ...opts });
+}
+
+/** Caption parts that exist, joined. An absent source is left out, never guessed. */
+function caption(...parts: (string | null | undefined)[]): string {
+  return parts.filter(Boolean).join(' · ');
 }
 
 export default function EconomicContextStrip({ ctx }: Props) {
   if (!ctx || !ctx.gdp_billion_kes) return null;
 
-  // Inflation provenance — KNBS (not CBK), shown with its real as-of date so a
-  // stale figure reads as dated rather than current (audit §3.10).
-  const inflationSource = ctx.inflation_source || 'KNBS Consumer Price Index';
-  const inflationAsOf =
-    ctx.inflation_as_of && !Number.isNaN(Date.parse(ctx.inflation_as_of))
-      ? new Date(ctx.inflation_as_of).toLocaleDateString('en-GB', {
-          month: 'short',
-          year: 'numeric',
-        })
-      : null;
-  const inflationSub = inflationAsOf
-    ? `${inflationSource} · as of ${inflationAsOf}`
-    : inflationSource;
+  // Every caption is the row's own declared provenance (issue #232). The
+  // inflation caption used to fall back to the literal "KNBS Consumer Price
+  // Index", which is how a World Bank annual average came to be credited to
+  // KNBS. No source from the API now means no source on the page.
+  const inflationSub = caption(
+    ctx.inflation_measure,
+    asOf(ctx.inflation_as_of, { month: 'short', year: 'numeric' }),
+  );
+  const growthYear = asOf(ctx.gdp_growth_as_of, { year: 'numeric' });
+  const gdpSub = caption(
+    `Growth ${pct(ctx.gdp_growth_pct)}${growthYear && ctx.gdp_growth_pct != null ? ` (${growthYear})` : ''}`,
+    ctx.gdp_growth_source !== ctx.gdp_source ? ctx.gdp_growth_source : null,
+  );
+  const gdpNote = caption(asOf(ctx.gdp_as_of, { year: 'numeric' }), ctx.gdp_source);
 
   const cards = [
     {
       icon: TrendingUp,
       label: 'GDP',
       value: `KES ${fmtT(ctx.gdp_billion_kes)}`,
-      sub: `Growth ${pct(ctx.gdp_growth_pct)}`,
+      sub: gdpSub,
+      note: gdpNote,
       accent: '#1B3A2A',
     },
     {
@@ -74,6 +91,7 @@ export default function EconomicContextStrip({ ctx }: Props) {
       label: 'Budget / GDP',
       value: pct(ctx.budget_to_gdp_pct),
       sub: `Revenue / GDP ${pct(ctx.revenue_to_gdp_pct)}`,
+      note: '',
       accent: '#3E6B84',
     },
     {
@@ -81,6 +99,7 @@ export default function EconomicContextStrip({ ctx }: Props) {
       label: 'Inflation',
       value: pct(ctx.inflation_pct),
       sub: inflationSub,
+      note: ctx.inflation_source ?? '',
       accent:
         // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- colour band threshold only — the figure itself renders from ctx.inflation_pct and shows an em dash when absent
         (ctx.inflation_pct ?? 0) > 7
@@ -114,7 +133,7 @@ export default function EconomicContextStrip({ ctx }: Props) {
       </div>
 
       <div className='grid grid-cols-1 sm:grid-cols-3 gap-2.5'>
-        {cards.map(({ icon: Icon, label, value, sub, accent }) => (
+        {cards.map(({ icon: Icon, label, value, sub, note, accent }) => (
           <div
             key={label}
             className='rounded-xl border border-neutral-border/30 bg-white dark:bg-surface-base p-4 flex items-start gap-3'>
@@ -133,6 +152,11 @@ export default function EconomicContextStrip({ ctx }: Props) {
               <div className='text-[11px] text-neutral-muted leading-tight mt-0.5'>
                 {sub}
               </div>
+              {note ? (
+                <div className='text-[10px] text-neutral-muted/80 leading-tight mt-1'>
+                  {note}
+                </div>
+              ) : null}
             </div>
           </div>
         ))}

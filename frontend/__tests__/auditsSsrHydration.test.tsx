@@ -46,11 +46,12 @@ import {
   auditFindingsKey,
   auditRecurringFindingsKey,
   auditTrendsKey,
-  federalAuditsKey,
+  federalAuditsHomeSummaryKey,
+  federalAuditsHomeSummaryQuery,
   useAuditDashboardSummary,
   useAuditFindings,
   useAuditTrends,
-  useFederalAudits,
+  useFederalAuditsHomeSummary,
   useRecurringFindings,
 } from '@/lib/react-query/useAudits';
 
@@ -265,24 +266,21 @@ describe('audit dashboard cache keys', () => {
 /* ── the homepage's federal prefetch — the last hand-written SSR key ─── */
 
 /**
- * `/audits` no longer prefetches `['audits','federal']`, but `/` still does,
- * and that prefetch is the one carrying the 886KB payload.
+ * `/audits` no longer prefetches `['audits','federal']`, but `/` prefetches
+ * national audit data for `AuditReportsSection`.
  *
- * `app/page.tsx` used to write the key out as a literal while
- * `useFederalAudits` read `QUERY_KEYS.federal`. The two matched only because
- * they happened to be equal — the same coincidence that stopped holding on
- * `/counties` (#222). Both now resolve to `federalAuditsKey()`.
+ * `app/page.tsx` used to write the key out as a literal while the hook read
+ * `QUERY_KEYS.federal`. The two matched only because they happened to be
+ * equal — the same coincidence that stopped holding on `/counties` (#222).
+ * Since #221 finding #4 the homepage ships a TRIMMED summary under its own
+ * key, and the page and the hook both build the query from
+ * `federalAuditsHomeSummaryQuery()` (see homeAuditsPayload.test.tsx for the
+ * trim itself).
  */
 describe('homepage federal audits prefetch', () => {
-  /** Exactly what `app/page.tsx` passes to `prefetchQuery`. */
-  const homepagePrefetchKey = () => federalAuditsKey();
-
-  it('serves the SSR-prefetched federal payload to AuditReportsSection — no loading state', async () => {
+  it('serves the SSR-prefetched federal summary to AuditReportsSection — no loading state', async () => {
     const server = new QueryClient();
-    await server.prefetchQuery({
-      queryKey: homepagePrefetchKey(),
-      queryFn: () => getFederalAudits(),
-    });
+    await server.prefetchQuery(federalAuditsHomeSummaryQuery());
     const state = dehydrate(server);
     getFederalAudits.mockClear();
 
@@ -295,17 +293,18 @@ describe('homepage federal audits prefetch', () => {
       </QueryClientProvider>
     );
 
-    const { result } = renderHook(() => useFederalAudits(), { wrapper });
+    const { result } = renderHook(() => useFederalAuditsHomeSummary(), { wrapper });
 
     // `AuditReportsSection` gates on this. If the homepage prefetch key ever
-    // drifts from the hook's, 886KB sits unread in a 1.32MB document and the
-    // component re-fetches all of it over the network.
+    // drifts from the hook's, the summary sits unread in the document and the
+    // component re-fetches the full ~886KB response over the network.
     expect(result.current.isLoading).toBe(false);
     expect(result.current.data).toEqual(FEDERAL);
     expect(getFederalAudits).not.toHaveBeenCalled();
   });
 
   it('pins the serialised key, which the hook and the prefetch must share', () => {
-    expect(hashKey(federalAuditsKey())).toBe('["audits","federal"]');
+    expect(hashKey(federalAuditsHomeSummaryKey())).toBe('["audits","federal","home-summary"]');
+    expect(hashKey(federalAuditsHomeSummaryQuery().queryKey)).toBe(hashKey(federalAuditsHomeSummaryKey()));
   });
 });

@@ -64,6 +64,3 @@ with Session(engine) as session:
     session.commit()
 
 print(f"\nDone — updated {updated} county entities with governor names")
-    session.commit()
-
-print(f"\nDone — updated {updated} county entities with governor names")

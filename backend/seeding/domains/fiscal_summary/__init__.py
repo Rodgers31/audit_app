@@ -42,6 +42,11 @@ def run(
                 errors=[f"Fetch failed: {exc}"],
             )
 
+    # What the Budget Summary listing carried this run, readable or not. The
+    # freshness gate reads it off the ingestion job, so it is attached to
+    # every result below, failures included.
+    run_facts = dict(payload.get("_run_facts") or {})
+
     try:
         records = parser.parse_fiscal_summary_payload(payload)
     except Exception as exc:
@@ -54,6 +59,7 @@ def run(
             items_created=0,
             items_updated=0,
             errors=[f"Parse failed: {exc}"],
+            metadata=run_facts,
         )
 
     # Validation gate: quarantine any fiscal-year row that fails plausibility
@@ -104,6 +110,7 @@ def run(
             items_created=0,
             items_updated=0,
             errors=[f"Write failed: {exc}"],
+            metadata=run_facts,
         )
 
     finished_at = datetime.now(timezone.utc)
@@ -120,4 +127,5 @@ def run(
         items_created=created,
         items_updated=updated,
         errors=errors,
+        metadata=run_facts,
     )

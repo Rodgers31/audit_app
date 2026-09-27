@@ -58,7 +58,16 @@ def seed_money_flow(db_session, seed_country, seed_source_doc):
         currency="KES",
         source_document_id=seed_source_doc.id,
     )
-    db_session.add_all([bl1, bl2])
+    total = BudgetLine(
+        entity_id=entity.id,
+        period_id=fp.id,
+        category="Total",
+        allocated_amount=15_000_000,
+        actual_spent=11_500_000,
+        currency="KES",
+        source_document_id=seed_source_doc.id,
+    )
+    db_session.add_all([total, bl1, bl2])
     db_session.flush()
 
     # Audit finding

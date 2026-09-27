@@ -279,3 +279,78 @@ class TestParseIntegration:
         results = parser.parse(extraction, meta)
         assert len(results) >= 1
         assert results[0]["audit_opinion"] is None
+
+
+# ---- Entity inference covers every county ----
+
+
+class TestInferEntityCoversAll47:
+    """``COUNTY_NAMES`` held 45 of the 47 counties: Kwale and Murang'a were missing.
+
+    Found when the county-selection guard was widened to the whole tree (issue
+    #206) and flagged the roster as a hand-picked subset. It was not a verdict,
+    it was a gap: a Kwale report was never attributed to Kwale. Title inference
+    found nothing, and the first-page fallback handed the report — and every
+    finding parsed from it — to whichever OTHER county page 1 happened to name.
+    """
+
+    def test_a_kwale_report_is_attributed_to_kwale(self, parser):
+        hint = parser.infer_entity(
+            "Report of the Auditor-General on the County Executive of Kwale", []
+        )
+        assert hint is not None and hint["canonical_name"] == "Kwale County", hint
+
+    def test_a_muranga_report_is_attributed_to_muranga(self, parser):
+        hint = parser.infer_entity(
+            "Report of the Auditor-General on the County Executive of Murang'a", []
+        )
+        assert hint is not None and hint["canonical_name"] == "Murang'a County", hint
+
+    def test_a_neighbour_named_on_page_one_does_not_take_the_report(self, parser):
+        pages = [{"text": "Kwale County borders Mombasa County to the north-east."}]
+        hint = parser.infer_entity("Kwale County Executive 2023/24", pages)
+        assert hint is not None and hint["canonical_name"] == "Kwale County", hint
+
+    # The three below were added in the consolidation review of #245. The
+    # title case above passes because the title names Kwale; with no county in
+    # the title, the page-one fallback took the first county in COUNTY_NAMES'
+    # order that the text mentioned, not the first the text names, and it
+    # matched only the straight-apostrophe spelling of Murang'a.
+
+    def test_page_one_attribution_takes_the_county_named_first(self, parser):
+        pages = [{"text": "County Executive of Kwale. Kwale borders Mombasa to the north-east."}]
+        hint = parser.infer_entity("Report of the Auditor-General 2023/24", pages)
+        assert hint is not None and hint["canonical_name"] == "Kwale County", hint
+
+    @pytest.mark.parametrize("spelling", ["Murang\u2019a", "Muranga", "MURANG\u2019A"])
+    def test_muranga_is_recognised_however_it_is_spelled(self, parser, spelling):
+        hint = parser.infer_entity(
+            f"Report of the Auditor-General on the County Executive of {spelling}", []
+        )
+        assert hint is not None and hint["canonical_name"] == "Murang'a County", hint
+
+    @pytest.mark.parametrize(
+        "spelling, county",
+        [("Elgeyo-Marakwet", "Elgeyo Marakwet"), ("Tharaka-Nithi", "Tharaka Nithi"),
+         ("Taita-Taveta", "Taita Taveta")],
+    )
+    def test_hyphenated_county_names_are_recognised(self, parser, spelling, county):
+        hint = parser.infer_entity(f"County Executive of {spelling} 2023/24", [])
+        assert hint is not None and hint["canonical_name"] == f"{county} County", hint
+
+    def test_a_muranga_report_naming_nairobi_later_stays_muranga(self, parser):
+        pages = [{"text": "County Executive of Murang\u2019a — funds transferred to Nairobi."}]
+        hint = parser.infer_entity("Report of the Auditor-General 2023/24", pages)
+        assert hint is not None and hint["canonical_name"] == "Murang'a County", hint
+
+    def test_the_roster_is_all_47(self):
+        from etl.audit_parser import COUNTY_NAMES
+        from etl.entity_resolver import COUNTY_NAMES as RESOLVER_COUNTY_NAMES
+
+        def canon(name):
+            return name.lower().replace("-", " ").replace("'", "")
+
+        assert {canon(c) for c in COUNTY_NAMES} == {
+            canon(c) for c in RESOLVER_COUNTY_NAMES
+        }
+        assert len({canon(c) for c in COUNTY_NAMES}) == 47

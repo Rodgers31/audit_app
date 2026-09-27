@@ -6,7 +6,6 @@ import hashlib
 import json
 import logging
 import os
-from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
@@ -14,7 +13,6 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from database import SessionLocal
 from models import (
-    Audit,
     BudgetLine,
     Country,
     DebtCategory,
@@ -29,7 +27,6 @@ from models import (
     Loan,
     PopulationData,
     PovertyIndex,
-    Severity,
     SourceDocument,
 )
 from county_metrics_purge import (  # noqa: F401 - re-exported
@@ -73,8 +70,14 @@ def resolve_data_dir() -> Path:
 
 DATA_DIR = resolve_data_dir()
 COUNTY_DATA_PATH = DATA_DIR / "enhanced_county_data.json"
-AUDIT_DATA_PATH = DATA_DIR / "oag_audit_data.json"
-NATIONAL_AUDIT_PATH = DATA_DIR / "oag_national_audit_data.json"
+# `oag_audit_data.json` and `oag_national_audit_data.json` were retired in
+# issue #233. Both were hand-written audit fixtures whose findings the Blue Book
+# extractor now delivers from the published reports, each with a page. The
+# supersession checks that proved it — every county the first named had
+# extraction-backed findings, and every row and figure the second could write
+# was withheld by the publication gate — passed on a production clone on
+# 2026-09-26 before either file was deleted. The API derives what they used to
+# supply (services/audit_derived.py).
 
 
 # ── Provenance for the weekly bootstrap (issue #137 P3) ─────────────
@@ -97,40 +100,6 @@ STALE_AFTER_DAYS = 180
 # publisher; "no_live_source" is a deliberate declaration, not a gap left
 # unfilled.
 _FIXTURE_DECLARATIONS: Dict[str, Dict[str, Any]] = {
-    "oag_audit_data.json": {
-        # This file carries no metadata block of any kind, so its date is
-        # declared here. The declaration is pinned to the file's CONTENT
-        # rather than to `git log`: refresh the file and the digest stops
-        # matching, which fails the test until the date is updated with it.
-        #
-        # The first version of this check compared against
-        # `git log -1 -- <file>` and passed locally while failing in CI —
-        # actions/checkout defaults to fetch-depth 1, so in a shallow clone
-        # `git log -1` on a path returns the TIP commit, not the commit that
-        # last touched the file. It read today's date and called the fixture
-        # fresh. That is the same failure the age calculation avoids by not
-        # trusting mtime, one layer up, in the test meant to guard it.
-        "date_field": None,
-        "declared_date": "2025-09-05",
-        "content_sha256": (
-            "bba74732d5959b1f39e63757c6f3337409db706693529d58654255969a5790f3"
-        ),
-        "live_source": "audits",
-        # Named check, run against the DATABASE — see _SUPERSESSION_CHECKS.
-        # A fixture is superseded only when the live domain is observed to
-        # have delivered, never because a declaration here says so.
-        "superseded_check": "county_audit_findings",
-    },
-    "oag_national_audit_data.json": {
-        "date_field": ("metadata", "report_date"),
-        "declared_date": "2024-12-15",
-        "live_source": "audits",
-        # This entry had no check, so _supersession() returned False for it
-        # unconditionally and 630 days of age could never be cleared by any
-        # amount of live seeding — nothing was asking. It is the OLDEST of the
-        # three, so it is also the file the stale message named.
-        "superseded_check": "national_audit_findings",
-    },
     "enhanced_county_data.json": {
         # This file's own metadata describes its figures as
         # "Official government sources + realistic estimates" with a
@@ -167,124 +136,6 @@ _FIXTURE_DECLARATIONS: Dict[str, Dict[str, Any]] = {
 # Every failure path returns False. A check that cannot run — no session, a
 # broken query, an unreadable file — leaves the fixture stale, so a fixture
 # is never excused by the absence of evidence.
-
-
-def _county_audit_findings_superseded(session: Session) -> Tuple[bool, str]:
-    """Is every published claim in ``oag_audit_data.json`` now derived?
-
-    The file feeds three things. Each is checked against what it would take
-    for the file to reach a reader:
-
-    ``audit_queries`` -> Audit rows via :func:`_upsert_audit_records`, which
-        defers to extracted findings per county. Superseded only when EVERY
-        county the file names has extraction-backed findings; a county the
-        extractor has not reached is still served the fixture, so one gap
-        means the file is still live.
-
-    ``missing_funds_cases`` -> ``entity.meta["missing_funds_cases"]``, served
-        by ``/counties/{slug}`` through ``missing_funds_provenance_failure``.
-        These are NOT deferred anywhere — the reason none is published is
-        that none carries a source document, so the publication gate withholds
-        it. That is the condition checked here, and if a case ever gains a
-        source document and a page reference it becomes publishable straight
-        out of a year-old file, so supersession has to fail.
-
-    ``summary_statistics`` -> nothing. Written nowhere, read nowhere.
-        ``entity.meta["audit_summary"]`` is likewise written by the county
-        loop and read by no one (verified: bootstrap.py holds the only
-        reference). Neither can reach a reader, so neither is gated on here.
-    """
-    from services.publication_gate import missing_funds_provenance_failure
-
-    try:
-        payload = json.loads(AUDIT_DATA_PATH.read_text())
-    except Exception as exc:  # noqa: BLE001 - unreadable means unproven
-        return False, f"could not read {AUDIT_DATA_PATH.name}: {exc}"
-
-    queries = [e for e in (payload.get("audit_queries") or []) if isinstance(e, dict)]
-    cases = [c for c in (payload.get("missing_funds_cases") or []) if isinstance(c, dict)]
-
-    # --- audit_queries -> Audit rows ---
-    counties = sorted(
-        {str(e.get("county") or "").strip() for e in queries + cases} - {""}
-    )
-    if not counties:
-        return False, f"{AUDIT_DATA_PATH.name} names no county to check"
-
-    unresolved: List[str] = []
-    uncovered: List[str] = []
-    covered: Dict[str, int] = {}
-    for name in counties:
-        # Resolved the same way the seeding loop resolves it, so the answer is
-        # to the real question: would the fixture path write for this county?
-        entity = (
-            session.query(Entity)
-            .filter(Entity.canonical_name == f"{name} County")
-            .first()
-        )
-        if entity is None:
-            unresolved.append(name)
-            continue
-        found = (
-            session.query(Audit)
-            .filter(Audit.entity_id == entity.id, Audit.extraction_id.isnot(None))
-            .count()
-        )
-        if found:
-            covered[name] = found
-        else:
-            uncovered.append(name)
-
-    if unresolved:
-        return False, (
-            f"{len(unresolved)} of {len(counties)} county name(s) in "
-            f"{AUDIT_DATA_PATH.name} resolve to no entity: {', '.join(unresolved)}"
-        )
-    if uncovered:
-        return False, (
-            f"{len(uncovered)} of {len(counties)} "
-            f"{'county' if len(counties) == 1 else 'counties'} named in "
-            f"{AUDIT_DATA_PATH.name} still has no extracted findings, so the "
-            f"fixture is what it is served: {', '.join(uncovered)}"
-        )
-
-    # --- missing_funds_cases -> entity.meta, gated at the API ---
-    doc_ids = set()
-    for case in cases:
-        raw = case.get("source_document_id")
-        if raw not in (None, ""):
-            try:
-                doc_ids.add(int(raw))
-            except (TypeError, ValueError):
-                continue
-    docs = {}
-    if doc_ids:
-        docs = {
-            d.id: d
-            for d in session.query(SourceDocument)
-            .filter(SourceDocument.id.in_(doc_ids))
-            .all()
-        }
-    publishable = [
-        str(case.get("case_id") or "?")
-        for case in cases
-        if missing_funds_provenance_failure(case, docs) is None
-    ]
-    if publishable:
-        return False, (
-            f"{len(publishable)} missing-funds case(s) in "
-            f"{AUDIT_DATA_PATH.name} would still be published: "
-            f"{', '.join(publishable)}"
-        )
-
-    return True, (
-        f"all {len(counties)} {'county' if len(counties) == 1 else 'counties'} "
-        f"named here have extraction-backed findings "
-        f"({min(covered.values())}-{max(covered.values())} each, "
-        f"{sum(covered.values())} in total), so _upsert_audit_records defers "
-        f"for every one; and all {len(cases)} missing-funds case(s) are "
-        f"withheld by the publication gate for having no source document"
-    )
 
 
 #: The fields ``enhanced_county_data.json`` MODELS rather than reports. Its
@@ -340,11 +191,11 @@ def _county_reference_data_superseded(session: Session) -> Tuple[bool, str]:
     ``BudgetLine`` rows and nothing else. The file writes four surfaces, so
     three of them have no live path at all today:
 
-    ``BudgetLine``      via ``_upsert_budget_lines``. This one IS superseded in
-        practice — the Controller of Budget and Government of Kenya documents
-        own all 2,000 county lines and none traces to this file.
-    ``Loan``            via ``_upsert_county_debt`` — county debt and pending
-        bills, both modelled as fixed percentages of a modelled budget.
+    ``BudgetLine``      formerly written here (modelled sector split); no
+        longer written — the counties_budget domain owns county budget lines.
+    ``Loan``            formerly written here (modelled county debt and
+        pending bills); no longer written — pending bills are the pending_bills
+        domain's (national: Treasury BROP; counties: CoB year-end CBIRR).
     ``PopulationData``  via ``_upsert_population``.
     ``entity.meta``     ``metrics`` (read by /counties for revenue, transfers,
         development budget and pending bills), plus ``economic_profile``,
@@ -439,88 +290,9 @@ def _county_reference_data_superseded(session: Session) -> Tuple[bool, str]:
     )
 
 
-def _national_audit_findings_superseded(session: Session) -> Tuple[bool, str]:
-    """Can anything in ``oag_national_audit_data.json`` still reach a reader?
-
-    This file had no check at all, so it was stale forever at 630 days and was
-    the one the ``fixture_stale`` message named — the nightly's CRITICAL.
-
-    Two surfaces, and BOTH must be closed:
-
-    ``Audit`` rows      via ``_seed_federal_audits``, hung off the source
-        document this file mints. ``_ensure_source_document`` takes the URL
-        from the file's own metadata block, which has no ``url`` key, so the
-        column is NULL and ``publishable_audit_criterion`` withholds every row
-        on it. Asked of the DATABASE rather than assumed: that function matches
-        on (country_id, title), so a real document with the same title would be
-        reused and merged, and the rows would publish again.
-    ``audit_opinion_summary`` + ``metadata`` — NOT read through the database at
-        all. ``/audits/federal`` opens this file off disk (main.py) and gates it
-        with ``file_source_provenance_failure``, which withholds it for citing
-        ``https://www.oagkenya.go.ke`` — a homepage, not a document.
-
-    Note what this deliberately does NOT claim: that national audit findings
-    are arriving. That question belongs to ``TableRule("Audit findings",
-    dataset_id="oag_national_audits")``, and answering it here would let a
-    silent extractor hide behind a withheld fixture.
-    """
-    from services.publication_gate import (
-        file_source_provenance_failure,
-        publishable_audit_criterion,
-    )
-
-    try:
-        payload = json.loads(NATIONAL_AUDIT_PATH.read_text())
-    except Exception as exc:  # noqa: BLE001 - unreadable means unproven
-        return False, f"could not read {NATIONAL_AUDIT_PATH.name}: {exc}"
-
-    outstanding: List[str] = []
-
-    # --- the Audit rows this file writes ---
-    doc_ids = _fixture_document_ids(session, NATIONAL_AUDIT_PATH.name)
-    if doc_ids:
-        publishable = (
-            session.query(Audit)
-            .filter(
-                Audit.source_document_id.in_(doc_ids),
-                publishable_audit_criterion(),
-            )
-            .count()
-        )
-        if publishable:
-            outstanding.append(
-                f"{publishable} audit row(s) minted from this file would still "
-                f"be published — the publication gate resolves their source "
-                f"document"
-            )
-
-    # --- the opinion summary /audits/federal reads straight off disk ---
-    gate = file_source_provenance_failure(payload.get("metadata"))
-    if gate is None:
-        outstanding.append(
-            "its audit opinion summary would be published — this file's own "
-            "metadata now satisfies the publication gate"
-        )
-
-    if outstanding:
-        return False, (
-            f"still served from {NATIONAL_AUDIT_PATH.name}: "
-            + "; ".join(outstanding)
-        )
-
-    findings = len(payload.get("national_audit_findings") or [])
-    return True, (
-        f"none of the {findings} national finding(s) here can reach a reader: "
-        f"every audit row minted from this file is withheld by the publication "
-        f"gate, and its opinion summary is withheld for {gate}"
-    )
-
-
 #: Named so the declaration table stays plain data.
 _SUPERSESSION_CHECKS: Dict[str, Callable[[Session], Tuple[bool, str]]] = {
-    "county_audit_findings": _county_audit_findings_superseded,
     "county_reference_data": _county_reference_data_superseded,
-    "national_audit_findings": _national_audit_findings_superseded,
 }
 
 
@@ -722,35 +494,6 @@ def _parse_decimal(value: Any) -> Decimal:
         return Decimal("0")
 
 
-def _parse_kes_amount(value: Any) -> float:
-    """Parse KES amount strings like 'KES 2.5B' into numeric values."""
-    if value is None:
-        return 0.0
-    if isinstance(value, (int, float, Decimal)):
-        return float(value)
-    try:
-        cleaned = str(value).upper().replace("KES", "").strip()
-        cleaned = cleaned.replace(",", "")
-        multiplier = 1.0
-        if cleaned.endswith("T"):
-            # Trillions — without this branch "KES 1.2T" raised and fell through
-            # to 0, undercounting the audit DB (audit §2.6 / §3.4).
-            multiplier = 1_000_000_000_000.0
-            cleaned = cleaned[:-1]
-        elif cleaned.endswith("B"):
-            multiplier = 1_000_000_000.0
-            cleaned = cleaned[:-1]
-        elif cleaned.endswith("M"):
-            multiplier = 1_000_000.0
-            cleaned = cleaned[:-1]
-        elif cleaned.endswith("K"):
-            multiplier = 1_000.0
-            cleaned = cleaned[:-1]
-        return float(cleaned or 0) * multiplier
-    except Exception:
-        return 0.0
-
-
 def _ensure_country(session: Session) -> Country:
     """Ensure Kenya country record exists."""
     country = session.query(Country).filter(Country.iso_code == "KEN").first()
@@ -846,201 +589,6 @@ def _ensure_source_document(
     return document
 
 
-# --- Typical Kenya county budget sector split (COB averages) ---
-# These percentages approximate how county budgets are distributed
-# Source: Controller of Budget county reports 2022-2024
-COUNTY_BUDGET_SECTORS = [
-    # util_bias: sector-specific offset (percentage points) added to the county's
-    # base execution rate so that different sectors show varied utilization.
-    # Recurrent-heavy sectors (admin, assembly) tend to absorb budget easily;
-    # development-heavy sectors (roads, water) typically underspend.
-    {
-        "category": "Health",
-        "development_pct": 0.08,
-        "recurrent_pct": 0.17,
-        "util_bias": +2,
-    },
-    {
-        "category": "Education & Training",
-        "development_pct": 0.04,
-        "recurrent_pct": 0.06,
-        "util_bias": +1,
-    },
-    {
-        "category": "Roads & Transport",
-        "development_pct": 0.10,
-        "recurrent_pct": 0.03,
-        "util_bias": -6,
-    },
-    {
-        "category": "Agriculture & Livestock",
-        "development_pct": 0.05,
-        "recurrent_pct": 0.04,
-        "util_bias": -4,
-    },
-    {
-        "category": "Water & Sanitation",
-        "development_pct": 0.06,
-        "recurrent_pct": 0.02,
-        "util_bias": -8,
-    },
-    {
-        "category": "Public Administration",
-        "development_pct": 0.02,
-        "recurrent_pct": 0.18,
-        "util_bias": +5,
-    },
-    {
-        "category": "County Assembly",
-        "development_pct": 0.01,
-        "recurrent_pct": 0.08,
-        "util_bias": +7,
-    },
-    {
-        "category": "Trade & Enterprise",
-        "development_pct": 0.02,
-        "recurrent_pct": 0.01,
-        "util_bias": -3,
-    },
-    {
-        "category": "Lands & Urban Planning",
-        "development_pct": 0.02,
-        "recurrent_pct": 0.01,
-        "util_bias": -5,
-    },
-]
-# Remaining ~6% dev + ~1% recurrent = "Other" catch-all
-
-
-def _upsert_budget_lines(
-    session: Session,
-    *,
-    entity_id: int,
-    entity_name: str,
-    period_id: int,
-    source_document_id: int,
-    total_allocated: Decimal,
-    execution_rate: Decimal,
-    pending_bills: Decimal,
-) -> None:
-    """Create multiple BudgetLine rows per county — one per sector."""
-    import hashlib
-
-    provenance = [
-        {
-            "source": "bootstrap",
-            "dataset": COUNTY_DATA_PATH.name,
-            "period": FISCAL_LABEL,
-        }
-    ]
-
-    # Development is typically ~40% of county budgets, recurrent ~60%
-    dev_total = total_allocated * Decimal("0.40")
-    rec_total = total_allocated * Decimal("0.60")
-
-    allocated_so_far = Decimal("0")
-    for idx, sector in enumerate(COUNTY_BUDGET_SECTORS):
-        cat = sector["category"]
-        alloc = (
-            dev_total * Decimal(str(sector["development_pct"] / 0.40))
-            + rec_total * Decimal(str(sector["recurrent_pct"] / 0.60))
-        ).quantize(Decimal("0.01"))
-        # Scale alloc so dev_pct + rec_pct share of total makes sense
-        alloc = (
-            total_allocated
-            * Decimal(str(sector["development_pct"] + sector["recurrent_pct"]))
-        ).quantize(Decimal("0.01"))
-
-        # --- Per-sector utilization variance ---
-        # Deterministic jitter in [-3, +3] based on county name + sector index
-        seed_bytes = f"{entity_name}:{idx}".encode()
-        jitter = (int(hashlib.md5(seed_bytes).hexdigest()[:8], 16) % 7) - 3  # -3..+3
-        bias = sector.get("util_bias", 0)
-        sector_rate = execution_rate + Decimal(str(bias + jitter))
-        # Clamp to [40, 100] so values stay plausible
-        sector_rate = max(Decimal("40"), min(Decimal("100"), sector_rate))
-        actual = (alloc * sector_rate / Decimal("100")).quantize(Decimal("0.01"))
-        committed = (
-            (pending_bills * alloc / total_allocated).quantize(Decimal("0.01"))
-            if total_allocated > 0
-            else Decimal("0")
-        )
-        allocated_so_far += alloc
-
-        existing = (
-            session.query(BudgetLine)
-            .filter(
-                BudgetLine.entity_id == entity_id,
-                BudgetLine.period_id == period_id,
-                BudgetLine.category == cat,
-            )
-            .first()
-        )
-        if existing:
-            existing.allocated_amount = alloc
-            existing.actual_spent = actual
-            existing.committed_amount = committed
-            existing.currency = "KES"
-            existing.source_document_id = source_document_id
-            existing.provenance = provenance
-            session.add(existing)
-        else:
-            session.add(
-                BudgetLine(
-                    entity_id=entity_id,
-                    period_id=period_id,
-                    category=cat,
-                    allocated_amount=alloc,
-                    actual_spent=actual,
-                    committed_amount=committed,
-                    currency="KES",
-                    source_document_id=source_document_id,
-                    provenance=provenance,
-                )
-            )
-
-    # "Other" catch-all for the remainder
-    remainder = total_allocated - allocated_so_far
-    if remainder > 0:
-        # Give "Other" a slight negative bias + its own jitter
-        seed_bytes = f"{entity_name}:other".encode()
-        jitter = (int(hashlib.md5(seed_bytes).hexdigest()[:8], 16) % 7) - 3
-        other_rate = execution_rate + Decimal(str(-2 + jitter))
-        other_rate = max(Decimal("40"), min(Decimal("100"), other_rate))
-        actual_rem = (remainder * other_rate / Decimal("100")).quantize(Decimal("0.01"))
-        existing = (
-            session.query(BudgetLine)
-            .filter(
-                BudgetLine.entity_id == entity_id,
-                BudgetLine.period_id == period_id,
-                BudgetLine.category == "Other",
-            )
-            .first()
-        )
-        if existing:
-            existing.allocated_amount = remainder
-            existing.actual_spent = actual_rem
-            existing.committed_amount = Decimal("0")
-            existing.currency = "KES"
-            existing.source_document_id = source_document_id
-            existing.provenance = provenance
-            session.add(existing)
-        else:
-            session.add(
-                BudgetLine(
-                    entity_id=entity_id,
-                    period_id=period_id,
-                    category="Other",
-                    allocated_amount=remainder,
-                    actual_spent=actual_rem,
-                    committed_amount=Decimal("0"),
-                    currency="KES",
-                    source_document_id=source_document_id,
-                    provenance=provenance,
-                )
-            )
-
-
 def _upsert_population(
     session: Session,
     *,
@@ -1076,248 +624,6 @@ def _upsert_population(
     )
 
 
-def _upsert_county_debt(
-    session: Session,
-    *,
-    entity_id: int,
-    county_name: str,
-    debt_outstanding: float,
-    pending_bills: float,
-    source_document_id: int,
-) -> None:
-    """Create Loan rows for county-level debt (outstanding + pending bills)."""
-    provenance = [{"source": "bootstrap", "dataset": COUNTY_DATA_PATH.name}]
-
-    if debt_outstanding and debt_outstanding > 0:
-        existing = (
-            session.query(Loan)
-            .filter(
-                Loan.entity_id == entity_id,
-                Loan.lender == "County Government Debt",
-            )
-            .first()
-        )
-        if existing:
-            existing.principal = Decimal(str(debt_outstanding))
-            existing.outstanding = Decimal(str(debt_outstanding))
-            existing.provenance = provenance
-            session.add(existing)
-        else:
-            session.add(
-                Loan(
-                    entity_id=entity_id,
-                    lender="County Government Debt",
-                    debt_category=DebtCategory.OTHER,
-                    principal=Decimal(str(debt_outstanding)),
-                    outstanding=Decimal(str(debt_outstanding)),
-                    interest_rate=Decimal("0"),
-                    issue_date=FISCAL_START,
-                    maturity_date=None,
-                    currency="KES",
-                    source_document_id=source_document_id,
-                    provenance=provenance,
-                )
-            )
-
-    # THE MODELLED PENDING-BILLS FIGURE IS NOT PUBLISHED AT ALL.
-    #
-    # It is not a measurement. Every one of the 47 is exactly 8% of a budget
-    # that is itself population x KSh 4,500 — the same ratio for the whole
-    # country, which is what a formula looks like, not a set of observations.
-    #
-    # An earlier version of this deferred only where the Treasury BROP had a
-    # real figure, so that "a county the parse has not reached keeps the only
-    # figure it has". That reasoning was wrong: the figure it kept was a
-    # fabrication, and the one county it applied to — Narok — is precisely
-    # the county the BROP reports as having submitted nothing. Publishing 8%
-    # of a modelled budget for the one county that told the Treasury nothing
-    # is the worst case, not the safe one.
-    #
-    # So nothing is written. Where the BROP has a figure the API serves it;
-    # where it does not, county_pending_bills() returns None and the UI shows
-    # absence. See services/publication_gate.py.
-    if pending_bills and pending_bills > 0:
-        logger.info(
-            "%s: not writing the modelled pending-bills figure (%.0f) — it is "
-            "8%% of a modelled budget, not a published one",
-            county_name,
-            pending_bills,
-        )
-        pending_bills = 0.0
-
-    if pending_bills and pending_bills > 0:
-        existing = (
-            session.query(Loan)
-            .filter(
-                Loan.entity_id == entity_id,
-                Loan.lender == "Pending Bills",
-            )
-            .first()
-        )
-        if existing:
-            existing.principal = Decimal(str(pending_bills))
-            existing.outstanding = Decimal(str(pending_bills))
-            existing.provenance = provenance
-            session.add(existing)
-        else:
-            session.add(
-                Loan(
-                    entity_id=entity_id,
-                    lender="Pending Bills",
-                    debt_category=DebtCategory.PENDING_BILLS,
-                    principal=Decimal(str(pending_bills)),
-                    outstanding=Decimal(str(pending_bills)),
-                    interest_rate=Decimal("0"),
-                    issue_date=FISCAL_START,
-                    maturity_date=None,
-                    currency="KES",
-                    source_document_id=source_document_id,
-                    provenance=provenance,
-                )
-            )
-
-
-def _map_severity(level: str) -> Severity:
-    # The Severity enum is coarse (INFO/WARNING/CRITICAL — no HIGH). OAG "high"
-    # findings must NOT be promoted to CRITICAL: that inflated the "critical
-    # findings" count and overstated the donut (audit §2.6). Map "high" to
-    # WARNING; the original OAG wording is preserved per-finding in provenance
-    # (severity_label) so nothing is lost.
-    mapping = {
-        "high": Severity.WARNING,
-        "medium": Severity.WARNING,
-        "low": Severity.INFO,
-        "critical": Severity.CRITICAL,
-        "warning": Severity.WARNING,
-        "info": Severity.INFO,
-    }
-    return mapping.get((level or "").lower(), Severity.WARNING)
-
-
-def _upsert_audit_records(
-    session: Session,
-    *,
-    entity_id: int,
-    period_id: int,
-    country_id: int,
-    county_name: str,
-    audit_entries: List[Dict[str, Any]],
-) -> None:
-    if not audit_entries:
-        return
-
-    # DERIVED FINDINGS WIN.
-    #
-    # These entries come from backend/data/reference/oag_audit_data.json, a hand-maintained
-    # fixture whose age is why bootstrap_reference_data fails the staleness
-    # gate (365 days as of 2026-09-05). Since 49a6e75 the audits domain
-    # extracts county findings from the OAG reports themselves — 1,499 rows
-    # across all 47 counties, each carrying the source document and page it
-    # came from.
-    #
-    # Where a county has those, the fixture must not also write its own: the
-    # two describe the same audit, so seeding both double-counts findings and
-    # reintroduces rows with no traceable source next to rows that have one.
-    # A county the extractor has not reached yet still gets the fixture, so
-    # this loses nothing while the extractor's coverage grows.
-    #
-    # The discriminator is ``extraction_id``, NOT ``source_document_id``.
-    # ``source_document_id`` is NOT NULL on this table and the block below
-    # gives every fixture row one of its own ("<County> County OAG Findings
-    # <FY>"), so testing it would be a test that is true of all audit rows —
-    # the guard would skip any county that had ever been seeded, including
-    # one whose only findings ARE the fixture's. ``extraction_id`` is the FK
-    # to the Layer-3 extractions row, which only the audits loader sets
-    # (seeding/domains/audits/loader.py keys its upsert on it), so it is
-    # exactly the "this came out of a published report" test.
-    derived = (
-        session.query(Audit)
-        .filter(
-            Audit.entity_id == entity_id,
-            Audit.extraction_id.isnot(None),
-        )
-        .count()
-    )
-    if derived:
-        logger.info(
-            "%s: %d extracted finding(s) already present — skipping the %d "
-            "fixture finding(s) from %s",
-            county_name,
-            derived,
-            len(audit_entries),
-            AUDIT_DATA_PATH.name,
-        )
-        return
-
-    audit_doc = _ensure_source_document(
-        session,
-        country_id=country_id,
-        title=f"{county_name} County OAG Findings {FISCAL_LABEL}",
-        publisher="Office of the Auditor General",
-        doc_type=DocumentType.AUDIT,
-        fetch_date=datetime(2024, 6, 30),
-        metadata={"source": AUDIT_DATA_PATH.name, "county": county_name},
-    )
-
-    for entry in audit_entries:
-        finding_text = entry.get("description", "Audit finding")
-        audit_record = (
-            session.query(Audit)
-            .filter(Audit.entity_id == entity_id, Audit.finding_text == finding_text)
-            .first()
-        )
-
-        provenance = [
-            {
-                "source": AUDIT_DATA_PATH.name,
-                "external_id": entry.get("id"),
-                "severity_label": entry.get("severity"),
-                "amount_involved": entry.get("amount_involved"),
-                "status": entry.get("status"),
-                "category": entry.get("category"),
-                "query_type": entry.get("query_type"),
-                "date_raised": entry.get("date_raised"),
-            }
-        ]
-
-        severity = _map_severity(entry.get("severity", "medium"))
-        query_type = entry.get("query_type") or entry.get("category")
-        amount_value = _parse_kes_amount(entry.get("amount_involved"))
-        amount = Decimal(str(amount_value)) if amount_value > 0 else None
-        status = entry.get("status")
-        # No fabricated default — a missing per-finding opinion stays None
-        # rather than asserting "Qualified" for every row (audit §2.6).
-        audit_opinion = entry.get("audit_opinion")
-
-        if audit_record:
-            audit_record.severity = severity
-            audit_record.source_document_id = audit_doc.id
-            audit_record.provenance = provenance
-            audit_record.query_type = query_type
-            audit_record.amount = amount
-            audit_record.status = status
-            audit_record.audit_opinion = audit_opinion
-            audit_record.audit_year = 2024
-            session.add(audit_record)
-            continue
-
-        audit_record = Audit(
-            entity_id=entity_id,
-            period_id=period_id,
-            finding_text=finding_text,
-            severity=severity,
-            recommended_action=None,
-            source_document_id=audit_doc.id,
-            provenance=provenance,
-            query_type=query_type,
-            amount=amount,
-            status=status,
-            audit_opinion=audit_opinion,
-            audit_year=2024,
-        )
-        session.add(audit_record)
-
-
 # ── National-level (Kenya) GDP ─────────────────────────────────────────
 # GDP is loaded from the World Bank-sourced fixture (seeding/real_data/
 # national_gdp.json), NOT a hardcoded series. A wrong constant here
@@ -1349,72 +655,52 @@ def _load_national_gdp_series() -> "list[tuple[int, int]]":
 NATIONAL_POPULATION = 47_564_296  # Census 2019 (KNBS)
 
 
+#: Indicator keys a live seeding domain owns. Bootstrap must not write them:
+#: see ``_seed_economic_indicators``.
+_LIVE_OWNED_INDICATORS = ("inflation_rate", "unemployment_rate")
+
+
 def _seed_economic_indicators(
     session: Session,
     *,
     source_document_id: int,
 ) -> None:
-    """Seed key economic indicators that the /economic/summary endpoint needs."""
-    # Source: KNBS Economic Survey 2025 + CBK Monthly Economic Indicators
+    """Seed the economic indicators no live source owns (the KNBS CPI index).
+
+    ``inflation_rate`` and ``unemployment_rate`` used to be literals here,
+    written on every backend start and every Sunday. The economic_indicators
+    domain's World Bank pull writes the same keys at the same ``YYYY-12-31``
+    dates, so each writer overwrote the other — and this one was wrong:
+    ``inflation_rate`` 2024-12-31 = 6.6 is December **2023**'s figure (CBK
+    gives Dec 2024 as 12-month 2.99, annual average 4.50). The update path
+    also changed ``value`` without ``meta``, leaving a bootstrap number under
+    World Bank provenance (issue #232). A live domain owns those keys now;
+    bootstrap writes none of them and removes the rows it created before.
+    """
+    # Rows this function CREATED carry meta.bootstrap. A row it merely
+    # overwrote got its meta from the live writer, so it has no flag and the
+    # next nightly restores the live value — it is not deleted here.
+    stale = [
+        row
+        for row in session.query(EconomicIndicator)
+        .filter(
+            EconomicIndicator.indicator_type.in_(_LIVE_OWNED_INDICATORS),
+            EconomicIndicator.entity_id.is_(None),
+        )
+        .all()
+        if isinstance(row.meta, dict) and row.meta.get("bootstrap") is True
+    ]
+    for row in stale:
+        session.delete(row)
+    if stale:
+        logger.info(
+            "Deleted %d bootstrap economic-indicator rows now owned by the "
+            "economic_indicators domain",
+            len(stale),
+        )
+
+    # Source: KNBS Consumer Price Index releases
     indicators = [
-        # Inflation rates (KNBS CPI releases)
-        {
-            "type": "inflation_rate",
-            "date": datetime(2024, 12, 31),
-            "value": Decimal("6.6"),
-            "unit": "percent",
-            "source": "KNBS CPI December 2024",
-        },
-        {
-            "type": "inflation_rate",
-            "date": datetime(2024, 6, 30),
-            "value": Decimal("4.6"),
-            "unit": "percent",
-            "source": "KNBS CPI June 2024",
-        },
-        {
-            "type": "inflation_rate",
-            "date": datetime(2023, 12, 31),
-            "value": Decimal("6.6"),
-            "unit": "percent",
-            "source": "KNBS CPI December 2023",
-        },
-        {
-            "type": "inflation_rate",
-            "date": datetime(2023, 6, 30),
-            "value": Decimal("7.9"),
-            "unit": "percent",
-            "source": "KNBS CPI June 2023",
-        },
-        {
-            "type": "inflation_rate",
-            "date": datetime(2025, 1, 31),
-            "value": Decimal("3.3"),
-            "unit": "percent",
-            "source": "KNBS CPI January 2025",
-        },
-        # Unemployment rates (KNBS Labour Force Survey)
-        {
-            "type": "unemployment_rate",
-            "date": datetime(2024, 12, 31),
-            "value": Decimal("5.4"),
-            "unit": "percent",
-            "source": "KNBS QLFS Q4 2024",
-        },
-        {
-            "type": "unemployment_rate",
-            "date": datetime(2023, 12, 31),
-            "value": Decimal("5.6"),
-            "unit": "percent",
-            "source": "KNBS QLFS Q4 2023",
-        },
-        {
-            "type": "unemployment_rate",
-            "date": datetime(2022, 12, 31),
-            "value": Decimal("5.7"),
-            "unit": "percent",
-            "source": "KNBS QLFS Q4 2022",
-        },
         # CPI index values
         {
             "type": "CPI",
@@ -1665,149 +951,6 @@ def _seed_national_data(
     )
 
 
-def _seed_federal_audits(
-    session: Session,
-    *,
-    country: Country,
-    period: FiscalPeriod,
-) -> None:
-    """Seed national/federal government audit findings from the OAG report."""
-    payload = _load_json(NATIONAL_AUDIT_PATH)
-    findings = payload.get("national_audit_findings", [])
-    if not findings:
-        logger.warning("No national audit findings to seed")
-        return
-
-    report_meta = payload.get("metadata", {})
-    opinion = payload.get("audit_opinion_summary", {})
-
-    # Create source document for the OAG national report
-    oag_doc = _ensure_source_document(
-        session,
-        country_id=country.id,
-        title=report_meta.get(
-            "report_title",
-            "Report of the Auditor General on National Government FY 2023/2024",
-        ),
-        publisher="Office of the Auditor General",
-        doc_type=DocumentType.AUDIT,
-        fetch_date=datetime(2024, 12, 15),
-        metadata={
-            "source": NATIONAL_AUDIT_PATH.name,
-            "scope": "national",
-            "auditor_general": report_meta.get("auditor_general", ""),
-            "fiscal_year": report_meta.get("fiscal_year", ""),
-            "opinion_type": opinion.get("opinion_type", ""),
-            "total_amount_questioned": opinion.get("total_amount_questioned", ""),
-            "key_statistics": opinion.get("key_statistics", {}),
-            "basis_for_qualification": opinion.get("basis_for_qualification", []),
-            "emphasis_of_matter": opinion.get("emphasis_of_matter", []),
-        },
-    )
-
-    seeded = 0
-    for entry in findings:
-        entity_name = entry.get("entity_name", "")
-
-        # Find matching entity — try MINISTRY first, then NATIONAL
-        entity = (
-            session.query(Entity)
-            .filter(
-                Entity.country_id == country.id,
-                Entity.canonical_name == entity_name,
-            )
-            .first()
-        )
-        if not entity:
-            # Try NATIONAL entity for "Republic of Kenya"
-            entity = (
-                session.query(Entity)
-                .filter(
-                    Entity.country_id == country.id,
-                    Entity.type == EntityType.NATIONAL,
-                )
-                .first()
-            )
-        if not entity:
-            logger.warning(
-                "Skipping national finding %s: no entity '%s'",
-                entry.get("id"),
-                entity_name,
-            )
-            continue
-
-        finding_text = entry.get("description", "Federal audit finding")
-        existing = (
-            session.query(Audit)
-            .filter(
-                Audit.entity_id == entity.id,
-                Audit.finding_text == finding_text,
-            )
-            .first()
-        )
-
-        severity = _map_severity(entry.get("severity", "medium"))
-        provenance = [
-            {
-                "source": NATIONAL_AUDIT_PATH.name,
-                "external_id": entry.get("id"),
-                "severity_label": entry.get("severity"),
-                "amount_involved": entry.get("amount_involved"),
-                "status": entry.get("status"),
-                "category": entry.get("category"),
-                "query_type": entry.get("query_type"),
-                "date_raised": entry.get("date_raised"),
-                "report_section": entry.get("report_section"),
-                "scope": "national",
-            }
-        ]
-
-        query_type = entry.get("query_type") or entry.get("category")
-        amount_value = _parse_kes_amount(entry.get("amount_involved"))
-        amount = Decimal(str(amount_value)) if amount_value > 0 else None
-        status = entry.get("status")
-        # No fabricated default — a missing per-finding opinion stays None
-        # rather than asserting "Qualified" for every row (audit §2.6).
-        audit_opinion = entry.get("audit_opinion")
-        fiscal_year_raw = report_meta.get("fiscal_year") or ""
-        fiscal_year_digits = "".join(
-            c for c in fiscal_year_raw.split("/")[0] if c.isdigit()
-        )
-        audit_year = int(fiscal_year_digits) if fiscal_year_digits else 2024
-
-        if existing:
-            existing.severity = severity
-            existing.recommended_action = entry.get("recommended_action")
-            existing.source_document_id = oag_doc.id
-            existing.provenance = provenance
-            existing.query_type = query_type
-            existing.amount = amount
-            existing.status = status
-            existing.audit_opinion = audit_opinion
-            existing.audit_year = audit_year
-            session.add(existing)
-        else:
-            session.add(
-                Audit(
-                    entity_id=entity.id,
-                    period_id=period.id,
-                    finding_text=finding_text,
-                    severity=severity,
-                    recommended_action=entry.get("recommended_action"),
-                    source_document_id=oag_doc.id,
-                    provenance=provenance,
-                    query_type=query_type,
-                    amount=amount,
-                    status=status,
-                    audit_opinion=audit_opinion,
-                    audit_year=audit_year,
-                )
-            )
-            seeded += 1
-
-    logger.info("Federal audit findings seeded: %d new records", seeded)
-
-
 def _seed_national_budget(session: Session) -> None:
     """Seed national-government BudgetLine rows from the CoB NG-BIRR fixture.
 
@@ -1950,8 +1093,6 @@ def initialize_reference_data(
             quick_session.close()
 
     county_records: Dict[str, Any] = {}
-    audit_by_county: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
-    missing_by_county: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
 
     if not skip_county_loop:
         county_payload = _load_json(COUNTY_DATA_PATH)
@@ -1959,12 +1100,6 @@ def initialize_reference_data(
         if not county_records:
             logger.warning("No county data available for seeding")
 
-        audit_payload = _load_json(AUDIT_DATA_PATH)
-        for entry in audit_payload.get("audit_queries", []) or []:
-            audit_by_county[entry.get("county", "")].append(entry)
-
-        for entry in audit_payload.get("missing_funds_cases", []) or []:
-            missing_by_county[entry.get("county", "")].append(entry)
 
     started_at = datetime.now(timezone.utc)
     session = SessionLocal()
@@ -1973,11 +1108,11 @@ def initialize_reference_data(
         period = _ensure_fiscal_period(session, country.id)
 
         for county_name, info in county_records.items():
-            county_code = None
-            if code_lookup:
-                county_code = code_lookup.get(county_name)
-            if not county_code:
-                county_code = info.get("county_code")
+            from services.county_identity import official_county_code
+
+            county_code = official_county_code(county_name)
+            if county_code is None:
+                raise ValueError(f"Unrecognized county identity: {county_name!r}")
             canonical_name = f"{county_name} County"
             entity = (
                 session.query(Entity)
@@ -2037,21 +1172,6 @@ def initialize_reference_data(
             if info.get("governor"):
                 meta["governor"] = info["governor"]
             meta["last_updated"] = info.get("last_updated")
-            if missing_by_county.get(county_name):
-                meta["missing_funds_cases"] = missing_by_county[county_name]
-
-            county_audits = audit_by_county.get(county_name, [])
-            if county_audits:
-                total_amount = sum(
-                    _parse_kes_amount(entry.get("amount_involved"))
-                    for entry in county_audits
-                )
-                meta["audit_summary"] = {
-                    "queries_count": len(county_audits),
-                    "total_amount_involved": total_amount,
-                    "last_refreshed": datetime.now(timezone.utc).isoformat(),
-                }
-
             entity.meta = meta
             session.add(entity)
             session.flush()
@@ -2076,19 +1196,13 @@ def initialize_reference_data(
                 },
             )
 
-            allocated = _parse_decimal(info.get("budget_2025"))
-            execution_rate = _parse_decimal(info.get("budget_execution_rate"))
-            committed = _parse_decimal(info.get("pending_bills"))
-            _upsert_budget_lines(
-                session,
-                entity_id=entity.id,
-                entity_name=county_name,
-                period_id=period.id,
-                source_document_id=budget_doc.id,
-                total_allocated=allocated,
-                execution_rate=execution_rate,
-                pending_bills=committed,
-            )
+            # County money is NOT written here. Budget lines (modelled as
+            # population x KSh 4,500, split into sectors), county debt (a flat
+            # 15% of that) and pending bills (8%) all came out of this loop on
+            # a fresh database, where they competed with — and in a period
+            # without live rows, stood in for — the Controller of Budget's
+            # CBIRR. The counties_budget and pending_bills domains own county
+            # money; this loop keeps the reference skeleton.
 
             # Seed PopulationData table (Census 2019)
             _upsert_population(
@@ -2098,30 +1212,8 @@ def initialize_reference_data(
                 source_document_id=budget_doc.id,
             )
 
-            # Seed Loan table (county debt + pending bills)
-            _upsert_county_debt(
-                session,
-                entity_id=entity.id,
-                county_name=county_name,
-                debt_outstanding=float(info.get("debt_outstanding", 0)),
-                pending_bills=float(info.get("pending_bills", 0)),
-                source_document_id=budget_doc.id,
-            )
-
-            _upsert_audit_records(
-                session,
-                entity_id=entity.id,
-                period_id=period.id,
-                country_id=country.id,
-                county_name=county_name,
-                audit_entries=county_audits,
-            )
-
         # --- National-level data (GDP + sovereign debt) ---
         _seed_national_data(session, country=country, period=period)
-
-        # --- Federal/National government audit findings ---
-        _seed_federal_audits(session, country=country, period=period)
 
         # --- National-government budget execution (CoB NG-BIRR) ---
         _seed_national_budget(session)

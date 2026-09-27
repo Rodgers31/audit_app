@@ -6,6 +6,7 @@ import {
   BudgetSource,
   County,
   CountyComprehensive,
+  CountyRevenue,
 } from '@/types';
 import type { CountyFiscalYears } from '@/lib/utils';
 import { apiClient } from './axios';
@@ -29,6 +30,7 @@ interface BackendCountyResponse {
   // Budget
   coordinates?: [number, number];
   total_budget?: number;
+  financial_summary?: { total_allocation: number | null; accounting_basis?: string | null };
   total_spent?: number;
   budget_utilization?: number;
   development_budget?: number;
@@ -38,8 +40,10 @@ interface BackendCountyResponse {
   budget_source?: BudgetSource;
   sector_breakdown?: Record<string, { allocated: number; spent: number }>;
   // Revenue / money
-  money_received?: number;
+  /** Withheld (null) by the API since #238: it was the budget under another name. */
+  money_received?: number | null;
   revenue_collection?: number;
+  revenue?: CountyRevenue;
   pending_bills?: number | null;
   // Debt
   debt?: number;
@@ -103,7 +107,9 @@ const publishedAmount = (...candidates: Array<number | null | undefined>): numbe
 export const transformCountyData = (bc: BackendCountyResponse): County => {
   // Use real coordinates from backend; undefined if not provided (do not default to Nairobi)
   const coordinates: [number, number] | undefined = bc.coordinates || undefined;
-  const budget = publishedAmount(bc.total_budget, bc.budget_2025);
+  const budget = bc.financial_summary
+    ? reportedAmount(bc.financial_summary.total_allocation)
+    : publishedAmount(bc.total_budget, bc.budget_2025);
   const debt = publishedAmount(bc.total_debt, bc.debt);
 
   // Fiscal grade — from the backend's financial-health index, NOT an audit
@@ -169,13 +175,16 @@ export const transformCountyData = (bc: BackendCountyResponse): County => {
     // The API genuinely returns gdp: null for every county — no county GDP
     // series is ingested. Rendering 0 said each county produces nothing (F2).
     gdp: bc.gdp ?? undefined,
-    moneyReceived: publishedAmount(bc.money_received, bc.total_spent),
+    // Money received, or nothing. It used to fall back to `total_spent`,
+    // publishing what a county SPENT as what it received (#238).
+    moneyReceived: reportedAmount(bc.money_received),
     budgetUtilization: bc.budget_utilization ?? undefined,
     revenueCollection: bc.revenue_collection ?? undefined,
+    revenue: bc.revenue,
     // `?? 0` here published a zero for a county with no figure. The API now
-    // returns null when nobody has published one — Narok submitted no
-    // pending-bills data to the Treasury for FY 2024/25, and the BROP says so
-    // — and "owes nothing" is a different claim from "not reported".
+    // returns null when nobody has published one — Nandi reported no trade
+    // payables to the Controller of Budget at 30 June 2026, and the report
+    // says so — and "owes nothing" is a different claim from "not reported".
     //
     // NOT publishedAmount(): that treats 0 as absence, which is right for the
     // backend's SUM-backed fields but wrong here. A publisher can report zero

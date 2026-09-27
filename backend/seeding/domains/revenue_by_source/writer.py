@@ -17,6 +17,9 @@ from .parser import RevenueBySourceRecord
 
 logger = logging.getLogger("seeding.revenue_by_source.writer")
 
+_DEFAULT_PUBLISHER = "Kenya Revenue Authority"
+_DEFAULT_TITLE = "KRA Annual Revenue Performance Report"
+
 
 @dataclass
 class PersistenceStats:
@@ -39,13 +42,36 @@ def _ensure_source_document(
     record: RevenueBySourceRecord,
 ) -> SourceDocument:
     url = record.source_url or settings.revenue_by_source_dataset_url
+    # The row declares who published it. This was a literal "Kenya Revenue
+    # Authority" / "KRA Annual Revenue Performance Report" for every URL, so
+    # the World Bank headline totals were filed as a KRA report (issue #267;
+    # the same defect as #232 in economic_indicators). Undeclared rows (the
+    # fixture, which cites KRA press releases) keep the old default.
+    publisher = record.publisher or _DEFAULT_PUBLISHER
+    title = record.source_title or _DEFAULT_TITLE
     stmt = select(SourceDocument).where(SourceDocument.url == url)
     source = session.execute(stmt).scalar_one_or_none()
+    if source is not None:
+        # Only a declaration corrects an existing document; the default is
+        # for creating one. Otherwise an undeclared row at the same URL would
+        # reset a correct label on every run.
+        if record.publisher and source.publisher != record.publisher:
+            logger.info(
+                "Relabelled source document %s publisher %r -> %r",
+                source.id, source.publisher, record.publisher,
+            )
+            source.publisher = record.publisher
+        if record.source_title and source.title != record.source_title:
+            logger.info(
+                "Relabelled source document %s title %r -> %r",
+                source.id, source.title, record.source_title,
+            )
+            source.title = record.source_title
     if source is None:
         source = SourceDocument(
             country_id=country_id,
-            publisher="Kenya Revenue Authority",
-            title="KRA Annual Revenue Performance Report",
+            publisher=publisher,
+            title=title,
             url=url,
             file_path=None,
             fetch_date=datetime.now(timezone.utc),
@@ -63,6 +89,10 @@ def _apply_updates(
     record: RevenueBySourceRecord,
     source_document_id: int,
 ) -> bool:
+    # An unavailable observation cannot re-label a retained actual with a
+    # fixture/projection's source. Explicit withdrawals are handled below.
+    if row.amount_billion_kes is not None and record.amount_billion_kes is None and not record.metadata.get("absent_reason"):
+        return False
     updated = False
 
     def _set(attr: str, value: object) -> None:
@@ -72,7 +102,7 @@ def _apply_updates(
             updated = True
 
     _set("category", record.category)
-    if record.amount_billion_kes is not None:
+    if record.amount_billion_kes is not None or record.metadata.get("absent_reason"):
         _set("amount_billion_kes", record.amount_billion_kes)
     _set("target_billion_kes", record.target_billion_kes)
     _set("performance_pct", record.performance_pct)

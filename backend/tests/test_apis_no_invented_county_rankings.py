@@ -1,5 +1,5 @@
-"""No module under ``apis/``, ``analysis/`` or ``extractors/`` may hand-pick a
-set of named counties.
+"""No module in this repository may hand-pick a set of named counties —
+unless it says why in writing.
 
 On 2026-09-07, ``apis/enhanced_county_analytics_api.py`` served this from
 ``GET /analytics/comprehensive``::
@@ -25,7 +25,7 @@ Lamu as the counties needing improvement is a statement of fact about five
 public bodies, actionable under the Defamation Act (Cap 36) whether or not the
 number beside it is flattering.
 
-THE RULE. A module under one of the scanned roots may not contain a literal
+THE RULE. A module anywhere in the tree may not contain a literal
 that names some-but-not-all of Kenya's 47 counties. A hand-typed subset IS the
 judgement — which counties made the list is the claim, and no amount of
 renaming the key changes that. The full 47 are exempt: a complete roster is a
@@ -59,12 +59,19 @@ parameters, not a selection. A per-county record says something *about* that
 county; a coefficient says something about the formula.
 
 WHY THE ROOTS GREW. This guard was rooted at ``apis/`` because that is where
-the payload it was written for sat. ``extractors/`` ships — ``Dockerfile:26``
-copies it into the production image — and the two guards beside this file
-(``test_apis_no_invented_national_figures.py``,
+the payload it was written for sat. ``extractors/`` ships —
+``etl/Dockerfile:20`` copies the repo root into the published ETL image — and
+the two guards beside this file (``test_apis_no_invented_national_figures.py``,
 ``test_no_published_figure_from_hash_or_clock.py``) already scan all three
 roots. A claim about a named county government is the same claim whichever
 directory it is typed in.
+
+WHY THE ROOTS WENT AWAY (issue #206). Three roots were still an inclusion
+list. ``county_analytics_generator.py`` at the repo root carried five
+hand-typed county profiles, each with a ``missing_funds`` figure — the exact
+payload of the second shape above — and this guard was green beside it because
+it never opened the file. It now walks the whole tree; ``tests/_repo_tree.py``
+lists, with reasons, what it skips.
 
 ESCAPE HATCH, following ``local/no-zero-fallback-on-published-figure`` (7b5d366):
 a suppression must carry a written reason. Put
@@ -82,12 +89,7 @@ from pathlib import Path
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-SCANNED_ROOTS = (
-    REPO_ROOT / "apis",
-    REPO_ROOT / "analysis",
-    REPO_ROOT / "extractors",
-)
+from tests._repo_tree import python_modules, rel as _rel
 
 # The 47 counties of the First Schedule to the Constitution of Kenya (2010).
 # Hardcoded deliberately: this guard must not weaken because a roster file
@@ -265,32 +267,18 @@ def find_county_selections(source: str, where: str = "<source>") -> list[str]:
     return findings
 
 
-def _modules(root: Path) -> list[Path]:
-    return sorted(root.rglob("*.py")) if root.is_dir() else []
+# The whole tree, minus the written exclusions in ``tests/_repo_tree.py``.
+SCANNED_MODULES = python_modules()
 
 
-SCANNED_MODULES = [m for root in SCANNED_ROOTS for m in _modules(root)]
-
-
-def _rel(module: Path) -> str:
-    return module.relative_to(REPO_ROOT).as_posix()
-
-
-def test_the_scanned_directories_are_where_we_think_they_are():
+def test_the_sweep_is_not_empty():
     """Anti-vacuity: an empty sweep must never read as a pass.
 
-    Skip a root that has been removed entirely — deleting one is a legitimate
-    outcome and the owner's call — but fail if a root exists and the scan finds
-    nothing in it, and fail if every root has vanished at once.
+    The walk itself — that it reaches the root, new directories, and every
+    tracked module — is pinned in ``test_guards_scan_the_whole_tree.py``.
     """
-    surviving = [root for root in SCANNED_ROOTS if root.is_dir()]
-    if not surviving:
-        pytest.skip("every scanned root has been removed — nothing to guard")
-    for root in surviving:
-        assert _modules(root), (
-            f"{root.name}/ exists but holds no .py files — its scan would be vacuous"
-        )
-    assert SCANNED_MODULES, "no modules collected — the sweep would be silent"
+    scanned = {_rel(m) for m in SCANNED_MODULES}
+    assert "backend/main.py" in scanned, "the sweep does not reach the shipping API"
 
 
 def test_the_detector_catches_the_payload_it_was_written_for():
@@ -419,7 +407,6 @@ factor = economic_factors.get(county, 1.0)
     )
 
 
-@pytest.mark.skipif(not SCANNED_MODULES, reason="the scanned roots hold no modules")
 @pytest.mark.parametrize(
     "module",
     SCANNED_MODULES,

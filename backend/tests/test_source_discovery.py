@@ -93,6 +93,22 @@ class TestFiscalYearInThePath:
     def test_real_treasury_paths(self, path, expected):
         assert parse_fiscal_year(path) == expected
 
+    @pytest.mark.parametrize("path,expected", [
+        # Verbatim hrefs from https://www.treasury.go.ke/budget-summary-revenue-expenditure
+        # on 2026-09-26. Treasury separates the Budget Summary's year pair
+        # with an UNDERSCORE, which the range regex did not accept, so the
+        # enacted edition parsed to None and nothing could say which fiscal
+        # year it describes (issue #237).
+        ("/sites/default/files/Budget%20summary/Budget%20Summary%20for%20the%20FY%202026_27%20Budget.pdf", "FY 2026/27"),
+        ("/sites/default/files/Budget%20summary/Budget-Summary-for-the-FY-2023_24.pdf", "FY 2023/24"),
+        ("/sites/default/files/Budget%20summary/Budget-Summary-for-the-FY-2022_23.pdf", "FY 2022/23"),
+        ("https://oldsite.treasury.go.ke/wp-content/uploads/2025/06/Budget-Summary-for-the-FY-2025-26F.pdf", "FY 2025/26"),
+        # Still no fiscal year: a DATE, not a year pair.
+        ("/sites/default/files/Budget%20summary/29.04.2021_Final-Budget-Summary_TP.pdf", None),
+    ])
+    def test_budget_summary_hrefs(self, path, expected):
+        assert parse_fiscal_year(path) == expected
+
     @pytest.mark.parametrize("path", [
         # Vote-code ranges are everywhere in these filenames and are NOT
         # fiscal years. The consecutive-years rule is what separates them.
@@ -306,5 +322,5 @@ class TestDraftDocumentsAreNotPublishable:
 
         from seeding.domains.pending_bills import fetcher
 
-        source = inspect.getsource(fetcher._discover_brop_url)
+        source = inspect.getsource(fetcher._discover_brop)
         assert 'must_not_match=("draft",)' in source

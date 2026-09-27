@@ -32,7 +32,12 @@ def generate_api_testing_guide():
     print("   under issue #188 — /national/overview, /national/debt,")
     print("   /national/ministries, /national/ministries/{name},")
     print("   /national/revenue and /analytics/comprehensive served typed-in")
-    print("   debt, budget and revenue figures. The nine below are unchanged.")
+    print("   debt, budget and revenue figures. Two more were withdrawn on")
+    print("   2026-09-26 — /counties/statistics and /counties/{county_name}")
+    print("   served the modelled county file (budget = population x 4,500 x")
+    print("   a hand-set factor, missing funds 2% of that, audit ratings read")
+    print("   off the same factor) as fact about named counties. The seven")
+    print("   below are unchanged.")
     print()
 
     modernized_endpoints = [
@@ -55,20 +60,6 @@ def generate_api_testing_guide():
             "endpoint": "/refresh-data",
             "description": "Refresh all data from source files",
             "params": None,
-            "body": None,
-        },
-        {
-            "method": "GET",
-            "endpoint": "/counties/statistics",
-            "description": "Get county statistics from realistic data",
-            "params": None,
-            "body": None,
-        },
-        {
-            "method": "GET",
-            "endpoint": "/counties/{county_name}",
-            "description": "Get specific county from realistic data",
-            "params": "county_name (path): County name",
             "body": None,
         },
         {
@@ -194,20 +185,6 @@ def generate_api_testing_guide():
             "body": None,
         },
         {
-            "method": "POST",
-            "endpoint": "/api/v1/etl/kenya/start",
-            "description": "Start Kenya ETL pipeline",
-            "params": None,
-            "body": None,
-        },
-        {
-            "method": "GET",
-            "endpoint": "/api/v1/etl/status/{job_id}",
-            "description": "Get ETL job status",
-            "params": "job_id (path): ETL job ID",
-            "body": None,
-        },
-        {
             "method": "GET",
             "endpoint": "/api/v1/etl/kenya/sources",
             "description": "Get Kenya ETL data sources status",
@@ -246,12 +223,10 @@ def generate_api_testing_guide():
     print("   Modernized API:")
     print("   • GET /health")
     print("   • GET /data-sources")
-    print("   • GET /counties/statistics")
     print("   • GET /analytics/transparency")
     print()
     print("   Main Backend:")
     print("   • GET /api/v1/countries")
-    print("   • POST /api/v1/etl/kenya/start")
     print("   • GET /api/v1/analytics/top_spenders")
     print()
     print("4. 📊 EXPECTED RESPONSE FORMATS:")
@@ -267,7 +242,6 @@ def generate_api_testing_guide():
     print()
     print("✅ TESTING COMPLETE WHEN:")
     print("   • All endpoints return valid JSON responses")
-    print("   • County data shows realistic figures (not fake patterns)")
     print("   • Audit data contains real OAG queries")
     print("   • No hard-coded fake values in responses")
 

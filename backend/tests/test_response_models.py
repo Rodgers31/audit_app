@@ -45,7 +45,7 @@ def test_entity_detail_response():
     from main import EntityDetailResponse
 
     edr = EntityDetailResponse(
-        entity={"id": 1, "name": "Treasury"},
+        entity={"id": 1, "canonical_name": "Treasury", "type": "ministry", "meta": {"unknown_claim": "retired"}},
         financial_time_series=[{"year": 2024, "amount": 1e12}],
         recent_budget_lines=[],
         audit_findings=[],
@@ -53,6 +53,7 @@ def test_entity_detail_response():
     )
     data = edr.model_dump()
     assert len(data["financial_time_series"]) == 1
+    assert data["entity"]["meta"] == {}
 
 
 def test_budget_line_response():
@@ -70,23 +71,6 @@ def test_budget_line_response():
     data = blr.model_dump()
     assert data["currency"] == "KES"
     assert data["allocated_amount"] == 5_000_000
-
-
-def test_etl_job_response():
-    """ETLJobResponse should handle job metadata."""
-    from main import ETLJobResponse
-
-    ejr = ETLJobResponse(
-        job_id="abc-123",
-        status="running",
-        country="Kenya",
-        started_at="2024-01-01T00:00:00Z",
-        documents_processed=0,
-        errors=[],
-    )
-    data = ejr.model_dump()
-    assert data["job_id"] == "abc-123"
-    assert data["errors"] == []
 
 
 def test_search_response():

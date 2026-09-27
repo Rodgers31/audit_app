@@ -1,0 +1,20 @@
+{
+  "source_url": "https://cob.go.ke/download/county-governments-budget-implementation-review-report-for-the-financial-year-2025-26/?wpdmdl=16482",
+  "sha256": "5f5e4f97bbe2752957f284950d0ba90fcff4d47b35fc0ac96a9106ffb59821b3",
+  "fiscal_period": "FY2025/26",
+  "summary": {
+    "table": "2.1", "pdf_page": 37, "printed_page": 3,
+    "label": "Actual Realised (Kshs. Million)", "formula": "F=D+E",
+    "ordinary_osr_million": "15618.11", "fif_aia_million": "5508.12", "total_osr_million": "21126.23"
+  },
+  "chapter": {
+    "table": "3.426", "pdf_pages": [564, 565], "printed_pages": [530, 531],
+    "cash_label": "Actual Receipts (Kshs.)", "receivables_label": "Receivables in FY 2025/26 (Kshs.)",
+    "accrual_label": "Total Revenues (on an accrual basis) in the FY 2025/26 (Kshs.)", "formula": "D=B+C",
+    "ordinary_osr": {"cash": "3799700513", "receivables": "11818407252", "accrual": "15618107765"},
+    "fif": {"cash": "2414889970", "receivables": "3093226161", "accrual": "5508116131"},
+    "total_cash_including_opening_balance": "15790774484",
+    "total_receivables": "14911633413", "total_accrual_including_opening_balance": "30702407897"
+  },
+  "interpretation": "Source-supported reconciliation: summary components match chapter accrual components rounded individually to 0.01 million. The summary itself labels them Actual Realised. Do not generalize this explanation to other counties."
+}

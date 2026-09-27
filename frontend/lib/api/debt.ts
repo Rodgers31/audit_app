@@ -4,6 +4,7 @@
 import { apiClient } from './axios';
 import { COUNTIES_ENDPOINTS, DEBT_ENDPOINTS, buildUrlWithParams } from './endpoints';
 import { ApiResponse, DebtDataResponse } from './types';
+import type { ImfDsaRating } from '@/lib/debt/dsaRating';
 
 // Get debt data for a county
 export const getCountyDebtData = async (countyId: string): Promise<DebtDataResponse> => {
@@ -111,28 +112,90 @@ export const getDebtRiskAssessment = async (): Promise<any> => {
 };
 
 // Get individual national government loans
+
+/** Where a published figure came from. */
+export interface FigureSource {
+  publisher: string;
+  title: string;
+  url: string;
+  as_of?: string | null;
+  publisher_date?: string | null;
+  date_basis?: string;
+  retrieved_at?: string | null;
+  page?: string | null;
+}
+
+/**
+ * One register row. The rate and the annual cost are each EITHER a value with
+ * its basis, label and source, OR null with the reason there is none — the
+ * backend publishes them only from a row's interest declaration
+ * (backend/seeding/domains/national_debt/interest_terms.py, issue #235).
+ * They used to be `"0.00%"` / `0` for 45 of 48 rows.
+ */
 export interface NationalLoan {
   lender: string;
   lender_type: string;
   principal: string;
   outstanding: string;
-  interest_rate: string;
   issue_date: string;
   maturity_date: string;
-  status: string;
-  annual_service_cost: number;
+  /** null when the row has no maturity date — NOT "matured". */
+  status: 'active' | 'matured' | null;
   outstanding_numeric: number;
   principal_numeric: number;
+  /** "13.41%", or null when no publisher gives a rate. */
+  interest_rate: string | null;
+  interest_rate_pct: number | null;
+  interest_rate_basis: 'coupon_weighted_average' | 'auction_yield' | null;
+  interest_rate_label: string | null;
+  interest_rate_source: FigureSource | null;
+  interest_rate_absent_reason: string | null;
+  annual_service_cost: number | null;
+  /** `published`: a publisher's own interest-paid figure. `modelled`: balance × a published rate. */
+  annual_service_basis: 'published' | 'modelled' | null;
+  annual_service_label: string | null;
+  annual_service_source: FigureSource | null;
+  annual_service_absent_reason: string | null;
+}
+
+/** The current fiscal year's published debt service — the same row /fiscal/summary calls current. */
+export interface AnnualDebtService {
+  value_kes: number | null;
+  fiscal_year?: string;
+  measure?: string;
+  source?: FigureSource;
+  absent_reason: string | null;
 }
 
 export interface NationalLoansResponse {
   loans: NationalLoan[];
   total_loans: number;
-  total_outstanding: number;
-  total_annual_service_cost: number;
+  total_outstanding: number | null;
+  /**
+   * Always null now: the rows are on different bases, so their sum is not a
+   * published figure. It was 1,022Bn — three 2025 fixture rates × three
+   * balances. Read `annual_debt_service` instead.
+   */
+  total_annual_service_cost: null;
+  total_annual_service_cost_absent_reason?: string;
+  annual_debt_service: AnnualDebtService;
   source: string;
   source_url: string;
+  last_updated?: string;
 }
+
+/** Treasury's Annual Public Debt Reports, discovered from its own listing page. */
+export interface AnnualDebtReportsResponse {
+  status: 'success' | 'unavailable';
+  listing_url: string;
+  reason?: string;
+  reports: Array<{ fiscal_year: string; title: string; url: string }>;
+}
+
+export const getAnnualDebtReports = async (): Promise<AnnualDebtReportsResponse> => {
+  const response = await apiClient.get<AnnualDebtReportsResponse>(DEBT_ENDPOINTS.ANNUAL_REPORTS);
+  return response.data;
+};
 
 export const getNationalLoans = async (): Promise<NationalLoansResponse> => {
   const response = await apiClient.get<NationalLoansResponse>(DEBT_ENDPOINTS.LOANS);
@@ -181,11 +244,18 @@ export interface PendingBillEntry {
 }
 
 export interface PendingBillsSummary {
-  total_pending: number;
-  national_total: number;
-  county_total: number;
+  // Each null when nothing is published for it; the total is null unless
+  // national and county are both published and stated at one date — the
+  // national half is the Treasury BROP's, the county half the Controller of
+  // Budget's year-end report (#265, #238).
+  total_pending: number | null;
+  national_total: number | null;
+  county_total: number | null;
   record_count: number;
-  as_at_date?: string;
+  /** ISO date both halves are stated at; null when they differ. */
+  as_at?: string | null;
+  national_as_at?: string | null;
+  county_as_at?: string | null;
 }
 
 export interface PendingBillsResponse {
@@ -213,7 +283,7 @@ export const getPendingBills = async (): Promise<PendingBillsResponse> => {
 
 // Enhanced pending bills summary (breakdown by type, aging, top counties, trend)
 export interface PendingBillsSummaryResponse {
-  total_pending_amount: number;
+  total_pending_amount: number | null;
   breakdown_by_type: {
     type: string;
     amount: number;
@@ -234,8 +304,10 @@ export interface PendingBillsSummaryResponse {
   }[];
   trend: {
     year: string;
-    amount: number;
+    total_amount: number;
   }[];
+  /** Why ``trend`` is empty when the halves are stated at different dates. */
+  trend_absent_reason?: string | null;
 }
 
 export const getPendingBillsSummary = async (): Promise<PendingBillsSummaryResponse> => {
@@ -281,18 +353,16 @@ export const getCountyPendingBills = async (countyId: string): Promise<CountyPen
 // the sustainability gauges were withdrawn (credibility audit F5/F10/F26) — so
 // the cost of it being wrong is deferred, not absent.
 
-/** A measure published beside the threshold it is judged against. */
+/** A measured ratio, independent of the separately cited DSA assessment. */
 export interface SustainabilityIndicator {
   value: number;
   /** Calendar year, or a fiscal-year label such as "FY 2026/27". */
   year: number | string;
-  status: 'above' | 'warning' | 'below';
 }
 
 export interface DebtToGdpIndicator extends SustainabilityIndicator {
   year: number;
-  threshold_imf: number;
-  threshold_eac: number;
+  assessment?: string;
   /**
    * Which measure this ratio is, in words. Present since #179 — the same
    * figure and basis as /debt/national's headline, so a reader comparing the
@@ -303,7 +373,9 @@ export interface DebtToGdpIndicator extends SustainabilityIndicator {
 }
 
 export interface DebtServiceIndicator extends SustainabilityIndicator {
-  threshold: number;
+  basis?: string;
+  source_document_id?: number | null;
+  page_ref?: string | null;
 }
 
 /**
@@ -395,8 +467,10 @@ export interface DebtProjection {
 
 export interface DebtSustainabilityResponse {
   status?: string;
+  imf_dsa?: ImfDsaRating;
   debt_to_gdp: DebtToGdpIndicator | null;
   debt_service_to_revenue: DebtServiceIndicator | null;
+  debt_service_to_revenue_absent_reason?: string | null;
   /** External debt as % of total public debt. */
   external_debt_share: number | null;
   /** Empty when no published forecast is seeded — see `projections_absent_reason`. */
