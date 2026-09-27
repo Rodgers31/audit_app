@@ -8,6 +8,7 @@
  * users who never open this tab.
  */
 import { useLang } from '@/lib/i18n/LangProvider';
+import UnaccountedFindings from '@/components/accountability/UnaccountedFindings';
 import type { TranslationKey } from '@/lib/i18n/messages';
 import { CountyComprehensive } from '@/types';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -267,19 +268,7 @@ export default function AuditTab({ data }: { data: CountyComprehensive }) {
       </div>
 
       {/* ── Missing funds alert ── */}
-      {(missing_funds.total_amount > 0 || missing_funds.cases_count > 0) && (
-        <div className='bg-red-50 border border-red-200 rounded-xl p-4'>
-          <div className='flex items-center gap-2 mb-1'>
-            <AlertTriangle size={16} className='text-red-600' />
-            <span className='text-sm font-semibold text-red-900'>
-              {fmtKES(missing_funds.total_amount)} {t('county.audit.missing_unaccounted')}
-            </span>
-          </div>
-          <div className='text-xs text-red-700'>
-            {missing_funds.cases_count} {t('county.audit.cases_flagged')}
-          </div>
-        </div>
-      )}
+      <UnaccountedFindings cases={missing_funds.cases} />
 
       {/* ── Findings list ── */}
       <div className='space-y-3'>

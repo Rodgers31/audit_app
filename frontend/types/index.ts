@@ -90,12 +90,26 @@ export interface CountyRevenue {
   total_revenue_absent_reason: string | null;
 }
 
+/** Where an official's name came from. */
+export interface OfficialSource {
+  publisher: string | null;
+  source_url: string;
+  fetched_at: string | null;
+}
+
 export interface CountyComprehensive {
   id: string;
   name: string;
   slug: string;
   coordinates: [number, number];
-  governor?: string;
+  /** null unless a publisher supplied it (the Council of Governors); see
+   *  `officials_source`. A name nobody can check is withheld (#231). */
+  governor?: string | null;
+  deputy_governor?: string | null;
+  officials_source?: {
+    governor: OfficialSource | null;
+    deputy_governor: OfficialSource | null;
+  };
   demographics: {
     /** null when the county has no PopulationData row. The endpoint used to
      *  fall back to bootstrap's un-sourced copy in entity.meta, and to 0 when
@@ -183,10 +197,16 @@ export interface CountyComprehensive {
     by_severity: Record<string, number>;
     findings: AuditFinding[];
   };
+  /** Findings the Auditor-General titled "Unaccounted …" / "Loss of Funds"
+   *  (issue #233). Never a money total: `total_amount` is always null. */
   missing_funds: {
-    total_amount: number;
+    basis?: 'oag_finding_title';
+    total_amount: null;
+    total_amount_reason?: 'no_amount_extracted';
     cases_count: number;
-    cases: any[];
+    cases: UnaccountedCase[];
+    reason?: string | null;
+    withheld?: { count: number; by_reason: Record<string, number> };
   };
   stalled_projects: {
     /** null when no evidence-backed row exists — unknown, not zero. */
@@ -450,4 +470,30 @@ export interface TooltipData {
     y: number;
   };
   visible: boolean;
+}
+
+/** One finding from backend/services/audit_derived.py::derive_unaccounted_cases. */
+export interface UnaccountedCase {
+  finding_id: number;
+  entity: string | null;
+  entity_id?: number;
+  county_name?: string | null;
+  county_slug?: string | null;
+  entity_type: string | null;
+  /** The Auditor-General's own heading for the finding. */
+  title: string;
+  /** The finding's text after its title, in the report's words. May be empty
+   *  when the extractor captured only the heading. */
+  excerpt: string;
+  /** The report section it sits under, e.g. "Basis for Adverse Opinion". */
+  heading: string | null;
+  fiscal_year: string | null;
+  page_ref: string | null;
+  source: {
+    document_id: number;
+    title: string | null;
+    publisher: string | null;
+    url: string | null;
+    page_url: string | null;
+  };
 }

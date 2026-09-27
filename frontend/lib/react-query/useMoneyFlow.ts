@@ -3,6 +3,7 @@
  */
 import { MoneyFlowData } from '@/types';
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
+import { SSR_HYDRATED_STALE_TIME_MS } from './isr';
 import { getAllCountiesMoneyFlow, getCountyMoneyFlow, getNationalMoneyFlow } from '../api/moneyFlow';
 
 /**
@@ -47,7 +48,7 @@ export const useAllCountiesMoneyFlow = (year: string) => {
     queryKey: allCountiesMoneyFlowKey(year),
     queryFn: () => getAllCountiesMoneyFlow(year),
     enabled: !!year,
-    staleTime: 10 * 60 * 1000,
+    staleTime: SSR_HYDRATED_STALE_TIME_MS, // read from SSR state; see ./isr
   });
 };
 
@@ -59,7 +60,7 @@ export const useNationalMoneyFlow = (
     queryKey: QUERY_KEYS.nationalMoneyFlow(year),
     queryFn: () => getNationalMoneyFlow(year),
     enabled: !!year,
-    staleTime: 10 * 60 * 1000,
+    staleTime: SSR_HYDRATED_STALE_TIME_MS, // read from SSR state; see ./isr
     ...options,
   });
 };

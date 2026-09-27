@@ -15,7 +15,6 @@ const mockTranslate = (key: string) => ({
 jest.mock('@/lib/i18n/LangProvider', () => ({
   useLang: () => ({ lang: 'sw', t: mockTranslate }),
 }));
-jest.mock('@/lib/data/county-officials', () => ({ getCountyOfficials: () => ({}) }));
 
 const revenue: CountyRevenue = {
   total_revenue: 100, total_revenue_target: null,

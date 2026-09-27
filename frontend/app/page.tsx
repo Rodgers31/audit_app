@@ -5,8 +5,9 @@
  * the dehydrated cache to the client component via HydrationBoundary.
  * Result: zero loading spinners on first paint, no waterfall.
  *
- * On subsequent client-side navigations React Query serves from its
- * in-memory cache (staleTime 10min–1hr) so no extra fetches occur.
+ * Every hook reading this state keeps it fresh for at least the ISR window
+ * (`SSR_HYDRATED_STALE_TIME_MS`, lib/react-query/isr.ts), so a cached copy of
+ * this page does not re-download after hydration what it just rendered.
  *
  * COLD-START NOTE: If the Render backend is sleeping, SSR prefetches
  * will fail within the SSR_TIMEOUT. The page still renders (loading
@@ -14,7 +15,6 @@
  * once the backend wakes up (~2-5s later).
  */
 import { Metadata } from 'next';
-import { getFederalAudits } from '@/lib/api/audits';
 
 export const metadata: Metadata = {
   title: 'AuditGava — Kenya Public Money Tracker',
@@ -26,7 +26,7 @@ import { getCounties } from '@/lib/api/counties';
 import { getDebtTimeline, getNationalDebtOverview, getNationalLoans } from '@/lib/api/debt';
 import { getFiscalSummary } from '@/lib/api/fiscal';
 import { getQueryClient } from '@/lib/react-query/getQueryClient';
-import { federalAuditsKey } from '@/lib/react-query/useAudits';
+import { federalAuditsHomeSummaryQuery } from '@/lib/react-query/useAudits';
 import { countiesFilteredKey } from '@/lib/react-query/useCounties';
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import HomeDashboardClient from './HomeDashboardClient';
@@ -72,13 +72,10 @@ export default async function HomePage() {
           queryKey: ['fiscal', 'summary'],
           queryFn: () => getFiscalSummary(),
         }),
-        queryClient.prefetchQuery({
-          // Shared factory, not a literal: `useFederalAudits` reads this
-          // exact key for `AuditReportsSection`, and this is the prefetch
-          // holding the 886KB payload.
-          queryKey: federalAuditsKey(),
-          queryFn: () => getFederalAudits(),
-        }),
+        // The trimmed summary `AuditReportsSection` renders, not the full
+        // ~886KB response: the section lists 4 of its 813 findings, and the
+        // rest were dehydrated into this document for nothing.
+        queryClient.prefetchQuery(federalAuditsHomeSummaryQuery()),
         queryClient.prefetchQuery({
           queryKey: ['budget', 'national', undefined],
           queryFn: () => getNationalBudgetSummary(),

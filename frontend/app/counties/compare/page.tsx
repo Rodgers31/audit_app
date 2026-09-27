@@ -30,8 +30,9 @@ const SSR_TIMEOUT_MS = 5000;
  * client-rendered behind a Suspense fallback — so the prerendered document
  * made no claim and could age until the next deploy. The boundary's fallback
  * now renders the provenance note off that same payload, so a reader sees it,
- * and it has to be kept current. React Query still background-refreshes past
- * the hook's 15-minute staleTime.
+ * and it has to be kept current. The hook's staleTime is the same hour
+ * (`SSR_HYDRATED_STALE_TIME_MS`), so the list is not re-downloaded after
+ * hydrating a document served inside its window.
  */
 export const revalidate = 3600;
 

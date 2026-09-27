@@ -29,9 +29,9 @@ const SSR_TIMEOUT_MS = 5000;
  * unread in the HTML while the client re-fetched — see `countiesFilteredKey`),
  * so the baked copy is user-visible and has to be kept current. Without a
  * revalidate window it would be prerendered once at deploy time and age until
- * the next deploy. React Query still background-refreshes on the client once
- * the hydrated entry passes its 30min staleTime, so an hour is an upper bound
- * on what the first paint can be behind, not on what the reader ends up with.
+ * the next deploy. The hook's staleTime is the same hour
+ * (`SSR_HYDRATED_STALE_TIME_MS`), so a document served inside its window is
+ * not re-downloaded after hydration; one served STALE past it is.
  */
 export const revalidate = 3600;
 

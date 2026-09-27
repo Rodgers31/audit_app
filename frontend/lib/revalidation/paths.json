@@ -1,0 +1,15 @@
+{
+  "$comment": "The ONE list of pages the nightly revalidates. Read by app/api/revalidate/route.ts (the allowlist) and by .github/workflows/seed.yml (the request body). A path with a [segment] is a route pattern and revalidates every page it matches: /counties/[id] is all 47 counties. __tests__/api/revalidateManifest.test.ts fails if a server-rendered data page is missing from this list.",
+  "paths": [
+    "/",
+    "/audits",
+    "/budget",
+    "/counties",
+    "/counties/[id]",
+    "/counties/compare",
+    "/debt",
+    "/transparency",
+    "/accountability/unaccounted-funds",
+    "/sources"
+  ]
+}

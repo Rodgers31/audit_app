@@ -39,6 +39,7 @@ import React from 'react';
 import { renderToString } from 'react-dom/server';
 
 import TransparencyPageClient from '@/app/transparency/TransparencyPageClient';
+import { SSR_HYDRATED_STALE_TIME_MS } from '@/lib/react-query/isr';
 import { transparencySsrQueries } from '@/lib/react-query/transparencySsrPrefetch';
 import { countyFiscalYearsKey, useCountyFiscalYears } from '@/lib/react-query/useCounties';
 import {
@@ -256,7 +257,10 @@ describe('/transparency SSR hydration — the queries the page reads', () => {
   it('serves the fiscal-year list, which is what chooses the other two keys', async () => {
     const wrapper = hydratedWrapper(await serverState());
 
-    const { result } = renderHook(() => useCountyFiscalYears(), { wrapper });
+    const { result } = renderHook(
+      () => useCountyFiscalYears({ staleTime: SSR_HYDRATED_STALE_TIME_MS }),
+      { wrapper }
+    );
 
     expect(result.current.isLoading).toBe(false);
     expect(transparencyYearOptions(result.current.data).default).toBe(DEFAULT_YEAR);
@@ -267,7 +271,7 @@ describe('/transparency SSR hydration — the queries the page reads', () => {
 
     renderHook(
       () => {
-        useCountyFiscalYears();
+        useCountyFiscalYears({ staleTime: SSR_HYDRATED_STALE_TIME_MS });
         useNationalMoneyFlow(DEFAULT_YEAR);
         useAllCountiesMoneyFlow(DEFAULT_YEAR);
         return null;
@@ -314,5 +318,40 @@ describe('transparencySsrQueries', () => {
       '["money-flow","national","2022/23"]',
       '["money-flow","all-counties","2022/23"]',
     ]);
+  });
+});
+
+/* ── no unsourced unit-cost conversions (#231) ──────────────────────── */
+
+describe('/transparency — no "≈ N schools" conversions', () => {
+  // `fundingImpact()` divided Auditor-General amounts by KES 10M (school),
+  // 3M (classroom), 500K (borehole) and 2M (health post). None of the four
+  // had a source or a vintage, and a borehole in Kenya costs several times
+  // 500K. It turned a documented figure into an invented one beside it.
+  const CONVERSION = /≈\s*[\d,]+\s*(schools?|classrooms?|boreholes?|health posts?)/i;
+
+  it('renders the flagged amounts without converting them into things', async () => {
+    getNationalMoneyFlow.mockResolvedValue({
+      ...NATIONAL,
+      stages: NATIONAL.stages.map((s) =>
+        s.stage === 'Flagged' ? { ...s, amount: 12_000_000_000 } : s
+      ),
+    });
+    const state = await serverState();
+    const Wrapper = hydratedWrapper(state);
+
+    const html = renderToString(
+      <Wrapper>
+        <TransparencyPageClient />
+      </Wrapper>
+    );
+
+    // Guard the guard: the flagged figures are on the page, so an absent
+    // conversion is not just an absent row.
+    expect(html).toContain('Nairobi');
+    expect(html).toContain('KES 3.00B');
+    // React separates adjacent text with `<!-- -->`, which is how the table
+    // cell rendered: "≈ <!-- -->1000 classrooms". Match the text a reader sees.
+    expect(html.replace(/<!-- -->/g, '')).not.toMatch(CONVERSION);
   });
 });
