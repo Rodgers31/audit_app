@@ -144,16 +144,15 @@ class TestItRefuses:
     def test_without_a_session_it_is_not_superseded(self):
         assert not _national_file(bootstrap.bootstrap_provenance(None))["superseded"]
 
-    def test_a_publishable_row_from_the_file_blocks_it(self, national):
-        """Give the fixture document a URL and its rows reach readers again."""
+    def test_attaching_a_url_does_not_rehabilitate_a_retired_fixture(self, national):
+        """A URL cannot turn invented unextracted claims into source evidence."""
         session, doc, *_ = national
         doc.url = "https://oagkenya.go.ke/reports/national-fy2023-24.pdf"
         session.add(doc)
         session.flush()
 
         f = _national_file(bootstrap.bootstrap_provenance(session))
-        assert f["superseded"] is False
-        assert "3" in f["supersession_evidence"]
+        assert f["superseded"] is True
 
     def test_a_citable_file_blocks_it(self, national, tmp_path, monkeypatch):
         """If the file gained a real document citation, /audits/federal would

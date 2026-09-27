@@ -42,7 +42,8 @@ from services.trust_guards import (
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+from services.entity_publication import public_entity_metadata
 from sqlalchemy import or_, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
@@ -174,12 +175,12 @@ def _resolve_fy_metrics(meta: dict, fiscal_year: Optional[str] = None) -> dict:
     only FY2024/25 was ingested), we return the most recent FY's metrics rather
     than returning empty values.
     """
-    all_metrics = (meta or {}).get("metrics") or {}
+    all_metrics = public_entity_metadata(meta).get("metrics", {})
     if not isinstance(all_metrics, dict):
         return {}
     key = _fy_metrics_key(fiscal_year)
     result = all_metrics.get(key)
-    if result:
+    if isinstance(result, dict) and result:
         return result
     # Fallback: latest available FY (sorted descending)
     sorted_keys = sorted(all_metrics.keys(), reverse=True)
@@ -1322,21 +1323,29 @@ class EntityFinancialSummary(BaseModel):
     execution_rate: float
 
 
-class EntityResponse(BaseModel):
+class EntityProfileResponse(BaseModel):
     id: int
     canonical_name: str
     type: str
     slug: Optional[str] = None
     country: Optional[str] = None
-    code: Optional[str] = None
     meta: Dict[str, Any] = {}
+    created_at: Optional[str] = None
+
+    @field_validator("meta", mode="before")
+    @classmethod
+    def publish_metadata(cls, value):
+        return public_entity_metadata(value)
+
+
+class EntityResponse(EntityProfileResponse):
+    code: Optional[str] = None
     financial_summary: Optional[EntityFinancialSummary] = None
     audit_findings_count: int = 0
-    created_at: Optional[str] = None
 
 
 class EntityDetailResponse(BaseModel):
-    entity: Dict[str, Any]
+    entity: EntityProfileResponse
     financial_time_series: List[Dict[str, Any]]
     recent_budget_lines: List[Dict[str, Any]]
     audit_findings: List[Dict[str, Any]]
@@ -3491,7 +3500,7 @@ async def get_county_comprehensive(
             if not county_name:
                 county_name = COUNTY_MAPPING.get(county_id, "")
 
-            meta = entity.meta or {}
+            meta = public_entity_metadata(entity.meta)
             metrics = _resolve_fy_metrics(meta)
 
             # --- Population ---
@@ -3852,7 +3861,9 @@ async def get_county_comprehensive(
                 )
 
             # --- Stalled projects ---
-            stalled_projects = meta.get("stalled_projects") or []
+            # Retired metadata is not source evidence. #327 supplies the
+            # replacement report-backed projects reader.
+            stalled_projects = []
 
             # --- Revenue ---
             # Own-source revenue as the Controller of Budget reports it. Both
@@ -4084,12 +4095,9 @@ async def get_county_comprehensive(
                 # Stalled projects
                 "stalled_projects": {
                     "count": len(stalled_projects),
-                    "total_contracted_value": sum(
-                        p.get("contracted_amount", 0) for p in stalled_projects
-                    ),
-                    "total_amount_paid": sum(
-                        p.get("amount_paid", 0) for p in stalled_projects
-                    ),
+                    "total_contracted_value": None,
+                    "total_amount_paid": None,
+                    "reason": "awaiting_sourced_data",
                     "projects": stalled_projects,
                 },
                 # Financial summary
@@ -6277,7 +6285,9 @@ async def get_national_missing_funds():
         # row rather than trusting an id that may point at nothing.
         referenced_ids = set()
         for county in counties:
-            for case in (county.meta or {}).get("missing_funds_cases") or []:
+            for case in (
+                public_entity_metadata(county.meta).get("missing_funds_cases") or []
+            ):
                 if isinstance(case, dict) and case.get("source_document_id") not in (None, ""):
                     try:
                         referenced_ids.add(int(case["source_document_id"]))
@@ -6293,7 +6303,7 @@ async def get_national_missing_funds():
             }
 
         for county in counties:
-            meta = county.meta or {}
+            meta = public_entity_metadata(county.meta)
             cases = meta.get("missing_funds_cases") or []
             if not isinstance(cases, list):
                 continue
@@ -11984,7 +11994,7 @@ async def get_entities(
                 entity.type.value if hasattr(entity.type, "value") else entity.type
             )
 
-            fy_metrics = _resolve_fy_metrics(entity.meta or {})
+            fy_metrics = _resolve_fy_metrics(public_entity_metadata(entity.meta))
             code_value = (
                 fy_metrics.get("county_code") if isinstance(fy_metrics, dict) else None
             )
@@ -12006,7 +12016,7 @@ async def get_entities(
                         else None
                     ),
                     "code": code_value,
-                    "meta": entity.meta or {},
+                    "meta": public_entity_metadata(entity.meta),
                     "financial_summary": {
                         "total_allocation": float(total_allocation),
                         "total_spent": float(total_spent),
@@ -12092,7 +12102,7 @@ async def get_entity(entity_id: int, db: Session = Depends(get_db)):
         entity_type_value = (
             entity.type.value if hasattr(entity.type, "value") else entity.type
         )
-        entity_meta = entity.meta or {}
+        entity_meta = public_entity_metadata(entity.meta)
 
         financial_time_series = []
         for period, total_allocation, total_spent, budget_lines_count in budget_summary:
@@ -12756,108 +12766,38 @@ async def get_top_spenders(
 
 @app.get("/api/v1/etl/kenya/sources")
 async def get_kenya_data_sources():
-    """Get available Kenya government data sources with real-time status."""
-    if not ETL_AVAILABLE:
-        raise HTTPException(status_code=503, detail="ETL pipeline not available")
+    """Source catalogue; no live checker is installed in the serving image.
 
-    try:
-        # Test real-time connection status
-        import os
-        import sys
-
-        sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-
-        from etl_test_runner import SimpleKenyaETL
-
-        etl = SimpleKenyaETL()
-
-        # Quick connection test
-        treasury_status = etl.test_treasury_connection()
-
-        sources = [
+    This route used an unshipped developer script and fabricated success when
+    it failed. Absence of a measurement stays unknown. The persisted pipeline
+    observations are available separately through /data/freshness; reachability
+    and the time a document was fetched are different measurements.
+    """
+    catalogue = (
+        (
+            "Kenya National Treasury",
+            "https://treasury.go.ke",
+            ["budget", "expenditure_report", "debt_report"],
+        ),
+        ("Office of Auditor General", "https://oagkenya.go.ke", ["audit_report"]),
+        ("Controller of Budget", "https://cob.go.ke", ["budget_implementation_review"]),
+    )
+    return {
+        "sources": [
             {
-                "name": "Kenya National Treasury",
-                "url": "https://treasury.go.ke",
-                "document_types": [
-                    "budget",
-                    "expenditure_report",
-                    "debt_report",
-                    "financial_statements",
-                ],
-                "last_fetch": treasury_status.get("timestamp", "2024-01-15T10:30:00Z"),
-                "status": (
-                    "active" if treasury_status.get("accessible", False) else "error"
-                ),
-                "live_test_results": {
-                    "response_code": treasury_status.get("status_code"),
-                    "pdf_documents_found": treasury_status.get(
-                        "pdf_documents_found", 0
-                    ),
-                    "page_title": treasury_status.get("page_title", ""),
-                    "sample_documents": treasury_status.get("sample_pdfs", [])[:3],
-                },
-            },
-            {
-                "name": "Office of Auditor General",
-                "url": "https://oagkenya.go.ke",
-                "document_types": [
-                    "audit_report",
-                    "special_audits",
-                    "compliance_reports",
-                ],
-                "last_fetch": "2024-01-10T14:20:00Z",
-                "status": "timeout_issues",
-                "note": "Site occasionally experiences timeouts but contains valuable audit reports",
-            },
-            {
-                "name": "Controller of Budget",
-                "url": "https://cob.go.ke",
-                "document_types": ["budget_implementation_review", "quarterly_reports"],
-                "last_fetch": "2024-01-12T09:15:00Z",
-                "status": "pending_test",
-            },
-        ]
-
-        return {
-            "sources": sources,
-            "real_time_test": True,
-            "test_timestamp": treasury_status.get("timestamp"),
-            "summary": {
-                "total_sources": len(sources),
-                "active_sources": len([s for s in sources if s["status"] == "active"]),
-                "total_pdf_documents": treasury_status.get("pdf_documents_found", 0),
-            },
-        }
-
-    except Exception as e:
-        # Fall back to static data if real-time test fails
-        return {
-            "sources": [
-                {
-                    "name": "Kenya National Treasury",
-                    "url": "https://treasury.go.ke",
-                    "document_types": ["budget", "expenditure_report", "debt_report"],
-                    "last_fetch": "2024-01-15T10:30:00Z",
-                    "status": "active",
-                },
-                {
-                    "name": "Office of Auditor General",
-                    "url": "https://oagkenya.go.ke",
-                    "document_types": ["audit_report"],
-                    "last_fetch": "2024-01-10T14:20:00Z",
-                    "status": "active",
-                },
-                {
-                    "name": "Controller of Budget",
-                    "url": "https://cob.go.ke",
-                    "document_types": ["budget_implementation_review"],
-                    "last_fetch": "2024-01-12T09:15:00Z",
-                    "status": "active",
-                },
-            ],
-            "real_time_test": False,
-            "error": str(e),
-        }
+                "name": name,
+                "url": url,
+                "document_types": document_types,
+                "status": "unknown",
+                "last_fetch": None,
+                "checked_at": None,
+            }
+            for name, url, document_types in catalogue
+        ],
+        "real_time_test": False,
+        "error": "live_check_unavailable",
+        "freshness_url": "/api/v1/data/freshness",
+    }
 
 
 if __name__ == "__main__":

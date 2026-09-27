@@ -137,7 +137,9 @@ class _AuditSelectCounter:
         flat = " ".join(statement.split()).lower()
         if not (flat.startswith("select") and "from audits" in flat):
             return
-        if "audits.extraction_id in (" in flat:
+        if flat.startswith("select count("):
+            self.other.append(flat)  # gate counts can also reference extraction_id
+        elif "audits.extraction_id in (" in flat:
             self.batched.append(flat)
         elif "audits.extraction_id" in flat:
             self.single.append(flat)
