@@ -53,6 +53,18 @@ def configured(monkeypatch, tmp_path):
     return tmp_path
 
 
+@pytest.fixture
+def memory_caches_only(monkeypatch):
+    """Production's configuration: no Redis, so every cached response lives in
+    the worker's memory. CI runs a Redis service (REDIS_URL), which would put
+    the response in Redis instead, and these tests are about the in-memory,
+    per-worker case. The Redis path is covered by test_redis_failure_fails_loudly."""
+    from cache.redis_cache import RedisCache
+
+    for rc in list(RedisCache._instances):
+        monkeypatch.setattr(rc, "client", None)
+
+
 def _warm_then_change(client, db_session, seed_country):
     """Cache a one-year answer, then add a second year to the database."""
     _add_period(db_session, seed_country.id, 9101, "FY 2023/24", 2023)
@@ -67,7 +79,7 @@ def _warm_then_change(client, db_session, seed_country):
 
 
 def test_signed_invalidation_makes_new_data_visible(
-    client, db_session, seed_country, configured
+    client, db_session, seed_country, configured, memory_caches_only
 ):
     _warm_then_change(client, db_session, seed_country)
 
@@ -83,7 +95,7 @@ def test_signed_invalidation_makes_new_data_visible(
 
 
 def test_another_workers_invalidation_reaches_this_worker(
-    client, db_session, seed_country, configured
+    client, db_session, seed_country, configured, memory_caches_only
 ):
     """Production runs gunicorn. The HTTP call lands on ONE worker, and every
     other worker holds its own in-process cache. They share the container's
