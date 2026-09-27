@@ -83,4 +83,25 @@ Full backend run from `backend/`: **2914 passed, 10 skipped, 9 failed**. All nin
 
 After the final input-source correction, the focused backend run passed **275 tests**. Its independent source-evidence cases first produced 14 failures and 25 passes before the correction. Frontend: **547 passed across 52 suites**, TypeScript passed, ESLint passed. The new all-zero revenue-year regression also failed against unchanged main and passed after correction. Jest used `--forceExit` because of an existing open handle. Independent reviewers executed hostile numeric inputs, zero, absent/malformed metadata, missing source locators, source failure and explicit withdrawal paths.
 
+Critical flake8 checks passed. `npm run build` initially stopped because this isolated checkout has no Supabase environment. It then passed with `NEXT_PUBLIC_API_URL=http://127.0.0.1:8000`, `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321`, and `NEXT_PUBLIC_SUPABASE_ANON_KEY=local-build-placeholder`. These values configure construction of the clients without using real credentials. This proves compilation and static build only, not live API/Supabase connectivity, authentication or production readiness.
+
+### Compatibility with pending consolidations
+
+The tested implementation head is `ea310339afa66f5a537432695e1859415af4390d`, following national/fiscal commit `3f2718c6ff4fad712ea3ae87d6ccf3942e9b8765`. The later receipt-only commit changes no code.
+
+`git merge-tree --write-tree ea310339afa66f5a537432695e1859415af4390d e88449fae4e9a4d49ec58a14fd3816db722a0905` (#325) produced clean tree `b55479f7339a29ed4bfa97505071400f57335f2a`.
+
+The same simulation against #327 at `3ee591107535280839ff0763b3cf10ddf69ff876` produced tree `b2023c116af3f0d285229486b6519588fe14787d`, with one conflict in `backend/tests/test_staleness_gates.py`. Product code, including the shared `main.py` and frontend files, auto-merged. The exact resolution of the conflicting block is:
+
+```python
+            has_failure = any(marker in sources for marker in (
+                "mark_fixture(", "mark_partial(", "mark_refused("
+            ))
+            if has_live and not has_failure:
+```
+
+This is the static instrumentation inventory only. Its three accepted failure markers describe different executed domain behaviors: a fixture fallback marks the run stale; KRA source failure returns no replacement records and marks `partial`; stalled-project extraction has no honest fixture, so download/parse failure returns `ok=False` and marks `refused`. They are not interchangeable publication outcomes. Behavioral assertions remain specific: the KRA unavailable-source test requires `[]`, `partial` and the source-unavailable reason; the stalled-project download/malformed-output tests require `(False, refused, reason)`; their positive controls require a live successful observation. A successful publication cannot satisfy those failure assertions. Existing freshness tests also prove refusals fail rather than becoming a fixture or a healthy run.
+
+After resolving only that block, the test file blob was `9e41c0fabf8b803157f1c9eca6ae8e4897b3afb6` and the combined tree was **`353e4433a241b237732820f8782701ef6584343c`**. It was extracted to a temporary directory; no branch or PR was merged. The same national/fiscal/KRA focused selection passed **276 tests** (one additional #327 case). A separate run of `test_stalled_projects_pipeline.py`, `test_stalled_projects_not_invented.py`, `test_stalled_projects_edition_gate.py`, `test_staleness_gates.py`, `test_kra_publication_adversarial_298.py` and `test_revenue_by_tax_head_live.py` passed **121 tests**, covering those distinct failure and success modes. This is not a full four-session integration run.
+
 Release remains separate: inspect current prerequisite heads, obtain CI on the final combined tree, deploy the API guards before any authorized seed, then verify the public debt, fiscal, revenue and loans payloads and corresponding UI. A refreshed fiscal/revenue seed is needed to add new source/column metadata to historical stored rows; until then unknown source versions and NULL outturn gaps are expected. Recheck the IMF register manually, and resolve KRA version differences with publisher evidence. Do not close production-dependent issues based on these local tests.
