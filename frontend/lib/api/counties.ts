@@ -29,6 +29,7 @@ interface BackendCountyResponse {
   // Budget
   coordinates?: [number, number];
   total_budget?: number;
+  financial_summary?: { total_allocation: number | null; accounting_basis?: string | null };
   total_spent?: number;
   budget_utilization?: number;
   development_budget?: number;
@@ -103,7 +104,9 @@ const publishedAmount = (...candidates: Array<number | null | undefined>): numbe
 export const transformCountyData = (bc: BackendCountyResponse): County => {
   // Use real coordinates from backend; undefined if not provided (do not default to Nairobi)
   const coordinates: [number, number] | undefined = bc.coordinates || undefined;
-  const budget = publishedAmount(bc.total_budget, bc.budget_2025);
+  const budget = bc.financial_summary
+    ? reportedAmount(bc.financial_summary.total_allocation)
+    : publishedAmount(bc.total_budget, bc.budget_2025);
   const debt = publishedAmount(bc.total_debt, bc.debt);
 
   // Fiscal grade — from the backend's financial-health index, NOT an audit

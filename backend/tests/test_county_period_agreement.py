@@ -157,7 +157,12 @@ def test_an_explicit_fiscal_year_still_overrides(
     eid = county_with_projection_and_reported.id
     resp = client.get(f"/api/v1/counties/{eid}/comprehensive?fiscal_year=2025/26")
     assert resp.status_code == 200, resp.text
-    assert resp.json()["budget"]["total_allocated"] == pytest.approx(9_000_000_000)
+    assert resp.json()["budget"]["total_allocated"] is None
+    assert resp.json()["budget"]["fiscal_year"] == "FY2025/26"
+    assert (
+        resp.json()["budget"]["absent_reasons"]["total_allocation"]
+        == "no_reported_total"
+    )
 
 
 # ── The aggregation rule, not just the period ─────────────────────────────
@@ -413,10 +418,10 @@ def test_provenance_names_cob_when_the_headline_came_from_cob(
     assert "modelled" in label.lower() and "sector" in label.lower(), label
 
 
-def test_provenance_still_says_modelled_when_there_are_no_cob_rows(
+def test_no_budget_provenance_claim_when_only_modelled_rows_remain(
     client, county_with_projection_and_reported, db_session
 ):
-    """Positive control: the label must be able to say "modelled" too."""
+    """A sector projection cannot establish a reported whole-county budget."""
     from models import BudgetLine
 
     # Strip the CoB classification rows, leaving only the modelled sector row.
@@ -428,7 +433,8 @@ def test_provenance_still_says_modelled_when_there_are_no_cob_rows(
 
     body = _comprehensive(client, county_with_projection_and_reported.id)
     label = body["data_sources"]["budget"]
-    assert "Modelled from the CRA equitable-share formula" in label, label
+    assert label is None
+    assert body["budget"]["total_allocated"] is None
 
 
 # ==========================================================================

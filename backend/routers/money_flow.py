@@ -17,11 +17,9 @@ from sqlalchemy.orm import Session
 
 from services.county_budget import (
     BUDGET_PROVENANCE_STAGE_LABELS,
-    budget_provenance,
-    combine_budget_provenance,
-    split_classification_and_sector_lines,
 )
 from services.publication_gate import publishable_audit_criterion
+from services.entity_financials import financial_summary
 
 from database import get_db
 from models import Audit, BudgetLine, Entity, EntityType, FiscalPeriod
@@ -253,7 +251,6 @@ def _resolve_periods_or_400(db: Session, year: str) -> List[int]:
         ) from exc
 
 
-
 def _money_flow_for_entity(
     db: Session,
     entity_id: int,
@@ -286,29 +283,10 @@ def _money_flow_for_entity(
     budget_lines = budget_q.all()
 
     if budget_lines:
-        # The CoB reports carry whole-budget classification rows -- Total /
-        # Development / Recurrent -- alongside the modelled per-sector split of
-        # the SAME money. Adding both together published Baringo's FY2024/25
-        # budget as KES 26.55B against the Controller of Budget's 9.54B, while
-        # the Budget & Debt tab on the same page showed 9.54B. One rule, shared
-        # with GET /counties and /comprehensive, so they cannot drift again.
-        allocated, split_spent, _sector_lines, _class_by_cat = (
-            split_classification_and_sector_lines(budget_lines)
-        )
-        # Which of the two kinds of row produced that figure — the Controller
-        # of Budget's classification aggregates, or the modelled sector split
-        # of a CRA equitable-share projection. Same answer /comprehensive and
-        # GET /counties publish, from the same function, so the Follow the
-        # Money tab and the Budget & Debt tab on one page cannot name
-        # different sources for one number.
-        budget_source = budget_provenance(_class_by_cat, allocated)
-        # Treat "no non-null spent rows" as data-unavailable (projected-
-        # year budgets don't have execution figures yet). Returning 0
-        # would misleadingly render as "100% unspent" in the waterfall.
-        # The split's own total is a sum over rows and cannot tell an absent
-        # figure from a zero, so that question is still asked of the rows.
-        has_spent = any(b.actual_spent is not None for b in budget_lines)
-        spent = split_spent if has_spent else None
+        summary = financial_summary(budget_lines, budget_lines[0].period)
+        allocated = summary["total_allocation"]
+        spent = summary["total_spent"]
+        budget_source = "cob_cbirr" if allocated is not None else None
         # "Committed" = procurement encumbrances (contracts awarded but
         # not yet paid out). This is NOT the same as "exchequer release"
         # — Treasury disbursements aren't currently captured in the COB
@@ -320,15 +298,14 @@ def _money_flow_for_entity(
         committed_amounts = [b.committed_amount for b in budget_lines if b.committed_amount is not None]
         committed = sum(float(c) for c in committed_amounts) if committed_amounts else None
 
-        # Source doc URL + label from first budget line. The CoB budget
+        # Source doc URL + label from the selected accounting rows. The CoB budget
         # implementation review reports are often H1 (half-year) or Q-
         # specific, so we surface the exact title rather than implying
         # a full-year snapshot.
-        first_doc = budget_lines[0].source_document if budget_lines else None
-        source_doc_url = first_doc.url if first_doc and hasattr(first_doc, "url") else None
-        source_doc_title = (
-            first_doc.title if first_doc and hasattr(first_doc, "title") else None
-        )
+        first_source = next(iter(summary["sources"]), {})
+        source_doc_url = first_source.get("url") if allocated is not None else None
+        source_doc_title = first_source.get("title") if allocated is not None else None
+
     else:
         allocated = None
         committed = None
@@ -430,36 +407,16 @@ async def county_money_flow(
     """Trace the full money flow for a county in a fiscal year.
 
     ``county_id`` accepts any of:
-      * the 3-digit Kenyan county code ("001" → Nairobi, "047" → Mombasa),
+      * the legacy route ID ("001" → Nairobi, "047" → Mombasa),
+      * an explicit official code ("code:001" → Mombasa),
       * the raw numeric ``Entity.id`` (database primary key),
       * the county ``slug`` (e.g. ``nairobi-city``).
     The 3-digit-code path is what the frontend actually links from, so
     resolve it first via the canonical COUNTY_MAPPING.
     """
-    q = db.query(Entity).filter(Entity.type == EntityType.COUNTY)
-    entity = None
+    from main import _resolve_county_entity
 
-    # 3-digit county-code lookup (most common path from the UI).
-    if county_id.isdigit() and len(county_id) == 3:
-        try:
-            from main import COUNTY_MAPPING  # avoid circular import at module load
-        except ImportError:
-            COUNTY_MAPPING = {}
-        county_name = COUNTY_MAPPING.get(county_id)
-        if county_name:
-            entity = q.filter(
-                Entity.canonical_name == f"{county_name} County"
-            ).first()
-            if not entity:
-                slug = county_name.lower().replace(" ", "-") + "-county"
-                entity = q.filter(Entity.slug == slug).first()
-
-    # Fallbacks: raw Entity.id then slug.
-    if not entity:
-        if county_id.isdigit():
-            entity = q.filter(Entity.id == int(county_id)).first()
-        else:
-            entity = q.filter(Entity.slug == county_id).first()
+    entity = _resolve_county_entity(db, county_id)
 
     if not entity:
         raise HTTPException(status_code=404, detail="County not found")
@@ -513,30 +470,35 @@ async def national_money_flow(
             # national total by the same multiple it inflated each county's.
             # Per entity, because the rule picks one aggregate per county and
             # a pooled split would mix 47 counties' rows into one choice.
-            allocated = 0.0
-            spent_total = 0.0
             by_entity: Dict[int, list] = {}
             for b in budget_lines:
                 by_entity.setdefault(b.entity_id, []).append(b)
-            # ...and per entity for the provenance too. The CBIRR does not
-            # land for all 47 counties at once, so a pooled figure can be part
-            # Controller of Budget and part CRA model; combine_budget_provenance
-            # says so rather than crediting one source for the other's money.
-            _sources = []
-            for _rows in by_entity.values():
-                _alloc, _spent, _s, _c = split_classification_and_sector_lines(_rows)
-                allocated += _alloc
-                spent_total += _spent
-                _sources.append(budget_provenance(_c, _alloc))
-            budget_source = combine_budget_provenance(_sources)
-            # Treat "no non-null spent rows" as data-unavailable (e.g.
-            # projected-year budgets where CoB has not yet released the
-            # execution figures). Returning 0 in that case lies by
-            # omission — the waterfall would show 100% unspent.
-            has_spent = any(b.actual_spent is not None for b in budget_lines)
-            spent = spent_total if has_spent else None
-            first_doc = budget_lines[0].source_document if budget_lines else None
-            source_doc_url = first_doc.url if first_doc and hasattr(first_doc, "url") else None
+            summaries = [
+                financial_summary(by_entity[eid], by_entity[eid][0].period)
+                if eid in by_entity
+                else financial_summary([])
+                for eid in entity_ids
+            ]
+            allocations = [s["total_allocation"] for s in summaries]
+            spending = [s["total_spent"] for s in summaries]
+            allocated = (
+                sum(allocations)
+                if allocations and all(v is not None for v in allocations)
+                else None
+            )
+            spent = (
+                sum(spending)
+                if spending and all(v is not None for v in spending)
+                else None
+            )
+            budget_source = "cob_cbirr" if allocated is not None else None
+            source_urls = {source["url"] for s in summaries for source in s["sources"]}
+            source_doc_url = (
+                next(iter(source_urls))
+                if allocated is not None and len(source_urls) == 1
+                else None
+            )
+
         else:
             allocated = None
             spent = None
@@ -686,26 +648,13 @@ async def all_counties_money_flow(
 
     budget_map: Dict[int, Dict[str, Any]] = {}
     for eid, rows in lines_by_entity.items():
-        alloc, spent, _sector, _cls = split_classification_and_sector_lines(rows)
-        committed_vals = [
-            r.committed_amount for r in rows if r.committed_amount is not None
-        ]
+        summary = financial_summary(rows, rows[0].period)
+        alloc, spent = summary["total_allocation"], summary["total_spent"]
         budget_map[eid] = {
-            "allocated": float(alloc) if alloc else None,
-            # Per county, from that county's own rows. A single caption for
-            # the whole feed is wrong for somebody whenever the CBIRR has
-            # reached only part of the country.
-            "source": budget_provenance(_cls, alloc),
-            # An absent execution figure is not a zero — a projected year has
-            # no actuals, and 0 renders as "100% unspent".
-            "spent": (
-                float(spent)
-                if any(r.actual_spent is not None for r in rows) and spent
-                else None
-            ),
-            "committed": (
-                float(sum(committed_vals)) if committed_vals else None
-            ),
+            "allocated": alloc,
+            "source": "cob_cbirr" if alloc is not None else None,
+            "spent": spent,
+            "committed": None,
         }
 
     # 3. Aggregate audit flagged amounts per entity in ONE query
