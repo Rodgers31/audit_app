@@ -88,7 +88,13 @@ def _audits_run(session, listing, when=datetime(2026, 9, 26, 2, 30), dry_run=Fal
                 volumes=None):
     from models import IngestionJob, IngestionStatus
 
-    meta = {"oag_county_discovery": {"listing_fiscal_years": listing}} if key else {}
+    inventory = {
+        fy: [f"https://www.oagkenya.go.ke/county-{role}-{fy.replace('/', '-')}.pdf"
+             for role in ("executives", "assemblies")]
+        for fy in listing if fy >= "2021/2022"
+    }
+    meta = {"oag_county_discovery": {"listing_fiscal_years": listing,
+                                     "volumes_by_fiscal_year": inventory}} if key else {}
     meta["county_volumes"] = volumes if volumes is not None else {
         "discovered": 8, "processed": [f"{year}/{year+1} {role}" for year in range(2021, 2025) for role in ("executives", "assemblies")],
         "already_current": [], "deferred": [], "failed": [], "partial": [],
@@ -187,7 +193,7 @@ class TestTheBacklogIsNamed:
 
     def test_a_clean_run_stays_ok(self, db):
         self._covered(db)
-        _audits_run(db, LISTING, volumes={"discovered": 8, "processed": [f"{year}/{year+1} {role}" for year in range(2021, 2025) for role in ("executives", "assemblies")], "already_current": [], "deferred": [], "failed": []})
+        _audits_run(db, LISTING, volumes={"discovered": 8, "processed": [f"{year}/{year+1} {role}" for year in range(2021, 2025) for role in ("executives", "assemblies")], "already_current": [], "deferred": [], "failed": [], "partial": []})
         assert _only(check_county_audit_coverage(db)).level == OK
 
 

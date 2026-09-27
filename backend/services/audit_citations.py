@@ -94,10 +94,11 @@ def audited_institution(raw, *, county_name=None, document_meta=None):
     role_names = [
         n for n in names if re.search(r"\bcounty\s+(assembly|executive)\b", n, re.I)
     ]
-    if len({n.casefold() for n in role_names}) > 1:
+    if role_names:
         # Current OAG volumes retain their printed auditee alongside the
-        # canonical entity name (Taita/Taveta, Nairobi City, etc.). Treat
-        # only aliases of THIS county and the SAME role as equivalent.
+        # canonical entity name (Taita/Taveta, Nairobi City, etc.). Every
+        # declaration must name THIS county and the SAME role, even if the
+        # printed auditee is the only declaration present.
         roles = {_county_role(n, county_name) for n in role_names}
         if None in roles or len(roles) != 1:
             return None
@@ -113,7 +114,7 @@ def audited_institution(raw, *, county_name=None, document_meta=None):
         return role_names[0]
     # An explicit volume declaration supplies institution type, not a guess
     # from severity, a finding's subject or a county's geographic association.
-    if kinds:
+    if kinds and not names:
         role = "Assembly" if "assemblies" in kinds else "Executive"
         county = re.sub(r"\s+County$", "", county_name, flags=re.I)
         return f"County {role} of {county}"

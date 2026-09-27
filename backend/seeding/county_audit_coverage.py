@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import re
 from collections import Counter
+from urllib.parse import urlsplit
 
 from .oag_discovery import FIRST_INGESTED_FISCAL_YEAR
 
@@ -28,6 +29,33 @@ def _years(value):
     return sorted(set(value))
 
 
+def _discovered_volume_labels(discovery):
+    """Resolve the listing's exact volume URLs to fiscal year and institution."""
+    from .oag_discovery import classify_document, fiscal_years_in_name, normalise_oag_url
+
+    volumes = discovery.get("volumes_by_fiscal_year")
+    if not isinstance(volumes, dict) or not volumes:
+        return None
+    labels = []
+    for fy, urls in volumes.items():
+        if _years([fy]) is None or not isinstance(urls, list) or not urls:
+            return None
+        for url in urls:
+            if not isinstance(url, str) or normalise_oag_url(url) != url:
+                return None
+            path = urlsplit(url).path
+            if not path.lower().endswith(".pdf"):
+                return None
+            named_years = fiscal_years_in_name(path.rsplit("/", 1)[-1])
+            if len(named_years) > 1 or named_years and fy not in named_years:
+                return None
+            kind, _ = classify_document(path)
+            if kind not in ROLES:
+                return None
+            labels.append((fy, kind))
+    return labels if len(labels) == len(set(labels)) else None
+
+
 def _run_gaps(job):
     """Validate before iterating; malformed collections cannot certify success."""
     if job is None:
@@ -37,9 +65,20 @@ def _run_gaps(job):
         return ["newest audits run has malformed metadata"]
     gaps = []
     discovery = meta.get("oag_county_discovery")
+    inventory = None
     if not isinstance(discovery, dict) or _years(discovery.get("listing_fiscal_years")) is None:
         gaps.append("newest audits run has no valid county listing")
     else:
+        inventory = _discovered_volume_labels(discovery)
+        if inventory is None:
+            gaps.append("newest audits run has no valid county volume inventory")
+        else:
+            required = [fy for fy in _years(discovery["listing_fiscal_years"])
+                        if fy >= FIRST_INGESTED_FISCAL_YEAR]
+            for fy in required:
+                for role in ROLES:
+                    if (fy, role) not in inventory:
+                        gaps.append(f"no discovered {fy} {role} volume")
         errors = discovery.get("errors", [])
         if not isinstance(errors, list) or any(not isinstance(e, str) for e in errors):
             gaps.append("malformed discovery errors")
@@ -52,7 +91,7 @@ def _run_gaps(job):
         outcome_count = 0
         labels = []
         for key in ("processed", "already_current", "deferred", "failed", "partial"):
-            values = report.get(key, [] if key == "partial" else None)
+            values = report.get(key)
             if isinstance(values, list) and all(isinstance(v, str) and v for v in values):
                 outcome_count += len(values)
                 for value in values:
@@ -68,6 +107,11 @@ def _run_gaps(job):
             gaps.append("volume outcomes do not account for every discovered volume")
         if len(labels) != len(set(labels)):
             gaps.append("duplicate volume outcomes")
+        if inventory is not None:
+            gaps.extend(f"discovered {fy} {role} has no run outcome"
+                        for fy, role in sorted(set(inventory) - set(labels)))
+            gaps.extend(f"outcome {fy} {role} was not in discovered volumes"
+                        for fy, role in sorted(set(labels) - set(inventory)))
         for key in ("deferred", "failed", "partial"):
             values = report.get(key, [])
             if not isinstance(values, list) or any(not isinstance(v, str) or not v for v in values):
@@ -88,13 +132,19 @@ def _run_gaps(job):
     status = getattr(job.status, "value", job.status)
     if status != "completed":
         gaps.append(f"newest audits run status is {status}")
-    if meta.get("source_mode") in ("refused", "partial", "fixture", "unknown"):
-        gaps.append(f"newest audits run source mode is {meta['source_mode']}")
+    if "source_mode" in meta:
+        mode = meta["source_mode"]
+        if not isinstance(mode, str) or mode not in {
+            "live", "refused", "partial", "fixture", "unknown"
+        }:
+            gaps.append("newest audits run has malformed source mode")
+        elif mode != "live":
+            gaps.append(f"newest audits run source mode is {mode}")
     return gaps
 
 
 def county_audit_coverage_receipt(session):
-    from models import Audit, Entity, EntityType, Extraction, IngestionJob, SourceDocument
+    from models import Audit, DocumentStatus, Entity, EntityType, Extraction, IngestionJob, SourceDocument
     from services.audit_citations import audited_institution, extraction_payload, page_number
     from services.publication_gate import publishable_audit_criterion
     from .extractors.oag_county_audit import _known_counties
@@ -113,7 +163,9 @@ def county_audit_coverage_receipt(session):
     counties = session.query(Entity).filter(Entity.type == EntityType.COUNTY).order_by(Entity.id).all()
     counts, documents = Counter(), {}
     known_counties = _known_counties(session)
-    incomplete_documents = set()
+    incomplete_documents = {}
+    invalid_documents = {}
+    source_state = {}
     unidentified = 0
     geographic = {}
     rows = (session.query(Audit, Entity, Extraction, SourceDocument)
@@ -126,6 +178,42 @@ def county_audit_coverage_receipt(session):
     for audit, county, ext, doc in rows:
         if audit.audit_year is not None:
             geographic.setdefault(audit.audit_year, set()).add(county.id)
+        if doc.id not in source_state:
+            invalid, incomplete = None, None
+            doc_meta = doc.meta
+            if doc.status != DocumentStatus.AVAILABLE:
+                invalid = f"source status is {getattr(doc.status, 'value', doc.status)}"
+            elif doc_meta is not None and not isinstance(doc_meta, dict):
+                invalid = "malformed metadata"
+            elif isinstance(doc_meta, dict):
+                if "extraction_stats" in doc_meta:
+                    stats = doc_meta["extraction_stats"]
+                    if not isinstance(stats, dict):
+                        invalid = "malformed extraction statistics"
+                    elif "partial" in stats and type(stats["partial"]) is not bool:
+                        invalid = "malformed partial extraction status"
+                    elif stats.get("partial"):
+                        incomplete = "stored partial extraction"
+                extracted_md5 = doc_meta.get("extracted_md5")
+                if extracted_md5 is not None:
+                    if not isinstance(extracted_md5, str):
+                        invalid = "malformed extracted MD5"
+                    elif doc.md5 and extracted_md5 != doc.md5:
+                        invalid = "source MD5 differs from extracted MD5"
+                if "last_extraction_attempt" in doc_meta:
+                    attempt = doc_meta["last_extraction_attempt"]
+                    if not isinstance(attempt, dict) or attempt.get("status") not in ("complete", "partial"):
+                        invalid = "malformed latest extraction attempt"
+                    elif attempt["status"] == "partial":
+                        incomplete = "latest extraction attempt was partial"
+            source_state[doc.id] = (invalid, incomplete)
+        invalid, incomplete = source_state[doc.id]
+        if invalid:
+            invalid_documents[doc.id] = invalid
+            unidentified += 1
+            continue
+        if incomplete:
+            incomplete_documents[doc.id] = incomplete
         payload = extraction_payload(ext.extracted_json) if ext else {}
         institution = audited_institution(payload, county_name=county.canonical_name, document_meta=doc.meta)
         role = next((kind for name, kind in (("assembly", "assemblies"), ("executive", "executives"))
@@ -147,8 +235,6 @@ def county_audit_coverage_receipt(session):
         ):
             unidentified += 1
             continue
-        if _mapping(_mapping(doc.meta).get("extraction_stats")).get("partial"):
-            incomplete_documents.add(doc.id)
         # Duplicate rows referencing one extraction do not inflate coverage.
         if ext.id in seen:
             continue
@@ -168,7 +254,9 @@ def county_audit_coverage_receipt(session):
         "cells": cells, "unattributed_findings": unidentified,
         "counties_by_year": {year: len(ids) for year, ids in geographic.items()},
         "run_gaps": _run_gaps(jobs[0] if jobs else None) + [
-            f"document {doc_id}: stored partial extraction" for doc_id in sorted(incomplete_documents)
+            f"document {doc_id}: {reason}" for doc_id, reason in sorted(invalid_documents.items())
+        ] + [
+            f"document {doc_id}: {reason}" for doc_id, reason in sorted(incomplete_documents.items())
         ],
     }
 
@@ -181,7 +269,20 @@ def coverage_verdict(receipt):
     when = (receipt["listing_read_at"] or "unknown date")[:10]
     if not listed:
         return "WARN", f"OAG's county listing (read {when}) named no fiscal year from {FIRST_INGESTED_FISCAL_YEAR} on"
-    counts = receipt["counties_by_year"]
+    raw_counts = receipt["counties_by_year"]
+    if not isinstance(raw_counts, dict):
+        return "WARN", "malformed county-year counts"
+    counts = {}
+    for raw_year, count in raw_counts.items():
+        if type(raw_year) is int and 2000 <= raw_year <= 2099:
+            year = raw_year
+        elif isinstance(raw_year, str) and re.fullmatch(r"20\d{2}", raw_year):
+            year = int(raw_year)
+        else:
+            return "WARN", "malformed county-year counts"
+        if year in counts or type(count) is not int or not 0 <= count <= COUNTY_COUNT:
+            return "WARN", "malformed county-year counts"
+        counts[year] = count
     missing = [fy for fy in listed if not counts.get(int(fy[5:]), 0)]
     messages, level = [], "OK"
     if missing:

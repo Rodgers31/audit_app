@@ -610,8 +610,13 @@ def _malformed_job_metadata(job):
     meta = getattr(job, "meta", None)
     if not isinstance(meta, dict):
         return True
+    mode = meta.get("source_mode")
+    if mode is not None and mode not in (
+        "live", "fixture", "partial", "refused", "unknown"
+    ):
+        return True
     return any(key in meta and meta[key] is not None and not isinstance(meta[key], str)
-               for key in ("source_mode", "source_fallback_reason", "source_detail", "source_fallback_detail"))
+               for key in ("source_fallback_reason", "source_detail", "source_fallback_detail"))
 
 
 def _latest_run_reasons(jobs) -> set:
@@ -703,7 +708,14 @@ def check_ingestion_freshness(
             ))
             continue
         modes = [_job_text(j, "source_mode") for j in jobs]
-        if "refused" in _latest_run_modes(jobs):
+        latest_modes = _latest_run_modes(jobs)
+        if (None in latest_modes or "unknown" in latest_modes) and "live" in modes and "refused" not in latest_modes:
+            findings.append(Finding(
+                WARN, f"{domain} ingestion",
+                "newest run has unconfirmed source_mode; older live runs cannot confirm current provenance",
+            ))
+            continue
+        if "refused" in latest_modes:
             # The domain reached a verdict of "do not publish" and wrote
             # nothing (freshness.REFUSED). Two things this must not say:
             #
