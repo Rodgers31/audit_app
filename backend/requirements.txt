@@ -21,6 +21,10 @@ passlib[bcrypt]>=1.7.4
 python-multipart>=0.0.6
 pandas>=2.1.4
 pdfplumber>=0.10.3
+# Imported directly by seeding/domains/stalled_projects/cob_parser.py for the
+# ~3s whole-document caption scan (PdfDocument / get_textpage); pdfplumber
+# also depends on it.
+pypdfium2>=4.0
 # OCR stack for scanned OAG audit-report PDFs (audits domain; needs
 # system tesseract-ocr + poppler-utils - installed in the seed workflow)
 pytesseract>=0.3.10

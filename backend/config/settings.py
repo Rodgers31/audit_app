@@ -2,12 +2,22 @@
 
 import os
 import secrets as stdlib_secrets
+from functools import cached_property
 from typing import List, Optional, Union
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from .secrets import get_secret
+
+
+# Development-only fallback shared across Settings instances in this process.
+# Production/staging must configure the same key across workers and restarts.
+_LOCAL_SIGNING_KEY = stdlib_secrets.token_urlsafe(32)
+
+
+class SigningKeyUnavailable(RuntimeError):
+    """Signing is disabled until a persistent SECRET_KEY is configured."""
 
 
 class Settings(BaseSettings):
@@ -30,20 +40,17 @@ class Settings(BaseSettings):
     SECRET_BACKEND: str = "env"  # Options: "env", "aws", "vault"
 
     # Security - Use secret manager for sensitive values
-    @property
+    @cached_property
     def SECRET_KEY(self) -> str:
-        """Get secret key from secret manager or generate one."""
+        """Resolve one stable key; never issue unverifiable production tokens."""
         key = get_secret("SECRET_KEY")
-        if not key:
-            # Generate and warn in production
-            key = stdlib_secrets.token_urlsafe(32)
-            if self.ENVIRONMENT == "production":
-                import logging
-
-                logging.warning(
-                    "SECRET_KEY not in secret manager, using generated key (not persistent!)"
-                )
-        return key
+        if isinstance(key, str) and key.strip():
+            return key
+        if self.ENVIRONMENT in ("development", "test"):
+            return _LOCAL_SIGNING_KEY
+        raise SigningKeyUnavailable(
+            "SECRET_KEY must be configured for persistent signing"
+        )
 
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30

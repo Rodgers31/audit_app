@@ -1,0 +1,86 @@
+FFFF.F.                                                                  [100%]
+=================================== FAILURES ===================================
+_ test_stale_or_undated_edition_cannot_overwrite_or_retire_current_rows[2025-06-30] _
+backend/tests/test_pending_bills_edition_guard.py:38: in test_stale_or_undated_edition_cannot_overwrite_or_retire_current_rows
+    with pytest.raises(ValueError):
+E   Failed: DID NOT RAISE <class 'ValueError'>
+----------------------------- Captured stderr call -----------------------------
+2026-09-27 03:57:12,303 - seeding.pending_bills.writer - INFO - Creating source document: County CBIRR 2026-06-30
+2026-09-27 03:57:12,307 - seeding.pending_bills.writer - INFO - Pending bills write complete: 2 created, 0 updated
+2026-09-27 03:57:12,309 - seeding.pending_bills.writer - INFO - Creating source document: County CBIRR 2025-06-30
+2026-09-27 03:57:12,310 - seeding.pending_bills.writer - WARNING - pending bills: 1 county row(s) are no longer published — the FY2025/26 report does not state them
+2026-09-27 03:57:12,311 - seeding.pending_bills.writer - INFO - Pending bills write complete: 0 created, 1 updated
+------------------------------ Captured log call -------------------------------
+INFO     seeding.pending_bills.writer:writer.py:379 Creating source document: County CBIRR 2026-06-30
+INFO     seeding.pending_bills.writer:writer.py:212 Pending bills write complete: 2 created, 0 updated
+INFO     seeding.pending_bills.writer:writer.py:379 Creating source document: County CBIRR 2025-06-30
+WARNING  seeding.pending_bills.writer:writer.py:262 pending bills: 1 county row(s) are no longer published — the FY2025/26 report does not state them
+INFO     seeding.pending_bills.writer:writer.py:212 Pending bills write complete: 0 created, 1 updated
+_ test_stale_or_undated_edition_cannot_overwrite_or_retire_current_rows[None] __
+backend/tests/test_pending_bills_edition_guard.py:38: in test_stale_or_undated_edition_cannot_overwrite_or_retire_current_rows
+    with pytest.raises(ValueError):
+E   Failed: DID NOT RAISE <class 'ValueError'>
+----------------------------- Captured stderr call -----------------------------
+2026-09-27 03:57:12,351 - seeding.pending_bills.writer - INFO - Creating source document: County CBIRR 2026-06-30
+2026-09-27 03:57:12,353 - seeding.pending_bills.writer - INFO - Pending bills write complete: 2 created, 0 updated
+2026-09-27 03:57:12,354 - seeding.pending_bills.writer - INFO - Creating source document: County CBIRR None
+2026-09-27 03:57:12,354 - seeding.pending_bills.writer - WARNING - pending bills: 1 county row(s) are no longer published — the FY2025/26 report does not state them
+2026-09-27 03:57:12,355 - seeding.pending_bills.writer - INFO - Pending bills write complete: 0 created, 1 updated
+------------------------------ Captured log call -------------------------------
+INFO     seeding.pending_bills.writer:writer.py:379 Creating source document: County CBIRR 2026-06-30
+INFO     seeding.pending_bills.writer:writer.py:212 Pending bills write complete: 2 created, 0 updated
+INFO     seeding.pending_bills.writer:writer.py:379 Creating source document: County CBIRR None
+WARNING  seeding.pending_bills.writer:writer.py:262 pending bills: 1 county row(s) are no longer published — the FY2025/26 report does not state them
+INFO     seeding.pending_bills.writer:writer.py:212 Pending bills write complete: 0 created, 1 updated
+_ test_stale_or_undated_edition_cannot_overwrite_or_retire_current_rows[broken] _
+backend/tests/test_pending_bills_edition_guard.py:38: in test_stale_or_undated_edition_cannot_overwrite_or_retire_current_rows
+    with pytest.raises(ValueError):
+E   Failed: DID NOT RAISE <class 'ValueError'>
+----------------------------- Captured stderr call -----------------------------
+2026-09-27 03:57:12,367 - seeding.pending_bills.writer - INFO - Creating source document: County CBIRR 2026-06-30
+2026-09-27 03:57:12,369 - seeding.pending_bills.writer - INFO - Pending bills write complete: 2 created, 0 updated
+2026-09-27 03:57:12,369 - seeding.pending_bills.writer - INFO - Creating source document: County CBIRR broken
+2026-09-27 03:57:12,370 - seeding.pending_bills.writer - WARNING - pending bills: 1 county row(s) are no longer published — the FY2025/26 report does not state them
+2026-09-27 03:57:12,370 - seeding.pending_bills.writer - INFO - Pending bills write complete: 0 created, 1 updated
+------------------------------ Captured log call -------------------------------
+INFO     seeding.pending_bills.writer:writer.py:379 Creating source document: County CBIRR 2026-06-30
+INFO     seeding.pending_bills.writer:writer.py:212 Pending bills write complete: 2 created, 0 updated
+INFO     seeding.pending_bills.writer:writer.py:379 Creating source document: County CBIRR broken
+WARNING  seeding.pending_bills.writer:writer.py:262 pending bills: 1 county row(s) are no longer published — the FY2025/26 report does not state them
+INFO     seeding.pending_bills.writer:writer.py:212 Pending bills write complete: 0 created, 1 updated
+________________ test_mixed_dates_are_rejected_before_any_write ________________
+backend/tests/test_pending_bills_edition_guard.py:45: in test_mixed_dates_are_rejected_before_any_write
+    with pytest.raises(ValueError):
+E   Failed: DID NOT RAISE <class 'ValueError'>
+----------------------------- Captured stderr call -----------------------------
+2026-09-27 03:57:12,382 - seeding.pending_bills.writer - INFO - Creating source document: County CBIRR 2026-06-30
+2026-09-27 03:57:12,384 - seeding.pending_bills.writer - INFO - Pending bills write complete: 2 created, 0 updated
+------------------------------ Captured log call -------------------------------
+INFO     seeding.pending_bills.writer:writer.py:379 Creating source document: County CBIRR 2026-06-30
+INFO     seeding.pending_bills.writer:writer.py:212 Pending bills write complete: 2 created, 0 updated
+______________ test_county_fallback_never_attaches_to_a_noncounty ______________
+backend/tests/test_pending_bills_edition_guard.py:63: in test_county_fallback_never_attaches_to_a_noncounty
+    assert _get_or_create_entity(db_session,'Mombasa','county') is None
+E   AssertionError: assert <models.Entity object at 0x1101e3e30> is None
+E    +  where <models.Entity object at 0x1101e3e30> = _get_or_create_entity(<sqlalchemy.orm.session.Session object at 0x10fddfe30>, 'Mombasa', 'county')
+=============================== warnings summary ===============================
+../../../Users/roger/Documents/projects/audit_app/backend/.venv313/lib/python3.13/site-packages/fastapi/testclient.py:1
+  /Users/roger/Documents/projects/audit_app/backend/.venv313/lib/python3.13/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+backend/database.py:64
+  /private/tmp/audit-app-session2-327/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+backend/models.py:23
+  /private/tmp/audit-app-session2-327/backend/models.py:23: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/test_pending_bills_edition_guard.py::test_stale_or_undated_edition_cannot_overwrite_or_retire_current_rows[2025-06-30]
+FAILED backend/tests/test_pending_bills_edition_guard.py::test_stale_or_undated_edition_cannot_overwrite_or_retire_current_rows[None]
+FAILED backend/tests/test_pending_bills_edition_guard.py::test_stale_or_undated_edition_cannot_overwrite_or_retire_current_rows[broken]
+FAILED backend/tests/test_pending_bills_edition_guard.py::test_mixed_dates_are_rejected_before_any_write
+FAILED backend/tests/test_pending_bills_edition_guard.py::test_county_fallback_never_attaches_to_a_noncounty
+5 failed, 2 passed, 3 warnings in 0.26s

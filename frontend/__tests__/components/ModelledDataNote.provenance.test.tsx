@@ -31,6 +31,15 @@ const renderNote = (props: React.ComponentProps<typeof ModelledDataNote> = {}) =
 
 const noteText = () => screen.getByRole('note').textContent ?? '';
 
+/** The budget clauses, verbatim. Since #238 the pending-bills clause names the
+ *  Controller of Budget too, so "mentions the CoB" no longer tells a budget
+ *  claim from a pending-bills one; these do. */
+const BUDGET_CLAUSES = [
+  MESSAGES['counties.provenance.budget_cbirr'].en,
+  MESSAGES['counties.provenance.budget_cra'].en,
+  MESSAGES['counties.provenance.budget_mixed'].en,
+];
+
 /** The sentence that must not appear over Controller of Budget figures. */
 const MODELLED_CLAIM = /modelled estimate/i;
 const NOT_OFFICIAL_CLAIM = /not official Controller of Budget figures/i;
@@ -46,8 +55,7 @@ describe('ModelledDataNote — budget provenance', () => {
   it('credits the Controller of Budget for CBIRR figures', () => {
     renderNote({ budgetSource: 'cob_cbirr' });
     const text = noteText();
-    expect(text).toMatch(/Controller of Budget/i);
-    expect(text).toMatch(/Budget Implementation Review Report|CBIRR/i);
+    expect(text).toContain(MESSAGES['counties.provenance.budget_cbirr'].en);
   });
 
   it('still calls a CRA projection a modelled estimate', () => {
@@ -78,7 +86,7 @@ describe('ModelledDataNote — budget provenance', () => {
     renderNote({ budgetSource: null });
     const text = noteText();
     expect(text).not.toMatch(MODELLED_CLAIM);
-    expect(text).not.toMatch(/Controller of Budget/i);
+    for (const clause of BUDGET_CLAUSES) expect(text).not.toContain(clause);
     expect(text).toMatch(/Auditor-General/i);
   });
 
@@ -87,13 +95,13 @@ describe('ModelledDataNote — budget provenance', () => {
   it('accepts a list of counties and agrees when they all agree', () => {
     renderNote({ budgetSource: ['cob_cbirr', 'cob_cbirr', null] });
     expect(noteText()).not.toMatch(MODELLED_CLAIM);
-    expect(noteText()).toMatch(/Controller of Budget/i);
+    expect(noteText()).toContain(MESSAGES['counties.provenance.budget_cbirr'].en);
   });
 
   it('does not claim one source for a page showing both', () => {
     renderNote({ budgetSource: ['cob_cbirr', 'cra_model'] });
     const text = noteText();
-    expect(text).toMatch(/Controller of Budget/i);
+    expect(text).toContain(MESSAGES['counties.provenance.budget_mixed'].en);
     expect(text).toMatch(/equitable-share/i);
   });
 

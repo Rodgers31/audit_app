@@ -87,6 +87,7 @@ services:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set (no insecure default)}@postgres:5432/audit_app
       REDIS_URL: redis://redis:6379
       ENVIRONMENT: production
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY must be set to a persistent signing key}
     labels:
       - traefik.enable=true
       - traefik.http.routers.backend.rule=Host(`${BACKEND_HOST}`)

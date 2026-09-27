@@ -153,3 +153,44 @@ class TestFetchDocument:
             )
         assert doc.title == "REPORT-2024-2025.pdf"
         assert "County Audit Findings" in doc.meta["previous_titles"]
+
+
+class TestCacheLifetimeAndCap:
+    """The cross-run PDF cache is what keeps the nightly inside its budget.
+
+    fetch_document passed the HTTP-response TTL (``cache_ttl_seconds``,
+    86,400s) where every other PDF fetcher passes ``pdf_cache_ttl_seconds``
+    (30 days). The nightlies run ~24h apart, so OAG documents hit the cache
+    only by accident. Run 35947298790 logged ages 86,199-86,345s, 55-200s
+    inside a one-day TTL, so any night the scheduler started later
+    re-downloaded every OAG document. With eight combined county volumes
+    (7-34MB each) in the queue, that is 140MB a night.
+    """
+
+    def _fetch(self, db_session, seed_country, settings, tmp_path, **kw):
+        seen = {}
+
+        def fake(client, url, **kwargs):
+            seen.update(kwargs)
+            return _fake_pdf(tmp_path)
+
+        with patch("seeding.fetch_documents.get_or_download_pdf", side_effect=fake):
+            fetch_document(
+                db_session, client=None, settings=settings, url=URL,
+                country_id=seed_country.id, publisher="Office of the Auditor-General",
+                title="REPORT-2024-2025.pdf", doc_type=DocumentType.AUDIT, **kw,
+            )
+        return seen
+
+    def test_the_pdf_cache_lifetime_is_the_pdf_one(self, db_session, seed_country, settings, tmp_path):
+        seen = self._fetch(db_session, seed_country, settings, tmp_path)
+        assert seen["ttl_seconds"] == settings.pdf_cache_ttl_seconds
+        assert seen["ttl_seconds"] > 86_400 + 3_600, "a nightly must not miss by drifting an hour"
+
+    def test_the_caller_can_tighten_the_download_cap(self, db_session, seed_country, settings, tmp_path):
+        assert self._fetch(db_session, seed_country, settings, tmp_path)["max_seconds"] == (
+            settings.pdf_download_timeout_seconds
+        )
+        assert self._fetch(db_session, seed_country, settings, tmp_path, max_seconds=120.0)[
+            "max_seconds"
+        ] == 120.0

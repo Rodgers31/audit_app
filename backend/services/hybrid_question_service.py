@@ -103,6 +103,7 @@ class HybridQuestionService:
             all_questions.extend(external_questions)
 
         # Randomize and limit
+        # nondeterminism-ok: which quiz questions to show; a selection of questions, not a figure
         random.shuffle(all_questions)
         return all_questions[:limit]
 
@@ -130,6 +131,7 @@ class HybridQuestionService:
         questions = [q for q in questions if q.get("is_active", True)]
 
         # Randomize and limit
+        # nondeterminism-ok: which quiz questions to show; a selection of questions, not a figure
         random.shuffle(questions)
         return questions[:limit]
 
@@ -168,6 +170,7 @@ class HybridQuestionService:
         # Sample questions that would be generated from Kenya Open Data insights
         sample_questions = [
             {
+                # nondeterminism-ok: a quiz question identifier, not a figure
                 "id": f"ext_kod_{random.randint(1000, 9999)}",
                 "question_text": "Which platform provides open access to Kenya's government data?",
                 "option_a": "Kenya Data Portal",
@@ -184,6 +187,7 @@ class HybridQuestionService:
                 "source": "Kenya Open Data",
             },
             {
+                # nondeterminism-ok: a quiz question identifier, not a figure
                 "id": f"ext_kod_{random.randint(1000, 9999)}",
                 "question_text": "What type of budget data is typically available on Kenya Open Data?",
                 "option_a": "Only national budget summaries",
@@ -201,6 +205,7 @@ class HybridQuestionService:
             },
         ]
 
+        # nondeterminism-ok: which quiz questions to show; a selection of questions, not a figure
         return random.sample(sample_questions, min(limit, len(sample_questions)))
 
     def _fetch_world_bank_questions(
@@ -210,6 +215,7 @@ class HybridQuestionService:
 
         sample_questions = [
             {
+                # nondeterminism-ok: a quiz question identifier, not a figure
                 "id": f"ext_wb_{random.randint(1000, 9999)}",
                 "question_text": "According to World Bank data, what is Kenya's approximate GDP per capita category?",
                 "option_a": "Low income",
@@ -227,6 +233,7 @@ class HybridQuestionService:
             }
         ]
 
+        # nondeterminism-ok: which quiz questions to show; a selection of questions, not a figure
         return random.sample(sample_questions, min(limit, len(sample_questions)))
 
     def add_question(self, question_data: Dict[str, Any]) -> Dict[str, Any]:

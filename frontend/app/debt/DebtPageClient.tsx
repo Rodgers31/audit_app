@@ -50,6 +50,7 @@ import {
   toTreemapCategories,
   treemapTotal,
 } from '@/lib/debt/lenderTreemapAdapter';
+import { formatAsAt } from '@/lib/counties/pendingBillsNotes';
 import { displayLenderName } from '@/lib/debt/lenderName';
 import {
   agingDistributionSupport,
@@ -396,6 +397,11 @@ export default function NationalDebtPage() {
       bills: pendingBillsData.pending_bills || [],
       source: pendingBillsData.source,
       sourceUrl: pendingBillsData.source_url,
+      // The day each half is a stock on. Since #238 they can differ by a
+      // year — national from the BROP, counties from the CoB — and then the
+      // API withholds the total, so the page says why.
+      nationalAsAt: s.national_as_at ?? null,
+      countyAsAt: s.county_as_at ?? null,
     };
   }, [pendingBillsData]);
 
@@ -957,8 +963,13 @@ export default function NationalDebtPage() {
 
       {/* ═══════════ SECTION 7 — PENDING BILLS AGING ═══════════ */}
       {pb && (() => {
-        const nationalPct = pb.total > 0 ? (pb.national / pb.total) * 100 : 0;
-        const countyPct = pb.total > 0 ? (pb.county / pb.total) * 100 : 0;
+        // No split without a total: the API withholds it unless national and
+        // county are both published and stated at one date, and a half over
+        // nothing is not a share.
+        const splitOf = (part: number | null) =>
+          pb.total != null && pb.total > 0 && part != null ? (part / pb.total) * 100 : 0;
+        const nationalPct = splitOf(pb.national);
+        const countyPct = splitOf(pb.county);
         const buckets = pendingBillsSummary?.aging_buckets || [];
         // Whether an aging distribution may be DRAWN at all. This used to draw
         // the chart unconditionally and append a caveat under it — a solid bar
@@ -1015,6 +1026,14 @@ export default function NationalDebtPage() {
                   <div className='text-4xl sm:text-5xl font-extrabold text-gov-dark dark:text-white tabular-nums tracking-tight leading-none'>
                     {fmtKES(pb.total)}
                   </div>
+                  {pb.total == null && pb.national != null && pb.county != null && (
+                    <p className='mt-2 text-xs text-neutral-muted'>
+                      Not added up: the national figure
+                      {pb.nationalAsAt ? ` is at ${formatAsAt(pb.nationalAsAt, 'en')}` : ' states no date'} and the
+                      county figure
+                      {pb.countyAsAt ? ` at ${formatAsAt(pb.countyAsAt, 'en')}` : ' states no date'}.
+                    </p>
+                  )}
                   <div className='mt-3 flex items-center gap-2 text-xs text-neutral-muted'>
                     <Users size={14} />
                     <span>
@@ -1056,6 +1075,11 @@ export default function NationalDebtPage() {
                         <div className='text-xl font-bold text-gov-dark dark:text-white tabular-nums'>
                           {fmtKES(pb.national)}
                         </div>
+                        {pb.national != null && pb.nationalAsAt && (
+                          <div className='text-[11px] text-neutral-muted'>
+                            at {formatAsAt(pb.nationalAsAt, 'en')} · Treasury BROP
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className='flex items-start gap-2.5'>
@@ -1067,6 +1091,11 @@ export default function NationalDebtPage() {
                         <div className='text-xl font-bold text-gov-dark dark:text-white tabular-nums'>
                           {fmtKES(pb.county)}
                         </div>
+                        {pb.county != null && pb.countyAsAt && (
+                          <div className='text-[11px] text-neutral-muted'>
+                            at {formatAsAt(pb.countyAsAt, 'en')} · Controller of Budget
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

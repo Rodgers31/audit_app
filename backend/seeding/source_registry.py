@@ -1,14 +1,21 @@
 """Layer 1 — the declarative source registry.
 
-One entry per Tier-1 dataset: who publishes it, where discovery starts,
-how often it appears, and how late it is allowed to be. The fetcher
-(Layer 2) and the scheduler decide *when* to look and *where* from this
-table; nothing downstream hardcodes a URL or a cadence.
+One entry per Tier-1 dataset: who publishes it, how often it appears,
+how late it is allowed to be, which Layer-3 parser reads it, and which
+keywords select its documents from a listing. The cadence here is what the
+staleness gates and the API's "next expected" windows read.
 
-Every URL and every lag figure here is copied from the
-``kenya-data-sources`` skill's Tier-1 table and ``PUBLICATION_SCHEDULE``
-— the registry deliberately invents nothing. If a source moves, fix it
-here (and in the skill), not at a call site.
+It does NOT say where to fetch from, and nothing reads it for that. Fetch
+URLs belong to each domain: most are settings in ``seeding/config.py``
+(``SeedingSettings``, overridable per environment as ``SEED_*``, and the list
+the nightly health check is tested against); some fetchers still carry
+literals of their own (``domains/audits/fetcher.py``,
+``domains/national_debt/cbk_web_tables.py``). If a source moves, fix it at
+the fetcher that requests it. A ``discovery_urls`` field used to sit here
+claiming this role while nothing read it — issue #137 P4.
+
+Every lag figure here is copied from the ``kenya-data-sources`` skill's
+``PUBLICATION_SCHEDULE`` — the registry deliberately invents nothing.
 
 The registry also answers "when is the next publication expected?", which
 the API uses to render an honest empty state ("annual, expected December–
@@ -105,9 +112,6 @@ class SourceDataset:
     publisher_url: str  # the publisher's site, from the Tier-1 table
     doc_type: str  # models.DocumentType name
     description: str
-    # Where discovery starts. For WordPress sites this is the REST media
-    # API; for others the listing page. Never a guessed deep link.
-    discovery_urls: Tuple[str, ...] = ()
     # Which Layer-3 parser understands this dataset's documents. None
     # means "fetch and register only" — no extraction implemented yet.
     parser_id: Optional[str] = None
@@ -130,10 +134,6 @@ SOURCE_REGISTRY: Dict[str, SourceDataset] = {
                 "Consolidated audit report on national government "
                 "ministries, departments and agencies (the Blue Book)"
             ),
-            discovery_urls=(
-                "https://www.oagkenya.go.ke/wp-json/wp/v2/media"
-                "?per_page=100&search=national+government",
-            ),
             parser_id="oag_blue_book",
             match_keywords=("national-government",),
         ),
@@ -143,10 +143,6 @@ SOURCE_REGISTRY: Dict[str, SourceDataset] = {
             publisher_url="https://www.oagkenya.go.ke",
             doc_type="AUDIT",
             description="County government and county assembly audit reports",
-            discovery_urls=(
-                "https://www.oagkenya.go.ke/wp-json/wp/v2/media"
-                "?per_page=100&search=county",
-            ),
             parser_id="oag_county_audit",
             match_keywords=("county",),
         ),
@@ -156,7 +152,6 @@ SOURCE_REGISTRY: Dict[str, SourceDataset] = {
             publisher_url="https://cob.go.ke",
             doc_type="BUDGET",
             description="Quarterly budget implementation review reports",
-            discovery_urls=("https://cob.go.ke/reports/",),
             parser_id=None,
         ),
         SourceDataset(
@@ -169,7 +164,6 @@ SOURCE_REGISTRY: Dict[str, SourceDataset] = {
                 "gross budget for a fiscal year, published after the "
                 "Appropriations Act is assented"
             ),
-            discovery_urls=("https://www.treasury.go.ke/budget-books/",),
             parser_id="treasury_pbb_gross",
             # The fiscal year lives in the DIRECTORY, not the filename
             # ("Budget books 2026-2027/Development Volume I (1011-1083)_
@@ -185,7 +179,6 @@ SOURCE_REGISTRY: Dict[str, SourceDataset] = {
             publisher_url="https://treasury.go.ke",
             doc_type="BUDGET",
             description="Quarterly economic and budgetary review",
-            discovery_urls=("https://treasury.go.ke",),
             parser_id=None,
         ),
         SourceDataset(
@@ -194,7 +187,6 @@ SOURCE_REGISTRY: Dict[str, SourceDataset] = {
             publisher_url="https://knbs.or.ke",
             doc_type="REPORT",
             description="Annual Economic Survey",
-            discovery_urls=("https://knbs.or.ke",),
             parser_id=None,
         ),
     ]

@@ -55,15 +55,16 @@ logger = logging.getLogger("auto_seeder")
 #: stored.
 MIN_NATIONAL_POPULATION = 5_000_000
 
+# Request-serving workers own only these lightweight refreshes. PDF registry
+# jobs (audits, counties_budget, pending_bills, stalled_projects) belong to the
+# dedicated .github/workflows/seed.yml runner with its bounded CLI budgets.
+# A thread or coroutine timeout cannot bound a parser's memory in this process.
 # Refresh schedule configuration (hours between refreshes)
 REFRESH_SCHEDULE = {
     "debt": 24,  # Daily - CBK updates monthly but we check daily
     "population": 720,  # Monthly - Census data changes rarely
     "economic": 168,  # Weekly - GDP/CPI updated quarterly/monthly
-    "counties": 168,  # Weekly - Budget implementation updates
-    "budgets": 168,  # Weekly - Treasury releases
-    "audits": 168,  # Weekly - OAG releases
-    "counties_budget": 168,  # Weekly — CoB CBIRR releases
+    "counties": 168,  # Weekly - County reference refresh
 }
 
 # Kenya's 47 counties - Official codes (ISO 3166-2:KE)
@@ -182,22 +183,6 @@ class AutoSeeder:
             await self.seed_all_domains()
         except Exception as exc:
             logger.warning(f"[AUTO-SEEDER] Initial seed failed (non-critical): {exc}")
-
-        # Backfill last_refresh ONLY for REFRESH_SCHEDULE domains that
-        # aren't boot-seeded (registry-only: budgets, audits,
-        # counties_budget). Without this they have last_refresh=None
-        # forever and the hourly tick re-runs the registry pipeline
-        # (pdfplumber + pandas + HTTP scrapes) every hour — which OOMs
-        # a 512 MB worker on Render.
-        #
-        # Boot-seeded domains are deliberately excluded: if their seed
-        # raised, last_refresh stays None and the hourly tick retries
-        # them on next iteration — that's the existing transient-failure
-        # behaviour and we don't want to suppress it.
-        boot_time = datetime.now(timezone.utc)
-        for domain in REFRESH_SCHEDULE:
-            if domain not in self._BOOT_DOMAINS:
-                self.last_refresh.setdefault(domain, boot_time)
 
         await self._refresh_loop()
 
@@ -319,59 +304,12 @@ class AutoSeeder:
             await self._seed_population_live()
         elif domain == "economic":
             await self._seed_economic_live()
-        elif domain in ("counties_budget", "audits", "budgets"):
-            # Delegate to the seeding-registry domain so the CoB CBIRR and
-            # OAG audit data used by the Follow-the-Money waterfall stay
-            # current without a manual CLI run.
-            await self._seed_registry_domain(
-                "counties_budget" if domain == "budgets" else domain
-            )
+        else:
+            raise ValueError(f"{domain} is owned by the dedicated seeding runner")
 
     async def _seed_registry_domain(self, domain_name: str):
-        """Run a registry-based seeding domain (counties_budget, audits).
-
-        Delegates to the same pipeline the CLI uses so CoB CBIRR and OAG
-        audit data refresh on the same schedule as the rest of the
-        Follow-the-Money waterfall, without requiring a manual run.
-        """
-        logger.info(
-            "[AUTO-SEEDER] Running registry domain %s via seeding pipeline",
-            domain_name,
-        )
-        try:
-            from seeding.config import get_settings
-            from seeding.registries import REGISTRY, load_builtin_domains
-            from seeding.types import DomainRunContext
-
-            load_builtin_domains()
-            runner = REGISTRY.get(domain_name)
-            if runner is None:
-                logger.warning(
-                    "[AUTO-SEEDER] Registry domain %s not registered", domain_name
-                )
-                return
-
-            settings = get_settings()
-            loop = asyncio.get_running_loop()
-
-            def _run() -> None:
-                with SessionLocal() as db:
-                    ctx = DomainRunContext(
-                        since=None, dry_run=False, job_id=None
-                    )
-                    runner(db, settings, ctx)
-                    db.commit()
-
-            await loop.run_in_executor(None, _run)
-            logger.info(
-                "[AUTO-SEEDER] Registry domain %s refresh complete", domain_name
-            )
-        except Exception as exc:
-            logger.warning(
-                "[AUTO-SEEDER] Registry domain %s refresh failed: %s",
-                domain_name,
-                exc,
-            )
+        """Refuse even direct calls: heavy jobs must never share the web worker."""
+        raise ValueError(f"{domain_name} is owned by the dedicated seeding runner")
 
     async def _seed_counties_live(self):
         """
@@ -793,6 +731,10 @@ class AutoSeeder:
             # non-empty means data is going stale; ≥3 has already alerted.
             "consecutive_failures": dict(self._consecutive_failures),
             "next_refresh": self._get_next_refresh_times(),
+            "external_job_owner": {
+                "domains": ["audits", "counties_budget", "pending_bills", "stalled_projects"],
+                "runner": ".github/workflows/seed.yml (seeding.cli)",
+            },
         }
 
     def _get_next_refresh_times(self) -> Dict[str, str]:

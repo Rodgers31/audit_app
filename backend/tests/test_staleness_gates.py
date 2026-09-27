@@ -215,9 +215,12 @@ class TestEveryDomainRecordsProvenance:
                 for path in (root / domain).rglob("*.py")
             )
             has_live = "mark_live(" in sources
-            has_fixture = "mark_fixture(" in sources
-            has_partial = "mark_partial(" in sources
-            if has_live and not (has_fixture or has_partial):
+            # Preserve each supported failure path: fallback, partial source
+            # read, and refusal when no trustworthy fixture exists.
+            has_failure = any(marker in sources for marker in (
+                "mark_fixture(", "mark_partial(", "mark_refused("
+            ))
+            if has_live and not has_failure:
                 one_sided.append(domain)
         assert one_sided == [], (
             f"domains that record success but not failure: {one_sided}"

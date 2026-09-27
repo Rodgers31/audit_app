@@ -175,39 +175,5 @@ export async function subscribeNewsletter(
     throw new Error(`Unexpected newsletter subscribe response: ${JSON.stringify(status)}`);
   }
 
-  // Fire-and-forget welcome email for new / returning subscribers
-  if (status === 'subscribed' || status === 'resubscribed') {
-    _sendWelcomeEmail(email);
-  }
-
   return { status, email };
-}
-
-/**
- * Trigger the backend to send a welcome email.
- * Best-effort — never blocks or throws on failure.
- */
-async function _sendWelcomeEmail(email: string): Promise<void> {
-  try {
-    const { apiClient } = await import('@/lib/api/axios');
-    await apiClient.post('/newsletter/send-welcome', { email });
-  } catch {
-    // Intentionally swallowed — welcome email is non-critical
-  }
-}
-
-export async function unsubscribeNewsletter(
-  email: string
-): Promise<{ status: 'unsubscribed' | 'not_found' }> {
-  const { apiClient } = await import('@/lib/api/axios');
-  const { data } = await apiClient.post('/newsletter/unsubscribe', { email });
-
-  // Same guard as subscribe: don't let an unexpected 2xx body masquerade as a
-  // successful unsubscribe (the old `?? 'unsubscribed'` silently claimed success).
-  const status: unknown = data?.status;
-  if (status !== 'unsubscribed' && status !== 'not_found') {
-    throw new Error(`Unexpected newsletter unsubscribe response: ${JSON.stringify(status)}`);
-  }
-
-  return { status };
 }

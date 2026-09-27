@@ -28,6 +28,12 @@ class PendingBillRecord:
     notes: Optional[str] = None
     source_url: Optional[str] = None
     source_title: Optional[str] = None
+    #: ISO date the figure is a stock on, as the publication states it.
+    as_at: Optional[str] = None
+    source_table: Optional[str] = None
+    source_page: Optional[int] = None
+    #: What the report says about this figure, as ``{"code": ..., ...}``.
+    reader_notes: list = field(default_factory=list)
 
 
 def parse_pending_bills_payload(
@@ -102,7 +108,11 @@ def parse_pending_bills_payload(
             eligible = _to_decimal(item.get("eligible_pending"))
             ineligible = _to_decimal(item.get("ineligible_pending"))
 
-            if total is None or total <= 0:
+            if total is None and item.get("printed_zero") is True:
+                # A zero the publication PRINTS is a figure. Every other
+                # zero or blank here is a missing amount.
+                total = Decimal(0)
+            if total is None or (total <= 0 and item.get("printed_zero") is not True):
                 logger.debug(
                     f"Skipping record {idx} ({entity_name}): " f"zero or missing amount"
                 )
@@ -119,6 +129,10 @@ def parse_pending_bills_payload(
                 notes=item.get("notes"),
                 source_url=source_url,
                 source_title=source_title,
+                as_at=item.get("as_at"),
+                source_table=item.get("table"),
+                source_page=item.get("page"),
+                reader_notes=list(item.get("reader_notes") or []),
             )
             records.append(record)
 
