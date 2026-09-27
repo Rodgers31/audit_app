@@ -253,7 +253,9 @@ class TestDispatch:
         f = tmp_path / "v.pdf"
         f.write_bytes(b"%PDF-1.4")
         doc.file_path = str(f)
-        doc.meta = {"extracted_md5": doc.md5}
+        from seeding.extractors import oag_blue_book as bb
+
+        doc.meta = {"extracted_md5": doc.md5, "extractor_version": bb.EXTRACTOR_VERSION}
         session.add(
             Extraction(
                 source_document_id=doc.id, page_number=1, extractor="oag_blue_book",

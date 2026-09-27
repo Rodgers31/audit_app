@@ -43,6 +43,16 @@ from typing import Dict, List, Optional, Tuple
 logger = logging.getLogger("seeding.extractors.oag_blue_book")
 
 EXTRACTOR_ID = "oag_blue_book"  # recorded on every extractions row
+#: The walk's version, stamped on the document beside ``extracted_md5``. Bump
+#: it whenever a change to the walk changes what it would extract from bytes
+#: it has already read: ``extract_blue_book`` re-reads a document whose stamp
+#: differs, and replaces its rows (``replace_extractions``). A document with no
+#: stamp was read by version 1.
+#:
+#: 2: paragraphs past 999, OAG's skipped numbers, prior-year tables, the
+#:    appendix rule, and the clean-statement typos (FY2024/25 national book:
+#:    813 rows, 329 of them table rows, became 1,882 findings).
+EXTRACTOR_VERSION = 2
 
 # ── text integrity ───────────────────────────────────────────────────
 _CID_RE = re.compile(r"\(cid:\d+\)")
@@ -82,15 +92,32 @@ _HEADING_RE = re.compile(
     r"|(?:Unqualified |Qualified |Adverse )?Conclusion)\s*$",
     re.IGNORECASE,
 )
-_FINDING_START_RE = re.compile(r"^(\d{1,3})\.\s+(\S.*)$")
+#: Four digits: OAG numbers the national book's paragraphs continuously
+#: across every vote, 1 to 2819 in FY2024/25. It does not restart them per vote.
+_FINDING_START_RE = re.compile(r"^(\d{1,4})\.\s+(\S.*)$")
+#: OAG skips a number now and then (¶215 and ¶1813 exist nowhere in the
+#: FY2024/25 national book). A step this small is a skip. A numbered list
+#: inside a finding goes backwards, and a year at the start of a wrapped line
+#: ("2019. The supplementary financing ...") lands far from the running number.
+MAX_NUMBER_STEP = 3
 _AMOUNT_RE = re.compile(r"Kshs?\.?\s*([\d][\d,]*(?:\.\d+)?)", re.IGNORECASE)
-_NO_ISSUE_RE = re.compile(r"^There (?:was|were) no material issue", re.IGNORECASE)
+# "There were no material issues ...", and OAG's typos of it: "The were no
+# material issues" (FY2024/25 p.488), "There were not material issues" (p.624).
+_NO_ISSUE_RE = re.compile(
+    r"^The(?:re)?\s+(?:was|were)\s+not?\s+material\s+issue", re.IGNORECASE
+)
 # The header of the table an "Unresolved Prior Year Matters" finding lists last
 # year's issues in: "No. Audit Issues for 2023/2024", "No. Audit Issue".
 _PRIOR_ISSUES_TABLE_RE = re.compile(r"^No\.?\s+Audit\s+Issues?\b", re.IGNORECASE)
 # Appendices (summary tables of opinions per MDA) follow the last chapter.
-# Their numbered table rows are not findings — a chapter ends here.
-_APPENDIX_RE = re.compile(r"^Appendix\s+[A-Z0-9]", re.IGNORECASE)
+# Their numbered table rows are not findings — a chapter ends here. Only the
+# HEADING ends it: "APPENDICES", "Appendix A: Unmodified Opinion". Findings
+# cite the financial statements' appendices at the start of a line ("Appendix
+# III to the financial statements discloses ..."), six times in the FY2024/25
+# book, and each of those used to end its chapter there.
+_APPENDIX_RE = re.compile(
+    r"^(?:APPENDICES\s*$|Appendix\s+[A-Z0-9]{1,5}\s*[:–—-])", re.IGNORECASE
+)
 # An ALL-CAPS line inside a chapter marks a sub-entity (Consolidated Fund
 # Services, donor-funded projects, …). Recorded for provenance fidelity.
 _SUBSECTION_RE = re.compile(r"^[A-Z][A-Z0-9 ,'&()/.–-]{11,}$")
@@ -214,30 +241,35 @@ def segment_chapter(
     *,
     finding_start_re=None,
     stop_at_appendix: bool = True,
-    max_number_step: int = 1,
-    skip_prior_issue_tables: bool = False,
+    max_number_step: int = MAX_NUMBER_STEP,
+    skip_prior_issue_tables: bool = True,
 ) -> Tuple[List[BlueBookFinding], int]:
     """Findings for one vote's chapter. Returns (findings, rejected_cid).
 
-    The keyword arguments exist for the consolidated COUNTY volumes
-    (``oag_county_volume``), whose layout breaks three assumptions this walk
-    makes about the national book. Their defaults are the national behaviour,
-    unchanged:
+    The defaults are the national walk. Each was measured on the FY2024/25
+    national book (document 2392), whose 813 rows under the old defaults
+    became 1,882 (every paragraph number 1-2818 accounted for: 1,882 findings,
+    933 "no material issues" statements, ¶215 and ¶1813 absent from the PDF,
+    and one wrapped prose line that is correctly not a paragraph). The
+    FY2020/21 county volumes the same walk reads (documents 2395 and 2396)
+    come out byte-identical under both.
 
-    * ``finding_start_re``: county volumes number paragraphs continuously
-      across all 47 chapters, past 1,000 (FY2024/25 executives reaches 1323),
-      so the three-digit pattern silently merged every later finding into the
-      one before it.
-    * ``stop_at_appendix``: county findings cite "Appendix VI to the financial
-      statements ..." at the start of a line, and the national rule reads that
-      as the end of the chapter, dropping everything after it (40 findings in
-      one FY2024/25 chapter). A county chapter's end is already fixed by the
-      next chapter's heading, so the county caller turns this off.
-    * ``max_number_step``: OAG's own numbering skips (1266, 1147 and 798
-      appear nowhere in their volumes). With a strict ``prev + 1`` rule,
-      every paragraph after the skip is lost. A step of up to this many is
-      accepted. Numbered list items inside a finding are still refused,
-      because they go backwards.
+    * ``finding_start_re``: up to four digits. OAG numbers paragraphs
+      continuously across the whole book, to 2819. The three-digit pattern
+      stopped at 999 (pdf p.312), after which the only numbered lines it could
+      match were the 1, 2, 3 rows of prior-year tables: 329 of the 813 rows.
+    * ``max_number_step``: OAG skips numbers. ¶1813 does not exist, and the
+      strict ``prev + 1`` rule lost the rest of vote 1152 (51 findings). A
+      numbered list inside a finding goes backwards, and a year opening a
+      wrapped line ("2019. The supplementary ...") lands hundreds away from
+      the running number, so neither passes. The four such lines in the year
+      band 1990-2100 are all refused, and its 83 real paragraphs kept.
+    * ``stop_at_appendix``: the end matter ("APPENDICES", "Appendix A:
+      Unmodified Opinion") falls inside the LAST vote's page range, so the
+      national walk still stops there. ``_APPENDIX_RE`` matches only that
+      heading, not a finding that opens a line with "Appendix III to the
+      financial statements ...". The county volumes turn it off: their
+      chapter ends are fixed by the next chapter's heading.
     * ``skip_prior_issue_tables``: an "Unresolved Prior Year Matters" finding
       lists last year's issues as a table numbered 1, 2, 3 under a
       "No. Audit Issues for ..." header. Where the running paragraph numbers
@@ -246,7 +278,9 @@ def segment_chapter(
       dropped (FY2024/25 assemblies, Mombasa, p.14). With this on, numbered
       lines continuing the table's own 1, 2, 3 sequence stay in the finding's
       body. The first number that breaks the sequence, or any heading, ends
-      the table.
+      the table. It changes nothing in documents 2392, 2395 or 2396 once
+      paragraphs past 999 are read, and guards the low-numbered chapters
+      where the continuity rule alone cannot tell a row from a paragraph.
     """
     finding_start_re = finding_start_re or _FINDING_START_RE
     lines: List[Tuple[int, str, str]] = []  # (pdf_page_1based, line, method)
@@ -553,14 +587,178 @@ def source_hash_of(extracted_json: dict) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+class ExtractionStillReferenced(RuntimeError):
+    """A row a re-extraction would remove is cited by something besides audits."""
+
+
+class EmptyReExtraction(RuntimeError):
+    """A re-read found no finding in a document that has rows. Refused."""
+
+
+#: Rows per ``IN (...)``. SQLite, which the tests run on, caps a statement at
+#: 999 parameters.
+_CHUNK = 500
+
+
+def _chunks(ids: List[int]):
+    for i in range(0, len(ids), _CHUNK):
+        yield ids[i : i + _CHUNK]
+
+
+def extraction_is_current(doc) -> bool:
+    """Has this version of the walk already read these exact bytes?
+
+    Fails closed. A missing md5 on either side, or a version stamp that is not
+    exactly this walk's, means "re-read". ``True == 1`` in Python, so the
+    stamp's type is checked, not only its value.
+    """
+    meta = doc.meta or {}
+    version = meta.get("extractor_version")
+    return bool(
+        doc.md5
+        and meta.get("extracted_md5") == doc.md5
+        and type(version) is int
+        and version == EXTRACTOR_VERSION
+    )
+
+
+def blue_book_row_key(payload: dict) -> tuple:
+    """What makes two extractions of one document the same finding.
+
+    Not the page: a re-issued PDF can move a paragraph to another page. The
+    walk emits paragraph numbers in strictly increasing order within a vote,
+    so the key is unique among the rows it writes.
+    """
+    return (payload.get("vote"), payload.get("paragraph_no"), payload.get("title"))
+
+
+def replace_extractions(session, doc, extractor_id: str, rows: list, key) -> dict:
+    """Make ``doc``'s rows from ``extractor_id`` exactly ``rows``.
+
+    ``audits.extraction_id`` is a foreign key, so the old way (delete every
+    row, insert the new ones) failed on Postgres whenever a finding had been
+    published from the document. The rows are reconciled instead, by
+    ``key(extracted_json)``:
+
+    * an old row with a new row's key is UPDATED in place. It keeps its id, so
+      the audit that cites it keeps citing it, and the loader then rewrites
+      that audit from the new payload.
+    * a new row with no old match is inserted.
+    * an old row with no new match was never a finding under the current walk
+      (a prior-year table row, say). The audits loaded from it are deleted,
+      then the row.
+
+    Audits are the only facts loaded from these rows. If any other table
+    cites a row that would be removed, nothing is changed and
+    ``ExtractionStillReferenced`` is raised. Deleting evidence a published
+    figure stands on is not this function's decision.
+
+    Returns counts, plus the ids of inserted rows as ``fresh_extraction_ids``
+    (the loader skips its confirming SELECT for rows created in this
+    transaction).
+    """
+    from models import Audit, Base, Extraction
+    from sqlalchemy import func, select
+
+    old = (
+        session.query(Extraction)
+        .filter(
+            Extraction.source_document_id == doc.id,
+            Extraction.extractor == extractor_id,
+        )
+        .order_by(Extraction.id)
+        .all()
+    )
+    by_key: Dict[tuple, list] = {}
+    for row in old:
+        by_key.setdefault(key(row.extracted_json or {}), []).append(row)
+
+    matched: List[Tuple[object, object]] = []
+    inserted: list = []
+    for new in rows:
+        candidates = by_key.get(key(new.extracted_json or {}))
+        if candidates:
+            matched.append((candidates.pop(0), new))
+        else:
+            inserted.append(new)
+    vanished = [r for group in by_key.values() for r in group]
+    vanished_ids = [r.id for r in vanished]
+
+    # Refuse before changing anything.
+    for table in Base.metadata.sorted_tables:
+        if table.name == Audit.__tablename__:
+            continue
+        for fk in table.foreign_keys:
+            if fk.column.table.name != Extraction.__tablename__:
+                continue
+            cited = sum(
+                session.execute(
+                    select(func.count())
+                    .select_from(table)
+                    .where(fk.parent.in_(chunk))
+                ).scalar_one()
+                for chunk in _chunks(vanished_ids)
+            )
+            if cited:
+                raise ExtractionStillReferenced(
+                    f"{table.name}.{fk.parent.name} cites {cited} of the "
+                    f"{len(vanished_ids)} {extractor_id} row(s) document {doc.id} "
+                    "no longer yields; nothing was replaced"
+                )
+
+    # Through the ORM, not a bulk DELETE: a bulk delete leaves the deleted
+    # audits live in the session, where the loader would meet them again.
+    audits_removed = 0
+    for chunk in _chunks(vanished_ids):
+        for audit in session.query(Audit).filter(Audit.extraction_id.in_(chunk)):
+            session.delete(audit)
+            audits_removed += 1
+    session.flush()
+    for row in vanished:
+        session.delete(row)
+    session.flush()
+
+    def same_confidence(a, b) -> bool:
+        # Numeric column: it reads back as Decimal("0.90"), never == 0.9.
+        return (a is None) == (b is None) and (a is None or float(a) == float(b))
+
+    updated = 0
+    for row, new in matched:
+        changed = False
+        for attr in ("extracted_json", "page_number"):
+            if getattr(row, attr) != getattr(new, attr):
+                setattr(row, attr, getattr(new, attr))
+                changed = True
+        if not same_confidence(row.confidence, new.confidence):
+            row.confidence = new.confidence
+            changed = True
+        updated += changed
+    for new in inserted:
+        session.add(new)
+    session.flush()
+
+    return {
+        "kept": len(matched) - updated,
+        "updated": updated,
+        "inserted": len(inserted),
+        "removed": len(vanished),
+        "audits_removed": audits_removed,
+        "fresh_extraction_ids": [r.id for r in inserted],
+    }
+
+
 def extract_blue_book(session, doc, settings) -> dict:
     """Extract ``doc`` (a fetched Blue Book) into ``extractions`` rows.
 
-    One row per finding, ``page_number`` = 1-based PDF page. Idempotent:
-    if rows from this extractor already exist for this document and the
-    document's md5 has not changed since, nothing is re-written.
+    One row per finding, ``page_number`` = 1-based PDF page. Idempotent: when
+    this version of the walk has already read these exact bytes
+    (``extraction_is_current``), nothing is re-read. When the bytes moved or
+    the walk changed, the rows are reconciled in place by
+    ``replace_extractions``, so a finding that survives keeps its row and its
+    published audit.
 
-    Returns a stats dict (created / skipped / rejected_cid / votes_seen).
+    Returns a stats dict (created / skipped / rejected_cid / votes_seen, and
+    the reconciliation counts).
     """
     from models import Extraction
 
@@ -578,11 +776,13 @@ def extract_blue_book(session, doc, settings) -> dict:
         .count()
     )
     doc_meta = dict(doc.meta or {})
-    if existing and doc_meta.get("extracted_md5") == doc.md5:
+    if existing and extraction_is_current(doc):
         logger.info(
-            "Document %s already extracted at md5 %s (%d rows) — skipping",
+            "Document %s already extracted at md5 %s by walk version %s "
+            "(%d rows) — skipping",
             doc.id,
             doc.md5,
+            EXTRACTOR_VERSION,
             existing,
         )
         return {
@@ -600,36 +800,48 @@ def extract_blue_book(session, doc, settings) -> dict:
     )
     result = parse_blue_book(pages, doc.url or "")
 
-    if existing:
-        # The document was re-issued (md5 moved): the old rows describe
-        # bytes that no longer exist at the URL. Replace them.
-        logger.warning(
-            "Re-extracting document %s: md5 changed since last extraction "
-            "(%d old rows replaced)",
-            doc.id,
-            existing,
+    if existing and not result.findings:
+        # A walk that suddenly finds nothing in a document it used to read is
+        # far likelier broken than the report empty. Replacing would delete
+        # every published finding of the document.
+        raise EmptyReExtraction(
+            f"document {doc.id}: re-read found no finding where {existing} "
+            f"row(s) exist (toc entries: {result.votes_seen}); rows kept"
         )
-        session.query(Extraction).filter(
-            Extraction.source_document_id == doc.id,
-            Extraction.extractor == EXTRACTOR_ID,
-        ).delete()
 
-    created = 0
-    for f in result.findings:
-        payload = finding_to_extracted_json(f, result.fiscal_year_label)
-        session.add(
-            Extraction(
-                source_document_id=doc.id,
-                page_number=f.pdf_page,
-                extracted_json=payload,
-                extractor=EXTRACTOR_ID,
-                confidence=0.90 if f.method == "pdfplumber" else 0.60,
-            )
+    rows = [
+        Extraction(
+            source_document_id=doc.id,
+            page_number=f.pdf_page,
+            extracted_json=finding_to_extracted_json(f, result.fiscal_year_label),
+            extractor=EXTRACTOR_ID,
+            confidence=0.90 if f.method == "pdfplumber" else 0.60,
         )
-        created += 1
+        for f in result.findings
+    ]
+    replaced = replace_extractions(
+        session, doc, EXTRACTOR_ID, rows, key=blue_book_row_key
+    )
+    if existing:
+        logger.warning(
+            "Re-extracted document %s (%s): %d kept, %d updated, %d new, "
+            "%d removed with %d audit row(s)",
+            doc.id,
+            "md5 changed"
+            if doc_meta.get("extracted_md5") != doc.md5
+            else f"walk version {doc_meta.get('extractor_version', 1)!r} -> "
+            f"{EXTRACTOR_VERSION}",
+            replaced["kept"],
+            replaced["updated"],
+            replaced["inserted"],
+            replaced["removed"],
+            replaced["audits_removed"],
+        )
+
     doc_meta["extracted_md5"] = doc.md5
+    doc_meta["extractor_version"] = EXTRACTOR_VERSION
     doc_meta["extraction_stats"] = {
-        "findings": created,
+        "findings": len(rows),
         "rejected_cid": result.rejected_cid,
         "votes_seen": result.votes_seen,
         "ocr_pages": result.ocr_pages,
@@ -640,23 +852,36 @@ def extract_blue_book(session, doc, settings) -> dict:
     logger.info(
         "Extracted %d findings from document %s (%d votes, %d rejected for "
         "text integrity, %d OCR pages)",
-        created,
+        len(rows),
         doc.id,
         result.votes_seen,
         result.rejected_cid,
         result.ocr_pages,
     )
     return {
-        "created": created,
+        "created": replaced["inserted"],
+        "findings": len(rows),
+        "kept": replaced["kept"],
+        "updated": replaced["updated"],
+        "removed": replaced["removed"],
+        "audits_removed": replaced["audits_removed"],
         "existing": 0,
         "rejected_cid": result.rejected_cid,
         "votes_seen": result.votes_seen,
         "skipped_unchanged": False,
+        "fresh_extraction_ids": replaced["fresh_extraction_ids"],
     }
 
 
 __all__ = [
     "EXTRACTOR_ID",
+    "EXTRACTOR_VERSION",
+    "MAX_NUMBER_STEP",
+    "EmptyReExtraction",
+    "ExtractionStillReferenced",
+    "blue_book_row_key",
+    "extraction_is_current",
+    "replace_extractions",
     "BlueBookFinding",
     "BlueBookResult",
     "PageText",
