@@ -99,10 +99,10 @@ KNOWN_UNGATED_WRITE_ROUTES = {
 
 # Write routes that another open PR removes. Tolerated while present, not
 # required, so this test stays green whichever PR merges first. Delete the
-# entry once the route is gone from main.
-REMOVED_BY_OPEN_PR = {
-    ("POST", "/api/v1/system/seeder-refresh"): "PR #253 (issue #252)",
-}
+# entry once the route is gone from main. Empty since #253 and this change
+# merged together: POST /api/v1/system/seeder-refresh no longer exists, and
+# test_system_routes_are_read_only.py refuses any write route under /system.
+REMOVED_BY_OPEN_PR: dict = {}
 
 
 def _mounted_write_routes(application=app) -> list[tuple[str, str, object, object]]:

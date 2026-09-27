@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch
 
-from fastapi.routing import APIRoute
+from fastapi import APIRouter, FastAPI
 
 from main import app
 
@@ -48,21 +48,58 @@ def test_anonymous_post_cannot_start_a_seed(client):
     assert seed.call_count == 0, "an anonymous POST started seed_all_domains()"
 
 
-def test_system_namespace_registers_only_reads():
-    system_routes = [
-        r
-        for r in app.routes
-        if isinstance(r, APIRoute) and r.path.startswith(SYSTEM_PREFIX)
+def _served_routes(application):
+    """(path, methods) for every route FastAPI serves, including routers.
+
+    ``app.routes`` alone is not enough: on this FastAPI (0.139) an included
+    router is one wrapper entry, so a write route added under the system
+    prefix through ``include_router`` never appears there. ``iter_route_contexts``
+    is what ``app.openapi()`` walks. If a future FastAPI drops it, fail rather
+    than quietly scan only ``main.py``'s own routes.
+    """
+    try:
+        from fastapi.routing import iter_route_contexts
+    except ImportError as exc:  # pragma: no cover - depends on FastAPI version
+        raise AssertionError(
+            "fastapi.routing.iter_route_contexts is gone; this guard cannot see "
+            "routes mounted through routers"
+        ) from exc
+    return [
+        (ctx.path, set(ctx.methods or ()))
+        for ctx in iter_route_contexts(application.routes)
+        if getattr(ctx, "path", None) is not None
     ]
+
+
+def _system_writers(application):
+    return sorted(
+        f"{sorted(methods - READ_METHODS)} {path}"
+        for path, methods in _served_routes(application)
+        if path.startswith(SYSTEM_PREFIX) and methods - READ_METHODS
+    )
+
+
+def test_system_namespace_registers_only_reads():
+    system_paths = {
+        path for path, _m in _served_routes(app) if path.startswith(SYSTEM_PREFIX)
+    }
     # Not vacuous: the status routes the frontend reads must still be here.
-    assert {r.path for r in system_routes} >= {
+    assert system_paths >= {
         "/api/v1/system/seeder-status",
         "/api/v1/system/pipeline-health",
     }
-
-    writers = sorted(
-        f"{sorted(r.methods - READ_METHODS)} {r.path}"
-        for r in system_routes
-        if r.methods - READ_METHODS
-    )
+    writers = _system_writers(app)
     assert writers == [], f"write routes under {SYSTEM_PREFIX}: {writers}"
+
+
+def test_the_guard_sees_a_write_route_mounted_through_a_router():
+    """Positive control: the shape the first version of this test missed."""
+    probe = FastAPI()
+    router = APIRouter(prefix="/api/v1/system")
+
+    @router.post("/reseed")
+    def _reseed():  # pragma: no cover - never called
+        return {}
+
+    probe.include_router(router)
+    assert _system_writers(probe) == ["['POST'] /api/v1/system/reseed"]
