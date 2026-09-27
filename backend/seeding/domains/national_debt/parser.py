@@ -53,6 +53,13 @@ class DebtRecord:
         self.interest_terms = interest_terms
 
 
+def _declared(value: Any) -> str | None:
+    """A declared label, or None when the payload declares nothing usable."""
+    if not isinstance(value, str):
+        return None
+    return value.strip() or None
+
+
 def parse_debt_payload(payload: dict[str, Any]) -> list[DebtRecord]:
     """
     Parse debt payload into structured records.
@@ -85,6 +92,9 @@ def parse_debt_payload(payload: dict[str, Any]) -> list[DebtRecord]:
     loans_data = payload.get("loans", [])
     source_url = payload.get("source_url")
     source_title = payload.get("source_title", "National Treasury Debt Bulletin")
+    # Who published the payload's own source. It belongs to ``source_url``, so
+    # a row inherits it only when it inherits that URL too (issue #274).
+    payload_publisher = _declared(payload.get("publisher"))
 
     logger.info(f"Parsing {len(loans_data)} debt records")
 
@@ -121,7 +131,10 @@ def parse_debt_payload(payload: dict[str, Any]) -> list[DebtRecord]:
                 # without this they persisted as if CBK had published them.
                 source_url=loan_data.get("source_url") or source_url,
                 source_title=loan_data.get("source_title") or source_title,
-                publisher=loan_data.get("publisher"),
+                publisher=(
+                    _declared(loan_data.get("publisher"))
+                    or (None if loan_data.get("source_url") else payload_publisher)
+                ),
                 debt_category=loan_data.get("debt_category"),
                 interest_rate=interest_rate,
                 notes=loan_data.get("notes"),

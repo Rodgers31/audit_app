@@ -21,6 +21,10 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger("seeding.national_debt.writer")
 
+#: For creating a document whose payload declares no publisher. Never used to
+#: correct an existing one (issue #274).
+_DEFAULT_PUBLISHER = "National Treasury of Kenya"
+
 
 def _get_or_create_entity(
     session: Session, name: str, entity_type: str
@@ -74,6 +78,17 @@ def _get_or_create_source_document(
     )
 
     if doc:
+        # The CBK bulletins were filed under the National Treasury default
+        # because the fixture declared no publisher, and nothing here ever
+        # looked at an existing document again (issue #274). Only a
+        # declaration corrects one; the default is for creating a document, or
+        # an undeclared row with the same title would reset it every run.
+        if record.publisher and doc.publisher != record.publisher:
+            logger.info(
+                "Relabelled source document %s publisher %r -> %r",
+                doc.id, doc.publisher, record.publisher,
+            )
+            doc.publisher = record.publisher
         return doc
 
     # Get Kenya country ID (should exist from bootstrap)
@@ -87,7 +102,7 @@ def _get_or_create_source_document(
     logger.info(f"Creating source document: {record.source_title}")
     doc = SourceDocument(
         country_id=kenya.id,
-        publisher=getattr(record, "publisher", None) or "National Treasury of Kenya",
+        publisher=record.publisher or _DEFAULT_PUBLISHER,
         title=record.source_title or "National Treasury Debt Bulletin",
         doc_type=DocumentType.LOAN,
         url=record.source_url,
@@ -363,7 +378,12 @@ def write_debt_records(
             # shifted, so the metric still reflects real churn rather
             # than counting every no-op re-write.
             changed = (
-                keeper.outstanding != record.outstanding
+                # A row whose figures are replaced from this record cites this
+                # record's document. It used to keep whichever document it was
+                # created under, so the CBK domestic rows went on citing a
+                # document no payload names any more (issue #274).
+                keeper.source_document_id != source_doc.id
+                or keeper.outstanding != record.outstanding
                 or keeper.principal != record.principal
                 or keeper.issue_date != record.issue_date
                 or keeper.maturity_date != record.maturity_date
@@ -387,6 +407,7 @@ def write_debt_records(
                 keeper.principal = record.principal
                 keeper.issue_date = record.issue_date
                 keeper.maturity_date = record.maturity_date
+                keeper.source_document_id = source_doc.id
                 resolved_cat = _resolve_debt_category(record.debt_category)
                 if resolved_cat is not None:
                     keeper.debt_category = resolved_cat
