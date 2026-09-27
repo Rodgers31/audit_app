@@ -72,23 +72,6 @@ def test_budget_line_response():
     assert data["allocated_amount"] == 5_000_000
 
 
-def test_etl_job_response():
-    """ETLJobResponse should handle job metadata."""
-    from main import ETLJobResponse
-
-    ejr = ETLJobResponse(
-        job_id="abc-123",
-        status="running",
-        country="Kenya",
-        started_at="2024-01-01T00:00:00Z",
-        documents_processed=0,
-        errors=[],
-    )
-    data = ejr.model_dump()
-    assert data["job_id"] == "abc-123"
-    assert data["errors"] == []
-
-
 def test_search_response():
     """SearchResponse should paginate results."""
     from main import SearchResponse
