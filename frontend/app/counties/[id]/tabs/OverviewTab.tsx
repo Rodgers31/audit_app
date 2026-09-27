@@ -22,6 +22,7 @@ import {
   pendingBillsNoteLines,
 } from '@/lib/counties/pendingBillsNotes';
 import KPI from './KPI';
+import { countyRevenueNotes } from '@/lib/counties/revenueNotes';
 
 /* ═══════════ Circular progress ═══════════ */
 function CircleProgress({
@@ -424,22 +425,9 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
             accent='text-emerald-700'
           />
           <KPI
-            label={t('county.overview.kpi.total_revenue')}
+            label={revenue.total_revenue_basis === 'cash_receipts_including_opening_balance' ? 'Cash receipts and opening balance' : t('county.overview.kpi.total_revenue')}
             value={fmtKES(revenue.total_revenue)}
-            sub={
-              // Receipts are for the report's period (a nine-month CBIRR is
-              // not a year), so the period travels with the figure.
-              [
-                revenue.fiscal_year && revenue.total_revenue != null
-                  ? revenue.fiscal_year
-                  : null,
-                revenue.local_revenue != null
-                  ? `${t('county.overview.kpi.local_prefix')} ${fmtKES(revenue.local_revenue)}`
-                  : null,
-              ]
-                .filter(Boolean)
-                .join(' · ') || undefined
-            }
+            sub={countyRevenueNotes(revenue, fmtKES).join(' · ') || undefined}
             accent='text-green-700'
           />
         </div>
