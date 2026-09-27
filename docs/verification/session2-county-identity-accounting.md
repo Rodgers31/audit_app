@@ -38,11 +38,41 @@ Release owner procedure:
 
 ## Executed evidence
 
-- Original #328 fixture: eight failures on the original entity implementation; Total 100 + Recurrent 60 + Development 40 + revenue 10 and an older half-sized period exposed210/315, null-to-zero and unsupported aggregation.
-- Independent identity attacks found and pinned alias404s, wildcard matching and Mombasa receiving Nairobi coordinates through alternate URLs. All 47 × five identifiers × three views now pass, with invalid identifiers and explicit official-code endpoint coverage.
-- Original money-flow implementation: 13 failed/8 passed on 21 independent cases. Current 21 pass (missing Total spending, printed0, unsupported sectors, partial classification spending, and valid controls).
+- Original #328 fixture: eight failures on the original entity implementation; Total 100 + Recurrent 60 + Development 40 + revenue 10 and an older half-sized period exposed 210/315, null-to-zero and unsupported aggregation.
+- Independent identity attacks found and pinned alias 404s, wildcard matching and Mombasa receiving Nairobi coordinates through alternate URLs. All 47 × five identifiers × three views now pass, with invalid identifiers and explicit official-code endpoint coverage.
+- Original money-flow implementation: 13 failed/8 passed on 21 independent cases. Current 21 pass (missing Total spending, printed 0, unsupported sectors, partial classification spending, and valid controls).
 - Final backend suite excluding external PostgreSQL integration: **2853 passed, 10 skipped**. Final independent identity/money-flow suites: 82 passed; full bootstrap identity test: 47 county codes verified. Final entity accounting/health tests: 9 passed.
-- Frontend API suites28 passed; TypeScript no-emit check passed. Explicit summary zero/absence tests were executed red before the adapter fix.
-- Full backend run before final fixture corrections: 2906 passed/10 skipped/17 failed. Three failures were stale sector-only expectations corrected to the new contract and rechecked. Fourteen integration failures depend on unavailable localhost PostgreSQL; nine also reproduce on untouched base. Five additional legacy/alternate lookup paths now require authoritative database resolution and hit that same missing service. This is not a clean PostgreSQL integration verdict; fresh CI with PostgreSQL is required.
+- Frontend API suites 28 passed; TypeScript no-emit check passed. Explicit summary zero/absence tests were executed red before the adapter fix.
+- Full backend run before final fixture corrections: 2906 passed/10 skipped/17 failed. Three failures were stale sector-only expectations corrected to the new contract and rechecked. Fourteen integration failures depended on unavailable localhost PostgreSQL; nine also reproduced on untouched base. Five newly exercised lookup paths hit that same missing service. These are distinct groups, not fourteen baseline-identical failures. The five additional paths passed the focused PostgreSQL follow-up below; the nine baseline failures were not broadly rerun.
 
-Adversarial agents executed malformed-number/provenance/source/date tests and real HTTP/SQLite relationship tests. SQL migration execution and PostgreSQL concurrency behavior remain release/integration checks.
+Adversarial agents executed malformed-number/provenance/source/date tests and real HTTP/SQLite relationship tests. The proposed SQL metadata migration remains unexecuted. The separate #336 receipt covers PostgreSQL writer concurrency.
+
+## Focused PostgreSQL follow-up
+
+Application code tested: `79db24d79fc75d7b1272455b4d63a92a52851208`. GitHub Actions [run 36309489454](https://github.com/Rodgers31/audit_app/actions/runs/36309489454) passed backend, frontend, ETL, security and quality checks at that head; deployment/migration jobs were skipped. The backend workflow excludes `tests/integration`, so that green run does not certify these five paths.
+
+`backend/scripts/verify_county_identity_postgres.py` runs these exact existing test nodes:
+
+| Test node | Newly exercised lookup |
+|---|---|
+| `tests/integration/test_api.py::TestCountiesAPI::test_invalid_county_id` | Invalid county identifiers now consult the authoritative county table. |
+| `tests/integration/test_api.py::TestDataValidation::test_sql_injection_prevention` | Hostile identifiers pass through the database-backed resolver. |
+| `tests/integration/test_public_routes.py::test_public_get_routes[route17]` | `/api/v1/counties/{county_id}/audits` |
+| `tests/integration/test_public_routes.py::test_public_get_routes[route20]` | `/api/v1/counties/{county_id}/accountability` |
+| `tests/integration/test_public_routes.py::test_public_get_routes[route21]` | `/api/v1/counties/{county_id}/summary` |
+
+The three route-sweep cases use `county_id=1`. Previously, name resolution padded this to legacy route `001`/Nairobi without a database lookup. It now treats unpadded `1` as an Entity primary key and checks its type. Route indices above apply to the tested commit; adding the explicit official-code endpoint shifted the old sweep indices by one.
+
+The follow-up used a disposable `postgres:17` container, bound only to `127.0.0.1:53333`, without persistent volumes. A fresh database contained synthetic versions of all 47 official county identities, National Government at PK 1, Nairobi at PK 3 and Mombasa at PK 4. Synthetic audit/source rows provided positive route controls; no production data was imported or changed. The script refuses non-loopback URLs, databases without the `audit_app_session2` prefix, nonempty databases and Python optimization that disables assertions.
+
+Result: **5 passed**. Because the existing route sweep allows HTTP 500, the script additionally requires national PK 1 to return 404 on all three routes and 24 valid identifier/route combinations to return 200 with the expected county name. The valid identifiers are `3`, `4`, `001`, `047`, `nairobi-county`, `mombasa-county`, `code:001` and `code:047`. Raw output: `session2-postgres-identity.txt`.
+
+Reproduce against a newly created empty local PostgreSQL database:
+
+```sh
+SESSION2_POSTGRES_URL=postgresql://postgres:LOCAL_PASSWORD@127.0.0.1:LOCAL_PORT/audit_app_session2_identity python backend/scripts/verify_county_identity_postgres.py
+```
+
+Independent harness checks additionally passed 34 URL/database guard cases across both scripts and three identity-verdict controls. Those checks used stubs without database connections: a wrong-county HTTP 200 and a nonzero pytest result both block success. Receipts: `session2-postgres-guards-final.txt` and `session2-postgres-identity-verdict-final.txt`.
+
+This verifies the five requested paths with PostgreSQL. It does not claim a complete integration-suite pass or rehearse the proposed metadata migration.

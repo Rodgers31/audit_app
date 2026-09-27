@@ -1,0 +1,35 @@
+{"script": "verify_county_identity_postgres.py", "case": "missing", "passed": true, "exit": 1, "stdout": "", "last_stderr": ["KeyError: 'SESSION2_POSTGRES_URL'"]}
+{"script": "verify_county_identity_postgres.py", "case": "remote", "passed": true, "exit": 1, "stdout": "", "last_stderr": ["AssertionError"]}
+{"script": "verify_county_identity_postgres.py", "case": "wrong_name", "passed": true, "exit": 1, "stdout": "", "last_stderr": ["AssertionError"]}
+{"script": "verify_county_identity_postgres.py", "case": "wrong_scheme", "passed": true, "exit": 1, "stdout": "", "last_stderr": ["AssertionError"]}
+{"script": "verify_county_identity_postgres.py", "case": "empty_local_control", "passed": true, "exit": 73, "stdout": "ENGINE_REQUESTED\nWRITE_BOUNDARY_REACHED", "last_stderr": []}
+{"script": "verify_county_identity_postgres.py", "case": "empty_psycopg2_control", "passed": true, "exit": 73, "stdout": "ENGINE_REQUESTED\nWRITE_BOUNDARY_REACHED", "last_stderr": []}
+{"script": "verify_county_identity_postgres.py", "case": "query_remote_override", "passed": true, "exit": 1, "stdout": "", "last_stderr": ["AssertionError: Connection URL overrides are forbidden"]}
+{"script": "verify_county_identity_postgres.py", "case": "query_database_override", "passed": true, "exit": 1, "stdout": "", "last_stderr": ["AssertionError: Connection URL overrides are forbidden"]}
+{"script": "verify_county_identity_postgres.py", "case": "fragment_override", "passed": true, "exit": 1, "stdout": "", "last_stderr": ["AssertionError: Connection URL overrides are forbidden"]}
+{"script": "verify_county_identity_postgres.py", "case": "optimized_remote", "passed": true, "exit": 1, "stdout": "", "last_stderr": ["RuntimeError: Run without -O: this verification requires active assertions"]}
+{"script": "verify_county_identity_postgres.py", "case": "optimized_nonempty", "passed": true, "exit": 1, "stdout": "", "last_stderr": ["RuntimeError: Run without -O: this verification requires active assertions"]}
+{"script": "verify_county_identity_postgres.py", "case": "preexisting_schema", "passed": true, "exit": 1, "stdout": "ENGINE_REQUESTED", "last_stderr": ["AssertionError: Use a fresh database"]}
+{"script": "verify_county_identity_postgres.py", "case": "preexisting_table", "passed": true, "exit": 1, "stdout": "ENGINE_REQUESTED", "last_stderr": ["AssertionError: Use a fresh empty disposable database"]}
+{"script": "verify_county_identity_postgres.py", "case": "preexisting_view", "passed": true, "exit": 1, "stdout": "ENGINE_REQUESTED", "last_stderr": ["AssertionError: Use a fresh empty disposable database"]}
+{"script": "verify_county_identity_postgres.py", "case": "preexisting_materialized_view", "passed": true, "exit": 1, "stdout": "ENGINE_REQUESTED", "last_stderr": ["AssertionError: Use a fresh empty disposable database"]}
+{"script": "verify_county_identity_postgres.py", "case": "preexisting_sequence", "passed": true, "exit": 1, "stdout": "ENGINE_REQUESTED", "last_stderr": ["AssertionError: Use a fresh empty disposable database"]}
+{"script": "verify_county_identity_postgres.py", "case": "preexisting_enum", "passed": true, "exit": 1, "stdout": "ENGINE_REQUESTED", "last_stderr": ["AssertionError: Use a fresh empty disposable database"]}
+{"script": "verify_county_editions_postgres.py", "case": "missing", "passed": true, "exit": 1, "stdout": "", "last_stderr": ["KeyError: 'SESSION2_POSTGRES_URL'"]}
+{"script": "verify_county_editions_postgres.py", "case": "remote", "passed": true, "exit": 1, "stdout": "", "last_stderr": ["AssertionError"]}
+{"script": "verify_county_editions_postgres.py", "case": "wrong_name", "passed": true, "exit": 1, "stdout": "", "last_stderr": ["AssertionError"]}
+{"script": "verify_county_editions_postgres.py", "case": "wrong_scheme", "passed": true, "exit": 1, "stdout": "", "last_stderr": ["AssertionError"]}
+{"script": "verify_county_editions_postgres.py", "case": "empty_local_control", "passed": true, "exit": 73, "stdout": "ENGINE_REQUESTED\nWRITE_BOUNDARY_REACHED", "last_stderr": []}
+{"script": "verify_county_editions_postgres.py", "case": "empty_psycopg2_control", "passed": true, "exit": 73, "stdout": "ENGINE_REQUESTED\nWRITE_BOUNDARY_REACHED", "last_stderr": []}
+{"script": "verify_county_editions_postgres.py", "case": "query_remote_override", "passed": true, "exit": 1, "stdout": "", "last_stderr": ["AssertionError: Connection URL overrides are forbidden"]}
+{"script": "verify_county_editions_postgres.py", "case": "query_database_override", "passed": true, "exit": 1, "stdout": "", "last_stderr": ["AssertionError: Connection URL overrides are forbidden"]}
+{"script": "verify_county_editions_postgres.py", "case": "fragment_override", "passed": true, "exit": 1, "stdout": "", "last_stderr": ["AssertionError: Connection URL overrides are forbidden"]}
+{"script": "verify_county_editions_postgres.py", "case": "optimized_remote", "passed": true, "exit": 1, "stdout": "", "last_stderr": ["RuntimeError: Run without -O: this verification requires active assertions"]}
+{"script": "verify_county_editions_postgres.py", "case": "optimized_nonempty", "passed": true, "exit": 1, "stdout": "", "last_stderr": ["RuntimeError: Run without -O: this verification requires active assertions"]}
+{"script": "verify_county_editions_postgres.py", "case": "preexisting_schema", "passed": true, "exit": 1, "stdout": "ENGINE_REQUESTED", "last_stderr": ["AssertionError: Use a fresh database"]}
+{"script": "verify_county_editions_postgres.py", "case": "preexisting_table", "passed": true, "exit": 1, "stdout": "ENGINE_REQUESTED", "last_stderr": ["AssertionError: Use a fresh empty disposable database"]}
+{"script": "verify_county_editions_postgres.py", "case": "preexisting_view", "passed": true, "exit": 1, "stdout": "ENGINE_REQUESTED", "last_stderr": ["AssertionError: Use a fresh empty disposable database"]}
+{"script": "verify_county_editions_postgres.py", "case": "preexisting_materialized_view", "passed": true, "exit": 1, "stdout": "ENGINE_REQUESTED", "last_stderr": ["AssertionError: Use a fresh empty disposable database"]}
+{"script": "verify_county_editions_postgres.py", "case": "preexisting_sequence", "passed": true, "exit": 1, "stdout": "ENGINE_REQUESTED", "last_stderr": ["AssertionError: Use a fresh empty disposable database"]}
+{"script": "verify_county_editions_postgres.py", "case": "preexisting_enum", "passed": true, "exit": 1, "stdout": "ENGINE_REQUESTED", "last_stderr": ["AssertionError: Use a fresh empty disposable database"]}
+34 / 34 guard cases behaved as expected
