@@ -27,7 +27,7 @@ interface Props {
   fiscalYear: string;
   countiesWithData: number;
   nationalEfficiency: number | null;
-  nationalAllocated: number;
+  nationalAllocated: number | null;
   projected: boolean;
   loading: boolean;
   error: boolean;
@@ -224,7 +224,7 @@ export default function CountySpendingList({
             const tone = efficiencyTone(row.efficiency_score);
             const flagged = row.flagged_amount != null && row.flagged_amount > 0;
             const share =
-              nationalAllocated > 0 && row.allocated != null
+              nationalAllocated != null && nationalAllocated > 0 && row.allocated != null
                 ? (row.allocated / nationalAllocated) * 100
                 : null;
             return (

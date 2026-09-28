@@ -20,6 +20,7 @@ import MoneyFlowSourceReconciliation from '@/components/transparency/MoneyFlowSo
 import MoneyFlowPeriodPicker from '@/components/transparency/MoneyFlowPeriodPicker';
 import MoneyFlowOverview from '@/components/transparency/MoneyFlowOverview';
 import CountySpendingList from '@/components/transparency/CountySpendingList';
+import { isProjectedMoneyFlow } from '@/components/transparency/moneyFlowPresentation';
 import type {
   CountyFlowRow,
   CountySortKey as SortKey,
@@ -312,24 +313,15 @@ export default function TransparencyPage() {
     });
   }, [allCountyFlows]);
 
-  /**
-   * "Projected FY" = allocations are known but no execution data has been
-   * published yet. We detect this from the data rather than the calendar so
-   * that any mid-year CoB release flips the page into full-data mode
-   * automatically. Guarded by a year check so a genuinely missing dataset
-   * for a closed FY shows the normal empty-state.
-   */
-  const isProjectedFY = useMemo(() => {
-    if (countyRows.length === 0) return false;
-    const noSpendData = countyRows.every((r) => r.spent == null);
-    if (!noSpendData) return false;
-    const startYr = fiscalStartYear(selectedYear);
-    if (startYr == null) return false;
-    return startYr >= currentFiscalStartYear();
-  }, [countyRows, selectedYear]);
+  const isProjectedFY = isProjectedMoneyFlow(nationalFlow);
+  const isProjectedCountyList =
+    isProjectedFY &&
+    countyRows.every(
+      (row) => row.spent == null && row.flagged_amount == null && row.efficiency_score == null
+    );
 
   // The comparator and selector must use the same key in either reporting mode.
-  const effectiveSortKey: SortKey = isProjectedFY
+  const effectiveSortKey: SortKey = isProjectedCountyList
     ? sortKey === 'name'
       ? 'name'
       : 'allocated'
@@ -368,13 +360,6 @@ export default function TransparencyPage() {
   }, [countyRows, searchQuery, effectiveSortKey, sortDir]);
 
   const countiesWithData = countyRows.filter((row) => row.allocated != null).length;
-  // Coverage, projected-year mode, and allocation shares describe the whole
-  // reporting period; filtering the list must not change those figures.
-  const countyAllocationTotal = countyRows.reduce(
-    // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- reducer accumulator
-    (total, row) => total + (row.allocated ?? 0),
-    0
-  );
 
   return (
     <PageShell
@@ -417,7 +402,7 @@ export default function TransparencyPage() {
       </Section>
 
       {/* ═══ 4. National summary ═══ */}
-      {insights && insights.allocated != null && insights.allocated > 0 && (
+      {insights && (
         <Section delay={0.12}>
           <MoneyFlowOverview
             insights={insights}
@@ -428,7 +413,7 @@ export default function TransparencyPage() {
       )}
 
       {/* ═══ 4b. Projected-FY explainer (shown when no execution data yet) ═══ */}
-      {isProjectedFY && (
+      {isProjectedFY && fiscalStartYear(selectedYear) === currentFiscalStartYear() && (
         <Section delay={0.14}>
           <ProjectedFYBanner yearLabel={selectedYear} />
         </Section>
@@ -441,8 +426,8 @@ export default function TransparencyPage() {
           fiscalYear={stripFY(selectedYear)}
           countiesWithData={countiesWithData}
           nationalEfficiency={insights?.efficiency ?? null}
-          nationalAllocated={countyAllocationTotal}
-          projected={isProjectedFY}
+          nationalAllocated={insights?.allocated ?? null}
+          projected={isProjectedCountyList}
           loading={allCountyFlowsLoading}
           error={countyFlowsError}
           auditUnavailable={
@@ -465,6 +450,7 @@ export default function TransparencyPage() {
         <MoneyFlowSourceReconciliation
           fiscalYear={selectedYear}
           budgetSource={nationalFlow?.budget_source}
+          data={nationalFlow}
         />
       </Section>
 
