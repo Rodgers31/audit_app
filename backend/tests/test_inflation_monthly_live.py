@@ -286,11 +286,11 @@ class TestSupersessionSweep:
     def test_a_sweep_too_large_to_be_plausible_is_refused_and_reported(
         self, db_session, seed_country
     ):
-        # A page serving 2005 and 2026 with the decade between missing would
-        # put 120 good months inside the span. Refuse, and say so.
+        # A page serving 2005 and 2026 with many off-cycle rows in between
+        # proposes more deletions than the cap allows. Refuse, and say so.
         db_session.add_all(
             [
-                _ind("inflation_rate_12m", f"{y}-06-30", 5.0)
+                _ind("inflation_rate_12m", f"{y}-06-15", 5.0)
                 for y in range(2010, 2024)
             ]
         )
@@ -331,6 +331,11 @@ def test_domain_run_puts_august_2026_on_the_budget_strip(
     assert result.errors == []
     removed = {(r["date"], r["value"]) for r in result.metadata["superseded_rows_removed"]}
     assert {("2024-06-30", 4.6), ("2025-01-31", 3.3)} <= removed
+    assert all(
+        isinstance(r["id"], int) and isinstance(r["stored_value"], str)
+        for r in result.metadata["superseded_rows_removed"]
+    )
+    assert "2025-12-31" in result.metadata["supersession_coverage"]["inflation_rate"]
 
     # World Bank source documents are no longer filed under KNBS.
     wb_doc = (

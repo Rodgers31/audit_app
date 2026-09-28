@@ -45,7 +45,10 @@ def run(
     errors.extend(payload.errors)
     errors.extend(stats.errors)
     session.flush()
-    removed, sweep_errors = writer.remove_superseded_rows(session, payload.coverage)
+    removal_receipts: list[dict] = []
+    _removed, sweep_errors = writer.remove_superseded_rows(
+        session, payload.coverage, receipts=removal_receipts
+    )
     errors.extend(sweep_errors)
 
     finished_at = datetime.now(timezone.utc)
@@ -61,9 +64,10 @@ def run(
         errors=errors,
         metadata={
             "skipped": stats.skipped,
-            "superseded_rows_removed": [
-                {"indicator_type": k, "date": d, "value": v} for k, d, v in removed
-            ],
+            "superseded_rows_removed": removal_receipts,
+            "supersession_coverage": {
+                kind: sorted(days) for kind, days in payload.coverage.items()
+            },
             "source_url": settings.economic_indicators_dataset_url,
         },
     )

@@ -256,10 +256,9 @@ MAX_DAYS_SINCE_LIVE = 14
 #
 # The cost of that choice, stated plainly: a DELIBERATE reduction (the 512
 # fabricated county audit rows purged on 2026-07-07 was one) fails the gate
-# until the window rolls past it. That is why the window is a week rather
-# than MAX_DAYS_SINCE_LIVE's fortnight. No mute is provided, on purpose —
-# building an escape hatch before observing any real noise is how a gate
-# ends up permanently muted.
+# until the window rolls past it. Inflation has a narrow row-identity receipt
+# check for the writer's validated off-cycle supersession; other decreases
+# still fail. The window is a week rather than MAX_DAYS_SINCE_LIVE's fortnight.
 
 #: ``ingestion_jobs.domain`` under which each validate run parks the counts
 #: it observed. Reuses a table that already exists and that the freshness
@@ -389,8 +388,139 @@ def _prior_census(session, now: datetime) -> tuple:
         meta = job.meta if isinstance(job.meta, dict) else {}
         counts = meta.get("row_counts")
         if isinstance(counts, dict) and counts:
-            observations.append((getattr(job, "started_at", None), counts))
+            observations.append((
+                getattr(job, "started_at", None),
+                counts,
+                meta.get("inflation_rows"),
+            ))
     return observations, None
+
+
+def _inflation_rows(session) -> list[dict]:
+    """Small identity census for the annual inflation series only."""
+    from models import EconomicIndicator
+
+    rows = (
+        session.query(
+            EconomicIndicator.id,
+            EconomicIndicator.indicator_date,
+            EconomicIndicator.entity_id,
+            EconomicIndicator.value,
+            EconomicIndicator.source_document_id,
+        )
+        .filter(EconomicIndicator.indicator_type == "inflation_rate")
+        .order_by(EconomicIndicator.id)
+        .all()
+    )
+    return [
+        {
+            "id": row.id,
+            "date": row.indicator_date.date().isoformat(),
+            "entity_id": row.entity_id,
+            "stored_value": str(row.value),
+            "source_document_id": row.source_document_id,
+        }
+        for row in rows
+    ]
+
+
+def _annual_coverage_dates(value) -> Optional[set[str]]:
+    if not isinstance(value, list) or not value:
+        return None
+    dates = set()
+    for day in value:
+        if not isinstance(day, str):
+            return None
+        try:
+            parsed = date.fromisoformat(day)
+        except ValueError:
+            return None
+        if parsed.isoformat() != day or (parsed.month, parsed.day) != (12, 31):
+            return None
+        dates.add(day)
+    return dates
+
+
+def _explained_inflation_drop(session, prior_rows, baseline, seen_at, count, now):
+    """Require every vanished row to match a successful writer receipt."""
+    from models import IngestionJob, IngestionStatus
+
+    if not isinstance(prior_rows, list) or len(prior_rows) != baseline:
+        return False, "the older census has no complete row identities"
+    if not all(
+        isinstance(row, dict)
+        and isinstance(row.get("id"), int)
+        and not isinstance(row.get("id"), bool)
+        and isinstance(row.get("date"), str)
+        and isinstance(row.get("stored_value"), str)
+        and "entity_id" in row
+        and "source_document_id" in row
+        for row in prior_rows
+    ):
+        return False, "the older census has malformed row identities"
+    prior_by_id = {row["id"]: row for row in prior_rows}
+    if len(prior_by_id) != baseline:
+        return False, "the older census has duplicate row identities"
+    try:
+        current_rows = _inflation_rows(session)
+        jobs = (
+            session.query(IngestionJob)
+            .filter(
+                IngestionJob.domain == "economic_indicators",
+                IngestionJob.started_at > seen_at,
+                IngestionJob.started_at <= now.replace(tzinfo=None),
+            )
+            .order_by(IngestionJob.started_at)
+            .all()
+        )
+    except Exception as exc:
+        return False, f"could not read row identities or writer receipts: {exc}"
+    if len(current_rows) != count:
+        return False, "the current count does not match the row identities"
+    vanished = set(prior_by_id) - {row["id"] for row in current_rows}
+    if not vanished:
+        return False, "no vanished row identities explain the count drop"
+
+    witnessed = set()
+    for job in jobs:
+        if job.status != IngestionStatus.COMPLETED or job.dry_run or job.errors:
+            continue
+        meta = job.meta if isinstance(job.meta, dict) else {}
+        receipts = meta.get("superseded_rows_removed")
+        coverage = meta.get("supersession_coverage")
+        if not isinstance(receipts, list) or not isinstance(coverage, dict):
+            continue
+        dates = _annual_coverage_dates(coverage.get("inflation_rate"))
+        if dates is None:
+            continue
+        inflation_receipts = [
+            receipt for receipt in receipts
+            if isinstance(receipt, dict) and receipt.get("indicator_type") == "inflation_rate"
+        ]
+        if len(inflation_receipts) > 12:
+            continue
+        for receipt in inflation_receipts:
+            row_id = receipt.get("id")
+            if not isinstance(row_id, int) or isinstance(row_id, bool):
+                continue
+            prior = prior_by_id.get(row_id)
+            if not prior or prior.get("entity_id") is not None:
+                continue
+            day = prior["date"]
+            if (
+                receipt.get("date") == day
+                and receipt.get("stored_value") == prior["stored_value"]
+                and receipt.get("entity_id") is None
+                and receipt.get("source_document_id") == prior["source_document_id"]
+                and day not in dates
+                and min(dates) <= day <= max(dates)
+                and not day.endswith("-12-31")
+            ):
+                witnessed.add(row_id)
+
+    if vanished <= witnessed:
+        return True, f"all {len(vanished)} vanished row identities have successful off-cycle supersession receipts"
+    return False, f"{len(vanished - witnessed)} vanished row identity/identities lack a matching supersession receipt"
 
 
 def check_row_count_drop(
@@ -430,13 +560,13 @@ def check_row_count_drop(
         ]
 
     baselines: dict = {}
-    for started_at, observed in observations:
+    for started_at, observed, inflation_rows in observations:
         for label, value in observed.items():
             if not isinstance(value, int) or isinstance(value, bool):
                 continue
             best = baselines.get(label)
             if best is None or value > best[0]:
-                baselines[label] = (value, started_at)
+                baselines[label] = (value, started_at, inflation_rows)
 
     for label in sorted(counts):
         count = counts[label]
@@ -453,20 +583,40 @@ def check_row_count_drop(
             )
             continue
 
-        baseline, seen_at = entry
+        baseline, seen_at, prior_inflation_rows = entry
         lost = baseline - count
         limit = baseline * (1 - ROW_DROP_TOLERANCE)
         when = seen_at.date().isoformat() if seen_at else "an earlier run"
         if count < limit and lost >= ROW_DROP_MIN_ABSOLUTE:
+            if label == "Inflation Rate records" and seen_at is not None:
+                explained, detail = _explained_inflation_drop(
+                    session, prior_inflation_rows, baseline, seen_at, count, now
+                )
+                if explained:
+                    findings.append(Finding(
+                        OK, label,
+                        f"{count} rows — down {lost} from {baseline} ({when}); {detail}",
+                    ))
+                    continue
+            else:
+                detail = "no row-level supersession receipt applies"
+            message = (
+                f"{count} rows — DOWN {lost} ({lost / baseline:.0%}) from "
+                f"{baseline} seen on {when}. Tolerance is "
+                f"{ROW_DROP_TOLERANCE:.0%}. "
+            )
+            if label == "Inflation Rate records":
+                message += f"The missing identities are not fully reconciled: {detail}."
+            else:
+                message += (
+                    "Rows that were published yesterday are not being published "
+                    "today; find what stopped writing them before the next deploy."
+                )
             findings.append(
                 Finding(
                     FAIL,
                     label,
-                    f"{count} rows — DOWN {lost} ({lost / baseline:.0%}) from "
-                    f"{baseline} seen on {when}. Tolerance is "
-                    f"{ROW_DROP_TOLERANCE:.0%}. Rows that were published "
-                    f"yesterday are not being published today; find what "
-                    f"stopped writing them before the next deploy.",
+                    message,
                 )
             )
         elif lost > 0:
@@ -519,6 +669,12 @@ def record_row_census(
 
     now = now or datetime.now(timezone.utc)
     try:
+        meta = {"row_counts": dict(counts)}
+        if "Inflation Rate records" in counts:
+            inflation_rows = _inflation_rows(session)
+            if len(inflation_rows) != counts["Inflation Rate records"]:
+                raise ValueError("inflation count does not match the row identity census")
+            meta["inflation_rows"] = inflation_rows
         session.add(
             IngestionJob(
                 domain=ROW_CENSUS_DOMAIN,
@@ -526,7 +682,7 @@ def record_row_census(
                 started_at=now.replace(tzinfo=None),
                 finished_at=now.replace(tzinfo=None),
                 items_processed=len(counts),
-                meta={"row_counts": dict(counts)},
+                meta=meta,
             )
         )
         session.commit()
