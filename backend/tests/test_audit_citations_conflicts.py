@@ -86,6 +86,7 @@ def test_national_api_keeps_finding_and_citation_when_only_label_is_conflicted(
     payload["auditee"] = "Ministry of Education" if conflicting else "ministry OF health"
     extraction.extracted_json = payload
     db_session.commit()
+    entity_id = entity.id
 
     response = client.get("/api/v1/accountability/missing-funds")
     assert response.status_code == 200, response.text
@@ -93,7 +94,7 @@ def test_national_api_keeps_finding_and_citation_when_only_label_is_conflicted(
     assert len(data["cases"]) == 1
     case = data["cases"][0]
     assert case["entity"] == (None if conflicting else "Ministry of Health")
-    assert case["entity_id"] == entity.id
+    assert case["entity_id"] == entity_id
     assert "The cited report retains this finding." in case["excerpt"]
     assert case["source"]["page_url"] == f"{REPORT_URL}#page=38"
     assert data["affected_national_entities"] == 1

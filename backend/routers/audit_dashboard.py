@@ -25,7 +25,12 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from cache.redis_cache import cached
 from services.audit_opinions import opinion_facet, opinion_facet_by_year
 from services.oag_report_sections import canonical_section
-from services.audit_citations import audited_institution, report_page_url
+from services.audit_citations import (
+    audited_institution,
+    extraction_json_type,
+    report_page_url,
+    string_extraction_payloads,
+)
 from services.publication_gate import (
     count_withheld_audits,
     publishable_audit_criterion,
@@ -746,10 +751,33 @@ async def get_audit_findings(
 
         query = (
             db.query(
-                Audit,
-                Entity,
-                SourceDocument,
-                Extraction.extracted_json,
+                Audit.id.label("audit_id"),
+                Audit.entity_id,
+                Audit.extraction_id,
+                Audit.period_id,
+                Audit.finding_text,
+                Audit.severity,
+                Audit.recommended_action,
+                Audit.query_type,
+                Audit.amount,
+                Audit.status,
+                Audit.audit_opinion,
+                Audit.audit_year,
+                Audit.follow_up_status,
+                Audit.external_reference,
+                Audit.management_response,
+                Audit.page_ref,
+                Entity.type.label("entity_type"),
+                Entity.canonical_name,
+                Entity.slug,
+                SourceDocument.url.label("document_url"),
+                SourceDocument.meta["extraction_stats"].label("extraction_stats"),
+                Extraction.extracted_json["entity_name"].label("extracted_entity_name"),
+                Extraction.extracted_json["auditee"].label("extracted_auditee"),
+                Extraction.extracted_json["volume_kind"].label("extracted_volume_kind"),
+                extraction_json_type(
+                    Extraction.extracted_json, db.get_bind().dialect.name
+                ).label("extraction_payload_type"),
                 confidence_sub.c.avg_confidence,
             )
             .join(Entity, Audit.entity_id == Entity.id)
@@ -775,46 +803,60 @@ async def get_audit_findings(
         if status is not None:
             query = query.filter(Audit.status == status)
 
-        total = query.count()
+        total = query.with_entities(func.count(Audit.id)).scalar()
         offset = (page - 1) * limit
         rows = query.order_by(desc(Audit.audit_year), desc(Audit.id)).offset(offset).limit(limit).all()
+        string_payloads = string_extraction_payloads(db, rows)
 
         items = []
-        for a, entity, doc, extracted_json, avg_conf in rows:
-            county_name = entity.canonical_name if entity.type.value == "county" else None
-            doc_url = doc.url if doc else None
+        for row in rows:
+            county_name = row.canonical_name if row.entity_type.value == "county" else None
+            extracted = string_payloads.get(row.extraction_id)
+            if extracted is None:
+                extracted = {
+                    "entity_name": row.extracted_entity_name,
+                    "auditee": row.extracted_auditee,
+                    "volume_kind": row.extracted_volume_kind,
+                }
             # The document the finding was extracted from, else a reference
             # that is itself a link, else nothing. external_reference is an
             # internal key ("OAG-BB-2024/2025-V2091-P11"); this used to be
             # pasted onto oagkenya.go.ke/wp-content/uploads/, which 404s, and
             # it outranked the real document URL on every production finding.
-            source_url = report_page_url(_openable_url(doc_url) or _openable_url(a.external_reference), a.page_ref)
+            source_url = report_page_url(
+                _openable_url(row.document_url) or _openable_url(row.external_reference),
+                row.page_ref,
+            )
 
             items.append(
                 FindingDetail(
-                    id=a.id,
-                    entity_id=a.entity_id,
+                    id=row.audit_id,
+                    entity_id=row.entity_id,
                     county_name=county_name,
-                    county_slug=entity.slug if county_name else None,
-                    audited_entity_name=audited_institution(extracted_json, county_name=county_name, document_meta=doc.meta if doc else None),
-                    page_ref=a.page_ref,
-                    period_id=a.period_id,
-                    finding_text=a.finding_text,
-                    severity=a.severity.value if hasattr(a.severity, "value") else str(a.severity),
-                    recommended_action=a.recommended_action,
+                    county_slug=row.slug if county_name else None,
+                    audited_entity_name=audited_institution(
+                        extracted,
+                        county_name=county_name,
+                        document_meta={"extraction_stats": row.extraction_stats},
+                    ),
+                    page_ref=row.page_ref,
+                    period_id=row.period_id,
+                    finding_text=row.finding_text,
+                    severity=row.severity.value if hasattr(row.severity, "value") else str(row.severity),
+                    recommended_action=row.recommended_action,
                     # The row's own label must match the facet the reader
                     # filtered on, otherwise selecting a section shows rows
                     # apparently of a different type.
-                    query_type=canonical_section(a.query_type) or a.query_type,
-                    amount=float(a.amount) if a.amount is not None else None,
-                    status=a.status,
-                    audit_opinion=a.audit_opinion,
-                    audit_year=a.audit_year,
-                    follow_up_status=a.follow_up_status,
-                    external_reference=a.external_reference,
-                    management_response=a.management_response,
+                    query_type=canonical_section(row.query_type) or row.query_type,
+                    amount=float(row.amount) if row.amount is not None else None,
+                    status=row.status,
+                    audit_opinion=row.audit_opinion,
+                    audit_year=row.audit_year,
+                    follow_up_status=row.follow_up_status,
+                    external_reference=row.external_reference,
+                    management_response=row.management_response,
                     source_document_url=source_url,
-                    confidence_score=float(avg_conf) if avg_conf is not None else None,
+                    confidence_score=float(row.avg_confidence) if row.avg_confidence is not None else None,
                 )
             )
 

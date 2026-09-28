@@ -3,6 +3,8 @@ import json
 import re
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
+from sqlalchemy import func
+
 
 def extraction_payload(raw):
     if isinstance(raw, str):
@@ -11,6 +13,34 @@ def extraction_payload(raw):
         except ValueError:
             return {}
     return raw if isinstance(raw, dict) else {}
+
+
+def extraction_json_type(column, dialect):
+    """JSON value type for the two database dialects used by the API/tests."""
+    if dialect == "postgresql":
+        return func.jsonb_typeof(column)
+    if dialect == "sqlite":
+        return func.json_type(column)
+    raise NotImplementedError(f"JSON projection is unsupported for {dialect}")
+
+
+def string_extraction_payloads(db, rows):
+    """Read full JSON only for historical rows stored as serialized strings."""
+    from models import Extraction
+
+    ids = {
+        row.extraction_id
+        for row in rows
+        if row.extraction_payload_type in ("string", "text")
+    }
+    if not ids:
+        return {}
+    return {
+        extraction_id: extraction_payload(raw)
+        for extraction_id, raw in db.query(Extraction.id, Extraction.extracted_json)
+        .filter(Extraction.id.in_(ids))
+        .all()
+    }
 
 
 def page_number(value):

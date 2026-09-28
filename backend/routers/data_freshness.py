@@ -312,15 +312,13 @@ def _source_publication_date(
     ids = _accepted_document_ids(db, domain)
     if not ids:
         return None
-    docs = (
-        db.query(SourceDocument)
+    publication_dates = (
+        db.query(SourceDocument.meta["publication_date"])
         .filter(_publisher_criterion(publisher_pattern), SourceDocument.id.in_(ids))
         .all()
     )
     dates = []
-    for doc in docs:
-        meta = doc.meta if isinstance(doc.meta, dict) else {}
-        raw = meta.get("publication_date")
+    for (raw,) in publication_dates:
         # Require a complete ISO publication date. Generic provenance fallback
         # parsing accepts partial/garbage values that cannot certify freshness.
         if not isinstance(raw, str) or not re.fullmatch(
