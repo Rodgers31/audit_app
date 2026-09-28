@@ -117,42 +117,42 @@ const fadeUp = {
 export default function AdminOverviewPage() {
   const ingestion = useQuery<IngestionStats>({
     queryKey: ['admin', 'ingestion-stats', 7],
-    queryFn: async () =>
-      (await api.get('/admin/ingestion-jobs/stats/summary', { params: { days: 7 } })).data,
+    queryFn: async ({ signal }) =>
+      (await api.get('/admin/ingestion-jobs/stats/summary', { params: { days: 7 }, signal })).data,
     staleTime: 30_000,
   });
 
   const schedule = useQuery<ScheduleSummary>({
     queryKey: ['admin', 'etl-schedule-summary'],
-    queryFn: async () => (await api.get('/admin/etl/schedule/summary')).data,
+    queryFn: async ({ signal }) => (await api.get('/admin/etl/schedule/summary', { signal })).data,
     staleTime: 60_000,
   });
 
   const health = useQuery<EtlHealth>({
     queryKey: ['admin', 'etl-health'],
-    queryFn: async () => (await api.get('/admin/etl/health')).data,
+    queryFn: async ({ signal }) => (await api.get('/admin/etl/health', { signal })).data,
     staleTime: 60_000,
   });
 
   const userStats = useQuery<UserStats>({
     queryKey: ['admin', 'user-stats'],
-    queryFn: async () => (await api.get('/admin/users/stats')).data,
+    queryFn: async ({ signal }) => (await api.get('/admin/users/stats', { signal })).data,
     staleTime: 60_000,
   });
 
   const recentActions = useQuery<AuditList>({
     queryKey: ['admin', 'audit-log', { recent: true }],
-    queryFn: async () =>
-      (await api.get('/admin/audit-log', { params: { page_size: 5, days: 30 } })).data,
+    queryFn: async ({ signal }) =>
+      (await api.get('/admin/audit-log', { params: { page_size: 5, days: 30 }, signal })).data,
     staleTime: 30_000,
   });
 
   const failedJobs = useQuery<FailedJobList>({
     queryKey: ['admin', 'ingestion-jobs', 'failed'],
-    queryFn: async () =>
+    queryFn: async ({ signal }) =>
       (
         await api.get('/admin/ingestion-jobs', {
-          params: { status: 'failed', days: 7, page_size: 5 },
+          params: { status: 'failed', days: 7, page_size: 5 }, signal
         })
       ).data,
     staleTime: 30_000,

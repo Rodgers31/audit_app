@@ -30,11 +30,14 @@ import {
 
 export interface AuditsSsrQuery {
   queryKey: QueryKey;
-  queryFn: () => Promise<unknown>;
+  queryFn: (context?: { signal?: AbortSignal }) => Promise<unknown>;
 }
 
 /** Widens one query's payload type so the four can share a list. */
-const ssrQuery = <TData,>(queryKey: QueryKey, queryFn: () => Promise<TData>): AuditsSsrQuery => ({
+const ssrQuery = <TData,>(
+  queryKey: QueryKey,
+  queryFn: (context?: { signal?: AbortSignal }) => Promise<TData>
+): AuditsSsrQuery => ({
   queryKey,
   queryFn,
 });
@@ -45,13 +48,13 @@ const ssrQuery = <TData,>(queryKey: QueryKey, queryFn: () => Promise<TData>): Au
  * between requests.
  */
 export const auditsSsrQueries = (): AuditsSsrQuery[] => [
-  ssrQuery(auditDashboardSummaryKey(), getAuditDashboardSummary),
+  ssrQuery(auditDashboardSummaryKey(), ({ signal } = {}) => getAuditDashboardSummary(signal)),
   // `useAuditTrends()` is called with no params by the page.
-  ssrQuery(auditTrendsKey(), () => getAuditTrends()),
-  ssrQuery(auditRecurringFindingsKey(), getRecurringFindings),
+  ssrQuery(auditTrendsKey(), ({ signal } = {}) => getAuditTrends(undefined, signal)),
+  ssrQuery(auditRecurringFindingsKey(), ({ signal } = {}) => getRecurringFindings(signal)),
   // The client seeds `useState` from this same constant, so its first render
   // asks for exactly the page of findings prefetched here.
-  ssrQuery(auditFindingsKey(AUDIT_FINDINGS_INITIAL_FILTERS), () =>
-    getAuditFindings(AUDIT_FINDINGS_INITIAL_FILTERS)
+  ssrQuery(auditFindingsKey(AUDIT_FINDINGS_INITIAL_FILTERS), ({ signal } = {}) =>
+    getAuditFindings(AUDIT_FINDINGS_INITIAL_FILTERS, signal)
   ),
 ];

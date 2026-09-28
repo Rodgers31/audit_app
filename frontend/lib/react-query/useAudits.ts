@@ -104,8 +104,8 @@ export const federalAuditsHomeSummaryKey = () => ['audits', 'federal', 'home-sum
  */
 export const federalAuditsHomeSummaryQuery = () => ({
   queryKey: federalAuditsHomeSummaryKey(),
-  queryFn: async () =>
-    trimFederalAuditsForHome(await getFederalAudits({ topFindings: HOME_TOP_FINDINGS })),
+  queryFn: async ({ signal }: { signal?: AbortSignal } = {}) =>
+    trimFederalAuditsForHome(await getFederalAudits({ topFindings: HOME_TOP_FINDINGS }, signal)),
 });
 
 // Query keys for audits
@@ -191,7 +191,7 @@ export const useAuditReports = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.auditsFiltered(filters),
-    queryFn: () => getAuditReports(filters),
+    queryFn: ({ signal }) => getAuditReports(filters, signal),
     staleTime: 30 * 60 * 1000, // 30 minutes — audit reports rarely change
     ...options,
   });
@@ -204,7 +204,7 @@ export const useAuditReport = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.audit(id),
-    queryFn: () => getAuditReport(id),
+    queryFn: ({ signal }) => getAuditReport(id, signal),
     enabled: !!id,
     staleTime: 10 * 60 * 1000, // 10 minutes
     ...options,
@@ -219,7 +219,7 @@ export const useCountyAuditReports = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.countyAudits(countyId, fiscalYear),
-    queryFn: () => getCountyAuditReports(countyId, fiscalYear),
+    queryFn: ({ signal }) => getCountyAuditReports(countyId, fiscalYear, signal),
     enabled: !!countyId,
     staleTime: 10 * 60 * 1000, // 10 minutes
     ...options,
@@ -233,7 +233,7 @@ export const useLatestCountyAudit = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.latestCountyAudit(countyId),
-    queryFn: () => getLatestCountyAudit(countyId),
+    queryFn: ({ signal }) => getLatestCountyAudit(countyId, signal),
     enabled: !!countyId,
     staleTime: 30 * 60 * 1000, // 30 minutes
     ...options,
@@ -247,7 +247,7 @@ export const useAuditReportsInfinite = (
 ) => {
   return useInfiniteQuery({
     queryKey: ['audits', 'infinite', limit, filters],
-    queryFn: ({ pageParam = 1 }) => getAuditReportsPaginated(pageParam, limit, filters),
+    queryFn: ({ pageParam = 1, signal }) => getAuditReportsPaginated(pageParam, limit, filters, signal),
     getNextPageParam: (lastPage) => {
       if (lastPage.pagination.page < lastPage.pagination.totalPages) {
         return lastPage.pagination.page + 1;
@@ -265,7 +265,7 @@ export const useAuditStatistics = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.statistics,
-    queryFn: getAuditStatistics,
+    queryFn: ({ signal }) => getAuditStatistics(signal),
     staleTime: 15 * 60 * 1000, // 15 minutes
     ...options,
   });
@@ -277,7 +277,7 @@ export const useAvailableFiscalYears = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.fiscalYears,
-    queryFn: getAvailableFiscalYears,
+    queryFn: ({ signal }) => getAvailableFiscalYears(signal),
     staleTime: 30 * 60 * 1000, // 30 minutes
     ...options,
   });
@@ -290,7 +290,7 @@ export const useCountyAuditsEnriched = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.countyAuditsEnriched(countyId),
-    queryFn: () => getCountyAuditsEnriched(countyId),
+    queryFn: ({ signal }) => getCountyAuditsEnriched(countyId, signal),
     enabled: !!countyId,
     staleTime: 5 * 60 * 1000, // 5 minutes
     ...options,
@@ -305,7 +305,7 @@ export const useCountyAuditList = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.countyAuditsList(countyId, params),
-    queryFn: () => getCountyAuditList(countyId, params),
+    queryFn: ({ signal }) => getCountyAuditList(countyId, params, signal),
     enabled: !!countyId,
     staleTime: 5 * 60 * 1000,
     ...options,
@@ -330,7 +330,7 @@ export const useAuditDashboardSummary = (
 ) => {
   return useQuery({
     queryKey: auditDashboardSummaryKey(),
-    queryFn: getAuditDashboardSummary,
+    queryFn: ({ signal }) => getAuditDashboardSummary(signal),
     staleTime: SSR_HYDRATED_STALE_TIME_MS, // read from SSR state; see ./isr
     ...options,
   });
@@ -342,7 +342,7 @@ export const useAuditTrends = (
 ) => {
   return useQuery({
     queryKey: auditTrendsKey(params),
-    queryFn: () => getAuditTrends(params),
+    queryFn: ({ signal }) => getAuditTrends(params, signal),
     staleTime: SSR_HYDRATED_STALE_TIME_MS, // read from SSR state; see ./isr
     ...options,
   });
@@ -353,7 +353,7 @@ export const useRecurringFindings = (
 ) => {
   return useQuery({
     queryKey: auditRecurringFindingsKey(),
-    queryFn: getRecurringFindings,
+    queryFn: ({ signal }) => getRecurringFindings(signal),
     staleTime: SSR_HYDRATED_STALE_TIME_MS, // read from SSR state; see ./isr
     ...options,
   });
@@ -365,7 +365,7 @@ export const useAuditFindings = (
 ) => {
   return useQuery({
     queryKey: auditFindingsKey(filters),
-    queryFn: () => getAuditFindings(filters),
+    queryFn: ({ signal }) => getAuditFindings(filters, signal),
     staleTime: SSR_HYDRATED_STALE_TIME_MS, // read from SSR state; see ./isr
     ...options,
   });

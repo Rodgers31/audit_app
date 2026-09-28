@@ -164,8 +164,8 @@ function StatusDashboard() {
 
   const { data, isLoading, error, refetch, dataUpdatedAt } = useQuery<PipelineHealth>({
     queryKey: ['pipeline-health'],
-    queryFn: async () => {
-      const res = await api.get('/system/pipeline-health');
+    queryFn: async ({ signal }) => {
+      const res = await api.get('/system/pipeline-health', { signal });
       return res.data;
     },
     refetchInterval: 60_000, // auto-refresh every 60s

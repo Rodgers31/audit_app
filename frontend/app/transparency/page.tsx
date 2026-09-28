@@ -11,6 +11,7 @@
 import { Metadata } from 'next';
 import { getCountyFiscalYears } from '@/lib/api/counties';
 import { getQueryClient } from '@/lib/react-query/getQueryClient';
+import { prefetchWithTimeout } from '@/lib/react-query/prefetchWithTimeout';
 import { countyFiscalYearsKey } from '@/lib/react-query/useCounties';
 import { transparencySsrQueries } from '@/lib/react-query/transparencySsrPrefetch';
 import { transparencyYearOptions } from '@/lib/utils';
@@ -48,13 +49,14 @@ export default async function FollowTheMoneyPage() {
   // key the client will look for. Sequential on purpose.
   let defaultYear: string | undefined;
   try {
-    const meta = await Promise.race([
+    const meta = await prefetchWithTimeout(
+      queryClient,
       queryClient.fetchQuery({
         queryKey: countyFiscalYearsKey(),
-        queryFn: getCountyFiscalYears,
+        queryFn: ({ signal }) => getCountyFiscalYears(signal),
       }),
-      new Promise<undefined>((resolve) => setTimeout(() => resolve(undefined), SSR_TIMEOUT_MS)),
-    ]);
+      SSR_TIMEOUT_MS
+    );
     defaultYear = transparencyYearOptions(meta).default;
   } catch {
     // Backend unreachable at build/revalidate time — the client hooks still
@@ -64,12 +66,13 @@ export default async function FollowTheMoneyPage() {
   if (defaultYear) {
     try {
       const year = defaultYear;
-      await Promise.race([
+      await prefetchWithTimeout(
+        queryClient,
         Promise.allSettled(
           transparencySsrQueries(year).map((q) => queryClient.prefetchQuery(q))
         ),
-        new Promise((resolve) => setTimeout(resolve, SSR_TIMEOUT_MS)),
-      ]);
+        SSR_TIMEOUT_MS
+      );
     } catch {
       // Same — a failed prefetch degrades to the previous client-fetch path.
     }

@@ -77,7 +77,7 @@ export const useCounties = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.countiesFiltered(filters),
-    queryFn: () => getCounties(filters),
+    queryFn: ({ signal }) => getCounties(filters, signal),
     staleTime: SSR_HYDRATED_STALE_TIME_MS, // read from SSR state; see ./isr
     ...options,
   });
@@ -90,7 +90,7 @@ export const useCounty = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.county(id),
-    queryFn: () => getCounty(id),
+    queryFn: ({ signal }) => getCounty(id, signal),
     enabled: !!id,
     staleTime: 10 * 60 * 1000, // 10 minutes
     ...options,
@@ -104,7 +104,7 @@ export const useCountyByCode = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.countyByCode(code),
-    queryFn: () => getCountyByCode(code),
+    queryFn: ({ signal }) => getCountyByCode(code, signal),
     enabled: !!code,
     staleTime: 10 * 60 * 1000, // 10 minutes
     ...options,
@@ -118,7 +118,7 @@ export const useCountiesInfinite = (
 ) => {
   return useInfiniteQuery({
     queryKey: ['counties', 'infinite', limit, filters],
-    queryFn: ({ pageParam = 1 }) => getCountiesPaginated(pageParam, limit, filters),
+    queryFn: ({ pageParam = 1, signal }) => getCountiesPaginated(pageParam, limit, filters, signal),
     getNextPageParam: (lastPage) => {
       if (lastPage.pagination.page < lastPage.pagination.totalPages) {
         return lastPage.pagination.page + 1;
@@ -137,7 +137,7 @@ export const useCountiesSearch = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.countiesSearch(query),
-    queryFn: () => searchCounties(query),
+    queryFn: ({ signal }) => searchCounties(query, signal),
     enabled: query.length > 2, // Only search if query is longer than 2 characters
     staleTime: 2 * 60 * 1000, // 2 minutes for search results
     ...options,
@@ -151,7 +151,7 @@ export const useTopPerformingCounties = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.topPerforming(limit),
-    queryFn: () => getTopPerformingCounties(limit),
+    queryFn: ({ signal }) => getTopPerformingCounties(limit, signal),
     staleTime: 15 * 60 * 1000, // 15 minutes
     ...options,
   });
@@ -163,7 +163,7 @@ export const useFlaggedCounties = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.flagged,
-    queryFn: getFlaggedCounties,
+    queryFn: ({ signal }) => getFlaggedCounties(signal),
     staleTime: 5 * 60 * 1000, // 5 minutes
     ...options,
   });
@@ -176,7 +176,7 @@ export const useCountyFinancialSummary = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.financialSummary(id),
-    queryFn: () => getCountyFinancialSummary(id),
+    queryFn: ({ signal }) => getCountyFinancialSummary(id, signal),
     enabled: !!id,
     staleTime: 10 * 60 * 1000, // 10 minutes
     ...options,
@@ -190,7 +190,7 @@ export const useCountyAccountability = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.accountability(id),
-    queryFn: () => getCountyAccountability(id),
+    queryFn: ({ signal }) => getCountyAccountability(id, signal),
     enabled: !!id,
     staleTime: 10 * 60 * 1000,
     ...options,
@@ -216,7 +216,7 @@ export const useCountyFiscalYears = (
 ) => {
   return useQuery({
     queryKey: countyFiscalYearsKey(),
-    queryFn: getCountyFiscalYears,
+    queryFn: ({ signal }) => getCountyFiscalYears(signal),
     staleTime: 30 * 60 * 1000,
     ...options,
   });
@@ -230,7 +230,7 @@ export const useCountyComprehensive = (
 ) => {
   return useQuery({
     queryKey: ['counties', id, 'comprehensive', fiscalYear ?? null] as const,
-    queryFn: () => getCountyComprehensive(id, fiscalYear),
+    queryFn: ({ signal }) => getCountyComprehensive(id, fiscalYear, signal),
     enabled: !!id,
     staleTime: 10 * 60 * 1000, // 10 minutes
     ...options,

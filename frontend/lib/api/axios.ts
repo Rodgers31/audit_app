@@ -9,14 +9,11 @@
  * Auth tokens are obtained from the Supabase session (cookie-based).
  * No manual localStorage management is needed.
  *
- * COLD-START RESILIENCE:
- * Render's Starter plan spins down after ~15 min of inactivity.
- * The response interceptor automatically retries on timeouts/network
- * errors with exponential backoff so the first visitor after a sleep
- * period still gets data without a manual refresh.
+ * A bounded retry budget helps safe reads recover from transient network
+ * failures and backend startup delays.
  */
 import { createClient } from '@/lib/supabase/client';
-import axios, { type AxiosError } from 'axios';
+import axios, { AxiosError, CanceledError, type InternalAxiosRequestConfig } from 'axios';
 
 const API_VERSION = process.env.NEXT_PUBLIC_API_VERSION || 'v1';
 
@@ -31,15 +28,53 @@ const MAX_RETRIES = 2;
 /** Base delay between retries in ms (doubles each attempt: 1.5s → 3s) */
 const RETRY_BASE_DELAY = 1500;
 
-/** Returns true if the error is a network/timeout issue worth retrying */
-function isRetryable(error: AxiosError): boolean {
-  // Network error (ECONNREFUSED, ECONNRESET, etc.)
-  if (!error.response) return true;
+type RetryConfig = InternalAxiosRequestConfig & { __retryCount?: number };
+
+/** Only safe reads get automatic retries. Mutations need caller-level decisions. */
+function isRetryable(error: AxiosError, config: RetryConfig): boolean {
+  if (config.signal?.aborted || error.code === AxiosError.ERR_CANCELED) return false;
+  const method = (config.method ?? 'get').toLowerCase();
+  if (method !== 'get' && method !== 'head') {
+    return false;
+  }
+  if (!error.response) {
+    // Exclude request setup and malformed URL errors with no HTTP response.
+    return [
+      AxiosError.ERR_NETWORK,
+      AxiosError.ECONNABORTED,
+      AxiosError.ETIMEDOUT,
+      AxiosError.ECONNREFUSED,
+      'ECONNRESET',
+      'EHOSTUNREACH',
+      'ENOTFOUND',
+      'EAI_AGAIN',
+    ].includes(error.code ?? '');
+  }
   // 502/504 — backend is booting or overloaded (worth retrying)
-  // 503 is NOT retried here — it means "data not seeded/available" in this app,
-  // not a transient failure. React Query handles its own retry logic.
+  // 503 means "data not seeded/available" in this app.
   const status = error.response.status;
   return status === 502 || status === 504;
+}
+
+/** Abort a pending backoff immediately when its logical request is cancelled. */
+function waitForRetry(delay: number, config: RetryConfig): Promise<void> {
+  const signal = config.signal;
+  if (signal?.aborted) return Promise.reject(new CanceledError());
+
+  return new Promise((resolve, reject) => {
+    const onAbort = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener?.('abort', onAbort);
+      reject(new CanceledError());
+    };
+    const timer = setTimeout(() => {
+      signal?.removeEventListener?.('abort', onAbort);
+      resolve();
+    }, delay);
+    signal?.addEventListener?.('abort', onAbort, { once: true });
+    // The signal may have fired between the first check and listener registration.
+    if (signal?.aborted) onAbort();
+  });
 }
 
 // Create axios instance with default configuration
@@ -95,13 +130,20 @@ apiClient.interceptors.response.use(
     return response;
   },
   async (error: AxiosError) => {
-    const config = error.config as any;
+    const config = error.config as RetryConfig | undefined;
     if (!config) return Promise.reject(error);
 
-    // Track retry count on the config object
-    config.__retryCount = config.__retryCount || 0;
+    // Axios preserves custom config fields. Reject malformed counts so a
+    // caller cannot accidentally turn the retry budget into an unbounded loop.
+    const suppliedRetryCount = config.__retryCount;
+    config.__retryCount =
+      typeof suppliedRetryCount === 'number' &&
+      Number.isInteger(suppliedRetryCount) &&
+      suppliedRetryCount >= 0
+        ? suppliedRetryCount
+        : 0;
 
-    if (isRetryable(error) && config.__retryCount < MAX_RETRIES) {
+    if (isRetryable(error, config) && config.__retryCount < MAX_RETRIES) {
       config.__retryCount += 1;
       const delay = RETRY_BASE_DELAY * Math.pow(2, config.__retryCount - 1);
 
@@ -111,7 +153,7 @@ apiClient.interceptors.response.use(
         );
       }
 
-      await new Promise((resolve) => setTimeout(resolve, delay));
+      await waitForRetry(delay, config);
       return apiClient(config);
     }
 

@@ -3,6 +3,7 @@
  */
 import type { FiscalFramework } from '@/lib/fiscal/framework';
 import { apiClient } from './axios';
+import { apiGet } from './request';
 import { FISCAL_ENDPOINTS } from './endpoints';
 
 export interface FiscalYearData {
@@ -82,7 +83,7 @@ export interface FiscalSummaryResponse {
   debt_anchor?: DebtAnchor;
 }
 
-export const getFiscalSummary = async (): Promise<FiscalSummaryResponse> => {
-  const response = await apiClient.get<FiscalSummaryResponse>(FISCAL_ENDPOINTS.SUMMARY);
+export const getFiscalSummary = async (signal?: AbortSignal): Promise<FiscalSummaryResponse> => {
+  const response = await apiGet<FiscalSummaryResponse>(apiClient, FISCAL_ENDPOINTS.SUMMARY, signal);
   return response.data;
 };

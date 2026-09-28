@@ -2,6 +2,7 @@
  * Audits API service
  */
 import { apiClient } from './axios';
+import { apiGet } from './request';
 import { AUDITS_ENDPOINTS, COUNTIES_ENDPOINTS, buildUrlWithParams } from './endpoints';
 import {
   ApiResponse,
@@ -12,7 +13,7 @@ import {
 } from './types';
 
 // Get all audit reports with optional filtering
-export const getAuditReports = async (filters?: AuditFilters): Promise<AuditReportResponse[]> => {
+export const getAuditReports = async (filters?: AuditFilters, signal?: AbortSignal): Promise<AuditReportResponse[]> => {
   const queryParams: Record<string, any> = {};
 
   if (filters?.countyId) queryParams.county_id = filters.countyId;
@@ -23,14 +24,16 @@ export const getAuditReports = async (filters?: AuditFilters): Promise<AuditRepo
   if (filters?.limit) queryParams.limit = filters.limit;
 
   const url = buildUrlWithParams(AUDITS_ENDPOINTS.LIST, queryParams);
-  const response = await apiClient.get<ApiResponse<AuditReportResponse[]>>(url);
+  const response = await apiGet<ApiResponse<AuditReportResponse[]>>(apiClient, url, signal);
   return response.data.data;
 };
 
 // Get single audit report by ID
-export const getAuditReport = async (id: string): Promise<AuditReportResponse> => {
-  const response = await apiClient.get<ApiResponse<AuditReportResponse>>(
-    AUDITS_ENDPOINTS.GET_BY_ID(id)
+export const getAuditReport = async (id: string, signal?: AbortSignal): Promise<AuditReportResponse> => {
+  const response = await apiGet<ApiResponse<AuditReportResponse>>(
+    apiClient,
+    AUDITS_ENDPOINTS.GET_BY_ID(id),
+    signal
   );
   return response.data.data;
 };
@@ -38,27 +41,30 @@ export const getAuditReport = async (id: string): Promise<AuditReportResponse> =
 // Get audit reports for a specific county
 export const getCountyAuditReports = async (
   countyId: string,
-  fiscalYear?: string
+  fiscalYear?: string,
+  signal?: AbortSignal
 ): Promise<AuditReportResponse[]> => {
   const queryParams: Record<string, any> = {};
   if (fiscalYear) queryParams.fiscal_year = fiscalYear;
 
   const url = buildUrlWithParams(COUNTIES_ENDPOINTS.AUDITS(countyId), queryParams);
-  const response = await apiClient.get<ApiResponse<AuditReportResponse[]>>(url);
+  const response = await apiGet<ApiResponse<AuditReportResponse[]>>(apiClient, url, signal);
   return response.data.data;
 };
 
 // Get latest audit report for a county
-export const getLatestCountyAudit = async (countyId: string): Promise<AuditReportResponse> => {
-  const response = await apiClient.get<ApiResponse<AuditReportResponse>>(
-    COUNTIES_ENDPOINTS.LATEST_AUDIT(countyId)
+export const getLatestCountyAudit = async (countyId: string, signal?: AbortSignal): Promise<AuditReportResponse> => {
+  const response = await apiGet<ApiResponse<AuditReportResponse>>(
+    apiClient,
+    COUNTIES_ENDPOINTS.LATEST_AUDIT(countyId),
+    signal
   );
   return response.data.data;
 };
 
 // Get enriched county audits aggregation for modal/report
-export const getCountyAuditsEnriched = async (countyId: string): Promise<CountyAuditsEnriched> => {
-  const response = await apiClient.get<CountyAuditsEnriched>(COUNTIES_ENDPOINTS.AUDITS(countyId));
+export const getCountyAuditsEnriched = async (countyId: string, signal?: AbortSignal): Promise<CountyAuditsEnriched> => {
+  const response = await apiGet<CountyAuditsEnriched>(apiClient, COUNTIES_ENDPOINTS.AUDITS(countyId), signal);
   return response.data;
 };
 
@@ -83,7 +89,8 @@ export interface CountyAuditListResponse {
 
 export const getCountyAuditList = async (
   countyId: string,
-  params?: { page?: number; limit?: number; year?: string; status?: string; severity?: string }
+  params?: { page?: number; limit?: number; year?: string; status?: string; severity?: string },
+  signal?: AbortSignal
 ): Promise<CountyAuditListResponse> => {
   const qp: Record<string, any> = {};
   if (params?.page) qp.page = params.page;
@@ -92,7 +99,7 @@ export const getCountyAuditList = async (
   if (params?.status) qp.status = params.status;
   if (params?.severity) qp.severity = params.severity;
   const url = buildUrlWithParams(COUNTIES_ENDPOINTS.AUDITS_LIST(countyId), qp);
-  const { data } = await apiClient.get<CountyAuditListResponse>(url);
+  const { data } = await apiGet<CountyAuditListResponse>(apiClient, url, signal);
   return data;
 };
 
@@ -100,7 +107,8 @@ export const getCountyAuditList = async (
 export const getAuditReportsPaginated = async (
   page: number = 1,
   limit: number = 20,
-  filters?: Omit<AuditFilters, 'page' | 'limit'>
+  filters?: Omit<AuditFilters, 'page' | 'limit'>,
+  signal?: AbortSignal
 ): Promise<PaginatedResponse<AuditReportResponse>> => {
   const queryParams: Record<string, any> = {
     page,
@@ -113,13 +121,13 @@ export const getAuditReportsPaginated = async (
   if (filters?.concernLevel?.length) queryParams.concern_level = filters.concernLevel;
 
   const url = buildUrlWithParams(AUDITS_ENDPOINTS.PAGINATED, queryParams);
-  const response = await apiClient.get<PaginatedResponse<AuditReportResponse>>(url);
+  const response = await apiGet<PaginatedResponse<AuditReportResponse>>(apiClient, url, signal);
   return response.data;
 };
 
 // Get audit statistics
-export const getAuditStatistics = async (): Promise<any> => {
-  const response = await apiClient.get<ApiResponse<any>>(AUDITS_ENDPOINTS.STATISTICS);
+export const getAuditStatistics = async (signal?: AbortSignal): Promise<any> => {
+  const response = await apiGet<ApiResponse<any>>(apiClient, AUDITS_ENDPOINTS.STATISTICS, signal);
   return response.data.data;
 };
 
@@ -239,17 +247,19 @@ export interface FederalAuditResponse {
  */
 export const getFederalAudits = async (params?: {
   topFindings?: number;
-}): Promise<FederalAuditResponse> => {
+},
+  signal?: AbortSignal
+): Promise<FederalAuditResponse> => {
   const url = buildUrlWithParams(AUDITS_ENDPOINTS.FEDERAL, {
     top_findings: params?.topFindings,
   });
-  const response = await apiClient.get<FederalAuditResponse>(url);
+  const response = await apiGet<FederalAuditResponse>(apiClient, url, signal);
   return response.data;
 };
 
 // Get fiscal years with available audit data
-export const getAvailableFiscalYears = async (): Promise<string[]> => {
-  const response = await apiClient.get<ApiResponse<string[]>>(AUDITS_ENDPOINTS.FISCAL_YEARS);
+export const getAvailableFiscalYears = async (signal?: AbortSignal): Promise<string[]> => {
+  const response = await apiGet<ApiResponse<string[]>>(apiClient, AUDITS_ENDPOINTS.FISCAL_YEARS, signal);
   return response.data.data;
 };
 
@@ -363,29 +373,31 @@ export interface FindingsFilters {
   limit?: number;
 }
 
-export const getAuditDashboardSummary = async (): Promise<AuditDashboardSummary> => {
-  const response = await apiClient.get<AuditDashboardSummary>(AUDITS_ENDPOINTS.DASHBOARD_SUMMARY);
+export const getAuditDashboardSummary = async (signal?: AbortSignal): Promise<AuditDashboardSummary> => {
+  const response = await apiGet<AuditDashboardSummary>(apiClient, AUDITS_ENDPOINTS.DASHBOARD_SUMMARY, signal);
   return response.data;
 };
 
 export const getAuditTrends = async (params?: {
   county_id?: number;
   query_type?: string;
-}): Promise<AuditTrendsData> => {
+},
+  signal?: AbortSignal
+): Promise<AuditTrendsData> => {
   const qp: Record<string, any> = {};
   if (params?.county_id) qp.county_id = params.county_id;
   if (params?.query_type) qp.query_type = params.query_type;
   const url = buildUrlWithParams(AUDITS_ENDPOINTS.DASHBOARD_TRENDS, qp);
-  const response = await apiClient.get<AuditTrendsData>(url);
+  const response = await apiGet<AuditTrendsData>(apiClient, url, signal);
   return response.data;
 };
 
-export const getRecurringFindings = async (): Promise<RecurringFindingsData> => {
-  const response = await apiClient.get<RecurringFindingsData>(AUDITS_ENDPOINTS.DASHBOARD_RECURRING);
+export const getRecurringFindings = async (signal?: AbortSignal): Promise<RecurringFindingsData> => {
+  const response = await apiGet<RecurringFindingsData>(apiClient, AUDITS_ENDPOINTS.DASHBOARD_RECURRING, signal);
   return response.data;
 };
 
-export const getAuditFindings = async (filters?: FindingsFilters): Promise<FindingsListData> => {
+export const getAuditFindings = async (filters?: FindingsFilters, signal?: AbortSignal): Promise<FindingsListData> => {
   const qp: Record<string, any> = {};
   if (filters?.county_id) qp.county_id = filters.county_id;
   if (filters?.year) qp.year = filters.year;
@@ -396,6 +408,6 @@ export const getAuditFindings = async (filters?: FindingsFilters): Promise<Findi
   if (filters?.page) qp.page = filters.page;
   if (filters?.limit) qp.limit = filters.limit;
   const url = buildUrlWithParams(AUDITS_ENDPOINTS.DASHBOARD_FINDINGS, qp);
-  const response = await apiClient.get<FindingsListData>(url);
+  const response = await apiGet<FindingsListData>(apiClient, url, signal);
   return response.data;
 };

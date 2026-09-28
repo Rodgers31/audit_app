@@ -105,10 +105,10 @@ function UsersListInner() {
 
   const { data, isLoading, error, refetch, isFetching } = useQuery<UserList>({
     queryKey: ['admin', 'users', { q, page }],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const params: Record<string, string | number> = { page, page_size: PAGE_SIZE };
       if (q) params.q = q;
-      return (await api.get('/admin/users', { params })).data;
+      return (await api.get('/admin/users', { params, signal })).data;
     },
     staleTime: 15_000,
   });

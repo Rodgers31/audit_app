@@ -44,7 +44,7 @@ const FRESH_RESPONSE = {
 const VARIANTS = ['inline', 'banner'] as const;
 
 function client() {
-  return new QueryClient({ defaultOptions: { queries: { gcTime: Infinity } } });
+  return new QueryClient({ defaultOptions: { queries: { gcTime: Infinity, retry: false } } });
 }
 
 function wrap(qc: QueryClient, ui: React.ReactElement) {
@@ -76,7 +76,7 @@ describe.each(VARIANTS)('DataFreshnessBadge (%s) with no measurement', (variant)
     const qc = client();
     const { container } = render(wrap(qc, <DataFreshnessBadge sources='COB' variant={variant} />));
 
-    // useDataFreshness retries once (~1s back-off) before settling on error.
+    // The query settles on the error without repeating the Axios retry budget.
     await waitFor(() => expect(qc.getQueryState(['data-freshness'])?.status).toBe('error'), {
       timeout: 4000,
     });

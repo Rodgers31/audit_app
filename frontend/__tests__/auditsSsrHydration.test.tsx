@@ -248,7 +248,10 @@ describe('audit dashboard cache keys', () => {
     // The server prefetched page 1 unfiltered; a year filter is a different
     // question and must go to the API.
     expect(result.current.isLoading).toBe(true);
-    expect(getAuditFindings).toHaveBeenCalledWith({ page: 1, limit: 20, year: 2023 });
+    expect(getAuditFindings).toHaveBeenCalledWith(
+      { page: 1, limit: 20, year: 2023 },
+      expect.any(AbortSignal)
+    );
   });
 
   it('clearing one filter returns to the prefetched key instead of splitting the cache', () => {

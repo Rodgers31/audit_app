@@ -57,7 +57,7 @@ export const useCountyDebtData = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.countyDebt(countyId),
-    queryFn: () => getCountyDebtData(countyId),
+    queryFn: ({ signal }) => getCountyDebtData(countyId, signal),
     enabled: !!countyId,
     staleTime: 30 * 60 * 1000, // 30 minutes
     ...options,
@@ -70,7 +70,7 @@ export const useNationalDebtOverview = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.nationalOverview,
-    queryFn: getNationalDebtOverview,
+    queryFn: ({ signal }) => getNationalDebtOverview(signal),
     staleTime: 60 * 60 * 1000, // 1 hour — national debt overview rarely changes
     ...options,
   });
@@ -85,7 +85,7 @@ export const useBroaderDebt = (
 ) => {
   return useQuery({
     queryKey: ['debt', 'broader'] as const,
-    queryFn: getBroaderDebt,
+    queryFn: ({ signal }) => getBroaderDebt(signal),
     staleTime: 24 * 60 * 60 * 1000, // 24 hours
     ...options,
   });
@@ -98,7 +98,7 @@ export const useDebtBreakdown = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.breakdown(countyId),
-    queryFn: () => getDebtBreakdown(countyId),
+    queryFn: ({ signal }) => getDebtBreakdown(countyId, signal),
     staleTime: 30 * 60 * 1000, // 30 minutes
     ...options,
   });
@@ -112,7 +112,7 @@ export const useCountyDebtTimeline = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.timeline(countyId, years),
-    queryFn: () => getCountyDebtTimeline(countyId, years),
+    queryFn: ({ signal }) => getCountyDebtTimeline(countyId, years, signal),
     staleTime: 15 * 60 * 1000, // 15 minutes
     ...options,
   });
@@ -124,7 +124,7 @@ export const useDebtTimeline = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.nationalTimeline,
-    queryFn: getDebtTimeline,
+    queryFn: ({ signal }) => getDebtTimeline(signal),
     staleTime: 60 * 60 * 1000, // 1 hour (historical data rarely changes)
     ...options,
   });
@@ -137,7 +137,7 @@ export const useDebtComparison = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.comparison(countyIds),
-    queryFn: () => getDebtComparison(countyIds),
+    queryFn: ({ signal }) => getDebtComparison(countyIds, signal),
     enabled: countyIds.length > 0,
     staleTime: 10 * 60 * 1000, // 10 minutes
     ...options,
@@ -151,7 +151,7 @@ export const useTopLoans = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.topLoans(limit),
-    queryFn: () => getTopLoans(limit),
+    queryFn: ({ signal }) => getTopLoans(limit, signal),
     staleTime: 60 * 60 * 1000, // 1 hour
     ...options,
   });
@@ -164,7 +164,7 @@ export const useDebtSustainabilityIndicators = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.sustainability(countyId),
-    queryFn: () => getDebtSustainabilityIndicators(countyId),
+    queryFn: ({ signal }) => getDebtSustainabilityIndicators(countyId, signal),
     staleTime: 15 * 60 * 1000, // 15 minutes
     ...options,
   });
@@ -176,7 +176,7 @@ export const useDebtRiskAssessment = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.riskAssessment,
-    queryFn: getDebtRiskAssessment,
+    queryFn: ({ signal }) => getDebtRiskAssessment(signal),
     staleTime: 20 * 60 * 1000, // 20 minutes
     ...options,
   });
@@ -188,7 +188,7 @@ export const useNationalLoans = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.nationalLoans,
-    queryFn: getNationalLoans,
+    queryFn: ({ signal }) => getNationalLoans(signal),
     staleTime: 60 * 60 * 1000, // 1 hour — loan records rarely change
     ...options,
   });
@@ -201,9 +201,8 @@ export const usePendingBills = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.pendingBills,
-    queryFn: getPendingBills,
+    queryFn: ({ signal }) => getPendingBills(signal),
     staleTime: 60 * 60 * 1000, // 1 hour — pending bills data updated quarterly
-    retry: 1,
     ...options,
   });
 };
@@ -215,9 +214,8 @@ export const usePendingBillsSummary = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.pendingBillsSummary,
-    queryFn: getPendingBillsSummary,
+    queryFn: ({ signal }) => getPendingBillsSummary(signal),
     staleTime: 60 * 60 * 1000,
-    retry: 1,
     ...options,
   });
 };
@@ -229,7 +227,7 @@ export const useCountyPendingBills = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.countyPendingBills(countyId),
-    queryFn: () => getCountyPendingBills(countyId),
+    queryFn: ({ signal }) => getCountyPendingBills(countyId, signal),
     enabled: !!countyId,
     staleTime: 30 * 60 * 1000,
     ...options,
@@ -242,7 +240,7 @@ export const useDebtSustainability = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.debtSustainability,
-    queryFn: getDebtSustainability,
+    queryFn: ({ signal }) => getDebtSustainability(signal),
     staleTime: 60 * 60 * 1000,
     ...options,
   });
@@ -254,7 +252,7 @@ export const useAnnualDebtReports = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.annualReports,
-    queryFn: getAnnualDebtReports,
+    queryFn: ({ signal }) => getAnnualDebtReports(signal),
     staleTime: 12 * 60 * 60 * 1000,
     ...options,
   });

@@ -10,6 +10,7 @@
 import { Metadata } from 'next';
 import { getCounties } from '@/lib/api/counties';
 import { getQueryClient } from '@/lib/react-query/getQueryClient';
+import { prefetchWithTimeout } from '@/lib/react-query/prefetchWithTimeout';
 import { countiesFilteredKey } from '@/lib/react-query/useCounties';
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import CountyExplorerPage from './CountiesPageClient';
@@ -39,17 +40,18 @@ export default async function CountiesPage() {
   const queryClient = getQueryClient();
 
   try {
-    await Promise.race([
+    await prefetchWithTimeout(
+      queryClient,
       Promise.allSettled([
         queryClient.prefetchQuery({
           // Shared factory, not a literal: the client hook reads this exact
           // key, and a hand-written copy is how the two drifted apart before.
           queryKey: countiesFilteredKey(),
-          queryFn: () => getCounties(),
+          queryFn: ({ signal }) => getCounties(undefined, signal),
         }),
       ]),
-      new Promise((resolve) => setTimeout(resolve, SSR_TIMEOUT_MS)),
-    ]);
+      SSR_TIMEOUT_MS
+    );
   } catch {
     // Timeout or SSR error — client React Query will handle it
   }

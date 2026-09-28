@@ -37,7 +37,7 @@ export const useDashboardStats = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.dashboard,
-    queryFn: getDashboardStats,
+    queryFn: ({ signal }) => getDashboardStats(signal),
     staleTime: 5 * 60 * 1000, // 5 minutes
     ...options,
   });
@@ -49,7 +49,7 @@ export const useNationalOverview = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.overview,
-    queryFn: getNationalOverview,
+    queryFn: ({ signal }) => getNationalOverview(signal),
     staleTime: 10 * 60 * 1000, // 10 minutes
     ...options,
   });
@@ -61,7 +61,7 @@ export const usePerformanceRankings = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.rankings,
-    queryFn: getPerformanceRankings,
+    queryFn: ({ signal }) => getPerformanceRankings(signal),
     staleTime: 15 * 60 * 1000, // 15 minutes
     ...options,
   });
@@ -74,7 +74,7 @@ export const useSectorPerformance = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.sectorPerformance(sector),
-    queryFn: () => getSectorPerformance(sector),
+    queryFn: ({ signal }) => getSectorPerformance(sector, signal),
     staleTime: 15 * 60 * 1000, // 15 minutes
     ...options,
   });
@@ -86,7 +86,7 @@ export const useRegionalAnalysis = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.regionalAnalysis,
-    queryFn: getRegionalAnalysis,
+    queryFn: ({ signal }) => getRegionalAnalysis(signal),
     staleTime: 20 * 60 * 1000, // 20 minutes
     ...options,
   });
@@ -99,7 +99,7 @@ export const useNationalTrends = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.trends(years),
-    queryFn: () => getNationalTrends(years),
+    queryFn: ({ signal }) => getNationalTrends(years, signal),
     staleTime: 15 * 60 * 1000, // 15 minutes
     ...options,
   });
@@ -111,7 +111,7 @@ export const useAuditComplianceStats = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.auditCompliance,
-    queryFn: getAuditComplianceStats,
+    queryFn: ({ signal }) => getAuditComplianceStats(signal),
     staleTime: 10 * 60 * 1000, // 10 minutes
     ...options,
   });
@@ -123,7 +123,7 @@ export const useFinancialHealthIndicators = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.financialHealth,
-    queryFn: getFinancialHealthIndicators,
+    queryFn: ({ signal }) => getFinancialHealthIndicators(signal),
     staleTime: 15 * 60 * 1000, // 15 minutes
     ...options,
   });
@@ -135,7 +135,7 @@ export const useTransparencyIndex = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.transparencyIndex,
-    queryFn: getTransparencyIndex,
+    queryFn: ({ signal }) => getTransparencyIndex(signal),
     staleTime: 30 * 60 * 1000, // 30 minutes
     ...options,
   });
@@ -147,7 +147,7 @@ export const useAlertsAndNotifications = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.alerts,
-    queryFn: getAlertsAndNotifications,
+    queryFn: ({ signal }) => getAlertsAndNotifications(signal),
     staleTime: 2 * 60 * 1000, // 2 minutes for alerts
     ...options,
   });

@@ -26,6 +26,7 @@ import { getCounties } from '@/lib/api/counties';
 import { getDebtTimeline, getNationalDebtOverview, getNationalLoans } from '@/lib/api/debt';
 import { getFiscalSummary } from '@/lib/api/fiscal';
 import { getQueryClient } from '@/lib/react-query/getQueryClient';
+import { prefetchWithTimeout } from '@/lib/react-query/prefetchWithTimeout';
 import { federalAuditsHomeSummaryQuery } from '@/lib/react-query/useAudits';
 import { countiesFilteredKey } from '@/lib/react-query/useCounties';
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
@@ -55,22 +56,22 @@ export default async function HomePage() {
 
   // Prefetch all homepage data in parallel (server → backend is fast, same machine)
   // Uses Promise.allSettled so a single failing endpoint doesn't block others.
-  // If the backend is cold-sleeping, these will fail — React Query on the client
-  // will retry with loading skeletons.
+  // If the backend is slow, the client fetches with its own bounded Axios budget.
   try {
-    await Promise.race([
+    await prefetchWithTimeout(
+      queryClient,
       Promise.allSettled([
         queryClient.prefetchQuery({
           queryKey: ['debt', 'national-timeline'],
-          queryFn: () => getDebtTimeline(),
+          queryFn: ({ signal }) => getDebtTimeline(signal),
         }),
         queryClient.prefetchQuery({
           queryKey: ['debt', 'national'],
-          queryFn: () => getNationalDebtOverview(),
+          queryFn: ({ signal }) => getNationalDebtOverview(signal),
         }),
         queryClient.prefetchQuery({
           queryKey: ['fiscal', 'summary'],
-          queryFn: () => getFiscalSummary(),
+          queryFn: ({ signal }) => getFiscalSummary(signal),
         }),
         // The trimmed summary `AuditReportsSection` renders, not the full
         // ~886KB response: the section lists 4 of its 813 findings, and the
@@ -78,20 +79,19 @@ export default async function HomePage() {
         queryClient.prefetchQuery(federalAuditsHomeSummaryQuery()),
         queryClient.prefetchQuery({
           queryKey: ['budget', 'national', undefined],
-          queryFn: () => getNationalBudgetSummary(),
+          queryFn: ({ signal }) => getNationalBudgetSummary(undefined, signal),
         }),
         queryClient.prefetchQuery({
           queryKey: ['debt', 'national-loans'],
-          queryFn: () => getNationalLoans(),
+          queryFn: ({ signal }) => getNationalLoans(signal),
         }),
         queryClient.prefetchQuery({
           queryKey: countiesFilteredKey(),
-          queryFn: () => getCounties(),
+          queryFn: ({ signal }) => getCounties(undefined, signal),
         }),
       ]),
-      // Bail after SSR_TIMEOUT_MS so cold starts don't block page render
-      new Promise((resolve) => setTimeout(resolve, SSR_TIMEOUT_MS)),
-    ]);
+      SSR_TIMEOUT_MS
+    );
   } catch {
     // Timeout or other SSR error — client React Query will handle it
   }
