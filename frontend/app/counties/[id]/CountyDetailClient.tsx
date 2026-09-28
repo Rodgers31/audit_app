@@ -38,10 +38,11 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import SmartBackLink from '@/lib/navigation/SmartBackLink';
 import { usePathname, useParams, useRouter, useSearchParams } from 'next/navigation';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { fmtKES, fmtLabel, fmtPop, hasIngestedAudit, pct, Tab } from './shared';
 import TabSkeleton from './tabs/TabSkeleton';
 import styles from '../CountyExperience.module.css';
+import { gradeSignal, SignalMark } from '../CountySignals';
 
 /* ═══════════ Code-split tabs ═══════════
    Each tab is its own chunk. ssr:false is fine here because the parent
@@ -149,6 +150,7 @@ function Sparkline({
 }
 
 function GradeBadge({
+  scale,
   grade,
   score,
   label,
@@ -156,6 +158,7 @@ function GradeBadge({
   onClick,
   sparklineValues,
 }: {
+  scale: 'health' | 'audit';
   /** null when there is no evidence to grade — rendered as an explicit
    *  "not assessed" state, never as a letter and never in a rating colour. */
   grade: string | null;
@@ -165,6 +168,9 @@ function GradeBadge({
   onClick?: () => void;
   sparklineValues?: number[];
 }) {
+  const { t } = useLang();
+  const signal = gradeSignal(grade, scale);
+  const verdictId = useId();
   return (
     <button
       type='button'
@@ -178,7 +184,9 @@ function GradeBadge({
           ? `${label}: not yet assessed — no sourced audit finding for this county`
           : `${label} grade: ${grade}${score !== null ? `, score ${score.toFixed(0)} out of 100` : ''}`
       }
-      className={styles.gradeBadge}
+      className={`${styles.gradeBadge} ${styles.signal}`}
+      data-tone={signal.tone}
+      aria-describedby={grade != null ? verdictId : undefined}
       data-grade={grade ?? 'unavailable'}>
       <div>
         {grade != null && (
@@ -192,10 +200,16 @@ function GradeBadge({
             <Info size={12} aria-hidden='true' />
           </div>
           <div className={styles.gradeScore}>
-            {grade == null ? 'Not assessed' : score !== null ? score.toFixed(0) : '—'}
+            {grade == null ? 'Not assessed' : score !== null ? `${score.toFixed(0)} / 100` : '—'}
           </div>
         </div>
       </div>
+      {grade != null && (
+        <span id={verdictId} className={styles.gradeVerdict}>
+          <SignalMark tone={signal.tone} />
+          {t(signal.labelKey)}
+        </span>
+      )}
       {sparklineValues && sparklineValues.length >= 2 && (
         <div className='pt-1'>
           <Sparkline
@@ -546,7 +560,7 @@ export default function CountyDetailClient() {
   // omitted to keep the URL clean; any other tab is written as a query
   // param via `router.replace` (no history entry — tab switching
   // shouldn't clutter the back-button stack).
-  const tabBarRef = useRef<HTMLElement | null>(null);
+  const tabBarRef = useRef<HTMLDivElement | null>(null);
   const handleTabChange = useCallback(
     (next: Tab) => {
       setTab(next);
@@ -704,6 +718,7 @@ export default function CountyDetailClient() {
                 />
                 <div className={styles.detailGrades}>
                   <GradeBadge
+                    scale='health'
                     grade={data.financial_summary.grade}
                     score={data.financial_summary.health_score}
                     label={t('county.grade.health')}
@@ -712,6 +727,7 @@ export default function CountyDetailClient() {
                     sparklineValues={data.health_history?.map((h) => h.score)}
                   />
                   <GradeBadge
+                    scale='audit'
                     grade={acctData?.accountability_grade ?? null}
                     score={
                       typeof acctData?.accountability_score === 'number'
@@ -768,17 +784,20 @@ export default function CountyDetailClient() {
               ))}
             </div>
           </header>
-          <nav ref={tabBarRef} className={styles.tabs} aria-label={t('county.page.title_fallback')}>
-            {TABS.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => handleTabChange(item.id)}
-                aria-pressed={tab === item.id}>
-                <item.icon size={15} aria-hidden='true' />
-                {t(item.labelKey)}
-              </button>
-            ))}
-          </nav>
+          <div ref={tabBarRef} className={styles.sectionNavigation}>
+            <p className={styles.sectionNavLabel}>{t('county.sections.label')}</p>
+            <nav className={styles.tabs} aria-label={t('county.page.title_fallback')}>
+              {TABS.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleTabChange(item.id)}
+                  aria-pressed={tab === item.id}>
+                  <item.icon size={17} aria-hidden='true' />
+                  <span>{t(item.labelKey)}</span>
+                </button>
+              ))}
+            </nav>
+          </div>
           <div className={styles.reportBody}>
             <TabContent data={data} />
           </div>

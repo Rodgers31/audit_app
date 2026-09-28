@@ -1,6 +1,7 @@
 'use client';
 
 import styles from '../../CountyExperience.module.css';
+import { severityTone, SignalMark } from '../../CountySignals';
 
 /**
  * AuditTab — expanded list and category breakdown of a county's audit
@@ -358,7 +359,10 @@ export default function AuditTab({ data }: { data: CountyComprehensive }) {
           }
 
           return (
-            <div key={f.id} className={styles.finding}>
+            <div
+              key={f.id}
+              className={`${styles.finding} ${styles.signal}`}
+              data-tone={severityTone(f.severity)}>
               <button
                 aria-expanded={open}
                 onClick={() => setExpanded(open ? null : f.id)}
@@ -374,7 +378,8 @@ export default function AuditTab({ data }: { data: CountyComprehensive }) {
                     <span className={`w-1.5 h-1.5 rounded-full ${stCfg.dot}`} />
                     {t(stCfg.labelKey)}
                   </span>
-                  <span className={`text-[11px] font-bold uppercase tracking-wider ${s.text}`}>
+                  <span className={styles.findingSeverity}>
+                    <SignalMark tone={severityTone(f.severity)} />
                     {t(s.labelKey)}
                   </span>
                   {f.audit_year && (

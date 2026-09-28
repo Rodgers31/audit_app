@@ -39,6 +39,7 @@ import React, {
 import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
 import ResponsiveTable from '@/components/ui/ResponsiveTable';
 import styles from './CountyExperience.module.css';
+import { AuditStatusSignal } from './CountySignals';
 
 /* ══════════════════════════════════════════════════════════════════════════════
    HELPERS
@@ -104,45 +105,27 @@ const AUDIT_STATUS_CFG: Record<
   {
     label: string;
     labelKey: TranslationKey;
-    dot: string;
-    chipBg: string;
-    chipText: string;
   }
 > = {
   clean: {
     label: 'Clean',
     labelKey: 'counties.audit_status.clean',
-    dot: 'bg-emerald-500',
-    chipBg: 'bg-emerald-50',
-    chipText: 'text-emerald-700',
   },
   qualified: {
     label: 'Qualified',
     labelKey: 'counties.audit_status.qualified',
-    dot: 'bg-amber-500',
-    chipBg: 'bg-amber-50',
-    chipText: 'text-amber-700',
   },
   adverse: {
     label: 'Adverse',
     labelKey: 'counties.audit_status.adverse',
-    dot: 'bg-red-500',
-    chipBg: 'bg-red-50',
-    chipText: 'text-red-700',
   },
   disclaimer: {
     label: 'Disclaimer',
     labelKey: 'counties.audit_status.disclaimer',
-    dot: 'bg-red-700',
-    chipBg: 'bg-red-100',
-    chipText: 'text-red-800',
   },
   pending: {
     label: 'Pending',
     labelKey: 'counties.audit_status.pending',
-    dot: 'bg-gray-400',
-    chipBg: 'bg-gray-50 dark:bg-surface-elevated',
-    chipText: 'text-gray-600 dark:text-neutral-muted',
   },
 };
 
@@ -440,10 +423,7 @@ function KPICards({ counties }: { counties: County[] }) {
                     <span className='text-xs font-semibold text-gray-800 dark:text-neutral-text truncate'>
                       {c.name}
                     </span>
-                    <span
-                      className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-full ${auditCfg.chipBg} ${auditCfg.chipText}`}>
-                      {t(auditCfg.labelKey)}
-                    </span>
+                    <AuditStatusSignal status={c.auditStatus} label={t(auditCfg.labelKey)} />
                   </div>
                   <div className='flex items-center gap-2 mt-0.5'>
                     <span className='text-[11px] text-gray-600 dark:text-neutral-muted tabular-nums'>
@@ -1022,18 +1002,18 @@ function InsightRow({
         {rank}
       </span>
       <div className='flex-1 min-w-0'>
-        <div className='flex items-center gap-2 mb-0.5'>
+        <div className='flex flex-wrap items-center gap-2 mb-0.5'>
           <span className='text-sm font-semibold text-gray-800 dark:text-neutral-text truncate'>
             {c.name}
           </span>
           <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded ${grade.cls}`}>
             {grade.letter}
           </span>
-          <span
-            className={`text-[11px] font-medium px-1.5 py-0.5 rounded-full ml-auto flex items-center gap-1 ${auditCfg.chipBg} ${auditCfg.chipText}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${auditCfg.dot}`} />
-            {t(auditCfg.labelKey)}
-          </span>
+          <AuditStatusSignal
+            status={c.auditStatus}
+            label={t(auditCfg.labelKey)}
+            className='ml-auto'
+          />
         </div>
         <div className='flex items-center gap-3'>
           {/* Utilization bar */}
@@ -1512,14 +1492,7 @@ function CountyRankingsTable({
                     <Link
                       href={`${base}${base.includes('?') ? '&' : '?'}tab=audit`}
                       className='flex items-center gap-1.5'>
-                      <span
-                        className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full ${auditCfg.chipBg} ${auditCfg.chipText}`}>
-                        <span
-                          aria-hidden='true'
-                          className={`w-1.5 h-1.5 rounded-full ${auditCfg.dot}`}
-                        />
-                        {t(auditCfg.labelKey)}
-                      </span>
+                      <AuditStatusSignal status={county.auditStatus} label={t(auditCfg.labelKey)} />
                       {issues > 0 && (
                         <span className='text-[11px] text-gray-500 dark:text-neutral-muted/80 font-medium'>
                           ({issues})

@@ -1,6 +1,7 @@
 'use client';
 
 import styles from '../../CountyExperience.module.css';
+import { severityTone, SignalMark } from '../../CountySignals';
 
 /**
  * OverviewTab — the default landing tab for a county.
@@ -315,9 +316,13 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
                 const count = hasIngestedAudit(audit) ? audit.by_severity[sev] || 0 : null;
                 const s = SEVERITY_STYLE[sev];
                 return (
-                  <div key={sev} className='flex items-center gap-1.5'>
-                    <div className={`w-2 h-2 rounded-full ${s.dot}`} />
-                    <span className='text-sm text-gray-700 dark:text-neutral-muted'>
+                  <div
+                    key={sev}
+                    className={`${styles.signal} ${styles.severityCount}`}
+                    data-tone={count == null ? 'unavailable' : severityTone(sev)}
+                    data-empty={count === 0}>
+                    <SignalMark tone={count == null ? 'unavailable' : severityTone(sev)} />
+                    <span className='text-sm'>
                       <span className='font-semibold tabular-nums'>{count ?? '—'}</span>{' '}
                       {t(s.lowerKey)}
                     </span>

@@ -8,6 +8,19 @@
   --county-negative: #a85d53;
   --county-paper: #f7f3e9;
   --county-map-boundary: #f7f3e9;
+  --county-positive-ink: #245c43;
+  --county-positive-wash: #e2eee4;
+  --county-watch-ink: #805017;
+  --county-watch-wash: #f3e5c3;
+  --county-concern-ink: #914523;
+  --county-concern-wash: #f2dfd1;
+  --county-critical-ink: #963d38;
+  --county-critical-wash: #f3ddda;
+  --county-info-ink: #3b607b;
+  --county-info-wash: #e4ebee;
+  --county-neutral-wash: #ebe9e1;
+  --county-nav-surface: #e9e5db;
+  --county-control-line: #c1c5b9;
   color: var(--county-ink);
   background: rgb(var(--page-bg-rgb));
   font-family: 'Public Sans', system-ui, sans-serif;
@@ -20,6 +33,19 @@
   --county-negative: #e3a19a;
   --county-paper: rgb(var(--c-surface-base));
   --county-map-boundary: #1c2d22;
+  --county-positive-ink: #aad9b6;
+  --county-positive-wash: #1d382c;
+  --county-watch-ink: #efc379;
+  --county-watch-wash: #3d321e;
+  --county-concern-ink: #edb18b;
+  --county-concern-wash: #402c24;
+  --county-critical-ink: #f0aba5;
+  --county-critical-wash: #402624;
+  --county-info-ink: #accadb;
+  --county-info-wash: #22343f;
+  --county-neutral-wash: #26312a;
+  --county-nav-surface: #1b2a21;
+  --county-control-line: #657466;
   background: #0d1711;
 }
 .explorer *,
@@ -487,16 +513,65 @@
 .detailGrades {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 12px;
+  max-width: 100%;
+}
+.signal {
+  --signal-ink: var(--county-muted);
+  --signal-wash: var(--county-neutral-wash);
+}
+.signal[data-tone='positive'] {
+  --signal-ink: var(--county-positive-ink);
+  --signal-wash: var(--county-positive-wash);
+}
+.signal[data-tone='watch'] {
+  --signal-ink: var(--county-watch-ink);
+  --signal-wash: var(--county-watch-wash);
+}
+.signal[data-tone='concern'] {
+  --signal-ink: var(--county-concern-ink);
+  --signal-wash: var(--county-concern-wash);
+}
+.signal[data-tone='critical'] {
+  --signal-ink: var(--county-critical-ink);
+  --signal-wash: var(--county-critical-wash);
+}
+.signal[data-tone='info'] {
+  --signal-ink: var(--county-info-ink);
+  --signal-wash: var(--county-info-wash);
+}
+.statusSignal,
+.severityCount {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 3px;
+  border-inline-start: 2px solid var(--signal-ink);
+  background: var(--signal-wash);
+  color: var(--signal-ink);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.statusSignal {
+  white-space: nowrap;
+}
+.signal svg {
+  flex-shrink: 0;
 }
 .gradeBadge {
   display: flex;
   flex-direction: column;
   gap: 8px;
   text-align: left;
-  padding: 12px 0 12px 16px;
-  border-left: 1px solid var(--county-line);
+  padding: 12px 14px;
+  border-left: 3px solid var(--signal-ink);
+  background: var(--signal-wash);
+  color: var(--signal-ink);
+  border-radius: 2px 4px 4px 2px;
   min-height: 72px;
+  flex: 1 1 138px;
 }
 .gradeBadge > div:first-child {
   display: flex;
@@ -505,7 +580,7 @@
 }
 .gradeLetter {
   font-family: Georgia, serif;
-  font-size: 30px;
+  font-size: 36px;
   font-weight: 400;
 }
 .gradeLabel {
@@ -513,7 +588,7 @@
   align-items: center;
   gap: 6px;
   font-size: 11px;
-  color: var(--county-muted);
+  color: var(--signal-ink);
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -521,8 +596,16 @@
   font-size: 14px;
   margin-top: 4px;
 }
+.gradeVerdict {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+}
 .gradeBadge:hover {
-  color: var(--county-accent);
+  box-shadow: inset 0 0 0 1px var(--signal-ink);
 }
 .detailMetrics {
   display: grid;
@@ -561,28 +644,67 @@
 :global(.dark) .detailMetrics [data-tone='low'] {
   color: #e3a19a;
 }
-.tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 16px;
-  border-bottom: 1px solid var(--county-line);
+.sectionNavigation {
   margin-bottom: 28px;
   scroll-margin-top: 88px;
 }
-.tabs button {
-  display: inline-flex;
-  align-items: center;
+.sectionNavLabel {
+  color: var(--county-accent);
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+/* Two columns keep every section visible on phones; five fit on wider screens. */
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  min-height: 48px;
-  padding: 10px 0;
-  border-bottom: 2px solid transparent;
+  padding: 8px;
+  background: var(--county-nav-surface);
+  border: 1px solid var(--county-control-line);
+  border-radius: 6px;
+}
+.tabs button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 50px;
+  padding: 10px;
+  background: var(--county-paper);
+  border: 1px solid var(--county-control-line);
+  border-radius: 3px;
   font-size: 13px;
-  color: var(--county-muted);
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--county-ink);
+  transition:
+    background-color 150ms,
+    border-color 150ms;
+}
+.tabs button:last-child {
+  grid-column: 1 / -1;
+}
+.tabs button svg {
+  flex-shrink: 0;
+}
+.tabs button:hover {
+  border-color: var(--county-accent);
+  background: var(--county-positive-wash);
 }
 .tabs button[aria-pressed='true'] {
-  color: var(--county-accent);
-  border-color: currentColor;
+  color: #fffdf5;
+  background: #285a43;
+  border-color: #285a43;
   font-weight: 600;
+}
+@media (min-width: 800px) {
+  .tabs {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  .tabs button:last-child {
+    grid-column: auto;
+  }
 }
 .reportBody {
   background: var(--county-paper);
@@ -661,6 +783,25 @@
 }
 .finding {
   border-block: 1px solid var(--county-line);
+  border-left: 3px solid var(--signal-ink);
+}
+.findingSeverity {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--signal-ink);
+  background: var(--signal-wash);
+  padding: 4px 6px;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.severityCount[data-empty='true'] {
+  background: transparent;
+  color: var(--county-muted);
+  border-color: var(--county-line);
 }
 .finding > button {
   min-height: 48px;
@@ -817,8 +958,16 @@
   flex-direction: column;
   gap: 6px;
   align-items: start;
-  padding-right: 24px;
-  border-right: 1px solid var(--county-line);
+  padding: 16px 24px;
+  border-left: 3px solid var(--signal-ink);
+  background: var(--signal-wash);
+  color: var(--signal-ink);
+}
+.accountVerdict {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--signal-ink);
 }
 .accountScore strong {
   font-family: Georgia, serif;

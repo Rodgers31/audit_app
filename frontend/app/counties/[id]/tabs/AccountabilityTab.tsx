@@ -1,6 +1,7 @@
 'use client';
 
 import styles from '../../CountyExperience.module.css';
+import { AuditStatusSignal, gradeSignal, SignalMark } from '../../CountySignals';
 
 /**
  * AccountabilityTab — editorial presentation of the county's
@@ -8,7 +9,7 @@ import styles from '../../CountyExperience.module.css';
  * key metrics, historical audit opinions, and peer comparisons.
  *
  * Split off because it pulls in its own queryset (useCountyAccountability)
- * and lookup tables (ACCT_GRADE_STYLE, OPINION_COLOR) that aren't needed
+ * and grade/opinion lookup tables that aren't needed
  * by the other tabs.
  */
 import { useLang } from '@/lib/i18n/LangProvider';
@@ -109,13 +110,6 @@ const IMPACT_STYLE: Record<string, { chip: string; dot: string; labelKey: Transl
   },
 };
 
-const OPINION_COLOR: Record<string, string> = {
-  Unqualified: 'bg-emerald-500 text-white',
-  Qualified: 'bg-yellow-400 text-yellow-900',
-  Adverse: 'bg-red-500 text-white',
-  Disclaimer: 'bg-red-700 text-white',
-};
-
 const OPINION_KEY: Record<string, TranslationKey> = {
   Unqualified: 'county.acct.opinion.unqualified',
   Qualified: 'county.acct.opinion.qualified',
@@ -187,11 +181,11 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
 
   return (
     <div className='space-y-6'>
-      <section className={styles.accountGrade}>
+      <section
+        className={`${styles.accountGrade} ${styles.signal}`}
+        data-tone={gradeSignal(data.accountability_grade, 'audit').tone}>
         <div className={styles.accountScore}>
-          <strong style={{ color: ungraded ? undefined : arcColor }}>
-            {ungraded ? '—' : data.accountability_grade}
-          </strong>
+          <strong>{ungraded ? '—' : data.accountability_grade}</strong>
           <span>{score !== null ? `${score.toFixed(0)}/100` : 'Not yet assessed'}</span>
           {score === null && (
             <small>
@@ -203,7 +197,10 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
         </div>
         <div>
           <p className={styles.eyebrow}>{t('county.acct.grade_label')}</p>
-          <h3 className={styles.sectionTitle}>{t(gradeStyle.labelKey)}</h3>
+          <h3 className={`${styles.sectionTitle} ${styles.accountVerdict}`}>
+            <SignalMark tone={gradeSignal(data.accountability_grade, 'audit').tone} size={20} />
+            {t(gradeStyle.labelKey)}
+          </h3>
           <p className={styles.detailDescription}>
             {t(
               ungraded ? 'county.acct.grade_ungraded_description' : 'county.acct.grade_description'
@@ -430,9 +427,6 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
                 {[...data.audit_opinion_history]
                   .sort((a, b) => b.year - a.year)
                   .map((entry) => {
-                    const opinionCls =
-                      OPINION_COLOR[entry.opinion] ||
-                      'bg-gray-200 dark:bg-surface-sunken text-gray-700 dark:text-neutral-muted';
                     const opinionKey = OPINION_KEY[entry.opinion];
                     return (
                       <tr
@@ -443,10 +437,10 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
                           {(entry.year + 1).toString().slice(-2)}
                         </td>
                         <td className='py-2.5 px-3'>
-                          <span
-                            className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full ${opinionCls}`}>
-                            {opinionKey ? t(opinionKey) : entry.opinion}
-                          </span>
+                          <AuditStatusSignal
+                            status={entry.opinion}
+                            label={opinionKey ? t(opinionKey) : entry.opinion}
+                          />
                         </td>
                       </tr>
                     );

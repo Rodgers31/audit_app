@@ -110,6 +110,10 @@ it('preserves published zeroes and withholds absent figures and grades', () => {
   expect(screen.getByRole('button', { name: /AUDIT: not yet assessed/ })).toHaveTextContent(
     'Not assessed'
   );
+  expect(screen.getByRole('button', { name: /AUDIT: not yet assessed/ })).toHaveAttribute(
+    'data-tone',
+    'unavailable'
+  );
 });
 
 it('keeps a sourced zero audit findings count visible', () => {
@@ -204,11 +208,30 @@ it('opens methodology with an unassessed health score and unavailable execution'
 
 it('retains a published zero health score as assessed', () => {
   Object.assign(mockData.financial_summary, { grade: 'C', health_score: 0 });
+  mockAccountability = { accountability_grade: 'F', accountability_score: 0 };
   renderPage();
   expect(
     screen.getByRole('button', { name: 'HEALTH grade: C, score 0 out of 100' })
   ).toHaveTextContent('0');
   expect(
+    screen.getByRole('button', { name: 'HEALTH grade: C, score 0 out of 100' })
+  ).toHaveAttribute('data-tone', 'critical');
+  expect(
     screen.queryByRole('button', { name: /HEALTH: not yet assessed/ })
   ).not.toBeInTheDocument();
+  expect(
+    screen.getByRole('button', { name: 'AUDIT grade: F, score 0 out of 100' })
+  ).toHaveAttribute('data-tone', 'critical');
+});
+
+it('uses the separate health and audit grade meanings in the detail header', () => {
+  Object.assign(mockData.financial_summary, { grade: 'B', health_score: 60 });
+  mockAccountability = { accountability_grade: 'D', accountability_score: 35 };
+  renderPage();
+  const health = screen.getByRole('button', { name: 'HEALTH grade: B, score 60 out of 100' });
+  const audit = screen.getByRole('button', { name: 'AUDIT grade: D, score 35 out of 100' });
+  expect(health).toHaveTextContent('Fair');
+  expect(health).toHaveAttribute('data-tone', 'watch');
+  expect(audit).toHaveTextContent('Needs Improvement');
+  expect(audit).toHaveAttribute('data-tone', 'concern');
 });

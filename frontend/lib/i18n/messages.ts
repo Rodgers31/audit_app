@@ -746,6 +746,7 @@ export const MESSAGES = {
 
   // Health & audit grade badges
   'county.grade.health': { en: 'HEALTH', sw: 'AFYA', plain: 'HEALTH' },
+  'county.sections.label': { en: 'Explore this county', sw: 'Chunguza kaunti hii', plain: 'County sections' },
   'county.grade.audit': { en: 'AUDIT', sw: 'UKAGUZI', plain: 'AUDIT' },
   'county.grade.trend_up': { en: 'trending up', sw: 'inapanda', plain: 'going up' },
   'county.grade.trend_down': { en: 'trending down', sw: 'inashuka', plain: 'going down' },
