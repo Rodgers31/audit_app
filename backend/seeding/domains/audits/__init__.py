@@ -337,6 +337,7 @@ def run(
                     "already_current": [],
                     "deferred": [],
                     "failed": [],
+                    "partial": [],
                 }
             else:
                 fresh = [
@@ -468,6 +469,25 @@ def run(
                     }
                 metadata["documents"].append(doc_stat)
                 ext = doc_stat.get("extractions") or {}
+                if is_volume:
+                    from models import Extraction
+
+                    counts = [ext.get(key, 0) for key in ("created", "skipped")]
+                    valid_stats = (
+                        all(type(n) is int and n >= 0 for n in counts)
+                        and sum(counts) > 0
+                        and ("partial" not in ext or type(ext["partial"]) is bool)
+                    )
+                    evidence = session.query(Extraction.id).filter_by(
+                        source_document_id=doc.id, extractor=oag_county_volume.EXTRACTOR_ID
+                    ).first()
+                    if not valid_stats or evidence is None:
+                        reason = f"{label}: no valid extraction outcome/evidence"
+                        doc_stat["extraction_outcome"] = "invalid"
+                        errors.append(reason)
+                        volume_report["failed"].append(reason)
+                        session.commit()
+                        continue
                 if not is_volume and _extracted_something(ext):
                     # Bank it, as each volume is banked below. A change to the
                     # Blue Book walk re-reads the national book and the two
@@ -476,7 +496,10 @@ def run(
                     # be repeated every night.
                     session.commit()
                 if is_volume:
-                    if ext.get("reason") == "already_extracted":
+                    if ext.get("partial") or (parser is not None and (load_stats.errors or load_stats.skipped)):
+                        volume_report["partial"].append(label)
+                        session.commit()
+                    elif ext.get("reason") == "already_extracted":
                         volume_report["already_current"].append(label)
                     else:
                         volume_report["processed"].append(
@@ -498,13 +521,14 @@ def run(
         logger.info(
             "oag_county_audits volumes: %d discovered; %d processed this run, "
             "%d already current, %d deferred to the next run (start budget "
-            "%ss), %d failed",
+            "%ss), %d failed, %d partial",
             volume_report["discovered"],
             len(volume_report["processed"]),
             len(volume_report["already_current"]),
             len(volume_report["deferred"]),
             volume_report["start_budget_seconds"],
             len(volume_report["failed"]),
+            len(volume_report["partial"]),
         )
         if volume_report["deferred"]:
             logger.warning(
@@ -513,7 +537,8 @@ def run(
             )
 
     extracted_docs = [
-        d for d in metadata["documents"] if d.get("extractions")
+        d for d in metadata["documents"]
+        if d.get("extractions") and d.get("extraction_outcome") != "invalid"
     ]
     if extracted_docs:
         volumes_note = ""

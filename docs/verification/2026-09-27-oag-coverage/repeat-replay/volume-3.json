@@ -1,0 +1,75 @@
+{
+  "scope": "disposable_local_clone",
+  "volume": {
+    "url": "https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf",
+    "fiscal_year": "2023/2024",
+    "kind": "assemblies",
+    "found_on": "year_page",
+    "listed_at": "https://www.oagkenya.go.ke/2023-2024-county-government-audit-reports/",
+    "entity": null,
+    "note": null
+  },
+  "document_id": 2444,
+  "sha256": "683fa522bf11eaa2b0bc2a9eef51eadc3d664d9a512d3af63cb6e9479820f8a2",
+  "md5": "15cd6108a0f08498a9e9f699430b365b",
+  "extracted": {
+    "created": 0,
+    "skipped": 541,
+    "rejected_cid": 0,
+    "reason": "already_extracted",
+    "shape": "county_volume"
+  },
+  "loaded": {
+    "processed": 541,
+    "created": 0,
+    "updated": 0,
+    "skipped": 0,
+    "errors": []
+  },
+  "document_metadata": {
+    "dataset_id": "oag_county_audits",
+    "extracted_md5": "15cd6108a0f08498a9e9f699430b365b",
+    "oag_discovery": {
+      "kind": "assemblies",
+      "note": null,
+      "entity": null,
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2023-2024-county-government-audit-reports/",
+      "fiscal_year": "2023/2024"
+    },
+    "extraction_stats": {
+      "pages": 217,
+      "partial": false,
+      "refused": [],
+      "findings": 541,
+      "extractor": "oag_county_volume",
+      "ocr_pages": 0,
+      "fiscal_year": "2023/2024",
+      "volume_kind": "assemblies",
+      "rejected_cid": 0,
+      "contents_entries": 47,
+      "missing_counties": [],
+      "unreadable_pages": [
+        1,
+        4,
+        9,
+        10,
+        14,
+        217
+      ],
+      "chapters_attributed": 47,
+      "fiscal_year_sources": [
+        "oag_year_page",
+        "title_page"
+      ],
+      "chapters_with_no_finding": [],
+      "unreadable_chapter_pages": []
+    },
+    "last_extraction_attempt": {
+      "status": "complete"
+    }
+  },
+  "outcome": "completed",
+  "wall_seconds": 0.508,
+  "max_rss_bytes": 229376
+}

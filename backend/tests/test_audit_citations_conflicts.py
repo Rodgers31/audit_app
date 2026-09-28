@@ -44,6 +44,25 @@ def test_absent_or_malformed_identity_does_not_invent_an_institution(payload):
     assert audited_institution(payload) is None
 
 
+@pytest.mark.parametrize("county,printed", [
+    ("Taita Taveta", "County Executive of Taita/Taveta"),
+    ("Elgeyo Marakwet", "County Executive of Elgeyo/Marakwet"),
+    ("Tharaka Nithi", "County Executive of Tharaka-Nithi"),
+    ("Nairobi", "County Executive of Nairobi City"),
+    ("Nairobi", "Nairobi City County Assembly"),
+])
+def test_current_county_volume_aliases_retain_printed_auditee(county, printed):
+    role = "Assembly" if "Assembly" in printed else "Executive"
+    payload = {"entity_name": f"County {role} of {county}", "auditee": printed}
+    assert audited_institution(payload, county_name=f"{county} County") == printed
+
+
+@pytest.mark.parametrize("printed", ["County Executive of Kilifi", "County Assembly of Taita/Taveta"])
+def test_alias_resolution_does_not_hide_county_or_role_conflict(printed):
+    payload = {"entity_name": "County Executive of Taita Taveta", "auditee": printed}
+    assert audited_institution(payload, county_name="Taita Taveta County") is None
+
+
 @pytest.mark.parametrize("conflicting", [True, False])
 def test_national_api_keeps_finding_and_citation_when_only_label_is_conflicted(
     client, db_session, seed_country, conflicting

@@ -1,0 +1,98 @@
+[
+  {
+    "fiscal_year": "2024/2025",
+    "institution": "executives",
+    "url": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf",
+    "sha256": "033e2aa26aa77351ec46f062573f25ede47d3e3a99978aeacf9a66af5ba717a5",
+    "md5": "87d03cbfca0e51a9c4183f89f5c8067a",
+    "findings": 1269,
+    "pages": 688,
+    "seconds": 34.604,
+    "max_rss_bytes": 3784048640,
+    "outcome": "completed"
+  },
+  {
+    "fiscal_year": "2024/2025",
+    "institution": "assemblies",
+    "url": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf",
+    "sha256": "aa72b0a512fe01ce8f40b9ed8597bd78657a9f441a8daf4963b07e661104d896",
+    "md5": "f495cb595c81583af7d8bbd46e2279d6",
+    "findings": 582,
+    "pages": 246,
+    "seconds": 12.245,
+    "max_rss_bytes": 1289158656,
+    "outcome": "completed"
+  },
+  {
+    "fiscal_year": "2023/2024",
+    "institution": "executives",
+    "url": "https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf",
+    "sha256": "bf36d9e65b7403f9ce66eaf32890834f546ca3674c331a2d5f734f9e68c59bcd",
+    "md5": "0c0f7b1eb6f63d3b16d0720ed627da40",
+    "findings": 1047,
+    "pages": 555,
+    "seconds": 56.596,
+    "max_rss_bytes": 5161091072,
+    "outcome": "completed"
+  },
+  {
+    "fiscal_year": "2023/2024",
+    "institution": "assemblies",
+    "url": "https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf",
+    "sha256": "683fa522bf11eaa2b0bc2a9eef51eadc3d664d9a512d3af63cb6e9479820f8a2",
+    "md5": "15cd6108a0f08498a9e9f699430b365b",
+    "findings": 541,
+    "pages": 217,
+    "seconds": 36.516,
+    "max_rss_bytes": 3095379968,
+    "outcome": "completed"
+  },
+  {
+    "fiscal_year": "2022/2023",
+    "institution": "executives",
+    "url": "https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf",
+    "sha256": "e873eb8a2f5b24366b4b847e529c832ef42d2aea02702a015597c6c406f9b953",
+    "md5": "f49345102b734ddc4825110e44ef9113",
+    "findings": 1041,
+    "pages": 504,
+    "seconds": 40.44,
+    "max_rss_bytes": 3744186368,
+    "outcome": "completed"
+  },
+  {
+    "fiscal_year": "2022/2023",
+    "institution": "assemblies",
+    "url": "https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf",
+    "sha256": "5c0ebf31a7cd6dc07558e55507b2b5228fb9a653e638a39abd72beffa46674cf",
+    "md5": "1e757ebf2480ab1959dd7e86e8fffddf",
+    "findings": 513,
+    "pages": 219,
+    "seconds": 23.114,
+    "max_rss_bytes": 2072412160,
+    "outcome": "completed"
+  },
+  {
+    "fiscal_year": "2021/2022",
+    "institution": "executives",
+    "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf",
+    "sha256": "0cc278f2ac0cc11be86b03dea6f7f7c97710c3f3903145716f403292967387fe",
+    "md5": "cda52424386d5ab6afae21a4dc9dcde7",
+    "findings": 1082,
+    "pages": 546,
+    "seconds": 50.239,
+    "max_rss_bytes": 5413994496,
+    "outcome": "completed"
+  },
+  {
+    "fiscal_year": "2021/2022",
+    "institution": "assemblies",
+    "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf",
+    "sha256": "07db60417ab122a6082fea3ec4bf70b5038e7eb3554d1e9ca1f5fee0eae5d50c",
+    "md5": "6ac0f20f7a8bfe535775bccb1e81bdcc",
+    "findings": 532,
+    "pages": 222,
+    "seconds": 26.62,
+    "max_rss_bytes": 2554036224,
+    "outcome": "completed"
+  }
+]

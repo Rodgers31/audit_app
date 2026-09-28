@@ -200,12 +200,8 @@ def fiscal_year_label(y1: int, y2: int) -> Optional[str]:
     return f"{y1}/{y2}" if y2 == y1 + 1 else None
 
 
-def fiscal_year_in_name(name: str) -> Optional[str]:
-    """The single fiscal year a filename states, or None.
-
-    Two DIFFERENT fiscal years in one name is ambiguous, not a choice to make,
-    so it also returns None.
-    """
+def fiscal_years_in_name(name: str) -> frozenset[str]:
+    """All distinct valid fiscal-year spans printed in a filename."""
     found = set()
     for m in _FY_SPAN_RE.finditer(name or ""):
         y1 = int(m.group(1))
@@ -214,7 +210,13 @@ def fiscal_year_in_name(name: str) -> Optional[str]:
         label = fiscal_year_label(y1, y2)
         if label:
             found.add(label)
-    return found.pop() if len(found) == 1 else None
+    return frozenset(found)
+
+
+def fiscal_year_in_name(name: str) -> Optional[str]:
+    """The single fiscal year a filename states, or None if absent/ambiguous."""
+    found = fiscal_years_in_name(name)
+    return next(iter(found)) if len(found) == 1 else None
 
 
 def upload_month(url: str) -> Optional[Tuple[int, int]]:

@@ -600,6 +600,25 @@ def _run_order(job) -> tuple:
     return (started is not None, started or datetime.min)
 
 
+def _job_text(job, key):
+    """JSON job metadata is untrusted, including scalar values inside a dict."""
+    value = _as_dict(getattr(job, "meta", None)).get(key)
+    return value if isinstance(value, str) and value else None
+
+
+def _malformed_job_metadata(job):
+    meta = getattr(job, "meta", None)
+    if not isinstance(meta, dict):
+        return True
+    mode = meta.get("source_mode")
+    if mode is not None and mode not in (
+        "live", "fixture", "partial", "refused", "unknown"
+    ):
+        return True
+    return any(key in meta and meta[key] is not None and not isinstance(meta[key], str)
+               for key in ("source_fallback_reason", "source_detail", "source_fallback_detail"))
+
+
 def _latest_run_reasons(jobs) -> set:
     """The fallback reason(s) recorded by the most recent run that recorded one.
 
@@ -607,12 +626,12 @@ def _latest_run_reasons(jobs) -> set:
     describing the same moment, and a moment its own writers disagree about is
     not a moment we can call healthy.
     """
-    reasoned = [j for j in jobs if (j.meta or {}).get("source_fallback_reason")]
+    reasoned = [j for j in jobs if _job_text(j, "source_fallback_reason")]
     if not reasoned:
         return set()
     newest = max(_run_order(j) for j in reasoned)
     return {
-        (j.meta or {}).get("source_fallback_reason")
+        _job_text(j, "source_fallback_reason")
         for j in reasoned
         if _run_order(j) == newest
     }
@@ -630,7 +649,7 @@ def _latest_run_modes(jobs) -> set:
         return set()
     newest = max(_run_order(j) for j in jobs)
     return {
-        (j.meta or {}).get("source_mode")
+        _job_text(j, "source_mode")
         for j in jobs
         if _run_order(j) == newest
     }
@@ -679,8 +698,24 @@ def check_ingestion_freshness(
                 )
             )
             continue
-        modes = [(j.meta or {}).get("source_mode") for j in jobs]
-        if "refused" in _latest_run_modes(jobs):
+        newest = max(_run_order(j) for j in jobs)
+        if any(_malformed_job_metadata(j) for j in jobs if _run_order(j) == newest):
+            refused = "refused" in _latest_run_modes(jobs)
+            findings.append(Finding(
+                FAIL if refused else WARN, f"{domain} ingestion",
+                "newest run refused to publish; refusal details malformed"
+                if refused else "newest run has malformed source metadata; provenance unknown",
+            ))
+            continue
+        modes = [_job_text(j, "source_mode") for j in jobs]
+        latest_modes = _latest_run_modes(jobs)
+        if (None in latest_modes or "unknown" in latest_modes) and "live" in modes and "refused" not in latest_modes:
+            findings.append(Finding(
+                WARN, f"{domain} ingestion",
+                "newest run has unconfirmed source_mode; older live runs cannot confirm current provenance",
+            ))
+            continue
+        if "refused" in latest_modes:
             # The domain reached a verdict of "do not publish" and wrote
             # nothing (freshness.REFUSED). Two things this must not say:
             #
@@ -712,10 +747,10 @@ def check_ingestion_freshness(
                 else f"{len(refusals)} of {len(modes)} recent run(s)"
             )
             reasons = {
-                (j.meta or {}).get("source_fallback_reason")
+                _job_text(j, "source_fallback_reason")
                 for j in jobs
-                if (j.meta or {}).get("source_mode") == "refused"
-                and (j.meta or {}).get("source_fallback_reason")
+                if _job_text(j, "source_mode") == "refused"
+                and _job_text(j, "source_fallback_reason")
             }
             # WHICH gate refused, not merely that one did. ``source_detail``
             # is the key seeding/cli.py writes from freshness's ``detail``;
@@ -725,9 +760,9 @@ def check_ingestion_freshness(
                 (
                     d
                     for d in (
-                        (j.meta or {}).get("source_detail")
+                        _job_text(j, "source_detail")
                         for j in sorted(jobs, key=_run_order, reverse=True)
-                        if (j.meta or {}).get("source_mode") == "refused"
+                        if _job_text(j, "source_mode") == "refused"
                     )
                     if d
                 ),
@@ -747,9 +782,9 @@ def check_ingestion_freshness(
             # Reached the publisher for a secondary series only. Not OK: the
             # figure this domain publishes did not move. See freshness.PARTIAL.
             reasons = {
-                (j.meta or {}).get("source_fallback_reason")
+                _job_text(j, "source_fallback_reason")
                 for j in jobs
-                if (j.meta or {}).get("source_fallback_reason")
+                if _job_text(j, "source_fallback_reason")
             }
             findings.append(
                 Finding(
@@ -783,9 +818,9 @@ def check_ingestion_freshness(
             )
         else:
             reasons = {
-                (j.meta or {}).get("source_fallback_reason")
+                _job_text(j, "source_fallback_reason")
                 for j in jobs
-                if (j.meta or {}).get("source_fallback_reason")
+                if _job_text(j, "source_fallback_reason")
             }
             declared = bool(reasons) and reasons <= DECLARED_NO_SOURCE_REASONS
             # Supersession is a claim about NOW, so it is judged on the newest
@@ -824,7 +859,7 @@ def check_ingestion_freshness(
                 (
                     d
                     for d in (
-                        (j.meta or {}).get("source_fallback_detail")
+                        _job_text(j, "source_fallback_detail")
                         for j in sorted(jobs, key=_run_order, reverse=True)
                     )
                     if d
@@ -1004,7 +1039,7 @@ def hollow_run_findings(jobs: Iterable) -> List[Finding]:
             continue
         meta = job.meta if isinstance(getattr(job, "meta", None), dict) else {}
         mode = meta.get("source_mode")
-        reason = meta.get("source_fallback_reason")
+        reason = _job_text(job, "source_fallback_reason")
         label = f"{domain} this run"
 
         if mode == "live":
@@ -1090,153 +1125,12 @@ COUNTY_AUDIT_LABEL = "County audit coverage"
 COUNTY_COUNT = 47
 
 
-def _county_findings_by_audit_year(session) -> dict:
-    """``{audit_year: distinct counties with a PUBLISHED finding}``.
-
-    Publishable only. A finding the gate withholds reaches no reader, so it
-    cannot count as holding that year.
-    """
-    from sqlalchemy import func
-
-    from models import Audit, Entity, EntityType
-
-    rows = (
-        session.query(Audit.audit_year, func.count(func.distinct(Audit.entity_id)))
-        .join(Entity, Entity.id == Audit.entity_id)
-        .filter(Entity.type == EntityType.COUNTY, Audit.publishable.is_(True))
-        .group_by(Audit.audit_year)
-        .all()
-    )
-    return {int(year): int(n) for year, n in rows if year is not None}
-
-
-def _latest_recorded_listing(session):
-    """The newest non-dry audits run that recorded a non-empty OAG listing.
-
-    Returns ``(job, discovery_meta)`` or ``(None, None)``.
-    """
-    from models import IngestionJob
-
-    jobs = (
-        session.query(IngestionJob)
-        .filter(IngestionJob.domain == "audits", IngestionJob.dry_run.is_(False))
-        .order_by(IngestionJob.started_at.desc(), IngestionJob.id.desc())
-        .limit(60)
-        .all()
-    )
-    for job in jobs:
-        meta = (job.meta or {}).get("oag_county_discovery") or {}
-        if meta.get("listing_fiscal_years"):
-            return job, meta
-    return None, None
-
-
-def _newest_volume_backlog(session) -> List[str]:
-    """Volumes the newest non-dry audits run deferred or failed, labelled."""
-    from models import IngestionJob
-
-    job = (
-        session.query(IngestionJob)
-        .filter(IngestionJob.domain == "audits", IngestionJob.dry_run.is_(False))
-        .order_by(IngestionJob.started_at.desc(), IngestionJob.id.desc())
-        .first()
-    )
-    report = ((job.meta or {}) if job else {}).get("county_volumes") or {}
-    return [f"deferred {v}" for v in report.get("deferred") or []] + [
-        f"failed {v}" for v in report.get("failed") or []
-    ]
-
-
 def check_county_audit_coverage(session, now: Optional[datetime] = None) -> List[Finding]:
-    """FAIL when OAG lists a fiscal year of county audits we hold none for."""
-    from .oag_discovery import FIRST_INGESTED_FISCAL_YEAR, fy_start
+    """Compare OAG's listing with attributed county/period/institution evidence."""
+    from .county_audit_coverage import county_audit_coverage_receipt, coverage_verdict
 
-    job, meta = _latest_recorded_listing(session)
-    if job is None:
-        return [
-            Finding(
-                WARN,
-                COUNTY_AUDIT_LABEL,
-                "no audits run has recorded OAG's county listing, so a published "
-                "fiscal year we hold nothing for cannot be seen. Unrecorded is "
-                "not the same as covered.",
-            )
-        ]
-
-    floor = fy_start(FIRST_INGESTED_FISCAL_YEAR)
-    listed = [fy for fy in meta["listing_fiscal_years"] if fy_start(fy) >= floor]
-    held = _county_findings_by_audit_year(session)
-    held_years = sorted(held)
-    newest_held = (
-        f"FY{held_years[-1] - 1}/{held_years[-1]}" if held_years else "none"
-    )
-    when = job.started_at.date().isoformat() if job.started_at else "unknown date"
-    if not listed:
-        # OAG has published every year since 2016/17. A listing that names
-        # none from the floor on was misread; it is not a clean bill.
-        return [
-            Finding(
-                WARN,
-                COUNTY_AUDIT_LABEL,
-                f"OAG's county listing (read {when}) named no fiscal year from "
-                f"{FIRST_INGESTED_FISCAL_YEAR} on "
-                f"({', '.join(meta['listing_fiscal_years'])}), so coverage "
-                "cannot be judged",
-            )
-        ]
-
-    missing =[fy for fy in listed if held.get(fy_start(fy) + 1, 0) == 0]
-    partial = [
-        f"{fy} ({held[fy_start(fy) + 1]}/{COUNTY_COUNT} counties)"
-        for fy in listed
-        if 0 < held.get(fy_start(fy) + 1, 0) < COUNTY_COUNT
-    ]
-    findings: List[Finding] = []
-    if missing:
-        findings.append(
-            Finding(
-                FAIL,
-                COUNTY_AUDIT_LABEL,
-                f"OAG's county listing (read {when}) publishes "
-                f"{', '.join(missing)}, and no county finding is published for "
-                f"{'it' if len(missing) == 1 else 'them'}; newest county year "
-                f"published is {newest_held}",
-            )
-        )
-    if partial:
-        findings.append(
-            Finding(
-                WARN,
-                COUNTY_AUDIT_LABEL,
-                f"some counties have no published finding for {', '.join(partial)}",
-            )
-        )
-    # A year counts as held once ANY of its volumes loads for all 47 counties,
-    # so a deferred or failed second volume is invisible to the counts above.
-    # It is named from the newest run alone: "still deferred" is a statement
-    # about now, and a union over past runs would keep reporting a backlog
-    # that has cleared.
-    backlog = _newest_volume_backlog(session)
-    if backlog:
-        findings.append(
-            Finding(
-                WARN,
-                COUNTY_AUDIT_LABEL,
-                "the newest audits run left combined volume(s) unloaded: "
-                + "; ".join(backlog),
-            )
-        )
-    if not findings:
-        findings.append(
-            Finding(
-                OK,
-                COUNTY_AUDIT_LABEL,
-                f"every fiscal year OAG lists from {FIRST_INGESTED_FISCAL_YEAR} "
-                f"({', '.join(listed) or 'none'}) has county findings for all "
-                f"{COUNTY_COUNT} counties (listing read {when})",
-            )
-        )
-    return findings
+    level, message = coverage_verdict(county_audit_coverage_receipt(session))
+    return [Finding(level, COUNTY_AUDIT_LABEL, message)]
 
 
 STALLED_PROJECTS_DOMAIN = "stalled_projects"
@@ -1315,7 +1209,7 @@ def check_stalled_projects_edition(session) -> List[Finding]:
     meta = _as_dict(job.meta)
     newest = _as_dict(meta.get("cbirr_listing_newest"))
     published = _as_dict(meta.get("cbirr_published"))
-    reason = meta.get("source_fallback_reason")
+    reason = _job_text(job, "source_fallback_reason")
     captions = _whole(meta.get("captions_found"))
     parsed = _whole(meta.get("rows_parsed"))
     written = _whole(meta.get("rows_written"))
@@ -1466,7 +1360,7 @@ def check_fiscal_split_freshness(
         .filter(IngestionJob.domain == "fiscal_summary")
         .filter(IngestionJob.started_at >= cutoff.replace(tzinfo=None))
         .all()
-        if "budget_summary_listing_newest_fy" in (j.meta or {})
+        if "budget_summary_listing_newest_fy" in _as_dict(j.meta)
     ]
     if not jobs:
         return [

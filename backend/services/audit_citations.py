@@ -49,6 +49,24 @@ def report_page_url(url, page_ref):
     return urlunsplit(parts._replace(fragment=urlencode(fragment)))
 
 
+def _county_role(name, county_name):
+    """Resolve the two printed auditee forms against the supplied county."""
+    front = re.fullmatch(r"county\s+(assembly|executive)\s+of\s+(.+)", name, re.I)
+    back = re.fullmatch(r"(.+?)\s+county\s+(assembly|executive)", name, re.I)
+    if front:
+        role, county = front.group(1), front.group(2)
+    elif back:
+        county, role = back.group(1), back.group(2)
+    else:
+        return None
+    normalize = lambda s: re.sub(r"[^a-z0-9]", "", s.casefold())
+    expected = normalize(re.sub(r"\s+County$", "", county_name, flags=re.I))
+    actual = normalize(county)
+    if actual == expected or (expected == "nairobi" and actual == "nairobicity"):
+        return role.casefold()
+    return None
+
+
 def audited_institution(raw, *, county_name=None, document_meta=None):
     """Use extracted identity; county affiliation alone never names an auditee.
 
@@ -76,18 +94,27 @@ def audited_institution(raw, *, county_name=None, document_meta=None):
     role_names = [
         n for n in names if re.search(r"\bcounty\s+(assembly|executive)\b", n, re.I)
     ]
-    if len({n.casefold() for n in role_names}) > 1:
-        return None
+    if role_names:
+        # Current OAG volumes retain their printed auditee alongside the
+        # canonical entity name (Taita/Taveta, Nairobi City, etc.). Every
+        # declaration must name THIS county and the SAME role, even if the
+        # printed auditee is the only declaration present.
+        roles = {_county_role(n, county_name) for n in role_names}
+        if None in roles or len(roles) != 1:
+            return None
     for name in role_names:
         for role in re.findall(r"\bcounty\s+(assembly|executive)\b", name, re.I):
             kinds.add("assemblies" if role.lower() == "assembly" else "executives")
     if len(kinds) > 1:
         return None
     if role_names:
+        printed = payload.get("auditee")
+        if isinstance(printed, str) and printed.strip() in role_names:
+            return printed.strip()
         return role_names[0]
     # An explicit volume declaration supplies institution type, not a guess
     # from severity, a finding's subject or a county's geographic association.
-    if kinds:
+    if kinds and not names:
         role = "Assembly" if "assemblies" in kinds else "Executive"
         county = re.sub(r"\s+County$", "", county_name, flags=re.I)
         return f"County {role} of {county}"

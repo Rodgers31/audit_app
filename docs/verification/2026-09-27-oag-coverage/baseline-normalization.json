@@ -1,0 +1,260 @@
+{
+  "scope": "disposable_clone_of_2026-09-26_dump",
+  "action": "apply_already_merged_publication_gate_before_ingestion_baseline",
+  "stats": {
+    "published": 2311,
+    "withheld": 2
+  },
+  "changed": {
+    "892": {
+      "before": [
+        false,
+        "source_document_has_no_url"
+      ],
+      "after": [
+        false,
+        "retired_legacy_fixture"
+      ]
+    },
+    "894": {
+      "before": [
+        false,
+        "source_document_has_no_url"
+      ],
+      "after": [
+        false,
+        "retired_legacy_fixture"
+      ]
+    },
+    "887": {
+      "before": [
+        false,
+        "source_document_has_no_url"
+      ],
+      "after": [
+        false,
+        "retired_legacy_fixture"
+      ]
+    },
+    "888": {
+      "before": [
+        false,
+        "source_document_has_no_url"
+      ],
+      "after": [
+        false,
+        "retired_legacy_fixture"
+      ]
+    },
+    "881": {
+      "before": [
+        false,
+        "source_document_has_no_url"
+      ],
+      "after": [
+        false,
+        "retired_legacy_fixture"
+      ]
+    },
+    "880": {
+      "before": [
+        false,
+        "source_document_has_no_url"
+      ],
+      "after": [
+        false,
+        "retired_legacy_fixture"
+      ]
+    },
+    "874": {
+      "before": [
+        false,
+        "source_document_has_no_url"
+      ],
+      "after": [
+        false,
+        "retired_legacy_fixture"
+      ]
+    },
+    "870": {
+      "before": [
+        false,
+        "source_document_has_no_url"
+      ],
+      "after": [
+        false,
+        "retired_legacy_fixture"
+      ]
+    },
+    "878": {
+      "before": [
+        false,
+        "source_document_has_no_url"
+      ],
+      "after": [
+        false,
+        "retired_legacy_fixture"
+      ]
+    },
+    "893": {
+      "before": [
+        false,
+        "source_document_has_no_url"
+      ],
+      "after": [
+        false,
+        "retired_legacy_fixture"
+      ]
+    },
+    "889": {
+      "before": [
+        false,
+        "source_document_has_no_url"
+      ],
+      "after": [
+        false,
+        "retired_legacy_fixture"
+      ]
+    },
+    "890": {
+      "before": [
+        false,
+        "source_document_has_no_url"
+      ],
+      "after": [
+        false,
+        "retired_legacy_fixture"
+      ]
+    },
+    "885": {
+      "before": [
+        false,
+        "source_document_has_no_url"
+      ],
+      "after": [
+        false,
+        "retired_legacy_fixture"
+      ]
+    },
+    "891": {
+      "before": [
+        false,
+        "source_document_has_no_url"
+      ],
+      "after": [
+        false,
+        "retired_legacy_fixture"
+      ]
+    },
+    "879": {
+      "before": [
+        false,
+        "source_document_has_no_url"
+      ],
+      "after": [
+        false,
+        "retired_legacy_fixture"
+      ]
+    },
+    "882": {
+      "before": [
+        false,
+        "source_document_has_no_url"
+      ],
+      "after": [
+        false,
+        "retired_legacy_fixture"
+      ]
+    },
+    "886": {
+      "before": [
+        false,
+        "source_document_has_no_url"
+      ],
+      "after": [
+        false,
+        "retired_legacy_fixture"
+      ]
+    },
+    "872": {
+      "before": [
+        false,
+        "source_document_has_no_url"
+      ],
+      "after": [
+        false,
+        "retired_legacy_fixture"
+      ]
+    },
+    "871": {
+      "before": [
+        false,
+        "source_document_has_no_url"
+      ],
+      "after": [
+        false,
+        "retired_legacy_fixture"
+      ]
+    },
+    "883": {
+      "before": [
+        false,
+        "source_document_has_no_url"
+      ],
+      "after": [
+        false,
+        "retired_legacy_fixture"
+      ]
+    },
+    "873": {
+      "before": [
+        false,
+        "source_document_has_no_url"
+      ],
+      "after": [
+        false,
+        "retired_legacy_fixture"
+      ]
+    },
+    "875": {
+      "before": [
+        false,
+        "source_document_has_no_url"
+      ],
+      "after": [
+        false,
+        "retired_legacy_fixture"
+      ]
+    },
+    "876": {
+      "before": [
+        false,
+        "source_document_has_no_url"
+      ],
+      "after": [
+        false,
+        "retired_legacy_fixture"
+      ]
+    },
+    "877": {
+      "before": [
+        false,
+        "source_document_has_no_url"
+      ],
+      "after": [
+        false,
+        "retired_legacy_fixture"
+      ]
+    },
+    "884": {
+      "before": [
+        false,
+        "source_document_has_no_url"
+      ],
+      "after": [
+        false,
+        "retired_legacy_fixture"
+      ]
+    }
+  }
+}

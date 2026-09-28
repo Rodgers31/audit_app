@@ -1,0 +1,76 @@
+{
+  "scope": "disposable_local_clone",
+  "volume": {
+    "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf",
+    "fiscal_year": "2021/2022",
+    "kind": "assemblies",
+    "found_on": "year_page",
+    "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+    "entity": null,
+    "note": null
+  },
+  "document_id": 2448,
+  "sha256": "07db60417ab122a6082fea3ec4bf70b5038e7eb3554d1e9ca1f5fee0eae5d50c",
+  "md5": "6ac0f20f7a8bfe535775bccb1e81bdcc",
+  "extracted": {
+    "created": 0,
+    "skipped": 532,
+    "rejected_cid": 0,
+    "reason": "already_extracted",
+    "shape": "county_volume"
+  },
+  "loaded": {
+    "processed": 532,
+    "created": 0,
+    "updated": 0,
+    "skipped": 0,
+    "errors": []
+  },
+  "document_metadata": {
+    "dataset_id": "oag_county_audits",
+    "extracted_md5": "6ac0f20f7a8bfe535775bccb1e81bdcc",
+    "oag_discovery": {
+      "kind": "assemblies",
+      "note": null,
+      "entity": null,
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "fiscal_year": "2021/2022"
+    },
+    "extraction_stats": {
+      "pages": 222,
+      "partial": false,
+      "refused": [],
+      "findings": 532,
+      "extractor": "oag_county_volume",
+      "ocr_pages": 0,
+      "fiscal_year": "2021/2022",
+      "volume_kind": "assemblies",
+      "rejected_cid": 0,
+      "contents_entries": 47,
+      "missing_counties": [],
+      "unreadable_pages": [
+        4,
+        7,
+        8,
+        9,
+        10,
+        221
+      ],
+      "chapters_attributed": 47,
+      "fiscal_year_sources": [
+        "filename",
+        "oag_year_page",
+        "title_page"
+      ],
+      "chapters_with_no_finding": [],
+      "unreadable_chapter_pages": []
+    },
+    "last_extraction_attempt": {
+      "status": "complete"
+    }
+  },
+  "outcome": "completed",
+  "wall_seconds": 0.355,
+  "max_rss_bytes": 229376
+}

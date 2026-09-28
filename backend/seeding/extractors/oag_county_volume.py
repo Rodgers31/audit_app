@@ -102,7 +102,11 @@ _KIND_TEXT_RE = re.compile(
 _GOVERNMENTS_RE = re.compile(r"COUNTY\s+GOVERNMENTS", re.I)
 #: The end matter after the last chapter: the opinions appendix, then the back
 #: cover.
-_END_MATTER_RE = re.compile(r"^(APPENDIX\b|CONTACTS\b)", re.I)
+_END_MATTER_RE = re.compile(
+    r"^(?:APPENDIX(?:\s+[A-Z0-9]+)?|APPENDICES|CONTACTS|"
+    r"(?:APPENDIX\s+)?[A-Z]:\s*List of County (?:Executives|Assemblies) and Audit "
+    r"Opinions given on their Financial(?: Statements)?)\s*$", re.I
+)
 _COUNTY_OF_RE = re.compile(
     r"county\s+(?:executive|assembly|government)\s+of\s+(?P<county>.+)$", re.I
 )
@@ -219,6 +223,7 @@ def split_volume(pages: List[PageText]) -> VolumeSplit:
     toc = parse_toc(pages)
     anchors: List[Tuple[int, int, str]] = []  # (pdf_page, number, heading)
     seen = set()
+    duplicate_chapters = set()
     for page in pages:
         head = _first_line(page.text)
         m = _CHAPTER_HEAD_RE.match(head)
@@ -226,7 +231,7 @@ def split_volume(pages: List[PageText]) -> VolumeSplit:
             continue
         no = int(m.group("no"))
         if no in seen:
-            continue
+            duplicate_chapters.add(no)
         seen.add(no)
         anchors.append((page.page_number, no, head))
     anchors.sort()
@@ -244,8 +249,22 @@ def split_volume(pages: List[PageText]) -> VolumeSplit:
 
     chapters: List[Chapter] = []
     refused: List[Tuple[int, str]] = []
+    for page in pages[:HEAD_PAGES]:
+        for line in page.text.split("\n"):
+            match = _TOC_ENTRY_RE.match(line.strip())
+            if match and int(match["no"]) in toc:
+                entry = toc[int(match["no"])]
+                if (_letters(match["name"]) != _letters(entry.name)
+                        or int(match["page"]) != entry.printed_page):
+                    refused.append((entry.no, "conflicting_contents_entry"))
     for i, (start, no, heading) in enumerate(anchors):
         end = anchors[i + 1][0] - 1 if i + 1 < len(anchors) else end_matter - 1
+        if no in duplicate_chapters:
+            # Keep every anchor as a boundary: ignoring the second would
+            # attach its text to the preceding county. Neither occurrence
+            # can be selected safely without inspecting the source.
+            refused.append((no, "duplicate_chapter_heading"))
+            continue
         entry = toc.get(no)
         if entry is None:
             refused.append((no, "number_not_in_contents"))
@@ -556,8 +575,19 @@ def extract_county_volume(session, doc, settings, *, known_counties: Dict[str, s
     held = session.query(Extraction).filter_by(
         source_document_id=doc.id, extractor=EXTRACTOR_ID
     ).count()
+    unreadable_pages = [p.page_number for p in pages if p.method == "rejected"]
+    unreadable_chapter_pages = [
+        page for page in unreadable_pages
+        if any(ch.start_page <= page <= ch.end_page for ch in split.chapters)
+    ]
+    # The books include image covers and blank front matter. Those pages
+    # cannot contain a county finding: chapter boundaries and identities are
+    # independently checked against the contents. A rejected chapter page,
+    # unresolved contents entry or missing chapter still prevents completion.
+    empty = sorted(set(resolved) - set(per_chapter))
+    missing_counties = sorted(set(known_counties.values()) - set(resolved.values()))
     partial = bool(refused or rejected or len(resolved) != len(split.toc)
-                   or any(p.method == "rejected" for p in pages))
+                   or unreadable_chapter_pages or empty or missing_counties)
     if held and partial:
         raise IncompleteExtraction(
             f"document {doc.id}: incomplete county volume; rows kept; "
@@ -584,7 +614,6 @@ def extract_county_volume(session, doc, settings, *, known_counties: Dict[str, s
             replaced["audits_removed"],
         )
 
-    empty = sorted(set(resolved) - set(per_chapter))
     meta = dict(doc.meta or {})
     if not partial:
         meta["extracted_md5"] = doc.md5
@@ -601,6 +630,10 @@ def extract_county_volume(session, doc, settings, *, known_counties: Dict[str, s
         "rejected_cid": rejected,
         "pages": len(pages),
         "ocr_pages": sum(1 for p in pages if p.method == "ocr"),
+        "partial": partial,
+        "unreadable_pages": unreadable_pages,
+        "unreadable_chapter_pages": unreadable_chapter_pages,
+        "missing_counties": missing_counties,
     }
     doc.meta = meta
     session.flush()

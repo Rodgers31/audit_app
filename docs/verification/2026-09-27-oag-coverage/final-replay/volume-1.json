@@ -1,0 +1,76 @@
+{
+  "scope": "disposable_local_clone",
+  "volume": {
+    "url": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf",
+    "fiscal_year": "2024/2025",
+    "kind": "assemblies",
+    "found_on": "year_page",
+    "listed_at": "https://www.oagkenya.go.ke/2024-2025-county-government-audit-reports/",
+    "entity": null,
+    "note": null
+  },
+  "document_id": 2442,
+  "sha256": "aa72b0a512fe01ce8f40b9ed8597bd78657a9f441a8daf4963b07e661104d896",
+  "md5": "f495cb595c81583af7d8bbd46e2279d6",
+  "extracted": {
+    "created": 582,
+    "skipped": 0,
+    "rejected_cid": 0,
+    "shape": "county_volume",
+    "partial": false,
+    "fiscal_year": "2024/2025",
+    "volume_kind": "assemblies",
+    "chapters": 47,
+    "refused": []
+  },
+  "loaded": {
+    "processed": 582,
+    "created": 582,
+    "updated": 0,
+    "skipped": 0,
+    "errors": []
+  },
+  "document_metadata": {
+    "dataset_id": "oag_county_audits",
+    "extracted_md5": "f495cb595c81583af7d8bbd46e2279d6",
+    "oag_discovery": {
+      "kind": "assemblies",
+      "note": null,
+      "entity": null,
+      "found_on": "year_page",
+      "listed_at": "https://www.oagkenya.go.ke/2024-2025-county-government-audit-reports/",
+      "fiscal_year": "2024/2025"
+    },
+    "extraction_stats": {
+      "pages": 246,
+      "partial": false,
+      "refused": [],
+      "findings": 582,
+      "extractor": "oag_county_volume",
+      "ocr_pages": 0,
+      "fiscal_year": "2024/2025",
+      "volume_kind": "assemblies",
+      "rejected_cid": 0,
+      "contents_entries": 47,
+      "missing_counties": [],
+      "unreadable_pages": [
+        1,
+        9
+      ],
+      "chapters_attributed": 47,
+      "fiscal_year_sources": [
+        "filename",
+        "oag_year_page",
+        "title_page"
+      ],
+      "chapters_with_no_finding": [],
+      "unreadable_chapter_pages": []
+    },
+    "last_extraction_attempt": {
+      "status": "complete"
+    }
+  },
+  "outcome": "completed",
+  "wall_seconds": 12.245,
+  "max_rss_bytes": 1289158656
+}
