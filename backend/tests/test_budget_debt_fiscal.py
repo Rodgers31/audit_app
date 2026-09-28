@@ -448,11 +448,54 @@ class TestPendingBillsSummary:
         data = client.get("/api/v1/pending-bills/summary").json()
         assert "Seed pending_bills table" not in (data.get("note") or "")
 
-    def test_trend_has_entries(self, client, seed_pending_bills):
+    def test_incomplete_publication_has_no_national_trend(self, client, seed_pending_bills):
+        data = client.get("/api/v1/pending-bills/summary").json()
+        assert data["trend"] == []
+        assert data["trend_absent_reason"] == "incomplete_national_publication"
+        assert data["reported_county_sum"] == 800_000_000
+
+    def test_complete_publication_trend_has_entries(self, client, db_session, seed_country):
+        """A real writer batch supplies both national parts and 47 counties.
+
+        These synthetic amounts test the API contract, not source figures.
+        """
+        from decimal import Decimal
+        from seeding.domains.pending_bills.parser import PendingBillRecord
+        from seeding.domains.pending_bills.writer import write_pending_bills
+        from seeding.pdf_parsers import KENYAN_COUNTIES
+
+        db_session.add(Entity(country_id=seed_country.id, type=EntityType.NATIONAL,
+                              canonical_name="National Government", slug="national-government"))
+        db_session.add_all([
+            Entity(country_id=seed_country.id, type=EntityType.COUNTY,
+                   canonical_name=f"{name} County", slug=f"test-{name.lower()}")
+            for name in KENYAN_COUNTIES
+        ])
+        db_session.flush()
+        national = [
+            PendingBillRecord(f"National Government — {category}", "national", category,
+                              "FY 2025/26", Decimal(amount), as_at="2026-06-30")
+            for category, amount in [("mda", 100_000_000), ("state_corporation", 200_000_000)]
+        ]
+        counties = [
+            PendingBillRecord(f"{name} County", "county", "county", "FY2025/26",
+                              Decimal(800_000_000 if name == "Nairobi" else 0), as_at="2026-06-30")
+            for name in KENYAN_COUNTIES
+        ]
+        for records, publication, source in [
+            (national, "treasury_brop", "https://treasury.go.ke/test-brop.pdf"),
+            (counties, "cob_cbirr_year_end", "https://cob.go.ke/test-cbirr.pdf"),
+        ]:
+            write_pending_bills(db_session, records, publication=publication,
+                                source_url=source, source_title=f"Synthetic {publication}")
+        db_session.commit()
+
         data = client.get("/api/v1/pending-bills/summary").json()
         assert [(p["year"], p["total_amount"]) for p in data["trend"]] == [
-            ("FY2025/26", 800_000_000)
+            ("FY2025/26", 1_100_000_000)
         ]
+        assert data["total_pending_amount"] == 1_100_000_000
+        assert data["trend_absent_reason"] is None
 
     def test_top_counties(self, client, seed_pending_bills):
         data = client.get("/api/v1/pending-bills/summary").json()

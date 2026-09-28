@@ -296,6 +296,7 @@ class TestFetch:
 @pytest.fixture()
 def entities(db_session, seed_country, seed_source_doc):
     from models import Entity, EntityType
+    from seeding.pdf_parsers import KENYAN_COUNTIES
 
     national = Entity(
         id=900, country_id=seed_country.id, type=EntityType.NATIONAL,
@@ -306,6 +307,11 @@ def entities(db_session, seed_country, seed_source_doc):
         canonical_name="Nairobi County", slug="nairobi-county",
     )
     db_session.add_all([national, nairobi])
+    db_session.add_all([
+        Entity(country_id=seed_country.id, type=EntityType.COUNTY,
+               canonical_name=f"{name} County", slug=f"test-{name.lower()}")
+        for name in KENYAN_COUNTIES if name != "Nairobi"
+    ])
     db_session.commit()
     return national, nairobi
 
@@ -323,7 +329,13 @@ def _write(db_session, payload, **kw):
 
 
 def _nairobi_cob_2026():
+    """Complete synthetic coverage; only Nairobi pins a publication figure.
+
+    The other 46 test-only zeros establish population completeness and are
+    not claims about what those counties reported.
+    """
     from seeding.domains.pending_bills.fetcher import county_payables_payload
+    from seeding.pdf_parsers import KENYAN_COUNTIES
 
     entry = {
         "county": "Nairobi", "status": "reported", "withheld_reason": None,
@@ -332,7 +344,11 @@ def _nairobi_cob_2026():
         "chapter_table": None, "chapter_page": None, "as_at": "2026-06-30",
         "fiscal_year": "FY 2025/26", "table": "Table 2.10", "page": 52,
     }
-    return county_payables_payload([entry], "https://cob.go.ke/download/cbirr/?wpdmdl=16482")
+    entries = [entry] + [
+        {**entry, "county": name, "total_millions": "0"}
+        for name in KENYAN_COUNTIES if name != "Nairobi"
+    ]
+    return county_payables_payload(entries, "https://cob.go.ke/download/cbirr/?wpdmdl=16482")
 
 
 def test_reading_the_2026_paper_makes_the_total_publishable(
@@ -351,6 +367,9 @@ def test_reading_the_2026_paper_makes_the_total_publishable(
     before = client.get("/api/v1/pending-bills").json()["summary"]
     assert (before["national_as_at"], before["county_as_at"]) == ("2025-06-30", "2026-06-30")
     assert before["total_pending"] is None
+    assert before["coverage"]["national_complete"] is True
+    assert before["coverage"]["county_complete"] is True
+    assert before["total_absent_reason"] == "national_and_county_stated_at_different_dates"
 
     _write(db_session, _fetch(tmp_path, _brop_2026()))
 
@@ -360,6 +379,7 @@ def test_reading_the_2026_paper_makes_the_total_publishable(
     assert after["county_total"] == 86_899_380_000
     assert after["as_at"] == "2026-06-30"
     assert after["total_pending"] == 475_500_000_000 + 86_899_380_000
+    assert after["total_absent_reason"] is None
 
 
 # --------------------------------------------------------------------------

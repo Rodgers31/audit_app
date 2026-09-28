@@ -41,6 +41,9 @@ class BudgetRecord:
     # Who published ``source_url``, when the payload declares it. Labels the
     # SourceDocument; undeclared rows are filed under the CoB (issue #276).
     publisher: Optional[str] = None
+    page_ref: Optional[str] = None
+    artifact_sha256: Optional[str] = None
+    revenue_coverage: Optional[Dict[str, Any]] = None
 
 
 def _iter_records(payload: Any) -> Iterable[Dict[str, Any]]:
@@ -69,10 +72,11 @@ def _iter_records(payload: Any) -> Iterable[Dict[str, Any]]:
 
 
 def _to_decimal(value: Any) -> Optional[Decimal]:
-    if value in (None, "", "NaN"):
+    if value in (None, "") or isinstance(value, bool):
         return None
     try:
-        return Decimal(str(value))
+        number = Decimal(str(value).replace(",", "").strip())
+        return number if number.is_finite() else None
     except (InvalidOperation, ValueError, TypeError):
         return None
 
@@ -93,6 +97,14 @@ def _declared(value: Any) -> Optional[str]:
     if not isinstance(value, str):
         return None
     return value.strip() or None
+
+
+def _amount(raw: Dict[str, Any], *keys: str) -> Optional[Decimal]:
+    """An explicit zero or withdrawal wins over legacy alias fields."""
+    for key in keys:
+        if key in raw:
+            return _to_decimal(raw[key])
+    return None
 
 
 def parse_budget_payload(payload: Dict[str, Any]) -> List[BudgetRecord]:
@@ -124,23 +136,14 @@ def parse_budget_payload(payload: Dict[str, Any]) -> List[BudgetRecord]:
             end_date=end,
             category=str(category),
             subcategory=(str(raw["subcategory"]) if raw.get("subcategory") else None),
-            allocated_amount=_to_decimal(
-                raw.get("allocated_amount") or raw.get("allocated")
-            ),
+            allocated_amount=_amount(raw, "allocated_amount", "allocated"),
             # Accept "actual_spent" too — both the fixture
             # (seeding/real_data/budgets.json) and the DB column
             # (BudgetLine.actual_spent) use that name, so older or
             # externally-authored payloads often emit it.
-            actual_amount=_to_decimal(
-                raw.get("actual_amount")
-                or raw.get("actual")
-                or raw.get("actual_spent")
-            ),
-            committed_amount=_to_decimal(
-                raw.get("committed_amount")
-                or raw.get("committed")
-                or raw.get("released")
-                or raw.get("exchequer_releases")
+            actual_amount=_amount(raw, "actual_amount", "actual", "actual_spent"),
+            committed_amount=_amount(
+                raw, "committed_amount", "committed", "released", "exchequer_releases"
             ),
             currency=str(raw.get("currency") or "KES"),
             dataset_id=raw.get("dataset_id"),
@@ -157,6 +160,11 @@ def parse_budget_payload(payload: Dict[str, Any]) -> List[BudgetRecord]:
             ),
             notes=raw.get("notes"),
             publisher=_declared(raw.get("publisher")),
+            page_ref=_declared(raw.get("page_ref")),
+            artifact_sha256=_declared(raw.get("artifact_sha256")),
+            revenue_coverage=(
+                raw["revenue_coverage"] if isinstance(raw.get("revenue_coverage"), dict) else None
+            ),
         )
         normalized.append(record)
 

@@ -118,6 +118,45 @@ def production_bills(db_session, national_entity, county_entity, seed_source_doc
     return db_session
 
 
+@pytest.fixture()
+def complete_publication(db_session, seed_country, national_entity, county_entity):
+    """Synthetic full population for aggregate and fiscal-label controls.
+
+    Preserve the historical test amounts and FY spellings, but write the
+    complete national pair and all 47 counties through the production writer.
+    The extra test-only zeros are not assertions about real county figures.
+    """
+    from decimal import Decimal
+    from seeding.domains.pending_bills.parser import PendingBillRecord
+    from seeding.domains.pending_bills.writer import write_pending_bills
+    from seeding.pdf_parsers import KENYAN_COUNTIES
+
+    db_session.add_all([
+        Entity(country_id=seed_country.id, type=EntityType.COUNTY,
+               canonical_name=f"{name} County", slug=f"test-{name.lower()}")
+        for name in KENYAN_COUNTIES if name != "Mombasa"
+    ])
+    db_session.flush()
+    national = [
+        PendingBillRecord(f"National Government — {category}", "national", category,
+                          "FY 2024/25", Decimal(amount), as_at="2025-06-30")
+        for category, amount in [("mda", 702_800_000_000), ("state_corporation", 0)]
+    ]
+    counties = [
+        PendingBillRecord(f"{name} County", "county", "county", "FY2024/25",
+                          Decimal(405_404_500_000 if name == "Mombasa" else 0), as_at="2025-06-30")
+        for name in KENYAN_COUNTIES
+    ]
+    for records, publication, source in [
+        (national, "treasury_brop", "https://treasury.go.ke/test-brop.pdf"),
+        (counties, "cob_cbirr_year_end", "https://cob.go.ke/test-cbirr.pdf"),
+    ]:
+        write_pending_bills(db_session, records, publication=publication,
+                            source_url=source, source_title=f"Synthetic {publication}")
+    db_session.commit()
+    return db_session
+
+
 # ── 1. Aging ───────────────────────────────────────────────────────────────
 
 def test_aging_is_withheld_because_the_loans_table_has_no_aging_column(
@@ -200,7 +239,7 @@ def test_a_lender_string_that_really_does_name_a_type_still_classifies(
 
 # ── 3. Trend ───────────────────────────────────────────────────────────────
 
-def test_one_fiscal_year_is_one_point(client, production_bills):
+def test_one_fiscal_year_is_one_point(client, complete_publication):
     """"FY 2024/25" and "FY2024/25" are the same year."""
     trend = summary(client)["trend"]
     years = [p["year"] for p in trend]
@@ -209,51 +248,53 @@ def test_one_fiscal_year_is_one_point(client, production_bills):
     assert trend[0]["total_amount"] == pytest.approx(1108.2045e9)
 
 
-def test_the_trend_adds_up_to_the_total_printed_above_it(client, production_bills):
+def test_the_trend_adds_up_to_the_total_printed_above_it(client, complete_publication):
     body = summary(client)
+    assert body["total_pending_amount"] == pytest.approx(1108.2045e9)
+    assert body["trend_absent_reason"] is None
     assert sum(p["total_amount"] for p in body["trend"]) == pytest.approx(
         body["total_pending_amount"]
     )
 
 
-def test_distinct_years_stay_distinct(
-    client, db_session, national_entity, seed_source_doc
-):
+def test_distinct_years_stay_distinct():
     """Positive control: normalisation must not collapse real years together,
     nor fold a sub-period into its parent year."""
-    B = 1e9
-    db_session.add_all([
-        _bill(national_entity, seed_source_doc, "Pending Bills — A",
-              100.0 * B, "FY 2023/24", 6),
-        _bill(national_entity, seed_source_doc, "Pending Bills — B",
-              200.0 * B, "FY2024/25", 7),
-        _bill(national_entity, seed_source_doc, "Pending Bills — C",
-              300.0 * B, "FY 2025/26 Q1", 8),
-    ])
-    db_session.commit()
+    from main import _normalised_fiscal_year
 
-    trend = summary(client)["trend"]
-    assert [p["year"] for p in trend] == ["FY2023/24", "FY2024/25", "FY2025/26 Q1"]
+    # Exercise the production normalizer directly: different stock editions
+    # must not be combined merely to manufacture a multi-year chart fixture.
+    labels = ["FY 2023/24", "FY2024/25", "FY 2025/26 Q1"]
+    assert [_normalised_fiscal_year(label) for label in labels] == [
+        "FY2023/24", "FY2024/25", "FY2025/26 Q1"
+    ]
+
+
+def test_incomplete_historical_rows_cannot_form_a_trend(client, production_bills):
+    body = summary(client)
+    assert body["total_pending_amount"] is None
+    assert body["trend"] == []
+    assert body["trend_absent_reason"] == "incomplete_national_publication"
 
 
 def test_an_unparseable_fiscal_label_is_dropped_not_crashed(
-    client, db_session, national_entity, seed_source_doc
+    client, db_session, complete_publication
 ):
     """``normalize_fiscal_label`` raises on junk; a junk label must not take
     the endpoint down, and must not be silently merged into a real year."""
-    B = 1e9
-    db_session.add_all([
-        _bill(national_entity, seed_source_doc, "Pending Bills — A",
-              100.0 * B, "FY2024/25", 9),
-        _bill(national_entity, seed_source_doc, "Pending Bills — B",
-              50.0 * B, "not a fiscal year", 10),
-    ])
+    loan = next(row for row in db_session.query(Loan).all()
+                if row.provenance.get("category") == "mda")
+    loan.provenance = {**loan.provenance, "fiscal_year": "not a fiscal year"}
     db_session.commit()
 
     body = summary(client)
     assert body["status"] == "success"
     assert [p["year"] for p in body["trend"]] == ["FY2024/25"]
-    assert body["trend"][0]["total_amount"] == pytest.approx(100.0 * B)
+    assert body["trend"][0]["total_amount"] == pytest.approx(405.4045e9)
+    assert body["trend_unattributed_amount"] == pytest.approx(702.8e9)
+    assert body["total_pending_amount"] == pytest.approx(
+        body["trend"][0]["total_amount"] + body["trend_unattributed_amount"]
+    )
 
 
 def test_the_county_path_infers_from_rows_it_actually_read(

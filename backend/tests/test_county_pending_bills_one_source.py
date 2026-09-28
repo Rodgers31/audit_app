@@ -172,9 +172,11 @@ def test_the_debt_page_ranks_counties_only_and_by_the_cob_figure(client, countie
     ]
 
 
-def test_the_counties_split_is_the_cob_sum(client, counties):
+def test_partial_county_coverage_is_a_reported_sum_not_the_county_total(client, counties):
     body = _get(client, "/api/v1/pending-bills")
-    assert body["summary"]["county_total"] == NAIROBI_COB
+    assert body["summary"]["county_total"] is None
+    assert body["summary"]["reported_county_sum"] == NAIROBI_COB
+    assert body["summary"]["coverage"]["county_complete"] is False
     assert body["summary"]["county_as_at"] == "2026-06-30"
 
 
@@ -507,7 +509,7 @@ def test_a_published_zero_stays_zero_on_the_pending_bills_endpoints(client, db_s
 
     top = {r["county"]: r["amount"] for r in _get(client, "/api/v1/pending-bills/summary")["top_counties_by_amount"]}
     assert top.get("Kisumu County", 0) == 0
-    assert _get(client, "/api/v1/pending-bills")["summary"]["county_total"] == NAIROBI_COB
+    assert _get(client, "/api/v1/pending-bills")["summary"]["reported_county_sum"] == NAIROBI_COB
 
 
 def test_a_county_the_report_says_did_not_report_is_told_so(client, db_session, counties):

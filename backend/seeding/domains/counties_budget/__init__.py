@@ -58,7 +58,13 @@ def run(
         metadata={
             "skipped": stats.skipped,
             "superseded": stats.superseded,
-            "source_url": settings.budgets_dataset_url,
+            "source_urls": sorted({record.source_url for record in records if record.source_url}),
+            "revenue_coverage": [
+                {"county": record.entity_name, "period": record.period_label,
+                 "source_url": record.source_url, "artifact_sha256": record.artifact_sha256,
+                 **record.revenue_coverage}
+                for record in records if record.revenue_coverage is not None
+            ],
         },
     )
 

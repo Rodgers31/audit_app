@@ -893,6 +893,10 @@ class _RevenueSection:
     actual_sub: Optional[Decimal] = None
     subtotals: int = 0
     target_unreadable: bool = False
+    receipts_observed: bool = False
+    blank_items: bool = False
+    blank_subtotal: bool = False
+    nil_heading: bool = False
 
     @property
     def target(self) -> Decimal:
@@ -904,7 +908,7 @@ class _RevenueSection:
 
 
 def _revenue_rows(tables: List[ExtractedTable]):
-    """``(kind, lettered, label, target, actual)`` for each meaningful row.
+    """``(kind, lettered, label, target, actual, observed, blank)`` per row.
 
     kind is ``header`` (a section or sub-section title), ``item``, ``sub`` or
     ``grand``. Columns are found per table from its own header, because the
@@ -933,7 +937,7 @@ def _revenue_rows(tables: List[ExtractedTable]):
                 # The header printed again inside the body. Its first cell can
                 # still carry a section letter ("B | Equitable Share | Annual…").
                 lettered = bool(_SECTION_LETTER_RE.match((row[0] or "").strip()))
-                yield ("header", lettered and target_col >= 2, label, None, None)
+                yield ("header", lettered and target_col >= 2, label, None, None, False, False)
                 continue
             if re.fullmatch(r"[A-Za-z]?", (row[target_col] or "").strip()) and re.fullmatch(
                 r"[A-Za-z]", (row[actual_col] or "").strip()
@@ -941,32 +945,54 @@ def _revenue_rows(tables: List[ExtractedTable]):
                 # The column legend under the header ("A | B | C | D=B+C"),
                 # sometimes shifted a cell by the extraction.
                 continue
-            target = _kes_cell(row[target_col])
+            target = _kes_cell(row[target_col]) if (row[target_col] or "").strip() else None
             actual = _kes_cell(row[actual_col])
+            observed = actual is not None and bool(
+                (row[actual_col] or "").strip().strip("-–.")
+            )
+            blank = (row[actual_col] or "").strip() in ("", ".")
             if re.search(r"sub[- ]?to[- ]?tal", label):
-                yield ("sub", False, label, target, actual)
+                yield ("sub", False, label, target, actual, observed, blank)
                 continue
-            if re.fullmatch(r"(grand )?total", label):
-                # A Grand Total cell that printed nothing is not a printed
-                # nil: read as 0 it reconciled 0 against 0 and published a
-                # county that received nothing.
-                printed = bool((row[actual_col] or "").strip().strip("-" + chr(0x2013)))
-                yield ("grand", False, label, target, actual if printed else None)
+            if re.fullmatch(r"(grand\s*)?total", label):
+                # Blank, dot and dash are unobserved totals, never reported zero.
+                yield ("grand", False, label, target, actual if observed else None, observed, blank)
                 continue
             has_numbers = any((c or "").strip() for c in row[target_col:])
             lettered = bool(_SECTION_LETTER_RE.match((row[0] or "").strip())) and (
                 target_col >= 2
             )
-            if lettered or not has_numbers:
+            # County treasuries also letter individual grant items A/B/C.
+            # Those have amount cells; section titles span the empty columns.
+            # Treating a monetary item as a new section counts it again beside
+            # the enclosing grant subtotal (e.g. Nairobi Table 3.457).
+            has_amount_cells = any((row[i] or "").strip() for i in (target_col, actual_col))
+            aggregate_heading = lettered and _revenue_stream(label) in {
+                "Balance Brought Forward", "Equitable Share", "Own Source Revenue",
+                "Facility Improvement Financing", "Appropriations in Aid", "Other Revenue",
+            }
+            # A monetary aggregate grants row is distinct from a named grant
+            # item whose label merely contains "grant" (e.g. DANIDA Grant).
+            stream_label = re.sub(r"^[a-h]\.?(?:\s*)", "", label)
+            aggregate_heading = aggregate_heading or (lettered and bool(re.match(
+                r"(?:additional|conditional|unconditional)(?: additional)? allocations\b",
+                stream_label,
+            )))
+            if aggregate_heading and has_amount_cells and actual is None:
+                yield ("item", False, label, target, None, False, blank)
+                continue
+            if not has_numbers or (lettered and (not has_amount_cells or aggregate_heading)):
                 yield (
                     "header",
                     lettered,
                     label,
                     target if has_numbers else None,
                     actual if has_numbers else None,
+                    observed,
+                    blank if has_numbers else False,
                 )
             else:
-                yield ("item", False, label, target, actual)
+                yield ("item", False, label, target, actual, observed, blank)
 
 
 def county_revenue_receipts(
@@ -1000,8 +1026,8 @@ def county_revenue_receipts(
         # Two counties' tables grouped as one — a caption was not found.
         return None, "more_than_one_grand_total"
     grand_target, grand_actual = grand[-1][3], grand[-1][4]
-    if not grand_actual.is_finite() or grand_actual <= 0:
-        return None, "grand_total_is_not_positive"
+    if not grand_actual.is_finite() or grand_actual < 0:
+        return None, "grand_total_is_negative_or_nonfinite"
     if any(r[0] in ("item", "sub") and r[4] is None for r in rows):
         # A cell in the receipts column that is not a number ("n/a", "NaN",
         # a merged cell): the streams cannot be proven to add up.
@@ -1010,7 +1036,7 @@ def county_revenue_receipts(
     lettered = any(r[1] for r in rows if r[0] == "header")
     sections: List[_RevenueSection] = []
     current: Optional[_RevenueSection] = None
-    for kind, is_lettered, label, target, actual in rows:
+    for kind, is_lettered, label, target, actual, observed, blank in rows:
         if kind == "header":
             stream = _revenue_stream(label)
             closed = current is not None and current.actual_sub is not None
@@ -1039,6 +1065,10 @@ def county_revenue_receipts(
                 if actual is not None:
                     current.actual_items += actual
                     current.target_items += target or Decimal(0)
+                    current.target_unreadable = target is None
+                    current.receipts_observed = observed
+                    current.blank_items = blank
+                    current.nil_heading = actual == 0 and not observed and not blank
             continue
         if current is None:
             continue
@@ -1052,8 +1082,12 @@ def county_revenue_receipts(
             current.actual_sub = actual
             current.target_sub = target
             current.target_unreadable = target is None
+            current.receipts_observed = observed
+            current.blank_subtotal = blank
         elif kind == "item" and actual is not None:
             current.actual_items += actual
+            current.receipts_observed = current.receipts_observed or observed
+            current.blank_items = current.blank_items or blank
             if target is None:
                 current.target_unreadable = True
             else:
@@ -1063,10 +1097,23 @@ def county_revenue_receipts(
         return None, "no_sections"
     if any(s.subtotals > 1 for s in sections):
         return None, "a_section_has_two_subtotals"
+    if any(
+        (s.blank_subtotal and not (s.nil_heading and s.actual_items == 0))
+        or (s.actual_sub is None and s.blank_items and not s.nil_heading)
+        for s in sections
+    ):
+        # A section subtotal can substantiate blank constituent item cells.
+        # Without that printed subtotal, a positive Grand Total elsewhere
+        # cannot turn a missing stream receipt into zero. A printed dash on
+        # the section heading is independent evidence of a nil stream even
+        # when its subtotal cell is blank (Vihiga PDF p.864).
+        return None, "unobserved_receipts_cell"
     if sum(1 for s in sections if s.stream == "Equitable Share") != 1:
         return None, "equitable_share_not_exactly_one_section"
-    if any(s.stream == "Equitable Share" and s.actual <= 0 for s in sections):
-        return None, "equitable_share_is_not_positive"
+    if any(s.actual < 0 for s in sections):
+        return None, "negative_receipts_section"
+    if grand_actual == 0 and any(not s.receipts_observed for s in sections):
+        return None, "zero_total_has_unobserved_sections"
     drift = abs(sum((s.actual for s in sections), Decimal(0)) - grand_actual)
     if drift > _REVENUE_TOLERANCE_KES:
         return None, f"streams_do_not_sum_to_grand_total (out by {drift:,})"
@@ -1122,6 +1169,7 @@ class CoBQuarterlyReportParser:
         self.pdf_path = pdf_path
         self.tables: List[ExtractedTable] = []
         self._period: Optional[Tuple[Optional[str], Optional[str]]] = None
+        self.revenue_coverage: Dict[str, Dict[str, Any]] = {}
 
     def parse(self) -> List[Dict[str, Any]]:
         """
@@ -1407,6 +1455,11 @@ class CoBQuarterlyReportParser:
         # What each county RECEIVED, stream by stream (equitable share,
         # additional allocations, ...) with the report's own total.
         records.extend(self._extract_county_revenue_receipts())
+        # Keep refusals in cached parses and ingestion receipts, including
+        # counties for which no supported chapter table was extracted.
+        for record in records:
+            if record.get("category") == "Total":
+                record["revenue_coverage"] = self.revenue_coverage.get(record["county"])
 
         logger.info(
             f"Parsed {len(records)} budget execution records from CoB report",
@@ -1501,6 +1554,10 @@ class CoBQuarterlyReportParser:
         the fetcher not to apply the KSh-millions scaling the Chapter 2
         aggregates need.
         """
+        self.revenue_coverage = {
+            county: {"status": "withheld", "reason": "no_supported_revenue_table", "pages": []}
+            for county in KENYAN_COUNTIES
+        }
         candidates = [t for t in self.tables if _is_revenue_table(t)]
         if not candidates:
             logger.info(
@@ -1525,6 +1582,8 @@ class CoBQuarterlyReportParser:
                         captions[number] = match.group(1)
         except Exception as exc:  # noqa: BLE001 - no captions means no owners
             logger.warning("CoB revenue captions unreadable: %s", exc)
+            for item in self.revenue_coverage.values():
+                item["reason"] = "revenue_captions_unreadable"
             return []
 
         records: List[Dict[str, Any]] = []
@@ -1538,6 +1597,13 @@ class CoBQuarterlyReportParser:
                 # here must cost this county its revenue, never every county
                 # its budget.
                 streams, why = None, f"extraction_error ({type(exc).__name__}: {exc})"
+            source_pages = sorted({t.page_number for t in tables})
+            self.revenue_coverage[county] = {
+                "status": "reconciled" if streams is not None else "withheld",
+                "reason": why or None,
+                "pages": source_pages,
+                "basis": "cash_receipts_including_opening_balance",
+            }
             if streams is None:
                 refused[county] = why
                 continue
@@ -1554,6 +1620,7 @@ class CoBQuarterlyReportParser:
                         "amounts_in": "kes",
                         "quarter": self._extract_quarter(),
                         "fiscal_year": self._extract_fiscal_year(),
+                        "page_ref": "PDF pp. " + ", ".join(map(str, source_pages)),
                     }
                 )
         reconciled = len(grouped) - len(refused)
@@ -1561,7 +1628,7 @@ class CoBQuarterlyReportParser:
             "CoB revenue receipts: %d of %d counties reconcile to their own "
             "Grand Total",
             reconciled,
-            len(grouped),
+            len(KENYAN_COUNTIES),
         )
         if refused:
             logger.warning(
