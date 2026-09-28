@@ -153,7 +153,7 @@ def harness(db_session, monkeypatch, tmp_path):
     monkeypatch.setattr(db_session, "commit", counting_commit)
     return {
         "session": db_session, "fetched": fetched, "commits": commits, "loads": loads,
-        "registered_at_first_fetch": registered_at_first_fetch,
+        "registered_at_first_fetch": registered_at_first_fetch, "clock": clock,
     }
 
 
@@ -214,6 +214,18 @@ class TestCountyIngest:
         ]
         assert report["deferred"] == []
 
+    def test_start_cutoff_does_not_recheck_current_volumes(self, harness):
+        _run(harness["session"], budget=10_000)
+        harness["fetched"].clear()
+        result = _run(harness["session"], budget=0)
+        report = result.metadata["county_volumes"]
+        assert report["already_current"] == []
+        assert report["deferred"] == [
+            "2024/2025 executives", "2024/2025 assemblies",
+            "2023/2024 executives", "2021/2022 executives",
+        ]
+        assert harness["fetched"] == []
+
     def test_a_covered_per_county_report_is_not_re_fetched(self, harness):
         _run(harness["session"], budget=10_000)
         assert STALE_SINGLE not in harness["fetched"]
@@ -255,14 +267,91 @@ class TestNationalCandidates:
 
 
 NATIONAL = f"{UP}/2026/05/AUDITOR-GENERALS-REPORT-ON-NATIONAL-GOVERNMENT-2024-2025.pdf"
+LEGACY_EXECUTIVES = f"{UP}/2023/02/REPORT-OF-THE-AUDITOR-GENERAL-FOR-THE-COUNTY-GOVERNMENTS-FOR-THE-YEAR-2020-2021-_VOLUME-I-COUNTY-EXECUTIVES.pdf"
+LEGACY_ASSEMBLIES = f"{UP}/2023/02/REPORT-OF-THE-AUDITOR-GENERAL-FOR-THE-COUNTY-GOVERNMENTS-FOR-THE-YEAR-2020-2021-_VOLUME-II-COUNTY-ASSEMBLIES.pdf"
+
+
+def test_slow_refused_national_and_legacy_books_cannot_starve_current_volumes(
+    harness, monkeypatch
+):
+    """Force the nightly's timing: a 100s national refusal and two 90s
+    legacy refusals exhausted the 150s start budget before any new volume.
+    The later queue still has to identify which work it deferred.
+    """
+    from models import DocumentStatus, DocumentType, SourceDocument
+    from seeding.extractors.reconciliation import IncompleteExtraction
+
+    session = harness["session"]
+    country_id = session.query(SourceDocument).first().country_id
+    for url in (NATIONAL, LEGACY_EXECUTIVES, LEGACY_ASSEMBLIES):
+        session.add(SourceDocument(
+            country_id=country_id, publisher="Office of the Auditor-General",
+            title=url.rsplit("/", 1)[-1], url=url, fetch_date=datetime(2026, 1, 1),
+            doc_type=DocumentType.AUDIT, status=DocumentStatus.AVAILABLE,
+        ))
+    session.commit()
+    harness["commits"].clear()
+    county_parser = __import__("seeding.extractors", fromlist=["get_parser"]).get_parser("oag_county_audit")
+
+    def slow_county(session, doc, settings):
+        if doc.url in (LEGACY_EXECUTIVES, LEGACY_ASSEMBLIES):
+            harness["clock"].now += 90
+            raise IncompleteExtraction("unreadable source text; rows kept")
+        return county_parser(session, doc, settings)
+
+    def slow_national(session, doc, settings):
+        harness["clock"].now += 100
+        raise IncompleteExtraction("reconciliation review required; rows kept")
+
+    monkeypatch.setattr(
+        "seeding.extractors.get_parser",
+        lambda pid: slow_national if pid == "oag_blue_book" else slow_county,
+    )
+
+    result = _run(session, budget=150)
+    report = result.metadata["county_volumes"]
+    assert [p.split(":")[0] for p in report["processed"]] == [
+        "2024/2025 executives", "2024/2025 assemblies",
+    ]
+    assert report["deferred"] == ["2023/2024 executives", "2021/2022 executives"]
+    assert harness["fetched"] == [d.url for d in DISCOVERY.volumes()[:2]]
+    assert {d["url"] for d in result.metadata["deferred_documents"]} == {
+        NATIONAL, LEGACY_EXECUTIVES, LEGACY_ASSEMBLIES,
+    }
+    assert result.metadata["deferred_discovery"] == ["oag_national_audits"]
+    assert harness["clock"].now == 200
+
+    harness["fetched"].clear()
+    result = _run(session, budget=150)
+    assert result.metadata["county_volumes"]["already_current"] == [
+        "2024/2025 executives", "2024/2025 assemblies",
+    ]
+    assert [p.split(":")[0] for p in result.metadata["county_volumes"]["processed"]] == [
+        "2023/2024 executives", "2021/2022 executives",
+    ]
+
+    harness["fetched"].clear()
+    result = _run(session, budget=150)
+    assert result.metadata["county_volumes"]["processed"] == []
+    assert len(result.metadata["county_volumes"]["already_current"]) == 4
+    assert [d["url"] for d in result.metadata["deferred_documents"]] == [LEGACY_ASSEMBLIES]
+    assert result.metadata["deferred_discovery"] == []
+    assert harness["fetched"][-2:] == [NATIONAL, LEGACY_EXECUTIVES]
+    assert any("unreadable source text" in error for error in result.errors)
+    assert any("reconciliation review required" in error for error in result.errors)
+
+    harness["fetched"].clear()
+    result = _run(session, budget=150)
+    assert harness["fetched"][-2:] == [NATIONAL, LEGACY_ASSEMBLIES]
+    assert [d["url"] for d in result.metadata["deferred_documents"]] == [LEGACY_EXECUTIVES]
 
 
 class TestNationalReExtractionIsBanked:
-    """The national Blue Book runs before the county pass and outside its
-    start budget. A walk change re-reads it (and the FY2020/21 volumes) once.
-    The CLI commits once, at the end, and rolls the whole domain back on a
-    timeout, so without a commit here a first night that ran out of time
-    would lose the re-extraction, and every later night would repeat it."""
+    """When the backlog permits national work, re-extraction is banked.
+
+    The CLI commits once at the end and rolls the whole domain back on a
+    timeout. A national re-read must be committed after it completes.
+    """
 
     @pytest.fixture()
     def national(self, harness, monkeypatch):
@@ -292,23 +381,23 @@ class TestNationalReExtractionIsBanked:
         )
         return harness
 
-    def test_a_re_extracted_national_book_is_committed_before_the_county_pass(
+    def test_a_re_extracted_national_book_is_committed_after_the_county_pass(
         self, national
     ):
-        _run(national["session"], budget=150)
-        # The first fetch is the national book; a commit must follow it
-        # before the second fetch (the first county volume).
-        assert national["fetched"][0] == NATIONAL
-        assert national["commits"][0] == 1
+        _run(national["session"], budget=10_000)
+        assert national["fetched"][-1] == NATIONAL
+        assert national["commits"][-1] == len(national["fetched"])
 
     def test_an_unchanged_national_book_is_not_a_reason_to_commit(
         self, national, monkeypatch
     ):
         """POSITIVE CONTROL: a skip did no work, so there is nothing to bank."""
+        county = __import__("seeding.extractors", fromlist=["get_parser"]).get_parser("oag_county_audit")
         monkeypatch.setattr(
             "seeding.extractors.get_parser",
             lambda pid: (lambda s, d, st: {"created": 0, "skipped_unchanged": True})
-            if pid == "oag_blue_book" else None,
+            if pid == "oag_blue_book" else county,
         )
-        _run(national["session"], budget=150)
-        assert 1 not in national["commits"]
+        _run(national["session"], budget=10_000)
+        assert national["fetched"][-1] == NATIONAL
+        assert len(national["fetched"]) not in national["commits"]

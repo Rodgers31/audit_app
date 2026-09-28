@@ -90,7 +90,9 @@ def _known_document_urls(session: Session, dataset: SourceDataset) -> List[str]:
         low = (url or "").lower()
         if all(kw in low for kw in dataset.match_keywords):
             urls.append(url)
-    return urls
+    # A bounded queue must keep the same retry order across runs. SQL row
+    # order without ORDER BY is not stable, especially after registrations.
+    return sorted(set(urls))
 
 
 def _registered_volumes(session: Session) -> Dict[str, dict]:
@@ -116,6 +118,23 @@ def _registered_volumes(session: Session) -> Dict[str, dict]:
         if facts.get("kind") in VOLUME_KINDS and facts.get("fiscal_year"):
             out[url] = facts
     return out
+
+
+def _oldest_attempt_first(session: Session, urls: List[str]) -> List[str]:
+    """Rotate old reports so a repeat refusal cannot hide later reports."""
+    from models import SourceDocument
+
+    rows = session.execute(
+        select(SourceDocument.url, SourceDocument.meta).where(
+            SourceDocument.url.in_(urls)
+        )
+    ).all() if urls else []
+    attempted_at = {}
+    for url, meta in rows:
+        attempt = meta.get("last_extraction_attempt") if isinstance(meta, dict) else None
+        value = attempt.get("attempted_at") if isinstance(attempt, dict) else None
+        attempted_at[url] = value if isinstance(value, str) else ""
+    return sorted(urls, key=lambda url: (attempted_at.get(url, ""), url))
 
 
 def register_discovered_documents(
@@ -202,7 +221,7 @@ def run(
     started_at = datetime.now(timezone.utc)
     errors: List[str] = []
     created = updated = processed = skipped = 0
-    metadata: dict = {"documents": []}
+    metadata: dict = {"documents": [], "deferred_documents": [], "deferred_discovery": []}
 
     from models import Country
 
@@ -218,7 +237,7 @@ def run(
             .mark_finished()
         )
 
-    from models import DocumentType, SourceDocument
+    from models import DocumentType
 
     from ...extractors import get_parser
     from ...extractors import oag_county_volume
@@ -243,14 +262,26 @@ def run(
     domain_start = time.monotonic()
     volume_urls: Dict[str, dict] = {}
     volume_report: Optional[dict] = None
+    legacy_candidates: List[str] = []
 
     with create_http_client(settings) as client:
-        for dataset_id in ("oag_national_audits", "oag_county_audits"):
+        # New county volumes get first use of the bounded window. National
+        # work retains priority over older county retries once the backlog
+        # permits; repeated old refusals rotate instead of hiding a sibling.
+        for phase in ("county_volumes", "national", "county_legacy"):
+            dataset_id = (
+                "oag_national_audits" if phase == "national" else "oag_county_audits"
+            )
             dataset = SOURCE_REGISTRY[dataset_id]
             parser = get_parser(dataset.parser_id)
 
-            known = _known_document_urls(session, dataset)
-            if dataset_id == "oag_county_audits":
+            known = (
+                _known_document_urls(session, dataset)
+                if phase != "county_legacy" else []
+            )
+            if phase == "county_legacy":
+                candidates = legacy_candidates
+            elif phase == "county_volumes":
                 discovery = discover_county_audit_documents(client)
                 metadata["oag_county_discovery"] = discovery.as_meta()
                 # An unreadable listing is not "OAG published nothing". Name it,
@@ -306,14 +337,14 @@ def run(
                         )
                         continue
                     legacy.append(u)
-                fresh: List[str] = []
-                # Earlier documents first. They are cheap and steady-state
-                # (the FY2020/21 volumes skip on md5), and nothing may run
-                # AFTER the budgeted volume loop, or the start budget would
-                # not bound the domain.
-                candidates, rejected = split_county_audit_candidates(
-                    legacy + ordered_volumes
+                # Process current reports first. Older registered documents
+                # remain eligible after the backlog, within the same start
+                # window, so a refused old extraction cannot starve new work.
+                candidates, rejected = split_county_audit_candidates(ordered_volumes)
+                legacy_candidates, legacy_rejected = split_county_audit_candidates(
+                    _oldest_attempt_first(session, legacy)
                 )
+                rejected.extend(legacy_rejected)
                 for url, why in rejected:
                     logger.info(
                         "Not a county audit, skipped before download (%s): %s",
@@ -340,11 +371,21 @@ def run(
                     "partial": [],
                 }
             else:
-                fresh = [
-                    u
-                    for u in _discovered_urls(client, dataset)
-                    if u not in set(known)
-                ][:_MAX_NEW_DOCUMENTS_PER_RUN]
+                if (
+                    not context.dry_run
+                    and time.monotonic() - domain_start
+                    >= settings.audits_county_start_budget_seconds
+                ):
+                    # The media API is a network read. If the shared start
+                    # window is spent, name this skipped discovery too.
+                    metadata["deferred_discovery"].append(dataset_id)
+                    fresh = []
+                else:
+                    fresh = [
+                        u
+                        for u in _discovered_urls(client, dataset)
+                        if u not in set(known)
+                    ][:_MAX_NEW_DOCUMENTS_PER_RUN]
                 candidates, rejected = split_national_audit_candidates(known + fresh)
                 for url, why in rejected:
                     logger.info(
@@ -362,31 +403,25 @@ def run(
 
             if context.dry_run:
                 metadata["documents"].append(
-                    {"dataset": dataset_id, "candidates": candidates}
+                    {"dataset": dataset_id, "phase": phase, "candidates": candidates}
                 )
                 continue
 
             for url in candidates:
                 is_volume = url in volume_urls
+                elapsed = time.monotonic() - domain_start
                 if is_volume:
                     label = f"{volume_urls[url]['fiscal_year']} {volume_urls[url]['kind']}"
-                    registered = session.execute(
-                        select(SourceDocument).where(SourceDocument.url == url)
-                    ).scalar_one_or_none()
-                    current = bool(
-                        registered is not None
-                        and oag_county_volume.already_extracted(session, registered)
-                    )
-                    elapsed = time.monotonic() - domain_start
-                    if (
-                        not current
-                        and elapsed >= settings.audits_county_start_budget_seconds
-                    ):
-                        # Not an error: the backlog is taken over several
-                        # nights, newest year first. Recorded so a run that
-                        # processed k of N says so.
+                    if elapsed >= settings.audits_county_start_budget_seconds:
+                        # A current volume may still require a PDF cache read.
+                        # Do not keep starting them after the cutoff either.
                         volume_report["deferred"].append(label)
                         continue
+                elif elapsed >= settings.audits_county_start_budget_seconds:
+                    metadata["deferred_documents"].append(
+                        {"dataset": dataset_id, "url": url, "reason": "start_budget"}
+                    )
+                    continue
                 try:
                     doc = fetch_document(
                         session,
@@ -456,6 +491,10 @@ def run(
                             volume_report["failed"].append(
                                 f"{label}: {type(exc).__name__}: {str(exc)[:160]}"
                             )
+                        # Keep the failed-attempt receipt even if a later PDF
+                        # exhausts the domain timeout. It never accepts the
+                        # candidate extraction or overrides the review gate.
+                        session.commit()
                         continue
                     processed += load_stats.processed
                     created += load_stats.created
@@ -490,10 +529,8 @@ def run(
                         continue
                 if not is_volume and _extracted_something(ext):
                     # Bank it, as each volume is banked below. A change to the
-                    # Blue Book walk re-reads the national book and the two
-                    # FY2020/21 volumes once, before the county start budget
-                    # applies. Rolled back by a timeout, that re-read would
-                    # be repeated every night.
+                    # Blue Book walk re-reads national or FY2020/21 evidence.
+                    # A later timeout must not make that work repeat nightly.
                     session.commit()
                 if is_volume:
                     if ext.get("partial") or (parser is not None and (load_stats.errors or load_stats.skipped)):
@@ -535,6 +572,12 @@ def run(
                 "County volumes deferred to the next run: %s",
                 "; ".join(volume_report["deferred"]),
             )
+    if metadata["deferred_documents"] or metadata["deferred_discovery"]:
+        logger.warning(
+            "Audit start budget deferred %d older document(s) and discovery for %s",
+            len(metadata["deferred_documents"]),
+            ", ".join(metadata["deferred_discovery"]) or "none",
+        )
 
     extracted_docs = [
         d for d in metadata["documents"]
