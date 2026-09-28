@@ -1,0 +1,857 @@
+/* Scoped to Follow the Money: the surrounding page and shared controls keep their styles. */
+.presentation {
+  --flow-ink: rgb(var(--c-neutral-text));
+  --flow-muted: rgb(var(--c-neutral-muted));
+  --flow-line: rgb(var(--c-neutral-border));
+  --flow-divider: #91a496;
+  --flow-allocation: #365f71;
+  --flow-good: #28634b;
+  --flow-fair: #805b25;
+  --flow-low: #984c43;
+  --flow-track: #e0e4d9;
+  --flow-control: #edf0e8;
+  --flow-reference: #526658;
+  color: var(--flow-ink);
+  font-family: "Public Sans", system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  container: money-flow / inline-size;
+}
+:global(.dark) .presentation {
+  --flow-divider: #637e6b;
+  --flow-allocation: #9cc4d5;
+  --flow-good: #8fbea3;
+  --flow-fair: #d4b57d;
+  --flow-low: #e3a19a;
+  --flow-track: #303d33;
+  --flow-control: rgb(var(--c-surface-elevated));
+  --flow-reference: #b2c4b6;
+}
+.presentation * {
+  min-width: 0;
+}
+.presentation :is(h2, h3) {
+  font-family: inherit;
+}
+.presentation :is(button, input, select, summary, a):focus-visible {
+  outline: 2px solid var(--flow-good);
+  outline-offset: 4px;
+}
+.presentation [data-tone="neutral"] {
+  --flow-tone: var(--flow-muted);
+}
+.presentation [data-tone="allocation"] {
+  --flow-tone: var(--flow-allocation);
+}
+.presentation [data-tone="good"] {
+  --flow-tone: var(--flow-good);
+}
+.presentation [data-tone="fair"] {
+  --flow-tone: var(--flow-fair);
+}
+.presentation [data-tone="low"] {
+  --flow-tone: var(--flow-low);
+}
+.period {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 24px;
+  padding: 20px 0;
+  border-block: 1px solid var(--flow-line);
+}
+.periodLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  flex: 1 1 220px;
+}
+.periodLabel svg {
+  color: var(--flow-good);
+  flex-shrink: 0;
+}
+.periodChoice {
+  position: relative;
+  flex: 1 1 260px;
+}
+.periodChoice select {
+  appearance: none;
+  width: 100%;
+  background: rgb(var(--c-surface-base));
+  border: 1px solid var(--flow-line);
+  border-radius: 10px;
+  min-height: 48px;
+  padding: 10px 44px 10px 16px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.periodChoice svg {
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  pointer-events: none;
+}
+.periodHelp {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--flow-muted);
+  flex: 1 1 200px;
+}
+.overview {
+  padding: 28px 0 32px;
+  border-block: 3px solid var(--flow-divider);
+}
+.overviewHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+.overviewHead h2 {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.overviewHead p {
+  font-size: 12px;
+  color: var(--flow-muted);
+}
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px 20px;
+}
+.metricLabel {
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 500;
+  color: var(--flow-muted);
+  margin-bottom: 10px;
+}
+.metricValue {
+  font-size: clamp(25px, 1.5rem + 1cqi, 38px);
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 1.15;
+  color: var(--flow-tone);
+  overflow-wrap: anywhere;
+}
+.metricValue small {
+  display: block;
+  font-size: 11px;
+  line-height: 1.5;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--flow-muted);
+  margin-bottom: 4px;
+}
+.metricNote {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--flow-muted);
+  margin-top: 10px;
+  max-width: 30ch;
+}
+.efficiencyMetric {
+  grid-column: 1/-1;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: 20px;
+  border-top: 1px solid var(--flow-line);
+  padding-top: 24px;
+}
+.efficiencyMetric .metricLabel {
+  grid-column: 1;
+  grid-row: 1;
+  margin: 0;
+}
+.efficiencyMetric .metricValue {
+  grid-column: 2;
+  grid-row: 1/3;
+}
+.efficiencyMetric .metricNote {
+  grid-column: 1;
+  grid-row: 2;
+  margin-top: 4px;
+}
+.auditStatus {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--flow-line);
+}
+.auditStatus svg {
+  color: var(--flow-tone);
+  margin-top: 2px;
+}
+.auditLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--flow-muted);
+  line-height: 1.4;
+}
+.auditValue {
+  font-size: 19px;
+  line-height: 1.3;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  margin-top: 6px;
+  color: var(--flow-tone);
+}
+.auditCopy {
+  grid-column: 2;
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--flow-muted);
+  max-width: 78ch;
+}
+.countySection {
+  padding-top: 16px;
+}
+.countyHeading {
+  margin-bottom: 20px;
+}
+.countyHeading h2 {
+  font-size: clamp(28px, 1.45rem + 1cqi, 36px);
+  line-height: 1.15;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  margin-bottom: 12px;
+  text-wrap: balance;
+}
+.coverage {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--flow-muted);
+}
+.coverage strong {
+  font-weight: 500;
+  color: var(--flow-ink);
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: end;
+  margin-bottom: 12px;
+}
+.searchWrap {
+  flex: 1 1 280px;
+  position: relative;
+}
+.fieldLabel {
+  display: block;
+  color: var(--flow-muted);
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+.searchIcon {
+  position: absolute;
+  left: 16px;
+  bottom: 15px;
+  color: var(--flow-muted);
+  pointer-events: none;
+}
+.searchWrap input {
+  display: block;
+  width: 100%;
+  height: 48px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--flow-control);
+  padding: 0 48px 0 44px;
+  font-size: 16px;
+  line-height: 1.5;
+}
+.searchWrap input::placeholder {
+  color: var(--flow-muted);
+  opacity: 1;
+}
+.searchWrap input::-webkit-search-cancel-button {
+  display: none;
+}
+.clearSearch {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  color: var(--flow-muted);
+}
+.sortWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 1 auto;
+}
+.sortWrap label {
+  font-size: 13px;
+  color: var(--flow-muted);
+  white-space: nowrap;
+}
+.selectWrap {
+  position: relative;
+}
+.selectWrap select {
+  appearance: none;
+  min-height: 48px;
+  max-width: 100%;
+  padding: 8px 32px 8px 8px;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+}
+.selectWrap option {
+  background: rgb(var(--c-surface-base));
+  color: var(--flow-ink);
+}
+.selectWrap svg {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.direction {
+  height: 44px;
+  width: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--flow-muted);
+  flex-shrink: 0;
+}
+.direction[aria-pressed="true"] {
+  color: var(--flow-ink);
+  background: var(--flow-control);
+}
+.presentation :is(.direction, .clearSearch):hover,
+.selectWrap select:hover {
+  background: var(--flow-control);
+  color: var(--flow-ink);
+}
+.reference {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--flow-muted);
+  margin: 0 0 4px;
+}
+.referenceMark {
+  display: inline-block;
+  height: 13px;
+  width: 2px;
+  background: var(--flow-reference);
+}
+.reference strong {
+  color: var(--flow-ink);
+  font-weight: 500;
+}
+.auditNote {
+  color: var(--flow-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.auditNote summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+  min-height: 44px;
+  width: fit-content;
+  max-width: 100%;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.auditNote summary::-webkit-details-marker {
+  display: none;
+}
+.auditNote summary svg {
+  flex-shrink: 0;
+}
+.auditNote summary > span {
+  text-decoration: underline;
+  text-decoration-color: var(--flow-line);
+  text-underline-offset: 4px;
+}
+.auditNote[open] summary svg:last-child {
+  transform: rotate(180deg);
+}
+.auditNote p {
+  max-width: 72ch;
+  margin: 0 0 20px;
+  padding-left: 24px;
+  font-size: 14px;
+}
+.efficiencyKey {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  color: var(--flow-muted);
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 12px 0;
+}
+.efficiencyKey span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.efficiencyKey span::before {
+  content: "";
+  width: 12px;
+  height: 3px;
+  background: var(--flow-tone);
+}
+.resultsLine {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  margin-top: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--flow-line);
+  color: var(--flow-muted);
+  font-size: 12px;
+}
+.counties {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.county {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "identity rate" "spending spending" "audit audit";
+  gap: 12px 16px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--flow-line);
+}
+.identity {
+  grid-area: identity;
+}
+.nameLine {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.rank {
+  font-size: 12px;
+  color: var(--flow-muted);
+  font-weight: 500;
+  min-width: 16px;
+}
+.county h3 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.3;
+  letter-spacing: -0.025em;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.county h3 a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+.county h3 a:hover {
+  text-decoration: underline;
+  color: var(--flow-good);
+}
+.allocation {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--flow-muted);
+  margin-left: 28px;
+}
+.allocation b {
+  font-weight: 500;
+  color: var(--flow-ink);
+}
+.rate {
+  grid-area: rate;
+  text-align: right;
+  padding-top: 4px;
+  max-width: 108px;
+}
+.rate strong {
+  display: block;
+  font-size: 28px;
+  line-height: 1.15;
+  font-weight: 500;
+  letter-spacing: -0.045em;
+  color: var(--flow-tone);
+}
+.rate span {
+  display: block;
+  margin-top: 6px;
+  color: var(--flow-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.spending {
+  grid-area: spending;
+}
+.amounts {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.amounts p:last-child {
+  text-align: right;
+}
+.amounts span {
+  display: block;
+  font-size: 12px;
+  color: var(--flow-muted);
+  margin-bottom: 4px;
+}
+.amounts b {
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  color: var(--flow-tone, var(--flow-ink));
+}
+.amounts small {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--flow-muted);
+  letter-spacing: 0;
+}
+.measure {
+  position: relative;
+  height: 6px;
+  background: var(--flow-track);
+  border-radius: 3px;
+}
+.fill {
+  display: block;
+  height: 100%;
+  width: var(--flow-value);
+  border-radius: inherit;
+  background: var(--flow-tone);
+}
+.nationalMarker {
+  position: absolute;
+  top: -4px;
+  width: 2px;
+  height: 14px;
+  background: var(--flow-reference);
+  transform: translateX(-1px);
+}
+.auditAmount {
+  grid-area: audit;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  color: var(--flow-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.auditAmount > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.auditAmount svg,
+.auditAmount b {
+  color: var(--flow-tone);
+}
+.auditAmount b {
+  font-weight: 500;
+}
+.auditAmount small {
+  margin-left: auto;
+  font-size: 11px;
+}
+.projectedCounty {
+  grid-template-areas: "identity identity" "spending spending" "audit audit";
+}
+.share {
+  margin-bottom: 12px;
+  font-size: 18px;
+  font-weight: 500;
+}
+.share span {
+  font-size: 12px;
+  color: var(--flow-muted);
+  font-weight: 400;
+}
+.pending {
+  grid-area: audit;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--flow-muted);
+}
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 16px;
+  text-align: center;
+  color: var(--flow-muted);
+}
+.empty button {
+  min-height: 44px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.flow {
+  padding: 4px 0 16px;
+}
+.flowHead {
+  margin-bottom: 28px;
+}
+.sourceLabel {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--flow-good);
+  margin-bottom: 12px;
+}
+.flowTitle {
+  font-size: clamp(21px, 1rem + 0.8cqi, 28px);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.025em;
+  margin-bottom: 12px;
+  text-wrap: balance;
+}
+.flowDescription {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--flow-muted);
+  max-width: 78ch;
+}
+.questionedRatio {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: baseline;
+  margin-top: 20px;
+  color: var(--flow-tone);
+  font-size: 13px;
+}
+.questionedRatio > strong {
+  font-size: 18px;
+}
+.questionedRatio p {
+  flex: 1 1 320px;
+  color: var(--flow-muted);
+  font-size: 12px;
+}
+.chartHeading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.chartHeading span {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--flow-muted);
+}
+.stageHeading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-bottom: 10px;
+}
+.stageName {
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.stageName small {
+  color: var(--flow-muted);
+  font-weight: 400;
+  font-size: 12px;
+}
+.stageAmount {
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+}
+.stageTrack {
+  height: 18px;
+  border-radius: 5px;
+  background: var(--flow-track);
+}
+.stageFill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--flow-tone);
+}
+.stagePercentage {
+  font-size: 12px;
+  color: var(--flow-muted);
+  margin-top: 6px;
+}
+.stageGap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin: 16px 0 20px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--flow-muted);
+}
+.stageGap > span:last-child {
+  margin-left: auto;
+}
+.stageMissing {
+  padding: 14px 16px;
+  border: 1px dashed var(--flow-line);
+  border-radius: 6px;
+  color: var(--flow-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.flowCaveat {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  border-top: 1px solid var(--flow-line);
+  padding-top: 20px;
+  margin-top: 24px;
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--flow-muted);
+}
+.flowCaveat svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: var(--flow-good);
+}
+@container money-flow (min-width: 640px) {
+  .metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 40px;
+  }
+  .efficiencyMetric {
+    display: block;
+    grid-column: auto;
+    padding-top: 0;
+    border: 0;
+  }
+  .efficiencyMetric .metricLabel {
+    margin-bottom: 10px;
+  }
+  .efficiencyMetric .metricNote {
+    margin-top: 10px;
+  }
+  .metricValue small {
+    display: inline;
+    font-size: 14px;
+    margin: 0 6px 0 0;
+    font-weight: 400;
+  }
+  .auditStatus {
+    grid-template-columns: 24px minmax(210px, 0.8fr) minmax(0, 1.5fr);
+    gap: 16px;
+    align-items: center;
+    padding-top: 28px;
+    margin-top: 32px;
+  }
+  .auditCopy {
+    grid-column: 3;
+    font-size: 13px;
+  }
+  .searchWrap {
+    flex: 0 1 400px;
+  }
+  .sortWrap {
+    margin-left: auto;
+  }
+  .county {
+    grid-template-columns: minmax(180px, 0.9fr) minmax(220px, 1.45fr) 88px;
+    grid-template-areas: "identity spending rate" "audit audit audit";
+    gap: 16px 24px;
+    padding: 24px 0;
+  }
+  .auditAmount {
+    padding-left: 28px;
+  }
+  .auditAmount small {
+    margin-left: 0;
+  }
+  .projectedCounty {
+    grid-template-areas: "identity spending spending" "audit audit audit";
+  }
+}
+@container money-flow (min-width: 920px) {
+  .county {
+    grid-template-columns: minmax(180px, 1fr) minmax(260px, 1.65fr) 92px minmax(
+        140px,
+        0.7fr
+      );
+    grid-template-areas: "identity spending rate audit";
+    gap: 24px;
+    align-items: center;
+  }
+  .rate {
+    align-self: center;
+    padding: 0;
+  }
+  .auditAmount {
+    display: grid;
+    gap: 4px;
+    padding-left: 0;
+    justify-self: end;
+  }
+  .auditAmount small {
+    max-width: 19ch;
+  }
+  .sectionMeta {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+  }
+  .projectedCounty {
+    grid-template-columns: minmax(200px, 1fr) minmax(300px, 1.5fr) minmax(
+        150px,
+        1fr
+      );
+    grid-template-areas: "identity spending audit";
+  }
+  .pending {
+    justify-self: end;
+  }
+}
