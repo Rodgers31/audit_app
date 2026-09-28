@@ -5,11 +5,10 @@
  *
  * Data is prefetched by the server component (`page.tsx`) and handed down
  * via HydrationBoundary, so first paint renders with a populated React
- * Query cache. Each of the six tabs (overview, money, budget, audit,
- * accountability, projects) is code-split via `next/dynamic` so we only
+ * Query cache. Each of the five tabs (overview, money, budget, audit,
+ * accountability) is code-split via `next/dynamic` so we only
  * ship the ~400 lines of JSX for the tab the user actually opens.
  */
-import PageShell from '@/components/layout/PageShell';
 import PDFExportButton from '@/components/PDFExportButton';
 import WatchButton from '@/components/WatchButton';
 import { useLang } from '@/lib/i18n/LangProvider';
@@ -40,17 +39,9 @@ import Link from 'next/link';
 import SmartBackLink from '@/lib/navigation/SmartBackLink';
 import { usePathname, useParams, useRouter, useSearchParams } from 'next/navigation';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  ACCT_GRADE_BG,
-  fmtKES,
-  fmtLabel,
-  fmtPop,
-  hasIngestedAudit,
-  HEALTH_GRADE_BG,
-  pct,
-  Tab,
-} from './shared';
+import { fmtKES, fmtLabel, fmtPop, hasIngestedAudit, pct, Tab } from './shared';
 import TabSkeleton from './tabs/TabSkeleton';
+import styles from '../CountyExperience.module.css';
 
 /* ═══════════ Code-split tabs ═══════════
    Each tab is its own chunk. ssr:false is fine here because the parent
@@ -103,8 +94,8 @@ const TABS: { id: Tab; labelKey: TranslationKey; icon: React.ElementType }[] = [
  * up or down over the last ~4 fiscal years. */
 function Sparkline({
   values,
-  stroke = 'rgba(255,255,255,0.85)',
-  fill = 'rgba(255,255,255,0.18)',
+  stroke = 'var(--county-accent)',
+  fill = 'var(--county-accent)',
   width = 80,
   height = 18,
   title,
@@ -136,9 +127,23 @@ function Sparkline({
       aria-label={title || `Trend across ${values.length} fiscal years`}
       className='overflow-visible'>
       <title>{title || `Trend across ${values.length} fiscal years`}</title>
-      <path d={areaPath} fill={fill} />
-      <polyline points={points} fill='none' stroke={stroke} strokeWidth={1.5} strokeLinejoin='round' strokeLinecap='round' />
-      <circle cx={width} cy={lastY} r={2} fill={trendUp ? '#86efac' : '#fca5a5'} stroke={stroke} strokeWidth={0.8} />
+      <path d={areaPath} fill={fill} fillOpacity={0.12} />
+      <polyline
+        points={points}
+        fill='none'
+        stroke={stroke}
+        strokeWidth={1.5}
+        strokeLinejoin='round'
+        strokeLinecap='round'
+      />
+      <circle
+        cx={width}
+        cy={lastY}
+        r={2}
+        fill={trendUp ? 'var(--county-accent)' : 'var(--county-negative)'}
+        stroke={stroke}
+        strokeWidth={0.8}
+      />
     </svg>
   );
 }
@@ -148,7 +153,6 @@ function GradeBadge({
   score,
   label,
   title,
-  palette,
   onClick,
   sparklineValues,
 }: {
@@ -158,7 +162,6 @@ function GradeBadge({
   score: number | null;
   label: string;
   title: string;
-  palette: Record<string, string>;
   onClick?: () => void;
   sparklineValues?: number[];
 }) {
@@ -170,39 +173,31 @@ function GradeBadge({
         onClick?.();
       }}
       title={title}
-      style={{ position: 'relative', zIndex: 100 }}
       aria-label={
         grade == null
           ? `${label}: not yet assessed — no sourced audit finding for this county`
           : `${label} grade: ${grade}${score !== null ? `, score ${score.toFixed(0)} out of 100` : ''}`
       }
-      className={`inline-flex flex-col items-stretch gap-1 px-3.5 py-2 rounded-xl bg-gradient-to-r ${
-        grade == null
-          ? 'from-gray-400 to-gray-500'
-          : palette[grade] || palette.C || palette.F || 'from-gray-500 to-gray-600'
-      } text-white shadow-lg cursor-pointer hover:brightness-110 hover:scale-105 transition-all group`}>
-      <div className='flex items-center gap-2'>
+      className={styles.gradeBadge}
+      data-grade={grade ?? 'unavailable'}>
+      <div>
         {grade != null && (
-          <span className='text-2xl font-black leading-none' aria-hidden='true'>
+          <span className={styles.gradeLetter} aria-hidden='true'>
             {grade}
           </span>
         )}
-        <div className={`text-left ${grade != null ? 'border-l border-white/30 pl-2' : ''}`}>
-          <div className='text-[11px] uppercase tracking-widest opacity-80 flex items-center gap-1'>
+        <div>
+          <div className={styles.gradeLabel}>
             {label}
-            <Info size={9} className='opacity-0 group-hover:opacity-100 transition-opacity' />
+            <Info size={12} aria-hidden='true' />
           </div>
-          <div className='text-sm font-bold leading-tight tabular-nums'>
-            {grade == null
-              ? 'Not assessed'
-              : score !== null
-                ? score.toFixed(0)
-                : '—'}
+          <div className={styles.gradeScore}>
+            {grade == null ? 'Not assessed' : score !== null ? score.toFixed(0) : '—'}
           </div>
         </div>
       </div>
       {sparklineValues && sparklineValues.length >= 2 && (
-        <div className='pt-1 border-t border-white/20'>
+        <div className='pt-1'>
           <Sparkline
             values={sparklineValues}
             width={72}
@@ -222,16 +217,36 @@ const GRADE_THRESHOLDS: Array<{
   labelKey: TranslationKey;
   color: string;
 }> = [
-  { min: 85, grade: 'A', labelKey: 'county.acct.grade_excellent', color: 'bg-emerald-500' },
-  { min: 70, grade: 'B+', labelKey: 'county.acct.grade_good', color: 'bg-green-500' },
-  { min: 55, grade: 'B', labelKey: 'county.acct.grade_fair', color: 'bg-amber-500' },
+  {
+    min: 85,
+    grade: 'A',
+    labelKey: 'county.acct.grade_excellent',
+    color: 'bg-emerald-500',
+  },
+  {
+    min: 70,
+    grade: 'B+',
+    labelKey: 'county.acct.grade_good',
+    color: 'bg-green-500',
+  },
+  {
+    min: 55,
+    grade: 'B',
+    labelKey: 'county.acct.grade_fair',
+    color: 'bg-amber-500',
+  },
   {
     min: 40,
     grade: 'B-',
     labelKey: 'county.acct.grade_needs_improvement',
     color: 'bg-orange-500',
   },
-  { min: 0, grade: 'C', labelKey: 'county.acct.grade_poor', color: 'bg-red-500' },
+  {
+    min: 0,
+    grade: 'C',
+    labelKey: 'county.acct.grade_poor',
+    color: 'bg-red-500',
+  },
 ];
 
 function HealthScoreModal({
@@ -263,8 +278,10 @@ function HealthScoreModal({
 
   // Determine which threshold is active
   const activeThreshold =
-    GRADE_THRESHOLDS.find((th) => healthScore >= th.min) ||
-    GRADE_THRESHOLDS[GRADE_THRESHOLDS.length - 1];
+    healthScore == null
+      ? null
+      : GRADE_THRESHOLDS.find((th) => healthScore >= th.min) ||
+        GRADE_THRESHOLDS[GRADE_THRESHOLDS.length - 1];
 
   return (
     <div
@@ -297,15 +314,22 @@ function HealthScoreModal({
           <div className='text-center'>
             <div className='inline-flex items-center gap-3 bg-gray-50 dark:bg-surface-elevated rounded-xl px-6 py-4'>
               <span
-                className={`text-4xl font-black ${activeThreshold.color} text-white w-14 h-14 rounded-xl flex items-center justify-center`}>
-                {grade}
+                className={`text-4xl font-black ${activeThreshold?.color ?? 'bg-gray-500'} text-white w-14 h-14 rounded-xl flex items-center justify-center`}>
+                {grade ?? '—'}
               </span>
               <div className='text-left'>
                 <div className='text-2xl font-bold text-gray-900 dark:text-neutral-text'>
-                  {healthScore.toFixed(1)}
-                  <span className='text-sm text-gray-500 dark:text-neutral-muted/80 font-normal'> / 100</span>
+                  {healthScore == null ? '—' : healthScore.toFixed(1)}
+                  {healthScore != null && (
+                    <span className='text-sm text-gray-500 dark:text-neutral-muted/80 font-normal'>
+                      {' '}
+                      / 100
+                    </span>
+                  )}
                 </div>
-                <div className='text-sm text-gray-500 dark:text-neutral-muted/80'>{t(activeThreshold.labelKey)}</div>
+                <div className='text-sm text-gray-500 dark:text-neutral-muted/80'>
+                  {activeThreshold ? t(activeThreshold.labelKey) : 'Not assessed'}
+                </div>
               </div>
             </div>
           </div>
@@ -331,7 +355,9 @@ function HealthScoreModal({
                   {t('county.healthmodal.rule_3_body')}
                 </p>
               </div>
-              <p className='text-xs text-gray-500 dark:text-neutral-muted/80 italic'>{t('county.healthmodal.max_note')}</p>
+              <p className='text-xs text-gray-500 dark:text-neutral-muted/80 italic'>
+                {t('county.healthmodal.max_note')}
+              </p>
             </div>
           </div>
 
@@ -352,14 +378,17 @@ function HealthScoreModal({
                 },
                 {
                   label: t('county.healthmodal.row.execution_rate'),
-                  value: `${utilization.toFixed(1)}%`,
+                  value: utilization == null ? '—' : `${utilization.toFixed(1)}%`,
                   highlight: true,
                 },
                 {
                   label: t('county.healthmodal.row.pending_bills'),
                   value: fmtKES(debt.pending_bills),
                 },
-                { label: t('county.healthmodal.row.total_debt'), value: fmtKES(debt.total_debt) },
+                {
+                  label: t('county.healthmodal.row.total_debt'),
+                  value: fmtKES(debt.total_debt),
+                },
                 {
                   label: t('county.healthmodal.row.audit_issues'),
                   value: hasIngestedAudit(audit)
@@ -370,10 +399,14 @@ function HealthScoreModal({
                 <div
                   key={row.label}
                   className={`flex justify-between items-center py-2 px-3 rounded-lg ${
-                    row.highlight ? 'bg-gov-sage/10 font-semibold' : 'even:bg-gray-50 dark:bg-surface-elevated'
+                    row.highlight
+                      ? 'bg-gov-sage/10 font-semibold'
+                      : 'even:bg-gray-50 dark:bg-surface-elevated'
                   }`}>
                   <span className='text-sm text-gray-600 dark:text-neutral-muted'>{row.label}</span>
-                  <span className='text-sm text-gray-900 dark:text-neutral-text font-medium'>{row.value}</span>
+                  <span className='text-sm text-gray-900 dark:text-neutral-text font-medium'>
+                    {row.value}
+                  </span>
                 </div>
               ))}
             </div>
@@ -389,13 +422,17 @@ function HealthScoreModal({
                 <div
                   key={th.grade}
                   className={`flex items-center gap-3 py-2 px-3 rounded-lg text-sm ${
-                    th.grade === grade ? 'bg-gray-100 dark:bg-surface-elevated ring-1 ring-gray-300 font-semibold' : ''
+                    th.grade === grade
+                      ? 'bg-gray-100 dark:bg-surface-elevated ring-1 ring-gray-300 font-semibold'
+                      : ''
                   }`}>
                   <span
                     className={`${th.color} text-white font-bold w-8 h-8 rounded-lg flex items-center justify-center text-xs`}>
                     {th.grade}
                   </span>
-                  <span className='text-gray-700 dark:text-neutral-muted flex-1'>{t(th.labelKey)}</span>
+                  <span className='text-gray-700 dark:text-neutral-muted flex-1'>
+                    {t(th.labelKey)}
+                  </span>
                   <span className='text-gray-400 dark:text-neutral-muted/80 text-xs'>
                     {th.min > 0 ? `≥ ${th.min}` : `< 40`}
                   </span>
@@ -446,7 +483,7 @@ function SourcesFooter() {
   ];
 
   return (
-    <div className='flex flex-wrap items-center gap-x-4 gap-y-1 pt-3 border-t border-gray-100 dark:border-neutral-border'>
+    <div className={styles.sourceLinks}>
       <span className='text-[11px] text-gray-400 dark:text-neutral-muted/80 uppercase tracking-wider font-semibold'>
         {t('county.sources.prefix')}
       </span>
@@ -509,7 +546,7 @@ export default function CountyDetailClient() {
   // omitted to keep the URL clean; any other tab is written as a query
   // param via `router.replace` (no history entry — tab switching
   // shouldn't clutter the back-button stack).
-  const tabBarRef = useRef<HTMLDivElement | null>(null);
+  const tabBarRef = useRef<HTMLElement | null>(null);
   const handleTabChange = useCallback(
     (next: Tab) => {
       setTab(next);
@@ -539,11 +576,17 @@ export default function CountyDetailClient() {
   /* Loading */
   if (isLoading) {
     return (
-      <PageShell title={t('county.page.title_fallback')} subtitle={t('county.loading')}>
-        <div className='flex items-center justify-center py-24'>
-          <div className='animate-spin rounded-full h-14 w-14 border-b-2 border-gov-forest' />
+      <div className={styles.detail}>
+        <div className={styles.container}>
+          <header className={styles.detailHeader}>
+            <h1>{t('county.page.title_fallback')}</h1>
+            <p className={styles.intro}>{t('county.loading')}</p>
+          </header>
+          <div className={styles.pageState}>
+            <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-gov-forest' />
+          </div>
         </div>
-      </PageShell>
+      </div>
     );
   }
 
@@ -556,15 +599,22 @@ export default function CountyDetailClient() {
         ? t('county.page.back_follow_money')
         : t('county.page.back_county_explorer');
     return (
-      <PageShell title={t('county.page.title_fallback')}>
-        <div className='text-center py-16'>
-          <ShieldAlert size={40} className='mx-auto text-red-400 mb-3' />
-          <p className='text-red-600 mb-4'>{t('county.page.failed_load')}</p>
-          <Link href={backHref} className='text-sm text-gov-forest dark:text-emerald-100 hover:underline'>
-            &larr; {backLabel}
-          </Link>
+      <div className={styles.detail}>
+        <div className={styles.container}>
+          <header className={styles.detailHeader}>
+            <h1>{t('county.page.title_fallback')}</h1>
+          </header>
+          <div className={styles.pageState}>
+            <ShieldAlert size={40} className='mx-auto text-red-400 mb-3' />
+            <p className='text-red-600 mb-4'>{t('county.page.failed_load')}</p>
+            <Link
+              href={backHref}
+              className='text-sm text-gov-forest dark:text-emerald-100 hover:underline'>
+              &larr; {backLabel}
+            </Link>
+          </div>
         </div>
-      </PageShell>
+      </div>
     );
   }
 
@@ -593,244 +643,148 @@ export default function CountyDetailClient() {
 
   return (
     <>
-      <PageShell
-        title={`${data.name} ${t('county.page.name_suffix')}`}
-        subtitle={t('county.page.subtitle')}>
-        {/* Back — default flow uses SmartBackLink so coming from
-            /counties?p=2 pops history (restoring pagination, filters,
-            scroll) instead of pushing a fresh /counties. The home-map
-            arrival path is different: we want an explicit "rewind to
-            the exact scroll position of the map" (via /#home-map) AND
-            a separate shortcut to the full list — so we render two
-            dedicated buttons instead. */}
-        {fromHomeMap ? (
-          <div className='flex flex-wrap items-center gap-2'>
-            {/* Primary action: solid forest fill + back arrow so it
-                reads as "rewind to where I came from". The all-counties
-                shortcut next to it is deliberately secondary (outlined
-                + muted) so the eye lands on the return path first. */}
-            <Link
-              href='/#home-map'
-              className='inline-flex items-center gap-1.5 rounded-full bg-gov-forest px-3.5 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-gov-dark transition-colors'>
-              <ArrowLeft size={14} />
-              {t('county.page.back_to_home_map')}
-            </Link>
-            <Link
-              href='/counties'
-              className='inline-flex items-center gap-1.5 rounded-full border border-neutral-border/60 bg-white dark:bg-surface-base px-3 py-1.5 text-sm text-neutral-muted hover:text-gov-dark dark:text-white hover:border-neutral-border transition-colors'>
-              <Grid3x3 size={14} />
-              {t('county.page.all_counties_short')}
-            </Link>
-          </div>
-        ) : (
-          <SmartBackLink
-            href={topBackHref}
-            className='inline-flex items-center gap-1.5 text-sm text-gov-forest dark:text-emerald-100 hover:text-gov-dark dark:text-white transition-colors'>
-            <ArrowLeft size={14} />
-            {topBackLabel}
-          </SmartBackLink>
-        )}
-
-        {/* ── Hero ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          className='relative overflow-hidden rounded-2xl bg-gradient-to-br from-gov-dark via-gov-forest to-gov-forest text-white shadow-lg'>
-          {/* Decorative blurred blobs for depth */}
-          <div
-            aria-hidden
-            className='pointer-events-none absolute -top-16 -right-16 h-64 w-64 rounded-full bg-emerald-400/20 blur-3xl'
-          />
-          <div
-            aria-hidden
-            className='pointer-events-none absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-sky-400/10 blur-3xl'
-          />
-
-          <div className='relative px-6 pt-6 pb-5 flex flex-col lg:flex-row lg:items-start justify-between gap-6'>
-            {/* Identity */}
-            <div className='min-w-0'>
-              <div className='flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-white/60 mb-2'>
-                <Landmark size={12} />
-                {t('county.hero.eyebrow')}
-              </div>
-              <h1 className='text-2xl sm:text-3xl font-bold tracking-tight'>
-                {data.name} {t('county.page.name_suffix')}
-              </h1>
-              {/* Only what someone published. A county with no census row
-                  used to lead this line with "0 residents"; now it drops the
-                  clause and the separator with it. */}
-              <p className='text-sm text-white/75 mt-1.5 max-w-md'>
-                {[
-                  // A county nobody has counted gets no residents clause at
-                  // all. "— residents" is a phrase about nothing, and the
-                  // map tooltip already drops the wording rather than printing
-                  // it around an em dash. The KPI tile in the Overview tab
-                  // keeps its em dash — there the label "Population" supplies
-                  // the subject the dash is standing in for.
-                  data.demographics.population != null
-                    ? `${fmtPop(data.demographics.population)} ${t('county.hero.residents')}`
-                    : null,
-                  data.economic_profile.economic_base
-                    ? `${fmtLabel(data.economic_profile.economic_base)} ${t('county.hero.economy_suffix')}`
-                    : null,
-                  data.governor
-                    ? `${t('county.hero.governor_short')} ${data.governor}`
-                    : null,
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </p>
-              {data.budget.fiscal_year && (
-                <div className='mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/10 backdrop-blur-sm px-3 py-1 text-[11px] font-medium text-white/90 border border-white/10'>
-                  <Clock size={10} />
-                  {t('county.hero.fy_badge')} {data.budget.fiscal_year}
-                </div>
-              )}
-            </div>
-
-            {/* Actions + Grades */}
-            <div className='flex items-center gap-3 flex-shrink-0 flex-wrap justify-end'>
-              <WatchButton
-                itemType='county'
-                itemId={countyId}
-                label={`${data.name} ${t('county.page.name_suffix')}`}
-              />
-              <PDFExportButton
-                compact
-                documentTitle={`${data.name} ${t('county.pdf.report_suffix')}`}
-                className='text-white/70 hover:text-white hover:bg-white/10'
-              />
-              <div className='flex items-center gap-2'>
-                <GradeBadge
-                  grade={data.financial_summary.grade}
-                  score={data.financial_summary.health_score}
-                  label={t('county.grade.health')}
-                  title={t('county.grade.health_tooltip')}
-                  palette={HEALTH_GRADE_BG}
-                  onClick={() => setShowHealthModal(true)}
-                  sparklineValues={data.health_history?.map((h) => h.score)}
-                />
-                <GradeBadge
-                  grade={acctData?.accountability_grade ?? null}
-                  score={
-                    typeof acctData?.accountability_score === 'number'
-                      ? acctData.accountability_score
-                      : null
-                  }
-                  label={t('county.grade.audit')}
-                  title={t('county.grade.audit_tooltip')}
-                  palette={ACCT_GRADE_BG}
-                  onClick={() => setTab('accountability')}
-                  sparklineValues={acctData?.audit_severity_history?.map((h) => h.score)}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Quick KPIs — glassy strip */}
-          <div className='relative grid grid-cols-3 sm:grid-cols-6 bg-black/15 backdrop-blur-sm border-t border-white/10'>
-            {[
-              {
-                label: t('county.hero.kpi.budget'),
-                value: fmtKES(data.budget.total_allocated),
-                accent: 'text-white',
-              },
-              {
-                label: t('county.hero.kpi.execution'),
-                value: pct(data.budget.utilization_rate),
-                accent:
-                  data.budget.utilization_rate >= 70
-                    ? 'text-emerald-300'
-                    : data.budget.utilization_rate >= 40
-                      ? 'text-amber-300'
-                      : 'text-rose-300',
-              },
-              {
-                label: t('county.hero.kpi.total_debt'),
-                value: fmtKES(data.debt.total_debt),
-                accent: 'text-white',
-              },
-              {
-                label: t('county.hero.kpi.pending_bills'),
-                value: fmtKES(data.debt.pending_bills),
-                accent: 'text-white',
-              },
-              {
-                // "0" here read as "this county has no audit problems". It
-                // means no OAG report has been ingested (F23).
-                label: t('county.hero.kpi.audit_issues'),
-                value: hasIngestedAudit(data.audit)
-                  ? String(data.audit.findings_count)
-                  : '—',
-                accent: data.audit.findings_count > 0 ? 'text-rose-300' : 'text-white',
-              },
-            ].map((kpi, i, arr) => (
-              <div
-                key={kpi.label}
-                className={`px-4 py-3.5 ${i < arr.length - 1 ? 'border-r border-white/10' : ''} text-center`}>
-                <div className={`text-sm font-bold tabular-nums ${kpi.accent}`}>{kpi.value}</div>
-                <div className='text-[11px] uppercase tracking-wider text-white/55 mt-0.5'>
-                  {kpi.label}
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* ── Tabs ── pill-button group with a clear active state.
-             The container itself is a subtle rounded surface; each tab
-             is a chip that lights up when active (solid gov-forest in
-             both modes so the active state reads instantly), while
-             inactive chips stay ghosted with hover affordance. */}
-        <div
-          ref={tabBarRef}
-          style={{ scrollMarginTop: '88px' }}
-          className='flex items-center gap-1 overflow-x-auto rounded-full bg-gov-dark/5 dark:bg-surface-elevated/60 p-1 ring-1 ring-inset ring-gov-dark/10 dark:ring-white/10'>
-          {TABS.map((tabItem) => {
-            const active = tab === tabItem.id;
-            return (
-              <button
-                key={tabItem.id}
-                onClick={() => handleTabChange(tabItem.id)}
-                aria-pressed={active}
-                className={`relative flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
-                  active
-                    ? 'text-white'
-                    : 'text-gov-dark/70 dark:text-white/70 hover:text-gov-dark dark:hover:text-white'
-                }`}>
-                {active && (
-                  <motion.div
-                    layoutId='county-tab-pill'
-                    className='absolute inset-0 rounded-full bg-gov-forest shadow-sm'
-                    transition={{ type: 'spring', stiffness: 400, damping: 32 }}
-                  />
+      <div className={styles.detail}>
+        <div className={styles.container}>
+          <nav className={styles.backLinks} aria-label={t('county.page.all_counties_short')}>
+            {fromHomeMap ? (
+              <>
+                <Link href='/#home-map'>
+                  <ArrowLeft size={14} aria-hidden='true' />
+                  {t('county.page.back_to_home_map')}
+                </Link>
+                <Link href='/counties'>
+                  <Grid3x3 size={14} aria-hidden='true' />
+                  {t('county.page.all_counties_short')}
+                </Link>
+              </>
+            ) : (
+              <SmartBackLink href={topBackHref}>
+                <ArrowLeft size={14} aria-hidden='true' />
+                {topBackLabel}
+              </SmartBackLink>
+            )}
+          </nav>
+          <header className={styles.detailHeader}>
+            <div className={styles.detailIdentity}>
+              <div>
+                <p className={styles.eyebrow}>{t('county.hero.eyebrow')}</p>
+                <h1>
+                  {data.name} {t('county.page.name_suffix')}
+                </h1>
+                <p className={styles.detailDescription}>{t('county.page.subtitle')}</p>
+                <p className={styles.detailDescription}>
+                  {[
+                    data.demographics.population != null
+                      ? `${fmtPop(data.demographics.population)} ${t('county.hero.residents')}`
+                      : null,
+                    data.economic_profile.economic_base
+                      ? `${fmtLabel(data.economic_profile.economic_base)} ${t('county.hero.economy_suffix')}`
+                      : null,
+                    data.governor ? `${t('county.hero.governor_short')} ${data.governor}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </p>
+                {data.budget.fiscal_year && (
+                  <p className={styles.detailYear}>
+                    <Clock size={13} aria-hidden='true' />
+                    {t('county.hero.fy_badge')} {data.budget.fiscal_year}
+                  </p>
                 )}
-                <tabItem.icon
-                  size={14}
-                  className={`relative z-[1] ${
-                    active ? 'text-white' : 'text-gov-dark/55 dark:text-white/55'
-                  }`}
+              </div>
+              <div className={styles.detailActions}>
+                <WatchButton
+                  itemType='county'
+                  itemId={countyId}
+                  label={`${data.name} ${t('county.page.name_suffix')}`}
                 />
-                <span className='relative z-[1]'>{t(tabItem.labelKey)}</span>
+                <PDFExportButton
+                  compact
+                  documentTitle={`${data.name} ${t('county.pdf.report_suffix')}`}
+                />
+                <div className={styles.detailGrades}>
+                  <GradeBadge
+                    grade={data.financial_summary.grade}
+                    score={data.financial_summary.health_score}
+                    label={t('county.grade.health')}
+                    title={t('county.grade.health_tooltip')}
+                    onClick={() => setShowHealthModal(true)}
+                    sparklineValues={data.health_history?.map((h) => h.score)}
+                  />
+                  <GradeBadge
+                    grade={acctData?.accountability_grade ?? null}
+                    score={
+                      typeof acctData?.accountability_score === 'number'
+                        ? acctData.accountability_score
+                        : null
+                    }
+                    label={t('county.grade.audit')}
+                    title={t('county.grade.audit_tooltip')}
+                    onClick={() => handleTabChange('accountability')}
+                    sparklineValues={acctData?.audit_severity_history?.map((h) => h.score)}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className={styles.detailMetrics}>
+              {[
+                {
+                  label: t('county.hero.kpi.budget'),
+                  value: fmtKES(data.budget.total_allocated),
+                  tone: 'neutral',
+                },
+                {
+                  label: t('county.hero.kpi.execution'),
+                  value: pct(data.budget.utilization_rate),
+                  tone:
+                    data.budget.utilization_rate == null
+                      ? 'neutral'
+                      : data.budget.utilization_rate >= 70
+                        ? 'good'
+                        : data.budget.utilization_rate >= 40
+                          ? 'fair'
+                          : 'low',
+                },
+                {
+                  label: t('county.hero.kpi.total_debt'),
+                  value: fmtKES(data.debt.total_debt),
+                  tone: 'neutral',
+                },
+                {
+                  label: t('county.hero.kpi.pending_bills'),
+                  value: fmtKES(data.debt.pending_bills),
+                  tone: 'neutral',
+                },
+                {
+                  label: t('county.hero.kpi.audit_issues'),
+                  value: hasIngestedAudit(data.audit) ? String(data.audit.findings_count) : '—',
+                  tone: data.audit.findings_count > 0 ? 'low' : 'neutral',
+                },
+              ].map((kpi) => (
+                <div key={kpi.label}>
+                  <strong data-tone={kpi.tone}>{kpi.value}</strong>
+                  <p>{kpi.label}</p>
+                </div>
+              ))}
+            </div>
+          </header>
+          <nav ref={tabBarRef} className={styles.tabs} aria-label={t('county.page.title_fallback')}>
+            {TABS.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => handleTabChange(item.id)}
+                aria-pressed={tab === item.id}>
+                <item.icon size={15} aria-hidden='true' />
+                {t(item.labelKey)}
               </button>
-            );
-          })}
+            ))}
+          </nav>
+          <div className={styles.reportBody}>
+            <TabContent data={data} />
+          </div>
+          <SourcesFooter />
         </div>
-
-        {/* ── Tab Content ── */}
-        <motion.div
-          key={tab}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2 }}>
-          <TabContent data={data} />
-        </motion.div>
-
-        {/* ── Sources ── */}
-        <SourcesFooter />
-      </PageShell>
-
-      {/* ── Health Score Modal ── rendered outside PageShell to avoid stacking context */}
+      </div>
       <HealthScoreModal
         open={showHealthModal}
         onClose={() => setShowHealthModal(false)}

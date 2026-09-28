@@ -146,14 +146,14 @@ function rankingTable(): HTMLElement {
   return table;
 }
 
-/** County names in render order. The name cell leads with a 🏛️ badge. */
+/** County names in render order, excluding the separately rendered mobile rank. */
 function rankedNames(): string[] {
   return within(rankingTable())
     .getAllByRole('row')
     .slice(1) // drop the header row
     .map((tr) => {
       const cells = within(tr).getAllByRole('cell');
-      return (cells[1].textContent ?? '').replace('\u{1F3DB}\u{FE0F}', '').trim();
+      return (cells[1].querySelector('a span:last-child')?.textContent ?? '').trim();
     });
 }
 
@@ -161,13 +161,11 @@ function header(name: RegExp): HTMLElement {
   return within(rankingTable()).getByRole('columnheader', { name });
 }
 
-/** The sidebar's SORT BY select — the one carrying the sort options. */
+/** Open the filter disclosure before using its SORT BY select. */
 function sortSelect(): HTMLSelectElement {
-  const select = Array.from(document.querySelectorAll('select')).find((s) =>
-    Array.from(s.options).some((o) => o.value === 'population-desc')
-  );
-  if (!select) throw new Error('SORT BY select not rendered');
-  return select;
+  const toggle = screen.getByRole('button', { name: 'Filters' });
+  if (toggle.getAttribute('aria-expanded') === 'false') fireEvent.click(toggle);
+  return screen.getByRole('combobox', { name: /^sort by$/i }) as HTMLSelectElement;
 }
 
 /** What the header's arrow claims the direction is: ↑ asc, ↓ desc, none. */

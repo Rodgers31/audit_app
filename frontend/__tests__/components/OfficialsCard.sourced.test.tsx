@@ -47,9 +47,7 @@ function officialsCard() {
       <OverviewTab data={meru()} />
     </LangProvider>
   );
-  const heading = screen.getByText('Who Runs This County');
-  // The card is the heading's nearest bordered container.
-  return heading.closest('div.rounded-xl') as HTMLElement;
+  return screen.getByRole('region', { name: 'Who Runs This County' });
 }
 
 function role(card: HTMLElement, title: string): string {

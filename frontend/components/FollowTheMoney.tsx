@@ -77,11 +77,12 @@ function StageCard({
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.3, delay: index * 0.1 }}
+      data-money-stage
       className={`${config.bgLight} border ${config.border} rounded-xl p-4 relative`}>
       <div className='flex items-start justify-between gap-3'>
         <div className='flex-1 min-w-0'>
           <div className='flex items-center gap-2 mb-1'>
-            <span className='text-lg'>{config.icon}</span>
+            <span data-money-icon aria-hidden='true' className='text-lg'>{config.icon}</span>
             <span className={`text-xs font-semibold uppercase tracking-wider ${config.color}`}>
               {stage.stage}
             </span>
@@ -170,6 +171,7 @@ function GapIndicator({
 
       {/* Gap pill */}
       <div
+        data-money-gap
         className={`flex flex-col gap-0.5 px-3 py-1.5 rounded-lg border border-dashed ${colors.bg} ${colors.border}`}>
         <div className='flex items-center gap-2'>
           <TrendingDown size={14} className={colors.text} />

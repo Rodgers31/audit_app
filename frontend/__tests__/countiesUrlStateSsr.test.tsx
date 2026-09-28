@@ -39,7 +39,7 @@
  * `.next/server/app/counties.html` (see the PR).
  */
 import '@testing-library/jest-dom';
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React, { Suspense } from 'react';
 import { hydrateRoot } from 'react-dom/client';
@@ -168,17 +168,12 @@ function rankingTable(root: ParentNode = document): HTMLTableElement {
 /** County names in the ranking table, in render order. */
 function rankedNames(root: ParentNode = document): string[] {
   return Array.from(rankingTable(root).querySelectorAll('tbody tr')).map((tr) =>
-    (tr.querySelectorAll('td')[1]?.textContent ?? '').replace('\u{1F3DB}\u{FE0F}', '').trim()
+    (tr.querySelectorAll('td')[1]?.querySelector('a span:last-child')?.textContent ?? '').trim()
   );
 }
 
 function pageButton(n: number): HTMLElement {
-  const panel = rankingTable().closest('.ledger-panel') as HTMLElement;
-  const btn = within(panel)
-    .getAllByRole('button')
-    .find((b) => b.textContent?.trim() === String(n));
-  if (!btn) throw new Error(`no page ${n} button`);
-  return btn;
+  return screen.getByRole('button', { name: String(n) });
 }
 
 beforeEach(() => {
@@ -277,7 +272,7 @@ describe('/counties URL state — regression guards (green before and after the 
     renderExplorer();
     expect(rankedNames()).toEqual(PAGE_3);
 
-    const search = screen.getAllByRole('textbox').find((i) => (i as HTMLInputElement).type === 'text')!;
+    const search = screen.getByRole('searchbox', { name: 'Search County' });
     fireEvent.change(search, { target: { value: 'Testcounty 0' } }); // 01–09: one page
     expect(rankedNames()).toEqual(NAMES.slice(0, 9));
     expect(mockNavigation.replace).toHaveBeenLastCalledWith('/counties', { scroll: false });
