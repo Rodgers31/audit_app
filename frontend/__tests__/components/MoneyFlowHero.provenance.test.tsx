@@ -15,19 +15,6 @@ import MoneyFlowHero from '@/components/transparency/MoneyFlowHero';
 import type { BudgetSource, MoneyFlowData } from '@/types';
 import { render, screen } from '@testing-library/react';
 
-jest.mock('framer-motion', () => ({
-  motion: {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    section: ({ children, initial: _i, animate: _a, whileInView: _w, viewport: _v, transition: _t, ...props }: any) => (
-      <section {...props}>{children}</section>
-    ),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    div: ({ children, initial: _i, animate: _a, whileInView: _w, viewport: _v, transition: _t, ...props }: any) => (
-      <div {...props}>{children}</div>
-    ),
-  },
-}));
-
 const flow = (budget_source: BudgetSource): MoneyFlowData => ({
   county_id: null,
   county_name: 'National (All Counties)',
@@ -60,6 +47,14 @@ const flow = (budget_source: BudgetSource): MoneyFlowData => ({
 const heroText = () => document.body.textContent ?? '';
 
 describe('MoneyFlowHero — Allocated stage provenance', () => {
+  it('retains a reported zero allocation without drawing undefined proportional comparisons', () => {
+    const zero = flow('cob_cbirr');
+    zero.stages[0].amount = 0;
+    render(<MoneyFlowHero data={zero} />);
+    expect(heroText()).toContain('KES 0');
+    expect(screen.queryAllByRole('img')).toHaveLength(0);
+  });
+
   it('does not credit the CRA formula for a Controller of Budget figure', () => {
     render(<MoneyFlowHero data={flow('cob_cbirr')} />);
     const text = heroText();
@@ -68,9 +63,7 @@ describe('MoneyFlowHero — Allocated stage provenance', () => {
     expect(screen.getAllByText(/633\.3B/).length).toBeGreaterThan(0);
 
     expect(text).not.toMatch(/CRA equitable share \+ conditional grants/i);
-    expect(text).not.toMatch(
-      /Allocations follow the Commission on Revenue Allocation formula/i
-    );
+    expect(text).not.toMatch(/Allocations follow the Commission on Revenue Allocation formula/i);
     expect(text).toMatch(/Controller of Budget/i);
   });
 
@@ -115,9 +108,7 @@ describe('MoneyFlowHero — Allocated stage provenance', () => {
     const text = heroText();
 
     expect(text).not.toMatch(/CRA equitable share \+ conditional grants/i);
-    expect(text).not.toMatch(
-      /Allocations follow the Commission on Revenue Allocation formula/i
-    );
+    expect(text).not.toMatch(/Allocations follow the Commission on Revenue Allocation formula/i);
     expect(text).not.toMatch(/Allocations are the Controller of Budget/i);
   });
 });

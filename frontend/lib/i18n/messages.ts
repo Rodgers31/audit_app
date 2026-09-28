@@ -24,6 +24,31 @@ export interface Translation {
 }
 
 export const MESSAGES = {
+  // Follow the Money reporting-period control and national summary
+  'transparency.period.label': { en: 'Fiscal year & reporting period', sw: 'Mwaka wa fedha na kipindi cha ripoti', plain: 'Year and reporting period' },
+  'transparency.period.current': { en: 'In progress', sw: 'Unaendelea', plain: 'Still running' },
+  'transparency.period.help': { en: 'Choose the reporting period for all figures below.', sw: 'Chagua kipindi cha ripoti kwa takwimu zote hapa chini.', plain: 'Choose which period the figures below should show.' },
+  'transparency.overview.title': { en: 'At a glance', sw: 'Kwa muhtasari', plain: 'At a glance' },
+  'transparency.overview.allocated': { en: 'Total allocated', sw: 'Jumla iliyotengwa', plain: 'Money set aside' },
+  'transparency.overview.counties': { en: '47 counties', sw: 'Kaunti 47', plain: '47 counties' },
+  'transparency.overview.spent': { en: 'Spent so far', sw: 'Iliyotumika hadi sasa', plain: 'Money spent so far' },
+  'transparency.overview.gap': { en: 'Gap to spend', sw: 'Kiasi kilichobaki kutumia', plain: 'Money left to spend' },
+  'transparency.overview.pending': { en: 'Pending', sw: 'Inasubiriwa', plain: 'Not available yet' },
+  'transparency.overview.execution_pending': { en: 'Execution figures publish as the CoB releases quarterly CBIRRs', sw: 'Takwimu za matumizi huchapishwa Mdhibiti wa Bajeti anapotoa ripoti za kila robo mwaka', plain: 'Spending figures appear when the Controller of Budget publishes its reports' },
+  'transparency.overview.unspent': { en: '{percent}% of allocation unspent at report time', sw: '{percent}% ya fedha zilizotengwa hazikuwa zimetumika wakati wa ripoti', plain: '{percent}% of the money had not been spent when the report was written' },
+  'transparency.overview.execution_unavailable': { en: 'Execution data unavailable for this period', sw: 'Takwimu za matumizi hazipatikani kwa kipindi hiki', plain: 'Spending figures are not available for this period' },
+  'transparency.overview.efficiency': { en: 'National efficiency', sw: 'Utekelezaji wa bajeti kitaifa', plain: 'Share of the national budget spent' },
+  'transparency.overview.efficiency_pending': { en: 'Calculated once allocation and spending figures are available', sw: 'Huhesabiwa takwimu za mgao na matumizi zinapopatikana', plain: 'We need the budget and spending figures to work this out' },
+  'transparency.overview.good': { en: 'Good — higher budget execution', sw: 'Vizuri — utekelezaji wa bajeti ni wa juu', plain: 'Good — more of the budget was spent' },
+  'transparency.overview.fair': { en: 'Fair — needs improvement', sw: 'Wastani — inahitaji kuboreshwa', plain: 'Fair — could improve' },
+  'transparency.overview.low': { en: 'Low — limited budget execution', sw: 'Chini — utekelezaji mdogo wa bajeti', plain: 'Low — less of the budget was spent' },
+  'transparency.overview.questioned': { en: 'Questioned by Auditor General', sw: 'Iliyohojiwa na Mkaguzi Mkuu wa Hesabu', plain: 'Money the Auditor General questioned' },
+  'transparency.overview.not_audited': { en: 'Not yet audited', sw: 'Bado haijakaguliwa', plain: 'Audit figures not available yet' },
+  'transparency.overview.not_published': { en: 'Not yet published', sw: 'Bado haijachapishwa', plain: 'No sourced audit figures yet' },
+  'transparency.overview.audit_pending': { en: 'Audit findings appear when sourced reports become available', sw: 'Matokeo ya ukaguzi huonekana ripoti zenye vyanzo zinapopatikana', plain: 'Audit findings appear when we have a report to support them' },
+  'transparency.overview.audit_unavailable': { en: 'No Auditor-General report for this year traces to a source document yet. This is not a finding that nothing was questioned.', sw: 'Bado hakuna ripoti ya Mkaguzi Mkuu wa Hesabu ya mwaka huu inayounganishwa na hati ya chanzo. Hii haimaanishi kuwa hakuna kiasi kilichohojiwa.', plain: 'We do not yet have a sourced audit report for this year. This does not mean that no money was questioned.' },
+  'transparency.overview.audit_positive': { en: "Amounts questioned in the Auditor-General's reports for this year — not proven loss or theft.", sw: 'Kiasi kilichohojiwa katika ripoti za Mkaguzi Mkuu wa Hesabu za mwaka huu — si hasara au wizi uliothibitishwa.', plain: 'The auditor questioned these amounts. That does not prove the money was lost or stolen.' },
+  'transparency.overview.audit_zero': { en: 'The available audit data records no questioned amount for this period', sw: 'Takwimu za ukaguzi zinazopatikana hazionyeshi kiasi kilichohojiwa kwa kipindi hiki', plain: 'The available audit figures record zero questioned money for this period' },
   // ══════════════════════════════════════════════════
   // Language switcher + global
   // ══════════════════════════════════════════════════
