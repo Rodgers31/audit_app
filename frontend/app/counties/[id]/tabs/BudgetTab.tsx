@@ -1,5 +1,7 @@
 'use client';
 
+import styles from '../../CountyExperience.module.css';
+
 /**
  * BudgetTab — deep-dive on a county's budget execution and debt position.
  *
@@ -56,7 +58,7 @@ export default function BudgetTab({ data }: { data: CountyComprehensive }) {
   const totalPending = raw?.total_pending ?? null;
   const agingBuckets = useMemo(
     () => normalizeAgingBuckets(raw?.aging_buckets, totalPending),
-    [raw?.aging_buckets, totalPending],
+    [raw?.aging_buckets, totalPending]
   );
   const agingSupport = agingDistributionSupport(agingBuckets, raw);
   // The type split is drawn only when the source records a bill type AND the
@@ -82,16 +84,19 @@ export default function BudgetTab({ data }: { data: CountyComprehensive }) {
         : [];
     return rows.map((r) => ({
       ...r,
-      percentage: r.percentage || (totalPending && totalPending > 0 ? (r.amount / totalPending) * 100 : 0),
+      percentage:
+        r.percentage || (totalPending && totalPending > 0 ? (r.amount / totalPending) * 100 : 0),
     }));
   }, [raw?.breakdown_by_type, totalPending]);
 
   return (
     <div className='space-y-5'>
-      <ModelledDataNote budgetSource={budget.source} />
+      <ModelledDataNote className={styles.provenance} budgetSource={budget.source} />
       {/* Top-level budget stats */}
-      <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-5'>
-        <h3 className='text-sm font-semibold text-gray-800 dark:text-neutral-text mb-4'>{t('county.budget.summary')}</h3>
+      <div className={styles.section}>
+        <h3 className='text-sm font-semibold text-gray-800 dark:text-neutral-text mb-4'>
+          {t('county.budget.summary')}
+        </h3>
         <div className='grid grid-cols-2 sm:grid-cols-4 gap-y-4 gap-x-6'>
           <KPI
             label={t('county.budget.total_allocated')}
@@ -140,7 +145,7 @@ export default function BudgetTab({ data }: { data: CountyComprehensive }) {
 
       {/* Debt breakdown */}
       {debt.breakdown.length > 0 && (
-        <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-5'>
+        <div className={styles.section}>
           <h3 className='text-sm font-semibold text-gray-800 dark:text-neutral-text mb-4'>
             {t('county.budget.debt_breakdown')}
           </h3>
@@ -150,7 +155,9 @@ export default function BudgetTab({ data }: { data: CountyComprehensive }) {
               return (
                 <div key={i}>
                   <div className='flex items-center justify-between mb-1'>
-                    <span className='text-sm text-gray-700 dark:text-neutral-muted'>{d.lender}</span>
+                    <span className='text-sm text-gray-700 dark:text-neutral-muted'>
+                      {d.lender}
+                    </span>
                     <span className='text-sm font-semibold text-gray-900 dark:text-neutral-text tabular-nums'>
                       {fmtKES(d.outstanding)}
                     </span>
@@ -169,7 +176,9 @@ export default function BudgetTab({ data }: { data: CountyComprehensive }) {
             })}
           </div>
           <div className='mt-4 pt-3 border-t border-gray-100 dark:border-neutral-border flex items-center justify-between text-sm'>
-            <span className='text-gray-500 dark:text-neutral-muted/80'>{t('county.budget.total_debt_label')}</span>
+            <span className='text-gray-500 dark:text-neutral-muted/80'>
+              {t('county.budget.total_debt_label')}
+            </span>
             <span className='font-bold text-red-700'>{fmtKES(debt.total_debt)}</span>
           </div>
         </div>
@@ -177,7 +186,7 @@ export default function BudgetTab({ data }: { data: CountyComprehensive }) {
 
       {/* County Pending Bills Breakdown */}
       {(countyPendingBills || (debt.pending_bills != null && debt.pending_bills > 0)) && (
-        <div className='bg-white dark:bg-surface-base rounded-xl border border-red-200 p-5'>
+        <div className={styles.section}>
           <div className='flex items-center gap-2 mb-4'>
             <FileWarning size={16} className='text-red-600' />
             <h3 className='text-sm font-semibold text-gray-800 dark:text-neutral-text'>
@@ -266,7 +275,9 @@ export default function BudgetTab({ data }: { data: CountyComprehensive }) {
                   <div key={bucket.bucket} className='flex items-center gap-1'>
                     <div
                       className='w-2 h-2 rounded-full'
-                      style={{ backgroundColor: AGING_COLORS[bucket.bucket] || '#94a3b8' }}
+                      style={{
+                        backgroundColor: AGING_COLORS[bucket.bucket] || '#94a3b8',
+                      }}
                     />
                     <span>
                       {bucket.bucket}: {fmtKES(bucket.amount)}

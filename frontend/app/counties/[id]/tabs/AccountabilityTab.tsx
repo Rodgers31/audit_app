@@ -1,12 +1,15 @@
 'use client';
 
+import styles from '../../CountyExperience.module.css';
+import { AuditStatusSignal, gradeSignal, SignalMark } from '../../CountySignals';
+
 /**
  * AccountabilityTab — editorial presentation of the county's
  * accountability grade, how it was computed (per-factor breakdown),
  * key metrics, historical audit opinions, and peer comparisons.
  *
  * Split off because it pulls in its own queryset (useCountyAccountability)
- * and lookup tables (ACCT_GRADE_STYLE, OPINION_COLOR) that aren't needed
+ * and grade/opinion lookup tables that aren't needed
  * by the other tabs.
  */
 import { useLang } from '@/lib/i18n/LangProvider';
@@ -39,7 +42,13 @@ const UNGRADED_STYLE = {
 
 const ACCT_GRADE_STYLE: Record<
   string,
-  { bg: string; text: string; border: string; labelKey: TranslationKey; glow: string }
+  {
+    bg: string;
+    text: string;
+    border: string;
+    labelKey: TranslationKey;
+    glow: string;
+  }
 > = {
   A: {
     bg: 'bg-emerald-500',
@@ -101,13 +110,6 @@ const IMPACT_STYLE: Record<string, { chip: string; dot: string; labelKey: Transl
   },
 };
 
-const OPINION_COLOR: Record<string, string> = {
-  Unqualified: 'bg-emerald-500 text-white',
-  Qualified: 'bg-yellow-400 text-yellow-900',
-  Adverse: 'bg-red-500 text-white',
-  Disclaimer: 'bg-red-700 text-white',
-};
-
 const OPINION_KEY: Record<string, TranslationKey> = {
   Unqualified: 'county.acct.opinion.unqualified',
   Qualified: 'county.acct.opinion.qualified',
@@ -159,14 +161,11 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
     data.total_flagged_amount != null && peer.population_bracket_avg != null
       ? data.total_flagged_amount > peer.population_bracket_avg
       : null;
-  const score =
-    typeof data.accountability_score === 'number' ? data.accountability_score : null;
+  const score = typeof data.accountability_score === 'number' ? data.accountability_score : null;
   const factors = data.grade_factors || [];
 
-  // Score arc — 0 to 100 maps to stroke-dashoffset on a circle
-  const CIRC = 2 * Math.PI * 42; // r=42
+  // Keep the score bar within its displayed 0–100 scale.
   const scorePct = score !== null ? Math.max(0, Math.min(100, score)) : 0;
-  const dashOffset = CIRC - (scorePct / 100) * CIRC;
   const arcColor =
     score === null
       ? '#9ca3af'
@@ -182,80 +181,37 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
 
   return (
     <div className='space-y-6'>
-      {/* A. GRADE — editorial hero with score ring */}
-      <div className='relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-gov-sage/5 dark:from-surface-elevated dark:to-surface-base border border-gray-100 dark:border-neutral-border p-6'>
-        <div
-          aria-hidden
-          className={`absolute top-0 right-0 w-40 h-40 rounded-full blur-3xl opacity-30 ${gradeStyle.glow}`}
-        />
-        <div className='relative flex flex-col sm:flex-row items-center sm:items-start gap-6'>
-          {/* Score ring with grade letter centered */}
-          <div className='relative flex-shrink-0'>
-            <svg width='112' height='112' viewBox='0 0 100 100' className='-rotate-90'>
-              <circle
-                cx='50'
-                cy='50'
-                r='42'
-                fill='none'
-                stroke='#f1f5f9'
-                strokeWidth='8'
-              />
-              <circle
-                cx='50'
-                cy='50'
-                r='42'
-                fill='none'
-                stroke={arcColor}
-                strokeWidth='8'
-                strokeLinecap='round'
-                strokeDasharray={CIRC}
-                strokeDashoffset={dashOffset}
-                style={{ transition: 'stroke-dashoffset 0.8s ease-out' }}
-              />
-            </svg>
-            <div className='absolute inset-0 flex flex-col items-center justify-center'>
-              <span
-                className={`text-4xl font-black leading-none ${
-                  score !== null && score >= 55 ? 'text-gray-800 dark:text-neutral-text' : 'text-gray-800 dark:text-neutral-text'
-                }`}
-                style={{ color: ungraded ? undefined : arcColor }}>
-                {ungraded ? (
-                  <span className='text-base font-bold text-gray-500 dark:text-neutral-muted'>
-                    Not yet assessed
-                  </span>
-                ) : (
-                  data.accountability_grade
-                )}
-              </span>
-              {score !== null ? (
-                <span className='text-[11px] font-semibold text-gray-500 dark:text-neutral-muted/80 tabular-nums mt-0.5'>
-                  {score.toFixed(0)}/100
-                </span>
-              ) : (
-                <span className='text-[11px] font-semibold text-gray-500 dark:text-neutral-muted/80 mt-0.5 text-center px-1 leading-tight'>
-                  {data.accountability_reason === 'not_yet_audited_in_this_dataset'
-                    ? 'no audit ingested yet'
-                    : 'no sourced findings'}
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className='text-center sm:text-left flex-1'>
-            <div className='text-[11px] uppercase tracking-widest font-semibold text-gray-400 dark:text-neutral-muted/80 mb-1'>
-              {t('county.acct.grade_label')}
-            </div>
-            <h3 className='text-2xl font-bold text-gray-900 dark:text-neutral-text mb-1'>{t(gradeStyle.labelKey)}</h3>
-            <p className='text-sm text-gray-600 dark:text-neutral-muted max-w-xl'>
-              {t(ungraded ? 'county.acct.grade_ungraded_description' : 'county.acct.grade_description')}
-            </p>
-          </div>
+      <section
+        className={`${styles.accountGrade} ${styles.signal}`}
+        data-tone={gradeSignal(data.accountability_grade, 'audit').tone}>
+        <div className={styles.accountScore}>
+          <strong>{ungraded ? '—' : data.accountability_grade}</strong>
+          <span>{score !== null ? `${score.toFixed(0)}/100` : 'Not yet assessed'}</span>
+          {score === null && (
+            <small>
+              {data.accountability_reason === 'not_yet_audited_in_this_dataset'
+                ? 'no audit ingested yet'
+                : 'no sourced findings'}
+            </small>
+          )}
         </div>
-      </div>
+        <div>
+          <p className={styles.eyebrow}>{t('county.acct.grade_label')}</p>
+          <h3 className={`${styles.sectionTitle} ${styles.accountVerdict}`}>
+            <SignalMark tone={gradeSignal(data.accountability_grade, 'audit').tone} size={20} />
+            {t(gradeStyle.labelKey)}
+          </h3>
+          <p className={styles.detailDescription}>
+            {t(
+              ungraded ? 'county.acct.grade_ungraded_description' : 'county.acct.grade_description'
+            )}
+          </p>
+        </div>
+      </section>
 
       {/* A2. HOW THIS GRADE WAS CALCULATED */}
       {factors.length > 0 && (
-        <div className='bg-white dark:bg-surface-base rounded-2xl border border-gray-100 dark:border-neutral-border overflow-hidden'>
+        <div className={styles.section}>
           <div className='px-5 pt-5 pb-3 flex items-center gap-2'>
             <div className='h-5 w-1 rounded-full bg-gov-forest' />
             <h3 className='text-base font-semibold text-gray-900 dark:text-neutral-text'>
@@ -316,7 +272,9 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
                   />
                   <div className='flex-1 min-w-0'>
                     <div className='flex items-center justify-between gap-2 mb-0.5'>
-                      <span className='text-sm font-semibold text-gray-800 dark:text-neutral-text'>{f.label}</span>
+                      <span className='text-sm font-semibold text-gray-800 dark:text-neutral-text'>
+                        {f.label}
+                      </span>
                       <span
                         className={`text-xs font-bold tabular-nums px-2 py-0.5 rounded-md border ${
                           pts < 0
@@ -333,7 +291,9 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
                         className={`inline-block text-[11px] uppercase tracking-widest font-semibold px-1.5 py-0.5 rounded border ${style.chip}`}>
                         {t(style.labelKey)}
                       </span>
-                      <span className='text-xs text-gray-500 dark:text-neutral-muted/80'>{f.detail}</span>
+                      <span className='text-xs text-gray-500 dark:text-neutral-muted/80'>
+                        {f.detail}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -346,7 +306,10 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
             )}
           </div>
           <div className='px-5 py-3 bg-gray-50/60 dark:bg-surface-elevated/70 border-t border-gray-100 dark:border-neutral-border text-[11px] text-gray-500 dark:text-neutral-muted/80 flex items-start gap-2'>
-            <Info size={12} className='mt-0.5 flex-shrink-0 text-gray-400 dark:text-neutral-muted/80' />
+            <Info
+              size={12}
+              className='mt-0.5 flex-shrink-0 text-gray-400 dark:text-neutral-muted/80'
+            />
             <span>{t('county.acct.calc_footnote')}</span>
           </div>
         </div>
@@ -385,8 +348,7 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
             // it was audited and clean. `evidence_basis` is the field that
             // distinguishes a real empty finding set from an absent one.
             value:
-              data.evidence_basis === 'publishable_findings' &&
-              data.total_findings != null
+              data.evidence_basis === 'publishable_findings' && data.total_findings != null
                 ? String(data.total_findings)
                 : '—',
             label: t('county.acct.kpi.audit_findings'),
@@ -423,17 +385,21 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
             blue: 'border-l-blue-400 text-blue-700',
           }[m.tone];
           return (
-            <div
-              key={m.label}
-              className={`bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border border-l-4 ${toneCls} p-4`}>
+            <div key={m.label} className={`${styles.tabMetric} ${toneCls}`}>
               <div className='flex items-center gap-2 mb-1'>
                 <m.Icon size={14} />
                 <div className='text-[11px] uppercase tracking-widest font-semibold text-gray-400 dark:text-neutral-muted/80'>
                   {m.label}
                 </div>
               </div>
-              <div className='text-xl font-bold tabular-nums text-gray-900 dark:text-neutral-text'>{m.value}</div>
-              {m.sub && <div className='text-[11px] text-gray-500 dark:text-neutral-muted/80 mt-0.5'>{m.sub}</div>}
+              <div className='text-xl font-bold tabular-nums text-gray-900 dark:text-neutral-text'>
+                {m.value}
+              </div>
+              {m.sub && (
+                <div className='text-[11px] text-gray-500 dark:text-neutral-muted/80 mt-0.5'>
+                  {m.sub}
+                </div>
+              )}
             </div>
           );
         })}
@@ -441,7 +407,7 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
 
       {/* B. AUDIT OPINION HISTORY */}
       {data.audit_opinion_history.length > 0 && (
-        <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-5'>
+        <div className={styles.section}>
           <h3 className='text-sm font-semibold text-gray-800 dark:text-neutral-text mb-4'>
             {t('county.acct.opinion_history')}
           </h3>
@@ -461,19 +427,20 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
                 {[...data.audit_opinion_history]
                   .sort((a, b) => b.year - a.year)
                   .map((entry) => {
-                    const opinionCls = OPINION_COLOR[entry.opinion] || 'bg-gray-200 dark:bg-surface-sunken text-gray-700 dark:text-neutral-muted';
                     const opinionKey = OPINION_KEY[entry.opinion];
                     return (
-                      <tr key={entry.year} className='border-b border-gray-50 dark:border-neutral-border last:border-0'>
+                      <tr
+                        key={entry.year}
+                        className='border-b border-gray-50 dark:border-neutral-border last:border-0'>
                         <td className='py-2.5 px-3 text-sm text-gray-700 dark:text-neutral-muted tabular-nums font-medium'>
                           {t('county.audit.fy_prefix')} {entry.year}/
                           {(entry.year + 1).toString().slice(-2)}
                         </td>
                         <td className='py-2.5 px-3'>
-                          <span
-                            className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full ${opinionCls}`}>
-                            {opinionKey ? t(opinionKey) : entry.opinion}
-                          </span>
+                          <AuditStatusSignal
+                            status={entry.opinion}
+                            label={opinionKey ? t(opinionKey) : entry.opinion}
+                          />
                         </td>
                       </tr>
                     );
@@ -488,18 +455,13 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
       <div>
         <div className='flex items-center gap-2 mb-3'>
           <div className='h-5 w-1 rounded-full bg-gov-forest' />
-          <h3 className='text-base font-semibold text-gray-900 dark:text-neutral-text'>{t('county.acct.peer.title')}</h3>
+          <h3 className='text-base font-semibold text-gray-900 dark:text-neutral-text'>
+            {t('county.acct.peer.title')}
+          </h3>
         </div>
         <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
           {/* vs Region */}
-          <div
-            className={`rounded-2xl border p-5 ${
-              isBelowRegion == null
-                ? 'bg-gray-50/60 border-gray-200 dark:bg-surface-elevated dark:border-neutral-border'
-                : isBelowRegion
-                  ? 'bg-gradient-to-br from-rose-50/60 to-white border-rose-100'
-                  : 'bg-gradient-to-br from-emerald-50/60 to-white border-emerald-100'
-            }`}>
+          <div className={styles.peerComparison}>
             <div className='text-[11px] font-semibold text-gray-500 dark:text-neutral-muted/80 uppercase tracking-widest mb-3'>
               {t('county.acct.peer.vs_region').replace(
                 '{region}',
@@ -533,37 +495,38 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
             </div>
             <div className='space-y-1 text-sm'>
               <div className='flex justify-between'>
-                <span className='text-gray-500 dark:text-neutral-muted/80'>{t('county.acct.peer.this_county')}</span>
+                <span className='text-gray-500 dark:text-neutral-muted/80'>
+                  {t('county.acct.peer.this_county')}
+                </span>
                 <span className='font-semibold text-gray-800 dark:text-neutral-text tabular-nums'>
-                  {data.total_flagged_amount != null
-                    ? fmtKES(data.total_flagged_amount)
-                    : '—'}
+                  {data.total_flagged_amount != null ? fmtKES(data.total_flagged_amount) : '—'}
                 </span>
               </div>
               <div className='flex justify-between'>
-                <span className='text-gray-500 dark:text-neutral-muted/80'>{t('county.acct.peer.region_avg')}</span>
+                <span className='text-gray-500 dark:text-neutral-muted/80'>
+                  {t('county.acct.peer.region_avg')}
+                </span>
                 <span className='font-semibold text-gray-800 dark:text-neutral-text tabular-nums'>
-                  {peer.region_avg_flagged_amount != null ? fmtKES(peer.region_avg_flagged_amount) : '—'}
+                  {peer.region_avg_flagged_amount != null
+                    ? fmtKES(peer.region_avg_flagged_amount)
+                    : '—'}
                 </span>
               </div>
               {peer.region_avg_grade && (
                 <div className='flex justify-between'>
-                  <span className='text-gray-500 dark:text-neutral-muted/80'>{t('county.acct.peer.region_avg_grade')}</span>
-                  <span className='font-semibold text-gray-800 dark:text-neutral-text'>{peer.region_avg_grade}</span>
+                  <span className='text-gray-500 dark:text-neutral-muted/80'>
+                    {t('county.acct.peer.region_avg_grade')}
+                  </span>
+                  <span className='font-semibold text-gray-800 dark:text-neutral-text'>
+                    {peer.region_avg_grade}
+                  </span>
                 </div>
               )}
             </div>
           </div>
 
           {/* vs Population Bracket */}
-          <div
-            className={`rounded-2xl border p-5 ${
-              isBelowBracket == null
-                ? 'bg-gray-50/60 border-gray-200 dark:bg-surface-elevated dark:border-neutral-border'
-                : isBelowBracket
-                  ? 'bg-gradient-to-br from-rose-50/60 to-white border-rose-100'
-                  : 'bg-gradient-to-br from-emerald-50/60 to-white border-emerald-100'
-            }`}>
+          <div className={styles.peerComparison}>
             <div className='text-[11px] font-semibold text-gray-500 dark:text-neutral-muted/80 uppercase tracking-widest mb-3'>
               {t('county.acct.peer.vs_bracket').replace(
                 '{bracket}',
@@ -593,15 +556,17 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
             </div>
             <div className='space-y-1 text-sm'>
               <div className='flex justify-between'>
-                <span className='text-gray-500 dark:text-neutral-muted/80'>{t('county.acct.peer.this_county')}</span>
+                <span className='text-gray-500 dark:text-neutral-muted/80'>
+                  {t('county.acct.peer.this_county')}
+                </span>
                 <span className='font-semibold text-gray-800 dark:text-neutral-text tabular-nums'>
-                  {data.total_flagged_amount != null
-                    ? fmtKES(data.total_flagged_amount)
-                    : '—'}
+                  {data.total_flagged_amount != null ? fmtKES(data.total_flagged_amount) : '—'}
                 </span>
               </div>
               <div className='flex justify-between'>
-                <span className='text-gray-500 dark:text-neutral-muted/80'>{t('county.acct.peer.bracket_avg')}</span>
+                <span className='text-gray-500 dark:text-neutral-muted/80'>
+                  {t('county.acct.peer.bracket_avg')}
+                </span>
                 <span className='font-semibold text-gray-800 dark:text-neutral-text tabular-nums'>
                   {peer.population_bracket_avg != null ? fmtKES(peer.population_bracket_avg) : '—'}
                 </span>

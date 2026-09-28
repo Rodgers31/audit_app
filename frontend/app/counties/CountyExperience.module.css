@@ -1,0 +1,1060 @@
+/* County atlas and county reports. Data colours retain their existing meanings. */
+.explorer,
+.detail {
+  --county-ink: rgb(var(--c-neutral-text));
+  --county-muted: rgb(var(--c-neutral-muted));
+  --county-line: rgb(var(--c-neutral-border));
+  --county-accent: #285a43;
+  --county-negative: #a85d53;
+  --county-paper: #f7f3e9;
+  --county-map-boundary: #f7f3e9;
+  --county-positive-ink: #245c43;
+  --county-positive-wash: #e2eee4;
+  --county-watch-ink: #805017;
+  --county-watch-wash: #f3e5c3;
+  --county-concern-ink: #914523;
+  --county-concern-wash: #f2dfd1;
+  --county-critical-ink: #963d38;
+  --county-critical-wash: #f3ddda;
+  --county-info-ink: #3b607b;
+  --county-info-wash: #e4ebee;
+  --county-neutral-wash: #ebe9e1;
+  --county-nav-surface: #e9e5db;
+  --county-control-line: #c1c5b9;
+  color: var(--county-ink);
+  background: rgb(var(--page-bg-rgb));
+  font-family: 'Public Sans', system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  min-height: 70vh;
+  padding-top: 100px;
+}
+:global(.dark) :is(.explorer, .detail) {
+  --county-accent: #a2c4ac;
+  --county-negative: #e3a19a;
+  --county-paper: rgb(var(--c-surface-base));
+  --county-map-boundary: #1c2d22;
+  --county-positive-ink: #aad9b6;
+  --county-positive-wash: #1d382c;
+  --county-watch-ink: #efc379;
+  --county-watch-wash: #3d321e;
+  --county-concern-ink: #edb18b;
+  --county-concern-wash: #402c24;
+  --county-critical-ink: #f0aba5;
+  --county-critical-wash: #402624;
+  --county-info-ink: #accadb;
+  --county-info-wash: #22343f;
+  --county-neutral-wash: #26312a;
+  --county-nav-surface: #1b2a21;
+  --county-control-line: #657466;
+  background: #0d1711;
+}
+.explorer *,
+.detail * {
+  min-width: 0;
+}
+.explorer :is(button, a, input, select):focus-visible,
+.detail :is(button, a, input, select, summary):focus-visible {
+  outline: 2px solid var(--county-accent);
+  outline-offset: 4px;
+}
+.container {
+  max-width: 1360px;
+  margin-inline: auto;
+  padding: 0 20px 56px;
+}
+.pageState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding-block: 64px;
+  color: var(--county-muted);
+}
+.explorerHeader {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: end;
+  gap: 24px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--county-line);
+}
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--county-accent);
+  margin-bottom: 12px;
+}
+.explorerHeader h1,
+.detailHeader h1 {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(32px, 3.8vw, 48px);
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+.intro {
+  margin-top: 12px;
+  max-width: 64ch;
+  font-size: 14px;
+  color: var(--county-muted);
+  line-height: 1.7;
+}
+.headerActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+}
+.headerActions button,
+.headerActions select {
+  min-height: 44px;
+}
+.exportButton,
+.filterToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 8px 14px;
+  border: 1px solid var(--county-line);
+  border-radius: 3px;
+  font-size: 13px;
+}
+.exportButton:hover,
+.filterToggle:hover {
+  background: var(--county-paper);
+}
+.explorer .freshness {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 16px 0 4px;
+  box-shadow: none;
+}
+.explorer .provenance,
+.detail .provenance {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 8px 0 20px;
+  color: var(--county-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.summaryStrip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  border-block: 1px solid var(--county-line);
+  padding: 24px 0;
+}
+.summaryMetric {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: start;
+  font-size: 12px;
+}
+.summaryMetric > :global(.text-xs) {
+  color: var(--county-muted);
+}
+.summaryMetric > div {
+  max-width: 100%;
+}
+.summaryMetric :global(.text-2xl) {
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+}
+.summaryMetric:last-child {
+  grid-column: 1/-1;
+}
+.summaryMetric a {
+  min-height: 32px;
+}
+.filters {
+  margin: 28px 0;
+}
+.filterToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: end;
+}
+.searchField {
+  flex: 1 1 300px;
+}
+.searchField > span,
+.selectField > span,
+.rangeField > span:first-child {
+  display: block;
+  font-size: 12px;
+  color: var(--county-muted);
+  margin-bottom: 8px;
+}
+.searchField > div {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--county-line);
+  gap: 12px;
+  min-height: 46px;
+}
+.searchField svg {
+  flex-shrink: 0;
+  color: var(--county-muted);
+}
+.searchField input {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  min-height: 46px;
+  padding: 8px 0;
+  font-size: 16px;
+}
+.selectField select {
+  background: transparent;
+  border: 1px solid var(--county-line);
+  border-radius: 3px;
+  min-height: 46px;
+  padding: 8px 28px 8px 12px;
+  font-size: 16px;
+  max-width: 100%;
+}
+.selectField option {
+  background: rgb(var(--c-surface-base));
+  color: var(--county-ink);
+}
+.filterOptions {
+  display: grid;
+  gap: 24px;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--county-line);
+  margin-top: 16px;
+}
+.filterOptions legend {
+  font-size: 12px;
+  color: var(--county-muted);
+  margin-bottom: 8px;
+}
+.gradeChoices,
+.auditChoices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.gradeChoices button {
+  width: 44px;
+  height: 44px;
+  border-bottom: 2px solid transparent;
+  font-size: 13px;
+}
+.gradeChoices button[aria-pressed='true'] {
+  color: var(--county-accent);
+  border-color: currentColor;
+  background: var(--county-paper);
+}
+.auditChoices label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 13px;
+}
+.auditChoices input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--county-accent);
+}
+.rangeField input {
+  width: 100%;
+  min-height: 44px;
+  accent-color: var(--county-accent);
+}
+.rangeField > span:last-child {
+  font-size: 12px;
+  color: var(--county-muted);
+}
+.filterActions {
+  display: flex;
+  align-items: end;
+  gap: 16px;
+}
+.filterActions button {
+  min-height: 44px;
+  font-size: 13px;
+  color: var(--county-accent);
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+.atlasLayout {
+  display: grid;
+  gap: 32px;
+  padding-block: 28px;
+  border-block: 1px solid var(--county-line);
+}
+.sectionHeading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 16px;
+  align-items: baseline;
+}
+.sectionHeading h2,
+.rankings h3 {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 1.3;
+}
+.sectionHeading > span {
+  color: var(--county-muted);
+  font-size: 12px;
+}
+.mapCanvas {
+  display: grid;
+  place-items: center;
+  padding: 16px 0;
+  background: var(--county-paper);
+  margin-top: 20px;
+}
+.mapSvg {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  height: 330px;
+}
+.mapSvg path[role='link'] {
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.mapSvg path[role='link']:hover,
+.mapSvg path[role='link']:focus {
+  stroke: var(--county-ink);
+  stroke-width: 2px;
+  outline: none;
+}
+.mapReadout {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  min-height: 90px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--county-line);
+}
+.mapReadout > a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 16px;
+  font-size: 18px;
+  font-weight: 500;
+}
+.mapReadout > a:hover {
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+.mapReadout dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+}
+.mapReadout dt {
+  font-size: 11px;
+  color: var(--county-muted);
+  margin-bottom: 4px;
+}
+.mapReadout dd {
+  font-size: 14px;
+}
+.mapLegend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  padding-top: 8px;
+  font-size: 12px;
+}
+.mapLegend > span {
+  color: var(--county-muted);
+}
+.mapLegend button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 44px;
+  min-height: 44px;
+  border-bottom: 2px solid transparent;
+}
+.mapLegend button[aria-pressed='true'] {
+  border-color: var(--county-accent);
+}
+.mapLegend i {
+  width: 10px;
+  height: 10px;
+  background: var(--grade-color);
+  border-radius: 2px;
+}
+.insights {
+  padding-block: 4px;
+}
+.insightGroups {
+  display: grid;
+  gap: 24px;
+}
+.insightRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--county-line);
+}
+.insightRow:hover {
+  background: var(--county-paper);
+}
+.insightRow :global(.truncate) {
+  white-space: normal;
+}
+.rankings {
+  margin-top: 36px;
+}
+.mobileSort {
+  display: none;
+}
+.rankingsTable th:focus-visible {
+  outline: 2px solid var(--county-accent);
+  outline-offset: -2px;
+}
+.rankings > div:first-of-type {
+  padding: 0 0 20px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rankingsTable td,
+.rankingsTable th {
+  padding: 16px 10px;
+}
+.rankingsTable tr {
+  border-color: var(--county-line);
+}
+.rankingsTable thead tr {
+  background: transparent;
+}
+.rankingsTable td a {
+  min-height: 44px;
+  align-content: center;
+}
+.rankings > div:last-child {
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-inline: 0;
+  background: transparent;
+}
+.rankings > div:last-child button {
+  min-width: 40px;
+  min-height: 44px;
+}
+.sourceFooter {
+  margin-top: 32px;
+}
+/* County detail: one identity header, then a continuous record with ruled sections. */
+.backLinks {
+  margin-bottom: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--county-accent);
+}
+.backLinks a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.detailHeader {
+  padding-bottom: 24px;
+}
+.detailIdentity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  justify-content: space-between;
+  gap: 24px;
+}
+.detailIdentity > div:first-child {
+  flex: 1 1 320px;
+}
+.detailDescription {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--county-muted);
+  max-width: 68ch;
+  margin-top: 12px;
+}
+.detailYear {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--county-muted);
+  margin-top: 16px;
+}
+.detailActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: end;
+  gap: 12px;
+}
+.detailGrades {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  max-width: 100%;
+}
+.signal {
+  --signal-ink: var(--county-muted);
+  --signal-wash: var(--county-neutral-wash);
+}
+.signal[data-tone='positive'] {
+  --signal-ink: var(--county-positive-ink);
+  --signal-wash: var(--county-positive-wash);
+}
+.signal[data-tone='watch'] {
+  --signal-ink: var(--county-watch-ink);
+  --signal-wash: var(--county-watch-wash);
+}
+.signal[data-tone='concern'] {
+  --signal-ink: var(--county-concern-ink);
+  --signal-wash: var(--county-concern-wash);
+}
+.signal[data-tone='critical'] {
+  --signal-ink: var(--county-critical-ink);
+  --signal-wash: var(--county-critical-wash);
+}
+.signal[data-tone='info'] {
+  --signal-ink: var(--county-info-ink);
+  --signal-wash: var(--county-info-wash);
+}
+.statusSignal,
+.severityCount {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 3px;
+  border-inline-start: 2px solid var(--signal-ink);
+  background: var(--signal-wash);
+  color: var(--signal-ink);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.statusSignal {
+  white-space: nowrap;
+}
+.signal svg {
+  flex-shrink: 0;
+}
+.gradeBadge {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  padding: 12px 14px;
+  border-left: 3px solid var(--signal-ink);
+  background: var(--signal-wash);
+  color: var(--signal-ink);
+  border-radius: 2px 4px 4px 2px;
+  min-height: 72px;
+  flex: 1 1 138px;
+}
+.gradeBadge > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.gradeLetter {
+  font-family: Georgia, serif;
+  font-size: 36px;
+  font-weight: 400;
+}
+.gradeLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--signal-ink);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.gradeScore {
+  font-size: 14px;
+  margin-top: 4px;
+}
+.gradeVerdict {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.gradeBadge:hover {
+  box-shadow: inset 0 0 0 1px var(--signal-ink);
+}
+.detailMetrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  padding: 24px 0;
+  margin-top: 28px;
+  border-block: 1px solid var(--county-line);
+}
+.detailMetrics strong {
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
+}
+.detailMetrics p {
+  font-size: 12px;
+  color: var(--county-muted);
+  margin-top: 6px;
+}
+.detailMetrics [data-tone='good'] {
+  color: #28634b;
+}
+.detailMetrics [data-tone='fair'] {
+  color: #805b25;
+}
+.detailMetrics [data-tone='low'] {
+  color: #984c43;
+}
+:global(.dark) .detailMetrics [data-tone='good'] {
+  color: #8fbea3;
+}
+:global(.dark) .detailMetrics [data-tone='fair'] {
+  color: #d4b57d;
+}
+:global(.dark) .detailMetrics [data-tone='low'] {
+  color: #e3a19a;
+}
+.sectionNavigation {
+  margin-bottom: 28px;
+  scroll-margin-top: 88px;
+}
+.sectionNavLabel {
+  color: var(--county-accent);
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+/* Two columns keep every section visible on phones; five fit on wider screens. */
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px;
+  background: var(--county-nav-surface);
+  border: 1px solid var(--county-control-line);
+  border-radius: 6px;
+}
+.tabs button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 50px;
+  padding: 10px;
+  background: var(--county-paper);
+  border: 1px solid var(--county-control-line);
+  border-radius: 3px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--county-ink);
+  transition:
+    background-color 150ms,
+    border-color 150ms;
+}
+.tabs button:last-child {
+  grid-column: 1 / -1;
+}
+.tabs button svg {
+  flex-shrink: 0;
+}
+.tabs button:hover {
+  border-color: var(--county-accent);
+  background: var(--county-positive-wash);
+}
+.tabs button[aria-pressed='true'] {
+  color: #fffdf5;
+  background: #285a43;
+  border-color: #285a43;
+  font-weight: 600;
+}
+@media (min-width: 800px) {
+  .tabs {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  .tabs button:last-child {
+    grid-column: auto;
+  }
+}
+.reportBody {
+  background: var(--county-paper);
+  padding: 24px 16px;
+  border-block: 1px solid var(--county-line);
+}
+.section {
+  border-top: 1px solid var(--county-line);
+  padding: 24px 0;
+}
+.peerComparison {
+  border-top: 1px solid var(--county-line);
+  padding-block: 24px;
+}
+:global(.dark) .peerComparison :global(.text-emerald-700),
+:global(.dark) .tabMetric :global(.text-green-700) {
+  color: #8fbea3;
+}
+:global(.dark) .peerComparison :global(.text-rose-700),
+:global(.dark) .tabMetric :global(.text-red-700) {
+  color: #e3a19a;
+}
+.section:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+.section h3,
+.sectionTitle {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.3;
+}
+.section :is(p, span, div) {
+  overflow-wrap: break-word;
+}
+.section :is(button, a) {
+  touch-action: manipulation;
+}
+.recordMetric {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--county-line);
+}
+.recordMetric > div:first-child {
+  font-size: 12px;
+  color: var(--county-muted);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.recordMetric > div:nth-child(2) {
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.recordMetric > div:nth-child(3) {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--county-muted);
+  margin-top: 6px;
+}
+.official {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--county-line);
+}
+.executionBar {
+  height: 8px;
+  background: var(--county-line);
+  margin-top: 20px;
+}
+.executionBar span {
+  display: block;
+  height: 100%;
+  background: var(--execution-color);
+  max-width: 100%;
+}
+.finding {
+  border-block: 1px solid var(--county-line);
+  border-left: 3px solid var(--signal-ink);
+}
+.findingSeverity {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--signal-ink);
+  background: var(--signal-wash);
+  padding: 4px 6px;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.severityCount[data-empty='true'] {
+  background: transparent;
+  color: var(--county-muted);
+  border-color: var(--county-line);
+}
+.finding > button {
+  min-height: 48px;
+}
+.tabMetric {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--county-line);
+  text-align: left;
+}
+.tabMetric :global(.text-2xl) {
+  font-size: 24px;
+  font-weight: 500;
+}
+.note {
+  padding: 16px 0 16px 16px;
+  border-left: 2px solid var(--county-line);
+  font-size: 13px;
+}
+.sourceLinks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+  margin-top: 24px;
+  font-size: 12px;
+  color: var(--county-muted);
+}
+.sourceLinks a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--county-accent);
+}
+@media (min-width: 640px) {
+  .container {
+    padding-inline: 32px;
+  }
+  .summaryStrip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .summaryMetric:last-child {
+    grid-column: auto;
+  }
+  .filterOptions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .mapSvg {
+    height: 420px;
+  }
+  .detailMetrics {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  .reportBody {
+    padding: 28px 32px;
+  }
+}
+@media (min-width: 1040px) {
+  .summaryStrip {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 24px;
+  }
+  .summaryMetric + .summaryMetric {
+    padding-left: 24px;
+    border-left: 1px solid var(--county-line);
+  }
+  .atlasLayout {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 48px;
+  }
+  .filterOptions {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .detailIdentity > div:first-child {
+    flex-basis: 480px;
+  }
+}
+/* Each mobile record exposes every existing column without a sideways scroll. */
+@media (max-width: 959px) {
+  .mobileSort {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 12px;
+    margin-block: 12px 24px;
+  }
+  .rankingsTable table,
+  .rankingsTable tbody {
+    display: block;
+    width: 100%;
+  }
+  .rankingsTable thead {
+    display: none;
+  }
+  .rankingsTable tbody tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px 16px;
+    padding: 20px 0;
+  }
+  .rankingsTable td {
+    display: block;
+    padding: 6px 0;
+    font-size: 14px;
+  }
+  .rankingsTable td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 11px;
+    color: var(--county-muted);
+    margin-bottom: 4px;
+  }
+  .rankingsTable td:first-child {
+    display: none;
+  }
+  .rankingsTable td:nth-child(2) {
+    grid-column: 1/-1;
+  }
+  .rankingsTable td:nth-child(2)::before {
+    display: none;
+  }
+  .rankingsTable td:nth-child(2) a::after {
+    content: '↗';
+    margin-left: auto;
+    color: var(--county-accent);
+  }
+  .rankingsTable td:nth-child(2) a span {
+    font-size: 18px;
+    font-weight: 500;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .explorer *,
+  .detail * {
+    scroll-behavior: auto;
+    transition: none;
+  }
+}
+.mobileRank {
+  display: none;
+}
+.accountGrade {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 24px;
+  padding-bottom: 24px;
+}
+.accountGrade > div:last-child {
+  flex: 1 1 220px;
+}
+.accountScore {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: start;
+  padding: 16px 24px;
+  border-left: 3px solid var(--signal-ink);
+  background: var(--signal-wash);
+  color: var(--signal-ink);
+}
+.accountVerdict {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--signal-ink);
+}
+.accountScore strong {
+  font-family: Georgia, serif;
+  font-size: 42px;
+  line-height: 1.1;
+  font-weight: 400;
+}
+.accountScore span {
+  font-size: 14px;
+}
+.accountScore small {
+  font-size: 12px;
+  color: var(--county-muted);
+}
+.moneyReport {
+  display: grid;
+  gap: 24px;
+}
+.moneyReport :global([data-money-stage]) {
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--county-line);
+  border-radius: 0;
+  padding: 20px 0;
+}
+.moneyReport :global([data-money-icon]) {
+  display: none;
+}
+.moneyReport :global([data-money-gap]) {
+  background: transparent;
+  border: 0;
+  border-left: 2px solid var(--county-line);
+  border-radius: 0;
+}
+.moneyReport :global(.text-blue-700) {
+  color: #3e668a;
+}
+.moneyReport :global(.text-red-700) {
+  color: #984c43;
+}
+.moneyReport :global(.text-amber-700) {
+  color: #805b25;
+}
+.moneyReport :global(.bg-blue-500) {
+  background-color: #587e9f;
+}
+.moneyReport :global(.bg-amber-500) {
+  background-color: #ad8346;
+}
+:global(.dark) .moneyReport :global(.text-blue-700) {
+  color: #9abbd9;
+}
+:global(.dark) .moneyReport :global(.text-red-700) {
+  color: #e3a19a;
+}
+:global(.dark) .moneyReport :global(.text-amber-700) {
+  color: #d4b57d;
+}
+@media (max-width: 959px) {
+  .rankingsTable td:nth-child(2) a .mobileRank {
+    display: inline;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--county-muted);
+    margin-right: 4px;
+  }
+}
+.recordMetric > div:nth-child(2) {
+  color: var(--county-ink);
+}
+.reportBody {
+  overflow-wrap: anywhere;
+}
+/* Keep the existing performance bands, with quieter report colours. */
+.explorer :global(.bg-emerald-500) {
+  background-color: #42765d;
+}
+.explorer :global(.bg-green-500) {
+  background-color: #507950;
+}
+.explorer :global(.bg-amber-500) {
+  background-color: #8d672f;
+}
+.explorer :global(.bg-orange-500) {
+  background-color: #a1643e;
+}
+.explorer :global(.bg-red-500),
+.explorer :global(.bg-red-400) {
+  background-color: #a85d53;
+}

@@ -158,8 +158,8 @@ function rankingRows(): Array<[string, string]> {
     .slice(1) // drop the header row
     .map((tr) => {
       const cells = within(tr).getAllByRole('cell');
-      // The name cell leads with a 🏛️ badge; the county's name is what follows.
-      const name = (cells[1].textContent ?? '').replace('\u{1F3DB}\u{FE0F}', '').trim();
+      // The county name follows a separate mobile rank in the same link.
+      const name = (cells[1].querySelector('a span:last-child')?.textContent ?? '').trim();
       return [name, (cells[2].textContent ?? '').trim()];
     });
 }

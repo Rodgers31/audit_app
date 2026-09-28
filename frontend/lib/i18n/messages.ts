@@ -618,6 +618,9 @@ export const MESSAGES = {
   'counties.filter.all': { en: 'All counties', sw: 'Kaunti zote', plain: 'All' },
   'counties.filter.region': { en: 'Region', sw: 'Eneo', plain: 'Region' },
   'counties.filter.sort': { en: 'Sort by', sw: 'Panga kwa', plain: 'Sort by' },
+  'counties.sort.ascending': { en: 'Ascending', sw: 'Kupanda', plain: 'Low to high' },
+  'counties.sort.descending': { en: 'Descending', sw: 'Kushuka', plain: 'High to low' },
+  'counties.sort.reverse_direction': { en: 'Reverse sort direction', sw: 'Badilisha mwelekeo wa mpangilio', plain: 'Reverse the order' },
   'counties.sort.name': { en: 'Name', sw: 'Jina', plain: 'Name' },
   'counties.sort.budget': { en: 'Budget (largest first)', sw: 'Bajeti (kubwa kwanza)', plain: 'Biggest budget first' },
   'counties.sort.utilization': { en: 'Execution rate', sw: 'Kiwango cha matumizi', plain: 'How much was spent' },
@@ -768,6 +771,7 @@ export const MESSAGES = {
 
   // Health & audit grade badges
   'county.grade.health': { en: 'HEALTH', sw: 'AFYA', plain: 'HEALTH' },
+  'county.sections.label': { en: 'Explore this county', sw: 'Chunguza kaunti hii', plain: 'County sections' },
   'county.grade.audit': { en: 'AUDIT', sw: 'UKAGUZI', plain: 'AUDIT' },
   'county.grade.trend_up': { en: 'trending up', sw: 'inapanda', plain: 'going up' },
   'county.grade.trend_down': { en: 'trending down', sw: 'inashuka', plain: 'going down' },

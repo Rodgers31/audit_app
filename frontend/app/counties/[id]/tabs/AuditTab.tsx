@@ -1,5 +1,8 @@
 'use client';
 
+import styles from '../../CountyExperience.module.css';
+import { severityTone, SignalMark } from '../../CountySignals';
+
 /**
  * AuditTab — expanded list and category breakdown of a county's audit
  * findings, powered by the OAG dataset. Each finding gets a plain-language
@@ -82,7 +85,8 @@ const STATUS_CONFIG: Record<string, { labelKey: TranslationKey; color: string; d
   },
   Pending: {
     labelKey: 'county.audit.status.pending',
-    color: 'text-gray-600 dark:text-neutral-muted bg-gray-50 dark:bg-surface-elevated border-gray-200 dark:border-neutral-border',
+    color:
+      'text-gray-600 dark:text-neutral-muted bg-gray-50 dark:bg-surface-elevated border-gray-200 dark:border-neutral-border',
     dot: 'bg-gray-400',
   },
   open: {
@@ -130,11 +134,13 @@ export default function AuditTab({ data }: { data: CountyComprehensive }) {
   return (
     <div className='space-y-5'>
       {/* ── What this means (plain language intro) ── */}
-      <div className='bg-gov-forest/5 border border-gov-forest/20 rounded-xl p-4'>
+      <div className={styles.note}>
         <h3 className='text-sm font-semibold text-gov-dark dark:text-white mb-1'>
           {t('county.audit.intro_title')}
         </h3>
-        <p className='text-xs text-gray-600 dark:text-neutral-muted leading-relaxed'>{t('county.audit.intro_body')}</p>
+        <p className='text-xs text-gray-600 dark:text-neutral-muted leading-relaxed'>
+          {t('county.audit.intro_body')}
+        </p>
       </div>
 
       {!ingested && (
@@ -143,16 +149,16 @@ export default function AuditTab({ data }: { data: CountyComprehensive }) {
             <span className='font-semibold text-gov-dark dark:text-white'>
               No Auditor-General report for this county has been ingested yet.
             </span>{' '}
-            The counters below read &ldquo;—&rdquo; rather than zero because a
-            zero would say the Auditor-General examined this county and
-            questioned nothing. That is not what an absent report means.
+            The counters below read &ldquo;—&rdquo; rather than zero because a zero would say the
+            Auditor-General examined this county and questioned nothing. That is not what an absent
+            report means.
           </p>
         </div>
       )}
 
       {/* ── Top-level stats ── */}
       <div className='grid grid-cols-2 sm:grid-cols-4 gap-3'>
-        <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-4 text-center'>
+        <div className={styles.tabMetric}>
           {/* "0 Total Findings" read as a clean bill of health. It means no
               OAG report for this county has been ingested (F23). */}
           <div className='text-2xl font-bold text-gray-900 dark:text-neutral-text'>
@@ -162,7 +168,7 @@ export default function AuditTab({ data }: { data: CountyComprehensive }) {
             {t('county.audit.kpi_total_findings')}
           </div>
         </div>
-        <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-4 text-center'>
+        <div className={styles.tabMetric}>
           <div className='text-2xl font-bold text-red-700'>
             {audit.total_amount_involved != null && audit.total_amount_involved > 0
               ? fmtKES(audit.total_amount_involved)
@@ -174,7 +180,7 @@ export default function AuditTab({ data }: { data: CountyComprehensive }) {
             {t('county.audit.kpi_money_questioned')}
           </div>
         </div>
-        <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-4 text-center'>
+        <div className={styles.tabMetric}>
           <div className='flex items-center justify-center gap-1.5'>
             <div className='w-2 h-2 rounded-full bg-red-500' />
             <span className='text-2xl font-bold text-gray-900 dark:text-neutral-text'>
@@ -185,17 +191,19 @@ export default function AuditTab({ data }: { data: CountyComprehensive }) {
             {t('county.audit.kpi_critical_issues')}
           </div>
         </div>
-        <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-4 text-center'>
+        <div className={styles.tabMetric}>
           <div className='text-2xl font-bold text-green-700'>
             {ingested ? statusCounts['Resolved'] || 0 : '—'}
           </div>
-          <div className='text-[11px] text-gray-500 dark:text-neutral-muted/80 mt-0.5'>{t('county.audit.kpi_resolved')}</div>
+          <div className='text-[11px] text-gray-500 dark:text-neutral-muted/80 mt-0.5'>
+            {t('county.audit.kpi_resolved')}
+          </div>
         </div>
       </div>
 
       {/* ── Category breakdown ── */}
       {categoryBreakdown.length > 0 && (
-        <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-5'>
+        <div className={styles.section}>
           <h3 className='text-sm font-semibold text-gray-800 dark:text-neutral-text mb-3'>
             {t('county.audit.findings_by_category')}
           </h3>
@@ -218,7 +226,9 @@ export default function AuditTab({ data }: { data: CountyComprehensive }) {
                   <div className='flex items-center justify-between mb-1'>
                     <div className='flex items-center gap-2'>
                       <span className='text-sm'>{cfg.icon}</span>
-                      <span className='text-sm font-medium text-gray-800 dark:text-neutral-text'>{t(cfg.labelKey)}</span>
+                      <span className='text-sm font-medium text-gray-800 dark:text-neutral-text'>
+                        {t(cfg.labelKey)}
+                      </span>
                       <span className='text-xs text-gray-400 dark:text-neutral-muted/80'>
                         {count}{' '}
                         {count !== 1
@@ -293,8 +303,7 @@ export default function AuditTab({ data }: { data: CountyComprehensive }) {
           const open = expanded === f.id;
 
           // Pre-compute the "what does this mean" text
-          const amountStr =
-            f.amount_involved > 0 ? f.amount_involved.toLocaleString() : '';
+          const amountStr = f.amount_involved > 0 ? f.amount_involved.toLocaleString() : '';
           const undisclosedAmount = t('county.audit.explain.undisclosed_amount');
           const undisclosedValue = t('county.audit.explain.undisclosed_value');
           const amountFallback = t('county.audit.explain.amount_fallback');
@@ -332,10 +341,7 @@ export default function AuditTab({ data }: { data: CountyComprehensive }) {
               f.amount_involved > 0
                 ? t('county.audit.explain.amount_clause').replace('{amount}', amountStr)
                 : '';
-            meansText = t('county.audit.explain.default').replace(
-              '{amount_clause}',
-              amountClause
-            );
+            meansText = t('county.audit.explain.default').replace('{amount_clause}', amountClause);
           }
 
           // Status explanation
@@ -355,12 +361,12 @@ export default function AuditTab({ data }: { data: CountyComprehensive }) {
           return (
             <div
               key={f.id}
-              className={`rounded-xl border border-gray-100 dark:border-neutral-border bg-white dark:bg-surface-base overflow-hidden transition-shadow ${
-                open ? 'shadow-md ring-1 ring-gray-200' : 'hover:shadow-sm'
-              }`}>
+              className={`${styles.finding} ${styles.signal}`}
+              data-tone={severityTone(f.severity)}>
               <button
+                aria-expanded={open}
                 onClick={() => setExpanded(open ? null : f.id)}
-                className='w-full text-left px-4 py-3.5 hover:bg-gray-50/50 dark:bg-surface-elevated/70 transition-colors'>
+                className='w-full text-left px-4 py-3.5 hover:bg-gray-50/50 dark:hover:bg-surface-elevated/70 transition-colors'>
                 {/* Top row: category tag + status + amount */}
                 <div className='flex items-center gap-2 flex-wrap mb-2'>
                   <span
@@ -372,7 +378,8 @@ export default function AuditTab({ data }: { data: CountyComprehensive }) {
                     <span className={`w-1.5 h-1.5 rounded-full ${stCfg.dot}`} />
                     {t(stCfg.labelKey)}
                   </span>
-                  <span className={`text-[11px] font-bold uppercase tracking-wider ${s.text}`}>
+                  <span className={styles.findingSeverity}>
+                    <SignalMark tone={severityTone(f.severity)} />
                     {t(s.labelKey)}
                   </span>
                   {f.audit_year && (
@@ -382,9 +389,13 @@ export default function AuditTab({ data }: { data: CountyComprehensive }) {
                   )}
                 </div>
 
-                <p className='text-xs font-medium mb-1'>{f.audited_entity_name ?? 'Audited institution not identified'}</p>
+                <p className='text-xs font-medium mb-1'>
+                  {f.audited_entity_name ?? 'Audited institution not identified'}
+                </p>
                 {/* Finding text */}
-                <p className='text-sm text-gray-800 dark:text-neutral-text leading-relaxed mb-1.5'>{f.finding}</p>
+                <p className='text-sm text-gray-800 dark:text-neutral-text leading-relaxed mb-1.5'>
+                  {f.finding}
+                </p>
 
                 {/* Bottom row: amount + reference + expand arrow */}
                 <div className='flex items-center gap-3'>
@@ -405,7 +416,10 @@ export default function AuditTab({ data }: { data: CountyComprehensive }) {
                 </div>
               </button>
               {f.source_url && (
-                <a href={f.source_url} target='_blank' rel='noopener noreferrer'
+                <a
+                  href={f.source_url}
+                  target='_blank'
+                  rel='noopener noreferrer'
                   className='block px-4 pb-3 text-xs text-gov-forest dark:text-emerald-100 underline'>
                   Source report{f.page_ref ? `, ${f.page_ref}` : ''}
                 </a>
@@ -442,7 +456,9 @@ export default function AuditTab({ data }: { data: CountyComprehensive }) {
                       )}
 
                       {/* Status explanation */}
-                      <div className='mt-2 text-[11px] text-gray-500 dark:text-neutral-muted/80'>{statusExplain}</div>
+                      <div className='mt-2 text-[11px] text-gray-500 dark:text-neutral-muted/80'>
+                        {statusExplain}
+                      </div>
                     </div>
                   </motion.div>
                 )}

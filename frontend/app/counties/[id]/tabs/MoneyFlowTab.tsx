@@ -1,5 +1,7 @@
 'use client';
 
+import styles from '../../CountyExperience.module.css';
+
 /**
  * MoneyFlowTab — wraps the FollowTheMoney visualization for a specific
  * county + fiscal year. The FollowTheMoney component itself is already
@@ -42,7 +44,7 @@ export default function MoneyFlowTab({ data: countyData }: { data: CountyCompreh
   const { data, isLoading } = useCountyMoneyFlow(countyData.id, selectedYear ?? '');
 
   return (
-    <div className='space-y-5'>
+    <div className={styles.moneyReport}>
       {/* Section header — no nested card, just typography */}
       <div className='flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-1'>
         <div>
