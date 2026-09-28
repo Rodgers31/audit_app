@@ -1,5 +1,21 @@
 # Combined backend performance verification
 
+## Copilot review follow-up
+
+The coordinator reran the original combined set plus
+`test_audit_attribution_contract.py`, `test_review_findings_pr135.py`,
+`test_unaccounted_reader_public_contract.py`, and
+`test_federal_review_cache.py` after the review fixes: **285 passed**, four
+existing warnings. This includes the five fixture assertions reproduced red
+at the reviewed PR head, generation-fencing races, and the batched extraction
+query-count regression. See `federal-review.md` and the updated audit receipt
+for individual red/green evidence. Render Docker selection was verified from
+its live settings; the cache receipt distinguishes it from the alternate
+image-publishing workflow. The remaining cold-miss event-loop work is tracked
+in [#363](https://github.com/Rodgers31/audit_app/issues/363).
+
+The commands and 251-test result below record the initial consolidation.
+
 Base: `37c6c37c565b3190ae0f72fb5fa895daf68abe24`.
 
 The audit projection, county projection, and cache/runtime sessions were
