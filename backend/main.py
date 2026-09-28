@@ -2371,7 +2371,12 @@ def cached(key_prefix: str, ttl: int = 3600):
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
             # Build cache key from prefix and path params
-            cache_key_parts = [key_prefix]
+            # Capture the marker before loading. A response completed after
+            # invalidation may fill only its old-generation key, so the next
+            # request cannot read stale data from an in-flight cache fill.
+            from cache.invalidation import generation_identity
+
+            cache_key_parts = [key_prefix, f"generation:{generation_identity()}"]
             for k, v in kwargs.items():
                 if k not in ["db", "request", "background_tasks"]:
                     cache_key_parts.append(f"{k}:{v}")
@@ -5454,7 +5459,12 @@ async def _federal_audits_payload():
             latest_source = None
             if DBSourceDocument is not None:
                 latest_source = (
-                    db.query(DBSourceDocument)
+                    db.query(
+                        DBSourceDocument.id,
+                        DBSourceDocument.title,
+                        DBSourceDocument.publisher,
+                        DBSourceDocument.fetch_date,
+                    )
                     .join(DBAudit, DBAudit.source_document_id == DBSourceDocument.id)
                     .join(DBEntity, DBAudit.entity_id == DBEntity.id)
                     .filter(publishable_audit_criterion())
