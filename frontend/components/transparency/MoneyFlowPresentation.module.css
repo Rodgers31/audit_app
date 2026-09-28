@@ -3,7 +3,7 @@
   --flow-ink: rgb(var(--c-neutral-text));
   --flow-muted: rgb(var(--c-neutral-muted));
   --flow-line: rgb(var(--c-neutral-border));
-  --flow-divider: #91a496;
+  --flow-divider: #526b59;
   --flow-allocation: #365f71;
   --flow-good: #28634b;
   --flow-fair: #805b25;
@@ -17,7 +17,7 @@
   container: money-flow / inline-size;
 }
 :global(.dark) .presentation {
-  --flow-divider: #637e6b;
+  --flow-divider: #9db7a5;
   --flow-allocation: #9cc4d5;
   --flow-good: #8fbea3;
   --flow-fair: #d4b57d;
@@ -100,8 +100,8 @@
   flex: 1 1 200px;
 }
 .overview {
-  padding: 28px 0 32px;
-  border-block: 3px solid var(--flow-divider);
+  padding: 32px 0 36px;
+  border-block: 5px solid var(--flow-divider);
 }
 .overviewHead {
   display: flex;
