@@ -149,7 +149,7 @@ const GLOSSARY: Record<string, { title: string; body: string }> = {
   },
   'financial-health': {
     title: 'Financial Health Score',
-    body: 'A composite score (0–100) that combines budget execution, audit results, debt levels, and revenue collection into a single grade (A through D-). Higher scores mean better financial management.',
+    body: 'A site-made composite score (0–100) using available budget absorption, own-source revenue, pending bills, and the Auditor-General’s audit opinion. Grades run from A to C; at least two inputs are required. This is separate from the accountability score.',
   },
 
   // ── Government structure ──────────────────────────────

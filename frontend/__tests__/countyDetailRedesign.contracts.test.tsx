@@ -181,6 +181,19 @@ it('retains health-methodology values and closes on Escape', async () => {
   expect(screen.queryByRole('heading', { name: 'Financial Health Score' })).not.toBeInTheDocument();
 });
 
+it('explains the current composite health score and its distinct audit opinion input', () => {
+  renderPage();
+  fireEvent.click(screen.getByRole('button', { name: /HEALTH grade/ }));
+  const modal = screen.getByRole('heading', { name: 'Financial Health Score' }).parentElement!
+    .parentElement!.parentElement!;
+  expect(modal).toHaveTextContent('budget absorption');
+  expect(modal).toHaveTextContent('own-source revenue');
+  expect(modal).toHaveTextContent('pending bills');
+  expect(modal).toHaveTextContent('audit opinion');
+  expect(modal).toHaveTextContent('At least two');
+  expect(modal).not.toHaveTextContent('Score = utilization percentage');
+});
+
 it('withholds an unavailable budget execution and health grade', () => {
   Object.assign(mockData.budget, { total_allocated: null, utilization_rate: null });
   Object.assign(mockData.financial_summary, { grade: null, health_score: null });

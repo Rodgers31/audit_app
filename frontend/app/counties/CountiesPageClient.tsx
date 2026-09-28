@@ -40,6 +40,8 @@ import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
 import ResponsiveTable from '@/components/ui/ResponsiveTable';
 import styles from './CountyExperience.module.css';
 import { AuditStatusSignal } from './CountySignals';
+import { FINANCIAL_HEALTH_BANDS, financialHealthBand } from '@/lib/counties/financialHealth';
+import { getCountyRegion, normalizeCountyName } from '@/lib/counties/regions';
 
 /* ══════════════════════════════════════════════════════════════════════════════
    HELPERS
@@ -74,31 +76,17 @@ function fmtPop(n: number | null | undefined): string {
   return String(n);
 }
 
-// Financial-health letter grade. Scale MUST match the backend's
-// `financial_summary.grade` bands in main.py so the listing and the
-// county detail hero show the same letter for the same county.
-//   A ≥ 85 · B+ ≥ 70 · B ≥ 55 · B- ≥ 40 · else C
 function getGrade(score: number | null | undefined) {
-  // The backend returns null when fewer than two of the health index's
-  // components can be computed. A county nobody can score must not be handed
-  // the lowest grade, which is what fell out of the previous `|| 0`.
-  if (typeof score !== 'number' || !Number.isFinite(score))
-    return { letter: '—', cls: 'bg-gray-200 text-gray-600' };
-  if (score >= 85) return { letter: 'A', cls: 'bg-emerald-500 text-white' };
-  if (score >= 70) return { letter: 'B+', cls: 'bg-green-500 text-white' };
-  if (score >= 55) return { letter: 'B', cls: 'bg-amber-500 text-white' };
-  if (score >= 40) return { letter: 'B-', cls: 'bg-orange-500 text-white' };
-  return { letter: 'C', cls: 'bg-red-500 text-white' };
+  const band = financialHealthBand(score);
+  return band
+    ? { letter: band.grade, cls: band.badgeClass }
+    : { letter: '—', cls: 'bg-gray-200 text-gray-600' };
 }
 
-const GRADE_ALL = ['A', 'B', 'C', 'D', 'D-'] as const;
-const GRADE_COLORS: Record<string, string> = {
-  A: 'bg-emerald-500 text-white',
-  B: 'bg-green-300 text-green-900',
-  C: 'bg-orange-600 text-white',
-  D: 'bg-red-500 text-white',
-  'D-': 'bg-red-700 text-white',
-};
+function rankedHealthScore(county: County): number | undefined {
+  const score = county.financial_health_score;
+  return typeof score === 'number' && financialHealthBand(score) ? score : undefined;
+}
 
 const AUDIT_STATUS_CFG: Record<
   string,
@@ -153,83 +141,6 @@ function initialDir(field: SortField): SortDir {
   return field === 'name' ? 'asc' : 'desc';
 }
 
-function gradeCategory(score: number | null | undefined): string {
-  if (typeof score !== 'number' || !Number.isFinite(score)) return 'Unknown';
-  if (score >= 70) return 'A';
-  if (score >= 55) return 'B';
-  if (score >= 40) return 'C';
-  if (score >= 20) return 'D';
-  return 'D-';
-}
-
-/* ── County → Region mapping (Kenya's 8 former provinces) ─────────── */
-const COUNTY_REGION: Record<string, string> = {
-  // Central
-  Kiambu: 'central',
-  Kirinyaga: 'central',
-  "Murang'a": 'central',
-  Nyandarua: 'central',
-  Nyeri: 'central',
-  // Coast
-  Kilifi: 'coast',
-  Kwale: 'coast',
-  Lamu: 'coast',
-  Mombasa: 'coast',
-  'Taita-Taveta': 'coast',
-  'Tana River': 'coast',
-  // Eastern
-  Embu: 'eastern',
-  Isiolo: 'eastern',
-  Kitui: 'eastern',
-  Machakos: 'eastern',
-  Makueni: 'eastern',
-  Marsabit: 'eastern',
-  Meru: 'eastern',
-  'Tharaka-Nithi': 'eastern',
-  // Nairobi
-  Nairobi: 'nairobi',
-  'Nairobi City': 'nairobi',
-  // North Eastern
-  Garissa: 'north-eastern',
-  Mandera: 'north-eastern',
-  Wajir: 'north-eastern',
-  // Nyanza
-  'Homa Bay': 'nyanza',
-  Kisii: 'nyanza',
-  Kisumu: 'nyanza',
-  Migori: 'nyanza',
-  Nyamira: 'nyanza',
-  Siaya: 'nyanza',
-  // Rift Valley
-  Baringo: 'rift-valley',
-  Bomet: 'rift-valley',
-  'Elgeyo-Marakwet': 'rift-valley',
-  Kajiado: 'rift-valley',
-  Kericho: 'rift-valley',
-  Laikipia: 'rift-valley',
-  Nakuru: 'rift-valley',
-  Nandi: 'rift-valley',
-  Narok: 'rift-valley',
-  Samburu: 'rift-valley',
-  'Trans-Nzoia': 'rift-valley',
-  Turkana: 'rift-valley',
-  'Uasin Gishu': 'rift-valley',
-  'West Pokot': 'rift-valley',
-  // Western
-  Bungoma: 'western',
-  Busia: 'western',
-  Kakamega: 'western',
-  Vihiga: 'western',
-};
-
-function getCountyRegion(name: string): string {
-  // Direct lookup first
-  if (COUNTY_REGION[name]) return COUNTY_REGION[name];
-  // Try stripping " County" suffix
-  const stripped = name.replace(/ County$/i, '');
-  if (COUNTY_REGION[stripped]) return COUNTY_REGION[stripped];
-  return '';
-}
 
 function KPICards({ counties }: { counties: County[] }) {
   const { t } = useLang();
@@ -563,7 +474,7 @@ function FiltersSidebar({
           <fieldset>
             <legend>{t('counties.filters.grade')}</legend>
             <div className={styles.gradeChoices}>
-              {GRADE_ALL.map((g) => (
+              {FINANCIAL_HEALTH_BANDS.map(({ grade: g }) => (
                 <button
                   key={g}
                   aria-pressed={filters.grades.includes(g)}
@@ -654,23 +565,6 @@ function FiltersSidebar({
 
 import { KENYA_COUNTY_PATHS } from '@/data/kenya-county-paths';
 
-// Normalize names for matching between GADM data and API data
-function normalizeName(name: string): string {
-  return name
-    .replace(/ County$/i, '')
-    .replace(/['\s-]/g, '')
-    .toLowerCase();
-}
-
-// Grade → fill color for choropleth
-const GRADE_FILLS: Record<string, string> = {
-  A: '#42765d', // green
-  B: '#9db993', // light green
-  C: '#bd9155', // ochre
-  D: '#b36b5c', // red
-  'D-': '#884c45', // dark red
-};
-
 function CountyPerformanceMap({
   counties,
   allCounties,
@@ -695,7 +589,7 @@ function CountyPerformanceMap({
   const allLookup = useMemo(() => {
     const map = new Map<string, County>();
     allCounties.forEach((c) => {
-      map.set(normalizeName(c.name), c);
+      map.set(normalizeCountyName(c.name), c);
     });
     return map;
   }, [allCounties]);
@@ -703,7 +597,7 @@ function CountyPerformanceMap({
   // Build set of filtered county names (for highlight control)
   const filteredNames = useMemo(() => {
     const set = new Set<string>();
-    counties.forEach((c) => set.add(normalizeName(c.name)));
+    counties.forEach((c) => set.add(normalizeCountyName(c.name)));
     return set;
   }, [counties]);
 
@@ -712,7 +606,7 @@ function CountyPerformanceMap({
     if (selectedRegion === 'all') return '0 0 360 400';
     // find county paths that belong to this region
     const regionPaths = KENYA_COUNTY_PATHS.filter((cp) => {
-      const county = allLookup.get(normalizeName(cp.name));
+      const county = allLookup.get(normalizeCountyName(cp.name));
       return county ? getCountyRegion(county.name) === selectedRegion : false;
     });
     if (regionPaths.length === 0) return '0 0 360 400';
@@ -755,12 +649,12 @@ function CountyPerformanceMap({
       <div className={styles.mapCanvas}>
         <svg viewBox={regionViewBox} className={styles.mapSvg} aria-label={t('counties.map.title')}>
           {KENYA_COUNTY_PATHS.map((cp) => {
-            const county = allLookup.get(normalizeName(cp.name));
-            const grade = county ? gradeCategory(county.financial_health_score) : null;
-            const fill = grade ? (GRADE_FILLS[grade] ?? '#b8bcb2') : '#b8bcb2';
+            const county = allLookup.get(normalizeCountyName(cp.name));
+            const band = county ? financialHealthBand(county.financial_health_score) : null;
+            const fill = band?.fill ?? '#b8bcb2';
             const dimmed =
-              !filteredNames.has(normalizeName(cp.name)) ||
-              (activeGrades.length > 0 && grade && !activeGrades.includes(grade));
+              !filteredNames.has(normalizeCountyName(cp.name)) ||
+              (activeGrades.length > 0 && (!band || !activeGrades.includes(band.grade)));
             const interactive = county != null && !dimmed;
             return (
               <path
@@ -835,12 +729,12 @@ function CountyPerformanceMap({
       </div>
       <div className={styles.mapLegend}>
         <span>{t('counties.map.performance')}:</span>
-        {GRADE_ALL.map((g) => (
+        {FINANCIAL_HEALTH_BANDS.map(({ grade: g, fill }) => (
           <button
             key={g}
             onClick={() => onToggleGrade(g)}
             aria-pressed={activeGrades.includes(g)}
-            style={{ '--grade-color': GRADE_FILLS[g] } as React.CSSProperties}>
+            style={{ '--grade-color': fill } as React.CSSProperties}>
             <i aria-hidden='true' />
             {g}
           </button>
@@ -864,18 +758,16 @@ function CountyInsightsPanel({ counties }: { counties: County[] }) {
   const { t } = useLang();
 
   const { best, worst, stats } = useMemo(() => {
-    // Absent scores sort LAST in both directions — the helper takes the
-    // direction rather than returning a value the caller negates, because a
-    // flipped +/-1 put the unscored counties at the top of "best".
-    const sorted = [...counties].sort((a, b) =>
-      compareByPublishedFigure(a, b, (c) => c.financial_health_score, 'desc')
+    // Only assessed counties can be described as best or needing attention.
+    const sorted = counties.filter((c) => rankedHealthScore(c) != null).sort((a, b) =>
+      compareByPublishedFigure(a, b, rankedHealthScore, 'desc')
     );
-    const count = sorted.length;
-    // Take top 3 and bottom 3 — guaranteed no overlap when count > 5
-    const takeTop = Math.min(3, Math.ceil(count / 2));
-    const takeBottom = Math.min(3, count - takeTop);
+    const scoredCount = sorted.length;
+    // Take top 3 and bottom 3 without overlap.
+    const takeTop = Math.min(3, Math.ceil(scoredCount / 2));
+    const takeBottom = Math.min(3, scoredCount - takeTop);
     const bestList = sorted.slice(0, takeTop);
-    const worstList = sorted.slice(count - takeBottom).reverse(); // worst first
+    const worstList = takeBottom > 0 ? sorted.slice(scoredCount - takeBottom).reverse() : [];
 
     const totalBudget = sumPublished(counties, countyBudget);
     const totalDebt = sumPublished(counties, countyDebt);
@@ -889,7 +781,7 @@ function CountyInsightsPanel({ counties }: { counties: County[] }) {
         : null;
     // Same rule as avgUtil above: a county with no score is not a county
     // that scored zero.
-    const healthReporters = counties.filter((c) => c.financial_health_score != null);
+    const healthReporters = counties.filter((c) => financialHealthBand(c.financial_health_score));
     const avgHealth =
       healthReporters.length > 0
         ? healthReporters.reduce((s, c) => s + (c.financial_health_score as number), 0) /
@@ -899,13 +791,19 @@ function CountyInsightsPanel({ counties }: { counties: County[] }) {
     return {
       best: bestList,
       worst: worstList,
-      stats: { totalBudget, totalDebt, avgUtil, avgHealth, count },
+      stats: { totalBudget, totalDebt, avgUtil, avgHealth, count: counties.length },
     };
   }, [counties]);
 
   if (counties.length === 0) {
     return <div className={styles.insights}>{t('counties.insights.no_match')}</div>;
   }
+
+  // The backend rounds individual health scores to one decimal before grading.
+  // Grade the displayed one-decimal regional mean by the same convention.
+  const displayedAvgHealth =
+    stats.avgHealth == null ? null : Math.round((stats.avgHealth + Number.EPSILON) * 10) / 10;
+  const avgHealthGrade = getGrade(displayedAvgHealth);
 
   return (
     <div className={styles.insights}>
@@ -940,40 +838,48 @@ function CountyInsightsPanel({ counties }: { counties: County[] }) {
           </span>
           <span
             className={`px-1.5 py-0.5 rounded font-bold text-[11px] ${
-              GRADE_COLORS[gradeCategory(stats.avgHealth)] ?? 'bg-gray-200 text-gray-600'
+              avgHealthGrade.cls
             }`}>
-            {stats.avgHealth == null
+            {displayedAvgHealth == null
               ? '—'
-              : `${gradeCategory(stats.avgHealth)} (${stats.avgHealth.toFixed(0)})`}
+              : `${avgHealthGrade.letter} (${displayedAvgHealth.toFixed(1)})`}
           </span>
         </div>
       </div>
 
-      <div className={styles.insightGroups}>
-        {/* Best performers */}
-        <div>
-          <h4 className='flex items-center gap-1.5 text-xs font-bold text-emerald-700 uppercase tracking-wider mb-2'>
-            <TrendingUp size={13} /> {t('counties.insights.best_performers')}
-          </h4>
-          <div className='space-y-2'>
-            {best.map((c, i) => (
-              <InsightRow key={c.id} county={c} rank={i + 1} variant='best' />
-            ))}
+      {best.length === 0 ? (
+        <p className='text-sm text-gray-500 dark:text-neutral-muted'>
+          {t('counties.insights.no_health_scores')}
+        </p>
+      ) : (
+        <div className={styles.insightGroups}>
+          {/* Best performers */}
+          <div>
+            <h4 className='flex items-center gap-1.5 text-xs font-bold text-emerald-700 uppercase tracking-wider mb-2'>
+              <TrendingUp size={13} /> {t('counties.insights.best_performers')}
+            </h4>
+            <div className='space-y-2'>
+              {best.map((c, i) => (
+                <InsightRow key={c.id} county={c} rank={i + 1} variant='best' />
+              ))}
+            </div>
           </div>
-        </div>
 
-        {/* Needs attention */}
-        <div>
-          <h4 className='flex items-center gap-1.5 text-xs font-bold text-red-700 uppercase tracking-wider mb-2'>
-            <AlertTriangle size={13} /> {t('counties.insights.needs_attention')}
-          </h4>
-          <div className='space-y-2'>
-            {worst.map((c, i) => (
-              <InsightRow key={c.id} county={c} rank={i + 1} variant='worst' />
-            ))}
-          </div>
+          {/* Needs attention */}
+          {worst.length > 0 && (
+            <div>
+              <h4 className='flex items-center gap-1.5 text-xs font-bold text-red-700 uppercase tracking-wider mb-2'>
+                <AlertTriangle size={13} /> {t('counties.insights.needs_attention')}
+              </h4>
+              <div className='space-y-2'>
+                {worst.map((c, i) => (
+                  <InsightRow key={c.id} county={c} rank={i + 1} variant='worst' />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -1663,12 +1569,18 @@ export default function CountyExplorerPage() {
     }
 
     if (filters.grades.length > 0) {
-      list = list.filter((c) => filters.grades.includes(gradeCategory(c.financial_health_score)));
+      list = list.filter((c) => {
+        const grade = financialHealthBand(c.financial_health_score)?.grade;
+        return grade != null && filters.grades.includes(grade);
+      });
     }
 
     // Map-legend grade filter (applied independently of sidebar)
     if (mapGrades.length > 0) {
-      list = list.filter((c) => mapGrades.includes(gradeCategory(c.financial_health_score)));
+      list = list.filter((c) => {
+        const grade = financialHealthBand(c.financial_health_score)?.grade;
+        return grade != null && mapGrades.includes(grade);
+      });
     }
 
     if (filters.auditStatuses.length > 0) {
@@ -1690,16 +1602,14 @@ export default function CountyExplorerPage() {
       // county with no published figure sinks in BOTH directions.
       const pick = RANKED_FIGURE[sortField];
       if (pick) return compareByPublishedFigure(a, b, pick, sortDir);
+      if (sortField === 'health') {
+        return compareByPublishedFigure(a, b, rankedHealthScore, sortDir);
+      }
 
       let cmp = 0;
       switch (sortField) {
         case 'name':
           cmp = a.name.localeCompare(b.name);
-          break;
-
-        case 'health':
-          // Absent last, whichever way the column is sorted.
-          cmp = compareByPublishedFigure(a, b, (c) => c.financial_health_score, 'asc');
           break;
 
         case 'utilization':
