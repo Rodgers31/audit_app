@@ -17,6 +17,34 @@ The existing `docker-compose.dev.yml` stays unchanged for the develop deployment
 
 ## Verification
 
+### PR #361 review follow-up
+
+- Copilot finding 4122186257 was valid: `ENHANCED_COUNTY_API_BASE` was read
+  by the API but omitted from launcher checks and child cleanup. A remote
+  inherited value now fails both `check` and `api` before startup; children
+  receive a fixed unavailable loopback fixture path.
+- Copilot finding 4122186311 was valid: the diagnostic previously delegated
+  TLS choice to libpq defaults. Remote URLs now require an explicit encrypted
+  `sslmode`, passed as a connection keyword. Host override query parameters
+  are rejected; loopback URLs remain usable for the local container.
+- Copilot finding 4122186392 was valid: row counts and synthetic text prefixes
+  did not detect replacement of a seeded row. Reopen now compares every mapped
+  column against the deterministic fixture values. The browser acceptance
+  control's KES 125 billion latest-budget mutation is the sole accepted value
+  change. Earlier local fixture databases with dynamic timestamps need reseeding.
+- The existing county literal guard in CI flagged the synthetic smoke script.
+  A narrow `counties-literal-ok` comment explains that its two names are fixture
+  rows, not a ranking.
+- Red state: the added regression cases yielded **17 failed, 16 passed**;
+  the county guard had **1 failure**. Green state:
+  `venv/bin/python -m pytest backend/tests/test_local_dev_launcher.py
+  backend/tests/test_local_dev_fixture_workflow.py
+  backend/tests/test_production_diagnostic_connection.py
+  backend/tests/test_apis_no_invented_county_rankings.py -q` yielded
+  **407 passed**. The fixture reopen test includes the approved browser budget
+  mutation. All diagnostic tests use a fake connector; no production endpoint
+  was contacted.
+
 - Guard regression was red before the launcher existed (the test's expected
   rejection text was absent); after implementation,
   `/Users/roger/Documents/projects/audit_app/venv/bin/python -m pytest backend/tests/test_local_dev_launcher.py
@@ -25,10 +53,10 @@ The existing `docker-compose.dev.yml` stays unchanged for the develop deployment
   The launcher tests execute both `check` and `api` with inherited remote
   database/API targets, including a loopback URL with a remote libpq `host`
   override. They reject before process startup.
-- Two additional fixture preflight tests first failed against a seeder that
+- Two original fixture preflight tests first failed against a seeder that
   accepted unrelated tables and extra rows. They now pass: existing databases
-  are inspected before any DDL, and only the exact synthetic fixture shape is
-  reopened.
+  are inspected before any DDL. Full row-value validation was added in the
+  PR #361 follow-up above.
 - `/Users/roger/Documents/projects/audit_app/venv/bin/python scripts/local_dev.py db-up` created and waited for the
   isolated PostgreSQL service to become healthy. Docker was initially stopped;
   it became available during the session. No production database was accessed.

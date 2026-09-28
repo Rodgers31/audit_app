@@ -16,6 +16,7 @@ POSTGRES_URL = (
     f"postgresql://auditgava_dev:auditgava_dev@127.0.0.1:{POSTGRES_PORT}/"
     "auditgava_local_dev?application_name=auditgava-local-dev-api"
 )
+ENHANCED_COUNTY_API_BASE = "http://127.0.0.1:18080/__fixture_upstream_unavailable"
 PRIVATE_ENV_FILES = (
     ROOT / ".env", ROOT / "backend/.env", ROOT / "frontend/.env",
     ROOT / "frontend/.env.local", ROOT / "frontend/.env.development",
@@ -28,6 +29,7 @@ TARGETS = {
     "PGHOSTADDR": {"127.0.0.1", "::1"},
     "NEXT_PUBLIC_API_URL": {f"http://127.0.0.1:{API_PORT}", f"http://localhost:{API_PORT}"},
     "NEXT_PUBLIC_SUPABASE_URL": {f"http://127.0.0.1:{API_PORT}", f"http://localhost:{API_PORT}"},
+    "ENHANCED_COUNTY_API_BASE": {ENHANCED_COUNTY_API_BASE},
 }
 
 
@@ -52,7 +54,7 @@ def clean_environment(data_dir):
     for name in list(env):
         if name.startswith(("SUPABASE_", "NEXT_PUBLIC_", "DB_", "PG")):
             env.pop(name)
-    for name in ("DATABASE_URL", "NEXT_PUBLIC_API_URL", "REDIS_URL", "SENTRY_DSN", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"):
+    for name in ("DATABASE_URL", "ENHANCED_COUNTY_API_BASE", "NEXT_PUBLIC_API_URL", "REDIS_URL", "SENTRY_DSN", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"):
         env.pop(name, None)
     env.update(
         ENVIRONMENT="development", AUTO_SEEDER_ENABLED="false",
@@ -61,6 +63,7 @@ def clean_environment(data_dir):
         LOCAL_DEV_CORS_ORIGINS=f"http://127.0.0.1:{FRONTEND_PORT},http://localhost:{FRONTEND_PORT}",
         CACHE_GENERATION_FILE=str(data_dir / "cache-generation"),
         NEXT_PUBLIC_API_URL=f"http://127.0.0.1:{API_PORT}",
+        ENHANCED_COUNTY_API_BASE=ENHANCED_COUNTY_API_BASE,
         NEXT_PUBLIC_SUPABASE_URL=f"http://127.0.0.1:{API_PORT}",
         NEXT_PUBLIC_SUPABASE_ANON_KEY="local-dev-only-no-auth",
         FRONTEND_URL=f"http://127.0.0.1:{FRONTEND_PORT}",

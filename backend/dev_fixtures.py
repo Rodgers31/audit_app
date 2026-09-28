@@ -3,7 +3,7 @@
 Shared with the existing browser acceptance API. Never imported by production.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlalchemy import func, inspect, select
 from sqlalchemy.dialects.postgresql import JSONB
@@ -15,12 +15,114 @@ def _jsonb_as_text(element, compiler, **kw):
     return "TEXT"
 
 
-def seed_local_fixture(db_module):
+FIXTURE_TIMESTAMP = datetime(2026, 4, 1)
+
+
+def _fixture_rows():
     from models import (
-        Audit, Base, BudgetLine, Country, DocumentType, Entity, EntityType,
-        FiscalPeriod, Severity, SourceDocument,
+        Audit, BudgetLine, Country, DocumentStatus, DocumentType, Entity,
+        EntityType, FiscalPeriod, Severity, SourceDocument,
     )
 
+    stamp = FIXTURE_TIMESTAMP
+    return {
+        Country: [{
+            "id": 1, "iso_code": "KEN", "name": "Kenya", "currency": "KES",
+            "timezone": "Africa/Nairobi", "default_locale": "en_KE",
+            "meta": {"fixture": "auditgava-local-dev-v1", "synthetic": True},
+            "created_at": stamp,
+        }],
+        Entity: [
+            {
+                "id": pk, "country_id": 1, "type": EntityType.COUNTY,
+                "canonical_name": name, "slug": name.split()[0].lower(),
+                "alt_names": [], "meta": {"county_code": code, "synthetic": True},
+                "created_at": stamp,
+            }
+            for pk, name, code in ((47, "Nairobi County", "047"), (1, "Mombasa County", "001"))
+        ],
+        FiscalPeriod: [
+            {
+                "id": pk, "country_id": 1, "label": label,
+                "start_date": datetime(year, 7, 1),
+                "end_date": datetime(year + 1, 3 if pk == 2 else 6, 30),
+                "created_at": stamp,
+            }
+            for pk, label, year in ((1, "FY2024/25", 2024), (2, "FY2025/26 9M", 2025))
+        ],
+        SourceDocument: [
+            {
+                "id": 1, "country_id": 1, "publisher": "Synthetic local fixture",
+                "title": "Synthetic CBIRR browser acceptance publication",
+                "url": "https://example.invalid/auditgava-local-budget.pdf",
+                "doc_type": DocumentType.BUDGET, "status": DocumentStatus.AVAILABLE,
+                "fetch_date": stamp, "last_seen_at": stamp, "created_at": stamp,
+                "meta": {"publication_date": stamp.date().isoformat(), "synthetic": True},
+            },
+            {
+                "id": 2, "country_id": 1, "publisher": "Synthetic local fixture",
+                "title": "Synthetic local audit findings",
+                "url": "https://example.invalid/auditgava-local-audit.pdf",
+                "doc_type": DocumentType.AUDIT, "status": DocumentStatus.AVAILABLE,
+                "fetch_date": stamp, "last_seen_at": stamp, "created_at": stamp,
+                "meta": {"synthetic": True},
+            },
+        ],
+        BudgetLine: [
+            {
+                "id": pk, "entity_id": 47, "period_id": period, "category": "Total",
+                "line_type": "total", "allocated_amount": amount, "actual_spent": 0,
+                "currency": "KES", "source_document_id": 1, "publishable": True,
+                "page_ref": "p. 1", "provenance": [], "created_at": stamp,
+            }
+            for pk, period, amount in ((1, 1, 50_000_000_000), (2, 2, 100_000_000_000))
+        ],
+        Audit: [
+            {
+                "id": 1, "entity_id": 47, "period_id": 1,
+                "finding_text": "Synthetic finding: documentation for one local test payment is incomplete.",
+                "severity": Severity.WARNING, "source_document_id": 2,
+                "page_ref": "p. 2", "publishable": True,
+                "audit_year": 2024, "audit_opinion": "qualified",
+                "provenance": [{"status": "open", "category": "documentation"}],
+                "created_at": stamp,
+            },
+            {
+                "id": 2, "entity_id": 47, "period_id": 2,
+                "finding_text": "Synthetic withheld finding: this has no page citation.",
+                "severity": Severity.CRITICAL, "source_document_id": 2,
+                "publishable": False, "audit_year": 2025,
+                "provenance": [{"status": "withheld"}], "created_at": stamp,
+            },
+        ],
+    }
+
+
+def _verify_fixture_rows(db, fixture_rows):
+    from models import BudgetLine
+
+    for model, expected_rows in fixture_rows.items():
+        observed = {row.id: row for row in db.query(model)}
+        for expected in expected_rows:
+            row = observed.get(expected["id"])
+            if row is None:
+                raise RuntimeError("Local fixture seeder refuses changed fixture IDs")
+            for attribute in inspect(model).column_attrs:
+                key = attribute.key
+                actual = getattr(row, key)
+                wanted = expected.get(key)
+                # The browser acceptance control changes only this synthetic budget value.
+                if model is BudgetLine and row.id == 2 and key == "allocated_amount":
+                    if actual in (wanted, 125_000_000_000):
+                        continue
+                if actual != wanted:
+                    raise RuntimeError(f"Local fixture seeder refuses changed {model.__tablename__}.{key}")
+
+
+def seed_local_fixture(db_module):
+    from models import Base
+
+    fixture_rows = _fixture_rows()
     expected_tables = set(Base.metadata.tables)
     existing_tables = set(inspect(db_module.engine).get_table_names())
     if existing_tables:
@@ -28,85 +130,19 @@ def seed_local_fixture(db_module):
         # use. The fixture's exact row counts are small enough to check at boot.
         if existing_tables != expected_tables:
             raise RuntimeError("Local fixture seeder refuses a database with other tables")
-        expected_counts = {
-            "countries": 1,
-            "entities": 2,
-            "fiscal_periods": 2,
-            "source_documents": 2,
-            "budget_lines": 2,
-            "audits": 2,
-        }
+        expected_counts = {model.__tablename__: len(rows) for model, rows in fixture_rows.items()}
         with db_module.SessionLocal() as db:
-            country = db.query(Country).one_or_none()
-            if country is None or (country.meta or {}).get("fixture") != "auditgava-local-dev-v1":
-                raise RuntimeError("Local fixture seeder refuses a database without its fixture marker")
             for table in Base.metadata.tables.values():
                 count = db.execute(select(func.count()).select_from(table)).scalar_one()
                 if count != expected_counts.get(table.name, 0):
                     raise RuntimeError("Local fixture seeder refuses unexpected rows")
-            if any(not doc.title.startswith("Synthetic ") for doc in db.query(SourceDocument)):
-                raise RuntimeError("Local fixture seeder refuses non-synthetic documents")
-            if any(not audit.finding_text.startswith("Synthetic ") for audit in db.query(Audit)):
-                raise RuntimeError("Local fixture seeder refuses non-synthetic findings")
+            _verify_fixture_rows(db, fixture_rows)
         return
 
     Base.metadata.create_all(db_module.engine)
     with db_module.SessionLocal() as db:
-        db.add(Country(
-            id=1, iso_code="KEN", name="Kenya", currency="KES",
-            timezone="Africa/Nairobi", default_locale="en_KE",
-            meta={"fixture": "auditgava-local-dev-v1", "synthetic": True},
-        ))
-        for pk, name, code in [(47, "Nairobi County", "047"), (1, "Mombasa County", "001")]:
-            db.add(Entity(
-                id=pk, country_id=1, type=EntityType.COUNTY,
-                canonical_name=name, slug=name.split()[0].lower(),
-                meta={"county_code": code, "synthetic": True},
-            ))
-        for pk, label, year in [(1, "FY2024/25", 2024), (2, "FY2025/26 9M", 2025)]:
-            db.add(FiscalPeriod(
-                id=pk, country_id=1, label=label,
-                start_date=datetime(year, 7, 1),
-                end_date=datetime(year + 1, 3 if pk == 2 else 6, 30),
-            ))
-        now = datetime.now(timezone.utc)
-        db.add(SourceDocument(
-            id=1, country_id=1, publisher="Synthetic local fixture",
-            title="Synthetic CBIRR browser acceptance publication",
-            url="https://example.invalid/auditgava-local-budget.pdf",
-            doc_type=DocumentType.BUDGET, fetch_date=now,
-            meta={"publication_date": now.date().isoformat(), "synthetic": True},
-        ))
-        db.add(SourceDocument(
-            id=2, country_id=1, publisher="Synthetic local fixture",
-            title="Synthetic local audit findings",
-            url="https://example.invalid/auditgava-local-audit.pdf",
-            doc_type=DocumentType.AUDIT, fetch_date=now,
-            meta={"synthetic": True},
-        ))
-        db.flush()
-        for pk, period, amount in [(1, 1, 50_000_000_000), (2, 2, 100_000_000_000)]:
-            db.add(BudgetLine(
-                id=pk, entity_id=47, period_id=period, category="Total",
-                line_type="total", allocated_amount=amount, actual_spent=0,
-                currency="KES", source_document_id=1, publishable=True,
-                page_ref="p. 1",
-            ))
-        db.add(Audit(
-            id=1, entity_id=47, period_id=1,
-            finding_text="Synthetic finding: documentation for one local test payment is incomplete.",
-            severity=Severity.WARNING, source_document_id=2,
-            page_ref="p. 2", publishable=True,
-            audit_year=2024, audit_opinion="qualified",
-            provenance=[{"status": "open", "category": "documentation"}],
-        ))
-        db.add(Audit(
-            id=2, entity_id=47, period_id=2,
-            finding_text="Synthetic withheld finding: this has no page citation.",
-            severity=Severity.CRITICAL, source_document_id=2,
-            page_ref=None, publishable=False,
-            audit_year=2025, provenance=[{"status": "withheld"}],
-        ))
+        for model, rows in fixture_rows.items():
+            db.add_all(model(**values) for values in rows)
         db.commit()
 
 

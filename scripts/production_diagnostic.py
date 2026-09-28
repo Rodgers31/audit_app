@@ -8,17 +8,39 @@ transaction. A filename or application_name alone grants no protection.
 
 import os
 import sys
+from urllib.parse import parse_qs, urlsplit
+
+
+def connection_options(url):
+    """Validate the destination and pin TLS before libpq can use environment defaults."""
+    parsed = urlsplit(url)
+    if parsed.scheme not in {"postgres", "postgresql"} or not parsed.hostname or parsed.fragment:
+        raise ValueError("Diagnostic requires an explicit PostgreSQL TCP URL")
+    options = parse_qs(parsed.query, keep_blank_values=True)
+    if any(name in options for name in ("host", "hostaddr", "service", "servicefile")):
+        raise ValueError("Diagnostic URL cannot override its host with connection options")
+    modes = options.get("sslmode", [])
+    if len(modes) > 1:
+        raise ValueError("Diagnostic URL must specify sslmode once")
+    if parsed.hostname in {"localhost", "127.0.0.1", "::1"}:
+        # A libpq PGHOSTADDR environment value must not redirect the local exception.
+        return {"hostaddr": "::1" if parsed.hostname == "::1" else "127.0.0.1"}
+    if not modes or modes[0] not in {"require", "verify-ca", "verify-full"}:
+        raise ValueError("Remote diagnostic URL requires sslmode=require or stronger")
+    return {"sslmode": modes[0]}
 
 
 def main():
     url = os.environ.get("PRODUCTION_DIAGNOSTIC_DATABASE_URL")
     if not url:
         raise SystemExit("Set PRODUCTION_DIAGNOSTIC_DATABASE_URL explicitly for this invocation")
+    options = connection_options(url)
 
     import psycopg2
 
     with psycopg2.connect(
         url, application_name="auditgava-production-diagnostic", connect_timeout=5,
+        **options,
     ) as conn:
         conn.set_session(readonly=True)
         with conn.cursor() as cursor:

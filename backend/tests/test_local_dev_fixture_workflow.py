@@ -53,6 +53,45 @@ def test_fixture_refuses_extra_rows_in_marked_database(tmp_path):
         seed_local_fixture(target)
 
 
+@pytest.mark.parametrize(
+    "model_name,pk,field,value",
+    [
+        ("Country", 1, "meta", {"fixture": "auditgava-local-dev-v1", "synthetic": False}),
+        ("Entity", 1, "canonical_name", "Changed county"),
+        ("FiscalPeriod", 1, "label", "FY2099/00"),
+        ("SourceDocument", 1, "url", "https://production.example/budget.pdf"),
+        ("SourceDocument", 2, "url", "https://production.example/audit.pdf"),
+        ("BudgetLine", 1, "allocated_amount", 42),
+        ("BudgetLine", 2, "publishable", False),
+        ("Audit", 1, "entity_id", 1),
+        ("Audit", 2, "publishable", True),
+    ],
+)
+def test_fixture_refuses_changed_rows_with_the_same_counts(tmp_path, model_name, pk, field, value):
+    import models
+    from dev_fixtures import seed_local_fixture
+
+    target = _sqlite_fixture_target(tmp_path / "fixture.sqlite")
+    seed_local_fixture(target)
+    with target.SessionLocal() as db:
+        setattr(db.get(getattr(models, model_name), pk), field, value)
+        db.commit()
+    with pytest.raises(RuntimeError, match="refuses"):
+        seed_local_fixture(target)
+
+
+def test_fixture_reopens_after_the_approved_browser_budget_change(tmp_path):
+    from dev_fixtures import seed_local_fixture
+    from models import BudgetLine
+
+    target = _sqlite_fixture_target(tmp_path / "fixture.sqlite")
+    seed_local_fixture(target)
+    with target.SessionLocal() as db:
+        db.get(BudgetLine, 2).allocated_amount = 125_000_000_000
+        db.commit()
+    seed_local_fixture(target)
+
+
 def _snapshot(database_path):
     script = r'''
 import json

@@ -17,6 +17,7 @@ def get(path):
 
 def main():
     counties = {item["name"]: item for item in get("/api/v1/counties")}
+    # counties-literal-ok: these are the two synthetic rows in the local acceptance fixture.
     assert set(counties) == {"Nairobi", "Mombasa"}
     assert counties["Nairobi"]["total_budget"] == 100_000_000_000
     assert counties["Nairobi"]["audit_status"] == "qualified"

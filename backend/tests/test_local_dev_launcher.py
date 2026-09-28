@@ -21,6 +21,7 @@ LAUNCHER = ROOT / "scripts" / "local_dev.py"
         {"DB_HOST": "aws-0.example.pooler.supabase.com"},
         {"NEXT_PUBLIC_API_URL": "https://api.production.example"},
         {"NEXT_PUBLIC_SUPABASE_URL": "https://project.supabase.co"},
+        {"ENHANCED_COUNTY_API_BASE": "https://production-analytics.example"},
     ],
 )
 def test_launcher_rejects_inherited_remote_targets(inherited, tmp_path, command):
