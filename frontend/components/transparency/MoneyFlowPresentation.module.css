@@ -3,7 +3,8 @@
   --flow-ink: rgb(var(--c-neutral-text));
   --flow-muted: rgb(var(--c-neutral-muted));
   --flow-line: rgb(var(--c-neutral-border));
-  --flow-divider: #526b59;
+  --flow-divider: #a3ad9e;
+  --flow-report-rule: #98a48f;
   --flow-allocation: #365f71;
   --flow-good: #28634b;
   --flow-fair: #805b25;
@@ -17,7 +18,8 @@
   container: money-flow / inline-size;
 }
 :global(.dark) .presentation {
-  --flow-divider: #9db7a5;
+  --flow-divider: #576c5e;
+  --flow-report-rule: #738978;
   --flow-allocation: #9cc4d5;
   --flow-good: #8fbea3;
   --flow-fair: #d4b57d;
@@ -101,7 +103,7 @@
 }
 .overview {
   padding: 32px 0 36px;
-  border-block: 5px solid var(--flow-divider);
+  border-block: 1px solid var(--flow-divider);
 }
 .overviewHead {
   display: flex;
@@ -213,7 +215,9 @@
   max-width: 78ch;
 }
 .countySection {
-  padding-top: 16px;
+  padding: 24px clamp(12px, 2.5vw, 32px);
+  border: 2px dotted var(--flow-report-rule);
+  border-radius: 4px;
 }
 .countyHeading {
   margin-bottom: 20px;
