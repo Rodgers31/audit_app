@@ -14,9 +14,11 @@ test('county table distinguishes a sourced amount, publisher zero and absence', 
 
 test('county fiscal-period selection fetches and renders that period', async ({ page }) => {
   await page.goto('/counties');
-  await page.getByRole('button', { name: /Year: FY2025\/26 9M/ }).click();
+  const fiscalYear = page.getByRole('combobox', { name: 'Year', exact: true });
+  await expect(fiscalYear).toHaveValue('FY2025/26 9M');
   const response = page.waitForResponse(r => r.url().includes('fiscal_year=FY2024%2F25') && r.ok());
-  await page.getByRole('button', { name: 'FY2024/25', exact: true }).click();
+  await fiscalYear.selectOption('FY2024/25');
   await response;
+  await expect(fiscalYear).toHaveValue('FY2024/25');
   await expect(page.getByRole('row').filter({ hasText: 'Nairobi' })).toContainText('50.0B');
 });
