@@ -113,7 +113,7 @@ describe.each(VARIANTS)('DataFreshnessBadge (%s) with no measurement', (variant)
     const html = renderToString(wrap(client(), <DataFreshnessBadge sources='COB/Treasury' variant={variant} />));
 
     expect(visibleText(html)).not.toMatch(/up to date/i);
-    expect(visibleText(html)).toMatch(/checking data freshness/i);
+    expect(visibleText(html)).toMatch(/freshness unknown/i);
     expect(html).not.toMatch(/up to date/i); // nor in aria-label / title
     expect(html).not.toMatch(/emerald/);
     expect(get).not.toHaveBeenCalled();
@@ -165,5 +165,55 @@ describe('DataFreshnessBadge banner keeps one shape across states (no CLS)', () 
     const measured = render(wrap(qc, <DataFreshnessBadge sources='COB' variant='banner' />));
 
     expect(skeleton(measured.container)).toEqual(pendingShape);
+  });
+});
+
+describe.each(VARIANTS)('publisher coverage (%s)', (variant) => {
+  it.each([
+    ['missing Treasury', [FRESH_RESPONSE.sources[0]]],
+    ['duplicate COB', [FRESH_RESPONSE.sources[0], FRESH_RESPONSE.sources[0]]],
+  ])('withholds a freshness verdict for %s', (_, sources) => {
+    const qc = client();
+    qc.setQueryData(['data-freshness'], { sources });
+    const { container } = render(wrap(qc, <DataFreshnessBadge sources='COB/Treasury' variant={variant} />));
+    expect(container.innerHTML).not.toMatch(/up to date/i);
+    expect(screen.getByText(/freshness unknown/i)).toBeVisible();
+    expect(screen.getByText(/Source: COB\/Treasury/)).toBeVisible();
+  });
+
+  it.each(['fresh', 'stale', 'outdated'])('uses the worst measured status with complete coverage: %s', (status) => {
+    const qc = client();
+    qc.setQueryData(['data-freshness'], { sources: [FRESH_RESPONSE.sources[0], {
+      ...FRESH_RESPONSE.sources[0], source: 'Treasury', label: 'National Treasury', status,
+    }] });
+    const { container } = render(wrap(qc, <DataFreshnessBadge sources='COB/Treasury' variant={variant} />));
+    expect(container.innerHTML).toMatch(status === 'fresh' ? /up to date/i : status === 'stale' ? /may be stale/i : /outdated/i);
+  });
+});
+
+describe('malformed freshness evidence', () => {
+  it.each(['T00:30:00+14:00', 'T23:30:00-02:00'])('accepts and displays a publisher-local date across a UTC day boundary (%s)', (time) => {
+    const qc = client();
+    qc.setQueryData(['data-freshness'], { sources: [{ ...FRESH_RESPONSE.sources[0], last_updated: `${RECENT}${time}` }] });
+    const html = renderToString(wrap(qc, <DataFreshnessBadge sources='COB' variant='banner' />));
+    expect(html).toMatch(/Up to date/);
+    expect(html).not.toMatch(/Freshness unknown/);
+    const expectedDate = new Date(`${RECENT}T00:00:00Z`).toLocaleDateString('en-GB', {
+      timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric',
+    });
+    expect(html).toContain(expectedDate);
+  });
+  it.each([null, 'not-a-date', '9999-01-01', '2026-02-31', true, {}, 0])('withholds fresh for invalid date %j', (last_updated) => {
+    const qc = client();
+    qc.setQueryData(['data-freshness'], { sources: [{ ...FRESH_RESPONSE.sources[0], last_updated }] });
+    const html = renderToString(wrap(qc, <DataFreshnessBadge sources='COB' variant='banner' />));
+    expect(html).not.toMatch(/Up to date|Invalid Date|NaN|emerald/);
+    expect(html).toMatch(/Freshness unknown/);
+  });
+  it.each([{}, { sources: null }, { sources: {} }, { sources: [null] }])('renders unknown for malformed payload %j', (data) => {
+    const qc = client();
+    qc.setQueryData(['data-freshness'], data);
+    const html = renderToString(wrap(qc, <DataFreshnessBadge sources='COB' variant='banner' />));
+    expect(html).toMatch(/Freshness unknown/);
   });
 });

@@ -2033,12 +2033,9 @@ async def _warm_cache() -> None:
 app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 
-# Cache-Control middleware: attach HTTP caching headers to GET /api/v1/*
-# responses. The frontend uses React Query (which already has in-memory
-# cache), but without HTTP cache headers the browser still pays full
-# payload cost on back/forward nav and hard reloads. We set a short
-# max-age (60s) with a long stale-while-revalidate window so pages feel
-# instant on navigation while revalidating in the background.
+# HTTP caches are not part of signed invalidation. Do not let a browser or
+# intermediary reuse an old public API body after the server caches clear.
+# Backend response caches still provide the normal performance benefit.
 @app.middleware("http")
 async def add_cache_headers(request, call_next):
     response = await call_next(request)
@@ -2046,16 +2043,13 @@ async def add_cache_headers(request, call_next):
     if (
         request.method == "GET"
         and path.startswith("/api/v1/")
-        and response.status_code == 200
         # Skip auth-scoped or mutation-adjacent endpoints
         and not path.startswith("/api/v1/auth/")
         and not path.startswith("/api/v1/account/")
         and not path.startswith("/api/v1/watchlist")
         and "cache-control" not in {k.lower() for k in response.headers.keys()}
     ):
-        response.headers["Cache-Control"] = (
-            "public, max-age=60, stale-while-revalidate=3600"
-        )
+        response.headers["Cache-Control"] = "no-store"
     return response
 
 
@@ -7028,17 +7022,35 @@ async def get_sources_summary():
     if not DATABASE_AVAILABLE:
         raise HTTPException(status_code=503, detail="Database unavailable")
 
-    from sqlalchemy import func as _fn
+    from sqlalchemy import func as _fn, case
+    from services.source_evidence import downloaded_document_criterion
+    from models import Extraction
+
     with next(get_db()) as db:
         rows = (
             db.query(
                 DBSourceDocument.publisher,
                 _fn.count(DBSourceDocument.id).label("doc_count"),
-                _fn.max(DBSourceDocument.fetch_date).label("last_fetched"),
+                _fn.max(
+                    case((downloaded_document_criterion(), DBSourceDocument.last_verified_at))
+                ).label("last_fetched"),
+                _fn.sum(
+                    case((downloaded_document_criterion(), 1), else_=0)
+                ).label("downloaded"),
                 _fn.max(DBSourceDocument.last_seen_at).label("last_seen_at"),
             )
             .group_by(DBSourceDocument.publisher)
             .order_by(_fn.count(DBSourceDocument.id).desc())
+            .all()
+        )
+
+        extracted = dict(
+            db.query(
+                DBSourceDocument.publisher,
+                _fn.count(_fn.distinct(Extraction.source_document_id)),
+            )
+            .join(Extraction, Extraction.source_document_id == DBSourceDocument.id)
+            .group_by(DBSourceDocument.publisher)
             .all()
         )
 
@@ -7152,7 +7164,7 @@ async def get_sources_summary():
         return {}
 
     out = []
-    for pub, count, fetched, seen in rows:
+    for pub, count, fetched, downloaded, seen in rows:
         meta = _meta_for(pub)
         out.append(
             {
@@ -7161,6 +7173,8 @@ async def get_sources_summary():
                 "role": meta.get("role", ""),
                 "website": meta.get("website"),
                 "document_count": int(count or 0),
+                "downloaded_documents": int(downloaded or 0),
+                "extracted_documents": int(extracted.get(pub, 0)),
                 "last_fetched": fetched.isoformat() if fetched else None,
                 "last_seen_at": seen.isoformat() if seen else None,
                 "doc_types": by_pub.get(pub, {}),

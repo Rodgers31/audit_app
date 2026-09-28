@@ -1,5 +1,6 @@
 'use client';
 
+import { useSyncExternalStore } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api/axios';
 import { Clock, RefreshCw } from 'lucide-react';
@@ -19,6 +20,10 @@ interface FreshnessResponse {
 
 type FreshnessStatus = SourceFreshness['status'];
 
+const subscribe = () => () => {};
+const clientSnapshot = () => true;
+const serverSnapshot = () => false;
+
 /**
  * What the badge can say. 'checking' and 'unknown' are not freshness verdicts:
  * they are what renders when nothing was measured (request in flight or the
@@ -31,6 +36,15 @@ const STATUS_RANK: Record<FreshnessStatus, number> = { fresh: 0, stale: 1, outda
 
 function isFreshnessStatus(status: unknown): status is FreshnessStatus {
   return typeof status === 'string' && Object.prototype.hasOwnProperty.call(STATUS_RANK, status);
+}
+
+/** A status word cannot certify an absent, impossible or future publication. */
+function isPublicationDate(value: unknown): value is string {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}(?:T[\d:.]+(?:Z|[+-]\d{2}:\d{2})?)?$/.test(value)) return false;
+  const stamp = Date.parse(value);
+  const calendar = new Date(`${value.slice(0, 10)}T00:00:00Z`);
+  return Number.isFinite(stamp) && stamp <= Date.now() &&
+    Number.isFinite(calendar.getTime()) && calendar.toISOString().slice(0, 10) === value.slice(0, 10);
 }
 
 const STATUS_DOT: Record<BadgeState, string> = {
@@ -107,6 +121,13 @@ function relativeTime(dateStr: string): string {
   return `${diffMonths} month${diffMonths === 1 ? '' : 's'} ago`;
 }
 
+function publicationCalendarDate(dateStr: string): string {
+  // A publisher's date does not change when its timestamp crosses a UTC day.
+  return new Date(`${dateStr.slice(0, 10)}T00:00:00Z`).toLocaleDateString('en-GB', {
+    timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric',
+  });
+}
+
 /**
  * Badge showing data source + freshness.
  * Pass one or more source codes (e.g. "COB", "OAG", "CBK/Treasury").
@@ -124,32 +145,35 @@ export default function DataFreshnessBadge({
   className?: string;
   variant?: 'inline' | 'banner';
 }) {
-  const { data, isPending } = useDataFreshness();
+  const { data, isPending, isError } = useDataFreshness();
+  const hydrated = useSyncExternalStore(subscribe, clientSnapshot, serverSnapshot);
 
-  const sourceCodes = sources.split('/').map((s) => s.trim());
-  const matched = data?.sources.filter((s) => sourceCodes.includes(s.source)) ?? [];
+  const sourceCodes = Array.from(new Set(sources.split('/').map((s) => s.trim()).filter(Boolean)));
+  const entries = Array.isArray(data?.sources) ? data.sources : [];
+  const matched = entries.filter((s) => s && typeof s === 'object' && sourceCodes.includes(s.source));
 
   // Worst status among matched sources. No match, or any status we do not
   // recognise, is not a measurement — it must not default to 'fresh'.
-  const measured = matched.length > 0 && matched.every((s) => isFreshnessStatus(s.status));
+  const measured = !isError && sourceCodes.length > 0 &&
+    sourceCodes.every((code) => matched.some((s) => s.source === code)) &&
+    matched.every((s) => isFreshnessStatus(s.status) && isPublicationDate(s.last_updated));
   const state: BadgeState = measured
     ? matched.reduce<FreshnessStatus>(
         (worst, s) => (STATUS_RANK[s.status] > STATUS_RANK[worst] ? s.status : worst),
         matched[0].status,
       )
-    : isPending
+    : isPending && hydrated
       ? 'checking'
       : 'unknown';
 
-  // Most recent last_updated among matched
-  const dates = matched
+  // A multi-publisher badge cannot date the whole group by its newest member.
+  const dates = (measured ? matched : [])
     .map((s) => s.last_updated)
     .filter(Boolean)
-    .sort()
-    .reverse();
-  const latestDate = dates[0];
+    .sort();
+  const latestDate = measured && dates.length === matched.length ? dates[0] : null;
 
-  const label = matched.map((s) => s.label).join(' / ');
+  const label = measured ? matched.map((s) => typeof s.label === 'string' ? s.label : s.source).join(' / ') : sources;
 
   if (variant === 'banner') {
     return (
@@ -176,11 +200,7 @@ export default function DataFreshnessBadge({
             {latestDate && (
               <>
                 {' · '}
-                {new Date(latestDate).toLocaleDateString('en-GB', {
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                })}
+                {publicationCalendarDate(latestDate)}
               </>
             )}
           </div>
@@ -215,7 +235,7 @@ export default function DataFreshnessBadge({
         aria-label={`Data freshness status: ${STATUS_LABEL[state]}`}
       />
       <span>
-        Data as of: {latestDate ? new Date(latestDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+        Data as of: {latestDate ? publicationCalendarDate(latestDate) : '—'}
         {' | '}Source: {sources}
       </span>
     </div>
