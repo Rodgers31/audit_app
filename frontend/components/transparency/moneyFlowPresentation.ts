@@ -1,3 +1,5 @@
+import type { MoneyFlowData } from '@/types';
+
 /** Presentation only: amounts and efficiency are supplied by the existing money-flow API. */
 export type FlowTone = 'neutral' | 'allocation' | 'good' | 'fair' | 'low';
 
@@ -50,3 +52,15 @@ export interface CountyFlowRow {
 }
 
 export type CountySortKey = 'efficiency' | 'flagged' | 'gap' | 'name' | 'allocated';
+
+/** Missing expenditure alone is not evidence of a modelled allocation. */
+export function isProjectedMoneyFlow(data: MoneyFlowData | null | undefined): boolean {
+  return Boolean(
+    data?.budget_source === 'cra_model' &&
+      data.stages?.some((stage) => stage.stage === 'Allocated' && stage.amount != null) &&
+      !data.stages?.some(
+        (stage) => ['Spent', 'Flagged', 'Released'].includes(stage.stage) && stage.amount != null
+      ) &&
+      data.efficiency_score == null
+  );
+}

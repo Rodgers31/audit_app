@@ -18,6 +18,7 @@
 
 import { AlertTriangle, ArrowDownRight, Info } from 'lucide-react';
 import type { BudgetSource, MoneyFlowData } from '@/types';
+import { isProjectedMoneyFlow } from './moneyFlowPresentation';
 import styles from './MoneyFlowPresentation.module.css';
 
 interface Props {
@@ -40,6 +41,12 @@ const ALLOCATED_TAGLINE: Record<NonNullable<BudgetSource>, string> = {
   cob_cbirr: 'Controller of Budget CBIRR county aggregates',
   cra_model: 'CRA equitable-share model — not CoB-reported',
   mixed: 'CoB CBIRR where published; CRA model elsewhere',
+};
+
+const SOURCE_LABEL: Record<NonNullable<BudgetSource>, string> = {
+  cob_cbirr: 'Controller of Budget CBIRR',
+  cra_model: 'CRA Budget Estimate',
+  mixed: 'CoB CBIRR + CRA model',
 };
 
 /**
@@ -98,8 +105,7 @@ export default function MoneyFlowHero({ data }: Props) {
   const spent = stageMap.Spent?.amount ?? null;
   const flagged = stageMap.Flagged?.amount ?? null;
 
-  // A projected / budgeted year will have allocation but no execution yet.
-  const isProjected = allocated != null && spent == null && released == null;
+  const isProjected = isProjectedMoneyFlow(data);
 
   // The Allocated stage's provenance is per-response, not fixed — see
   // ALLOCATED_TAGLINE. Absent means the API published no budget, and then the
@@ -110,9 +116,17 @@ export default function MoneyFlowHero({ data }: Props) {
   const countyLabel = data.county_name || 'All counties';
 
   // If we have no allocated anchor, nothing to draw.
-  if (!allocated) {
+  if (allocated == null || allocated === 0) {
     return (
-      <EmptyHero fy={fy} reason='No CRA/CoB allocations have been recorded yet for this year.' />
+      <EmptyHero
+        fy={fy}
+        title={allocated === 0 ? 'Reported allocation: KES 0' : 'Allocation unavailable'}
+        reason={
+          allocated === 0
+            ? 'Percentage comparisons cannot be calculated against a zero allocation. Other available national figures remain in the summary below.'
+            : 'A complete national allocation is unavailable for this period. Other available national figures remain in the summary below.'
+        }
+      />
     );
   }
 
@@ -120,7 +134,7 @@ export default function MoneyFlowHero({ data }: Props) {
   const pct = (v: number | null | undefined) =>
     v != null && allocated > 0 ? Math.min(100, (v / allocated) * 100) : 0;
 
-  const allocatedPct = 100;
+  const allocatedPct = allocated > 0 ? 100 : 0;
   const spentPct = pct(spent);
   const flaggedPct = pct(flagged);
 
@@ -136,14 +150,16 @@ export default function MoneyFlowHero({ data }: Props) {
     <section className={`${styles.presentation} ${styles.flow}`} aria-labelledby='money-flow-title'>
       <header className={styles.flowHead}>
         <p className={styles.sourceLabel}>
-          {isProjected ? 'CRA Budget Estimate' : 'Controller of Budget + OAG'} · FY{' '}
-          {fy.replace('FY', '').trim()}
+          {data.budget_source ? SOURCE_LABEL[data.budget_source] : 'Allocation source unavailable'}
+          {flagged != null ? ' + OAG' : ''} · FY {fy.replace('FY', '').trim()}
         </p>
         <h2 id='money-flow-title' className={styles.flowTitle}>
           {isProjected ? (
             <>
               KES {fmtT(allocated)} budgeted for {countyLabel.toLowerCase()}
             </>
+          ) : spent == null ? (
+            <>KES {fmtT(allocated)} allocated; spending unavailable</>
           ) : (
             <>
               KES {fmtT(allocated)} allocated, KES {fmtT(spent)} reached programmes
@@ -152,7 +168,7 @@ export default function MoneyFlowHero({ data }: Props) {
         </h2>
         <p className={styles.flowDescription}>
           {isProjected
-            ? 'This fiscal year is still being executed, so spending figures will appear as the Controller of Budget publishes quarterly reports.'
+            ? 'This allocation is modelled. Spending figures will appear when sourced Controller of Budget reports are available.'
             : 'The waterfall below traces every shilling from Treasury allocation through execution, and the portion the Auditor General questioned (could not confirm was properly spent).'}
         </p>
         {flaggedPer100 != null && (
@@ -185,9 +201,7 @@ export default function MoneyFlowHero({ data }: Props) {
         label='Unspent — absorption shortfall'
         amount={unspent}
         unavailable={spent == null}
-        reason={
-          isProjected ? 'County spending still pending' : 'County execution still in progress'
-        }
+        reason='Spending data unavailable for this reporting period'
       />
       <WaterfallStage stage='Spent' amount={spent} widthPct={spentPct} />
       <StageGap
@@ -285,13 +299,13 @@ function StageGap({
   );
 }
 
-function EmptyHero({ fy, reason }: { fy: string; reason: string }) {
+function EmptyHero({ fy, title, reason }: { fy: string; title: string; reason: string }) {
   return (
     <div className='rounded-2xl bg-white dark:bg-surface-base border border-neutral-border/40 shadow-surface p-8 text-center'>
       <div className='text-[11px] font-semibold uppercase tracking-[0.18em] text-gov-forest/60 dark:text-emerald-100/60 mb-2'>
         Follow the Money · FY {fy}
       </div>
-      <h2 className='font-display text-2xl text-gov-dark dark:text-white mb-2'>No data yet</h2>
+      <h2 className='font-display text-2xl text-gov-dark dark:text-white mb-2'>{title}</h2>
       <p className='text-sm text-neutral-muted max-w-lg mx-auto'>{reason}</p>
     </div>
   );

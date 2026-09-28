@@ -1,4 +1,7 @@
+'use client';
+
 import { FileText, TriangleAlert } from 'lucide-react';
+import { useLang } from '@/lib/i18n/LangProvider';
 import {
   efficiencyTone,
   formatEfficiency,
@@ -45,6 +48,7 @@ export default function MoneyFlowOverview({
   fiscalYear: string;
   projected: boolean;
 }) {
+  const { t } = useLang();
   const flagged = !projected && insights.flagged != null && insights.flagged > 0;
   const AuditIcon = flagged ? TriangleAlert : FileText;
   return (
@@ -52,25 +56,28 @@ export default function MoneyFlowOverview({
       className={`${styles.presentation} ${styles.overview}`}
       aria-labelledby='money-flow-overview'>
       <header className={styles.overviewHead}>
-        <h2 id='money-flow-overview'>At a glance</h2>
+        <h2 id='money-flow-overview'>{t('transparency.overview.title')}</h2>
         <p>FY {fiscalYear}</p>
       </header>
       <div className={styles.metrics}>
         <Metric
-          label='Total allocated'
+          label={t('transparency.overview.allocated')}
           value={formatFlowKES(insights.allocated)}
-          note={`47 counties · FY ${fiscalYear}`}
+          note={`${t('transparency.overview.counties')} · FY ${fiscalYear}`}
           tone='allocation'
         />
         <Metric
-          label={projected ? 'Spent so far' : 'Gap to spend'}
-          value={projected ? 'Pending' : formatFlowKES(insights.gap)}
+          label={t(projected ? 'transparency.overview.spent' : 'transparency.overview.gap')}
+          value={projected ? t('transparency.overview.pending') : formatFlowKES(insights.gap)}
           note={
             projected
-              ? 'Execution figures publish as the CoB releases quarterly CBIRRs'
+              ? t('transparency.overview.execution_pending')
               : insights.unspentPct != null
-                ? `${insights.unspentPct.toFixed(1)}% of allocation unspent at report time`
-                : 'Execution not yet published for this period'
+                ? t('transparency.overview.unspent').replace(
+                    '{percent}',
+                    insights.unspentPct.toFixed(1)
+                  )
+                : t('transparency.overview.execution_unavailable')
           }
           tone={
             projected || insights.gap == null
@@ -83,7 +90,7 @@ export default function MoneyFlowOverview({
           }
         />
         <Metric
-          label='National efficiency'
+          label={t('transparency.overview.efficiency')}
           efficiency
           value={
             projected || insights.efficiency == null
@@ -92,14 +99,14 @@ export default function MoneyFlowOverview({
           }
           note={
             projected
-              ? 'Calculated once CoB + OAG publish'
+              ? t('transparency.overview.efficiency_pending')
               : insights.efficiency == null
-                ? 'Execution data pending'
+                ? t('transparency.overview.execution_unavailable')
                 : insights.efficiency >= 70
-                  ? 'Good — higher budget execution'
+                  ? t('transparency.overview.good')
                   : insights.efficiency >= 50
-                    ? 'Fair — needs improvement'
-                    : 'Low — limited budget execution'
+                    ? t('transparency.overview.fair')
+                    : t('transparency.overview.low')
           }
           tone={efficiencyTone(projected ? null : insights.efficiency)}
         />
@@ -107,23 +114,23 @@ export default function MoneyFlowOverview({
       <div className={styles.auditStatus} data-tone={flagged ? 'low' : 'neutral'}>
         <AuditIcon size={23} aria-hidden='true' />
         <div>
-          <h3 className={styles.auditLabel}>Questioned by Auditor General</h3>
+          <h3 className={styles.auditLabel}>{t('transparency.overview.questioned')}</h3>
           <p className={styles.auditValue}>
             {projected
-              ? 'Not yet audited'
+              ? t('transparency.overview.not_audited')
               : insights.flagged == null
-                ? 'Not yet published'
+                ? t('transparency.overview.not_published')
                 : formatFlowKES(insights.flagged)}
           </p>
         </div>
         <p className={styles.auditCopy}>
           {projected
-            ? 'OAG audits close ~18 months after year-end'
+            ? t('transparency.overview.audit_pending')
             : insights.flagged == null
-              ? 'No Auditor-General report for this year traces to a source document yet. This is not a finding that nothing was questioned.'
+              ? t('transparency.overview.audit_unavailable')
               : flagged
-                ? "Amounts questioned in the Auditor-General's reports for this year — not proven loss or theft."
-                : 'The published report questioned no amount for this period'}
+                ? t('transparency.overview.audit_positive')
+                : t('transparency.overview.audit_zero')}
         </p>
       </div>
     </section>
