@@ -45,7 +45,7 @@ from services.county_budget import (
     REVENUE_RECEIPTS_CATEGORY,
     REVENUE_RECEIPTS_TOTAL,
 )
-from services.audit_citations import audited_institution, extraction_payload, report_page_url
+from services.audit_citations import audited_institution, extraction_payload, page_number, report_page_url
 from services.audit_derived import derive_federal_headline, derive_unaccounted_cases
 from services.trust_guards import (
     check_budget_sectors,
@@ -5998,6 +5998,8 @@ async def list_county_audits(
                 doc = (
                     audit.source_document if hasattr(audit, "source_document") else None
                 )
+                source_url = doc.url if doc else None
+                source_page = page_number(audit.page_ref)
                 provenance = audit.provenance or []
                 status_value = None
                 category_value = None
@@ -6020,8 +6022,9 @@ async def list_county_audits(
                         "fiscal_year": audit.period.label if audit.period else None,
                         "source": {
                             "title": doc.title if doc else None,
-                            "url": doc.url if doc else None,
-                            "page": None,
+                            "url": source_url,
+                            "page": source_page,
+                            "page_url": report_page_url(source_url, source_page),
                             "table_index": None,
                         },
                     }
@@ -6065,7 +6068,7 @@ async def list_county_audits(
             prov = q.get("provenance") or {}
             source = q.get("source") or {}
             url = source.get("url") or q.get("document_url")
-            page_ref = prov.get("page") or source.get("page")
+            source_page = page_number(prov.get("page") or source.get("page"))
             return {
                 "id": q.get("id") or f"{county_id}-{start+idx}",
                 "description": q.get("description")
@@ -6079,7 +6082,8 @@ async def list_county_audits(
                 "source": {
                     "title": source.get("title"),
                     "url": url,
-                    "page": page_ref,
+                    "page": source_page,
+                    "page_url": report_page_url(url, source_page),
                     "table_index": prov.get("table_index") or source.get("table_index"),
                 },
             }
