@@ -92,6 +92,66 @@ describe('County map persistent readout', () => {
     expect(within(readout()).queryByRole('link', { name: /Lamu/ })).not.toBeInTheDocument();
   });
 
+  it('keeps excluded county geometry as context without offering it as a map link', () => {
+    render(<CountiesPageClient />);
+    const excluded = lamuPolygon();
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search County' }), {
+      target: { value: 'Mombasa' },
+    });
+
+    expect(excluded).toBeInTheDocument();
+    expect(excluded).not.toHaveAttribute('role', 'link');
+    expect(excluded).not.toHaveAttribute('tabindex', '0');
+    expect(screen.getByRole('link', { name: /^Mombasa, Grade:/ })).toHaveAttribute('tabindex', '0');
+  });
+
+  it.each(['click', 'Enter'] as const)(
+    'does not navigate an excluded county through %s',
+    (interaction) => {
+      render(<CountiesPageClient />);
+      const excluded = lamuPolygon();
+      fireEvent.change(screen.getByRole('searchbox', { name: 'Search County' }), {
+        target: { value: 'Mombasa' },
+      });
+
+      if (interaction === 'click') fireEvent.click(excluded);
+      else fireEvent.keyDown(excluded, { key: 'Enter' });
+
+      expect(mockPush).not.toHaveBeenCalled();
+      expect(within(readout()).getByRole('link', { name: /Mombasa/ })).toBeInTheDocument();
+    }
+  );
+
+  it.each(['focus', 'mouseEnter'] as const)(
+    'does not inspect an excluded county through %s and reveal it after clearing filters',
+    (interaction) => {
+      render(<CountiesPageClient />);
+      const excluded = lamuPolygon();
+      fireEvent.focus(screen.getByRole('link', { name: /^Mombasa, Grade:/ }));
+      fireEvent.change(screen.getByRole('searchbox', { name: 'Search County' }), {
+        target: { value: 'Mombasa' },
+      });
+
+      fireEvent[interaction](excluded);
+      fireEvent.change(screen.getByRole('searchbox', { name: 'Search County' }), {
+        target: { value: '' },
+      });
+
+      expect(within(readout()).getByRole('link', { name: /Mombasa/ })).toBeInTheDocument();
+      expect(within(readout()).queryByRole('link', { name: /Lamu/ })).not.toBeInTheDocument();
+    }
+  );
+
+  it('offers no county navigation when filters match no county', () => {
+    render(<CountiesPageClient />);
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search County' }), {
+      target: { value: 'No matching county' },
+    });
+
+    const map = screen.getByRole('region', { name: 'County Performance Map' });
+    expect(within(map).queryAllByRole('link')).toHaveLength(0);
+  });
+
   it('navigates a focused map polygon with Enter and retains the selected year', () => {
     render(<CountiesPageClient />);
     fireEvent.change(screen.getByRole('combobox', { name: 'Year' }), {

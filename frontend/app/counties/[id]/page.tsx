@@ -37,7 +37,7 @@ const SSR_TIMEOUT_MS = 1500;
 export const metadata: Metadata = {
   title: 'County Detail — AuditGava',
   description:
-    'Budget execution, debt, audit findings, and stalled projects for this county.',
+    'Budget execution, debt, audit findings, and accountability for this county.',
 };
 
 export default async function CountyDetailPage({

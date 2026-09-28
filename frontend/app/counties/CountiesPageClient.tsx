@@ -747,7 +747,7 @@ function CountyPerformanceMap({
   const countyHref = (county: County) =>
     `/counties/${county.id}${fiscalYear ? `?fy=${encodeURIComponent(fiscalYear)}` : ''}`;
   return (
-    <section className={styles.atlas} aria-labelledby='county-map-title'>
+    <section aria-labelledby='county-map-title'>
       <header className={styles.sectionHeading}>
         <h2 id='county-map-title'>{t('counties.map.title')}</h2>
         <span>{fiscalYear}</span>
@@ -761,35 +761,36 @@ function CountyPerformanceMap({
             const dimmed =
               !filteredNames.has(normalizeName(cp.name)) ||
               (activeGrades.length > 0 && grade && !activeGrades.includes(grade));
+            const interactive = county != null && !dimmed;
             return (
               <path
                 key={cp.name}
                 d={cp.path}
                 fill={fill}
                 stroke='var(--county-map-boundary)'
-                strokeWidth={hoveredGadm === cp.name ? 1.8 : 0.7}
+                strokeWidth={interactive && hoveredGadm === cp.name ? 1.8 : 0.7}
                 opacity={dimmed ? 0.2 : 1}
-                role={county ? 'link' : undefined}
-                tabIndex={county ? 0 : undefined}
+                role={interactive ? 'link' : undefined}
+                tabIndex={interactive ? 0 : undefined}
                 aria-label={
                   county
                     ? `${county.name}, ${t('counties.map.tooltip_grade')}: ${getGrade(county.financial_health_score).letter}`
                     : cp.name
                 }
                 onClick={() => {
-                  if (county) router.push(countyHref(county));
+                  if (interactive) router.push(countyHref(county));
                 }}
                 onKeyDown={(e) => {
-                  if (county && e.key === 'Enter') router.push(countyHref(county));
+                  if (interactive && e.key === 'Enter') router.push(countyHref(county));
                 }}
                 onFocus={() => {
-                  if (county) {
+                  if (interactive) {
                     setHoveredCountyId(county.id);
                     setHoveredGadm(cp.name);
                   }
                 }}
                 onMouseEnter={() => {
-                  if (county) {
+                  if (interactive) {
                     setHoveredCountyId(county.id);
                     setHoveredGadm(cp.name);
                   }

@@ -326,12 +326,12 @@
   max-width: 420px;
   height: 330px;
 }
-.mapSvg path {
+.mapSvg path[role='link'] {
   cursor: pointer;
   transition: opacity 0.15s;
 }
-.mapSvg path:hover,
-.mapSvg path:focus {
+.mapSvg path[role='link']:hover,
+.mapSvg path[role='link']:focus {
   stroke: var(--county-ink);
   stroke-width: 2px;
   outline: none;
