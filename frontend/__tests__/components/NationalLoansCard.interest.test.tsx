@@ -126,4 +126,15 @@ describe('NationalLoansCard', () => {
     expect(screen.getByText('Finland')).toBeInTheDocument();
     expect(screen.getByText('China')).toBeInTheDocument();
   });
+
+  it.each([
+    ['CBK Public Debt Statistical Bulletin', 'https://www.centralbank.go.ke/public-debt/'],
+    ['World Bank IDS', 'https://api.worldbank.org/'],
+  ])('does not call %s a Treasury source', (source, source_url) => {
+    mockLoans.mockReturnValue({ data: { ...PAYLOAD, source, source_url }, isLoading: false });
+    render(<NationalLoansCard />);
+    expect(screen.queryByRole('link', { name: 'Treasury' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'home.loans.source_label' }))
+      .toHaveAttribute('href', source_url);
+  });
 });

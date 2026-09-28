@@ -209,7 +209,7 @@ export interface DebtTimelineEntry {
   domestic: number;
   total: number;
   gdp: number;
-  gdp_ratio: number;
+  gdp_ratio: number | null;
   /** Declared unit of the money fields. "KES" = raw KES (stage1 3a
    *  migration). Absent on a pre-migration backend, whose values are
    *  bare billions — convert with toRawKES(), never by guessing. */

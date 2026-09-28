@@ -182,6 +182,53 @@ def test_a_second_identical_run_changes_nothing(db_session, national):
     assert (created, updated) == (0, 0)
 
 
+@pytest.mark.parametrize(
+    "stored_spaces,incoming_spaces",
+    [(False, True), (True, False), (True, True), (False, False)],
+)
+def test_live_bulletin_url_encoding_preserves_the_existing_document(
+    db_session, seed_country, national, stored_spaces, incoming_spaces
+):
+    """The official listing returns spaces; document 2430 stores %20.
+
+    Same PDF, different title from the live overlay. Repair its publisher in
+    place instead of creating another document and leaving 2430 mislabeled.
+    """
+    payload = _payload()
+    encoded = payload["source_url"]
+    assert "%20" in encoded
+    stored_url = encoded.replace("%20", " ") if stored_spaces else encoded
+    incoming_url = encoded.replace("%20", " ") if incoming_spaces else encoded
+    existing = _add_doc(
+        db_session, seed_country.id, 2430, TREASURY_DEFAULT,
+        stored_url, payload["source_title"],
+    )
+    payload.update(
+        source_url=incoming_url,
+        source_title="CBK Statistical Bulletin — domestic debt",
+    )
+    write_debt_records(db_session, parse_debt_payload(payload), dataset_id="t", job_id=None)
+    db_session.flush()
+    assert db_session.query(SourceDocument).count() == 1
+    assert existing.publisher == CBK
+    assert {loan.source_document_id for loan in db_session.query(Loan).all()} == {2430}
+
+
+def test_url_matching_does_not_decode_distinct_reserved_path_characters(
+    db_session, seed_country, national
+):
+    payload = _payload()
+    _add_doc(
+        db_session, seed_country.id, 2430, "Other publisher",
+        "https://www.centralbank.go.ke/archive%2Fbulletin.pdf", payload["source_title"],
+    )
+    payload["source_url"] = "https://www.centralbank.go.ke/archive/bulletin.pdf"
+    write_debt_records(db_session, parse_debt_payload(payload), dataset_id="t", job_id=None)
+    db_session.flush()
+    assert db_session.query(SourceDocument).count() == 2
+    assert db_session.get(SourceDocument, 2430).publisher == "Other publisher"
+
+
 def test_undeclared_row_never_overwrites_a_declared_publisher(
     db_session, national
 ):

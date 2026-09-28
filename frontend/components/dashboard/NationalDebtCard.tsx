@@ -38,7 +38,7 @@ interface ChartEntry {
   external: number;
   domestic: number;
   total: number;
-  gdpRatio: number;
+  gdpRatio: number | null;
   /** True when this year's figures are round-number estimates rather than a
    *  reading off a published table. See `isRoundNumberEstimate`. */
   modelled: boolean;
@@ -159,7 +159,9 @@ function CustomTooltip({ active, payload, label }: any) {
         </div>
         <div className='flex justify-between gap-6 pt-1 border-t border-neutral-border/30'>
           <span className='text-neutral-muted'>{t('home.debt.tooltip_gdp')}</span>
-          <span className='font-bold text-gov-gold tabular-nums'>{d.gdpRatio}%</span>
+          <span className='font-bold text-gov-gold tabular-nums'>
+            {d.gdpRatio != null ? `${d.gdpRatio}%` : '—'}
+          </span>
         </div>
       </div>
     </div>
@@ -357,7 +359,7 @@ export default function NationalDebtCard() {
                 <InfoTip term='debt-to-gdp' size={11} />
               </div>
             }
-            value={`${gdpRatio}%`}
+            value={gdpRatio != null ? `${gdpRatio}%` : '—'}
             sub={
               gdpComparison
                 ? t('home.debt.from_year_sub')

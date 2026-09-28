@@ -1,0 +1,482 @@
+{
+  "base_commit": "dc58685bb72007a5654863bfbeee912cfd6b89e3",
+  "production_mutations": false,
+  "artifacts": [
+    {
+      "name": "kra-page.html",
+      "url": "https://www.kra.go.ke/annual-revenue-performance-fy-2025-2026",
+      "final_url": "https://www.kra.go.ke/annual-revenue-performance-fy-2025-2026",
+      "status": 200,
+      "bytes": 90985,
+      "sha256": "17079516c2c089e4103c37614ea063a57afeb7abf6408091d7b356f9fdd5d27a",
+      "content_type": "text/html; charset=utf-8",
+      "observed_at": "2026-09-27T20:03:13.371895+00:00"
+    },
+    {
+      "name": "kra-dashboard.js",
+      "url": "https://krarevenue2526testingdashboard.bolt.host/assets/index-n9eGcpF_.js",
+      "final_url": "https://krarevenue2526testingdashboard.bolt.host/assets/index-n9eGcpF_.js",
+      "status": 200,
+      "bytes": 628097,
+      "sha256": "f3cf2fd1075f4af3eb0aafb92ed6c8a1e336437b2603a9dc67a28283561d03d7",
+      "content_type": "application/javascript; charset=UTF-8",
+      "observed_at": "2026-09-27T20:03:12.145009+00:00"
+    },
+    {
+      "name": "kra-annual.pdf",
+      "url": "https://www.kra.go.ke/images/publications/FY25-26_Annual-Revenue-Performance_.pdf",
+      "final_url": "https://www.kra.go.ke/images/publications/FY25-26_Annual-Revenue-Performance_.pdf",
+      "status": 200,
+      "bytes": 1555679,
+      "sha256": "1eca29e68c9e203e4d84a15f5cc6fed2aa075893f7d586d2209e6750a24d52a4",
+      "content_type": "application/pdf",
+      "observed_at": "2026-09-27T20:03:16.206212+00:00"
+    },
+    {
+      "name": "treasury-budget.pdf",
+      "url": "https://www.treasury.go.ke/sites/default/files/Budget%20summary/Budget%20Summary%20for%20the%20FY%202026_27%20Budget.pdf",
+      "final_url": "https://www.treasury.go.ke/sites/default/files/Budget%20summary/Budget%20Summary%20for%20the%20FY%202026_27%20Budget.pdf",
+      "status": 200,
+      "bytes": 1390375,
+      "sha256": "1e24992d34cb4dddefd4ad04c3f77055e6be976b8b326256a17b5312725a550b",
+      "content_type": "application/pdf",
+      "observed_at": "2026-09-27T20:03:16.108011+00:00"
+    },
+    {
+      "name": "imf-register.pdf",
+      "url": "https://www.imf.org/external/pubs/ft/dsa/dsalist.pdf",
+      "final_url": "https://www.imf.org/external/pubs/ft/dsa/dsalist.pdf",
+      "status": 200,
+      "bytes": 64885,
+      "sha256": "3ffd7c5992cdf24117db851e664d60b81476f8de2a77d1d7e0d482658c354bad",
+      "content_type": "application/pdf",
+      "observed_at": "2026-09-27T20:03:21.154317+00:00"
+    },
+    {
+      "name": "cbk-bulletin.pdf",
+      "url": "https://www.centralbank.go.ke/uploads/statistical_bulletin/107371226_Statistical Bulletin - December 2025.pdf",
+      "observed_at": "2026-09-27T20:09:40.820295+00:00",
+      "bytes": 3013088,
+      "sha256": "a056dd65b8f5dca2e5356718a87f5d11b5a5162c89979efdbab412160dc318eb",
+      "pdf_page": 57,
+      "table": "4.1.4",
+      "period": "December 2025",
+      "units": "KES million; parser scales to raw KES"
+    }
+  ],
+  "production_before": {
+    "observed_at": "2026-09-27T20:02:40.194418+00:00",
+    "sha256": "57134655ce5c2111c3e654ac07a1984d1994e3f14e0b682156e66653090a57e4",
+    "documents": [
+      {
+        "id": 1840,
+        "publisher": "National Treasury of Kenya",
+        "url": "https://www.centralbank.go.ke/public-debt/"
+      },
+      {
+        "id": 2430,
+        "publisher": "National Treasury of Kenya",
+        "url": "https://www.centralbank.go.ke/uploads/statistical_bulletin/107371226_Statistical%20Bulletin%20-%20December%202025.pdf"
+      }
+    ],
+    "loan_references": [
+      {
+        "id": 381,
+        "source_document_id": 1840,
+        "outstanding_kes": 5578982400000.0
+      },
+      {
+        "id": 382,
+        "source_document_id": 1840,
+        "outstanding_kes": 300000000000.0
+      },
+      {
+        "id": 383,
+        "source_document_id": 1840,
+        "outstanding_kes": 1090017800000.0
+      },
+      {
+        "id": 384,
+        "source_document_id": 1840,
+        "outstanding_kes": 78231300000.0
+      },
+      {
+        "id": 439,
+        "source_document_id": 1840,
+        "outstanding_kes": 11420400000.0
+      }
+    ]
+  },
+  "local_live_domestic_writer_replay": {
+    "before": {
+      "381": 1840,
+      "382": 1840,
+      "383": 1840,
+      "384": 1840,
+      "439": 1840
+    },
+    "after": {
+      "381": 2430,
+      "383": 2430,
+      "384": 2430,
+      "439": 2430
+    },
+    "deleted": [
+      382
+    ],
+    "scope": "local SQLite replay of 5 production rows through 4 freshly fetched CBK domestic records; NOT a full national_debt run or production mutation",
+    "remaining_1840": []
+  },
+  "kra_live_reader": {
+    "status": "promoted:5/FY 2025/26 (dashboard; residual withheld: incompatible bases)",
+    "rows": [
+      {
+        "fiscal_year": "FY 2025/26",
+        "revenue_type": "PAYE",
+        "category": "tax",
+        "amount_billion_kes": 598.81,
+        "target_billion_kes": null,
+        "performance_pct": 91.8,
+        "share_of_total_pct": null,
+        "yoy_growth_pct": 6.7,
+        "source": {
+          "url": "https://www.kra.go.ke/annual-revenue-performance-fy-2025-2026",
+          "data_url": "https://krarevenue2526testingdashboard.bolt.host/assets/index-n9eGcpF_.js",
+          "report_url": "https://www.kra.go.ke/images/publications/FY25-26_Annual-Revenue-Performance_.pdf",
+          "version": "dashboard_bundle",
+          "retrieved_at": "2026-09-27T20:08:11.123700+00:00",
+          "sha256": "f3cf2fd1075f4af3eb0aafb92ed6c8a1e336437b2603a9dc67a28283561d03d7",
+          "period": "FY 2025/26",
+          "publication_date": null,
+          "stated_amount_billion_kes": "598.807",
+          "reconciliation": "Dashboard version; not independently reconciled to the KRA annual PDF. App check: reported total less domestic and Customs collections = KES 4.22B."
+        },
+        "notes": "KRA Annual Revenue Performance FY 2025/26: PAYE collected KES 598.807B, performance 91.8%, growth 6.7%",
+        "source_url": "https://www.kra.go.ke/annual-revenue-performance-fy-2025-2026",
+        "basis": "published",
+        "data_quality": "official",
+        "_revenue_source": "kra_live",
+        "measure": "PAYE"
+      },
+      {
+        "fiscal_year": "FY 2025/26",
+        "revenue_type": "Corporation Tax",
+        "category": "tax",
+        "amount_billion_kes": 347.07,
+        "target_billion_kes": 365.25,
+        "performance_pct": null,
+        "share_of_total_pct": null,
+        "yoy_growth_pct": 14.0,
+        "source": {
+          "url": "https://www.kra.go.ke/annual-revenue-performance-fy-2025-2026",
+          "data_url": "https://krarevenue2526testingdashboard.bolt.host/assets/index-n9eGcpF_.js",
+          "report_url": "https://www.kra.go.ke/images/publications/FY25-26_Annual-Revenue-Performance_.pdf",
+          "version": "dashboard_bundle",
+          "retrieved_at": "2026-09-27T20:08:11.123700+00:00",
+          "sha256": "f3cf2fd1075f4af3eb0aafb92ed6c8a1e336437b2603a9dc67a28283561d03d7",
+          "period": "FY 2025/26",
+          "publication_date": null,
+          "stated_amount_billion_kes": "347.066",
+          "reconciliation": "Dashboard version; not independently reconciled to the KRA annual PDF. App check: reported total less domestic and Customs collections = KES 4.22B."
+        },
+        "notes": "KRA Annual Revenue Performance FY 2025/26: Corporation Tax collected KES 347.066B vs target 365.249B, growth 14%",
+        "source_url": "https://www.kra.go.ke/annual-revenue-performance-fy-2025-2026",
+        "basis": "published",
+        "data_quality": "official",
+        "_revenue_source": "kra_live",
+        "measure": "Corporation Tax"
+      },
+      {
+        "fiscal_year": "FY 2025/26",
+        "revenue_type": "VAT",
+        "category": "tax",
+        "amount_billion_kes": 355.26,
+        "target_billion_kes": null,
+        "performance_pct": null,
+        "share_of_total_pct": null,
+        "yoy_growth_pct": 8.5,
+        "source": {
+          "url": "https://www.kra.go.ke/annual-revenue-performance-fy-2025-2026",
+          "data_url": "https://krarevenue2526testingdashboard.bolt.host/assets/index-n9eGcpF_.js",
+          "report_url": "https://www.kra.go.ke/images/publications/FY25-26_Annual-Revenue-Performance_.pdf",
+          "version": "dashboard_bundle",
+          "retrieved_at": "2026-09-27T20:08:11.123700+00:00",
+          "sha256": "f3cf2fd1075f4af3eb0aafb92ed6c8a1e336437b2603a9dc67a28283561d03d7",
+          "period": "FY 2025/26",
+          "publication_date": null,
+          "stated_amount_billion_kes": "355.255",
+          "reconciliation": "Dashboard version; not independently reconciled to the KRA annual PDF. App check: reported total less domestic and Customs collections = KES 4.22B."
+        },
+        "notes": "KRA Annual Revenue Performance FY 2025/26: VAT collected KES 355.255B, growth 8.5%",
+        "source_url": "https://www.kra.go.ke/annual-revenue-performance-fy-2025-2026",
+        "basis": "published",
+        "data_quality": "official",
+        "_revenue_source": "kra_live",
+        "measure": "Domestic VAT"
+      },
+      {
+        "fiscal_year": "FY 2025/26",
+        "revenue_type": "Excise Duty",
+        "category": "tax",
+        "amount_billion_kes": 61.85,
+        "target_billion_kes": null,
+        "performance_pct": null,
+        "share_of_total_pct": null,
+        "yoy_growth_pct": null,
+        "source": {
+          "url": "https://www.kra.go.ke/annual-revenue-performance-fy-2025-2026",
+          "data_url": "https://krarevenue2526testingdashboard.bolt.host/assets/index-n9eGcpF_.js",
+          "report_url": "https://www.kra.go.ke/images/publications/FY25-26_Annual-Revenue-Performance_.pdf",
+          "version": "dashboard_bundle",
+          "retrieved_at": "2026-09-27T20:08:11.123700+00:00",
+          "sha256": "f3cf2fd1075f4af3eb0aafb92ed6c8a1e336437b2603a9dc67a28283561d03d7",
+          "period": "FY 2025/26",
+          "publication_date": null,
+          "stated_amount_billion_kes": "61.845",
+          "reconciliation": "Dashboard version; not independently reconciled to the KRA annual PDF. App check: reported total less domestic and Customs collections = KES 4.22B."
+        },
+        "notes": "KRA Annual Revenue Performance FY 2025/26: Excise Duty collected KES 61.845B",
+        "source_url": "https://www.kra.go.ke/annual-revenue-performance-fy-2025-2026",
+        "basis": "published",
+        "data_quality": "official",
+        "_revenue_source": "kra_live",
+        "measure": "Domestic excise"
+      },
+      {
+        "fiscal_year": "FY 2025/26",
+        "revenue_type": "Customs & Import Duty",
+        "category": "tax",
+        "amount_billion_kes": 988.78,
+        "target_billion_kes": null,
+        "performance_pct": 100.8,
+        "share_of_total_pct": null,
+        "yoy_growth_pct": 12.4,
+        "source": {
+          "url": "https://www.kra.go.ke/annual-revenue-performance-fy-2025-2026",
+          "data_url": "https://krarevenue2526testingdashboard.bolt.host/assets/index-n9eGcpF_.js",
+          "report_url": "https://www.kra.go.ke/images/publications/FY25-26_Annual-Revenue-Performance_.pdf",
+          "version": "dashboard_bundle",
+          "retrieved_at": "2026-09-27T20:08:11.123700+00:00",
+          "sha256": "f3cf2fd1075f4af3eb0aafb92ed6c8a1e336437b2603a9dc67a28283561d03d7",
+          "period": "FY 2025/26",
+          "publication_date": null,
+          "stated_amount_billion_kes": "988.78",
+          "reconciliation": "Dashboard version; not independently reconciled to the KRA annual PDF. App check: reported total less domestic and Customs collections = KES 4.22B."
+        },
+        "notes": "KRA Annual Revenue Performance FY 2025/26: Customs & Import Duty collected KES 988.78B, performance 100.8%, growth 12.4%",
+        "source_url": "https://www.kra.go.ke/annual-revenue-performance-fy-2025-2026",
+        "basis": "published",
+        "data_quality": "official",
+        "_revenue_source": "kra_live",
+        "measure": "Customs departmental collections, including agency levies"
+      },
+      {
+        "fiscal_year": "FY 2025/26",
+        "revenue_type": "Other Tax Revenue",
+        "category": "tax",
+        "amount_billion_kes": null,
+        "target_billion_kes": null,
+        "performance_pct": null,
+        "share_of_total_pct": null,
+        "yoy_growth_pct": null,
+        "basis": "residual",
+        "absent_reason": "Other Tax Revenue is unavailable: Customs departmental collections include agency levies, and the source does not identify their Exchequer component.",
+        "notes": "Other Tax Revenue is unavailable: Customs departmental collections include agency levies, and the source does not identify their Exchequer component.",
+        "source_url": "https://www.kra.go.ke/annual-revenue-performance-fy-2025-2026",
+        "_revenue_source": "kra_live"
+      },
+      {
+        "fiscal_year": "FY 2025/26",
+        "revenue_type": "Total KRA Collections",
+        "category": "total",
+        "amount_billion_kes": 2844.0,
+        "target_billion_kes": null,
+        "performance_pct": null,
+        "share_of_total_pct": null,
+        "yoy_growth_pct": null,
+        "source": {
+          "url": "https://www.kra.go.ke/annual-revenue-performance-fy-2025-2026",
+          "data_url": "https://krarevenue2526testingdashboard.bolt.host/assets/index-n9eGcpF_.js",
+          "report_url": "https://www.kra.go.ke/images/publications/FY25-26_Annual-Revenue-Performance_.pdf",
+          "version": "dashboard_bundle",
+          "retrieved_at": "2026-09-27T20:08:11.123700+00:00",
+          "sha256": "f3cf2fd1075f4af3eb0aafb92ed6c8a1e336437b2603a9dc67a28283561d03d7",
+          "period": "FY 2025/26",
+          "publication_date": null,
+          "stated_amount_billion_kes": "2844",
+          "reconciliation": "Dashboard version; not independently reconciled to the KRA annual PDF. App check: reported total less domestic and Customs collections = KES 4.22B."
+        },
+        "notes": "KRA dashboard: Total KRA Collections, FY 2025/26",
+        "source_url": "https://www.kra.go.ke/annual-revenue-performance-fy-2025-2026",
+        "basis": "published",
+        "data_quality": "official",
+        "_revenue_source": "kra_live",
+        "measure": "Total KRA Collections"
+      },
+      {
+        "fiscal_year": "FY 2025/26",
+        "revenue_type": "Total Exchequer Revenue",
+        "category": "total",
+        "amount_billion_kes": 2568.0,
+        "target_billion_kes": null,
+        "performance_pct": null,
+        "share_of_total_pct": null,
+        "yoy_growth_pct": null,
+        "source": {
+          "url": "https://www.kra.go.ke/annual-revenue-performance-fy-2025-2026",
+          "data_url": "https://krarevenue2526testingdashboard.bolt.host/assets/index-n9eGcpF_.js",
+          "report_url": "https://www.kra.go.ke/images/publications/FY25-26_Annual-Revenue-Performance_.pdf",
+          "version": "dashboard_bundle",
+          "retrieved_at": "2026-09-27T20:08:11.123700+00:00",
+          "sha256": "f3cf2fd1075f4af3eb0aafb92ed6c8a1e336437b2603a9dc67a28283561d03d7",
+          "period": "FY 2025/26",
+          "publication_date": null,
+          "stated_amount_billion_kes": "2568",
+          "reconciliation": "Dashboard version; not independently reconciled to the KRA annual PDF. App check: reported total less domestic and Customs collections = KES 4.22B."
+        },
+        "notes": "KRA dashboard: Total Exchequer Revenue, FY 2025/26",
+        "source_url": "https://www.kra.go.ke/annual-revenue-performance-fy-2025-2026",
+        "basis": "published",
+        "data_quality": "official",
+        "_revenue_source": "kra_live",
+        "measure": "Total Exchequer Revenue"
+      },
+      {
+        "fiscal_year": "FY 2025/26",
+        "revenue_type": "Total Agency Revenue",
+        "category": "total",
+        "amount_billion_kes": 276.14,
+        "target_billion_kes": null,
+        "performance_pct": null,
+        "share_of_total_pct": null,
+        "yoy_growth_pct": null,
+        "source": {
+          "url": "https://www.kra.go.ke/annual-revenue-performance-fy-2025-2026",
+          "data_url": "https://krarevenue2526testingdashboard.bolt.host/assets/index-n9eGcpF_.js",
+          "report_url": "https://www.kra.go.ke/images/publications/FY25-26_Annual-Revenue-Performance_.pdf",
+          "version": "dashboard_bundle",
+          "retrieved_at": "2026-09-27T20:08:11.123700+00:00",
+          "sha256": "f3cf2fd1075f4af3eb0aafb92ed6c8a1e336437b2603a9dc67a28283561d03d7",
+          "period": "FY 2025/26",
+          "publication_date": null,
+          "stated_amount_billion_kes": "276.139",
+          "reconciliation": "Dashboard version; not independently reconciled to the KRA annual PDF. App check: reported total less domestic and Customs collections = KES 4.22B."
+        },
+        "notes": "KRA dashboard: Total Agency Revenue, FY 2025/26",
+        "source_url": "https://www.kra.go.ke/annual-revenue-performance-fy-2025-2026",
+        "basis": "published",
+        "data_quality": "official",
+        "_revenue_source": "kra_live",
+        "measure": "Total Agency Revenue"
+      }
+    ]
+  },
+  "fiscal_parser": {
+    "FY 2023/24": {
+      "basis": "treasury_fiscal_framework",
+      "identified_by": "revenue_column",
+      "total_expenditure_billion": 3605.2,
+      "recurrent_billion": 2678.4,
+      "interest_payments_billion": 840.7,
+      "development_billion": 546.4,
+      "county_transfers_billion": 380.4,
+      "county_equitable_share_billion": 354.6,
+      "contingency_billion": 0.0,
+      "total_revenue_incl_aia_billion": 2702.7,
+      "ordinary_revenue_billion": 2288.9,
+      "ministerial_aia_billion": 413.7,
+      "grants_billion": 22.0,
+      "fiscal_deficit_incl_grants_billion": 880.5,
+      "adjustment_to_cash_basis_billion": 45.4,
+      "statistical_discrepancy_billion": -16.8,
+      "total_financing_billion": 818.3,
+      "net_foreign_financing_billion": 222.7,
+      "net_domestic_financing_billion": 595.6,
+      "nominal_gdp_billion": 15633.0,
+      "source": {
+        "title": "Budget Summary",
+        "publisher": "The National Treasury",
+        "url": "https://www.treasury.go.ke/sites/default/files/Budget%20summary/Budget%20Summary%20for%20the%20FY%202026_27%20Budget.pdf",
+        "page": "Annex Table 2a, PDF p.63",
+        "table": "Annex Table 2a: Fiscal Framework (KSh billion)",
+        "column": "Actual"
+      },
+      "checks": [
+        "column identified by its ordinary revenue 2288.9",
+        "ordinary + ministerial AiA = total revenue: 2702.6 vs 2702.7",
+        "recurrent + development + county transfers + contingency = expenditure: 3605.2 vs 3605.2",
+        "total revenue + grants - expenditure = fiscal balance (incl. grants): -880.5 vs -880.5",
+        "fiscal balance + adjustment to cash basis = fiscal balance (cash basis): -835.1 vs -835.1",
+        "net foreign + net domestic = total financing: 818.3 vs 818.3",
+        "total financing = -fiscal balance (cash basis) + statistical discrepancy: 818.3 vs 818.3",
+        "tax + non-tax = ordinary revenue: 2288.9 vs 2288.9",
+        "five tax heads = tax revenue: 2167.8 vs 2167.8"
+      ],
+      "tax_revenue_billion": 2167.8,
+      "non_tax_revenue_billion": 121.1,
+      "tax_heads_billion": {
+        "income_tax": 1042.8,
+        "import_duty": 133.9,
+        "excise_duty": 276.7,
+        "vat": 645.5,
+        "other_tax": 68.9
+      }
+    },
+    "FY 2026/27": {
+      "basis": "treasury_fiscal_framework",
+      "identified_by": "approved_budget",
+      "total_expenditure_billion": 4785.2,
+      "recurrent_billion": 3538.7,
+      "interest_payments_billion": 1254.2,
+      "development_billion": 749.0,
+      "county_transfers_billion": 495.5,
+      "county_equitable_share_billion": 420.0,
+      "contingency_billion": 2.0,
+      "total_revenue_incl_aia_billion": 3629.7,
+      "ordinary_revenue_billion": 2985.7,
+      "ministerial_aia_billion": 644.0,
+      "grants_billion": 43.6,
+      "fiscal_deficit_incl_grants_billion": 1111.8,
+      "adjustment_to_cash_basis_billion": 0.0,
+      "statistical_discrepancy_billion": 0.0,
+      "total_financing_billion": 1111.8,
+      "net_foreign_financing_billion": 116.2,
+      "net_domestic_financing_billion": 995.7,
+      "nominal_gdp_billion": 20816.8,
+      "source": {
+        "title": "Budget Summary",
+        "publisher": "The National Treasury",
+        "url": "https://www.treasury.go.ke/sites/default/files/Budget%20summary/Budget%20Summary%20for%20the%20FY%202026_27%20Budget.pdf",
+        "page": "Annex Table 2a, PDF p.63",
+        "table": "Annex Table 2a: Fiscal Framework (KSh billion)",
+        "column": "Approved"
+      },
+      "checks": [
+        "approved column identified by the narrative: 9 quoted figures (runner-up 4)",
+        "ordinary + ministerial AiA = total revenue: 3629.7 vs 3629.7",
+        "recurrent + development + county transfers + contingency = expenditure: 4785.2 vs 4785.2",
+        "total revenue + grants - expenditure = fiscal balance (incl. grants): -1111.9 vs -1111.8",
+        "fiscal balance + adjustment to cash basis = fiscal balance (cash basis): -1111.8 vs -1111.8",
+        "net foreign + net domestic = total financing: 1111.9 vs 1111.8",
+        "total financing = -fiscal balance (cash basis) + statistical discrepancy: 1111.8 vs 1111.8",
+        "tax + non-tax = ordinary revenue: 2985.8 vs 2985.7",
+        "five tax heads = tax revenue: 2858.6 vs 2858.7"
+      ],
+      "tax_revenue_billion": 2858.7,
+      "non_tax_revenue_billion": 127.1,
+      "tax_heads_billion": {
+        "income_tax": 1383.6,
+        "import_duty": 186.2,
+        "excise_duty": 382.2,
+        "vat": 829.2,
+        "other_tax": 77.4
+      }
+    }
+  },
+  "release_blockers": [
+    "Draft writer URL match must merge/deploy before refresh",
+    "Shared signed invalidation configuration and a successful ordered cache refresh remain unverified (Session 5)",
+    "Full national_debt external-creditor and bond-register payload/delta not staged; domestic-only replay is not a full seed plan",
+    "Post-refresh source retirement requires Session 2 fresh dependency manifest; no documents retired"
+  ]
+}

@@ -124,7 +124,7 @@ export default function NationalLoansCard() {
               target='_blank'
               rel='noopener noreferrer'
               className='flex items-center gap-1 text-[11px] text-neutral-muted hover:text-gov-forest dark:text-emerald-100 transition-colors mt-1'>
-              Treasury <ExternalLink className='w-3 h-3' />
+              {t('home.loans.source_label')} <ExternalLink className='w-3 h-3' />
             </a>
           )}
         </div>
