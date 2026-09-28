@@ -96,7 +96,7 @@ def test_malformed_coverage_refuses_the_whole_sweep(db_session, seed_country):
     assert db_session.query(EconomicIndicator).count() == 1
 
 
-def _seed_baseline(db_session):
+def _seed_baseline(db_session, *, removed_source_document_id=None):
     rows = [_row(f"{year}-12-31") for year in range(2015, 2026)]
     rows += [
         _row("2022-06-30", 4.6, meta={"bootstrap": True}),
@@ -104,6 +104,7 @@ def _seed_baseline(db_session):
         _row("2024-06-30", 4.6, meta={"bootstrap": True}),
         _row("2025-01-31", 3.3),
     ]
+    rows[-1].source_document_id = removed_source_document_id
     db_session.add_all(rows)
     db_session.flush()
     staleness.record_row_census(db_session, {LABEL: 15}, NOW - timedelta(days=1))
@@ -126,26 +127,31 @@ def _receipts(rows):
 
 
 def _job(db_session, receipts):
-    db_session.add(
-        IngestionJob(
-            domain="economic_indicators",
-            status=IngestionStatus.COMPLETED,
-            started_at=(NOW - timedelta(hours=1)).replace(tzinfo=None),
-            dry_run=False,
-            errors=[],
-            meta={
-                "superseded_rows_removed": receipts,
-                "supersession_coverage": {
-                    "inflation_rate": [f"{year}-12-31" for year in range(2015, 2026)]
-                },
+    job = IngestionJob(
+        domain="economic_indicators",
+        status=IngestionStatus.COMPLETED,
+        started_at=(NOW - timedelta(hours=1)).replace(tzinfo=None),
+        dry_run=False,
+        errors=[],
+        meta={
+            "superseded_rows_removed": receipts,
+            "supersession_coverage": {
+                "inflation_rate": [f"{year}-12-31" for year in range(2015, 2026)]
             },
-        )
+        },
     )
+    db_session.add(job)
     db_session.flush()
+    return job
 
 
-def test_exact_authorized_supersession_explains_count_drop(db_session, seed_country):
+def test_exact_authorized_supersession_explains_count_drop(
+    db_session, seed_country, seed_source_doc
+):
     rows = _seed_baseline(db_session)
+    rows[0].value = 8.8
+    rows[0].source_document_id = seed_source_doc.id
+    db_session.flush()
     receipts = _receipts(rows[-4:])
     removed, errors = writer.remove_superseded_rows(
         db_session, {"inflation_rate": {f"{year}-12-31" for year in range(2015, 2026)}}
@@ -179,6 +185,95 @@ def test_wrong_source_identity_cannot_authorize_a_loss(db_session, seed_country)
         db_session.delete(row)
     db_session.flush()
     _job(db_session, receipts)
+
+    assert _finding(db_session, 11).level == staleness.FAIL
+
+
+def test_unsuccessful_or_dry_run_receipts_cannot_authorize_loss(db_session, seed_country):
+    rows = _seed_baseline(db_session)
+    receipts = _receipts(rows[-4:])
+    for row in rows[-4:]:
+        db_session.delete(row)
+    db_session.flush()
+    job = _job(db_session, receipts)
+
+    job.status = IngestionStatus.COMPLETED_WITH_ERRORS
+    db_session.flush()
+    assert _finding(db_session, 11).level == staleness.FAIL
+
+    job.status = IngestionStatus.COMPLETED
+    job.dry_run = True
+    db_session.flush()
+    assert _finding(db_session, 11).level == staleness.FAIL
+
+
+def test_matching_receipt_cannot_authorize_an_impossible_census_date(
+    db_session, seed_country
+):
+    rows = _seed_baseline(db_session)
+    baseline = (
+        db_session.query(IngestionJob)
+        .filter(IngestionJob.domain == staleness.ROW_CENSUS_DOMAIN)
+        .one()
+    )
+    identities = [dict(row) for row in baseline.meta["inflation_rows"]]
+    next(row for row in identities if row["id"] == rows[-1].id)["date"] = "2025-01-32"
+    baseline.meta = {**baseline.meta, "inflation_rows": identities}
+    db_session.flush()
+
+    receipts = _receipts(rows[-4:])
+    receipts[-1]["date"] = "2025-01-32"
+    for row in rows[-4:]:
+        db_session.delete(row)
+    db_session.flush()
+    _job(db_session, receipts)
+
+    assert _finding(db_session, 11).level == staleness.FAIL
+
+
+def test_malformed_extra_receipt_invalidates_the_job(db_session, seed_country):
+    rows = _seed_baseline(db_session)
+    receipts = _receipts(rows[-4:]) + [
+        {"indicator_type": "inflation_rate", "id": True, "date": "2025-01-32"}
+    ]
+    for row in rows[-4:]:
+        db_session.delete(row)
+    db_session.flush()
+    _job(db_session, receipts)
+
+    assert _finding(db_session, 11).level == staleness.FAIL
+
+
+def test_boolean_source_document_id_cannot_match_integer_identity(
+    db_session, seed_country, seed_source_doc
+):
+    assert seed_source_doc.id == 1
+    rows = _seed_baseline(db_session, removed_source_document_id=seed_source_doc.id)
+    receipts = _receipts(rows[-4:])
+    receipts[-1]["source_document_id"] = True
+    for row in rows[-4:]:
+        db_session.delete(row)
+    db_session.flush()
+    _job(db_session, receipts)
+
+    assert _finding(db_session, 11).level == staleness.FAIL
+
+
+def test_malformed_other_series_coverage_invalidates_the_job(db_session, seed_country):
+    rows = _seed_baseline(db_session)
+    receipts = _receipts(rows[-4:])
+    for row in rows[-4:]:
+        db_session.delete(row)
+    db_session.flush()
+    job = _job(db_session, receipts)
+    job.meta = {
+        **job.meta,
+        "supersession_coverage": {
+            **job.meta["supersession_coverage"],
+            "inflation_rate_12m": ["bad-date"],
+        },
+    }
+    db_session.flush()
 
     assert _finding(db_session, 11).level == staleness.FAIL
 

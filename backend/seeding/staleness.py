@@ -33,6 +33,7 @@ February, which is how gates die.
 
 from __future__ import annotations
 
+import calendar
 import logging
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
@@ -424,21 +425,70 @@ def _inflation_rows(session) -> list[dict]:
     ]
 
 
+def _canonical_day(value) -> Optional[date]:
+    if not isinstance(value, str):
+        return None
+    try:
+        parsed = date.fromisoformat(value)
+    except ValueError:
+        return None
+    return parsed if parsed.isoformat() == value else None
+
+
 def _annual_coverage_dates(value) -> Optional[set[str]]:
     if not isinstance(value, list) or not value:
         return None
     dates = set()
     for day in value:
-        if not isinstance(day, str):
-            return None
-        try:
-            parsed = date.fromisoformat(day)
-        except ValueError:
-            return None
-        if parsed.isoformat() != day or (parsed.month, parsed.day) != (12, 31):
+        parsed = _canonical_day(day)
+        if parsed is None or (parsed.month, parsed.day) != (12, 31):
             return None
         dates.add(day)
     return dates
+
+
+def _valid_optional_id(value) -> bool:
+    return value is None or (type(value) is int and value > 0)
+
+
+def _valid_removal_receipt(receipt) -> bool:
+    return (
+        isinstance(receipt, dict)
+        and isinstance(receipt.get("indicator_type"), str)
+        and bool(receipt["indicator_type"])
+        and type(receipt.get("id")) is int
+        and receipt["id"] > 0
+        and _canonical_day(receipt.get("date")) is not None
+        and isinstance(receipt.get("stored_value"), str)
+        and "entity_id" in receipt
+        and "source_document_id" in receipt
+        and _valid_optional_id(receipt.get("entity_id"))
+        and _valid_optional_id(receipt.get("source_document_id"))
+    )
+
+
+def _valid_supersession_coverage(coverage) -> bool:
+    from .domains.economic_indicators import cbk_inflation, fetcher
+
+    if not isinstance(coverage, dict) or not coverage:
+        return False
+    annual_types = {item["indicator_type"] for item in fetcher._WB_INDICATORS.values()}
+    for kind, days in coverage.items():
+        if not isinstance(kind, str) or not isinstance(days, list) or not days:
+            return False
+        if kind in annual_types:
+            if _annual_coverage_dates(days) is None:
+                return False
+        elif kind == cbk_inflation.INDICATOR_TYPE:
+            for day in days:
+                parsed = _canonical_day(day)
+                if parsed is None or parsed.day != calendar.monthrange(
+                    parsed.year, parsed.month
+                )[1]:
+                    return False
+        else:
+            return False
+    return True
 
 
 def _explained_inflation_drop(session, prior_rows, baseline, seen_at, count, now):
@@ -449,12 +499,14 @@ def _explained_inflation_drop(session, prior_rows, baseline, seen_at, count, now
         return False, "the older census has no complete row identities"
     if not all(
         isinstance(row, dict)
-        and isinstance(row.get("id"), int)
-        and not isinstance(row.get("id"), bool)
-        and isinstance(row.get("date"), str)
+        and type(row.get("id")) is int
+        and row["id"] > 0
+        and _canonical_day(row.get("date")) is not None
         and isinstance(row.get("stored_value"), str)
         and "entity_id" in row
         and "source_document_id" in row
+        and _valid_optional_id(row["entity_id"])
+        and _valid_optional_id(row["source_document_id"])
         for row in prior_rows
     ):
         return False, "the older census has malformed row identities"
@@ -488,7 +540,9 @@ def _explained_inflation_drop(session, prior_rows, baseline, seen_at, count, now
         meta = job.meta if isinstance(job.meta, dict) else {}
         receipts = meta.get("superseded_rows_removed")
         coverage = meta.get("supersession_coverage")
-        if not isinstance(receipts, list) or not isinstance(coverage, dict):
+        if not isinstance(receipts, list) or not _valid_supersession_coverage(coverage):
+            continue
+        if not all(_valid_removal_receipt(receipt) for receipt in receipts):
             continue
         dates = _annual_coverage_dates(coverage.get("inflation_rate"))
         if dates is None:
@@ -501,12 +555,11 @@ def _explained_inflation_drop(session, prior_rows, baseline, seen_at, count, now
             continue
         for receipt in inflation_receipts:
             row_id = receipt.get("id")
-            if not isinstance(row_id, int) or isinstance(row_id, bool):
-                continue
             prior = prior_by_id.get(row_id)
             if not prior or prior.get("entity_id") is not None:
                 continue
             day = prior["date"]
+            parsed_day = _canonical_day(day)
             if (
                 receipt.get("date") == day
                 and receipt.get("stored_value") == prior["stored_value"]
@@ -514,7 +567,8 @@ def _explained_inflation_drop(session, prior_rows, baseline, seen_at, count, now
                 and receipt.get("source_document_id") == prior["source_document_id"]
                 and day not in dates
                 and min(dates) <= day <= max(dates)
-                and not day.endswith("-12-31")
+                and parsed_day is not None
+                and (parsed_day.month, parsed_day.day) != (12, 31)
             ):
                 witnessed.add(row_id)
 
