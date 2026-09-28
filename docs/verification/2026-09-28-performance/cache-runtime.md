@@ -8,7 +8,19 @@ Base: `37c6c37c565b3190ae0f72fb5fa895daf68abe24`. Worktree: `codex/cache-runtime
 - The existing `cache.redis_cache` decorator now hashes complete bound arguments, including defaults, filters, pages and page limits, while excluding request scoped dependencies. It uses fixed 64 stripe locks per event loop or sync wrapper so matching cold requests share one load. The generation marker participates in the key, making a pre-invalidation in-flight fill unreachable afterward. Cancelled or raised loads do not write a successful cache entry.
 - Each `RedisCache` instance caps its memory fallback at 1,024 entries, 16 MiB of serialized JSON payloads, and 2 MiB per entry. The process has multiple instances, so 16 MiB is not a total process-memory limit. Oversized entries are served without storage. Existing build namespaces, TTLs, and signed invalidation remain in force.
 - `/health/detailed` reports process-local cache hits, misses, expirations, evictions, lock contention, rejected oversized entries, memory entry count and JSON payload bytes for the shared cache instance. Request completion logs use JSON with method, route template, status and duration. Fast 2xx requests log at DEBUG; slow responses and errors log at WARNING/ERROR. Raw URLs, query values, credentials and evidence text are omitted. `httpx` URL logging at INFO is disabled.
-- Production `backend/Dockerfile` no longer starts Uvicorn with `--reload`; local README commands still use reload for development.
+- The Render service's `backend/Dockerfile` no longer starts Uvicorn with `--reload`. This file is also used by the repository's default Docker Compose service, which therefore no longer reloads automatically. The separate image-publishing workflow builds `backend/Dockerfile.prod`, whose Gunicorn command already omits reload; that alternate image is unchanged.
+
+### Deployment-path evidence
+
+The coordinator re-read the live Render **Settings** page on 2026-09-28 during
+Copilot review. The service builds branch `main`, with root directory `backend`,
+Dockerfile path `./Dockerfile`, Docker build context `.`, and an empty Docker
+Command override. These settings select `backend/Dockerfile`, not the alternate
+image from `.github/workflows/docker-build-deploy.yml:271`. That workflow does
+build `backend/Dockerfile.prod`, and `docker-compose.yml:36` uses `Dockerfile`.
+Both repository references are correct; they do not establish which image the
+Render service uses. No Render setting or deployment was changed during this
+read-only verification.
 
 ## Behavioral receipts
 
