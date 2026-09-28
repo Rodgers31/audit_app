@@ -27,13 +27,15 @@ fixture had wrong by a third of a million people while labelling it
 
 from __future__ import annotations
 
+import hashlib
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional
 
-from models import DocumentType, Entity, Extraction, PopulationData, SourceDocument
+from models import DocumentType, Entity, EntityType, Extraction, PopulationData
+from services.county_identity import official_county_code
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -82,11 +84,6 @@ class CensusLoadStats:
     def __post_init__(self) -> None:
         if self.errors is None:
             self.errors = []
-
-
-def _slug_for(county: str) -> str:
-    """The slug this project stores county entities under."""
-    return county.lower().replace(" ", "-").replace("'", "") + "-county"
 
 
 def read_census_counties(path: Path) -> CensusPopulation:
@@ -165,20 +162,32 @@ def load_census_population(
     session.add(extraction)
     session.flush()
 
-    slugs = [_slug_for(c.county) for c in result.counties]
-    entities = {
-        e.slug: e
-        for e in session.execute(select(Entity).where(Entity.slug.in_(slugs)))
-        .scalars()
-        .all()
-    }
-    unresolved = sorted({s for s in slugs if s not in entities})
+    # Resolve by canonical county identity, never the historical slug format.
+    # Bootstrap creates code-suffixed slugs; existing production uses -county.
+    entities = {}
+    duplicates = set()
+    for entity in session.execute(
+        select(Entity).where(
+            Entity.country_id == country_id, Entity.type == EntityType.COUNTY
+        )
+    ).scalars():
+        code = official_county_code(entity.canonical_name)
+        if code is None:
+            continue
+        if code in entities:
+            duplicates.add(code)
+        entities[code] = entity
+    unresolved = sorted(
+        c.county
+        for c in result.counties
+        if official_county_code(c.county) is None
+        or official_county_code(c.county) not in entities
+        or official_county_code(c.county) in duplicates
+    )
     if unresolved:
-        # Refuse rather than write a partial census.
         stats.quarantine_reason = "county_entities_unresolved"
         stats.errors.append(
-            f"{len(unresolved)} county slug(s) match no entity: "
-            f"{', '.join(unresolved)}"
+            f"County identity missing or ambiguous: {', '.join(unresolved)}"
         )
         return stats
 
@@ -194,9 +203,10 @@ def load_census_population(
         .all()
     }
 
+    source_hash = hashlib.sha256(Path(doc.file_path).read_bytes()).hexdigest()
     for county in result.counties:
         stats.processed += 1
-        entity = entities[_slug_for(county.county)]
+        entity = entities[official_county_code(county.county)]
         row = existing.get((entity.id, CENSUS_YEAR))
         values = {
             "total_population": county.total,
@@ -207,6 +217,14 @@ def load_census_population(
             "extraction_id": extraction.id,
             "page_ref": f"p. {result.page}",
             "confidence": 1.0,
+            "source_hash": source_hash,
+            "confidence_score": None,
+            "basis": None,
+            "publishable": False,
+            "quarantine_reason": None,
+            "rural_population": None,
+            "urban_population": None,
+            "population_density": None,
             "meta": {
                 "census_year": CENSUS_YEAR,
                 "intersex_population": county.intersex,
@@ -215,9 +233,7 @@ def load_census_population(
             },
         }
         if row is None:
-            session.add(
-                PopulationData(entity_id=entity.id, year=CENSUS_YEAR, **values)
-            )
+            session.add(PopulationData(entity_id=entity.id, year=CENSUS_YEAR, **values))
             stats.created += 1
         else:
             changed = False
@@ -234,7 +250,11 @@ def load_census_population(
     logger.info(
         "census population: %d counties (%d created, %d updated, %d unchanged) "
         "from doc %s p.%d",
-        stats.processed, stats.created, stats.updated, stats.skipped,
-        doc.id, result.page,
+        stats.processed,
+        stats.created,
+        stats.updated,
+        stats.skipped,
+        doc.id,
+        result.page,
     )
     return stats

@@ -1,0 +1,159 @@
+{
+  "status": "REVIEW ONLY; no production update authorized or executed",
+  "observed_at": "2026-09-27T20:02:05.206945+00:00",
+  "row_id": 79,
+  "before": {
+    "id": 79,
+    "year": 2019,
+    "basis": null,
+    "metadata": {
+      "source": "World Bank Development Indicators (2019)",
+      "dataset_id": null
+    },
+    "page_ref": null,
+    "entity_id": null,
+    "confidence": 1.0,
+    "created_at": "2026-03-25T23:12:41.680005",
+    "publishable": false,
+    "source_hash": null,
+    "source_page": null,
+    "extraction_id": null,
+    "male_population": 25485390,
+    "confidence_score": null,
+    "rural_population": null,
+    "total_population": 47564296,
+    "urban_population": null,
+    "female_population": 25717437,
+    "quarantine_reason": null,
+    "population_density": null,
+    "source_document_id": 1823
+  },
+  "after": {
+    "id": 79,
+    "year": 2019,
+    "basis": null,
+    "metadata": {
+      "source": "World Bank Development Indicators (2019)",
+      "source_url": "https://data.worldbank.org/indicator/SP.POP.TOTL?locations=KE",
+      "dataset_id": "SP.POP.TOTL"
+    },
+    "page_ref": null,
+    "entity_id": null,
+    "confidence": 1.0,
+    "created_at": "2026-03-25T23:12:41.680005",
+    "publishable": false,
+    "source_hash": null,
+    "source_page": null,
+    "extraction_id": null,
+    "male_population": 25485390,
+    "confidence_score": null,
+    "rural_population": null,
+    "total_population": 51202827,
+    "urban_population": null,
+    "female_population": 25717437,
+    "quarantine_reason": null,
+    "population_density": null,
+    "source_document_id": null
+  },
+  "writer": "seeding.domains.population.writer.persist_population_records",
+  "source_responses": {
+    "total": [
+      {
+        "page": 1,
+        "pages": 1,
+        "per_page": 50,
+        "total": 1,
+        "sourceid": "2",
+        "lastupdated": "2026-07-13"
+      },
+      [
+        {
+          "indicator": {
+            "id": "SP.POP.TOTL",
+            "value": "Population, total"
+          },
+          "country": {
+            "id": "KE",
+            "value": "Kenya"
+          },
+          "countryiso3code": "KEN",
+          "date": "2019",
+          "value": 51202827,
+          "unit": "",
+          "obs_status": "",
+          "decimal": 0
+        }
+      ]
+    ],
+    "male": [
+      {
+        "page": 1,
+        "pages": 1,
+        "per_page": 50,
+        "total": 1,
+        "sourceid": "2",
+        "lastupdated": "2026-07-13"
+      },
+      [
+        {
+          "indicator": {
+            "id": "SP.POP.TOTL.MA.IN",
+            "value": "Population, male"
+          },
+          "country": {
+            "id": "KE",
+            "value": "Kenya"
+          },
+          "countryiso3code": "KEN",
+          "date": "2019",
+          "value": 25485390,
+          "unit": "",
+          "obs_status": "",
+          "decimal": 0
+        }
+      ]
+    ],
+    "female": [
+      {
+        "page": 1,
+        "pages": 1,
+        "per_page": 1,
+        "total": 1,
+        "sourceid": "2",
+        "lastupdated": "2026-07-13"
+      },
+      [
+        {
+          "indicator": {
+            "id": "SP.POP.TOTL.FE.IN",
+            "value": "Population, female"
+          },
+          "country": {
+            "id": "KE",
+            "value": "Kenya"
+          },
+          "countryiso3code": "KEN",
+          "date": "2019",
+          "value": 25717437,
+          "unit": "",
+          "obs_status": "",
+          "decimal": 0
+        }
+      ]
+    ]
+  },
+  "source_urls": {
+    "total": "https://api.worldbank.org/v2/country/KEN/indicator/SP.POP.TOTL?format=json&date=2019",
+    "male": "https://api.worldbank.org/v2/country/KEN/indicator/SP.POP.TOTL.MA.IN?format=json&date=2019",
+    "female": "https://api.worldbank.org/v2/country/KEN/indicator/SP.POP.TOTL.FE.IN?format=json&date=2019"
+  },
+  "prerequisites": [
+    "Deploy writer ownership protections first",
+    "Re-fetch all three exact World Bank observations and compare publisher version and values",
+    "Re-read complete row79 under a lock; refuse any before-image drift",
+    "Take and restore-test an external database backup",
+    "Obtain release-owner authorization for this exact one-row repair or approve a separate bounded population-domain refresh",
+    "Coordinate shared write/cache refresh with Session5"
+  ],
+  "recovery": "Restore this exact before-image only if the complete current row equals the approved after-image; preserve id/entity_id/year/created_at; no source document deletion"
+}

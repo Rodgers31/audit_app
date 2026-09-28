@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
 from typing import Any, Dict, Iterable, List, Optional
 
 
@@ -23,11 +24,15 @@ class PopulationRecord:
 
 
 def _coerce_int(value: Any) -> Optional[int]:
-    if value is None:
+    if value is None or isinstance(value, bool):
+        return None
+    if isinstance(value, float) and (
+        not math.isfinite(value) or not value.is_integer()
+    ):
         return None
     try:
         return int(value)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         return None
 
 
@@ -84,9 +89,7 @@ def parse_population_payload(payload: Any) -> List[PopulationRecord]:
         )
 
         year = _coerce_int(item.get("year"))
-        total_population = _coerce_int(
-            item.get("total_population") or item.get("total")
-        )
+        total_population = _coerce_int(item.get("total_population", item.get("total")))
         if year is None or total_population is None:
             continue
 
@@ -96,14 +99,13 @@ def parse_population_payload(payload: Any) -> List[PopulationRecord]:
             entity_name=entity_name,
             year=year,
             total_population=total_population,
-            male_population=_coerce_int(
-                item.get("male_population") or item.get("male")
-            ),
+            male_population=_coerce_int(item.get("male_population", item.get("male"))),
             female_population=_coerce_int(
-                item.get("female_population") or item.get("female")
+                item.get("female_population", item.get("female"))
             ),
             meta={
                 "source": item.get("source"),
+                "source_url": item.get("source_url"),
                 "dataset_id": item.get("dataset_id"),
             },
         )

@@ -48,14 +48,8 @@ def run(
 
     errors.extend(stats.errors)
 
-    # ── county populations, from the census itself ────────────────────
-    # The fetcher above marked this domain `partial / no_live_county_source`,
-    # which was true for as long as the county breakdown came from a fixture.
-    # It no longer has to: KNBS publishes the count per county in Volume I of
-    # the 2019 census, and census_counties reads it under gates the table
-    # itself supplies. A failure here leaves the fetcher's marking standing —
-    # the domain does not get to call itself live on a census it could not
-    # read.
+    # County observations come only from the validated census table. National
+    # and county coverage must both succeed before the whole domain is live.
     census = census_counties.CensusLoadStats()
     if context.dry_run:
         logger.info("dry run — not fetching the census volume")
@@ -77,7 +71,12 @@ def run(
                     census.errors.append(str(exc))
             errors.extend(census.errors)
 
-            if census.processed and not census.quarantine_reason:
+            if (
+                census.processed
+                and not census.quarantine_reason
+                and records
+                and not stats.errors
+            ):
                 mark_live(
                     "population",
                     detail=(
@@ -90,12 +89,18 @@ def run(
                         )
                     ),
                 )
+            elif census.processed and not census.quarantine_reason:
+                mark_partial(
+                    "population",
+                    reason="national_series_unavailable",
+                    detail=f"{census.processed} census counties loaded; no World Bank national refresh",
+                )
             elif census.quarantine_reason:
                 mark_partial(
                     "population",
                     reason=f"census_{census.quarantine_reason}",
                     detail=(
-                        "the county breakdown stays on the fixture: the census "
+                        "stored county observations are unchanged: the census "
                         f"volume was refused ({census.quarantine_reason})"
                     ),
                 )
@@ -113,7 +118,7 @@ def run(
         errors=errors,
         metadata={
             "skipped": stats.skipped,
-            "source_url": settings.population_dataset_url,
+            "source_url": "https://data.worldbank.org/indicator/SP.POP.TOTL?locations=KE",
             "census_counties": {
                 "processed": census.processed,
                 "created": census.created,

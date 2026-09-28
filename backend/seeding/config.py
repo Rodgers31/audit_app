@@ -144,14 +144,6 @@ class SeedingSettings(BaseSettings):
             "change (an edited parser invalidates its own entries)."
         ),
     )
-    population_dataset_url: str = Field(
-        default="file://seeding/real_data/population.json",
-        description=(
-            "Endpoint providing population statistics payloads. "
-            "Use file:// for local fixtures or https:// for production APIs "
-            "(e.g., https://www.knbs.or.ke/data/population.json)."
-        ),
-    )
     budgets_dataset_url: str = Field(
         default="file://seeding/real_data/budgets.json",
         description=(

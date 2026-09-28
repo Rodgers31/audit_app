@@ -148,7 +148,7 @@ _FIXTURE_DECLARATIONS: Dict[str, Dict[str, Any]] = {
 #: A figure derived from a Controller of Budget report would not match one of
 #: these to the shilling, so an exact match means the stored figure IS this
 #: file's. ``population`` is deliberately excluded: it is a real Census 2019
-#: count, so a live source would legitimately agree with it and the match
+#: count for most counties, so a live source could agree and the match
 #: would prove nothing.
 _MODELLED_COUNTY_METRICS = (
     "budget_2025",
@@ -196,10 +196,11 @@ def _county_reference_data_superseded(session: Session) -> Tuple[bool, str]:
     ``Loan``            formerly written here (modelled county debt and
         pending bills); no longer written — pending bills are the pending_bills
         domain's (national: Treasury BROP; counties: CoB year-end CBIRR).
-    ``PopulationData``  via ``_upsert_population``.
+    ``PopulationData``  formerly written here; the population domain owns it.
     ``entity.meta``     ``metrics`` (read by /counties for revenue, transfers,
-        development budget and pending bills), plus ``economic_profile``,
-        ``governor`` and ``last_updated``, which nothing else writes.
+        development budget and pending bills) from the historical writer.
+        Bootstrap now writes only county identifiers and reference timestamps;
+        county_officials owns governors, and economic profiles are retired.
 
     So this returns False until each of those has a live source. The evidence
     names what is still outstanding, which is the actionable form of "377 days
@@ -589,41 +590,6 @@ def _ensure_source_document(
     return document
 
 
-def _upsert_population(
-    session: Session,
-    *,
-    entity_id: int,
-    population: int,
-    source_document_id: int,
-) -> None:
-    """Create PopulationData row for a county (Census 2019 baseline)."""
-    if not population or population <= 0:
-        return
-    existing = (
-        session.query(PopulationData)
-        .filter(
-            PopulationData.entity_id == entity_id,
-            PopulationData.year == 2019,
-        )
-        .first()
-    )
-    if existing:
-        existing.total_population = population
-        existing.source_document_id = source_document_id
-        session.add(existing)
-        return
-    session.add(
-        PopulationData(
-            entity_id=entity_id,
-            year=2019,
-            total_population=population,
-            source_document_id=source_document_id,
-            confidence=Decimal("0.95"),
-            meta={"source": "Kenya Census 2019", "bootstrap": True},
-        )
-    )
-
-
 # ── National-level (Kenya) GDP ─────────────────────────────────────────
 # GDP is loaded from the World Bank-sourced fixture (seeding/real_data/
 # national_gdp.json), NOT a hardcoded series. A wrong constant here
@@ -651,8 +617,6 @@ def _load_national_gdp_series() -> "list[tuple[int, int]]":
 # pipeline via `python -m seeding.cli seed --domain national_debt`.
 # Real data in: backend/seeding/real_data/national_debt.json
 # Source: CBK Public Debt Statistical Bulletin, April 2025.
-
-NATIONAL_POPULATION = 47_564_296  # Census 2019 (KNBS)
 
 
 #: Indicator keys a live seeding domain owns. Bootstrap must not write them:
@@ -770,7 +734,7 @@ def _seed_national_data(
     country: Country,
     period: FiscalPeriod,
 ) -> None:
-    """Seed Kenya national GDP, population, and sovereign debt into normalised tables."""
+    """Seed national reference data and legacy economic indicators."""
     # Ensure a national-level Entity exists
     national_entity = (
         session.query(Entity)
@@ -883,40 +847,7 @@ def _seed_national_data(
     # the entity-linked rows above.
     session.flush()
 
-    # National population
-    _upsert_population(
-        session,
-        entity_id=national_entity.id,
-        population=NATIONAL_POPULATION,
-        source_document_id=national_doc.id,
-    )
-
-    # Also seed a national population record with entity_id=None
-    # This is what the /economic/population/latest and /economic/summary endpoints query for
-    existing_null_pop = (
-        session.query(PopulationData)
-        .filter(PopulationData.entity_id.is_(None), PopulationData.year == 2019)
-        .first()
-    )
-    if not existing_null_pop:
-        session.add(
-            PopulationData(
-                entity_id=None,
-                year=2019,
-                total_population=NATIONAL_POPULATION,
-                source_document_id=national_doc.id,
-                confidence=Decimal("0.95"),
-                meta={
-                    "source": "Kenya Census 2019",
-                    "bootstrap": True,
-                    "scope": "national",
-                },
-            )
-        )
-    elif existing_null_pop.total_population != NATIONAL_POPULATION:
-        existing_null_pop.total_population = NATIONAL_POPULATION
-        existing_null_pop.source_document_id = national_doc.id
-        session.add(existing_null_pop)
+    # National and county population are owned by the population domain.
 
     # National debt breakdown is now handled by the seeding pipeline:
     #   python -m seeding.cli seed --domain national_debt
@@ -946,7 +877,7 @@ def _seed_national_data(
     _seed_poverty_indices(session, source_document_id=national_doc.id)
 
     logger.info(
-        "National-level data seeded (GDP, population, economic indicators, poverty indices). "
+        "National-level data seeded (GDP, economic indicators, poverty indices). "
         "Run 'python -m seeding.cli seed --domain national_debt' for debt records."
     )
 
@@ -1036,10 +967,8 @@ def initialize_reference_data(
 
     The per-county loop is the expensive part (~3 min on a cold DB); once
     47 county entities exist it's skipped on subsequent boots. The
-    national-level seeders (GDP, population, federal audits) are cheap
-    and idempotent, so they always run — that way a new data file
-    (e.g. federal audit findings) is picked up on restart without
-    needing `--force`.
+    national-level reference seeders are cheap
+    and idempotent, so they always run without needing `--force`.
     """
     # Yield to a seed run that is already writing. Nothing here is urgent —
     # these are git-tracked files — and the alternative is a row-lock wait that
@@ -1162,55 +1091,14 @@ def initialize_reference_data(
             meta.setdefault("metrics", {})[_fy_key] = metrics
             for _stale in _PURGED_META_KEYS:
                 meta.pop(_stale, None)
-            meta["economic_profile"] = {
-                "county_type": info.get("county_type"),
-                "economic_base": info.get("economic_base"),
-                "infrastructure_level": info.get("infrastructure_level"),
-                "revenue_potential": info.get("revenue_potential"),
-                "major_issues": info.get("major_issues", []),
-            }
-            if info.get("governor"):
-                meta["governor"] = info["governor"]
+            # Officials belong to county_officials; retired economic profiles
+            # are removed only by the separately reviewed cleanup.
             meta["last_updated"] = info.get("last_updated")
             entity.meta = meta
             session.add(entity)
             session.flush()
 
-            last_updated = info.get("last_updated")
-            fetch_dt = (
-                datetime.fromisoformat(last_updated)
-                if isinstance(last_updated, str)
-                else datetime.now(timezone.utc)
-            )
-
-            budget_doc = _ensure_source_document(
-                session,
-                country_id=country.id,
-                title=f"{county_name} County Budget {FISCAL_LABEL}",
-                publisher="County Treasury",
-                doc_type=DocumentType.BUDGET,
-                fetch_date=fetch_dt,
-                metadata={
-                    "source": COUNTY_DATA_PATH.name,
-                    "county": county_name,
-                },
-            )
-
-            # County money is NOT written here. Budget lines (modelled as
-            # population x KSh 4,500, split into sectors), county debt (a flat
-            # 15% of that) and pending bills (8%) all came out of this loop on
-            # a fresh database, where they competed with — and in a period
-            # without live rows, stood in for — the Controller of Budget's
-            # CBIRR. The counties_budget and pending_bills domains own county
-            # money; this loop keeps the reference skeleton.
-
-            # Seed PopulationData table (Census 2019)
-            _upsert_population(
-                session,
-                entity_id=entity.id,
-                population=int(info.get("population", 0)),
-                source_document_id=budget_doc.id,
-            )
+            # Population and county money are ingested by their sourced domains.
 
         # --- National-level data (GDP + sovereign debt) ---
         _seed_national_data(session, country=country, period=period)
@@ -1248,8 +1136,8 @@ def initialize_reference_data(
 
         if skip_county_loop:
             logger.info(
-                "National-level data refreshed (GDP, population, "
-                "federal audits, national budget)"
+                "National-level data refreshed (GDP, "
+                "economic indicators, national budget)"
             )
         else:
             logger.info(

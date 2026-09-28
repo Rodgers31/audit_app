@@ -1,7 +1,6 @@
 """Population domain fetcher with live World Bank API integration.
 
-Fetches population data from the World Bank API first, then supplements
-with fixture data for county-level breakdowns not available via the API.
+County observations are owned by the separate census table loader.
 """
 
 from __future__ import annotations
@@ -11,7 +10,7 @@ from typing import Any, Dict, List
 
 from ...config import SeedingSettings
 from ...http_client import SeedingHttpClient
-from ...utils import load_json_resource
+from .parser import _coerce_int
 
 logger = logging.getLogger("seeding.population.fetcher")
 
@@ -64,8 +63,18 @@ def _fetch_wb_national_population(
                 if item.get("value") is None:
                     continue
 
-                year = int(item["date"])
-                value = int(round(item["value"]))
+                year = _coerce_int(item.get("date"))
+                value = _coerce_int(item["value"])
+                if (
+                    year is None
+                    or not 1900 <= year <= 2100
+                    or value is None
+                    or value < 0
+                ):
+                    logger.warning(
+                        "Invalid population observation for %s", indicator_code
+                    )
+                    continue
 
                 if year not in data_by_year:
                     data_by_year[year] = {
@@ -77,6 +86,7 @@ def _fetch_wb_national_population(
                             "https://data.worldbank.org/indicator/"
                             "SP.POP.TOTL?locations=KE"
                         ),
+                        "dataset_id": "SP.POP.TOTL",
                         "data_quality": "official",
                     }
 
@@ -105,7 +115,10 @@ def _fetch_wb_national_population(
             pass  # supplementary data is best-effort
 
     # Convert to sorted list
-    records = sorted(data_by_year.values(), key=lambda r: r["year"])
+    records = sorted(
+        (r for r in data_by_year.values() if "total_population" in r),
+        key=lambda r: r["year"],
+    )
     logger.info(
         "World Bank: fetched national population for %d years (%s–%s)",
         len(records),
@@ -115,140 +128,29 @@ def _fetch_wb_national_population(
     return records
 
 
-def _merge_population(
-    fixture: Any, live_national: List[Dict[str, Any]]
-) -> List[Dict[str, Any]]:
-    """Merge live national data with fixture county data.
-
-    Live national data takes precedence over fixture national data.
-    County-level data from fixture is preserved (World Bank doesn't
-    provide sub-national breakdowns for Kenya).
-    """
-    # Normalize fixture format
-    if isinstance(fixture, dict):
-        fixture_records = fixture.get("records", fixture.get("data", []))
-    elif isinstance(fixture, list):
-        fixture_records = fixture
-    else:
-        fixture_records = []
-
-    # Separate fixture into county vs national records
-    county_records = []
-    fixture_national_keys: set[int] = set()
-
-    for record in fixture_records:
-        level = record.get("level", "")
-        entity = record.get("entity", "").lower()
-
-        is_national = (
-            level == "national"
-            or entity in ("kenya", "national", "republic of kenya")
-            or record.get("county", "").lower() in ("", "national", "kenya")
-        )
-
-        if is_national:
-            fixture_national_keys.add(record.get("year", 0))
-        else:
-            county_records.append(record)
-
-    # Live national data indexed by year
-    live_years = {r["year"] for r in live_national}
-
-    # Keep fixture national entries for years without live data
-    for record in fixture_records:
-        year = record.get("year", 0)
-        level = record.get("level", "")
-        entity = record.get("entity", "").lower()
-        is_national = (
-            level == "national"
-            or entity in ("kenya", "national", "republic of kenya")
-        )
-        if is_national and year not in live_years:
-            live_national.append(record)
-
-    merged = live_national + county_records
-
-    logger.info(
-        "Merged population: %d live national + %d county fixture = %d total",
-        len(live_national),
-        len(county_records),
-        len(merged),
-    )
-
-    return merged
-
-
 def fetch_population_payload(
     client: SeedingHttpClient, settings: SeedingSettings
 ) -> Any:
-    """Fetch population data, prioritizing live World Bank API.
+    """Fetch only World Bank national observations; counties use the census loader.
 
-    Strategy:
-    1. Fetch national population time series from World Bank API.
-    2. Load fixture for county-level data (47 counties from KNBS Census).
-    3. Merge: live national data takes precedence; county data preserved.
-    4. If World Bank fails entirely, fall back to fixture only.
+    No fixture is read on failure. The existing stored observations remain
+    untouched until their owning source supplies a replacement.
     """
-    from ...freshness import mark_fixture, mark_live, mark_partial
+    from ...freshness import mark_partial, mark_refused
 
-    live_national: List[Dict[str, Any]] = []
-    fallback_reason = "worldbank_disabled"
-
-    # Step 1: Try live World Bank API
-    if settings.enrich_with_worldbank:
-        fallback_reason = "worldbank_returned_nothing"
-        try:
-            live_national = _fetch_wb_national_population(client)
-        except Exception as exc:
-            logger.warning("World Bank population fetch failed: %s", exc)
-            fallback_reason = f"worldbank_unreachable({type(exc).__name__})"
-
-    # Step 2: Load fixture (always — we need county data from it)
-    try:
-        fixture = load_json_resource(
-            url=settings.population_dataset_url,
-            client=client,
-            logger=logger,
-            label="population",
-        )
-    except Exception as exc:
-        logger.warning("Failed to load population fixture: %s", exc)
-        fixture = []
-
-    # Step 3: Merge. Provenance is recorded on BOTH branches — the county
-    # breakdown always comes from the KNBS census fixture (the World Bank
-    # publishes no sub-national series for Kenya), so "live" here means the
-    # NATIONAL series was refreshed, and the detail says exactly that rather
-    # than implying all 47 counties were.
-    if live_national:
-        merged = _merge_population(fixture, live_national)
-        # National series is genuinely refreshed; all 47 counties are still
-        # the KNBS census fixture, and the World Bank publishes no
-        # sub-national series for Kenya. Same shape as revenue_by_source
-        # (review, PR #136): a fresh secondary series is not a fresh domain.
-        mark_partial(
-            "population",
-            reason="no_live_county_source",
-            detail=(
-                f"World Bank SP.POP.* national series for "
-                f"{len(live_national)} year(s); county breakdown remains the "
-                f"KNBS census fixture (no sub-national World Bank series)"
-            ),
-        )
-        # Wrap in the expected format for the parser
-        return {"records": merged} if isinstance(fixture, dict) else merged
-    else:
-        if fixture:
-            logger.warning(
-                "No live population data — using fixture as fallback "
-                "(data may be stale)"
-            )
-        mark_fixture(
-            "population",
-            reason=fallback_reason,
-            detail="national AND county population served from the fixture",
-        )
-        return fixture
+    if not settings.enrich_with_worldbank:
+        mark_refused("population", reason="worldbank_disabled")
+        return []
+    records = _fetch_wb_national_population(client)
+    if not records:
+        mark_refused("population", reason="worldbank_returned_nothing")
+        return []
+    mark_partial(
+        "population",
+        reason="census_not_yet_loaded",
+        detail=f"World Bank SP.POP.* national series for {len(records)} year(s)",
+    )
+    return records
 
 
 __all__ = ["fetch_population_payload"]

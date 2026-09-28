@@ -1,0 +1,25 @@
+{
+  "document_title": "2019 Kenya Population and Housing Census Volume I: Population by County and Sub-County",
+  "publisher": "Kenya National Bureau of Statistics",
+  "url": "https://www.knbs.or.ke/wp-content/uploads/2023/09/2019-Kenya-population-and-Housing-Census-Volume-1-Population-By-County-And-Sub-County.pdf",
+  "sha256": "740093a7e0d3a2f34bc85bebfe343c3b45e6b8401a394470f191d281b280ae4e",
+  "table": "2.2 Distribution of Population by Sex and County",
+  "printed_page": 7,
+  "pdf_page": 17,
+  "observation_year": 2019,
+  "units": "persons",
+  "basis": "published census count, not a World Bank national time-series observation",
+  "mandera": {
+    "male": 434976,
+    "female": 432444,
+    "intersex": 37,
+    "total": 867457
+  },
+  "national": {
+    "male": 23548056,
+    "female": 24014716,
+    "intersex": 1524,
+    "total": 47564296
+  },
+  "verified": "Downloaded from publisher with TLS verification using public KNBS trust bundle; rendered page inspected; production extractor validated all 47 counties and national reconciliation."
+}

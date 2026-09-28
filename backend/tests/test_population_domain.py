@@ -1,202 +1,144 @@
-"""Tests for the population seeding domain."""
-
-from __future__ import annotations
-
-from typing import Iterator
+"""The population domain consumes publisher observations without fixture fallback."""
+from contextlib import contextmanager
+from copy import deepcopy
 
 import httpx
-import pytest
-from models import Base, Country, Entity, EntityType, PopulationData
+from models import PopulationData
 from seeding.config import SeedingSettings
-from seeding.domains.population import run as run_population_domain
+from seeding.domains import population
+from seeding.domains.population import census_counties
 from seeding.types import DomainRunContext
-from sqlalchemy import create_engine, select
-from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.orm import Session, sessionmaker
+
+WB_SOURCE = "https://data.worldbank.org/indicator/SP.POP.TOTL?locations=KE"
 
 
-@compiles(JSONB, "sqlite")
-def _compile_jsonb_sqlite(type_, compiler, **kw):  # pragma: no cover - dialect shim
-    return "TEXT"
+def run_domain(
+    db_session,
+    monkeypatch,
+    *,
+    enabled=True,
+    fail=False,
+    values=None,
+    census_processed=0
+):
+    values = values or {
+        "SP.POP.TOTL": 51202827,
+        "SP.POP.TOTL.MA.IN": 25485390,
+        "SP.POP.TOTL.FE.IN": 25717437,
+    }
+    requested = []
 
+    class Client:
+        def get(self, url, **kwargs):
+            requested.append(url)
+            if fail:
+                raise httpx.ConnectError("publisher unavailable")
+            code = url.rsplit("/", 1)[-1]
+            return httpx.Response(
+                200, json=[{}, [{"date": "2019", "value": values.get(code)}]]
+            )
 
-@pytest.fixture()
-def sqlite_session(tmp_path) -> Iterator[Session]:
-    engine = create_engine(f"sqlite:///{tmp_path/'population.db'}")
-    Base.metadata.create_all(engine)
-    TestingSession = sessionmaker(bind=engine)
-    session = TestingSession()
-    try:
-        yield session
-    finally:
-        session.close()
-        engine.dispose()
+    @contextmanager
+    def factory(settings):
+        yield Client()
 
-
-def _no_census(monkeypatch):
-    """Stub the census step for the tests below.
-
-    The domain now also reads county populations from the 2019 census volume
-    (seeding/domains/population/census_counties.py). These tests are about the
-    World Bank / fixture persistence path, and their `calls == 1` assertions
-    are about THAT fetch; letting the census run turns them into assertions
-    about how many requests the domain happens to make. The census has its own
-    tests — test_knbs_census_population.py — and its own domain test below.
-    """
-    from seeding.domains.population import census_counties
-
+    monkeypatch.setattr(population, "create_http_client", factory)
     monkeypatch.setattr(
         census_counties,
         "load_census_population",
-        lambda *a, **k: census_counties.CensusLoadStats(),
+        lambda *a, **k: census_counties.CensusLoadStats(
+            processed=census_processed,
+            quarantine_reason=None if census_processed else "test_no_pdf",
+        ),
     )
+    result = population.run(
+        db_session,
+        SeedingSettings(enrich_with_worldbank=enabled),
+        DomainRunContext(since=None, dry_run=False),
+    )
+    db_session.commit()
+    return result, requested
 
 
-@pytest.fixture()
-def http_mock(monkeypatch):
-    _no_census(monkeypatch)
-    state = {
-        "payload": {"records": []},
-        "status": 200,
-        "calls": 0,
+def test_world_bank_refresh_replaces_mixed_bootstrap_record(
+    db_session, seed_country, seed_source_doc, monkeypatch
+):
+    row = PopulationData(
+        year=2019,
+        total_population=47564296,
+        source_document_id=seed_source_doc.id,
+        page_ref="old p. 17",
+        source_page=17,
+        meta={"source": "World Bank Development Indicators (2019)", "bootstrap": True},
+    )
+    db_session.add(row)
+    db_session.commit()
+    result, requests = run_domain(db_session, monkeypatch)
+    db_session.refresh(row)
+    assert result.items_updated == 1
+    assert len(requests) == 7
+    assert row.total_population == 51202827
+    assert row.male_population + row.female_population == row.total_population
+    assert row.meta == {
+        "source": "World Bank Development Indicators (2019)",
+        "source_url": WB_SOURCE,
+        "dataset_id": "SP.POP.TOTL",
     }
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        state["calls"] += 1
-        return httpx.Response(
-            state["status"],
-            json=state["payload"],
-            headers={"content-type": "application/json"},
-            request=request,
-        )
-
-    transport = httpx.MockTransport(handler)
-    original_client = httpx.Client
-
-    def client_factory(*args, **kwargs):
-        kwargs["transport"] = transport
-        return original_client(*args, **kwargs)
-
-    monkeypatch.setattr("seeding.http_client.httpx.Client", client_factory)
-    return state
-
-
-def _bootstrap_entities(session: Session) -> None:
-    country = Country(
-        iso_code="KEN",
-        name="Kenya",
-        currency="KES",
-        timezone="Africa/Nairobi",
-        default_locale="en-KE",
+    assert (
+        row.source_document_id is None
+        and row.page_ref is None
+        and row.source_page is None
     )
-    session.add(country)
-    session.flush()
 
-    session.add(
-        Entity(
-            country_id=country.id,
-            type=EntityType.COUNTY,
-            canonical_name="Nairobi City",
-            slug="nairobi",
-            alt_names=["Nairobi"],
-            meta={},
-        )
+
+def test_world_bank_disabled_preserves_existing_observation(
+    db_session, seed_country, monkeypatch
+):
+    row = PopulationData(
+        year=2019, total_population=47564296, meta={"source": "existing"}
     )
-    session.commit()
+    db_session.add(row)
+    db_session.commit()
+    before = deepcopy(row.meta)
+    result, requests = run_domain(db_session, monkeypatch, enabled=False)
+    db_session.refresh(row)
+    assert requests == []
+    assert result.items_created == result.items_updated == 0
+    assert row.total_population == 47564296 and row.meta == before
 
 
-def _build_settings(
-    tmp_path, url: str, *, enrich_with_worldbank: bool = False
-) -> SeedingSettings:
-    settings = SeedingSettings(
-        storage_path=tmp_path / "storage",
-        cache_path=tmp_path / "cache",
-        log_path=tmp_path / "logs" / "seed.log",
-        population_dataset_url=url,
-        retry_backoff=0.01,
-        max_retries=2,
-        # Disable live enrichment in unit tests so the mock transport
-        # only serves the test fixture payload (not World Bank API calls).
-        enrich_with_worldbank=enrich_with_worldbank,
-        live_pdf_fetch_enabled=False,
+def test_world_bank_unavailable_never_falls_back(db_session, seed_country, monkeypatch):
+    result, requests = run_domain(db_session, monkeypatch, fail=True)
+    assert requests  # The publisher was actually attempted.
+    assert result.items_created == result.items_updated == 0
+    assert db_session.query(PopulationData).count() == 0
+
+
+def test_sex_series_without_total_cannot_create_population(
+    db_session, seed_country, monkeypatch
+):
+    result, _ = run_domain(
+        db_session, monkeypatch, values={"SP.POP.TOTL.MA.IN": 25485390}
     )
-    settings.ensure_directories()
-    return settings
-
-
-def test_population_domain_persists_records(sqlite_session, http_mock, tmp_path):
-    _bootstrap_entities(sqlite_session)
-    http_mock["payload"] = {
-        "records": [
-            {
-                "level": "national",
-                "entity": "Kenya",
-                "year": 2023,
-                "total_population": 54000000,
-                "male_population": 26000000,
-                "female_population": 28000000,
-                "dataset_id": "pop-2023",
-            },
-            {
-                "level": "county",
-                "entity": "Nairobi City",
-                "entity_slug": "nairobi",
-                "year": 2023,
-                "total_population": 4500000,
-                "male_population": 2200000,
-                "female_population": 2300000,
-                "dataset_id": "pop-2023",
-            },
-        ]
-    }
-    http_mock["calls"] = 0
-
-    settings = _build_settings(tmp_path, "https://example.test/population")
-    context = DomainRunContext(since=None, dry_run=False)
-
-    result = run_population_domain(sqlite_session, settings, context)
-    sqlite_session.commit()
-
-    assert result.items_processed == 2
-    assert result.items_created == 2
-    assert result.metadata["skipped"] == 0
-    assert http_mock["calls"] == 1
-
-    rows = sqlite_session.execute(select(PopulationData)).scalars().all()
-    assert len(rows) == 2
-    national = next(row for row in rows if row.entity_id is None)
-    county = next(row for row in rows if row.entity_id is not None)
-    assert national.total_population == 54000000
-    assert county.total_population == 4500000
-
-
-def test_population_domain_skips_unknown_entity(sqlite_session, http_mock, tmp_path):
-    _bootstrap_entities(sqlite_session)
-    http_mock["payload"] = {
-        "records": [
-            {
-                "level": "county",
-                "entity": "Unknown County",
-                "entity_slug": "unknown",
-                "year": 2023,
-                "total_population": 100000,
-                "dataset_id": "pop-2023",
-            }
-        ]
-    }
-    http_mock["calls"] = 0
-
-    settings = _build_settings(tmp_path, "https://example.test/population")
-    context = DomainRunContext(since=None, dry_run=False)
-
-    result = run_population_domain(sqlite_session, settings, context)
-
-    assert result.items_processed == 1
     assert result.items_created == 0
-    assert result.metadata["skipped"] == 1
-    assert result.errors
-    assert http_mock["calls"] == 1
+    assert db_session.query(PopulationData).count() == 0
 
-    rows = sqlite_session.execute(select(PopulationData)).scalars().all()
-    assert rows == []
+
+def test_refused_national_series_is_not_reported_live(
+    db_session, seed_country, monkeypatch
+):
+    from seeding import freshness
+
+    result, _ = run_domain(
+        db_session, monkeypatch, values={"SP.POP.TOTL": 82}, census_processed=47
+    )
+    assert result.errors
+    assert freshness.get("population")["mode"] == freshness.PARTIAL
+
+
+def test_both_accepted_sources_are_reported_live(db_session, seed_country, monkeypatch):
+    from seeding import freshness
+
+    result, _ = run_domain(db_session, monkeypatch, census_processed=47)
+    assert not result.errors
+    assert freshness.get("population")["mode"] == freshness.LIVE

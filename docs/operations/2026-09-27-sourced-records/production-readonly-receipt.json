@@ -1,0 +1,620 @@
+{
+  "observed_at": "2026-09-27T20:02:05.206945+00:00",
+  "read_only": true,
+  "insert_refused": true,
+  "county_count": 47,
+  "population_79": {
+    "id": 79,
+    "year": 2019,
+    "basis": null,
+    "metadata": {
+      "source": "World Bank Development Indicators (2019)",
+      "dataset_id": null
+    },
+    "page_ref": null,
+    "entity_id": null,
+    "confidence": 1.0,
+    "created_at": "2026-03-25T23:12:41.680005",
+    "publishable": false,
+    "source_hash": null,
+    "source_page": null,
+    "extraction_id": null,
+    "male_population": 25485390,
+    "confidence_score": null,
+    "rural_population": null,
+    "total_population": 47564296,
+    "urban_population": null,
+    "female_population": 25717437,
+    "quarantine_reason": null,
+    "population_density": null,
+    "source_document_id": 1823
+  },
+  "mandera_population": {
+    "id": 26,
+    "year": 2019,
+    "basis": null,
+    "metadata": {
+      "table": "2.2",
+      "source_url": "https://www.knbs.or.ke/wp-content/uploads/2023/09/2019-Kenya-population-and-Housing-Census-Volume-1-Population-By-County-And-Sub-County.pdf",
+      "census_year": 2019,
+      "intersex_population": 37
+    },
+    "page_ref": "p. 17",
+    "entity_id": 12,
+    "confidence": 1.0,
+    "created_at": "2025-11-04T14:03:37.351107",
+    "publishable": false,
+    "source_hash": null,
+    "source_page": 17,
+    "extraction_id": 4345,
+    "male_population": 434976,
+    "confidence_score": null,
+    "rural_population": null,
+    "total_population": 867457,
+    "urban_population": null,
+    "female_population": 432444,
+    "quarantine_reason": null,
+    "population_density": null,
+    "source_document_id": 2435
+  },
+  "documents": [
+    {
+      "id": 1707,
+      "md5": null,
+      "url": "https://fixtures.example/budgets",
+      "title": "County Budget Execution Summary",
+      "status": "AVAILABLE",
+      "doc_type": "BUDGET",
+      "metadata": {
+        "dataset_id": "fixture-budgets"
+      },
+      "file_path": null,
+      "publisher": "Controller of Budget",
+      "country_id": 1,
+      "created_at": "2025-11-02T03:04:49.328928",
+      "fetch_date": "2025-11-02T03:04:49.328928",
+      "http_status": null,
+      "content_type": null,
+      "last_seen_at": "2025-11-02T03:04:49.328928",
+      "last_verified_at": null
+    },
+    {
+      "id": 1718,
+      "md5": null,
+      "url": "https://www.crakenya.org/county-allocations/",
+      "title": "Estimated based on CRA Equitable Share FY 2023/24",
+      "status": "AVAILABLE",
+      "doc_type": "BUDGET",
+      "metadata": {
+        "data_quality": "estimated",
+        "source_label": "Estimated based on CRA Equitable Share FY 2023/24"
+      },
+      "file_path": null,
+      "publisher": "Controller of Budget",
+      "country_id": 1,
+      "created_at": "2025-11-09T21:39:32.113397",
+      "fetch_date": "2025-11-09T21:39:32.113397",
+      "http_status": null,
+      "content_type": null,
+      "last_seen_at": "2026-04-20T03:29:19.60125",
+      "last_verified_at": null
+    },
+    {
+      "id": 1823,
+      "md5": null,
+      "url": null,
+      "title": "CBK Public Debt Report & KNBS Economic Survey 2025",
+      "status": "FAILED",
+      "doc_type": "LOAN",
+      "metadata": {
+        "scope": "national",
+        "source": "bootstrap",
+        "cbk_csv_latest": "Apr 2025",
+        "status_before_3c": "AVAILABLE"
+      },
+      "file_path": null,
+      "publisher": "Central Bank of Kenya / National Treasury",
+      "country_id": 1,
+      "created_at": "2026-02-18T13:42:10.423029",
+      "fetch_date": "2025-04-30T00:00:00",
+      "http_status": null,
+      "content_type": null,
+      "last_seen_at": "2026-02-18T13:42:10.423029",
+      "last_verified_at": null
+    },
+    {
+      "id": 1836,
+      "md5": null,
+      "url": null,
+      "title": "Report of the Auditor General on the Financial Statements of the National Government for FY 2023/2024",
+      "status": "FAILED",
+      "doc_type": "AUDIT",
+      "metadata": {
+        "scope": "national",
+        "source": "oag_national_audit_data.json",
+        "fiscal_year": "FY2023/24",
+        "opinion_type": "Qualified",
+        "key_statistics": {
+          "minor_findings": 3,
+          "total_findings": 25,
+          "critical_findings": 10,
+          "significant_findings": 12,
+          "total_amount_flagged_kes": 981300000000,
+          "total_ministries_audited": 21,
+          "recurring_issues_from_prior_year": 18,
+          "response_rate_to_previous_queries": "34%"
+        },
+        "auditor_general": "Nancy Gathungu, CPA",
+        "status_before_3c": "AVAILABLE",
+        "emphasis_of_matter": [
+          "Debt service costs consuming 62.8% of ordinary revenue",
+          "Deteriorating fiscal sustainability indicators",
+          "Recurring nature of audit findings from previous years"
+        ],
+        "basis_for_qualification": [
+          "Unexplained Consolidated Fund balance differences of KES 156.8 billion",
+          "Incomplete government property register affecting asset valuation",
+          "Unresolved pending bills of KES 589.7 billion",
+          "Unsupported expenditures across multiple votes"
+        ],
+        "total_amount_questioned": "KES 981.3B"
+      },
+      "file_path": null,
+      "publisher": "Office of the Auditor General",
+      "country_id": 1,
+      "created_at": "2026-02-20T06:39:06.296693",
+      "fetch_date": "2024-12-15T00:00:00",
+      "http_status": null,
+      "content_type": null,
+      "last_seen_at": "2026-02-20T06:39:06.296689",
+      "last_verified_at": null
+    },
+    {
+      "id": 1840,
+      "md5": null,
+      "url": "https://www.centralbank.go.ke/public-debt/",
+      "title": "CBK Public Debt Statistical Bulletin \u2014 April 2025",
+      "status": "AVAILABLE",
+      "doc_type": "LOAN",
+      "metadata": {},
+      "file_path": null,
+      "publisher": "National Treasury of Kenya",
+      "country_id": 1,
+      "created_at": "2026-02-21T22:52:00.252947",
+      "fetch_date": "2026-02-21T22:52:00.252161",
+      "http_status": null,
+      "content_type": null,
+      "last_seen_at": "2026-02-21T22:52:00.252944",
+      "last_verified_at": null
+    }
+  ],
+  "document_references": [
+    {
+      "child_table": "audits",
+      "child_column": "source_document_id",
+      "document_id": 1707,
+      "row_ids": []
+    },
+    {
+      "child_table": "audits",
+      "child_column": "source_document_id",
+      "document_id": 1718,
+      "row_ids": []
+    },
+    {
+      "child_table": "audits",
+      "child_column": "source_document_id",
+      "document_id": 1840,
+      "row_ids": []
+    },
+    {
+      "child_table": "audits",
+      "child_column": "source_document_id",
+      "document_id": 1836,
+      "row_ids": [
+        870,
+        871,
+        872,
+        873,
+        874,
+        875,
+        876,
+        877,
+        878,
+        879,
+        880,
+        881,
+        882,
+        883,
+        884,
+        885,
+        886,
+        887,
+        888,
+        889,
+        890,
+        891,
+        892,
+        893,
+        894
+      ]
+    },
+    {
+      "child_table": "budget_lines",
+      "child_column": "source_document_id",
+      "document_id": 1707,
+      "row_ids": []
+    },
+    {
+      "child_table": "budget_lines",
+      "child_column": "source_document_id",
+      "document_id": 1718,
+      "row_ids": []
+    },
+    {
+      "child_table": "budget_lines",
+      "child_column": "source_document_id",
+      "document_id": 1840,
+      "row_ids": []
+    },
+    {
+      "child_table": "budget_lines",
+      "child_column": "source_document_id",
+      "document_id": 1836,
+      "row_ids": []
+    },
+    {
+      "child_table": "debt_timeline",
+      "child_column": "source_document_id",
+      "document_id": 1707,
+      "row_ids": []
+    },
+    {
+      "child_table": "debt_timeline",
+      "child_column": "source_document_id",
+      "document_id": 1718,
+      "row_ids": []
+    },
+    {
+      "child_table": "debt_timeline",
+      "child_column": "source_document_id",
+      "document_id": 1840,
+      "row_ids": []
+    },
+    {
+      "child_table": "debt_timeline",
+      "child_column": "source_document_id",
+      "document_id": 1836,
+      "row_ids": []
+    },
+    {
+      "child_table": "economic_indicators",
+      "child_column": "source_document_id",
+      "document_id": 1707,
+      "row_ids": []
+    },
+    {
+      "child_table": "economic_indicators",
+      "child_column": "source_document_id",
+      "document_id": 1718,
+      "row_ids": []
+    },
+    {
+      "child_table": "economic_indicators",
+      "child_column": "source_document_id",
+      "document_id": 1840,
+      "row_ids": []
+    },
+    {
+      "child_table": "economic_indicators",
+      "child_column": "source_document_id",
+      "document_id": 1836,
+      "row_ids": []
+    },
+    {
+      "child_table": "extractions",
+      "child_column": "source_document_id",
+      "document_id": 1707,
+      "row_ids": []
+    },
+    {
+      "child_table": "extractions",
+      "child_column": "source_document_id",
+      "document_id": 1718,
+      "row_ids": []
+    },
+    {
+      "child_table": "extractions",
+      "child_column": "source_document_id",
+      "document_id": 1840,
+      "row_ids": []
+    },
+    {
+      "child_table": "extractions",
+      "child_column": "source_document_id",
+      "document_id": 1836,
+      "row_ids": []
+    },
+    {
+      "child_table": "fiscal_summaries",
+      "child_column": "source_document_id",
+      "document_id": 1707,
+      "row_ids": []
+    },
+    {
+      "child_table": "fiscal_summaries",
+      "child_column": "source_document_id",
+      "document_id": 1718,
+      "row_ids": []
+    },
+    {
+      "child_table": "fiscal_summaries",
+      "child_column": "source_document_id",
+      "document_id": 1840,
+      "row_ids": []
+    },
+    {
+      "child_table": "fiscal_summaries",
+      "child_column": "source_document_id",
+      "document_id": 1836,
+      "row_ids": []
+    },
+    {
+      "child_table": "gdp_data",
+      "child_column": "source_document_id",
+      "document_id": 1707,
+      "row_ids": []
+    },
+    {
+      "child_table": "gdp_data",
+      "child_column": "source_document_id",
+      "document_id": 1718,
+      "row_ids": []
+    },
+    {
+      "child_table": "gdp_data",
+      "child_column": "source_document_id",
+      "document_id": 1840,
+      "row_ids": []
+    },
+    {
+      "child_table": "gdp_data",
+      "child_column": "source_document_id",
+      "document_id": 1836,
+      "row_ids": []
+    },
+    {
+      "child_table": "loans",
+      "child_column": "source_document_id",
+      "document_id": 1707,
+      "row_ids": []
+    },
+    {
+      "child_table": "loans",
+      "child_column": "source_document_id",
+      "document_id": 1718,
+      "row_ids": []
+    },
+    {
+      "child_table": "loans",
+      "child_column": "source_document_id",
+      "document_id": 1840,
+      "row_ids": [
+        381,
+        382,
+        383,
+        384,
+        439
+      ]
+    },
+    {
+      "child_table": "loans",
+      "child_column": "source_document_id",
+      "document_id": 1836,
+      "row_ids": []
+    },
+    {
+      "child_table": "parliament_source_documents",
+      "child_column": "source_document_id",
+      "document_id": 1707,
+      "row_ids": []
+    },
+    {
+      "child_table": "parliament_source_documents",
+      "child_column": "source_document_id",
+      "document_id": 1718,
+      "row_ids": []
+    },
+    {
+      "child_table": "parliament_source_documents",
+      "child_column": "source_document_id",
+      "document_id": 1840,
+      "row_ids": []
+    },
+    {
+      "child_table": "parliament_source_documents",
+      "child_column": "source_document_id",
+      "document_id": 1836,
+      "row_ids": []
+    },
+    {
+      "child_table": "population_data",
+      "child_column": "source_document_id",
+      "document_id": 1707,
+      "row_ids": []
+    },
+    {
+      "child_table": "population_data",
+      "child_column": "source_document_id",
+      "document_id": 1718,
+      "row_ids": []
+    },
+    {
+      "child_table": "population_data",
+      "child_column": "source_document_id",
+      "document_id": 1840,
+      "row_ids": []
+    },
+    {
+      "child_table": "population_data",
+      "child_column": "source_document_id",
+      "document_id": 1836,
+      "row_ids": []
+    },
+    {
+      "child_table": "poverty_indices",
+      "child_column": "source_document_id",
+      "document_id": 1707,
+      "row_ids": []
+    },
+    {
+      "child_table": "poverty_indices",
+      "child_column": "source_document_id",
+      "document_id": 1718,
+      "row_ids": []
+    },
+    {
+      "child_table": "poverty_indices",
+      "child_column": "source_document_id",
+      "document_id": 1840,
+      "row_ids": []
+    },
+    {
+      "child_table": "poverty_indices",
+      "child_column": "source_document_id",
+      "document_id": 1836,
+      "row_ids": []
+    },
+    {
+      "child_table": "revenue_by_source",
+      "child_column": "source_document_id",
+      "document_id": 1707,
+      "row_ids": []
+    },
+    {
+      "child_table": "revenue_by_source",
+      "child_column": "source_document_id",
+      "document_id": 1718,
+      "row_ids": []
+    },
+    {
+      "child_table": "revenue_by_source",
+      "child_column": "source_document_id",
+      "document_id": 1840,
+      "row_ids": []
+    },
+    {
+      "child_table": "revenue_by_source",
+      "child_column": "source_document_id",
+      "document_id": 1836,
+      "row_ids": []
+    },
+    {
+      "child_table": "debt_instruments",
+      "child_column": "source_document_id",
+      "document_id": 1707,
+      "row_ids": []
+    },
+    {
+      "child_table": "debt_instruments",
+      "child_column": "source_document_id",
+      "document_id": 1718,
+      "row_ids": []
+    },
+    {
+      "child_table": "debt_instruments",
+      "child_column": "source_document_id",
+      "document_id": 1840,
+      "row_ids": []
+    },
+    {
+      "child_table": "debt_instruments",
+      "child_column": "source_document_id",
+      "document_id": 1836,
+      "row_ids": []
+    }
+  ],
+  "referencing_constraints": [
+    {
+      "child_table": "audits",
+      "definition": "FOREIGN KEY (entity_id) REFERENCES entities(id)"
+    },
+    {
+      "child_table": "audits",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id)"
+    },
+    {
+      "child_table": "budget_lines",
+      "definition": "FOREIGN KEY (entity_id) REFERENCES entities(id)"
+    },
+    {
+      "child_table": "budget_lines",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id)"
+    },
+    {
+      "child_table": "debt_instruments",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id)"
+    },
+    {
+      "child_table": "debt_timeline",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id)"
+    },
+    {
+      "child_table": "economic_indicators",
+      "definition": "FOREIGN KEY (entity_id) REFERENCES entities(id) ON DELETE SET NULL"
+    },
+    {
+      "child_table": "economic_indicators",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id) ON DELETE SET NULL"
+    },
+    {
+      "child_table": "extractions",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id)"
+    },
+    {
+      "child_table": "fiscal_summaries",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id)"
+    },
+    {
+      "child_table": "gdp_data",
+      "definition": "FOREIGN KEY (entity_id) REFERENCES entities(id) ON DELETE SET NULL"
+    },
+    {
+      "child_table": "gdp_data",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id) ON DELETE SET NULL"
+    },
+    {
+      "child_table": "loans",
+      "definition": "FOREIGN KEY (entity_id) REFERENCES entities(id)"
+    },
+    {
+      "child_table": "loans",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id)"
+    },
+    {
+      "child_table": "parliament_source_documents",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id)"
+    },
+    {
+      "child_table": "population_data",
+      "definition": "FOREIGN KEY (entity_id) REFERENCES entities(id) ON DELETE SET NULL"
+    },
+    {
+      "child_table": "population_data",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id) ON DELETE SET NULL"
+    },
+    {
+      "child_table": "poverty_indices",
+      "definition": "FOREIGN KEY (entity_id) REFERENCES entities(id) ON DELETE SET NULL"
+    },
+    {
+      "child_table": "poverty_indices",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id) ON DELETE SET NULL"
+    },
+    {
+      "child_table": "revenue_by_source",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id)"
+    }
+  ],
+  "release_status": "Current pre-release snapshot; no source jobs scheduled while shared refresh configuration is blocked. Regenerate after future source writes."
+}

@@ -1,42 +1,21 @@
-"""
-Auto-Seeder Service - Fully Automated Data Refresh
+"""Lightweight web-worker refreshes and county reference creation.
 
-This service runs on application startup and periodically refreshes
-all data domains from official government sources WITHOUT HUMAN INTERVENTION.
-
-ZERO HARDCODED DATA - All data comes from live fetching.
-
-Data Sources:
-- CBK (Central Bank of Kenya): National debt statistics
-- KNBS (Kenya National Bureau of Statistics): Population, GDP, economic indicators
-- Treasury: Budget allocations, debt bulletins
-- COB: County budget implementation reports
-- OAG: Audit findings
-
-Architecture:
-- Uses existing ETL infrastructure (kenya_pipeline.py, knbs_parser.py)
-- LiveDataAggregator fetches from all sources
-- Automatic fallback when primary sources unavailable
-- Scheduled refresh based on data volatility
+Population, officials and heavy document ingestion belong to the dedicated
+seeding runner. Its source-owning writers must not compete with web startup
+or periodic refreshes.
 """
 
 import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from database import SessionLocal
 from models import (
     Country,
-    DebtCategory,
-    DocumentType,
     EconomicIndicator,
     Entity,
     EntityType,
-    Loan,
-    PopulationData,
-    SourceDocument,
 )
 
 # Import the live data fetcher
@@ -44,25 +23,13 @@ from services.live_data_fetcher import LiveDataAggregator
 
 logger = logging.getLogger("auto_seeder")
 
-#: Kept in step with alembic a2f7c1b48d90's MIN_NATIONAL_POPULATION.
-#:
-#: This writer produced population_data id=69 — National Government, year 2026,
-#: total_population 82, no source document (issue #190). Its national branch
-#: takes whatever ``fetch_all_population_data`` hands back. The 82 was the
-#: KNBS homepage's population *density*, read by a regex that #204 removed.
-#: Kenya's 1948 census counted 5.4 million; nothing below this floor is a
-#: national population, and a row that fails it is dropped loudly rather than
-#: stored.
-MIN_NATIONAL_POPULATION = 5_000_000
-
 # Request-serving workers own only these lightweight refreshes. PDF registry
-# jobs (audits, counties_budget, pending_bills, stalled_projects) belong to the
-# dedicated .github/workflows/seed.yml runner with its bounded CLI budgets.
+# jobs (population, audits, counties_budget, pending_bills, stalled_projects)
+# belong to the dedicated seed.yml runner with its bounded CLI budgets.
 # A thread or coroutine timeout cannot bound a parser's memory in this process.
 # Refresh schedule configuration (hours between refreshes)
 REFRESH_SCHEDULE = {
     "debt": 24,  # Daily - CBK updates monthly but we check daily
-    "population": 720,  # Monthly - Census data changes rarely
     "economic": 168,  # Weekly - GDP/CPI updated quarterly/monthly
     "counties": 168,  # Weekly - County reference refresh
 }
@@ -141,7 +108,6 @@ class AutoSeeder:
         "counties",
         "national_entity",
         "debt",
-        "population",
         "economic",
     )
 
@@ -300,8 +266,6 @@ class AutoSeeder:
             await self._ensure_national_entity()
         elif domain == "debt":
             await self._seed_debt_live()
-        elif domain == "population":
-            await self._seed_population_live()
         elif domain == "economic":
             await self._seed_economic_live()
         else:
@@ -457,136 +421,8 @@ class AutoSeeder:
         return
 
     async def _seed_population_live(self):
-        """
-        Seed population data from KNBS live sources.
-
-        NO HARDCODED VALUES - all data from live fetch.
-        """
-        logger.info("[AUTO-SEEDER] Fetching population data...")
-
-        try:
-            population_data = await asyncio.wait_for(
-                self.aggregator.fetch_all_population_data(), timeout=30.0
-            )
-        except asyncio.TimeoutError:
-            logger.warning("[AUTO-SEEDER] Population fetch timed out")
-            return
-        except Exception as e:
-            logger.warning(f"[AUTO-SEEDER] Population fetch failed: {e}")
-            return
-
-        if not population_data.get("fetch_success"):
-            logger.warning(
-                f"[AUTO-SEEDER] Live population fetch failed: {population_data.get('error', 'Unknown')}"
-            )
-            return
-
-        # A figure whose vintage the source did not state is refused, not filed
-        # under today's date. `or datetime.now().year` here is what made
-        # population_data id=69's year equal the year it was written (#204).
-        census_year = population_data.get("census_year")
-        if not census_year:
-            logger.error(
-                "[AUTO-SEEDER] Refusing population data with no stated year "
-                "(national=%s, %d county record(s)). Source: %s",
-                population_data.get("national_population"),
-                len(population_data.get("counties") or []),
-                population_data.get("source", "unknown"),
-            )
-            return
-
-        with SessionLocal() as db:
-            records_created = 0
-            records_updated = 0
-
-            # Update county populations
-            for county_pop in population_data.get("counties", []):
-                county_name = county_pop.get("county", "").lower()
-                population = county_pop.get("total_population")
-
-                if not population:
-                    continue
-
-                # Find county entity by name
-                county = (
-                    db.query(Entity)
-                    .filter(
-                        Entity.type == EntityType.COUNTY,
-                        Entity.canonical_name.ilike(f"%{county_name}%"),
-                    )
-                    .first()
-                )
-
-                if county:
-                    # Check for existing population record
-                    existing_pop = (
-                        db.query(PopulationData)
-                        .filter(
-                            PopulationData.entity_id == county.id,
-                            PopulationData.year == census_year,
-                        )
-                        .first()
-                    )
-
-                    if existing_pop:
-                        existing_pop.total_population = population
-                        records_updated += 1
-                    else:
-                        pop_record = PopulationData(
-                            entity_id=county.id,
-                            year=census_year,
-                            total_population=population,
-                            confidence=1.0,
-                        )
-                        db.add(pop_record)
-                        records_created += 1
-
-            # Add national population if available — and only if it could be one.
-            national_population = population_data.get("national_population")
-            if national_population and national_population < MIN_NATIONAL_POPULATION:
-                logger.error(
-                    "[AUTO-SEEDER] Refusing national population %s for %s: below "
-                    "the %s floor, so it is not a national population. Source: %s",
-                    f"{national_population:,}",
-                    census_year,
-                    f"{MIN_NATIONAL_POPULATION:,}",
-                    population_data.get("source", "unknown"),
-                )
-                national_population = None
-
-            if national_population:
-                national = (
-                    db.query(Entity).filter(Entity.type == EntityType.NATIONAL).first()
-                )
-
-                if national:
-                    existing = (
-                        db.query(PopulationData)
-                        .filter(
-                            PopulationData.entity_id == national.id,
-                            PopulationData.year == census_year,
-                        )
-                        .first()
-                    )
-
-                    if existing:
-                        existing.total_population = national_population
-                        records_updated += 1
-                    else:
-                        db.add(
-                            PopulationData(
-                                entity_id=national.id,
-                                year=census_year,
-                                total_population=national_population,
-                                confidence=1.0,
-                            )
-                        )
-                        records_created += 1
-
-            db.commit()
-            logger.info(
-                f"[AUTO-SEEDER] Population: {records_created} created, {records_updated} updated"
-            )
+        """Refuse legacy direct callers before fetching or touching the database."""
+        raise ValueError("population is owned by the dedicated seeding runner")
 
     async def _seed_economic_live(self):
         """
@@ -732,7 +568,12 @@ class AutoSeeder:
             "consecutive_failures": dict(self._consecutive_failures),
             "next_refresh": self._get_next_refresh_times(),
             "external_job_owner": {
-                "domains": ["audits", "counties_budget", "pending_bills", "stalled_projects"],
+                "domains": [
+                    "audits",
+                    "counties_budget",
+                    "pending_bills",
+                    "stalled_projects",
+                ],
                 "runner": ".github/workflows/seed.yml (seeding.cli)",
             },
         }

@@ -1,0 +1,4684 @@
+{
+  "purpose": "REVIEW ONLY: retired unsourced data snapshots, not publishable evidence",
+  "observed_utc": "2026-09-27T19:57:16.133125+00:00",
+  "entity_snapshot_source": "Production PostgreSQL BEGIN READ ONLY; transaction_read_only=on; INSERT refused before SELECTs",
+  "audit_snapshot_read_only_enforced": true,
+  "entities": [
+    {
+      "id": 33,
+      "canonical_name": "Baringo County",
+      "remove_keys": [
+        "economic_profile"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "030"
+          }
+        },
+        "category": "unknown",
+        "governor": "Benjamin Chesire Cheboi",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "030"
+          }
+        },
+        "category": "unknown",
+        "governor": "Benjamin Chesire Cheboi",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 39,
+      "canonical_name": "Bomet County",
+      "remove_keys": [
+        "economic_profile"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "036"
+          }
+        },
+        "category": "unknown",
+        "governor": "Hillary K Barchok",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "036"
+          }
+        },
+        "category": "unknown",
+        "governor": "Hillary K Barchok",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 42,
+      "canonical_name": "Bungoma County",
+      "remove_keys": [
+        "economic_profile",
+        "stalled_projects",
+        "stalled_projects_count",
+        "stalled_projects_total_paid",
+        "stalled_projects_total_value"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "039"
+          }
+        },
+        "category": "unknown",
+        "governor": "Kenneth Makelo Lusaka",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "stalled_projects": [
+          {
+            "reason": "Variations in structural design required additional foundation reinforcement",
+            "sector": "Health",
+            "status": "delayed",
+            "start_year": 2021,
+            "amount_paid": 252000000,
+            "project_name": "Bungoma Level 4 Hospital Maternity Wing",
+            "oag_reference": "OAG/BGM/2024/HLT-003",
+            "completion_pct": 40,
+            "contracted_amount": 420000000,
+            "expected_completion": 2023
+          }
+        ],
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        },
+        "stalled_projects_count": 1,
+        "stalled_projects_total_paid": 252000000,
+        "stalled_projects_total_value": 420000000
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "039"
+          }
+        },
+        "category": "unknown",
+        "governor": "Kenneth Makelo Lusaka",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 43,
+      "canonical_name": "Busia County",
+      "remove_keys": [
+        "economic_profile"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "040"
+          }
+        },
+        "category": "unknown",
+        "governor": "Paul Nyongesa Otuoma",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "040"
+          }
+        },
+        "category": "unknown",
+        "governor": "Paul Nyongesa Otuoma",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 31,
+      "canonical_name": "Elgeyo Marakwet County",
+      "remove_keys": [
+        "economic_profile"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "028"
+          }
+        },
+        "category": "unknown",
+        "governor": "Wisley Rotich",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "028"
+          }
+        },
+        "category": "unknown",
+        "governor": "Wisley Rotich",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 17,
+      "canonical_name": "Embu County",
+      "remove_keys": [
+        "economic_profile"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "014"
+          }
+        },
+        "category": "unknown",
+        "governor": "Cecily Mutitu Mbarire",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "014"
+          }
+        },
+        "category": "unknown",
+        "governor": "Cecily Mutitu Mbarire",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 10,
+      "canonical_name": "Garissa County",
+      "remove_keys": [
+        "economic_profile",
+        "stalled_projects",
+        "stalled_projects_count",
+        "stalled_projects_total_paid",
+        "stalled_projects_total_value"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "007"
+          }
+        },
+        "category": "unknown",
+        "governor": "Nathif Adam Jama",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "stalled_projects": [
+          {
+            "reason": "Equipment procurement irregularities identified by OAG; procurement process nullified",
+            "sector": "Water & Sanitation",
+            "status": "stalled",
+            "start_year": 2020,
+            "amount_paid": 600000000,
+            "project_name": "Garissa Solar-Powered Borehole Network",
+            "oag_reference": "OAG/GRS/2023/WS-002",
+            "completion_pct": 25,
+            "contracted_amount": 1500000000,
+            "expected_completion": 2023
+          }
+        ],
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        },
+        "stalled_projects_count": 1,
+        "stalled_projects_total_paid": 600000000,
+        "stalled_projects_total_value": 1500000000
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "007"
+          }
+        },
+        "category": "unknown",
+        "governor": "Nathif Adam Jama",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 46,
+      "canonical_name": "Homa Bay County",
+      "remove_keys": [
+        "economic_profile",
+        "stalled_projects",
+        "stalled_projects_count",
+        "stalled_projects_total_paid",
+        "stalled_projects_total_value"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "043"
+          }
+        },
+        "category": "unknown",
+        "governor": "Gladys Atieno Nyasuna Wanga",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "stalled_projects": [
+          {
+            "reason": "Lake Victoria water levels dropped, requiring redesign of water intake infrastructure",
+            "sector": "Trade & Commerce",
+            "status": "stalled",
+            "start_year": 2020,
+            "amount_paid": 225000000,
+            "project_name": "Homa Bay Fish Processing Plant",
+            "oag_reference": "OAG/HBY/2023/TR-003",
+            "completion_pct": 35,
+            "contracted_amount": 450000000,
+            "expected_completion": 2023
+          }
+        ],
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        },
+        "stalled_projects_count": 1,
+        "stalled_projects_total_paid": 225000000,
+        "stalled_projects_total_value": 450000000
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "043"
+          }
+        },
+        "category": "unknown",
+        "governor": "Gladys Atieno Nyasuna Wanga",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 14,
+      "canonical_name": "Isiolo County",
+      "remove_keys": [
+        "economic_profile"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "011"
+          }
+        },
+        "category": "unknown",
+        "governor": "Abdi Ibrahim Hassan",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "011"
+          }
+        },
+        "category": "unknown",
+        "governor": "Abdi Ibrahim Hassan",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 37,
+      "canonical_name": "Kajiado County",
+      "remove_keys": [
+        "economic_profile"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "034"
+          }
+        },
+        "category": "unknown",
+        "governor": "Joseph Jama Ole Lenku",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "034"
+          }
+        },
+        "category": "unknown",
+        "governor": "Joseph Jama Ole Lenku",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 40,
+      "canonical_name": "Kakamega County",
+      "remove_keys": [
+        "economic_profile",
+        "stalled_projects",
+        "stalled_projects_count",
+        "stalled_projects_total_paid",
+        "stalled_projects_total_value"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "037"
+          }
+        },
+        "category": "unknown",
+        "governor": "Fernandes Barasa",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "stalled_projects": [
+          {
+            "reason": "Original contractor liquidated; forensic audit revealed KES 340M in irregular payments",
+            "sector": "Sports & Culture",
+            "status": "stalled",
+            "start_year": 2018,
+            "amount_paid": 1680000000,
+            "project_name": "Kakamega County Stadium",
+            "oag_reference": "OAG/KKM/2023/SP-002",
+            "completion_pct": 48,
+            "contracted_amount": 2800000000,
+            "expected_completion": 2021
+          },
+          {
+            "reason": "Prolonged rain seasons causing repeated washouts of completed sections",
+            "sector": "Roads",
+            "status": "delayed",
+            "start_year": 2021,
+            "amount_paid": 550000000,
+            "project_name": "Malava-Butere Road Tarmacking",
+            "oag_reference": "OAG/KKM/2024/RD-005",
+            "completion_pct": 33,
+            "contracted_amount": 1100000000,
+            "expected_completion": 2024
+          }
+        ],
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        },
+        "stalled_projects_count": 2,
+        "stalled_projects_total_paid": 2230000000,
+        "stalled_projects_total_value": 3900000000
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "037"
+          }
+        },
+        "category": "unknown",
+        "governor": "Fernandes Barasa",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 38,
+      "canonical_name": "Kericho County",
+      "remove_keys": [
+        "economic_profile"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "035"
+          }
+        },
+        "category": "unknown",
+        "governor": "Erick Kipkoech Mutai",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "035"
+          }
+        },
+        "category": "unknown",
+        "governor": "Erick Kipkoech Mutai",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 25,
+      "canonical_name": "Kiambu County",
+      "remove_keys": [
+        "audit_summary",
+        "economic_profile",
+        "stalled_projects",
+        "stalled_projects_count",
+        "stalled_projects_total_paid",
+        "stalled_projects_total_value"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "022"
+          },
+          "FY2025/26": {
+            "county_code": "022"
+          }
+        },
+        "category": "unknown",
+        "governor": "Paul Kimani Wamatangi",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "audit_summary": {
+          "queries_count": 1,
+          "last_refreshed": "2026-02-22T19:08:34.772826+00:00",
+          "total_amount_involved": 1200000000.0
+        },
+        "economic_profile": {
+          "county_type": "metropolitan",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture_services",
+          "revenue_potential": "high",
+          "infrastructure_level": "medium_high"
+        },
+        "stalled_projects": [
+          {
+            "reason": "Contract terminated due to non-performance; re-tendering in progress",
+            "sector": "Health",
+            "status": "stalled",
+            "start_year": 2021,
+            "amount_paid": 312000000,
+            "project_name": "Thika Level 5 Hospital ICU Wing",
+            "oag_reference": "OAG/KBU/2024/HLT-009",
+            "completion_pct": 22,
+            "contracted_amount": 780000000,
+            "expected_completion": 2023
+          }
+        ],
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        },
+        "stalled_projects_count": 1,
+        "stalled_projects_total_paid": 312000000,
+        "stalled_projects_total_value": 780000000
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "022"
+          },
+          "FY2025/26": {
+            "county_code": "022"
+          }
+        },
+        "category": "unknown",
+        "governor": "Paul Kimani Wamatangi",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 6,
+      "canonical_name": "Kilifi County",
+      "remove_keys": [
+        "economic_profile",
+        "stalled_projects",
+        "stalled_projects_count",
+        "stalled_projects_total_paid",
+        "stalled_projects_total_value"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "003"
+          }
+        },
+        "category": "unknown",
+        "governor": "Gideon Maitha Mung'aro",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "stalled_projects": [
+          {
+            "reason": "Environmental impact assessment challenged in court; construction halted by NEMA directive",
+            "sector": "Water & Sanitation",
+            "status": "stalled",
+            "start_year": 2020,
+            "amount_paid": 720000000,
+            "project_name": "Malindi Water Desalination Plant",
+            "oag_reference": "OAG/KLF/2023/WS-001",
+            "completion_pct": 12,
+            "contracted_amount": 3600000000,
+            "expected_completion": 2024
+          }
+        ],
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        },
+        "stalled_projects_count": 1,
+        "stalled_projects_total_paid": 720000000,
+        "stalled_projects_total_value": 3600000000
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "003"
+          }
+        },
+        "category": "unknown",
+        "governor": "Gideon Maitha Mung'aro",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 23,
+      "canonical_name": "Kirinyaga County",
+      "remove_keys": [
+        "economic_profile"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "020"
+          }
+        },
+        "category": "unknown",
+        "governor": "Anne Mumbi Waiguru",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "020"
+          }
+        },
+        "category": "unknown",
+        "governor": "Anne Mumbi Waiguru",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 48,
+      "canonical_name": "Kisii County",
+      "remove_keys": [
+        "economic_profile"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "045"
+          }
+        },
+        "category": "unknown",
+        "governor": "Paul Simba Arati",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "045"
+          }
+        },
+        "category": "unknown",
+        "governor": "Paul Simba Arati",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 45,
+      "canonical_name": "Kisumu County",
+      "remove_keys": [
+        "audit_summary",
+        "economic_profile",
+        "missing_funds_cases",
+        "stalled_projects",
+        "stalled_projects_count",
+        "stalled_projects_total_paid",
+        "stalled_projects_total_value"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "042"
+          },
+          "FY2025/26": {
+            "county_code": "042"
+          }
+        },
+        "category": "unknown",
+        "governor": "Peter Anyang\u2019 Nyong\u2019o",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "audit_summary": {
+          "queries_count": 1,
+          "last_refreshed": "2026-02-22T19:09:58.414831+00:00",
+          "total_amount_involved": 300000000.0
+        },
+        "economic_profile": {
+          "county_type": "regional_hub",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "trade_fishing",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "stalled_projects": [
+          {
+            "reason": "Contractor cash flow problems; county unable to meet co-funding obligation",
+            "sector": "Roads",
+            "status": "stalled",
+            "start_year": 2019,
+            "amount_paid": 1350000000,
+            "project_name": "Kisumu Port Hinterland Bypass",
+            "oag_reference": "OAG/KSM/2023/RD-001",
+            "completion_pct": 20,
+            "contracted_amount": 4500000000,
+            "expected_completion": 2022
+          }
+        ],
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        },
+        "missing_funds_cases": [
+          {
+            "amount": "KES 45M",
+            "county": "Kisumu",
+            "period": "FY 2023/24",
+            "status": "resolved",
+            "case_id": "MF_003",
+            "description": "Unaccounted emergency fund expenditure"
+          }
+        ],
+        "stalled_projects_count": 1,
+        "stalled_projects_total_paid": 1350000000,
+        "stalled_projects_total_value": 4500000000
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "042"
+          },
+          "FY2025/26": {
+            "county_code": "042"
+          }
+        },
+        "category": "unknown",
+        "governor": "Peter Anyang\u2019 Nyong\u2019o",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 18,
+      "canonical_name": "Kitui County",
+      "remove_keys": [
+        "economic_profile"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "015"
+          }
+        },
+        "category": "unknown",
+        "governor": "Julius Makau Malombe",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "015"
+          }
+        },
+        "category": "unknown",
+        "governor": "Julius Makau Malombe",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 5,
+      "canonical_name": "Kwale County",
+      "remove_keys": [
+        "economic_profile",
+        "stalled_projects",
+        "stalled_projects_count",
+        "stalled_projects_total_paid",
+        "stalled_projects_total_value"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "002"
+          }
+        },
+        "category": "unknown",
+        "governor": "Fatuma Mohamed Achani",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "stalled_projects": [
+          {
+            "reason": "Co-financing from development partner (AFD) suspended pending governance review",
+            "sector": "Water & Sanitation",
+            "status": "delayed",
+            "start_year": 2020,
+            "amount_paid": 540000000,
+            "project_name": "Diani-Ukunda Sewerage System",
+            "oag_reference": "OAG/KWL/2024/WS-001",
+            "completion_pct": 22,
+            "contracted_amount": 1800000000,
+            "expected_completion": 2024
+          }
+        ],
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        },
+        "stalled_projects_count": 1,
+        "stalled_projects_total_paid": 540000000,
+        "stalled_projects_total_value": 1800000000
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "002"
+          }
+        },
+        "category": "unknown",
+        "governor": "Fatuma Mohamed Achani",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 34,
+      "canonical_name": "Laikipia County",
+      "remove_keys": [
+        "economic_profile"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "031"
+          }
+        },
+        "category": "unknown",
+        "governor": "Joshua Wakahora Irungu",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "031"
+          }
+        },
+        "category": "unknown",
+        "governor": "Joshua Wakahora Irungu",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 8,
+      "canonical_name": "Lamu County",
+      "remove_keys": [
+        "economic_profile"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "005"
+          }
+        },
+        "category": "unknown",
+        "governor": "Issa Abdalla Timamy",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "005"
+          }
+        },
+        "category": "unknown",
+        "governor": "Issa Abdalla Timamy",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 19,
+      "canonical_name": "Machakos County",
+      "remove_keys": [
+        "audit_summary",
+        "economic_profile",
+        "stalled_projects",
+        "stalled_projects_count",
+        "stalled_projects_total_paid",
+        "stalled_projects_total_value"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "016"
+          },
+          "FY2025/26": {
+            "county_code": "016"
+          }
+        },
+        "category": "unknown",
+        "governor": "Wavinya Ndeti",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "audit_summary": {
+          "queries_count": 1,
+          "last_refreshed": "2026-02-22T19:08:10.766169+00:00",
+          "total_amount_involved": 950000000.0
+        },
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "stalled_projects": [
+          {
+            "reason": "Budget reallocation to emergency COVID response; resumed at reduced scope",
+            "sector": "Health",
+            "status": "delayed",
+            "start_year": 2020,
+            "amount_paid": 460000000,
+            "project_name": "Mavoko Sub-County Hospital",
+            "oag_reference": "OAG/MCK/2023/HLT-006",
+            "completion_pct": 35,
+            "contracted_amount": 920000000,
+            "expected_completion": 2023
+          }
+        ],
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        },
+        "stalled_projects_count": 1,
+        "stalled_projects_total_paid": 460000000,
+        "stalled_projects_total_value": 920000000
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "016"
+          },
+          "FY2025/26": {
+            "county_code": "016"
+          }
+        },
+        "category": "unknown",
+        "governor": "Wavinya Ndeti",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 20,
+      "canonical_name": "Makueni County",
+      "remove_keys": [
+        "economic_profile"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "017"
+          }
+        },
+        "category": "unknown",
+        "governor": "Mutula Kilonzo JR",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "017"
+          }
+        },
+        "category": "unknown",
+        "governor": "Mutula Kilonzo JR",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 12,
+      "canonical_name": "Mandera County",
+      "remove_keys": [
+        "economic_profile",
+        "stalled_projects",
+        "stalled_projects_count",
+        "stalled_projects_total_paid",
+        "stalled_projects_total_value"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "009"
+          }
+        },
+        "category": "unknown",
+        "governor": "Mohamed Adan Khalif",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "stalled_projects": [
+          {
+            "reason": "Contractor mobilization delayed due to insecurity; force majeure declared",
+            "sector": "Health",
+            "status": "stalled",
+            "start_year": 2021,
+            "amount_paid": 204000000,
+            "project_name": "Mandera Referral Hospital Theatre Complex",
+            "oag_reference": "OAG/MND/2024/HLT-001",
+            "completion_pct": 18,
+            "contracted_amount": 680000000,
+            "expected_completion": 2024
+          }
+        ],
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        },
+        "stalled_projects_count": 1,
+        "stalled_projects_total_paid": 204000000,
+        "stalled_projects_total_value": 680000000
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "009"
+          }
+        },
+        "category": "unknown",
+        "governor": "Mohamed Adan Khalif",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 13,
+      "canonical_name": "Marsabit County",
+      "remove_keys": [
+        "economic_profile"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "010"
+          }
+        },
+        "category": "unknown",
+        "governor": "Mohamud Mohamed Ali",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "010"
+          }
+        },
+        "category": "unknown",
+        "governor": "Mohamud Mohamed Ali",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 15,
+      "canonical_name": "Meru County",
+      "remove_keys": [
+        "economic_profile",
+        "stalled_projects",
+        "stalled_projects_count",
+        "stalled_projects_total_paid",
+        "stalled_projects_total_value"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "012"
+          }
+        },
+        "category": "unknown",
+        "governor": "Isaac Mutuma M\u2019ethingia",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "stalled_projects": [
+          {
+            "reason": "Power infrastructure connection delays by Kenya Power; MoU renegotiation ongoing",
+            "sector": "Infrastructure",
+            "status": "delayed",
+            "start_year": 2020,
+            "amount_paid": 630000000,
+            "project_name": "Meru Industrial Park Phase I",
+            "oag_reference": "OAG/MER/2024/INF-002",
+            "completion_pct": 20,
+            "contracted_amount": 2100000000,
+            "expected_completion": 2024
+          }
+        ],
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        },
+        "stalled_projects_count": 1,
+        "stalled_projects_total_paid": 630000000,
+        "stalled_projects_total_value": 2100000000
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "012"
+          }
+        },
+        "category": "unknown",
+        "governor": "Isaac Mutuma M\u2019ethingia",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 47,
+      "canonical_name": "Migori County",
+      "remove_keys": [
+        "economic_profile",
+        "stalled_projects",
+        "stalled_projects_count",
+        "stalled_projects_total_paid",
+        "stalled_projects_total_value"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "044"
+          }
+        },
+        "category": "unknown",
+        "governor": "George Ochilo M. Ayacko",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "stalled_projects": [
+          {
+            "reason": "Disputed land ownership for project site; alternative site being evaluated",
+            "sector": "Agriculture",
+            "status": "delayed",
+            "start_year": 2021,
+            "amount_paid": 192000000,
+            "project_name": "Migori Modern Abattoir",
+            "oag_reference": "OAG/MGR/2024/AG-001",
+            "completion_pct": 40,
+            "contracted_amount": 320000000,
+            "expected_completion": 2023
+          }
+        ],
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        },
+        "stalled_projects_count": 1,
+        "stalled_projects_total_paid": 192000000,
+        "stalled_projects_total_value": 320000000
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "044"
+          }
+        },
+        "category": "unknown",
+        "governor": "George Ochilo M. Ayacko",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 4,
+      "canonical_name": "Mombasa County",
+      "remove_keys": [
+        "audit_summary",
+        "economic_profile",
+        "missing_funds_cases",
+        "stalled_projects",
+        "stalled_projects_count",
+        "stalled_projects_total_paid",
+        "stalled_projects_total_value"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "001"
+          },
+          "FY2025/26": {
+            "county_code": "001"
+          }
+        },
+        "category": "unknown",
+        "governor": "AbdullSwamad Shariff Nassir",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "audit_summary": {
+          "queries_count": 1,
+          "last_refreshed": "2026-02-22T19:07:11.912290+00:00",
+          "total_amount_involved": 800000000.0
+        },
+        "economic_profile": {
+          "county_type": "port_city",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "trade_logistics",
+          "revenue_potential": "high",
+          "infrastructure_level": "high"
+        },
+        "stalled_projects": [
+          {
+            "reason": "Funding gaps due to pending bills backlog from previous fiscal years",
+            "sector": "Health",
+            "status": "stalled",
+            "start_year": 2020,
+            "amount_paid": 740000000,
+            "project_name": "Mombasa County Referral Hospital Expansion",
+            "oag_reference": "OAG/MSA/2023/HLT-004",
+            "completion_pct": 28,
+            "contracted_amount": 1850000000,
+            "expected_completion": 2023
+          },
+          {
+            "reason": "Design changes required after geological survey revealed unstable subgrade",
+            "sector": "Roads",
+            "status": "delayed",
+            "start_year": 2021,
+            "amount_paid": 1050000000,
+            "project_name": "Likoni-Mtongwe Road Upgrade",
+            "oag_reference": "OAG/MSA/2024/RD-002",
+            "completion_pct": 38,
+            "contracted_amount": 2100000000,
+            "expected_completion": 2024
+          }
+        ],
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        },
+        "missing_funds_cases": [
+          {
+            "amount": "KES 85M",
+            "county": "Mombasa",
+            "period": "FY 2023/24",
+            "status": "recovery_ongoing",
+            "case_id": "MF_002",
+            "description": "Missing funds from port levy collections"
+          }
+        ],
+        "stalled_projects_count": 2,
+        "stalled_projects_total_paid": 1790000000,
+        "stalled_projects_total_value": 3950000000
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "001"
+          },
+          "FY2025/26": {
+            "county_code": "001"
+          }
+        },
+        "category": "unknown",
+        "governor": "AbdullSwamad Shariff Nassir",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 24,
+      "canonical_name": "Murang'a County",
+      "remove_keys": [
+        "economic_profile"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "021"
+          }
+        },
+        "category": "unknown",
+        "governor": "Irungu Kangata",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "021"
+          }
+        },
+        "category": "unknown",
+        "governor": "Irungu Kangata",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 3,
+      "canonical_name": "Nairobi County",
+      "remove_keys": [
+        "audit_summary",
+        "economic_profile",
+        "missing_funds_cases",
+        "stalled_projects",
+        "stalled_projects_count",
+        "stalled_projects_total_paid",
+        "stalled_projects_total_value"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "047"
+          },
+          "FY2025/26": {
+            "county_code": "047"
+          }
+        },
+        "category": "unknown",
+        "governor": "Sakaja Arthur Johnson",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "audit_summary": {
+          "queries_count": 1,
+          "last_refreshed": "2026-02-22T19:10:19.202194+00:00",
+          "total_amount_involved": 2500000000.0
+        },
+        "economic_profile": {
+          "county_type": "capital_city",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "financial_services",
+          "revenue_potential": "very_high",
+          "infrastructure_level": "high"
+        },
+        "stalled_projects": [
+          {
+            "reason": "Contractor abandoned site after payment disputes; pending arbitration",
+            "sector": "Infrastructure",
+            "status": "stalled",
+            "start_year": 2019,
+            "amount_paid": 1920000000,
+            "project_name": "Eastlands Urban Renewal Phase II",
+            "oag_reference": "OAG/NRB/2023/INF-012",
+            "completion_pct": 35,
+            "contracted_amount": 3200000000,
+            "expected_completion": 2022
+          },
+          {
+            "reason": "Scope changes and land acquisition delays",
+            "sector": "Water & Sanitation",
+            "status": "delayed",
+            "start_year": 2020,
+            "amount_paid": 534000000,
+            "project_name": "Dandora Estate Sewer Rehabilitation",
+            "oag_reference": "OAG/NRB/2023/WS-007",
+            "completion_pct": 42,
+            "contracted_amount": 890000000,
+            "expected_completion": 2023
+          }
+        ],
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        },
+        "missing_funds_cases": [
+          {
+            "amount": "KES 120M",
+            "county": "Nairobi",
+            "period": "FY 2023/24",
+            "status": "active_investigation",
+            "case_id": "MF_001",
+            "description": "Unaccounted funds in county assembly operations"
+          }
+        ],
+        "stalled_projects_count": 2,
+        "stalled_projects_total_paid": 2454000000,
+        "stalled_projects_total_value": 4090000000
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "047"
+          },
+          "FY2025/26": {
+            "county_code": "047"
+          }
+        },
+        "category": "unknown",
+        "governor": "Sakaja Arthur Johnson",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 35,
+      "canonical_name": "Nakuru County",
+      "remove_keys": [
+        "audit_summary",
+        "economic_profile",
+        "stalled_projects",
+        "stalled_projects_count",
+        "stalled_projects_total_paid",
+        "stalled_projects_total_value"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "032"
+          },
+          "FY2025/26": {
+            "county_code": "032"
+          }
+        },
+        "category": "unknown",
+        "governor": "Susan Wakarura Kihika",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "audit_summary": {
+          "queries_count": 1,
+          "last_refreshed": "2026-02-22T19:09:17.475930+00:00",
+          "total_amount_involved": 450000000.0
+        },
+        "economic_profile": {
+          "county_type": "regional_hub",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture_trade",
+          "revenue_potential": "medium_high",
+          "infrastructure_level": "medium_high"
+        },
+        "stalled_projects": [
+          {
+            "reason": "Land compensation disputes with affected residents; court injunction issued",
+            "sector": "Infrastructure",
+            "status": "stalled",
+            "start_year": 2020,
+            "amount_paid": 480000000,
+            "project_name": "Naivasha Industrial Park Access Roads",
+            "oag_reference": "OAG/NKR/2023/INF-018",
+            "completion_pct": 30,
+            "contracted_amount": 1200000000,
+            "expected_completion": 2023
+          },
+          {
+            "reason": "Pipe materials supply chain disruptions and cost escalation",
+            "sector": "Water & Sanitation",
+            "status": "delayed",
+            "start_year": 2021,
+            "amount_paid": 390000000,
+            "project_name": "Gilgil Water Supply Project",
+            "oag_reference": "OAG/NKR/2024/WS-003",
+            "completion_pct": 45,
+            "contracted_amount": 650000000,
+            "expected_completion": 2024
+          }
+        ],
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        },
+        "stalled_projects_count": 2,
+        "stalled_projects_total_paid": 870000000,
+        "stalled_projects_total_value": 1850000000
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "032"
+          },
+          "FY2025/26": {
+            "county_code": "032"
+          }
+        },
+        "category": "unknown",
+        "governor": "Susan Wakarura Kihika",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 32,
+      "canonical_name": "Nandi County",
+      "remove_keys": [
+        "economic_profile"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "029"
+          }
+        },
+        "category": "unknown",
+        "governor": "Stephen Kipyego Sang",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "029"
+          }
+        },
+        "category": "unknown",
+        "governor": "Stephen Kipyego Sang",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 36,
+      "canonical_name": "Narok County",
+      "remove_keys": [
+        "economic_profile"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "033"
+          }
+        },
+        "category": "unknown",
+        "governor": "Patrick Keturet Ole Ntutu",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "033"
+          }
+        },
+        "category": "unknown",
+        "governor": "Patrick Keturet Ole Ntutu",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 49,
+      "canonical_name": "Nyamira County",
+      "remove_keys": [
+        "economic_profile"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "046"
+          }
+        },
+        "category": "unknown",
+        "governor": "Amos Kimwomi Nyaribo",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "046"
+          }
+        },
+        "category": "unknown",
+        "governor": "Amos Kimwomi Nyaribo",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 21,
+      "canonical_name": "Nyandarua County",
+      "remove_keys": [
+        "economic_profile",
+        "stalled_projects",
+        "stalled_projects_count",
+        "stalled_projects_total_paid",
+        "stalled_projects_total_value"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "018"
+          }
+        },
+        "category": "unknown",
+        "governor": "Moses Ndirangu Kiarie Badilisha",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "stalled_projects": [
+          {
+            "reason": "Heavy rainfall damaged completed sections; contractor issued variation order for repairs",
+            "sector": "Roads",
+            "status": "delayed",
+            "start_year": 2021,
+            "amount_paid": 380000000,
+            "project_name": "Ol Kalou-Engineer Road Rehabilitation",
+            "oag_reference": "OAG/NDA/2024/RD-003",
+            "completion_pct": 30,
+            "contracted_amount": 950000000,
+            "expected_completion": 2024
+          }
+        ],
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        },
+        "stalled_projects_count": 1,
+        "stalled_projects_total_paid": 380000000,
+        "stalled_projects_total_value": 950000000
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "018"
+          }
+        },
+        "category": "unknown",
+        "governor": "Moses Ndirangu Kiarie Badilisha",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 22,
+      "canonical_name": "Nyeri County",
+      "remove_keys": [
+        "economic_profile",
+        "stalled_projects",
+        "stalled_projects_count",
+        "stalled_projects_total_paid",
+        "stalled_projects_total_value"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "019"
+          }
+        },
+        "category": "unknown",
+        "governor": "Edward Mutahi Kahiga",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "stalled_projects": [
+          {
+            "reason": "Delayed disbursement of county development funds from National Treasury",
+            "sector": "Trade & Commerce",
+            "status": "delayed",
+            "start_year": 2022,
+            "amount_paid": 190000000,
+            "project_name": "Karatina Modern Market Complex",
+            "oag_reference": "OAG/NYR/2024/TR-002",
+            "completion_pct": 38,
+            "contracted_amount": 380000000,
+            "expected_completion": 2024
+          }
+        ],
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        },
+        "stalled_projects_count": 1,
+        "stalled_projects_total_paid": 190000000,
+        "stalled_projects_total_value": 380000000
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "019"
+          }
+        },
+        "category": "unknown",
+        "governor": "Edward Mutahi Kahiga",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 28,
+      "canonical_name": "Samburu County",
+      "remove_keys": [
+        "economic_profile"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "025"
+          }
+        },
+        "category": "unknown",
+        "governor": "Jonathan Lelelit Lati",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "025"
+          }
+        },
+        "category": "unknown",
+        "governor": "Jonathan Lelelit Lati",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 44,
+      "canonical_name": "Siaya County",
+      "remove_keys": [
+        "economic_profile",
+        "stalled_projects",
+        "stalled_projects_count",
+        "stalled_projects_total_paid",
+        "stalled_projects_total_value"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "041"
+          }
+        },
+        "category": "unknown",
+        "governor": "James Orengo",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "stalled_projects": [
+          {
+            "reason": "Multiple procurement irregularities; EACC investigation ongoing",
+            "sector": "Health",
+            "status": "stalled",
+            "start_year": 2019,
+            "amount_paid": 580000000,
+            "project_name": "Siaya County Teaching & Referral Hospital",
+            "oag_reference": "OAG/SYA/2023/HLT-002",
+            "completion_pct": 28,
+            "contracted_amount": 1450000000,
+            "expected_completion": 2023
+          }
+        ],
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        },
+        "stalled_projects_count": 1,
+        "stalled_projects_total_paid": 580000000,
+        "stalled_projects_total_value": 1450000000
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "041"
+          }
+        },
+        "category": "unknown",
+        "governor": "James Orengo",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 9,
+      "canonical_name": "Taita Taveta County",
+      "remove_keys": [
+        "economic_profile"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "006"
+          }
+        },
+        "category": "unknown",
+        "governor": "Andrew Mwadime",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "006"
+          }
+        },
+        "category": "unknown",
+        "governor": "Andrew Mwadime",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 7,
+      "canonical_name": "Tana River County",
+      "remove_keys": [
+        "economic_profile"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "004"
+          }
+        },
+        "category": "unknown",
+        "governor": "Dhadho Gaddae Godhana",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "004"
+          }
+        },
+        "category": "unknown",
+        "governor": "Dhadho Gaddae Godhana",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 16,
+      "canonical_name": "Tharaka Nithi County",
+      "remove_keys": [
+        "economic_profile"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "013"
+          }
+        },
+        "category": "unknown",
+        "governor": "Muthomi Njuki",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "013"
+          }
+        },
+        "category": "unknown",
+        "governor": "Muthomi Njuki",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 29,
+      "canonical_name": "Trans Nzoia County",
+      "remove_keys": [
+        "economic_profile"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "026"
+          }
+        },
+        "category": "unknown",
+        "governor": "George Natembeya",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "026"
+          }
+        },
+        "category": "unknown",
+        "governor": "George Natembeya",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 26,
+      "canonical_name": "Turkana County",
+      "remove_keys": [
+        "audit_summary",
+        "economic_profile",
+        "stalled_projects",
+        "stalled_projects_count",
+        "stalled_projects_total_paid",
+        "stalled_projects_total_value"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "023"
+          },
+          "FY2025/26": {
+            "county_code": "023"
+          }
+        },
+        "category": "unknown",
+        "governor": "Jeremiah Ekamais Lomorukai",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "audit_summary": {
+          "queries_count": 1,
+          "last_refreshed": "2026-02-22T19:08:39.565778+00:00",
+          "total_amount_involved": 1800000000.0
+        },
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "stalled_projects": [
+          {
+            "reason": "Security concerns in project area; contractor withdrew citing safety risks to workers",
+            "sector": "Water & Sanitation",
+            "status": "stalled",
+            "start_year": 2019,
+            "amount_paid": 440000000,
+            "project_name": "Lodwar-Lokichar Water Pipeline",
+            "oag_reference": "OAG/TRK/2023/WS-004",
+            "completion_pct": 15,
+            "contracted_amount": 2200000000,
+            "expected_completion": 2022
+          }
+        ],
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        },
+        "stalled_projects_count": 1,
+        "stalled_projects_total_paid": 440000000,
+        "stalled_projects_total_value": 2200000000
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "023"
+          },
+          "FY2025/26": {
+            "county_code": "023"
+          }
+        },
+        "category": "unknown",
+        "governor": "Jeremiah Ekamais Lomorukai",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 30,
+      "canonical_name": "Uasin Gishu County",
+      "remove_keys": [
+        "audit_summary",
+        "economic_profile",
+        "stalled_projects",
+        "stalled_projects_count",
+        "stalled_projects_total_paid",
+        "stalled_projects_total_value"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "027"
+          },
+          "FY2025/26": {
+            "county_code": "027"
+          }
+        },
+        "category": "unknown",
+        "governor": "Jonathan Bii",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "audit_summary": {
+          "queries_count": 1,
+          "last_refreshed": "2026-02-22T19:08:56.359628+00:00",
+          "total_amount_involved": 650000000.0
+        },
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "stalled_projects": [
+          {
+            "reason": "Dispute between traders and county government over design and relocation plan",
+            "sector": "Trade & Commerce",
+            "status": "delayed",
+            "start_year": 2021,
+            "amount_paid": 336000000,
+            "project_name": "Eldoret Town Central Market Reconstruction",
+            "oag_reference": "OAG/UGS/2024/TR-001",
+            "completion_pct": 52,
+            "contracted_amount": 560000000,
+            "expected_completion": 2023
+          }
+        ],
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        },
+        "stalled_projects_count": 1,
+        "stalled_projects_total_paid": 336000000,
+        "stalled_projects_total_value": 560000000
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "027"
+          },
+          "FY2025/26": {
+            "county_code": "027"
+          }
+        },
+        "category": "unknown",
+        "governor": "Jonathan Bii",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 41,
+      "canonical_name": "Vihiga County",
+      "remove_keys": [
+        "economic_profile",
+        "stalled_projects",
+        "stalled_projects_count",
+        "stalled_projects_total_paid",
+        "stalled_projects_total_value"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "038"
+          }
+        },
+        "category": "unknown",
+        "governor": "Wilber Khasilwa Ottichilo",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "stalled_projects": [
+          {
+            "reason": "County revenue shortfall; allocated funds diverted to emergency flood response",
+            "sector": "Trade & Commerce",
+            "status": "delayed",
+            "start_year": 2022,
+            "amount_paid": 168000000,
+            "project_name": "Mbale Town Multi-Purpose Market",
+            "oag_reference": "OAG/VHG/2024/TR-001",
+            "completion_pct": 45,
+            "contracted_amount": 280000000,
+            "expected_completion": 2024
+          }
+        ],
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        },
+        "stalled_projects_count": 1,
+        "stalled_projects_total_paid": 168000000,
+        "stalled_projects_total_value": 280000000
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "038"
+          }
+        },
+        "category": "unknown",
+        "governor": "Wilber Khasilwa Ottichilo",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 11,
+      "canonical_name": "Wajir County",
+      "remove_keys": [
+        "economic_profile"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "008"
+          }
+        },
+        "category": "unknown",
+        "governor": "Ahmed Abdullahi",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "008"
+          }
+        },
+        "category": "unknown",
+        "governor": "Ahmed Abdullahi",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    },
+    {
+      "id": 27,
+      "canonical_name": "West Pokot County",
+      "remove_keys": [
+        "economic_profile"
+      ],
+      "before": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "024"
+          }
+        },
+        "category": "unknown",
+        "governor": "Simon Kachapin Kitalei",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "economic_profile": {
+          "county_type": "standard_county",
+          "major_issues": [
+            "Budget execution delays",
+            "Revenue collection challenges",
+            "Infrastructure maintenance needs",
+            "Service delivery gaps"
+          ],
+          "economic_base": "agriculture",
+          "revenue_potential": "medium",
+          "infrastructure_level": "medium"
+        },
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      },
+      "after": {
+        "metrics": {
+          "FY2024/25": {
+            "county_code": "024"
+          }
+        },
+        "category": "unknown",
+        "governor": "Simon Kachapin Kitalei",
+        "confidence": 1.0,
+        "last_updated": "2025-08-24T17:09:27.305421",
+        "governor_provenance": {
+          "source": "Council of Governors",
+          "extractor": "cog_governors",
+          "fetched_at": "2026-09-24T02:29:58.861278+00:00",
+          "source_url": "https://cog.go.ke/current-governors/",
+          "source_document_id": 2437
+        }
+      }
+    }
+  ],
+  "retired_source_document": {
+    "id": 1836,
+    "md5": null,
+    "url": null,
+    "title": "Report of the Auditor General on the Financial Statements of the National Government for FY 2023/2024",
+    "status": "FAILED",
+    "doc_type": "AUDIT",
+    "metadata": {
+      "scope": "national",
+      "source": "oag_national_audit_data.json",
+      "fiscal_year": "FY2023/24",
+      "opinion_type": "Qualified",
+      "key_statistics": {
+        "minor_findings": 3,
+        "total_findings": 25,
+        "critical_findings": 10,
+        "significant_findings": 12,
+        "total_amount_flagged_kes": 981300000000,
+        "total_ministries_audited": 21,
+        "recurring_issues_from_prior_year": 18,
+        "response_rate_to_previous_queries": "34%"
+      },
+      "auditor_general": "Nancy Gathungu, CPA",
+      "status_before_3c": "AVAILABLE",
+      "emphasis_of_matter": [
+        "Debt service costs consuming 62.8% of ordinary revenue",
+        "Deteriorating fiscal sustainability indicators",
+        "Recurring nature of audit findings from previous years"
+      ],
+      "basis_for_qualification": [
+        "Unexplained Consolidated Fund balance differences of KES 156.8 billion",
+        "Incomplete government property register affecting asset valuation",
+        "Unresolved pending bills of KES 589.7 billion",
+        "Unsupported expenditures across multiple votes"
+      ],
+      "total_amount_questioned": "KES 981.3B"
+    },
+    "file_path": null,
+    "publisher": "Office of the Auditor General",
+    "country_id": 1,
+    "created_at": "2026-02-20T06:39:06.296693",
+    "fetch_date": "2024-12-15T00:00:00",
+    "http_status": null,
+    "content_type": null,
+    "last_seen_at": "2026-02-20T06:39:06.296689",
+    "last_verified_at": null
+  },
+  "delete_audits": [
+    {
+      "id": 870,
+      "basis": null,
+      "amount": 589700000000.0,
+      "status": "unresolved",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 53,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.96316",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "unresolved",
+          "category": "fiscal_risk",
+          "query_type": "Pending Bills",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_001",
+          "report_section": "National Government Consolidated Accounts",
+          "severity_label": "high",
+          "amount_involved": "KES 589.7B"
+        }
+      ],
+      "query_type": "Pending Bills",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Accumulated pending bills of KES 589.7 billion remain unresolved across government ministries, departments and agencies, posing significant fiscal risk to ongoing service delivery",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "source_document_has_no_url",
+      "external_reference": null,
+      "recommended_action": "The National Treasury should develop a comprehensive pending bills clearance strategy with prioritized payment schedules",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 871,
+      "basis": null,
+      "amount": 12300000000.0,
+      "status": "under_investigation",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 1,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963167",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "under_investigation",
+          "category": "procurement_issue",
+          "query_type": "Procurement Irregularities",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_002",
+          "report_section": "Ministry of Health Vote",
+          "severity_label": "high",
+          "amount_involved": "KES 12.3B"
+        }
+      ],
+      "query_type": "Procurement Irregularities",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Irregular procurement of medical supplies worth KES 12.3 billion without competitive bidding, including COVID-19 related emergency purchases that lacked proper documentation",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "source_document_has_no_url",
+      "external_reference": null,
+      "recommended_action": "Ministry should provide full documentation for emergency procurements and ensure future compliance with PPDA Act 2015",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 872,
+      "basis": null,
+      "amount": 47800000000.0,
+      "status": "under_review",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 55,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963168",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "under_review",
+          "category": "expenditure_variance",
+          "query_type": "Cost Overruns",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_003",
+          "report_section": "Ministry of Roads and Transport Vote",
+          "severity_label": "high",
+          "amount_involved": "KES 47.8B"
+        }
+      ],
+      "query_type": "Cost Overruns",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Road construction project cost overruns totaling KES 47.8 billion across 23 major infrastructure projects, with some projects exceeding original estimates by over 200%",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "source_document_has_no_url",
+      "external_reference": null,
+      "recommended_action": "Implement project cost management controls and conduct forensic audits on projects with overruns exceeding 50%",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 873,
+      "basis": null,
+      "amount": 8700000000.0,
+      "status": "disclaimer",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 51,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963169",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "disclaimer",
+          "category": "documentation_gap",
+          "query_type": "Unaccounted Expenditure",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_004",
+          "report_section": "Ministry of Defence Vote",
+          "severity_label": "high",
+          "amount_involved": "KES 8.7B"
+        }
+      ],
+      "query_type": "Unaccounted Expenditure",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Expenditure amounting to KES 8.7 billion classified under 'classified operations' lacked verifiable supporting documentation accessible to the Auditor General",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "source_document_has_no_url",
+      "external_reference": null,
+      "recommended_action": "Establish secure audit arrangements for classified expenditure in line with Section 69 of the Public Finance Management Act",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 874,
+      "basis": null,
+      "amount": 6200000000.0,
+      "status": "pending_response",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 2,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.96317",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "pending_response",
+          "category": "documentation_gap",
+          "query_type": "Missing Documentation",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_005",
+          "report_section": "Ministry of Education Vote",
+          "severity_label": "medium",
+          "amount_involved": "KES 6.2B"
+        }
+      ],
+      "query_type": "Missing Documentation",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Grants to secondary schools and TVET institutions totaling KES 6.2 billion disbursed without adequate confirmation of receipt or utilization reports from beneficiary institutions",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "source_document_has_no_url",
+      "external_reference": null,
+      "recommended_action": "Require mandatory utilization certificates before subsequent disbursements and conduct spot-check audits",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 875,
+      "basis": null,
+      "amount": 1170000000000.0,
+      "status": "ongoing_concern",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 53,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.96317",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "ongoing_concern",
+          "category": "fiscal_risk",
+          "query_type": "Debt Management",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_006",
+          "report_section": "Public Debt Management",
+          "severity_label": "high",
+          "amount_involved": "KES 1.17T"
+        }
+      ],
+      "query_type": "Debt Management",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "National debt service costs rose to KES 1.17 trillion (62.8% of ordinary revenue), threatening fiscal sustainability. External debt refinancing losses from currency depreciation amounted to KES 234 billion",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "source_document_has_no_url",
+      "external_reference": null,
+      "recommended_action": "Diversify debt portfolio towards longer-tenor concessional borrowing and establish hedging mechanisms for foreign currency exposure",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 876,
+      "basis": null,
+      "amount": 3400000000.0,
+      "status": "under_investigation",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 50,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963171",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "under_investigation",
+          "category": "payroll_fraud",
+          "query_type": "Payroll Irregularities",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_007",
+          "report_section": "Ministry of Interior Vote",
+          "severity_label": "high",
+          "amount_involved": "KES 3.4B"
+        }
+      ],
+      "query_type": "Payroll Irregularities",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Ghost workers and irregular payroll entries costing KES 3.4 billion identified across National Police Service and Kenya Prisons Service payrolls",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "source_document_has_no_url",
+      "external_reference": null,
+      "recommended_action": "Conduct biometric verification of all uniformed services personnel and integrate IPPD with IPRS for real-time validation",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 877,
+      "basis": null,
+      "amount": 9100000000.0,
+      "status": "under_investigation",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 54,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963172",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "under_investigation",
+          "category": "procurement_issue",
+          "query_type": "Subsidy Program Irregularities",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_008",
+          "report_section": "Ministry of Agriculture Vote",
+          "severity_label": "high",
+          "amount_involved": "KES 9.1B"
+        }
+      ],
+      "query_type": "Subsidy Program Irregularities",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Fertilizer subsidy programme disbursed KES 9.1 billion with significant irregularities including payments to unregistered farmers and inflated pricing by contracted suppliers",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "source_document_has_no_url",
+      "external_reference": null,
+      "recommended_action": "Digitize farmer registration and implement e-voucher system to prevent diversion of subsidized inputs",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 878,
+      "basis": null,
+      "amount": 4600000000.0,
+      "status": "under_review",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 56,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963173",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "under_review",
+          "category": "revenue_shortfall",
+          "query_type": "Revenue Collection Gap",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_009",
+          "report_section": "Ministry of Energy Vote",
+          "severity_label": "medium",
+          "amount_involved": "KES 4.6B"
+        }
+      ],
+      "query_type": "Revenue Collection Gap",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Kenya Pipeline Company and National Oil Corporation revenue remittances to the Exchequer fell short by KES 4.6 billion against projected targets, with unreconciled pipeline throughput fees",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "source_document_has_no_url",
+      "external_reference": null,
+      "recommended_action": "Automate revenue collection and remittance monitoring for all energy sector parastatals",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 879,
+      "basis": null,
+      "amount": 28300000000.0,
+      "status": "unresolved",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 57,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963173",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "unresolved",
+          "category": "project_delay",
+          "query_type": "Stalled Projects",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_010",
+          "report_section": "Ministry of Water Vote",
+          "severity_label": "medium",
+          "amount_involved": "KES 28.3B"
+        }
+      ],
+      "query_type": "Stalled Projects",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "14 water and irrigation projects worth KES 28.3 billion remained stalled or behind schedule, with accumulated idle costs and contractor claims totaling KES 5.7 billion",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "source_document_has_no_url",
+      "external_reference": null,
+      "recommended_action": "Establish project monitoring dashboards and enforce liquidated damages clauses for delayed contractors",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 880,
+      "basis": null,
+      "amount": 7200000000.0,
+      "status": "under_review",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 60,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963174",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "under_review",
+          "category": "expenditure_variance",
+          "query_type": "ICT Project Overruns",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_011",
+          "report_section": "Ministry of ICT Vote",
+          "severity_label": "medium",
+          "amount_involved": "KES 7.2B"
+        }
+      ],
+      "query_type": "ICT Project Overruns",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Huduma Namba and Integrated National Management System projects exceeded budget by KES 7.2 billion with incomplete deliverables and vendor lock-in concerns",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "source_document_has_no_url",
+      "external_reference": null,
+      "recommended_action": "Commission independent technology assessment and require open-standard compliance in all future ICT procurements",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 881,
+      "basis": null,
+      "amount": 2100000000.0,
+      "status": "pending_response",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 52,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963175",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "pending_response",
+          "category": "documentation_gap",
+          "query_type": "Embassy Expenditure",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_012",
+          "report_section": "Ministry of Foreign Affairs Vote",
+          "severity_label": "medium",
+          "amount_involved": "KES 2.1B"
+        }
+      ],
+      "query_type": "Embassy Expenditure",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "64 diplomatic missions had unexplained expenditure variances of KES 2.1 billion, with 12 missions failing to submit accounts for the entire fiscal year",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "source_document_has_no_url",
+      "external_reference": null,
+      "recommended_action": "Deploy unified financial management systems across all missions and require quarterly reporting compliance",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 882,
+      "basis": null,
+      "amount": 1200000000000.0,
+      "status": "ongoing_concern",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 59,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963175",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "ongoing_concern",
+          "category": "asset_management",
+          "query_type": "Asset Management",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_013",
+          "report_section": "Ministry of Lands Vote",
+          "severity_label": "high",
+          "amount_involved": "KES 1.2T"
+        }
+      ],
+      "query_type": "Asset Management",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Government immovable property register remains incomplete \u2014 an estimated 40% of government-owned land parcels worth approximately KES 1.2 trillion lack updated title documentation",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "source_document_has_no_url",
+      "external_reference": null,
+      "recommended_action": "Fast-track the National Land Information Management System digitization and conduct nationwide verification of government properties",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 883,
+      "basis": null,
+      "amount": 4800000000.0,
+      "status": "under_review",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 61,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963176",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "under_review",
+          "category": "programme_leakage",
+          "query_type": "Social Protection Leakage",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_014",
+          "report_section": "Ministry of Labour Vote",
+          "severity_label": "medium",
+          "amount_involved": "KES 4.8B"
+        }
+      ],
+      "query_type": "Social Protection Leakage",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Inua Jamii and cash transfer programmes had identified inclusion errors affecting 340,000 ineligible beneficiaries, with leakage estimated at KES 4.8 billion annually",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "source_document_has_no_url",
+      "external_reference": null,
+      "recommended_action": "Implement biometric authentication for all social protection disbursements and conduct beneficiary re-registration",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 884,
+      "basis": null,
+      "amount": 1800000000.0,
+      "status": "noted",
+      "page_ref": null,
+      "severity": "INFO",
+      "entity_id": 68,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963177",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "noted",
+          "category": "infrastructure_deficit",
+          "query_type": "Facility Maintenance",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_015",
+          "report_section": "Correctional Services Vote",
+          "severity_label": "low",
+          "amount_involved": "KES 1.8B"
+        }
+      ],
+      "query_type": "Facility Maintenance",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Correctional facilities across the country have accumulated a maintenance backlog costing KES 1.8 billion, with 28 facilities rated as structurally compromised",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "source_document_has_no_url",
+      "external_reference": null,
+      "recommended_action": "Develop a 5-year facility rehabilitation plan with allocated annual budget provisions",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 885,
+      "basis": null,
+      "amount": 3200000000.0,
+      "status": "under_review",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 62,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963177",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "under_review",
+          "category": "revenue_shortfall",
+          "query_type": "Revenue Leakage",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_016",
+          "report_section": "Ministry of Tourism Vote",
+          "severity_label": "medium",
+          "amount_involved": "KES 3.2B"
+        }
+      ],
+      "query_type": "Revenue Leakage",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "National parks and game reserves revenue collection shortfall of KES 3.2 billion due to outdated collection systems and unmonitored entry points",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "source_document_has_no_url",
+      "external_reference": null,
+      "recommended_action": "Deploy electronic revenue collection at all park gates and automate reconciliation with KWS headquarters",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 886,
+      "basis": null,
+      "amount": 2900000000.0,
+      "status": "under_investigation",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 63,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963178",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "under_investigation",
+          "category": "fund_mismanagement",
+          "query_type": "Fund Mismanagement",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_017",
+          "report_section": "Ministry of Youth Vote",
+          "severity_label": "medium",
+          "amount_involved": "KES 2.9B"
+        }
+      ],
+      "query_type": "Fund Mismanagement",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Youth Enterprise Development Fund and Sports Fund disbursements totaling KES 2.9 billion lacked proper beneficiary verification and recovery mechanisms for non-performing loans",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "source_document_has_no_url",
+      "external_reference": null,
+      "recommended_action": "Strengthen credit assessment processes and establish legal recovery framework for defaulting beneficiaries",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 887,
+      "basis": null,
+      "amount": 1400000000.0,
+      "status": "noted",
+      "page_ref": null,
+      "severity": "INFO",
+      "entity_id": 58,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963179",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "noted",
+          "category": "low_absorption",
+          "query_type": "Climate Fund Utilization",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_018",
+          "report_section": "Ministry of Environment Vote",
+          "severity_label": "low",
+          "amount_involved": "KES 1.4B"
+        }
+      ],
+      "query_type": "Climate Fund Utilization",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "National Climate Change Action Plan funds of KES 1.4 billion had low absorption rates (32%) with significant funds returned to Treasury unspent",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "source_document_has_no_url",
+      "external_reference": null,
+      "recommended_action": "Build implementation capacity within the ministry and streamline climate fund disbursement procedures",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 888,
+      "basis": null,
+      "amount": 5300000000.0,
+      "status": "under_review",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 64,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963179",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "under_review",
+          "category": "programme_management",
+          "query_type": "ASAL Fund Irregularities",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_019",
+          "report_section": "Ministry of EAC and ASALs Vote",
+          "severity_label": "medium",
+          "amount_involved": "KES 5.3B"
+        }
+      ],
+      "query_type": "ASAL Fund Irregularities",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "ASAL development fund disbursements of KES 5.3 billion had inadequate monitoring and evaluation, with 60% of funded projects lacking completion reports",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "source_document_has_no_url",
+      "external_reference": null,
+      "recommended_action": "Establish integrated M&E framework and require project completion certificates before final payment tranches",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 889,
+      "basis": null,
+      "amount": 2700000000.0,
+      "status": "under_review",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 65,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.96318",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "under_review",
+          "category": "revenue_shortfall",
+          "query_type": "Mineral Royalty Gaps",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_020",
+          "report_section": "Ministry of Mining Vote",
+          "severity_label": "medium",
+          "amount_involved": "KES 2.7B"
+        }
+      ],
+      "query_type": "Mineral Royalty Gaps",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Mineral royalty collections fell short by KES 2.7 billion against estimated potential, with inadequate monitoring of mining operations and under-declared production volumes",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "source_document_has_no_url",
+      "external_reference": null,
+      "recommended_action": "Deploy real-time production monitoring systems at major mining sites and strengthen royalty audit capacity",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 890,
+      "basis": null,
+      "amount": 8400000000.0,
+      "status": "ongoing_concern",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 66,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.96318",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "ongoing_concern",
+          "category": "fund_sustainability",
+          "query_type": "MSME Fund Disbursement",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_021",
+          "report_section": "Ministry of Co-operatives Vote",
+          "severity_label": "medium",
+          "amount_involved": "KES 8.4B"
+        }
+      ],
+      "query_type": "MSME Fund Disbursement",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Hustler Fund and MSME development fund disbursements of KES 8.4 billion had repayment rates below 40%, threatening fund sustainability",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "source_document_has_no_url",
+      "external_reference": null,
+      "recommended_action": "Implement credit scoring for disbursements and integrate with CRB for defaulter tracking",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 891,
+      "basis": null,
+      "amount": 2100000000.0,
+      "status": "noted",
+      "page_ref": null,
+      "severity": "INFO",
+      "entity_id": 67,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963181",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "noted",
+          "category": "low_absorption",
+          "query_type": "Gender Fund Utilization",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_022",
+          "report_section": "Ministry of Public Service Vote",
+          "severity_label": "low",
+          "amount_involved": "KES 2.1B"
+        }
+      ],
+      "query_type": "Gender Fund Utilization",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "National Gender and Equality Commission programmes spent only KES 890 million of KES 2.1 billion allocation, with procurement delays and poor project implementation",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "source_document_has_no_url",
+      "external_reference": null,
+      "recommended_action": "Conduct capacity assessment and develop quarterly expenditure targets with management accountability",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 892,
+      "basis": null,
+      "amount": 34200000000.0,
+      "status": "under_investigation",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 53,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963182",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "under_investigation",
+          "category": "internal_controls",
+          "query_type": "IFMIS System Weaknesses",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_023",
+          "report_section": "National Government IT Controls",
+          "severity_label": "high",
+          "amount_involved": "KES 34.2B"
+        }
+      ],
+      "query_type": "IFMIS System Weaknesses",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "The Integrated Financial Management Information System (IFMIS) had 847 override transactions worth KES 34.2 billion where standard controls were bypassed without adequate justification",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "source_document_has_no_url",
+      "external_reference": null,
+      "recommended_action": "Review and restrict override privileges, implement real-time monitoring of override transactions, and require dual authorization for all overrides above KES 10M",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 893,
+      "basis": null,
+      "amount": 156800000000.0,
+      "status": "ongoing_concern",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 53,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963182",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "ongoing_concern",
+          "category": "reconciliation_gap",
+          "query_type": "Consolidated Fund Reconciliation",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_024",
+          "report_section": "Consolidated Fund Statement",
+          "severity_label": "high",
+          "amount_involved": "KES 156.8B"
+        }
+      ],
+      "query_type": "Consolidated Fund Reconciliation",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Material differences of KES 156.8 billion between CBK records and National Treasury records for the Consolidated Fund remain unexplained as at end of FY 2023/24",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "source_document_has_no_url",
+      "external_reference": null,
+      "recommended_action": "Establish a dedicated reconciliation unit and complete monthly reconciliation with CBK within 30 days of period end",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 894,
+      "basis": null,
+      "amount": null,
+      "status": "official_opinion",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 73,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963183",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "official_opinion",
+          "category": "audit_opinion",
+          "query_type": "Overall Audit Opinion",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_025",
+          "report_section": "Auditor General's Report - Overall",
+          "severity_label": "high",
+          "amount_involved": "KES 0"
+        }
+      ],
+      "query_type": "Overall Audit Opinion",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "The Auditor General issued a qualified opinion on the National Government financial statements for FY 2023/24, citing material misstatements in pending bills, payroll, and asset registers across multiple ministries",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "source_document_has_no_url",
+      "external_reference": null,
+      "recommended_action": "All accounting officers should address audit queries within the statutory 60-day response window and implement previous audit recommendations",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    }
+  ],
+  "referencing_constraints": [],
+  "retirement_basis": {
+    "reviewed_fixture_commit": "1bd397f398450245da83abc2e24502ab16ffb063",
+    "fixture_sha256": {
+      "backend/data/reference/oag_national_audit_data.json": "e1ac4396683caa15661807713aabc5d616dfd5fec1931998153cd0117ea5b8f7",
+      "backend/seeding/real_data/stalled_projects.json": "dcf7d04bfdd8396c1f1c62c541ca43d3bca4cda4629fcdb1731912df1eba8855",
+      "backend/data/reference/enhanced_county_data.json": "b7e93f6358628a91417e57c13006e5279eb70a850ecd9501b3ff9f0bca608767",
+      "backend/data/reference/oag_audit_data.json": "bba74732d5959b1f39e63757c6f3337409db706693529d58654255969a5790f3"
+    },
+    "audit_rows": {
+      "count": 25,
+      "matched_fields": [
+        "document metadata.source",
+        "provenance.source",
+        "provenance.external_id",
+        "finding_text == fixture.description",
+        "recommended_action",
+        "provenance.status/category/query_type/date_raised/report_section/amount_involved"
+      ],
+      "mapping": [
+        {
+          "audit_id": 870,
+          "fixture_id": "NAT_001",
+          "source_document_id": 1836,
+          "entity_id": 53,
+          "period_id": 9
+        },
+        {
+          "audit_id": 871,
+          "fixture_id": "NAT_002",
+          "source_document_id": 1836,
+          "entity_id": 1,
+          "period_id": 9
+        },
+        {
+          "audit_id": 872,
+          "fixture_id": "NAT_003",
+          "source_document_id": 1836,
+          "entity_id": 55,
+          "period_id": 9
+        },
+        {
+          "audit_id": 873,
+          "fixture_id": "NAT_004",
+          "source_document_id": 1836,
+          "entity_id": 51,
+          "period_id": 9
+        },
+        {
+          "audit_id": 874,
+          "fixture_id": "NAT_005",
+          "source_document_id": 1836,
+          "entity_id": 2,
+          "period_id": 9
+        },
+        {
+          "audit_id": 875,
+          "fixture_id": "NAT_006",
+          "source_document_id": 1836,
+          "entity_id": 53,
+          "period_id": 9
+        },
+        {
+          "audit_id": 876,
+          "fixture_id": "NAT_007",
+          "source_document_id": 1836,
+          "entity_id": 50,
+          "period_id": 9
+        },
+        {
+          "audit_id": 877,
+          "fixture_id": "NAT_008",
+          "source_document_id": 1836,
+          "entity_id": 54,
+          "period_id": 9
+        },
+        {
+          "audit_id": 878,
+          "fixture_id": "NAT_009",
+          "source_document_id": 1836,
+          "entity_id": 56,
+          "period_id": 9
+        },
+        {
+          "audit_id": 879,
+          "fixture_id": "NAT_010",
+          "source_document_id": 1836,
+          "entity_id": 57,
+          "period_id": 9
+        },
+        {
+          "audit_id": 880,
+          "fixture_id": "NAT_011",
+          "source_document_id": 1836,
+          "entity_id": 60,
+          "period_id": 9
+        },
+        {
+          "audit_id": 881,
+          "fixture_id": "NAT_012",
+          "source_document_id": 1836,
+          "entity_id": 52,
+          "period_id": 9
+        },
+        {
+          "audit_id": 882,
+          "fixture_id": "NAT_013",
+          "source_document_id": 1836,
+          "entity_id": 59,
+          "period_id": 9
+        },
+        {
+          "audit_id": 883,
+          "fixture_id": "NAT_014",
+          "source_document_id": 1836,
+          "entity_id": 61,
+          "period_id": 9
+        },
+        {
+          "audit_id": 884,
+          "fixture_id": "NAT_015",
+          "source_document_id": 1836,
+          "entity_id": 68,
+          "period_id": 9
+        },
+        {
+          "audit_id": 885,
+          "fixture_id": "NAT_016",
+          "source_document_id": 1836,
+          "entity_id": 62,
+          "period_id": 9
+        },
+        {
+          "audit_id": 886,
+          "fixture_id": "NAT_017",
+          "source_document_id": 1836,
+          "entity_id": 63,
+          "period_id": 9
+        },
+        {
+          "audit_id": 887,
+          "fixture_id": "NAT_018",
+          "source_document_id": 1836,
+          "entity_id": 58,
+          "period_id": 9
+        },
+        {
+          "audit_id": 888,
+          "fixture_id": "NAT_019",
+          "source_document_id": 1836,
+          "entity_id": 64,
+          "period_id": 9
+        },
+        {
+          "audit_id": 889,
+          "fixture_id": "NAT_020",
+          "source_document_id": 1836,
+          "entity_id": 65,
+          "period_id": 9
+        },
+        {
+          "audit_id": 890,
+          "fixture_id": "NAT_021",
+          "source_document_id": 1836,
+          "entity_id": 66,
+          "period_id": 9
+        },
+        {
+          "audit_id": 891,
+          "fixture_id": "NAT_022",
+          "source_document_id": 1836,
+          "entity_id": 67,
+          "period_id": 9
+        },
+        {
+          "audit_id": 892,
+          "fixture_id": "NAT_023",
+          "source_document_id": 1836,
+          "entity_id": 53,
+          "period_id": 9
+        },
+        {
+          "audit_id": 893,
+          "fixture_id": "NAT_024",
+          "source_document_id": 1836,
+          "entity_id": 53,
+          "period_id": 9
+        },
+        {
+          "audit_id": 894,
+          "fixture_id": "NAT_025",
+          "source_document_id": 1836,
+          "entity_id": 73,
+          "period_id": 9
+        }
+      ]
+    },
+    "stalled_project_records": {
+      "count": 25,
+      "county_count": 21,
+      "matched_fields": "Every stored project field equals the fixture after grouping by county_slug and dropping that grouping field; count/total_value/total_paid equal writer aggregates. These are JSON project records, distinct from the 25 rows in audits.",
+      "mapping": [
+        {
+          "entity_id": 42,
+          "fixture_county_slug": "bungoma-county",
+          "project_names": [
+            "Bungoma Level 4 Hospital Maternity Wing"
+          ]
+        },
+        {
+          "entity_id": 10,
+          "fixture_county_slug": "garissa-county",
+          "project_names": [
+            "Garissa Solar-Powered Borehole Network"
+          ]
+        },
+        {
+          "entity_id": 46,
+          "fixture_county_slug": "homa-bay-county",
+          "project_names": [
+            "Homa Bay Fish Processing Plant"
+          ]
+        },
+        {
+          "entity_id": 40,
+          "fixture_county_slug": "kakamega-county",
+          "project_names": [
+            "Kakamega County Stadium",
+            "Malava-Butere Road Tarmacking"
+          ]
+        },
+        {
+          "entity_id": 25,
+          "fixture_county_slug": "kiambu-county",
+          "project_names": [
+            "Thika Level 5 Hospital ICU Wing"
+          ]
+        },
+        {
+          "entity_id": 6,
+          "fixture_county_slug": "kilifi-county",
+          "project_names": [
+            "Malindi Water Desalination Plant"
+          ]
+        },
+        {
+          "entity_id": 45,
+          "fixture_county_slug": "kisumu-county",
+          "project_names": [
+            "Kisumu Port Hinterland Bypass"
+          ]
+        },
+        {
+          "entity_id": 5,
+          "fixture_county_slug": "kwale-county",
+          "project_names": [
+            "Diani-Ukunda Sewerage System"
+          ]
+        },
+        {
+          "entity_id": 19,
+          "fixture_county_slug": "machakos-county",
+          "project_names": [
+            "Mavoko Sub-County Hospital"
+          ]
+        },
+        {
+          "entity_id": 12,
+          "fixture_county_slug": "mandera-county",
+          "project_names": [
+            "Mandera Referral Hospital Theatre Complex"
+          ]
+        },
+        {
+          "entity_id": 15,
+          "fixture_county_slug": "meru-county",
+          "project_names": [
+            "Meru Industrial Park Phase I"
+          ]
+        },
+        {
+          "entity_id": 47,
+          "fixture_county_slug": "migori-county",
+          "project_names": [
+            "Migori Modern Abattoir"
+          ]
+        },
+        {
+          "entity_id": 4,
+          "fixture_county_slug": "mombasa-county",
+          "project_names": [
+            "Mombasa County Referral Hospital Expansion",
+            "Likoni-Mtongwe Road Upgrade"
+          ]
+        },
+        {
+          "entity_id": 3,
+          "fixture_county_slug": "nairobi-county",
+          "project_names": [
+            "Eastlands Urban Renewal Phase II",
+            "Dandora Estate Sewer Rehabilitation"
+          ]
+        },
+        {
+          "entity_id": 35,
+          "fixture_county_slug": "nakuru-county",
+          "project_names": [
+            "Naivasha Industrial Park Access Roads",
+            "Gilgil Water Supply Project"
+          ]
+        },
+        {
+          "entity_id": 21,
+          "fixture_county_slug": "nyandarua-county",
+          "project_names": [
+            "Ol Kalou-Engineer Road Rehabilitation"
+          ]
+        },
+        {
+          "entity_id": 22,
+          "fixture_county_slug": "nyeri-county",
+          "project_names": [
+            "Karatina Modern Market Complex"
+          ]
+        },
+        {
+          "entity_id": 44,
+          "fixture_county_slug": "siaya-county",
+          "project_names": [
+            "Siaya County Teaching & Referral Hospital"
+          ]
+        },
+        {
+          "entity_id": 26,
+          "fixture_county_slug": "turkana-county",
+          "project_names": [
+            "Lodwar-Lokichar Water Pipeline"
+          ]
+        },
+        {
+          "entity_id": 30,
+          "fixture_county_slug": "uasin-gishu-county",
+          "project_names": [
+            "Eldoret Town Central Market Reconstruction"
+          ]
+        },
+        {
+          "entity_id": 41,
+          "fixture_county_slug": "vihiga-county",
+          "project_names": [
+            "Mbale Town Multi-Purpose Market"
+          ]
+        }
+      ]
+    },
+    "economic_profile_entity_ids": [
+      33,
+      39,
+      42,
+      43,
+      31,
+      17,
+      10,
+      46,
+      14,
+      37,
+      40,
+      38,
+      25,
+      6,
+      23,
+      48,
+      45,
+      18,
+      5,
+      34,
+      8,
+      19,
+      20,
+      12,
+      13,
+      15,
+      47,
+      4,
+      24,
+      3,
+      35,
+      32,
+      36,
+      49,
+      21,
+      22,
+      28,
+      44,
+      9,
+      7,
+      16,
+      29,
+      26,
+      30,
+      41,
+      11,
+      27
+    ],
+    "economic_profile_match": "All five fields equal enhanced_county_data.json county_data; major_issues defaults to [] as the bootstrap writer does.",
+    "missing_funds_entity_ids": [
+      45,
+      4,
+      3
+    ],
+    "missing_funds_match": "Full arrays equal oag_audit_data.json entries grouped by county.",
+    "audit_summary_entity_ids": [
+      25,
+      45,
+      19,
+      4,
+      3,
+      35,
+      26,
+      30
+    ],
+    "audit_summary_match": "queries_count and total_amount_involved equal oag_audit_data.json grouped fixture aggregates; last_refreshed is dynamic writer metadata retained in the exact before-image."
+  },
+  "release_status": "CONDITIONAL REVIEW ONLY: projected after exactly four county-code edits; recapture actual DB after authorized identity repair and all source refreshes before approval"
+}

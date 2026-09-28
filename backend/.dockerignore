@@ -6,13 +6,16 @@
 # ---- Secrets. Never in a build context. ----
 # backend/.env holds SUPABASE_SERVICE_ROLE_KEY, SUPABASE_JWT_SECRET and DB_PASSWORD.
 # It is gitignored (backend/.gitignore:25) but gitignore is not dockerignore.
-.env
-.env.*
-!.env.example
-*.pem
-*.key
-secrets.*
-service-account*.json
+**/.env
+**/.env.*
+!**/.env.example
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/secrets.*
+!config/secrets.py
+**/service-account*.json
 
 # ---- Virtualenvs (venv 452 MB + .venv313 410 MB = 862 MB) ----
 venv/
