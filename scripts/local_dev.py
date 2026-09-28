@@ -100,7 +100,7 @@ def main():
     env = clean_environment(data_dir)
     if args.command == "db-up":
         return subprocess.call(
-            ["docker", "compose", "-f", "docker-compose.dev.yml", "-p", "auditgava-local-dev", "up", "-d", "--wait", "postgres"],
+            ["docker", "compose", "-f", "docker-compose.local.yml", "-p", "auditgava-local-dev", "up", "-d", "--wait", "postgres"],
             cwd=ROOT, env=env,
         )
     if args.command == "api":

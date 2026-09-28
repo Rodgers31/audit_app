@@ -8,11 +8,12 @@ Branch: `codex/local-dev-isolation`, based on `37c6c37c565b3190ae0f72fb5fa895daf
 database and Supabase variables for child processes, refuses private env files
 in the isolated checkout, and runs on ports 13080/18080. The default API uses
 the existing browser acceptance fixture with a persistent SQLite file. Optional
-`docker-compose.dev.yml` provides a dedicated persistent PostgreSQL 17 database
+`docker-compose.local.yml` provides a dedicated persistent PostgreSQL 17 database
 on loopback port 55432. Both modes use the same synthetic county/budget/audit
 fixture and suppress background jobs. PostgreSQL queries carry
 `application_name=auditgava-local-dev-api`. Production diagnostics have a
 separate command with a read-only transaction and require a read-only DB role.
+The existing `docker-compose.dev.yml` stays unchanged for the develop deployment.
 
 ## Verification
 
@@ -20,10 +21,14 @@ separate command with a read-only transaction and require a read-only DB role.
   rejection text was absent); after implementation,
   `/Users/roger/Documents/projects/audit_app/venv/bin/python -m pytest backend/tests/test_local_dev_launcher.py
   backend/tests/test_local_dev_fixture_workflow.py
-  backend/tests/test_database_import_modes.py -q` passed **16 tests**.
+  backend/tests/test_database_import_modes.py -q` passed **18 tests**.
   The launcher tests execute both `check` and `api` with inherited remote
   database/API targets, including a loopback URL with a remote libpq `host`
   override. They reject before process startup.
+- Two additional fixture preflight tests first failed against a seeder that
+  accepted unrelated tables and extra rows. They now pass: existing databases
+  are inspected before any DDL, and only the exact synthetic fixture shape is
+  reopened.
 - `/Users/roger/Documents/projects/audit_app/venv/bin/python scripts/local_dev.py db-up` created and waited for the
   isolated PostgreSQL service to become healthy. Docker was initially stopped;
   it became available during the session. No production database was accessed.
@@ -53,6 +58,11 @@ separate command with a read-only transaction and require a read-only DB role.
   invalidation path after the fixture extraction.
 - `scripts/production_diagnostic.py` was exercised only against the local
   PostgreSQL container; it returned client counts from a read-only transaction.
+- After moving the local service to `docker-compose.local.yml`, `docker compose
+  -f docker-compose.local.yml config --quiet` passed and the PostgreSQL API
+  smoke passed again. `git diff --exit-code 37c6c37c565b3190ae0f72fb5fa895daf68abe24
+  -- docker-compose.dev.yml` confirmed the develop deployment Compose file
+  matches the base exactly.
 - `git diff --check` and `python -m py_compile` passed for changed Python.
 
 ## Limits and follow-up
@@ -62,6 +72,6 @@ PostgreSQL-specific features need the Compose path. Neither fixture verifies
 real publication URLs, and its synthetic links deliberately use
 `example.invalid`. The old county audit-list route emits `source.page: null`
 even though the stored synthetic finding has `page_ref="p. 2"`; this pre-existing
-route behavior is outside issue #356 and should be deduplicated against existing
-citation issues before filing. The coordinator owns combined suite/CI and PR
+route behavior is outside issue #356 and is tracked as [#359](https://github.com/Rodgers31/audit_app/issues/359).
+The coordinator owns combined suite/CI and PR
 review. No production snapshot, production read, or deployment was performed.

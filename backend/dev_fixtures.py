@@ -5,6 +5,7 @@ Shared with the existing browser acceptance API. Never imported by production.
 
 from datetime import datetime, timezone
 
+from sqlalchemy import func, inspect, select
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.compiler import compiles
 
@@ -20,14 +21,37 @@ def seed_local_fixture(db_module):
         FiscalPeriod, Severity, SourceDocument,
     )
 
+    expected_tables = set(Base.metadata.tables)
+    existing_tables = set(inspect(db_module.engine).get_table_names())
+    if existing_tables:
+        # Do not let create_all add tables to a database that was already in
+        # use. The fixture's exact row counts are small enough to check at boot.
+        if existing_tables != expected_tables:
+            raise RuntimeError("Local fixture seeder refuses a database with other tables")
+        expected_counts = {
+            "countries": 1,
+            "entities": 2,
+            "fiscal_periods": 2,
+            "source_documents": 2,
+            "budget_lines": 2,
+            "audits": 2,
+        }
+        with db_module.SessionLocal() as db:
+            country = db.query(Country).one_or_none()
+            if country is None or (country.meta or {}).get("fixture") != "auditgava-local-dev-v1":
+                raise RuntimeError("Local fixture seeder refuses a database without its fixture marker")
+            for table in Base.metadata.tables.values():
+                count = db.execute(select(func.count()).select_from(table)).scalar_one()
+                if count != expected_counts.get(table.name, 0):
+                    raise RuntimeError("Local fixture seeder refuses unexpected rows")
+            if any(not doc.title.startswith("Synthetic ") for doc in db.query(SourceDocument)):
+                raise RuntimeError("Local fixture seeder refuses non-synthetic documents")
+            if any(not audit.finding_text.startswith("Synthetic ") for audit in db.query(Audit)):
+                raise RuntimeError("Local fixture seeder refuses non-synthetic findings")
+        return
+
     Base.metadata.create_all(db_module.engine)
     with db_module.SessionLocal() as db:
-        existing = db.query(Country).first()
-        if existing:
-            if existing.iso_code != "KEN" or (existing.meta or {}).get("fixture") != "auditgava-local-dev-v1":
-                raise RuntimeError("Local fixture seeder refuses a database with other data")
-            return
-
         db.add(Country(
             id=1, iso_code="KEN", name="Kenya", currency="KES",
             timezone="Africa/Nairobi", default_locale="en_KE",

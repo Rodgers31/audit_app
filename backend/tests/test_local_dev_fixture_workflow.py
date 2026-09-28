@@ -2,12 +2,55 @@
 
 import json
 import os
+import sqlite3
 import subprocess
 import sys
 from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def _sqlite_fixture_target(path):
+    engine = create_engine(f"sqlite:///{path}")
+    return SimpleNamespace(engine=engine, SessionLocal=sessionmaker(bind=engine))
+
+
+def test_fixture_refuses_unrelated_database_before_creating_tables(tmp_path):
+    from dev_fixtures import seed_local_fixture
+
+    path = tmp_path / "other.sqlite"
+    with sqlite3.connect(path) as connection:
+        connection.execute("CREATE TABLE private_data (value TEXT)")
+        connection.execute("INSERT INTO private_data VALUES ('existing')")
+    target = _sqlite_fixture_target(path)
+    with pytest.raises(RuntimeError, match="refuses"):
+        seed_local_fixture(target)
+    with sqlite3.connect(path) as connection:
+        tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        assert tables == {"private_data"}
+        assert connection.execute("SELECT value FROM private_data").fetchone() == ("existing",)
+
+
+def test_fixture_refuses_extra_rows_in_marked_database(tmp_path):
+    from dev_fixtures import seed_local_fixture
+    from models import Entity, EntityType
+
+    target = _sqlite_fixture_target(tmp_path / "fixture.sqlite")
+    seed_local_fixture(target)
+    with target.SessionLocal() as db:
+        db.add(Entity(
+            id=99, country_id=1, type=EntityType.COUNTY,
+            canonical_name="Extra County", slug="extra",
+        ))
+        db.commit()
+    with pytest.raises(RuntimeError, match="refuses"):
+        seed_local_fixture(target)
 
 
 def _snapshot(database_path):

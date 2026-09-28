@@ -36,7 +36,7 @@ national fiscal summary returns `no_data` with `current: null`.
 
 ## Use persistent PostgreSQL when Docker is available
 
-`docker-compose.dev.yml` starts only a local PostgreSQL 17 database, bound to
+`docker-compose.local.yml` starts only a local PostgreSQL 17 database, bound to
 127.0.0.1:55432. It has a dedicated named volume and a fixed local-only database
 name. It starts no ETL worker, proxy, cache, or application container.
 
@@ -47,9 +47,10 @@ venv/bin/python scripts/local_dev.py frontend
 ```
 
 The API bootstraps the same acceptance records and refuses any database already
-containing other data. PostgreSQL query sessions use
+containing other data. It checks existing tables and row counts before any
+schema write; extra rows require a fresh dedicated fixture database. PostgreSQL query sessions use
 `application_name=auditgava-local-dev-api`. The API disables background jobs and
-blocks external requests made through requests/httpx. Use `docker compose -f docker-compose.dev.yml -p auditgava-local-dev
+blocks external requests made through requests/httpx. Use `docker compose -f docker-compose.local.yml -p auditgava-local-dev
 stop postgres` to stop only this database container; the volume persists.
 
 Do not copy a production `.env` into this checkout. The launcher supplies local
