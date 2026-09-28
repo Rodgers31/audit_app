@@ -52,7 +52,13 @@ from sqlalchemy import or_
 
 from models import Audit, Entity, EntityType, Extraction, FiscalPeriod, SourceDocument
 from services.publication_gate import publishable_audit_criterion
-from services.audit_citations import (audited_institution, page_number as _page_number, report_page_url as page_url)
+from services.audit_citations import (
+    audited_institution,
+    extraction_json_type,
+    page_number as _page_number,
+    report_page_url as page_url,
+    string_extraction_payloads,
+)
 
 #: Most severe first — the order a reader should meet them in.
 MODIFIED_OPINIONS = ("Adverse", "Disclaimer", "Qualified")
@@ -120,15 +126,44 @@ def table_row_extraction_ids(db, source_document_ids: Iterable[int]) -> set:
     paragraph sequence is a property of the whole report.
     """
     out: set = set()
-    for doc_id in set(source_document_ids):
-        rows = []
-        for ext in db.query(Extraction).filter(Extraction.source_document_id == doc_id):
-            j = _payload(ext)
-            try:
-                page = int(j.get("pdf_page") or ext.page_number or 0)
-            except (TypeError, ValueError):
-                page = 0
-            rows.append((page, ext.id, j))
+    doc_ids = set(source_document_ids)
+    if not doc_ids:
+        return out
+    payload_type = extraction_json_type(
+        Extraction.extracted_json, db.get_bind().dialect.name
+    )
+    fields = (
+        db.query(
+            Extraction.id.label("extraction_id"),
+            Extraction.source_document_id,
+            Extraction.page_number,
+            Extraction.extracted_json["pdf_page"].label("pdf_page"),
+            Extraction.extracted_json["paragraph_no"].label("paragraph_no"),
+            Extraction.extracted_json["finding_text"].label("finding_text"),
+            Extraction.extracted_json["title"].label("title"),
+            payload_type.label("extraction_payload_type"),
+        )
+        .filter(Extraction.source_document_id.in_(doc_ids))
+        .all()
+    )
+    string_payloads = string_extraction_payloads(db, fields)
+    rows_by_document = defaultdict(list)
+    for ext in fields:
+        j = string_payloads.get(ext.extraction_id)
+        if j is None:
+            j = {
+                "pdf_page": ext.pdf_page,
+                "paragraph_no": ext.paragraph_no,
+                "finding_text": ext.finding_text,
+                "title": ext.title,
+            }
+        try:
+            page = int(j.get("pdf_page") or ext.page_number or 0)
+        except (TypeError, ValueError):
+            page = 0
+        rows_by_document[ext.source_document_id].append((page, ext.extraction_id, j))
+
+    for rows in rows_by_document.values():
         rows.sort(key=lambda r: (r[0], r[1]))
         running = 0
         for _page, ext_id, j in rows:
@@ -300,7 +335,32 @@ def derive_unaccounted_cases(
     balance under discussion rather than the sum unaccounted for.
     """
     q = (
-        db.query(Audit, Entity, Extraction, SourceDocument, FiscalPeriod.label)
+        db.query(
+            Audit.id.label("audit_id"),
+            Audit.finding_text,
+            Audit.quarantine_reason,
+            Audit.page_ref,
+            Entity.id.label("entity_id"),
+            Entity.canonical_name,
+            Entity.slug,
+            Entity.type.label("entity_type"),
+            Extraction.id.label("extraction_id"),
+            Extraction.extracted_json["title"].label("extracted_title"),
+            Extraction.extracted_json["finding_text"].label("extracted_finding_text"),
+            Extraction.extracted_json["heading"].label("extracted_heading"),
+            Extraction.extracted_json["entity_name"].label("extracted_entity_name"),
+            Extraction.extracted_json["auditee"].label("extracted_auditee"),
+            Extraction.extracted_json["volume_kind"].label("extracted_volume_kind"),
+            extraction_json_type(
+                Extraction.extracted_json, db.get_bind().dialect.name
+            ).label("extraction_payload_type"),
+            SourceDocument.id.label("document_id"),
+            SourceDocument.title.label("document_title"),
+            SourceDocument.publisher.label("document_publisher"),
+            SourceDocument.url.label("document_url"),
+            SourceDocument.meta["extraction_stats"].label("extraction_stats"),
+            FiscalPeriod.label.label("period_label"),
+        )
         .join(Entity, Audit.entity_id == Entity.id)
         .join(Extraction, Audit.extraction_id == Extraction.id)
         .join(SourceDocument, Audit.source_document_id == SourceDocument.id)
@@ -317,63 +377,79 @@ def derive_unaccounted_cases(
         q = q.filter(Audit.entity_id.in_(list(entity_ids)))
 
     matched = []
-    for audit, entity, extraction, doc, period_label in q.all():
-        title = _norm(_payload(extraction).get("title"))
+    rows = q.all()
+    string_payloads = string_extraction_payloads(db, rows)
+    for row in rows:
+        payload = string_payloads.get(row.extraction_id)
+        if payload is None:
+            payload = {
+                "title": row.extracted_title,
+                "finding_text": row.extracted_finding_text,
+                "heading": row.extracted_heading,
+                "entity_name": row.extracted_entity_name,
+                "auditee": row.extracted_auditee,
+                "volume_kind": row.extracted_volume_kind,
+            }
+        title = _norm(payload.get("title"))
         if is_unaccounted_title(title):
-            matched.append((audit, entity, extraction, doc, period_label, title))
+            matched.append((row, payload, title))
 
     # Only a finding with no text under its title can be a table row, so only
     # their documents are scanned — a county page must not walk a whole
     # 6,000-finding volume to rule out a case that has a body.
     bodyless = [
         m for m in matched
-        if _norm(_payload(m[2]).get("finding_text")) == _norm(m[5])
+        if _norm(m[1].get("finding_text")) == m[2]
     ]
-    table_rows = table_row_extraction_ids(db, {m[3].id for m in bodyless})
-    table_row_matches = [m for m in matched if m[2].id in table_rows]
-    matched = [m for m in matched if m[2].id not in table_rows]
+    table_rows = table_row_extraction_ids(db, {m[0].document_id for m in bodyless})
+    table_row_matches = [m for m in matched if m[0].extraction_id in table_rows]
+    matched = [m for m in matched if m[0].extraction_id not in table_rows]
 
     ok_ids = set()
     if matched:
         ok_ids = {
             aid
             for (aid,) in db.query(Audit.id)
-            .filter(Audit.id.in_([m[0].id for m in matched]))
+            .filter(Audit.id.in_([m[0].audit_id for m in matched]))
             .filter(publishable_audit_criterion())
             .all()
         }
 
     cases: List[Dict[str, Any]] = []
     withheld: Dict[str, int] = {}
-    for audit, entity, extraction, doc, period_label, title in matched:
-        if audit.id not in ok_ids:
-            reason = audit.quarantine_reason or "withheld_by_publication_gate"
+    for row, payload, title in matched:
+        if row.audit_id not in ok_ids:
+            reason = row.quarantine_reason or "withheld_by_publication_gate"
             withheld[reason] = withheld.get(reason, 0) + 1
             continue
-        j = _payload(extraction)
-        text = _norm(audit.finding_text)
+        text = _norm(row.finding_text)
         # The finding text opens with its own title; the excerpt is what
         # follows it, in the report's words.
         excerpt = text[len(title):].strip() if title and text.startswith(title) else text
+        county_name = row.canonical_name if row.entity_type == EntityType.COUNTY else None
         cases.append(
             {
-                "finding_id": audit.id,
-                "entity": audited_institution(j, county_name=entity.canonical_name if entity.type == EntityType.COUNTY else None, document_meta=doc.meta),
-                "entity_id": entity.id,
-                "county_name": entity.canonical_name if entity.type == EntityType.COUNTY else None,
-                "county_slug": entity.slug if entity.type == EntityType.COUNTY else None,
-                "entity_type": entity.type.value if entity.type else None,
+                "finding_id": row.audit_id,
+                "entity": audited_institution(
+                    payload,
+                    county_name=county_name,
+                    document_meta={"extraction_stats": row.extraction_stats},
+                ),
+                "entity_id": row.entity_id,
+                "county_name": county_name,
+                "county_slug": row.slug if county_name else None,
+                "entity_type": row.entity_type.value if row.entity_type else None,
                 "title": title,
                 "excerpt": excerpt[:600],
-                "heading": _norm(j.get("heading")) or None,
-                "fiscal_year": period_label,
-                "page_ref": audit.page_ref,
+                "heading": _norm(payload.get("heading")) or None,
+                "fiscal_year": row.period_label,
+                "page_ref": row.page_ref,
                 "source": {
-                    "document_id": doc.id,
-                    "title": doc.title,
-                    "publisher": doc.publisher,
-                    "url": doc.url,
-                    "page_url": page_url(doc.url, audit.page_ref),
+                    "document_id": row.document_id,
+                    "title": row.document_title,
+                    "publisher": row.document_publisher,
+                    "url": row.document_url,
+                    "page_url": page_url(row.document_url, row.page_ref),
                 },
             }
         )

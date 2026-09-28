@@ -4,6 +4,7 @@ import contextlib
 import datetime
 import functools
 import importlib
+import json
 import logging
 import os
 import random
@@ -91,6 +92,9 @@ logging.basicConfig(
     handlers=_log_handlers,
 )
 logger = logging.getLogger(__name__)
+# httpx INFO records include full URLs, including query strings. Request
+# summaries below emit bounded route templates instead.
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 try:
     import boto3  # type: ignore
@@ -98,6 +102,8 @@ except Exception:
     boto3 = None  # type: ignore
 
 # Import Redis cache
+from cache.redis_cache import cached as response_cached
+
 try:
     from bootstrap import initialize_reference_data
     from cache.redis_cache import RedisCache
@@ -2212,28 +2218,44 @@ async def sync_cache_generation(request: Request, call_next):
 # errors and slow requests — the signal engineers actually scan for.
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
-    start_time = datetime.datetime.now()
+    start_time = time.perf_counter()
     method = request.method
-    url = str(request.url)
 
     try:
         response = await call_next(request)
-        process_time = (datetime.datetime.now() - start_time).total_seconds()
+        process_time = time.perf_counter() - start_time
         response.headers["X-Process-Time"] = f"{process_time:.3f}"
+        # Route templates are bounded labels; raw URLs can expose query text.
+        route = getattr(request.scope.get("route"), "path", "unmatched")
+        event = {
+            "event": "http_request",
+            "method": method,
+            "route": route,
+            "status": response.status_code,
+            "duration_ms": round(process_time * 1000, 1),
+        }
         # Escalate severity for slow or non-2xx responses so scanning logs
         # highlights real problems without drowning them in noise.
         if process_time > 0.5 or response.status_code >= 400:
-            logger.warning(
-                f"{method} {url} - {response.status_code} - {process_time:.3f}s"
-            )
+            logger.warning("%s", json.dumps(event, separators=(",", ":")))
         else:
-            logger.debug(
-                f"{method} {url} - {response.status_code} - {process_time:.3f}s"
-            )
+            logger.debug("%s", json.dumps(event, separators=(",", ":")))
         return response
-    except Exception as e:
-        process_time = (datetime.datetime.now() - start_time).total_seconds()
-        logger.error(f"ERROR {method} {url} - {str(e)} - {process_time:.3f}s")
+    except Exception as exc:
+        process_time = time.perf_counter() - start_time
+        logger.error(
+            "%s",
+            json.dumps(
+                {
+                    "event": "http_request_failed",
+                    "method": method,
+                    "route": getattr(request.scope.get("route"), "path", "unmatched"),
+                    "error_type": type(exc).__name__,
+                    "duration_ms": round(process_time * 1000, 1),
+                },
+                separators=(",", ":"),
+            ),
+        )
         raise
 
 
@@ -2349,7 +2371,12 @@ def cached(key_prefix: str, ttl: int = 3600):
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
             # Build cache key from prefix and path params
-            cache_key_parts = [key_prefix]
+            # Capture the marker before loading. A response completed after
+            # invalidation may fill only its old-generation key, so the next
+            # request cannot read stale data from an in-flight cache fill.
+            from cache.invalidation import generation_identity
+
+            cache_key_parts = [key_prefix, f"generation:{generation_identity()}"]
             for k, v in kwargs.items():
                 if k not in ["db", "request", "background_tasks"]:
                     cache_key_parts.append(f"{k}:{v}")
@@ -2359,7 +2386,7 @@ def cached(key_prefix: str, ttl: int = 3600):
             if redis_cache:
                 cached_data = redis_cache.get(cache_key)
                 if cached_data is not None:
-                    logger.debug(f"Redis cache HIT: {cache_key}")
+                    logger.debug("Redis cache HIT: %s", key_prefix)
                     return cached_data
 
                 result = await func(*args, **kwargs)
@@ -2372,7 +2399,7 @@ def cached(key_prefix: str, ttl: int = 3600):
             # A transient failure is kept for seconds; reading it back against
             # the full TTL would defeat that.
             if rec and (time.time() - rec["ts"]) < rec.get("ttl", ttl):
-                logger.debug(f"Memory cache HIT: {cache_key}")
+                logger.debug("Memory cache HIT: %s", key_prefix)
                 return rec["value"]
 
             result = await func(*args, **kwargs)
@@ -2470,7 +2497,8 @@ async def get_seeder_status() -> JSONResponse:
 
 
 @app.get("/api/v1/system/pipeline-health")
-async def get_pipeline_health(db: Session = Depends(get_db)) -> JSONResponse:
+@response_cached(ttl=30, key_prefix="pipeline_health")
+async def get_pipeline_health(db: Session = Depends(get_db)) -> dict:
     """
     Comprehensive pipeline health dashboard.
 
@@ -2706,23 +2734,21 @@ async def get_pipeline_health(db: Session = Depends(get_db)) -> JSONResponse:
         else ("degraded" if error_count == 0 else "unhealthy")
     )
 
-    return JSONResponse(
-        {
-            "status": overall,
-            "checked_at": now.isoformat(),
-            "auto_seeder": seeder_info,
-            "database": db_stats,
-            "modules": module_status,
-            "sources": sources,
-            "etl_jobs": scheduler_jobs,
-            "alerts": alerts,
-            "summary": {
-                "errors": error_count,
-                "warnings": warn_count,
-                "total_alerts": len(alerts),
-            },
-        }
-    )
+    return {
+        "status": overall,
+        "checked_at": now.isoformat(),
+        "auto_seeder": seeder_info,
+        "database": db_stats,
+        "modules": module_status,
+        "sources": sources,
+        "etl_jobs": scheduler_jobs,
+        "alerts": alerts,
+        "summary": {
+            "errors": error_count,
+            "warnings": warn_count,
+            "total_alerts": len(alerts),
+        },
+    }
 
 
 # POST /api/v1/system/seeder-refresh was removed: it started a full in-app
@@ -3237,8 +3263,19 @@ async def get_counties(fiscal_year: Optional[str] = None):
             # (The old period filter pinned audits to the projections
             # period, which has none, so every county read as "pending".)
             # Fabricated/modelled rows are gated out — display-grade only.
+            # Scan the publication metadata before picking a latest row or
+            # limiting issue summaries. The Python display-grade check can
+            # reject a newer publishable row, so a SQL LIMIT here would change
+            # both the latest opinion and the count.
             all_audits = (
-                db.query(DBAudit)
+                db.query(
+                    DBAudit.id,
+                    DBAudit.entity_id,
+                    DBAudit.created_at,
+                    DBAudit.severity,
+                    DBAudit.source_document_id,
+                    DBAudit.provenance,
+                )
                 .filter(publishable_audit_criterion())
                 .filter(DBAudit.entity_id.in_(entity_ids))
                 .order_by(DBAudit.entity_id, DBAudit.created_at.desc())
@@ -3249,6 +3286,21 @@ async def get_counties(fiscal_year: Optional[str] = None):
                 if not _audit_is_display_grade(a):
                     continue
                 audits_by_entity.setdefault(a.entity_id, []).append(a)
+
+            # Only the first ten display-grade findings per county are shown,
+            # and only their first 200 characters leave the database. Fetch
+            # these after the Python gate, in one batch for all counties.
+            issue_ids = [a.id for rows in audits_by_entity.values() for a in rows[:10]]
+            issue_text_by_id = {}
+            if issue_ids:
+                issue_text_by_id = dict(
+                    db.query(
+                        DBAudit.id,
+                        _fn.substr(DBAudit.finding_text, 1, 200),
+                    )
+                    .filter(DBAudit.id.in_(issue_ids))
+                    .all()
+                )
 
             # 5. GDP data: latest per entity
             from models import GDPData as _GDPData
@@ -3371,7 +3423,7 @@ async def get_counties(fiscal_year: Optional[str] = None):
                             "id": str(a.id),
                             "type": "financial",
                             "severity": a.severity.value if a.severity else "medium",
-                            "description": (a.finding_text or "")[:200],
+                            "description": issue_text_by_id.get(a.id) or "",
                             "status": "open",
                         }
                     )
@@ -5217,8 +5269,23 @@ async def _federal_audits_payload():
             from sqlalchemy import func
 
             # Get all federal findings (MINISTRY + NATIONAL entities)
+            # The unparameterized API and aggregation need every published
+            # finding. Project their public inputs instead of hydrating every
+            # Audit and repeating the Entity's metadata on each joined row.
             federal_audits = (
-                db.query(DBAudit, DBEntity)
+                db.query(
+                    DBAudit.id,
+                    DBAudit.finding_text,
+                    DBAudit.severity,
+                    DBAudit.recommended_action,
+                    DBAudit.amount,
+                    DBAudit.provenance,
+                    DBAudit.page_ref,
+                    DBAudit.created_at,
+                    DBAudit.source_document_id,
+                    DBEntity.canonical_name.label("entity_name"),
+                    DBEntity.type.label("entity_type"),
+                )
                 .filter(publishable_audit_criterion())
                 .join(DBEntity, DBAudit.entity_id == DBEntity.id)
                 .filter(DBEntity.type.in_(FEDERAL_AUDIT_ENTITY_TYPES))
@@ -5237,7 +5304,7 @@ async def _federal_audits_payload():
             findings_with_amount = 0
             severity_counts = {}
 
-            for audit, entity in federal_audits:
+            for audit in federal_audits:
                 # Parse amount from provenance or finding_text.
                 #
                 # amount_val starts as None, not 0.0. Most findings state no
@@ -5303,8 +5370,8 @@ async def _federal_audits_payload():
                 findings.append(
                     {
                         "id": audit.id,
-                        "entity_name": entity.canonical_name,
-                        "entity_type": entity.type.value if entity.type else "MINISTRY",
+                        "entity_name": audit.entity_name,
+                        "entity_type": audit.entity_type.value if audit.entity_type else "MINISTRY",
                         "finding": audit.finding_text,
                         "severity": sev_key,
                         "recommended_action": audit.recommended_action,
@@ -5392,7 +5459,12 @@ async def _federal_audits_payload():
             latest_source = None
             if DBSourceDocument is not None:
                 latest_source = (
-                    db.query(DBSourceDocument)
+                    db.query(
+                        DBSourceDocument.id,
+                        DBSourceDocument.title,
+                        DBSourceDocument.publisher,
+                        DBSourceDocument.fetch_date,
+                    )
                     .join(DBAudit, DBAudit.source_document_id == DBSourceDocument.id)
                     .join(DBEntity, DBAudit.entity_id == DBEntity.id)
                     .filter(publishable_audit_criterion())
@@ -5546,7 +5618,7 @@ async def _federal_audits_payload():
                     ),
                 ),
                 "last_updated": vintage_iso(
-                    db, [a.source_document_id for a, _ in federal_audits]
+                    db, [a.source_document_id for a in federal_audits]
                 ),
             }
     except HTTPException:
@@ -6412,16 +6484,22 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
     }
     peer_entity_ids = [e.id for e in all_peer_entities if e.id != entity.id]
 
-    # Pull all audits for every peer in a single IN(...) query, then
-    # group by entity_id in Python. For 47 counties × ~20 audits this
-    # is <1000 rows.
+    # Pull only the peer fields used by the two comparisons in one query.
+    # Full finding text, provenance, and responses are not needed here.
     from collections import defaultdict
-    from sqlalchemy import func as _sqlfunc3
 
     peer_audits_by_entity: Dict[int, List[Any]] = defaultdict(list)
     if peer_entity_ids:
         for pa in (
-            db.query(DBAudit).filter(publishable_audit_criterion()).filter(DBAudit.entity_id.in_(peer_entity_ids)).all()
+            db.query(
+                DBAudit.entity_id,
+                DBAudit.amount,
+                DBAudit.audit_year,
+                DBAudit.audit_opinion,
+            )
+            .filter(publishable_audit_criterion())
+            .filter(DBAudit.entity_id.in_(peer_entity_ids))
+            .all()
         ):
             peer_audits_by_entity[pa.entity_id].append(pa)
 

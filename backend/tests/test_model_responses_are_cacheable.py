@@ -345,6 +345,10 @@ def representative_rows(db_session, seed_entity, seed_fiscal_period, seed_source
     country_id = seed_entity.country_id
     period_id = seed_fiscal_period.id
     doc_id = seed_source_doc.id
+    # Freshness needs an accepted fact AND the source's publication date.
+    # Without this the sweep only sees its unknown-data branch.
+    seed_source_doc.meta = {"publication_date": "2024-08-01"}
+    db_session.flush()
     fact = dict(source_document_id=doc_id, publishable=True, page_ref="p. 12")
 
     national = Entity(

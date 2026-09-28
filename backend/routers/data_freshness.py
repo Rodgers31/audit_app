@@ -31,6 +31,7 @@ from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from cache.redis_cache import cached
 from services.publication_gate import publishable_audit_criterion
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -312,15 +313,13 @@ def _source_publication_date(
     ids = _accepted_document_ids(db, domain)
     if not ids:
         return None
-    docs = (
-        db.query(SourceDocument)
+    publication_dates = (
+        db.query(SourceDocument.meta["publication_date"])
         .filter(_publisher_criterion(publisher_pattern), SourceDocument.id.in_(ids))
         .all()
     )
     dates = []
-    for doc in docs:
-        meta = doc.meta if isinstance(doc.meta, dict) else {}
-        raw = meta.get("publication_date")
+    for (raw,) in publication_dates:
         # Require a complete ISO publication date. Generic provenance fallback
         # parsing accepts partial/garbage values that cannot certify freshness.
         if not isinstance(raw, str) or not re.fullmatch(
@@ -345,7 +344,8 @@ def _source_publication_date(
 
 
 @router.get("/freshness", response_model=FreshnessResponse)
-async def get_data_freshness(db: Session = Depends(get_db)):
+@cached(ttl=120, key_prefix="data_freshness")
+def get_data_freshness(db: Session = Depends(get_db)):
     """Return freshness information for each data source."""
 
     results: List[SourceFreshness] = []
