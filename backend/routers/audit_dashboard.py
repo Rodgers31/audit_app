@@ -725,7 +725,8 @@ async def get_recurring_findings(db: Session = Depends(get_db)):
 
 
 @router.get("/findings", response_model=FindingsListResponse)
-async def get_audit_findings(
+@cached(ttl=300, key_prefix="audit_findings")
+def get_audit_findings(
     county_id: Optional[int] = Query(None, description="Filter by county entity ID"),
     year: Optional[int] = Query(None, description="Filter by audit year"),
     query_type: Optional[str] = Query(None, description="Filter by query type"),

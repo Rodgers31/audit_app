@@ -4,6 +4,7 @@ import contextlib
 import datetime
 import functools
 import importlib
+import json
 import logging
 import os
 import random
@@ -91,6 +92,9 @@ logging.basicConfig(
     handlers=_log_handlers,
 )
 logger = logging.getLogger(__name__)
+# httpx INFO records include full URLs, including query strings. Request
+# summaries below emit bounded route templates instead.
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 try:
     import boto3  # type: ignore
@@ -98,6 +102,8 @@ except Exception:
     boto3 = None  # type: ignore
 
 # Import Redis cache
+from cache.redis_cache import cached as response_cached
+
 try:
     from bootstrap import initialize_reference_data
     from cache.redis_cache import RedisCache
@@ -2212,28 +2218,44 @@ async def sync_cache_generation(request: Request, call_next):
 # errors and slow requests — the signal engineers actually scan for.
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
-    start_time = datetime.datetime.now()
+    start_time = time.perf_counter()
     method = request.method
-    url = str(request.url)
 
     try:
         response = await call_next(request)
-        process_time = (datetime.datetime.now() - start_time).total_seconds()
+        process_time = time.perf_counter() - start_time
         response.headers["X-Process-Time"] = f"{process_time:.3f}"
+        # Route templates are bounded labels; raw URLs can expose query text.
+        route = getattr(request.scope.get("route"), "path", "unmatched")
+        event = {
+            "event": "http_request",
+            "method": method,
+            "route": route,
+            "status": response.status_code,
+            "duration_ms": round(process_time * 1000, 1),
+        }
         # Escalate severity for slow or non-2xx responses so scanning logs
         # highlights real problems without drowning them in noise.
         if process_time > 0.5 or response.status_code >= 400:
-            logger.warning(
-                f"{method} {url} - {response.status_code} - {process_time:.3f}s"
-            )
+            logger.warning("%s", json.dumps(event, separators=(",", ":")))
         else:
-            logger.debug(
-                f"{method} {url} - {response.status_code} - {process_time:.3f}s"
-            )
+            logger.debug("%s", json.dumps(event, separators=(",", ":")))
         return response
-    except Exception as e:
-        process_time = (datetime.datetime.now() - start_time).total_seconds()
-        logger.error(f"ERROR {method} {url} - {str(e)} - {process_time:.3f}s")
+    except Exception as exc:
+        process_time = time.perf_counter() - start_time
+        logger.error(
+            "%s",
+            json.dumps(
+                {
+                    "event": "http_request_failed",
+                    "method": method,
+                    "route": getattr(request.scope.get("route"), "path", "unmatched"),
+                    "error_type": type(exc).__name__,
+                    "duration_ms": round(process_time * 1000, 1),
+                },
+                separators=(",", ":"),
+            ),
+        )
         raise
 
 
@@ -2359,7 +2381,7 @@ def cached(key_prefix: str, ttl: int = 3600):
             if redis_cache:
                 cached_data = redis_cache.get(cache_key)
                 if cached_data is not None:
-                    logger.debug(f"Redis cache HIT: {cache_key}")
+                    logger.debug("Redis cache HIT: %s", key_prefix)
                     return cached_data
 
                 result = await func(*args, **kwargs)
@@ -2372,7 +2394,7 @@ def cached(key_prefix: str, ttl: int = 3600):
             # A transient failure is kept for seconds; reading it back against
             # the full TTL would defeat that.
             if rec and (time.time() - rec["ts"]) < rec.get("ttl", ttl):
-                logger.debug(f"Memory cache HIT: {cache_key}")
+                logger.debug("Memory cache HIT: %s", key_prefix)
                 return rec["value"]
 
             result = await func(*args, **kwargs)
@@ -2470,7 +2492,8 @@ async def get_seeder_status() -> JSONResponse:
 
 
 @app.get("/api/v1/system/pipeline-health")
-async def get_pipeline_health(db: Session = Depends(get_db)) -> JSONResponse:
+@response_cached(ttl=30, key_prefix="pipeline_health")
+async def get_pipeline_health(db: Session = Depends(get_db)) -> dict:
     """
     Comprehensive pipeline health dashboard.
 
@@ -2706,23 +2729,21 @@ async def get_pipeline_health(db: Session = Depends(get_db)) -> JSONResponse:
         else ("degraded" if error_count == 0 else "unhealthy")
     )
 
-    return JSONResponse(
-        {
-            "status": overall,
-            "checked_at": now.isoformat(),
-            "auto_seeder": seeder_info,
-            "database": db_stats,
-            "modules": module_status,
-            "sources": sources,
-            "etl_jobs": scheduler_jobs,
-            "alerts": alerts,
-            "summary": {
-                "errors": error_count,
-                "warnings": warn_count,
-                "total_alerts": len(alerts),
-            },
-        }
-    )
+    return {
+        "status": overall,
+        "checked_at": now.isoformat(),
+        "auto_seeder": seeder_info,
+        "database": db_stats,
+        "modules": module_status,
+        "sources": sources,
+        "etl_jobs": scheduler_jobs,
+        "alerts": alerts,
+        "summary": {
+            "errors": error_count,
+            "warnings": warn_count,
+            "total_alerts": len(alerts),
+        },
+    }
 
 
 # POST /api/v1/system/seeder-refresh was removed: it started a full in-app

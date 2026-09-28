@@ -118,7 +118,7 @@ class TestHealthDetailedIsReachable:
         assert after["unserialisable_values"] == 1, (
             f"the endpoint does not surface the failure: {after!r}"
         )
-        assert "health:probe" in after.get("last_unserialisable", ""), after
+        assert "key_sha256=" in after.get("last_unserialisable", ""), after
 
 
 class TestTheProbesAreNotShadowed:

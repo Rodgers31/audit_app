@@ -85,9 +85,10 @@ def clear_local_caches() -> Dict[str, int]:
     memory = 0
     for rc in _redis_instances():
         mem = getattr(rc, "_memory_cache", None)
-        if mem:
-            memory += len(mem)
-            mem.clear()
+        if mem is not None:
+            with rc._memory_lock:
+                memory += len(mem)
+                mem.clear()
     counts["redis_cache_memory"] = memory
     for name, clear in _local_caches.items():
         counts[name] = int(clear() or 0)
@@ -139,6 +140,20 @@ def _stat_token() -> Optional[Tuple[int, int, int]]:
     except FileNotFoundError:
         return None
     return (st.st_ino, st.st_mtime_ns, st.st_size)
+
+
+def generation_identity() -> Optional[Tuple[int, int, int]]:
+    """Stable cache-key generation for an in-flight response.
+
+    A loader keeps the identity it started with; after a marker bump its
+    late write is unreachable by new requests, even in another worker.
+    """
+    try:
+        return _stat_token()
+    except OSError:
+        # The request middleware reports the unreadable marker. Keep serving
+        # via the existing fallback policy rather than turning every read 500.
+        return None
 
 
 def bump_generation() -> str:

@@ -251,6 +251,56 @@ class TestAuditRecurring:
 
 
 class TestAuditFindings:
+    def test_warm_unfiltered_page_does_not_mask_any_filter_or_page(
+        self, client, seed_audit_dashboard
+    ):
+        base = "/api/v1/audit/findings"
+        all_rows = client.get(base).json()
+        assert all_rows["total"] == 4
+        expected = {
+            "county_id=101": 1,
+            "year=2022": 1,
+            "query_type=Governance": 1,
+            "severity=INFO": 1,
+            "audit_opinion=Qualified": 2,
+            "status=Resolved": 1,
+        }
+        for query, total in expected.items():
+            response = client.get(f"{base}?{query}")
+            assert response.status_code == 200, query
+            assert response.json()["total"] == total, query
+        first_page = client.get(f"{base}?page=1&limit=1").json()
+        second_page = client.get(f"{base}?page=2&limit=1").json()
+        assert first_page["total"] == second_page["total"] == 4
+        assert first_page["items"][0]["id"] != second_page["items"][0]["id"]
+
+    @pytest.mark.parametrize(
+        "metadata",
+        [None, "malformed", {"extraction_stats": {"volume_kind": "county_assembly"}}],
+    )
+    def test_cached_page_preserves_body_until_invalidation(
+        self, client, db_session, seed_audit_dashboard, seed_source_doc, monkeypatch, metadata
+    ):
+        from cache.invalidation import clear_local_caches
+        from cache.redis_cache import cache
+
+        monkeypatch.setattr(cache, "client", None)
+        cache._memory_cache.clear()
+        seed_source_doc.meta = metadata
+        db_session.commit()
+        url = "/api/v1/audit/findings?year=2023&page=1&limit=2"
+        first = client.get(url)
+        assert first.status_code == 200
+        assert first.json()["total"] == 3
+        assert all(item["source_document_url"] for item in first.json()["items"])
+        db_session.query(Audit).delete()
+        db_session.commit()
+        assert client.get(url).content == first.content
+        clear_local_caches()
+        refreshed = client.get(url)
+        assert refreshed.status_code == 200
+        assert refreshed.json()["total"] == 0
+
     def test_returns_200_empty(self, client):
         resp = client.get("/api/v1/audit/findings")
         assert resp.status_code == 200

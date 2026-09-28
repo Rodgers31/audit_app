@@ -1,14 +1,21 @@
 """Redis caching utilities for API responses."""
 
+import asyncio
+import hashlib
+import inspect
 import json
 import logging
 import os
+import re
+import threading
 import time
 import weakref
+from collections import Counter
 from functools import wraps
 from typing import Any, Callable, Optional
 
 import redis
+from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
@@ -117,6 +124,10 @@ if CACHE_NAMESPACE_WARNING:
 class RedisCache:
     """Redis cache manager with fallback to in-memory cache."""
 
+    # Also cover test instances constructed with __new__.
+    _memory_lock = threading.RLock()
+    _metrics = Counter()
+
     #: Every instance ever built, so test teardown can clear all of them.
     #: There are three module-level singletons (cache.redis_cache.cache,
     #: main.redis_cache, routers.money_flow._redis_cache) and
@@ -156,6 +167,10 @@ class RedisCache:
         self.client: Optional[redis.Redis] = None
         self._memory_cache = {}  # {key: (value, expiry_timestamp)}
         self._memory_cache_max_size = 1024
+        self._memory_cache_max_bytes = 16 * 1024 * 1024
+        self._memory_cache_max_entry_bytes = 2 * 1024 * 1024
+        self._memory_lock = threading.RLock()
+        self._metrics = Counter()
         self._unserialisable_values = 0
         self._last_unserialisable = None
         self.namespace = CACHE_NAMESPACE
@@ -199,19 +214,29 @@ class RedisCache:
             if self.client:
                 value = self.client.get(self._scoped(key))
                 if value:
+                    self.record("hit")
                     return json.loads(value)
             else:
                 # Fallback to memory cache
-                entry = self._memory_cache.get(self._scoped(key))
-                if entry is not None:
-                    value, expiry = entry
-                    if time.time() < expiry:
-                        return value
-                    else:
-                        del self._memory_cache[self._scoped(key)]  # Expired
+                with self._memory_lock:
+                    entry = self._memory_cache.get(self._scoped(key))
+                    if entry is not None:
+                        value, expiry = entry[:2]
+                        if time.time() < expiry:
+                            self.record("hit")
+                            return value
+                        del self._memory_cache[self._scoped(key)]
+                        self.record("expired")
         except Exception as e:
-            logger.error(f"Cache get error: {e}")
+            logger.error("Cache get error (%s)", type(e).__name__)
+        self.record("miss")
         return None
+
+    def record(self, event: str) -> None:
+        """Fixed-name counters; keys and public query values are never labels."""
+        if event in {"hit", "miss", "expired", "evicted", "oversized", "lock_contention"}:
+            with self._memory_lock:
+                self._metrics[event] += 1
 
     def set(self, key: str, value: Any, ttl: int = 3600):
         """Set value in cache with TTL.
@@ -233,15 +258,18 @@ class RedisCache:
             payload = json.dumps(value, default=_json_default)
         except (TypeError, ValueError) as exc:
             self._unserialisable_values += 1
-            self._last_unserialisable = f"{key}: {type(exc).__name__}: {exc}"
+            key_hash = hashlib.sha256(key.encode("utf-8")).hexdigest()[:16]
+            match = re.fullmatch(
+                r"Object of type ([A-Za-z_][A-Za-z0-9_]*) is not JSON serializable",
+                str(exc),
+            )
+            failure_type = match.group(1) if match else type(exc).__name__
+            self._last_unserialisable = f"key_sha256={key_hash}: {failure_type}"
             logger.error(
-                "Cache set SKIPPED — the value for %r can never be serialised "
-                "(%s: %s). This is not a Redis outage and will not heal on its "
-                "own: this key re-runs its query on every request until the "
-                "value is made JSON-serialisable. Total such values: %d",
-                key,
-                type(exc).__name__,
-                exc,
+                "Cache set SKIPPED — key_sha256=%s cannot be serialised "
+                "(%s). Total such values: %d",
+                key_hash,
+                failure_type,
                 self._unserialisable_values,
             )
             return
@@ -251,24 +279,35 @@ class RedisCache:
                 self.client.setex(self._scoped(key), ttl, payload)
             else:
                 # Fallback to memory cache with TTL
-                if len(self._memory_cache) >= self._memory_cache_max_size:
-                    # Evict expired entries first
+                size = len(payload.encode("utf-8"))
+                with self._memory_lock:
+                    entry_limit = getattr(self, "_memory_cache_max_entry_bytes", 2 * 1024 * 1024)
+                    total_limit = getattr(self, "_memory_cache_max_bytes", 16 * 1024 * 1024)
+                    if size > entry_limit or size > total_limit:
+                        self.record("oversized")
+                        return
+                    scoped = self._scoped(key)
+                    self._memory_cache.pop(scoped, None)
                     now = time.time()
-                    expired_keys = [k for k, (_, exp) in self._memory_cache.items() if now >= exp]
-                    for k in expired_keys:
-                        del self._memory_cache[k]
-                    # If still full, evict oldest entry
-                    if len(self._memory_cache) >= self._memory_cache_max_size:
-                        oldest_key = next(iter(self._memory_cache))
-                        del self._memory_cache[oldest_key]
-                # Store what Redis WOULD have stored, not the live object.
-                # Development and CI have no Redis, so this branch is the only
-                # one they ever take; keeping it un-normalised is precisely why
-                # #184 was invisible everywhere except production. A cache hit
-                # now yields the same shape here as it does on Render.
-                self._memory_cache[self._scoped(key)] = (json.loads(payload), time.time() + ttl)
+                    for stale, entry in list(self._memory_cache.items()):
+                        if now >= entry[1]:
+                            del self._memory_cache[stale]
+                    used = sum(
+                        entry[2] if len(entry) > 2 else 0
+                        for entry in self._memory_cache.values()
+                    )
+                    while self._memory_cache and (
+                        len(self._memory_cache) >= self._memory_cache_max_size
+                        or used + size > total_limit
+                    ):
+                        oldest, removed = next(iter(self._memory_cache.items()))
+                        del self._memory_cache[oldest]
+                        used -= removed[2] if len(removed) > 2 else 0
+                        self.record("evicted")
+                    # Store the JSON shape Redis would return, not the live model.
+                    self._memory_cache[scoped] = (json.loads(payload), now + ttl, size)
         except Exception as e:
-            logger.error(f"Cache set error (transport) for {key!r}: {e}")
+            logger.error("Cache set error (transport): %s", type(e).__name__)
 
     def delete(self, key: str):
         """Delete key from cache."""
@@ -276,9 +315,10 @@ class RedisCache:
             if self.client:
                 self.client.delete(self._scoped(key))
             else:
-                self._memory_cache.pop(self._scoped(key), None)
+                with self._memory_lock:
+                    self._memory_cache.pop(self._scoped(key), None)
         except Exception as e:
-            logger.error(f"Cache delete error: {e}")
+            logger.error("Cache delete error (%s)", type(e).__name__)
 
     def clear_pattern(self, pattern: str):
         """Clear all keys matching pattern."""
@@ -292,13 +332,14 @@ class RedisCache:
                     self.client.delete(*keys)
             else:
                 # Memory cache - clear matching keys
-                keys_to_delete = [
-                    k for k in self._memory_cache if scoped_pattern.replace("*", "") in k
-                ]
-                for key in keys_to_delete:
-                    self._memory_cache.pop(key, None)
+                with self._memory_lock:
+                    keys_to_delete = [
+                        k for k in self._memory_cache if scoped_pattern.replace("*", "") in k
+                    ]
+                    for key in keys_to_delete:
+                        self._memory_cache.pop(key, None)
         except Exception as e:
-            logger.error(f"Cache clear error: {e}")
+            logger.error("Cache clear error (%s)", type(e).__name__)
 
     def health_check(self) -> dict:
         """Check Redis health status.
@@ -309,11 +350,21 @@ class RedisCache:
         for months, and a health report that only describes the connection
         cannot distinguish it from a cache that is working.
         """
+        with self._memory_lock:
+            memory_entries = len(self._memory_cache)
+            memory_payload_bytes = sum(
+                entry[2] if len(entry) > 2 else 0
+                for entry in self._memory_cache.values()
+            )
+            counters = dict(self._metrics)
         diagnostics = {
             "unserialisable_values": self._unserialisable_values,
             "cache_namespace": self.namespace,
             "cache_namespace_source": self.namespace_source,
             "redis_configured": self.redis_url_configured,
+            "response_cache_counters": counters,
+            "memory_entries": memory_entries,
+            "memory_payload_bytes": memory_payload_bytes,
         }
         if self._last_unserialisable:
             diagnostics["last_unserialisable"] = self._last_unserialisable
@@ -332,7 +383,7 @@ class RedisCache:
                     **diagnostics,
                 }
         except Exception as e:
-            logger.error(f"Redis health check failed: {e}")
+            logger.error("Redis health check failed (%s)", type(e).__name__)
 
         return {
             "status": "unavailable" if self.client else "using_memory_cache",
@@ -399,6 +450,8 @@ def is_transient_failure(result: object) -> bool:
     this reads it rather than inventing a new convention for handlers to
     remember to set.
     """
+    if isinstance(result, BaseModel):
+        result = result.model_dump(mode="json")
     if not isinstance(result, dict):
         return False
     for field, bad_values in _TRANSIENT_MARKERS.items():
@@ -417,54 +470,84 @@ def cached(ttl: int = 3600, key_prefix: str = ""):
     """
 
     def decorator(func: Callable) -> Callable:
-        @wraps(func)
-        async def wrapper(*args, **kwargs):
-            # Generate cache key from function name and arguments,
-            # excluding non-serialisable DI objects (db sessions, requests)
-            cache_key_parts = [key_prefix or func.__name__]
+        signature = inspect.signature(func)
+        sync_locks = [threading.Lock() for _ in range(64)]
+        loop_locks: "weakref.WeakKeyDictionary[Any, list[asyncio.Lock]]" = (
+            weakref.WeakKeyDictionary()
+        )
+        loop_locks_guard = threading.Lock()
+        prefix = key_prefix or func.__name__
 
-            for arg in args:
-                if _is_cacheable_param(arg):
-                    cache_key_parts.append(str(arg))
+        def key_for(args, kwargs):
+            bound = signature.bind_partial(*args, **kwargs)
+            bound.apply_defaults()
+            parameters = {
+                name: jsonable_encoder(value)
+                for name, value in bound.arguments.items()
+                if name not in {"db", "request", "background_tasks"}
+                and _is_cacheable_param(value)
+            }
+            # The generation is part of the logical key. An in-flight read
+            # completed after invalidation can only write its OLD generation.
+            from cache.invalidation import generation_identity
 
-            for k, v in sorted(kwargs.items()):
-                if _is_cacheable_param(v):
-                    cache_key_parts.append(f"{k}={v}")
+            payload = json.dumps(
+                {"arguments": parameters, "generation": generation_identity()},
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+            return f"{prefix}:{digest}", int(digest[:8], 16) % 64
 
-            cache_key = ":".join(cache_key_parts)
+        def store(key, result):
+            if result is None:
+                return
+            effective_ttl = (
+                min(ttl, TRANSIENT_FAILURE_TTL)
+                if is_transient_failure(result)
+                else ttl
+            )
+            cache.set(key, result, effective_ttl)
 
-            # Try to get from cache
-            cached_value = cache.get(cache_key)
-            if cached_value is not None:
-                logger.debug(f"Cache hit: {cache_key}")
-                return cached_value
-
-            # Call function and cache result
-            logger.debug(f"Cache miss: {cache_key}")
-            result = await func(*args, **kwargs)
-
-            if result is not None:
-                # A body describing an unreadable source gets a short TTL, so
-                # a recovered source is visible in seconds rather than hours.
-                # Observed in production 2026-09-03: /debt/national served
-                # `database_unavailable` from cache long after the database
-                # recovered, because the failure had been stored with the
-                # endpoint's full 12-hour TTL (issue #141).
-                effective_ttl = (
-                    min(ttl, TRANSIENT_FAILURE_TTL)
-                    if is_transient_failure(result)
-                    else ttl
-                )
-                if effective_ttl != ttl:
-                    logger.info(
-                        "Caching transient failure briefly (%ss instead of %ss): %s",
-                        effective_ttl,
-                        ttl,
-                        cache_key,
-                    )
-                cache.set(cache_key, result, effective_ttl)
-
-            return result
+        if inspect.iscoroutinefunction(func):
+            @wraps(func)
+            async def wrapper(*args, **kwargs):
+                key, stripe = key_for(args, kwargs)
+                hit = await asyncio.to_thread(cache.get, key)
+                if hit is not None:
+                    return hit
+                loop = asyncio.get_running_loop()
+                with loop_locks_guard:
+                    locks = loop_locks.get(loop)
+                    if locks is None:
+                        locks = [asyncio.Lock() for _ in range(64)]
+                        loop_locks[loop] = locks
+                if locks[stripe].locked() and hasattr(cache, "record"):
+                    await asyncio.to_thread(cache.record, "lock_contention")
+                async with locks[stripe]:
+                    hit = await asyncio.to_thread(cache.get, key)
+                    if hit is not None:
+                        return hit
+                    result = await func(*args, **kwargs)
+                    await asyncio.to_thread(store, key, result)
+                    return result
+        else:
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                key, stripe = key_for(args, kwargs)
+                hit = cache.get(key)
+                if hit is not None:
+                    return hit
+                lock = sync_locks[stripe]
+                if lock.locked() and hasattr(cache, "record"):
+                    cache.record("lock_contention")
+                with lock:
+                    hit = cache.get(key)
+                    if hit is not None:
+                        return hit
+                    result = func(*args, **kwargs)
+                    store(key, result)
+                    return result
 
         return wrapper
 
@@ -474,4 +557,4 @@ def cached(ttl: int = 3600, key_prefix: str = ""):
 def invalidate_cache(pattern: str):
     """Invalidate cache entries matching pattern."""
     cache.clear_pattern(pattern)
-    logger.info(f"Invalidated cache pattern: {pattern}")
+    logger.info("Invalidated cache pattern")

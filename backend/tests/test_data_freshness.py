@@ -58,3 +58,31 @@ def test_freshness_endpoint_exposes_last_checked(client):
         assert "last_updated" in s
         assert "last_checked" in s
         assert s["status"] in {"fresh", "stale", "outdated", "unknown"}
+
+
+def test_freshness_cache_preserves_unknown_and_recovers_after_invalidation(client, monkeypatch):
+    from cache.invalidation import clear_local_caches
+    from cache.redis_cache import cache
+    from routers import data_freshness
+
+    monkeypatch.setattr(cache, "client", None)
+    cache._memory_cache.clear()
+    state = {"published": None}
+    calls = []
+
+    def publication_date(db, publisher, domain):
+        calls.append(publisher)
+        return state["published"]
+
+    monkeypatch.setattr(data_freshness, "_source_publication_date", publication_date)
+    monkeypatch.setattr(data_freshness, "_covers_through", lambda db, cfg: None)
+    first = client.get("/api/v1/data/freshness")
+    assert first.status_code == 200
+    assert all(item["status"] == "unknown" for item in first.json()["sources"])
+    state["published"] = TODAY
+    assert client.get("/api/v1/data/freshness").content == first.content
+    assert len(calls) == len(data_freshness.SOURCE_CONFIG)
+    clear_local_caches()
+    refreshed = client.get("/api/v1/data/freshness")
+    assert refreshed.status_code == 200
+    assert all(item["status"] == "fresh" for item in refreshed.json()["sources"])
