@@ -93,10 +93,11 @@ export default function CountySpendingList({
       className={`${styles.presentation} ${styles.countySection}`}
       aria-labelledby='county-spending-heading'>
       <header className={styles.countyHeading}>
-        <h2 id='county-spending-heading'>County spending</h2>
+        <div className={styles.reportTitle}>
+          <h2 id='county-spending-heading'>County spending</h2>
+          <p className={styles.reportPeriod}>FY {fiscalYear}</p>
+        </div>
         <p className={styles.coverage}>
-          <strong>FY {fiscalYear}</strong>
-          {' · '}
           {loading
             ? 'Loading county data…'
             : `${countiesWithData} of 47 counties have published allocations`}
