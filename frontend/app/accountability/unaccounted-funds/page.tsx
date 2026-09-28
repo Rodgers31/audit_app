@@ -40,8 +40,8 @@ export default function MissingFundsPage() {
 
   const { data, isLoading, error } = useQuery<UnaccountedResponse>({
     queryKey: ['accountability', 'missing-funds'],
-    queryFn: async () =>
-      (await api.get<UnaccountedResponse>('/accountability/missing-funds')).data,
+    queryFn: async ({ signal }) =>
+      (await api.get<UnaccountedResponse>('/accountability/missing-funds', { signal })).data,
     staleTime: 10 * 60 * 1000,
   });
 

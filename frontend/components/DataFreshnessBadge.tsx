@@ -94,12 +94,11 @@ const STATUS_ICON_COLOR: Record<BadgeState, string> = {
 export function useDataFreshness() {
   return useQuery<FreshnessResponse>({
     queryKey: ['data-freshness'],
-    queryFn: async () => {
-      const { data } = await apiClient.get<FreshnessResponse>('/data/freshness');
+    queryFn: async ({ signal }) => {
+      const { data } = await apiClient.get<FreshnessResponse>('/data/freshness', { signal });
       return data;
     },
     staleTime: 30 * 60 * 1000, // 30 min
-    retry: 1, // Don't hammer a failing endpoint
     meta: { silent: true }, // Suppress console noise for non-critical data
   });
 }

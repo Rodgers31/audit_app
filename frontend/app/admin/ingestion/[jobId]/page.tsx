@@ -55,7 +55,7 @@ export default function IngestionJobDetailPage({
   const { jobId } = use(params);
   const { data, isLoading, error, refetch, isFetching } = useQuery<IngestionJob>({
     queryKey: ['admin', 'ingestion-job', jobId],
-    queryFn: async () => (await api.get(`/admin/ingestion-jobs/${jobId}`)).data,
+    queryFn: async ({ signal }) => (await api.get(`/admin/ingestion-jobs/${jobId}`, { signal })).data,
     staleTime: 15_000,
   });
 

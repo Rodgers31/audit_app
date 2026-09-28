@@ -39,7 +39,7 @@ export const useBudgetAllocation = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.allocation(countyId, fiscalYear),
-    queryFn: () => getBudgetAllocation(countyId, fiscalYear),
+    queryFn: ({ signal }) => getBudgetAllocation(countyId, fiscalYear, signal),
     enabled: !!countyId,
     staleTime: 30 * 60 * 1000, // 30 minutes — budget data rarely changes
     ...options,
@@ -54,7 +54,7 @@ export const useBudgetComparison = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.comparison(countyIds, fiscalYear),
-    queryFn: () => getBudgetComparison(countyIds, fiscalYear),
+    queryFn: ({ signal }) => getBudgetComparison(countyIds, fiscalYear, signal),
     enabled: countyIds.length > 0,
     staleTime: 30 * 60 * 1000, // 30 minutes
     ...options,
@@ -68,7 +68,7 @@ export const useNationalBudgetSummary = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.nationalSummary(fiscalYear),
-    queryFn: () => getNationalBudgetSummary(fiscalYear),
+    queryFn: ({ signal }) => getNationalBudgetSummary(fiscalYear, signal),
     staleTime: 60 * 60 * 1000, // 1 hour — national budget changes infrequently
     ...options,
   });
@@ -82,7 +82,7 @@ export const useBudgetTrends = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.trends(countyId, years),
-    queryFn: () => getBudgetTrends(countyId, years),
+    queryFn: ({ signal }) => getBudgetTrends(countyId, years, signal),
     enabled: !!countyId,
     staleTime: 15 * 60 * 1000, // 15 minutes
     ...options,
@@ -97,7 +97,7 @@ export const useSectorBudgetAllocation = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.sectorAllocation(sector, fiscalYear),
-    queryFn: () => getSectorBudgetAllocation(sector, fiscalYear),
+    queryFn: ({ signal }) => getSectorBudgetAllocation(sector, fiscalYear, signal),
     enabled: !!sector,
     staleTime: 15 * 60 * 1000, // 15 minutes
     ...options,
@@ -108,7 +108,7 @@ export const useSectorBudgetAllocation = (
 export const useBudgetOverview = (options?: Omit<UseQueryOptions<any>, 'queryKey' | 'queryFn'>) => {
   return useQuery({
     queryKey: QUERY_KEYS.overview,
-    queryFn: getBudgetOverview,
+    queryFn: ({ signal }) => getBudgetOverview(signal),
     staleTime: SSR_HYDRATED_STALE_TIME_MS, // read from SSR state; see ./isr
     ...options,
   });
@@ -118,7 +118,7 @@ export const useBudgetOverview = (options?: Omit<UseQueryOptions<any>, 'queryKey
 export const useBudgetEnhanced = (options?: Omit<UseQueryOptions<any>, 'queryKey' | 'queryFn'>) => {
   return useQuery({
     queryKey: QUERY_KEYS.enhanced,
-    queryFn: getBudgetEnhanced,
+    queryFn: ({ signal }) => getBudgetEnhanced(signal),
     staleTime: SSR_HYDRATED_STALE_TIME_MS, // read from SSR state; see ./isr
     ...options,
   });
@@ -131,7 +131,7 @@ export const useBudgetUtilizationSummary = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.utilizationSummary(fiscalYear),
-    queryFn: () => getBudgetUtilizationSummary(fiscalYear),
+    queryFn: ({ signal }) => getBudgetUtilizationSummary(fiscalYear, signal),
     staleTime: 10 * 60 * 1000, // 10 minutes
     ...options,
   });

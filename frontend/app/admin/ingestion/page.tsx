@@ -118,11 +118,11 @@ function IngestionJobsInner() {
 
   const { data, isLoading, error, refetch, isFetching } = useQuery<IngestionJobList>({
     queryKey: ['admin', 'ingestion-jobs', { domain, status, days, page }],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const params: Record<string, string | number> = { page, page_size: PAGE_SIZE, days };
       if (domain) params.domain = domain;
       if (status) params.status = status;
-      return (await api.get('/admin/ingestion-jobs', { params })).data;
+      return (await api.get('/admin/ingestion-jobs', { params, signal })).data;
     },
     staleTime: 15_000,
   });

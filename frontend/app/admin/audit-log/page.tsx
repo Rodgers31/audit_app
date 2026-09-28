@@ -100,13 +100,13 @@ function AuditLogInner() {
 
   const { data, isLoading, error, refetch, isFetching } = useQuery<AuditList>({
     queryKey: ['admin', 'audit-log', { actor_id, action, target_type, target_id, days, page }],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const params: Record<string, string | number> = { page, page_size: PAGE_SIZE, days };
       if (actor_id) params.actor_id = actor_id;
       if (action) params.action = action;
       if (target_type) params.target_type = target_type;
       if (target_id) params.target_id = target_id;
-      return (await api.get('/admin/audit-log', { params })).data;
+      return (await api.get('/admin/audit-log', { params, signal })).data;
     },
     staleTime: 15_000,
   });

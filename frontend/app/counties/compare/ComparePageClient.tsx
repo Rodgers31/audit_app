@@ -207,7 +207,7 @@ function CompareRow({ label, values, highlight, sublabel }: RowProps) {
 export function useCompareCounties() {
   return useQuery<CountySummary[]>({
     queryKey: compareCountiesKey(),
-    queryFn: async () => (await api.get<CountySummary[]>('/counties?limit=50')).data,
+    queryFn: async ({ signal }) => (await api.get<CountySummary[]>('/counties?limit=50', { signal })).data,
     staleTime: SSR_HYDRATED_STALE_TIME_MS, // read from SSR state; see ./isr
   });
 }

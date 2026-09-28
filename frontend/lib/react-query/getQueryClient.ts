@@ -20,20 +20,13 @@ function makeQueryClient() {
       queries: {
         staleTime: 10 * 60 * 1000,
         gcTime: 60 * 60 * 1000,
-        retry: (failureCount, error: unknown) => {
-          const status = (error as { response?: { status?: number } })?.response?.status;
-          if (status !== undefined && status >= 400 && status < 500) return false;
-          if (status === 503) return false;
-          return failureCount < 2;
-        },
-        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 15000),
+        // Axios owns the three-attempt GET budget for browser, SSR and direct calls.
+        // Retrying here would repeat that entire request and multiply HTTP traffic.
+        retry: false,
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
       },
-      mutations: {
-        retry: 1,
-        retryDelay: 1000,
-      },
+      mutations: { retry: false },
     },
   });
 }

@@ -63,7 +63,7 @@ export default function UserDetailPage({
 
   const { data, isLoading, error } = useQuery<UserDetail>({
     queryKey: ['admin', 'user', userId],
-    queryFn: async () => (await api.get(`/admin/users/${userId}`)).data,
+    queryFn: async ({ signal }) => (await api.get(`/admin/users/${userId}`, { signal })).data,
     staleTime: 15_000,
   });
 

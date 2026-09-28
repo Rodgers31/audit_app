@@ -288,10 +288,16 @@ export default function NationalDebtPage() {
 
   useEffect(() => {
     if (!backendReady) return;
+    const controller = new AbortController();
     apiClient
-      .get('/economic/population/latest')
-      .then((res) => setFetchedPopulation(res.data?.population ?? null))
-      .catch(() => setFetchedPopulation(null));
+      .get('/economic/population/latest', { signal: controller.signal })
+      .then((res) => {
+        if (!controller.signal.aborted) setFetchedPopulation(res.data?.population ?? null);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setFetchedPopulation(null);
+      });
+    return () => controller.abort();
   }, [backendReady]);
 
   /* ── Derived data ── */

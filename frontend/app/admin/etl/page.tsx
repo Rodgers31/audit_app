@@ -76,13 +76,13 @@ export default function AdminEtlPage() {
 
   const schedule = useQuery<ScheduleResponse>({
     queryKey: ['admin', 'etl-schedule'],
-    queryFn: async () => (await api.get('/admin/etl/schedule')).data,
+    queryFn: async ({ signal }) => (await api.get('/admin/etl/schedule', { signal })).data,
     staleTime: 30_000,
   });
 
   const health = useQuery<EtlHealth>({
     queryKey: ['admin', 'etl-health'],
-    queryFn: async () => (await api.get('/admin/etl/health')).data,
+    queryFn: async ({ signal }) => (await api.get('/admin/etl/health', { signal })).data,
     staleTime: 30_000,
   });
 

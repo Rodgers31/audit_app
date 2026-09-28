@@ -59,7 +59,7 @@ export default function InteractiveGlossary({
   // On error/loading we simply render the dated fallbacks baked into each term.
   const { data: civic } = useQuery({
     queryKey: ['civic-figures'],
-    queryFn: getCivicFigures,
+    queryFn: ({ signal }) => getCivicFigures(signal),
     staleTime: 1000 * 60 * 60, // 1h — these change at most a few times a year
   });
   const figures = civic?.figures;

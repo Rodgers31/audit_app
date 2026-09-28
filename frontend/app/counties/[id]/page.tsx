@@ -7,7 +7,7 @@
  * no waterfall.
  *
  * Matches the homepage pattern (`app/page.tsx`): Promise.allSettled
- * wrapped in a 5s Promise.race guard so cold-start backends don't
+ * with a 5s prefetch guard so cold-start backends don't
  * block the page render.
  *
  * Query keys MUST match what `useCountyComprehensive` /
@@ -19,6 +19,7 @@
 import { Metadata } from 'next';
 import { getCountyComprehensive } from '@/lib/api/counties';
 import { getQueryClient } from '@/lib/react-query/getQueryClient';
+import { prefetchWithTimeout } from '@/lib/react-query/prefetchWithTimeout';
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import CountyDetailClient from './CountyDetailClient';
 
@@ -60,14 +61,15 @@ export default async function CountyDetailPage({
   // only the small AUDIT badge, which appears cleanly after hydrate.
   // If we had it here too, a cold backend would double the SSR wait.
   try {
-    await Promise.race([
+    await prefetchWithTimeout(
+      queryClient,
       queryClient.prefetchQuery({
         // Matches useCountyComprehensive's queryKey shape.
         queryKey: ['counties', id, 'comprehensive', fiscalYear ?? null] as const,
-        queryFn: () => getCountyComprehensive(id, fiscalYear),
+        queryFn: ({ signal }) => getCountyComprehensive(id, fiscalYear, signal),
       }),
-      new Promise((resolve) => setTimeout(resolve, SSR_TIMEOUT_MS)),
-    ]);
+      SSR_TIMEOUT_MS
+    );
   } catch {
     // Timeout or SSR error — client React Query will handle it
   }

@@ -14,7 +14,7 @@ export const useFiscalSummary = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.fiscalSummary,
-    queryFn: getFiscalSummary,
+    queryFn: ({ signal }) => getFiscalSummary(signal),
     staleTime: 60 * 60 * 1000, // 1 hour — fiscal data changes infrequently
     ...options,
   });

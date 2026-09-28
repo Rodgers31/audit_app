@@ -8,6 +8,7 @@
 import { getBudgetEnhanced, getBudgetOverview } from '@/lib/api/budget';
 import { getFiscalSummary } from '@/lib/api/fiscal';
 import { getQueryClient } from '@/lib/react-query/getQueryClient';
+import { prefetchWithTimeout } from '@/lib/react-query/prefetchWithTimeout';
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { Metadata } from 'next';
 import BudgetSpendingPage from './BudgetPageClient';
@@ -41,23 +42,24 @@ export default async function BudgetPage() {
   const queryClient = getQueryClient();
 
   try {
-    await Promise.race([
+    await prefetchWithTimeout(
+      queryClient,
       Promise.allSettled([
         queryClient.prefetchQuery({
           queryKey: ['budget', 'overview'],
-          queryFn: () => getBudgetOverview(),
+          queryFn: ({ signal }) => getBudgetOverview(signal),
         }),
         queryClient.prefetchQuery({
           queryKey: ['budget', 'enhanced'],
-          queryFn: () => getBudgetEnhanced(),
+          queryFn: ({ signal }) => getBudgetEnhanced(signal),
         }),
         queryClient.prefetchQuery({
           queryKey: ['fiscal', 'summary'],
-          queryFn: () => getFiscalSummary(),
+          queryFn: ({ signal }) => getFiscalSummary(signal),
         }),
       ]),
-      new Promise((resolve) => setTimeout(resolve, SSR_TIMEOUT_MS)),
-    ]);
+      SSR_TIMEOUT_MS
+    );
   } catch {
     // Timeout or SSR error — client React Query will handle it
   }

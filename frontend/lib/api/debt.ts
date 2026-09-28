@@ -2,21 +2,24 @@
  * Debt API service
  */
 import { apiClient } from './axios';
+import { apiGet } from './request';
 import { COUNTIES_ENDPOINTS, DEBT_ENDPOINTS, buildUrlWithParams } from './endpoints';
 import { ApiResponse, DebtDataResponse } from './types';
 import type { ImfDsaRating } from '@/lib/debt/dsaRating';
 
 // Get debt data for a county
-export const getCountyDebtData = async (countyId: string): Promise<DebtDataResponse> => {
-  const response = await apiClient.get<ApiResponse<DebtDataResponse>>(
-    COUNTIES_ENDPOINTS.DEBT(countyId)
+export const getCountyDebtData = async (countyId: string, signal?: AbortSignal): Promise<DebtDataResponse> => {
+  const response = await apiGet<ApiResponse<DebtDataResponse>>(
+    apiClient,
+    COUNTIES_ENDPOINTS.DEBT(countyId),
+    signal
   );
   return response.data.data;
 };
 
 // Get national debt overview
-export const getNationalDebtOverview = async (): Promise<any> => {
-  const response = await apiClient.get<any>(DEBT_ENDPOINTS.NATIONAL);
+export const getNationalDebtOverview = async (signal?: AbortSignal): Promise<any> => {
+  const response = await apiGet<any>(apiClient, DEBT_ENDPOINTS.NATIONAL, signal);
   return response.data;
 };
 
@@ -52,22 +55,22 @@ export interface BroaderDebtResponse {
   as_of?: string;
 }
 
-export const getBroaderDebt = async (): Promise<BroaderDebtResponse> => {
-  const response = await apiClient.get<BroaderDebtResponse>(DEBT_ENDPOINTS.BROADER);
+export const getBroaderDebt = async (signal?: AbortSignal): Promise<BroaderDebtResponse> => {
+  const response = await apiGet<BroaderDebtResponse>(apiClient, DEBT_ENDPOINTS.BROADER, signal);
   return response.data;
 };
 
 // Get debt breakdown by category
-export const getDebtBreakdown = async (countyId?: string): Promise<any> => {
+export const getDebtBreakdown = async (countyId?: string, signal?: AbortSignal): Promise<any> => {
   const endpoint = countyId
     ? DEBT_ENDPOINTS.BREAKDOWN_BY_COUNTY(countyId)
     : DEBT_ENDPOINTS.BREAKDOWN;
-  const response = await apiClient.get<ApiResponse<any>>(endpoint);
+  const response = await apiGet<ApiResponse<any>>(apiClient, endpoint, signal);
   return response.data.data;
 };
 
 // Get county debt timeline data
-export const getCountyDebtTimeline = async (countyId?: string, years?: number): Promise<any> => {
+export const getCountyDebtTimeline = async (countyId?: string, years?: number, signal?: AbortSignal): Promise<any> => {
   const queryParams: Record<string, any> = {};
   if (years) queryParams.years = years;
 
@@ -76,38 +79,38 @@ export const getCountyDebtTimeline = async (countyId?: string, years?: number): 
     : DEBT_ENDPOINTS.TIMELINE;
   const url = buildUrlWithParams(baseEndpoint, queryParams);
 
-  const response = await apiClient.get<ApiResponse<any>>(url);
+  const response = await apiGet<ApiResponse<any>>(apiClient, url, signal);
   return response.data.data;
 };
 
 // Get debt comparison between counties
-export const getDebtComparison = async (countyIds: string[]): Promise<any> => {
+export const getDebtComparison = async (countyIds: string[], signal?: AbortSignal): Promise<any> => {
   const queryParams = { county_ids: countyIds };
   const url = buildUrlWithParams(DEBT_ENDPOINTS.COMPARISON, queryParams);
 
-  const response = await apiClient.get<ApiResponse<any>>(url);
+  const response = await apiGet<ApiResponse<any>>(apiClient, url, signal);
   return response.data.data;
 };
 
 // Get top loans/debt sources
-export const getTopLoans = async (limit: number = 10): Promise<any> => {
+export const getTopLoans = async (limit: number = 10, signal?: AbortSignal): Promise<any> => {
   const url = buildUrlWithParams(DEBT_ENDPOINTS.TOP_LOANS, { limit });
-  const response = await apiClient.get<ApiResponse<any>>(url);
+  const response = await apiGet<ApiResponse<any>>(apiClient, url, signal);
   return response.data.data;
 };
 
 // Get debt sustainability indicators
-export const getDebtSustainabilityIndicators = async (countyId?: string): Promise<any> => {
+export const getDebtSustainabilityIndicators = async (countyId?: string, signal?: AbortSignal): Promise<any> => {
   const endpoint = countyId
     ? COUNTIES_ENDPOINTS.DEBT_SUSTAINABILITY(countyId)
     : DEBT_ENDPOINTS.SUSTAINABILITY;
-  const response = await apiClient.get<ApiResponse<any>>(endpoint);
+  const response = await apiGet<ApiResponse<any>>(apiClient, endpoint, signal);
   return response.data.data;
 };
 
 // Get debt risk assessment
-export const getDebtRiskAssessment = async (): Promise<any> => {
-  const response = await apiClient.get<ApiResponse<any>>(DEBT_ENDPOINTS.RISK_ASSESSMENT);
+export const getDebtRiskAssessment = async (signal?: AbortSignal): Promise<any> => {
+  const response = await apiGet<ApiResponse<any>>(apiClient, DEBT_ENDPOINTS.RISK_ASSESSMENT, signal);
   return response.data.data;
 };
 
@@ -192,13 +195,13 @@ export interface AnnualDebtReportsResponse {
   reports: Array<{ fiscal_year: string; title: string; url: string }>;
 }
 
-export const getAnnualDebtReports = async (): Promise<AnnualDebtReportsResponse> => {
-  const response = await apiClient.get<AnnualDebtReportsResponse>(DEBT_ENDPOINTS.ANNUAL_REPORTS);
+export const getAnnualDebtReports = async (signal?: AbortSignal): Promise<AnnualDebtReportsResponse> => {
+  const response = await apiGet<AnnualDebtReportsResponse>(apiClient, DEBT_ENDPOINTS.ANNUAL_REPORTS, signal);
   return response.data;
 };
 
-export const getNationalLoans = async (): Promise<NationalLoansResponse> => {
-  const response = await apiClient.get<NationalLoansResponse>(DEBT_ENDPOINTS.LOANS);
+export const getNationalLoans = async (signal?: AbortSignal): Promise<NationalLoansResponse> => {
+  const response = await apiGet<NationalLoansResponse>(apiClient, DEBT_ENDPOINTS.LOANS, signal);
   return response.data;
 };
 
@@ -225,8 +228,8 @@ export interface DebtTimelineResponse {
   timeline: DebtTimelineEntry[];
 }
 
-export const getDebtTimeline = async (): Promise<DebtTimelineResponse> => {
-  const response = await apiClient.get<DebtTimelineResponse>(DEBT_ENDPOINTS.TIMELINE);
+export const getDebtTimeline = async (signal?: AbortSignal): Promise<DebtTimelineResponse> => {
+  const response = await apiGet<DebtTimelineResponse>(apiClient, DEBT_ENDPOINTS.TIMELINE, signal);
   return response.data;
 };
 
@@ -276,8 +279,8 @@ export interface PendingBillsResponse {
   };
 }
 
-export const getPendingBills = async (): Promise<PendingBillsResponse> => {
-  const response = await apiClient.get<PendingBillsResponse>(DEBT_ENDPOINTS.PENDING_BILLS);
+export const getPendingBills = async (signal?: AbortSignal): Promise<PendingBillsResponse> => {
+  const response = await apiGet<PendingBillsResponse>(apiClient, DEBT_ENDPOINTS.PENDING_BILLS, signal);
   return response.data;
 };
 
@@ -310,8 +313,8 @@ export interface PendingBillsSummaryResponse {
   trend_absent_reason?: string | null;
 }
 
-export const getPendingBillsSummary = async (): Promise<PendingBillsSummaryResponse> => {
-  const response = await apiClient.get<PendingBillsSummaryResponse>(DEBT_ENDPOINTS.PENDING_BILLS_SUMMARY);
+export const getPendingBillsSummary = async (signal?: AbortSignal): Promise<PendingBillsSummaryResponse> => {
+  const response = await apiGet<PendingBillsSummaryResponse>(apiClient, DEBT_ENDPOINTS.PENDING_BILLS_SUMMARY, signal);
   return response.data;
 };
 
@@ -333,8 +336,8 @@ export interface CountyPendingBillsResponse {
   }[];
 }
 
-export const getCountyPendingBills = async (countyId: string): Promise<CountyPendingBillsResponse> => {
-  const response = await apiClient.get<CountyPendingBillsResponse>(DEBT_ENDPOINTS.PENDING_BILLS_COUNTY(countyId));
+export const getCountyPendingBills = async (countyId: string, signal?: AbortSignal): Promise<CountyPendingBillsResponse> => {
+  const response = await apiGet<CountyPendingBillsResponse>(apiClient, DEBT_ENDPOINTS.PENDING_BILLS_COUNTY(countyId), signal);
   return response.data;
 };
 
@@ -484,7 +487,7 @@ export interface DebtSustainabilityResponse {
   source?: string;
 }
 
-export const getDebtSustainability = async (): Promise<DebtSustainabilityResponse> => {
-  const response = await apiClient.get<DebtSustainabilityResponse>(DEBT_ENDPOINTS.DEBT_SUSTAINABILITY);
+export const getDebtSustainability = async (signal?: AbortSignal): Promise<DebtSustainabilityResponse> => {
+  const response = await apiGet<DebtSustainabilityResponse>(apiClient, DEBT_ENDPOINTS.DEBT_SUSTAINABILITY, signal);
   return response.data;
 };

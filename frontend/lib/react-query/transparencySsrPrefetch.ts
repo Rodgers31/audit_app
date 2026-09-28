@@ -25,13 +25,13 @@ import { allCountiesMoneyFlowKey, nationalMoneyFlowKey } from './useMoneyFlow';
 
 export interface TransparencySsrQuery {
   queryKey: QueryKey;
-  queryFn: () => Promise<unknown>;
+  queryFn: (context?: { signal?: AbortSignal }) => Promise<unknown>;
 }
 
 /** Widens one query's payload type so the list can hold both. */
 const ssrQuery = <TData,>(
   queryKey: QueryKey,
-  queryFn: () => Promise<TData>
+  queryFn: (context?: { signal?: AbortSignal }) => Promise<TData>
 ): TransparencySsrQuery => ({ queryKey, queryFn });
 
 /**
@@ -42,6 +42,6 @@ const ssrQuery = <TData,>(
  * between requests.
  */
 export const transparencySsrQueries = (year: string): TransparencySsrQuery[] => [
-  ssrQuery(nationalMoneyFlowKey(year), () => getNationalMoneyFlow(year)),
-  ssrQuery(allCountiesMoneyFlowKey(year), () => getAllCountiesMoneyFlow(year)),
+  ssrQuery(nationalMoneyFlowKey(year), ({ signal } = {}) => getNationalMoneyFlow(year, signal)),
+  ssrQuery(allCountiesMoneyFlowKey(year), ({ signal } = {}) => getAllCountiesMoneyFlow(year, signal)),
 ];

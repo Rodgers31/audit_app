@@ -8,6 +8,7 @@
  * seeded instead of going stale. See backend `/learn/civic-figures`.
  */
 import { apiClient } from './axios';
+import { apiGet } from './request';
 import { LEARN_ENDPOINTS } from './endpoints';
 
 export type CivicFigureKey =
@@ -38,9 +39,11 @@ export interface CivicFiguresResponse {
   figures: Partial<Record<CivicFigureKey, CivicFigure>>;
 }
 
-export const getCivicFigures = async (): Promise<CivicFiguresResponse> => {
-  const response = await apiClient.get<CivicFiguresResponse>(
-    LEARN_ENDPOINTS.CIVIC_FIGURES
+export const getCivicFigures = async (signal?: AbortSignal): Promise<CivicFiguresResponse> => {
+  const response = await apiGet<CivicFiguresResponse>(
+    apiClient,
+    LEARN_ENDPOINTS.CIVIC_FIGURES,
+    signal
   );
   return response.data;
 };

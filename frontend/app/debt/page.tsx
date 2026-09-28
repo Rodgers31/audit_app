@@ -22,6 +22,7 @@ import {
 } from '@/lib/api/debt';
 import { getFiscalSummary } from '@/lib/api/fiscal';
 import { getQueryClient } from '@/lib/react-query/getQueryClient';
+import { prefetchWithTimeout } from '@/lib/react-query/prefetchWithTimeout';
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { Metadata } from 'next';
 import NationalDebtPage from './DebtPageClient';
@@ -55,35 +56,36 @@ export default async function DebtPage() {
   const queryClient = getQueryClient();
 
   try {
-    await Promise.race([
+    await prefetchWithTimeout(
+      queryClient,
       Promise.allSettled([
         queryClient.prefetchQuery({
           queryKey: ['debt', 'national'],
-          queryFn: () => getNationalDebtOverview(),
+          queryFn: ({ signal }) => getNationalDebtOverview(signal),
         }),
         queryClient.prefetchQuery({
           queryKey: ['debt', 'national-loans'],
-          queryFn: () => getNationalLoans(),
+          queryFn: ({ signal }) => getNationalLoans(signal),
         }),
         queryClient.prefetchQuery({
           queryKey: ['debt', 'national-timeline'],
-          queryFn: () => getDebtTimeline(),
+          queryFn: ({ signal }) => getDebtTimeline(signal),
         }),
         queryClient.prefetchQuery({
           queryKey: ['fiscal', 'summary'],
-          queryFn: () => getFiscalSummary(),
+          queryFn: ({ signal }) => getFiscalSummary(signal),
         }),
         queryClient.prefetchQuery({
           queryKey: ['debt', 'pending-bills'],
-          queryFn: () => getPendingBills(),
+          queryFn: ({ signal }) => getPendingBills(signal),
         }),
         queryClient.prefetchQuery({
           queryKey: ['debt', 'pending-bills-summary'],
-          queryFn: () => getPendingBillsSummary(),
+          queryFn: ({ signal }) => getPendingBillsSummary(signal),
         }),
       ]),
-      new Promise((resolve) => setTimeout(resolve, SSR_TIMEOUT_MS)),
-    ]);
+      SSR_TIMEOUT_MS
+    );
   } catch {
     // Timeout or SSR error — client React Query will handle it
   }

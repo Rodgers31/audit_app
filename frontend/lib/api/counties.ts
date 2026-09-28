@@ -10,6 +10,7 @@ import {
 } from '@/types';
 import type { CountyFiscalYears } from '@/lib/utils';
 import { apiClient } from './axios';
+import { apiGet } from './request';
 import { COUNTIES_ENDPOINTS, buildUrlWithParams } from './endpoints';
 import { ApiResponse, CountyFilters, CountyResponse, PaginatedResponse } from './types';
 
@@ -213,7 +214,7 @@ export const transformCountyData = (bc: BackendCountyResponse): County => {
 };
 
 // Get all counties with optional filtering
-export const getCounties = async (filters?: CountyFilters): Promise<County[]> => {
+export const getCounties = async (filters?: CountyFilters, signal?: AbortSignal): Promise<County[]> => {
   const queryParams: Record<string, any> = {};
 
   if (filters?.search) queryParams.search = filters.search;
@@ -228,22 +229,24 @@ export const getCounties = async (filters?: CountyFilters): Promise<County[]> =>
   if (filters?.limit) queryParams.limit = filters.limit;
 
   const url = buildUrlWithParams(COUNTIES_ENDPOINTS.LIST, queryParams);
-  const response = await apiClient.get<BackendCountyResponse[]>(url);
+  const response = await apiGet<BackendCountyResponse[]>(apiClient, url, signal);
 
   // Transform backend data to frontend County type
   return response.data.map(transformCountyData);
 };
 
 // Get single county by ID
-export const getCounty = async (id: string): Promise<County> => {
-  const response = await apiClient.get<BackendCountyResponse>(COUNTIES_ENDPOINTS.GET_BY_ID(id));
+export const getCounty = async (id: string, signal?: AbortSignal): Promise<County> => {
+  const response = await apiGet<BackendCountyResponse>(apiClient, COUNTIES_ENDPOINTS.GET_BY_ID(id), signal);
   return transformCountyData(response.data);
 };
 
 // Get county by code (e.g., 'NBI' for Nairobi)
-export const getCountyByCode = async (code: string): Promise<CountyResponse> => {
-  const response = await apiClient.get<ApiResponse<CountyResponse>>(
-    COUNTIES_ENDPOINTS.GET_BY_CODE(code)
+export const getCountyByCode = async (code: string, signal?: AbortSignal): Promise<CountyResponse> => {
+  const response = await apiGet<ApiResponse<CountyResponse>>(
+    apiClient,
+    COUNTIES_ENDPOINTS.GET_BY_CODE(code),
+    signal
   );
   return response.data.data;
 };
@@ -252,7 +255,8 @@ export const getCountyByCode = async (code: string): Promise<CountyResponse> => 
 export const getCountiesPaginated = async (
   page: number = 1,
   limit: number = 20,
-  filters?: Omit<CountyFilters, 'page' | 'limit'>
+  filters?: Omit<CountyFilters, 'page' | 'limit'>,
+  signal?: AbortSignal
 ): Promise<PaginatedResponse<CountyResponse>> => {
   const queryParams: Record<string, any> = {
     page,
@@ -269,33 +273,33 @@ export const getCountiesPaginated = async (
 
   const url = buildUrlWithParams(COUNTIES_ENDPOINTS.PAGINATED, queryParams);
 
-  const response = await apiClient.get<PaginatedResponse<CountyResponse>>(url);
+  const response = await apiGet<PaginatedResponse<CountyResponse>>(apiClient, url, signal);
   return response.data;
 };
 
 // Get county financial summary
-export const getCountyFinancialSummary = async (id: string): Promise<any> => {
-  const response = await apiClient.get<ApiResponse<any>>(COUNTIES_ENDPOINTS.FINANCIAL_SUMMARY(id));
+export const getCountyFinancialSummary = async (id: string, signal?: AbortSignal): Promise<any> => {
+  const response = await apiGet<ApiResponse<any>>(apiClient, COUNTIES_ENDPOINTS.FINANCIAL_SUMMARY(id), signal);
   return response.data.data;
 };
 
 // Search counties by name
-export const searchCounties = async (query: string): Promise<CountyResponse[]> => {
+export const searchCounties = async (query: string, signal?: AbortSignal): Promise<CountyResponse[]> => {
   const url = buildUrlWithParams(COUNTIES_ENDPOINTS.SEARCH, { q: query });
-  const response = await apiClient.get<ApiResponse<CountyResponse[]>>(url);
+  const response = await apiGet<ApiResponse<CountyResponse[]>>(apiClient, url, signal);
   return response.data.data;
 };
 
 // Get top performing counties
-export const getTopPerformingCounties = async (limit: number = 10): Promise<CountyResponse[]> => {
+export const getTopPerformingCounties = async (limit: number = 10, signal?: AbortSignal): Promise<CountyResponse[]> => {
   const url = buildUrlWithParams(COUNTIES_ENDPOINTS.TOP_PERFORMING, { limit });
-  const response = await apiClient.get<ApiResponse<CountyResponse[]>>(url);
+  const response = await apiGet<ApiResponse<CountyResponse[]>>(apiClient, url, signal);
   return response.data.data;
 };
 
 // Get counties with issues/flags
-export const getFlaggedCounties = async (): Promise<CountyResponse[]> => {
-  const response = await apiClient.get<ApiResponse<CountyResponse[]>>(COUNTIES_ENDPOINTS.FLAGGED);
+export const getFlaggedCounties = async (signal?: AbortSignal): Promise<CountyResponse[]> => {
+  const response = await apiGet<ApiResponse<CountyResponse[]>>(apiClient, COUNTIES_ENDPOINTS.FLAGGED, signal);
   return response.data.data;
 };
 
@@ -308,9 +312,11 @@ export const getFlaggedCounties = async (): Promise<CountyResponse[]> => {
  * API resolve the period from the rows that exist. The two published different
  * budgets for the same county. This is the one source both now use.
  */
-export const getCountyFiscalYears = async (): Promise<CountyFiscalYears> => {
-  const response = await apiClient.get<CountyFiscalYears>(
-    COUNTIES_ENDPOINTS.FISCAL_YEARS
+export const getCountyFiscalYears = async (signal?: AbortSignal): Promise<CountyFiscalYears> => {
+  const response = await apiGet<CountyFiscalYears>(
+    apiClient,
+    COUNTIES_ENDPOINTS.FISCAL_YEARS,
+    signal
   );
   return response.data;
 };
@@ -320,18 +326,21 @@ export const getCountyFiscalYears = async (): Promise<CountyFiscalYears> => {
 // When omitted, the backend falls back to the latest period with execution data.
 export const getCountyComprehensive = async (
   id: string,
-  fiscalYear?: string
+  fiscalYear?: string,
+  signal?: AbortSignal
 ): Promise<CountyComprehensive> => {
   const base = COUNTIES_ENDPOINTS.COMPREHENSIVE(id);
   const url = fiscalYear ? buildUrlWithParams(base, { fiscal_year: fiscalYear }) : base;
-  const response = await apiClient.get<CountyComprehensive>(url);
+  const response = await apiGet<CountyComprehensive>(apiClient, url, signal);
   return response.data;
 };
 
 // Get county accountability scorecard
-export const getCountyAccountability = async (id: string): Promise<AccountabilityScorecard> => {
-  const response = await apiClient.get<AccountabilityScorecard>(
-    COUNTIES_ENDPOINTS.ACCOUNTABILITY(id)
+export const getCountyAccountability = async (id: string, signal?: AbortSignal): Promise<AccountabilityScorecard> => {
+  const response = await apiGet<AccountabilityScorecard>(
+    apiClient,
+    COUNTIES_ENDPOINTS.ACCOUNTABILITY(id),
+    signal
   );
   return response.data;
 };

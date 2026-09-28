@@ -12,6 +12,7 @@
  */
 import { Metadata } from 'next';
 import { getQueryClient } from '@/lib/react-query/getQueryClient';
+import { prefetchWithTimeout } from '@/lib/react-query/prefetchWithTimeout';
 import { auditsSsrQueries } from '@/lib/react-query/auditsSsrPrefetch';
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import AuditsPageClient from './AuditsPageClient';
@@ -42,15 +43,11 @@ export default async function AuditsPage() {
   const queryClient = getQueryClient();
 
   try {
-    await Promise.race([
-      // The query list lives in `auditsSsrPrefetch` rather than inline here,
-      // and its keys come from the shared factories in `useAudits`. A key
-      // written out by hand in a server component is exactly how the
-      // /counties prefetch and its hook drifted apart (#222) — and the test
-      // hydrates this same list, so it cannot drift from the page either.
+    await prefetchWithTimeout(
+      queryClient,
       Promise.allSettled(auditsSsrQueries().map((q) => queryClient.prefetchQuery(q))),
-      new Promise((resolve) => setTimeout(resolve, SSR_TIMEOUT_MS)),
-    ]);
+      SSR_TIMEOUT_MS
+    );
   } catch {
     // Timeout or SSR error — client React Query will handle it
   }

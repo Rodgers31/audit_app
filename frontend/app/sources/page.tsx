@@ -132,7 +132,7 @@ function DocTypeBadge({ type, count }: { type: string; count: number }) {
 export default function SourcesPage() {
   const { data, isLoading, error } = useQuery<SourcesResponse>({
     queryKey: ['sources', 'summary'],
-    queryFn: async () => (await api.get<SourcesResponse>('/sources/summary')).data,
+    queryFn: async ({ signal }) => (await api.get<SourcesResponse>('/sources/summary', { signal })).data,
     staleTime: 10 * 60 * 1000,
   });
 
@@ -178,7 +178,7 @@ export default function SourcesPage() {
   // unused by any page; audit §2.9). Shows live completeness of each dataset.
   const { data: health, isLoading: healthLoading } = useQuery<HealthResponse>({
     queryKey: ['provenance', 'health'],
-    queryFn: async () => (await api.get<HealthResponse>('/provenance/health')).data,
+    queryFn: async ({ signal }) => (await api.get<HealthResponse>('/provenance/health', { signal })).data,
     staleTime: 10 * 60 * 1000,
   });
   const healthTables = health?.tables || [];

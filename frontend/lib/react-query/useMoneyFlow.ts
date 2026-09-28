@@ -36,7 +36,7 @@ export const useCountyMoneyFlow = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.countyMoneyFlow(countyId, year),
-    queryFn: () => getCountyMoneyFlow(countyId, year),
+    queryFn: ({ signal }) => getCountyMoneyFlow(countyId, year, signal),
     enabled: !!countyId && !!year,
     staleTime: 10 * 60 * 1000,
     ...options,
@@ -46,7 +46,7 @@ export const useCountyMoneyFlow = (
 export const useAllCountiesMoneyFlow = (year: string) => {
   return useQuery({
     queryKey: allCountiesMoneyFlowKey(year),
-    queryFn: () => getAllCountiesMoneyFlow(year),
+    queryFn: ({ signal }) => getAllCountiesMoneyFlow(year, signal),
     enabled: !!year,
     staleTime: SSR_HYDRATED_STALE_TIME_MS, // read from SSR state; see ./isr
   });
@@ -58,7 +58,7 @@ export const useNationalMoneyFlow = (
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.nationalMoneyFlow(year),
-    queryFn: () => getNationalMoneyFlow(year),
+    queryFn: ({ signal }) => getNationalMoneyFlow(year, signal),
     enabled: !!year,
     staleTime: SSR_HYDRATED_STALE_TIME_MS, // read from SSR state; see ./isr
     ...options,

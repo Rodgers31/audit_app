@@ -9,6 +9,7 @@
 import { Metadata } from 'next';
 import api from '@/lib/api/axios';
 import { getQueryClient } from '@/lib/react-query/getQueryClient';
+import { prefetchWithTimeout } from '@/lib/react-query/prefetchWithTimeout';
 import { compareCountiesKey } from '@/lib/react-query/useCounties';
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import ComparePageClient from './ComparePageClient';
@@ -40,17 +41,18 @@ export default async function ComparePage() {
   const queryClient = getQueryClient();
 
   try {
-    await Promise.race([
+    await prefetchWithTimeout(
+      queryClient,
       Promise.allSettled([
         queryClient.prefetchQuery({
           // Shared factory, not a literal: the client hook and the Suspense
           // fallback that reserves its space both read this exact key.
           queryKey: compareCountiesKey(),
-          queryFn: async () => (await api.get('/counties?limit=50')).data,
+          queryFn: async ({ signal }) => (await api.get('/counties?limit=50', { signal })).data,
         }),
       ]),
-      new Promise((resolve) => setTimeout(resolve, SSR_TIMEOUT_MS)),
-    ]);
+      SSR_TIMEOUT_MS
+    );
   } catch {
     // Timeout or SSR error — client React Query will handle it
   }

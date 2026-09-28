@@ -52,7 +52,7 @@ function fmtKES(v: number): string {
 export default function MaturityLadder() {
   const { data, isLoading, isError, refetch } = useQuery<InstrumentsResponse>({
     queryKey: ['debt', 'instruments'],
-    queryFn: async () => (await api.get<InstrumentsResponse>('/debt/instruments')).data,
+    queryFn: async ({ signal }) => (await api.get<InstrumentsResponse>('/debt/instruments', { signal })).data,
     staleTime: 60 * 60 * 1000,
   });
 
