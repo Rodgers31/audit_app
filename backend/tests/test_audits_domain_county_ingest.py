@@ -265,6 +265,61 @@ class TestNationalCandidates:
         assert keep == [f"{UP}/2026/05/AUDITOR-GENERALS-REPORT-ON-NATIONAL-GOVERNMENT-2024-2025.pdf"]
         assert [why for _u, why in rejected] == ["popular_report"]
 
+    def test_new_national_candidate_is_still_discovered_and_attempted(
+        self, harness, monkeypatch
+    ):
+        from models import DocumentStatus, DocumentType, SourceDocument
+        from seeding import fetch_documents
+        from seeding.extractors import get_parser
+
+        session = harness["session"]
+        _run(session, budget=10_000)
+        harness["fetched"].clear()
+        country_id = session.query(SourceDocument).first().country_id
+        original_fetch = fetch_documents.fetch_document
+        county_parser = get_parser("oag_county_audit")
+
+        def fetch_new(session, client, settings, *, url, **kwargs):
+            if url == NATIONAL:
+                session.add(SourceDocument(
+                    country_id=country_id, publisher="Office of the Auditor-General",
+                    title=url.rsplit("/", 1)[-1], url=url,
+                    fetch_date=datetime(2026, 1, 1), doc_type=DocumentType.AUDIT,
+                    status=DocumentStatus.FAILED,
+                ))
+                session.flush()
+            return original_fetch(session, client, settings, url=url, **kwargs)
+
+        monkeypatch.setattr(audits_domain.fetcher, "_discover_audit_pdfs_via_wp_api", lambda c: [NATIONAL])
+        monkeypatch.setattr(fetch_documents, "fetch_document", fetch_new)
+        monkeypatch.setattr(
+            "seeding.extractors.get_parser",
+            lambda pid: county_parser if pid == "oag_county_audit"
+            else (lambda s, d, st: {"created": 0, "skipped_unchanged": True}),
+        )
+        result = _run(session, budget=150)
+        assert harness["fetched"][-1] == NATIONAL
+        assert result.metadata["deferred_discovery"] == []
+        assert result.metadata["deferred_documents"] == []
+
+    def test_malformed_national_metadata_is_not_replaced_by_retry_stamp(self, harness):
+        from models import DocumentStatus, DocumentType, SourceDocument
+
+        session = harness["session"]
+        doc = SourceDocument(
+            country_id=session.query(SourceDocument).first().country_id,
+            publisher="Office of the Auditor-General", title="national.pdf",
+            url=NATIONAL, fetch_date=datetime(2026, 1, 1),
+            doc_type=DocumentType.AUDIT, status=DocumentStatus.AVAILABLE,
+            meta=["unreviewed source metadata"],
+        )
+        session.add(doc)
+        session.commit()
+        with pytest.raises(ValueError, match="malformed metadata"):
+            audits_domain._record_scheduled_attempt(session, doc)
+        session.expire(doc)
+        assert doc.meta == ["unreviewed source metadata"]
+
 
 NATIONAL = f"{UP}/2026/05/AUDITOR-GENERALS-REPORT-ON-NATIONAL-GOVERNMENT-2024-2025.pdf"
 LEGACY_EXECUTIVES = f"{UP}/2023/02/REPORT-OF-THE-AUDITOR-GENERAL-FOR-THE-COUNTY-GOVERNMENTS-FOR-THE-YEAR-2020-2021-_VOLUME-I-COUNTY-EXECUTIVES.pdf"
@@ -342,8 +397,64 @@ def test_slow_refused_national_and_legacy_books_cannot_starve_current_volumes(
 
     harness["fetched"].clear()
     result = _run(session, budget=150)
-    assert harness["fetched"][-2:] == [NATIONAL, LEGACY_ASSEMBLIES]
+    assert harness["fetched"][-2:] == [LEGACY_ASSEMBLIES, NATIONAL]
     assert [d["url"] for d in result.metadata["deferred_documents"]] == [LEGACY_EXECUTIVES]
+
+
+@pytest.mark.parametrize("national_refused", [True, False])
+def test_repeated_slow_national_retry_cannot_starve_older_county_reports(
+    harness, monkeypatch, national_refused
+):
+    from models import DocumentStatus, DocumentType, SourceDocument
+    from seeding.extractors.reconciliation import IncompleteExtraction
+
+    session = harness["session"]
+    _run(session, budget=10_000)  # All current volumes have been banked.
+    country_id = session.query(SourceDocument).first().country_id
+    for url in (NATIONAL, LEGACY_EXECUTIVES, LEGACY_ASSEMBLIES):
+        session.add(SourceDocument(
+            country_id=country_id, publisher="Office of the Auditor-General",
+            title=url.rsplit("/", 1)[-1], url=url, fetch_date=datetime(2026, 1, 1),
+            doc_type=DocumentType.AUDIT, status=DocumentStatus.AVAILABLE,
+        ))
+    session.commit()
+    county_parser = __import__("seeding.extractors", fromlist=["get_parser"]).get_parser("oag_county_audit")
+
+    def slow_county(session, doc, settings):
+        if doc.url in (LEGACY_EXECUTIVES, LEGACY_ASSEMBLIES):
+            harness["clock"].now += 90
+            raise IncompleteExtraction("unreadable source text; rows kept")
+        return county_parser(session, doc, settings)
+
+    def slow_national(session, doc, settings):
+        harness["clock"].now += 200
+        if national_refused:
+            raise IncompleteExtraction("reconciliation review required; rows kept")
+        return {"created": 0, "skipped_unchanged": True}
+
+    monkeypatch.setattr(
+        "seeding.extractors.get_parser",
+        lambda pid: slow_national if pid == "oag_blue_book" else slow_county,
+    )
+    older = {NATIONAL, LEGACY_EXECUTIVES, LEGACY_ASSEMBLIES}
+    attempts, deferred = [], []
+    for _ in range(3):
+        harness["fetched"].clear()
+        result = _run(session, budget=150)
+        attempts.append([url for url in harness["fetched"] if url in older])
+        deferred.append([item["url"] for item in result.metadata["deferred_documents"]])
+        assert len(result.metadata["county_volumes"]["already_current"]) == 4
+
+    assert attempts == [
+        [NATIONAL],
+        [LEGACY_EXECUTIVES, LEGACY_ASSEMBLIES],
+        [NATIONAL],
+    ]
+    assert deferred == [
+        [LEGACY_EXECUTIVES, LEGACY_ASSEMBLIES],
+        [NATIONAL],
+        [LEGACY_EXECUTIVES, LEGACY_ASSEMBLIES],
+    ]
 
 
 class TestNationalReExtractionIsBanked:

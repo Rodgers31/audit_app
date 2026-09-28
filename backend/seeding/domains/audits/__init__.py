@@ -120,10 +120,11 @@ def _registered_volumes(session: Session) -> Dict[str, dict]:
     return out
 
 
-def _oldest_attempt_first(session: Session, urls: List[str]) -> List[str]:
-    """Rotate old reports so a repeat refusal cannot hide later reports."""
+def _oldest_attempt_first(session: Session, candidates: List[tuple[str, str]]) -> List[tuple[str, str]]:
+    """Share retry slots across national and older county reports."""
     from models import SourceDocument
 
+    urls = [url for _, url in candidates]
     rows = session.execute(
         select(SourceDocument.url, SourceDocument.meta).where(
             SourceDocument.url.in_(urls)
@@ -131,10 +132,31 @@ def _oldest_attempt_first(session: Session, urls: List[str]) -> List[str]:
     ).all() if urls else []
     attempted_at = {}
     for url, meta in rows:
-        attempt = meta.get("last_extraction_attempt") if isinstance(meta, dict) else None
-        value = attempt.get("attempted_at") if isinstance(attempt, dict) else None
+        facts = meta if isinstance(meta, dict) else {}
+        attempt = facts.get("last_extraction_attempt")
+        value = facts.get("last_audit_schedule_attempt_at")
+        if not isinstance(value, str):
+            value = attempt.get("attempted_at") if isinstance(attempt, dict) else None
         attempted_at[url] = value if isinstance(value, str) else ""
-    return sorted(urls, key=lambda url: (attempted_at.get(url, ""), url))
+    return sorted(
+        candidates,
+        key=lambda item: (
+            attempted_at.get(item[1], ""),
+            0 if item[0] == "oag_national_audits" else 1,
+            item[1],
+        ),
+    )
+
+
+def _record_scheduled_attempt(session: Session, doc) -> None:
+    """Persist a retry turn before a slow fetch or extraction can time out."""
+    if doc.meta is not None and not isinstance(doc.meta, dict):
+        raise ValueError(f"document {doc.id}: malformed metadata; retry not scheduled")
+    doc.meta = {
+        **(doc.meta or {}),
+        "last_audit_schedule_attempt_at": datetime.now(timezone.utc).isoformat(),
+    }
+    session.commit()
 
 
 def register_discovered_documents(
@@ -237,7 +259,7 @@ def run(
             .mark_finished()
         )
 
-    from models import DocumentType
+    from models import DocumentType, SourceDocument
 
     from ...extractors import get_parser
     from ...extractors import oag_county_volume
@@ -266,22 +288,16 @@ def run(
 
     with create_http_client(settings) as client:
         # New county volumes get first use of the bounded window. National
-        # work retains priority over older county retries once the backlog
-        # permits; repeated old refusals rotate instead of hiding a sibling.
-        for phase in ("county_volumes", "national", "county_legacy"):
+        # and older county retries then share the remaining start slots.
+        for phase in ("county_volumes", "older_documents"):
             dataset_id = (
-                "oag_national_audits" if phase == "national" else "oag_county_audits"
+                "oag_county_audits" if phase == "county_volumes" else "oag_national_audits"
             )
             dataset = SOURCE_REGISTRY[dataset_id]
             parser = get_parser(dataset.parser_id)
 
-            known = (
-                _known_document_urls(session, dataset)
-                if phase != "county_legacy" else []
-            )
-            if phase == "county_legacy":
-                candidates = legacy_candidates
-            elif phase == "county_volumes":
+            known = _known_document_urls(session, dataset)
+            if phase == "county_volumes":
                 discovery = discover_county_audit_documents(client)
                 metadata["oag_county_discovery"] = discovery.as_meta()
                 # An unreadable listing is not "OAG published nothing". Name it,
@@ -341,9 +357,7 @@ def run(
                 # remain eligible after the backlog, within the same start
                 # window, so a refused old extraction cannot starve new work.
                 candidates, rejected = split_county_audit_candidates(ordered_volumes)
-                legacy_candidates, legacy_rejected = split_county_audit_candidates(
-                    _oldest_attempt_first(session, legacy)
-                )
+                legacy_candidates, legacy_rejected = split_county_audit_candidates(legacy)
                 rejected.extend(legacy_rejected)
                 for url, why in rejected:
                     logger.info(
@@ -370,6 +384,7 @@ def run(
                     "failed": [],
                     "partial": [],
                 }
+                candidates = [(dataset_id, url) for url in candidates]
             else:
                 if (
                     not context.dry_run
@@ -400,14 +415,27 @@ def run(
                     len(fresh),
                     "" if parser else " (no parser — fetch/register only)",
                 )
+                candidates = _oldest_attempt_first(
+                    session,
+                    [(dataset_id, url) for url in candidates]
+                    + [("oag_county_audits", url) for url in legacy_candidates],
+                )
 
             if context.dry_run:
-                metadata["documents"].append(
-                    {"dataset": dataset_id, "phase": phase, "candidates": candidates}
-                )
+                for dry_dataset in (
+                    ("oag_county_audits",) if phase == "county_volumes"
+                    else ("oag_national_audits", "oag_county_audits")
+                ):
+                    metadata["documents"].append({
+                        "dataset": dry_dataset,
+                        "phase": phase,
+                        "candidates": [url for owner, url in candidates if owner == dry_dataset],
+                    })
                 continue
 
-            for url in candidates:
+            for dataset_id, url in candidates:
+                dataset = SOURCE_REGISTRY[dataset_id]
+                parser = get_parser(dataset.parser_id)
                 is_volume = url in volume_urls
                 elapsed = time.monotonic() - domain_start
                 if is_volume:
@@ -422,6 +450,12 @@ def run(
                         {"dataset": dataset_id, "url": url, "reason": "start_budget"}
                     )
                     continue
+                if not is_volume:
+                    registered = session.execute(
+                        select(SourceDocument).where(SourceDocument.url == url)
+                    ).scalar_one_or_none()
+                    if registered is not None:
+                        _record_scheduled_attempt(session, registered)
                 try:
                     doc = fetch_document(
                         session,
@@ -446,6 +480,9 @@ def run(
                         # The FAILED status and fetch_error are worth keeping.
                         session.commit()
                     continue
+
+                if not is_volume and registered is None:
+                    _record_scheduled_attempt(session, doc)
 
                 doc_stat = {"dataset": dataset_id, "doc_id": doc.id, "url": url}
                 if parser is not None:
