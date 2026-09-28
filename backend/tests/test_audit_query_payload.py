@@ -355,6 +355,62 @@ def test_table_row_detection_preserves_string_encoded_extractions(
     assert table_row_extraction_ids(db_session, [doc.id]) == {table_row.id}
 
 
+def test_table_row_scan_query_count_does_not_grow_per_document(
+    db_session, seed_country
+):
+    from services.audit_derived import table_row_extraction_ids
+
+    document_ids = []
+    expected_table_rows = set()
+    for index in range(4):
+        doc = _doc(db_session, seed_country)
+        document_ids.append(doc.id)
+        earlier = {
+            "paragraph_no": 52,
+            "title": "Earlier",
+            "finding_text": "Earlier has body",
+        }
+        table = {
+            "paragraph_no": 2,
+            "title": "Unaccounted cash",
+            "finding_text": "Unaccounted cash",
+        }
+        rows = [
+            Extraction(
+                source_document_id=doc.id,
+                extractor="fixture",
+                page_number=page,
+                extracted_json=json.dumps(payload) if index % 2 else payload,
+            )
+            for page, payload in ((10, earlier), (11, table))
+        ]
+        db_session.add_all(rows)
+        db_session.flush()
+        expected_table_rows.add(rows[1].id)
+    db_session.commit()
+
+    statements = []
+    engine = db_session.get_bind().engine
+
+    def count_reads(conn, cursor, statement, parameters, context, executemany):
+        if (
+            statement.lstrip().lower().startswith("select")
+            and "from extractions" in statement.lower()
+        ):
+            statements.append(statement)
+
+    event.listen(engine, "before_cursor_execute", count_reads)
+    try:
+        detected = table_row_extraction_ids(db_session, document_ids)
+    finally:
+        event.remove(engine, "before_cursor_execute", count_reads)
+
+    assert detected == expected_table_rows
+    assert len(statements) == 2, (
+        "four documents should share one projection and one string fallback"
+    )
+
+
 def test_publication_date_selects_only_date_from_accepted_document(
     db_session, seed_country, seed_entity, seed_fiscal_period
 ):

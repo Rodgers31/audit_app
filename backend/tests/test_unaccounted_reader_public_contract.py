@@ -73,14 +73,15 @@ def block(client, path):
 @pytest.mark.parametrize("path", PATHS)
 def test_extracted_case_publishes_without_reopening_legacy_metadata(client, candidate, path):
     audit, document = candidate
+    audit_id, document_id = audit.id, document.id
     data = block(client, path)
     assert len(data["cases"]) == 1
     case = data["cases"][0]
-    assert case["finding_id"] == audit.id
+    assert case["finding_id"] == audit_id
     assert case["entity"] == "County Assembly of Nairobi"
     assert case["county_name"] == "Nairobi County"
     assert case["excerpt"] == "The Assembly did not provide supporting records."
-    assert case["source"]["document_id"] == document.id
+    assert case["source"]["document_id"] == document_id
     assert case["source"]["page_url"] == REPORT_URL + "#page=23"
     # A balance in the paragraph is not a quantified loss; do not sum it.
     assert data["total_amount"] is None

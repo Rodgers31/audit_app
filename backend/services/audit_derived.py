@@ -126,43 +126,44 @@ def table_row_extraction_ids(db, source_document_ids: Iterable[int]) -> set:
     paragraph sequence is a property of the whole report.
     """
     out: set = set()
+    doc_ids = set(source_document_ids)
+    if not doc_ids:
+        return out
     payload_type = extraction_json_type(
         Extraction.extracted_json, db.get_bind().dialect.name
     )
-    for doc_id in set(source_document_ids):
-        rows = []
-        fields = (
-            db.query(
-                Extraction.id.label("extraction_id"),
-                Extraction.page_number,
-                Extraction.extracted_json["pdf_page"].label("pdf_page"),
-                Extraction.extracted_json["paragraph_no"].label("paragraph_no"),
-                Extraction.extracted_json["finding_text"].label("finding_text"),
-                Extraction.extracted_json["title"].label("title"),
-                payload_type.label("extraction_payload_type"),
-            )
-            .filter(Extraction.source_document_id == doc_id)
-            .all()
+    fields = (
+        db.query(
+            Extraction.id.label("extraction_id"),
+            Extraction.source_document_id,
+            Extraction.page_number,
+            Extraction.extracted_json["pdf_page"].label("pdf_page"),
+            Extraction.extracted_json["paragraph_no"].label("paragraph_no"),
+            Extraction.extracted_json["finding_text"].label("finding_text"),
+            Extraction.extracted_json["title"].label("title"),
+            payload_type.label("extraction_payload_type"),
         )
-        string_payloads = string_extraction_payloads(db, fields)
-        for ext in fields:
-            j = string_payloads.get(ext.extraction_id)
-            if j is None:
-                j = {
-                    "pdf_page": ext.pdf_page,
-                    "paragraph_no": ext.paragraph_no,
-                    "finding_text": ext.finding_text,
-                    "title": ext.title,
-                }
-            rows.append((ext.page_number, ext.extraction_id, j))
-        ordered_rows = []
-        for page_number, ext_id, j in rows:
-            try:
-                page = int(j.get("pdf_page") or page_number or 0)
-            except (TypeError, ValueError):
-                page = 0
-            ordered_rows.append((page, ext_id, j))
-        rows = ordered_rows
+        .filter(Extraction.source_document_id.in_(doc_ids))
+        .all()
+    )
+    string_payloads = string_extraction_payloads(db, fields)
+    rows_by_document = defaultdict(list)
+    for ext in fields:
+        j = string_payloads.get(ext.extraction_id)
+        if j is None:
+            j = {
+                "pdf_page": ext.pdf_page,
+                "paragraph_no": ext.paragraph_no,
+                "finding_text": ext.finding_text,
+                "title": ext.title,
+            }
+        try:
+            page = int(j.get("pdf_page") or ext.page_number or 0)
+        except (TypeError, ValueError):
+            page = 0
+        rows_by_document[ext.source_document_id].append((page, ext.extraction_id, j))
+
+    for rows in rows_by_document.values():
         rows.sort(key=lambda r: (r[0], r[1]))
         running = 0
         for _page, ext_id, j in rows:

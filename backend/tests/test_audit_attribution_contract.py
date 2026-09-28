@@ -41,6 +41,7 @@ def test_assembly_and_executive_share_geography_not_institution(
         )
         extraction.extracted_json = payload
     db_session.commit()
+    county_id = county.id
     response = client.get("/api/v1/accountability/missing-funds")
     assert response.status_code == 200, response.text
     data = response.json()
@@ -49,7 +50,7 @@ def test_assembly_and_executive_share_geography_not_institution(
         "County Executive of Wajir",
     }
     assert {c["county_name"] for c in data["cases"]} == {"Wajir County"}
-    assert {c["entity_id"] for c in data["cases"]} == {county.id}
+    assert {c["entity_id"] for c in data["cases"]} == {county_id}
     assert data["affected_counties"] == 1
     assert all(c["source"]["page_url"].endswith("#page=38") for c in data["cases"])
     assert all("unresolved" in c["excerpt"] for c in data["cases"])

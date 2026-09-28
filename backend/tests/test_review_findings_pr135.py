@@ -236,6 +236,7 @@ class TestAbsenceIsNotZero:
             }],
         }
         db_session.commit()
+        finding_id = audit.id
 
         response = client.get(path)
         assert response.status_code == 200, response.text
@@ -247,7 +248,7 @@ class TestAbsenceIsNotZero:
         assert data["withheld"]["count"] == 0
         assert len(data["cases"]) == 1
         case = data["cases"][0]
-        assert case["finding_id"] == audit.id
+        assert case["finding_id"] == finding_id
         assert case["source"]["page_url"].endswith("#page=23")
         assert "amount" not in case
         assert "RETIRED_UNREADABLE_AMOUNT" not in response.text
