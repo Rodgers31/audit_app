@@ -50,6 +50,7 @@ backend/data/seeding/cache/
 *.pptx
 
 # Databases
+.local-dev/
 *.sqlite
 *.sqlite3
 *.db

@@ -1,5 +1,9 @@
 # Government Financial Transparency Audit Application
 
+For routine previews with synthetic, persistent local data, see
+[isolated local development](docs/local-development.md). It uses ports 13080 and
+18080 and does not load production Supabase credentials.
+
 🎉 **Production-Ready!** This application has been hardened for production deployment with comprehensive security, monitoring, testing, and legal compliance.
 
 A comprehensive platform for transparent, auditable publication of government allocations, spending, borrowing, and audits with extensible multi-country support.
@@ -58,25 +62,9 @@ audit_app/
 
 ### Local Development (Full Stack)
 
-```bash
-# 1. Start Backend (Terminal 1)
-cd audit_app
-python3 -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r backend/requirements.txt
-cd backend
-python3 -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
-
-# 2. Start Frontend (Terminal 2)
-cd frontend
-npm install
-npm run dev
-
-# 3. Access Application
-# Frontend: http://localhost:3000
-# Backend API: http://localhost:8000
-# API Docs: http://localhost:8000/docs
-```
+Follow [isolated local development](docs/local-development.md). Its launcher
+checks for inherited remote endpoints, supplies synthetic persistent fixtures,
+and runs on ports 13080/18080 so an existing preview can keep running.
 
 ### Testing Without Backend
 

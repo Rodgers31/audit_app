@@ -1,105 +1,21 @@
-version: '3.9'
-
-networks:
-  web:
-    external: false
-  internal:
-    driver: bridge
-
-volumes:
-  postgres_data:
-  etl_downloads:
-
+# Dedicated persistent local database for scripts/local_dev.py --db postgres.
+# Compose starts no app, ETL, proxy, or external connection.
 services:
-  reverse-proxy:
-    image: traefik:v3.3
-    command:
-      - --providers.docker=true
-      - --providers.docker.exposedbydefault=false
-      - --entrypoints.web.address=:80
-    ports:
-      - '80:80'
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    networks:
-      - web
-      - internal
-    restart: unless-stopped
-
   postgres:
     image: postgres:17
     environment:
-      POSTGRES_DB: audit_app
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: auditgava_local_dev
+      POSTGRES_USER: auditgava_dev
+      POSTGRES_PASSWORD: auditgava_dev
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - auditgava_local_postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres -d audit_app || exit 1']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - internal
-    restart: unless-stopped
+      test: ["CMD-SHELL", "pg_isready -U auditgava_dev -d auditgava_local_dev"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
-  redis:
-    image: redis:7-alpine
-    networks:
-      - internal
-    restart: unless-stopped
-
-  backend:
-    image: ${BACKEND_IMAGE:-${DOCKERHUB_NAMESPACE:-yourhubname}/audit-app-backend:dev}
-    environment:
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-password}@postgres:5432/audit_app
-      REDIS_URL: redis://redis:6379
-      ENVIRONMENT: development
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.backend.rule=Host(`${BACKEND_HOST}`)
-      - traefik.http.routers.backend.entrypoints=web
-      - traefik.http.services.backend.loadbalancer.server.port=8000
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
-    networks:
-      - web
-      - internal
-    restart: unless-stopped
-
-  frontend:
-    image: ${FRONTEND_IMAGE:-${DOCKERHUB_NAMESPACE:-yourhubname}/audit-app-frontend:dev}
-    environment:
-      NEXT_PUBLIC_API_URL: http://${BACKEND_HOST}
-      NODE_ENV: development
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.frontend.rule=Host(`${FRONTEND_HOST}`)
-      - traefik.http.routers.frontend.entrypoints=web
-      - traefik.http.services.frontend.loadbalancer.server.port=3000
-    depends_on:
-      - backend
-    networks:
-      - web
-      - internal
-    restart: unless-stopped
-
-  etl:
-    image: ${ETL_IMAGE:-${DOCKERHUB_NAMESPACE:-yourhubname}/audit-app-etl:dev}
-    environment:
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-password}@postgres:5432/audit_app
-      ETL_SCHEDULE_CONFIG: /app/config/etl_schedule.yaml
-      PLAYWRIGHT_ENABLED: '1'
-      TZ: Africa/Nairobi
-    depends_on:
-      postgres:
-        condition: service_healthy
-    volumes:
-      - ./config:/app/config:ro
-      - etl_downloads:/app/downloads
-    networks:
-      - internal
-    restart: unless-stopped
+volumes:
+  auditgava_local_postgres:

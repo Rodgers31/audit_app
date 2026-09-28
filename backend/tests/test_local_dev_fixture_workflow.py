@@ -1,0 +1,71 @@
+"""Exercise the actual API against the reusable local acceptance fixture."""
+
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def _snapshot(database_path):
+    script = r'''
+import json
+import sys
+sys.path.insert(0, "backend/tests")
+import browser_fixture_api as fixture
+from fastapi.testclient import TestClient
+
+client = TestClient(fixture.main.app)
+paths = {
+    "counties": "/api/v1/counties",
+    "detail": "/api/v1/counties/nairobi",
+    "older": "/api/v1/counties/nairobi?fiscal_year=2024/25",
+    "years": "/api/v1/counties/fiscal-years",
+    "findings": "/api/v1/counties/nairobi/audits/list",
+    "withheld_year": "/api/v1/counties/nairobi/audits/list?year=FY2025/26%209M",
+    "fiscal": "/api/v1/fiscal/summary",
+}
+responses = {name: client.get(path) for name, path in paths.items()}
+assert all(response.status_code == 200 for response in responses.values())
+print("LOCAL_FIXTURE_RESULT=" + json.dumps({name: response.json() for name, response in responses.items()}))
+'''
+    env = {
+        k: v for k, v in os.environ.items()
+        if k not in {"DATABASE_URL", "DB_HOST", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"}
+    }
+    env["AUDIT_BROWSER_FIXTURE_DB"] = str(database_path)
+    result = subprocess.run(
+        [sys.executable, "-c", script], cwd=ROOT, env=env,
+        capture_output=True, text=True, timeout=30,
+    )
+    assert result.returncode == 0, result.stderr
+    return json.loads(result.stdout.split("LOCAL_FIXTURE_RESULT=", 1)[1])
+
+
+def test_persistent_fixture_preserves_county_year_audit_and_absence(tmp_path):
+    database_path = tmp_path / "acceptance.sqlite"
+    first = _snapshot(database_path)
+    assert database_path.exists()
+    second = _snapshot(database_path)
+    assert second == first  # restart did not duplicate rows or change values
+
+    counties = {row["name"]: row for row in first["counties"]}
+    assert set(counties) == {"Nairobi", "Mombasa"}
+    assert counties["Nairobi"]["total_budget"] == 100_000_000_000
+    assert counties["Nairobi"]["audit_status"] == "qualified"
+    assert counties["Mombasa"]["total_budget"] is None
+    assert counties["Mombasa"]["audit_status"] == "pending"
+    assert first["detail"]["total_budget"] == 100_000_000_000
+    assert first["older"]["total_budget"] == 50_000_000_000
+    assert first["years"]["default"] == "FY2025/26 9M"
+
+    findings = first["findings"]
+    assert findings["total"] == 1
+    assert findings["items"][0]["description"].startswith("Synthetic finding:")
+    assert findings["items"][0]["source"]["title"] == "Synthetic local audit findings"
+    assert first["withheld_year"]["total"] == 0
+    assert first["fiscal"]["status"] == "no_data"
+    assert first["fiscal"]["current"] is None
