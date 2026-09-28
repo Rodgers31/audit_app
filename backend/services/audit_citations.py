@@ -1,7 +1,7 @@
 """A citation's institution and PDF page are evidence, not geographic labels."""
 import json
 import re
-from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+from urllib.parse import parse_qsl, unquote_plus, urlencode, urlsplit, urlunsplit
 
 from sqlalchemy import func
 
@@ -62,7 +62,24 @@ def page_number(value):
     return start
 
 
-def report_page_url(url, page_ref):
+def citation_page(value):
+    """A PDF page number or a named report locator, never a malformed page."""
+    number = page_number(value)
+    if number is not None:
+        return number
+    if not isinstance(value, str):
+        return None
+    label = " ".join(value.split())
+    if re.fullmatch(
+        r"(?:annex(?:ure)?|appendix|schedule)\s+(?:[IVXLCDM]+|[A-Z]|[1-9][0-9]*)",
+        label,
+        re.I,
+    ):
+        return label
+    return None
+
+
+def report_page_url(url, page_ref, *, clear_stale_page=False):
     if not isinstance(url, str):
         return None
     try:
@@ -73,6 +90,14 @@ def report_page_url(url, page_ref):
         return None
     page = page_number(page_ref)
     if page is None or not parts.path.lower().endswith(".pdf"):
+        if clear_stale_page:
+            # Keep unrelated fragment settings verbatim. An inherited #page=N
+            # is not evidence of a page for this finding.
+            fragment = "&".join(
+                part for part in parts.fragment.split("&")
+                if unquote_plus(part.partition("=")[0]).casefold() != "page"
+            )
+            return urlunsplit(parts._replace(fragment=fragment))
         return url.strip()
     fragment = [(k, v) for k, v in parse_qsl(parts.fragment) if k.lower() != "page"]
     fragment.append(("page", str(page)))

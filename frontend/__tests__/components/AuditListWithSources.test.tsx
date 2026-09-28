@@ -36,9 +36,16 @@ describe('county audit source links', () => {
   });
 
   it('does not append a malformed reference or invent a page', () => {
-    const link = showSource(null, documentUrl);
-    expect(link).toHaveAttribute('href', documentUrl);
+    const link = showSource(null, 'https://example.invalid/synthetic-county-audit.pdf?download=1#zoom=100');
+    expect(link).toHaveAttribute('href', 'https://example.invalid/synthetic-county-audit.pdf?download=1#zoom=100');
     expect(link).not.toHaveTextContent(/page/i);
+  });
+
+  it('shows a textual annex locator without claiming a numeric PDF page', () => {
+    const link = showSource('Annex VII', 'https://example.invalid/synthetic-county-audit.pdf?download=1#zoom=100');
+    expect(link).toHaveAttribute('href', 'https://example.invalid/synthetic-county-audit.pdf?download=1#zoom=100');
+    expect(link).toHaveTextContent('Annex VII');
+    expect(link).not.toHaveTextContent('page Annex VII');
   });
 
   it('uses the resolved link even if an older response carries a textual page', () => {

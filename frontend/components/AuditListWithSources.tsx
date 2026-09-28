@@ -47,7 +47,9 @@ export default function AuditListWithSources({
         const page = item.source?.page;
         const source = item.source;
         const anchor = webSourceUrl(source.page_url === undefined ? source.url : source.page_url);
-        const pageLabel = source.page_url && typeof page === 'number' && page > 0 ? page : null;
+        const pageLabel = source.page_url && typeof page === 'number' && page > 0
+          ? `page ${page}`
+          : source.page_url && typeof page === 'string' ? page : null;
         return (
           <li key={String(item.id)} className='p-3 rounded-lg border border-slate-200 bg-white dark:bg-surface-base'>
             <div className='text-sm text-slate-800 dark:text-neutral-text'>{item.description || 'Audit finding'}</div>
@@ -67,7 +69,7 @@ export default function AuditListWithSources({
                     ? `Open source (table #${item.source.table_index})`
                     : 'Open source'
                 }>
-                Open source{pageLabel ? ` (page ${pageLabel})` : ''}
+                Open source{pageLabel ? ` (${pageLabel})` : ''}
               </a>
             )}
           </li>
