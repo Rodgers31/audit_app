@@ -5298,9 +5298,8 @@ async def _federal_audits_payload():
             findings = []
             total_amount = 0.0
             # "no publishable finding carries an amount" is not "the amount is
-            # zero". Track whether anything was actually parsed so the response
-            # can say null instead of 0.0 (AUDIT_FINDINGS P1).
-            any_amount_parsed = False
+            # zero". Count recorded amounts so the response can say null
+            # instead of 0.0 when coverage is absent (AUDIT_FINDINGS P1).
             findings_with_amount = 0
             severity_counts = {}
 
@@ -5359,8 +5358,6 @@ async def _federal_audits_payload():
                     if not amount_str:
                         amount_str = f"KES {amount_val:,.0f}"
 
-                if amount_str and amount_val:
-                    any_amount_parsed = True
                 if amount_val is not None:
                     total_amount += amount_val
                     findings_with_amount += 1
@@ -5541,7 +5538,7 @@ async def _federal_audits_payload():
                 # Transparency only: the raw sum across all finding amounts.
                 # NOT the questioned headline (see above).
                 "total_amount_in_findings": (
-                    total_amount if any_amount_parsed else None
+                    total_amount if findings_with_amount > 0 else None
                 ),
                 # The denominator that makes the partial safe to render. The
                 # OAG's own questioned total is not extracted for FY2024/25,
@@ -5554,7 +5551,7 @@ async def _federal_audits_payload():
                 "findings_with_amount": findings_with_amount,
                 "total_amount_in_findings_reason": (
                     None
-                    if any_amount_parsed
+                    if findings_with_amount > 0
                     else (
                         "awaiting_sourced_data"
                         if _withheld_federal
@@ -9069,8 +9066,8 @@ async def get_debt_timeline(db: Session = Depends(get_db)):
                     "external": float(r.external),
                     "domestic": float(r.domestic),
                     "total": float(r.total),
-                    "gdp": float(r.gdp) if r.gdp else None,
-                    "gdp_ratio": float(r.gdp_ratio) if r.gdp_ratio else None,
+                    "gdp": float(r.gdp) if r.gdp is not None else None,
+                    "gdp_ratio": float(r.gdp_ratio) if r.gdp_ratio is not None else None,
                     # The row's declared unit (stage1 3a): "KES" = raw KES.
                     # Consumers convert on this field, never by guessing
                     # magnitude — see F5.5.
@@ -9121,7 +9118,7 @@ async def get_debt_timeline(db: Session = Depends(get_db)):
             # debt_timeline stores raw KES with a declared unit column
             # (stage1 3a migration) — no scale factor.
             "primary_value_kes": (
-                float(rows[-1].total) if rows and rows[-1].total else None
+                float(rows[-1].total) if rows[-1].total is not None else None
             ),
             "secondary_source": "loans_table",
             "secondary_value_kes": None,
