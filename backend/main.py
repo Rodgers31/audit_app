@@ -3237,8 +3237,19 @@ async def get_counties(fiscal_year: Optional[str] = None):
             # (The old period filter pinned audits to the projections
             # period, which has none, so every county read as "pending".)
             # Fabricated/modelled rows are gated out — display-grade only.
+            # Scan the publication metadata before picking a latest row or
+            # limiting issue summaries. The Python display-grade check can
+            # reject a newer publishable row, so a SQL LIMIT here would change
+            # both the latest opinion and the count.
             all_audits = (
-                db.query(DBAudit)
+                db.query(
+                    DBAudit.id,
+                    DBAudit.entity_id,
+                    DBAudit.created_at,
+                    DBAudit.severity,
+                    DBAudit.source_document_id,
+                    DBAudit.provenance,
+                )
                 .filter(publishable_audit_criterion())
                 .filter(DBAudit.entity_id.in_(entity_ids))
                 .order_by(DBAudit.entity_id, DBAudit.created_at.desc())
@@ -3249,6 +3260,21 @@ async def get_counties(fiscal_year: Optional[str] = None):
                 if not _audit_is_display_grade(a):
                     continue
                 audits_by_entity.setdefault(a.entity_id, []).append(a)
+
+            # Only the first ten display-grade findings per county are shown,
+            # and only their first 200 characters leave the database. Fetch
+            # these after the Python gate, in one batch for all counties.
+            issue_ids = [a.id for rows in audits_by_entity.values() for a in rows[:10]]
+            issue_text_by_id = {}
+            if issue_ids:
+                issue_text_by_id = dict(
+                    db.query(
+                        DBAudit.id,
+                        _fn.substr(DBAudit.finding_text, 1, 200),
+                    )
+                    .filter(DBAudit.id.in_(issue_ids))
+                    .all()
+                )
 
             # 5. GDP data: latest per entity
             from models import GDPData as _GDPData
@@ -3371,7 +3397,7 @@ async def get_counties(fiscal_year: Optional[str] = None):
                             "id": str(a.id),
                             "type": "financial",
                             "severity": a.severity.value if a.severity else "medium",
-                            "description": (a.finding_text or "")[:200],
+                            "description": issue_text_by_id.get(a.id) or "",
                             "status": "open",
                         }
                     )
@@ -5217,8 +5243,23 @@ async def _federal_audits_payload():
             from sqlalchemy import func
 
             # Get all federal findings (MINISTRY + NATIONAL entities)
+            # The unparameterized API and aggregation need every published
+            # finding. Project their public inputs instead of hydrating every
+            # Audit and repeating the Entity's metadata on each joined row.
             federal_audits = (
-                db.query(DBAudit, DBEntity)
+                db.query(
+                    DBAudit.id,
+                    DBAudit.finding_text,
+                    DBAudit.severity,
+                    DBAudit.recommended_action,
+                    DBAudit.amount,
+                    DBAudit.provenance,
+                    DBAudit.page_ref,
+                    DBAudit.created_at,
+                    DBAudit.source_document_id,
+                    DBEntity.canonical_name.label("entity_name"),
+                    DBEntity.type.label("entity_type"),
+                )
                 .filter(publishable_audit_criterion())
                 .join(DBEntity, DBAudit.entity_id == DBEntity.id)
                 .filter(DBEntity.type.in_(FEDERAL_AUDIT_ENTITY_TYPES))
@@ -5237,7 +5278,7 @@ async def _federal_audits_payload():
             findings_with_amount = 0
             severity_counts = {}
 
-            for audit, entity in federal_audits:
+            for audit in federal_audits:
                 # Parse amount from provenance or finding_text.
                 #
                 # amount_val starts as None, not 0.0. Most findings state no
@@ -5303,8 +5344,8 @@ async def _federal_audits_payload():
                 findings.append(
                     {
                         "id": audit.id,
-                        "entity_name": entity.canonical_name,
-                        "entity_type": entity.type.value if entity.type else "MINISTRY",
+                        "entity_name": audit.entity_name,
+                        "entity_type": audit.entity_type.value if audit.entity_type else "MINISTRY",
                         "finding": audit.finding_text,
                         "severity": sev_key,
                         "recommended_action": audit.recommended_action,
@@ -5546,7 +5587,7 @@ async def _federal_audits_payload():
                     ),
                 ),
                 "last_updated": vintage_iso(
-                    db, [a.source_document_id for a, _ in federal_audits]
+                    db, [a.source_document_id for a in federal_audits]
                 ),
             }
     except HTTPException:
@@ -6412,16 +6453,22 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
     }
     peer_entity_ids = [e.id for e in all_peer_entities if e.id != entity.id]
 
-    # Pull all audits for every peer in a single IN(...) query, then
-    # group by entity_id in Python. For 47 counties × ~20 audits this
-    # is <1000 rows.
+    # Pull only the peer fields used by the two comparisons in one query.
+    # Full finding text, provenance, and responses are not needed here.
     from collections import defaultdict
-    from sqlalchemy import func as _sqlfunc3
 
     peer_audits_by_entity: Dict[int, List[Any]] = defaultdict(list)
     if peer_entity_ids:
         for pa in (
-            db.query(DBAudit).filter(publishable_audit_criterion()).filter(DBAudit.entity_id.in_(peer_entity_ids)).all()
+            db.query(
+                DBAudit.entity_id,
+                DBAudit.amount,
+                DBAudit.audit_year,
+                DBAudit.audit_opinion,
+            )
+            .filter(publishable_audit_criterion())
+            .filter(DBAudit.entity_id.in_(peer_entity_ids))
+            .all()
         ):
             peer_audits_by_entity[pa.entity_id].append(pa)
 
