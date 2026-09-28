@@ -1,5 +1,9 @@
 # Government Financial Transparency Audit Application
 
+For routine previews with synthetic, persistent local data, see
+[isolated local development](docs/local-development.md). It uses ports 13080 and
+18080 and does not load production Supabase credentials.
+
 🎉 **Production-Ready!** This application has been hardened for production deployment with comprehensive security, monitoring, testing, and legal compliance.
 
 A comprehensive platform for transparent, auditable publication of government allocations, spending, borrowing, and audits with extensible multi-country support.
@@ -58,25 +62,9 @@ audit_app/
 
 ### Local Development (Full Stack)
 
-```bash
-# 1. Start Backend (Terminal 1)
-cd audit_app
-python3 -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r backend/requirements.txt
-cd backend
-python3 -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
-
-# 2. Start Frontend (Terminal 2)
-cd frontend
-npm install
-npm run dev
-
-# 3. Access Application
-# Frontend: http://localhost:3000
-# Backend API: http://localhost:8000
-# API Docs: http://localhost:8000/docs
-```
+Follow [isolated local development](docs/local-development.md). Its launcher
+checks for inherited remote endpoints, supplies synthetic persistent fixtures,
+and runs on ports 13080/18080 so an existing preview can keep running.
 
 ### Testing Without Backend
 
@@ -217,114 +205,15 @@ Deployments are automatically blocked if any tests fail.
 
 - Python 3.9+
 - Node.js 18+
-- PostgreSQL 13+
-- Redis (for caching)
+- PostgreSQL 17 through Docker (optional for the isolated PostgreSQL path)
+- Redis (optional for local previews)
 
-### Backend Setup
+### Backend and frontend setup
 
-#### 1. Create Virtual Environment and Install Dependencies
-
-```bash
-# Navigate to project root
-cd audit_app
-
-# Create virtual environment
-python3 -m venv venv
-
-# Activate virtual environment
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r backend/requirements.txt
-```
-
-#### 2. Configure Frontend Environment Variables
-
-```bash
-# Copy example env file
-cp backend/.env.example backend/.env
-
-# Edit backend/.env with your settings:
-# - Database connection string (PostgreSQL)
-# - Redis URL (for caching)
-# - API keys and secrets
-```
-
-#### 3. Setup Database
-
-```bash
-# Make sure PostgreSQL is running
-# Create database: audit_app
-
-# Run migrations
-cd backend
-alembic upgrade head
-```
-
-#### 4. Start Backend Server
-
-```bash
-# Development mode (with venv activated)
-source venv/bin/activate  # if not already activated
-cd backend
-python3 -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
-
-# Alternative: Use the VS Code task "Start Backend (Dev)"
-
-# Backend will be available at:
-# http://localhost:8000
-# API docs: http://localhost:8000/docs
-# Alternative docs: http://localhost:8000/redoc
-```
-
-**Note**: The backend runs on **port 8000** by default. The frontend expects the API at `http://localhost:8001` (configured in `frontend/.env.local`).
-
-### Frontend Setup
-
-#### 1. Install Dependencies
-
-```bash
-# Navigate to frontend directory
-cd frontend
-
-# Install Node.js packages
-npm install
-```
-
-#### 2. Configure Environment Variables
-
-```bash
-# Copy example env file
-cp .env.local.example .env.local
-
-# Edit frontend/.env.local with your settings:
-# NEXT_PUBLIC_API_URL=http://localhost:8001
-# NEXT_PUBLIC_API_VERSION=v1
-```
-
-#### 3. Start Development Server
-
-```bash
-# Development mode
-npm run dev
-
-# Alternative: Use the VS Code task "Start Frontend (Dev)"
-
-# Frontend will be available at:
-# http://localhost:3000
-```
-
-#### 4. Build for Production
-
-```bash
-# Create optimized production build
-npm run build
-
-# Start production server
-npm start
-```
-
-**Note**: Make sure the backend is running before starting the frontend, or configure the mock API layer for development.
+For routine UI and API work, use [isolated local development](docs/local-development.md).
+It sets both processes to alternate loopback ports and supplies persistent,
+clearly synthetic data. The older manual `.env` and default-port startup path
+is not the supported preview workflow.
 
 ### ETL Setup
 
@@ -456,42 +345,22 @@ alembic upgrade head
 
 #### Backend won't start
 
-```bash
-# Check Python version (requires 3.9+)
-python3 --version
-
-# Verify virtual environment is activated
-which python3  # Should point to venv/bin/python3
-
-# Install missing dependencies
-pip install -r backend/requirements.txt
-
-# Check PostgreSQL is running
-psql -U postgres -l
-
-# Verify database exists
-psql -U postgres -c "SELECT datname FROM pg_database WHERE datname='audit_app';"
-```
+Run `venv/bin/python scripts/local_dev.py check` from the isolated checkout.
+If using PostgreSQL, run `venv/bin/python scripts/local_dev.py db-up` first.
+See [isolated local development](docs/local-development.md) for dependencies.
 
 #### Frontend can't connect to backend
 
-1. Verify backend is running: `curl http://localhost:8000/health`
-2. Check `frontend/.env.local` has correct `NEXT_PUBLIC_API_URL`
+1. Verify the local API: `venv/bin/python scripts/local_dev_smoke.py`
+2. Start the frontend through `venv/bin/python scripts/local_dev.py frontend`
 3. Check browser console for CORS errors
 4. Try clearing browser cache and restarting frontend
 
 #### Port conflicts
 
-```bash
-# Backend default: 8000
-# Frontend default: 3000
-
-# Change backend port:
-uvicorn main:app --reload --port 8001
-
-# Change frontend port:
-PORT=3001 npm run dev
-```
+The isolated preview uses 18080 for the API, 13080 for the frontend, and
+55432 for optional PostgreSQL. Stop only the conflicting process you own;
+the launcher deliberately leaves any services on 8000/3000 alone.
 
 ### Deployment
 
