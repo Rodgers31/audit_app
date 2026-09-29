@@ -1,0 +1,231 @@
+"""#238: the public county summary uses the same sourced account as entity pages."""
+from datetime import datetime
+
+import pytest
+
+from models import BudgetLine, Entity, EntityType, FigureBasis, FiscalPeriod, SourceDocument, DocumentType
+
+
+@pytest.fixture
+def county(db_session, seed_country, seed_source_doc):
+    entity = Entity(
+        country_id=seed_country.id,
+        canonical_name="Mombasa County",
+        slug="mombasa-county",
+        type=EntityType.COUNTY,
+    )
+    db_session.add(entity)
+    db_session.flush()
+    periods = []
+    for year in (2024, 2025):
+        period = FiscalPeriod(
+            country_id=seed_country.id,
+            label=f"FY{year}/{str(year + 1)[2:]}",
+            start_date=datetime(year, 7, 1),
+            end_date=datetime(year + 1, 6, 30),
+        )
+        db_session.add(period)
+        db_session.flush()
+        periods.append(period)
+    return entity, periods, seed_source_doc
+
+
+def add_line(db, entity, period, source, category, allocated, spent, *, basis=None):
+    db.add(BudgetLine(
+        entity_id=entity.id,
+        period_id=period.id,
+        source_document_id=source.id,
+        category=category,
+        allocated_amount=allocated,
+        actual_spent=spent,
+        currency="KES",
+        page_ref="p.42",
+        basis=basis,
+    ))
+    db.flush()
+
+
+def summary(client, identifier="047"):
+    response = client.get(f"/api/v1/counties/{identifier}/summary")
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
+def test_latest_period_total_does_not_add_classifications_sectors_or_revenue(
+    client, db_session, county
+):
+    entity, (older, latest), source = county
+    add_line(db_session, entity, older, source, "Total", 80, 40)
+    for category, allocated, spent in (
+        ("Total", 100, 50),
+        ("Recurrent", 60, 30),
+        ("Development", 40, 20),
+        ("Health", 10, 5),
+        ("Own Source Revenue", 7, 3),
+    ):
+        add_line(db_session, entity, latest, source, category, allocated, spent)
+    result = summary(client)
+    assert (result["total_budget"], result["total_spent"]) == (100, 50)
+    assert result["budget_accounting_basis"] == "reported_total"
+    assert result["budget_fiscal_period"]["id"] == latest.id
+    assert result["budget_sources"][0]["id"] == source.id
+    assert summary(client, "mombasa-county")["total_budget"] == 100
+    assert summary(client, f"code:001")["total_budget"] == 100
+
+
+def test_complete_classification_without_total_is_additive(client, db_session, county):
+    entity, (_, period), source = county
+    add_line(db_session, entity, period, source, "Recurrent", 60, 30)
+    add_line(db_session, entity, period, source, "Development", 40, 20)
+    add_line(db_session, entity, period, source, "Health", 10, 5)
+    result = summary(client)
+    assert (result["total_budget"], result["total_spent"]) == (100, 50)
+    assert result["budget_accounting_basis"] == "recurrent_plus_development"
+
+
+def test_incomplete_classification_and_sector_only_are_absent(client, db_session, county):
+    entity, (_, period), source = county
+    add_line(db_session, entity, period, source, "Recurrent", 60, 30)
+    add_line(db_session, entity, period, source, "Health", 10, 5)
+    result = summary(client)
+    assert result["total_budget"] is None
+    assert result["total_spent"] is None
+    assert result["budget_absent_reasons"]["total_allocation"] == "incomplete_classification"
+
+
+def test_sourced_zero_and_unreported_spending_remain_distinct(client, db_session, county):
+    entity, (_, period), source = county
+    add_line(db_session, entity, period, source, "Total", 100, 0)
+    assert summary(client)["total_spent"] == 0
+    row = db_session.query(BudgetLine).one()
+    row.actual_spent = None
+    db_session.flush()
+    result = summary(client, "mombasa-county")
+    assert result["total_spent"] is None
+    assert result["budget_absent_reasons"]["total_spent"] == "spending_not_reported"
+
+
+def test_competing_sources_are_withheld(client, db_session, county, seed_country):
+    entity, (_, period), source = county
+    other = SourceDocument(
+        country_id=seed_country.id,
+        title="Other report",
+        publisher="Controller of Budget",
+        url="https://cob.go.ke/other.pdf",
+        fetch_date=datetime(2026, 9, 29),
+        doc_type=DocumentType.BUDGET,
+    )
+    db_session.add(other)
+    db_session.flush()
+    add_line(db_session, entity, period, source, "Recurrent", 60, 30)
+    add_line(db_session, entity, period, other, "Development", 40, 20)
+    result = summary(client)
+    assert result["total_budget"] is None
+    assert result["budget_absent_reasons"]["total_allocation"] == "multiple_sources"
+    assert {s["id"] for s in result["budget_sources"]} == {source.id, other.id}
+
+
+def test_annual_projection_does_not_replace_nine_months_report(client, db_session, county):
+    entity, (_, annual), source = county
+    nine_months = FiscalPeriod(
+        country_id=annual.country_id,
+        label="FY2025/26 9M",
+        start_date=annual.start_date,
+        end_date=datetime(2026, 3, 31),
+    )
+    db_session.add(nine_months)
+    db_session.flush()
+    add_line(db_session, entity, annual, source, "Health", 999, 888)
+    add_line(db_session, entity, nine_months, source, "Total", 100, 50)
+    result = summary(client)
+    assert result["budget_fiscal_period"]["id"] == nine_months.id
+    assert (result["total_budget"], result["total_spent"]) == (100, 50)
+
+
+def test_full_year_report_wins_equal_start_date_over_nine_months(
+    client, db_session, seed_country, seed_source_doc
+):
+    entity = Entity(
+        country_id=seed_country.id,
+        canonical_name="Mombasa County",
+        slug="mombasa-county",
+        type=EntityType.COUNTY,
+    )
+    db_session.add(entity)
+    db_session.flush()
+    nine_months = FiscalPeriod(
+        country_id=seed_country.id,
+        label="FY2025/26 9M",
+        start_date=datetime(2025, 7, 1),
+        end_date=datetime(2026, 3, 31),
+    )
+    db_session.add(nine_months)
+    db_session.flush()
+    annual = FiscalPeriod(
+        country_id=seed_country.id,
+        label="FY2025/26",
+        start_date=nine_months.start_date,
+        end_date=datetime(2026, 6, 30),
+    )
+    db_session.add(annual)
+    db_session.flush()
+    # Insert the 9M classification first to reproduce the planner's tie.
+    add_line(db_session, entity, nine_months, seed_source_doc, "Total", 100, 50)
+    add_line(db_session, entity, annual, seed_source_doc, "Total", 200, 120)
+    result = summary(client)
+    assert result["budget_fiscal_period"]["id"] == annual.id
+    assert (result["total_budget"], result["total_spent"]) == (200, 120)
+
+
+def test_modelled_annual_total_does_not_mask_reported_nine_months(
+    client, db_session, seed_country, seed_source_doc
+):
+    entity = Entity(
+        country_id=seed_country.id,
+        canonical_name="Mombasa County",
+        slug="mombasa-county",
+        type=EntityType.COUNTY,
+    )
+    db_session.add(entity)
+    db_session.flush()
+    nine_months = FiscalPeriod(
+        country_id=seed_country.id,
+        label="FY2025/26 9M",
+        start_date=datetime(2025, 7, 1),
+        end_date=datetime(2026, 3, 31),
+    )
+    annual = FiscalPeriod(
+        country_id=seed_country.id,
+        label="FY2025/26",
+        start_date=datetime(2025, 7, 1),
+        end_date=datetime(2026, 6, 30),
+    )
+    db_session.add_all([nine_months, annual])
+    db_session.flush()
+    add_line(db_session, entity, nine_months, seed_source_doc, "Total", 100, 50)
+    add_line(
+        db_session, entity, annual, seed_source_doc, "Total", 200, 120,
+        basis=FigureBasis.PROJECTED,
+    )
+    result = summary(client)
+    assert result["budget_fiscal_period"]["id"] == nine_months.id
+    assert (result["total_budget"], result["total_spent"]) == (100, 50)
+
+
+def test_classification_whitespace_is_recognized_by_period_selector(
+    client, db_session, county
+):
+    entity, (reported, projection), source = county
+    add_line(db_session, entity, reported, source, " Total ", 100, 50)
+    add_line(db_session, entity, projection, source, "Health", 20, 10)
+    result = summary(client)
+    assert result["budget_fiscal_period"]["id"] == reported.id
+    assert result["total_budget"] == 100
+
+
+def test_no_rows_is_absent_not_a_zero_budget(client, county):
+    result = summary(client)
+    assert result["total_budget"] is None
+    assert result["total_spent"] is None
+    assert result["budget_sources"] == []
+    assert result["budget_absent_reasons"]["total_allocation"] == "no_valid_period"

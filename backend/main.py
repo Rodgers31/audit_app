@@ -3127,20 +3127,23 @@ def _latest_county_actuals_period_ids(db) -> Optional[List[int]]:
     from sqlalchemy import func as _f
 
     from models import FiscalPeriod as _FP
+    from services.entity_financials import budget_line_is_unreported
 
-    row = (
-        db.query(_FP.id)
-        .join(DBBudgetLine, DBBudgetLine.period_id == _FP.id)
+    rows = (
+        db.query(DBBudgetLine)
+        .options(joinedload(DBBudgetLine.source_document))
+        .join(_FP, DBBudgetLine.period_id == _FP.id)
         .join(DBEntity, DBEntity.id == DBBudgetLine.entity_id)
         .filter(
             DBEntity.type == EntityType.COUNTY,
-            _f.lower(DBBudgetLine.category).in_(list(_CLASSIFICATION_CATEGORIES)),
+            _f.lower(_f.trim(DBBudgetLine.category)).in_(list(_CLASSIFICATION_CATEGORIES)),
         )
-        .order_by(_FP.start_date.desc())
-        .first()
+        .order_by(_FP.start_date.desc(), _FP.end_date.desc(), _FP.id.desc())
+        .all()
     )
-    if row:
-        return [row[0]]
+    for row in rows:
+        if not budget_line_is_unreported(row):
+            return [row.period_id]
 
     row = (
         db.query(_FP.id)
@@ -3151,12 +3154,14 @@ def _latest_county_actuals_period_ids(db) -> Optional[List[int]]:
             DBBudgetLine.actual_spent.isnot(None),
             DBBudgetLine.actual_spent > 0,
         )
-        .order_by(_FP.start_date.desc())
+        .order_by(_FP.start_date.desc(), _FP.end_date.desc(), _FP.id.desc())
         .first()
     )
     if row:
         return [row[0]]
-    latest = db.query(_FP).order_by(_FP.start_date.desc()).first()
+    latest = db.query(_FP).order_by(
+        _FP.start_date.desc(), _FP.end_date.desc(), _FP.id.desc()
+    ).first()
     return [latest.id] if latest else None
 
 
@@ -6915,8 +6920,11 @@ async def get_county_summary(county_id: str):
                 .first()
             )
             budget_lines = _entity_period_budget_query(db, entity.id).all()
-            total_allocated = sum(float(b.allocated_amount or 0) for b in budget_lines)
-            total_spent = sum(float(b.actual_spent or 0) for b in budget_lines)
+            from services.entity_financials import financial_summary
+
+            budget_account = financial_summary(
+                budget_lines, budget_lines[0].period if budget_lines else None
+            )
             audits = db.query(DBAudit).filter(publishable_audit_criterion()).filter(DBAudit.entity_id == entity.id).all()
 
             scorecard = _compute_accountability(db, entity, county_id)
@@ -6930,8 +6938,13 @@ async def get_county_summary(county_id: str):
                 "population": (
                     pop_data.total_population if pop_data else None
                 ),
-                "total_budget": total_allocated,
-                "total_spent": total_spent,
+                "total_budget": budget_account["total_allocation"],
+                "total_spent": budget_account["total_spent"],
+                "budget_fiscal_period": budget_account["fiscal_period"],
+                "budget_accounting_basis": budget_account["accounting_basis"],
+                "budget_currency": budget_account["currency"],
+                "budget_sources": budget_account["sources"],
+                "budget_absent_reasons": budget_account["absent_reasons"],
                 "audit_findings_count": len(audits),
                 "accountability_grade": scorecard["accountability_grade"],
             }

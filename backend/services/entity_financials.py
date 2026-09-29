@@ -24,7 +24,7 @@ def _amount(value):
     )
 
 
-def _not_reported(line):
+def budget_line_is_unreported(line):
     if line.quarantine_reason or getattr(line.basis, "value", line.basis) in {
         "modelled",
         "projected",
@@ -116,7 +116,7 @@ def financial_summary(lines, period=None):
         for line in selected
     ):
         reason = "no_page_reference"
-    elif any(_not_reported(line) for line in selected):
+    elif any(budget_line_is_unreported(line) for line in selected):
         reason = "not_reported_actuals"
 
     def total(field):
