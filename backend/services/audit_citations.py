@@ -6,6 +6,15 @@ from urllib.parse import parse_qsl, unquote_plus, urlencode, urlsplit, urlunspli
 from sqlalchemy import func
 
 
+# Conventional Roman numerals from I through MMMCMXCIX (1–3999). A named
+# locator may also use one alphabetic letter, but multi-letter Roman labels
+# must be canonical rather than merely composed of Roman characters.
+_ROMAN_NUMERAL = re.compile(
+    r"M{0,3}(?:CM|CD|D?C{0,3})(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3})",
+    re.I,
+)
+
+
 def extraction_payload(raw):
     if isinstance(raw, str):
         try:
@@ -70,10 +79,18 @@ def citation_page(value):
     if not isinstance(value, str):
         return None
     label = " ".join(value.split())
-    if re.fullmatch(
-        r"(?:annex(?:ure)?|appendix|schedule)\s+(?:[IVXLCDM]+|[A-Z]|[1-9][0-9]*)",
+    match = re.fullmatch(
+        r"(?:annex(?:ure)?|appendix|schedule)\s*([A-Z]+|[1-9][0-9]*)",
         label,
         re.I,
+    )
+    if not match:
+        return None
+    identifier = match[1]
+    if (
+        identifier.isdigit()
+        or len(identifier) == 1
+        or _ROMAN_NUMERAL.fullmatch(identifier)
     ):
         return label
     return None

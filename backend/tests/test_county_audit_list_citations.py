@@ -3,6 +3,8 @@
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock
 
+import pytest
+
 from models import (
     Audit,
     DocumentStatus,
@@ -15,6 +17,46 @@ from models import (
 
 
 PDF_URL = "https://example.invalid/synthetic-county-audit.pdf?download=1#page=9&zoom=100"
+
+
+@pytest.mark.parametrize(
+    "locator",
+    [
+        "Annex IIV",
+        "Schedule VX",
+        "Appendix IIII",
+        "Annex IC",
+        "Schedule VIV",
+        "Annex MMMM",
+        "AnnexIIV",
+        "Schedule000",
+    ],
+)
+def test_noncanonical_roman_locator_is_not_a_citation(locator):
+    from services.audit_citations import citation_page
+
+    assert citation_page(locator) is None
+
+
+@pytest.mark.parametrize(
+    "locator,expected",
+    [
+        ("Annex VII", "Annex VII"),
+        ("annex  iv", "annex iv"),
+        ("Schedule XL", "Schedule XL"),
+        ("Appendix MCMXCIV", "Appendix MCMXCIV"),
+        ("Appendix MMMCMXCIX", "Appendix MMMCMXCIX"),
+        ("Annex A", "Annex A"),
+        ("Schedule 12", "Schedule 12"),
+        ("Schedule12", "Schedule12"),
+        ("p. 2", 2),
+        ("pp. 38–39", 38),
+    ],
+)
+def test_supported_locators_keep_their_contract(locator, expected):
+    from services.audit_citations import citation_page
+
+    assert citation_page(locator) == expected
 
 
 def test_named_locators_are_conservative_and_stale_page_cleanup_is_opt_in():
@@ -66,6 +108,15 @@ def test_county_audit_list_carries_only_parseable_pages_and_preserves_gates(
         ("single", "p. 2", nairobi),
         ("range", "pp. 38-39", nairobi),
         ("annex", "Annex VII", nairobi),
+        ("roman-additive", "Annex VIII", nairobi),
+        ("roman-subtractive", "Schedule XIV", nairobi),
+        ("roman-large", "Appendix MCMXCIV", nairobi),
+        ("single-letter", "Annex A", nairobi),
+        ("decimal-label", "Schedule 12", nairobi),
+        ("compact-schedule", "Schedule12", nairobi),
+        ("roman-iiv", "Annex IIV", nairobi),
+        ("roman-vx", "Schedule VX", nairobi),
+        ("roman-iiii", "Appendix IIII", nairobi),
         ("malformed", "p.38 garbage 73", nairobi),
         ("negative", "p.-3", nairobi),
         ("zero", "p.0", nairobi),
@@ -93,8 +144,12 @@ def test_county_audit_list_carries_only_parseable_pages_and_preserves_gates(
         item["description"].removeprefix("Synthetic ").removesuffix(" finding"): item
         for item in data["items"]
     }
-    assert data["total"] == 6
-    assert set(by_label) == {"single", "range", "annex", "malformed", "negative", "zero"}
+    assert data["total"] == 15
+    assert set(by_label) == {
+        "single", "range", "annex", "roman-additive", "roman-subtractive",
+        "roman-large", "single-letter", "decimal-label", "compact-schedule",
+        "roman-iiv", "roman-vx", "roman-iiii", "malformed", "negative", "zero",
+    }
     assert all(item["fiscal_year"] == "FY2024/25" for item in by_label.values())
 
     for label, expected_page in (("single", 2), ("range", 38)):
@@ -106,11 +161,20 @@ def test_county_audit_list_carries_only_parseable_pages_and_preserves_gates(
             "https://example.invalid/synthetic-county-audit.pdf?download=1"
             f"#zoom=100&page={expected_page}"
         )
-    assert by_label["annex"]["source"]["page"] == "Annex VII"
-    assert by_label["annex"]["source"]["page_url"] == (
-        "https://example.invalid/synthetic-county-audit.pdf?download=1#zoom=100"
-    )
-    for label in ("malformed", "negative", "zero"):
+    for label, locator in (
+        ("annex", "Annex VII"),
+        ("roman-additive", "Annex VIII"),
+        ("roman-subtractive", "Schedule XIV"),
+        ("roman-large", "Appendix MCMXCIV"),
+        ("single-letter", "Annex A"),
+        ("decimal-label", "Schedule 12"),
+        ("compact-schedule", "Schedule12"),
+    ):
+        assert by_label[label]["source"]["page"] == locator
+        assert by_label[label]["source"]["page_url"] == (
+            "https://example.invalid/synthetic-county-audit.pdf?download=1#zoom=100"
+        )
+    for label in ("roman-iiv", "roman-vx", "roman-iiii", "malformed", "negative", "zero"):
         source = by_label[label]["source"]
         assert source["page"] is None
         assert source["page_url"] == (
@@ -146,6 +210,16 @@ def test_county_audit_list_fallback_uses_the_same_page_contract(client, monkeypa
                 "source": {"title": "Synthetic PDF", "url": PDF_URL, "page": "Annex VII"},
             },
             {
+                "id": "bad-roman",
+                "description": "Synthetic noncanonical Roman locator",
+                "source": {"title": "Synthetic PDF", "url": PDF_URL, "page": "Schedule VX"},
+            },
+            {
+                "id": "compact-schedule",
+                "description": "Synthetic compact schedule locator",
+                "source": {"title": "Synthetic PDF", "url": PDF_URL, "page": "Schedule12"},
+            },
+            {
                 "id": "unsafe-url",
                 "description": "Synthetic invalid URL",
                 "source": {"title": "Synthetic PDF", "url": "javascript:alert(1)", "page": "p. 2"},
@@ -164,6 +238,10 @@ def test_county_audit_list_fallback_uses_the_same_page_contract(client, monkeypa
     assert items["annex"]["page_url"] == (
         "https://example.invalid/synthetic-county-audit.pdf?download=1#zoom=100"
     )
+    assert items["bad-roman"]["page"] is None
+    assert items["bad-roman"]["page_url"] == items["annex"]["page_url"]
+    assert items["compact-schedule"]["page"] == "Schedule12"
+    assert items["compact-schedule"]["page_url"] == items["annex"]["page_url"]
     assert items["invalid"]["page"] is None
     assert items["invalid"]["page_url"] == (
         "https://example.invalid/synthetic-county-audit.pdf?download=1#zoom=100"
