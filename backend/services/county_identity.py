@@ -83,13 +83,16 @@ def legacy_county_route_id(name):
 
 def resolve_official_county_entity(db, code):
     """Resolve an official code, never through the app's legacy URL mapping."""
-    from models import Entity, EntityType
+    from models import Country, Entity, EntityType
 
     if code not in OFFICIAL_COUNTY_CODES:
         return None
     matches = [
         entity
-        for entity in db.query(Entity).filter(Entity.type == EntityType.COUNTY).all()
+        for entity in db.query(Entity)
+        .join(Country, Entity.country_id == Country.id)
+        .filter(Entity.type == EntityType.COUNTY, Country.iso_code == "KEN")
+        .all()
         if official_county_code(entity.canonical_name) == code
     ]
     return matches[0] if len(matches) == 1 else None

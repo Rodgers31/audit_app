@@ -5293,6 +5293,19 @@ async def _federal_audits_payload():
                 .all()
             )
 
+            # A finding's linked document is its citation. Load the URL for
+            # every selected document in one batch; provenance may contain a
+            # different URL and cannot silently replace that relationship.
+            source_document_ids = {a.source_document_id for a in federal_audits}
+            source_urls_by_document_id = (
+                dict(
+                    db.query(DBSourceDocument.id, DBSourceDocument.url)
+                    .filter(DBSourceDocument.id.in_(source_document_ids))
+                    .all()
+                )
+                if source_document_ids else {}
+            )
+
             from provenance import vintage_iso
 
             findings = []
@@ -5364,6 +5377,13 @@ async def _federal_audits_payload():
                 sev_key = (audit.severity.value if audit.severity else "INFO").upper()
                 severity_counts[sev_key] = severity_counts.get(sev_key, 0) + 1
 
+                source_url = report_page_url(
+                    source_urls_by_document_id.get(audit.source_document_id),
+                    None,
+                    clear_stale_page=True,
+                )
+                source_page = citation_page(audit.page_ref)
+
                 findings.append(
                     {
                         "id": audit.id,
@@ -5378,7 +5398,14 @@ async def _federal_audits_payload():
                         # source PDF this finding was extracted from.
                         "title": prov.get("title") or None,
                         "page_ref": audit.page_ref,
-                        "source_url": prov.get("source_url") or None,
+                        "source_url": source_url,
+                        "source_page": source_page,
+                        "source_page_url": (
+                            report_page_url(
+                                source_url, source_page, clear_stale_page=True
+                            )
+                            if source_page is not None else None
+                        ),
                         "status": status,
                         "category": category,
                         "query_type": query_type,
@@ -5558,8 +5585,8 @@ async def _federal_audits_payload():
                         else "no_amounts_recorded"
                     )
                 ),
-                # Findings excluded because their source document has no URL a
-                # reader could open. Retained in the database, not served here.
+                # Findings excluded by publication checks. Retained in the
+                # database, not served here.
                 "withheld_findings": _withheld_federal,
                 "withheld_findings_by_reason": _withheld_federal_reasons,
                 "by_severity": by_severity,
@@ -5939,22 +5966,34 @@ async def list_county_audits(
 ):
     """Paginated audit queries with filters. DB-backed when available; falls back to Enhanced API."""
     try:
-        county_name = _resolve_county_name(county_id)
+        from services.county_identity import OFFICIAL_COUNTY_CODES
+
+        cid = str(county_id or "").strip()
+        county_name = (
+            OFFICIAL_COUNTY_CODES.get(cid[5:])
+            if cid.startswith("code:")
+            else _resolve_county_name(cid, db)
+        )
         if not county_name:
             raise HTTPException(status_code=404, detail="County not found")
 
         # DB-backed path
         if DATABASE_AVAILABLE and DBAudit and DBEntity and db:
-            entity_ids = [
-                e.id
-                for e in db.query(DBEntity)
-                .filter(DBEntity.canonical_name == f"{county_name} County")
-                .all()
-            ]
+            county_entity = _resolve_county_entity(db, cid)
 
-            query = db.query(DBAudit).filter(publishable_audit_criterion())
-            if entity_ids:
-                query = query.filter(DBAudit.entity_id.in_(entity_ids))
+            if county_entity is None:
+                return {"total": 0, "page": page, "limit": limit, "items": []}
+
+            # Bind to the exact Kenyan county entity resolved from this URL.
+            # A namesake in another country or a ministry must not supply it.
+            query = (
+                db.query(DBAudit)
+                .options(
+                    joinedload(DBAudit.source_document), joinedload(DBAudit.period)
+                )
+                .filter(publishable_audit_criterion())
+                .filter(DBAudit.entity_id == county_entity.id)
+            )
 
             if year and DBFiscalPeriod:
                 query = query.join(
@@ -6118,9 +6157,8 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
         .filter(DBAudit.entity_id == entity.id)
         .all()
     )
-    # Findings held back for this county because their source document has no
-    # URL a reader could open. Counted so the omission is visible in the
-    # response rather than inferred from a suspiciously clean scorecard.
+    # Findings held back by the publication checks. Counted so the omission
+    # is visible rather than inferred from a suspiciously clean scorecard.
     withheld_findings = count_withheld_audits(db, entity_id=entity.id)
 
     # --- audit_opinion_history ---
@@ -6400,8 +6438,8 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
             accountability_reason = "awaiting_sourced_data"
             _detail = (
                 f"{withheld_findings} finding"
-                f"{'s' if withheld_findings != 1 else ''} withheld: the source "
-                "document has no URL a reader could open"
+                f"{'s' if withheld_findings != 1 else ''} withheld because "
+                "the audit publication requirements are not met"
             )
         else:
             # Distinguish "audited and clean" from "never audited here". This
@@ -6653,7 +6691,7 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
         "accountability_reason": accountability_reason,
         "withheld": {
             "count": withheld_findings,
-            "reason": "source_document_has_no_url" if withheld_findings else None,
+            "reason": "publication_requirements_not_met" if withheld_findings else None,
         },
         "grade_factors": grade_factors,
         "peer_comparison": peer_comparison,
@@ -11423,12 +11461,22 @@ def _resolve_county_entity(db: Session, county_id: str):
     if cid.isdigit():
         return (
             db.query(DBEntity)
-            .filter(DBEntity.id == int(cid), DBEntity.type == EntityType.COUNTY)
+            .join(DBCountry, DBEntity.country_id == DBCountry.id)
+            .filter(
+                DBEntity.id == int(cid),
+                DBEntity.type == EntityType.COUNTY,
+                DBCountry.iso_code == "KEN",
+            )
             .first()
         )
     entity = (
         db.query(DBEntity)
-        .filter(DBEntity.slug == cid.lower(), DBEntity.type == EntityType.COUNTY)
+        .join(DBCountry, DBEntity.country_id == DBCountry.id)
+        .filter(
+            DBEntity.slug == cid.lower(),
+            DBEntity.type == EntityType.COUNTY,
+            DBCountry.iso_code == "KEN",
+        )
         .first()
     )
     if entity is not None:

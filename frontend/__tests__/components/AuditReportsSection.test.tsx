@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import type { FederalAuditHeadline, FederalAuditResponse } from '@/lib/api/audits';
+import { LangProvider } from '@/lib/i18n/LangProvider';
 
 // The exact shape /api/v1/audits/federal returns when the publication gate
 // withholds every federal finding (verified against the live DB 2026-08-29:
@@ -96,8 +97,43 @@ describe('AuditReportsSection with zero publishable findings', () => {
   });
 });
 
+describe('AuditReportsSection withholding reasons (#366 integration)', () => {
+  const reasons = {
+    source_document_has_no_url: 1,
+    source_document_has_invalid_url: 2,
+    finding_text_unreadable_cid: 3,
+    no_page_reference: 4,
+    future_gate_reason: 5,
+    toString: 6,
+    zero_reason: 0,
+  };
+
+  it.each([
+    ['en', /2 finding\(s\) held back because the source document link is invalid or unsafe/i,
+      /4 finding\(s\) held back because the page reference is missing or invalid/i,
+      /5 finding\(s\) held back because another publication check did not pass/i],
+    ['sw', /Matokeo 2 yamezuiliwa kwa sababu kiungo cha hati ya chanzo si sahihi au si salama/i,
+      /Matokeo 4 yamezuiliwa kwa sababu rejeleo la ukurasa halipo au si sahihi/i,
+      /Matokeo 5 yamezuiliwa kwa sababu hayakupita ukaguzi mwingine wa uchapishaji/i],
+    ['plain', /2 finding\(s\) held back because the report link does not work safely/i,
+      /4 finding\(s\) held back because they do not give a usable page reference/i,
+      /5 finding\(s\) held back because another check was not met/i],
+  ] as const)('renders known and unknown positive reasons in %s, omitting zero', async (language, invalidUrl, invalidPage, unknown) => {
+    localStorage.setItem('auditgava-lang', language);
+    mockUseFederalAudits.mockReturnValue({ data: {
+      ...GATED_EMPTY_RESPONSE, withheld_findings: 21, withheld_findings_by_reason: reasons,
+    }, isLoading: false, error: null });
+    render(<LangProvider><AuditReportsSection /></LangProvider>);
+    await waitFor(() => expect(screen.getAllByText(invalidUrl).length).toBeGreaterThan(0));
+    expect(screen.getAllByText(invalidPage).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(unknown).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(new RegExp(unknown.source.replace('5', '6'), 'i')).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/0 finding\(s\) held back|Matokeo 0 yamezuiliwa/i)).toBeNull();
+  });
+});
+
 describe('AuditReportsSection with published findings', () => {
-  it('derives the donut count and the severity breakdown from one map', () => {
+  beforeEach(() => {
     mockUseFederalAudits.mockReturnValue({
       data: {
         ...GATED_EMPTY_RESPONSE,
@@ -124,7 +160,8 @@ describe('AuditReportsSection with published findings', () => {
             date: null,
             title: 'Pending Accounts Payable',
             page_ref: 'p.14',
-            source_url: 'https://www.oagkenya.go.ke/wp-content/uploads/2026/05/R.pdf',
+            source_url: 'https://www.oagkenya.go.ke/wp-content/uploads/2026/05/R.pdf#zoom=100',
+            source_page_url: 'https://www.oagkenya.go.ke/wp-content/uploads/2026/05/R.pdf#zoom=100&page=14',
           },
           {
             id: 2,
@@ -151,6 +188,9 @@ describe('AuditReportsSection with published findings', () => {
       isLoading: false,
       error: null,
     });
+  });
+
+  it('derives the donut count and the severity breakdown from one map', () => {
     render(<AuditReportsSection />);
     expect(screen.getByText('2')).toBeInTheDocument(); // donut count
     expect(screen.getByText(/Critical \(1\)/)).toBeInTheDocument();
@@ -169,7 +209,7 @@ describe('AuditReportsSection with published findings', () => {
     const link = screen.getByRole('link', { name: /source.*p\.14/i });
     expect(link).toHaveAttribute(
       'href',
-      'https://www.oagkenya.go.ke/wp-content/uploads/2026/05/R.pdf#page=14'
+      'https://www.oagkenya.go.ke/wp-content/uploads/2026/05/R.pdf#zoom=100&page=14'
     );
   });
 
@@ -354,6 +394,16 @@ describe('AuditReportsSection with a derived headline (issue #233)', () => {
     expect(screen.getByText(/1 finding\(s\) held back because the extracted text is unreadable/)).toBeInTheDocument();
     expect(screen.queryByText(/26 finding/)).toBeNull();
     expect(screen.queryByText(/0 finding/)).toBeNull();
+  });
+
+  it('also shows a new URL reason beside a published finding', () => {
+    mockUseFederalAudits.mockReturnValue({ data: {
+      ...withHeadline,
+      withheld_findings: 2,
+      withheld_findings_by_reason: { source_document_has_invalid_url: 2 },
+    }, isLoading: false, error: null });
+    render(<AuditReportsSection />);
+    expect(screen.getByText(/2 finding\(s\) held back because the source document link is invalid or unsafe/)).toBeInTheDocument();
   });
 
   it('summarises Emphasis of Matter in the report\'s words, with its page', () => {

@@ -6,13 +6,35 @@ from urllib.parse import parse_qsl, unquote_plus, urlencode, urlsplit, urlunspli
 from sqlalchemy import func
 
 
-# Conventional Roman numerals from I through MMMCMXCIX (1–3999). A named
-# locator may also use one alphabetic letter, but multi-letter Roman labels
-# must be canonical rather than merely composed of Roman characters.
-_ROMAN_NUMERAL = re.compile(
-    r"M{0,3}(?:CM|CD|D?C{0,3})(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3})",
-    re.I,
+# These patterns are also used by the audit publication query. Keep them in
+# the common Python/PostgreSQL/SQLite regular-expression subset: SQLAlchemy
+# translates regexp_match to PostgreSQL ~ and SQLite's REGEXP function.
+_SPACE = r"[ \t\n\r\f\v]"
+NUMERIC_LOCATOR_PATTERN = (
+    rf"^{_SPACE}*(?:(?:pp?\.?|pages?){_SPACE}*)?"
+    rf"([0-9]{{1,9}})(?:{_SPACE}*[-–]{_SPACE}*([0-9]{{1,9}}))?{_SPACE}*$"
 )
+_ROMAN = r"M{0,3}(?:CM|CD|D?C{0,3})(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3})"
+NAMED_LOCATOR_PATTERN = (
+    rf"^{_SPACE}*(?:annex(?:ure)?|appendix|schedule){_SPACE}*"
+    rf"(?:[A-Z]|[1-9][0-9]*|(?=[MDCLXVI]){_ROMAN}){_SPACE}*$"
+)
+
+# Explicit port ranges prevent SQL from admitting a URL that urlsplit rejects.
+_HOST_LABEL = r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?"
+_PORT = r"(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])"
+_URL_TAIL_CHAR = r"[a-z0-9._~:/?#\[\]@!$&'()*+,;=-]"
+SOURCE_URL_PATTERN = (
+    rf"^https?://{_HOST_LABEL}(?:\.{_HOST_LABEL})*(?::{_PORT})?"
+    rf"(?:[/?#](?:{_URL_TAIL_CHAR}|%[0-9a-f]{{2}})*)?\Z"
+)
+
+
+def safe_source_url(url):
+    """Whether a stored source URL is a syntactically safe HTTP(S) link."""
+    return isinstance(url, str) and re.fullmatch(
+        SOURCE_URL_PATTERN, url, re.I | re.ASCII
+    ) is not None
 
 
 def extraction_payload(raw):
@@ -54,12 +76,11 @@ def string_extraction_payloads(db, rows):
 
 def page_number(value):
     if type(value) is int:
-        return value if value > 0 else None
+        # Match the SQL locator regex, which permits at most nine digits.
+        return value if 0 < value <= 999_999_999 else None
     if not isinstance(value, str):
         return None
-    match = re.fullmatch(
-        r"\s*(?:(?:pp?\.?|pages?)\s*)?([0-9]+)(?:\s*[-–]\s*([0-9]+))?\s*", value, re.I
-    )
+    match = re.fullmatch(NUMERIC_LOCATOR_PATTERN, value, re.I | re.ASCII)
     if not match:
         return None
     try:
@@ -78,29 +99,19 @@ def citation_page(value):
         return number
     if not isinstance(value, str):
         return None
-    label = " ".join(value.split())
-    match = re.fullmatch(
-        r"(?:annex(?:ure)?|appendix|schedule)\s*([A-Z]+|[1-9][0-9]*)",
-        label,
-        re.I,
-    )
-    if not match:
-        return None
-    identifier = match[1]
-    if (
-        identifier.isdigit()
-        or len(identifier) == 1
-        or _ROMAN_NUMERAL.fullmatch(identifier)
-    ):
+    # Match the SQL policy's ASCII whitespace set exactly. Python's split()
+    # also folds Unicode separators, which the SQL expression does not.
+    label = re.sub(r"[ \t\n\r\f\v]+", " ", value).strip(" \t\n\r\f\v")
+    if re.fullmatch(NAMED_LOCATOR_PATTERN, label, re.I | re.ASCII):
         return label
     return None
 
 
 def report_page_url(url, page_ref, *, clear_stale_page=False):
-    if not isinstance(url, str):
+    if not safe_source_url(url):
         return None
     try:
-        parts = urlsplit(url.strip())
+        parts = urlsplit(url)
         if parts.scheme not in ("https", "http") or not parts.hostname:
             return None
     except ValueError:
@@ -115,7 +126,7 @@ def report_page_url(url, page_ref, *, clear_stale_page=False):
                 if unquote_plus(part.partition("=")[0]).casefold() != "page"
             )
             return urlunsplit(parts._replace(fragment=fragment))
-        return url.strip()
+        return url
     fragment = [(k, v) for k, v in parse_qsl(parts.fragment) if k.lower() != "page"]
     fragment.append(("page", str(page)))
     return urlunsplit(parts._replace(fragment=urlencode(fragment)))

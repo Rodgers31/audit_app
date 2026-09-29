@@ -157,6 +157,8 @@ export interface FederalAuditFinding {
   title?: string | null;
   page_ref?: string | null;
   source_url?: string | null;
+  /** Server-validated destination for the stored locator. */
+  source_page_url?: string | null;
 }
 
 /** A count with the page a reader can open to check it. */

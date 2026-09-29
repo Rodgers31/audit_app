@@ -104,22 +104,24 @@ def test_document_url_outranks_a_linkable_reference(
     assert _source_urls(client) == DOC_URL + "#page=11"
 
 
-def test_linkable_reference_is_used_when_the_document_url_is_not_a_link(
+def test_linkable_reference_cannot_rescue_an_invalid_linked_document(
     client, db_session, seed_country, county
 ):
-    """The control for the fallback: an http(s) reference still comes through."""
+    """A different link is not evidence that the linked document is openable."""
     ref = "https://www.oagkenya.go.ke/wp-content/uploads/2025/12/Nakuru.pdf"
     _finding(db_session, seed_country, county, "fixture://oag/blue-book", ref)
-    assert _source_urls(client) == ref + "#page=11"
+    assert client.get("/api/v1/audit/findings").json()["items"] == []
+    from services.publication_gate import count_withheld_by_reason
+
+    assert count_withheld_by_reason(db_session)["source_document_has_invalid_url"] == 1
 
 
-def test_no_url_is_published_when_nothing_is_a_link(
+def test_finding_is_withheld_when_nothing_is_a_link(
     client, db_session, seed_country, county
 ):
-    """Neither value opens in a browser, so the honest answer is None — not a
-    URL built from the key. Old code published the fabricated one here too."""
+    """Neither value opens in a browser, so the finding stays withheld."""
     _finding(db_session, seed_country, county, "fixture://oag/blue-book", OAG_KEY)
-    assert _source_urls(client) is None
+    assert client.get("/api/v1/audit/findings").json()["items"] == []
 
 
 def test_finding_keeps_auditee_separate_from_county(

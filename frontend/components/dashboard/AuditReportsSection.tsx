@@ -157,12 +157,18 @@ export default function AuditReportsSection() {
   // used to count the unreadable-text row under a reason it did not have.
   const WITHHELD_KEY: Record<string, TranslationKey> = {
     source_document_has_no_url: 'home.audits.withheld_source_document_has_no_url',
+    source_document_has_invalid_url: 'home.audits.withheld_source_document_has_invalid_url',
     finding_text_unreadable_cid: 'home.audits.withheld_finding_text_unreadable_cid',
     no_page_reference: 'home.audits.withheld_no_page_reference',
   };
   const withheldLines = Object.entries(data.withheld_findings_by_reason ?? {})
-    .filter(([reason, n]) => n > 0 && WITHHELD_KEY[reason])
-    .map(([reason, n]) => t(WITHHELD_KEY[reason]).replace('{n}', String(n)));
+    .filter(([, n]) => n > 0)
+    .map(([reason, n]) => {
+      const key = Object.prototype.hasOwnProperty.call(WITHHELD_KEY, reason)
+        ? WITHHELD_KEY[reason]
+        : 'home.audits.withheld_other_publication_check';
+      return t(key).replace('{n}', String(n));
+    });
 
   // Zero publishable findings is a real state that deserves a real empty
   // state — not an empty donut over a bare button. Everything rendered
@@ -499,11 +505,11 @@ export default function AuditReportsSection() {
                                 {f.recommended_action}
                               </p>
                             )}
-                            {/* The product's core claim: every finding links
-                                to the page of the report it came from. */}
-                            {f.source_url && f.page_ref && (
+                            {/* The server resolves the stored locator and PDF
+                                fragment; raw page text is never a URL. */}
+                            {f.source_page_url && f.page_ref && (
                               <a
-                                href={`${f.source_url}#page=${f.page_ref.replace(/[^0-9]/g, '')}`}
+                                href={f.source_page_url}
                                 target='_blank'
                                 rel='noopener noreferrer'
                                 onClick={(e) => e.stopPropagation()}

@@ -144,11 +144,10 @@ def test_county_audit_list_carries_only_parseable_pages_and_preserves_gates(
         item["description"].removeprefix("Synthetic ").removesuffix(" finding"): item
         for item in data["items"]
     }
-    assert data["total"] == 15
+    assert data["total"] == 9
     assert set(by_label) == {
         "single", "range", "annex", "roman-additive", "roman-subtractive",
         "roman-large", "single-letter", "decimal-label", "compact-schedule",
-        "roman-iiv", "roman-vx", "roman-iiii", "malformed", "negative", "zero",
     }
     assert all(item["fiscal_year"] == "FY2024/25" for item in by_label.values())
 
@@ -174,12 +173,9 @@ def test_county_audit_list_carries_only_parseable_pages_and_preserves_gates(
         assert by_label[label]["source"]["page_url"] == (
             "https://example.invalid/synthetic-county-audit.pdf?download=1#zoom=100"
         )
-    for label in ("roman-iiv", "roman-vx", "roman-iiii", "malformed", "negative", "zero"):
-        source = by_label[label]["source"]
-        assert source["page"] is None
-        assert source["page_url"] == (
-            "https://example.invalid/synthetic-county-audit.pdf?download=1#zoom=100"
-        )
+    assert not {
+        "roman-iiv", "roman-vx", "roman-iiii", "malformed", "negative", "zero"
+    } & set(by_label)
 
     wrong_period = client.get("/api/v1/counties/001/audits/list?year=FY2023/24")
     assert wrong_period.status_code == 200

@@ -300,9 +300,9 @@ export const MESSAGES = {
     plain: 'No findings from the Auditor-General can be shown yet',
   },
   'home.audits.empty_withheld': {
-    en: '{n} findings are held back because none of them can yet be traced to a page of a published report.',
-    sw: 'Matokeo {n} yamezuiliwa kwa sababu hakuna linaloweza kufuatiliwa hadi ukurasa wa ripoti iliyochapishwa.',
-    plain: '{n} findings are held back because we cannot yet point to the page of an official report they come from.',
+    en: '{n} findings are held back because their publication checks could not be confirmed.',
+    sw: 'Matokeo {n} yamezuiliwa kwa sababu ukaguzi wa uchapishaji wake haukuweza kuthibitishwa.',
+    plain: '{n} findings are held back because we could not confirm the checks needed to show them.',
   },
   'home.audits.empty_window': {
     en: 'The {publisher} publishes this report {cadence}, {lag} after the fiscal year ends. The next report is expected between {start} and {end}.',
@@ -354,15 +354,25 @@ export const MESSAGES = {
     sw: 'Matokeo {n} yamezuiliwa kwa kukosa hati ya chanzo inayofuatilika.',
     plain: '{n} finding(s) held back because we cannot point to the report they came from.',
   },
+  'home.audits.withheld_source_document_has_invalid_url': {
+    en: '{n} finding(s) held back because the source document link is invalid or unsafe.',
+    sw: 'Matokeo {n} yamezuiliwa kwa sababu kiungo cha hati ya chanzo si sahihi au si salama.',
+    plain: '{n} finding(s) held back because the report link does not work safely.',
+  },
   'home.audits.withheld_finding_text_unreadable_cid': {
     en: '{n} finding(s) held back because the extracted text is unreadable.',
     sw: 'Matokeo {n} yamezuiliwa kwa sababu maandishi yaliyotolewa hayasomeki.',
     plain: '{n} finding(s) held back because the text could not be read.',
   },
   'home.audits.withheld_no_page_reference': {
-    en: '{n} finding(s) held back for citing no page of the report.',
-    sw: 'Matokeo {n} yamezuiliwa kwa kutotaja ukurasa wa ripoti.',
-    plain: '{n} finding(s) held back because they do not say which page they come from.',
+    en: '{n} finding(s) held back because the page reference is missing or invalid.',
+    sw: 'Matokeo {n} yamezuiliwa kwa sababu rejeleo la ukurasa halipo au si sahihi.',
+    plain: '{n} finding(s) held back because they do not give a usable page reference.',
+  },
+  'home.audits.withheld_other_publication_check': {
+    en: '{n} finding(s) held back because another publication check did not pass.',
+    sw: 'Matokeo {n} yamezuiliwa kwa sababu hayakupita ukaguzi mwingine wa uchapishaji.',
+    plain: '{n} finding(s) held back because another check was not met.',
   },
   'home.audits.cadence_annual': { en: 'annually', sw: 'kila mwaka', plain: 'once a year' },
   'home.audits.cadence_quarterly': { en: 'quarterly', sw: 'kila robo mwaka', plain: 'every three months' },

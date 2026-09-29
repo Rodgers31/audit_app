@@ -64,8 +64,10 @@ import re
 import time
 from decimal import Decimal
 from typing import Any, Dict, Iterable, Optional
+from urllib.parse import urlsplit
 
 from sqlalchemy import and_ as sa_and
+from sqlalchemy import Integer, LargeBinary, case, cast
 from sqlalchemy import func
 from sqlalchemy import or_ as sa_or
 from sqlalchemy import select
@@ -77,6 +79,13 @@ logger = logging.getLogger(__name__)
 # into an AttributeError deep inside a request instead of a clear failure at
 # import. The gate must fail closed, and loudly.
 from models import Audit, SourceDocument
+from services.audit_citations import (
+    NAMED_LOCATOR_PATTERN,
+    NUMERIC_LOCATOR_PATTERN,
+    SOURCE_URL_PATTERN,
+    citation_page,
+    safe_source_url,
+)
 
 
 # --------------------------------------------------------------------------
@@ -84,8 +93,17 @@ from models import Audit, SourceDocument
 # --------------------------------------------------------------------------
 
 
+def _source_document_has_url():
+    return Audit.source_document_id.in_(
+        select(SourceDocument.id).where(
+            SourceDocument.url.isnot(None),
+            SourceDocument.url.regexp_match(r"[^ \t\n\r\f\v]"),
+        )
+    )
+
+
 def _source_document_is_resolvable():
-    """The URL half of the gate, named once so it cannot drift.
+    """A linked document with a syntactically safe HTTP(S) URL.
 
     Extracted while fixing the PR #135 reason-breakdown finding: the
     per-reason count has to ask "did THIS clause fail?", and re-typing the
@@ -94,77 +112,87 @@ def _source_document_is_resolvable():
     """
     return Audit.source_document_id.in_(
         select(SourceDocument.id).where(
-            SourceDocument.url.isnot(None),
-            func.length(func.trim(SourceDocument.url)) > 0,
+            _ascii_only(SourceDocument.url),
+            func.lower(SourceDocument.url).regexp_match(SOURCE_URL_PATTERN),
         )
     )
 
 
-def _has_page_locator(*candidates) -> bool:
-    """True only if some candidate names a page a reader could turn to.
+def _ascii_only(column):
+    """Portable byte-length guard against Unicode case-folding aliases."""
+    return func.length(column) == func.length(cast(column, LargeBinary))
 
-    Reported by review on PR #135: the previous test was ``in (None, "")``, so
-    ``page_ref="   "`` and ``page_number=0`` both read as "present" and
-    published a case that cannot be located. Whitespace is stripped, and a
-    numeric locator must be POSITIVE — page 0 of a 400-page report is not a
-    citation. A non-numeric string (``"p. 42"``, ``"Annex VII"``) is accepted
-    on its own terms once it has any non-whitespace content.
-    """
+
+_DESCRIPTIVE_PDF_PAGE = re.compile(
+    r"\bPDF[ \t]+pp?\.[ \t]*[1-9][0-9]{0,8}"
+    r"(?:[ \t]*(?:,|[-–])[ \t]*[1-9][0-9]{0,8})*\b",
+    re.I,
+)
+
+# Treasury's fiscal-framework rows also retain the concise source-table form
+# "Annex 2a p63". Keep this outside the shared audit/county locator policy.
+_FISCAL_ANNEX_PAGE = re.compile(
+    r"Annex(?:[ \t]+Table)?[ \t]+[1-9][0-9]{0,2}[a-z]?"
+    r"(?:[ \t]*,[ \t]*|[ \t]+)p\.?[ \t]*[1-9][0-9]{0,8}",
+    re.I | re.ASCII,
+)
+
+
+def _has_page_locator(*candidates, allow_descriptive=False) -> bool:
+    """Validate a direct citation; fiscal summaries may cite PDF pages in prose."""
     for value in candidates:
-        if value is None:
-            continue
-        if isinstance(value, bool):  # a bool is an int; never a page number
-            continue
-        if isinstance(value, (int, float)):
-            if value > 0:
-                return True
-            continue
-        text = str(value).strip()
-        if not text:
-            continue
-        try:
-            return float(text) > 0
-        except ValueError:
-            return True  # a real textual locator, e.g. "p. 42" / "Annex VII"
+        if citation_page(value) is not None:
+            return True
+        if (
+            allow_descriptive
+            and isinstance(value, str)
+            and _DESCRIPTIVE_PDF_PAGE.search(value)
+        ):
+            return True
     return False
 
 
-#: Whitespace that ``str.strip()`` removes but SQL ``trim()`` does not — SQL
-#: trims spaces only, so a page_ref of "\t\n" would read as present.
-_WHITESPACE = (" ", "\t", "\n", "\r")
-
-#: The characters a bare number is made of, minus the digits 1-9. Removing
-#: these from a value leaves nothing only when the value was a number built
-#: entirely from zeros, signs and a decimal point: "0", "00", "0.0", "-0".
-_ZERO_ISH = ("0", "+", "-", ".")
+_WHITESPACE = (" ", "\t", "\n", "\r", "\f", "\v")
 
 
 def _has_page_locator_criterion(column):
-    """SQL form of :func:`_has_page_locator`, for use inside a query.
-
-    There are now two expressions of one rule — this and the Python predicate
-    — because the audits gate runs in SQL at 47 call sites while the fiscal and
-    missing-funds gates run over materialised rows. Two copies of a rule that
-    must agree is exactly the drift this module exists to prevent, so they are
-    not trusted to stay in step: ``tests/test_audits_page_locator_gate.py``
-    runs both over one shared table of cases and fails if they ever disagree.
-
-    Expressed with ``replace`` rather than a regular expression because the
-    dialects do not share one — Postgres has ``~``, SQLite does not — and a
-    criterion that behaves differently under test than in production would be
-    worse than no criterion at all.
-    """
+    """SQL form of the shared direct-citation policy, including range order."""
     squeezed = column
     for ch in _WHITESPACE:
         squeezed = func.replace(squeezed, ch, "")
-    bare = squeezed
-    for ch in _ZERO_ISH:
-        bare = func.replace(bare, ch, "")
-    return sa_and(
-        column.isnot(None),
-        func.length(squeezed) > 0,   # not blank, whatever the whitespace
-        func.length(bare) > 0,       # not "0" / "00" / "0.0" / "-0"
-        ~squeezed.like("-%"),        # not a negative page number
+    # The shape regex bounds each integer to nine digits before a SQL cast.
+    # ltrim removes only the permitted page-prefix characters; the regex
+    # rules out arbitrary prose before these numeric operations are evaluated.
+    body = func.ltrim(func.lower(func.replace(squeezed, "–", "-")), "pages.")
+    start_length = func.length(body) - func.length(func.ltrim(body, "0123456789"))
+    start = func.substr(body, 1, start_length)
+    remainder = func.substr(body, start_length + 1)
+    numeric = sa_and(
+        _ascii_only(func.replace(column, "–", "-")),
+        func.lower(column).regexp_match(NUMERIC_LOCATOR_PATTERN.lower()),
+    )
+    return func.coalesce(
+        sa_or(
+            sa_and(
+                _ascii_only(column),
+                func.lower(column).regexp_match(NAMED_LOCATOR_PATTERN.lower()),
+            ),
+            case(
+                (
+                    numeric,
+                    sa_and(
+                        cast(start, Integer) > 0,
+                        sa_or(
+                            remainder == "",
+                            cast(func.substr(remainder, 2), Integer)
+                            >= cast(start, Integer),
+                        ),
+                    ),
+                ),
+                else_=False,
+            ),
+        ),
+        False,
     )
 
 
@@ -247,16 +275,8 @@ def publishable_audit_criterion():
 def count_withheld_by_reason(db, entity_id=None, entity_types=None) -> dict:
     """Withheld audit rows grouped by WHY, not just how many.
 
-    Reported by review on PR #135. There are two independent withholding
-    causes — an unresolvable source document, and finding text that is
-    unreadable ``(cid:NN)`` glyph codes — and ``count_withheld_audits``
-    collapsed them into one integer that every caller then labelled "source
-    document has no resolvable URL". A row withheld for unreadable text was
-    reported under a reason that did not apply to it.
-
-    The backfill in this module already tracks the two separately
-    (``no_url_count`` vs ``withheld_cid``), which is what makes the runtime
-    collapse a defect rather than a limitation of the data.
+    A row can fail on a missing URL, an invalid URL, unreadable text or an
+    invalid locator. Each bucket names the first actual failure.
 
     Keys are the same slugs the backfill writes to ``quarantine_reason``, so a
     response, a log line and the column all say the same word. Always returns
@@ -288,19 +308,21 @@ def count_withheld_by_reason(db, entity_id=None, entity_types=None) -> dict:
     # text — the same mislabelling this function was written to fix, one layer
     # down. Summing to the total is necessary, not sufficient; the words have
     # to be true too.
+    has_url = _source_document_has_url()
     resolvable = _source_document_is_resolvable()
     readable = _finding_text_is_readable()
     located = _has_page_locator_criterion(Audit.page_ref)
 
     total = _count(~publishable_audit_criterion())
     reasons = {
-        "source_document_has_no_url": _count(~resolvable),
+        "source_document_has_no_url": _count(~has_url),
+        "source_document_has_invalid_url": _count(sa_and(has_url, ~resolvable)),
         "finding_text_unreadable_cid": _count(sa_and(resolvable, ~readable)),
         "no_page_reference": _count(sa_and(resolvable, readable, ~located)),
     }
 
-    # The three clauses above are the whole of the criterion, so a residual
-    # means a fourth clause was added without a word for it. Report it rather
+    # The named clauses above cover the criterion, so a residual means an
+    # eligibility clause was added without a word for it. Report it rather
     # than let the parts quietly stop summing, or file it under a cause it
     # does not have.
     residual = total - sum(reasons.values())
@@ -367,20 +389,20 @@ def backfill_publishable_audits(session) -> Dict[str, int]:
     started = time.monotonic()
 
     crit = publishable_audit_criterion()
-    # Which clause failed? In order: URL (the commonest and most fundamental
-    # defect), then text integrity, then the locator. A row can fail more than
-    # one; the earliest reason wins, and the buckets are disjoint so no row is
+    # Which clause failed? In order: missing URL, invalid URL, text integrity,
+    # then the locator. A row can fail more than one; the earliest reason wins,
+    # and the buckets are disjoint so no row is
     # counted or stamped twice.
     #
-    # These reuse the same three named clauses the criterion is built from,
-    # rather than restating them. The URL clause used to be re-typed here as a
-    # second copy of `_source_document_is_resolvable()`.
+    # These reuse the named clauses the criterion is built from.
+    has_url = _source_document_has_url()
     resolvable = _source_document_is_resolvable()
     readable = _finding_text_is_readable()
     located = _has_page_locator_criterion(Audit.page_ref)
 
     retired = retired_audit_fixture_criterion()
-    no_url = sa_and(~retired, ~resolvable)
+    no_url = sa_and(~retired, ~has_url)
+    invalid_url = sa_and(~retired, has_url, ~resolvable)
     unreadable = sa_and(~retired, resolvable, ~readable)
     unlocated = sa_and(~retired, resolvable, readable, ~located)
 
@@ -393,6 +415,9 @@ def backfill_publishable_audits(session) -> Dict[str, int]:
     ).scalar_one()
     no_url_count = session.execute(
         select(func.count(Audit.id)).where(no_url)
+    ).scalar_one()
+    invalid_url_count = session.execute(
+        select(func.count(Audit.id)).where(invalid_url)
     ).scalar_one()
     withheld_cid = session.execute(
         select(func.count(Audit.id)).where(unreadable)
@@ -450,6 +475,12 @@ def backfill_publishable_audits(session) -> Dict[str, int]:
     )
     session.execute(
         update(Audit)
+        .where(invalid_url, _needs(False, "source_document_has_invalid_url"))
+        .values(publishable=False, quarantine_reason="source_document_has_invalid_url")
+        .execution_options(synchronize_session=False)
+    )
+    session.execute(
+        update(Audit)
         .where(unreadable, _needs(False, "finding_text_unreadable_cid"))
         .values(publishable=False, quarantine_reason="finding_text_unreadable_cid")
         .execution_options(synchronize_session=False)
@@ -469,14 +500,15 @@ def backfill_publishable_audits(session) -> Dict[str, int]:
     session.flush()
     stats = {
         "published": published,
-        "withheld": no_url_count + withheld_cid + withheld_no_page,
+        "withheld": no_url_count + invalid_url_count + withheld_cid + withheld_no_page,
     }
     logger.info(
         "publishable backfill: %d published, %d withheld "
-        "(%d no-url, %d cid, %d no-page) in %.2fs",
+        "(%d no-url, %d invalid-url, %d cid, %d no-page) in %.2fs",
         stats["published"],
         stats["withheld"],
         no_url_count,
+        invalid_url_count,
         withheld_cid,
         withheld_no_page,
         time.monotonic() - started,
@@ -488,8 +520,8 @@ def log_withheld_audits(context: str, withheld: int, published: int) -> None:
     """Emit the withholding at WARNING, with enough detail to act on."""
     if withheld:
         logger.warning(
-            "%s: %d audit finding(s) withheld — source document has no "
-            "resolvable URL; %d published",
+            "%s: %d audit finding(s) withheld by the evidence gate; "
+            "%d published",
             context,
             withheld,
             published,
@@ -516,15 +548,18 @@ def fiscal_summary_withheld_reason(row) -> Optional[str]:
     ``extraction_id`` at all; audit 902 had an ``Extraction`` and was 89.6%
     ``(cid:NN)`` glyphs off a cover page.
 
-    This is a Python predicate rather than a SQL criterion on purpose. The
-    locator rule already exists exactly once, in :func:`_has_page_locator`, and
-    restating "is this a positive page number?" in SQL would need a second copy
-    of it whose regex differs between Postgres and SQLite. Two copies of a rule
-    that must agree is the drift this module exists to prevent.
-    ``fiscal_summaries`` holds 29 rows and every read site already materialises
-    them, so the SQL form would buy nothing.
+    Fiscal rows use the shared direct citation policy plus explicit exceptions
+    for descriptive PDF pages and Treasury's "Annex 2a p63" shorthand. They are
+    materialised before this check; audit findings use the matching SQL expression.
     """
-    if not _has_page_locator(getattr(row, "page_ref", None)):
+    page_ref = getattr(row, "page_ref", None)
+    if not (
+        _has_page_locator(page_ref, allow_descriptive=True)
+        or (
+            isinstance(page_ref, str)
+            and _FISCAL_ANNEX_PAGE.fullmatch(page_ref) is not None
+        )
+    ):
         return FISCAL_SUMMARY_NO_PAGE_REF
     return None
 
@@ -600,9 +635,8 @@ def missing_funds_provenance_failure(
 ) -> Optional[str]:
     """Why this missing-funds case may not be published, or None if it may.
 
-    Stricter than the audits gate because it can be: these cases are free-form
-    JSON and can carry a page reference. See the module docstring's asymmetry
-    note.
+    These free-form cases use the same safe URL and direct locator policy as
+    audit findings.
 
     ``docs`` maps ``source_document_id`` -> SourceDocument row, resolved by the
     caller so the check sees the real row rather than trusting an id that may
@@ -619,6 +653,8 @@ def missing_funds_provenance_failure(
         return "source_document_not_found"
     if not (getattr(doc, "url", None) or "").strip():
         return "source_document_has_no_url"
+    if not safe_source_url(getattr(doc, "url", None)):
+        return "source_document_has_invalid_url"
     if not _has_page_locator(case.get("page_ref"), case.get("page_number")):
         return "no_page_reference"
     return None
@@ -903,16 +939,15 @@ def file_source_provenance_failure(meta: Optional[Dict[str, Any]]) -> Optional[s
     url = ""
     for key in ("source_url", "document_url", "url", "source"):
         value = meta.get(key)
-        if isinstance(value, str) and value.strip().lower().startswith("http"):
-            url = value.strip()
+        if isinstance(value, str) and value.strip():
+            url = value
             break
     if not url:
         return "no_source_url"
+    if not safe_source_url(url):
+        return "source_url_is_invalid"
 
-    # Strip scheme + host; whatever remains is the path to a document.
-    remainder = url.split("://", 1)[-1]
-    path = remainder.split("/", 1)[1] if "/" in remainder else ""
-    path = path.split("?", 1)[0].split("#", 1)[0].strip("/")
+    path = urlsplit(url).path.strip("/")
     if not path:
         return "source_url_is_a_homepage_not_a_document"
     if not path.lower().endswith(_DOCUMENT_EXTENSIONS):

@@ -187,6 +187,34 @@ class TestTheCriterion:
         db_session.commit()
         assert "FY 2097/98" in self._published(db_session)
 
+    @pytest.mark.parametrize("locator", ["Annex 2a p63", "Annex Table 2a, p.63"])
+    def test_fiscal_annex_page_shorthand_is_a_locator(self, db_session, locator):
+        """The framework row can cite its printed annex and PDF page concisely."""
+        from models import FiscalSummary
+
+        db_session.add(FiscalSummary(
+            fiscal_year="FY 2096/97", appropriated_budget=1, unit="KES",
+            page_ref=locator,
+        ))
+        db_session.commit()
+        assert "FY 2096/97" in self._published(db_session)
+
+    @pytest.mark.parametrize("locator", [
+        "Annex 2a p0", "Annex 2a p-3", "Annex 0 p63",
+        "Annex 2a p63-62", "Annex 2a p63--64",
+        "Annex 2a p63junk", "Annex 2a p63 https://example.com/doc.pdf",
+        "https://example.com/doc.pdf#page=63",
+    ])
+    def test_malformed_fiscal_annex_or_url_is_not_a_locator(self, db_session, locator):
+        from models import FiscalSummary
+
+        db_session.add(FiscalSummary(
+            fiscal_year="FY 2096/97", appropriated_budget=1, unit="KES",
+            page_ref=locator,
+        ))
+        db_session.commit()
+        assert "FY 2096/97" not in self._published(db_session)
+
 
 class TestTheEndpointStillPublishesWhatItPublished:
     """The positive control. A gate that changes a figure has broken something."""
