@@ -125,9 +125,29 @@ export const getAuditReportsPaginated = async (
   return response.data;
 };
 
+export interface AuditStatistics {
+  total_findings: number;
+  counties_audited: number;
+  total_amount_flagged: number | null;
+  total_amount_flagged_reason: 'no_amounts_recorded' | 'invalid_stored_amount' | 'non_finite_total' | null;
+  findings_with_amount: number;
+  findings_with_invalid_amount: number;
+  findings_without_amount: number;
+  by_severity: Record<string, number>;
+  top_flagged_counties: { county: string; critical_count: number }[];
+  recent_critical: {
+    id: number;
+    finding: string;
+    county: string;
+    fiscal_year: string;
+    amount: number | null;
+    amount_unavailable_reason: 'invalid_stored_amount' | 'non_finite_text_amount' | null;
+  }[];
+}
+
 // Get audit statistics
-export const getAuditStatistics = async (signal?: AbortSignal): Promise<any> => {
-  const response = await apiGet<ApiResponse<any>>(apiClient, AUDITS_ENDPOINTS.STATISTICS, signal);
+export const getAuditStatistics = async (signal?: AbortSignal): Promise<AuditStatistics> => {
+  const response = await apiGet<ApiResponse<AuditStatistics>>(apiClient, AUDITS_ENDPOINTS.STATISTICS, signal);
   return response.data.data;
 };
 

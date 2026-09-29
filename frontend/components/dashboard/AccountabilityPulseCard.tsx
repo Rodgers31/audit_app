@@ -32,6 +32,13 @@ export default function AccountabilityPulseCard() {
   const total = critical + warning + info || 1;
   const topCounties = (stats.top_flagged_counties || []).slice(0, 5);
   const recentCritical = (stats.recent_critical || []).slice(0, 3);
+  const hasAmountCoverage = [
+    stats.findings_with_amount,
+    stats.findings_with_invalid_amount,
+    stats.findings_without_amount,
+  ].every((count) => Number.isInteger(count) && count >= 0) &&
+    stats.findings_with_amount + stats.findings_with_invalid_amount +
+      stats.findings_without_amount === stats.total_findings;
 
   return (
     <motion.div
@@ -110,18 +117,37 @@ export default function AccountabilityPulseCard() {
         </div>
 
         {/* Amount flagged callout */}
-        {stats.total_amount_flagged > 0 && (
+        {stats.total_findings > 0 && (
           <div className='rounded-xl bg-gov-copper/[0.05] border border-gov-copper/10 px-4 py-3 mb-5 flex items-center gap-3'>
             <div className='w-9 h-9 rounded-lg bg-gov-copper/10 flex items-center justify-center flex-shrink-0'>
               <AlertTriangle className='w-4 h-4 text-gov-copper' />
             </div>
             <div>
               <span className='text-sm font-bold text-gov-dark dark:text-white tabular-nums'>
-                {fmtKES(stats.total_amount_flagged)}
+                {hasAmountCoverage && typeof stats.total_amount_flagged === 'number' &&
+                  Number.isFinite(stats.total_amount_flagged)
+                  ? fmtKES(stats.total_amount_flagged)
+                  : 'Amount total unavailable'}
               </span>
-              <p className='text-[11px] text-neutral-muted leading-snug'>
-                in public funds flagged by auditors
-              </p>
+              {hasAmountCoverage ? (
+                <p className='text-[11px] text-neutral-muted leading-snug'>
+                  {stats.findings_with_amount} of {stats.total_findings} findings have a usable amount
+                </p>
+              ) : (
+                <p className='text-[11px] text-neutral-muted leading-snug'>
+                  Audit amount coverage unavailable
+                </p>
+              )}
+              {hasAmountCoverage && stats.findings_with_invalid_amount > 0 && (
+                <p className='text-[11px] text-neutral-muted leading-snug'>
+                  {stats.findings_with_invalid_amount} invalid stored {stats.findings_with_invalid_amount === 1 ? 'amount' : 'amounts'} withheld
+                </p>
+              )}
+              {hasAmountCoverage && stats.findings_without_amount > 0 && (
+                <p className='text-[11px] text-neutral-muted leading-snug'>
+                  {stats.findings_without_amount} {stats.findings_without_amount === 1 ? 'finding has' : 'findings have'} no recorded amount
+                </p>
+              )}
             </div>
           </div>
         )}

@@ -4945,6 +4945,29 @@ async def get_budget_line_provenance(line_id: int):
 # ── Audit Statistics & Top-Level Routes ──────────────────────────────────
 
 
+def _plain_kes_amount_in_audit_text(finding_text: Optional[str]) -> Optional[Decimal]:
+    """Read only an unambiguous plain KES integer from legacy finding text.
+
+    Shorthand, decimal, malformed grouping and multiple KES figures need
+    source review; taking their integer prefix publishes the wrong amount.
+    """
+    if not finding_text:
+        return None
+    mentions = list(re.finditer(r"\bKES[ \t]+", finding_text))
+    if len(mentions) != 1:
+        return None
+    tail = finding_text[mentions[0].end():]
+    match = re.match(r"(?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)", tail)
+    if not match:
+        return None
+    suffix = tail[match.end():]
+    if suffix and (suffix[0].isalnum() or suffix[0] in ",."):
+        return None
+    if re.match(r"\s+(?:million|billion|thousand|trillion|mn|bn)\b", suffix, re.I):
+        return None
+    return Decimal(match.group().replace(",", ""))
+
+
 @app.get("/api/v1/audits/statistics")
 @cached(key_prefix="audits:statistics", ttl=3600)
 async def get_audit_statistics():
@@ -4958,7 +4981,7 @@ async def get_audit_statistics():
 
     try:
         with next(get_db()) as db:
-            from sqlalchemy import case, func
+            from sqlalchemy import String, case, cast, func
 
             # Total counts
             total = db.query(func.count(DBAudit.id)).filter(publishable_audit_criterion()).scalar() or 0
@@ -5000,14 +5023,28 @@ async def get_audit_statistics():
 
             recent_items = []
             for audit, county_name in recent_critical:
-                amount = 0.0
-                if audit.finding_text:
-                    match = re.search(r"KES\s*([\d,]+)", audit.finding_text)
-                    if match:
+                amount = None
+                amount_unavailable_reason = None
+                if audit.amount is not None:
+                    try:
+                        candidate = float(audit.amount)
+                    except (TypeError, ValueError, OverflowError):
+                        candidate = math.inf
+                    if math.isfinite(candidate):
+                        amount = candidate
+                    else:
+                        amount_unavailable_reason = "invalid_stored_amount"
+                else:
+                    legacy_amount = _plain_kes_amount_in_audit_text(audit.finding_text)
+                    if legacy_amount is not None:
                         try:
-                            amount = float(match.group(1).replace(",", ""))
-                        except Exception:
-                            pass
+                            candidate = float(legacy_amount)
+                        except (OverflowError, ValueError):
+                            candidate = math.inf
+                        if math.isfinite(candidate):
+                            amount = candidate
+                        else:
+                            amount_unavailable_reason = "non_finite_text_amount"
                 period_label = ""
                 if audit.period and hasattr(audit.period, "label"):
                     period_label = audit.period.label
@@ -5020,6 +5057,7 @@ async def get_audit_statistics():
                             audit.severity.value if audit.severity else "unknown"
                         ),
                         "amount": amount,
+                        "amount_unavailable_reason": amount_unavailable_reason,
                         "fiscal_year": period_label,
                         "date": (
                             audit.created_at.isoformat() if audit.created_at else None
@@ -5032,34 +5070,63 @@ async def get_audit_statistics():
                 db.query(func.count(func.distinct(DBAudit.entity_id))).filter(publishable_audit_criterion()).scalar() or 0
             )
 
-            # Total amount involved across all findings — prefer the
-            # structured `amount` column (populated from OAG parsers).
-            # Fall back to regex over `finding_text` only for rows that
-            # lack an `amount` value, so we don't lose data but also don't
-            # pull the entire text column across the wire when unnecessary.
-            amount_from_col = (
-                db.query(func.coalesce(func.sum(DBAudit.amount), 0))
-                .filter(publishable_audit_criterion())
-                .filter(DBAudit.amount.isnot(None))
-                .scalar()
-                or 0.0
+            # PostgreSQL numeric accepts NaN. One such row poisons SUM, so
+            # exclude non-finite stored values *inside* the aggregate. Count
+            # them separately rather than hiding their missing coverage.
+            finite_amount = case(
+                (
+                    ~cast(DBAudit.amount, String).in_(("NaN", "Infinity", "-Infinity")),
+                    DBAudit.amount,
+                ),
+                else_=None,
             )
+            amount_from_col, structured_count, stored_count = (
+                db.query(
+                    func.sum(finite_amount),
+                    func.count(finite_amount),
+                    func.count(DBAudit.amount),
+                )
+                .filter(publishable_audit_criterion())
+                .one()
+            )
+            invalid_count = stored_count - structured_count
+            if invalid_count:
+                logger.warning(
+                    "Withholding invalid stored amounts from /audits/statistics: %s findings",
+                    invalid_count,
+                )
             # Regex fallback only over rows where amount is NULL.
-            fallback_amount = 0.0
+            fallback_amount = Decimal(0)
+            fallback_count = 0
             for (text_val,) in (
                 db.query(DBAudit.finding_text)
                 .filter(publishable_audit_criterion())
                 .filter(DBAudit.amount.is_(None))
-                .all()
+                .yield_per(500)
             ):
-                if text_val:
-                    match = re.search(r"KES\s*([\d,]+)", text_val)
-                    if match:
-                        try:
-                            fallback_amount += float(match.group(1).replace(",", ""))
-                        except Exception:
-                            pass
-            total_amount = float(amount_from_col) + fallback_amount
+                legacy_amount = _plain_kes_amount_in_audit_text(text_val)
+                if legacy_amount is not None:
+                    fallback_amount += legacy_amount
+                    fallback_count += 1
+            findings_with_amount = structured_count + fallback_count
+            total_amount = None
+            total_amount_reason = None
+            if findings_with_amount:
+                amount_decimal = (amount_from_col or Decimal(0)) + fallback_amount
+                try:
+                    candidate = float(amount_decimal)
+                except (OverflowError, ValueError):
+                    candidate = math.inf
+                if math.isfinite(candidate):
+                    total_amount = candidate
+                else:
+                    logger.warning("Withholding non-finite audit statistics total")
+                    total_amount_reason = "non_finite_total"
+            else:
+                total_amount_reason = (
+                    "invalid_stored_amount" if invalid_count else "no_amounts_recorded"
+                )
+            findings_without_amount = total - findings_with_amount - invalid_count
 
             _withheld_stats = count_withheld_audits(db)
             # Not just how many, but why. The breakdown existed and had no
@@ -5109,6 +5176,10 @@ async def get_audit_statistics():
                 "counties_audited": counties_audited,
                 "total_counties": 47,
                 "total_amount_flagged": total_amount,
+                "total_amount_flagged_reason": total_amount_reason,
+                "findings_with_amount": findings_with_amount,
+                "findings_with_invalid_amount": invalid_count,
+                "findings_without_amount": findings_without_amount,
                 "by_severity": by_severity,
                 "top_flagged_counties": [
                     {"county": name.replace(" County", ""), "critical_count": count}
