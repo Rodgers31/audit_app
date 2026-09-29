@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import logging
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -845,6 +845,9 @@ def _cell_text(cell: Optional[str]) -> str:
 _KES_CELL_RE = re.compile(
     r"(?:(?P<minus>-)|(?P<paren>\())?(?P<digits>\d+(?:\.\d+)?)(?(paren)\))"
 )
+_KES_GROUPED_CELL_RE = re.compile(
+    r"(?:-?\d{1,3}(?:,\d{3})+(?:\.\d+)?|\(\d{1,3}(?:,\d{3})+(?:\.\d+)?\))"
+)
 
 
 def _kes_cell(cell: Optional[str]) -> Optional[Decimal]:
@@ -853,7 +856,13 @@ def _kes_cell(cell: Optional[str]) -> Optional[Decimal]:
     None when the cell holds something that is not a number, so a caller can
     tell a misread cell from a printed nil.
     """
-    s = (cell or "").strip().replace(",", "").replace(" ", "")
+    s = (cell or "").strip()
+    # A leading comma means pdfplumber clipped a digit from the cell (Kilifi
+    # FY2025/26: printed 1,150,000,000 became ",150,000,000"). Dropping the
+    # comma would silently publish an amount smaller by a billion.
+    if "," in s and not _KES_GROUPED_CELL_RE.fullmatch(s.replace(" ", "")):
+        return None
+    s = s.replace(",", "").replace(" ", "")
     if s in ("", "-", "–", "."):
         return Decimal(0)
     # Digits, one optional decimal point, a leading minus or parentheses —
@@ -873,14 +882,55 @@ def _revenue_stream(label: str) -> Optional[str]:
     return None
 
 
+def _is_cash_revenue_header(header: str) -> bool:
+    """Recognize the cash column, never the adjacent accrual/receivables one.
+
+    County treasuries call it either ``Actual Receipts`` (most chapters) or
+    ``Actual Revenue(s)`` (Bungoma and Busia in FY2025/26). The latter is
+    cash: the table separately labels the D column ``Total Revenues (on an
+    accrual basis)`` and defines D=B+C, with B as the actual-revenue column.
+    """
+    return bool(
+        re.search(r"\bactual\s+(?:receipts?|revenues?)\b", header)
+        and not re.search(r"\b(?:accrual|receivables?|arrears?)\b", header)
+    )
+
+
+def _corroborated_misgrouped_cash(
+    row: List[str], headers: List[str], actual_col: int,
+) -> Optional[Decimal]:
+    """Recover a misgrouped cash item only when the same row proves B=D-C.
+
+    Machakos PDF 440 prints B as ``16,04,988,360``; C is a dash and D
+    independently prints ``1,604,988,360``. The enclosing FIF subtotal is
+    checked later. An uncorroborated malformed cell remains unreadable.
+    """
+    raw = (row[actual_col] or "").strip()
+    if not re.fullmatch(r"\d[\d,]+(?:\.\d+)?", raw) or "," not in raw:
+        return None
+    receivable_cols = [i for i, h in enumerate(headers) if "receivab" in h]
+    accrual_cols = [i for i, h in enumerate(headers) if "accrual" in h]
+    if len(receivable_cols) != 1 or len(accrual_cols) != 1:
+        return None
+    receivable_col, accrual_col = receivable_cols[0], accrual_cols[0]
+    if max(receivable_col, accrual_col) >= len(row):
+        return None
+    if (row[receivable_col] or "").strip() not in {"-", "–", "0", "0.00"}:
+        return None
+    candidate = _KES_CELL_RE.fullmatch(raw.replace(",", ""))
+    accrual = _kes_cell(row[accrual_col])
+    if candidate is None or accrual is None:
+        return None
+    value = Decimal(candidate.group("digits"))
+    return value if value == accrual else None
+
+
 def _is_revenue_table(table: ExtractedTable) -> bool:
     headers = [_cell_text(c) for c in table.headers]
     # "Revenue Stream" is sometimes split across the first two header cells
     # ("No Reve" | "nue Stream"), so match it on the two joined.
     joined = _cell_text("".join(table.headers[:2]))
-    return "revenue stream" in joined and any(
-        "actual" in h and "receipt" in h for h in headers
-    )
+    return "revenue stream" in joined and any(_is_cash_revenue_header(h) for h in headers)
 
 
 @dataclass
@@ -897,6 +947,12 @@ class _RevenueSection:
     blank_items: bool = False
     blank_subtotal: bool = False
     nil_heading: bool = False
+    # (printed subtotal, sum of item cells read up to that subtotal). Some
+    # county tables print nested subtotals; retain each checkpoint so we can
+    # prove whether the later subtotal is cumulative or an additional part.
+    actual_checkpoints: List[Tuple[Optional[Decimal], Decimal]] = field(default_factory=list)
+    target_checkpoints: List[Tuple[Optional[Decimal], Decimal]] = field(default_factory=list)
+    nested_grant_headings_after_subtotal: int = 0
 
     @property
     def target(self) -> Decimal:
@@ -918,15 +974,24 @@ def _revenue_rows(tables: List[ExtractedTable]):
     """
     for table in tables:
         headers = [_cell_text(c) for c in table.headers]
-        target_col = next(
-            (i for i, h in enumerate(headers) if "annual" in h or "target" in h), None
-        )
-        actual_cols = [
-            i for i, h in enumerate(headers) if "actual" in h and "receipt" in h
-        ]
+        actual_cols = [i for i, h in enumerate(headers) if _is_cash_revenue_header(h)]
         # Two "actual receipts" columns (a quarter and a cumulative, say) is
         # a layout this cannot tell apart; take neither.
         actual_col = actual_cols[0] if len(actual_cols) == 1 else None
+        target_col = next(
+            (i for i, h in enumerate(headers) if "annual" in h or "target" in h), None
+        )
+        if target_col is None and actual_col is not None and actual_col >= 2:
+            # On Kilifi PDF 314 and Kisumu PDF 351 the header's first
+            # letters leak into "Revenue Stream", leaving "geted Revenue"
+            # or "argeted Revenue" in the target cell. Its position just
+            # before the independently named cash column identifies it.
+            before = headers[actual_col - 1]
+            if (
+                "revenue stream" in _cell_text("".join(table.headers[:2]))
+                and re.match(r"(?:geted|argeted)\s+revenue\b", before)
+            ):
+                target_col = actual_col - 1
         if target_col is None or actual_col is None or target_col < 1:
             continue
         for row in table.rows:
@@ -947,6 +1012,8 @@ def _revenue_rows(tables: List[ExtractedTable]):
                 continue
             target = _kes_cell(row[target_col]) if (row[target_col] or "").strip() else None
             actual = _kes_cell(row[actual_col])
+            if actual is None:
+                actual = _corroborated_misgrouped_cash(row, headers, actual_col)
             observed = actual is not None and bool(
                 (row[actual_col] or "").strip().strip("-–.")
             )
@@ -1059,6 +1126,13 @@ def county_revenue_receipts(
                 top = stream is not None and (
                     current is None or stream != current.stream or closed
                 )
+            if (
+                not top
+                and current is not None
+                and current.actual_sub is not None
+                and current.stream == stream == "Additional Allocations"
+            ):
+                current.nested_grant_headings_after_subtotal += 1
             if top:
                 current = _RevenueSection(stream=stream, label=label)
                 sections.append(current)
@@ -1084,6 +1158,8 @@ def county_revenue_receipts(
             current.target_unreadable = target is None
             current.receipts_observed = observed
             current.blank_subtotal = blank
+            current.actual_checkpoints.append((actual, current.actual_items))
+            current.target_checkpoints.append((target, current.target_items))
         elif kind == "item" and actual is not None:
             current.actual_items += actual
             current.receipts_observed = current.receipts_observed or observed
@@ -1095,8 +1171,47 @@ def county_revenue_receipts(
 
     if not sections:
         return None, "no_sections"
-    if any(s.subtotals > 1 for s in sections):
-        return None, "a_section_has_two_subtotals"
+    for section in sections:
+        if section.subtotals <= 1:
+            continue
+        if (
+            section.subtotals != 2
+            or section.stream != "Additional Allocations"
+            or section.nested_grant_headings_after_subtotal != 1
+        ):
+            return None, "a_section_has_two_subtotals"
+
+        def subtotal_mode(checkpoints):
+            if any(value is None for value, _items in checkpoints):
+                return None
+            cumulative = all(
+                abs(value - items) <= _REVENUE_TOLERANCE_KES
+                for value, items in checkpoints
+            )
+            if cumulative:
+                return checkpoints[-1][0]
+            previous_items = Decimal(0)
+            additive = True
+            for value, items in checkpoints:
+                if abs(value - (items - previous_items)) > _REVENUE_TOLERANCE_KES:
+                    additive = False
+                    break
+                previous_items = items
+            if additive:
+                return sum((value for value, _items in checkpoints), Decimal(0))
+            return None
+
+        actual_sub = subtotal_mode(section.actual_checkpoints)
+        if actual_sub is None:
+            # Without item-by-item support, two subtotals may belong to
+            # different streams; a matching grand total alone is insufficient.
+            return None, "a_section_has_two_subtotals"
+        section.actual_sub = actual_sub
+        target_sub = subtotal_mode(section.target_checkpoints)
+        if target_sub is None:
+            section.target_unreadable = True
+        else:
+            section.target_sub = target_sub
     if any(
         (s.blank_subtotal and not (s.nil_heading and s.actual_items == 0))
         or (s.actual_sub is None and s.blank_items and not s.nil_heading)

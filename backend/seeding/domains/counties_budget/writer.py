@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, time, timezone
+from datetime import date, datetime, time, timezone
 from decimal import Decimal
 from typing import Iterable, List, Optional, Tuple
 
@@ -241,6 +241,158 @@ def _apply_line(
     return updated
 
 
+def _line_is_official(line: BudgetLine, source: SourceDocument) -> bool:
+    """Whether the currently linked row claims a source-backed publication."""
+    if isinstance(source.meta, dict) and source.meta.get("data_quality") == "official":
+        return True
+    provenance = line.provenance
+    return bool(
+        isinstance(provenance, list)
+        and any(
+            isinstance(entry, dict) and entry.get("data_quality") == "official"
+            for entry in provenance
+        )
+    )
+
+
+def _regressive_publication_error(
+    session: Session,
+    records: List[BudgetRecord],
+    entities_by_slug: dict[str, Entity],
+    default_url: str,
+) -> Optional[str]:
+    """Refuse a stale edition or fixture collision before any mutation.
+
+    Same-date official corrections are permitted. A fallback fixture can fill
+    a genuinely absent key, but cannot replace a key already backed by an
+    official document. Reject the whole batch so its other rows and source
+    metadata cannot be partly written when one key collides.
+    """
+    from ...utils import normalize_fiscal_label
+
+    # A SourceDocument carries one quality badge. A mixed batch makes that
+    # badge depend on row order, and can put modelled values under "official".
+    qualities_by_url: dict[str, set[str]] = {}
+    for record in records:
+        qualities_by_url.setdefault(record.source_url or default_url, set()).add(
+            record.data_quality
+        )
+    for url, qualities in qualities_by_url.items():
+        if len(qualities) > 1:
+            return f"Mixed county budget data quality for source document {url}"
+
+    for record in records:
+        canonical = normalize_fiscal_label(record.period_label)
+        if " " not in canonical:
+            year = int(canonical[2:6])
+            if (record.start_date, record.end_date) != (
+                date(year, 7, 1), date(year + 1, 6, 30)
+            ):
+                return f"Annual county budget dates disagree with {canonical}"
+
+    official_urls = {
+        r.source_url or default_url for r in records if r.data_quality == "official"
+    }
+    if official_urls:
+        existing = session.execute(
+            select(BudgetLine, FiscalPeriod, SourceDocument)
+            .join(FiscalPeriod, BudgetLine.period_id == FiscalPeriod.id)
+            .join(SourceDocument, BudgetLine.source_document_id == SourceDocument.id)
+            .where(SourceDocument.url.in_(official_urls))
+        ).all()
+        newest_by_url_county: dict[tuple[str, int], date] = {}
+        for line, period, source in existing:
+            if not _line_is_official(line, source):
+                continue
+            key = (source.url, line.entity_id)
+            current = newest_by_url_county.get(key)
+            if current is None or period.end_date.date() > current:
+                newest_by_url_county[key] = period.end_date.date()
+        for record in records:
+            if record.data_quality != "official":
+                continue
+            url = record.source_url or default_url
+            current = newest_by_url_county.get(
+                (url, entities_by_slug[record.entity_slug].id)
+            )
+            incoming = record.end_date
+            if current is not None and incoming < current:
+                return (
+                    f"Older official county budget edition at {url}: "
+                    f"incoming ends {incoming}, published edition ends {current}"
+                )
+
+        # A different document can target the same county, period and row.
+        # Its earlier reporting cutoff must not replace the annual value.
+        official_keys = {
+            (entities_by_slug[r.entity_slug].id,
+             normalize_fiscal_label(r.period_label), r.category, r.subcategory): r
+            for r in records if r.data_quality == "official"
+        }
+        existing_keys = session.execute(
+            select(BudgetLine, FiscalPeriod, SourceDocument)
+            .join(FiscalPeriod, BudgetLine.period_id == FiscalPeriod.id)
+            .join(SourceDocument, BudgetLine.source_document_id == SourceDocument.id)
+            .where(
+                BudgetLine.entity_id.in_({key[0] for key in official_keys}),
+                FiscalPeriod.label.in_({key[1] for key in official_keys}),
+            )
+        ).all()
+        for line, period, source in existing_keys:
+            incoming_record = official_keys.get(
+                (line.entity_id, period.label, line.category, line.subcategory)
+            )
+            if (
+                incoming_record is not None
+                and _line_is_official(line, source)
+                and incoming_record.end_date < period.end_date.date()
+            ):
+                return (
+                    "Older official county budget report would replace a "
+                    f"newer source-backed row {line.id}"
+                )
+
+    nonofficial = [r for r in records if r.data_quality != "official"]
+    if nonofficial:
+        nonofficial_urls = {r.source_url or default_url for r in nonofficial}
+        same_url_rows = session.execute(
+            select(BudgetLine, SourceDocument)
+            .join(SourceDocument, BudgetLine.source_document_id == SourceDocument.id)
+            .where(SourceDocument.url.in_(nonofficial_urls))
+        ).all()
+        if any(_line_is_official(line, source) for line, source in same_url_rows):
+            return (
+                "Fixture or unverified county budget batch would change a "
+                "source-backed document and withdraw its current revenue rows"
+            )
+        keys = {
+            (
+                entities_by_slug[r.entity_slug].id,
+                normalize_fiscal_label(r.period_label),
+                r.category,
+                r.subcategory,
+            )
+            for r in nonofficial
+        }
+        existing = session.execute(
+            select(BudgetLine, FiscalPeriod, SourceDocument)
+            .join(FiscalPeriod, BudgetLine.period_id == FiscalPeriod.id)
+            .join(SourceDocument, BudgetLine.source_document_id == SourceDocument.id)
+            .where(
+                BudgetLine.entity_id.in_({key[0] for key in keys}),
+                FiscalPeriod.label.in_({key[1] for key in keys}),
+            )
+        ).all()
+        for line, period, source in existing:
+            key = (line.entity_id, period.label, line.category, line.subcategory)
+            if key in keys and _line_is_official(line, source):
+                return (
+                    "Fixture or unverified county budget batch would replace "
+                    f"source-backed row {line.id} ({period.label}, {line.category})"
+                )
+    return None
+
+
 def persist_budget_records(
     session: Session,
     records: Iterable[BudgetRecord],
@@ -332,6 +484,15 @@ def persist_budget_records(
             unknown_slugs_reported.add(record.entity_slug)
 
     if not resolvable:
+        return stats
+
+    regression = _regressive_publication_error(
+        session, resolvable, entities_by_slug, settings.budgets_dataset_url
+    )
+    if regression:
+        logger.warning(regression)
+        stats.errors.append(regression)
+        stats.skipped += len(resolvable)
         return stats
 
     now = datetime.now(timezone.utc)
