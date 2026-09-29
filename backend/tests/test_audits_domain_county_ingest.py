@@ -153,7 +153,7 @@ def harness(db_session, monkeypatch, tmp_path):
     monkeypatch.setattr(db_session, "commit", counting_commit)
     return {
         "session": db_session, "fetched": fetched, "commits": commits, "loads": loads,
-        "registered_at_first_fetch": registered_at_first_fetch,
+        "registered_at_first_fetch": registered_at_first_fetch, "clock": clock,
     }
 
 
@@ -214,6 +214,18 @@ class TestCountyIngest:
         ]
         assert report["deferred"] == []
 
+    def test_start_cutoff_does_not_recheck_current_volumes(self, harness):
+        _run(harness["session"], budget=10_000)
+        harness["fetched"].clear()
+        result = _run(harness["session"], budget=0)
+        report = result.metadata["county_volumes"]
+        assert report["already_current"] == []
+        assert report["deferred"] == [
+            "2024/2025 executives", "2024/2025 assemblies",
+            "2023/2024 executives", "2021/2022 executives",
+        ]
+        assert harness["fetched"] == []
+
     def test_a_covered_per_county_report_is_not_re_fetched(self, harness):
         _run(harness["session"], budget=10_000)
         assert STALE_SINGLE not in harness["fetched"]
@@ -253,16 +265,379 @@ class TestNationalCandidates:
         assert keep == [f"{UP}/2026/05/AUDITOR-GENERALS-REPORT-ON-NATIONAL-GOVERNMENT-2024-2025.pdf"]
         assert [why for _u, why in rejected] == ["popular_report"]
 
+    def test_new_national_candidate_is_still_discovered_and_attempted(
+        self, harness, monkeypatch
+    ):
+        from models import DocumentStatus, DocumentType, SourceDocument
+        from seeding import fetch_documents
+        from seeding.extractors import get_parser
+
+        session = harness["session"]
+        _run(session, budget=10_000)
+        harness["fetched"].clear()
+        country_id = session.query(SourceDocument).first().country_id
+        original_fetch = fetch_documents.fetch_document
+        county_parser = get_parser("oag_county_audit")
+
+        def fetch_new(session, client, settings, *, url, **kwargs):
+            if url == NATIONAL and session.query(SourceDocument).filter_by(url=url).one_or_none() is None:
+                session.add(SourceDocument(
+                    country_id=country_id, publisher="Office of the Auditor-General",
+                    title=url.rsplit("/", 1)[-1], url=url,
+                    fetch_date=datetime(2026, 1, 1), doc_type=DocumentType.AUDIT,
+                    status=DocumentStatus.FAILED,
+                ))
+                session.flush()
+            return original_fetch(session, client, settings, url=url, **kwargs)
+
+        monkeypatch.setattr(audits_domain.fetcher, "_discover_audit_pdfs_via_wp_api", lambda c: [NATIONAL])
+        monkeypatch.setattr(fetch_documents, "fetch_document", fetch_new)
+        monkeypatch.setattr(
+            "seeding.extractors.get_parser",
+            lambda pid: county_parser if pid == "oag_county_audit"
+            else (lambda s, d, st: {"created": 0, "skipped_unchanged": True}),
+        )
+        result = _run(session, budget=150)
+        assert harness["fetched"][-1] == NATIONAL
+        assert result.metadata["deferred_discovery"] == []
+        assert result.metadata["deferred_documents"] == []
+
+    def test_malformed_national_metadata_is_not_replaced_by_retry_stamp(self, harness):
+        from models import DocumentStatus, DocumentType, SourceDocument
+
+        session = harness["session"]
+        doc = SourceDocument(
+            country_id=session.query(SourceDocument).first().country_id,
+            publisher="Office of the Auditor-General", title="national.pdf",
+            url=NATIONAL, fetch_date=datetime(2026, 1, 1),
+            doc_type=DocumentType.AUDIT, status=DocumentStatus.AVAILABLE,
+            meta=["unreviewed source metadata"],
+        )
+        session.add(doc)
+        session.commit()
+        with pytest.raises(ValueError, match="malformed metadata"):
+            audits_domain._record_scheduled_attempt(session, doc)
+        session.expire(doc)
+        assert doc.meta == ["unreviewed source metadata"]
+
+    def test_filter_and_dedupe_before_capping_new_national_reports(self, harness, monkeypatch):
+        from models import DocumentStatus, DocumentType, SourceDocument
+        from seeding import fetch_documents
+
+        session = harness["session"]
+        _run(session, budget=10_000)  # Bank the county volumes first.
+        harness["fetched"].clear()
+        urls = [f"{UP}/2026/05/National-Government-Blue-Book-{n}.pdf" for n in range(5)]
+        popular = f"{UP}/2026/05/National-Government-Popular-Report.pdf"
+        summary = f"{UP}/2026/05/National-Government-Summary-Report.pdf"
+        monkeypatch.setattr(
+            audits_domain.fetcher, "_discover_audit_pdfs_via_wp_api",
+            lambda c: [popular, summary, *urls, urls[0]],
+        )
+        original_fetch = fetch_documents.fetch_document
+        country_id = session.query(SourceDocument).first().country_id
+
+        def fetch_new(session, client, settings, *, url, **kwargs):
+            if session.query(SourceDocument).filter_by(url=url).one_or_none() is None:
+                session.add(SourceDocument(
+                    country_id=country_id, publisher="Office of the Auditor-General",
+                    title=url.rsplit("/", 1)[-1], url=url,
+                    fetch_date=datetime(2026, 1, 1), doc_type=DocumentType.AUDIT,
+                    status=DocumentStatus.FAILED,
+                ))
+                session.flush()
+            return original_fetch(session, client, settings, url=url, **kwargs)
+
+        monkeypatch.setattr(fetch_documents, "fetch_document", fetch_new)
+        from seeding.extractors import get_parser
+        county_parser = get_parser("oag_county_audit")
+        monkeypatch.setattr(
+            "seeding.extractors.get_parser",
+            lambda pid: None if pid == "oag_blue_book" else county_parser,
+        )
+        first = _run(session, budget=10_000)
+        assert [url for url in harness["fetched"] if url in urls] == urls[:3]
+        assert first.metadata["deferred_documents"] == [
+            {"dataset": "oag_national_audits", "url": url, "reason": "new_document_cap"}
+            for url in urls[3:]
+        ]
+        assert popular not in harness["fetched"] and summary not in harness["fetched"]
+
+        session.commit()  # The CLI banks a completed domain between runs.
+        harness["fetched"].clear()
+        second = _run(session, budget=10_000)
+        assert [url for url in harness["fetched"] if url in urls][:2] == urls[3:]
+        assert second.metadata["deferred_documents"] == []
+
+    def test_dry_run_lists_all_eligible_national_reports_without_registering(self, harness, monkeypatch):
+        from models import SourceDocument
+
+        urls = [f"{UP}/2026/05/National-Government-Blue-Book-{n}.pdf" for n in range(5)]
+        monkeypatch.setattr(
+            audits_domain.fetcher, "_discover_audit_pdfs_via_wp_api",
+            lambda c: [f"{UP}/2026/05/National-Government-Popular-Report.pdf", *urls, urls[0]],
+        )
+        session = harness["session"]
+        before = session.query(SourceDocument).count()
+        result = audits_domain.run(
+            session, SeedingSettings(audits_county_start_budget_seconds=10_000),
+            DomainRunContext(since=None, dry_run=True),
+        )
+        national = next(
+            item for item in result.metadata["documents"]
+            if item["phase"] == "older_documents" and item["dataset"] == "oag_national_audits"
+        )
+        assert national["candidates"] == urls
+        assert session.query(SourceDocument).count() == before
+        assert harness["fetched"] == []
+
+    def test_pre_registered_unfetched_reports_still_use_the_new_document_cap(self, harness):
+        from models import DocumentStatus, DocumentType, SourceDocument
+
+        session = harness["session"]
+        _run(session, budget=10_000)
+        harness["fetched"].clear()
+        urls = [f"{UP}/2026/05/National-Government-Queued-{n}.pdf" for n in range(5)]
+        country_id = session.query(SourceDocument).first().country_id
+        for url in urls:
+            session.add(SourceDocument(
+                country_id=country_id, publisher="Office of the Auditor-General",
+                title=url.rsplit("/", 1)[-1], url=url,
+                fetch_date=datetime(2026, 1, 1), doc_type=DocumentType.AUDIT,
+                status=DocumentStatus.FAILED,
+                meta={"dataset_id": "oag_national_audits", "registration": "discovered_not_fetched"},
+            ))
+        session.commit()
+
+        result = _run(session, budget=10_000)
+        assert [url for url in harness["fetched"] if url in urls] == urls[:3]
+        assert result.metadata["deferred_documents"] == [
+            {"dataset": "oag_national_audits", "url": url, "reason": "new_document_cap"}
+            for url in urls[3:]
+        ]
+
 
 NATIONAL = f"{UP}/2026/05/AUDITOR-GENERALS-REPORT-ON-NATIONAL-GOVERNMENT-2024-2025.pdf"
+LEGACY_EXECUTIVES = f"{UP}/2023/02/REPORT-OF-THE-AUDITOR-GENERAL-FOR-THE-COUNTY-GOVERNMENTS-FOR-THE-YEAR-2020-2021-_VOLUME-I-COUNTY-EXECUTIVES.pdf"
+LEGACY_ASSEMBLIES = f"{UP}/2023/02/REPORT-OF-THE-AUDITOR-GENERAL-FOR-THE-COUNTY-GOVERNMENTS-FOR-THE-YEAR-2020-2021-_VOLUME-II-COUNTY-ASSEMBLIES.pdf"
+
+
+def test_first_national_fetch_timeout_keeps_a_durable_retry_turn(tmp_path, monkeypatch):
+    """A CLI rollback after a first-fetch timeout must not restore top priority."""
+    from models import Base, Country, DocumentStatus, DocumentType, SourceDocument
+    from seeding.cli import DomainTimeoutError
+    from sqlalchemy import create_engine
+    from sqlalchemy.dialects.postgresql import JSONB
+    from sqlalchemy.ext.compiler import compiles
+    from sqlalchemy.orm import sessionmaker
+
+    @compiles(JSONB, "sqlite")
+    def compile_jsonb_sqlite(type_, compiler, **kw):
+        return "TEXT"
+
+    engine = create_engine(f"sqlite:///{tmp_path / 'audit_timeout.db'}")
+    Base.metadata.create_all(engine)
+    maker = sessionmaker(bind=engine)
+    with maker() as session:
+        country = Country(
+            name="Kenya", iso_code="KEN", currency="KES",
+            timezone="Africa/Nairobi", default_locale="en-KE",
+        )
+        session.add(country)
+        session.flush()
+        session.add(SourceDocument(
+            country_id=country.id, publisher="Office of the Auditor-General",
+            title="legacy.pdf", url=LEGACY_EXECUTIVES,
+            fetch_date=datetime(2026, 1, 1), doc_type=DocumentType.AUDIT,
+            status=DocumentStatus.AVAILABLE,
+        ))
+        session.commit()
+
+    @contextmanager
+    def fake_client(_settings):
+        yield object()
+
+    monkeypatch.setattr(audits_domain, "create_http_client", fake_client)
+    monkeypatch.setattr(od, "discover_county_audit_documents", lambda c: od.CountyAuditDiscovery())
+    monkeypatch.setattr(
+        audits_domain.fetcher, "_discover_audit_pdfs_via_wp_api", lambda c: [NATIONAL],
+    )
+    monkeypatch.setattr("seeding.extractors.get_parser", lambda pid: None)
+    fetched = []
+
+    def interrupted_fetch(session, client, settings, *, url, **kwargs):
+        fetched.append(url)
+        if url == NATIONAL:
+            # Model the real fetcher's flush before its slow download.
+            if session.query(SourceDocument).filter_by(url=url).one_or_none() is None:
+                session.add(SourceDocument(
+                    country_id=kwargs["country_id"], publisher=kwargs["publisher"],
+                    title=kwargs["title"], url=url, fetch_date=datetime.now(timezone.utc),
+                    doc_type=kwargs["doc_type"], status=DocumentStatus.FAILED,
+                ))
+                session.flush()
+            raise DomainTimeoutError("first national download interrupted")
+        return session.query(SourceDocument).filter_by(url=url).one()
+
+    monkeypatch.setattr("seeding.fetch_documents.fetch_document", interrupted_fetch)
+    with maker() as session:
+        with pytest.raises(DomainTimeoutError):
+            _run(session, budget=10_000)
+        session.rollback()  # Exactly what the CLI does on DomainTimeoutError.
+
+    with maker() as session:
+        row = session.query(SourceDocument).filter_by(url=NATIONAL).one()
+        assert row.status == DocumentStatus.FAILED
+        assert row.file_path is None and row.md5 is None and row.http_status is None
+        assert row.meta["registration"] == "discovered_not_fetched"
+        assert row.meta["last_audit_schedule_attempt_at"]
+
+    fetched.clear()
+    with maker() as session:
+        with pytest.raises(DomainTimeoutError):
+            _run(session, budget=10_000)
+        session.rollback()
+    assert fetched == [LEGACY_EXECUTIVES, NATIONAL]
+    engine.dispose()
+
+
+def test_slow_refused_national_and_legacy_books_cannot_starve_current_volumes(
+    harness, monkeypatch
+):
+    """Force the nightly's timing: a 100s national refusal and two 90s
+    legacy refusals exhausted the 150s start budget before any new volume.
+    The later queue still has to identify which work it deferred.
+    """
+    from models import DocumentStatus, DocumentType, SourceDocument
+    from seeding.extractors.reconciliation import IncompleteExtraction
+
+    session = harness["session"]
+    country_id = session.query(SourceDocument).first().country_id
+    for url in (NATIONAL, LEGACY_EXECUTIVES, LEGACY_ASSEMBLIES):
+        session.add(SourceDocument(
+            country_id=country_id, publisher="Office of the Auditor-General",
+            title=url.rsplit("/", 1)[-1], url=url, fetch_date=datetime(2026, 1, 1),
+            doc_type=DocumentType.AUDIT, status=DocumentStatus.AVAILABLE,
+        ))
+    session.commit()
+    harness["commits"].clear()
+    county_parser = __import__("seeding.extractors", fromlist=["get_parser"]).get_parser("oag_county_audit")
+
+    def slow_county(session, doc, settings):
+        if doc.url in (LEGACY_EXECUTIVES, LEGACY_ASSEMBLIES):
+            harness["clock"].now += 90
+            raise IncompleteExtraction("unreadable source text; rows kept")
+        return county_parser(session, doc, settings)
+
+    def slow_national(session, doc, settings):
+        harness["clock"].now += 100
+        raise IncompleteExtraction("reconciliation review required; rows kept")
+
+    monkeypatch.setattr(
+        "seeding.extractors.get_parser",
+        lambda pid: slow_national if pid == "oag_blue_book" else slow_county,
+    )
+
+    result = _run(session, budget=150)
+    report = result.metadata["county_volumes"]
+    assert [p.split(":")[0] for p in report["processed"]] == [
+        "2024/2025 executives", "2024/2025 assemblies",
+    ]
+    assert report["deferred"] == ["2023/2024 executives", "2021/2022 executives"]
+    assert harness["fetched"] == [d.url for d in DISCOVERY.volumes()[:2]]
+    assert {d["url"] for d in result.metadata["deferred_documents"]} == {
+        NATIONAL, LEGACY_EXECUTIVES, LEGACY_ASSEMBLIES,
+    }
+    assert result.metadata["deferred_discovery"] == ["oag_national_audits"]
+    assert harness["clock"].now == 200
+
+    harness["fetched"].clear()
+    result = _run(session, budget=150)
+    assert result.metadata["county_volumes"]["already_current"] == [
+        "2024/2025 executives", "2024/2025 assemblies",
+    ]
+    assert [p.split(":")[0] for p in result.metadata["county_volumes"]["processed"]] == [
+        "2023/2024 executives", "2021/2022 executives",
+    ]
+
+    harness["fetched"].clear()
+    result = _run(session, budget=150)
+    assert result.metadata["county_volumes"]["processed"] == []
+    assert len(result.metadata["county_volumes"]["already_current"]) == 4
+    assert [d["url"] for d in result.metadata["deferred_documents"]] == [LEGACY_ASSEMBLIES]
+    assert result.metadata["deferred_discovery"] == []
+    assert harness["fetched"][-2:] == [NATIONAL, LEGACY_EXECUTIVES]
+    assert any("unreadable source text" in error for error in result.errors)
+    assert any("reconciliation review required" in error for error in result.errors)
+
+    harness["fetched"].clear()
+    result = _run(session, budget=150)
+    assert harness["fetched"][-2:] == [LEGACY_ASSEMBLIES, NATIONAL]
+    assert [d["url"] for d in result.metadata["deferred_documents"]] == [LEGACY_EXECUTIVES]
+
+
+@pytest.mark.parametrize("national_refused", [True, False])
+def test_repeated_slow_national_retry_cannot_starve_older_county_reports(
+    harness, monkeypatch, national_refused
+):
+    from models import DocumentStatus, DocumentType, SourceDocument
+    from seeding.extractors.reconciliation import IncompleteExtraction
+
+    session = harness["session"]
+    _run(session, budget=10_000)  # All current volumes have been banked.
+    country_id = session.query(SourceDocument).first().country_id
+    for url in (NATIONAL, LEGACY_EXECUTIVES, LEGACY_ASSEMBLIES):
+        session.add(SourceDocument(
+            country_id=country_id, publisher="Office of the Auditor-General",
+            title=url.rsplit("/", 1)[-1], url=url, fetch_date=datetime(2026, 1, 1),
+            doc_type=DocumentType.AUDIT, status=DocumentStatus.AVAILABLE,
+        ))
+    session.commit()
+    county_parser = __import__("seeding.extractors", fromlist=["get_parser"]).get_parser("oag_county_audit")
+
+    def slow_county(session, doc, settings):
+        if doc.url in (LEGACY_EXECUTIVES, LEGACY_ASSEMBLIES):
+            harness["clock"].now += 90
+            raise IncompleteExtraction("unreadable source text; rows kept")
+        return county_parser(session, doc, settings)
+
+    def slow_national(session, doc, settings):
+        harness["clock"].now += 200
+        if national_refused:
+            raise IncompleteExtraction("reconciliation review required; rows kept")
+        return {"created": 0, "skipped_unchanged": True}
+
+    monkeypatch.setattr(
+        "seeding.extractors.get_parser",
+        lambda pid: slow_national if pid == "oag_blue_book" else slow_county,
+    )
+    older = {NATIONAL, LEGACY_EXECUTIVES, LEGACY_ASSEMBLIES}
+    attempts, deferred = [], []
+    for _ in range(3):
+        harness["fetched"].clear()
+        result = _run(session, budget=150)
+        attempts.append([url for url in harness["fetched"] if url in older])
+        deferred.append([item["url"] for item in result.metadata["deferred_documents"]])
+        assert len(result.metadata["county_volumes"]["already_current"]) == 4
+
+    assert attempts == [
+        [NATIONAL],
+        [LEGACY_EXECUTIVES, LEGACY_ASSEMBLIES],
+        [NATIONAL],
+    ]
+    assert deferred == [
+        [LEGACY_EXECUTIVES, LEGACY_ASSEMBLIES],
+        [NATIONAL],
+        [LEGACY_EXECUTIVES, LEGACY_ASSEMBLIES],
+    ]
 
 
 class TestNationalReExtractionIsBanked:
-    """The national Blue Book runs before the county pass and outside its
-    start budget. A walk change re-reads it (and the FY2020/21 volumes) once.
-    The CLI commits once, at the end, and rolls the whole domain back on a
-    timeout, so without a commit here a first night that ran out of time
-    would lose the re-extraction, and every later night would repeat it."""
+    """When the backlog permits national work, re-extraction is banked.
+
+    The CLI commits once at the end and rolls the whole domain back on a
+    timeout. A national re-read must be committed after it completes.
+    """
 
     @pytest.fixture()
     def national(self, harness, monkeypatch):
@@ -292,23 +667,23 @@ class TestNationalReExtractionIsBanked:
         )
         return harness
 
-    def test_a_re_extracted_national_book_is_committed_before_the_county_pass(
+    def test_a_re_extracted_national_book_is_committed_after_the_county_pass(
         self, national
     ):
-        _run(national["session"], budget=150)
-        # The first fetch is the national book; a commit must follow it
-        # before the second fetch (the first county volume).
-        assert national["fetched"][0] == NATIONAL
-        assert national["commits"][0] == 1
+        _run(national["session"], budget=10_000)
+        assert national["fetched"][-1] == NATIONAL
+        assert national["commits"][-1] == len(national["fetched"])
 
     def test_an_unchanged_national_book_is_not_a_reason_to_commit(
         self, national, monkeypatch
     ):
         """POSITIVE CONTROL: a skip did no work, so there is nothing to bank."""
+        county = __import__("seeding.extractors", fromlist=["get_parser"]).get_parser("oag_county_audit")
         monkeypatch.setattr(
             "seeding.extractors.get_parser",
             lambda pid: (lambda s, d, st: {"created": 0, "skipped_unchanged": True})
-            if pid == "oag_blue_book" else None,
+            if pid == "oag_blue_book" else county,
         )
-        _run(national["session"], budget=150)
-        assert 1 not in national["commits"]
+        _run(national["session"], budget=10_000)
+        assert national["fetched"][-1] == NATIONAL
+        assert len(national["fetched"]) not in national["commits"]

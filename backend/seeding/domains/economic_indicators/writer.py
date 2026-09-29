@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import calendar
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 from models import Country, DocumentType, EconomicIndicator, Entity, SourceDocument
@@ -188,37 +189,58 @@ def persist_economic_records(
 
 
 #: A sweep that wants to delete more than this many rows of one type in one
-#: run is more likely a malformed source than that many stale rows. The first
-#: production run removes five in total (verified on a 2026-09-26 clone).
+#: run is more likely a malformed source than that many off-cycle rows.
 MAX_SUPERSEDED_PER_TYPE = 12
 
 
 def remove_superseded_rows(
-    session: Session, coverage: Dict[str, Set[str]]
+    session: Session,
+    coverage: Dict[str, Set[str]],
+    receipts: Optional[List[dict]] = None,
 ) -> Tuple[List[Tuple[str, str, float]], List[str]]:
-    """Delete national rows a live source has proven cannot be right.
+    """Delete national rows whose dates cannot represent the live series.
 
     ``coverage`` is :attr:`..fetcher.EconomicPayload.coverage`: for each type
-    a live source delivered THIS run, the dates it delivered. A national row
-    of that type, inside the delivered span, at a date the source did not
-    deliver, was written by something other than the owner — bootstrap's
-    literal ``inflation_rate`` 2024-06-30 = 4.6, the fixture's 12-month 3.3
-    filed in the annual-average series at 2025-01-31, or a CBK month that has
-    since failed the cross-check.
+    a live source delivered THIS run, the dates it delivered. An off-cycle
+    date inside that span cannot be an observation of the owner's measure.
+    A missing observation at a valid period end is insufficient evidence for
+    deletion: a partial source response can omit a legitimate stored row.
 
     Returns ``(removed, errors)``: ``(type, date, value)`` per deleted row,
-    and one error per type whose sweep was REFUSED for exceeding
-    :data:`MAX_SUPERSEDED_PER_TYPE` — nothing of that type is deleted, and
-    the refusal reaches the job row rather than a log line.
+    and errors for malformed coverage or a sweep exceeding
+    :data:`MAX_SUPERSEDED_PER_TYPE`. Malformed coverage refuses all deletion;
+    an over-limit type is left intact. Refusals reach the job row.
 
     An empty coverage (live sources down) deletes nothing: the sweep only
     ever acts on evidence gathered in the same run.
     """
-    from .fetcher import superseded_by_live
+    from .cbk_inflation import INDICATOR_TYPE as MONTHLY_TYPE
+    from .fetcher import _WB_INDICATORS, superseded_by_live
 
     removed: List[Tuple[str, str, float]] = []
     errors: List[str] = []
     if not coverage:
+        return removed, errors
+    annual_types = {item["indicator_type"] for item in _WB_INDICATORS.values()}
+    allowed_types = annual_types | {MONTHLY_TYPE}
+    for kind, days in coverage.items():
+        if not isinstance(kind, str) or kind not in allowed_types or not isinstance(days, set):
+            errors.append(f"Refused malformed supersession coverage for {kind!r}")
+            continue
+        for day in days:
+            try:
+                parsed = date.fromisoformat(day) if isinstance(day, str) else None
+            except ValueError:
+                parsed = None
+            if parsed is None or parsed.isoformat() != day or (
+                kind in annual_types and (parsed.month, parsed.day) != (12, 31)
+            ) or (
+                kind == MONTHLY_TYPE
+                and parsed.day != calendar.monthrange(parsed.year, parsed.month)[1]
+            ):
+                errors.append(f"Refused malformed supersession coverage for {kind!r}: {day!r}")
+                break
+    if errors:
         return removed, errors
     rows = session.execute(
         select(EconomicIndicator).where(
@@ -229,7 +251,13 @@ def remove_superseded_rows(
     doomed: Dict[str, List[EconomicIndicator]] = {}
     for row in list(rows):
         day = row.indicator_date.date().isoformat()
-        if superseded_by_live(row.indicator_type, day, coverage):
+        row_day = row.indicator_date.date()
+        is_off_cycle = (
+            (row_day.month, row_day.day) != (12, 31)
+            if row.indicator_type in annual_types
+            else row_day.day != calendar.monthrange(row_day.year, row_day.month)[1]
+        )
+        if is_off_cycle and superseded_by_live(row.indicator_type, day, coverage):
             doomed.setdefault(row.indicator_type, []).append(row)
     for kind, victims in sorted(doomed.items()):
         if len(victims) > MAX_SUPERSEDED_PER_TYPE:
@@ -244,6 +272,16 @@ def remove_superseded_rows(
         for row in victims:
             day = row.indicator_date.date().isoformat()
             removed.append((kind, day, float(row.value)))
+            if receipts is not None:
+                receipts.append({
+                    "id": row.id,
+                    "indicator_type": kind,
+                    "date": day,
+                    "value": float(row.value),
+                    "stored_value": str(row.value),
+                    "entity_id": row.entity_id,
+                    "source_document_id": row.source_document_id,
+                })
             logger.info("Removed superseded %s %s = %s", kind, day, row.value)
             session.delete(row)
     return removed, errors
