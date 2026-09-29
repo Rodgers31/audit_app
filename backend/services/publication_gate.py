@@ -129,6 +129,14 @@ _DESCRIPTIVE_PDF_PAGE = re.compile(
     re.I,
 )
 
+# Treasury's fiscal-framework rows also retain the concise source-table form
+# "Annex 2a p63". Keep this outside the shared audit/county locator policy.
+_FISCAL_ANNEX_PAGE = re.compile(
+    r"Annex(?:[ \t]+Table)?[ \t]+[1-9][0-9]{0,2}[a-z]?"
+    r"(?:[ \t]*,[ \t]*|[ \t]+)p\.?[ \t]*[1-9][0-9]{0,8}",
+    re.I | re.ASCII,
+)
+
 
 def _has_page_locator(*candidates, allow_descriptive=False) -> bool:
     """Validate a direct citation; fiscal summaries may cite PDF pages in prose."""
@@ -540,12 +548,18 @@ def fiscal_summary_withheld_reason(row) -> Optional[str]:
     ``extraction_id`` at all; audit 902 had an ``Extraction`` and was 89.6%
     ``(cid:NN)`` glyphs off a cover page.
 
-    Fiscal rows use the shared direct citation policy plus an explicit
-    descriptive PDF-page exception for existing references such as the one
-    above. They are materialised before this check; audit findings use the
-    matching SQL expression.
+    Fiscal rows use the shared direct citation policy plus explicit exceptions
+    for descriptive PDF pages and Treasury's "Annex 2a p63" shorthand. They are
+    materialised before this check; audit findings use the matching SQL expression.
     """
-    if not _has_page_locator(getattr(row, "page_ref", None), allow_descriptive=True):
+    page_ref = getattr(row, "page_ref", None)
+    if not (
+        _has_page_locator(page_ref, allow_descriptive=True)
+        or (
+            isinstance(page_ref, str)
+            and _FISCAL_ANNEX_PAGE.fullmatch(page_ref) is not None
+        )
+    ):
         return FISCAL_SUMMARY_NO_PAGE_REF
     return None
 

@@ -33,3 +33,16 @@ Deploy backend and frontend together, accounting for the federal payload's one-h
 Coordinator independently reproduced and logged #374: malformed stored provenance can crash the entire federal endpoint. #375 separately records accountability's unchanged lookup accepting a foreign namesake; the repaired county audit-list route does not have that defect. Both are synthetic reachable findings; production occurrence is unmeasured.
 
 Unknown county severity currently being ignored is a preexisting contract question rather than a confirmed requirement violation; no speculative issue was filed. Malformed coverage/date payload probes did not match the current backend contract, which emits complete coverage structure and validated dates; they are not claimed as observed production defects. No broad audit or historical cleanup was performed.
+
+
+## Copilot review corrections
+
+Reviewed both inline findings and the complete review body at head `0d3fde2`; both findings were valid. PR #377's current-head Copilot review had no findings and its CI passed.
+
+- Integer locator parity: the coordinator reproduced integer 1000000000 being accepted while its equivalent string was refused. The central page_number bound now matches the SQL nine-digit policy. Five surface assertions failed before correction; integer/string boundary, boolean/nonpositive and named-locator controls pass afterward. The caller fix covers citation_page, report_page_url and Python publication checks without widening SQL casts.
+- Pending-bill snapshot disagreement: rendered regressions failed for unequal partial sums with identical coverage, zero versus missing, and apparently complete but contradictory sums. The page compares validated reported sums, discloses mismatch beside the total and ranking, and avoids a full-ranking claim. Matching zero remains zero. This comparison detects the demonstrated inconsistency; it does not certify that equal aggregates came from an identical snapshot.
+- Full CI run36513703410 exposed two fiscal-outturn regressions (5871 other tests passed). A legitimate `Annex 2a p63` fiscal shorthand was rejected by the shared citation tightening. A narrow fiscal-only full-match exception restores it; malformed/zero/reversed/trailing-junk controls still withhold. The current fiscal writer's `Annex Table 2a, PDF p.63` was already supported. No audit gate loosening or source/reconciliation check removal was used to make the tests pass.
+
+Final coordinator checks for these corrections: 288 targeted backend tests passed, including actual SQLite/PostgreSQL gate execution and the two previously failing CI tests; 73 frontend tests passed. TypeScript, targeted ESLint and diff checks passed. Independent direct calls confirmed fiscal shorthand remains invalid for the audit citation policy. Every changed behavior has observed failing-before/passing-after evidence. A fresh full CI run is required on the pushed head; these local checks do not represent its outcome.
+
+No additional unaddressed confirmed issue emerged in this review round. Previously logged #374/#375 remain open. The premerge production impact assessment for #366 is still required; no production data access, mutation, seed, merge or deployment was performed for this review.
