@@ -124,7 +124,8 @@ describe('AuditReportsSection with published findings', () => {
             date: null,
             title: 'Pending Accounts Payable',
             page_ref: 'p.14',
-            source_url: 'https://www.oagkenya.go.ke/wp-content/uploads/2026/05/R.pdf',
+            source_url: 'https://www.oagkenya.go.ke/wp-content/uploads/2026/05/R.pdf#zoom=100',
+            source_page_url: 'https://www.oagkenya.go.ke/wp-content/uploads/2026/05/R.pdf#zoom=100&page=14',
           },
           {
             id: 2,
@@ -169,7 +170,7 @@ describe('AuditReportsSection with published findings', () => {
     const link = screen.getByRole('link', { name: /source.*p\.14/i });
     expect(link).toHaveAttribute(
       'href',
-      'https://www.oagkenya.go.ke/wp-content/uploads/2026/05/R.pdf#page=14'
+      'https://www.oagkenya.go.ke/wp-content/uploads/2026/05/R.pdf#zoom=100&page=14'
     );
   });
 

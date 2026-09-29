@@ -499,11 +499,11 @@ export default function AuditReportsSection() {
                                 {f.recommended_action}
                               </p>
                             )}
-                            {/* The product's core claim: every finding links
-                                to the page of the report it came from. */}
-                            {f.source_url && f.page_ref && (
+                            {/* The server resolves the stored locator and PDF
+                                fragment; raw page text is never a URL. */}
+                            {f.source_page_url && f.page_ref && (
                               <a
-                                href={`${f.source_url}#page=${f.page_ref.replace(/[^0-9]/g, '')}`}
+                                href={f.source_page_url}
                                 target='_blank'
                                 rel='noopener noreferrer'
                                 onClick={(e) => e.stopPropagation()}
