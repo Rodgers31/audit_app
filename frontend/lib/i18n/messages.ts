@@ -703,6 +703,7 @@ export const MESSAGES = {
 
   // Counties list — Insights panel
   'counties.insights.no_match': { en: 'No counties match the current filters', sw: 'Hakuna kaunti zinazolingana na vichujio', plain: 'No counties match your filters' },
+  'counties.insights.no_health_scores': { en: 'No financial-health grades are available for this selection.', sw: 'Hakuna madaraja ya afya ya kifedha yanayopatikana kwa chaguo hili.', plain: 'No money-health grades are available for this selection.' },
   'counties.insights.budget': { en: 'Budget', sw: 'Bajeti', plain: 'Budget' },
   'counties.insights.debt': { en: 'Debt', sw: 'Deni', plain: 'Debt' },
   'counties.insights.avg_exec': { en: 'Avg Exec', sw: 'Wastani wa Matumizi', plain: 'Avg spent' },
@@ -1309,18 +1310,28 @@ export const MESSAGES = {
   'county.sources.debt': { en: 'Debt', sw: 'Deni', plain: 'Debt' },
   'county.sources.population': { en: 'Population', sw: 'Idadi ya Watu', plain: 'People' },
 
+  // Contextual glossary help for the county financial-health score
+  'glossary.info_label': { en: 'What is {title}?', sw: '{title} ni nini?', plain: 'What does {title} mean?' },
+  'glossary.financial_health.body': {
+    en: 'A site-made composite score (0–100) using available budget absorption, own-source revenue, pending bills, and the Auditor-General’s audit opinion. When all four are available, the audit opinion carries the same weight as the other three inputs combined. At least two inputs are required for a grade, from A to C. This is separate from the accountability score.',
+    sw: 'Alama ya pamoja (0–100) iliyoundwa na tovuti kutokana na matumizi ya bajeti, mapato ya ndani, bili ambazo hazijalipwa, na maoni ya ukaguzi ya Mkaguzi Mkuu yanayopatikana. Vipengele vyote vinne vikipatikana, maoni ya ukaguzi yana uzito sawa na vipengele vingine vitatu kwa pamoja. Angalau vipengele viwili vinahitajika ili kutoa daraja la A hadi C. Alama hii ni tofauti na alama ya uwajibikaji.',
+    plain: 'This site gives each county a money-health score from 0 to 100 using available budget spending, local revenue, unpaid bills, and the Auditor-General’s audit opinion. When all four are available, the audit opinion counts as much as the other three together. We need at least two to give an A to C grade. This is separate from the accountability score.',
+  },
+
   // Health score modal
   'county.healthmodal.title': { en: 'Financial Health Score', sw: 'Alama ya Afya ya Kifedha', plain: 'Money Health Score' },
   'county.healthmodal.how_calc': { en: 'How It\u2019s Calculated', sw: 'Jinsi Inavyohesabiwa', plain: 'How it\u2019s figured out' },
-  'county.healthmodal.derived_from': { en: 'The health score is derived from the county\u2019s budget execution rate — how much of the allocated budget was actually spent in the fiscal year.', sw: 'Alama ya afya inatokana na kiwango cha utekelezaji wa bajeti ya kaunti — kiasi gani cha bajeti iliyotengwa kilitumika kweli mwaka huo wa fedha.', plain: 'The health score comes from how much of the planned budget the county really spent this year.' },
-  'county.healthmodal.rule_1': { en: 'If utilization ≤ 95%:', sw: 'Ikiwa matumizi ≤ 95%:', plain: 'If spending ≤ 95%:' },
-  'county.healthmodal.rule_1_body': { en: 'Score = utilization percentage', sw: 'Alama = asilimia ya matumizi', plain: 'Score = the spending percentage' },
-  'county.healthmodal.rule_2': { en: 'If 95% < utilization ≤ 100%:', sw: 'Ikiwa 95% < matumizi ≤ 100%:', plain: 'If 95% < spending ≤ 100%:' },
-  'county.healthmodal.rule_2_body': { en: 'Score = 90 (near-perfect execution)', sw: 'Alama = 90 (utekelezaji karibu kamili)', plain: 'Score = 90 (almost perfect)' },
-  'county.healthmodal.rule_3': { en: 'If utilization > 100% (overspend):', sw: 'Ikiwa matumizi > 100% (matumizi ya ziada):', plain: 'If spending > 100% (overspend):' },
-  'county.healthmodal.rule_3_body': { en: 'Score = 80 − overspend %, penalizing excess spending', sw: 'Alama = 80 − % ya matumizi ya ziada, kuadhibu matumizi ya ziada', plain: 'Score = 80 minus the overspend %, so going over the budget is penalized' },
-  'county.healthmodal.max_note': { en: 'A score of 95 is the maximum — counties that spend close to their budget without overspending demonstrate the best fiscal discipline.', sw: 'Alama ya 95 ndiyo ya juu zaidi — kaunti zinazotumia karibu bajeti yao bila kupita kiasi zinaonyesha nidhamu bora ya kifedha.', plain: 'The highest possible score is 95 — counties that spend close to their budget without going over do best.' },
-  'county.healthmodal.this_county_numbers': { en: 'This County\u2019s Numbers', sw: 'Nambari za Kaunti Hii', plain: 'This County\u2019s Numbers' },
+  'county.healthmodal.derived_from': { en: 'This site-made financial-health index combines available budget absorption, own-source revenue, pending bills, and the Auditor-General\u2019s audit opinion. It is separate from the accountability score.', sw: 'Faharasa hii ya afya ya kifedha iliyoundwa na tovuti inachanganya matumizi ya bajeti, mapato ya ndani, madeni ya bili, na maoni ya ukaguzi ya Mkaguzi Mkuu yanayopatikana. Ni tofauti na alama ya uwajibikaji.', plain: 'This site combines available budget spending, local revenue, unpaid bills, and the Auditor-General\u2019s opinion into a money-health score. The accountability score is separate.' },
+  'county.healthmodal.rule_1': { en: 'Budget absorption:', sw: 'Matumizi ya bajeti:', plain: 'Budget spending:' },
+  'county.healthmodal.rule_1_body': { en: 'Spending compared with allocation, scored around 100%; under- and overspending both lower this component.', sw: 'Matumizi yanalinganishwa na bajeti iliyotengwa; matumizi chini au juu ya 100% hupunguza sehemu hii.', plain: 'Spending is compared with the budget; spending too little or too much lowers this part.' },
+  'county.healthmodal.rule_2': { en: 'Own-source revenue:', sw: 'Mapato ya ndani:', plain: 'Local revenue:' },
+  'county.healthmodal.rule_2_body': { en: 'Amount collected against the reported target, capped at 100.', sw: 'Kiasi kilichokusanywa dhidi ya lengo lililoripotiwa, hadi alama 100.', plain: 'Money collected is compared with the reported target, up to 100.' },
+  'county.healthmodal.rule_3': { en: 'Pending bills:', sw: 'Bili ambazo hazijalipwa:', plain: 'Unpaid bills:' },
+  'county.healthmodal.rule_3_body': { en: 'Pending bills as a share of budget; this component reaches zero at 25% of the budget.', sw: 'Bili ambazo hazijalipwa kama sehemu ya bajeti; sehemu hii huwa sifuri zikifikia 25% ya bajeti.', plain: 'Unpaid bills are compared with the budget; this part reaches zero when they reach a quarter of it.' },
+  'county.healthmodal.rule_4': { en: 'Audit opinion:', sw: 'Maoni ya ukaguzi:', plain: 'Auditor\u2019s opinion:' },
+  'county.healthmodal.rule_4_body': { en: 'Clean 100, qualified 60, adverse 20, disclaimer 0. Its chosen weight equals the other three components combined when all are available.', sw: 'Safi 100, yenye masharti 60, hasi 20, bila maoni 0. Uzito wake uliochaguliwa ni sawa na jumla ya sehemu nyingine tatu zote zikipatikana.', plain: 'A clean opinion scores 100; qualified 60; adverse 20; no opinion 0. This part carries the same weight as the other three together when all are available.' },
+  'county.healthmodal.max_note': { en: 'At least two components are required. Missing components are omitted and the available weights are adjusted; no score means no grade.', sw: 'Angalau sehemu mbili zinahitajika. Sehemu zisizopatikana hazihesabiwi na uzito wa zilizopo hurekebishwa; bila alama hakuna daraja.', plain: 'At least two parts are needed. Missing parts are left out, and the remaining weights are adjusted. No score means no grade.' },
+  'county.healthmodal.this_county_numbers': { en: 'Related County Figures', sw: 'Takwimu Husika za Kaunti', plain: 'Related County Numbers' },
   'county.healthmodal.row.budget_allocated': { en: 'Budget Allocated', sw: 'Bajeti Iliyotengwa', plain: 'Budget Planned' },
   'county.healthmodal.row.budget_spent': { en: 'Budget Spent', sw: 'Bajeti Iliyotumika', plain: 'Budget Spent' },
   'county.healthmodal.row.execution_rate': { en: 'Execution Rate', sw: 'Kiwango cha Utekelezaji', plain: 'Spending Rate' },
@@ -1330,7 +1341,7 @@ export const MESSAGES = {
   'county.healthmodal.row.stalled_projects': { en: 'Stalled Projects', sw: 'Miradi Iliyokwama', plain: 'Stuck Projects' },
   'county.healthmodal.grade_scale': { en: 'Grade Scale', sw: 'Kiwango cha Alama', plain: 'Grade Scale' },
   'county.healthmodal.current': { en: 'Current', sw: 'Ya Sasa', plain: 'Now' },
-  'county.healthmodal.source_line': { en: 'Source: Office of the Auditor General · County financial statements', sw: 'Chanzo: Ofisi ya Mkaguzi Mkuu · Taarifa za kifedha za kaunti', plain: 'Source: Auditor-General · County money reports' },
+  'county.healthmodal.source_line': { en: 'Possible inputs: Controller of Budget county reports · Auditor-General audit opinions', sw: 'Vyanzo vinavyowezekana: Ripoti za kaunti za Mdhibiti wa Bajeti · maoni ya ukaguzi ya Mkaguzi Mkuu', plain: 'Possible inputs: Controller of Budget county reports · Auditor-General opinions' },
 
   // Officials card (extras beyond county.officials.*)
   'county.officials.card_title': { en: 'Who Runs This County', sw: 'Nani Anaongoza Kaunti Hii', plain: 'Who Runs the County' },
@@ -1342,7 +1353,7 @@ export const MESSAGES = {
   'county.officials.title.deputy_governor': { en: 'Deputy Governor', sw: 'Naibu Gavana', plain: 'Deputy Governor' },
 
   // Grade badge tooltips
-  'county.grade.health_tooltip': { en: 'Financial health — budget execution, debt, pending bills. Click for methodology.', sw: 'Afya ya kifedha — utekelezaji wa bajeti, deni, ankara. Bonyeza kwa maelezo.', plain: 'Money health — budget, debt, unpaid bills. Click to see how it\u2019s scored.' },
+  'county.grade.health_tooltip': { en: 'Financial health — budget absorption, revenue, pending bills, audit opinion. Click for methodology.', sw: 'Afya ya kifedha — matumizi ya bajeti, mapato, bili, maoni ya ukaguzi. Bonyeza kwa maelezo.', plain: 'Money health — budget spending, revenue, unpaid bills, audit opinion. Click to see how it\u2019s scored.' },
   'county.grade.audit_tooltip': { en: 'Accountability — audit findings, unresolved items, flagged spend. Click to view breakdown.', sw: 'Uwajibikaji — matokeo ya ukaguzi, masuala yasiyoshughulikiwa, matumizi yaliyogunduliwa. Bonyeza kuona maelezo.', plain: 'Accountability — audit findings, open issues, flagged money. Click to see details.' },
 
   // PDF export

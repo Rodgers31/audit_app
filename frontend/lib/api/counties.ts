@@ -13,6 +13,7 @@ import { apiClient } from './axios';
 import { apiGet } from './request';
 import { COUNTIES_ENDPOINTS, buildUrlWithParams } from './endpoints';
 import { ApiResponse, CountyFilters, CountyResponse, PaginatedResponse } from './types';
+import { financialHealthBand } from '@/lib/counties/financialHealth';
 
 // Backend county response type — matches the real /api/v1/counties endpoint shape
 interface BackendCountyResponse {
@@ -119,26 +120,14 @@ export const transformCountyData = (bc: BackendCountyResponse): County => {
   // audit_status="pending" for many counties, and this derived grade used to
   // be displayed as "Audit Rating".
   //
-  // The index is no longer budget utilisation under another name — it is an
-  // equal-weighted composite of absorption, own-source revenue performance,
-  // pending-bill burden and audit opinion, and the API reports its components.
+  // The index combines absorption, own-source revenue performance,
+  // pending-bill burden and a more heavily weighted audit opinion.
   //
   // `|| 0` here graded a county with no score at all a "C". The backend now
   // returns null when fewer than two components can be computed, and a county
   // nobody can score must not be given the lowest grade.
   const score = reportedAmount(bc.financial_health_score);
-  const fiscalGrade =
-    score == null
-      ? undefined
-      : score >= 85
-        ? 'A'
-        : score >= 70
-          ? 'B+'
-          : score >= 55
-            ? 'B'
-            : score >= 40
-              ? 'B-'
-              : 'C';
+  const fiscalGrade = financialHealthBand(score)?.grade;
 
   // The backend already classifies audit_status – use it directly.
   const validStatuses = ['clean', 'qualified', 'adverse', 'disclaimer'];

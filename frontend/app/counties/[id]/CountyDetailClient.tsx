@@ -43,6 +43,7 @@ import { fmtKES, fmtLabel, fmtPop, hasIngestedAudit, pct, Tab } from './shared';
 import TabSkeleton from './tabs/TabSkeleton';
 import styles from '../CountyExperience.module.css';
 import { gradeSignal, SignalMark } from '../CountySignals';
+import { FINANCIAL_HEALTH_BANDS, financialHealthBand } from '@/lib/counties/financialHealth';
 
 /* ═══════════ Code-split tabs ═══════════
    Each tab is its own chunk. ssr:false is fine here because the parent
@@ -225,44 +226,6 @@ function GradeBadge({
 }
 
 /* ═══════════ Health Score Methodology Modal ═══════════ */
-const GRADE_THRESHOLDS: Array<{
-  min: number;
-  grade: string;
-  labelKey: TranslationKey;
-  color: string;
-}> = [
-  {
-    min: 85,
-    grade: 'A',
-    labelKey: 'county.acct.grade_excellent',
-    color: 'bg-emerald-500',
-  },
-  {
-    min: 70,
-    grade: 'B+',
-    labelKey: 'county.acct.grade_good',
-    color: 'bg-green-500',
-  },
-  {
-    min: 55,
-    grade: 'B',
-    labelKey: 'county.acct.grade_fair',
-    color: 'bg-amber-500',
-  },
-  {
-    min: 40,
-    grade: 'B-',
-    labelKey: 'county.acct.grade_needs_improvement',
-    color: 'bg-orange-500',
-  },
-  {
-    min: 0,
-    grade: 'C',
-    labelKey: 'county.acct.grade_poor',
-    color: 'bg-red-500',
-  },
-];
-
 function HealthScoreModal({
   open,
   onClose,
@@ -291,11 +254,7 @@ function HealthScoreModal({
   const grade = financial_summary.grade;
 
   // Determine which threshold is active
-  const activeThreshold =
-    healthScore == null
-      ? null
-      : GRADE_THRESHOLDS.find((th) => healthScore >= th.min) ||
-        GRADE_THRESHOLDS[GRADE_THRESHOLDS.length - 1];
+  const activeThreshold = financialHealthBand(healthScore);
 
   return (
     <div
@@ -328,7 +287,7 @@ function HealthScoreModal({
           <div className='text-center'>
             <div className='inline-flex items-center gap-3 bg-gray-50 dark:bg-surface-elevated rounded-xl px-6 py-4'>
               <span
-                className={`text-4xl font-black ${activeThreshold?.color ?? 'bg-gray-500'} text-white w-14 h-14 rounded-xl flex items-center justify-center`}>
+                className={`text-4xl font-black ${activeThreshold?.badgeClass ?? 'bg-gray-500 text-white'} w-14 h-14 rounded-xl flex items-center justify-center`}>
                 {grade ?? '—'}
               </span>
               <div className='text-left'>
@@ -367,6 +326,10 @@ function HealthScoreModal({
                 <p>
                   <strong>{t('county.healthmodal.rule_3')}</strong>{' '}
                   {t('county.healthmodal.rule_3_body')}
+                </p>
+                <p>
+                  <strong>{t('county.healthmodal.rule_4')}</strong>{' '}
+                  {t('county.healthmodal.rule_4_body')}
                 </p>
               </div>
               <p className='text-xs text-gray-500 dark:text-neutral-muted/80 italic'>
@@ -432,7 +395,7 @@ function HealthScoreModal({
               {t('county.healthmodal.grade_scale')}
             </h3>
             <div className='space-y-1.5'>
-              {GRADE_THRESHOLDS.map((th) => (
+              {FINANCIAL_HEALTH_BANDS.map((th) => (
                 <div
                   key={th.grade}
                   className={`flex items-center gap-3 py-2 px-3 rounded-lg text-sm ${
@@ -441,7 +404,7 @@ function HealthScoreModal({
                       : ''
                   }`}>
                   <span
-                    className={`${th.color} text-white font-bold w-8 h-8 rounded-lg flex items-center justify-center text-xs`}>
+                    className={`${th.badgeClass} font-bold w-8 h-8 rounded-lg flex items-center justify-center text-xs`}>
                     {th.grade}
                   </span>
                   <span className='text-gray-700 dark:text-neutral-muted flex-1'>
