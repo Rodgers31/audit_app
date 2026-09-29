@@ -19,7 +19,7 @@ import {
   useCountyFiscalYears,
 } from '@/lib/react-query/useCounties';
 import { serviceableFiscalYear } from '@/lib/utils';
-import { CountyComprehensive } from '@/types';
+import { CountyComprehensive, FinancialHealthComponentName } from '@/types';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft,
@@ -177,6 +177,7 @@ function GradeBadge({
       type='button'
       onClick={(e) => {
         e.stopPropagation();
+        e.currentTarget.focus();
         onClick?.();
       }}
       title={title}
@@ -226,6 +227,19 @@ function GradeBadge({
 }
 
 /* ═══════════ Health Score Methodology Modal ═══════════ */
+const healthComponentLabels: Record<FinancialHealthComponentName, TranslationKey> = {
+  budget_absorption: 'county.healthmodal.rule_1',
+  own_source_revenue: 'county.healthmodal.rule_2',
+  pending_bills: 'county.healthmodal.rule_3',
+  audit_opinion: 'county.healthmodal.rule_4',
+};
+const auditStatusLabels: Record<string, TranslationKey> = {
+  clean: 'county.healthmodal.status.clean',
+  qualified: 'county.healthmodal.status.qualified',
+  adverse: 'county.healthmodal.status.adverse',
+  disclaimer: 'county.healthmodal.status.disclaimer',
+};
+
 function HealthScoreModal({
   open,
   onClose,
@@ -236,14 +250,33 @@ function HealthScoreModal({
   data: CountyComprehensive;
 }) {
   const { t } = useLang();
-  // Close on Escape key
+  const modalRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (!open) return;
+    const previousFocus = document.activeElement as HTMLElement | null;
+    closeRef.current?.focus();
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
+      if (e.key === 'Tab') {
+        const focusable = modalRef.current?.querySelectorAll<HTMLElement>('button, a[href]');
+        if (!focusable?.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
+    return () => {
+      window.removeEventListener('keydown', handleKey);
+      previousFocus?.focus();
+    };
   }, [open, onClose]);
 
   if (!open) return null;
@@ -252,6 +285,7 @@ function HealthScoreModal({
   const utilization = budget.utilization_rate;
   const healthScore = financial_summary.health_score;
   const grade = financial_summary.grade;
+  const health = data.financial_health;
 
   // Determine which threshold is active
   const activeThreshold = financialHealthBand(healthScore);
@@ -261,6 +295,10 @@ function HealthScoreModal({
       className='fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm'
       onClick={onClose}>
       <motion.div
+        ref={modalRef}
+        role='dialog'
+        aria-modal='true'
+        aria-labelledby='county-health-modal-title'
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -270,14 +308,16 @@ function HealthScoreModal({
         {/* Header */}
         <div className='bg-gradient-to-r from-gov-dark to-gov-forest px-6 py-5 rounded-t-2xl flex items-center justify-between'>
           <div>
-            <h2 className='text-lg font-bold text-white'>{t('county.healthmodal.title')}</h2>
+            <h2 id='county-health-modal-title' className='text-lg font-bold text-white'>{t('county.healthmodal.title')}</h2>
             <p className='text-sm text-white/70 mt-0.5'>
               {data.name} {t('county.page.name_suffix')}
             </p>
           </div>
           <button
+            ref={closeRef}
+            aria-label={t('county.healthmodal.close')}
             onClick={onClose}
-            className='text-white/70 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10'>
+            className='text-white hover:text-white transition-colors min-w-11 min-h-11 flex items-center justify-center rounded-lg hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white'>
             <X size={20} />
           </button>
         </div>
@@ -337,6 +377,82 @@ function HealthScoreModal({
               </p>
             </div>
           </div>
+
+          {/* The actual terms used for this county, including the denominator. */}
+          <section aria-labelledby='county-health-components-title'>
+            <h3 id='county-health-components-title' className='text-sm font-semibold text-gray-900 dark:text-neutral-text uppercase tracking-wide mb-3'>
+              {t('county.healthmodal.components_title')}
+            </h3>
+            {health?.components.length ? (
+              <>
+                <dl className='space-y-2'>
+                  {health.components.map((component) => (
+                    <div key={component.name} className='rounded-lg border border-gray-200 dark:border-white/10 px-3 py-2 text-sm'>
+                      <div className='flex items-baseline justify-between gap-3'>
+                        <dt className='font-semibold text-gray-900 dark:text-neutral-text'>
+                          {t(healthComponentLabels[component.name])}
+                        </dt>
+                        <dd className='font-semibold tabular-nums text-gray-900 dark:text-neutral-text'>
+                          {component.score.toFixed(1)} / 100
+                        </dd>
+                      </div>
+                      <p className='text-xs text-gray-600 dark:text-neutral-muted mt-1'>
+                        {t('county.healthmodal.observed')}: {component.name === 'audit_opinion'
+                          ? (auditStatusLabels[String(component.observed)]
+                            ? t(auditStatusLabels[String(component.observed)])
+                            : String(component.observed))
+                          : `${Number(component.observed).toFixed(1)}%`}
+                        {' · '}{t('county.healthmodal.weight')}: {component.weight} / {health.effective_weight}
+                        {' '}({component.share_pct.toFixed(1)}%)
+                      </p>
+                      {component.measurement_basis && (
+                        <p className='text-xs text-gray-600 dark:text-neutral-muted mt-1'>
+                          {t(component.measurement_basis === 'cash_receipts'
+                            ? 'county.healthmodal.basis.cash_receipts'
+                            : 'county.healthmodal.basis.summary_actual')}
+                        </p>
+                      )}
+                      {component.source_warning && (
+                        <p className='text-xs text-amber-800 dark:text-amber-200 mt-1'>
+                          {t(component.source_warning === 'mixed_pending_periods'
+                            ? 'county.healthmodal.mixed_pending_periods'
+                            : 'county.healthmodal.mixed_pending_sources')}
+                          {' '}{[...(component.source_periods ?? []), ...(component.source_dates ?? [])].join(' · ')}
+                        </p>
+                      )}
+                      {(component.source_period || component.as_at || component.source_url) && (
+                        <p className='text-xs text-gray-500 dark:text-neutral-muted/80 mt-1'>
+                          {component.source_period ?? t('county.healthmodal.period_unknown')}
+                          {component.as_at && ` · ${t('county.healthmodal.as_at')} ${component.as_at}`}
+                          {component.source_url && (
+                            <> · <a className='underline underline-offset-2 hover:text-gov-forest' href={component.source_url} target='_blank' rel='noopener noreferrer'>
+                              {t('county.healthmodal.source_link')}
+                            </a></>
+                          )}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </dl>
+                <p className='mt-3 text-xs text-gray-700 dark:text-neutral-muted tabular-nums'>
+                  ({health.components.map((c) => `${c.score.toFixed(1)} × ${c.weight}`).join(' + ')})
+                  {' '}/ {health.effective_weight} = {health.score?.toFixed(1)} / 100
+                </p>
+              </>
+            ) : (
+              <p className='text-sm text-gray-600 dark:text-neutral-muted'>
+                {healthScore != null && !health
+                  ? t('county.healthmodal.breakdown_unavailable')
+                  : t('county.healthmodal.no_breakdown')}
+              </p>
+            )}
+            {!!health?.unavailable_inputs.length && (
+              <p className='text-xs text-gray-600 dark:text-neutral-muted mt-3'>
+                {t('county.healthmodal.unavailable')}: {' '}
+                {health.unavailable_inputs.map((item) => t(healthComponentLabels[item.name])).join(', ')}.
+              </p>
+            )}
+          </section>
 
           {/* This county's breakdown */}
           <div>
@@ -517,6 +633,7 @@ export default function CountyDetailClient() {
   const validTabs: Tab[] = ['overview', 'money', 'budget', 'audit', 'accountability'];
   const [tab, setTab] = useState<Tab>(validTabs.includes(initialTab) ? initialTab : 'overview');
   const [showHealthModal, setShowHealthModal] = useState(false);
+  const closeHealthModal = useCallback(() => setShowHealthModal(false), []);
 
   // Sync the active tab to the URL so reload / share-link / browser-back
   // all restore the user's place. `?tab=overview` is the default and is
@@ -769,7 +886,7 @@ export default function CountyDetailClient() {
       </div>
       <HealthScoreModal
         open={showHealthModal}
-        onClose={() => setShowHealthModal(false)}
+        onClose={closeHealthModal}
         data={data}
       />
     </>

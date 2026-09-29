@@ -971,8 +971,9 @@ _HEALTH_GRADE_BANDS = ((85, "A"), (70, "B+"), (55, "B"), (40, "B-"), (0, "C"))
 #: invoices is the point at which the component stops discriminating.
 _PENDING_BILLS_SEVERE_SHARE = 25.0
 
-#: How an audit opinion maps onto 0-100. The ordering is the Auditor-General's;
-#: the numbers are ours.
+#: Site-chosen mapping of an audit status onto 0-100. County detail derives
+#: that status from the most recently ingested publishable finding severity;
+#: it is not an official Auditor-General rating.
 _AUDIT_OPINION_SCORES = {
     "clean": 100.0,
     "qualified": 60.0,
@@ -986,12 +987,10 @@ _MIN_HEALTH_COMPONENTS = 2
 
 #: Relative weights, renormalised over whichever components a county has.
 #:
-#: The audit opinion carries as much as the three financial components put
-#: together, because it is the only one that speaks to whether the other three
-#: can be believed at all: a disclaimer means the Auditor-General could not
-#: form an opinion on the accounts those figures come out of. Under equal
-#: weighting a county with perfect absorption and revenue performance still
-#: scored 50.0 (B-) on a disclaimer; it now scores 33.3 (C).
+#: The audit signal carries as much as the three financial components put
+#: together when all four are available. Under equal weighting a county with
+#: perfect absorption and revenue performance still scored 50.0 (B-) on an
+#: explicit disclaimer; with this weighting it scores 33.3 (C).
 #:
 #: These are a CHOSEN weighting, not a measured one — no publisher ranks these
 #: four against each other. Integers rather than fractions so the ratio is
@@ -1033,9 +1032,8 @@ def county_financial_health(
 
     WHAT IT IS NOW
     --------------
-    An equal-weighted mean of the components below, each of which is derived
-    from a published figure and each of which is REPORTED with the score, so
-    the number can be taken apart:
+    A weighted mean of available components, each derived from a published
+    figure. The audit signal has weight 3; each financial measure has weight 1.
 
     ``budget_absorption``  spent vs allocated (Controller of Budget). Scored
         symmetrically about 100 — under-spending is a failure to deliver and
@@ -1043,9 +1041,12 @@ def county_financial_health(
     ``own_source_revenue`` amount vs target from the same CBIRR table. Capped at
         100 so a lowballed target cannot buy a high score.
     ``pending_bills``      pending bills as a share of budget, inverted.
-    ``audit_opinion``      the Auditor-General's opinion.
+    ``audit_opinion``      audit status supplied by the caller. The county
+        detail currently maps its most recently ingested publishable finding
+        severity to this status; the label is retained for compatibility,
+        not an OAG rating.
 
-    The audit opinion carries as much weight as the other three combined —
+    The audit signal carries as much weight as the other three combined —
     see ``_HEALTH_COMPONENT_WEIGHTS`` for why, and note that the ratio is a
     chosen one, reported in the payload so a reader can re-weight it.
 
@@ -1103,7 +1104,7 @@ def county_financial_health(
                 "name": "audit_opinion",
                 "score": opinion_score,
                 "observed": audit_status,
-                "basis": "Office of the Auditor-General opinion",
+                "basis": "audit status supplied by caller; county detail maps most recently ingested publishable finding severity",
             }
         )
 
@@ -4329,16 +4330,151 @@ async def get_county_comprehensive(
             _published_budget = financial_summary(
                 budget_lines, budget_lines[0].period if budget_lines else None
             )
+            _health_revenue = _county_revenue_for_lines(budget_lines)
             _health = county_financial_health(
                 total_allocated=_published_budget["total_allocation"],
                 total_spent=_published_budget["total_spent"],
                 pending_bills=pending_bills,
                 audit_status=audit_status,
-                own_source_target=county_own_source_target(budget_lines),
-                own_source_actual=county_own_source_revenue(budget_lines),
+                own_source_target=_health_revenue["own_source_target"],
+                own_source_actual=_health_revenue["local_revenue"],
             )
             health_score = _health["score"] if _health else None
             grade = _health["grade"] if _health else None
+
+            # Disclose the actual numerator and denominator of this site's
+            # index. Absent components have no effective weight; a reported
+            # zero remains an included component.
+            _own_source_target = _health_revenue["own_source_target"]
+            _own_source_actual = _health_revenue["local_revenue"]
+            _available = {
+                "budget_absorption": _published_budget["total_allocation"] is not None
+                and _published_budget["total_allocation"] > 0
+                and _published_budget["total_spent"] is not None,
+                "own_source_revenue": _own_source_target is not None
+                and _own_source_target > 0 and _own_source_actual is not None,
+                "pending_bills": _published_budget["total_allocation"] is not None
+                and _published_budget["total_allocation"] > 0
+                and pending_bills is not None,
+                "audit_opinion": audit_status in _AUDIT_OPINION_SCORES,
+            }
+            _unavailable_reasons = {
+                "budget_absorption": (
+                    _published_budget["absent_reasons"].get("total_allocation")
+                    or _published_budget["absent_reasons"].get("total_spent")
+                    or "no_positive_allocation"
+                ),
+                "own_source_revenue": (
+                    "target_not_reported" if _own_source_target is None
+                    else "no_positive_target" if _own_source_target <= 0
+                    else "actual_not_reported"
+                ),
+                "pending_bills": (
+                    "budget_unavailable"
+                    if _published_budget["total_allocation"] is None
+                    or _published_budget["total_allocation"] <= 0
+                    else "pending_bills_not_reported"
+                ),
+                "audit_opinion": "no_publishable_audit_signal",
+            }
+            _unavailable = [
+                {"name": name, "reason": _unavailable_reasons[name]}
+                for name in _HEALTH_COMPONENT_WEIGHTS if not _available[name]
+            ]
+            _budget_doc = (
+                _published_budget["sources"][0]
+                if len(_published_budget["sources"]) == 1 else None
+            )
+            _osr_sources = [
+                source for source in _health_revenue["sources"]
+                if source["measure"] == _health_revenue["local_revenue_basis"]
+            ]
+            _osr_source = _osr_sources[0] if len(_osr_sources) == 1 else None
+            _pending_details = (
+                county_pending_bills_details(loans) if pending_bills is not None else {}
+            )
+            _pending_rows = [
+                loan for loan in loans
+                if county_pending_bills_row_is_published(loan)
+                and pending_bills_row_amount(loan) is not None
+            ]
+            _pending_periods = sorted({
+                str(_pending_bills_provenance(loan).get("fiscal_year"))
+                for loan in _pending_rows
+                if _pending_bills_provenance(loan).get("fiscal_year")
+            })
+            _pending_dates = sorted({
+                date for loan in _pending_rows
+                if (date := pending_bills_row_as_at(loan))
+            })
+            _pending_urls = {
+                url if isinstance(url, str) else None
+                for loan in _pending_rows
+                for url in [_pending_bills_provenance(loan).get("source_url")]
+            }
+            _pending_warning = (
+                "mixed_pending_periods"
+                if len(_pending_periods) > 1 or len(_pending_dates) > 1
+                else "mixed_pending_sources" if len(_pending_urls) > 1 else None
+            )
+            _latest_audit_doc = (
+                _audit_docs.get(latest_audit.source_document_id) if latest_audit else None
+            )
+            _component_source = {
+                "budget_absorption": (
+                    budget_fy_label, _budget_doc.get("url") if _budget_doc else None, None
+                ),
+                "own_source_revenue": (
+                    _health_revenue["fiscal_year"],
+                    _osr_source["url"] if _osr_source else None, None
+                ),
+                "pending_bills": (
+                    _pending_details.get("fiscal_year") if not _pending_warning else None,
+                    _pending_details.get("source_url") if not _pending_warning else None,
+                    _pending_details.get("as_at") if not _pending_warning else None,
+                ),
+                "audit_opinion": (
+                    latest_audit.period.label if latest_audit and latest_audit.period else None,
+                    _latest_audit_doc.url if _latest_audit_doc else None,
+                    None,
+                ),
+            }
+            _health_components = [
+                {
+                    **component,
+                    "source_period": _component_source[component["name"]][0],
+                    "source_url": _component_source[component["name"]][1],
+                    "as_at": _component_source[component["name"]][2],
+                    "measurement_basis": (
+                        _health_revenue["local_revenue_basis"]
+                        if component["name"] == "own_source_revenue" else None
+                    ),
+                    "source_periods": (
+                        _pending_periods if component["name"] == "pending_bills"
+                        and _pending_warning else []
+                    ),
+                    "source_dates": (
+                        _pending_dates if component["name"] == "pending_bills"
+                        and _pending_warning else []
+                    ),
+                    "source_warning": (
+                        _pending_warning if component["name"] == "pending_bills" else None
+                    ),
+                }
+                for component in (_health["components"] if _health else [])
+            ]
+            _health_disclosure = {
+                "score": health_score,
+                "grade": grade,
+                "weighting": "audit_opinion_weighted",
+                "weights": dict(_HEALTH_COMPONENT_WEIGHTS),
+                "effective_weight": sum(c["weight"] for c in _health_components),
+                "components": _health_components,
+                "available_inputs": [name for name in _HEALTH_COMPONENT_WEIGHTS if _available[name]],
+                "unavailable_inputs": _unavailable,
+                "minimum_components": _MIN_HEALTH_COMPONENTS,
+                "absent_reason": None if _health else "fewer_than_two_components",
+            }
 
             # --- Missing funds ---
             # The same derivation as /accountability/missing-funds (issue
@@ -4605,6 +4741,7 @@ async def get_county_comprehensive(
                         total_debt, total_allocated
                     ),
                 },
+                "financial_health": _health_disclosure,
                 # Data provenance
                 # Provenance labels, not aspirations. Three of these named a
                 # publisher who did not publish the figure underneath: county

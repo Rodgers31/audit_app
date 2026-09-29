@@ -97,6 +97,41 @@ export interface OfficialSource {
   fetched_at: string | null;
 }
 
+export type FinancialHealthComponentName =
+  | 'budget_absorption'
+  | 'own_source_revenue'
+  | 'pending_bills'
+  | 'audit_opinion';
+
+/** The site's index terms, as computed for this county. Shares use the
+ * effective denominator of available terms, never unavailable nominal weights. */
+export interface CountyFinancialHealth {
+  score: number | null;
+  grade: string | null;
+  weighting: 'audit_opinion_weighted';
+  weights: Record<FinancialHealthComponentName, number>;
+  effective_weight: number;
+  minimum_components: number;
+  absent_reason: 'fewer_than_two_components' | null;
+  available_inputs: FinancialHealthComponentName[];
+  unavailable_inputs: Array<{ name: FinancialHealthComponentName; reason: string }>;
+  components: Array<{
+    name: FinancialHealthComponentName;
+    score: number;
+    observed: number | string;
+    basis: string;
+    weight: number;
+    share_pct: number;
+    source_period: string | null;
+    source_url: string | null;
+    as_at: string | null;
+    measurement_basis?: 'cash_receipts' | 'summary_table_actual_realised' | null;
+    source_periods?: string[];
+    source_dates?: string[];
+    source_warning?: 'mixed_pending_periods' | 'mixed_pending_sources' | null;
+  }>;
+}
+
 export interface CountyComprehensive {
   id: string;
   name: string;
@@ -186,8 +221,8 @@ export interface CountyComprehensive {
   };
   audit: {
     status: string;
-    grade: string;
-    health_score: number;
+    grade: string | null;
+    health_score: number | null;
     findings_count: number;
     /** null when no publishable finding carries an amount. NOT 0 — the API
      *  distinguishes "nothing was flagged" from "we cannot source a figure",
@@ -243,12 +278,14 @@ export interface CountyComprehensive {
     withheld: { count: number; by_reason: Record<string, number> };
   };
   financial_summary: {
-    health_score: number;
-    grade: string;
+    health_score: number | null;
+    grade: string | null;
     budget_execution_rate: number;
-    pending_bills_ratio: number;
+    pending_bills_ratio: number | null;
     debt_sustainability: string;
   };
+  /** Optional during a rolling deploy or while an older API cache expires. */
+  financial_health?: CountyFinancialHealth;
   /** Per-FY health scores, oldest → newest. Only periods with actual
    * execution are included; allocated-only years are skipped. */
   health_history?: Array<{ fy: string; score: number; grade: string }>;
