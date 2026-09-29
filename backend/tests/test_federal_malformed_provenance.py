@@ -1,8 +1,12 @@
 """Stored audit metadata shape cannot erase source-linked federal findings."""
 
+from decimal import Decimal
 from datetime import datetime, timezone
+from types import SimpleNamespace
 
+import pytest
 from sqlalchemy import event
+from sqlalchemy.orm import Query
 
 from models import (
     Audit,
@@ -84,6 +88,99 @@ def test_stored_amount_controls_display_when_legacy_metadata_disagrees(
         assert (
             row["source_page_url"] == f"https://example.invalid/linked.pdf#page={page}"
         )
+
+
+@pytest.mark.parametrize("include_valid", [True, False])
+def test_nonfinite_stored_amount_withholds_only_its_figure(
+    client, db_session, seed_country, seed_fiscal_period, monkeypatch, include_valid
+):
+    """SQLite turns NaN into NULL, so inject PostgreSQL's projected Decimal NaN."""
+    ministry = Entity(
+        country_id=seed_country.id,
+        type=EntityType.MINISTRY,
+        canonical_name="Nonfinite Amount Ministry",
+        slug="nonfinite-amount-ministry",
+    )
+    linked = SourceDocument(
+        country_id=seed_country.id,
+        publisher="Synthetic OAG",
+        title="Linked report",
+        url="https://example.invalid/linked.pdf",
+        fetch_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
+        doc_type=DocumentType.AUDIT,
+        status=DocumentStatus.AVAILABLE,
+    )
+    db_session.add_all([ministry, linked])
+    db_session.flush()
+    cases = [("stored nonfinite", None, "KES 999"), ("unstated", None, None)]
+    if include_valid:
+        cases.extend(
+            [("stored zero", 0, "KES 123"), ("stored positive", 5.25, "KES 777")]
+        )
+    for label, amount, metadata_amount in cases:
+        db_session.add(
+            Audit(
+                entity_id=ministry.id,
+                period_id=seed_fiscal_period.id,
+                source_document_id=linked.id,
+                finding_text=label,
+                severity=Severity.WARNING,
+                page_ref="p. 7",
+                provenance=(
+                    [{"amount_involved": metadata_amount}]
+                    if metadata_amount else []
+                ),
+                amount=amount,
+            )
+        )
+    db_session.commit()
+
+    original_all = Query.all
+
+    def with_postgres_numeric_nan(query):
+        rows = original_all(query)
+        if not any(d["expr"] is Audit.amount for d in query.column_descriptions):
+            return rows
+        return [
+            SimpleNamespace(**{**row._asdict(), "amount": Decimal("NaN")})
+            if row.finding_text == "stored nonfinite" else row
+            for row in rows
+        ]
+
+    monkeypatch.setattr(Query, "all", with_postgres_numeric_nan)
+
+    response = client.get("/api/v1/audits/federal")
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    rows = {row["finding"]: row for row in payload["findings"]}
+    assert set(rows) == {case[0] for case in cases}
+    assert payload["total_findings"] == len(cases)
+    assert payload["by_severity"] == {"WARNING": len(cases)}
+    assert payload["findings_with_amount"] == (2 if include_valid else 0)
+    assert payload["findings_with_invalid_amount"] == 1
+    assert payload["total_amount_in_findings"] == (5.25 if include_valid else None)
+    assert payload["total_amount_in_findings_reason"] == (
+        None if include_valid else "invalid_stored_amount"
+    )
+    invalid = rows["stored nonfinite"]
+    assert invalid["amount_numeric"] is None
+    assert invalid["amount_involved"] == ""
+    assert invalid["amount_unavailable_reason"] == "invalid_stored_amount"
+    assert invalid["provenance_metadata_status"] == "valid"
+    assert invalid["source_page_url"] == "https://example.invalid/linked.pdf#page=7"
+    if include_valid:
+        assert rows["stored zero"]["amount_numeric"] == 0
+        assert rows["stored positive"]["amount_numeric"] == 5.25
+    assert rows["unstated"]["amount_numeric"] is None
+    assert rows["unstated"]["amount_unavailable_reason"] is None
+
+    top = client.get("/api/v1/audits/federal?top_findings=2")
+    assert top.status_code == 200, top.text
+    assert [row["finding"] for row in top.json()["findings"]] == (
+        ["stored positive"] if include_valid else [payload["findings"][0]["finding"]]
+    )
+    assert top.json()["total_findings"] == len(cases)
+    assert top.json()["findings_with_invalid_amount"] == 1
 
 
 def test_federal_endpoint_handles_malformed_provenance_with_valid_rows(

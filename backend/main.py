@@ -5390,6 +5390,7 @@ async def _federal_audits_payload():
             # zero". Count recorded amounts so the response can say null
             # instead of 0.0 when coverage is absent (AUDIT_FINDINGS P1).
             findings_with_amount = 0
+            findings_with_invalid_amount = 0
             severity_counts = {}
 
             for audit in federal_audits:
@@ -5404,6 +5405,7 @@ async def _federal_audits_payload():
                 # to sum.
                 amount_str = ""
                 amount_val: Optional[float] = None
+                amount_unavailable_reason = None
                 status = ""
                 category = ""
                 query_type = ""
@@ -5423,10 +5425,26 @@ async def _federal_audits_payload():
                 # one Kshs figure. Prefer it over the legacy provenance
                 # string; never invent one when both are absent.
                 if audit.amount is not None:
-                    amount_val = float(audit.amount)
-                    if not math.isfinite(amount_val):
-                        raise ValueError(f"Non-finite stored amount on federal audit {audit.id}")
-                    amount_str = f"KES {audit.amount:,.2f}".rstrip("0").rstrip(".")
+                    try:
+                        stored_amount = float(audit.amount)
+                    except (TypeError, ValueError, OverflowError):
+                        stored_amount = math.nan
+                    if math.isfinite(stored_amount):
+                        amount_val = stored_amount
+                        amount_str = f"KES {audit.amount:,.2f}".rstrip("0").rstrip(".")
+                    else:
+                        # A corrupt stored figure takes precedence over legacy
+                        # metadata too: using that string would silently
+                        # replace one conflicting amount with another. Keep
+                        # the source-linked finding, but withhold its figure.
+                        logger.warning(
+                            "Withholding invalid stored amount on federal audit %s",
+                            audit.id,
+                        )
+                        amount_val = None
+                        amount_str = ""
+                        amount_unavailable_reason = "invalid_stored_amount"
+                        findings_with_invalid_amount += 1
 
                 if amount_val is not None:
                     total_amount += amount_val
@@ -5451,6 +5469,7 @@ async def _federal_audits_payload():
                         "recommended_action": audit.recommended_action,
                         "amount_involved": amount_str,
                         "amount_numeric": amount_val,
+                        "amount_unavailable_reason": amount_unavailable_reason,
                         # Provenance a reader can follow: the page of the
                         # source PDF this finding was extracted from.
                         "title": prov.get("title") or None,
@@ -5634,13 +5653,18 @@ async def _federal_audits_payload():
                 # em-dash (hiding a real sourced number) or a bare figure
                 # (implying it is the total).
                 "findings_with_amount": findings_with_amount,
+                "findings_with_invalid_amount": findings_with_invalid_amount,
                 "total_amount_in_findings_reason": (
                     None
                     if findings_with_amount > 0
                     else (
-                        "awaiting_sourced_data"
-                        if _withheld_federal
-                        else "no_amounts_recorded"
+                        "invalid_stored_amount"
+                        if findings_with_invalid_amount
+                        else (
+                            "awaiting_sourced_data"
+                            if _withheld_federal
+                            else "no_amounts_recorded"
+                        )
                     )
                 ),
                 # Findings excluded by publication checks. Retained in the
