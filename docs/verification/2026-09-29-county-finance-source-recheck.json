@@ -1,8 +1,8 @@
 {
   "kind": "offline_county_finance_source_recheck",
   "generated_by": "backend/scripts/recheck_county_finance_source.py",
-  "generator_sha256": "77f83ab54790b22592d3f1c75331ead94a4ed58cef03b4bca77e1542dc60f88e",
-  "generated_at": "2026-09-29T13:07:14.022973+00:00",
+  "generator_sha256": "ed03f19812e716ba3077a893af9d2c5ad0ceb87fafb2add7e08b0d3f5f74c73a",
+  "generated_at": "2026-09-29T13:20:50.366791+00:00",
   "verdict": "PARTIAL_SOURCE_COVERAGE",
   "target_commit": null,
   "production_published": false,

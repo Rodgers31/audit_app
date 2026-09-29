@@ -26,6 +26,7 @@ SOURCE_URL = (
     "https://cob.go.ke/download/county-governments-budget-implementation-"
     "review-report-for-the-financial-year-2025-26/?wpdmdl=16482"
 )
+EXPECTED_FISCAL_YEAR = "2025/26"
 
 
 def _checked_digest(path: Path, expected: str) -> None:
@@ -78,6 +79,18 @@ def recheck(pdf_path: Path, expected_sha256: str, prior_path: Path) -> dict:
 
     parser = CoBQuarterlyReportParser(pdf_path)
     records = parser.parse()
+    for row in records:
+        if (
+            row.get("fiscal_year") != EXPECTED_FISCAL_YEAR
+            or "quarter" not in row
+            or row["quarter"] is not None
+        ):
+            raise ValueError(
+                f"Current {row.get('category', 'record')} period is not "
+                f"FY{EXPECTED_FISCAL_YEAR} annual for {row.get('county', '<unknown>')}: "
+                f"fiscal_year={row.get('fiscal_year')!r}, "
+                f"quarter={row.get('quarter', '<missing>')!r}"
+            )
     totals = [r for r in records if r["category"] == "Total"]
     cash = [
         r for r in records
