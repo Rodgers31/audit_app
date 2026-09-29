@@ -12,7 +12,7 @@ from models import (
     Audit, Base, Country, DocumentStatus, DocumentType, Entity, EntityType,
     FiscalPeriod, Severity, SourceDocument,
 )
-from services.audit_citations import citation_page, report_page_url, safe_source_url
+from services.audit_citations import citation_page, page_number, report_page_url, safe_source_url
 from services.publication_gate import (
     _has_page_locator, backfill_publishable_audits, count_withheld_by_reason,
     file_source_provenance_failure,
@@ -147,6 +147,45 @@ def test_descriptive_pdf_references_keep_their_explicit_exception():
         assert _has_page_locator(value, allow_descriptive=True)
         assert not _has_page_locator(value)
     assert not _has_page_locator("PDF pp. 0, 9", allow_descriptive=True)
+
+
+@pytest.mark.parametrize(
+    "locator,number,citation,has_locator",
+    [
+        (999_999_999, 999_999_999, 999_999_999, True),
+        ("999999999", 999_999_999, 999_999_999, True),
+        (1_000_000_000, None, None, False),
+        ("1000000000", None, None, False),
+        (True, None, None, False),
+        (False, None, None, False),
+        (0, None, None, False),
+        (-1, None, None, False),
+        ("0", None, None, False),
+        ("-1", None, None, False),
+        ("Annex VII", None, "Annex VII", True),
+    ],
+)
+@pytest.mark.parametrize("surface", ("number", "citation", "gate", "url", "url_clear"))
+def test_numeric_page_limit_is_the_same_for_integer_and_string_locators(
+    locator, number, citation, has_locator, surface
+):
+    url = "https://example.invalid/audit.pdf#page=9&zoom=100"
+    if surface == "number":
+        assert page_number(locator) == number
+    elif surface == "citation":
+        assert citation_page(locator) == citation
+    elif surface == "gate":
+        assert _has_page_locator(locator) is has_locator
+    elif surface == "url":
+        assert report_page_url(url, locator) == (
+            f"https://example.invalid/audit.pdf#zoom=100&page={number}"
+            if number is not None else url
+        )
+    else:
+        assert report_page_url(url, locator, clear_stale_page=True) == (
+            f"https://example.invalid/audit.pdf#zoom=100&page={number}"
+            if number is not None else "https://example.invalid/audit.pdf#zoom=100"
+        )
 
 
 def test_file_source_requires_a_safe_document_url_and_page():

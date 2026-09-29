@@ -78,6 +78,8 @@ LOCATOR_CASES = [
     ("p. 42", True),
     ("Annex VII", True),
     ("701", True),
+    ("999999999", True),
+    ("1000000000", False),
     ("+5", False),
     ("p.0", False),
     ("p.-3", False),

@@ -76,7 +76,8 @@ def string_extraction_payloads(db, rows):
 
 def page_number(value):
     if type(value) is int:
-        return value if value > 0 else None
+        # Match the SQL locator regex, which permits at most nine digits.
+        return value if 0 < value <= 999_999_999 else None
     if not isinstance(value, str):
         return None
     match = re.fullmatch(NUMERIC_LOCATOR_PATTERN, value, re.I | re.ASCII)
