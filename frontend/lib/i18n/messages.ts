@@ -284,6 +284,16 @@ export const MESSAGES = {
   'home.audits.stat_recurring': { en: 'Recurring Issues', sw: 'Masuala Yanayojirudia', plain: 'Repeat Problems' },
   'home.audits.findings_overview': { en: 'Audit Findings Overview', sw: 'Muhtasari wa Matokeo ya Ukaguzi', plain: 'Audit Findings' },
   'home.audits.amount_prefix': { en: 'Amount:', sw: 'Kiasi:', plain: 'Amount:' },
+  'home.audits.amount_unavailable': {
+    en: 'Unavailable pending verification',
+    sw: 'Haipatikani hadi ithibitishwe',
+    plain: 'Unavailable pending verification',
+  },
+  'home.audits.amount_not_recorded': {
+    en: 'No amount recorded',
+    sw: 'Hakuna kiasi kilichorekodiwa',
+    plain: 'No amount recorded',
+  },
   'home.audits.action_prefix': { en: 'Action:', sw: 'Hatua:', plain: 'Action:' },
   'home.audits.sev_critical': { en: 'Critical', sw: 'Muhimu Sana', plain: 'Serious' },
   'home.audits.sev_significant': { en: 'Significant', sw: 'Kubwa', plain: 'Significant' },

@@ -145,6 +145,10 @@ export interface FederalAuditFinding {
    *  which made "no figure stated" indistinguishable from "nothing
    *  questioned" for anything summing or sorting this array. */
   amount_numeric: number | null;
+  /** An invalid stored figure is withheld even when legacy metadata states
+   * a different amount. The linked finding and citation remain available. */
+  amount_unavailable_reason?: 'invalid_stored_amount' | null;
+  provenance_metadata_status?: 'valid' | 'absent' | 'invalid';
   status: string;
   category: string;
   query_type: string;
@@ -216,6 +220,8 @@ export interface FederalAuditResponse {
   /** How many findings the `total_amount_in_findings` sum covers. A
    *  partial sum with no denominator cannot be told apart from a total. */
   findings_with_amount: number;
+  /** Published findings whose stored numeric figure was invalid. */
+  findings_with_invalid_amount?: number;
   by_severity: Record<string, number>;
   /** Derived from the latest report's extracted findings; null when that
    *  report has none (`headline_reason` says so). */

@@ -6,12 +6,14 @@ import functools
 import importlib
 import json
 import logging
+import math
 import os
 import random
 import re
 import smtplib
 import sys
 import time
+from decimal import Decimal
 from email.mime.text import MIMEText
 from email.utils import formatdate
 from typing import Any, Dict, List, Optional, Tuple
@@ -5225,6 +5227,80 @@ def select_top_stated_findings(findings: List[dict], n: int) -> List[dict]:
     return top
 
 
+_FEDERAL_PROVENANCE_TEXT_FIELDS = (
+    "amount_involved", "status", "category", "query_type",
+    "report_section", "date_raised", "title", "source_url",
+)
+# A provenance-only figure above 100 times the modeled Audit.amount column's
+# range is not safely publishable as a numeric amount. Keep its linked finding
+# available, but mark the metadata invalid for review against the source PDF.
+_MAX_FEDERAL_PROVENANCE_KES = 1_000_000_000_000_000
+
+
+def _federal_audit_metadata(value) -> Tuple[dict, str, Optional[float]]:
+    """Read optional legacy finding metadata without promoting malformed JSON.
+
+    The linked SourceDocument and Audit.page_ref remain the citation authority.
+    A malformed metadata container or claimed field invalidates the whole
+    metadata entry, but never removes an otherwise publishable finding.
+    """
+    if value is None or value == [] or value == {}:
+        return {}, "absent", None
+    if isinstance(value, dict):
+        entries = [value]
+    elif isinstance(value, list) and value and all(isinstance(item, dict) for item in value):
+        entries = value
+    else:
+        return {}, "invalid", None
+
+    metadata = entries[0]
+    if any(
+        entry.get(field) is not None and not isinstance(entry[field], str)
+        for entry in entries
+        for field in _FEDERAL_PROVENANCE_TEXT_FIELDS
+        if field in entry
+    ):
+        return {}, "invalid", None
+
+    selected_amount = None
+    for index, entry in enumerate(entries):
+        date_text = entry.get("date_raised")
+        if date_text:
+            try:
+                # Legacy finding metadata gives an ISO calendar date. Treat
+                # an impossible date as invalid rather than publishing it.
+                datetime.date.fromisoformat(date_text)
+            except ValueError:
+                return {}, "invalid", None
+
+        amount_text = entry.get("amount_involved") or ""
+        if not amount_text:
+            continue
+        # The public amount range is bounded above. A megabyte-long numeric
+        # string can overflow Decimal's exponent while parsing stored JSON.
+        if len(amount_text) > 64:
+            return {}, "invalid", None
+        match = re.fullmatch(
+            r"(?:KES\s*)?([+-]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?)\s*([TBM]?)",
+            amount_text.strip(), re.IGNORECASE,
+        )
+        if match is None:
+            return {}, "invalid", None
+        multiplier = {
+            "": 1, "M": 1_000_000, "B": 1_000_000_000,
+            "T": 1_000_000_000_000,
+        }[match.group(2).upper()]
+        exact_amount = Decimal(match.group(1).replace(",", "")) * multiplier
+        if abs(exact_amount) > _MAX_FEDERAL_PROVENANCE_KES:
+            return {}, "invalid", None
+        amount = float(exact_amount)
+        if not math.isfinite(amount) or (exact_amount != 0 and amount == 0):
+            return {}, "invalid", None
+        if index == 0:
+            selected_amount = amount
+    return metadata, "valid" if metadata else "absent", selected_amount
+
+
 @app.get("/api/v1/audits/federal")
 async def get_federal_audits(
     top_findings: Optional[int] = Query(
@@ -5314,6 +5390,7 @@ async def _federal_audits_payload():
             # zero". Count recorded amounts so the response can say null
             # instead of 0.0 when coverage is absent (AUDIT_FINDINGS P1).
             findings_with_amount = 0
+            findings_with_invalid_amount = 0
             severity_counts = {}
 
             for audit in federal_audits:
@@ -5328,48 +5405,46 @@ async def _federal_audits_payload():
                 # to sum.
                 amount_str = ""
                 amount_val: Optional[float] = None
+                amount_unavailable_reason = None
                 status = ""
                 category = ""
                 query_type = ""
                 report_section = ""
                 date_raised = ""
 
-                prov = {}
-                if audit.provenance and isinstance(audit.provenance, list):
-                    prov = audit.provenance[0] if audit.provenance else {}
-                    amount_str = prov.get("amount_involved", "")
-                    status = prov.get("status", "")
-                    category = prov.get("category", "")
-                    query_type = prov.get("query_type", "")
-                    report_section = prov.get("report_section", "")
-                    date_raised = prov.get("date_raised", "")
-
-                # Parse numeric amount
-                if amount_str:
-                    cleaned = amount_str.upper().replace("KES", "").strip()
-                    try:
-                        mult = 1.0
-                        if cleaned.endswith("T"):
-                            mult = 1_000_000_000_000
-                            cleaned = cleaned[:-1]
-                        elif cleaned.endswith("B"):
-                            mult = 1_000_000_000
-                            cleaned = cleaned[:-1]
-                        elif cleaned.endswith("M"):
-                            mult = 1_000_000
-                            cleaned = cleaned[:-1]
-                        amount_val = float(cleaned.replace(",", "").strip()) * mult
-                    except (ValueError, TypeError):
-                        amount_val = None
+                prov, metadata_status, amount_val = _federal_audit_metadata(audit.provenance)
+                amount_str = prov.get("amount_involved") or ""
+                status = prov.get("status") or ""
+                category = prov.get("category") or ""
+                query_type = prov.get("query_type") or ""
+                report_section = prov.get("report_section") or ""
+                date_raised = prov.get("date_raised") or ""
 
                 # Extraction-backed rows (Stage 2) carry the figure in the
                 # `amount` column — set only when the paragraph cites exactly
                 # one Kshs figure. Prefer it over the legacy provenance
                 # string; never invent one when both are absent.
                 if audit.amount is not None:
-                    amount_val = float(audit.amount)
-                    if not amount_str:
-                        amount_str = f"KES {amount_val:,.0f}"
+                    try:
+                        stored_amount = float(audit.amount)
+                    except (TypeError, ValueError, OverflowError):
+                        stored_amount = math.nan
+                    if math.isfinite(stored_amount):
+                        amount_val = stored_amount
+                        amount_str = f"KES {audit.amount:,.2f}".rstrip("0").rstrip(".")
+                    else:
+                        # A corrupt stored figure takes precedence over legacy
+                        # metadata too: using that string would silently
+                        # replace one conflicting amount with another. Keep
+                        # the source-linked finding, but withhold its figure.
+                        logger.warning(
+                            "Withholding invalid stored amount on federal audit %s",
+                            audit.id,
+                        )
+                        amount_val = None
+                        amount_str = ""
+                        amount_unavailable_reason = "invalid_stored_amount"
+                        findings_with_invalid_amount += 1
 
                 if amount_val is not None:
                     total_amount += amount_val
@@ -5394,9 +5469,11 @@ async def _federal_audits_payload():
                         "recommended_action": audit.recommended_action,
                         "amount_involved": amount_str,
                         "amount_numeric": amount_val,
+                        "amount_unavailable_reason": amount_unavailable_reason,
                         # Provenance a reader can follow: the page of the
                         # source PDF this finding was extracted from.
                         "title": prov.get("title") or None,
+                        "provenance_metadata_status": metadata_status,
                         "page_ref": audit.page_ref,
                         "source_url": source_url,
                         "source_page": source_page,
@@ -5576,13 +5653,18 @@ async def _federal_audits_payload():
                 # em-dash (hiding a real sourced number) or a bare figure
                 # (implying it is the total).
                 "findings_with_amount": findings_with_amount,
+                "findings_with_invalid_amount": findings_with_invalid_amount,
                 "total_amount_in_findings_reason": (
                     None
                     if findings_with_amount > 0
                     else (
-                        "awaiting_sourced_data"
-                        if _withheld_federal
-                        else "no_amounts_recorded"
+                        "invalid_stored_amount"
+                        if findings_with_invalid_amount
+                        else (
+                            "awaiting_sourced_data"
+                            if _withheld_federal
+                            else "no_amounts_recorded"
+                        )
                     )
                 ),
                 # Findings excluded by publication checks. Retained in the
@@ -5664,20 +5746,10 @@ async def get_county_audits(county_id: str):
     if DATABASE_AVAILABLE:
         try:
             with next(get_db()) as db:
-                # Find the entity
-                entity = (
-                    db.query(DBEntity)
-                    .filter(DBEntity.type == EntityType.COUNTY)
-                    .filter(DBEntity.canonical_name == f"{county_name} County")
-                    .first()
-                )
-
-                if not entity:
-                    # Try alternate slug lookup
-                    slug = county_name.lower().replace(" ", "-") + "-county"
-                    entity = db.query(DBEntity).filter(DBEntity.slug == slug).first()
+                entity = _resolve_county_entity(db, county_id)
 
                 if entity:
+                    county_name = entity.canonical_name.removesuffix(" County")
                     # Query audits from database
                     audits = (
                         db.query(DBAudit)
@@ -6461,9 +6533,12 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
         ]
 
     # --- peer_comparison ---
-    region = COUNTY_REGIONS.get(county_id, "Unknown")
+    from services.county_identity import legacy_county_route_id
+
+    peer_route_id = legacy_county_route_id(entity.canonical_name)
+    region = COUNTY_REGIONS.get(peer_route_id, "Unknown")
     region_county_ids = [
-        cid for cid, r in COUNTY_REGIONS.items() if r == region and cid != county_id
+        cid for cid, r in COUNTY_REGIONS.items() if r == region and cid != peer_route_id
     ]
 
     pop_data = (
@@ -6519,7 +6594,10 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
     #   3. Latest DBPopulationData per entity (DISTINCT ON / MAX year).
     # Peer stats are then computed in Python, reusing the same logic.
     all_peer_entities = (
-        db.query(DBEntity).filter(DBEntity.type == EntityType.COUNTY).all()
+        db.query(DBEntity)
+        .join(DBCountry, DBEntity.country_id == DBCountry.id)
+        .filter(DBEntity.type == EntityType.COUNTY, DBCountry.iso_code == "KEN")
+        .all()
     )
     # Map canonical_name ("Nairobi County") → entity for the lookup below.
     peers_by_name: Dict[str, Any] = {
@@ -6627,7 +6705,7 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
     # the bracket, so population_bracket_avg goes absent with the bracket.
     if pop_bracket is not None:
         for cid, cname in COUNTY_MAPPING.items():
-            if cid == county_id:
+            if cid == peer_route_id:
                 continue
             ce = peers_by_name.get(f"{cname} County")
             if not ce:
@@ -6705,21 +6783,9 @@ async def get_county_accountability(county_id: str):
     if not DATABASE_AVAILABLE:
         raise HTTPException(status_code=503, detail="Database unavailable")
 
-    county_name = _resolve_county_name(county_id)
-    if not county_name:
-        raise HTTPException(status_code=404, detail="County not found")
-
     try:
         with next(get_db()) as db:
-            entity = (
-                db.query(DBEntity)
-                .filter(DBEntity.type == EntityType.COUNTY)
-                .filter(DBEntity.canonical_name == f"{county_name} County")
-                .first()
-            )
-            if not entity:
-                slug = county_name.lower().replace(" ", "-") + "-county"
-                entity = db.query(DBEntity).filter(DBEntity.slug == slug).first()
+            entity = _resolve_county_entity(db, county_id)
             if not entity:
                 raise HTTPException(status_code=404, detail="County entity not found")
 
@@ -6738,21 +6804,9 @@ async def get_county_summary(county_id: str):
     if not DATABASE_AVAILABLE:
         raise HTTPException(status_code=503, detail="Database unavailable")
 
-    county_name = _resolve_county_name(county_id)
-    if not county_name:
-        raise HTTPException(status_code=404, detail="County not found")
-
     try:
         with next(get_db()) as db:
-            entity = (
-                db.query(DBEntity)
-                .filter(DBEntity.type == EntityType.COUNTY)
-                .filter(DBEntity.canonical_name == f"{county_name} County")
-                .first()
-            )
-            if not entity:
-                slug = county_name.lower().replace(" ", "-") + "-county"
-                entity = db.query(DBEntity).filter(DBEntity.slug == slug).first()
+            entity = _resolve_county_entity(db, county_id)
             if not entity:
                 raise HTTPException(status_code=404, detail="County entity not found")
 

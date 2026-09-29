@@ -118,13 +118,16 @@ export default function AuditReportsSection() {
 
     const maxMinistry = Math.max(...(data.top_ministries || []).map((m) => m.finding_count), 1);
 
+    const statedFindings = topStatedFindings(data.findings ?? []);
     return {
       sev: s,
       // Real sum — 0 means 0. Guards against division live at use sites.
       sevTotal: Object.values(s).reduce((a, b) => a + b, 0),
       // "Largest findings" means largest STATED figure — one computation,
       // shared with the homepage prefetch, which ships only these rows.
-      topFindings: topStatedFindings(data.findings),
+      // The trimmed API keeps one cited row when none has a stated amount.
+      // Show that row instead of an empty findings list beside a nonzero count.
+      topFindings: statedFindings.length > 0 ? statedFindings : (data.findings ?? []).slice(0, 1),
       ministryBars: (data.top_ministries || []).slice(0, 5).map((m) => ({
         ...m,
         pct: (m.finding_count / maxMinistry) * 100,
@@ -497,7 +500,10 @@ export default function AuditReportsSection() {
                             className='mt-2 pt-2 border-t border-neutral-border/30'>
                             <p className='text-xs text-neutral-muted leading-relaxed'>
                               <span className='font-semibold text-gov-dark dark:text-white'>{t('home.audits.amount_prefix')}</span>{' '}
-                              {f.amount_involved}
+                              {f.amount_unavailable_reason === 'invalid_stored_amount' ||
+                              (!f.amount_involved && f.provenance_metadata_status === 'invalid')
+                                ? t('home.audits.amount_unavailable')
+                                : f.amount_involved || t('home.audits.amount_not_recorded')}
                             </p>
                             {f.recommended_action && (
                               <p className='text-xs text-neutral-muted leading-relaxed mt-1'>

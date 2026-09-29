@@ -260,6 +260,57 @@ describe('AuditReportsSection with published findings', () => {
   });
 });
 
+describe('AuditReportsSection when no finding has a stated figure', () => {
+  it.each([
+    ['invalid_stored_amount', 'valid', /unavailable pending verification/i],
+    [null, 'absent', /no amount recorded/i],
+    [null, 'invalid', /unavailable pending verification/i],
+  ] as const)('renders the cited fallback finding with %s/%s amount status', async (reason, metadataStatus, label) => {
+    const { fireEvent } = await import('@testing-library/react');
+    mockUseFederalAudits.mockReturnValue({
+      data: {
+        ...GATED_EMPTY_RESPONSE,
+        total_findings: 1,
+        withheld_findings: 0,
+        findings_reason: null,
+        next_expected: null,
+        by_severity: { WARNING: 1 },
+        findings: [{
+          id: 383,
+          entity_name: 'Ministry of Test',
+          entity_type: 'MINISTRY',
+          finding: 'Source-linked finding without a publishable figure',
+          severity: 'WARNING',
+          recommended_action: '',
+          amount_involved: '',
+          amount_numeric: null,
+          amount_unavailable_reason: reason,
+          provenance_metadata_status: metadataStatus,
+          status: '',
+          category: '',
+          query_type: '',
+          report_section: '',
+          date_raised: '',
+          date: null,
+          page_ref: 'p.7',
+          source_page_url: 'https://example.invalid/report.pdf#page=7',
+        }],
+        top_ministries: [],
+      },
+      isLoading: false,
+      error: null,
+    });
+
+    render(<AuditReportsSection />);
+    fireEvent.click(screen.getByRole('button', { name: /source-linked finding/i }));
+    expect(screen.getByText(label)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /source.*p\.7/i })).toHaveAttribute(
+      'href',
+      'https://example.invalid/report.pdf#page=7'
+    );
+  });
+});
+
 // The headline production's FY2024/25 report derives, measured on a clone of
 // the production database taken 2026-09-26 (issue #233), after excluding the
 // 304 prior-year table rows the extractor reads as findings. Typed, so `tsc`
