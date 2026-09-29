@@ -343,7 +343,7 @@ def _money_flow_for_entity(
         Audit.period_id.in_(period_ids),
     )
     flagged = audit_q.scalar()
-    flagged = float(flagged) if flagged else None
+    flagged = float(flagged) if flagged is not None else None
 
     # --- Build stages ---
     # We surface three stages from data we ACTUALLY have:
@@ -538,7 +538,7 @@ async def national_money_flow(
             Audit.period_id.in_(period_ids),
         )
         flagged_raw = audit_q.scalar()
-        flagged = float(flagged_raw) if flagged_raw else None
+        flagged = float(flagged_raw) if flagged_raw is not None else None
 
     # --- Build stages ---
     stages = []
@@ -698,7 +698,7 @@ async def all_counties_money_flow(
         .all()
     )
     flagged_map: Dict[int, float] = {
-        eid: float(amt) for eid, amt in audit_rows if amt
+        eid: float(amt) for eid, amt in audit_rows if amt is not None
     }
 
     # 4. Build response for every county

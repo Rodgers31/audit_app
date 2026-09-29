@@ -77,7 +77,7 @@ export interface CountyAuditListItem {
   category?: string;
   amountLabel?: string;
   fiscal_year?: string;
-  source: { title?: string; url?: string; page?: number | string; table_index?: number };
+  source: { title?: string; url?: string; page?: number | string | null; page_url?: string | null; table_index?: number };
 }
 
 export interface CountyAuditListResponse {

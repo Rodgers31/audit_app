@@ -45,7 +45,7 @@ from services.county_budget import (
     REVENUE_RECEIPTS_CATEGORY,
     REVENUE_RECEIPTS_TOTAL,
 )
-from services.audit_citations import audited_institution, extraction_payload, report_page_url
+from services.audit_citations import audited_institution, citation_page, extraction_payload, report_page_url
 from services.audit_derived import derive_federal_headline, derive_unaccounted_cases
 from services.trust_guards import (
     check_budget_sectors,
@@ -5298,9 +5298,8 @@ async def _federal_audits_payload():
             findings = []
             total_amount = 0.0
             # "no publishable finding carries an amount" is not "the amount is
-            # zero". Track whether anything was actually parsed so the response
-            # can say null instead of 0.0 (AUDIT_FINDINGS P1).
-            any_amount_parsed = False
+            # zero". Count recorded amounts so the response can say null
+            # instead of 0.0 when coverage is absent (AUDIT_FINDINGS P1).
             findings_with_amount = 0
             severity_counts = {}
 
@@ -5359,8 +5358,6 @@ async def _federal_audits_payload():
                     if not amount_str:
                         amount_str = f"KES {amount_val:,.0f}"
 
-                if amount_str and amount_val:
-                    any_amount_parsed = True
                 if amount_val is not None:
                     total_amount += amount_val
                     findings_with_amount += 1
@@ -5541,7 +5538,7 @@ async def _federal_audits_payload():
                 # Transparency only: the raw sum across all finding amounts.
                 # NOT the questioned headline (see above).
                 "total_amount_in_findings": (
-                    total_amount if any_amount_parsed else None
+                    total_amount if findings_with_amount > 0 else None
                 ),
                 # The denominator that makes the partial safe to render. The
                 # OAG's own questioned total is not extracted for FY2024/25,
@@ -5554,7 +5551,7 @@ async def _federal_audits_payload():
                 "findings_with_amount": findings_with_amount,
                 "total_amount_in_findings_reason": (
                     None
-                    if any_amount_parsed
+                    if findings_with_amount > 0
                     else (
                         "awaiting_sourced_data"
                         if _withheld_federal
@@ -6001,6 +5998,8 @@ async def list_county_audits(
                 doc = (
                     audit.source_document if hasattr(audit, "source_document") else None
                 )
+                source_url = doc.url if doc else None
+                source_page = citation_page(audit.page_ref)
                 provenance = audit.provenance or []
                 status_value = None
                 category_value = None
@@ -6023,8 +6022,11 @@ async def list_county_audits(
                         "fiscal_year": audit.period.label if audit.period else None,
                         "source": {
                             "title": doc.title if doc else None,
-                            "url": doc.url if doc else None,
-                            "page": None,
+                            "url": source_url,
+                            "page": source_page,
+                            "page_url": report_page_url(
+                                source_url, source_page, clear_stale_page=True
+                            ),
                             "table_index": None,
                         },
                     }
@@ -6068,7 +6070,7 @@ async def list_county_audits(
             prov = q.get("provenance") or {}
             source = q.get("source") or {}
             url = source.get("url") or q.get("document_url")
-            page_ref = prov.get("page") or source.get("page")
+            source_page = citation_page(prov.get("page") or source.get("page"))
             return {
                 "id": q.get("id") or f"{county_id}-{start+idx}",
                 "description": q.get("description")
@@ -6082,7 +6084,10 @@ async def list_county_audits(
                 "source": {
                     "title": source.get("title"),
                     "url": url,
-                    "page": page_ref,
+                    "page": source_page,
+                    "page_url": report_page_url(
+                        url, source_page, clear_stale_page=True
+                    ),
                     "table_index": prov.get("table_index") or source.get("table_index"),
                 },
             }
@@ -9069,8 +9074,8 @@ async def get_debt_timeline(db: Session = Depends(get_db)):
                     "external": float(r.external),
                     "domestic": float(r.domestic),
                     "total": float(r.total),
-                    "gdp": float(r.gdp) if r.gdp else None,
-                    "gdp_ratio": float(r.gdp_ratio) if r.gdp_ratio else None,
+                    "gdp": float(r.gdp) if r.gdp is not None else None,
+                    "gdp_ratio": float(r.gdp_ratio) if r.gdp_ratio is not None else None,
                     # The row's declared unit (stage1 3a): "KES" = raw KES.
                     # Consumers convert on this field, never by guessing
                     # magnitude — see F5.5.
@@ -9121,7 +9126,7 @@ async def get_debt_timeline(db: Session = Depends(get_db)):
             # debt_timeline stores raw KES with a declared unit column
             # (stage1 3a migration) — no scale factor.
             "primary_value_kes": (
-                float(rows[-1].total) if rows and rows[-1].total else None
+                float(rows[-1].total) if rows[-1].total is not None else None
             ),
             "secondary_source": "loans_table",
             "secondary_value_kes": None,
