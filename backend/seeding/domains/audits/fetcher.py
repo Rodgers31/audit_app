@@ -188,15 +188,19 @@ _WP_MEDIA_SEARCHES = ("county", "audit report", "financial statements")
 
 def _discover_audit_pdfs_via_wp_api(
     client: SeedingHttpClient,
+    *,
+    diagnostics: Optional[Dict[str, Any]] = None,
 ) -> List[str]:
     """Discover audit-report PDF URLs via the OAG WordPress media API.
 
-    Best-effort: any HTTP/JSON failure returns [] so the caller falls
-    back to homepage scraping.
+    Best-effort for the legacy fetch path. Domain runs pass ``diagnostics``
+    so a failed search is distinguishable from a successful empty search.
     """
     discovered: List[str] = []
     seen: set = set()
     for term in _WP_MEDIA_SEARCHES:
+        if diagnostics is not None:
+            diagnostics["attempted_queries"] += 1
         api_url = (
             "https://www.oagkenya.go.ke/wp-json/wp/v2/media"
             f"?per_page=100&search={quote_plus(term)}"
@@ -206,16 +210,36 @@ def _discover_audit_pdfs_via_wp_api(
             items = response.json()
         except Exception as exc:
             logger.info("OAG WP media API query failed (%s): %s", term, exc)
+            if diagnostics is not None:
+                diagnostics["failures"].append(
+                    f"{term}: {type(exc).__name__}: {str(exc)[:160]}"
+                )
             continue
         if not isinstance(items, list):
+            if diagnostics is not None:
+                diagnostics["failures"].append(
+                    f"{term}: unexpected {type(items).__name__} response"
+                )
             continue
-        for item in items:
-            if not isinstance(item, dict):
-                continue
+        valid_items = [
+            item for item in items
+            if isinstance(item, dict)
+            and isinstance(item.get("mime_type"), str)
+            and isinstance(item.get("source_url"), str)
+            and item["source_url"].strip()
+        ]
+        malformed_count = len(items) - len(valid_items)
+        if malformed_count and diagnostics is not None:
+            diagnostics["failures"].append(
+                f"{term}: {malformed_count} malformed media item(s)"
+            )
+        if diagnostics is not None and (not items or valid_items):
+            diagnostics["successful_queries"] += 1
+        for item in valid_items:
             if item.get("mime_type") != "application/pdf":
                 continue
-            url = item.get("source_url") or ""
-            if not url or url in seen:
+            url = item["source_url"]
+            if url in seen:
                 continue
             seen.add(url)
             discovered.append(url)
