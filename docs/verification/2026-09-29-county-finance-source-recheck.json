@@ -1,0 +1,982 @@
+{
+  "kind": "offline_county_finance_source_recheck",
+  "generated_by": "backend/scripts/recheck_county_finance_source.py",
+  "generator_sha256": "ed03f19812e716ba3077a893af9d2c5ad0ceb87fafb2add7e08b0d3f5f74c73a",
+  "generated_at": "2026-09-29T13:20:50.366791+00:00",
+  "verdict": "PARTIAL_SOURCE_COVERAGE",
+  "target_commit": null,
+  "production_published": false,
+  "source_url": "https://cob.go.ke/download/county-governments-budget-implementation-review-report-for-the-financial-year-2025-26/?wpdmdl=16482",
+  "sha256": "5f5e4f97bbe2752957f284950d0ba90fcff4d47b35fc0ac96a9106ffb59821b3",
+  "periods": [
+    "FY2025/26"
+  ],
+  "as_at": [
+    "2026-06-30"
+  ],
+  "budget_records": 448,
+  "budget_total_counties": 47,
+  "revenue_reconciled": 40,
+  "revenue_recovered_vs_prior": [
+    "Bungoma",
+    "Busia",
+    "Kilifi"
+  ],
+  "prior_reconciled_preserved": 37,
+  "pending_status_counts": {
+    "reported": 46,
+    "not_reported": 1
+  },
+  "pending_qualified_count": 23,
+  "pending_note_counts": {
+    "cob_marked_inconsistent": 14,
+    "chapter_table_differs": 7,
+    "assembly_not_printed": 9
+  },
+  "pending_reported_sum_kes": "172526690000.00",
+  "pending_complete_total_kes": null,
+  "coverage": [
+    {
+      "county": "Baringo",
+      "budget_allocated_million_kes": "10075.96",
+      "budget_spent_million_kes": "7665.52",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "9177515820",
+      "revenue_pdf_pages": [
+        59,
+        60,
+        61
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "870.23",
+      "pending_pdf_page": 51,
+      "pending_reader_notes": []
+    },
+    {
+      "county": "Bomet",
+      "budget_allocated_million_kes": "10853.28",
+      "budget_spent_million_kes": "8718.28",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "9769344780",
+      "revenue_pdf_pages": [
+        77,
+        78,
+        79
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "1431.39",
+      "pending_pdf_page": 51,
+      "pending_reader_notes": [
+        {
+          "code": "cob_marked_inconsistent",
+          "table": "Table 2.10"
+        },
+        {
+          "code": "chapter_table_differs",
+          "table": "Table 2.10",
+          "chapter_table": "Table 3.31",
+          "chapter_page": 91,
+          "chapter_total": "1436840000.00"
+        }
+      ]
+    },
+    {
+      "county": "Bungoma",
+      "budget_allocated_million_kes": "17433.20",
+      "budget_spent_million_kes": "14537.39",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "16154951221",
+      "revenue_pdf_pages": [
+        94,
+        95,
+        96
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "3125.74",
+      "pending_pdf_page": 51,
+      "pending_reader_notes": [
+        {
+          "code": "cob_marked_inconsistent",
+          "table": "Table 2.10"
+        }
+      ]
+    },
+    {
+      "county": "Busia",
+      "budget_allocated_million_kes": "11159.48",
+      "budget_spent_million_kes": "7276.62",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "9897383793",
+      "revenue_pdf_pages": [
+        112,
+        113
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "2594.37",
+      "pending_pdf_page": 51,
+      "pending_reader_notes": []
+    },
+    {
+      "county": "Elgeyo Marakwet",
+      "budget_allocated_million_kes": "9144.87",
+      "budget_spent_million_kes": "6061.49",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "8129336090",
+      "revenue_pdf_pages": [
+        128,
+        129
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "238.71",
+      "pending_pdf_page": 51,
+      "pending_reader_notes": [
+        {
+          "code": "assembly_not_printed",
+          "table": "Table 2.10"
+        },
+        {
+          "code": "chapter_table_differs",
+          "table": "Table 2.10",
+          "chapter_table": "Table 3.80",
+          "chapter_page": 142,
+          "chapter_total": "236300000.00"
+        }
+      ]
+    },
+    {
+      "county": "Embu",
+      "budget_allocated_million_kes": "9395.13",
+      "budget_spent_million_kes": "6932.91",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "8123169295",
+      "revenue_pdf_pages": [
+        145,
+        146
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "1624.98",
+      "pending_pdf_page": 51,
+      "pending_reader_notes": []
+    },
+    {
+      "county": "Garissa",
+      "budget_allocated_million_kes": "13536.09",
+      "budget_spent_million_kes": "10640.38",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "11378721908",
+      "revenue_pdf_pages": [
+        163,
+        164
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "1485.65",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": []
+    },
+    {
+      "county": "Homa Bay",
+      "budget_allocated_million_kes": "13601.46",
+      "budget_spent_million_kes": "10244.80",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "11029018806",
+      "revenue_pdf_pages": [
+        182,
+        183
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "1118.01",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": []
+    },
+    {
+      "county": "Isiolo",
+      "budget_allocated_million_kes": "7202.84",
+      "budget_spent_million_kes": "5349.05",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "7100404489",
+      "revenue_pdf_pages": [
+        199,
+        200,
+        201
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "1672.46",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": []
+    },
+    {
+      "county": "Kajiado",
+      "budget_allocated_million_kes": "13546.89",
+      "budget_spent_million_kes": "9892.81",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "11628847386",
+      "revenue_pdf_pages": [
+        218,
+        219,
+        220
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "2555.43",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": [
+        {
+          "code": "chapter_table_differs",
+          "table": "Table 2.10",
+          "chapter_table": "Table 3.158",
+          "chapter_page": 232,
+          "chapter_total": "2545930000.00"
+        }
+      ]
+    },
+    {
+      "county": "Kakamega",
+      "budget_allocated_million_kes": "17497.11",
+      "budget_spent_million_kes": "13981.97",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "16738492420",
+      "revenue_pdf_pages": [
+        236,
+        237
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "2808.81",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": []
+    },
+    {
+      "county": "Kericho",
+      "budget_allocated_million_kes": "10491.81",
+      "budget_spent_million_kes": "8362.97",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "9258125117",
+      "revenue_pdf_pages": [
+        256,
+        257,
+        258
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "1483.04",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": []
+    },
+    {
+      "county": "Kiambu",
+      "budget_allocated_million_kes": "27202.74",
+      "budget_spent_million_kes": "18538.80",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "21877475266",
+      "revenue_pdf_pages": [
+        275,
+        276,
+        277
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "5800.13",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": []
+    },
+    {
+      "county": "Kilifi",
+      "budget_allocated_million_kes": "20480.85",
+      "budget_spent_million_kes": "17049.44",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "17118563037",
+      "revenue_pdf_pages": [
+        312,
+        313,
+        314
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "8091.52",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": [
+        {
+          "code": "cob_marked_inconsistent",
+          "table": "Table 2.10"
+        }
+      ]
+    },
+    {
+      "county": "Kirinyaga",
+      "budget_allocated_million_kes": "8541.37",
+      "budget_spent_million_kes": "7249.80",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "8171979260",
+      "revenue_pdf_pages": [
+        296,
+        297
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "564.47",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": [
+        {
+          "code": "assembly_not_printed",
+          "table": "Table 2.10"
+        }
+      ]
+    },
+    {
+      "county": "Kisii",
+      "budget_allocated_million_kes": "20160.90",
+      "budget_spent_million_kes": "12765.24",
+      "revenue_status": "withheld",
+      "revenue_reason": "unreadable_receipts_cell",
+      "revenue_total_kes": null,
+      "revenue_pdf_pages": [
+        330,
+        331,
+        332
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "1247.70",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": []
+    },
+    {
+      "county": "Kisumu",
+      "budget_allocated_million_kes": "16982.00",
+      "budget_spent_million_kes": "10095.00",
+      "revenue_status": "withheld",
+      "revenue_reason": "no_grand_total",
+      "revenue_total_kes": null,
+      "revenue_pdf_pages": [
+        349,
+        350,
+        351
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "850.47",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": [
+        {
+          "code": "cob_marked_inconsistent",
+          "table": "Table 2.10"
+        },
+        {
+          "code": "assembly_not_printed",
+          "table": "Table 2.10"
+        }
+      ]
+    },
+    {
+      "county": "Kitui",
+      "budget_allocated_million_kes": "14753.53",
+      "budget_spent_million_kes": "11867.25",
+      "revenue_status": "withheld",
+      "revenue_reason": "streams_do_not_sum_to_grand_total (out by 1,286,750,892.25)",
+      "revenue_total_kes": null,
+      "revenue_pdf_pages": [
+        367,
+        368,
+        369
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "494.96",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": []
+    },
+    {
+      "county": "Kwale",
+      "budget_allocated_million_kes": "16710.18",
+      "budget_spent_million_kes": "11473.13",
+      "revenue_status": "withheld",
+      "revenue_reason": "streams_do_not_sum_to_grand_total (out by 59,814,318.00)",
+      "revenue_total_kes": null,
+      "revenue_pdf_pages": [
+        385,
+        386,
+        387
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "310.94",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": []
+    },
+    {
+      "county": "Laikipia",
+      "budget_allocated_million_kes": "9768.88",
+      "budget_spent_million_kes": "6749.88",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "9186891397",
+      "revenue_pdf_pages": [
+        404,
+        405
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "983.14",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": [
+        {
+          "code": "cob_marked_inconsistent",
+          "table": "Table 2.10"
+        }
+      ]
+    },
+    {
+      "county": "Lamu",
+      "budget_allocated_million_kes": "5592.56",
+      "budget_spent_million_kes": "4274.88",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "5288678543.97",
+      "revenue_pdf_pages": [
+        420,
+        421,
+        422
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "1.30",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": [
+        {
+          "code": "assembly_not_printed",
+          "table": "Table 2.10"
+        }
+      ]
+    },
+    {
+      "county": "Machakos",
+      "budget_allocated_million_kes": "15193.59",
+      "budget_spent_million_kes": "11407.10",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "14230737987",
+      "revenue_pdf_pages": [
+        438,
+        439,
+        440
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "4493.50",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": []
+    },
+    {
+      "county": "Makueni",
+      "budget_allocated_million_kes": "12862.92",
+      "budget_spent_million_kes": "11337.71",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "12355522486",
+      "revenue_pdf_pages": [
+        462,
+        463,
+        464
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "424.25",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": [
+        {
+          "code": "cob_marked_inconsistent",
+          "table": "Table 2.10"
+        }
+      ]
+    },
+    {
+      "county": "Mandera",
+      "budget_allocated_million_kes": "15092.73",
+      "budget_spent_million_kes": "13550.47",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "14011801938",
+      "revenue_pdf_pages": [
+        482,
+        483,
+        484
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "3825.00",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": []
+    },
+    {
+      "county": "Marsabit",
+      "budget_allocated_million_kes": "11033.90",
+      "budget_spent_million_kes": "9667.19",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "9556672474.96",
+      "revenue_pdf_pages": [
+        500,
+        501
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "1427.60",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": [
+        {
+          "code": "cob_marked_inconsistent",
+          "table": "Table 2.10"
+        }
+      ]
+    },
+    {
+      "county": "Meru",
+      "budget_allocated_million_kes": "15124.98",
+      "budget_spent_million_kes": "13892.85",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "13981377637",
+      "revenue_pdf_pages": [
+        520,
+        521,
+        522
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "1901.80",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": []
+    },
+    {
+      "county": "Migori",
+      "budget_allocated_million_kes": "11972.11",
+      "budget_spent_million_kes": "9914.96",
+      "revenue_status": "withheld",
+      "revenue_reason": "a_section_has_two_subtotals",
+      "revenue_total_kes": null,
+      "revenue_pdf_pages": [
+        546,
+        547,
+        548,
+        549
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "1029.96",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": [
+        {
+          "code": "cob_marked_inconsistent",
+          "table": "Table 2.10"
+        }
+      ]
+    },
+    {
+      "county": "Mombasa",
+      "budget_allocated_million_kes": "18725.00",
+      "budget_spent_million_kes": "13641.31",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "15790774484",
+      "revenue_pdf_pages": [
+        564,
+        565
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "3844.59",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": []
+    },
+    {
+      "county": "Murang'a",
+      "budget_allocated_million_kes": "12130.58",
+      "budget_spent_million_kes": "9485.25",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "10511561102",
+      "revenue_pdf_pages": [
+        582,
+        583,
+        584
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "1479.90",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": [
+        {
+          "code": "cob_marked_inconsistent",
+          "table": "Table 2.10"
+        }
+      ]
+    },
+    {
+      "county": "Nairobi",
+      "budget_allocated_million_kes": "44620.89",
+      "budget_spent_million_kes": "33102.83",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "37917986931",
+      "revenue_pdf_pages": [
+        600,
+        601
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "86899.38",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": []
+    },
+    {
+      "county": "Nakuru",
+      "budget_allocated_million_kes": "25649.10",
+      "budget_spent_million_kes": "19283.21",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "24534866512",
+      "revenue_pdf_pages": [
+        624,
+        625
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "3137.67",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": [
+        {
+          "code": "cob_marked_inconsistent",
+          "table": "Table 2.10"
+        }
+      ]
+    },
+    {
+      "county": "Nandi",
+      "budget_allocated_million_kes": "11404.54",
+      "budget_spent_million_kes": "8941.04",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "10574982033.09",
+      "revenue_pdf_pages": [
+        644,
+        645,
+        646
+      ],
+      "pending_status": "not_reported",
+      "pending_million_kes": null,
+      "pending_pdf_page": 52,
+      "pending_reader_notes": []
+    },
+    {
+      "county": "Narok",
+      "budget_allocated_million_kes": "17231.06",
+      "budget_spent_million_kes": "11901.88",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "15228059242",
+      "revenue_pdf_pages": [
+        661,
+        662,
+        663
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "4245.69",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": [
+        {
+          "code": "cob_marked_inconsistent",
+          "table": "Table 2.10"
+        },
+        {
+          "code": "chapter_table_differs",
+          "table": "Table 2.10",
+          "chapter_table": "Table 3.513",
+          "chapter_page": 674,
+          "chapter_total": "4188690000.00"
+        }
+      ]
+    },
+    {
+      "county": "Nyamira",
+      "budget_allocated_million_kes": "8646.30",
+      "budget_spent_million_kes": "7009.26",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "8103874187",
+      "revenue_pdf_pages": [
+        676,
+        677
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "357.68",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": [
+        {
+          "code": "assembly_not_printed",
+          "table": "Table 2.10"
+        }
+      ]
+    },
+    {
+      "county": "Nyandarua",
+      "budget_allocated_million_kes": "9698.26",
+      "budget_spent_million_kes": "7439.62",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "8494074742",
+      "revenue_pdf_pages": [
+        693,
+        694
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "2190.50",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": []
+    },
+    {
+      "county": "Nyeri",
+      "budget_allocated_million_kes": "9441.73",
+      "budget_spent_million_kes": "7881.02",
+      "revenue_status": "withheld",
+      "revenue_reason": "unobserved_receipts_cell",
+      "revenue_total_kes": null,
+      "revenue_pdf_pages": [
+        712,
+        713
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "572.06",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": [
+        {
+          "code": "cob_marked_inconsistent",
+          "table": "Table 2.10"
+        }
+      ]
+    },
+    {
+      "county": "Samburu",
+      "budget_allocated_million_kes": "8105.18",
+      "budget_spent_million_kes": "7283.25",
+      "revenue_status": "withheld",
+      "revenue_reason": "a_section_has_two_subtotals",
+      "revenue_total_kes": null,
+      "revenue_pdf_pages": [
+        729,
+        730
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "117.25",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": [
+        {
+          "code": "assembly_not_printed",
+          "table": "Table 2.10"
+        }
+      ]
+    },
+    {
+      "county": "Siaya",
+      "budget_allocated_million_kes": "13377.98",
+      "budget_spent_million_kes": "7504.73",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "10500430395",
+      "revenue_pdf_pages": [
+        748,
+        749,
+        750
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "1276.89",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": []
+    },
+    {
+      "county": "Taita Taveta",
+      "budget_allocated_million_kes": "8297.52",
+      "budget_spent_million_kes": "7064.78",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "7531702137",
+      "revenue_pdf_pages": [
+        765,
+        766
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "2296.71",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": []
+    },
+    {
+      "county": "Tana River",
+      "budget_allocated_million_kes": "10237.38",
+      "budget_spent_million_kes": "8078.13",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "9469455135",
+      "revenue_pdf_pages": [
+        782,
+        783
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "1771.28",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": [
+        {
+          "code": "assembly_not_printed",
+          "table": "Table 2.10"
+        }
+      ]
+    },
+    {
+      "county": "Tharaka Nithi",
+      "budget_allocated_million_kes": "7777.00",
+      "budget_spent_million_kes": "6097.32",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "6702458032",
+      "revenue_pdf_pages": [
+        798,
+        799
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "858.58",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": [
+        {
+          "code": "cob_marked_inconsistent",
+          "table": "Table 2.10"
+        },
+        {
+          "code": "chapter_table_differs",
+          "table": "Table 2.10",
+          "chapter_table": "Table 3.632",
+          "chapter_page": 812,
+          "chapter_total": "863390000.00"
+        }
+      ]
+    },
+    {
+      "county": "Trans Nzoia",
+      "budget_allocated_million_kes": "10266.19",
+      "budget_spent_million_kes": "8879.10",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "10003733417",
+      "revenue_pdf_pages": [
+        815,
+        816
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "2374.07",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": []
+    },
+    {
+      "county": "Turkana",
+      "budget_allocated_million_kes": "19236.19",
+      "budget_spent_million_kes": "15004.55",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "17218989961",
+      "revenue_pdf_pages": [
+        832,
+        833
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "3077.49",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": [
+        {
+          "code": "cob_marked_inconsistent",
+          "table": "Table 2.10"
+        },
+        {
+          "code": "chapter_table_differs",
+          "table": "Table 2.10",
+          "chapter_table": "Table 3.662",
+          "chapter_page": 845,
+          "chapter_total": "3107490000.00"
+        }
+      ]
+    },
+    {
+      "county": "Uasin Gishu",
+      "budget_allocated_million_kes": "17427.22",
+      "budget_spent_million_kes": "11098.46",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "16632355381",
+      "revenue_pdf_pages": [
+        847,
+        848
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "1153.72",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": [
+        {
+          "code": "assembly_not_printed",
+          "table": "Table 2.10"
+        },
+        {
+          "code": "chapter_table_differs",
+          "table": "Table 2.10",
+          "chapter_table": "Table 3.678",
+          "chapter_page": 861,
+          "chapter_total": "1481440000.00"
+        }
+      ]
+    },
+    {
+      "county": "Vihiga",
+      "budget_allocated_million_kes": "7926.21",
+      "budget_spent_million_kes": "7079.06",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "7376161521",
+      "revenue_pdf_pages": [
+        864,
+        865,
+        866
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "811.24",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": []
+    },
+    {
+      "county": "Wajir",
+      "budget_allocated_million_kes": "13638.52",
+      "budget_spent_million_kes": "12305.36",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "12915131062",
+      "revenue_pdf_pages": [
+        882,
+        883,
+        884
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "3304.84",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": []
+    },
+    {
+      "county": "West Pokot",
+      "budget_allocated_million_kes": "8986.20",
+      "budget_spent_million_kes": "8000.31",
+      "revenue_status": "reconciled",
+      "revenue_reason": null,
+      "revenue_total_kes": "8623742083",
+      "revenue_pdf_pages": [
+        898,
+        899,
+        900
+      ],
+      "pending_status": "reported",
+      "pending_million_kes": "301.59",
+      "pending_pdf_page": 52,
+      "pending_reader_notes": [
+        {
+          "code": "assembly_not_printed",
+          "table": "Table 2.10"
+        }
+      ]
+    }
+  ]
+}
