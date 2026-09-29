@@ -53,7 +53,7 @@ from . import fetcher  # retained for its FY-derivation helpers + tests
 
 logger = logging.getLogger("seeding.audits")
 
-# New documents fetched per dataset per run — bounds nightly wall-clock.
+# Never-fetched national documents attempted per run — bounds nightly wall-clock.
 _MAX_NEW_DOCUMENTS_PER_RUN = 3
 
 
@@ -259,7 +259,7 @@ def run(
             .mark_finished()
         )
 
-    from models import DocumentType, SourceDocument
+    from models import DocumentStatus, DocumentType, SourceDocument
 
     from ...extractors import get_parser
     from ...extractors import oag_county_volume
@@ -394,14 +394,17 @@ def run(
                     # The media API is a network read. If the shared start
                     # window is spent, name this skipped discovery too.
                     metadata["deferred_discovery"].append(dataset_id)
-                    fresh = []
+                    discovered = []
                 else:
-                    fresh = [
-                        u
-                        for u in _discovered_urls(client, dataset)
-                        if u not in set(known)
-                    ][:_MAX_NEW_DOCUMENTS_PER_RUN]
-                candidates, rejected = split_national_audit_candidates(known + fresh)
+                    discovered = _discovered_urls(client, dataset)
+                # Filter and dedupe the whole discovery result before the
+                # fetch cap. Otherwise a digest or repeated URL can consume a
+                # slot and hide a real report from the backlog indefinitely.
+                candidates, rejected = split_national_audit_candidates(
+                    list(dict.fromkeys([*known, *discovered]))
+                )
+                known_urls = set(known)
+                fresh_count = sum(url not in known_urls for url in candidates)
                 for url, why in rejected:
                     logger.info(
                         "Not the Blue Book, skipped before download (%s): %s",
@@ -412,7 +415,7 @@ def run(
                     "%s: %d known + %d newly discovered document(s)%s",
                     dataset_id,
                     len(known),
-                    len(fresh),
+                    fresh_count,
                     "" if parser else " (no parser — fetch/register only)",
                 )
                 candidates = _oldest_attempt_first(
@@ -433,6 +436,7 @@ def run(
                     })
                 continue
 
+            new_national_attempts = 0
             for dataset_id, url in candidates:
                 dataset = SOURCE_REGISTRY[dataset_id]
                 parser = get_parser(dataset.parser_id)
@@ -454,8 +458,41 @@ def run(
                     registered = session.execute(
                         select(SourceDocument).where(SourceDocument.url == url)
                     ).scalar_one_or_none()
-                    if registered is not None:
-                        _record_scheduled_attempt(session, registered)
+                    # A provisional registration is still never-fetched. It
+                    # must keep using a bounded new-document slot on retries;
+                    # only verified PDF bytes take it out of that category.
+                    never_fetched_national = (
+                        dataset_id == "oag_national_audits"
+                        and (registered is None or not (registered.md5 and registered.file_path))
+                    )
+                    if never_fetched_national:
+                        if new_national_attempts >= _MAX_NEW_DOCUMENTS_PER_RUN:
+                            metadata["deferred_documents"].append(
+                                {"dataset": dataset_id, "url": url, "reason": "new_document_cap"}
+                            )
+                            continue
+                        new_national_attempts += 1
+                    if registered is None:
+                        # Commit an honest source URL and retry turn before IO.
+                        # The CLI rolls uncommitted fetcher rows back when its
+                        # hard timeout interrupts the first download.
+                        now = datetime.now(timezone.utc)
+                        registered = SourceDocument(
+                            country_id=country.id,
+                            publisher=dataset.publisher,
+                            title=url.rsplit("/", 1)[-1],
+                            url=url,
+                            fetch_date=now,
+                            doc_type=DocumentType[dataset.doc_type],
+                            status=DocumentStatus.FAILED,
+                            last_seen_at=now,
+                            meta={
+                                "dataset_id": dataset_id,
+                                "registration": "discovered_not_fetched",
+                            },
+                        )
+                        session.add(registered)
+                    _record_scheduled_attempt(session, registered)
                 try:
                     doc = fetch_document(
                         session,
@@ -480,9 +517,6 @@ def run(
                         # The FAILED status and fetch_error are worth keeping.
                         session.commit()
                     continue
-
-                if not is_volume and registered is None:
-                    _record_scheduled_attempt(session, doc)
 
                 doc_stat = {"dataset": dataset_id, "doc_id": doc.id, "url": url}
                 if parser is not None:
@@ -611,7 +645,7 @@ def run(
             )
     if metadata["deferred_documents"] or metadata["deferred_discovery"]:
         logger.warning(
-            "Audit start budget deferred %d older document(s) and discovery for %s",
+            "Audit scheduling deferred %d older document(s) and discovery for %s",
             len(metadata["deferred_documents"]),
             ", ".join(metadata["deferred_discovery"]) or "none",
         )
