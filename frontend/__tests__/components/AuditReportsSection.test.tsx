@@ -133,7 +133,7 @@ describe('AuditReportsSection withholding reasons (#366 integration)', () => {
 });
 
 describe('AuditReportsSection with published findings', () => {
-  it('derives the donut count and the severity breakdown from one map', () => {
+  beforeEach(() => {
     mockUseFederalAudits.mockReturnValue({
       data: {
         ...GATED_EMPTY_RESPONSE,
@@ -188,6 +188,9 @@ describe('AuditReportsSection with published findings', () => {
       isLoading: false,
       error: null,
     });
+  });
+
+  it('derives the donut count and the severity breakdown from one map', () => {
     render(<AuditReportsSection />);
     expect(screen.getByText('2')).toBeInTheDocument(); // donut count
     expect(screen.getByText(/Critical \(1\)/)).toBeInTheDocument();

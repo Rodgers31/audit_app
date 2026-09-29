@@ -220,6 +220,7 @@ describe('debt page pending-bills disclosure (#321)', () => {
     ] });
     const section = stalledPayments();
     expect(section).toHaveTextContent('Controller of Budget CBIRR');
+    expect(section).toHaveTextContent('Controller of Budget CBIRR · Source link unavailable');
     expect(within(section).queryByRole('link', { name: 'Controller of Budget CBIRR' })).not.toBeInTheDocument();
   });
 

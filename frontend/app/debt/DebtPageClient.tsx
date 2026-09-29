@@ -127,7 +127,9 @@ function PendingBillsSourceLine({ date, source }: { date: string | null; source?
         <a href={href} target='_blank' rel='noopener noreferrer' className='underline underline-offset-2 hover:text-gov-copper'>
           {source?.title || 'Source document'}
         </a>
-      ) : (source?.title || 'Source link unavailable')}
+      ) : (
+        <span>{source?.title ? `${source.title} · ` : ''}Source link unavailable</span>
+      )}
     </div>
   );
 }
