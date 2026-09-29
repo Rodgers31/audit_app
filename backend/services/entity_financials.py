@@ -112,7 +112,7 @@ def financial_summary(lines, period=None):
     elif any(
         line.page_ref
         and str(line.page_ref).strip()
-        and not _has_page_locator(line.page_ref)
+        and not _has_page_locator(line.page_ref, allow_descriptive=True)
         for line in selected
     ):
         reason = "no_page_reference"

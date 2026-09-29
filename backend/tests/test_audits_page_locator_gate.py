@@ -78,8 +78,14 @@ LOCATOR_CASES = [
     ("p. 42", True),
     ("Annex VII", True),
     ("701", True),
-    ("+5", True),
-    ("p.0", True),        # textual: "p.0" does not parse as a number
+    ("+5", False),
+    ("p.0", False),
+    ("p.-3", False),
+    ("p.38 garbage 73", False),
+    ("pp.38-39", True),
+    ("pp.39-38", False),
+    ("Schedule XL", True),
+    ("Annex IIV", False),
     (None, False),
     ("", False),
     ("   ", False),
@@ -248,6 +254,7 @@ class TestTheWithheldReasonIsTheRightWord:
         reasons = count_withheld_by_reason(db_session)
         assert reasons == {
             "source_document_has_no_url": 1,
+            "source_document_has_invalid_url": 0,
             "finding_text_unreadable_cid": 1,
             "no_page_reference": 1,
         }, reasons
@@ -261,6 +268,7 @@ class TestTheWithheldReasonIsTheRightWord:
         reasons = count_withheld_by_reason(db_session)
         assert set(reasons) == {
             "source_document_has_no_url",
+            "source_document_has_invalid_url",
             "finding_text_unreadable_cid",
             "no_page_reference",
         }
@@ -397,6 +405,7 @@ class TestAReaderCanSeeWhy:
         assert body["withheld_findings"] == 1
         assert body.get("withheld_findings_by_reason") == {
             "source_document_has_no_url": 0,
+            "source_document_has_invalid_url": 0,
             "finding_text_unreadable_cid": 0,
             "no_page_reference": 1,
         }, body.get("withheld_findings_by_reason")
