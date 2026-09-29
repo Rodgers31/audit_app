@@ -24,15 +24,15 @@ def _amount(value):
     )
 
 
-def budget_line_is_unreported(line):
-    if line.quarantine_reason or getattr(line.basis, "value", line.basis) in {
+def budget_evidence_is_unreported(quarantine_reason, basis, provenance, source_meta):
+    """Inspect the fields needed to distinguish reported from modelled lines."""
+    if quarantine_reason or getattr(basis, "value", basis) in {
         "modelled",
         "projected",
     }:
         return True
-    provenance = getattr(line, "provenance", None)
     entries = provenance if isinstance(provenance, list) else [provenance]
-    entries = [*entries, getattr(line.source_document, "meta", None)]
+    entries = [*entries, source_meta]
     return any(
         isinstance(entry, dict)
         and (
@@ -44,6 +44,18 @@ def budget_line_is_unreported(line):
             or entry.get("source") == "bootstrap"
         )
         for entry in entries
+    )
+
+
+def budget_line_is_unreported(line):
+    provenance = getattr(line, "provenance", None)
+    if budget_evidence_is_unreported(line.quarantine_reason, line.basis, provenance, None):
+        return True
+    return budget_evidence_is_unreported(
+        line.quarantine_reason,
+        line.basis,
+        provenance,
+        getattr(line.source_document, "meta", None),
     )
 
 

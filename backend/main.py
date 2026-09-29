@@ -3127,24 +3127,91 @@ def _latest_county_actuals_period_ids(db) -> Optional[List[int]]:
     every county's audit status into "pending"."""
     from sqlalchemy import func as _f
 
-    from models import FiscalPeriod as _FP
-    from services.entity_financials import budget_line_is_unreported
+    from models import FigureBasis as _FigureBasis, FiscalPeriod as _FP
+    from services.entity_financials import budget_evidence_is_unreported
 
-    rows = (
-        db.query(DBBudgetLine)
-        .options(joinedload(DBBudgetLine.source_document))
+    possible_reported_basis = or_(
+        DBBudgetLine.basis.is_(None),
+        DBBudgetLine.basis.notin_((_FigureBasis.MODELLED, _FigureBasis.PROJECTED)),
+    )
+    not_quarantined = or_(
+        DBBudgetLine.quarantine_reason.is_(None),
+        DBBudgetLine.quarantine_reason == "",
+    )
+    periods = (
+        db.query(_FP.id, _FP.start_date, _FP.end_date)
+        .select_from(DBBudgetLine)
         .join(_FP, DBBudgetLine.period_id == _FP.id)
         .join(DBEntity, DBEntity.id == DBBudgetLine.entity_id)
         .filter(
             DBEntity.type == EntityType.COUNTY,
             _f.lower(_f.trim(DBBudgetLine.category)).in_(list(_CLASSIFICATION_CATEGORIES)),
+            possible_reported_basis,
+            not_quarantined,
         )
+        .distinct()
         .order_by(_FP.start_date.desc(), _FP.end_date.desc(), _FP.id.desc())
         .all()
     )
-    for row in rows:
-        if not budget_line_is_unreported(row):
-            return [row.period_id]
+    source_metadata = {}
+    for period_id, _, _ in periods:
+        last_line_id = 0
+        while True:
+            # Page only the fields the shared evidence predicate needs. Source
+            # metadata is fetched separately and cached across pages/periods.
+            rows = (
+                db.query(
+                    DBBudgetLine.id,
+                    DBBudgetLine.quarantine_reason,
+                    DBBudgetLine.basis,
+                    DBBudgetLine.provenance,
+                    DBBudgetLine.source_document_id,
+                )
+                .join(DBEntity, DBEntity.id == DBBudgetLine.entity_id)
+                .filter(
+                    DBEntity.type == EntityType.COUNTY,
+                    DBBudgetLine.period_id == period_id,
+                    DBBudgetLine.id > last_line_id,
+                    _f.lower(_f.trim(DBBudgetLine.category)).in_(
+                        list(_CLASSIFICATION_CATEGORIES)
+                    ),
+                    possible_reported_basis,
+                    not_quarantined,
+                )
+                .order_by(DBBudgetLine.id)
+                .limit(32)
+                .all()
+            )
+            if not rows:
+                break
+            candidates = [
+                row for row in rows
+                if not budget_evidence_is_unreported(
+                    row.quarantine_reason, row.basis, row.provenance, None
+                )
+            ]
+            uncached_source_ids = {
+                row.source_document_id for row in candidates
+                if row.source_document_id not in source_metadata
+            }
+            if uncached_source_ids:
+                source_metadata.update({
+                    doc_id: meta
+                    for doc_id, meta in db.query(
+                        DBSourceDocument.id, DBSourceDocument.meta
+                    ).filter(DBSourceDocument.id.in_(uncached_source_ids)).all()
+                })
+                for doc_id in uncached_source_ids:
+                    source_metadata.setdefault(doc_id, None)
+            for row in candidates:
+                if not budget_evidence_is_unreported(
+                    row.quarantine_reason,
+                    row.basis,
+                    row.provenance,
+                    source_metadata[row.source_document_id],
+                ):
+                    return [period_id]
+            last_line_id = rows[-1].id
 
     row = (
         db.query(_FP.id)
