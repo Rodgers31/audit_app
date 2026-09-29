@@ -166,6 +166,55 @@ def _run(session, budget):
 
 
 class TestCountyIngest:
+    def test_eight_volume_backlog_advances_across_bounded_runs(self, harness, monkeypatch):
+        """The production-sized backlog must finish without retrying extraction.
+
+        The clock charges 100 synthetic seconds per new volume. A 240-second
+        start window therefore admits three volumes per run, then two on the
+        final catch-up run. This models the 29 September five-volume deferral.
+        """
+        from models import Extraction
+
+        documents = [
+            _vol(fy, kind, filename)
+            for fy, kind, filename in (
+                ("2024/2025", "executives", "COUNTY-EXECUTIVES-2024-2025.pdf"),
+                ("2024/2025", "assemblies", "COUNTY-ASSEMBLIES-2024-2025.pdf"),
+                ("2023/2024", "executives", "GREEN-BOOK-EXECUTIVES-2024.pdf"),
+                ("2023/2024", "assemblies", "GREEN-BOOK-ASSEMBLIES-2024.pdf"),
+                ("2022/2023", "executives", "COUNTY-EXECUTIVES-2022-2023.pdf"),
+                ("2022/2023", "assemblies", "COUNTY-ASSEMBLIES-2022-2023.pdf"),
+                ("2021/2022", "executives", "COUNTY-EXECUTIVES-2021-2022.pdf"),
+                ("2021/2022", "assemblies", "COUNTY-ASSEMBLIES-2021-2022.pdf"),
+            )
+        ]
+        discovery = od.CountyAuditDiscovery(
+            listing_fiscal_years=[
+                "2021/2022", "2022/2023", "2023/2024", "2024/2025"
+            ],
+            documents=documents,
+        )
+        monkeypatch.setattr(od, "discover_county_audit_documents", lambda client: discovery)
+
+        expected_processed = [3, 3, 2, 0]
+        expected_current = [0, 3, 6, 8]
+        expected_deferred = [5, 2, 0, 0]
+        for index in range(4):
+            result = _run(harness["session"], budget=240)
+            report = result.metadata["county_volumes"]
+            assert report["discovered"] == 8
+            assert len(report["processed"]) == expected_processed[index]
+            assert len(report["already_current"]) == expected_current[index]
+            assert len(report["deferred"]) == expected_deferred[index]
+            assert report["failed"] == report["partial"] == []
+            assert harness["session"].query(Extraction).filter_by(
+                extractor="oag_county_volume"
+            ).count() == sum(expected_processed[: index + 1])
+
+        assert [entry.split(":")[0] for entry in result.metadata["county_volumes"]["already_current"]] == [
+            f"{document.fiscal_year} {document.kind}" for document in documents
+        ]
+
     def test_registered_before_fetched_newest_first_and_deferral_recorded(self, harness):
         from models import SourceDocument
 
