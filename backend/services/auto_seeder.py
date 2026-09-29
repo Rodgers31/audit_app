@@ -13,7 +13,6 @@ from typing import Any, Dict, Optional
 from database import SessionLocal
 from models import (
     Country,
-    EconomicIndicator,
     Entity,
     EntityType,
 )
@@ -30,7 +29,6 @@ logger = logging.getLogger("auto_seeder")
 # Refresh schedule configuration (hours between refreshes)
 REFRESH_SCHEDULE = {
     "debt": 24,  # Daily - CBK updates monthly but we check daily
-    "economic": 168,  # Weekly - GDP/CPI updated quarterly/monthly
     "counties": 168,  # Weekly - County reference refresh
 }
 
@@ -88,16 +86,7 @@ KENYA_COUNTY_CODES = {
 
 
 class AutoSeeder:
-    """
-    Fully automated data seeder - NO HARDCODED DATA.
-
-    Features:
-    - Runs on application startup
-    - Periodic refresh based on source-specific intervals
-    - Uses LiveDataAggregator for all data
-    - Handles failures gracefully with retry logic
-    - Updates database without human intervention
-    """
+    """Schedule the web worker's lightweight reference refreshes."""
 
     # Domains seeded synchronously at boot via seed_all_domains().
     # Exposed as a class attribute so _initial_seed_and_loop can backfill
@@ -108,7 +97,6 @@ class AutoSeeder:
         "counties",
         "national_entity",
         "debt",
-        "economic",
     )
 
     def __init__(self):
@@ -135,8 +123,7 @@ class AutoSeeder:
             return
 
         self.is_running = True
-        logger.info("[AUTO-SEEDER] Starting Fully Automated Data Seeder")
-        logger.info("[AUTO-SEEDER] NO HARDCODED DATA - All data from live sources")
+        logger.info("[AUTO-SEEDER] Starting web reference refresh scheduler")
 
         # Run initial seed in background so it doesn't block uvicorn startup.
         # The server can start serving requests immediately using bootstrap data.
@@ -236,8 +223,8 @@ class AutoSeeder:
         self._fetch_stats["last_full_refresh"] = now.isoformat()
 
     async def seed_all_domains(self):
-        """Seed all data domains from live sources."""
-        logger.info("[AUTO-SEEDER] === FULL DATA REFRESH FROM LIVE SOURCES ===")
+        """Run the web worker's registered reference refreshes."""
+        logger.info("[AUTO-SEEDER] === WEB REFERENCE REFRESH ===")
 
         # Order matters: entities first, then data that references them.
         # Sourced from the class attribute so _initial_seed_and_loop and
@@ -255,19 +242,17 @@ class AutoSeeder:
             self._fetch_stats["total_fetches"] += 1
             await asyncio.sleep(2)  # Rate limiting
 
-        logger.info("[AUTO-SEEDER] === FULL DATA REFRESH COMPLETE ===")
+        logger.info("[AUTO-SEEDER] === WEB REFERENCE REFRESH COMPLETE ===")
         logger.info(f"[AUTO-SEEDER] Stats: {self._fetch_stats}")
 
     async def _seed_domain(self, domain: str):
-        """Seed a specific domain with fresh data from live sources."""
+        """Dispatch a web-owned reference domain or refuse an external one."""
         if domain == "counties":
             await self._seed_counties_live()
         elif domain == "national_entity":
             await self._ensure_national_entity()
         elif domain == "debt":
             await self._seed_debt_live()
-        elif domain == "economic":
-            await self._seed_economic_live()
         else:
             raise ValueError(f"{domain} is owned by the dedicated seeding runner")
 
@@ -425,137 +410,8 @@ class AutoSeeder:
         raise ValueError("population is owned by the dedicated seeding runner")
 
     async def _seed_economic_live(self):
-        """
-        Seed economic indicators from KNBS live sources.
-
-        NO HARDCODED VALUES - all data from live fetch.
-        """
-        logger.info("[AUTO-SEEDER] Fetching economic indicators...")
-
-        try:
-            economic_data = await asyncio.wait_for(
-                self.aggregator.fetch_all_economic_data(), timeout=30.0
-            )
-        except asyncio.TimeoutError:
-            logger.warning("[AUTO-SEEDER] Economic fetch timed out")
-            return
-        except Exception as e:
-            logger.warning(f"[AUTO-SEEDER] Economic fetch failed: {e}")
-            return
-
-        if not economic_data.get("fetch_success"):
-            logger.warning(
-                f"[AUTO-SEEDER] Live economic fetch failed: {economic_data.get('error', 'Unknown')}"
-            )
-            return
-
-        with SessionLocal() as db:
-            national = (
-                db.query(Entity).filter(Entity.type == EntityType.NATIONAL).first()
-            )
-
-            if not national:
-                logger.error("[AUTO-SEEDER] National entity not found")
-                return
-
-            indicators_created = 0
-            indicators_updated = 0
-            current_year = datetime.now().year
-
-            # GDP
-            if economic_data.get("gdp_kes"):
-                gdp_year = economic_data.get("gdp_year", current_year)
-                existing = (
-                    db.query(EconomicIndicator)
-                    .filter(
-                        EconomicIndicator.entity_id == national.id,
-                        EconomicIndicator.indicator_type == "gdp",
-                        EconomicIndicator.year == gdp_year,
-                    )
-                    .first()
-                )
-
-                if existing:
-                    existing.value = economic_data["gdp_kes"]
-                    indicators_updated += 1
-                else:
-                    db.add(
-                        EconomicIndicator(
-                            entity_id=national.id,
-                            indicator_type="gdp",
-                            year=gdp_year,
-                            value=economic_data["gdp_kes"],
-                            currency="KES",
-                            confidence=0.95,
-                        )
-                    )
-                    indicators_created += 1
-
-            # Inflation
-            if economic_data.get("inflation_rate"):
-                existing = (
-                    db.query(EconomicIndicator)
-                    .filter(
-                        EconomicIndicator.entity_id == national.id,
-                        EconomicIndicator.indicator_type == "inflation",
-                        EconomicIndicator.year == current_year,
-                    )
-                    .first()
-                )
-
-                if existing:
-                    existing.value = economic_data["inflation_rate"]
-                    indicators_updated += 1
-                else:
-                    db.add(
-                        EconomicIndicator(
-                            entity_id=national.id,
-                            indicator_type="inflation",
-                            year=current_year,
-                            value=economic_data["inflation_rate"],
-                            confidence=0.98,
-                        )
-                    )
-                    indicators_created += 1
-
-            # Other indicators from the list
-            for indicator in economic_data.get("indicators", []):
-                ind_type = indicator.get("indicator_type", "other")
-                ind_value = indicator.get("value")
-                ind_year = indicator.get("year", current_year)
-
-                if ind_value is None:
-                    continue
-
-                existing = (
-                    db.query(EconomicIndicator)
-                    .filter(
-                        EconomicIndicator.entity_id == national.id,
-                        EconomicIndicator.indicator_type == ind_type,
-                        EconomicIndicator.year == ind_year,
-                    )
-                    .first()
-                )
-
-                if existing:
-                    existing.value = ind_value
-                    indicators_updated += 1
-                else:
-                    db.add(
-                        EconomicIndicator(
-                            entity_id=national.id,
-                            indicator_type=ind_type,
-                            year=ind_year,
-                            value=ind_value,
-                            confidence=indicator.get("confidence", 0.9),
-                        )
-                    )
-                    indicators_created += 1
-
-            db.commit()
-            logger.info(
-                f"[AUTO-SEEDER] Economic: {indicators_created} created, {indicators_updated} updated"
-            )
+        """Refuse legacy direct calls before fetch or database access."""
+        raise ValueError("economic indicators are owned by the dedicated seeding runner")
 
     def get_status(self) -> Dict[str, Any]:
         """Get current status of the auto-seeder."""
@@ -571,6 +427,7 @@ class AutoSeeder:
                 "domains": [
                     "audits",
                     "counties_budget",
+                    "economic_indicators",
                     "pending_bills",
                     "stalled_projects",
                 ],

@@ -1,149 +1,22 @@
-"""
-Live Data Fetcher - Fetches real data from Kenya government sources.
+"""Legacy discovery helpers used by the web worker's county reference refresh.
 
-This module provides live data fetchers that replace hardcoded data.
-It integrates with the existing ETL infrastructure to get actual data
-from official government sources.
-
-Sources:
-- KNBS: Kenya National Bureau of Statistics - Economic indicators
-- Treasury: National Treasury - Budget allocations, debt bulletins
-- COB: Controller of Budget - County budget implementation
-
-DATA PRIORITY:
-1. Live scraping from government sites
-2. ETL pipeline cached data (from previous successful scrapes)
-3. Cached JSON files from manual data collection
-
-Population and debt ingestion are owned by dedicated seeding domains.
+Population, debt and economic indicators are owned by dedicated seeding domains.
 """
 
 import asyncio
 import logging
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 
 logger = logging.getLogger("live_data_fetcher")
 
-# Add project root to path for imports
-import sys
-
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(PROJECT_ROOT))
-
 
 class KNBSDataFetcher:
-    """
-    Fetches live data from Kenya National Bureau of Statistics.
-
-    Uses the existing KNBSExtractor and KNBSParser from the ETL infrastructure.
-    """
+    """County reference fetcher; population belongs to the census domain."""
 
     def __init__(self):
         self.base_url = "https://www.knbs.or.ke"
-        self._extractor = None
-        self._parser = None
-
-    def _get_extractor(self):
-        """Lazy load the KNBS extractor."""
-        if self._extractor is None:
-            try:
-                from extractors.government.knbs_extractor import KNBSExtractor
-
-                self._extractor = KNBSExtractor()
-            except ImportError as e:
-                logger.warning(f"[KNBS] Could not import KNBSExtractor: {e}")
-        return self._extractor
-
-    def _get_parser(self):
-        """Lazy load the KNBS parser."""
-        if self._parser is None:
-            try:
-                from etl.knbs_parser import KNBSParser
-
-                self._parser = KNBSParser()
-            except ImportError as e:
-                logger.warning(f"[KNBS] Could not import KNBSParser: {e}")
-        return self._parser
-
-    async def fetch_economic_indicators(self) -> Dict[str, Any]:
-        """
-        Fetch latest economic indicators from KNBS.
-
-        Returns:
-            Dict with GDP, inflation, and other economic data
-        """
-        logger.info("[KNBS] Fetching live economic indicators...")
-
-        result = {
-            "gdp_kes": None,
-            "gdp_usd": None,
-            "gdp_year": None,
-            "gdp_growth_rate": None,
-            "inflation_rate": None,
-            "inflation_period": None,
-            "unemployment_rate": None,
-            "indicators": [],
-            "source": "Kenya National Bureau of Statistics",
-            "fetched_at": datetime.now(timezone.utc).isoformat(),
-            "fetch_success": False,
-        }
-
-        extractor = self._get_extractor()
-        parser = self._get_parser()
-
-        if extractor:
-            try:
-                # discover_documents() is synchronous — run in thread
-                documents = await asyncio.to_thread(extractor.discover_documents)
-
-                # Look for economic survey, GDP reports, CPI
-                for doc in documents:
-                    title = doc.get("title", "").lower()
-                    doc_type = doc.get("type", "")
-
-                    if any(
-                        kw in title
-                        for kw in ["economic survey", "gdp", "cpi", "inflation"]
-                    ):
-                        logger.info(
-                            f"[KNBS] Found economic document: {doc.get('title')}"
-                        )
-
-                        if parser:
-                            parsed = await asyncio.to_thread(parser.parse_document, doc)
-                            if parsed:
-                                # Extract GDP data
-                                for gdp in parsed.get("gdp_data", []):
-                                    result["gdp_kes"] = gdp.get("gdp_value")
-                                    result["gdp_year"] = gdp.get("year")
-                                    result["gdp_growth_rate"] = gdp.get("growth_rate")
-
-                                # Extract other indicators
-                                for indicator in parsed.get("economic_indicators", []):
-                                    result["indicators"].append(indicator)
-                                    if indicator.get("indicator_type") == "inflation":
-                                        result["inflation_rate"] = indicator.get(
-                                            "value"
-                                        )
-                                        result["inflation_period"] = indicator.get(
-                                            "period"
-                                        )
-
-                if (
-                    result["gdp_kes"]
-                    or result["inflation_rate"]
-                    or result["indicators"]
-                ):
-                    result["fetch_success"] = True
-
-            except Exception as e:
-                logger.error(f"[KNBS] Error fetching economic indicators: {e}")
-                result["error"] = str(e)
-
-        return result
 
     async def fetch_county_data(self) -> List[Dict[str, Any]]:
         """
@@ -313,10 +186,6 @@ class LiveDataAggregator:
         self.knbs = KNBSDataFetcher()
         self.treasury = TreasuryDataFetcher()
         self.cob = COBDataFetcher()
-
-    async def fetch_all_economic_data(self) -> Dict[str, Any]:
-        """Fetch consolidated economic indicators."""
-        return await self.knbs.fetch_economic_indicators()
 
     async def fetch_all_county_data(self) -> Tuple[List[Dict], List[Dict]]:
         """
