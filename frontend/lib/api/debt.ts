@@ -254,11 +254,30 @@ export interface PendingBillsSummary {
   total_pending: number | null;
   national_total: number | null;
   county_total: number | null;
+  total_absent_reason?: string | null;
+  reported_county_sum?: number | null;
+  coverage?: {
+    national_components: number;
+    national_expected: number;
+    national_complete: boolean;
+    county_count: number;
+    county_expected: number;
+    county_complete: boolean;
+    missing_counties: string[];
+    qualified_counties: string[];
+  };
   record_count: number;
   /** ISO date both halves are stated at; null when they differ. */
   as_at?: string | null;
   national_as_at?: string | null;
   county_as_at?: string | null;
+}
+
+export interface PendingBillsSource {
+  side: 'national' | 'county';
+  title: string;
+  url: string | null;
+  as_at: string | null;
 }
 
 export interface PendingBillsResponse {
@@ -268,7 +287,8 @@ export interface PendingBillsResponse {
   pending_bills: PendingBillEntry[];
   summary: PendingBillsSummary;
   source: string;
-  source_url: string;
+  source_url: string | null;
+  sources?: PendingBillsSource[];
   currency: string;
   explanation: string;
   how_to_populate?: {
@@ -287,11 +307,14 @@ export const getPendingBills = async (signal?: AbortSignal): Promise<PendingBill
 // Enhanced pending bills summary (breakdown by type, aging, top counties, trend)
 export interface PendingBillsSummaryResponse {
   total_pending_amount: number | null;
+  total_absent_reason?: string | null;
+  reported_county_sum?: number | null;
+  coverage?: PendingBillsSummary['coverage'];
   breakdown_by_type: {
     type: string;
     amount: number;
     percentage: number;
-  }[];
+  }[] | Record<string, number>;
   top_counties_by_amount: {
     county_id: string;
     county_name: string;
@@ -304,7 +327,8 @@ export interface PendingBillsSummaryResponse {
     amount: number;
     percentage: number;
     count: number;
-  }[];
+  }[] | Record<string, number> | null;
+  aging_buckets_absent_reason?: string | null;
   trend: {
     year: string;
     total_amount: number;

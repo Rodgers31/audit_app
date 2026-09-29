@@ -185,13 +185,16 @@ export function agingDistributionSupport(
  * appear once the pending_bills seed lands", which reads as a delivery date
  * for a dataset nobody has committed to publishing.
  */
-export function agingUnsupportedNote(reason: AgingUnsupportedReason): string {
+export function agingUnsupportedNote(reason: AgingUnsupportedReason, hasPublishedTotal = true): string {
+  const totalNote = hasPublishedTotal
+    ? 'The total above is unaffected.'
+    : 'No combined total is published above.';
   switch (reason) {
     case 'no-data':
       return 'No aging breakdown has been published for these bills.';
     case 'not-measured':
-      return 'How long these bills have gone unpaid is not recorded in the source they come from, so no age breakdown is shown. The total above is unaffected.';
+      return `How long these bills have gone unpaid is not recorded in the source they come from, so no age breakdown is shown. ${totalNote}`;
     case 'single-bucket':
-      return 'The source reports every shilling in a single age band, which cannot be told apart from an unmeasured figure, so no age breakdown is shown. The total above is unaffected.';
+      return `The source reports every shilling in a single age band, which cannot be told apart from an unmeasured figure, so no age breakdown is shown. ${totalNote}`;
   }
 }

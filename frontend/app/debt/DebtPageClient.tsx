@@ -20,7 +20,7 @@ import {
 import { buildDebtServiceSeries, yearMissingRevenue } from '@/lib/debt/debtServiceSeries';
 import { useFiscalSummary } from '@/lib/react-query/useFiscal';
 import { apiClient } from '@/lib/api/axios';
-import type { NationalLoan } from '@/lib/api/debt';
+import type { NationalLoan, PendingBillsSource } from '@/lib/api/debt';
 import {
   computeRevenueAllocation,
   fiscalSourceLine,
@@ -97,6 +97,39 @@ function pct(val: number | null | undefined): string {
 
 function sourceText(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function sourceHref(value: string | null | undefined): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
+function pendingAmount(value: number | null | undefined): number | null {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
+}
+
+function sameNames(left: string[], right: string[]): boolean {
+  return left.length === right.length && left.every((name) => right.includes(name));
+}
+
+function PendingBillsSourceLine({ date, source }: { date: string | null; source?: PendingBillsSource }) {
+  const href = sourceHref(source?.url);
+  return (
+    <div className='mt-1 text-xs leading-relaxed text-neutral-muted break-words'>
+      {date ? `at ${formatAsAt(date, 'en')}` : 'Date unavailable'}
+      {' · '}
+      {href ? (
+        <a href={href} target='_blank' rel='noopener noreferrer' className='underline underline-offset-2 hover:text-gov-copper'>
+          {source?.title || 'Source document'}
+        </a>
+      ) : (source?.title || 'Source link unavailable')}
+    </div>
+  );
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -239,22 +272,21 @@ export default function NationalDebtPage() {
     refetch: refetchTimeline,
   } = useDebtTimeline({ enabled: backendReady });
   const { data: fiscalResp } = useFiscalSummary({ enabled: backendReady });
-  const { data: pendingBillsData } = usePendingBills({ enabled: backendReady });
+  const { data: pendingBillsData, isError: pendingBillsError } = usePendingBills({ enabled: backendReady });
   const { data: rawPendingBillsSummary } = usePendingBillsSummary({ enabled: backendReady });
 
   /* ── Normalize pending bills summary (API returns dicts) ── */
   const pendingBillsSummary = useMemo(() => {
     if (!rawPendingBillsSummary) return null;
     const raw = rawPendingBillsSummary as any;
-    // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- a pending-bills total of 0 is the aggregate of zero rows, and the panel below renders its own empty state
-    const totalPending = raw.total_pending_amount || 0;
+    const totalPending = raw.total_pending_amount;
 
     let breakdownByType = raw.breakdown_by_type;
     if (breakdownByType && !Array.isArray(breakdownByType)) {
       breakdownByType = Object.entries(breakdownByType).map(([type, amount]: [string, any]) => ({
         type,
         amount: Number(amount) || 0,
-        percentage: totalPending > 0 ? ((Number(amount) || 0) / totalPending) * 100 : 0,
+        percentage: totalPending != null && totalPending > 0 ? ((Number(amount) || 0) / totalPending) * 100 : 0,
       }));
     }
 
@@ -263,7 +295,8 @@ export default function NationalDebtPage() {
     // otherwise bypass it.
     const agingBuckets = normalizeAgingBuckets(raw.aging_buckets, totalPending);
 
-    const topCounties = (raw.top_counties_by_amount || []).map((c: any) => ({
+    const rawTopCounties = raw.top_counties_by_amount || [];
+    const topCounties = rawTopCounties.filter((c: any) => pendingAmount(c.amount) != null).map((c: any) => ({
       ...c,
       county_name: c.county_name || c.county || 'Unknown',
       county_id: c.county_id || c.entity_id || c.id,
@@ -274,6 +307,7 @@ export default function NationalDebtPage() {
       breakdown_by_type: breakdownByType || [],
       aging_buckets: agingBuckets,
       top_counties_by_amount: topCounties,
+      invalid_ranking_amounts: rawTopCounties.length - topCounties.length,
     };
   }, [rawPendingBillsSummary]);
 
@@ -408,16 +442,20 @@ export default function NationalDebtPage() {
   }, [timeline]);
 
   const pb = useMemo(() => {
-    if (!pendingBillsData || pendingBillsData.status === 'no_data') return null;
+    if (!pendingBillsData || pendingBillsData.status !== 'success') return null;
     const s = pendingBillsData.summary;
     return {
       total: s.total_pending,
       national: s.national_total,
       county: s.county_total,
+      totalAbsentReason: s.total_absent_reason,
+      reportedCountySum: s.reported_county_sum,
+      coverage: s.coverage,
       count: s.record_count,
       bills: pendingBillsData.pending_bills || [],
       source: pendingBillsData.source,
       sourceUrl: pendingBillsData.source_url,
+      sources: pendingBillsData.sources || [],
       // The day each half is a stock on. Since #238 they can differ by a
       // year — national from the BROP, counties from the CoB — and then the
       // API withholds the total, so the page says why.
@@ -973,14 +1011,25 @@ export default function NationalDebtPage() {
       )}
 
       {/* ═══════════ SECTION 7 — PENDING BILLS AGING ═══════════ */}
+      {(pendingBillsData?.status === 'no_data' || (!pendingBillsData && pendingBillsError) ||
+        (pendingBillsData && pendingBillsData.status !== 'success')) && (
+        <section className='rounded-2xl bg-white dark:bg-surface-base border border-neutral-border/40 shadow-surface p-5 sm:p-6'>
+          <h2 className='font-display text-2xl sm:text-3xl text-gov-dark dark:text-white flex items-center gap-2'>
+            <FileWarning className='text-gov-forest dark:text-emerald-100' size={24} />
+            Stalled payments
+            <InfoTip term='pending-bills' size={14} />
+          </h2>
+          <p className='mt-3 text-sm text-neutral-muted'>
+            {pendingBillsData?.status === 'no_data'
+              ? 'No pending-bills figure is published here. National, county and combined totals are unavailable.'
+              : 'Pending-bills information is temporarily unavailable. No total can be confirmed.'}
+          </p>
+        </section>
+      )}
       {pb && (() => {
         // No split without a total: the API withholds it unless national and
         // county are both published and stated at one date, and a half over
         // nothing is not a share.
-        const splitOf = (part: number | null) =>
-          pb.total != null && pb.total > 0 && part != null ? (part / pb.total) * 100 : 0;
-        const nationalPct = splitOf(pb.national);
-        const countyPct = splitOf(pb.county);
         const buckets = pendingBillsSummary?.aging_buckets || [];
         // Whether an aging distribution may be DRAWN at all. This used to draw
         // the chart unconditionally and append a caveat under it — a solid bar
@@ -989,6 +1038,38 @@ export default function NationalDebtPage() {
         // The same guard now runs on /counties/[id], so one rule governs both
         // surfaces. See lib/debt/pendingBillsAging.
         const agingSupport = agingDistributionSupport(buckets, pendingBillsSummary);
+        const nationalSource = pb.sources.find((source) => source.side === 'national');
+        const countySource = pb.sources.find((source) => source.side === 'county');
+        const qualifiedCount = pb.coverage?.qualified_counties.length ?? 0;
+        const rankingCoverage = pendingBillsSummary?.coverage;
+        const rankingCoverageAgrees = !!pb.coverage && !!rankingCoverage &&
+          pb.coverage.county_count === rankingCoverage.county_count &&
+          pb.coverage.county_expected === rankingCoverage.county_expected &&
+          pb.coverage.county_complete === rankingCoverage.county_complete &&
+          sameNames(pb.coverage.missing_counties, rankingCoverage.missing_counties) &&
+          sameNames(pb.coverage.qualified_counties, rankingCoverage.qualified_counties);
+        const sourceSummaryConflict = !!pendingBillsSummary && (
+          pendingBillsSummary.total_pending_amount !== pb.total ||
+          (!!pb.coverage && !!rankingCoverage && !rankingCoverageAgrees)
+        );
+        const national = pb.coverage?.national_complete === false ? null : pendingAmount(pb.national);
+        const county = pb.coverage?.county_complete === false ? null : pendingAmount(pb.county);
+        const reportedCountySum = pendingAmount(pb.reportedCountySum);
+        const publishedTotal = pendingAmount(pb.total);
+        const statedAtOneDate = !!pb.nationalAsAt && pb.nationalAsAt === pb.countyAsAt;
+        const total = !sourceSummaryConflict &&
+          pb.coverage?.national_complete === true && pb.coverage.county_complete === true &&
+          national != null && county != null && statedAtOneDate &&
+          sourceHref(nationalSource?.url) && sourceHref(countySource?.url) &&
+          publishedTotal != null && Math.abs(publishedTotal - national - county) <= 1
+            ? publishedTotal : null;
+        const splitOf = (part: number | null) =>
+          total != null && total > 0 && part != null ? (part / total) * 100 : 0;
+        const nationalPct = splitOf(national);
+        const countyPct = splitOf(county);
+        const rankingIsComplete = rankingCoverage?.county_complete === true &&
+          rankingCoverage.qualified_counties.length === 0 && rankingCoverageAgrees &&
+          pendingBillsSummary.invalid_ranking_amounts === 0;
         return (
           <motion.section
             initial={{ opacity: 0, y: 20 }}
@@ -1011,6 +1092,7 @@ export default function NationalDebtPage() {
               <div className='inline-flex rounded-lg bg-white dark:bg-surface-base border border-neutral-border/40 p-1 shadow-sm'>
                 <button
                   onClick={() => setPbView('national')}
+                  aria-pressed={pbView === 'national'}
                   className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
                     pbView === 'national' ? 'bg-gov-dark text-white' : 'text-gov-dark dark:text-white hover:bg-neutral-border/30'
                   }`}>
@@ -1018,6 +1100,7 @@ export default function NationalDebtPage() {
                 </button>
                 <button
                   onClick={() => setPbView('counties')}
+                  aria-pressed={pbView === 'counties'}
                   className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
                     pbView === 'counties' ? 'bg-gov-dark text-white' : 'text-gov-dark dark:text-white hover:bg-neutral-border/30'
                   }`}>
@@ -1034,25 +1117,41 @@ export default function NationalDebtPage() {
                   <div className='text-[11px] uppercase tracking-[0.2em] font-semibold text-gov-copper mb-2'>
                     Total money owed, unpaid
                   </div>
-                  <div className='text-4xl sm:text-5xl font-extrabold text-gov-dark dark:text-white tabular-nums tracking-tight leading-none'>
-                    {fmtKES(pb.total)}
+                  <div className='text-4xl sm:text-5xl font-extrabold text-gov-dark dark:text-white tabular-nums tracking-tight leading-tight break-words'>
+                    {fmtKES(total)}
                   </div>
-                  {pb.total == null && pb.national != null && pb.county != null && (
-                    <p className='mt-2 text-xs text-neutral-muted'>
-                      Not added up: the national figure
-                      {pb.nationalAsAt ? ` is at ${formatAsAt(pb.nationalAsAt, 'en')}` : ' states no date'} and the
-                      county figure
-                      {pb.countyAsAt ? ` at ${formatAsAt(pb.countyAsAt, 'en')}` : ' states no date'}.
+                  {total == null && (
+                    <p className='mt-2 text-xs leading-relaxed text-neutral-muted'>
+                      {sourceSummaryConflict ? (
+                        <>Combined total not published: the two pending-bills source summaries do not agree about the amount or coverage.</>
+                      ) : pb.totalAbsentReason === 'incomplete_county_publication' ? (
+                        <>
+                          Combined total not published: county amounts cover{' '}
+                          {pb.coverage ? `${pb.coverage.county_count} of ${pb.coverage.county_expected} counties` : 'an unconfirmed number of counties'}.
+                          {qualifiedCount > 0 && ` ${qualifiedCount} ${qualifiedCount === 1 ? 'county has' : 'counties have'} qualified reported amounts.`}
+                        </>
+                      ) : pb.totalAbsentReason === 'incomplete_national_publication' ? (
+                        <>Combined total not published: the national publication does not contain both required Treasury BROP components.
+                          {pb.coverage?.county_complete === false && ' County publication is also incomplete or qualified.'}</>
+                      ) : pb.totalAbsentReason === 'national_and_county_stated_at_different_dates' ? (
+                        <>
+                          Combined total not published: the national figure
+                          {pb.nationalAsAt ? ` is at ${formatAsAt(pb.nationalAsAt, 'en')}` : ' has no stated date'} and the county figure
+                          {pb.countyAsAt ? ` at ${formatAsAt(pb.countyAsAt, 'en')}` : ' has no stated date'}.
+                        </>
+                      ) : (
+                        <>Combined total not published: complete coverage and a shared reporting date have not been confirmed.</>
+                      )}
                     </p>
                   )}
                   <div className='mt-3 flex items-center gap-2 text-xs text-neutral-muted'>
                     <Users size={14} />
                     <span>
-                      Across{' '}
+                      From{' '}
                       <span className='font-bold text-gov-dark dark:text-white tabular-nums'>
                         {pb.count.toLocaleString()}
                       </span>{' '}
-                      ministries, agencies &amp; counties
+                      published national and county records
                     </span>
                   </div>
                 </div>
@@ -1062,21 +1161,21 @@ export default function NationalDebtPage() {
                   <div className='text-[11px] uppercase tracking-[0.2em] font-semibold text-neutral-muted mb-3'>
                     National vs. counties
                   </div>
-                  <div className='flex w-full h-10 rounded-lg overflow-hidden shadow-sm border border-neutral-border/30 mb-3'>
+                  {total != null && total > 0 && <div className='flex w-full h-10 rounded-lg overflow-hidden shadow-sm border border-neutral-border/30 mb-3'>
                     <div
                       className='bg-gov-copper flex items-center justify-center text-white text-xs font-bold'
                       style={{ width: `${nationalPct}%` }}
-                      title={`National: ${fmtKES(pb.national)} (${nationalPct.toFixed(0)}%)`}>
+                      title={`National: ${fmtKES(national)} (${nationalPct.toFixed(0)}%)`}>
                       {nationalPct > 15 ? `${nationalPct.toFixed(0)}%` : ''}
                     </div>
                     <div
                       className='bg-gov-gold flex items-center justify-center text-white text-xs font-bold'
                       style={{ width: `${countyPct}%` }}
-                      title={`Counties: ${fmtKES(pb.county)} (${countyPct.toFixed(0)}%)`}>
+                      title={`Counties: ${fmtKES(county)} (${countyPct.toFixed(0)}%)`}>
                       {countyPct > 15 ? `${countyPct.toFixed(0)}%` : ''}
                     </div>
-                  </div>
-                  <div className='grid grid-cols-2 gap-3'>
+                  </div>}
+                  <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-3'>
                     <div className='flex items-start gap-2.5'>
                       <span className='w-2.5 h-2.5 rounded-sm bg-gov-copper mt-1.5 flex-shrink-0' />
                       <div>
@@ -1084,13 +1183,9 @@ export default function NationalDebtPage() {
                           National
                         </div>
                         <div className='text-xl font-bold text-gov-dark dark:text-white tabular-nums'>
-                          {fmtKES(pb.national)}
+                          {fmtKES(national)}
                         </div>
-                        {pb.national != null && pb.nationalAsAt && (
-                          <div className='text-[11px] text-neutral-muted'>
-                            at {formatAsAt(pb.nationalAsAt, 'en')} · Treasury BROP
-                          </div>
-                        )}
+                        <PendingBillsSourceLine date={pb.nationalAsAt} source={nationalSource} />
                       </div>
                     </div>
                     <div className='flex items-start gap-2.5'>
@@ -1100,13 +1195,16 @@ export default function NationalDebtPage() {
                           Counties
                         </div>
                         <div className='text-xl font-bold text-gov-dark dark:text-white tabular-nums'>
-                          {fmtKES(pb.county)}
+                          {fmtKES(county)}
                         </div>
-                        {pb.county != null && pb.countyAsAt && (
-                          <div className='text-[11px] text-neutral-muted'>
-                            at {formatAsAt(pb.countyAsAt, 'en')} · Controller of Budget
+                        {county == null && reportedCountySum != null && (
+                          <div className='mt-2 text-xs leading-relaxed text-neutral-muted'>
+                            Reported county sum: <span className='font-semibold text-gov-dark dark:text-white tabular-nums'>{fmtKES(reportedCountySum)}</span>
+                            {' '}— {pb.coverage ? `${pb.coverage.county_count} of ${pb.coverage.county_expected} counties` : 'coverage unconfirmed'};
+                            {qualifiedCount > 0 ? ' includes qualified reported amounts.' : ' not a complete county total.'}
                           </div>
                         )}
+                        <PendingBillsSourceLine date={pb.countyAsAt} source={countySource} />
                       </div>
                     </div>
                   </div>
@@ -1190,7 +1288,7 @@ export default function NationalDebtPage() {
                   <AlertTriangle size={14} className='text-gov-gold flex-shrink-0 mt-0.5' />
                   <span>
                     <span className='font-semibold text-gov-dark dark:text-white'>Not published:</span>{' '}
-                    {agingUnsupportedNote(agingSupport.reason)}
+                    {agingUnsupportedNote(agingSupport.reason, total != null)}
                   </span>
                 </div>
               </div>
@@ -1199,8 +1297,17 @@ export default function NationalDebtPage() {
             {pbView === 'counties' && pendingBillsSummary?.top_counties_by_amount?.length > 0 && (
               <div className='rounded-2xl bg-white dark:bg-surface-base border border-neutral-border/40 shadow-surface p-5 sm:p-6'>
                 <h3 className='text-sm font-semibold text-gov-dark dark:text-white mb-4'>
-                  Top counties by stalled payments
+                  {rankingIsComplete ? 'Top counties by stalled payments' : 'Reported counties by stalled payments'}
                 </h3>
+                {!rankingIsComplete && (
+                  <p className='mb-4 text-xs leading-relaxed text-neutral-muted'>
+                    {!rankingCoverageAgrees
+                      ? 'Ranking includes counties with reported amounts; full coverage is unconfirmed because the source summaries do not agree.'
+                      : `Ranking covers ${rankingCoverage.county_count} of ${rankingCoverage.county_expected} counties with reported amounts.`}
+                    {rankingCoverageAgrees && rankingCoverage.qualified_counties.length > 0 &&
+                      ` Ranking includes ${rankingCoverage.qualified_counties.length} ${rankingCoverage.qualified_counties.length === 1 ? 'county' : 'counties'} with qualified reported amounts.`}
+                  </p>
+                )}
                 <div className='space-y-2.5'>
                   {pendingBillsSummary.top_counties_by_amount
                     .filter((c: any) => c.county_name !== 'National Government')
@@ -1216,10 +1323,10 @@ export default function NationalDebtPage() {
                           <span className='text-[11px] text-neutral-muted font-bold w-5 text-right tabular-nums'>
                             {i + 1}
                           </span>
-                          <span className='text-xs font-medium text-gov-dark dark:text-white w-32 truncate flex-shrink-0'>
+                          <span className='text-xs font-medium text-gov-dark dark:text-white w-24 sm:w-32 min-w-0 truncate flex-shrink-0' title={c.county_name}>
                             {c.county_name}
                           </span>
-                          <div className='flex-1 h-5 bg-neutral-border/20 rounded-md overflow-hidden'>
+                          <div className='flex-1 min-w-0 h-5 bg-neutral-border/20 rounded-md overflow-hidden'>
                             <motion.div
                               initial={{ width: 0 }}
                               whileInView={{ width: `${w}%` }}
@@ -1228,7 +1335,7 @@ export default function NationalDebtPage() {
                               className='h-full rounded-md bg-gradient-to-r from-gov-copper/80 to-gov-copper'
                             />
                           </div>
-                          <span className='text-xs font-bold text-gov-dark dark:text-white tabular-nums w-20 text-right'>
+                          <span className='text-xs font-bold text-gov-dark dark:text-white tabular-nums w-16 sm:w-20 flex-shrink-0 text-right'>
                             {fmtT(c.amount)}
                           </span>
                         </div>
