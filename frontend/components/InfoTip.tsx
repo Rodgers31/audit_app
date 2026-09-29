@@ -3,6 +3,8 @@
 import { Info } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { useLang } from '@/lib/i18n/LangProvider';
+import type { TranslationKey } from '@/lib/i18n/messages';
 
 /**
  * InfoTip — a small (i) icon that shows a plain-language explanation on hover/tap.
@@ -11,8 +13,8 @@ import { createPortal } from 'react-dom';
  *   <h3>Debt-to-GDP Ratio <InfoTip term="debt-to-gdp" /></h3>
  *   <th>Eligible <InfoTip term="eligible-bills" size={12} /></th>
  *
- * All explanations are co-located in GLOSSARY below so they stay consistent
- * across the app and are easy to update in one place.
+ * English-only explanations live in GLOSSARY. Translated explanations use
+ * keys from the shared language catalog.
  */
 
 const GLOSSARY: Record<string, { title: string; body: string }> = {
@@ -147,11 +149,6 @@ const GLOSSARY: Record<string, { title: string; body: string }> = {
     title: 'Disclaimer of Opinion',
     body: 'The worst outcome — the Auditor General couldn\'t even form an opinion because records were so poor or access was restricted. This is a major red flag for accountability.',
   },
-  'financial-health': {
-    title: 'Financial Health Score',
-    body: 'A site-made composite score (0–100) using available budget absorption, own-source revenue, pending bills, and the Auditor-General’s audit opinion. Grades run from A to C; at least two inputs are required. This is separate from the accountability score.',
-  },
-
   // ── Government structure ──────────────────────────────
   'mda': {
     title: 'MDA',
@@ -175,8 +172,15 @@ const GLOSSARY: Record<string, { title: string; body: string }> = {
   },
 };
 
+const TRANSLATED_GLOSSARY: Record<string, { title: TranslationKey; body: TranslationKey }> = {
+  'financial-health': {
+    title: 'county.healthmodal.title',
+    body: 'glossary.financial_health.body',
+  },
+};
+
 interface InfoTipProps {
-  /** Key from the GLOSSARY above */
+  /** Key from the English or translated glossary above */
   term: string;
   /** Icon size in pixels (default 14) */
   size?: number;
@@ -185,12 +189,16 @@ interface InfoTipProps {
 }
 
 export default function InfoTip({ term, size = 14, className = '' }: InfoTipProps) {
+  const { t } = useLang();
   const [open, setOpen] = useState(false);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const entry = GLOSSARY[term];
+  const translatedKeys = TRANSLATED_GLOSSARY[term];
+  const entry = translatedKeys
+    ? { title: t(translatedKeys.title), body: t(translatedKeys.body) }
+    : GLOSSARY[term];
 
   const clearClose = () => {
     if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; }
@@ -256,7 +264,9 @@ export default function InfoTip({ term, size = 14, className = '' }: InfoTipProp
       <button
         ref={btnRef}
         type='button'
-        aria-label={`What is ${entry.title}?`}
+        aria-label={translatedKeys
+          ? t('glossary.info_label').replace('{title}', entry.title)
+          : `What is ${entry.title}?`}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -293,4 +303,4 @@ export default function InfoTip({ term, size = 14, className = '' }: InfoTipProp
 }
 
 /** Re-export glossary keys for discoverability */
-export type GlossaryTerm = keyof typeof GLOSSARY;
+export type GlossaryTerm = keyof typeof GLOSSARY | keyof typeof TRANSLATED_GLOSSARY;

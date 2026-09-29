@@ -1310,6 +1310,14 @@ export const MESSAGES = {
   'county.sources.debt': { en: 'Debt', sw: 'Deni', plain: 'Debt' },
   'county.sources.population': { en: 'Population', sw: 'Idadi ya Watu', plain: 'People' },
 
+  // Contextual glossary help for the county financial-health score
+  'glossary.info_label': { en: 'What is {title}?', sw: '{title} ni nini?', plain: 'What does {title} mean?' },
+  'glossary.financial_health.body': {
+    en: 'A site-made composite score (0–100) using available budget absorption, own-source revenue, pending bills, and the Auditor-General’s audit opinion. When all four are available, the audit opinion carries the same weight as the other three inputs combined. At least two inputs are required for a grade, from A to C. This is separate from the accountability score.',
+    sw: 'Alama ya pamoja (0–100) iliyoundwa na tovuti kutokana na matumizi ya bajeti, mapato ya ndani, bili ambazo hazijalipwa, na maoni ya ukaguzi ya Mkaguzi Mkuu yanayopatikana. Vipengele vyote vinne vikipatikana, maoni ya ukaguzi yana uzito sawa na vipengele vingine vitatu kwa pamoja. Angalau vipengele viwili vinahitajika ili kutoa daraja la A hadi C. Alama hii ni tofauti na alama ya uwajibikaji.',
+    plain: 'This site gives each county a money-health score from 0 to 100 using available budget spending, local revenue, unpaid bills, and the Auditor-General’s audit opinion. When all four are available, the audit opinion counts as much as the other three together. We need at least two to give an A to C grade. This is separate from the accountability score.',
+  },
+
   // Health score modal
   'county.healthmodal.title': { en: 'Financial Health Score', sw: 'Alama ya Afya ya Kifedha', plain: 'Money Health Score' },
   'county.healthmodal.how_calc': { en: 'How It\u2019s Calculated', sw: 'Jinsi Inavyohesabiwa', plain: 'How it\u2019s figured out' },
