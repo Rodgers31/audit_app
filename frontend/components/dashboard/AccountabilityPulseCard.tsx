@@ -145,7 +145,13 @@ export default function AccountabilityPulseCard() {
               )}
               {hasAmountCoverage && stats.findings_without_amount > 0 && (
                 <p className='text-[11px] text-neutral-muted leading-snug'>
-                  {stats.findings_without_amount} {stats.findings_without_amount === 1 ? 'finding has' : 'findings have'} no recorded amount
+                  {stats.findings_without_amount} {stats.findings_without_amount === 1 ? 'finding lacks' : 'findings lack'} a usable numeric amount
+                </p>
+              )}
+              {hasAmountCoverage && typeof stats.findings_with_ambiguous_text_amount === 'number' &&
+                stats.findings_with_ambiguous_text_amount > 0 && (
+                <p className='text-[11px] text-neutral-muted leading-snug'>
+                  {stats.findings_with_ambiguous_text_amount} {stats.findings_with_ambiguous_text_amount === 1 ? 'finding has' : 'findings have'} amount text that needs source review
                 </p>
               )}
             </div>

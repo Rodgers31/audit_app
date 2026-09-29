@@ -4945,27 +4945,40 @@ async def get_budget_line_provenance(line_id: int):
 # ── Audit Statistics & Top-Level Routes ──────────────────────────────────
 
 
-def _plain_kes_amount_in_audit_text(finding_text: Optional[str]) -> Optional[Decimal]:
-    """Read only an unambiguous plain KES integer from legacy finding text.
+def _plain_kes_amount_in_audit_text(
+    finding_text: Optional[str],
+) -> Tuple[Optional[Decimal], bool]:
+    """Read a whole plain KES integer, or report ambiguous amount text.
 
-    Shorthand, decimal, malformed grouping and multiple KES figures need
-    source review; taking their integer prefix publishes the wrong amount.
+    A value is accepted only when the full plain integer ends the text. The
+    second result marks a mentioned figure needing source review, keeping it
+    distinct from a finding that states no amount at all.
     """
     if not finding_text:
-        return None
-    mentions = list(re.finditer(r"\bKES[ \t]+", finding_text))
-    if len(mentions) != 1:
-        return None
+        return None, False
+    mentions = list(re.finditer(r"\bKES(?P<gap>\s*)(?=\d)", finding_text, re.I))
+    if not mentions:
+        return None, False
+    if (
+        len(mentions) != 1
+        or mentions[0].group()[:3] != "KES"
+        or not re.fullmatch(r"[ \t]+", mentions[0].group("gap"))
+    ):
+        return None, True
     tail = finding_text[mentions[0].end():]
-    match = re.match(r"(?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)", tail)
+    # Consume the *whole* number-shaped span. A regex for only the allowed
+    # prefix would turn "1 200" into 1 and "50 M" into 50.
+    match = re.match(r"\d[\d,.\s\u200b]*", tail)
     if not match:
-        return None
-    suffix = tail[match.end():]
-    if suffix and (suffix[0].isalnum() or suffix[0] in ",."):
-        return None
-    if re.match(r"\s+(?:million|billion|thousand|trillion|mn|bn)\b", suffix, re.I):
-        return None
-    return Decimal(match.group().replace(",", ""))
+        return None, True
+    number_text = match.group().strip()
+    if not re.fullmatch(r"(?:[0-9]+|[0-9]{1,3}(?:,[0-9]{3})+)", number_text):
+        return None, True
+    # Any continuation can qualify the unit, as in "KES 50 in millions".
+    # Do not certify a numeric prefix without source review.
+    if tail[match.end():]:
+        return None, True
+    return Decimal(number_text.replace(",", "")), False
 
 
 @app.get("/api/v1/audits/statistics")
@@ -5035,7 +5048,9 @@ async def get_audit_statistics():
                     else:
                         amount_unavailable_reason = "invalid_stored_amount"
                 else:
-                    legacy_amount = _plain_kes_amount_in_audit_text(audit.finding_text)
+                    legacy_amount, ambiguous_text = _plain_kes_amount_in_audit_text(
+                        audit.finding_text
+                    )
                     if legacy_amount is not None:
                         try:
                             candidate = float(legacy_amount)
@@ -5045,6 +5060,8 @@ async def get_audit_statistics():
                             amount = candidate
                         else:
                             amount_unavailable_reason = "non_finite_text_amount"
+                    elif ambiguous_text:
+                        amount_unavailable_reason = "ambiguous_text_amount"
                 period_label = ""
                 if audit.period and hasattr(audit.period, "label"):
                     period_label = audit.period.label
@@ -5098,16 +5115,19 @@ async def get_audit_statistics():
             # Regex fallback only over rows where amount is NULL.
             fallback_amount = Decimal(0)
             fallback_count = 0
+            ambiguous_text_count = 0
             for (text_val,) in (
                 db.query(DBAudit.finding_text)
                 .filter(publishable_audit_criterion())
                 .filter(DBAudit.amount.is_(None))
                 .yield_per(500)
             ):
-                legacy_amount = _plain_kes_amount_in_audit_text(text_val)
+                legacy_amount, ambiguous_text = _plain_kes_amount_in_audit_text(text_val)
                 if legacy_amount is not None:
                     fallback_amount += legacy_amount
                     fallback_count += 1
+                elif ambiguous_text:
+                    ambiguous_text_count += 1
             findings_with_amount = structured_count + fallback_count
             total_amount = None
             total_amount_reason = None
@@ -5124,8 +5144,14 @@ async def get_audit_statistics():
                     total_amount_reason = "non_finite_total"
             else:
                 total_amount_reason = (
-                    "invalid_stored_amount" if invalid_count else "no_amounts_recorded"
+                    "invalid_stored_amount"
+                    if invalid_count
+                    else "ambiguous_text_amount"
+                    if ambiguous_text_count
+                    else "no_amounts_recorded"
                 )
+            # This is the number without a usable numeric amount; ambiguous
+            # KES text is a disclosed subset, not evidence that no sum was stated.
             findings_without_amount = total - findings_with_amount - invalid_count
 
             _withheld_stats = count_withheld_audits(db)
@@ -5179,6 +5205,7 @@ async def get_audit_statistics():
                 "total_amount_flagged_reason": total_amount_reason,
                 "findings_with_amount": findings_with_amount,
                 "findings_with_invalid_amount": invalid_count,
+                "findings_with_ambiguous_text_amount": ambiguous_text_count,
                 "findings_without_amount": findings_without_amount,
                 "by_severity": by_severity,
                 "top_flagged_counties": [

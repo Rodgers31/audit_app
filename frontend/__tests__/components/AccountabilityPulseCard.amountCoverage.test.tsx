@@ -26,6 +26,7 @@ const base = {
   total_amount_flagged_reason: null,
   findings_with_amount: 2,
   findings_with_invalid_amount: 1,
+  findings_with_ambiguous_text_amount: 0,
   findings_without_amount: 0,
 };
 
@@ -54,7 +55,19 @@ describe('audit statistics amount coverage', () => {
     render(<AccountabilityPulseCard />);
     expect(screen.getByText('KES 0')).toBeInTheDocument();
     expect(screen.getByText(/1 of 2 findings have a usable amount/)).toBeInTheDocument();
-    expect(screen.getByText(/1 finding has no recorded amount/)).toBeInTheDocument();
+    expect(screen.getByText(/1 finding lacks a usable numeric amount/)).toBeInTheDocument();
+  });
+
+  it('distinguishes ambiguous amount text from a finding with no figure', () => {
+    statistics = { ...base, total_findings: 1, by_severity: { warning: 1 },
+      total_amount_flagged: null, total_amount_flagged_reason: 'ambiguous_text_amount',
+      findings_with_amount: 0, findings_with_invalid_amount: 0,
+      findings_with_ambiguous_text_amount: 1, findings_without_amount: 1 };
+    render(<AccountabilityPulseCard />);
+    expect(screen.getByText('Amount total unavailable')).toBeInTheDocument();
+    expect(screen.getByText(/1 finding lacks a usable numeric amount/)).toBeInTheDocument();
+    expect(screen.getByText(/1 finding has amount text that needs source review/)).toBeInTheDocument();
+    expect(screen.queryByText(/no recorded amount/)).not.toBeInTheDocument();
   });
 
   it('withholds the figure when an older payload lacks coverage fields', () => {

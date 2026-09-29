@@ -151,7 +151,7 @@ def test_missing_amount_is_distinct_from_stored_zero(postgres_audits):
 
 def test_legacy_plain_kes_fallback_keeps_coverage_explicit(postgres_audits):
     add, response, _ = postgres_audits
-    add(None, text_value="Unsupported KES 1,200 on cited page")
+    add(None, text_value="Unsupported amount on cited page: KES 1,200")
     result = response()
     assert result.status_code == 200, result.text
     assert result.json()["total_amount_flagged"] == 1200
@@ -165,6 +165,8 @@ def test_recent_critical_does_not_invent_zero_for_absent_amount(postgres_audits)
     assert result.status_code == 200, result.text
     assert result.json()["recent_critical"][0]["amount"] is None
     assert result.json()["total_amount_flagged"] is None
+    assert result.json()["total_amount_flagged_reason"] == "no_amounts_recorded"
+    assert result.json()["findings_with_ambiguous_text_amount"] == 0
 
 
 def test_recent_critical_prefers_finite_stored_amount(postgres_audits):
@@ -188,20 +190,52 @@ def test_oversized_critical_legacy_amount_cannot_break_json(postgres_audits):
 
 @pytest.mark.parametrize("finding", [
     "Irregular procurement totalling KES 50M",
+    "Irregular procurement totalling KES 50 M",
+    "Irregular procurement totalling kes 50 M",
+    "Irregular procurement totalling Kes 50 M",
+    "Irregular procurement totalling KES 50 Mn",
+    "Irregular procurement totalling KES 50 B",
+    "Irregular procurement totalling KES 50 bln",
+    "Irregular procurement totalling KES 50 crore",
+    "Irregular procurement totalling KES 50 in millions",
+    "Irregular procurement totalling KES 50 in thousands",
     "Irregular procurement totalling KES 5 million",
     "Irregular procurement totalling KES 1,234.50",
     "Irregular procurement totalling KES 1,2,3",
+    "Irregular procurement totalling KES 1'200",
+    "Irregular procurement totalling KES 1_200",
+    "Irregular procurement totalling KES 1/200",
+    "Irregular procurement totalling KES 1 200",
+    "Irregular procurement totalling KES 1\u00a0200",
     "Irregular procurement totalling KES ١٢٣",
+    "Irregular procurement totalling KES 100 and KES 200",
+    "Irregular procurement totalling KES 1,200 on cited page",
 ])
 def test_legacy_text_does_not_turn_partial_or_scaled_figures_into_plain_kes(
     postgres_audits, finding
 ):
     add, response, _ = postgres_audits
-    add(None, text_value=finding)
+    add(None, text_value=finding, severity=Severity.CRITICAL)
     result = response()
     assert result.status_code == 200, result.text
     assert result.json()["total_amount_flagged"] is None
+    assert result.json()["total_amount_flagged_reason"] == "ambiguous_text_amount"
+    assert result.json()["findings_with_ambiguous_text_amount"] == 1
     assert result.json()["findings_without_amount"] == 1
+    assert result.json()["recent_critical"][0]["amount"] is None
+    assert result.json()["recent_critical"][0]["amount_unavailable_reason"] == "ambiguous_text_amount"
+
+
+def test_ambiguous_text_does_not_poison_a_finite_partial_sum(postgres_audits):
+    add, response, _ = postgres_audits
+    add(Decimal("5.25"))
+    add(None, text_value="Cited KES 50 M")
+    result = response()
+    assert result.status_code == 200, result.text
+    assert result.json()["total_amount_flagged"] == 5.25
+    assert result.json()["findings_with_amount"] == 1
+    assert result.json()["findings_without_amount"] == 1
+    assert result.json()["findings_with_ambiguous_text_amount"] == 1
 
 
 def test_amount_query_count_stays_bounded_as_findings_grow(postgres_audits):

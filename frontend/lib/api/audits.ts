@@ -129,9 +129,11 @@ export interface AuditStatistics {
   total_findings: number;
   counties_audited: number;
   total_amount_flagged: number | null;
-  total_amount_flagged_reason: 'no_amounts_recorded' | 'invalid_stored_amount' | 'non_finite_total' | null;
+  total_amount_flagged_reason: 'no_amounts_recorded' | 'ambiguous_text_amount' | 'invalid_stored_amount' | 'non_finite_total' | null;
   findings_with_amount: number;
   findings_with_invalid_amount: number;
+  /** Subset of findings_without_amount: KES text exists but cannot be safely parsed. */
+  findings_with_ambiguous_text_amount?: number;
   findings_without_amount: number;
   by_severity: Record<string, number>;
   top_flagged_counties: { county: string; critical_count: number }[];
@@ -141,7 +143,7 @@ export interface AuditStatistics {
     county: string;
     fiscal_year: string;
     amount: number | null;
-    amount_unavailable_reason: 'invalid_stored_amount' | 'non_finite_text_amount' | null;
+    amount_unavailable_reason: 'ambiguous_text_amount' | 'invalid_stored_amount' | 'non_finite_text_amount' | null;
   }[];
 }
 
