@@ -142,6 +142,41 @@ describe('debt page pending-bills disclosure (#321)', () => {
     expect(section).not.toHaveTextContent(/ranking covers 47 of 47/i);
   });
 
+  it('discloses disagreeing reported county sums for the same partial coverage', async () => {
+    await mount(pending, { ...summary, reported_county_sum: 281_000_000_000 });
+    const section = stalledPayments();
+    expect(section).toHaveTextContent('Reported county sum: KES 280.0B');
+    expect(section).toHaveTextContent(/source summaries do not agree/i);
+    fireEvent.click(within(section).getByRole('button', { name: 'Counties' }));
+    expect(within(section).getByRole('heading', { name: 'Reported counties by stalled payments' })).toBeInTheDocument();
+    expect(section).toHaveTextContent(/ranking includes counties with reported amounts; the source summaries do not agree about an amount/i);
+    expect(section).not.toHaveTextContent(/ranking covers 46 of 47 counties/i);
+  });
+
+  it('treats a published zero and an absent reported county sum as different', async () => {
+    await mount({ ...pending, summary: { ...pending.summary, reported_county_sum: 0 } },
+      { ...summary, reported_county_sum: null });
+    const section = stalledPayments();
+    expect(section).toHaveTextContent('Reported county sum: KES 0');
+    expect(section).toHaveTextContent(/source summaries do not agree/i);
+  });
+
+  it('withholds a complete hero total and ranking when reported county sums differ', async () => {
+    const complete = { ...coverage, county_count: 47, county_complete: true, missing_counties: [] };
+    await mount({ ...pending, summary: {
+      ...pending.summary, total_pending: 805_900_000_000,
+      county_total: 280_000_000_000, total_absent_reason: null,
+      coverage: complete, county_as_at: '2025-06-30',
+    } }, { ...summary, total_pending_amount: 805_900_000_000,
+      reported_county_sum: 281_000_000_000, coverage: complete });
+    const section = stalledPayments();
+    expect(section).not.toHaveTextContent('KES 805.9B');
+    expect(section).toHaveTextContent(/source summaries do not agree/i);
+    fireEvent.click(within(section).getByRole('button', { name: 'Counties' }));
+    expect(within(section).getByRole('heading', { name: 'Reported counties by stalled payments' })).toBeInTheDocument();
+    expect(section).toHaveTextContent(/source summaries do not agree/i);
+  });
+
   it('does not certify a full ranking when missing-county identities conflict', async () => {
     const complete = { ...coverage, county_count: 47, county_complete: true, missing_counties: [] };
     await mount({ ...pending, summary: {

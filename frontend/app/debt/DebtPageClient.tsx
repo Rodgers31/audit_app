@@ -1050,13 +1050,14 @@ export default function NationalDebtPage() {
           pb.coverage.county_complete === rankingCoverage.county_complete &&
           sameNames(pb.coverage.missing_counties, rankingCoverage.missing_counties) &&
           sameNames(pb.coverage.qualified_counties, rankingCoverage.qualified_counties);
+        const reportedCountySum = pendingAmount(pb.reportedCountySum);
         const sourceSummaryConflict = !!pendingBillsSummary && (
           pendingBillsSummary.total_pending_amount !== pb.total ||
+          pendingAmount(pendingBillsSummary.reported_county_sum) !== reportedCountySum ||
           (!!pb.coverage && !!rankingCoverage && !rankingCoverageAgrees)
         );
         const national = pb.coverage?.national_complete === false ? null : pendingAmount(pb.national);
         const county = pb.coverage?.county_complete === false ? null : pendingAmount(pb.county);
-        const reportedCountySum = pendingAmount(pb.reportedCountySum);
         const publishedTotal = pendingAmount(pb.total);
         const statedAtOneDate = !!pb.nationalAsAt && pb.nationalAsAt === pb.countyAsAt;
         const total = !sourceSummaryConflict &&
@@ -1071,6 +1072,7 @@ export default function NationalDebtPage() {
         const countyPct = splitOf(county);
         const rankingIsComplete = rankingCoverage?.county_complete === true &&
           rankingCoverage.qualified_counties.length === 0 && rankingCoverageAgrees &&
+          !sourceSummaryConflict &&
           pendingBillsSummary.invalid_ranking_amounts === 0;
         return (
           <motion.section
@@ -1125,7 +1127,7 @@ export default function NationalDebtPage() {
                   {total == null && (
                     <p className='mt-2 text-xs leading-relaxed text-neutral-muted'>
                       {sourceSummaryConflict ? (
-                        <>Combined total not published: the two pending-bills source summaries do not agree about the amount or coverage.</>
+                        <>Combined total unavailable here: the two pending-bills source summaries do not agree about an amount or coverage.</>
                       ) : pb.totalAbsentReason === 'incomplete_county_publication' ? (
                         <>
                           Combined total not published: county amounts cover{' '}
@@ -1305,6 +1307,8 @@ export default function NationalDebtPage() {
                   <p className='mb-4 text-xs leading-relaxed text-neutral-muted'>
                     {!rankingCoverageAgrees
                       ? 'Ranking includes counties with reported amounts; full coverage is unconfirmed because the source summaries do not agree.'
+                      : sourceSummaryConflict
+                      ? 'Ranking includes counties with reported amounts; the source summaries do not agree about an amount.'
                       : `Ranking covers ${rankingCoverage.county_count} of ${rankingCoverage.county_expected} counties with reported amounts.`}
                     {rankingCoverageAgrees && rankingCoverage.qualified_counties.length > 0 &&
                       ` Ranking includes ${rankingCoverage.qualified_counties.length} ${rankingCoverage.qualified_counties.length === 1 ? 'county' : 'counties'} with qualified reported amounts.`}
