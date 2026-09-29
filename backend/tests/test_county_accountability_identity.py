@@ -169,3 +169,59 @@ def test_foreign_peer_cannot_change_kenyan_region_average(
     response = client.get("/api/v1/counties/047/accountability")
     assert response.status_code == 200, response.text
     assert response.json()["peer_comparison"]["region_avg_flagged_amount"] == 2
+
+
+def test_county_audits_never_publish_foreign_namesake_without_kenyan_entity(
+    client, db_session, seed_country, monkeypatch
+):
+    async def absent(_county_name):
+        return None
+
+    for method in (
+        "get_county_data",
+        "get_county_audit_queries",
+        "get_missing_funds",
+        "get_cob_implementation",
+    ):
+        monkeypatch.setattr(f"main.InternalAPIClient.{method}", absent)
+
+    tanzania = Country(
+        iso_code="TZA",
+        name="Tanzania",
+        currency="TZS",
+        timezone="Africa/Dar_es_Salaam",
+        default_locale="sw_TZ",
+    )
+    db_session.add(tanzania)
+    db_session.flush()
+    foreign = _county(db_session, tanzania, "Nairobi", "foreign-nairobi-audits")
+    _finding(db_session, tanzania, foreign, "FY2024/25 foreign Nairobi")
+
+    response = client.get("/api/v1/counties/001/audits")
+    assert response.status_code == 404, response.text
+
+
+def test_county_audits_choose_kenyan_entity_for_each_supported_identifier(
+    client, db_session, seed_country
+):
+    tanzania = Country(
+        iso_code="TZA",
+        name="Tanzania",
+        currency="TZS",
+        timezone="Africa/Dar_es_Salaam",
+        default_locale="sw_TZ",
+    )
+    db_session.add(tanzania)
+    db_session.flush()
+    foreign = _county(db_session, tanzania, "Nairobi", "foreign-nairobi-audits")
+    _finding(db_session, tanzania, foreign, "FY2024/25 foreign Nairobi")
+    kenya = _county(db_session, seed_country, "Nairobi", "kenya-nairobi-audits")
+    _finding(db_session, seed_country, kenya, "FY2024/25 Kenyan Nairobi")
+
+    for identifier in ("001", "code:047", kenya.slug, str(kenya.id)):
+        response = client.get(f"/api/v1/counties/{identifier}/audits")
+        assert response.status_code == 200, response.text
+        payload = response.json()
+        assert payload["data_source"] == "database"
+        assert payload["summary"]["queries_count"] == 1
+        assert payload["queries"][0]["finding"] == "KEN finding"

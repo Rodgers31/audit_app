@@ -5426,8 +5426,7 @@ async def _federal_audits_payload():
                     amount_val = float(audit.amount)
                     if not math.isfinite(amount_val):
                         raise ValueError(f"Non-finite stored amount on federal audit {audit.id}")
-                    if not amount_str:
-                        amount_str = f"KES {amount_val:,.0f}"
+                    amount_str = f"KES {audit.amount:,.2f}".rstrip("0").rstrip(".")
 
                 if amount_val is not None:
                     total_amount += amount_val
@@ -5723,20 +5722,10 @@ async def get_county_audits(county_id: str):
     if DATABASE_AVAILABLE:
         try:
             with next(get_db()) as db:
-                # Find the entity
-                entity = (
-                    db.query(DBEntity)
-                    .filter(DBEntity.type == EntityType.COUNTY)
-                    .filter(DBEntity.canonical_name == f"{county_name} County")
-                    .first()
-                )
-
-                if not entity:
-                    # Try alternate slug lookup
-                    slug = county_name.lower().replace(" ", "-") + "-county"
-                    entity = db.query(DBEntity).filter(DBEntity.slug == slug).first()
+                entity = _resolve_county_entity(db, county_id)
 
                 if entity:
+                    county_name = entity.canonical_name.removesuffix(" County")
                     # Query audits from database
                     audits = (
                         db.query(DBAudit)

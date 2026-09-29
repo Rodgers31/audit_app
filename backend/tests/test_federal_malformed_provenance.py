@@ -25,6 +25,67 @@ def test_oversized_stored_numeric_string_is_invalid_without_crashing():
     )
 
 
+def test_stored_amount_controls_display_when_legacy_metadata_disagrees(
+    client, db_session, seed_country, seed_fiscal_period
+):
+    ministry = Entity(
+        country_id=seed_country.id,
+        type=EntityType.MINISTRY,
+        canonical_name="Stored Amount Ministry",
+        slug="stored-amount-ministry",
+    )
+    linked = SourceDocument(
+        country_id=seed_country.id,
+        publisher="Synthetic OAG",
+        title="Linked report",
+        url="https://example.invalid/linked.pdf#page=99",
+        fetch_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
+        doc_type=DocumentType.AUDIT,
+        status=DocumentStatus.AVAILABLE,
+    )
+    db_session.add_all([ministry, linked])
+    db_session.flush()
+    for label, stored_amount, metadata_amount, page in (
+        ("stored zero", 0, "KES 123", "p. 7"),
+        ("stored positive", 5.25, "KES 999", "p. 8"),
+    ):
+        db_session.add(
+            Audit(
+                entity_id=ministry.id,
+                period_id=seed_fiscal_period.id,
+                source_document_id=linked.id,
+                finding_text=label,
+                severity=Severity.WARNING,
+                page_ref=page,
+                provenance=[
+                    {
+                        "amount_involved": metadata_amount,
+                        "source_url": "https://example.invalid/wrong.pdf",
+                    }
+                ],
+                amount=stored_amount,
+            )
+        )
+    db_session.commit()
+
+    response = client.get("/api/v1/audits/federal")
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    rows = {row["finding"]: row for row in payload["findings"]}
+    assert payload["total_amount_in_findings"] == 5.25
+    assert payload["findings_with_amount"] == 2
+    assert rows["stored zero"]["amount_numeric"] == 0
+    assert rows["stored zero"]["amount_involved"] == "KES 0"
+    assert rows["stored positive"]["amount_numeric"] == 5.25
+    assert rows["stored positive"]["amount_involved"] == "KES 5.25"
+    for row, page in ((rows["stored zero"], 7), (rows["stored positive"], 8)):
+        assert row["provenance_metadata_status"] == "valid"
+        assert row["source_url"] == "https://example.invalid/linked.pdf"
+        assert (
+            row["source_page_url"] == f"https://example.invalid/linked.pdf#page={page}"
+        )
+
+
 def test_federal_endpoint_handles_malformed_provenance_with_valid_rows(
     client,
     db_session,
