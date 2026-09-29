@@ -619,8 +619,6 @@ def _load_national_gdp_series() -> "list[tuple[int, int]]":
 # Source: CBK Public Debt Statistical Bulletin, April 2025.
 
 
-#: Indicator keys a live seeding domain owns. Bootstrap must not write them:
-#: see ``_seed_economic_indicators``.
 _LIVE_OWNED_INDICATORS = ("inflation_rate", "unemployment_rate")
 
 
@@ -639,13 +637,12 @@ def _seed_economic_indicators(
     gives Dec 2024 as 12-month 2.99, annual average 4.50). The update path
     also changed ``value`` without ``meta``, leaving a bootstrap number under
     World Bank provenance (issue #232). A live domain owns those keys now;
-    bootstrap writes none of them and removes the rows it created before.
+    bootstrap writes none of them. Legacy rows must remain until the live
+    writer can replace a matching year-end row or retire an off-cycle row
+    with source coverage and an identity receipt. Startup has neither.
     """
-    # Rows this function CREATED carry meta.bootstrap. A row it merely
-    # overwrote got its meta from the live writer, so it has no flag and the
-    # next nightly restores the live value — it is not deleted here.
-    stale = [
-        row
+    legacy = [
+        row.id
         for row in session.query(EconomicIndicator)
         .filter(
             EconomicIndicator.indicator_type.in_(_LIVE_OWNED_INDICATORS),
@@ -654,13 +651,12 @@ def _seed_economic_indicators(
         .all()
         if isinstance(row.meta, dict) and row.meta.get("bootstrap") is True
     ]
-    for row in stale:
-        session.delete(row)
-    if stale:
-        logger.info(
-            "Deleted %d bootstrap economic-indicator rows now owned by the "
-            "economic_indicators domain",
-            len(stale),
+    if legacy:
+        logger.warning(
+            "Preserved %d legacy bootstrap economic-indicator rows pending "
+            "live source coverage; row IDs: %s",
+            len(legacy),
+            sorted(legacy)[:10],
         )
 
     # Source: KNBS Consumer Price Index releases
