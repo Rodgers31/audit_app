@@ -134,6 +134,100 @@ class TestIngestionFreshness:
             check_ingestion_freshness(db_session, now=NOW), "national_budget ingestion"
         ).level == OK
 
+    @pytest.mark.parametrize("status", ["failed", "partial", "deferred"])
+    def test_audits_national_discovery_gap_is_visible_despite_live_documents(
+        self, db_session, status
+    ):
+        job = self._job("audits", 1, "live")
+        job.meta["oag_national_discovery"] = {"status": status}
+        db_session.add(job)
+        db_session.commit()
+
+        finding = _finding(
+            check_ingestion_freshness(db_session, now=NOW, domains=["audits"]),
+            "audits ingestion",
+        )
+        assert finding.level == WARN
+        assert "national discovery" in finding.message.lower()
+        assert status in finding.message
+
+    def test_successful_empty_national_discovery_retains_live_freshness(self, db_session):
+        job = self._job("audits", 1, "live")
+        job.meta["oag_national_discovery"] = {
+            "status": "completed", "candidate_count": 0,
+            "attempted_queries": 3, "successful_queries": 3, "failures": [],
+        }
+        db_session.add(job)
+        db_session.commit()
+
+        assert _finding(
+            check_ingestion_freshness(db_session, now=NOW, domains=["audits"]),
+            "audits ingestion",
+        ).level == OK
+
+    @pytest.mark.parametrize("with_errors", [False, True])
+    def test_missing_national_discovery_receipt_cannot_certify_live_audits(
+        self, db_session, with_errors
+    ):
+        job = self._job("audits", 1, "live")
+        if with_errors:
+            job.status = IngestionStatus.COMPLETED_WITH_ERRORS
+            job.errors = ["OAG national discovery: media search failed"]
+        db_session.add(job)
+        db_session.commit()
+
+        finding = _finding(
+            check_ingestion_freshness(db_session, now=NOW, domains=["audits"]),
+            "audits ingestion",
+        )
+        assert finding.level == WARN
+        assert "national discovery" in finding.message.lower()
+
+    def test_missing_tied_national_receipt_cannot_inherit_completed_status(
+        self, db_session
+    ):
+        complete = self._job("audits", 1, "live")
+        complete.meta["oag_national_discovery"] = {
+            "status": "completed", "candidate_count": 0,
+            "attempted_queries": 3, "successful_queries": 3, "failures": [],
+        }
+        missing = self._job("audits", 1, "live")
+        db_session.add_all([complete, missing])
+        db_session.commit()
+
+        finding = _finding(
+            check_ingestion_freshness(db_session, now=NOW, domains=["audits"]),
+            "audits ingestion",
+        )
+        assert finding.level == WARN
+        assert "national discovery" in finding.message.lower()
+
+    @pytest.mark.parametrize("inconsistency", ["zero_attempts", "failed_query"])
+    def test_inconsistent_completed_discovery_receipt_is_not_fresh(
+        self, db_session, inconsistency
+    ):
+        job = self._job("audits", 1, "live")
+        job.meta["oag_national_discovery"] = {
+            "status": "completed", "attempted_queries": 3,
+            "successful_queries": 3, "candidate_count": 0, "failures": [],
+        }
+        if inconsistency == "zero_attempts":
+            job.meta["oag_national_discovery"]["attempted_queries"] = 0
+            job.meta["oag_national_discovery"]["successful_queries"] = 0
+        else:
+            job.meta["oag_national_discovery"]["failures"] = ["media search failed"]
+            job.status = IngestionStatus.COMPLETED_WITH_ERRORS
+            job.errors = ["OAG national discovery: media search failed"]
+        db_session.add(job)
+        db_session.commit()
+
+        finding = _finding(
+            check_ingestion_freshness(db_session, now=NOW, domains=["audits"]),
+            "audits ingestion",
+        )
+        assert finding.level == WARN
+        assert "inconsistent" in finding.message
+
     def test_unrecorded_provenance_is_not_reported_healthy(self, db_session):
         """Absence of evidence must never render as OK — that is the exact
         false-green this module exists to eliminate."""

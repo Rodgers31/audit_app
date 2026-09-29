@@ -142,7 +142,7 @@ def harness(db_session, monkeypatch, tmp_path):
 
     monkeypatch.setattr(audits_domain, "create_http_client", fake_client)
     monkeypatch.setattr(audits_domain, "time", clock)
-    monkeypatch.setattr(audits_domain.fetcher, "_discover_audit_pdfs_via_wp_api", lambda c: [])
+    monkeypatch.setattr(audits_domain.fetcher, "_discover_audit_pdfs_via_wp_api", lambda c, **kw: [])
     monkeypatch.setattr(od, "discover_county_audit_documents", lambda client, **k: DISCOVERY)
     monkeypatch.setattr("seeding.fetch_documents.fetch_document", fake_fetch)
     monkeypatch.setattr(
@@ -290,7 +290,7 @@ class TestNationalCandidates:
                 session.flush()
             return original_fetch(session, client, settings, url=url, **kwargs)
 
-        monkeypatch.setattr(audits_domain.fetcher, "_discover_audit_pdfs_via_wp_api", lambda c: [NATIONAL])
+        monkeypatch.setattr(audits_domain.fetcher, "_discover_audit_pdfs_via_wp_api", lambda c, **kw: [NATIONAL])
         monkeypatch.setattr(fetch_documents, "fetch_document", fetch_new)
         monkeypatch.setattr(
             "seeding.extractors.get_parser",
@@ -301,6 +301,7 @@ class TestNationalCandidates:
         assert harness["fetched"][-1] == NATIONAL
         assert result.metadata["deferred_discovery"] == []
         assert result.metadata["deferred_documents"] == []
+        assert result.metadata["oag_national_discovery"]["status"] == "completed"
 
     def test_malformed_national_metadata_is_not_replaced_by_retry_stamp(self, harness):
         from models import DocumentStatus, DocumentType, SourceDocument
@@ -332,7 +333,7 @@ class TestNationalCandidates:
         summary = f"{UP}/2026/05/National-Government-Summary-Report.pdf"
         monkeypatch.setattr(
             audits_domain.fetcher, "_discover_audit_pdfs_via_wp_api",
-            lambda c: [popular, summary, *urls, urls[0]],
+            lambda c, **kw: [popular, summary, *urls, urls[0]],
         )
         original_fetch = fetch_documents.fetch_document
         country_id = session.query(SourceDocument).first().country_id
@@ -375,7 +376,7 @@ class TestNationalCandidates:
         urls = [f"{UP}/2026/05/National-Government-Blue-Book-{n}.pdf" for n in range(5)]
         monkeypatch.setattr(
             audits_domain.fetcher, "_discover_audit_pdfs_via_wp_api",
-            lambda c: [f"{UP}/2026/05/National-Government-Popular-Report.pdf", *urls, urls[0]],
+            lambda c, **kw: [f"{UP}/2026/05/National-Government-Popular-Report.pdf", *urls, urls[0]],
         )
         session = harness["session"]
         before = session.query(SourceDocument).count()
@@ -418,6 +419,172 @@ class TestNationalCandidates:
 
 
 NATIONAL = f"{UP}/2026/05/AUDITOR-GENERALS-REPORT-ON-NATIONAL-GOVERNMENT-2024-2025.pdf"
+
+
+def test_national_discovery_failure_survives_successful_known_document(
+    harness, monkeypatch
+):
+    from models import DocumentStatus, DocumentType, SourceDocument
+    from seeding import freshness
+
+    session = harness["session"]
+    _run(session, budget=10_000)  # Bank current volumes before the national pass.
+    harness["fetched"].clear()
+    session.add(SourceDocument(
+        country_id=session.query(SourceDocument).first().country_id,
+        publisher="Office of the Auditor-General", title="blue-book.pdf",
+        url=NATIONAL, fetch_date=datetime(2026, 5, 1),
+        doc_type=DocumentType.AUDIT, status=DocumentStatus.AVAILABLE,
+    ))
+    session.commit()
+    county_parser = __import__(
+        "seeding.extractors", fromlist=["get_parser"]
+    ).get_parser("oag_county_audit")
+    monkeypatch.setattr(
+        "seeding.extractors.get_parser",
+        lambda pid: (lambda s, d, st: {"created": 0, "skipped_unchanged": True})
+        if pid == "oag_blue_book" else county_parser,
+    )
+
+    def failed_discovery(_client, **_kw):
+        raise RuntimeError("synthetic OAG media outage")
+
+    monkeypatch.setattr(
+        audits_domain.fetcher, "_discover_audit_pdfs_via_wp_api", failed_discovery
+    )
+    freshness.reset("audits")
+    result = _run(session, budget=10_000)
+
+    assert NATIONAL in harness["fetched"]
+    assert any(
+        doc.get("url") == NATIONAL and doc.get("extractions")
+        for doc in result.metadata["documents"]
+    )
+    assert any(
+        "national discovery" in error.lower()
+        and "synthetic OAG media outage" in error
+        for error in result.errors
+    )
+    assert result.metadata["oag_national_discovery"]["status"] == "failed"
+    assert freshness.get("audits")["mode"] == "live"
+
+
+@pytest.mark.parametrize(
+    "failed_terms, expected_status, expected_candidates",
+    [
+        (set(), "completed", 0),
+        ({"county", "audit report", "financial statements"}, "failed", 0),
+        ({"county"}, "partial", 1),
+    ],
+)
+def test_national_media_search_distinguishes_empty_failure_and_partial(
+    failed_terms, expected_status, expected_candidates
+):
+    from seeding.source_registry import SOURCE_REGISTRY
+
+    class Response:
+        def __init__(self, items):
+            self.items = items
+
+        def json(self):
+            return self.items
+
+    class Client:
+        def __init__(self):
+            self.calls = []
+
+        def get(self, url, *, raise_for_status):
+            self.calls.append(url)
+            term = next(
+                t for t in ("county", "audit report", "financial statements")
+                if f"search={t.replace(' ', '+')}" in url
+            )
+            if term in failed_terms:
+                raise RuntimeError(f"{term} unavailable")
+            items = ([{"mime_type": "application/pdf", "source_url": NATIONAL}]
+                     if failed_terms and term == "audit report" else [])
+            return Response(items)
+
+    client = Client()
+    urls, report = audits_domain._discovered_urls(
+        client, SOURCE_REGISTRY["oag_national_audits"]
+    )
+    assert len(client.calls) == 3
+    assert len(urls) == expected_candidates
+    assert report["status"] == expected_status
+    assert report["candidate_count"] == expected_candidates
+    assert len(report["failures"]) == len(failed_terms)
+
+
+def test_malformed_media_items_do_not_certify_empty_discovery():
+    from seeding.source_registry import SOURCE_REGISTRY
+
+    class Response:
+        def json(self):
+            return ["upstream error"]
+
+    class Client:
+        def get(self, url, *, raise_for_status):
+            return Response()
+
+    urls, report = audits_domain._discovered_urls(
+        Client(), SOURCE_REGISTRY["oag_national_audits"]
+    )
+    assert urls == []
+    assert report["status"] == "failed"
+    assert report["successful_queries"] == 0
+    assert len(report["failures"]) == 3
+
+
+def test_malformed_media_url_does_not_discard_earlier_valid_candidate():
+    from seeding.source_registry import SOURCE_REGISTRY
+
+    class Response:
+        def __init__(self, items):
+            self.items = items
+
+        def json(self):
+            return self.items
+
+    class Client:
+        def __init__(self):
+            self.calls = 0
+
+        def get(self, url, *, raise_for_status):
+            items = (
+                [{"mime_type": "application/pdf", "source_url": NATIONAL}]
+                if self.calls == 0 else
+                [{"mime_type": "application/pdf", "source_url": 42}]
+                if self.calls == 1 else []
+            )
+            self.calls += 1
+            return Response(items)
+
+    urls, report = audits_domain._discovered_urls(
+        Client(), SOURCE_REGISTRY["oag_national_audits"]
+    )
+    assert urls == [NATIONAL]
+    assert report["status"] == "partial"
+    assert report["candidate_count"] == 1
+
+
+def test_partial_national_discovery_is_an_error_even_with_successful_searches(
+    harness, monkeypatch
+):
+    def partly_failed(_client, *, diagnostics):
+        diagnostics.update(attempted_queries=3, successful_queries=2)
+        diagnostics["failures"].append("county: RuntimeError: search unavailable")
+        return []
+
+    monkeypatch.setattr(
+        audits_domain.fetcher, "_discover_audit_pdfs_via_wp_api", partly_failed
+    )
+    result = _run(harness["session"], budget=10_000)
+    assert result.metadata["oag_national_discovery"]["status"] == "partial"
+    assert result.metadata["oag_national_discovery"]["successful_queries"] == 2
+    assert any("OAG national discovery: county" in e for e in result.errors)
+
+
 LEGACY_EXECUTIVES = f"{UP}/2023/02/REPORT-OF-THE-AUDITOR-GENERAL-FOR-THE-COUNTY-GOVERNMENTS-FOR-THE-YEAR-2020-2021-_VOLUME-I-COUNTY-EXECUTIVES.pdf"
 LEGACY_ASSEMBLIES = f"{UP}/2023/02/REPORT-OF-THE-AUDITOR-GENERAL-FOR-THE-COUNTY-GOVERNMENTS-FOR-THE-YEAR-2020-2021-_VOLUME-II-COUNTY-ASSEMBLIES.pdf"
 
@@ -460,7 +627,7 @@ def test_first_national_fetch_timeout_keeps_a_durable_retry_turn(tmp_path, monke
     monkeypatch.setattr(audits_domain, "create_http_client", fake_client)
     monkeypatch.setattr(od, "discover_county_audit_documents", lambda c: od.CountyAuditDiscovery())
     monkeypatch.setattr(
-        audits_domain.fetcher, "_discover_audit_pdfs_via_wp_api", lambda c: [NATIONAL],
+        audits_domain.fetcher, "_discover_audit_pdfs_via_wp_api", lambda c, **kw: [NATIONAL],
     )
     monkeypatch.setattr("seeding.extractors.get_parser", lambda pid: None)
     fetched = []
@@ -549,6 +716,8 @@ def test_slow_refused_national_and_legacy_books_cannot_starve_current_volumes(
         NATIONAL, LEGACY_EXECUTIVES, LEGACY_ASSEMBLIES,
     }
     assert result.metadata["deferred_discovery"] == ["oag_national_audits"]
+    assert result.metadata["oag_national_discovery"]["status"] == "deferred"
+    assert result.metadata["oag_national_discovery"]["candidate_count"] is None
     assert harness["clock"].now == 200
 
     harness["fetched"].clear()

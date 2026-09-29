@@ -98,6 +98,36 @@ def _make_handler(calls, name, *, work=0.0, raise_timeout=False, clock=None):
     return _handler
 
 
+def test_live_audit_document_does_not_erase_discovery_error_in_job(
+    clock, sessionmaker_factory, monkeypatch
+):
+    from seeding import freshness
+
+    def audit_handler(*, session, settings, context):
+        freshness.mark_live("audits", detail="known document extracted")
+        return DomainRunResult(
+            domain="audits", items_processed=1,
+            errors=["OAG national discovery: county: RuntimeError: search unavailable"],
+            metadata={"oag_national_discovery": {
+                "status": "partial", "attempted_queries": 3,
+                "successful_queries": 2, "candidate_count": 0,
+                "failures": ["county: RuntimeError: search unavailable"],
+            }},
+        )
+
+    monkeypatch.setattr(seed_cli, "REGISTRY", _FakeRegistry({"audits": audit_handler}))
+    seed_cli.run_seed_command(
+        _args(), SeedingSettings(total_timeout_seconds=0, domain_timeout_seconds=600)
+    )
+
+    job = _jobs_by_domain(sessionmaker_factory)["audits"]
+    assert job.status == IngestionStatus.COMPLETED_WITH_ERRORS
+    assert job.items_processed == 1
+    assert "OAG national discovery" in job.errors[0]
+    assert job.meta["oag_national_discovery"]["status"] == "partial"
+    assert job.meta["source_mode"] == "live"
+
+
 def test_global_budget_skips_remaining_domains_and_reports_the_drop(
     clock, sessionmaker_factory, monkeypatch
 ):

@@ -222,18 +222,31 @@ def register_discovered_documents(
     return counts
 
 
-def _discovered_urls(client, dataset: SourceDataset) -> List[str]:
-    """New candidate PDFs from the OAG WP media API, keyword-filtered."""
+def _discovered_urls(client, dataset: SourceDataset) -> tuple[List[str], dict]:
+    """Candidate PDFs and the outcome of bounded OAG media searches."""
+    diagnostics = {"attempted_queries": 0, "successful_queries": 0, "failures": []}
     try:
-        discovered = fetcher._discover_audit_pdfs_via_wp_api(client)
-    except Exception as exc:  # discovery is best-effort; failure is loud
-        logger.warning("OAG discovery failed: %s", exc)
-        return []
-    return [
+        discovered = fetcher._discover_audit_pdfs_via_wp_api(
+            client, diagnostics=diagnostics
+        )
+    except Exception as exc:
+        diagnostics["failures"].append(
+            f"media search: {type(exc).__name__}: {str(exc)[:160]}"
+        )
+        discovered = []
+    urls = [
         u
         for u in discovered
         if all(kw in u.lower() for kw in dataset.match_keywords)
     ]
+    diagnostics["status"] = (
+        "completed" if not diagnostics["failures"]
+        else "partial" if diagnostics["successful_queries"] else "failed"
+    )
+    diagnostics["candidate_count"] = len(urls)
+    for failure in diagnostics["failures"]:
+        logger.warning("OAG national discovery failed (%s)", failure)
+    return urls, diagnostics
 
 
 @register_domain("audits")
@@ -394,9 +407,19 @@ def run(
                     # The media API is a network read. If the shared start
                     # window is spent, name this skipped discovery too.
                     metadata["deferred_discovery"].append(dataset_id)
+                    metadata["oag_national_discovery"] = {
+                        "status": "deferred", "reason": "start_budget",
+                        "attempted_queries": 0, "successful_queries": 0,
+                        "candidate_count": None, "failures": [],
+                    }
                     discovered = []
                 else:
-                    discovered = _discovered_urls(client, dataset)
+                    discovered, national_discovery = _discovered_urls(client, dataset)
+                    metadata["oag_national_discovery"] = national_discovery
+                    errors.extend(
+                        f"OAG national discovery: {failure}"
+                        for failure in national_discovery["failures"]
+                    )
                 # Filter and dedupe the whole discovery result before the
                 # fetch cap. Otherwise a digest or repeated URL can consume a
                 # slot and hide a real report from the backlog indefinitely.

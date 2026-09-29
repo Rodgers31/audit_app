@@ -865,6 +865,31 @@ def _latest_run_modes(jobs) -> set:
     }
 
 
+def _national_discovery_state(job) -> str:
+    """A stored discovery receipt must prove an actual completed search."""
+    report = _as_dict(getattr(job, "meta", None)).get("oag_national_discovery")
+    if not isinstance(report, dict):
+        return "unrecorded"
+    status = report.get("status")
+    if status != "completed":
+        return status if status in ("failed", "partial", "deferred") else "unknown"
+    attempted = report.get("attempted_queries")
+    successful = report.get("successful_queries")
+    candidates = report.get("candidate_count")
+    if (
+        type(attempted) is not int or attempted <= 0
+        or type(successful) is not int or successful != attempted
+        or type(candidates) is not int or candidates < 0
+        or report.get("failures") != []
+        or any(
+            isinstance(error, str) and error.startswith("OAG national discovery:")
+            for error in (getattr(job, "errors", None) or [])
+        )
+    ):
+        return "inconsistent"
+    return "completed"
+
+
 def check_ingestion_freshness(
     session, now: Optional[datetime] = None, domains: Optional[List[str]] = None
 ) -> List[Finding]:
@@ -919,6 +944,11 @@ def check_ingestion_freshness(
             continue
         modes = [_job_text(j, "source_mode") for j in jobs]
         latest_modes = _latest_run_modes(jobs)
+        latest_jobs = [j for j in jobs if _run_order(j) == newest]
+        national_discovery_states = set()
+        if domain == "audits":
+            for job in latest_jobs:
+                national_discovery_states.add(_national_discovery_state(job))
         if (None in latest_modes or "unknown" in latest_modes) and "live" in modes and "refused" not in latest_modes:
             findings.append(Finding(
                 WARN, f"{domain} ingestion",
@@ -1006,6 +1036,15 @@ def check_ingestion_freshness(
                     f"(reasons: {', '.join(sorted(reasons)) or 'unrecorded'})",
                 )
             )
+        elif "live" in modes and national_discovery_states - {"completed"}:
+            findings.append(Finding(
+                WARN,
+                f"{domain} ingestion",
+                "national discovery "
+                f"{', '.join(sorted(national_discovery_states - {'completed'}))} "
+                "on the newest run; known audit documents may still have "
+                "refreshed, but new national coverage was not fully checked",
+            ))
         elif "live" in modes:
             findings.append(
                 Finding(
