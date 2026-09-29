@@ -2484,7 +2484,10 @@ async def get_seeder_status() -> JSONResponse:
             {
                 "status": "ok",
                 "auto_seeder": status,
-                "note": "All data is fetched from live sources - NO hardcoded data",
+                "note": (
+                    "Web reference refreshes run here. economic_indicators is owned "
+                    "by the dedicated seeding runner; its job health is not reported here."
+                ),
             }
         )
     except Exception as e:
@@ -2505,10 +2508,10 @@ async def get_pipeline_health(db: Session = Depends(get_db)) -> dict:
     Comprehensive pipeline health dashboard.
 
     Returns the full picture of:
-    - Data freshness per domain (counties, debt, population, economic)
-    - Source module availability (ETL, extractors)
+    - Database record counts and latest observation periods
+    - Web ETL module availability
     - Auto-seeder status and next refresh times
-    - Database record counts and last-updated timestamps
+    - Dedicated economic ingestion ownership (not its job health)
     - Any warnings or errors that need attention
     """
     import importlib
@@ -2518,11 +2521,11 @@ async def get_pipeline_health(db: Session = Depends(get_db)) -> dict:
     db_stats: dict = {}
     now = datetime.datetime.now(datetime.timezone.utc)
 
-    # ── 1. Check module availability (import health) ──
+    # ── 1. Check the web worker's ETL dependency ──
+    # The root KNBS extractor/parser belong to no active web economic path.
+    # Their absence from the backend image must not imply a cached fallback.
     module_checks = {
         "etl.kenya_pipeline": "ETL Pipeline (OAG/COB/Treasury scraping)",
-        "etl.knbs_parser": "KNBS Parser (population/economic parsing)",
-        "extractors.government.knbs_extractor": "KNBS Extractor (document discovery)",
     }
     module_status = {}
     for mod_name, description in module_checks.items():
@@ -2539,7 +2542,7 @@ async def get_pipeline_health(db: Session = Depends(get_db)) -> dict:
                 {
                     "level": "warning",
                     "source": mod_name,
-                    "message": f"Module not importable: {exc}. Live scraping for this source will fall back to cached data.",
+                    "message": f"Module not importable: {exc}. Web ETL discovery is unavailable.",
                 }
             )
 
@@ -2628,7 +2631,7 @@ async def get_pipeline_health(db: Session = Depends(get_db)) -> dict:
                 {
                     "level": "warning",
                     "source": "population",
-                    "message": "No population records. KNBS live fetch may have failed — check module availability.",
+                    "message": "No population records; check the dedicated population seeding job.",
                 }
             )
         if econ_count == 0:
@@ -2636,7 +2639,7 @@ async def get_pipeline_health(db: Session = Depends(get_db)) -> dict:
                 {
                     "level": "warning",
                     "source": "economic",
-                    "message": "No economic indicator records.",
+                    "message": "No economic indicator records; check the dedicated economic_indicators seeding job.",
                 }
             )
         if loan_count == 0:
@@ -2740,6 +2743,12 @@ async def get_pipeline_health(db: Session = Depends(get_db)) -> dict:
         "status": overall,
         "checked_at": now.isoformat(),
         "auto_seeder": seeder_info,
+        "economic_ingestion": {
+            "owner": "dedicated seeding runner",
+            "domain": "economic_indicators",
+            "web_refresh": "retired",
+            "job_health": "not_checked_here",
+        },
         "database": db_stats,
         "modules": module_status,
         "sources": sources,
