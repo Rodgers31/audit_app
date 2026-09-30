@@ -5,6 +5,7 @@ import { useInfiniteQuery, useQuery, UseQueryOptions } from '@tanstack/react-que
 import { SSR_HYDRATED_STALE_TIME_MS } from './isr';
 import type {
   AuditDashboardSummary,
+  AuditStatistics,
   AuditTrendsData,
   FederalAuditFinding,
   FederalAuditResponse,
@@ -261,7 +262,7 @@ export const useAuditReportsInfinite = (
 
 // Get audit statistics
 export const useAuditStatistics = (
-  options?: Omit<UseQueryOptions<any>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<AuditStatistics>, 'queryKey' | 'queryFn'>
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.statistics,

@@ -971,8 +971,9 @@ _HEALTH_GRADE_BANDS = ((85, "A"), (70, "B+"), (55, "B"), (40, "B-"), (0, "C"))
 #: invoices is the point at which the component stops discriminating.
 _PENDING_BILLS_SEVERE_SHARE = 25.0
 
-#: How an audit opinion maps onto 0-100. The ordering is the Auditor-General's;
-#: the numbers are ours.
+#: Site-chosen mapping of an audit status onto 0-100. County detail derives
+#: that status from the most recently ingested publishable finding severity;
+#: it is not an official Auditor-General rating.
 _AUDIT_OPINION_SCORES = {
     "clean": 100.0,
     "qualified": 60.0,
@@ -986,12 +987,10 @@ _MIN_HEALTH_COMPONENTS = 2
 
 #: Relative weights, renormalised over whichever components a county has.
 #:
-#: The audit opinion carries as much as the three financial components put
-#: together, because it is the only one that speaks to whether the other three
-#: can be believed at all: a disclaimer means the Auditor-General could not
-#: form an opinion on the accounts those figures come out of. Under equal
-#: weighting a county with perfect absorption and revenue performance still
-#: scored 50.0 (B-) on a disclaimer; it now scores 33.3 (C).
+#: The audit signal carries as much as the three financial components put
+#: together when all four are available. Under equal weighting a county with
+#: perfect absorption and revenue performance still scored 50.0 (B-) on an
+#: explicit disclaimer; with this weighting it scores 33.3 (C).
 #:
 #: These are a CHOSEN weighting, not a measured one — no publisher ranks these
 #: four against each other. Integers rather than fractions so the ratio is
@@ -1033,9 +1032,8 @@ def county_financial_health(
 
     WHAT IT IS NOW
     --------------
-    An equal-weighted mean of the components below, each of which is derived
-    from a published figure and each of which is REPORTED with the score, so
-    the number can be taken apart:
+    A weighted mean of available components, each derived from a published
+    figure. The audit signal has weight 3; each financial measure has weight 1.
 
     ``budget_absorption``  spent vs allocated (Controller of Budget). Scored
         symmetrically about 100 — under-spending is a failure to deliver and
@@ -1043,9 +1041,12 @@ def county_financial_health(
     ``own_source_revenue`` amount vs target from the same CBIRR table. Capped at
         100 so a lowballed target cannot buy a high score.
     ``pending_bills``      pending bills as a share of budget, inverted.
-    ``audit_opinion``      the Auditor-General's opinion.
+    ``audit_opinion``      audit status supplied by the caller. The county
+        detail currently maps its most recently ingested publishable finding
+        severity to this status; the label is retained for compatibility,
+        not an OAG rating.
 
-    The audit opinion carries as much weight as the other three combined —
+    The audit signal carries as much weight as the other three combined —
     see ``_HEALTH_COMPONENT_WEIGHTS`` for why, and note that the ratio is a
     chosen one, reported in the payload so a reader can re-weight it.
 
@@ -1103,7 +1104,7 @@ def county_financial_health(
                 "name": "audit_opinion",
                 "score": opinion_score,
                 "observed": audit_status,
-                "basis": "Office of the Auditor-General opinion",
+                "basis": "audit status supplied by caller; county detail maps most recently ingested publishable finding severity",
             }
         )
 
@@ -3135,21 +3136,91 @@ def _latest_county_actuals_period_ids(db) -> Optional[List[int]]:
     every county's audit status into "pending"."""
     from sqlalchemy import func as _f
 
-    from models import FiscalPeriod as _FP
+    from models import FigureBasis as _FigureBasis, FiscalPeriod as _FP
+    from services.entity_financials import budget_evidence_is_unreported
 
-    row = (
-        db.query(_FP.id)
-        .join(DBBudgetLine, DBBudgetLine.period_id == _FP.id)
+    possible_reported_basis = or_(
+        DBBudgetLine.basis.is_(None),
+        DBBudgetLine.basis.notin_((_FigureBasis.MODELLED, _FigureBasis.PROJECTED)),
+    )
+    not_quarantined = or_(
+        DBBudgetLine.quarantine_reason.is_(None),
+        DBBudgetLine.quarantine_reason == "",
+    )
+    periods = (
+        db.query(_FP.id, _FP.start_date, _FP.end_date)
+        .select_from(DBBudgetLine)
+        .join(_FP, DBBudgetLine.period_id == _FP.id)
         .join(DBEntity, DBEntity.id == DBBudgetLine.entity_id)
         .filter(
             DBEntity.type == EntityType.COUNTY,
-            _f.lower(DBBudgetLine.category).in_(list(_CLASSIFICATION_CATEGORIES)),
+            _f.lower(_f.trim(DBBudgetLine.category)).in_(list(_CLASSIFICATION_CATEGORIES)),
+            possible_reported_basis,
+            not_quarantined,
         )
-        .order_by(_FP.start_date.desc())
-        .first()
+        .distinct()
+        .order_by(_FP.start_date.desc(), _FP.end_date.desc(), _FP.id.desc())
+        .all()
     )
-    if row:
-        return [row[0]]
+    source_metadata = {}
+    for period_id, _, _ in periods:
+        last_line_id = 0
+        while True:
+            # Page only the fields the shared evidence predicate needs. Source
+            # metadata is fetched separately and cached across pages/periods.
+            rows = (
+                db.query(
+                    DBBudgetLine.id,
+                    DBBudgetLine.quarantine_reason,
+                    DBBudgetLine.basis,
+                    DBBudgetLine.provenance,
+                    DBBudgetLine.source_document_id,
+                )
+                .join(DBEntity, DBEntity.id == DBBudgetLine.entity_id)
+                .filter(
+                    DBEntity.type == EntityType.COUNTY,
+                    DBBudgetLine.period_id == period_id,
+                    DBBudgetLine.id > last_line_id,
+                    _f.lower(_f.trim(DBBudgetLine.category)).in_(
+                        list(_CLASSIFICATION_CATEGORIES)
+                    ),
+                    possible_reported_basis,
+                    not_quarantined,
+                )
+                .order_by(DBBudgetLine.id)
+                .limit(32)
+                .all()
+            )
+            if not rows:
+                break
+            candidates = [
+                row for row in rows
+                if not budget_evidence_is_unreported(
+                    row.quarantine_reason, row.basis, row.provenance, None
+                )
+            ]
+            uncached_source_ids = {
+                row.source_document_id for row in candidates
+                if row.source_document_id not in source_metadata
+            }
+            if uncached_source_ids:
+                source_metadata.update({
+                    doc_id: meta
+                    for doc_id, meta in db.query(
+                        DBSourceDocument.id, DBSourceDocument.meta
+                    ).filter(DBSourceDocument.id.in_(uncached_source_ids)).all()
+                })
+                for doc_id in uncached_source_ids:
+                    source_metadata.setdefault(doc_id, None)
+            for row in candidates:
+                if not budget_evidence_is_unreported(
+                    row.quarantine_reason,
+                    row.basis,
+                    row.provenance,
+                    source_metadata[row.source_document_id],
+                ):
+                    return [period_id]
+            last_line_id = rows[-1].id
 
     row = (
         db.query(_FP.id)
@@ -3160,12 +3231,14 @@ def _latest_county_actuals_period_ids(db) -> Optional[List[int]]:
             DBBudgetLine.actual_spent.isnot(None),
             DBBudgetLine.actual_spent > 0,
         )
-        .order_by(_FP.start_date.desc())
+        .order_by(_FP.start_date.desc(), _FP.end_date.desc(), _FP.id.desc())
         .first()
     )
     if row:
         return [row[0]]
-    latest = db.query(_FP).order_by(_FP.start_date.desc()).first()
+    latest = db.query(_FP).order_by(
+        _FP.start_date.desc(), _FP.end_date.desc(), _FP.id.desc()
+    ).first()
     return [latest.id] if latest else None
 
 
@@ -4333,16 +4406,151 @@ async def get_county_comprehensive(
             _published_budget = financial_summary(
                 budget_lines, budget_lines[0].period if budget_lines else None
             )
+            _health_revenue = _county_revenue_for_lines(budget_lines)
             _health = county_financial_health(
                 total_allocated=_published_budget["total_allocation"],
                 total_spent=_published_budget["total_spent"],
                 pending_bills=pending_bills,
                 audit_status=audit_status,
-                own_source_target=county_own_source_target(budget_lines),
-                own_source_actual=county_own_source_revenue(budget_lines),
+                own_source_target=_health_revenue["own_source_target"],
+                own_source_actual=_health_revenue["local_revenue"],
             )
             health_score = _health["score"] if _health else None
             grade = _health["grade"] if _health else None
+
+            # Disclose the actual numerator and denominator of this site's
+            # index. Absent components have no effective weight; a reported
+            # zero remains an included component.
+            _own_source_target = _health_revenue["own_source_target"]
+            _own_source_actual = _health_revenue["local_revenue"]
+            _available = {
+                "budget_absorption": _published_budget["total_allocation"] is not None
+                and _published_budget["total_allocation"] > 0
+                and _published_budget["total_spent"] is not None,
+                "own_source_revenue": _own_source_target is not None
+                and _own_source_target > 0 and _own_source_actual is not None,
+                "pending_bills": _published_budget["total_allocation"] is not None
+                and _published_budget["total_allocation"] > 0
+                and pending_bills is not None,
+                "audit_opinion": audit_status in _AUDIT_OPINION_SCORES,
+            }
+            _unavailable_reasons = {
+                "budget_absorption": (
+                    _published_budget["absent_reasons"].get("total_allocation")
+                    or _published_budget["absent_reasons"].get("total_spent")
+                    or "no_positive_allocation"
+                ),
+                "own_source_revenue": (
+                    "target_not_reported" if _own_source_target is None
+                    else "no_positive_target" if _own_source_target <= 0
+                    else "actual_not_reported"
+                ),
+                "pending_bills": (
+                    "budget_unavailable"
+                    if _published_budget["total_allocation"] is None
+                    or _published_budget["total_allocation"] <= 0
+                    else "pending_bills_not_reported"
+                ),
+                "audit_opinion": "no_publishable_audit_signal",
+            }
+            _unavailable = [
+                {"name": name, "reason": _unavailable_reasons[name]}
+                for name in _HEALTH_COMPONENT_WEIGHTS if not _available[name]
+            ]
+            _budget_doc = (
+                _published_budget["sources"][0]
+                if len(_published_budget["sources"]) == 1 else None
+            )
+            _osr_sources = [
+                source for source in _health_revenue["sources"]
+                if source["measure"] == _health_revenue["local_revenue_basis"]
+            ]
+            _osr_source = _osr_sources[0] if len(_osr_sources) == 1 else None
+            _pending_details = (
+                county_pending_bills_details(loans) if pending_bills is not None else {}
+            )
+            _pending_rows = [
+                loan for loan in loans
+                if county_pending_bills_row_is_published(loan)
+                and pending_bills_row_amount(loan) is not None
+            ]
+            _pending_periods = sorted({
+                str(_pending_bills_provenance(loan).get("fiscal_year"))
+                for loan in _pending_rows
+                if _pending_bills_provenance(loan).get("fiscal_year")
+            })
+            _pending_dates = sorted({
+                date for loan in _pending_rows
+                if (date := pending_bills_row_as_at(loan))
+            })
+            _pending_urls = {
+                url if isinstance(url, str) else None
+                for loan in _pending_rows
+                for url in [_pending_bills_provenance(loan).get("source_url")]
+            }
+            _pending_warning = (
+                "mixed_pending_periods"
+                if len(_pending_periods) > 1 or len(_pending_dates) > 1
+                else "mixed_pending_sources" if len(_pending_urls) > 1 else None
+            )
+            _latest_audit_doc = (
+                _audit_docs.get(latest_audit.source_document_id) if latest_audit else None
+            )
+            _component_source = {
+                "budget_absorption": (
+                    budget_fy_label, _budget_doc.get("url") if _budget_doc else None, None
+                ),
+                "own_source_revenue": (
+                    _health_revenue["fiscal_year"],
+                    _osr_source["url"] if _osr_source else None, None
+                ),
+                "pending_bills": (
+                    _pending_details.get("fiscal_year") if not _pending_warning else None,
+                    _pending_details.get("source_url") if not _pending_warning else None,
+                    _pending_details.get("as_at") if not _pending_warning else None,
+                ),
+                "audit_opinion": (
+                    latest_audit.period.label if latest_audit and latest_audit.period else None,
+                    _latest_audit_doc.url if _latest_audit_doc else None,
+                    None,
+                ),
+            }
+            _health_components = [
+                {
+                    **component,
+                    "source_period": _component_source[component["name"]][0],
+                    "source_url": _component_source[component["name"]][1],
+                    "as_at": _component_source[component["name"]][2],
+                    "measurement_basis": (
+                        _health_revenue["local_revenue_basis"]
+                        if component["name"] == "own_source_revenue" else None
+                    ),
+                    "source_periods": (
+                        _pending_periods if component["name"] == "pending_bills"
+                        and _pending_warning else []
+                    ),
+                    "source_dates": (
+                        _pending_dates if component["name"] == "pending_bills"
+                        and _pending_warning else []
+                    ),
+                    "source_warning": (
+                        _pending_warning if component["name"] == "pending_bills" else None
+                    ),
+                }
+                for component in (_health["components"] if _health else [])
+            ]
+            _health_disclosure = {
+                "score": health_score,
+                "grade": grade,
+                "weighting": "audit_opinion_weighted",
+                "weights": dict(_HEALTH_COMPONENT_WEIGHTS),
+                "effective_weight": sum(c["weight"] for c in _health_components),
+                "components": _health_components,
+                "available_inputs": [name for name in _HEALTH_COMPONENT_WEIGHTS if _available[name]],
+                "unavailable_inputs": _unavailable,
+                "minimum_components": _MIN_HEALTH_COMPONENTS,
+                "absent_reason": None if _health else "fewer_than_two_components",
+            }
 
             # --- Missing funds ---
             # The same derivation as /accountability/missing-funds (issue
@@ -4609,6 +4817,7 @@ async def get_county_comprehensive(
                         total_debt, total_allocated
                     ),
                 },
+                "financial_health": _health_disclosure,
                 # Data provenance
                 # Provenance labels, not aspirations. Three of these named a
                 # publisher who did not publish the figure underneath: county
@@ -4954,6 +5163,42 @@ async def get_budget_line_provenance(line_id: int):
 # ── Audit Statistics & Top-Level Routes ──────────────────────────────────
 
 
+def _plain_kes_amount_in_audit_text(
+    finding_text: Optional[str],
+) -> Tuple[Optional[Decimal], bool]:
+    """Read a whole plain KES integer, or report ambiguous amount text.
+
+    A value is accepted only when the full plain integer ends the text. The
+    second result marks a mentioned figure needing source review, keeping it
+    distinct from a finding that states no amount at all.
+    """
+    if not finding_text:
+        return None, False
+    mentions = list(re.finditer(r"\bKES(?P<gap>\s*)(?=\d)", finding_text, re.I))
+    if not mentions:
+        return None, False
+    if (
+        len(mentions) != 1
+        or mentions[0].group()[:3] != "KES"
+        or not re.fullmatch(r"[ \t]+", mentions[0].group("gap"))
+    ):
+        return None, True
+    tail = finding_text[mentions[0].end():]
+    # Consume the *whole* number-shaped span. A regex for only the allowed
+    # prefix would turn "1 200" into 1 and "50 M" into 50.
+    match = re.match(r"\d[\d,.\s\u200b]*", tail)
+    if not match:
+        return None, True
+    number_text = match.group().strip()
+    if not re.fullmatch(r"(?:[0-9]+|[0-9]{1,3}(?:,[0-9]{3})+)", number_text):
+        return None, True
+    # Any continuation can qualify the unit, as in "KES 50 in millions".
+    # Do not certify a numeric prefix without source review.
+    if tail[match.end():]:
+        return None, True
+    return Decimal(number_text.replace(",", "")), False
+
+
 @app.get("/api/v1/audits/statistics")
 @cached(key_prefix="audits:statistics", ttl=3600)
 async def get_audit_statistics():
@@ -4967,7 +5212,7 @@ async def get_audit_statistics():
 
     try:
         with next(get_db()) as db:
-            from sqlalchemy import case, func
+            from sqlalchemy import String, case, cast, func
 
             # Total counts
             total = db.query(func.count(DBAudit.id)).filter(publishable_audit_criterion()).scalar() or 0
@@ -5009,14 +5254,32 @@ async def get_audit_statistics():
 
             recent_items = []
             for audit, county_name in recent_critical:
-                amount = 0.0
-                if audit.finding_text:
-                    match = re.search(r"KES\s*([\d,]+)", audit.finding_text)
-                    if match:
+                amount = None
+                amount_unavailable_reason = None
+                if audit.amount is not None:
+                    try:
+                        candidate = float(audit.amount)
+                    except (TypeError, ValueError, OverflowError):
+                        candidate = math.inf
+                    if math.isfinite(candidate):
+                        amount = candidate
+                    else:
+                        amount_unavailable_reason = "invalid_stored_amount"
+                else:
+                    legacy_amount, ambiguous_text = _plain_kes_amount_in_audit_text(
+                        audit.finding_text
+                    )
+                    if legacy_amount is not None:
                         try:
-                            amount = float(match.group(1).replace(",", ""))
-                        except Exception:
-                            pass
+                            candidate = float(legacy_amount)
+                        except (OverflowError, ValueError):
+                            candidate = math.inf
+                        if math.isfinite(candidate):
+                            amount = candidate
+                        else:
+                            amount_unavailable_reason = "non_finite_text_amount"
+                    elif ambiguous_text:
+                        amount_unavailable_reason = "ambiguous_text_amount"
                 period_label = ""
                 if audit.period and hasattr(audit.period, "label"):
                     period_label = audit.period.label
@@ -5029,6 +5292,7 @@ async def get_audit_statistics():
                             audit.severity.value if audit.severity else "unknown"
                         ),
                         "amount": amount,
+                        "amount_unavailable_reason": amount_unavailable_reason,
                         "fiscal_year": period_label,
                         "date": (
                             audit.created_at.isoformat() if audit.created_at else None
@@ -5041,34 +5305,72 @@ async def get_audit_statistics():
                 db.query(func.count(func.distinct(DBAudit.entity_id))).filter(publishable_audit_criterion()).scalar() or 0
             )
 
-            # Total amount involved across all findings — prefer the
-            # structured `amount` column (populated from OAG parsers).
-            # Fall back to regex over `finding_text` only for rows that
-            # lack an `amount` value, so we don't lose data but also don't
-            # pull the entire text column across the wire when unnecessary.
-            amount_from_col = (
-                db.query(func.coalesce(func.sum(DBAudit.amount), 0))
-                .filter(publishable_audit_criterion())
-                .filter(DBAudit.amount.isnot(None))
-                .scalar()
-                or 0.0
+            # PostgreSQL numeric accepts NaN. One such row poisons SUM, so
+            # exclude non-finite stored values *inside* the aggregate. Count
+            # them separately rather than hiding their missing coverage.
+            finite_amount = case(
+                (
+                    ~cast(DBAudit.amount, String).in_(("NaN", "Infinity", "-Infinity")),
+                    DBAudit.amount,
+                ),
+                else_=None,
             )
+            amount_from_col, structured_count, stored_count = (
+                db.query(
+                    func.sum(finite_amount),
+                    func.count(finite_amount),
+                    func.count(DBAudit.amount),
+                )
+                .filter(publishable_audit_criterion())
+                .one()
+            )
+            invalid_count = stored_count - structured_count
+            if invalid_count:
+                logger.warning(
+                    "Withholding invalid stored amounts from /audits/statistics: %s findings",
+                    invalid_count,
+                )
             # Regex fallback only over rows where amount is NULL.
-            fallback_amount = 0.0
+            fallback_amount = Decimal(0)
+            fallback_count = 0
+            ambiguous_text_count = 0
             for (text_val,) in (
                 db.query(DBAudit.finding_text)
                 .filter(publishable_audit_criterion())
                 .filter(DBAudit.amount.is_(None))
-                .all()
+                .yield_per(500)
             ):
-                if text_val:
-                    match = re.search(r"KES\s*([\d,]+)", text_val)
-                    if match:
-                        try:
-                            fallback_amount += float(match.group(1).replace(",", ""))
-                        except Exception:
-                            pass
-            total_amount = float(amount_from_col) + fallback_amount
+                legacy_amount, ambiguous_text = _plain_kes_amount_in_audit_text(text_val)
+                if legacy_amount is not None:
+                    fallback_amount += legacy_amount
+                    fallback_count += 1
+                elif ambiguous_text:
+                    ambiguous_text_count += 1
+            findings_with_amount = structured_count + fallback_count
+            total_amount = None
+            total_amount_reason = None
+            if findings_with_amount:
+                amount_decimal = (amount_from_col or Decimal(0)) + fallback_amount
+                try:
+                    candidate = float(amount_decimal)
+                except (OverflowError, ValueError):
+                    candidate = math.inf
+                if math.isfinite(candidate):
+                    total_amount = candidate
+                else:
+                    logger.warning("Withholding non-finite audit statistics total")
+                    total_amount_reason = "non_finite_total"
+            else:
+                total_amount_reason = (
+                    "invalid_stored_amount"
+                    if invalid_count
+                    else "ambiguous_text_amount"
+                    if ambiguous_text_count
+                    else "no_amounts_recorded"
+                )
+            # This is the number without a usable numeric amount; ambiguous
+            # KES text is a disclosed subset, not evidence that no sum was stated.
+            findings_without_amount = total - findings_with_amount - invalid_count
 
             _withheld_stats = count_withheld_audits(db)
             # Not just how many, but why. The breakdown existed and had no
@@ -5118,6 +5420,11 @@ async def get_audit_statistics():
                 "counties_audited": counties_audited,
                 "total_counties": 47,
                 "total_amount_flagged": total_amount,
+                "total_amount_flagged_reason": total_amount_reason,
+                "findings_with_amount": findings_with_amount,
+                "findings_with_invalid_amount": invalid_count,
+                "findings_with_ambiguous_text_amount": ambiguous_text_count,
+                "findings_without_amount": findings_without_amount,
                 "by_severity": by_severity,
                 "top_flagged_counties": [
                     {"county": name.replace(" County", ""), "critical_count": count}
@@ -6826,8 +7133,11 @@ async def get_county_summary(county_id: str):
                 .first()
             )
             budget_lines = _entity_period_budget_query(db, entity.id).all()
-            total_allocated = sum(float(b.allocated_amount or 0) for b in budget_lines)
-            total_spent = sum(float(b.actual_spent or 0) for b in budget_lines)
+            from services.entity_financials import financial_summary
+
+            budget_account = financial_summary(
+                budget_lines, budget_lines[0].period if budget_lines else None
+            )
             audits = db.query(DBAudit).filter(publishable_audit_criterion()).filter(DBAudit.entity_id == entity.id).all()
 
             scorecard = _compute_accountability(db, entity, county_id)
@@ -6841,8 +7151,13 @@ async def get_county_summary(county_id: str):
                 "population": (
                     pop_data.total_population if pop_data else None
                 ),
-                "total_budget": total_allocated,
-                "total_spent": total_spent,
+                "total_budget": budget_account["total_allocation"],
+                "total_spent": budget_account["total_spent"],
+                "budget_fiscal_period": budget_account["fiscal_period"],
+                "budget_accounting_basis": budget_account["accounting_basis"],
+                "budget_currency": budget_account["currency"],
+                "budget_sources": budget_account["sources"],
+                "budget_absent_reasons": budget_account["absent_reasons"],
                 "audit_findings_count": len(audits),
                 "accountability_grade": scorecard["accountability_grade"],
             }

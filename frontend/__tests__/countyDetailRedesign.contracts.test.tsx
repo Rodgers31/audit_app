@@ -181,7 +181,7 @@ it('retains health-methodology values and closes on Escape', async () => {
   expect(screen.queryByRole('heading', { name: 'Financial Health Score' })).not.toBeInTheDocument();
 });
 
-it('explains the current composite health score and its distinct audit opinion input', () => {
+it('explains the site index and its distinct audit signal input', () => {
   renderPage();
   fireEvent.click(screen.getByRole('button', { name: /HEALTH grade/ }));
   const modal = screen.getByRole('heading', { name: 'Financial Health Score' }).parentElement!
@@ -189,9 +189,54 @@ it('explains the current composite health score and its distinct audit opinion i
   expect(modal).toHaveTextContent('budget absorption');
   expect(modal).toHaveTextContent('own-source revenue');
   expect(modal).toHaveTextContent('pending bills');
-  expect(modal).toHaveTextContent('audit opinion');
+  expect(modal).toHaveTextContent('Audit signal');
   expect(modal).toHaveTextContent('At least two');
   expect(modal).not.toHaveTextContent('Score = utilization percentage');
+});
+
+it('shows the county terms and actual denominator in an accessible dialog', () => {
+  mockData.financial_summary.health_score = 45;
+  mockData.financial_summary.grade = 'B-';
+  mockData.financial_health = {
+    score: 45,
+    grade: 'B-',
+    weighting: 'audit_opinion_weighted',
+    weights: { budget_absorption: 1, own_source_revenue: 1, pending_bills: 1, audit_opinion: 3 },
+    effective_weight: 2,
+    minimum_components: 2,
+    absent_reason: null,
+    available_inputs: ['budget_absorption', 'own_source_revenue'],
+    unavailable_inputs: [
+      { name: 'pending_bills', reason: 'pending_bills_not_reported' },
+      { name: 'audit_opinion', reason: 'no_publishable_audit_signal' },
+    ],
+    components: [
+      {
+        name: 'budget_absorption', score: 50, observed: 50, basis: 'spent vs allocated',
+        weight: 1, share_pct: 50, source_period: 'FY2025/26 9M',
+        source_url: 'https://cob.go.ke/report.pdf', as_at: null,
+      },
+      {
+        name: 'own_source_revenue', score: 40, observed: 40, basis: 'revenue vs target',
+        weight: 1, share_pct: 50, source_period: 'FY2025/26 9M',
+        source_url: 'https://cob.go.ke/report.pdf', as_at: null,
+        measurement_basis: 'cash_receipts',
+      },
+    ],
+  };
+  renderPage();
+  fireEvent.click(screen.getByRole('button', { name: /HEALTH grade/ }));
+  const dialog = screen.getByRole('dialog', { name: 'Financial Health Score' });
+  expect(dialog).toHaveAttribute('aria-modal', 'true');
+  expect(within(dialog).getByText(/\(50\.0 × 1 \+ 40\.0 × 1\)/)).toHaveTextContent('/ 2 = 45.0 / 100');
+  expect(within(dialog).getAllByText(/FY2025\/26 9M/)).toHaveLength(2);
+  expect(within(dialog).getAllByRole('link', { name: 'Source report' })).toHaveLength(2);
+  expect(dialog).toHaveTextContent('Measured from cash receipts');
+  expect(dialog).toHaveTextContent('Unavailable inputs, excluded from the score');
+  expect(screen.getByRole('button', { name: 'Close financial health explanation' })).toHaveFocus();
+  fireEvent.keyDown(window, { key: 'Escape' });
+  expect(screen.queryByRole('dialog', { name: 'Financial Health Score' })).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /HEALTH grade/ })).toHaveFocus();
 });
 
 it('withholds an unavailable budget execution and health grade', () => {
