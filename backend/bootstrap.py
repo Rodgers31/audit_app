@@ -619,7 +619,7 @@ def _load_national_gdp_series() -> "list[tuple[int, int]]":
 # Source: CBK Public Debt Statistical Bulletin, April 2025.
 
 
-_LIVE_OWNED_INDICATORS = ("inflation_rate", "unemployment_rate")
+_LEGACY_BOOTSTRAP_INDICATORS = ("inflation_rate", "unemployment_rate", "CPI")
 
 
 def _seed_economic_indicators(
@@ -627,7 +627,7 @@ def _seed_economic_indicators(
     *,
     source_document_id: int,
 ) -> None:
-    """Seed the economic indicators no live source owns (the KNBS CPI index).
+    """Preserve legacy bootstrap indicators until the source owner replaces them.
 
     ``inflation_rate`` and ``unemployment_rate`` used to be literals here,
     written on every backend start and every Sunday. The economic_indicators
@@ -640,12 +640,20 @@ def _seed_economic_indicators(
     bootstrap writes none of them. Legacy rows must remain until the live
     writer can replace a matching year-end row or retire an off-cycle row
     with source coverage and an identity receipt. Startup has neither.
+
+    The dedicated economic_indicators domain also owns CPI. The former CPI
+    literals used a combined national debt/GDP source document, which could
+    not establish the CPI release or measurement basis. Bootstrap therefore
+    neither creates nor updates any economic indicator, including CPI. Its
+    existing rows remain for source-backed reconciliation. The domain
+    normalizes indicator names, so legacy uppercase ``CPI`` rows require an
+    explicit identity and measure review before retirement.
     """
     legacy = [
         row.id
         for row in session.query(EconomicIndicator)
         .filter(
-            EconomicIndicator.indicator_type.in_(_LIVE_OWNED_INDICATORS),
+            EconomicIndicator.indicator_type.in_(_LEGACY_BOOTSTRAP_INDICATORS),
             EconomicIndicator.entity_id.is_(None),
         )
         .all()
@@ -654,60 +662,12 @@ def _seed_economic_indicators(
     if legacy:
         logger.warning(
             "Preserved %d legacy bootstrap economic-indicator rows pending "
-            "live source coverage; row IDs: %s",
+            "source reconciliation; row IDs: %s",
             len(legacy),
             sorted(legacy)[:10],
         )
 
-    # Source: KNBS Consumer Price Index releases
-    indicators = [
-        # CPI index values
-        {
-            "type": "CPI",
-            "date": datetime(2025, 1, 31),
-            "value": Decimal("143.08"),
-            "unit": "index",
-            "source": "KNBS Consumer Price Index January 2025",
-        },
-        {
-            "type": "CPI",
-            "date": datetime(2024, 12, 31),
-            "value": Decimal("142.47"),
-            "unit": "index",
-            "source": "KNBS Consumer Price Index December 2024",
-        },
-    ]
-
-    for ind in indicators:
-        existing = (
-            session.query(EconomicIndicator)
-            .filter(
-                EconomicIndicator.indicator_type == ind["type"],
-                EconomicIndicator.indicator_date == ind["date"],
-                EconomicIndicator.entity_id.is_(None),
-            )
-            .first()
-        )
-        if existing:
-            existing.value = ind["value"]
-            existing.unit = ind["unit"]
-            existing.source_document_id = source_document_id
-            session.add(existing)
-        else:
-            session.add(
-                EconomicIndicator(
-                    indicator_type=ind["type"],
-                    indicator_date=ind["date"],
-                    value=ind["value"],
-                    entity_id=None,
-                    unit=ind["unit"],
-                    source_document_id=source_document_id,
-                    confidence=Decimal("0.90"),
-                    meta={"source": ind["source"], "bootstrap": True},
-                )
-            )
-
-    logger.info("Seeded %d economic indicator records", len(indicators))
+    logger.info("Economic indicator writes delegated to economic_indicators domain")
 
 
 def _seed_poverty_indices(
@@ -730,7 +690,7 @@ def _seed_national_data(
     country: Country,
     period: FiscalPeriod,
 ) -> None:
-    """Seed national reference data and legacy economic indicators."""
+    """Seed national reference data while preserving legacy economic indicators."""
     # Ensure a national-level Entity exists
     national_entity = (
         session.query(Entity)
@@ -868,12 +828,12 @@ def _seed_national_data(
             f"(debt data now comes from seeding pipeline)"
         )
 
-    # Seed economic indicators and poverty indices
+    # Preserve legacy economic indicators; the dedicated domain owns new writes.
     _seed_economic_indicators(session, source_document_id=national_doc.id)
     _seed_poverty_indices(session, source_document_id=national_doc.id)
 
     logger.info(
-        "National-level data seeded (GDP, economic indicators, poverty indices). "
+        "National-level data seeded (GDP); economic indicators use the dedicated domain. "
         "Run 'python -m seeding.cli seed --domain national_debt' for debt records."
     )
 

@@ -19,7 +19,8 @@ async def test_weekly_tick_never_dispatches_heavy_domains(monkeypatch):
     monkeypatch.setattr(module.asyncio, "sleep", AsyncMock())
     await seeder._check_and_refresh()
     names = [call.args[0] for call in run.call_args_list]
-    assert "economic" in names  # The scheduler actually ran.
+    assert "counties" in names  # The scheduler actually ran.
+    assert "economic" not in names
     assert not {"population", "audits", "budgets", "counties_budget"}.intersection(names)
 
 
@@ -92,5 +93,5 @@ async def test_boot_dispatch_preserves_unrelated_domains(monkeypatch):
     monkeypatch.setattr(module.asyncio, "sleep", AsyncMock())
     await seeder.seed_all_domains()
     assert [c.args[0] for c in run.call_args_list] == [
-        "counties", "national_entity", "debt", "economic"
+        "counties", "national_entity", "debt"
     ]

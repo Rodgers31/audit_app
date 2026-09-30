@@ -35,8 +35,8 @@ def test_bootstrap_writes_no_live_owned_indicator(db_session, seed_source_doc):
     db_session.flush()
     assert _rows(db_session, "inflation_rate") == []
     assert _rows(db_session, "unemployment_rate") == []
-    # The KNBS CPI index has no live owner and is still seeded.
-    assert len(_rows(db_session, "CPI")) == 2
+    # CPI also belongs to the dedicated economic_indicators domain.
+    assert _rows(db_session, "CPI") == []
 
 
 def test_bootstrap_does_not_overwrite_a_live_row(db_session, seed_source_doc):
