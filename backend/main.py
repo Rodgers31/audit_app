@@ -2486,8 +2486,9 @@ async def get_seeder_status() -> JSONResponse:
                 "status": "ok",
                 "auto_seeder": status,
                 "note": (
-                    "Web reference refreshes run here. economic_indicators is owned "
-                    "by the dedicated seeding runner; its job health is not reported here."
+                    "Web reference refreshes run here. economic_indicators, national_debt "
+                    "and debt_timeline are owned by the dedicated seeding runner; "
+                    "its job health is not reported here."
                 ),
             }
         )

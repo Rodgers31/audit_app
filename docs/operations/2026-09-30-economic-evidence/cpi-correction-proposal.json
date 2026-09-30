@@ -1,0 +1,509 @@
+{
+  "status": "REVIEW ONLY - not applied; fresh preflight, isolated rehearsal and release-owner approval required",
+  "observed_date": "2026-09-30",
+  "issues": [
+    380,
+    293
+  ],
+  "classification": "Three national CPI observations disagree with verified KNBS national Overall CPI. Document 1823 is a failed bootstrap debt placeholder; document 1715 is a generic un-hashed landing-page citation.",
+  "before_evidence": {
+    "transaction_read_only": "on",
+    "rows": [
+      {
+        "id": 67,
+        "indicator_type": "cpi",
+        "indicator_date": "2025-01-31 00:00:00",
+        "value": "143.08",
+        "entity_id": null,
+        "unit": "index",
+        "source_document_id": 1715,
+        "source_page": null,
+        "confidence": "1.00",
+        "metadata": {
+          "notes": "Consumer Price Index (Feb 2009 = 100). Source: KNBS.",
+          "source": "KNBS CPI January 2025",
+          "data_quality": "official"
+        },
+        "created_at": "2026-03-26 00:56:36.191289",
+        "extraction_id": null,
+        "page_ref": null,
+        "source_hash": null,
+        "confidence_score": null,
+        "basis": null,
+        "publishable": false,
+        "quarantine_reason": null
+      },
+      {
+        "id": 86,
+        "indicator_type": "CPI",
+        "indicator_date": "2025-01-31 00:00:00",
+        "value": "143.08",
+        "entity_id": null,
+        "unit": "index",
+        "source_document_id": 1823,
+        "source_page": null,
+        "confidence": "0.90",
+        "metadata": {
+          "source": "KNBS Consumer Price Index January 2025",
+          "bootstrap": true
+        },
+        "created_at": "2026-04-20 02:38:16.960329",
+        "extraction_id": null,
+        "page_ref": null,
+        "source_hash": null,
+        "confidence_score": null,
+        "basis": null,
+        "publishable": false,
+        "quarantine_reason": null
+      },
+      {
+        "id": 87,
+        "indicator_type": "CPI",
+        "indicator_date": "2024-12-31 00:00:00",
+        "value": "142.47",
+        "entity_id": null,
+        "unit": "index",
+        "source_document_id": 1823,
+        "source_page": null,
+        "confidence": "0.90",
+        "metadata": {
+          "source": "KNBS Consumer Price Index December 2024",
+          "bootstrap": true
+        },
+        "created_at": "2026-04-20 02:38:16.960330",
+        "extraction_id": null,
+        "page_ref": null,
+        "source_hash": null,
+        "confidence_score": null,
+        "basis": null,
+        "publishable": false,
+        "quarantine_reason": null
+      }
+    ],
+    "sources": [
+      {
+        "id": 1715,
+        "country_id": 1,
+        "publisher": "Kenya National Bureau of Statistics",
+        "title": "Economic Indicators Time Series",
+        "url": "https://www.knbs.or.ke/consumer-price-indices/",
+        "file_path": null,
+        "fetch_date": "2025-11-09 01:16:41.801176",
+        "md5": null,
+        "doc_type": "REPORT",
+        "metadata": {},
+        "created_at": "2025-11-09 01:16:41.801176",
+        "status": "AVAILABLE",
+        "last_seen_at": "2025-11-09 01:16:41.801176",
+        "content_type": null,
+        "http_status": null,
+        "last_verified_at": null
+      },
+      {
+        "id": 1823,
+        "country_id": 1,
+        "publisher": "Central Bank of Kenya / National Treasury",
+        "title": "CBK Public Debt Report & KNBS Economic Survey 2025",
+        "url": null,
+        "file_path": null,
+        "fetch_date": "2025-04-30 00:00:00",
+        "md5": null,
+        "doc_type": "LOAN",
+        "metadata": {
+          "scope": "national",
+          "source": "bootstrap",
+          "cbk_csv_latest": "Apr 2025",
+          "status_before_3c": "AVAILABLE"
+        },
+        "created_at": "2026-02-18 13:42:10.423029",
+        "status": "FAILED",
+        "last_seen_at": "2026-02-18 13:42:10.423029",
+        "content_type": null,
+        "http_status": null,
+        "last_verified_at": null
+      }
+    ],
+    "rolled_back": true
+  },
+  "source_documents_to_allocate_or_reuse": {
+    "knbs_jan2025": {
+      "allocate_or_reuse_by_url": true,
+      "country_id": 1,
+      "publisher": "Kenya National Bureau of Statistics",
+      "title": "Consumer Price Indices and Inflation Rates for January 2025",
+      "url": "https://www.knbs.or.ke/wp-content/uploads/2025/01/Kenya-Consumer-Price-Indices-and-Inflation-Rates-January-2025.pdf",
+      "md5": "b00fde8e84e20a038a6f5e34a329d054",
+      "sha256": "ca9654579a2a0b8d14301de005cea70f1db2943c8d40cb111be3b8b1e0ccd44d",
+      "doc_type": "REPORT",
+      "content_type": "application/pdf",
+      "http_status": 200,
+      "page_number": 2,
+      "table": "Table 1: Overall CPI and Rates of Inflation",
+      "base_period": "February 2019 = 100"
+    },
+    "knbs_dec2024": {
+      "allocate_or_reuse_by_url": true,
+      "country_id": 1,
+      "publisher": "Kenya National Bureau of Statistics",
+      "title": "Consumer Price Indices and Inflation Rates for December 2024",
+      "url": "https://www.knbs.or.ke/wp-content/uploads/2024/12/Kenya-Consumer-Price-Indices-and-Inflation-Rates-December-2024.pdf",
+      "md5": "23fd1036538c58f9044fbf63dffddb78",
+      "sha256": "75e6f741704874180edd8378ec6219c5920f15082496e6bf47aa00e0f7570614",
+      "doc_type": "REPORT",
+      "content_type": "application/pdf",
+      "http_status": 200,
+      "page_number": 2,
+      "table": "Table 1: Overall CPI and Rates of Inflation",
+      "base_period": "February 2019 = 100"
+    }
+  },
+  "extractions_to_allocate": {
+    "knbs_jan2025_table1": {
+      "source_document_ref": "knbs_jan2025",
+      "page_number": 2,
+      "extractor": "manual_review",
+      "confidence": null,
+      "extracted_json": {
+        "base_period": "February 2019 = 100",
+        "measure": "national overall CPI",
+        "table": "Table 1",
+        "observations": {
+          "2025-01-31": "142.68",
+          "2024-12-31": "141.66"
+        }
+      }
+    },
+    "knbs_dec2024_table1": {
+      "source_document_ref": "knbs_dec2024",
+      "page_number": 2,
+      "extractor": "manual_review",
+      "confidence": null,
+      "extracted_json": {
+        "base_period": "February 2019 = 100",
+        "measure": "national overall CPI",
+        "table": "Table 1",
+        "observations": {
+          "2024-12-31": "141.66"
+        }
+      }
+    }
+  },
+  "updates": [
+    {
+      "table": "economic_indicators",
+      "row_id": 67,
+      "before": {
+        "id": 67,
+        "indicator_type": "cpi",
+        "indicator_date": "2025-01-31 00:00:00",
+        "value": "143.08",
+        "entity_id": null,
+        "unit": "index",
+        "source_document_id": 1715,
+        "source_page": null,
+        "confidence": "1.00",
+        "metadata": {
+          "notes": "Consumer Price Index (Feb 2009 = 100). Source: KNBS.",
+          "source": "KNBS CPI January 2025",
+          "data_quality": "official"
+        },
+        "created_at": "2026-03-26 00:56:36.191289",
+        "extraction_id": null,
+        "page_ref": null,
+        "source_hash": null,
+        "confidence_score": null,
+        "basis": null,
+        "publishable": false,
+        "quarantine_reason": null
+      },
+      "after": {
+        "id": 67,
+        "indicator_type": "cpi",
+        "indicator_date": "2025-01-31 00:00:00",
+        "value": "142.68",
+        "entity_id": null,
+        "unit": "index_2019_02_100",
+        "source_document_id": {
+          "allocated_document_ref": "knbs_jan2025"
+        },
+        "source_page": 2,
+        "confidence": "1.00",
+        "metadata": {
+          "publisher": "Kenya National Bureau of Statistics",
+          "source": "Consumer Price Indices and Inflation Rates for January 2025",
+          "source_label": "KNBS, monthly national overall CPI",
+          "measure": "overall consumer price index, February 2019 = 100",
+          "base_period": "2019-02",
+          "frequency": "monthly",
+          "data_quality": "official",
+          "page_ref": "p.2 / Table 1",
+          "review_date": "2026-09-30",
+          "notes": "Reviewed national Overall CPI column; index level, not an inflation percentage."
+        },
+        "created_at": "2026-03-26 00:56:36.191289",
+        "extraction_id": {
+          "allocated_extraction_ref": "knbs_jan2025_table1"
+        },
+        "page_ref": "p.2 / Table 1",
+        "source_hash": "ca9654579a2a0b8d14301de005cea70f1db2943c8d40cb111be3b8b1e0ccd44d",
+        "confidence_score": null,
+        "basis": "ACTUAL",
+        "publishable": false,
+        "quarantine_reason": null
+      },
+      "invariant": "Preserve exact case/type/date/entity/id and created_at. No merge, deletion or rescaling."
+    },
+    {
+      "table": "economic_indicators",
+      "row_id": 86,
+      "before": {
+        "id": 86,
+        "indicator_type": "CPI",
+        "indicator_date": "2025-01-31 00:00:00",
+        "value": "143.08",
+        "entity_id": null,
+        "unit": "index",
+        "source_document_id": 1823,
+        "source_page": null,
+        "confidence": "0.90",
+        "metadata": {
+          "source": "KNBS Consumer Price Index January 2025",
+          "bootstrap": true
+        },
+        "created_at": "2026-04-20 02:38:16.960329",
+        "extraction_id": null,
+        "page_ref": null,
+        "source_hash": null,
+        "confidence_score": null,
+        "basis": null,
+        "publishable": false,
+        "quarantine_reason": null
+      },
+      "after": {
+        "id": 86,
+        "indicator_type": "CPI",
+        "indicator_date": "2025-01-31 00:00:00",
+        "value": "142.68",
+        "entity_id": null,
+        "unit": "index_2019_02_100",
+        "source_document_id": {
+          "allocated_document_ref": "knbs_jan2025"
+        },
+        "source_page": 2,
+        "confidence": "0.90",
+        "metadata": {
+          "publisher": "Kenya National Bureau of Statistics",
+          "source": "Consumer Price Indices and Inflation Rates for January 2025",
+          "source_label": "KNBS, monthly national overall CPI",
+          "measure": "overall consumer price index, February 2019 = 100",
+          "base_period": "2019-02",
+          "frequency": "monthly",
+          "data_quality": "official",
+          "page_ref": "p.2 / Table 1",
+          "review_date": "2026-09-30",
+          "notes": "Reviewed national Overall CPI column; index level, not an inflation percentage."
+        },
+        "created_at": "2026-04-20 02:38:16.960329",
+        "extraction_id": {
+          "allocated_extraction_ref": "knbs_jan2025_table1"
+        },
+        "page_ref": "p.2 / Table 1",
+        "source_hash": "ca9654579a2a0b8d14301de005cea70f1db2943c8d40cb111be3b8b1e0ccd44d",
+        "confidence_score": null,
+        "basis": "ACTUAL",
+        "publishable": false,
+        "quarantine_reason": null
+      },
+      "invariant": "Preserve exact case/type/date/entity/id and created_at. No merge, deletion or rescaling."
+    },
+    {
+      "table": "economic_indicators",
+      "row_id": 87,
+      "before": {
+        "id": 87,
+        "indicator_type": "CPI",
+        "indicator_date": "2024-12-31 00:00:00",
+        "value": "142.47",
+        "entity_id": null,
+        "unit": "index",
+        "source_document_id": 1823,
+        "source_page": null,
+        "confidence": "0.90",
+        "metadata": {
+          "source": "KNBS Consumer Price Index December 2024",
+          "bootstrap": true
+        },
+        "created_at": "2026-04-20 02:38:16.960330",
+        "extraction_id": null,
+        "page_ref": null,
+        "source_hash": null,
+        "confidence_score": null,
+        "basis": null,
+        "publishable": false,
+        "quarantine_reason": null
+      },
+      "after": {
+        "id": 87,
+        "indicator_type": "CPI",
+        "indicator_date": "2024-12-31 00:00:00",
+        "value": "141.66",
+        "entity_id": null,
+        "unit": "index_2019_02_100",
+        "source_document_id": {
+          "allocated_document_ref": "knbs_dec2024"
+        },
+        "source_page": 2,
+        "confidence": "0.90",
+        "metadata": {
+          "publisher": "Kenya National Bureau of Statistics",
+          "source": "Consumer Price Indices and Inflation Rates for December 2024",
+          "source_label": "KNBS, monthly national overall CPI",
+          "measure": "overall consumer price index, February 2019 = 100",
+          "base_period": "2019-02",
+          "frequency": "monthly",
+          "data_quality": "official",
+          "page_ref": "p.2 / Table 1",
+          "review_date": "2026-09-30",
+          "notes": "Reviewed national Overall CPI column; index level, not an inflation percentage."
+        },
+        "created_at": "2026-04-20 02:38:16.960330",
+        "extraction_id": {
+          "allocated_extraction_ref": "knbs_dec2024_table1"
+        },
+        "page_ref": "p.2 / Table 1",
+        "source_hash": "75e6f741704874180edd8378ec6219c5920f15082496e6bf47aa00e0f7570614",
+        "confidence_score": null,
+        "basis": "ACTUAL",
+        "publishable": false,
+        "quarantine_reason": null
+      },
+      "invariant": "Preserve exact case/type/date/entity/id and created_at. No merge, deletion or rescaling."
+    }
+  ],
+  "fixture_prerequisite": {
+    "file": "backend/seeding/real_data/economic_indicators.json",
+    "before_sha256": "f1e70b98f6573f98b49b1eef606a3ffe2651056e3012e993a74f588f3f261a9f",
+    "before": {
+      "indicator_type": "CPI",
+      "date": "2025-01-31",
+      "value": 143.08,
+      "unit": "index",
+      "source_url": "https://www.knbs.or.ke/consumer-price-indices/",
+      "source": "KNBS CPI January 2025",
+      "data_quality": "official",
+      "notes": "Consumer Price Index (Feb 2009 = 100). Source: KNBS."
+    },
+    "proposed_after": {
+      "indicator_type": "CPI",
+      "date": "2025-01-31",
+      "value": 142.68,
+      "unit": "index_2019_02_100",
+      "source_url": "https://www.knbs.or.ke/wp-content/uploads/2025/01/Kenya-Consumer-Price-Indices-and-Inflation-Rates-January-2025.pdf",
+      "source": "Consumer Price Indices and Inflation Rates for January 2025",
+      "data_quality": "official",
+      "notes": "Monthly national overall CPI, February 2019 = 100; January 2025, Table 1, PDF page 2.",
+      "publisher": "Kenya National Bureau of Statistics",
+      "measure": "overall consumer price index, February 2019 = 100",
+      "base_period": "2019-02",
+      "page_ref": "p.2 / Table 1",
+      "source_hash": "ca9654579a2a0b8d14301de005cea70f1db2943c8d40cb111be3b8b1e0ccd44d"
+    },
+    "reason": "Otherwise the dedicated fixture supplement will reapply unsupported 143.08/basis to lowercase cpi row 67."
+  },
+  "unchanged_sources": [
+    1715,
+    1823
+  ],
+  "rollback": {
+    "conditions": [
+      "Keep newly allocated source/extraction IDs in execution receipt.",
+      "Require the full current row to equal the approved after-image, resolving symbolic IDs to execution IDs. Refuse on any drift.",
+      "Restore each full before-image for IDs 67, 86, 87 only; verify unchanged case/date/entity and unrelated rows.",
+      "Retain reviewed source and extraction records as archival evidence; do not delete shared sources 1715/1823.",
+      "Rollback is a recovery to unsupported observations; re-quarantine public readers until re-reviewed. Do not resume jobs against the old fixture."
+    ],
+    "before_images": [
+      {
+        "id": 67,
+        "indicator_type": "cpi",
+        "indicator_date": "2025-01-31 00:00:00",
+        "value": "143.08",
+        "entity_id": null,
+        "unit": "index",
+        "source_document_id": 1715,
+        "source_page": null,
+        "confidence": "1.00",
+        "metadata": {
+          "notes": "Consumer Price Index (Feb 2009 = 100). Source: KNBS.",
+          "source": "KNBS CPI January 2025",
+          "data_quality": "official"
+        },
+        "created_at": "2026-03-26 00:56:36.191289",
+        "extraction_id": null,
+        "page_ref": null,
+        "source_hash": null,
+        "confidence_score": null,
+        "basis": null,
+        "publishable": false,
+        "quarantine_reason": null
+      },
+      {
+        "id": 86,
+        "indicator_type": "CPI",
+        "indicator_date": "2025-01-31 00:00:00",
+        "value": "143.08",
+        "entity_id": null,
+        "unit": "index",
+        "source_document_id": 1823,
+        "source_page": null,
+        "confidence": "0.90",
+        "metadata": {
+          "source": "KNBS Consumer Price Index January 2025",
+          "bootstrap": true
+        },
+        "created_at": "2026-04-20 02:38:16.960329",
+        "extraction_id": null,
+        "page_ref": null,
+        "source_hash": null,
+        "confidence_score": null,
+        "basis": null,
+        "publishable": false,
+        "quarantine_reason": null
+      },
+      {
+        "id": 87,
+        "indicator_type": "CPI",
+        "indicator_date": "2024-12-31 00:00:00",
+        "value": "142.47",
+        "entity_id": null,
+        "unit": "index",
+        "source_document_id": 1823,
+        "source_page": null,
+        "confidence": "0.90",
+        "metadata": {
+          "source": "KNBS Consumer Price Index December 2024",
+          "bootstrap": true
+        },
+        "created_at": "2026-04-20 02:38:16.960330",
+        "extraction_id": null,
+        "page_ref": null,
+        "source_hash": null,
+        "confidence_score": null,
+        "basis": null,
+        "publishable": false,
+        "quarantine_reason": null
+      }
+    ]
+  },
+  "release_requirements": [
+    "Do not execute this manifest in this development session.",
+    "Recapture all three full row preimages and the source PDF bytes; require exact row and hash equality or renewed review.",
+    "Reuse any existing document/extraction matching the exact PDF/hash/page; do not guess assigned IDs.",
+    "Keep uppercase CPI, lowercase cpi and World Bank cpi_index (2010=100) separate.",
+    "Review and deploy the fixture correction or remove that supplement before any approved stored correction/runner restart.",
+    "Rehearse correction and rollback on a disposable PostgreSQL copy.",
+    "Verify source/model/API value, unit, page, URL and hash coherently after any approved change.",
+    "The current indicators endpoint ignores publishable=false and quarantine_reason; a metadata-only quarantine is ineffective. Any withholding option must honor the existing shared publication selector and explain absence. No such reader change is authorized by this manifest.",
+    "No historical inflation reconstruction, baseline change, global reseed or Actions enablement."
+  ]
+}
