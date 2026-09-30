@@ -52,7 +52,9 @@ EXTRACTOR_ID = "oag_blue_book"  # recorded on every extractions row
 #: 2: paragraphs past 999, OAG's skipped numbers, prior-year tables, the
 #:    appendix rule, and the clean-statement typos (FY2024/25 national book:
 #:    813 rows, 329 of them table rows, became 1,882 findings).
-EXTRACTOR_VERSION = 2
+#: 3: a standalone historical list after an unrelated finding is withheld
+#:    from that finding; a prior-year finding still retains its own table.
+EXTRACTOR_VERSION = 3
 
 # ── text integrity ───────────────────────────────────────────────────
 _CID_RE = re.compile(r"\(cid:\d+\)")
@@ -109,6 +111,14 @@ _NO_ISSUE_RE = re.compile(
 # The header of the table an "Unresolved Prior Year Matters" finding lists last
 # year's issues in: "No. Audit Issues for 2023/2024", "No. Audit Issue".
 _PRIOR_ISSUES_TABLE_RE = re.compile(r"^No\.?\s+Audit\s+Issues?\b", re.IGNORECASE)
+# This is a standalone heading in the FY2024/25 Assemblies volume (PDF p.239),
+# after paragraph 645's conclusion. It introduces a separate historical list,
+# not paragraph 645's body. A finding about prior-year matters can instead own
+# such a list as its evidence.
+_PRIOR_ISSUES_LIST_RE = re.compile(
+    r"^List of Unresolved Prior[\s\-–—]+Years? Matters:?\s*$", re.IGNORECASE
+)
+_PRIOR_YEAR_CONTEXT_RE = re.compile(r"\bprior[\s\-–—]+years?\b", re.IGNORECASE)
 # Appendices (summary tables of opinions per MDA) follow the last chapter.
 # Their numbered table rows are not findings — a chapter ends here. Only the
 # HEADING ends it: "APPENDICES", "Appendix A: Unmodified Opinion". Findings
@@ -277,11 +287,13 @@ def segment_chapter(
       are low, those rows pass the continuity rule as body-less "findings",
       and the real findings after them then look like steps backwards and are
       dropped (FY2024/25 assemblies, Mombasa, p.14). With this on, numbered
-      lines continuing the table's own 1, 2, 3 sequence stay in the finding's
-      body. The first number that breaks the sequence, or any heading, ends
-      the table. It changes nothing in documents 2392, 2395 or 2396 once
-      paragraphs past 999 are read, and guards the low-numbered chapters
-      where the continuity rule alone cannot tell a row from a paragraph.
+      lines continuing the table's own 1, 2, 3 sequence stay in the prior-year
+      finding's body. A separate "List of Unresolved Prior Years Matters"
+      heading after an unrelated finding instead ends that finding and
+      withholds the historical table. A structural heading resumes the walk;
+      an unmarked low number is withheld because it could still be a row.
+      This guards the low-numbered chapters where continuity alone cannot
+      tell a table row from a paragraph.
     """
     finding_start_re = finding_start_re or _FINDING_START_RE
     lines: List[Tuple[int, str, str]] = []  # (pdf_page_1based, line, method)
@@ -298,6 +310,22 @@ def segment_chapter(
         for l in page_lines:
             lines.append((idx + 1, l.strip(), page.method))
 
+    # The table title can wrap even when the body extraction is otherwise
+    # readable. Join only the two lines that form this exact structural title.
+    joined_lines = []
+    position = 0
+    while position < len(lines):
+        page, line, method = lines[position]
+        if position + 1 < len(lines):
+            candidate = f"{line} {lines[position + 1][1]}"
+            if _PRIOR_ISSUES_LIST_RE.fullmatch(candidate):
+                joined_lines.append((page, candidate, method))
+                position += 2
+                continue
+        joined_lines.append((page, line, method))
+        position += 1
+    lines = joined_lines
+
     findings: List[BlueBookFinding] = []
     rejected = 0
     subreport: Optional[str] = None
@@ -307,6 +335,9 @@ def segment_chapter(
     cur: Optional[dict] = None
     prev_no: Optional[int] = None
     table_next: Optional[int] = None  # next row number while inside a table
+    detached_prior_list = False  # historical document scope, not a finding
+    detached_rows = 0
+    detached_max_row = 0
 
     def flush() -> None:
         nonlocal cur, rejected
@@ -356,6 +387,43 @@ def segment_chapter(
     for pdf_page, line, method in lines:
         if not line:
             continue
+        if skip_prior_issue_tables and _PRIOR_ISSUES_LIST_RE.fullmatch(line):
+            if cur is None or not _PRIOR_YEAR_CONTEXT_RE.search(cur["title"]):
+                flush()
+                table_next = None
+                detached_prior_list = True
+                detached_rows = 0
+                detached_max_row = 0
+                sub_section = None
+                continue
+        if detached_prior_list:
+            # Page breaks, repeated year headers and wrapped rows stay in the
+            # historical list. A report/section heading resumes the walk.
+            # Without one, a paragraph may resume only after at least one
+            # historical row, when its number continues the chapter sequence
+            # and is well beyond every row number seen in the list. Close
+            # numbers remain ambiguous and are withheld rather than fabricated.
+            row = finding_start_re.match(line)
+            structural = (
+                _SUBREPORT_RE.match(line)
+                or _OPINION_RE.match(line)
+                or _HEADING_RE.match(line)
+                or (stop_at_appendix and _APPENDIX_RE.match(line))
+            )
+            resumes_numbering = (
+                row is not None
+                and detached_rows > 0
+                and prev_no is not None
+                and prev_no < int(row.group(1)) <= prev_no + max_number_step
+                and int(row.group(1)) > detached_max_row + max_number_step
+                and prev_no - detached_max_row > max(20, 10 * max_number_step)
+            )
+            if not structural and not resumes_numbering:
+                if row is not None:
+                    detached_rows += 1
+                    detached_max_row = max(detached_max_row, int(row.group(1)))
+                continue
+            detached_prior_list = False
         if skip_prior_issue_tables and cur is not None:
             if _PRIOR_ISSUES_TABLE_RE.match(line):
                 table_next = 1
