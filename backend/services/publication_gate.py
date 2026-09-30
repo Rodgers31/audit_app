@@ -783,8 +783,6 @@ def _is_published_county_row(loan: Any, *, entity_type: Any = None) -> bool:
     )
 
 
-
-
 def county_pending_bills_row_is_published(loan: Any) -> bool:
     """The county half of :func:`pending_bills_row_is_published`, alone."""
     return _is_published_county_row(loan)
@@ -833,20 +831,20 @@ def county_pending_bills_details(loans: Iterable[Any]) -> Dict[str, Any]:
         "as_at": None, "fiscal_year": None, "table": None,
         "source_url": None, "notes": [],
     }
-    for loan in loans or []:
-        if not _is_published_county_row(loan):
-            continue
-        if pending_bills_row_amount(loan) is None:
-            continue
+    selection = select_county_pending_bills(loans)
+    details["absent_reason"] = selection["absent_reason"]
+    details["selection_policy"] = "latest_common_reporting_date"
+    details["reporting_date"] = selection["as_at"]
+    details["sources"] = selection["sources"]
+    for loan in selection["rows"]:
         for entry in _pending_bills_entries(loan):
-            if entry.get("publication") != COUNTY_PENDING_BILLS_PUBLICATION:
-                continue
-            details["as_at"] = details["as_at"] or pending_bills_row_as_at(loan)
+            details["as_at"] = pending_bills_row_as_at(loan)
             for key in ("fiscal_year", "table", "source_url"):
-                details[key] = details[key] or entry.get(key)
+                details[key] = entry.get(key)
             for note in entry.get("reader_notes") or []:
                 if isinstance(note, dict) and note.get("code") in _COUNTY_PENDING_BILLS_NOTE_CODES:
-                    details["notes"].append(dict(note))
+                    if note not in details["notes"]:
+                        details["notes"].append(dict(note))
     return details
 
 
@@ -895,19 +893,140 @@ def county_pending_bills(loans: Iterable[Any]) -> Optional[float]:
     the county list, the map, the detail page, compare, ``/pending-bills`` and
     the debt page's top counties — so they cannot disagree.
     """
-    total = 0.0
-    found = False
-    for loan in loans or []:
-        # The county side only: a row on a county entity declaring a national
-        # line is not the county's figure (adversarial pass, #238).
-        if not _is_published_county_row(loan):
-            continue
-        amount = pending_bills_row_amount(loan)
-        if amount is None:
-            continue
-        total += amount
-        found = True
-    return total if found else None
+    return select_county_pending_bills(loans)["amount"]
+
+
+def select_county_pending_bills(loans: Iterable[Any], *, as_at=None) -> Dict[str, Any]:
+    """Select a stock, never sum snapshots or choose a competing source by ID.
+
+    Callers spanning counties supply the latest common declared reporting day.
+    One county's direct reader selects its newest day. Exact duplicate evidence
+    is idempotent; differing amount, source, period, table, batch, currency or
+    qualifications is a conflict. Missing latest amounts never revive history.
+    """
+    candidates = [loan for loan in loans or [] if _is_published_county_row(loan)]
+    day = as_at or max((pending_bills_row_as_at(l) for l in candidates), default=None)
+    latest = [l for l in candidates if pending_bills_row_as_at(l) == day]
+
+    def evidence(l):
+        p = l.provenance
+        return {
+            "source_document_id": getattr(l, "source_document_id", None),
+            "source_url": p.get("source_url"),
+            "as_at": day,
+            "fiscal_year": p.get("fiscal_year"),
+            "table": p.get("table"),
+            "publication_batch": p.get("publication_batch"),
+            "currency": getattr(l, "currency", None),
+            "reader_notes": p.get("reader_notes") or [],
+            "page_ref": getattr(l, "page_ref", None) or p.get("page_ref"),
+            "page": p.get("page"),
+            "amount": pending_bills_row_amount(l),
+        }
+
+    import json
+
+    sources = {json.dumps(evidence(l), sort_keys=True): evidence(l) for l in latest}
+    reason = (
+        "not_reported_at_latest_date"
+        if not latest
+        else "conflicting_same_date_pending_sources"
+        if len(sources) > 1
+        else "pending_amount_not_reported"
+        if pending_bills_row_amount(latest[0]) is None
+        else "unsupported_pending_currency"
+        if getattr(latest[0], "currency", None) != "KES"
+        else None
+    )
+    # Representative row only for byte-equivalent evidence, never max-ID wins.
+    selected = latest[:1] if reason is None else []
+    return {
+        "amount": pending_bills_row_amount(selected[0]) if selected else None,
+        "rows": selected,
+        "as_at": day,
+        "absent_reason": reason,
+        "sources": [sources[k] for k in sorted(sources)[:20]],
+        "source_count": len(sources),
+        "sources_truncated": len(sources) > 20,
+    }
+
+
+def county_pending_reporting_date(db) -> Optional[str]:
+    """One bounded-width query of county stocks; no finding text or source N+1."""
+    from models import Loan, Entity, EntityType, DebtCategory
+
+    rows = (
+        db.query(Loan.provenance)
+        .join(Entity, Loan.entity_id == Entity.id)
+        .filter(
+            Entity.type == EntityType.COUNTY,
+            Loan.debt_category == DebtCategory.PENDING_BILLS,
+        )
+        .all()
+    )
+    from types import SimpleNamespace
+
+    candidates = [
+        SimpleNamespace(
+            provenance=r.provenance,
+            debt_category=DebtCategory.PENDING_BILLS,
+            entity=SimpleNamespace(type=EntityType.COUNTY),
+        )
+        for r in rows
+    ]
+    return max(
+        (pending_bills_row_as_at(l) for l in candidates if _is_published_county_row(l)),
+        default=None,
+    )
+
+
+def county_loans_at_reporting_date(loans, as_at):
+    """Retain borrowing rows and only the common-date pending observations."""
+    return [
+        l
+        for l in loans
+        if not _is_published_county_row(l) or pending_bills_row_as_at(l) == as_at
+    ]
+
+
+def pending_budget_compatible(loans, fiscal_period, *, budget_currency="KES") -> bool:
+    """Only a year-end stock and budget for the same Kenyan fiscal year."""
+    selection = select_county_pending_bills(loans)
+    if selection["amount"] is None:
+        return False
+    return pending_period_compatible(
+        selection["as_at"],
+        selection["rows"][0].provenance.get("fiscal_year"),
+        fiscal_period,
+        budget_currency=budget_currency,
+    )
+
+
+def pending_period_compatible(
+    as_at, fiscal_year, fiscal_period, *, budget_currency="KES"
+):
+    from datetime import date
+
+    if not fiscal_period or budget_currency != "KES":
+        return False
+    try:
+        end = date.fromisoformat(fiscal_period["end_date"][:10])
+        start = date.fromisoformat(fiscal_period["start_date"][:10])
+    except (TypeError, KeyError, ValueError):
+        return False
+    if end.year < 2:
+        return False
+    match = re.fullmatch(
+        r"(?:FY\s*)?(\d{4})/(\d{2}|\d{4})", str(fiscal_year or "").strip(), re.I
+    )
+    return bool(
+        match
+        and start == date(end.year - 1, 7, 1)
+        and end == date(end.year, 6, 30)
+        and as_at == end.isoformat()
+        and int(match[1]) == start.year
+        and int(match[2]) == (end.year if len(match[2]) == 4 else end.year % 100)
+    )
 
 
 # --------------------------------------------------------------------------

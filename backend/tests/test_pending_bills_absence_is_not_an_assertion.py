@@ -319,8 +319,6 @@ def test_the_county_path_infers_from_rows_it_actually_read(
         _bill(county_entity, seed_source_doc,
               "Pending Bills — Salary Arrears (Mombasa County)", 30.0 * B,
               "FY2024/25", 11),
-        _bill(county_entity, seed_source_doc,
-              "Pending Bills — County Governments", 70.0 * B, "FY2024/25", 12),
     ])
     db_session.commit()
 
@@ -328,7 +326,7 @@ def test_the_county_path_infers_from_rows_it_actually_read(
     body = client.get("/api/v1/pending-bills/counties/mombasa-county").json()
 
     assert body["breakdown_by_type"]["salary"] == pytest.approx(30.0 * B)
-    assert body["breakdown_by_type"]["unclassified"] == pytest.approx(70.0 * B)
+    assert "unclassified" not in body["breakdown_by_type"]
     assert "supplier_arrears" not in body["breakdown_by_type"]
     # Something was classified, so the block is not wholly absent.
     assert body["breakdown_by_type_absent_reason"] is None

@@ -29,6 +29,10 @@ from services.publication_gate import (
     county_debt_instrument_failure,
     county_pending_bills,
     county_pending_bills_details,
+    select_county_pending_bills,
+    county_pending_reporting_date,
+    county_loans_at_reporting_date,
+    pending_budget_compatible,
     county_pending_bills_row_is_published,
     pending_bills_row_as_at,
     pending_bills_row_amount,
@@ -64,6 +68,7 @@ from pydantic import BaseModel, field_validator
 from services.entity_publication import public_entity_metadata
 from sqlalchemy import or_, text
 from sqlalchemy.exc import SQLAlchemyError
+from services.county_financial_health import county_audit_signals
 from sqlalchemy.orm import Session, joinedload
 from starlette.responses import JSONResponse, Response
 
@@ -897,7 +902,10 @@ def _county_pending_bills_absence(db: Session, entity) -> Optional[Dict[str, Any
 
 
 def _county_pending_bills_fields(
-    loans, pending_bills: Optional[float], absence: Optional[Dict[str, Any]] = None
+    loans,
+    pending_bills: Optional[float],
+    absence: Optional[Dict[str, Any]] = None,
+    reporting_date=None,
 ) -> Dict[str, Any]:
     """``pending_bills_as_at`` / ``_source`` / ``_notes`` / ``_absence``.
 
@@ -907,8 +915,12 @@ def _county_pending_bills_fields(
     :func:`_county_pending_bills_absence`), and only ever set when there is
     none.
     """
+    selection = select_county_pending_bills(loans, as_at=reporting_date)
     if pending_bills is None:
         return {
+            "pending_bills_selection": {
+                k: v for k, v in selection.items() if k != "rows"
+            },
             "pending_bills_as_at": None,
             "pending_bills_source": None,
             "pending_bills_notes": [],
@@ -916,6 +928,7 @@ def _county_pending_bills_fields(
         }
     details = county_pending_bills_details(loans)
     return {
+        "pending_bills_selection": {k: v for k, v in selection.items() if k != "rows"},
         "pending_bills_as_at": details["as_at"],
         "pending_bills_source": {
             "publisher": "Controller of Budget",
@@ -925,6 +938,10 @@ def _county_pending_bills_fields(
             ),
             "table": details["table"],
             "url": details["source_url"],
+            "source_document_id": details["sources"][0]["source_document_id"],
+            "page_ref": details["sources"][0]["page_ref"],
+            "page": details["sources"][0]["page"],
+            "publication_batch": details["sources"][0]["publication_batch"],
         },
         "pending_bills_notes": details["notes"],
         "pending_bills_absence": None,
@@ -972,7 +989,7 @@ _HEALTH_GRADE_BANDS = ((85, "A"), (70, "B+"), (55, "B"), (40, "B-"), (0, "C"))
 _PENDING_BILLS_SEVERE_SHARE = 25.0
 
 #: Site-chosen mapping of an audit status onto 0-100. County detail derives
-#: that status from the most recently ingested publishable finding severity;
+#: that status from the latest executive fiscal period maximum finding severity;
 #: it is not an official Auditor-General rating.
 _AUDIT_OPINION_SCORES = {
     "clean": 100.0,
@@ -1042,7 +1059,7 @@ def county_financial_health(
         100 so a lowballed target cannot buy a high score.
     ``pending_bills``      pending bills as a share of budget, inverted.
     ``audit_opinion``      audit status supplied by the caller. The county
-        detail currently maps its most recently ingested publishable finding
+        detail currently maps its latest executive fiscal period maximum finding
         severity to this status; the label is retained for compatibility,
         not an OAG rating.
 
@@ -1104,7 +1121,7 @@ def county_financial_health(
                 "name": "audit_opinion",
                 "score": opinion_score,
                 "observed": audit_status,
-                "basis": "audit status supplied by caller; county detail maps most recently ingested publishable finding severity",
+                "basis": "audit status supplied by caller; severity-derived site signal, not an official OAG opinion; latest executive fiscal period maximum finding severity",
             }
         )
 
@@ -3336,7 +3353,14 @@ async def get_counties(fiscal_year: Optional[str] = None):
                 bl_by_entity.setdefault(bl.entity_id, []).append(bl)
 
             # 3. Loans (all county loans at once)
-            all_loans = db.query(DBLoan).filter(DBLoan.entity_id.in_(entity_ids)).all()
+            _pending_reporting_day = county_pending_reporting_date(db)
+            all_loans = county_loans_at_reporting_date(
+                db.query(DBLoan).filter(DBLoan.entity_id.in_(entity_ids)).all(),
+                _pending_reporting_day,
+            )
+            _audit_signals = county_audit_signals(
+                db, entity_ids, display_grade=_audit_is_display_grade
+            )
             loans_by_entity: dict = {}
             for loan in all_loans:
                 loans_by_entity.setdefault(loan.entity_id, []).append(loan)
@@ -3512,17 +3536,9 @@ async def get_counties(fiscal_year: Optional[str] = None):
                         }
                     )
 
-                audit_status = "pending"
-                audit_rating = ""
-                if latest_audit and latest_audit.severity:
-                    sev = latest_audit.severity.value
-                    audit_rating = sev
-                    if sev == "info":
-                        audit_status = "clean"
-                    elif sev == "warning":
-                        audit_status = "qualified"
-                    elif sev == "critical":
-                        audit_status = "adverse"
+                _audit_signal = _audit_signals[e.id]
+                audit_status = _audit_signal["status"]
+                audit_rating = _audit_signal["severity"] or ""
 
                 # One disclosed composite, shared by all three endpoints — see
                 # county_financial_health. The formula this replaces was a piecewise
@@ -3536,7 +3552,13 @@ async def get_counties(fiscal_year: Optional[str] = None):
                 _health = county_financial_health(
                     total_allocated=_published_budget["total_allocation"],
                     total_spent=_published_budget["total_spent"],
-                    pending_bills=pending_bills,
+                    pending_bills=pending_bills
+                    if pending_budget_compatible(
+                        loans,
+                        _published_budget["fiscal_period"],
+                        budget_currency=_published_budget["currency"],
+                    )
+                    else None,
                     audit_status=audit_status,
                     own_source_target=county_own_source_target(budget_lines),
                     own_source_actual=county_own_source_revenue(budget_lines),
@@ -3562,8 +3584,7 @@ async def get_counties(fiscal_year: Optional[str] = None):
                 coords = COUNTY_COORDINATES.get(county_id or "", [36.8219, -1.2921])
 
                 last_audit_date = None
-                if latest_audit and latest_audit.created_at:
-                    last_audit_date = latest_audit.created_at.isoformat().split("T")[0]
+                last_audit_date = _audit_signal.get("period_end")
 
                 results.append(
                     {
@@ -3606,6 +3627,9 @@ async def get_counties(fiscal_year: Optional[str] = None):
                         "revenue_collection": revenue_collection,
                         "revenue": _county_revenue_for_lines(budget_lines),
                         "pending_bills": pending_bills,
+                        **_county_pending_bills_fields(
+                            loans, pending_bills, reporting_date=_pending_reporting_day
+                        ),
                         "debt": total_debt,
                         "total_debt": total_debt,
                         "gdp": float(gdp_data.gdp_value) if gdp_data else None,
@@ -3613,7 +3637,9 @@ async def get_counties(fiscal_year: Optional[str] = None):
                         "financial_health": _health,
                         "audit_rating": audit_rating,
                         "audit_status": audit_status,
+                        "audit_signal": _audit_signal,
                         "last_audit_date": last_audit_date,
+                        "last_audit_date_basis": "audited_period_end",
                         "audit_issues": audit_issues,
                         "audit_findings_count": len(audits),
                         "data_freshness": {
@@ -3623,8 +3649,8 @@ async def get_counties(fiscal_year: Optional[str] = None):
                                 else None
                             ),
                             "last_audit_source": (
-                                latest_audit.source_document_id
-                                if latest_audit
+                                _audit_signal["sources"][0]["source_document_id"]
+                                if len(_audit_signal["sources"]) == 1
                                 else None
                             ),
                         },
@@ -3851,7 +3877,11 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                         if recurrent_total == 0:
                             recurrent_total = keyword_rec
 
-                    loans = db.query(DBLoan).filter(DBLoan.entity_id == e.id).all()
+                    _pending_reporting_day = county_pending_reporting_date(db)
+                    loans = county_loans_at_reporting_date(
+                        db.query(DBLoan).filter(DBLoan.entity_id == e.id).all(),
+                        _pending_reporting_day,
+                    )
                     total_debt = county_debt_total(loans)
 
                     # Same reader as the list and /comprehensive.
@@ -3888,17 +3918,11 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                             }
                         )
 
-                    audit_status = "pending"
-                    audit_rating = ""
-                    if latest_audit and latest_audit.severity:
-                        sev = latest_audit.severity.value
-                        audit_rating = sev
-                        if sev == "info":
-                            audit_status = "clean"
-                        elif sev == "warning":
-                            audit_status = "qualified"
-                        elif sev == "critical":
-                            audit_status = "adverse"
+                    _audit_signal = county_audit_signals(
+                        db, [e.id], display_grade=_audit_is_display_grade
+                    )[e.id]
+                    audit_status = _audit_signal["status"]
+                    audit_rating = _audit_signal["severity"] or ""
 
                     # One disclosed composite, shared by all three endpoints — see
                     # county_financial_health. The formula this replaces was a piecewise
@@ -3912,7 +3936,13 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                     _health = county_financial_health(
                         total_allocated=_published_budget["total_allocation"],
                         total_spent=_published_budget["total_spent"],
-                        pending_bills=pending_bills,
+                        pending_bills=pending_bills
+                        if pending_budget_compatible(
+                            loans,
+                            _published_budget["fiscal_period"],
+                            budget_currency=_published_budget["currency"],
+                        )
+                        else None,
                         audit_status=audit_status,
                         own_source_target=county_own_source_target(budget_lines),
                         own_source_actual=county_own_source_revenue(budget_lines),
@@ -3945,10 +3975,7 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                     )
 
                     last_audit_date = None
-                    if latest_audit and latest_audit.created_at:
-                        last_audit_date = latest_audit.created_at.isoformat().split(
-                            "T"
-                        )[0]
+                    last_audit_date = _audit_signal.get("period_end")
 
                     if development_total == 0 and total_allocated > 0:
                         dev_from_meta = float(metrics.get("development_budget", 0))
@@ -3995,6 +4022,9 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                         "revenue_collection": revenue_collection,
                         "revenue": _county_revenue_for_lines(budget_lines),
                         "pending_bills": pending_bills,
+                        **_county_pending_bills_fields(
+                            loans, pending_bills, reporting_date=_pending_reporting_day
+                        ),
                         "debt": total_debt,
                         "total_debt": total_debt,
                         "gdp": float(gdp_data.gdp_value) if gdp_data else None,
@@ -4002,7 +4032,9 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                         "financial_health": _health,
                         "audit_rating": audit_rating,
                         "audit_status": audit_status,
+                        "audit_signal": _audit_signal,
                         "last_audit_date": last_audit_date,
+                        "last_audit_date_basis": "audited_period_end",
                         "audit_issues": audit_issues,
                         "audit_findings_count": len(audits),
                     }
@@ -4233,7 +4265,10 @@ async def get_county_comprehensive(
                     )
                     continue
                 _publishable_loans.append(_l)
-            loans = _publishable_loans
+            _pending_reporting_day = county_pending_reporting_date(db)
+            loans = county_loans_at_reporting_date(
+                _publishable_loans, _pending_reporting_day
+            )
 
             total_debt = county_debt_total(loans)
 
@@ -4380,17 +4415,10 @@ async def get_county_comprehensive(
                     }
                 )
 
-            # Audit status determination
-            latest_audit = audits[0] if audits else None
-            audit_status = "pending"
-            if latest_audit and latest_audit.severity:
-                sev = latest_audit.severity.value
-                if sev == "info":
-                    audit_status = "clean"
-                elif sev == "warning":
-                    audit_status = "qualified"
-                elif sev == "critical":
-                    audit_status = "adverse"
+            _audit_signal = county_audit_signals(
+                db, [entity.id], display_grade=_audit_is_display_grade
+            )[entity.id]
+            audit_status = _audit_signal["status"]
 
             # Financial health — one disclosed composite, shared with the
             # /counties list endpoint so the listing's Health column and this
@@ -4410,7 +4438,13 @@ async def get_county_comprehensive(
             _health = county_financial_health(
                 total_allocated=_published_budget["total_allocation"],
                 total_spent=_published_budget["total_spent"],
-                pending_bills=pending_bills,
+                pending_bills=pending_bills
+                if pending_budget_compatible(
+                    loans,
+                    _published_budget["fiscal_period"],
+                    budget_currency=_published_budget["currency"],
+                )
+                else None,
                 audit_status=audit_status,
                 own_source_target=_health_revenue["own_source_target"],
                 own_source_actual=_health_revenue["local_revenue"],
@@ -4428,10 +4462,16 @@ async def get_county_comprehensive(
                 and _published_budget["total_allocation"] > 0
                 and _published_budget["total_spent"] is not None,
                 "own_source_revenue": _own_source_target is not None
-                and _own_source_target > 0 and _own_source_actual is not None,
+                and _own_source_target > 0
+                and _own_source_actual is not None,
                 "pending_bills": _published_budget["total_allocation"] is not None
                 and _published_budget["total_allocation"] > 0
-                and pending_bills is not None,
+                and pending_bills is not None
+                and pending_budget_compatible(
+                    loans,
+                    _published_budget["fiscal_period"],
+                    budget_currency=_published_budget["currency"],
+                ),
                 "audit_opinion": audit_status in _AUDIT_OPINION_SCORES,
             }
             _unavailable_reasons = {
@@ -4441,17 +4481,26 @@ async def get_county_comprehensive(
                     or "no_positive_allocation"
                 ),
                 "own_source_revenue": (
-                    "target_not_reported" if _own_source_target is None
-                    else "no_positive_target" if _own_source_target <= 0
+                    "target_not_reported"
+                    if _own_source_target is None
+                    else "no_positive_target"
+                    if _own_source_target <= 0
                     else "actual_not_reported"
                 ),
                 "pending_bills": (
                     "budget_unavailable"
                     if _published_budget["total_allocation"] is None
                     or _published_budget["total_allocation"] <= 0
-                    else "pending_bills_not_reported"
+                    else "pending_budget_period_mismatch"
+                    if pending_bills is not None
+                    else (
+                        county_pending_bills_details(loans).get("absent_reason")
+                        if loans
+                        else None
+                    )
+                    or "pending_bills_not_reported"
                 ),
-                "audit_opinion": "no_publishable_audit_signal",
+                "audit_opinion": _audit_signal["absent_reason"],
             }
             _unavailable = [
                 {"name": name, "reason": _unavailable_reasons[name]}
@@ -4469,11 +4518,7 @@ async def get_county_comprehensive(
             _pending_details = (
                 county_pending_bills_details(loans) if pending_bills is not None else {}
             )
-            _pending_rows = [
-                loan for loan in loans
-                if county_pending_bills_row_is_published(loan)
-                and pending_bills_row_amount(loan) is not None
-            ]
+            _pending_rows = select_county_pending_bills(loans)["rows"]
             _pending_periods = sorted({
                 str(_pending_bills_provenance(loan).get("fiscal_year"))
                 for loan in _pending_rows
@@ -4493,25 +4538,29 @@ async def get_county_comprehensive(
                 if len(_pending_periods) > 1 or len(_pending_dates) > 1
                 else "mixed_pending_sources" if len(_pending_urls) > 1 else None
             )
-            _latest_audit_doc = (
-                _audit_docs.get(latest_audit.source_document_id) if latest_audit else None
-            )
             _component_source = {
                 "budget_absorption": (
-                    budget_fy_label, _budget_doc.get("url") if _budget_doc else None, None
+                    budget_fy_label,
+                    _budget_doc.get("url") if _budget_doc else None,
+                    None,
                 ),
                 "own_source_revenue": (
                     _health_revenue["fiscal_year"],
-                    _osr_source["url"] if _osr_source else None, None
+                    _osr_source["url"] if _osr_source else None,
+                    None,
                 ),
                 "pending_bills": (
-                    _pending_details.get("fiscal_year") if not _pending_warning else None,
-                    _pending_details.get("source_url") if not _pending_warning else None,
+                    _pending_details.get("fiscal_year")
+                    if not _pending_warning
+                    else None,
+                    _pending_details.get("source_url")
+                    if not _pending_warning
+                    else None,
                     _pending_details.get("as_at") if not _pending_warning else None,
                 ),
                 "audit_opinion": (
-                    latest_audit.period.label if latest_audit and latest_audit.period else None,
-                    _latest_audit_doc.url if _latest_audit_doc else None,
+                    _audit_signal["source_period"],
+                    _audit_signal["source_url"],
                     None,
                 ),
             }
@@ -4523,18 +4572,25 @@ async def get_county_comprehensive(
                     "as_at": _component_source[component["name"]][2],
                     "measurement_basis": (
                         _health_revenue["local_revenue_basis"]
-                        if component["name"] == "own_source_revenue" else None
+                        if component["name"] == "own_source_revenue"
+                        else "finding_severity"
+                        if component["name"] == "audit_opinion"
+                        else None
                     ),
                     "source_periods": (
-                        _pending_periods if component["name"] == "pending_bills"
-                        and _pending_warning else []
+                        _pending_periods
+                        if component["name"] == "pending_bills" and _pending_warning
+                        else []
                     ),
                     "source_dates": (
-                        _pending_dates if component["name"] == "pending_bills"
-                        and _pending_warning else []
+                        _pending_dates
+                        if component["name"] == "pending_bills" and _pending_warning
+                        else []
                     ),
                     "source_warning": (
-                        _pending_warning if component["name"] == "pending_bills" else None
+                        _pending_warning
+                        if component["name"] == "pending_bills"
+                        else None
                     ),
                 }
                 for component in (_health["components"] if _health else [])
@@ -4542,11 +4598,15 @@ async def get_county_comprehensive(
             _health_disclosure = {
                 "score": health_score,
                 "grade": grade,
+                "audit_signal": _audit_signal,
+                "selection_policy": "latest_common_pending_date_and_latest_executive_audit_period",
                 "weighting": "audit_opinion_weighted",
                 "weights": dict(_HEALTH_COMPONENT_WEIGHTS),
                 "effective_weight": sum(c["weight"] for c in _health_components),
                 "components": _health_components,
-                "available_inputs": [name for name in _HEALTH_COMPONENT_WEIGHTS if _available[name]],
+                "available_inputs": [
+                    name for name in _HEALTH_COMPONENT_WEIGHTS if _available[name]
+                ],
                 "unavailable_inputs": _unavailable,
                 "minimum_components": _MIN_HEALTH_COMPONENTS,
                 "absent_reason": None if _health else "fewer_than_two_components",
@@ -4730,6 +4790,7 @@ async def get_county_comprehensive(
                     **_county_pending_bills_fields(
                         loans,
                         pending_bills,
+                        reporting_date=_pending_reporting_day,
                         absence=(
                             _county_pending_bills_absence(db, entity)
                             if pending_bills is None
@@ -4757,6 +4818,7 @@ async def get_county_comprehensive(
                 # the correctness cost. Kept shipping the full list.
                 "audit": {
                     "status": audit_status,
+                    "signal": _audit_signal,
                     "grade": grade,
                     "health_score": health_score,
                     "findings_count": len(audits),
@@ -4806,7 +4868,13 @@ async def get_county_comprehensive(
                     # debt-service series follows.
                     "pending_bills_ratio": (
                         round(pending_bills / total_allocated * 100, 1)
-                        if pending_bills is not None and total_allocated > 0
+                        if pending_bills is not None
+                        and total_allocated > 0
+                        and pending_budget_compatible(
+                            loans,
+                            _published_budget["fiscal_period"],
+                            budget_currency=_published_budget["currency"],
+                        )
                         else None
                     ),
                     # An assessment needs a debt figure. With no published
@@ -11164,6 +11232,7 @@ def _published_pending_bills(db: Session) -> Tuple[List[tuple], Dict[str, Any]]:
 
     loans = (
         db.query(DBLoan)
+        .options(joinedload(DBLoan.entity))
         .filter(DBLoan.debt_category == DebtCategory.PENDING_BILLS)
         .order_by(DBLoan.id)
         .all()
@@ -11180,6 +11249,7 @@ def _published_pending_bills(db: Session) -> Tuple[List[tuple], Dict[str, Any]]:
             entity_map[eid] = (ename, etype.value if etype else "national")
 
     rows = []
+    county_candidates = []
     for loan in loans:
         entity_info = entity_map.get(loan.entity_id)
         if entity_info is None:
@@ -11187,10 +11257,27 @@ def _published_pending_bills(db: Session) -> Tuple[List[tuple], Dict[str, Any]]:
         entity_name, entity_type = entity_info
         if not pending_bills_row_is_published(loan, entity_type=entity_type):
             continue
+        if entity_type == "county":
+            county_candidates.append(loan)
+            continue
         amount = pending_bills_row_amount(loan)
         if amount is None:
             continue
         rows.append((loan, entity_name, entity_type, amount))
+    common_date = max(
+        (pending_bills_row_as_at(l) for l in county_candidates), default=None
+    )
+    by_county = {}
+    for loan in county_candidates:
+        by_county.setdefault(loan.entity_id, []).append(loan)
+    county_absence = {}
+    for eid, observations in by_county.items():
+        selection = select_county_pending_bills(observations, as_at=common_date)
+        if selection["amount"] is None:
+            county_absence[entity_map[eid][0]] = selection["absent_reason"]
+        else:
+            loan = selection["rows"][0]
+            rows.append((loan, entity_map[eid][0], "county", selection["amount"]))
 
     from services.county_identity import OFFICIAL_COUNTY_CODES, official_county_code
 
@@ -11250,21 +11337,28 @@ def _published_pending_bills(db: Session) -> Tuple[List[tuple], Dict[str, Any]]:
         "total": total,
         "total_absent_reason": total_absent_reason,
         "coverage": {
-            "national_components": len(national_rows), "national_expected": 2,
+            "national_components": len(national_rows),
+            "national_expected": 2,
             "national_complete": national_complete,
-            "county_count": len(county_rows), "county_expected": len(OFFICIAL_COUNTY_CODES),
+            "county_count": len(county_rows),
+            "county_expected": len(OFFICIAL_COUNTY_CODES),
             "county_complete": county_complete,
-            "missing_counties": [name for code, name in OFFICIAL_COUNTY_CODES.items() if code not in county_codes],
+            "missing_counties": [
+                name
+                for code, name in OFFICIAL_COUNTY_CODES.items()
+                if code not in county_codes
+            ],
             "qualified_counties": qualified_counties,
+            "county_absent_reasons": county_absence,
+            "county_reporting_date": common_date,
+            "county_selection_policy": "latest_common_reporting_date",
         },
         "reported_county_sum": sum(r[3] for r in county_rows) if county_rows else None,
         "as_at": next(iter(as_at_dates)) if one_day else None,
         "national_as_at": _one_as_at(
             loan for loan, _n, etype, _a in rows if etype != "county"
         ),
-        "county_as_at": _one_as_at(
-            loan for loan, _n, etype, _a in rows if etype == "county"
-        ),
+        "county_as_at": common_date,
         "unpublished": len(loans) - len(rows),
     }
 
@@ -11329,6 +11423,13 @@ async def get_pending_bills(
                     "as_at": pending_bills_row_as_at(loan),
                     "category": provenance.get("category", "mda"),
                     "notes": provenance.get("notes"),
+                    "reader_notes": provenance.get("reader_notes") or [],
+                    "source_document_id": loan.source_document_id,
+                    "source_url": provenance.get("source_url"),
+                    "table": provenance.get("table"),
+                    "page_ref": loan.page_ref or provenance.get("page_ref"),
+                    "page": provenance.get("page"),
+                    "publication_batch": provenance.get("publication_batch"),
                 }
             )
 
@@ -11336,35 +11437,33 @@ async def get_pending_bills(
         # row's — the fixture's cited a COB URL that resolves to a template.
         # One per side, because since #238 the two halves are two publications.
         sources = []
-        for side in ("national", "county"):
-            side_rows = [
-                l for l, _n, etype, _a in rows if (etype == "county") == (side == "county")
-            ]
-            if not side_rows:
-                continue
-            first = side_rows[0]
-            url = _pending_bills_provenance(first).get("source_url")
-            title = (
-                "National Treasury — Budget Review and Outlook Paper"
-                if side == "national"
-                else "Controller of Budget — County Governments Budget "
-                "Implementation Review Report"
+        docs = {
+            doc.id: doc
+            for doc in db.query(DBSourceDocument).filter(
+                DBSourceDocument.id.in_({loan.source_document_id for loan, *_ in rows})
             )
-            if first.source_document_id:
-                sdoc = (
-                    db.query(DBSourceDocument)
-                    .filter(DBSourceDocument.id == first.source_document_id)
-                    .first()
-                )
-                if sdoc:
-                    title = sdoc.title or title
-                    url = sdoc.url or url
+        }
+        seen_sources = set()
+        for loan, _name, entity_type, _amount in rows:
+            side = "county" if entity_type == "county" else "national"
+            prov = _pending_bills_provenance(loan)
+            key = (
+                side,
+                loan.source_document_id,
+                prov.get("source_url"),
+                pending_bills_row_as_at(loan),
+            )
+            if key in seen_sources:
+                continue
+            seen_sources.add(key)
+            doc = docs.get(loan.source_document_id)
             sources.append(
                 {
                     "side": side,
-                    "title": title,
-                    "url": url,
-                    "as_at": totals[f"{side}_as_at"],
+                    "source_document_id": loan.source_document_id,
+                    "title": doc.title if doc else side,
+                    "url": prov.get("source_url"),
+                    "as_at": pending_bills_row_as_at(loan),
                 }
             )
         source_title = "; ".join(src["title"] for src in sources)
@@ -11422,6 +11521,10 @@ async def get_pending_bills(
             "total_pending": None,
             "national_total": None,
             "county_total": None,
+            "total_absent_reason": totals["total_absent_reason"],
+            "coverage": totals["coverage"],
+            "reported_county_sum": totals["reported_county_sum"],
+            "county_as_at": totals["county_as_at"],
             "record_count": 0,
         },
         # Rows that exist but do not declare their side's publication —
@@ -11435,10 +11538,9 @@ async def get_pending_bills(
         "source_url": "https://www.treasury.go.ke/budget-review-and-outlook-paper/",
         "currency": "KES",
         "explanation": (
-            "No pending-bills figure read from the Treasury's Budget Review "
-            "and Outlook Paper or the Controller of Budget's year-end county "
-            "report is held. Run the seeding pipeline: "
-            "python -m seeding.cli seed --domain pending_bills."
+            "No current pending-bills balance is eligible for publication. "
+            "Coverage and absence reasons distinguish missing observations "
+            "from conflicting source evidence."
         ),
     }
 
@@ -11608,7 +11710,9 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
     rows, totals = _published_pending_bills(db)
     if not rows:
         reason = (
-            "no_row_declares_its_publication"
+            "no_available_current_county_stock"
+            if totals["coverage"]["county_absent_reasons"]
+            else "no_row_declares_its_publication"
             if totals["unpublished"]
             else "no_pending_bills_rows"
         )
@@ -11616,6 +11720,10 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
             "status": "no_data",
             # Absent, not zero: withheld rows are not a total of nothing.
             "total_pending_amount": None,
+            "total_absent_reason": totals["total_absent_reason"],
+            "coverage": totals["coverage"],
+            "reported_county_sum": totals["reported_county_sum"],
+            "county_as_at": totals["county_as_at"],
             "eligible_total": None,
             "ineligible_total": None,
             "breakdown_by_type": {},
@@ -11626,7 +11734,7 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
             "trend": [],
             "trend_unattributed_amount": 0,
             "currency": "KES",
-            "note": "No pending bills data. Run: python -m seeding.cli seed --domain pending_bills",
+            "note": "No current pending-bills balance is eligible; see coverage and absence reasons.",
         }
 
     # Counties only. This ranked every entity with a pending-bills row under
@@ -11768,7 +11876,11 @@ async def get_pending_bills_by_county(county_id: str, db: Session = Depends(get_
         # The same figure the county page prints beside this card, and
         # null — not 0 — for a county the CoB year-end report has no
         # figure for.
-        total = county_pending_bills(pending_loans)
+        reporting_date = county_pending_reporting_date(db)
+        selection = select_county_pending_bills(pending_loans, as_at=reporting_date)
+        pending_observations = pending_loans
+        pending_loans = selection["rows"]
+        total = selection["amount"]
         # The same two assertions the national fallback used to make, on
         # the page that never carried the debt page's disclaimer: 100% of
         # this county's arrears declared over 180 days old, and 100%
@@ -11783,6 +11895,10 @@ async def get_pending_bills_by_county(county_id: str, db: Session = Depends(get_
             "county": entity.canonical_name,
             "county_id": county_id,
             "total_pending": total,
+            **_county_pending_bills_fields(
+                pending_observations, total, reporting_date=reporting_date
+            ),
+            "selection": {k: v for k, v in selection.items() if k != "rows"},
             "breakdown_by_type": by_type,
             "breakdown_by_type_absent_reason": (
                 "loans_table_carries_no_bill_type"

@@ -7,7 +7,7 @@ from models import BudgetLine
 from sqlalchemy.orm import joinedload
 
 from services.county_budget import CLASSIFICATION_CATEGORIES, BUDGET_PROVENANCE_LABELS
-from services.publication_gate import _has_page_locator
+from services.publication_gate import _has_page_locator, pending_period_compatible
 
 
 def _amount(value):
@@ -265,6 +265,16 @@ def publish_county_budget(payload, summary, *, comprehensive=False):
                 payload["debt"].get("pending_bills"),
             ),
         ]:
+            if key == "pending_bills_ratio":
+                selection = payload["debt"].get("pending_bills_selection") or {}
+                sources = selection.get("sources") or []
+                if len(sources) != 1 or not pending_period_compatible(
+                    selection.get("as_at"),
+                    sources[0].get("fiscal_year"),
+                    summary["fiscal_period"],
+                    budget_currency=summary["currency"],
+                ):
+                    amount = None
             payload[section][key] = (
                 amount / allocation * 100 if allocation and amount is not None else None
             )
