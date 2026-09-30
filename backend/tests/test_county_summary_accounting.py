@@ -430,3 +430,103 @@ def test_no_rows_is_absent_not_a_zero_budget(client, county):
     assert result["total_spent"] is None
     assert result["budget_sources"] == []
     assert result["budget_absent_reasons"]["total_allocation"] == "no_valid_period"
+
+
+@pytest.mark.parametrize("quality", [
+    "modelled", "modeled", "estimated", "projected", "synthetic", "fixture",
+])
+@pytest.mark.parametrize("location", ["source", "dict_provenance", "list_provenance"])
+def test_padded_quality_is_unreported_in_shared_gate(quality, location):
+    from services.entity_financials import budget_evidence_is_unreported
+
+    entry = {"data_quality": f" \t{quality.upper()}\n "}
+    provenance = entry if location == "dict_provenance" else [entry]
+    assert budget_evidence_is_unreported(
+        None, FigureBasis.ACTUAL,
+        None if location == "source" else provenance,
+        entry if location == "source" else None,
+    )
+
+
+@pytest.mark.parametrize("quality", [
+    None, "", " unknown ", "historical", "mixed", "future_label",
+    [], ["modelled"], {}, {"quality": "modelled"}, 0, False,
+])
+def test_unrecognized_quality_does_not_assert_modelled_or_trusted(quality):
+    from services.entity_financials import budget_evidence_is_unreported
+
+    # This negative evidence filter does not certify unknown metadata as official.
+    entry = {"data_quality": quality}
+    assert not budget_evidence_is_unreported(None, None, [entry], entry)
+    assert budget_evidence_is_unreported("quarantined", None, [entry], entry)
+    assert budget_evidence_is_unreported(None, FigureBasis.MODELLED, [entry], entry)
+
+
+@pytest.mark.parametrize("location", ["source", "dict_provenance", "list_provenance"])
+def test_padded_quality_skips_latest_period_and_summary_keeps_sourced_zero(
+    client, db_session, county, seed_country, location,
+):
+    from main import _latest_county_actuals_period_ids
+
+    entity, (older, latest), source = county
+    source.meta = {"data_quality": " OfFiCiAl "}
+    add_line(db_session, entity, older, source, "Total", 100, 0,
+             basis=FigureBasis.ACTUAL, quarantine_reason="")
+    modeled_source = SourceDocument(
+        country_id=seed_country.id, publisher="Test publisher", title="Modelled",
+        url="https://example.test/modelled.pdf", doc_type=DocumentType.BUDGET,
+        fetch_date=datetime(2026, 9, 30),
+        meta={"data_quality": " \tMoDeLlEd\n "} if location == "source" else {},
+    )
+    db_session.add(modeled_source)
+    db_session.flush()
+    entry = {"data_quality": " \tEsTiMaTeD\n "}
+    # Cross the real selector's page boundary, keeping source lookups batched.
+    for spaces in range(1, 35):
+        add_line(db_session, entity, latest, modeled_source,
+                 "Total" + " " * spaces, 999, 888, basis=FigureBasis.ACTUAL,
+                 provenance=None if location == "source" else (
+                     entry if location == "dict_provenance" else [entry]
+                 ))
+    assert _latest_county_actuals_period_ids(db_session) == [older.id]
+    result = summary(client)
+    assert (result["total_budget"], result["total_spent"]) == (100, 0)
+    assert result["budget_fiscal_period"]["id"] == older.id
+    assert result["budget_sources"][0]["id"] == source.id
+    assert result["budget_sources"][0]["url"] == source.url
+
+
+@pytest.mark.parametrize("quality", [" OfFiCiAl ", " RePoRtEd "])
+def test_reported_quality_latest_period_and_summary_preserve_zero(
+    client, db_session, county, quality,
+):
+    from main import _latest_county_actuals_period_ids
+
+    entity, (_, latest), source = county
+    source.meta = {"data_quality": quality}
+    add_line(db_session, entity, latest, source, "Total", 100, 0,
+             provenance=[{"data_quality": quality}], basis=FigureBasis.ACTUAL)
+    assert _latest_county_actuals_period_ids(db_session) == [latest.id]
+    result = summary(client)
+    assert (result["total_budget"], result["total_spent"]) == (100, 0)
+    assert result["budget_absent_reasons"] == {}
+
+
+@pytest.mark.parametrize("location", ["source", "dict_provenance", "list_provenance"])
+def test_padded_quality_is_withheld_when_selector_has_only_unreported_rows(
+    client, db_session, county, location,
+):
+    entity, (_, latest), source = county
+    entry = {"data_quality": " \tMoDeLlEd\n "}
+    if location == "source":
+        source.meta = entry
+    add_line(db_session, entity, latest, source, "Total", 100, 50,
+             provenance=None if location == "source" else (
+                 entry if location == "dict_provenance" else [entry]
+             ))
+    result = summary(client)
+    assert result["total_budget"] is None
+    assert result["total_spent"] is None
+    assert result["budget_absent_reasons"]["total_spent"] == "not_reported_actuals"
+    assert result["budget_fiscal_period"]["id"] == latest.id
+    assert result["budget_sources"][0]["url"] == source.url

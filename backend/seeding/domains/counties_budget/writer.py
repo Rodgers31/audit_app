@@ -42,6 +42,22 @@ class PersistenceStats:
     errors: List[str] = field(default_factory=list)
 
 
+def _source_metadata_for_update(source: SourceDocument) -> dict:
+    """Copy object metadata; refuse other shapes instead of erasing evidence.
+
+    Null represents absent metadata. Even an empty list or a list of pairs is
+    persisted non-object evidence, and cannot be silently promoted to official.
+    """
+    if source.meta is None:
+        return {}
+    if not isinstance(source.meta, dict):
+        raise ValueError(
+            f"County budget source {source.id} metadata must be an object or null; "
+            f"found {type(source.meta).__name__}. Explicit provenance repair required."
+        )
+    return dict(source.meta)
+
+
 def _correct_declared_publisher(source: SourceDocument, record: BudgetRecord) -> None:
     """Relabel an existing document whose publisher the row contradicts.
 
@@ -101,7 +117,7 @@ def _ensure_source_document(
         session.add(source)
         session.flush()
     else:
-        meta = dict(source.meta or {})
+        meta = _source_metadata_for_update(source)
         if record.dataset_id and "dataset_id" not in meta:
             meta["dataset_id"] = record.dataset_id
         # Always reflect the *latest* data_quality/source_label so a COB
@@ -512,6 +528,18 @@ def persist_budget_records(
         .scalars()
         .all()
     }
+    # Validate the entire source set before touching a title, publisher, digest,
+    # period or row. A malformed later source must not partly apply the batch.
+    for source in existing_sources.values():
+        try:
+            _source_metadata_for_update(source)
+        except ValueError as exc:
+            message = str(exc)
+            logger.warning(message)
+            stats.errors.append(message)
+            stats.skipped += len(resolvable)
+            return stats
+
     sources_by_url: dict[str, SourceDocument] = {}
     for record in resolvable:
         url = record.source_url or settings.budgets_dataset_url
@@ -539,7 +567,7 @@ def persist_budget_records(
             )
             session.add(source)
         else:
-            meta = dict(source.meta or {})
+            meta = _source_metadata_for_update(source)
             if record.dataset_id and "dataset_id" not in meta:
                 meta["dataset_id"] = record.dataset_id
             # Latest-wins: re-seeds with real COB data should upgrade
@@ -555,8 +583,10 @@ def persist_budget_records(
         source.status = DocumentStatus.AVAILABLE
         source.last_seen_at = now
         if record.artifact_sha256:
-            source.meta = {**(source.meta or {}), "sha256": record.artifact_sha256}
-        elif record.data_quality == "official" and "sha256" in (source.meta or {}):
+            meta = _source_metadata_for_update(source)
+            meta["sha256"] = record.artifact_sha256
+            source.meta = meta
+        elif record.data_quality == "official" and "sha256" in source.meta:
             # A replacement at the same URL may no longer identify its bytes.
             # The old digest remains on historical row provenance, but cannot
             # describe this document's current values without a fresh assertion.
