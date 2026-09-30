@@ -1,5 +1,5 @@
 import TransparencyPage from '@/app/transparency/TransparencyPageClient';
-import type { MoneyFlowData } from '@/types';
+import type { AuditAmountCoverage, MoneyFlowData } from '@/types';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import type { HTMLAttributes } from 'react';
 
@@ -64,6 +64,7 @@ function flow(
     budget_source: 'cob_cbirr',
     efficiency_score: efficiency,
     total_waste_estimate: flagged,
+    audit_amount_coverage: coverageOverride,
     stages: [
       { stage: 'Allocated', label: 'Allocation', amount: allocated },
       {
@@ -77,6 +78,7 @@ function flow(
   };
 }
 let efficiencyOverrides: number[] | undefined;
+let coverageOverride: AuditAmountCoverage | undefined;
 
 function countiesFor(year: string): MoneyFlowData[] {
   const rows = [
@@ -115,6 +117,7 @@ const overview = () => screen.getByRole('region', { name: 'At a glance' });
 describe('Follow the Money presentation contracts', () => {
   beforeEach(() => {
     efficiencyOverrides = undefined;
+    coverageOverride = undefined;
     jest.useFakeTimers();
     jest.setSystemTime(new Date('2026-09-27T12:00:00Z'));
   });
@@ -130,7 +133,7 @@ describe('Follow the Money presentation contracts', () => {
     expect(county('Beta')).toHaveTextContent('FlaggedKES 0');
     expect(county('Beta')).toHaveTextContent('Fair execution');
     expect(county('Gamma')).toHaveTextContent('FlaggedKES 2.00B');
-    expect(county('Gamma')).toHaveTextContent('Questioned, not proven loss');
+    expect(county('Gamma')).toHaveTextContent('Amounts discussed; not proven loss');
     expect(county('Gamma')).toHaveTextContent('Good execution');
     expect(screen.getByRole('link', { name: 'Gamma' })).toHaveAttribute(
       'href',
@@ -138,6 +141,20 @@ describe('Follow the Money presentation contracts', () => {
     );
     expect(overview()).toHaveTextContent('KES 24.00B');
     expect(overview()).toHaveTextContent('40.0% of allocation unspent');
+  });
+
+  it('carries partial coverage through the actual page into county rows and the national summary', () => {
+    coverageOverride = {
+      status: 'partial', reason: 'incomplete_amount_coverage', total_findings: 3,
+      findings_with_amount: 1, findings_without_amount: 1, findings_with_invalid_amount: 1,
+      withheld_findings: 0,
+    };
+    render(<TransparencyPage />);
+    expect(county('Beta')).toHaveTextContent('FlaggedKES 0');
+    expect(county('Beta')).toHaveTextContent('Partial subtotal: 1 of 3 cited findings');
+    expect(county('Gamma')).toHaveTextContent('FlaggedKES 2.00B');
+    expect(county('Gamma')).toHaveTextContent('1 missing and 1 invalid amounts');
+    expect(overview()).toHaveTextContent('Partial subtotal: 1 of 3 cited findings');
   });
 
   it('searches and reverses all sort modes while preserving the national summary and coverage', () => {

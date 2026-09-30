@@ -1,5 +1,7 @@
 'use client';
 
+import { useLang } from '@/lib/i18n/LangProvider';
+
 /**
  * MoneyFlowHero
  *
@@ -18,7 +20,7 @@
 
 import { AlertTriangle, ArrowDownRight, Info } from 'lucide-react';
 import type { BudgetSource, MoneyFlowData } from '@/types';
-import { isProjectedMoneyFlow } from './moneyFlowPresentation';
+import { auditAmountCoverageNote, isProjectedMoneyFlow } from './moneyFlowPresentation';
 import styles from './MoneyFlowPresentation.module.css';
 
 interface Props {
@@ -78,7 +80,7 @@ const STAGE_META = {
   },
   Flagged: {
     label: 'Flagged',
-    tagline: 'OAG: irregular, unsupported, or wasteful',
+    tagline: 'Recorded amounts in OAG findings',
     tone: 'low',
   },
 } as const;
@@ -93,6 +95,7 @@ function fmtT(kes: number | null | undefined): string {
 }
 
 export default function MoneyFlowHero({ data }: Props) {
+  const { lang } = useLang();
   if (!data || !data.stages || data.stages.length === 0) return null;
 
   const stageMap = Object.fromEntries(data.stages.map((s) => [s.stage, s])) as Record<
@@ -169,7 +172,7 @@ export default function MoneyFlowHero({ data }: Props) {
         <p className={styles.flowDescription}>
           {isProjected
             ? 'This allocation is modelled. Spending figures will appear when sourced Controller of Budget reports are available.'
-            : 'The waterfall below traces every shilling from Treasury allocation through execution, and the portion the Auditor General questioned (could not confirm was properly spent).'}
+            : 'The waterfall shows allocation and expenditure alongside recorded amounts in cited audit findings.'}
         </p>
         {flaggedPer100 != null && (
           <div className={styles.questionedRatio} data-tone={flaggedPer100 > 0 ? 'low' : 'neutral'}>
@@ -178,11 +181,11 @@ export default function MoneyFlowHero({ data }: Props) {
             ) : (
               <Info size={18} aria-hidden='true' />
             )}
-            <span>OAG · questioned ratio</span>
+            <span>OAG · recorded amounts / allocation</span>
             <strong>KES {flaggedPer100.toFixed(2)}</strong>
             <p>
-              of every KES 100 allocated was questioned by the Auditor General — could not be
-              confirmed as properly spent (not proven loss)
+              in recorded finding amounts per KES 100 allocated. These may include balances
+              discussed in the report; they are not proven loss.
             </p>
           </div>
         )}
@@ -205,22 +208,23 @@ export default function MoneyFlowHero({ data }: Props) {
       />
       <WaterfallStage stage='Spent' amount={spent} widthPct={spentPct} />
       <StageGap
-        label='Of which the Auditor General flagged'
+        label='Recorded amounts in audit findings'
         amount={flagged}
         unavailable={flagged == null}
-        reason='OAG audit report not yet published for this year'
+        reason={auditAmountCoverageNote(data.audit_amount_coverage, lang) ?? 'Cited audit amounts unavailable for this period'}
       />
       <WaterfallStage stage='Flagged' amount={flagged} widthPct={flaggedPct} />
+      {data.audit_amount_coverage && (
+        <p className={styles.flowDescription}>{auditAmountCoverageNote(data.audit_amount_coverage, lang)}</p>
+      )}
       <div className={styles.flowCaveat}>
         <Info size={16} aria-hidden='true' />
         <p>
           {allocationProvenanceSentence(data.budget_source)} Expenditure comes from the Controller
           of Budget&apos;s <em>County Budget Implementation Review Report</em> (CBIRR). Flagged
-          amounts are the aggregate of findings the Auditor General <em>questioned</em> (classified
-          as irregular, unsupported, or wasteful) in the consolidated county audit for the year —
-          expenditure that could not be confirmed as properly supported, which is a{' '}
-          <strong>query, not proven loss or theft</strong>. Where a stage is blank the source
-          document has not yet been published — it isn&apos;t missing.
+          amounts sum finite recorded amounts in cited findings. These may be balances discussed
+          in the report, rather than expenditure queried, and are not proven loss or theft.
+          A blank audit amount means no finite amount is available; see the amount coverage.
         </p>
       </div>
     </section>

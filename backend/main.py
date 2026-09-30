@@ -5308,13 +5308,9 @@ async def get_audit_statistics():
             # PostgreSQL numeric accepts NaN. One such row poisons SUM, so
             # exclude non-finite stored values *inside* the aggregate. Count
             # them separately rather than hiding their missing coverage.
-            finite_amount = case(
-                (
-                    ~cast(DBAudit.amount, String).in_(("NaN", "Infinity", "-Infinity")),
-                    DBAudit.amount,
-                ),
-                else_=None,
-            )
+            from services.audit_amounts import finite_audit_amount
+
+            finite_amount = finite_audit_amount(DBAudit.amount)
             amount_from_col, structured_count, stored_count = (
                 db.query(
                     func.sum(finite_amount),

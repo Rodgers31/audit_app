@@ -1,5 +1,8 @@
 'use client';
 
+import { useLang } from '@/lib/i18n/LangProvider';
+
+import { auditAmountCoverageNote } from './transparency/moneyFlowPresentation';
 import { MoneyFlowData, MoneyFlowStage } from '@/types';
 import { motion } from 'framer-motion';
 import { AlertTriangle, ArrowDown, Ban, ChevronDown, Loader2, TrendingDown } from 'lucide-react';
@@ -8,7 +11,8 @@ import React, { useMemo } from 'react';
 /* ═══════════ Helpers ═══════════ */
 
 function fmtKES(n: number | null | undefined): string {
-  if (n == null || n === 0) return 'KES 0';
+  if (n == null) return '—';
+  if (n === 0) return 'KES 0';
   const abs = Math.abs(n);
   if (abs >= 1e12) return `KES ${(n / 1e12).toFixed(2)}T`;
   if (abs >= 1e9) return `KES ${(n / 1e9).toFixed(2)}B`;
@@ -68,6 +72,7 @@ function StageCard({
   maxAmount: number;
   index: number;
 }) {
+  const { lang } = useLang();
   const config = STAGE_CONFIG[stage.stage] || STAGE_CONFIG.Allocated;
   const barWidth =
     stage.amount && maxAmount > 0 ? Math.max((stage.amount / maxAmount) * 100, 8) : 0;
@@ -96,6 +101,11 @@ function StageCard({
           ) : (
             <div className={`text-xl font-bold ${config.color} tabular-nums`}>
               {fmtKES(stage.amount)}
+            </div>
+          )}
+          {stage.amount_coverage && (
+            <div className='text-xs text-gray-600 dark:text-neutral-muted mt-1'>
+              {auditAmountCoverageNote(stage.amount_coverage, lang)}
             </div>
           )}
           {stage.source && (
@@ -143,7 +153,7 @@ const GAP_SUBLABEL: Record<string, string> = {
   'Withheld/Delayed':
     'Allocated but not released by Treasury at report time.',
   'Irregular/Unsupported Expenditure':
-    'Spent, but the Auditor-General could not confirm it was properly supported — questioned, not proven loss.',
+    'Recorded amounts in cited audit findings; may include balances discussed, not proven loss.',
 };
 
 function GapIndicator({
@@ -351,10 +361,10 @@ export default function FollowTheMoney({ data, isLoading, compact }: FollowTheMo
             </div>
             <div>
               <div className='text-sm font-semibold text-red-900'>
-                {fmtKES(data.total_waste_estimate)} Questioned by the Auditor General
+                {fmtKES(data.total_waste_estimate)} in recorded audit finding amounts
               </div>
               <div className='text-xs text-red-700'>
-                Irregular or unsupported expenditure questioned by the Auditor-General — could not be confirmed as properly spent; not proven loss
+                Amounts may include balances discussed by the Auditor-General; not proven loss or theft
               </div>
             </div>
           </div>

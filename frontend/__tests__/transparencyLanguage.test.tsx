@@ -36,7 +36,7 @@ it('translates the period control and national summary in Swahili', () => {
     'Jumla iliyotengwa'
   );
   expect(screen.queryByText('Total allocated')).not.toBeInTheDocument();
-  expect(screen.getByText('Bado haijachapishwa')).toBeInTheDocument();
+  expect(screen.getByText('Kiasi hakipatikani')).toBeInTheDocument();
 });
 
 it('uses plain-language descriptions without changing the displayed amounts', () => {
@@ -61,4 +61,20 @@ it('uses plain-language descriptions without changing the displayed amounts', ()
   expect(screen.getByText('Money left to spend')).toBeInTheDocument();
   expect(screen.getByRole('region')).toHaveTextContent('KES 100');
   expect(screen.getByRole('region')).toHaveTextContent('KES 0');
+});
+
+
+it('renders new amount coverage in Swahili beside a partial zero', () => {
+  localStorage.setItem('auditgava-lang', 'sw');
+  render(<LangProvider><MoneyFlowOverview fiscalYear='2024/25' projected={false} insights={{
+    allocated: 100, spent: 60, flagged: 0, gap: 40, unspentPct: 40, efficiency: 60,
+    audit_amount_coverage: {
+      status: 'partial', reason: 'incomplete_amount_coverage', total_findings: 2,
+      findings_with_amount: 1, findings_without_amount: 1, findings_with_invalid_amount: 0,
+      withheld_findings: 0,
+    },
+  }} /></LangProvider>);
+  expect(document.body.textContent).toContain('KES 0');
+  expect(document.body.textContent).toContain('Jumla ya sehemu: Matokeo 1 kati ya 2');
+  expect(document.body.textContent).not.toContain('Partial subtotal');
 });

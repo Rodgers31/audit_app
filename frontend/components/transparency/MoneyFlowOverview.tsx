@@ -3,6 +3,7 @@
 import { FileText, TriangleAlert } from 'lucide-react';
 import { useLang } from '@/lib/i18n/LangProvider';
 import {
+  auditAmountCoverageNote,
   efficiencyTone,
   formatEfficiency,
   formatFlowKES,
@@ -48,7 +49,7 @@ export default function MoneyFlowOverview({
   fiscalYear: string;
   projected: boolean;
 }) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const flagged = !projected && insights.flagged != null && insights.flagged > 0;
   const AuditIcon = flagged ? TriangleAlert : FileText;
   return (
@@ -94,7 +95,7 @@ export default function MoneyFlowOverview({
           efficiency
           value={
             projected || insights.efficiency == null
-              ? '—'
+              ? t('transparency.overview.not_published')
               : `${formatEfficiency(insights.efficiency)}%`
           }
           note={
@@ -124,13 +125,15 @@ export default function MoneyFlowOverview({
           </p>
         </div>
         <p className={styles.auditCopy}>
-          {projected
-            ? t('transparency.overview.audit_pending')
-            : insights.flagged == null
-              ? t('transparency.overview.audit_unavailable')
-              : flagged
-                ? t('transparency.overview.audit_positive')
-                : t('transparency.overview.audit_zero')}
+          {auditAmountCoverageNote(insights.audit_amount_coverage, lang) ?? (
+            projected
+              ? t('transparency.overview.audit_pending')
+              : insights.flagged == null
+                ? t('transparency.overview.audit_unavailable')
+                : flagged
+                  ? t('transparency.overview.audit_positive')
+                  : t('transparency.overview.audit_zero')
+          )}
         </p>
       </div>
     </section>

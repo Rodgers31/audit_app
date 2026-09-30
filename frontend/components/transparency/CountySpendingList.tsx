@@ -1,5 +1,7 @@
 'use client';
 
+import { useLang } from '@/lib/i18n/LangProvider';
+
 import {
   ArrowUpDown,
   ChevronDown,
@@ -13,6 +15,7 @@ import {
 import Link from 'next/link';
 import { useRef, type CSSProperties } from 'react';
 import {
+  auditAmountCoverageNote,
   efficiencyLabel,
   formatEfficiency,
   efficiencyTone,
@@ -69,6 +72,7 @@ export default function CountySpendingList({
   onSort,
   onReverse,
 }: Props) {
+  const { lang } = useLang();
   const searchInput = useRef<HTMLInputElement>(null);
   const options: { value: CountySortKey; label: string }[] = projected
     ? [
@@ -172,15 +176,15 @@ export default function CountySpendingList({
                 <Info size={16} aria-hidden='true' />
                 <span>
                   {auditUnavailable
-                    ? 'Auditor-General data not yet published'
+                    ? 'Auditor-General amounts unavailable'
                     : 'About Auditor-General findings'}
                 </span>
                 <ChevronDown size={14} aria-hidden='true' />
               </summary>
               <p>
                 {auditUnavailable
-                  ? 'No Auditor-General report for this year traces to a source document yet. This is not a finding that nothing was questioned. '
-                  : 'Flagged amounts are expenditure questioned by the Auditor-General, not proven loss or theft. '}
+                  ? 'No finite cited finding amounts are available for this period. '
+                  : 'Recorded finding amounts may include balances discussed in the report; they are not a measure of proven loss or theft. '}
                 A dash means the amount is unavailable.
               </p>
             </details>
@@ -328,7 +332,8 @@ export default function CountySpendingList({
                         }>
                         {formatFlowKES(row.flagged_amount)}
                       </b>
-                      {flagged && <small>Questioned, not proven loss</small>}
+                      {row.audit_amount_coverage && <small>{auditAmountCoverageNote(row.audit_amount_coverage, lang)}</small>}
+                      {flagged && <small>Amounts discussed; not proven loss</small>}
                     </div>
                   </>
                 )}

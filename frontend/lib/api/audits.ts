@@ -1,6 +1,7 @@
 /**
  * Audits API service
  */
+import type { AuditAmountCoverage } from '@/types';
 import { apiClient } from './axios';
 import { apiGet } from './request';
 import { AUDITS_ENDPOINTS, COUNTIES_ENDPOINTS, buildUrlWithParams } from './endpoints';
@@ -311,6 +312,7 @@ export interface WorstCounty {
  * show `reason`; never coerce it with `?? 0` or `|| 0`.
  */
 export interface WithheldFigure {
+  amount_coverage?: AuditAmountCoverage;
   value: number | null;
   reason: string | null;
 }
@@ -336,7 +338,9 @@ export interface AuditDashboardSummary {
 export interface AuditTrendsData {
   years: number[];
   findings_per_year: Record<string, number>;
-  amount_per_year: Record<string, number>;
+  amount_per_year: Record<string, number | null>;
+  amount_coverage_per_year?: Record<string, AuditAmountCoverage>;
+  amount_coverage?: AuditAmountCoverage;
   /** `null` when the facet is not published — see `opinion_per_year_reason`. */
   opinion_per_year: Record<string, Record<string, number>> | null;
   opinion_per_year_reason: string | null;
