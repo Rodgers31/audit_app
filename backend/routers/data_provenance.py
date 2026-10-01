@@ -10,15 +10,17 @@ GET /api/v1/provenance/health        — overall data health check
 """
 
 import logging
+import math
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from urllib.parse import unquote, urlsplit
+from urllib.parse import parse_qs, unquote, urlsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from sqlalchemy import func, desc
+from sqlalchemy import desc, func
 from sqlalchemy.orm import Session
 
 from services.audit_citations import safe_source_url
@@ -34,6 +36,7 @@ try:
     from models import (
         Audit,
         BudgetLine,
+        Country,
         DebtCategory,
         DebtTimeline,
         EconomicIndicator,
@@ -439,6 +442,349 @@ def _attach_population_evidence(verification, db, record) -> None:
         )
 
 
+_GDP_INDICATOR = "NY.GDP.MKTP.CN"
+_GDP_MEASURES = {
+    "gdp, current kes",
+    "gdp, current lcu",
+    "nominal gdp",
+    "gross domestic product, current prices",
+}
+_GCP_MEASURES = {
+    "gross county product, current kes",
+    "gross county product, current prices",
+}
+
+
+def _gdp_publisher_identity(label):
+    """Resolve supported writer aliases; unfamiliar publishers compare exactly."""
+    if not isinstance(label, str) or not label.strip():
+        return None
+    label = label.strip().casefold()
+    if label in {"world bank", "world bank open data"} or re.fullmatch(
+        r"world bank (?:development indicators \(\d{4}\)|ny\.gdp\.mktp\.cn(?: \(fixture\))?)",
+        label,
+    ):
+        return "worldbank"
+    if label in {
+        "knbs",
+        "kenya national bureau of statistics",
+        "kenya national bureau of statistics (knbs)",
+    }:
+        return "knbs"
+    return label
+
+
+def _gdp_url_identity(url, year):
+    """Read declared indicator/country/year identity, never fetch or verify it.
+
+    A publisher homepage is not a GDP measure. World Bank URLs must identify
+    Kenya's nominal local-currency series; other safe URLs carry no measure.
+    """
+    if not safe_source_url(url):
+        return None, False, "invalid GDP source URL"
+    parts = urlsplit(url)
+    host = parts.hostname
+    path = unquote(parts.path).rstrip("/")
+    query = parse_qs(parts.query, keep_blank_values=True)
+    if host in {"api.worldbank.org", "data.worldbank.org"}:
+        expected = (
+            f"/v2/country/KEN/indicator/{_GDP_INDICATOR}"
+            if host == "api.worldbank.org"
+            else f"/indicator/{_GDP_INDICATOR}"
+        )
+        allowed = (
+            {"format", "date", "per_page", "page"}
+            if host == "api.worldbank.org"
+            else {"locations"}
+        )
+        if path != expected or set(query) - allowed or parts.fragment:
+            return "worldbank", False, "conflicting GDP indicator URL identity"
+        if (
+            host == "data.worldbank.org"
+            and query.get("locations") != ["KE"]
+            or "format" in query
+            and query["format"] != ["json"]
+            or "date" in query
+            and query["date"] != [str(year)]
+        ):
+            return "worldbank", False, "conflicting GDP country or year URL identity"
+        return "worldbank", True, None
+    if host == "knbs.or.ke" or host.endswith(".knbs.or.ke"):
+        return "knbs", False, None
+    return None, False, None
+
+
+def _attach_gdp_evidence(verification, db, record) -> None:
+    """Attach only coherent evidence for the selected GDP/GCP observation.
+
+    Dataset/measure declarations are hints, not a performed reconciliation.
+    Metadata-only JSON never manufactures a document or upgrades its grade.
+    A linked document must also agree with explicit row/extraction identity.
+    """
+    try:
+        amount = float(record.gdp_value)
+    except (TypeError, ValueError, OverflowError):
+        verification.reason = "invalid nominal GDP value"
+        return
+    if type(record.gdp_value) is bool or not math.isfinite(amount) or amount < 0:
+        verification.reason = (
+            "invalid nominal GDP value; expected a finite nonnegative amount"
+        )
+        return
+    meta = record.meta
+    if meta is not None and not isinstance(meta, dict):
+        verification.reason = "malformed GDP source metadata"
+        return
+    meta = meta or {}
+    doc = None
+    if record.source_document_id is not None:
+        doc = (
+            db.query(SourceDocument)
+            .filter(SourceDocument.id == record.source_document_id)
+            .first()
+        )
+        if doc is None:
+            verification.reason = "no resolvable GDP source document"
+            return
+        if (
+            not isinstance(doc.title, str)
+            or not doc.title.strip()
+            or _gdp_publisher_identity(doc.publisher) is None
+            or doc.meta is not None
+            and not isinstance(doc.meta, dict)
+        ):
+            verification.reason = "missing or malformed GDP document identity"
+            return
+    entity = (
+        db.query(Entity).filter(Entity.id == record.entity_id).first()
+        if record.entity_id is not None
+        else None
+    )
+    if record.entity_id is not None and entity is None:
+        verification.reason = "missing GDP entity identity"
+        return
+    if entity is not None and entity.type not in {
+        EntityType.NATIONAL,
+        EntityType.COUNTY,
+    }:
+        verification.reason = "unsupported GDP entity type"
+        return
+    national = entity is None or entity.type == EntityType.NATIONAL
+    country_id = (
+        entity.country_id if entity is not None else (doc.country_id if doc else None)
+    )
+    country = (
+        db.query(Country).filter(Country.id == country_id).first()
+        if country_id is not None
+        else None
+    )
+    if (
+        country is not None
+        and country.iso_code != "KEN"
+        or doc is not None
+        and (country is None or doc.country_id != country.id)
+    ):
+        verification.reason = "conflicting or missing GDP country identity"
+        return
+    if record.currency != "KES":
+        verification.reason = "unsupported GDP currency; expected current KES evidence"
+        return
+    evidence = [meta]
+    if doc is not None:
+        evidence.append(doc.meta or {})
+    url = doc.url if doc else meta.get("source_url")
+    publisher = doc.publisher if doc else meta.get("source")
+    family = _gdp_publisher_identity(publisher)
+    url_family, wb_measure, url_error = _gdp_url_identity(url, record.year)
+    if family is None or url_error or url_family is not None and url_family != family:
+        verification.reason = (
+            url_error or "missing or conflicting GDP publisher identity"
+        )
+        return
+    if record.extraction_id is not None:
+        extraction = (
+            db.query(Extraction).filter(Extraction.id == record.extraction_id).first()
+        )
+        if (
+            doc is None
+            or extraction is None
+            or extraction.source_document_id != doc.id
+            or record.source_page is not None
+            and extraction.page_number != record.source_page
+            or not isinstance(extraction.extracted_json, dict)
+        ):
+            verification.reason = "conflicting or malformed GDP extraction identity"
+            return
+        evidence.append(extraction.extracted_json)
+    # The World Bank indicator is annual national JSON, including when a
+    # writer represents its API endpoint as a SourceDocument REPORT row.
+    if family == "worldbank" and (
+        not wb_measure
+        or not national
+        or record.quarter is not None
+        or any(
+            getattr(record, field) is not None
+            for field in ("source_page", "page_ref", "source_hash", "extraction_id")
+        )
+    ):
+        verification.reason = "conflicting GDP scope or JSON locator identity"
+        return
+    if record.quarter not in {None, "Q1", "Q2", "Q3", "Q4"} or (
+        record.quarter is not None
+        and not any(item.get("quarter") == record.quarter for item in evidence)
+    ):
+        verification.reason = "missing or conflicting GDP quarter identity"
+        return
+    label_year = re.fullmatch(
+        r"World Bank Development Indicators \((\d{4})\)", publisher.strip(), re.I
+    )
+    if label_year and int(label_year[1]) != record.year:
+        verification.reason = "conflicting GDP publisher-label year"
+        return
+    measures = _GDP_MEASURES if national else _GCP_MEASURES
+    measure_known = wb_measure
+    datasets = []
+    for item in evidence:
+        # Enumerate plural declaration shapes instead of silently ignoring
+        # conflicts in JSONB lists or malformed containers.
+        declarations = []
+        for plural, singular in (
+            ("indicators", "indicator"),
+            ("datasets", "dataset_id"),
+            ("measures", "measure"),
+        ):
+            if plural in item:
+                values = item[plural]
+                if (
+                    not isinstance(values, list)
+                    or not values
+                    or any(not isinstance(v, str) for v in values)
+                ):
+                    verification.reason = "malformed GDP evidence declarations"
+                    return
+                declarations.extend({singular: v} for v in values)
+        for key in ("gdp_value", "value"):
+            if key in item and (
+                type(item[key]) not in {int, float}
+                or not math.isfinite(item[key])
+                or item[key] != amount
+            ):
+                verification.reason = "conflicting GDP amount identity"
+                return
+        for key, expected in (
+            ("year", record.year),
+            ("entity_id", record.entity_id),
+            ("quarter", record.quarter),
+            ("currency", record.currency),
+            ("country_code", "KEN"),
+            ("scope", "national" if national else "county"),
+        ):
+            if key in item and (
+                type(item[key]) is not type(expected) or item[key] != expected
+            ):
+                verification.reason = "conflicting GDP observation identity"
+                return
+        if "units" in item and (
+            not isinstance(item["units"], str) or item["units"].casefold() != "kes"
+        ):
+            verification.reason = "conflicting GDP units identity"
+            return
+        if "source" in item and _gdp_publisher_identity(item["source"]) != family:
+            verification.reason = "conflicting GDP publisher identity"
+            return
+        if "source_url" in item and item["source_url"] != url:
+            verification.reason = "conflicting GDP source URL identity"
+            return
+        for declaration in [item, *declarations]:
+            if "measure" in declaration:
+                measure = declaration["measure"]
+                if (
+                    not isinstance(measure, str)
+                    or measure.strip().casefold() not in measures
+                ):
+                    verification.reason = "conflicting GDP measure identity"
+                    return
+                measure_known = True
+            for key in ("dataset_id", "dataset", "indicator"):
+                if key not in declaration:
+                    continue
+                value = declaration[key]
+                if not isinstance(value, str) or not value.strip():
+                    verification.reason = "malformed GDP dataset identity"
+                    return
+                # A multi-measure survey still needs an explicit nominal
+                # measure. Conflicting indicator codes cannot be rescued by
+                # a nominal-GDP label elsewhere in the evidence.
+                if (
+                    family == "worldbank"
+                    and value != _GDP_INDICATOR
+                    or family == "knbs"
+                    and value
+                    not in {"knbs_economic_survey", "knbs_gross_county_product"}
+                    or re.fullmatch(r"[A-Za-z]{2}\.[A-Za-z0-9.]+", value)
+                    and value != _GDP_INDICATOR
+                ):
+                    verification.reason = "conflicting GDP dataset identity"
+                    return
+                datasets.append(value)
+        source = item.get("source")
+        if isinstance(source, str):
+            match = re.fullmatch(
+                r"World Bank Development Indicators \((\d{4})\)", source.strip(), re.I
+            )
+            if match and int(match[1]) != record.year:
+                verification.reason = "conflicting GDP source-label year"
+                return
+    if doc is not None:
+        codes = re.findall(r"[A-Z]{2}\.[A-Z0-9.]+", doc.title, re.I)
+        # Normalize ordinary title typography before reading explicit wrong
+        # measures. Survey publication years are not observation-year claims.
+        title = re.sub(r"[\s\u2010-\u2015-]+", " ", doc.title)
+        wrong_measure = re.search(
+            r"\bpopulation\b|\bper capita\b|US\$|"
+            r"\b(?:usd|dollars|eur|ugx|tzs|gbp)\b|"
+            r"\b(?:gdp|gross domestic product)\b.{0,40}\b(?:growth|constant)\b|"
+            r"\b(?:real|growth|constant)\b.{0,40}\b(?:gdp|gross domestic product)\b",
+            title,
+            re.I,
+        )
+        if wrong_measure or any(
+            code.upper().rstrip(".") != _GDP_INDICATOR for code in codes
+        ):
+            verification.reason = "conflicting GDP document indicator identity"
+            return
+    if not measure_known or len(set(datasets)) > 1:
+        verification.reason = "missing or conflicting GDP measure/dataset identity"
+        return
+    if doc is None and (
+        family != "worldbank" or meta.get("dataset_id") != _GDP_INDICATOR
+    ):
+        verification.reason = "missing GDP document or supported JSON identity"
+        return
+    hint = {
+        "record_id": record.id,
+        "year": record.year,
+        "quarter": record.quarter,
+        "entity_id": record.entity_id,
+        "country_code": "KEN",
+        "currency": record.currency,
+        "measure": "GDP, current KES"
+        if national
+        else "Gross County Product, current KES",
+        "source": publisher,
+        "dataset": doc.title if doc else meta["dataset_id"],
+        "url": url,
+    }
+    if doc is not None:
+        _attach_source_document(verification, db, doc.id)
+        hint["source_document_id"] = doc.id
+        for field in ("source_page", "page_ref", "source_hash", "extraction_id"):
+            value = getattr(record, field)
+            if value is not None:
+                hint[field] = value
+    verification.provenance_chain = [hint]
+
+
 def _note_document_integrity(verification, db, source_document_id) -> None:
     """Append what CAN be said about the stored document, without fetching it.
 
@@ -827,24 +1173,21 @@ async def verify_data_point(
                 query = query.filter(GDPData.entity_id == entity_id)
             else:
                 query = query.filter(GDPData.entity_id.is_(None))
-            if year:
+            if year is not None:
                 query = query.filter(GDPData.year == year)
             record = query.order_by(desc(GDPData.year)).first()
-            if record:
+            if record is None:
+                verification.reason = "no_rows_for_year" if year is not None else "no_rows"
+            else:
                 gdp_t = float(record.gdp_value) / 1e12
-                verification.value = f"KES {gdp_t:.2f}T (year {record.year})"
-                if record.source_document_id:
-                    doc = db.query(SourceDocument).filter(SourceDocument.id == record.source_document_id).first()
-                    if doc:
-                        verification.source_document = doc.title
-                        verification.source_url = doc.url
-                        verification.publisher = doc.publisher
-                verification.provenance_chain = [
-                    {"source": "KNBS", "dataset": "Economic Survey", "url": "https://www.knbs.or.ke/economic-survey/"},
-                    {"cross_check": "World Bank", "url": "https://data.worldbank.org/indicator/NY.GDP.MKTP.CN?locations=KE"},
-                ]
+                verification.value = (
+                    f"{record.currency} {gdp_t:.2f}T (year {record.year})"
+                    if math.isfinite(gdp_t) else None
+                )
+                _attach_gdp_evidence(verification, db, record)
                 _grade_verification(verification)
-                _note_document_integrity(verification, db, record.source_document_id)
+                if verification.source_document:
+                    _note_document_integrity(verification, db, record.source_document_id)
 
         elif table_name == "audits":
             # Only rows that pass the publication gate. This branch previously
