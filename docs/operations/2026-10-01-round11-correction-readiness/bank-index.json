@@ -1,0 +1,393 @@
+{
+  "evidence_status": "DATED_INHERITED_BANK;NOT_PRODUCTION_AUTHORIZATION",
+  "base_commit": "355c057a6138ed47212a5aab865f4bdf26a02177",
+  "files": {
+    "docs/operations/2026-09-30-sourced-records/README.md": {
+      "byte_sha256": "05ff1acba4b14c03eca190c703bb01a6db9a4bcfe73e4a1ccb511d566317bab5",
+      "status": "inherited",
+      "bytes": 11231
+    },
+    "docs/operations/2026-09-30-sourced-records/adjacent-findings.json": {
+      "byte_sha256": "d8d674fd2953bfc4128408086460854a54f21e77bc1b9f9a584daf25a8e4cf2a",
+      "status": "inherited",
+      "bytes": 1625
+    },
+    "docs/operations/2026-09-30-sourced-records/adversarial-receipt.json": {
+      "byte_sha256": "4672fcc158813d1669d8d31d9690fef3f9004c9da89b9a128031bbc2927268bf",
+      "status": "inherited",
+      "bytes": 913
+    },
+    "docs/operations/2026-09-30-sourced-records/cleanup-after-codes-manifest.json": {
+      "byte_sha256": "520daf4b677aa9412716072a665be5bb0018262fa4224cf47fa81a261d831551",
+      "status": "inherited",
+      "bytes": 1093562
+    },
+    "docs/operations/2026-09-30-sourced-records/cleanup-current-manifest.json": {
+      "byte_sha256": "30823b069f568241ba6646fd6fee2f57918b2a03a185133b694205f6c2c8f3ce",
+      "status": "inherited",
+      "bytes": 1093569
+    },
+    "docs/operations/2026-09-30-sourced-records/cleanup-rehearsal.json": {
+      "byte_sha256": "e795c4b471f1927ad33832d119329c17d9f3adb162d9859137f797dad38bcc1e",
+      "status": "inherited",
+      "bytes": 8060
+    },
+    "docs/operations/2026-09-30-sourced-records/county-code-proposal.json": {
+      "byte_sha256": "212213e4942c01e1b499fc09e498377056efa5adf497f530ea22014f5670dab7",
+      "status": "inherited",
+      "bytes": 6292
+    },
+    "docs/operations/2026-09-30-sourced-records/county-code-recovery.sql": {
+      "byte_sha256": "83456602fc18b311abd246edc72965358a2b92dad6790becdcc86258c4ef9df1",
+      "status": "inherited",
+      "bytes": 3984
+    },
+    "docs/operations/2026-09-30-sourced-records/county-code-source-receipt.json": {
+      "byte_sha256": "7f35f3bde215b99fd3c5cb19a364cf60897094a621347d3f92cbf0728b45ea65",
+      "status": "inherited",
+      "bytes": 2856
+    },
+    "docs/operations/2026-09-30-sourced-records/county-codes.sql": {
+      "byte_sha256": "0301c1270c148beb21b56c76d98ae2305b841e6a02feff611b7cbea08ff63b95",
+      "status": "inherited",
+      "bytes": 4168
+    },
+    "docs/operations/2026-09-30-sourced-records/local-resource-cleanup.json": {
+      "byte_sha256": "e86f5c5f01d73f6018f5be3bb28333f68b244fb206eeedaa53769b27ba45a26e",
+      "status": "inherited",
+      "bytes": 260
+    },
+    "docs/operations/2026-09-30-sourced-records/plan-summary.json": {
+      "byte_sha256": "eec774255a05cbb2da0175d2940f8bc5c1a113c2cd23aa785b182c9fd0e44911",
+      "status": "inherited",
+      "bytes": 559
+    },
+    "docs/operations/2026-09-30-sourced-records/population-79-acceptance.json": {
+      "byte_sha256": "bffb10678d8e0128e8d84b82a01b5deb9ce171488c25a962b0d23096b551dde4",
+      "status": "inherited",
+      "bytes": 5105
+    },
+    "docs/operations/2026-09-30-sourced-records/production-readonly-receipt.json": {
+      "byte_sha256": "c201eba727ff0d253001818f623b71c014637688f9ca3f9be76efc1132c5efdf",
+      "status": "inherited",
+      "bytes": 177902
+    },
+    "docs/operations/2026-09-30-sourced-records/public-source-receipt.json": {
+      "byte_sha256": "cf48ad8d0ce8efe4d2e04eb44722fec453ebfc28fc21c16b6d8ff6c0dffda9b9",
+      "status": "inherited",
+      "bytes": 15177
+    },
+    "docs/operations/2026-09-30-sourced-records/public-source-walk.json": {
+      "byte_sha256": "27cc15285ee42341a2b3c4b6f6a32dcd3942312a043c9a45498a449b3f68b548",
+      "status": "inherited",
+      "bytes": 2270
+    },
+    "docs/operations/2026-09-30-sourced-records/publisher-rehearsal.json": {
+      "byte_sha256": "fe938a8fbdc15904fe81c3aa6051d0e75634274369eca1e5c4dc26320e9733d1",
+      "status": "inherited",
+      "bytes": 2140
+    },
+    "docs/operations/2026-09-30-sourced-records/retired-source-hash-receipt.json": {
+      "byte_sha256": "38a8c15ecac534b852d05b3913678d22d44b8d26e95c178ea9923d3b24feaa3f",
+      "status": "inherited",
+      "bytes": 1117
+    },
+    "docs/operations/2026-09-30-sourced-records/source-publisher-proposal.json": {
+      "byte_sha256": "69d6a29c0fcdd4e3319d256859d4749c4c6f5b690a8e01c3dd4061d42857cb96",
+      "status": "inherited",
+      "bytes": 7992
+    },
+    "docs/operations/2026-09-30-sourced-records/source-publisher-recovery.sql": {
+      "byte_sha256": "ad0c9e4bbaf287728c52690457c994045c52b62e0c291ea6f928384de1d6cb92",
+      "status": "inherited",
+      "bytes": 12815
+    },
+    "docs/operations/2026-09-30-sourced-records/source-publishers.sql": {
+      "byte_sha256": "3df36234135d1a2935d15556277ed9b8cc0a0baf2ad3a1726149102d446af55a",
+      "status": "inherited",
+      "bytes": 11630
+    },
+    "docs/operations/2026-09-30-sourced-records/source-walk-receipt.json": {
+      "byte_sha256": "92ca197daf40f38ddf55eaf5654d85a3cdb3b0e3ba6f4d4718c25a94e5794073",
+      "status": "inherited",
+      "bytes": 7161
+    },
+    "tools/prepare_legacy_evidence_cleanup.py": {
+      "byte_sha256": "ed3453b4e18045d46667bf29bde7987f9daa7d57231f93e8036f33b67476eef0",
+      "status": "current_checkout_hash_matches_bank",
+      "bytes": 5221
+    },
+    "tools/verify_sourced_record_cleanup.py": {
+      "byte_sha256": "6dbe3f1949cd3cff52de072828649dcc590fd41537c2ba9c46cf9b9dc741c119",
+      "status": "current_checkout_hash_matches_bank",
+      "bytes": 21569
+    },
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_CAPTURE.py": {
+      "byte_sha256": "823c7d62ad4b0e42d8059b0462ef23038fd020164256b20487d3e39bf1d2a620",
+      "status": "inherited_external",
+      "bytes": 4794
+    },
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_PREPARE.py": {
+      "byte_sha256": "da1d75ac61ea2fab4796b404799091ed0edf07b6400d8a23fa2d19133ef78ad6",
+      "status": "inherited_external",
+      "bytes": 10283
+    },
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_PUBLIC_SOURCE.py": {
+      "byte_sha256": "b8fff397b56eac2308ea6c9c081f856c8b55be1d11294bbe6cb080193cfc3b73",
+      "status": "inherited_external",
+      "bytes": 1573
+    },
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_SOURCE_WALK.py": {
+      "byte_sha256": "6532579d786b319245613de1b920578e82b4cb34e934e96c8e9ba3c44916107d",
+      "status": "inherited_external",
+      "bytes": 2130
+    },
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_IDENTITY_PROBE.py": {
+      "byte_sha256": "6be83f48e913ad07bc12b866944cc44ca0d1f90ec19cbb35ed5fb834993bd486",
+      "status": "inherited_external",
+      "bytes": 1368
+    },
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_IDENTITY_RED.json": {
+      "byte_sha256": "5097ccd3417b53322f58d6104593958bed090f827ab03bd4f51fd80c55aea081",
+      "status": "inherited_external",
+      "bytes": 290
+    },
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_IDENTITY_GREEN.json": {
+      "byte_sha256": "c40347b9bd947778a31e7462e1ce597b0c0665e992a2d5b59735e2c5d785b364",
+      "status": "inherited_external",
+      "bytes": 236
+    },
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_PUBLISHER_REHEARSAL.py": {
+      "byte_sha256": "7576996758d0082c9b4527051bc9454bae3fae463701b31581a502f492bd13c2",
+      "status": "inherited_external",
+      "bytes": 5067
+    },
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_RENDERER_UNIT.log": {
+      "byte_sha256": "e7ffe1640b897b64112cecbea0911b670cafb745a54cf45999a5834b500c4d1e",
+      "status": "inherited_external",
+      "bytes": 1343
+    },
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_cleanup_current.sql": {
+      "byte_sha256": "ed1577b789bd6a07857b4fc0cb304a0d707a1f05001b3fbf6260d139fd69c8ce",
+      "status": "inherited_external",
+      "bytes": 745146
+    },
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_recover_current.sql": {
+      "byte_sha256": "dfe56bd621b5ef550f6266a63c18af71bd1cdaf5abf92069c8b0ae4118342c73",
+      "status": "inherited_external",
+      "bytes": 744910
+    },
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_cleanup_after-codes.sql": {
+      "byte_sha256": "ddcce87d996a50ee29ed228136b705e3f15c729798497ad5c884b5dff4d008b6",
+      "status": "inherited_external",
+      "bytes": 745146
+    },
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_recover_after-codes.sql": {
+      "byte_sha256": "566bf3f392b30140168a0e121f489f6ddcfcce43799cfd3f15c8cdbec1b76a0e",
+      "status": "inherited_external",
+      "bytes": 744910
+    },
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_ACTIONS_PERMISSION.json": {
+      "byte_sha256": "32700f5e09febdcc97d40b65c42a1c4b981b4b96af6eb1b8e87c932aba0a71ca",
+      "status": "inherited_external",
+      "bytes": 46
+    },
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_ACTIONS_ci.yml.json": {
+      "byte_sha256": "6649823901ddd78e0a30596ad255d07e22fdc17c300db2991dd556ede5d7d95e",
+      "status": "inherited_external",
+      "bytes": 64
+    },
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_ACTIONS_docker-build-deploy.yml.json": {
+      "byte_sha256": "a366f02ab7fad354698110c5ed333700e97c315c6dbc8f9c7c97366ab1a8848d",
+      "status": "inherited_external",
+      "bytes": 81
+    },
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_ACTIONS_seed.yml.json": {
+      "byte_sha256": "23ade5a2640ac003f1d24624b17fb476aff67396da001536e617494aa3c807a0",
+      "status": "inherited_external",
+      "bytes": 66
+    },
+    "docs/operations/2026-09-30-oag-boundary-correction.md": {
+      "byte_sha256": "871e393d794898c072a24583525771e4fa7b2674fde6aad343ec2831c632c60d",
+      "status": "inherited",
+      "bytes": 11503
+    },
+    "backend/tests/fixtures/oag_boundary_reviewed_manifest.json": {
+      "byte_sha256": "8504dd3243d56a5de8b98eea717faf0c8de484be3e3b28a00b2c8342c0228961",
+      "status": "inherited",
+      "bytes": 14317
+    },
+    "docs/operations/2026-09-30-economic-evidence/cpi-correction-proposal.json": {
+      "byte_sha256": "543e1ad07a7c30081c93b51b74450c22883611656ec03ff2b6c5dd62dfa50722",
+      "status": "inherited",
+      "bytes": 18958
+    },
+    "docs/operations/2026-09-30-economic-evidence/cpi-execution.md": {
+      "byte_sha256": "87b83a2816e3d00c5788d9d7630f99aeccc789b944108cb60faeb5e8a6bf783e",
+      "status": "inherited",
+      "bytes": 10755
+    },
+    "docs/operations/2026-09-30-sourced-records/authorization-packet.json": {
+      "byte_sha256": "7466a7e44860fb555a1094c4a5b8b48dcad0d4014920e2db71fcea63f0f2e75e",
+      "status": "inherited",
+      "bytes": 7372
+    },
+    "backend/tests/fixtures/kra/fy2025_26_primary_source_comparison_298.json": {
+      "byte_sha256": "230462c40921c55b4ed88c99a33bb77f6c86b15d19c30d8f70d1dfc7faaee7f6",
+      "status": "inherited",
+      "bytes": 4884
+    },
+    "docs/receipts/2026-09-27-national-finance-consumer-evidence.json": {
+      "byte_sha256": "4ea10ceca98797001eb99104e8d44708b452efb15727f486db50bc6cb7f16449",
+      "status": "inherited",
+      "bytes": 22099
+    },
+    "docs/receipts/2026-09-27-national-finance-consumers.md": {
+      "byte_sha256": "41e53fae3cafa83401d10b30aa5ecbe66771a87f8ff583feda6a092761548cc4",
+      "status": "inherited",
+      "bytes": 12322
+    },
+    "docs/operations/2026-09-27-freshness-browser.md": {
+      "byte_sha256": "14acffb17b15fd4c829bd13562ec23469d6decc5233b0e171494a94af03f3e13",
+      "status": "inherited",
+      "bytes": 12587
+    },
+    "frontend/lib/revalidation/paths.json": {
+      "byte_sha256": "1304c9d5470f3181bf9f83e31bdddfab69f2e9d4043f623e8276648a858e5459",
+      "status": "inherited",
+      "bytes": 606
+    },
+    ".github/workflows/seed.yml": {
+      "byte_sha256": "2b35344012d347529a2e7765fe4a3fbbf4ece290553308adc231bb51abfbc3fe",
+      "status": "inherited",
+      "bytes": 67221
+    },
+    "docs/operations/2026-09-30-economic-evidence/inflation-history-reconciliation.md": {
+      "byte_sha256": "0b84c11772da1f710bdb7f7e86b6e5b7729fee859cc881244fc6d6c679703122",
+      "status": "inherited",
+      "bytes": 6702
+    },
+    "docs/operations/2026-09-29-oag-catchup-refresh.md": {
+      "byte_sha256": "e55be10d220a9ae466f0020a8384fb141691f798b2eeceeb058928f2c8acfd68",
+      "status": "inherited",
+      "bytes": 7793
+    },
+    "scripts/verification/oag_boundary_correction.py": {
+      "byte_sha256": "bd5ff239c13f7f6241256ad8cc4e6effcb1cd8076989418921ce7fdaaea22903",
+      "status": "current_checkout_static_version_binding",
+      "bytes": 20093
+    },
+    "scripts/verification/cpi_source_correction.py": {
+      "byte_sha256": "d416a18b29a58976f8a0994d55cb9f68122f7468bcc1e4fa20982c3a6f072a46",
+      "status": "current_checkout_static_version_binding",
+      "bytes": 25496
+    },
+    "backend/services/publication_gate.py": {
+      "byte_sha256": "cf578dfe223ab974cd8f3299155cc5910e5eaac92d0cd3742391816cb2751eaa",
+      "status": "current_checkout_static_version_binding",
+      "bytes": 61791
+    },
+    "backend/routers/economic.py": {
+      "byte_sha256": "ceef0d76978411de1582a5cf1ceeca818e6448f22d1aae2cd9c1eb92d4764751",
+      "status": "current_checkout_static_version_binding",
+      "bytes": 39063
+    },
+    "backend/services/county_debt.py": {
+      "byte_sha256": "5bc0876fe6d57ae830dbea56839fa6734749bda930b2c61182014cb1fa0bdf8d",
+      "status": "current_checkout_static_version_binding",
+      "bytes": 14117
+    },
+    "backend/alembic/versions/c415a10d2026_county_debt_observations.py": {
+      "byte_sha256": "9a21f4fbefb5b41f0e187cae5486131609f7cda9b9aed15f3fde628626305f8c",
+      "status": "current_checkout_static_version_binding",
+      "bytes": 4978
+    },
+    "backend/routers/cache_invalidation.py": {
+      "byte_sha256": "95602207d785d7e25a230bc85b88cfb49f0d431f4ef6e4bda213b2409b9246fa",
+      "status": "current_checkout_static_version_binding",
+      "bytes": 2920
+    },
+    "frontend/app/api/revalidate/route.ts": {
+      "byte_sha256": "290f533519ae66ce9681c850252f6e7cf210d7d4f04b0425e794667ff21d43ee",
+      "status": "current_checkout_static_version_binding",
+      "bytes": 2441
+    },
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_FULL_production-readonly-receipt.json": {
+      "byte_sha256": "3705593520de3cba6aedd3eb2613e234e5a8e61910cd54e08b856d55c076c8bf",
+      "status": "inherited_full_capture"
+    },
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND11_SESSION_4_ISSUES_2026-10-01.json": {
+      "byte_sha256": "b688fc603637bad385f30f5089fa2de812b0eafae23a94fb75d5b730d0cbd6d3",
+      "status": "session4_fresh_local_or_readonly_github",
+      "bytes": 104414
+    },
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND11_SESSION_4_ACTIONS_READONLY.json": {
+      "byte_sha256": "4655c98ca10d662b110bd85820b24a63d506c0ab872102e4a139e72d55703232",
+      "status": "session4_fresh_local_or_readonly_github",
+      "bytes": 842
+    },
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND11_SESSION_4_FOCUSED.log": {
+      "byte_sha256": "3cb2a8507ddb6731ae524c3ddce4cc1b188f350e634848ea932a4fe601172329",
+      "status": "session4_fresh_local_or_readonly_github",
+      "bytes": 3242
+    },
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND11_SESSION_4_RUN.py": {
+      "byte_sha256": "6244ceb1ac096a57b3dd9f12ba14697ccde050bc158a104b2106f8f4e1b633ac",
+      "status": "session4_fresh_local_or_readonly_github",
+      "bytes": 1501
+    },
+    "docs/operations/2026-09-30-oag-round6-acceptance.md": {
+      "byte_sha256": "5bc3c8342e6959afa54b30dd9a0efc0a22601189d8a0ab48edc1434ad3b602f6",
+      "status": "dated_inherited_OAG_integration_input",
+      "bytes": 14465
+    },
+    "docs/verification/2026-09-30-round6-oag/source-coverage-matrix.csv": {
+      "byte_sha256": "86ed39b886345c122528012f754fd609fd8d9940cd516b390a4e112e70df083f",
+      "status": "dated_inherited_OAG_integration_input",
+      "bytes": 5294
+    },
+    "docs/verification/2026-09-30-round6-oag/county-coverage-matrix.csv": {
+      "byte_sha256": "696f9867f98d2941a26f7e522f2831298a080a6bc827bc354a9c767da15b1aca",
+      "status": "dated_inherited_OAG_integration_input",
+      "bytes": 72562
+    },
+    "docs/verification/2026-09-27-oag-coverage/accepted-source-manifest.json": {
+      "byte_sha256": "62f26e0d93c8a3a25e1f2ae813c362aa0e10908e0ffff33fd496342674cf1dab",
+      "status": "dated_inherited_OAG_integration_input",
+      "bytes": 3701
+    }
+  },
+  "canonical_digests": {
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_2_EVIDENCE_2026-09-30/production-readonly-plan.json": {
+      "canonical_sha256": "57a73173edaa838a589c3e5e5a091042da801db3a23c6d8050ab6b0ced36338a",
+      "byte_sha256": "57a73173edaa838a589c3e5e5a091042da801db3a23c6d8050ab6b0ced36338a",
+      "status": "inherited_live_plan_not_permanent_release_key"
+    },
+    "rendered-current": {
+      "manifest_canonical_sha256": "e61b9ff401508766fb4ce01c79e5d52766a6327d89e15ef609028f4a509e4f87",
+      "forward_byte_sha256": "ed1577b789bd6a07857b4fc0cb304a0d707a1f05001b3fbf6260d139fd69c8ce",
+      "recovery_byte_sha256": "dfe56bd621b5ef550f6266a63c18af71bd1cdaf5abf92069c8b0ae4118342c73",
+      "status": "offline_default_rollback_preview_not_execution"
+    },
+    "rendered-projected-not-actual": {
+      "manifest_canonical_sha256": "b7449f4a38a7da721c17551169c567100ab0aade7822b2ba3cfbf61f5539f151",
+      "forward_byte_sha256": "ddcce87d996a50ee29ed228136b705e3f15c729798497ad5c884b5dff4d008b6",
+      "recovery_byte_sha256": "566bf3f392b30140168a0e121f489f6ddcfcce43799cfd3f15c8cdbec1b76a0e",
+      "status": "offline_default_rollback_preview_not_execution"
+    }
+  },
+  "source_bytes": {
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND5_SESSION_5_RECEIPTS_2026-09-30/knbs-cpi-jan2025.pdf": {
+      "sha256": "ca9654579a2a0b8d14301de005cea70f1db2943c8d40cb111be3b8b1e0ccd44d",
+      "status": "cached_bytes_rehashed_not_refetched"
+    },
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND5_SESSION_5_RECEIPTS_2026-09-30/knbs-cpi-dec2024.pdf": {
+      "sha256": "75e6f741704874180edd8378ec6219c5920f15082496e6bf47aa00e0f7570614",
+      "status": "cached_bytes_rehashed_not_refetched"
+    },
+    "/tmp/oag-county-assemblies-2024-2025-session1.pdf": {
+      "sha256": "aa72b0a512fe01ce8f40b9ed8597bd78657a9f441a8daf4963b07e661104d896",
+      "status": "cached_bytes_rehashed_not_refetched"
+    }
+  }
+}

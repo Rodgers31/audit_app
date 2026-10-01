@@ -1,0 +1,29 @@
+{
+  "status": "REVIEW_ONLY_READINESS_ENVELOPE_NOT_EXECUTION_PLAN_OR_AUTHORIZATION",
+  "client_date": "2026-10-01",
+  "base_commit": "355c057a6138ed47212a5aab865f4bdf26a02177",
+  "base_tree": "57d55dfdb1c01b04f92297edd02ff6a78a8e4cbf",
+  "file_sha256": {
+    "README.md": "25905b4c14643816a374af6c306f09a13ef5268280cd257e33787b0afd3d6718",
+    "approval-and-recapture.md": "e006a9fdd7305b1429a86a3e645b4126cc17851edc8a6659b2bc0914b7403c84",
+    "backup-and-restore.md": "64a322ff78e8803382baaaf91ec95fd918ffe49bf1871a66ca8fa1995808373c",
+    "bank-index.json": "ed8c8a4fb3fc36848e22612855e005fc884bedeae85ec328605c322bd7faff58",
+    "decision-ledger.json": "e2fd92d92c4acfc9a08352a8e7bc5aa91954965e9f685685492dd81d8e108cf4",
+    "independent-review.json": "562b24c18f0c2367b6adf06ecdf1383b5eccfa6690ac67c291e2dc8b6ae30dcb",
+    "session3-integration.md": "2662563e4095f846950126b3cdd7ec88615ba0e146aae4a567d736f09c730fc7",
+    "verification-receipt.json": "f0cb950388672bbe18834b744b749e9cad165ffc9c54b6ad602e372acc071905"
+  },
+  "production_plan_digests": "Bank-index canonical entries are inherited. Every future plan/SQL must be recaptured/reviewed and separately approved. This envelope hash does not grant any production authority.",
+  "session3_handoff_status": "not_present_at_finalization;coordinator integration dependency explicitly retained",
+  "external_artifact_sha256": {
+    "ROUND11_SESSION_4_BANK_AUDIT.py": "c6efa22fc055e266aa29fd6d89fca00802e0a3275959ea35d267fc55716b0ad3",
+    "ROUND11_SESSION_4_REVIEW_PROBES.py": "58381d69eaff8ccf0548003d43b51f1c8e1eaee7dcc2c4710b2e35c31ff8243b",
+    "ROUND11_SESSION_4_REVIEW_RECEIPT.json": "0019954290e21c5f2c4efe36fef60bdc298be5eb27e1983cc7431e4b79bb1df4",
+    "ROUND11_SESSION_4_RUN.py": "6244ceb1ac096a57b3dd9f12ba14697ccde050bc158a104b2106f8f4e1b633ac",
+    "ROUND11_SESSION_4_FOCUSED.log": "3cb2a8507ddb6731ae524c3ddce4cc1b188f350e634848ea932a4fe601172329",
+    "ROUND11_SESSION_4_ISSUES_2026-10-01.json": "b688fc603637bad385f30f5089fa2de812b0eafae23a94fb75d5b730d0cbd6d3",
+    "ROUND11_SESSION_4_ACTIONS_READONLY.json": "4655c98ca10d662b110bd85820b24a63d506c0ab872102e4a139e72d55703232",
+    "ROUND11_SESSION_4_CLEANUP.json": "e7dbffef8fab8bda91e739fe8066ea28efe139ce4cfb47458d41c13bf3ca8bd3"
+  },
+  "readiness_envelope_sha256": "330b8a6bb05c20c342f8519f86ddd88cb7778ab1470a022ee6c66884245796c9"
+}

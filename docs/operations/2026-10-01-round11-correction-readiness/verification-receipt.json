@@ -1,0 +1,1080 @@
+{
+  "status": "OFFLINE_BANK_CONTRACTS_PASSED_NOT_RELEASE_ACCEPTANCE",
+  "production_authorization": false,
+  "production_connections": false,
+  "fresh_public_or_source_fetch": false,
+  "checks": [
+    {
+      "name": "bank repo hash:README.md",
+      "passed": true
+    },
+    {
+      "name": "bank repo hash:adjacent-findings.json",
+      "passed": true
+    },
+    {
+      "name": "bank repo hash:adversarial-receipt.json",
+      "passed": true
+    },
+    {
+      "name": "bank repo hash:cleanup-after-codes-manifest.json",
+      "passed": true
+    },
+    {
+      "name": "bank repo hash:cleanup-current-manifest.json",
+      "passed": true
+    },
+    {
+      "name": "bank repo hash:cleanup-rehearsal.json",
+      "passed": true
+    },
+    {
+      "name": "bank repo hash:county-code-proposal.json",
+      "passed": true
+    },
+    {
+      "name": "bank repo hash:county-code-recovery.sql",
+      "passed": true
+    },
+    {
+      "name": "bank repo hash:county-code-source-receipt.json",
+      "passed": true
+    },
+    {
+      "name": "bank repo hash:county-codes.sql",
+      "passed": true
+    },
+    {
+      "name": "bank repo hash:local-resource-cleanup.json",
+      "passed": true
+    },
+    {
+      "name": "bank repo hash:plan-summary.json",
+      "passed": true
+    },
+    {
+      "name": "bank repo hash:population-79-acceptance.json",
+      "passed": true
+    },
+    {
+      "name": "bank repo hash:production-readonly-receipt.json",
+      "passed": true
+    },
+    {
+      "name": "bank repo hash:public-source-receipt.json",
+      "passed": true
+    },
+    {
+      "name": "bank repo hash:public-source-walk.json",
+      "passed": true
+    },
+    {
+      "name": "bank repo hash:publisher-rehearsal.json",
+      "passed": true
+    },
+    {
+      "name": "bank repo hash:retired-source-hash-receipt.json",
+      "passed": true
+    },
+    {
+      "name": "bank repo hash:source-publisher-proposal.json",
+      "passed": true
+    },
+    {
+      "name": "bank repo hash:source-publisher-recovery.sql",
+      "passed": true
+    },
+    {
+      "name": "bank repo hash:source-publishers.sql",
+      "passed": true
+    },
+    {
+      "name": "bank repo hash:source-walk-receipt.json",
+      "passed": true
+    },
+    {
+      "name": "bank tool hash:tools/prepare_legacy_evidence_cleanup.py",
+      "passed": true
+    },
+    {
+      "name": "bank tool hash:tools/verify_sourced_record_cleanup.py",
+      "passed": true
+    },
+    {
+      "name": "bank external hash:ROUND6_SESSION_3_CAPTURE.py",
+      "passed": true
+    },
+    {
+      "name": "bank external hash:ROUND6_SESSION_3_PREPARE.py",
+      "passed": true
+    },
+    {
+      "name": "bank external hash:ROUND6_SESSION_3_PUBLIC_SOURCE.py",
+      "passed": true
+    },
+    {
+      "name": "bank external hash:ROUND6_SESSION_3_SOURCE_WALK.py",
+      "passed": true
+    },
+    {
+      "name": "bank external hash:ROUND6_SESSION_3_IDENTITY_PROBE.py",
+      "passed": true
+    },
+    {
+      "name": "bank external hash:ROUND6_SESSION_3_IDENTITY_RED.json",
+      "passed": true
+    },
+    {
+      "name": "bank external hash:ROUND6_SESSION_3_IDENTITY_GREEN.json",
+      "passed": true
+    },
+    {
+      "name": "bank external hash:ROUND6_SESSION_3_PUBLISHER_REHEARSAL.py",
+      "passed": true
+    },
+    {
+      "name": "bank external hash:ROUND6_SESSION_3_RENDERER_UNIT.log",
+      "passed": true
+    },
+    {
+      "name": "bank external hash:ROUND6_SESSION_3_cleanup_current.sql",
+      "passed": true
+    },
+    {
+      "name": "bank external hash:ROUND6_SESSION_3_recover_current.sql",
+      "passed": true
+    },
+    {
+      "name": "bank external hash:ROUND6_SESSION_3_cleanup_after-codes.sql",
+      "passed": true
+    },
+    {
+      "name": "bank external hash:ROUND6_SESSION_3_recover_after-codes.sql",
+      "passed": true
+    },
+    {
+      "name": "bank external hash:ROUND6_SESSION_3_ACTIONS_PERMISSION.json",
+      "passed": true
+    },
+    {
+      "name": "bank external hash:ROUND6_SESSION_3_ACTIONS_ci.yml.json",
+      "passed": true
+    },
+    {
+      "name": "bank external hash:ROUND6_SESSION_3_ACTIONS_docker-build-deploy.yml.json",
+      "passed": true
+    },
+    {
+      "name": "bank external hash:ROUND6_SESSION_3_ACTIONS_seed.yml.json",
+      "passed": true
+    },
+    {
+      "name": "authorization packet known byte hash",
+      "passed": true
+    },
+    {
+      "name": "OAG manifest fixed pin",
+      "passed": true
+    },
+    {
+      "name": "OAG exact IDs",
+      "passed": true
+    },
+    {
+      "name": "OAG text hash:5545before",
+      "passed": true
+    },
+    {
+      "name": "OAG text hash:5545after",
+      "passed": true
+    },
+    {
+      "name": "OAG text hash:5679before",
+      "passed": true
+    },
+    {
+      "name": "OAG text hash:5679after",
+      "passed": true
+    },
+    {
+      "name": "OAG text hash:5716before",
+      "passed": true
+    },
+    {
+      "name": "OAG text hash:5716after",
+      "passed": true
+    },
+    {
+      "name": "OAG bank canonical live-plan digest",
+      "passed": true
+    },
+    {
+      "name": "CPI manifest fixed pin",
+      "passed": true
+    },
+    {
+      "name": "CPI exact IDs",
+      "passed": true
+    },
+    {
+      "name": "CPI values exact",
+      "passed": true
+    },
+    {
+      "name": "CPI shared sources preserved",
+      "passed": true
+    },
+    {
+      "name": "cached CPI PDF jan2025",
+      "passed": true
+    },
+    {
+      "name": "cached CPI PDF dec2024",
+      "passed": true
+    },
+    {
+      "name": "cached OAG PDF",
+      "passed": true
+    },
+    {
+      "name": "full bank transport hash",
+      "passed": true
+    },
+    {
+      "name": "exact four code cells",
+      "passed": true
+    },
+    {
+      "name": "all 47 target county identities",
+      "passed": true
+    },
+    {
+      "name": "same county identity:3",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:3",
+      "passed": true
+    },
+    {
+      "name": "code old predicate:3before",
+      "passed": true
+    },
+    {
+      "name": "code old predicate:3before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:3before",
+      "passed": true
+    },
+    {
+      "name": "code old predicate:3after",
+      "passed": true
+    },
+    {
+      "name": "code old predicate:3after",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:3after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:4",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:4",
+      "passed": true
+    },
+    {
+      "name": "code old predicate:4before",
+      "passed": true
+    },
+    {
+      "name": "code old predicate:4before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:4before",
+      "passed": true
+    },
+    {
+      "name": "code old predicate:4after",
+      "passed": true
+    },
+    {
+      "name": "code old predicate:4after",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:4after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:5",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:5",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:5before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:5after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:6",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:6",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:6before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:6after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:7",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:7",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:7before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:7after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:8",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:8",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:8before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:8after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:9",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:9",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:9before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:9after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:10",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:10",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:10before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:10after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:11",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:11",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:11before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:11after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:12",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:12",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:12before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:12after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:13",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:13",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:13before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:13after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:14",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:14",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:14before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:14after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:15",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:15",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:15before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:15after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:16",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:16",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:16before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:16after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:17",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:17",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:17before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:17after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:18",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:18",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:18before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:18after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:19",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:19",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:19before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:19after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:20",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:20",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:20before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:20after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:21",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:21",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:21before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:21after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:22",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:22",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:22before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:22after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:23",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:23",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:23before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:23after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:24",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:24",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:24before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:24after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:25",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:25",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:25before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:25after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:26",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:26",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:26before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:26after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:27",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:27",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:27before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:27after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:28",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:28",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:28before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:28after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:29",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:29",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:29before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:29after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:30",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:30",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:30before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:30after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:31",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:31",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:31before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:31after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:32",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:32",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:32before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:32after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:33",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:33",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:33before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:33after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:34",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:34",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:34before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:34after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:35",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:35",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:35before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:35after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:36",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:36",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:36before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:36after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:37",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:37",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:37before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:37after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:38",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:38",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:38before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:38after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:39",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:39",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:39before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:39after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:40",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:40",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:40before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:40after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:41",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:41",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:41before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:41after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:42",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:42",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:42before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:42after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:43",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:43",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:43before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:43after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:44",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:44",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:44before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:44after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:45",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:45",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:45before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:45after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:46",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:46",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:46before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:46after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:47",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:47",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:47before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:47after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:48",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:48",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:48before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:48after",
+      "passed": true
+    },
+    {
+      "name": "same county identity:49",
+      "passed": true
+    },
+    {
+      "name": "current source projects retained:49",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:49before",
+      "passed": true
+    },
+    {
+      "name": "only projected four code changes:49after",
+      "passed": true
+    },
+    {
+      "name": "renderer positive rollback current",
+      "passed": true
+    },
+    {
+      "name": "renderer positive rollback projected-not-actual",
+      "passed": true
+    },
+    {
+      "name": "renderer hostile refusal:project_overwrite",
+      "passed": true
+    },
+    {
+      "name": "renderer hostile refusal:wrong_shared_source",
+      "passed": true
+    },
+    {
+      "name": "renderer hostile refusal:duplicate_id",
+      "passed": true
+    },
+    {
+      "name": "renderer hostile refusal:new_inbound_fk",
+      "passed": true
+    }
+  ],
+  "check_count": 263,
+  "focused_tests": {
+    "command": "allowlisted ROUND11_SESSION_4_RUN.py tests/test_legacy_cleanup_validation.py tests/test_refresh_workflow_responses.py -q",
+    "exit_code": 0,
+    "passed": 24,
+    "skips": 0,
+    "scope": "SQLite renderer inputs and loopback actual workflow shell; not PostgreSQL production parity or browser acceptance"
+  },
+  "limits": [
+    "No fresh production capture/full restore/deployment/configuration/live API/browser acceptance",
+    "Current/projected bank remains unapproved and stale after any related write",
+    "Independent reviewer has separate executed controls/receipt; no banked PG replay repeated"
+  ],
+  "independent_review": {
+    "receipt": "independent-review.json",
+    "probe_path": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND11_SESSION_4_REVIEW_PROBES.py",
+    "probe_sha256": "58381d69eaff8ccf0548003d43b51f1c8e1eaee7dcc2c4710b2e35c31ff8243b",
+    "parent_reproduced_exit_code": 0,
+    "limits": "Offline pure renderer, extracted real schema helper/synthetic catalog, actual workflow jq; no real PostgreSQL ORM/live config/public/browser acceptance"
+  }
+}

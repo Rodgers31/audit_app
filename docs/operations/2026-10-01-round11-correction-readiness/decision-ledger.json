@@ -1,0 +1,341 @@
+{
+  "schema_version": 1,
+  "prepared_client_date": "2026-10-01",
+  "checkout": "/Users/roger/.codex/worktrees/audit-release-verification/audit_app",
+  "base_commit": "355c057a6138ed47212a5aab865f4bdf26a02177",
+  "base_tree": "57d55dfdb1c01b04f92297edd02ff6a78a8e4cbf",
+  "authorization": "NONE_FOR_PRODUCTION_EXECUTION",
+  "evidence_policy": "All production/source snapshots below are inherited dated banks. No fresh production connection/capture, credential read, data/config/cache write or live database restore in Session4.",
+  "actions": [
+    {
+      "id": "S4-OAG",
+      "issues": [
+        379
+      ],
+      "owner": "OAG data owner + release owner",
+      "decision": "PREPARED_UNAPPROVED",
+      "tool": "scripts/verification/oag_boundary_correction.py",
+      "bank": [
+        "docs/operations/2026-09-30-oag-boundary-correction.md",
+        "backend/tests/fixtures/oag_boundary_reviewed_manifest.json"
+      ],
+      "targets": {
+        "audits": [
+          5545,
+          5679,
+          5716
+        ],
+        "extractions": [
+          6023,
+          6158,
+          6196
+        ],
+        "source_document": 2541
+      },
+      "before_after": "Three extraction finding_text values; three audit finding_text and loader source_hash values. Exact full texts/hashes are in the reviewed manifest. Preserve every other field.",
+      "fresh_plan": "Rehash exact assemblies PDF, replay pinned baseline/current parser and prepare full reflected rows/documents/entities/periods in default READ ONLY mode. Review all drift and canonical plan digest.",
+      "refusal": "Wrong PDF/manifest/identity/institution/period/page/full preimage/publication eligibility/digest or durable receipt/lock failure; any concurrent drift.",
+      "recovery": "Original exact plan/digest with --recover; require exact after-state; new immutable intent receipt; separate recovery authorization. Inspect database on uncertain commit.",
+      "acceptance": "Read both authoritative copies and public hashes for all three IDs; PDF paragraphs; real UI; authorized next loader preserves corrected text. Broader national2392 retirement excluded."
+    },
+    {
+      "id": "S4-CPI",
+      "issues": [
+        380
+      ],
+      "owner": "Economic data owner + release owner",
+      "decision": "PREPARED_UNAPPROVED",
+      "tool": "scripts/verification/cpi_source_correction.py",
+      "bank": [
+        "docs/operations/2026-09-30-economic-evidence/cpi-correction-proposal.json",
+        "docs/operations/2026-09-30-economic-evidence/cpi-execution.md"
+      ],
+      "targets": {
+        "economic_indicators": [
+          67,
+          86,
+          87
+        ],
+        "unchanged_sources": [
+          1715,
+          1823
+        ]
+      },
+      "before_after": "67(cpi)/86(CPI), 2025-01-31:143.08→142.68;87(CPI),2024-12-31:142.47→141.66. National NULL scope; February2019=100 index. Allocate/reuse exact KNBS PDF/Table1/page2 evidence; coherent units/basis/provenance/publication per manifest, preserve IDs/types/dates/created_at.",
+      "fresh_plan": "Verify both banked KNBS PDFs and approved prevention deployment; default tool recaptures full unknown-column-inclusive before-images, country/source/duplicate identity context and exact source/extraction candidates; canonical digest requires renewed owner review.",
+      "refusal": "Any source/row/context/duplicate/value/type/hash drift, generic fixture/direct CPI input, forged receipt, no durable intent/resolved receipt; no unconditional source relabel.",
+      "recovery": "Default --recovery resolved receipt with canonical receipt digest; compare full actual allocated/reused evidence and exact after-images. Separate --commit recovery restores only three full before-images; archived evidence retained and unsupported observations withheld.",
+      "acceptance": "Public indicators exact uppercase/lowercase types, zero/absence semantics,142.68/141.66,monthly2019 basis,PDF URL/page/hash; actual profile/list gate;next dedicated domain preserves corrected rows;annual WB/cpi_index unaffected."
+    },
+    {
+      "id": "S4-PUBLISHERS",
+      "issues": [
+        273,
+        274,
+        319
+      ],
+      "owner": "National-finance source owner + release owner",
+      "decision": "PREPARED_UNAPPROVED",
+      "tool": "docs/operations/2026-09-30-sourced-records/source-publishers.sql",
+      "bank": [
+        "docs/operations/2026-09-30-sourced-records/source-publisher-proposal.json",
+        "docs/operations/2026-09-30-sourced-records/source-publishers.sql",
+        "docs/operations/2026-09-30-sourced-records/source-publisher-recovery.sql"
+      ],
+      "targets": {
+        "source_documents": [
+          1840,
+          2383
+        ],
+        "expected_loan_refs": {
+          "1840": [],
+          "2383": [
+            426
+          ]
+        }
+      },
+      "before_after": "1840 publisher National Treasury of Kenya→Central Bank of Kenya;2383 Office of the Controller of Budget (OCOB)→National Treasury. Exactly two publisher columns; preserve title/edition/URL/status/IDs and all references.",
+      "fresh_plan": "Refresh CBK landing-page publisher identity and2025 BROP cover PDF hash; read complete source rows, full current source-FK catalogue and all target reference IDs under enforced READ ONLY; regenerate/review exact SQL and recovery digests.",
+      "refusal": "Source/URL/hash/row/reference/catalogue drift. Old48/5-loan counts are superseded. 1840 landing page does not prove April2025 edition or amounts;zero references grants no deletion.",
+      "recovery": "Guard exact corrected publisher and identity/reference contract; restore only old publishers, preserve later unrelated source metadata; separate exact recovery authorization.",
+      "acceptance": "Postcommit publisher-only delta;loan426 retained;2430 already CBK with381/383/384/439 remains unchanged;public source labels/links/edition qualified."
+    },
+    {
+      "id": "S4-CODES",
+      "issues": [
+        306,
+        319
+      ],
+      "owner": "County identity owner + release owner",
+      "decision": "PREPARED_UNAPPROVED",
+      "tool": "docs/operations/2026-09-30-sourced-records/county-codes.sql",
+      "bank": [
+        "docs/operations/2026-09-30-sourced-records/county-code-proposal.json",
+        "docs/operations/2026-09-30-sourced-records/county-codes.sql",
+        "docs/operations/2026-09-30-sourced-records/county-code-recovery.sql"
+      ],
+      "targets": {
+        "entities": [
+          4,
+          3
+        ],
+        "paths": [
+          "metrics.FY2024/25.county_code",
+          "metrics.FY2025/26.county_code"
+        ],
+        "cells": 4
+      },
+      "before_after": "Entity4 Mombasa047→001,Entity3 Nairobi001→047 in exactly two periods each. Preserve public routes Mombasa047/Nairobi001,IDs/names/slugs/FKs and financial rows.",
+      "fresh_plan": "Recapture complete county metadata/identities and relevant FK/fiscal controls, official ConstitutionFirstSchedulePDFpp167–168/sourcehash; review exact four path predicates and SQL/recovery file SHA256.",
+      "refusal": "Missing/different old cell,county identity/name/slug or reviewed reference drift. No financial-record swap or route-ID migration.",
+      "recovery": "Four inverse jsonb_set path changes only; exact corrected cells/identity predicates; preserve unrelated newer JSON; separate recovery authorization.",
+      "acceptance": "Public county-list code001/047 with unchanged compatibility routes and financial identities; full retained metadata comparison. Mandatory actual post-code recapture before cleanup."
+    },
+    {
+      "id": "S4-CLEANUP",
+      "issues": [
+        319
+      ],
+      "owner": "Legacy evidence owner + release owner",
+      "decision": "PREPARED_UNAPPROVED_POSTCODE_RECAPTURE_REQUIRED",
+      "tool": "tools/prepare_legacy_evidence_cleanup.py",
+      "bank": [
+        "docs/operations/2026-09-30-sourced-records/cleanup-current-manifest.json",
+        "docs/operations/2026-09-30-sourced-records/cleanup-after-codes-manifest.json",
+        "docs/operations/2026-09-30-sourced-records/production-readonly-receipt.json",
+        "docs/operations/2026-09-30-sourced-records/authorization-packet.json"
+      ],
+      "targets": {
+        "metadata_keys": {
+          "economic_profile": 47,
+          "missing_funds_cases": 3,
+          "audit_summary": 8
+        },
+        "audit_ids": [
+          870,
+          871,
+          872,
+          873,
+          874,
+          875,
+          876,
+          877,
+          878,
+          879,
+          880,
+          881,
+          882,
+          883,
+          884,
+          885,
+          886,
+          887,
+          888,
+          889,
+          890,
+          891,
+          892,
+          893,
+          894
+        ],
+        "retained_source": 1836
+      },
+      "before_after": "Remove only exact reviewed retired keys and exact audits870–894. Full rows and unrelated JSON retained; all47 source-backed project arrays/companion metadata and four corrected code cells survive.",
+      "fresh_plan": "After approved four code writes, recapture actual post-code complete rows and dependencies. Projected after-codes manifest is not a receipt. Reconcile later source metadata, render via existing tool and review full manifest+forward+recovery SHA256s; approval is renewed before cleanup.",
+      "refusal": "Any full county metadata/name/slug,source1836,audit full-row/count,FK catalogue/inbound-reference drift. Occupied recovery IDs or newer JSON causes atomic refusal;no stale whole-document restoration.",
+      "recovery": "Reverse cleanup into approved post-code state first;require exact post-cleanup full images and unoccupied IDs. If newer metadata exists, independently rebase both before/after images preserving it and obtain new recovery approval;never force stale snapshots.",
+      "acceptance": "Exact returned county/audit IDs and selected key counts;every other key/project preserved;source1836 retained;no source deletions;public absence distinguished from zero;fresh API/source/browser checks."
+    },
+    {
+      "id": "S4-KRA",
+      "issues": [
+        298
+      ],
+      "owner": "National-revenue source owner + release owner",
+      "decision": "NO_EXACT_STORED_WRITE_APPROVABLE_FROM_BANK",
+      "tool": "Existing revenue_by_source/fiscal_summary source preflight and signed refresh; no new repair path",
+      "bank": [
+        "backend/tests/fixtures/kra/fy2025_26_primary_source_comparison_298.json",
+        "docs/receipts/2026-09-27-national-finance-consumer-evidence.json",
+        "docs/receipts/2026-09-27-national-finance-consumers.md"
+      ],
+      "targets": {
+        "scope": "Separate official dashboard_bundle and KRA PDF editions; incompatible residual/partition shares withheld"
+      },
+      "before_after": "No exact production DML proposed. Bank proves published versions differ on Agency/Customs/PAYE/Excise;no revision chronology. Preserve qualified stated totals and incompatible-basis withholding.",
+      "fresh_plan": "Authorized future public source-chain capture(official embed→bundle→linked PDF),hash/retrieval/version and publication-date qualification;source review plus complete database/dependency/delta manifest for selected bounded domains before any seed.",
+      "refusal": "No preferred-version inference;no guessed Customs-to-Exchequer allocation,agency subtraction,residual or partition shares;failed source never authorizes fixture publication.",
+      "recovery": "Only after exact bounded source/delta before-after/recovery exists;none invented in this packet. Whole national_debt seed excluded.",
+      "acceptance": "Source version/hash/page/billion-KES/period/basis matches API and rendered budget/debt;Other TaxRevenue/partition remains qualified/withheld where incompatible;no accidental rounding as reconciliation."
+    },
+    {
+      "id": "S4-FRESHNESS",
+      "issues": [
+        231
+      ],
+      "owner": "Account/platform owners(Actions,Render,Vercel)+release owner",
+      "decision": "CONFIGURATION_AND_FINAL_ACTIONS_APPROVAL_REQUIRED",
+      "tool": ".github/workflows/seed.yml jobs.revalidate; backend/routers/cache_invalidation.py; frontend/app/api/revalidate/route.ts",
+      "bank": [
+        "docs/operations/2026-09-27-freshness-browser.md",
+        "frontend/lib/revalidation/paths.json",
+        ".github/workflows/seed.yml"
+      ],
+      "targets": {
+        "shared_secret_name": "REVALIDATE_SECRET",
+        "paths_manifest": "frontend/lib/revalidation/paths.json"
+      },
+      "before_after": "Architecture already implemented. Future owner configuration supplies same secure secret on all three platforms and approved endpoint vars. No settings/secrets/signed requests changed here.",
+      "fresh_plan": "Owner verifies actual deployed code/schema/environment/cross-worker generation destination and secret equality without logging secret;resolve account billing/access;authorize final Actions batch separately;select only source-approved serialized domains.",
+      "refusal": "Missing/wrong secret/signature/timestamp;seed/validation failure;nonboolean invalidation;multiple JSON documents;missing/extra/duplicate/rejected frontend paths;unvalidated data must not refresh.",
+      "recovery": "Stop after failure and preserve last valid publication;credential incident handled by platform owner;no disabling gates or broad Redis flush. Any data recovery uses action-specific approved receipts;refresh recovery after guarded state verification.",
+      "acceptance": "Actual authorized seed→full successful validation→signed API invalidation(all workers/generation)→exact manifest acknowledgement→API/source/browser changed figure without another deploy/restart/TTL-only explanation. Local24-control pass is not live acceptance."
+    },
+    {
+      "id": "S4-UMBRELLA",
+      "issues": [
+        322
+      ],
+      "owner": "Coordinator + county instrument/source owners",
+      "decision": "TRACK_UNFINISHED_ACCEPTANCES",
+      "tool": "backend/services/county_debt.py; backend/alembic/versions/c415a10d2026_county_debt_observations.py",
+      "bank": [
+        "docs/operations/2026-09-30-sourced-records/README.md"
+      ],
+      "targets": {
+        "optional_schema": "c415a10d2026",
+        "predecessor": "ea1645a4c0b5"
+      },
+      "before_after": "No schema application/backfill/adoption in this packet. Both new tables absent is compatible legacy mode;partial schema refuses. record_county_debt_observation has only definition/test callers in inspected backend.",
+      "fresh_plan": "If separately selected:owner reviews migration/backup/full restore/compatibility then explicit real instrument identity/source ingestion adoption with exact source amounts/before-after;keep separate from corrections.",
+      "refusal": "Closing415/design acceptance does not prove actual Kenyan instrument pair,deployed migration,or corrected undercount;new tables are not mandatory for this packet.",
+      "recovery": "Separate migration/adoption recovery planning;no downgrade orbackfill from this packet.",
+      "acceptance": "Umbrella remains open for all linked source/public/configuration acceptances,including230/234/299;do not revive historical code findings."
+    },
+    {
+      "id": "S4-HISTORY",
+      "issues": [
+        347,
+        378
+      ],
+      "owner": "Historical evidence owner + account owner + release owner",
+      "decision": "MISSING_HISTORY_AND_ACCOUNT_ACCEPTANCE",
+      "tool": "Banked SELECT-only historical diagnostic and source reconciliation runbooks",
+      "bank": [
+        "docs/operations/2026-09-30-economic-evidence/inflation-history-reconciliation.md",
+        "docs/operations/2026-09-29-oag-catchup-refresh.md"
+      ],
+      "targets": {
+        "tuple_clues": [
+          "2023-06-30=7.9",
+          "2024-01-31=6.3",
+          "2024-06-30=4.6",
+          "2025-01-31=3.3"
+        ]
+      },
+      "before_after": "No restoration/deletion/baseline change proposed. Two January removals logged;June actor/time/authorization unproven;15→11 counts alone insufficient. Latest378 billing-block run executed zero steps per issue receipt.",
+      "fresh_plan": "Owner recovers Sep26 original snapshot/preSep27 backup including exact IDs/type/date/entity/value/unit/full source/extraction/metadata and deployed/startup/job/authorization evidence;compare independently to preserved annual series.",
+      "refusal": "Do not guess IDs/monthly lineage,reset baseline11,reinstate bootstrap literals orread billing administrative failure as code regression.",
+      "recovery": "Only source-qualified historical reconciliation may produce separately approved exact recovery;no plausible-value reconstruction.",
+      "acceptance": "Auditable historical disposition plus successful real validated catch-up/refresh after owner final Actions approval and account access. Session3 source preservation matrix governs OAG;2392 proposed335retirements/2revisions remain separate."
+    }
+  ],
+  "preserved": {
+    "population79": 51202827,
+    "no_population79_recovery": true,
+    "source_documents_never_globally_relabel_or_retire": [
+      1823,
+      2541
+    ],
+    "source_documents_retained": [
+      1707,
+      1718,
+      1822,
+      1836,
+      1840,
+      2383,
+      2430
+    ],
+    "current_source_backed_project_arrays": 47,
+    "source_backed_array_preservation_is_not_source_acceptance": true
+  },
+  "order": [
+    "verify deployed prevention and ActionsOFF;owner-controlled competing-writer freeze",
+    "external full backup+isolated full restore proof",
+    "fresh source/hash/READONLY plans and owner exact digest authorization per action",
+    "S4-OAG and S4-CPI serialized with Session3 preservation;no blanket seed",
+    "S4-PUBLISHERS after refreshed complete refs",
+    "S4-CODES four cells",
+    "mandatory ACTUAL post-code metadata/dependency recapture+new cleanup SQL/digests+owner review",
+    "S4-CLEANUP",
+    "S4-KRA only once separate complete bounded delta is source-approved",
+    "Session3 serial OAG catch-up once exact source/preservation approvals and history/configuration gates permit",
+    "S4-FRESHNESS actual fullvalidated seed→invalidation→revalidation→render acceptance"
+  ],
+  "recovery_order": [
+    "stop competing writers and determine uncertain commit from database/receipts",
+    "S4-CLEANUP→approved POSTCODE state",
+    "S4-CODES fourinverse paths",
+    "S4-PUBLISHERS publisher-only",
+    "S4-CPI/S4-OAG in reverse actual execution order with their own exact approved receipts and drift refusal",
+    "revalidate only independently verified resulting state;retain archivedsource evidence"
+  ],
+  "coordination": {
+    "session3_handoff": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND11_SESSION_3_HANDOFF_2026-10-01.md",
+    "status": "Pending at packet preparation;coordinator must reconcile final handoff without rewriting its source manifest",
+    "oag_dependency": "Five-volume catch-up source/public preservation under234;no concurrent correction/catch-up write"
+  },
+  "open_issues_must_not_close": [
+    319,
+    306,
+    379,
+    380,
+    273,
+    274,
+    231,
+    298,
+    322,
+    347,
+    378
+  ]
+}
