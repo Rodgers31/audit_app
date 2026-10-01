@@ -50,6 +50,12 @@ PARAMETER NAMES ARE NOT PART OF THE PATH. ``/counties/{name}`` is served by
 rule that compared parameter names would report a defect where the only
 difference is what the author called the variable.
 
+Traversal covers the shared whole-tree source set; parse errors fail closed.
+This is a static decorator registry, not proof that a deployed app mounts a route.
+Relative paths with a directly attached, valid remote HTTP(S) ``base_url``
+belong to that explicit other service. This context is not inherited by nested
+or neighboring mappings and does not cover local or dynamically replaced URLs.
+
 WHAT IS NOT CHECKED, deliberately. ``ready_for_ui: True`` in the block above is
 a literal that cannot become False whatever the run found, and it is the last
 of the self-assessment #195 was withdrawing. It goes with the block, but there
@@ -72,27 +78,17 @@ service is a legitimate reason; writing it down is the point.
 from __future__ import annotations
 
 import ast
+import ipaddress
 import re
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+from tests._repo_tree import REPO_ROOT, python_modules, rel as _rel
+from tests._guard_suppression import suppressed
 
-# Where a route may be REGISTERED. Wider than where advertisements are read,
-# because ``backend/main.py`` serves most of what ships.
-ROUTE_ROOTS = (
-    REPO_ROOT / "apis",
-    REPO_ROOT / "analysis",
-    REPO_ROOT / "extractors",
-    REPO_ROOT / "backend",
-)
-# Where an advertisement may be MADE — the three roots the sibling guards scan.
-SCANNED_ROOTS = (
-    REPO_ROOT / "apis",
-    REPO_ROOT / "analysis",
-    REPO_ROOT / "extractors",
-)
+ROUTE_ROOTS = SCANNED_ROOTS = (REPO_ROOT,)
 
 SUPPRESSION = "endpoint-ok:"
 
@@ -103,27 +99,14 @@ HTTP_METHODS = frozenset(
 # The leading path token of an advertisement string: "/national/debt - blah".
 LEADING_PATH = re.compile(r"^(/[A-Za-z0-9_\-{}/.]*)")
 
-EXCLUDED_DIRS = frozenset({".venv", ".venv313", "node_modules", "site-packages", "__pycache__"})
+EXCLUDED_DIRS = frozenset(
+    {".venv", ".venv313", "node_modules", "site-packages", "__pycache__"}
+)
 
 
 def flatten(path: str) -> str:
     """``/counties/{county_name}`` and ``/counties/{name}`` both to ``/counties/{}``."""
     return re.sub(r"\{[^}]*\}", "{}", path.rstrip("/")) or "/"
-
-
-def _modules(root: Path) -> list[Path]:
-    if not root.is_dir():
-        return []
-    return sorted(
-        m for m in root.rglob("*.py") if not (EXCLUDED_DIRS & set(m.parts))
-    )
-
-
-def _parse(module: Path) -> ast.AST | None:
-    try:
-        return ast.parse(module.read_text(encoding="utf-8", errors="ignore"))
-    except (SyntaxError, ValueError):
-        return None
 
 
 def find_registered_routes(source: str, where: str = "<source>") -> set[str]:
@@ -144,26 +127,27 @@ def find_registered_routes(source: str, where: str = "<source>") -> set[str]:
     return routes
 
 
-def _suppressed(source_lines: list[str], node: ast.AST) -> bool:
-    """True if an ``endpoint-ok:`` comment WITH A REASON covers node."""
-    start = max(1, getattr(node, "lineno", 1) - 1)
-    end = getattr(node, "end_lineno", None) or getattr(node, "lineno", 1)
-    for lineno in range(start, end + 1):
-        line = source_lines[lineno - 1] if lineno <= len(source_lines) else ""
-        if SUPPRESSION in line:
-            reason = line.split(SUPPRESSION, 1)[1].strip()
-            if reason:
-                return True
-    return False
-
-
-def find_advertised_paths(source: str, where: str = "<source>") -> list[tuple[str, int]]:
+def find_advertised_paths(
+    source: str, where: str = "<source>"
+) -> list[tuple[str, int]]:
     """Every ``(path, lineno)`` advertised under an ``endpoint``-ish key."""
     tree = ast.parse(source, filename=where)
     lines = source.splitlines()
+    sites = [
+        n
+        for n in ast.walk(tree)
+        if isinstance(n, ast.Constant)
+        and isinstance(n.value, str)
+        and LEADING_PATH.match(n.value.strip())
+    ]
     advertised: list[tuple[str, int]] = []
     for node in ast.walk(tree):
         if not isinstance(node, ast.Dict):
+            continue
+        # A directly attached absolute remote base URL identifies the service
+        # owning these relative paths. Do not infer it from siblings, outer
+        # containers, variables or an invalid/local URL.
+        if _has_explicit_remote_base(node):
             continue
         for key, value in zip(node.keys, node.values):
             if not (isinstance(key, ast.Constant) and isinstance(key.value, str)):
@@ -171,7 +155,9 @@ def find_advertised_paths(source: str, where: str = "<source>") -> list[tuple[st
             if "endpoint" not in key.value.lower():
                 continue
             elements = (
-                value.elts if isinstance(value, (ast.List, ast.Tuple, ast.Set)) else [value]
+                value.elts
+                if isinstance(value, (ast.List, ast.Tuple, ast.Set))
+                else [value]
             )
             for element in elements:
                 if not (
@@ -179,10 +165,68 @@ def find_advertised_paths(source: str, where: str = "<source>") -> list[tuple[st
                 ):
                     continue
                 match = LEADING_PATH.match(element.value.strip())
-                if not match or _suppressed(lines, element):
+                if not match or suppressed(lines, element, SUPPRESSION, sites):
                     continue
                 advertised.append((match.group(1), element.lineno))
     return advertised
+
+
+def _has_explicit_remote_base(node: ast.Dict) -> bool:
+    if any(not isinstance(key, ast.Constant) for key in node.keys):
+        # Unpacking and computed keys may replace the URL at runtime.
+        return False
+    base_keys = [
+        key
+        for key in node.keys
+        if isinstance(key, ast.Constant) and key.value == "base_url"
+    ]
+    if len(base_keys) != 1:
+        return False  # duplicate keys are ambiguous source context
+    for key, value in zip(node.keys, node.values):
+        if not (
+            isinstance(key, ast.Constant)
+            and key.value == "base_url"
+            and isinstance(value, ast.Constant)
+            and isinstance(value.value, str)
+        ):
+            continue
+        try:
+            url = urlsplit(value.value)
+            host = url.hostname
+            if url.scheme not in {"http", "https"} or not host:
+                continue
+            host = host.rstrip(".")
+            if host.lower() == "localhost" or host.lower().endswith(".localhost"):
+                continue
+            try:
+                address = ipaddress.ip_address(host)
+                address = getattr(address, "ipv4_mapped", None) or address
+                if address.is_loopback or address.is_unspecified:
+                    continue
+            except ValueError:
+                labels = host.split(".")
+                # HTTP clients may interpret short, octal or hexadecimal IPv4
+                # forms as addresses. Refuse ambiguous numeric DNS labels
+                # instead of letting a legacy loopback form claim remoteness.
+                # This is lexical/local parsing; it performs no DNS lookup.
+                if all(
+                    re.fullmatch(r"(?:[0-9]+|0[xX][0-9a-fA-F]+)", label)
+                    for label in labels
+                ):
+                    continue
+                if len(labels) < 2 or any(
+                    not re.fullmatch(
+                        r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?", label
+                    )
+                    for label in labels
+                ):
+                    continue
+            # Accessing port also refuses malformed netlocs such as :abc.
+            url.port
+        except ValueError:
+            continue
+        return True
+    return False
 
 
 def find_unserved_advertisements(
@@ -207,27 +251,14 @@ def find_unserved_advertisements(
 
 SERVED_ROUTES: set[str] = set()
 ROUTE_SOURCE: dict[str, str] = {}
-for _root in ROUTE_ROOTS:
-    for _module in _modules(_root):
-        _tree = _parse(_module)
-        if _tree is None:
-            continue
-        try:
-            _found = find_registered_routes(
-                _module.read_text(encoding="utf-8", errors="ignore"),
-                _module.as_posix(),
-            )
-        except (SyntaxError, ValueError):
-            continue
-        for _route in _found:
-            SERVED_ROUTES.add(_route)
-            ROUTE_SOURCE.setdefault(_route, _module.relative_to(REPO_ROOT).as_posix())
-
-SCANNED_MODULES = [m for root in SCANNED_ROOTS for m in _modules(root)]
-
-
-def _rel(module: Path) -> str:
-    return module.relative_to(REPO_ROOT).as_posix()
+SCANNED_MODULES = python_modules()
+for _module in SCANNED_MODULES:
+    # Parse errors fail collection instead of silently removing a route source.
+    for _route in find_registered_routes(
+        _module.read_text(encoding="utf-8"), _rel(_module)
+    ):
+        SERVED_ROUTES.add(_route)
+        ROUTE_SOURCE.setdefault(_route, _rel(_module))
 
 
 def test_the_route_table_is_populated():
@@ -241,15 +272,15 @@ def test_the_route_table_is_populated():
     """
     surviving = [root for root in ROUTE_ROOTS if root.is_dir()]
     if not surviving:
-        pytest.skip("every route root has been removed")
+        pytest.fail("repository source root is absent")
     assert len(SERVED_ROUTES) > 20, (
         f"only {len(SERVED_ROUTES)} routes found across "
         f"{', '.join(r.name for r in surviving)} — the scan is not reading "
         f"decorators any more, and every advertisement would read as broken"
     )
-    assert "/audit/queries" in SERVED_ROUTES, (
-        "a route this repo demonstrably serves is missing from the table"
-    )
+    assert (
+        "/audit/queries" in SERVED_ROUTES
+    ), "a route this repo demonstrably serves is missing from the table"
 
 
 def test_the_detector_catches_the_payload_it_was_written_for():
@@ -259,7 +290,7 @@ def test_the_detector_catches_the_payload_it_was_written_for():
     ``extractors/government/comprehensive_government_extractor.py:472-482``,
     checked against the routes the repo actually registers today.
     """
-    known_bad = '''
+    known_bad = """
 results = {
     "api_integration": {
         "ready_for_ui": True,
@@ -273,28 +304,30 @@ results = {
         ],
     },
 }
-'''
+"""
     findings = find_unserved_advertisements(known_bad, SERVED_ROUTES, "known_bad.py")
     blob = "\n".join(findings)
     for gone in ("/national/issues", "/national/ministries", "/national/debt"):
-        assert gone in blob, f"{gone} was deleted by #191 and must be flagged: {findings}"
+        assert (
+            gone in blob
+        ), f"{gone} was deleted by #191 and must be flagged: {findings}"
     # Withdrawn from apis/county_analytics_api.py and apis/modernized_api.py,
     # which served them from a file whose every figure but population is
     # modelled.
     for withdrawn in ("/analytics/summary", "/counties/{name}"):
-        assert withdrawn in blob, (
-            f"{withdrawn} is no longer served and must be flagged: {findings}"
-        )
-    assert "/audit/queries" not in blob, (
-        f"/audit/queries does resolve today and must not be flagged: {findings}"
-    )
+        assert (
+            withdrawn in blob
+        ), f"{withdrawn} is no longer served and must be flagged: {findings}"
+    assert (
+        "/audit/queries" not in blob
+    ), f"/audit/queries does resolve today and must not be flagged: {findings}"
     assert len(findings) == 5, f"expected exactly five findings, got: {findings}"
 
     # An empty suppression buys nothing.
     unreasoned = '{"endpoints": ["/national/debt"]}  # endpoint-ok:'
-    assert find_unserved_advertisements(unreasoned, SERVED_ROUTES, "u.py"), (
-        "an empty suppression bought silence for free"
-    )
+    assert find_unserved_advertisements(
+        unreasoned, SERVED_ROUTES, "u.py"
+    ), "an empty suppression bought silence for free"
 
 
 def test_the_detector_leaves_served_paths_and_prose_alone():
@@ -302,7 +335,7 @@ def test_the_detector_leaves_served_paths_and_prose_alone():
     served = {"/counties/{}", "/audit/queries", "/reports/{}/pages/{}"}
 
     # The parameter is named differently at each end; the path is the same.
-    legal = '''
+    legal = """
 info = {
     "endpoints_available": [
         "/counties/{name} - by county",
@@ -311,20 +344,20 @@ info = {
         "/reports/{report_id}/pages/{page_no} - one page",
     ],
 }
-'''
-    assert not find_unserved_advertisements(legal, served, "legal.py"), (
-        find_unserved_advertisements(legal, served, "legal.py")
-    )
+"""
+    assert not find_unserved_advertisements(
+        legal, served, "legal.py"
+    ), find_unserved_advertisements(legal, served, "legal.py")
 
     # A key with no "endpoint" in it is not an advertisement, and a string that
     # does not open with a path is not a path.
-    quiet = '''
+    quiet = """
 config = {"docs": ["see /national/debt in the old API"], "prefix": "/national"}
 notes = {"endpoint_notes": ["retired in #191"]}
-'''
-    assert not find_unserved_advertisements(quiet, served, "quiet.py"), (
-        find_unserved_advertisements(quiet, served, "quiet.py")
-    )
+"""
+    assert not find_unserved_advertisements(
+        quiet, served, "quiet.py"
+    ), find_unserved_advertisements(quiet, served, "quiet.py")
 
     # A signed suppression is honoured.
     signed = (
@@ -332,9 +365,9 @@ notes = {"endpoint_notes": ["retired in #191"]}
         '    "/external/thing",  # endpoint-ok: served by the county portal, not us\n'
         "]}\n"
     )
-    assert not find_unserved_advertisements(signed, served, "signed.py"), (
-        "a suppression with a written reason must be honoured"
-    )
+    assert not find_unserved_advertisements(
+        signed, served, "signed.py"
+    ), "a suppression with a written reason must be honoured"
 
 
 def test_the_route_scanner_reads_decorators():
@@ -360,16 +393,12 @@ def health(): ...
     assert "/national/debt" not in routes, "a docstring mention was read as a route"
 
 
-@pytest.mark.skipif(not SCANNED_MODULES, reason="the scanned roots hold no modules")
 @pytest.mark.parametrize(
     "module",
     SCANNED_MODULES,
     ids=[_rel(m) for m in SCANNED_MODULES] or ["none"],
 )
 def test_no_module_advertises_an_endpoint_nobody_serves(module: Path):
-    source = module.read_text(encoding="utf-8", errors="ignore")
-    try:
-        findings = find_unserved_advertisements(source, SERVED_ROUTES, _rel(module))
-    except (SyntaxError, ValueError) as exc:
-        pytest.skip(f"{_rel(module)} does not parse: {exc}")
+    source = module.read_text(encoding="utf-8")
+    findings = find_unserved_advertisements(source, SERVED_ROUTES, _rel(module))
     assert not findings, "\n".join(["endpoints advertised but not served:", *findings])

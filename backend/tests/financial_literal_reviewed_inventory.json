@@ -1,0 +1,442 @@
+{
+  "backend/main.py": {
+    "ast_sha256": "c3bfb46eddf56b1a14033811817326b856927400b39f78f333160f65d619950c",
+    "sites": [
+      {
+        "signature": "'_MAX_COUNTY_BUDGET_KES' is published from typed-in numbers [50000000000]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "unused private upper-bound constant; no code reference beyond definition",
+        "disposition": "reviewed contextual value",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'_PENDING_BILLS_SEVERE_SHARE' is published from typed-in numbers [25.0]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "documented score policy calibration threshold, not a measured monetary observation",
+        "disposition": "reviewed contextual value",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'_budget_overview_meta' is published from typed-in numbers [1800]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "response metadata TTL keyword 1800 seconds, not a finance amount",
+        "disposition": "reviewed contextual value",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'anchor_pct_gdp' is published from typed-in numbers [55.0]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "documented legislative debt-anchor threshold, not a reported debt observation",
+        "disposition": "reviewed contextual value",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'debt_to_gdp' is published from typed-in numbers [68.0]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "shipping public static peer fallback; requires exact source/citation decision outside assigned product ownership",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/424"
+      },
+      {
+        "signature": "'debt_to_gdp' is published from typed-in numbers [31.4]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "shipping public static peer fallback; requires exact source/citation decision outside assigned product ownership",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/424"
+      },
+      {
+        "signature": "'debt_to_gdp' is published from typed-in numbers [48.2]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "shipping public static peer fallback; requires exact source/citation decision outside assigned product ownership",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/424"
+      },
+      {
+        "signature": "'debt_to_gdp' is published from typed-in numbers [53.1]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "shipping public static peer fallback; requires exact source/citation decision outside assigned product ownership",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/424"
+      },
+      {
+        "signature": "'debt_to_gdp' is published from typed-in numbers [67.2]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "shipping public static peer fallback; requires exact source/citation decision outside assigned product ownership",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/424"
+      }
+    ]
+  },
+  "backend/main_simple.py": {
+    "ast_sha256": "7241e8dff07328db5b87cdff80047c0598eb1aa2e30843db479c3409d8cba074",
+    "sites": [
+      {
+        "signature": "'total_budget' is published from typed-in numbers [150000000000.0]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "unused alternate app with executed invented finance (#301 already names it)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'total_budget' is published from typed-in numbers [300000000000.0]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "unused alternate app with executed invented finance (#301 already names it)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'total_budget' is published from typed-in numbers [500000000000.0]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "unused alternate app with executed invented finance (#301 already names it)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'total_budget_allocation' is published from typed-in numbers [3200000000000.0]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "unused alternate app with executed invented finance (#301 already names it)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'budget_execution_rate' is published from typed-in numbers [87.5]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "unused alternate app with executed invented finance (#301 already names it)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'total_debt' is published from typed-in numbers [8500000000000.0]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "unused alternate app with executed invented finance (#301 already names it)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'debt_to_gdp_ratio' is published from typed-in numbers [67.8]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "unused alternate app with executed invented finance (#301 already names it)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      }
+    ]
+  },
+  "backend/routers/data_provenance.py": {
+    "ast_sha256": "f9bece6d20f86ecd6e9c338092b040834d501e445f010a74839d9d2fd31eea66",
+    "sites": [
+      {
+        "signature": "'budget_lines' is published from typed-in numbers [180]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "documented source cadence threshold in days; not measured finance; Session3 product file remains untouched",
+        "disposition": "reviewed contextual value",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'gdp_data' is published from typed-in numbers [550]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "documented source cadence threshold in days; not measured finance; Session3 product file remains untouched",
+        "disposition": "reviewed contextual value",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'debt_timeline' is published from typed-in numbers [240]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "documented source cadence threshold in days; not measured finance; Session3 product file remains untouched",
+        "disposition": "reviewed contextual value",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      }
+    ]
+  },
+  "backend/seeding/config.py": {
+    "ast_sha256": "4f5359acd086aa40a3807b27e242f31e1d88b53b3ac22a2c10de741de71df14f",
+    "sites": [
+      {
+        "signature": "'audits_county_start_budget_seconds' is published from typed-in numbers [240]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "documented configuration/validation threshold; not a measured published amount (source context attached)",
+        "disposition": "reviewed contextual value",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      }
+    ]
+  },
+  "backend/seeding/domains/fiscal_summary/revenue_estimates.py": {
+    "ast_sha256": "bc5d0036287b146657a5cd2fa671d0d521aae5331ae7c91fc6df11978e545188",
+    "sites": [
+      {
+        "signature": "'_PLAUSIBLE_ORDINARY_REVENUE_BILLION' is published from typed-in numbers [1500.0, 6000.0]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "documented configuration/validation threshold; not a measured published amount (source context attached)",
+        "disposition": "reviewed contextual value",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      }
+    ]
+  },
+  "backend/services/trust_guards.py": {
+    "ast_sha256": "de7096b16e83c72cf13d5cb4788b14064e78327715aa24d3e773b67221ea9d1b",
+    "sites": [
+      {
+        "signature": "'_REVENUE_HEAD_MAX_BILLION' is published from typed-in numbers [3000.0]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "documented configuration/validation threshold; not a measured published amount (source context attached)",
+        "disposition": "reviewed contextual value",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'appropriated_budget' is published from typed-in numbers [2000.0, 8000.0]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "documented configuration/validation threshold; not a measured published amount (source context attached)",
+        "disposition": "reviewed contextual value",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'total_revenue' is published from typed-in numbers [1000.0, 5000.0]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "documented configuration/validation threshold; not a measured published amount (source context attached)",
+        "disposition": "reviewed contextual value",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'tax_revenue' is published from typed-in numbers [800.0, 4500.0]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "documented configuration/validation threshold; not a measured published amount (source context attached)",
+        "disposition": "reviewed contextual value",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'non_tax_revenue' is published from typed-in numbers [30.0, 1500.0]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "documented configuration/validation threshold; not a measured published amount (source context attached)",
+        "disposition": "reviewed contextual value",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'total_borrowing' is published from typed-in numbers [3000.0]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "documented configuration/validation threshold; not a measured published amount (source context attached)",
+        "disposition": "reviewed contextual value",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'debt_service_cost' is published from typed-in numbers [400.0, 4000.0]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "documented configuration/validation threshold; not a measured published amount (source context attached)",
+        "disposition": "reviewed contextual value",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'county_allocation' is published from typed-in numbers [150.0, 1200.0]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "documented configuration/validation threshold; not a measured published amount (source context attached)",
+        "disposition": "reviewed contextual value",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      }
+    ]
+  },
+  "comprehensive_kenya_etl.py": {
+    "ast_sha256": "7269361cce7d2f3f141a238bfaa9820b035a5048d7b7f3d7fbb31e0d4e7867ac",
+    "sites": [
+      {
+        "signature": "'budget_allocation' is published from typed-in numbers [150000000000]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'execution_rate' is published from typed-in numbers [93.3]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'budget_allocation' is published from typed-in numbers [300000000000]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'execution_rate' is published from typed-in numbers [95.0]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'budget_allocation' is published from typed-in numbers [250000000000]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'execution_rate' is published from typed-in numbers [92.0]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'budget_allocation' is published from typed-in numbers [120000000000]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'execution_rate' is published from typed-in numbers [95.8]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'budget_allocation' is published from typed-in numbers [80000000000]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'execution_rate' is published from typed-in numbers [93.8]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'budget_allocation' is published from typed-in numbers [2500000000]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'execution_rate' is published from typed-in numbers [92.0]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'budget_allocation' is published from typed-in numbers [1800000000]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'execution_rate' is published from typed-in numbers [94.4]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'budget_allocation' is published from typed-in numbers [45000000000]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'execution_rate' is published from typed-in numbers [93.3]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'budget_allocation' is published from typed-in numbers [15000000000]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'execution_rate' is published from typed-in numbers [96.7]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'budget_allocation' is published from typed-in numbers [35000000000]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'execution_rate' is published from typed-in numbers [91.4]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'budget_allocation' is published from typed-in numbers [12000000000]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'execution_rate' is published from typed-in numbers [93.3]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      }
+    ]
+  },
+  "etl_test_runner.py": {
+    "ast_sha256": "77f0dfbfa0dd5c58a45e151dfc3db87b3e701954dbd0dc49b303943ee89f014a",
+    "sites": [
+      {
+        "signature": "'budget_allocation' is published from typed-in numbers [150000000000]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'budget_allocation' is published from typed-in numbers [300000000000]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'budget_allocation' is published from typed-in numbers [250000000000]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      }
+    ]
+  },
+  "tools/alternative_sources.py": {
+    "ast_sha256": "339eab0f6ab44858e5f209d668e86a7d86063cd092d40a7a00441d3719fb8516",
+    "sites": [
+      {
+        "signature": "'budget' is published from typed-in numbers [35000000000]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'budget' is published from typed-in numbers [12000000000]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'budget' is published from typed-in numbers [15000000000]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'budget' is published from typed-in numbers [18000000000]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'budget' is published from typed-in numbers [8000000000]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'allocation' is published from typed-in numbers [150000000000]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'allocation' is published from typed-in numbers [300000000000]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'allocation' is published from typed-in numbers [250000000000]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'allocation' is published from typed-in numbers [120000000000]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      },
+      {
+        "signature": "'allocation' is published from typed-in numbers [80000000000]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "legacy/demo generator with executed typed finance; callers and downstream publication recorded separately (#301 existing class)",
+        "disposition": "unresolved typed finance",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      }
+    ]
+  },
+  "tools/verify_sourced_record_cleanup.py": {
+    "ast_sha256": "c397b1d73b6c4d48bf8a7c95dccaed73cb25af0c3cccee5498a2f36a188ee155",
+    "sites": [
+      {
+        "signature": "'synthetic_budget_rows_unchanged' is published from typed-in numbers [2]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "declared synthetic-row verification expected count; not a reported budget amount",
+        "disposition": "reviewed contextual value",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+      }
+    ]
+  }
+}
