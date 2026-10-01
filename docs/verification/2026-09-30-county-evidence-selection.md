@@ -60,6 +60,11 @@ stored dates and any declared extraction/provenance/source fiscal year. Missing
 or unparseable periods are excluded and counted because chronology cannot be
 established. When a label identifies a later FY but its dates or declarations
 conflict, that latest period is withheld without fallback to an older period.
+Audit selection and pending ratios share the annual-year parser: both years
+must be representable dates (1 through 9999), with consecutive start/end years.
+Year zero and FY9999 with an overflowing end are excluded; two-digit end years
+support century rollover, such as FY1999/00. Invalid labels retain the existing
+missing/ambiguous-period disclosure rather than causing an endpoint error.
 
 Select the newest Executive FY, then the **maximum finding severity across all
 eligible Executive findings and documents in that FY**. Multiple findings,

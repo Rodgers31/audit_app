@@ -989,6 +989,23 @@ def county_loans_at_reporting_date(loans, as_at):
     ]
 
 
+def annual_fiscal_year(value):
+    """An annual FY whose start and end are representable Python dates."""
+    match = re.fullmatch(
+        r"(?:FY\s*)?(\d{4})/(\d{2}|\d{4})", str(value or "").strip(), re.I
+    )
+    if not match:
+        return None
+    start = int(match[1])
+    if not 1 <= start < 9999:
+        return None
+    end = start + 1
+    declared_end = int(match[2])
+    if declared_end != (end if len(match[2]) == 4 else end % 100):
+        return None
+    return start, end
+
+
 def pending_budget_compatible(loans, fiscal_period, *, budget_currency="KES") -> bool:
     """Only a year-end stock and budget for the same Kenyan fiscal year."""
     selection = select_county_pending_bills(loans)
@@ -1016,16 +1033,13 @@ def pending_period_compatible(
         return False
     if end.year < 2:
         return False
-    match = re.fullmatch(
-        r"(?:FY\s*)?(\d{4})/(\d{2}|\d{4})", str(fiscal_year or "").strip(), re.I
-    )
+    fy = annual_fiscal_year(fiscal_year)
     return bool(
-        match
+        fy
         and start == date(end.year - 1, 7, 1)
         and end == date(end.year, 6, 30)
         and as_at == end.isoformat()
-        and int(match[1]) == start.year
-        and int(match[2]) == (end.year if len(match[2]) == 4 else end.year % 100)
+        and fy == (start.year, end.year)
     )
 
 

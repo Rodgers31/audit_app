@@ -627,3 +627,106 @@ def test_pending_summary_reader_has_constant_queries_in_a_fresh_session(
     assert len(statements) == 2
     assert len(rows) == 2
     assert totals["reported_county_sum"] == 2_500_000
+
+
+@pytest.mark.parametrize("label", ["FY0000/01", "FY0000/0001", "FY9999/00"])
+def test_unrepresentable_audit_year_does_not_break_county_readers(
+    client, db_session, evidence, label
+):
+    counties, periods, doc = evidence
+    malformed = periods[2024]
+    malformed.label = label
+    finding(db_session, counties[0], malformed, doc, severity=Severity.CRITICAL)
+    db_session.flush()
+
+    def signals():
+        clear()
+        listing = next(
+            c for c in body(client, "/api/v1/counties") if c["name"] == "Mombasa"
+        )
+        detail = body(client, "/api/v1/counties/mombasa-county")
+        comprehensive = body(client, "/api/v1/counties/mombasa-county/comprehensive")
+        return [
+            listing["audit_signal"],
+            detail["audit_signal"],
+            comprehensive["financial_health"]["audit_signal"],
+        ]
+
+    for signal in signals():
+        assert signal["severity"] is None
+        assert signal["period_end"] is None
+        assert signal["absent_reason"] == "missing_or_ambiguous_audit_period"
+        assert signal["excluded"] == {"missing_or_ambiguous_audit_period": 1}
+
+    finding(db_session, counties[0], periods[2026], doc)
+    for signal in signals():
+        assert signal["severity"] == "warning"
+        assert signal["source_period"] == "FY2025/26"
+        assert signal["excluded"] == {"missing_or_ambiguous_audit_period": 1}
+
+
+@pytest.mark.parametrize(
+    "label,start,end",
+    [("FY0001/02", 1, 2), ("FY0099/00", 99, 100), ("FY9998/99", 9998, 9999)],
+)
+def test_representable_boundary_audit_years_remain_publishable(
+    client, db_session, evidence, label, start, end
+):
+    counties, periods, doc = evidence
+    period = periods[2024]
+    period.label = label
+    period.start_date = datetime(start, 7, 1)
+    period.end_date = datetime(end, 6, 30)
+    finding(db_session, counties[0], period, doc)
+    db_session.flush()
+    listing = next(
+        c for c in body(client, "/api/v1/counties") if c["name"] == "Mombasa"
+    )
+    detail = body(client, "/api/v1/counties/mombasa-county")
+    comprehensive = body(client, "/api/v1/counties/mombasa-county/comprehensive")
+    for signal in (
+        listing["audit_signal"],
+        detail["audit_signal"],
+        comprehensive["financial_health"]["audit_signal"],
+    ):
+        assert signal["severity"] == "warning"
+        assert signal["period_end"] == datetime(end, 6, 30).date().isoformat()
+        assert signal["source_period"] == label
+        assert signal["excluded"] == {}
+
+
+@pytest.mark.parametrize(
+    "label,expected",
+    [
+        ("FY0000/01", None),
+        ("FY0000/0001", None),
+        ("FY9999/00", None),
+        ("FY9999/10000", None),
+        ("FY9999/9999", None),
+        ("FY9998/99", (9998, 9999)),
+        ("FY9998/9999", (9998, 9999)),
+        ("FY0001/02", (1, 2)),
+        ("FY0001/0002", (1, 2)),
+        ("FY0099/00", (99, 100)),
+        ("FY1999/00", (1999, 2000)),
+        ("FY2025/26", (2025, 2026)),
+    ],
+)
+def test_audit_and_pending_year_boundaries_agree(label, expected):
+    from services.county_financial_health import fiscal_year
+    from services.publication_gate import pending_period_compatible
+
+    assert fiscal_year(label) == expected
+    start, end = expected or (2025, 2026)
+    period = {
+        "start_date": datetime(start, 7, 1).date().isoformat(),
+        "end_date": datetime(end, 6, 30).date().isoformat(),
+    }
+    assert pending_period_compatible(period["end_date"], label, period) is bool(expected)
+    # Unrepresentable denominator dates must also be rejected without a crash.
+    assert not pending_period_compatible(
+        "0001-06-30", label, {"start_date": "0000-07-01", "end_date": "0001-06-30"}
+    )
+    assert not pending_period_compatible(
+        "10000-06-30", label, {"start_date": "9999-07-01", "end_date": "10000-06-30"}
+    )

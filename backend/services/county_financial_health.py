@@ -14,18 +14,10 @@ from services.audit_citations import (
     extraction_json_type,
     string_extraction_payloads,
 )
-from services.publication_gate import publishable_audit_criterion
-
-
-def fiscal_year(value):
-    match = re.fullmatch(
-        r"(?:FY\s*)?(\d{4})/(\d{2}|\d{4})", str(value or "").strip(), re.I
-    )
-    if not match:
-        return None
-    start = int(match[1])
-    end = int(match[2]) if len(match[2]) == 4 else start // 100 * 100 + int(match[2])
-    return (start, end) if end == start + 1 else None
+from services.publication_gate import (
+    annual_fiscal_year as fiscal_year,
+    publishable_audit_criterion,
+)
 
 
 def county_audit_signals(db, entity_ids, *, display_grade):
@@ -171,7 +163,7 @@ def select_audit_signal(rows, county_name):
         return result
     fy = max(periods)
     chosen = periods[fy]
-    result["source_period"] = f"FY{fy[0]}/{str(fy[1])[-2:]}"
+    result["source_period"] = f"FY{fy[0]:04d}/{fy[1] % 100:02d}"
     sources = {(r.source_document_id, r.url, r.page_ref) for r, _, _ in chosen}
     urls = {url for _, url, _ in sources}
     result.update(
