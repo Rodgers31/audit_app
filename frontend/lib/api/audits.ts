@@ -127,7 +127,9 @@ export const getAuditReportsPaginated = async (
 };
 
 export interface AuditStatistics {
+  /** Eligible findings across all institution types and countries. */
   total_findings: number;
+  /** Distinct Kenyan COUNTY entities with at least one eligible finding. */
   counties_audited: number;
   total_amount_flagged: number | null;
   total_amount_flagged_reason: 'no_amounts_recorded' | 'ambiguous_text_amount' | 'invalid_stored_amount' | 'non_finite_total' | null;

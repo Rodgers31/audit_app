@@ -5271,10 +5271,10 @@ def _plain_kes_amount_in_audit_text(
 @app.get("/api/v1/audits/statistics")
 @cached(key_prefix="audits:statistics", ttl=3600)
 async def get_audit_statistics():
-    """Aggregate audit statistics across all counties for the dashboard.
+    """Aggregate institution-wide audit findings for the dashboard.
 
-    Returns severity breakdown, top flagged counties, recent critical findings,
-    and overall totals from the Audit table.
+    County coverage counts eligible Kenyan counties only; severity and amount
+    totals retain all eligible institutions from the Audit table.
     """
     if not DATABASE_AVAILABLE:
         raise HTTPException(status_code=503, detail="Database unavailable")
@@ -5369,9 +5369,18 @@ async def get_audit_statistics():
                     }
                 )
 
-            # Counties audited count
+            # Coverage has a Kenyan county denominator; institution-wide
+            # finding and money totals above/below keep their broader scope.
             counties_audited = (
-                db.query(func.count(func.distinct(DBAudit.entity_id))).filter(publishable_audit_criterion()).scalar() or 0
+                db.query(func.count(func.distinct(DBAudit.entity_id)))
+                .join(DBEntity, DBAudit.entity_id == DBEntity.id)
+                .join(DBCountry, DBEntity.country_id == DBCountry.id)
+                .filter(
+                    publishable_audit_criterion(),
+                    DBEntity.type == EntityType.COUNTY,
+                    DBCountry.iso_code == "KEN",
+                )
+                .scalar() or 0
             )
 
             # PostgreSQL numeric accepts NaN. One such row poisons SUM, so
