@@ -30,7 +30,13 @@ def local_engine():
             or url.host not in {"localhost", "127.0.0.1", "::1"}
             or not (url.database or "").startswith("codex_oag_")):
         raise ValueError("Rehearsal requires a loopback codex_oag_* database")
-    return create_engine(raw)
+    # libpq's inherited PGHOSTADDR can redirect even an explicit loopback
+    # URL. Pin the local address at the driver boundary before any writer is
+    # launched, and do not inherit TLS/GSS or an unbounded connection wait.
+    return create_engine(url.set(drivername="postgresql+psycopg2"), connect_args={
+        "hostaddr": "::1" if url.host == "::1" else "127.0.0.1",
+        "sslmode": "disable", "gssencmode": "disable", "connect_timeout": 8,
+    })
 
 
 def save(path, value):
