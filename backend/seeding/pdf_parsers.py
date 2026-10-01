@@ -854,7 +854,8 @@ def _kes_cell(cell: Optional[str]) -> Optional[Decimal]:
     """A whole-shilling cell: "7, 956, 564, 058" -> 7956564058; "-" -> 0.
 
     None when the cell holds something that is not a number, so a caller can
-    tell a misread cell from a printed nil.
+    tell a misread cell from a printed nil. Kisii PDF 331 prints underscores
+    as its nil marks; a lone underscore is nil, never an observed numeric zero.
     """
     s = (cell or "").strip()
     # A leading comma means pdfplumber clipped a digit from the cell (Kilifi
@@ -863,7 +864,7 @@ def _kes_cell(cell: Optional[str]) -> Optional[Decimal]:
     if "," in s and not _KES_GROUPED_CELL_RE.fullmatch(s.replace(" ", "")):
         return None
     s = s.replace(",", "").replace(" ", "")
-    if s in ("", "-", "–", "."):
+    if s in ("", "-", "–", ".", "_"):
         return Decimal(0)
     # Digits, one optional decimal point, a leading minus or parentheses —
     # nothing else. Decimal() alone would take "1e6", "1_000_000", "NaN" and
@@ -987,9 +988,8 @@ def _revenue_rows(tables: List[ExtractedTable]):
             # or "argeted Revenue" in the target cell. Its position just
             # before the independently named cash column identifies it.
             before = headers[actual_col - 1]
-            if (
-                "revenue stream" in _cell_text("".join(table.headers[:2]))
-                and re.match(r"(?:geted|argeted)\s+revenue\b", before)
+            if "revenue stream" in _cell_text("".join(table.headers[:2])) and re.match(
+                r"(?:geted|argeted)\s+revenue\b", before
             ):
                 target_col = actual_col - 1
         if target_col is None or actual_col is None or target_col < 1:
@@ -1002,28 +1002,83 @@ def _revenue_rows(tables: List[ExtractedTable]):
                 # The header printed again inside the body. Its first cell can
                 # still carry a section letter ("B | Equitable Share | Annual…").
                 lettered = bool(_SECTION_LETTER_RE.match((row[0] or "").strip()))
-                yield ("header", lettered and target_col >= 2, label, None, None, False, False)
+                yield (
+                    "header",
+                    lettered and target_col >= 2,
+                    label,
+                    None,
+                    None,
+                    False,
+                    False,
+                )
                 continue
-            if re.fullmatch(r"[A-Za-z]?", (row[target_col] or "").strip()) and re.fullmatch(
-                r"[A-Za-z]", (row[actual_col] or "").strip()
-            ):
+            if re.fullmatch(
+                r"[A-Za-z]?", (row[target_col] or "").strip()
+            ) and re.fullmatch(r"[A-Za-z]", (row[actual_col] or "").strip()):
                 # The column legend under the header ("A | B | C | D=B+C"),
                 # sometimes shifted a cell by the extraction.
                 continue
-            target = _kes_cell(row[target_col]) if (row[target_col] or "").strip() else None
+            target = (
+                _kes_cell(row[target_col]) if (row[target_col] or "").strip() else None
+            )
+            # Kisumu PDF 351 clips the leading target digit into the total
+            # label: ``Total 1 | ... | 6,973,318,712``. Only a grouped target
+            # with room in its first group can substantiate that boundary.
+            clipped_total = re.fullmatch(r"((?:grand\s*)?total)\s+(\d{1,2})", label)
+            if clipped_total:
+                label, prefix = clipped_total.groups()
+                raw_target = (row[target_col] or "").strip().replace(" ", "")
+                target = None
+                if re.fullmatch(r"\d{1,2}(?:,\d{3})+(?:\.\d+)?", raw_target):
+                    if len(prefix + raw_target.split(",")[0]) <= 3:
+                        target = _kes_cell(prefix + raw_target)
             actual = _kes_cell(row[actual_col])
             if actual is None:
                 actual = _corroborated_misgrouped_cash(row, headers, actual_col)
             observed = actual is not None and bool(
-                (row[actual_col] or "").strip().strip("-–.")
+                (row[actual_col] or "").strip().strip("-–._")
             )
             blank = (row[actual_col] or "").strip() in ("", ".")
+            if label == "-":
+                # Kitui PDF 368 leaves its closing grants label as a dash.
+                # D independently repeats B and C explicitly prints nil.
+                arrears = [
+                    i
+                    for i, h in enumerate(headers)
+                    if "arrears" in h or "receivab" in h
+                ]
+                accrual = [i for i, h in enumerate(headers) if "accrual" in h]
+                corroborated = (
+                    actual is not None
+                    and len(arrears) == len(accrual) == 1
+                    and max(arrears[0], accrual[0]) < len(row)
+                    and (row[arrears[0]] or "").strip() in {"-", "–", "_", "0", "0.00"}
+                    and _kes_cell(row[accrual[0]]) == actual
+                )
+                yield (
+                    "unlabelled_sub" if corroborated else "unlabelled_sub_unproven",
+                    False,
+                    label,
+                    target,
+                    actual,
+                    observed,
+                    blank,
+                )
+                continue
             if re.search(r"sub[- ]?to[- ]?tal", label):
                 yield ("sub", False, label, target, actual, observed, blank)
                 continue
             if re.fullmatch(r"(grand\s*)?total", label):
                 # Blank, dot and dash are unobserved totals, never reported zero.
-                yield ("grand", False, label, target, actual if observed else None, observed, blank)
+                yield (
+                    "grand",
+                    False,
+                    label,
+                    target,
+                    actual if observed else None,
+                    observed,
+                    blank,
+                )
                 continue
             has_numbers = any((c or "").strip() for c in row[target_col:])
             lettered = bool(_SECTION_LETTER_RE.match((row[0] or "").strip())) and (
@@ -1033,22 +1088,35 @@ def _revenue_rows(tables: List[ExtractedTable]):
             # Those have amount cells; section titles span the empty columns.
             # Treating a monetary item as a new section counts it again beside
             # the enclosing grant subtotal (e.g. Nairobi Table 3.457).
-            has_amount_cells = any((row[i] or "").strip() for i in (target_col, actual_col))
+            has_amount_cells = any(
+                (row[i] or "").strip() for i in (target_col, actual_col)
+            )
             aggregate_heading = lettered and _revenue_stream(label) in {
-                "Balance Brought Forward", "Equitable Share", "Own Source Revenue",
-                "Facility Improvement Financing", "Appropriations in Aid", "Other Revenue",
+                "Balance Brought Forward",
+                "Equitable Share",
+                "Own Source Revenue",
+                "Facility Improvement Financing",
+                "Appropriations in Aid",
+                "Other Revenue",
             }
             # A monetary aggregate grants row is distinct from a named grant
             # item whose label merely contains "grant" (e.g. DANIDA Grant).
             stream_label = re.sub(r"^[a-h]\.?(?:\s*)", "", label)
-            aggregate_heading = aggregate_heading or (lettered and bool(re.match(
-                r"(?:additional|conditional|unconditional)(?: additional)? allocations\b",
-                stream_label,
-            )))
+            aggregate_heading = aggregate_heading or (
+                lettered
+                and bool(
+                    re.match(
+                        r"(?:additional|conditional|unconditional)(?: additional)? allocations\b",
+                        stream_label,
+                    )
+                )
+            )
             if aggregate_heading and has_amount_cells and actual is None:
                 yield ("item", False, label, target, None, False, blank)
                 continue
-            if not has_numbers or (lettered and (not has_amount_cells or aggregate_heading)):
+            if not has_numbers or (
+                lettered and (not has_amount_cells or aggregate_heading)
+            ):
                 yield (
                     "header",
                     lettered,
@@ -1060,6 +1128,114 @@ def _revenue_rows(tables: List[ExtractedTable]):
                 )
             else:
                 yield ("item", False, label, target, actual, observed, blank)
+
+
+def _recover_revenue_layout_rows(rows):
+    """Resolve two printed subtotal layouts using their local row evidence.
+
+    Samburu PDF 729 labels its sole numbered equitable-share item Sub-Total,
+    then repeats the same target and cash in the unnumbered closing subtotal.
+    Kitui PDF 368 prints only a dash as the grants subtotal's label.
+    Cash must match both its accrual cell (with nil arrears) and the preceding
+    items within their printed precision. Complete targets must also add up;
+    incomplete targets only bound the independently printed aggregate from
+    below. The next row must open a different named stream. A grand total
+    elsewhere is never evidence for either recovery.
+    """
+    recovered = list(rows)
+    section_start = 0
+    for index, row in enumerate(rows):
+        kind, _lettered, label, target, actual, observed, blank = row
+        previous = rows[index - 1] if index else None
+        following = rows[index + 1] if index + 1 < len(rows) else None
+        if (
+            kind == "sub"
+            and re.fullmatch(r"1\s*sub[- ]?total", label)
+            and previous is not None
+            and previous[0] == "header"
+            and _revenue_stream(previous[2]) == "Equitable Share"
+            and previous[3:5] == (None, None)
+            and following is not None
+            and following[0] == "sub"
+            and following[2] in {"sub-total", "sub total", "subtotal"}
+            and target is not None
+            and actual is not None
+            and observed
+            and not blank
+            and following[3:5] == (target, actual)
+            and following[5]
+            and not following[6]
+        ):
+            recovered[index] = ("item", *row[1:])
+
+        if kind == "header" and _revenue_stream(label) != "Additional Allocations":
+            section_start = index
+        elif kind == "header" and _revenue_stream(label) == "Additional Allocations":
+            if (
+                rows[section_start][0] != "header"
+                or _revenue_stream(rows[section_start][2]) != "Additional Allocations"
+            ):
+                section_start = index
+        if kind not in {"unlabelled_sub", "unlabelled_sub_unproven"}:
+            continue
+        section = rows[section_start:index]
+        if not section or _revenue_stream(section[0][2]) != "Additional Allocations":
+            return None, "unlabelled_subtotal_not_corroborated"
+        items = [r for r in section if r[0] == "item"]
+        # A numbered monetary item with every amount erased is classified
+        # as a heading upstream. It must not vanish from the proof merely
+        # because its label includes "grant". Only named allocation-group
+        # headings may divide the items used to prove this subtotal.
+        erased_item = any(
+            r[0] == "header"
+            and re.match(r"^\d", r[2])
+            and not re.match(
+                r"^\d+\s*(?:unconditional|conditional)(?: additional)? allocations\b",
+                r[2],
+            )
+            for r in section[1:]
+        )
+        if (
+            kind != "unlabelled_sub"
+            or not items
+            or any(r[0] == "sub" for r in section)
+            or following is None
+            or following[0] != "header"
+            or _revenue_stream(following[2]) in {None, "Additional Allocations"}
+            or target is None
+            or actual is None
+            or not observed
+            or blank
+            or erased_item
+            or any(r[4] is None or r[6] for r in items)
+        ):
+            return None, "unlabelled_subtotal_not_corroborated"
+        for column in (3, 4):
+            amounts = [r[column] for r in items if r[column] is not None]
+            printed = row[column]
+            # Half a unit in each cell's last printed decimal place. Nil
+            # items contribute no rounding allowance. Never use the wider
+            # grand-total tolerance to certify this previously unnamed row.
+            bound = sum(
+                (
+                    Decimal("0.5") * Decimal(10) ** value.as_tuple().exponent
+                    for value in [*amounts, printed]
+                    if value != 0
+                ),
+                Decimal(0),
+            )
+            difference = sum(amounts, Decimal(0)) - printed
+            incomplete_target = column == 3 and any(r[3] is None for r in items)
+            if (
+                any(value < 0 for value in amounts)
+                or printed < 0
+                or (
+                    difference > bound if incomplete_target else abs(difference) > bound
+                )
+            ):
+                return None, "unlabelled_subtotal_not_corroborated"
+        recovered[index] = ("sub", *row[1:])
+    return recovered, ""
 
 
 def county_revenue_receipts(
@@ -1085,7 +1261,9 @@ def county_revenue_receipts(
     (receipts plus receivables), which is a different measure — several
     counties' own narratives quote the accrual figure.
     """
-    rows = list(_revenue_rows(tables))
+    rows, layout_reason = _recover_revenue_layout_rows(list(_revenue_rows(tables)))
+    if rows is None:
+        return None, layout_reason
     grand = [r for r in rows if r[0] == "grand" and r[4] is not None]
     if not grand:
         return None, "no_grand_total"
