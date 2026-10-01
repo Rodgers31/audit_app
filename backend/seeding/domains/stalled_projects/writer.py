@@ -27,6 +27,7 @@ Shape written (``schema: 2``)::
 from __future__ import annotations
 
 import logging
+from contextlib import contextmanager
 from typing import Any, Dict, List, Optional
 
 from .cob_parser import MONEY_FIELDS, REPORTED_BY, normalise_county
@@ -53,6 +54,44 @@ def _counties(db_session: Any):
     return db_session.query(Entity).filter(Entity.type == EntityType.COUNTY)
 
 
+@contextmanager
+def _project_transaction(db_session: Any, dry_run: bool):
+    """Read current JSON under ordered locks for the owned mutation.
+
+    An unflushed Entity edit is ambiguous: refreshing would discard it, while
+    autoflush could persist a stale whole-JSON before we acquire locks. Refuse
+    it rather than silently choosing either beforeimage. Callers must finish
+    their Entity work before entering this domain's transaction.
+    """
+    from models import Entity
+
+    try:
+        with db_session.no_autoflush:
+            pending = set(db_session.new) | set(db_session.deleted) | {
+                obj for obj in db_session.dirty if db_session.is_modified(obj)
+            }
+            if any(isinstance(obj, Entity) for obj in pending):
+                raise ValueError("stalled_projects refuses pending Entity changes")
+            query = _counties(db_session).order_by(Entity.id).populate_existing()
+            if not dry_run:
+                # Same ordering as the reference writer. populate_existing is
+                # essential: FOR UPDATE alone reuses stale identity-map JSON.
+                query = query.with_for_update()
+            entities = query.all()
+            for entity in entities:
+                if entity.meta is not None and not isinstance(entity.meta, dict):
+                    raise ValueError(f"Invalid county metadata for Entity {entity.id}")
+            yield entities
+        if not dry_run:
+            db_session.commit()
+    except BaseException:
+        if not dry_run:
+            # Roll back rather than assigning stale dictionaries back to ORM
+            # objects. A fresh read after failure reflects durable authority.
+            db_session.rollback()
+        raise
+
+
 def clear_owned_keys(db_session: Any, dry_run: bool = False, *, legacy_only: bool = False) -> dict:
     """Remove this domain's keys from every county's meta.
 
@@ -63,22 +102,21 @@ def clear_owned_keys(db_session: Any, dry_run: bool = False, *, legacy_only: boo
     """
     entities = 0
     keys = 0
-    for entity in _counties(db_session):
-        stale = owned_keys(entity.meta)
-        if legacy_only and _is_current(entity.meta):
-            stale = [k for k in stale if k != OWNED_PREFIX]
-        if not stale:
-            continue
-        entities += 1
-        keys += len(stale)
-        if dry_run:
-            logger.info("[DRY RUN] would clear %s from %s", stale, entity.slug)
-            continue
-        # A new dict, not an in-place pop: JSONB columns are not
-        # mutation-tracked, so mutating entity.meta would never be flushed.
-        entity.meta = {k: v for k, v in entity.meta.items() if k not in stale}
-    if not dry_run:
-        db_session.commit()
+    with _project_transaction(db_session, dry_run) as counties:
+        for entity in counties:
+            stale = owned_keys(entity.meta)
+            if legacy_only and _is_current(entity.meta):
+                stale = [k for k in stale if k != OWNED_PREFIX]
+            if not stale:
+                continue
+            entities += 1
+            keys += len(stale)
+            if dry_run:
+                logger.info("[DRY RUN] would clear %s from %s", stale, entity.slug)
+                continue
+            # A new dict, not an in-place pop: JSONB columns are not
+            # mutation-tracked, so mutating entity.meta would never be flushed.
+            entity.meta = {k: v for k, v in entity.meta.items() if k not in stale}
     logger.info(
         "stalled_projects: cleared %d key(s) on %d county entit(y/ies)%s",
         keys,
@@ -244,30 +282,29 @@ def write(
     written = 0
     rows = 0
     unmatched = set(by_name)
-    for entity in _counties(db_session):
-        name = normalise_county(entity.canonical_name or "") or normalise_county(
-            (entity.slug or "").rsplit("-", 1)[0]
-        )
-        county = by_name.get(name) if name else None
-        meta = {k: v for k, v in (entity.meta or {}).items() if not k.startswith(OWNED_PREFIX)}
-        if county is not None:
-            block = build_county_block(county, edition)
-            meta[OWNED_PREFIX] = block
-            if name in unmatched:
-                # Counted once per county. A stale duplicate entity gets the
-                # same block, but must not add rows: doubled counts covered
-                # for a county that matched no entity at all.
-                unmatched.discard(name)
-                written += 1
-                rows += len(block["rows"])
-        if dry_run:
-            continue
-        if meta != (entity.meta or {}):
-            entity.meta = meta
+    with _project_transaction(db_session, dry_run) as entities:
+        for entity in entities:
+            name = normalise_county(entity.canonical_name or "") or normalise_county(
+                (entity.slug or "").rsplit("-", 1)[0]
+            )
+            county = by_name.get(name) if name else None
+            meta = {k: v for k, v in (entity.meta or {}).items() if not k.startswith(OWNED_PREFIX)}
+            if county is not None:
+                block = build_county_block(county, edition)
+                meta[OWNED_PREFIX] = block
+                if name in unmatched:
+                    # Counted once per county. A stale duplicate entity gets the
+                    # same block, but must not add rows: doubled counts covered
+                    # for a county that matched no entity at all.
+                    unmatched.discard(name)
+                    written += 1
+                    rows += len(block["rows"])
+            if dry_run:
+                continue
+            if meta != (entity.meta or {}):
+                entity.meta = meta
     if unmatched:
         logger.warning("stalled_projects: no county entity for %s", sorted(unmatched))
-    if not dry_run:
-        db_session.commit()
     logger.info(
         "stalled_projects: wrote %d county block(s), %d row(s)%s",
         written,
