@@ -3188,8 +3188,10 @@ async def get_counties(fiscal_year: Optional[str] = None):
 
             # 3. Loans (all county loans at once)
             _pending_reporting_day = county_pending_reporting_date(db)
+            from services.county_debt import county_debt_rows
+
             all_loans = county_loans_at_reporting_date(
-                db.query(DBLoan).filter(DBLoan.entity_id.in_(entity_ids)).all(),
+                county_debt_rows(db, entity_ids),
                 _pending_reporting_day,
             )
             _audit_signals = county_audit_signals(
@@ -3718,8 +3720,10 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                         recurrent_total = keyword_rec
 
                 _pending_reporting_day = county_pending_reporting_date(db)
+                from services.county_debt import county_debt_rows
+
                 loans = county_loans_at_reporting_date(
-                    db.query(DBLoan).filter(DBLoan.entity_id == e.id).all(),
+                    county_debt_rows(db, [e.id]),
                     _pending_reporting_day,
                 )
                 from services.financial_publication import county_debt_summary
@@ -4065,12 +4069,9 @@ async def get_county_comprehensive(
             # PENDING_BILLS (see ``_is_debt_loan`` for why).
             # joinedload: the publication gate below reads each loan's source
             # document, so resolve them in one query rather than N+1.
-            loans = (
-                db.query(DBLoan)
-                .options(joinedload(DBLoan.source_document))
-                .filter(DBLoan.entity_id == entity.id)
-                .all()
-            )
+            from services.county_debt import county_debt_rows
+
+            loans = county_debt_rows(db, [entity.id])
 
             # Publication gate. A county row naming a creditor that only lends
             # to sovereigns, with no source document behind it, is withheld —
@@ -4100,7 +4101,7 @@ async def get_county_comprehensive(
             )
 
             from services.financial_publication import (
-                county_debt_summary, county_debt_instrument_fields,
+                county_debt_summary, county_debt_instrument_fields, eligible_county_debt_rows,
             )
 
             debt_summary = county_debt_summary(loans)
@@ -4111,9 +4112,7 @@ async def get_county_comprehensive(
             # ``pending_bills``. Including them here made the breakdown sum to
             # more than the total the page prints beside it.
             debt_breakdown = []
-            for loan in loans:
-                if not _is_debt_loan(loan):
-                    continue
+            for loan in eligible_county_debt_rows(loans):
                 debt_breakdown.append(
                     {
                         "lender": loan.lender,
@@ -4855,58 +4854,57 @@ async def get_county_debt(county_id: str):
                         status_code=404, detail="County entity not found in DB"
                     )
 
-                # Real debt from Loan table — exclude PENDING_BILLS
-                # so the total reflects borrowed money, not unpaid
-                # obligations. Pending bills land in this same table
-                # via the seeding writer; see ``_is_debt_loan``.
-                loans = _debt_loans_query(db, DBLoan.entity_id == e.id).all()
-                total_principal = sum(float(l.principal or 0) for l in loans)
-                total_outstanding = sum(float(l.outstanding or 0) for l in loans)
-
-                # Pending bills from BudgetLine (latest FY deficit)
-                budget_rows = _entity_period_budget_query(db, e.id).all()
-                total_allocated = sum(
-                    float(b.allocated_amount or 0) for b in budget_rows
+                from services.county_debt import county_debt_rows
+                from services.financial_publication import (
+                    county_debt_summary, county_debt_instrument_fields, eligible_county_debt_rows,
                 )
-                total_spent = sum(float(b.actual_spent or 0) for b in budget_rows)
 
-                # Own-source revenue from the CBIRR, not 0.85 x a modelled
-                # budget. A ratio against the modelled figure was flattering
-                # by a factor of four.
-                meta = e.meta or {}
-                metrics = _resolve_fy_metrics(meta)
+                all_loans = county_debt_rows(db, [e.id])
+                loans = eligible_county_debt_rows(all_loans)
+                debt_summary = county_debt_summary(loans)
+                total_outstanding = debt_summary["total_debt"]
+                principals = [county_debt_instrument_fields(l)["principal"] for l in loans]
+                total_principal = (
+                    sum(principals) if principals and all(v is not None for v in principals)
+                    and total_outstanding is not None else None
+                )
+
+                budget_rows = _entity_period_budget_query(db, e.id).all()
                 revenue = county_own_source_revenue(budget_rows)
 
                 debt_to_revenue = (
                     round(total_outstanding / revenue * 100, 1)
-                    if revenue is not None and revenue > 0
+                    if total_outstanding is not None and revenue is not None and revenue > 0
                     else None
                 )
 
-                # Debt breakdown by lender type
+                # A withheld cohort cannot produce a contradictory numeric breakdown.
                 breakdown = {}
-                for l in loans:
-                    lender = l.lender or "Other"
-                    breakdown[lender] = breakdown.get(lender, 0) + float(
-                        l.outstanding or l.principal or 0
-                    )
+                if total_outstanding is not None:
+                    for loan in loans:
+                        lender = loan.lender or "Other"
+                        amount = county_debt_instrument_fields(loan)["outstanding"]
+                        if amount is not None:
+                            breakdown[lender] = breakdown.get(lender, 0) + amount
 
-                # Sustainability assessment
-                if debt_to_revenue > 100:
-                    sustainability = "critical"
-                elif debt_to_revenue > 50:
-                    sustainability = "high_risk"
-                elif debt_to_revenue > 25:
-                    sustainability = "moderate"
-                else:
-                    sustainability = "sustainable"
+                sustainability = None
+                if debt_to_revenue is not None:
+                    if debt_to_revenue > 100:
+                        sustainability = "critical"
+                    elif debt_to_revenue > 50:
+                        sustainability = "high_risk"
+                    elif debt_to_revenue > 25:
+                        sustainability = "moderate"
+                    else:
+                        sustainability = "sustainable"
 
                 return {
                     "county_id": county_id,
                     "county_name": name,
-                    "debt_outstanding": total_outstanding or total_principal,
+                    **debt_summary,
+                    "debt_outstanding": total_outstanding,
                     "debt_principal": total_principal,
-                    "pending_bills": max(0, total_spent - total_allocated),
+                    "pending_bills": county_pending_bills(all_loans),
                     "debt_to_revenue_ratio": debt_to_revenue,
                     "revenue": revenue,
                     "debt_breakdown": breakdown,

@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 from sqlalchemy import (
     Boolean,
     Column,
+    CheckConstraint,
+    Date,
     DateTime,
     Enum,
     Float,
@@ -1152,3 +1154,85 @@ class AdminAuditLog(Base):
         default=lambda: datetime.now(timezone.utc),
         index=True,
     )
+
+
+class CountyDebtInstrument(Base):
+    """One county borrowing contract, identified by an issuer namespace/reference.
+
+    Lender and issue date are terms, never a deduplication key. National Loan
+    creditor buckets and DebtInstrument Treasury redemption lines are separate.
+    """
+
+    __tablename__ = "county_debt_instruments"
+    __table_args__ = (
+        UniqueConstraint(
+            "entity_id",
+            "identity_namespace",
+            "instrument_reference",
+            name="uq_county_debt_identity",
+        ),
+        CheckConstraint(
+            "trim(identity_namespace) <> '' AND trim(instrument_reference) <> '' AND identity_namespace = trim(identity_namespace) AND instrument_reference = trim(instrument_reference)",
+            name="ck_county_debt_explicit_identity",
+        ),
+        CheckConstraint(
+            "debt_category <> 'PENDING_BILLS'", name="ck_county_debt_not_arrears"
+        ),
+    )
+    id = Column(Integer, primary_key=True)
+    entity_id = Column(Integer, ForeignKey("entities.id"), nullable=False)
+    identity_namespace = Column(String(120), nullable=False)
+    instrument_reference = Column(String(200), nullable=False)
+    lender = Column(String(200), nullable=False)
+    issue_date = Column(DateTime, nullable=False)
+    currency = Column(String(3), nullable=False)
+    debt_category = Column(Enum(DebtCategory), nullable=False)
+    entity = relationship("Entity")
+
+
+class CountyDebtObservation(Base):
+    """One dated source account of a county instrument, in raw declared currency.
+
+    Replays keep the same row. Explicit corrections update that account and
+    increment revision; other documents remain competing accounts, not addends.
+    NULL money means unreported, including on a newer snapshot. Zero is measured.
+    """
+
+    __tablename__ = "county_debt_observations"
+    __table_args__ = (
+        UniqueConstraint(
+            "instrument_id",
+            "as_at",
+            "source_document_id",
+            name="uq_county_debt_observation",
+        ),
+        CheckConstraint(
+            "principal IS NULL OR (principal >= 0 AND principal <> 'NaN')",
+            name="ck_county_debt_principal",
+        ),
+        CheckConstraint(
+            "outstanding IS NULL OR (outstanding >= 0 AND outstanding <> 'NaN')",
+            name="ck_county_debt_outstanding",
+        ),
+        CheckConstraint(
+            "interest_rate IS NULL OR (interest_rate >= 0 AND interest_rate <> 'NaN')",
+            name="ck_county_debt_rate",
+        ),
+    )
+    id = Column(Integer, primary_key=True)
+    instrument_id = Column(
+        Integer, ForeignKey("county_debt_instruments.id"), nullable=False
+    )
+    as_at = Column(Date, nullable=False)
+    source_document_id = Column(
+        Integer, ForeignKey("source_documents.id"), nullable=False, index=True
+    )
+    page_ref = Column(String(50), nullable=False)
+    basis = Column(Enum(FigureBasis), nullable=False)
+    principal = Column(Numeric(20, 2), nullable=True)
+    outstanding = Column(Numeric(20, 2), nullable=True)
+    interest_rate = Column(Numeric(6, 3), nullable=True)
+    provenance = Column(JSONB, nullable=False, default=dict)
+    revision = Column(Integer, nullable=False, default=1, server_default="1")
+    quarantine_reason = Column(String(120), nullable=True)
+    source_document = relationship("SourceDocument")

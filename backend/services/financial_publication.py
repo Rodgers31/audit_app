@@ -99,21 +99,36 @@ def county_debt_instrument_fields(loan):
     rate = monetary_fields(loan, ("interest_rate",))
     fields["interest_rate"] = rate["interest_rate"]
     fields["absent_reasons"].update(rate["absent_reasons"])
-    if _loan_unreported(loan):
+    failure = getattr(loan, "observation_failure", None)
+    if failure or _loan_unreported(loan):
+        reason = failure or "unreported_accounting_basis"
         fields.update(
             principal=None,
             outstanding=None,
             interest_rate=None,
             absent_reasons={
-                "principal": "unreported_accounting_basis",
-                "outstanding": "unreported_accounting_basis",
-                "interest_rate": "unreported_accounting_basis",
+                "principal": reason,
+                "outstanding": reason,
+                "interest_rate": reason,
             },
+        )
+    if getattr(loan, "county_instrument", False):
+        fields.update(
+            instrument_namespace=loan.identity_namespace,
+            instrument_reference=loan.instrument_reference,
+            observation_id=loan.observation_id,
+            observation_revision=loan.observation_revision,
         )
     return fields
 
 
 def _instrument_identity(loan):
+    if getattr(loan, "county_instrument", False):
+        namespace = getattr(loan, "identity_namespace", None)
+        reference = getattr(loan, "instrument_reference", None)
+        if not all(isinstance(v, str) and v.strip() for v in (namespace, reference)):
+            return None, "ambiguous_instrument_identity"
+        return ("county_identifier", namespace, reference), None
     provenance = getattr(loan, "provenance", None)
     entries = provenance if isinstance(provenance, list) else [provenance]
     identifiers = set()
@@ -135,6 +150,23 @@ def _instrument_identity(loan):
     ), None
 
 
+def eligible_county_debt_rows(loans):
+    """One eligibility cohort shared by totals and their breakdowns."""
+    from models import DebtCategory
+    from services.publication_gate import (
+        county_debt_instrument_failure,
+        loan_is_modelled_fixture,
+    )
+
+    return [
+        loan
+        for loan in loans or []
+        if getattr(loan, "debt_category", None) != DebtCategory.PENDING_BILLS
+        and not loan_is_modelled_fixture(loan)
+        and not county_debt_instrument_failure(loan)
+    ]
+
+
 def county_debt_summary(loans):
     """Selected eligible instruments' outstanding balances, excluding arrears.
 
@@ -143,19 +175,7 @@ def county_debt_summary(loans):
     addition requires a common explicit reporting date, entity and actual basis.
     Original principal never substitutes for outstanding, even at zero.
     """
-    from models import DebtCategory
-    from services.publication_gate import (
-        county_debt_instrument_failure,
-        loan_is_modelled_fixture,
-    )
-
-    rows = [
-        loan
-        for loan in loans or []
-        if getattr(loan, "debt_category", None) != DebtCategory.PENDING_BILLS
-        and not loan_is_modelled_fixture(loan)
-        and not county_debt_instrument_failure(loan)
-    ]
+    rows = eligible_county_debt_rows(loans)
     reason = "no_eligible_instruments" if not rows else None
     amounts, dates, bases, entities = [], set(), set(), set()
     for loan in rows:
@@ -172,7 +192,9 @@ def county_debt_summary(loans):
         )
         entities.add(getattr(loan, "entity_id", None))
         if reason is None:
-            if getattr(loan, "source_document", None) is None:
+            if getattr(loan, "observation_failure", None):
+                reason = loan.observation_failure
+            elif getattr(loan, "source_document", None) is None:
                 reason = "no_source_document"
             elif getattr(loan, "currency", None) != "KES":
                 reason = "unsupported_currency"
@@ -200,6 +222,12 @@ def county_debt_summary(loans):
                     if any(identity[0] == "lender_date" for identity, _ in identities)
                     else "duplicate_instrument_observations"
                 )
+    # No automatic backfill or equivalence assertion for historical Loan JSON.
+    # An old account may describe the same borrowing as an explicit instrument.
+    if reason is None and {
+        bool(getattr(row, "county_instrument", False)) for row in rows
+    } == {True, False}:
+        reason = "mixed_instrument_representations"
     total = sum(amounts) if reason is None else None
     total = _amount(total)
     if total is None and reason is None:
