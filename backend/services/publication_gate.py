@@ -157,6 +157,22 @@ def _has_page_locator(*candidates, allow_descriptive=False) -> bool:
 _WHITESPACE = (" ", "\t", "\n", "\r", "\f", "\v")
 
 
+def normalize_audit_identity(value: Any) -> str:
+    """Typed, case-sensitive identity with ordinary edge whitespace removed.
+
+    Fixture filenames and dataset IDs are identifiers, not prose: preserve
+    internal whitespace and case. Do not stringify containers or numbers into
+    identities. Share the explicit whitespace set with the SQL guard.
+    """
+    return value.strip("".join(_WHITESPACE)) if isinstance(value, str) else ""
+
+
+def _normalized_audit_identity_sql(column):
+    """The same edge trim, portable across PostgreSQL and SQLite."""
+    whitespace = "".join(_WHITESPACE)
+    return func.rtrim(func.ltrim(column, whitespace), whitespace)
+
+
 def _has_page_locator_criterion(column):
     """SQL form of the shared direct-citation policy, including range order."""
     squeezed = column
@@ -219,7 +235,10 @@ def retired_audit_fixture_criterion():
     Storage is retained pending the reviewed cleanup in #319.
     """
     fixture_docs = select(SourceDocument.id).where(
-        SourceDocument.meta["source"].as_string().in_(
+        # Extract only the source member, never search the whole metadata.
+        # JSON null/missing members cannot match, and nonstring JSON text
+        # cannot equal either filename (objects/arrays retain JSON delimiters).
+        _normalized_audit_identity_sql(SourceDocument.meta["source"].as_string()).in_(
             ("oag_national_audit_data.json", "oag_audit_data.json")
         )
     )

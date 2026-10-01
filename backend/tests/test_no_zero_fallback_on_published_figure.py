@@ -234,7 +234,7 @@ SCANNED_MODULES = python_modules()
 # that owns it. Every site is listed in that issue.
 QUARANTINE_ISSUE = "#240"
 QUARANTINE: dict[str, int] = {
-    "backend/main.py": 18,  # #331 removes six historical zero fallbacks.
+    "backend/main.py": 12,  # #407 withdraws six legacy county budget proxy fallbacks.
     "etl/knbs_parser.py": 2,
     "etl/pending_bills_extractor.py": 1,
     "main_comprehensive.py": 2,

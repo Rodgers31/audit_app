@@ -139,11 +139,19 @@ export interface AuditStatistics {
   findings_with_ambiguous_text_amount?: number;
   findings_without_amount: number;
   by_severity: Record<string, number>;
+  /** Eligible Kenyan COUNTY entities, ranked by critical findings across all periods. */
   top_flagged_counties: { county: string; critical_count: number }[];
+  report_title?: string;
+  /** Latest covered period; totals span every fiscal_years_covered entry. */
+  fiscal_year?: string | null;
+  fiscal_years_covered?: string[];
+  _meta?: { unit: string; entity_scope: string; scope_detail?: string };
   recent_critical: {
     id: number;
     finding: string;
+    /** Legacy display key; recent findings include all institution types/countries. */
     county: string;
+    entity_name?: string;
     fiscal_year: string;
     amount: number | null;
     amount_unavailable_reason: 'ambiguous_text_amount' | 'invalid_stored_amount' | 'non_finite_text_amount' | null;
@@ -152,8 +160,8 @@ export interface AuditStatistics {
 
 // Get audit statistics
 export const getAuditStatistics = async (signal?: AbortSignal): Promise<AuditStatistics> => {
-  const response = await apiGet<ApiResponse<AuditStatistics>>(apiClient, AUDITS_ENDPOINTS.STATISTICS, signal);
-  return response.data.data;
+  const response = await apiGet<AuditStatistics>(apiClient, AUDITS_ENDPOINTS.STATISTICS, signal);
+  return response.data;
 };
 
 // Federal / national government audit findings

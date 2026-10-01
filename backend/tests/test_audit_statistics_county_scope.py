@@ -39,14 +39,18 @@ def test_county_coverage_uses_entity_country_and_type(
     db_session.flush()
     db_session.add(Audit(entity_id=entity.id, period_id=seed_fiscal_period.id,
                          source_document_id=seed_source_doc.id, page_ref="p.7",
-                         finding_text="Cited synthetic finding", severity=Severity.WARNING,
+                         finding_text="Cited synthetic finding", severity=Severity.CRITICAL,
                          amount=Decimal("0")))
     db_session.commit()
     body = statistics(client)
     assert body["counties_audited"] == expected
     assert body["total_counties"] == 47
     assert body["total_findings"] == 1
-    assert body["by_severity"] == {"warning": 1}
+    assert body["by_severity"] == {"critical": 1}
+    assert body["top_flagged_counties"] == (
+        [{"county": "Mombasa", "critical_count": 1}] if expected else []
+    )
+    assert body["_meta"]["entity_scope"] == "all"
     assert body["total_amount_flagged"] == 0
     assert body["findings_with_amount"] == 1
 

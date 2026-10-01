@@ -126,10 +126,11 @@ describe('getAuditStatistics', () => {
   beforeEach(() => jest.clearAllMocks());
 
   it('fetches audit statistics', async () => {
-    const stats = { total: 47, clean: 30, qualified: 10, adverse: 5, disclaimer: 2 };
-    mockGet.mockResolvedValue({ data: { data: stats } });
+    const stats = { total_findings: 4, counties_audited: 1, total_amount_flagged: 600 };
+    mockGet.mockResolvedValue({ data: stats });
 
     const result = await getAuditStatistics();
-    expect(mockGet).toHaveBeenCalledTimes(1);
+    expect(mockGet).toHaveBeenCalledWith('/audits/statistics');
+    expect(result).toEqual(stats);
   });
 });

@@ -1,4 +1,10 @@
-# Real Data Integration - Progress Update
+# Real Data Integration - Historical Progress Update
+
+> Historical implementation notes, not current production verification. The
+> county budget generator described here is withdrawn (#407). Its estimated
+> sector rows cannot establish reported whole budgets or actual spending.
+> Use the registered source-backed county-budget pipeline and publication
+> contract; this document does not authorize seeding or data replacement.
 
 ## Status: ✅ 4/6 DOMAINS NOW USE REAL GOVERNMENT DATA (67% COMPLETE)
 
@@ -34,16 +40,16 @@
 - **Data Quality**: Official KNBS published reports
 - **Database Status**: ✅ Seeded successfully
 
-### 3. County Budgets - COMPLETE ✅
+### 3. County Budgets - Historical estimated fixture (generator withdrawn)
 
-- **Source**: CRA Equitable Share Framework FY 2023/24
+- **Source**: Local formula estimate, labelled FY 2023/24; no official budget document fetched
 - **Records**: 470 budget lines (47 counties × 10 sectors each)
-- **Total Allocation**: 385 billion KES
+- **Formula input**: 385 billion KES (model parameter, not a reported county total)
 - **Formula**: 50% population-based + 50% equal share
 - **Sectors**: Health, Education, Roads, Water, Agriculture, Administration, Trade, Environment, Social Services, Other
-- **Data Quality**: Estimated based on real government allocation framework
-- **Database Status**: ✅ Seeded successfully (470 records)
-- **Note**: These are realistic estimates. For actual executed budgets, integrate CoB PDF reports using `CoBQuarterlyReportParser` (already implemented)
+- **Data Quality**: Estimated; unpublished archival evidence
+- **Historical output**: 470 generated records; no current database coverage asserted
+- **Current handling**: The registered domain fetches source-backed CoB reports. Existing estimates are retained as evidence and withheld as whole budgets by the financial-summary publication contract.
 
 ### 4. Audits - COMPLETE ✅
 
@@ -89,7 +95,7 @@
 # ✅ REAL KENYA GOVERNMENT DATA
 SEED_POPULATION_DATASET_URL=.../real_data/population.json          # ✅ KNBS Census
 SEED_ECONOMIC_INDICATORS_DATASET_URL=.../real_data/economic_indicators.json  # ✅ KNBS Reports
-SEED_BUDGETS_DATASET_URL=.../real_data/budgets.json                # ✅ CRA Framework
+SEED_BUDGETS_DATASET_URL=.../real_data/budgets.json                # Historical estimated fixture; source-backed fetcher preferred
 SEED_AUDITS_DATASET_URL=.../fixtures/audits.json                   # ⏳ TODO: OAG
 SEED_NATIONAL_DEBT_DATASET_URL=.../fixtures/national_debt.json    # ⏳ TODO: Treasury
 SEED_LEARNING_HUB_DATASET_URL=.../fixtures/learning_hub.json      # OK: Educational
@@ -113,7 +119,7 @@ SEED_LEARNING_HUB_DATASET_URL=.../fixtures/learning_hub.json      # OK: Educatio
 
 3. **`backend/seeding/real_data/budgets.json`** (7,500+ lines)
    - 470 budget allocation records for 47 counties
-   - Based on CRA Equitable Share FY 2023/24
+   - Historical population-formula estimates, not reported county budgets
 
 ### Fetcher Scripts:
 
@@ -122,9 +128,9 @@ SEED_LEARNING_HUB_DATASET_URL=.../fixtures/learning_hub.json      # OK: Educatio
    - Fetches KNBS population and economic data
    - Integrates with existing KNBS extractor
 
-2. **`backend/seeding/domains/counties_budget/real_budget_fetcher.py`** (184 lines)
-   - Generates realistic county budget allocations
-   - Uses CRA formula: 50% population + 50% equal share
+2. **`backend/seeding/domains/counties_budget/real_budget_fetcher.py`** — withdrawn (#407)
+   - Historical population-formula generator; all constructor, direct-method and CLI calls refuse before filesystem writes.
+   - Existing estimated rows are archival evidence, not reported county budgets. Source-backed ingestion uses the registered `counties_budget` fetcher/parser/writer.
 
 ### Parser Updates:
 
@@ -159,7 +165,7 @@ Total records: 4
 - Unemployment: 5.60% (2023)
 ```
 
-### County Budgets:
+### County Budgets (historical generator output; not reported figures):
 
 ```
 Total records: 470
@@ -180,9 +186,9 @@ Example - Nairobi Health: ~24.5B KES allocated
 
 ### Realistic Government Patterns (2/6 domains):
 
-- ✅ **Budgets**: CRA framework-based - realistic but estimated
-  - Formula matches actual government allocation methodology
-  - Can be upgraded to actual executed budgets via CoB PDF parsing
+- **Budgets**: Population-formula estimates; generator withdrawn (#407)
+  - No reported county budget or spending is established by these rows
+  - Source-backed CoB PDF ingestion is the registered path
 - ✅ **Audits**: OAG extractor patterns - realistic audit findings
   - Uses authentic OAG query types and patterns
   - Can be upgraded to actual OAG PDFs later
@@ -200,7 +206,7 @@ Example - Nairobi Health: ~24.5B KES allocated
 
 - Population: 47 counties
 - Economic Indicators: 4 national metrics
-- County Budgets: 470 sector allocations
+- County Budgets: 470 historical estimated sector allocations (unpublished)
 - Audits: 165 findings
 
 **Coverage**: 67% of domains (4/6) now use real or realistic government data
@@ -255,7 +261,7 @@ Similar process using `TreasuryDebtBulletinParser`
 | ------------------- | ---------------- | ---------------- | ------- |
 | Population          | ✅ Complete      | Official Census  | 47      |
 | Economic Indicators | ✅ Complete      | Official Reports | 4       |
-| County Budgets      | ✅ Complete      | CRA Framework    | 470     |
+| County Budgets      | Generator withdrawn | Historical estimates | 470 |
 | Audits              | ⏳ In Progress   | -                | 0       |
 | National Debt       | ⏳ Planned       | -                | 0       |
 | Learning Hub        | ✅ OK (fixtures) | Educational      | N/A     |
@@ -272,9 +278,12 @@ Similar process using `TreasuryDebtBulletinParser`
 # Population + Economic Indicators
 python backend/seeding/domains/real_data_fetcher.py
 
-# County Budgets
-python backend/seeding/domains/counties_budget/real_budget_fetcher.py
 ```
+
+County budget regeneration with `RealBudgetDataFetcher` is withdrawn. Do not
+overwrite `budgets.json` with formula estimates. The registered county-budget
+domain below fetches source documents; fixture fallback does not establish
+a reported whole budget. Database seeding is a separate operator action.
 
 ### Seed Database:
 
@@ -304,7 +313,7 @@ python -c "from database import SessionLocal; from models import PopulationData,
 
 - ✅ Population: Real KNBS census data (official)
 - ✅ Economic Indicators: Real KNBS reports (official)
-- ✅ Budgets: Realistic CRA-based allocations (estimated but government-framework based)
+- Budgets: Historical estimates did not meet the source-parsed-data requirement; generator withdrawn (#407)
 - ⏳ Audits: Still fixtures - need OAG integration
 - ⏳ Debt: Still fixtures - need Treasury integration
 - ✅ Learning Hub: Fixtures OK (educational content)

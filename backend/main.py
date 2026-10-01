@@ -2986,6 +2986,8 @@ def _audit_is_display_grade(audit) -> bool:
     and to derive a county's audit_status from. Fabricated or modelled
     rows (identified via provenance) are excluded so a transparency site
     never renders a synthetic finding as an audit opinion."""
+    from services.publication_gate import normalize_audit_identity
+
     provenance = audit.provenance
     if isinstance(provenance, dict):
         # JSONB provenance is dict-shaped for some writers/older rows
@@ -2998,10 +3000,10 @@ def _audit_is_display_grade(audit) -> bool:
     for entry in provenance:
         if not isinstance(entry, dict):
             continue
-        dataset_id = str(entry.get("dataset_id") or "")
+        dataset_id = normalize_audit_identity(entry.get("dataset_id"))
         if dataset_id.startswith(_FABRICATED_AUDIT_DATASET_PREFIXES):
             return False
-        quality = str(entry.get("data_quality") or "").lower()
+        quality = normalize_audit_identity(entry.get("data_quality")).lower()
         if quality in _NON_OFFICIAL_QUALITIES:
             return False
     return True
@@ -4974,105 +4976,44 @@ async def get_county_financial_data(county_id: str):
 
 @app.get("/api/v1/counties/{county_id}/budget")
 async def get_county_budget(county_id: str):
-    """Get budget information for a specific county (DB-first aggregate)."""
-    if DATABASE_AVAILABLE:
-        try:
-            with next(get_db()) as db:
-                name = _resolve_county_name(county_id, db=db)
-                e = (
-                    db.query(DBEntity)
-                    .filter(DBEntity.type == EntityType.COUNTY)
-                    .filter(DBEntity.canonical_name == f"{name} County")
-                    .first()
-                )
-                if e:
-                    # Through the same rule /counties and
-                    # /counties/{id}/comprehensive use, so the three cannot
-                    # disagree about one county. This endpoint used to:
-                    #
-                    #  * sum EVERY budget line's allocated amount — Total plus
-                    #    Recurrent plus Development plus each sector row —
-                    #    which counts the same money three times over;
-                    #  * then discard that anyway in favour of the fixture's
-                    #    modelled budget_2025, so Baringo read KSh 3.0B here
-                    #    and KSh 9.54B on /counties;
-                    #  * read budget_execution_rate from
-                    #    metrics["financial_health_score"], a different field,
-                    #    which for 40 of the 47 counties was the constant 75.0;
-                    #  * return a hardcoded revenue_2024 of 0.
-                    budget_lines = _entity_period_budget_query(db, e.id).all()
-                    (
-                        total_allocated,
-                        total_spent,
-                        _sector_lines,
-                        _class_by_cat,
-                    ) = _split_classification_and_sector_lines(budget_lines)
-                    return {
-                        "county_id": county_id,
-                        "county_name": name,
-                        "budget_2025": total_allocated or None,
-                        "budget_execution_rate": (
-                            round(total_spent / total_allocated * 100, 1)
-                            if total_allocated
-                            else None
-                        ),
-                        "revenue_2024": county_own_source_revenue(budget_lines),
-                        "expenditure_breakdown": {},
-                        "budget_allocation": {},
-                    }
-        except Exception as e:
-            logging.error(f"DB budget aggregate failed, falling back: {e}")
+    """Publish the same dated, source-supported account as county list/detail.
 
-    # Fallback: Enhanced County Analytics API
+    Historical field names are retained as aliases; the financial summary
+    carries the actual period, source, accounting basis and absence reasons.
+    The retired analytics proxy cannot supply a reported budget.
+    """
+    if not DATABASE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+    from services.entity_financials import financial_summary, publish_county_budget
+
     try:
-        county_name = _resolve_county_name(county_id)
-        if not county_name:
-            raise HTTPException(status_code=404, detail="County not found")
-
-        # Prefer dedicated financial endpoint, then general county data
-        backend_fin = await InternalAPIClient.get_county_financial_data(county_name)
-        if backend_fin and isinstance(backend_fin, dict):
-            budget_2025 = (
-                backend_fin.get("budget_2025")
-                or backend_fin.get("basic_info", {}).get("budget_2025")
-                or 0
+        with next(get_db()) as db:
+            entity = _resolve_county_entity(db, county_id)
+            if entity is None:
+                raise HTTPException(status_code=404, detail="County not found")
+            budget_lines = _entity_period_budget_query(db, entity.id).all()
+            summary = financial_summary(
+                budget_lines, budget_lines[0].period if budget_lines else None
             )
-            ber = backend_fin.get("financial_metrics", {}).get(
-                "budget_execution_rate", 0
-            )
-            revenue_2024 = (
-                backend_fin.get("revenue_2024")
-                or backend_fin.get("basic_info", {}).get("revenue_2024")
-                or 0
-            )
-            return {
+            response = {
                 "county_id": county_id,
-                "county_name": county_name,
-                "budget_2025": budget_2025 or 0,
-                "budget_execution_rate": ber or 0,
-                "revenue_2024": revenue_2024 or 0,
-                "expenditure_breakdown": backend_fin.get("expenditure_breakdown", {}),
-                "budget_allocation": backend_fin.get("budget_allocation", {}),
-            }
-
-        backend_data = await InternalAPIClient.get_county_data(county_name)
-        if backend_data:
-            mapped = transform_county_data_for_frontend(backend_data, county_id)
-            return {
-                "county_id": county_id,
-                "county_name": county_name,
-                "budget_2025": mapped.get("budget_2025", 0),
-                "budget_execution_rate": mapped.get("budgetUtilization", 0),
-                "revenue_2024": mapped.get("revenue_2024", 0),
+                "county_name": entity.canonical_name.removesuffix(" County"),
+                "budget_execution_rate": summary["execution_rate"],
+                "revenue_2024": county_own_source_revenue(budget_lines),
                 "expenditure_breakdown": {},
                 "budget_allocation": {},
+                "fiscal_period": summary["fiscal_period"],
+                "sources": summary["sources"],
+                "accounting_basis": summary["accounting_basis"],
+                "currency": summary["currency"],
+                "absent_reasons": summary["absent_reasons"],
             }
-
-        raise HTTPException(status_code=404, detail="County data not available")
+            return publish_county_budget(response, summary)
     except HTTPException:
         raise
-    except Exception as e:
-        logging.error(f"Error in budget fallback for county {county_id}: {e}")
+    except Exception:
+        logging.exception("Error fetching budget for county %s", county_id)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -5273,8 +5214,8 @@ def _plain_kes_amount_in_audit_text(
 async def get_audit_statistics():
     """Aggregate institution-wide audit findings for the dashboard.
 
-    County coverage counts eligible Kenyan counties only; severity and amount
-    totals retain all eligible institutions from the Audit table.
+    County coverage and ranking count eligible Kenyan counties only; severity
+    and amount totals retain all eligible institutions from the Audit table.
     """
     if not DATABASE_AVAILABLE:
         raise HTTPException(status_code=503, detail="Database unavailable")
@@ -5303,26 +5244,32 @@ async def get_audit_statistics():
                 )
                 .join(DBEntity, DBAudit.entity_id == DBEntity.id)
                 .filter(publishable_audit_criterion())
-                .filter(DBAudit.severity == Severity.CRITICAL)
-                .group_by(DBEntity.canonical_name)
-                .order_by(func.count(DBAudit.id).desc())
+                .join(DBCountry, DBEntity.country_id == DBCountry.id)
+                .filter(
+                    DBAudit.severity == Severity.CRITICAL,
+                    DBEntity.type == EntityType.COUNTY,
+                    DBCountry.iso_code == "KEN",
+                )
+                .group_by(DBEntity.id, DBEntity.canonical_name)
+                .order_by(func.count(DBAudit.id).desc(), DBEntity.id.asc())
                 .limit(5)
                 .all()
             )
 
             # Recent critical findings (most recent 6)
             recent_critical = (
-                db.query(DBAudit, DBEntity.canonical_name)
+                db.query(DBAudit, DBEntity.canonical_name, DBFiscalPeriod.label)
                 .filter(publishable_audit_criterion())
                 .join(DBEntity, DBAudit.entity_id == DBEntity.id)
+                .outerjoin(DBFiscalPeriod, DBAudit.period_id == DBFiscalPeriod.id)
                 .filter(DBAudit.severity == Severity.CRITICAL)
-                .order_by(DBAudit.created_at.desc())
+                .order_by(DBAudit.created_at.desc(), DBAudit.id.desc())
                 .limit(6)
                 .all()
             )
 
             recent_items = []
-            for audit, county_name in recent_critical:
+            for audit, entity_name, period_label in recent_critical:
                 amount = None
                 amount_unavailable_reason = None
                 if audit.amount is not None:
@@ -5349,20 +5296,20 @@ async def get_audit_statistics():
                             amount_unavailable_reason = "non_finite_text_amount"
                     elif ambiguous_text:
                         amount_unavailable_reason = "ambiguous_text_amount"
-                period_label = ""
-                if audit.period and hasattr(audit.period, "label"):
-                    period_label = audit.period.label
                 recent_items.append(
                     {
                         "id": audit.id,
-                        "county": county_name.replace(" County", ""),
+                        # Keep the legacy key for existing readers; the neutral
+                        # name preserves institution identity for new consumers.
+                        "county": entity_name.replace(" County", ""),
+                        "entity_name": entity_name,
                         "finding": audit.finding_text,
                         "severity": (
                             audit.severity.value if audit.severity else "unknown"
                         ),
                         "amount": amount,
                         "amount_unavailable_reason": amount_unavailable_reason,
-                        "fiscal_year": period_label,
+                        "fiscal_year": period_label or "",
                         "date": (
                             audit.created_at.isoformat() if audit.created_at else None
                         ),
@@ -5505,7 +5452,7 @@ async def get_audit_statistics():
                     for name, count in top_flagged
                 ],
                 "recent_critical": recent_items,
-                "report_title": "Office of the Auditor General — County Audit Findings",
+                "report_title": "Office of the Auditor General — Institution-wide Audit Findings",
                 # NOTE: derived from the latest period actually present in the
                 # Audit table. Returns None when the table is empty so the UI
                 # can show an honest "no audit data yet" state instead of a
@@ -5514,7 +5461,13 @@ async def get_audit_statistics():
                 "fiscal_years_covered": fiscal_years_covered,
                 "_meta": _response_meta(
                     unit="kes",
-                    entity_scope="county",
+                    entity_scope="all",
+                    scope_detail=(
+                        "Findings, severity, finite amount totals and recent critical items "
+                        "include all institution types and all countries across all covered fiscal periods. "
+                        "County coverage and top_flagged_counties include eligible Kenyan COUNTY entities only. "
+                        "Fiscal year identifies the latest covered period; amount coverage is reported separately."
+                    ),
                     fiscal_period=latest_period_label,
                     covers_through=latest_period_label,
                     cache_ttl_seconds=3600,
