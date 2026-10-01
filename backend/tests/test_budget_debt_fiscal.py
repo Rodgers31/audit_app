@@ -18,6 +18,7 @@ Covers:
 """
 
 from datetime import datetime
+from decimal import Decimal
 
 import pytest
 from models import (
@@ -311,8 +312,8 @@ class TestPendingBills:
 
 
 @pytest.fixture()
-def seed_pending_bills(db_session, seed_country, seed_source_doc):
-    """Seed pending bills for a county entity, the way production stores them.
+def seed_pending_bills(db_session, seed_country):
+    """Write one synthetic county stock through the real publication writer.
 
     Pending bills are ``Loan`` rows in the ``PENDING_BILLS`` category — the
     shape ``seeding/domains/pending_bills/writer.py`` writes. This fixture used
@@ -329,38 +330,26 @@ def seed_pending_bills(db_session, seed_country, seed_source_doc):
     db_session.add(county)
     db_session.flush()
 
-    # Declared as the pending_bills fetcher stamps a county row since #238:
-    # the Controller of Budget's year-end report, the county side, and the day
-    # the figure is a stock on. An undeclared row is withheld (the fixture's
-    # invented county figures used to pass as sourced), and the writer retires
-    # the previous edition's rows, so a county holds one as-at date.
-    for day, (lender, amount) in enumerate(
-        [
-            ("Pending Bills — Suppliers (Nairobi County)", 500_000_000),
-            ("Pending Bills — Salary Arrears (Nairobi County)", 200_000_000),
-            ("Pending Bills — Pension Arrears (Nairobi County)", 100_000_000),
-        ],
-        start=1,
-    ):
-        db_session.add(
-            Loan(
-                entity_id=county.id,
-                lender=lender,
-                debt_category=DebtCategory.PENDING_BILLS,
-                principal=amount,
-                outstanding=amount,
-                issue_date=datetime(2026, 6, day),
-                currency="KES",
-                source_document_id=seed_source_doc.id,
-                provenance={
-                    "fiscal_year": "FY2025/26",
-                    "source": "cob_pending_bills_etl",
-                    "publication": "cob_cbirr_year_end",
-                    "category": "county",
-                    "as_at": "2026-06-30",
-                },
-            )
-        )
+    from seeding.domains.pending_bills.parser import PendingBillRecord
+    from seeding.domains.pending_bills.writer import write_pending_bills
+
+    # The current writer accepts one county balance per reporting date. The
+    # former three invented type components were competing same-date stocks,
+    # correctly withheld rather than added. No source states a type split here.
+    result = write_pending_bills(
+        db_session,
+        [PendingBillRecord("Nairobi", "county", "county", "FY2025/26",
+                           Decimal("800000000"), as_at="2026-06-30")],
+        publication="cob_cbirr_year_end",
+        source_url="https://example.invalid/synthetic-cob-county-stock.pdf",
+        source_title="Synthetic CoB-shaped county stock",
+        publisher="Synthetic Controller of Budget",
+    )
+    assert result == (1, 0)
+    stored = db_session.query(Loan).one()
+    assert stored.source_document.url == "https://example.invalid/synthetic-cob-county-stock.pdf"
+    assert stored.provenance["publication"] == "cob_cbirr_year_end"
+    assert stored.provenance["as_at"] == "2026-06-30"
 
     db_session.commit()
     return county
@@ -430,11 +419,9 @@ class TestPendingBillsSummary:
         # (see _published_pending_bills). The county figure is in top_counties.
         assert data["total_pending_amount"] is None
         assert data["county_as_at"] == "2026-06-30"
-        assert data["top_counties_by_amount"][0]["amount"] == 800_000_000  # 500M + 200M + 100M
-        # Typed only where the lender string says so; the rest is unclassified.
-        assert data["breakdown_by_type"]["salary"] == 200_000_000
-        assert data["breakdown_by_type"]["pension"] == 100_000_000
-        assert data["breakdown_by_type"]["unclassified"] == 500_000_000
+        assert data["top_counties_by_amount"][0]["amount"] == 800_000_000
+        assert data["breakdown_by_type"] == {"unclassified": 800_000_000}
+        assert data["breakdown_by_type_absent_reason"] == "loans_table_carries_no_bill_type"
 
     def test_aging_is_absent_with_a_reason(self, client, seed_pending_bills):
         """``loans`` carries no bill age, so no age distribution is stated."""
@@ -525,10 +512,25 @@ class TestPendingBillsByCounty:
         assert data["status"] == "success"
         assert data["total_pending"] == 800_000_000
 
-    def test_county_breakdown_by_type(self, client, seed_pending_bills):
+    @pytest.mark.parametrize("lender,amount,bill_type", [
+        ("Pending Bills — Suppliers (Nairobi County)", 500_000_000, "unclassified"),
+        ("Pending Bills — Salary Arrears (Nairobi County)", 200_000_000, "salary"),
+        ("Pending Bills — Pension Arrears (Nairobi County)", 100_000_000, "pension"),
+    ])
+    def test_county_breakdown_by_type(self, client, db_session, seed_pending_bills,
+                                     lender, amount, bill_type):
+        # Each control is one selected stock; type keywords do not justify
+        # adding competing observations of the same county/date.
+        loan = db_session.query(Loan).one()
+        loan.lender = lender
+        loan.principal = loan.outstanding = amount
+        db_session.commit()
         data = client.get("/api/v1/pending-bills/counties/nairobi").json()
-        assert data["breakdown_by_type"]["salary"] == 200_000_000
-        assert data["breakdown_by_type"]["unclassified"] == 500_000_000
+        summary = client.get("/api/v1/pending-bills/summary").json()
+        assert data["total_pending"] == summary["reported_county_sum"] == amount
+        assert data["breakdown_by_type"] == summary["breakdown_by_type"] == {bill_type: amount}
+        reason = "loans_table_carries_no_bill_type" if bill_type == "unclassified" else None
+        assert data["breakdown_by_type_absent_reason"] == summary["breakdown_by_type_absent_reason"] == reason
 
     def test_county_aging_is_absent_with_a_reason(self, client, seed_pending_bills):
         data = client.get("/api/v1/pending-bills/counties/nairobi").json()
@@ -539,6 +541,67 @@ class TestPendingBillsByCounty:
         """``loans`` rows are aggregates, not bills; none is presented as one."""
         data = client.get("/api/v1/pending-bills/counties/nairobi").json()
         assert data["bills"] == []
+
+    def test_competing_same_date_stocks_remain_withheld(self, client, db_session, seed_pending_bills):
+        from services.publication_gate import pending_bills_row_is_published, select_county_pending_bills
+
+        current = db_session.query(Loan).one()
+        provenance = dict(current.provenance)
+        document_id = current.source_document_id
+        db_session.delete(current)
+        db_session.flush()
+        for day, (lender, amount) in enumerate([
+            ("Suppliers", 500_000_000), ("Salary Arrears", 200_000_000),
+            ("Pension Arrears", 100_000_000),
+        ], start=1):
+            db_session.add(Loan(entity_id=seed_pending_bills.id,
+                                lender=f"Pending Bills — {lender} (Nairobi County)",
+                                debt_category=DebtCategory.PENDING_BILLS,
+                                principal=amount, outstanding=amount, currency="KES",
+                                issue_date=datetime(2026, 6, day),
+                                source_document_id=document_id, provenance=dict(provenance)))
+        db_session.commit()
+        rows = db_session.query(Loan).all()
+        assert all(pending_bills_row_is_published(row) for row in rows)
+        selection = select_county_pending_bills(rows)
+        assert selection["amount"] is None
+        assert selection["absent_reason"] == "conflicting_same_date_pending_sources"
+        data = client.get("/api/v1/pending-bills/counties/nairobi").json()
+        summary = client.get("/api/v1/pending-bills/summary").json()
+        assert data["status"] == summary["status"] == "no_data"
+        assert data["total_pending"] is summary["total_pending_amount"] is None
+        assert data["selection"]["absent_reason"] == "conflicting_same_date_pending_sources"
+        assert summary["top_counties_by_amount"] == []
+
+    @pytest.mark.parametrize("declaration", ["undeclared", "wrong_publication", "undated"])
+    def test_unpublished_stock_does_not_supply_an_amount(self, client, db_session, seed_pending_bills, declaration):
+        loan = db_session.query(Loan).one()
+        provenance = dict(loan.provenance)
+        if declaration == "undeclared":
+            provenance.pop("publication")
+        elif declaration == "wrong_publication":
+            provenance["publication"] = "treasury_brop"
+        else:
+            provenance.pop("as_at")
+        loan.provenance = provenance
+        db_session.commit()
+        data = client.get("/api/v1/pending-bills/counties/nairobi").json()
+        summary = client.get("/api/v1/pending-bills/summary").json()
+        assert data["status"] == summary["status"] == "no_data"
+        assert data["total_pending"] is summary["total_pending_amount"] is None
+        assert data["breakdown_by_type"] == summary["breakdown_by_type"] == {}
+
+    def test_selected_reported_zero_stays_zero(self, client, db_session, seed_pending_bills):
+        loan = db_session.query(Loan).one()
+        loan.principal = loan.outstanding = 0
+        db_session.commit()
+        data = client.get("/api/v1/pending-bills/counties/nairobi").json()
+        summary = client.get("/api/v1/pending-bills/summary").json()
+        assert data["status"] == summary["status"] == "success"
+        assert data["total_pending"] == summary["reported_county_sum"] == 0
+        assert data["selection"]["absent_reason"] is None
+        assert summary["total_pending_amount"] is None
+        assert summary["total_absent_reason"] == "incomplete_national_publication"
 
 
 # ── Debt Sustainability ───────────────────────────────────────────────
