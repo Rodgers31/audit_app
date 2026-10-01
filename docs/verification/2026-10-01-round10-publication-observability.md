@@ -15,4 +15,3 @@ Unavailable peers remain explicitly absent; provider values carry measure/year/s
 Pipeline health owns its SQL session in a bounded worker and reports unavailable snapshots truthfully. No hard SQL timeout or production billing acceptance is included.
 Actions stayed disabled; no paid reviews, live data writes, migrations, source-document correction or deployment were requested. Documents1823/2541 and accepted population79 were not accessed or repaired.
 Worker discoveries are either fixed in these patches or separately assessed. The GDP poverty-result gap is recorded under existing issue137, with fresh original/current PostgreSQL controls; no duplicate ticket is created.
-
