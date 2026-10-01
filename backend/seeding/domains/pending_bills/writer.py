@@ -10,10 +10,11 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import math
+from dataclasses import replace
 from functools import wraps
 from datetime import date, datetime, timezone
 from decimal import Decimal
-from typing import TYPE_CHECKING
 
 from models import DebtCategory, DocumentType, Entity, EntityType, Loan, SourceDocument
 from services.publication_gate import (
@@ -21,9 +22,7 @@ from services.publication_gate import (
     NATIONAL_PENDING_BILLS_PUBLICATION,
 )
 from sqlalchemy.orm import Session
-
-if TYPE_CHECKING:
-    from .parser import PendingBillRecord
+from .parser import PendingBillRecord, require_pending_amount
 
 logger = logging.getLogger("seeding.pending_bills.writer")
 
@@ -64,6 +63,8 @@ def _write_pending_bills(
     created = 0
     updated = 0
 
+    if not isinstance(records, list):
+        raise ValueError("Pending bills records must be a list")
     if not records:
         logger.info("No pending bills records to write")
         return created, updated
@@ -95,6 +96,13 @@ def _write_pending_bills(
             publication or "fixture",
         )
         return created, updated
+    if any(not isinstance(r, PendingBillRecord) for r in records):
+        raise ValueError("Pending bills records must be PendingBillRecord objects")
+    if any(
+        not isinstance(r.entity_type, str) or not isinstance(r.category, str)
+        for r in records
+    ):
+        raise ValueError("Pending bills entity type and category must be strings")
     off_side = [r for r in records if _is_county_record(r) != writes_county]
     if off_side:
         logger.warning(
@@ -107,6 +115,8 @@ def _write_pending_bills(
     records = [r for r in records if _is_county_record(r) == writes_county]
     if not records:
         return created, updated
+
+    records = _validated_records(records, source_url, source_title, publisher)
 
     if writes_county:
         _require_forward_county_edition(session, records, county_table)
@@ -128,11 +138,22 @@ def _write_pending_bills(
     # Same URL/date does not identify a correction edition. Fingerprint this
     # whole batch so a partial same-day replacement cannot be added to rows
     # retained from an earlier parse (including same-URL reissues).
-    publication_batch = hashlib.sha256(json.dumps(sorted(
-        (record.entity_name, record.category, record.fiscal_year,
-         str(record.total_pending), record.as_at or "", record.source_url or source_url or "")
-        for record in records
-    ), ensure_ascii=False).encode()).hexdigest()
+    publication_batch = hashlib.sha256(
+        json.dumps(
+            sorted(
+                (
+                    record.entity_name,
+                    record.category,
+                    record.fiscal_year,
+                    str(record.total_pending),
+                    record.as_at or "",
+                    record.source_url or source_url or "",
+                )
+                for record in records
+            ),
+            ensure_ascii=False,
+        ).encode()
+    ).hexdigest()
 
     # Get or create the source document
     source_doc = _get_or_create_source_document(
@@ -254,6 +275,78 @@ def write_pending_bills(session: Session, *args, **kwargs) -> tuple[int, int]:
     """
     with session.begin_nested():
         return _write_pending_bills(session, *args, **kwargs)
+
+
+def _validated_records(records, source_url, source_title, publisher):
+    """Preflight the consumed batch before source, edition or loan mutation.
+
+    Return normalized copies so direct callers cannot slip driver-specific
+    representations through or have their own records partially modified.
+    """
+    for field, value in (
+        ("source_url", source_url),
+        ("source_title", source_title),
+        ("publisher", publisher),
+    ):
+        if value is not None and (not isinstance(value, str) or not value.strip()):
+            raise ValueError(f"Invalid pending bills {field}")
+    validated = []
+    for record in records:
+        for field in ("entity_name", "entity_type", "category", "fiscal_year"):
+            value = getattr(record, field)
+            if not isinstance(value, str) or (
+                field != "fiscal_year" and not value.strip()
+            ):
+                raise ValueError(f"Invalid pending bills {field}")
+        for field in ("source_url", "source_title", "source_table", "notes"):
+            value = getattr(record, field)
+            if value is not None and not isinstance(value, str):
+                raise ValueError(f"Invalid pending bills {field}")
+        if (
+            record.source_url is not None
+            and source_url is not None
+            and record.source_url != source_url
+        ):
+            raise ValueError("Pending bills record and batch disagree on source URL")
+        if record.as_at is not None:
+            if not isinstance(record.as_at, str):
+                raise ValueError("Pending bills require an ISO as-at date")
+            try:
+                day = date.fromisoformat(record.as_at)
+            except ValueError as exc:
+                raise ValueError("Invalid pending bills as-at date") from exc
+            if day.isoformat() != record.as_at:
+                raise ValueError("Pending bills require an ISO as-at date")
+        if record.source_page is not None and (
+            type(record.source_page) is not int or record.source_page <= 0
+        ):
+            raise ValueError("Invalid pending bills source page")
+        if not isinstance(record.reader_notes, list) or any(
+            not isinstance(n, dict) for n in record.reader_notes
+        ):
+            raise ValueError("Pending bills reader notes must be objects")
+        amounts = {
+            field: require_pending_amount(
+                getattr(record, field), field, optional=field != "total_pending"
+            )
+            for field in ("total_pending", "eligible_pending", "ineligible_pending")
+        }
+        # Loan principal/outstanding are Numeric(15,2). Reject overflow before
+        # mutation; optional provenance amounts must also serialize finitely.
+        if amounts["total_pending"] > Decimal("9999999999999.99"):
+            raise ValueError("Pending bills total exceeds monetary storage range")
+        if any(
+            value is not None and not math.isfinite(float(value))
+            for value in amounts.values()
+        ):
+            raise ValueError("Pending bills amount exceeds finite publication range")
+        validated.append(replace(record, **amounts))
+    for field in ("fiscal_year", "as_at"):
+        if len({getattr(r, field) for r in validated}) > 1:
+            raise ValueError(f"Pending bills records mix {field}")
+    if len({r.source_url or source_url for r in validated}) > 1:
+        raise ValueError("Pending bills records mix source URLs")
+    return validated
 
 
 def _require_forward_county_edition(session, records, county_table):
