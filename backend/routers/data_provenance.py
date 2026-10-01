@@ -14,12 +14,14 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from urllib.parse import unquote, urlsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import func, desc
 from sqlalchemy.orm import Session
 
+from services.audit_citations import safe_source_url
 from services.publication_gate import (
     loan_is_modelled_fixture,
     publishable_audit_criterion,
@@ -37,6 +39,7 @@ try:
         EconomicIndicator,
         Entity,
         EntityType,
+        Extraction,
         FiscalPeriod,
         FiscalSummary,
         GDPData,
@@ -299,6 +302,141 @@ def _attach_source_document(verification, db, source_document_id) -> None:
     verification.source_url = doc.url
     verification.publisher = doc.publisher
     verification.fetch_date = doc.fetch_date.isoformat() if doc.fetch_date else None
+
+
+def _population_publisher_family(label):
+    """Recognize population writer labels only for detecting contradictions."""
+    if not isinstance(label, str):
+        return None
+    label = label.strip().casefold()
+    if label.startswith("world bank"):
+        return "worldbank"
+    if label.startswith(("knbs", "kenya national bureau of statistics", "kenya census")):
+        return "knbs"
+    return None
+
+
+def _attach_population_evidence(verification, db, record) -> None:
+    """Cite only the selected observation's evidence; metadata is a hint.
+
+    World Bank's JSON writer deliberately clears document/extraction fields.
+    Its internally consistent publisher/dataset/URL identity can be shown in
+    the chain, but must not become a source_document or upgrade the grade.
+    """
+    meta = record.meta
+    identity = {
+        "record_id": record.id,
+        "year": record.year,
+        "entity_id": record.entity_id,
+    }
+    if record.source_document_id:
+        doc = db.query(SourceDocument).filter(
+            SourceDocument.id == record.source_document_id
+        ).first()
+        if (
+            doc is None or not safe_source_url(doc.url)
+            or not doc.publisher.strip() or not doc.title.strip()
+        ):
+            verification.reason = "no resolvable source document"
+            return
+        if meta is not None and not isinstance(meta, dict):
+            verification.reason = "malformed population source metadata"
+            return
+        meta = meta or {}
+        source = meta.get("source")
+        source_url = meta.get("source_url")
+        census_year = meta.get("census_year")
+        source_family = _population_publisher_family(source)
+        document_family = _population_publisher_family(doc.publisher)
+        publisher_conflict = source is not None and (
+            not isinstance(source, str) or not source.strip()
+            or (source_family != document_family if source_family and document_family
+                else source.strip().casefold() != doc.publisher.strip().casefold())
+        )
+        supported_datasets = set()
+        if document_family == "worldbank" and record.entity_id is None:
+            supported_datasets.add("SP.POP.TOTL")
+        if document_family == "knbs":
+            supported_datasets.add(f"knbs_census_{record.year}")
+        document_meta = doc.meta if isinstance(doc.meta, dict) else {}
+        declared_datasets = [meta.get("dataset_id"),
+                             document_meta.get("dataset_id"),
+                             document_meta.get("indicator")]
+        document_url = urlsplit(doc.url)
+        document_path = unquote(document_url.path)
+        if (document_family == "worldbank"
+            and document_url.hostname in {"api.worldbank.org", "data.worldbank.org"}
+            and "/indicator/" in document_path):
+            declared_datasets.append(document_path.rsplit("/indicator/", 1)[1].rstrip("/"))
+        dataset_conflict = any(
+            value is not None and (
+                not isinstance(value, str) or value not in supported_datasets
+            ) for value in declared_datasets
+        )
+        if (
+            (source_url is not None and source_url != doc.url)
+            or publisher_conflict or dataset_conflict
+            or (census_year is not None and
+                (type(census_year) is not int or census_year != record.year))
+        ):
+            verification.reason = "conflicting population source identity"
+            return
+        if record.extraction_id is not None:
+            extraction = db.query(Extraction).filter(
+                Extraction.id == record.extraction_id
+            ).first()
+            if (
+                extraction is None or extraction.source_document_id != doc.id
+                or (record.source_page is not None
+                    and extraction.page_number != record.source_page)
+            ):
+                verification.reason = "conflicting population extraction identity"
+                return
+        _attach_source_document(verification, db, doc.id)
+        hint = {
+            **identity, "source": doc.publisher, "dataset": doc.title,
+            "url": doc.url, "source_document_id": doc.id,
+        }
+        # These are stored locators, not a claim this endpoint checked a page.
+        for field in ("source_page", "page_ref", "source_hash", "extraction_id"):
+            value = getattr(record, field)
+            if value is not None:
+                hint[field] = value
+        verification.provenance_chain = [hint]
+        return
+
+    if not isinstance(meta, dict):
+        verification.reason = (
+            "missing or malformed population source identity; "
+            "no resolvable source document"
+        )
+        return
+    source = meta.get("source")
+    url = meta.get("source_url")
+    # Accept the identity emitted by the current publisher JSON writer, with
+    # the year in the source label tied to this row. Do not infer a dataset
+    # from a publisher name alone, or borrow a national indicator for a county.
+    source_matches = source == f"World Bank Development Indicators ({record.year})"
+    urls = {
+        "https://data.worldbank.org/indicator/SP.POP.TOTL?locations=KE",
+        f"https://api.worldbank.org/v2/country/KEN/indicator/SP.POP.TOTL?format=json&date={record.year}",
+    }
+    if (
+        record.entity_id is None and source_matches
+        and meta.get("dataset_id") == "SP.POP.TOTL"
+        and isinstance(url, str) and url in urls
+        and meta.get("census_year") is None
+        and all(getattr(record, field) is None for field in
+                ("source_page", "page_ref", "source_hash", "extraction_id"))
+    ):
+        verification.provenance_chain = [
+            {**identity, "source": source, "dataset": meta["dataset_id"], "url": url}
+        ]
+    else:
+        verification.reason = (
+            "missing or conflicting population source identity; "
+            "no resolvable source document"
+        )
 
 
 def _note_document_integrity(verification, db, source_document_id) -> None:
@@ -669,24 +807,19 @@ async def verify_data_point(
                 query = query.filter(PopulationData.entity_id == entity_id)
             else:
                 query = query.filter(PopulationData.entity_id.is_(None))
-            if year:
+            if year is not None:
                 query = query.filter(PopulationData.year == year)
-            record = query.order_by(desc(PopulationData.year)).first()
+            record = query.order_by(
+                desc(PopulationData.year), desc(PopulationData.id)
+            ).first()
+            if record is None:
+                verification.reason = "no_rows_for_year" if year is not None else "no_rows"
             if record:
                 verification.value = f"{record.total_population:,} (year {record.year})"
-                if record.source_document_id:
-                    doc = db.query(SourceDocument).filter(SourceDocument.id == record.source_document_id).first()
-                    if doc:
-                        verification.source_document = doc.title
-                        verification.source_url = doc.url
-                        verification.publisher = doc.publisher
-                        verification.fetch_date = doc.fetch_date.isoformat() if doc.fetch_date else None
-                verification.provenance_chain = [
-                    {"source": "Kenya National Bureau of Statistics", "dataset": "Census 2019",
-                     "url": "https://www.knbs.or.ke/2019-kenya-population-and-housing-census-results/"},
-                ]
+                _attach_population_evidence(verification, db, record)
                 _grade_verification(verification)
-                _note_document_integrity(verification, db, record.source_document_id)
+                if verification.source_document:
+                    _note_document_integrity(verification, db, record.source_document_id)
 
         elif table_name == "gdp_data":
             query = db.query(GDPData)
