@@ -11583,7 +11583,6 @@ async def _get_debt_broader_cached(db: Session, vintage: str):
 
 
 @app.get("/api/v1/debt/sustainability")
-@cached(key_prefix="debt:sustainability", ttl=NIGHTLY_REFRESH_TTL)
 async def get_debt_sustainability(db: Session = Depends(get_db)):
     """Get debt sustainability indicators, projections, and regional comparison.
 
@@ -11824,12 +11823,10 @@ def _get_regional_peers(
 ) -> list:
     """Return EAC regional debt comparison with multiple indicators.
 
-    Fetches three indicators from World Bank + IMF APIs (cached 12 hours):
-      - Debt-to-GDP (%)
-      - Debt service to revenue (%)
-      - External debt share (%)
-
-    Falls back to verified static values when APIs are unreachable.
+    Successful provider reads are cached for 12 hours. Each published cell
+    carries its observation year and source, or an explicit absence reason.
+    The debt column uses IMF general-government debt at one reference year;
+    World Bank interest/revenue and external debt/GNI remain separate measures.
     """
     return _get_regional_peers_cached(kenya_debt_to_gdp, reference_year)
 
@@ -11858,7 +11855,6 @@ _EAC_COUNTRIES = {
 # Rwanda's 93.9 in that second column is the tell: no country holds 93.9% of
 # its public debt externally, but 93.9% of GNI is unremarkable.
 _WB_INDICATORS = {
-    "debt_to_gdp": "GC.DOD.TOTL.GD.ZS",  # Central govt debt (% GDP)
     "interest_payments_pct_revenue": "GC.XPN.INTP.RV.ZS",
     "external_debt_pct_gni": "DT.DOD.DECT.GN.ZS",
 }
@@ -11910,7 +11906,7 @@ _IMF_INDICATORS = {
     "debt_to_gdp": "GGXWDG_NGDP",  # General govt gross debt (% GDP)
 }
 
-# Simple TTL cache: (timestamp, data, reference_year). The reference year is
+# TTL cache of provider observations (never request anchors). The reference year is
 # part of the entry's identity — a cached column from last year's WEO vintage
 # must not be served against this year's.
 _peers_cache: Dict[str, Any] = {"ts": 0.0, "data": None, "reference_year": None}
@@ -11919,10 +11915,11 @@ _PEERS_CACHE_TTL = 12 * 3600  # 12 hours
 _logger_peers = logging.getLogger("audit_app.regional_peers")
 
 
-def _wb_fetch_indicator(indicator_code: str, country_codes: str) -> Dict[str, float]:
-    """Fetch latest value per country for a single World Bank indicator.
+def _wb_fetch_indicator(indicator_code: str, country_codes: str) -> Dict[str, dict]:
+    """Latest non-null World Bank observation per peer, retaining its year.
 
-    Returns {ISO3: value} for countries that have data.
+    Values are validated when assembling cells, so a malformed numeric value
+    remains distinguishable from a country with no observation.
     """
     url = (
         f"https://api.worldbank.org/v2/country/{country_codes}"
@@ -11931,20 +11928,34 @@ def _wb_fetch_indicator(indicator_code: str, country_codes: str) -> Dict[str, fl
     resp = httpx.get(url, timeout=8)
     resp.raise_for_status()
     wb_data = resp.json()
-
-    if not isinstance(wb_data, list) or len(wb_data) < 2 or not wb_data[1]:
+    if not isinstance(wb_data, list) or len(wb_data) != 2:
+        raise ValueError("Invalid World Bank observation response")
+    if wb_data[1] is None:
         return {}
-
-    # Keep the most recent non-null value per country
-    latest: Dict[str, Dict[str, Any]] = {}
+    if not isinstance(wb_data[1], list):
+        raise ValueError("Invalid World Bank observation rows")
+    latest: Dict[str, dict] = {}
     for item in wb_data[1]:
-        if item.get("value") is not None:
-            iso = item["countryiso3code"]
-            year = int(item["date"])
-            if iso not in latest or year > latest[iso]["year"]:
-                latest[iso] = {"year": year, "value": float(item["value"])}
-
-    return {iso: d["value"] for iso, d in latest.items()}
+        if not isinstance(item, dict):
+            raise ValueError("Invalid World Bank observation row")
+        indicator = item.get("indicator")
+        if not isinstance(indicator, dict) or indicator.get("id") != indicator_code:
+            raise ValueError("World Bank observation has the wrong indicator")
+        iso = item.get("countryiso3code")
+        if not isinstance(iso, str) or not iso or "value" not in item:
+            raise ValueError("World Bank observation is missing a required field")
+        if iso not in _EAC_COUNTRIES or item["value"] is None:
+            continue
+        date = item.get("date")
+        if not isinstance(date, str) or not date.isdigit():
+            raise ValueError("Invalid World Bank observation year")
+        year = int(date)
+        # Enforce the requested window even if the provider ignores it.
+        if not 2015 <= year <= 2026:
+            continue
+        if iso not in latest or year > latest[iso]["year"]:
+            latest[iso] = {"year": year, "value": item["value"]}
+    return latest
 
 
 def _imf_fetch_debt_to_gdp(reference_year: int) -> Dict[str, float]:
@@ -11980,16 +11991,22 @@ def _imf_fetch_debt_to_gdp(reference_year: int) -> Dict[str, float]:
     data = resp.json()
 
     # IMF response: {"values": {"GGXWDG_NGDP": {"KEN": {"2023": 68.1, ...}, ...}}}
-    indicator_data = data.get("values", {}).get("GGXWDG_NGDP", {})
+    if not isinstance(data, dict) or not isinstance(data.get("values"), dict):
+        raise ValueError("Invalid IMF observation response")
+    indicator_data = data["values"].get("GGXWDG_NGDP")
+    if not isinstance(indicator_data, dict):
+        raise ValueError("Missing IMF debt indicator observations")
     result: Dict[str, float] = {}
     for iso, year_vals in indicator_data.items():
         # The response carries every country and every aggregate, asked for or
         # not. Keep only the peers this table compares.
-        if iso not in _EAC_COUNTRIES or not year_vals:
+        if iso not in _EAC_COUNTRIES:
             continue
+        if not isinstance(year_vals, dict):
+            raise ValueError("Invalid IMF country observations")
         val = year_vals.get(str(reference_year))
         if val is not None:
-            result[iso] = round(float(val), 1)
+            result[iso] = val
 
     return result
 
@@ -11998,184 +12015,149 @@ def _get_regional_peers_cached(
     kenya_debt_to_gdp: Optional[float] = None,
     reference_year: Optional[int] = None,
 ) -> list:
-    """Fetch EAC peers from World Bank + IMF APIs with 12-hour TTL cache.
+    """Source-backed regional cells, with no substitution of another measure.
 
-    ``kenya_debt_to_gdp`` is Kenya's headline figure from the seeded IMF WEO
-    table, passed in ONLY when it is on the same measure and year as the rest
-    of the column. It used to be ``kenya_ratio`` — DebtTimeline.gdp_ratio —
-    which made Kenya the one country in its own comparison measured
-    differently from its four comparators, and did not match the site's
-    declared headline either. Using the seeded table rather than this fetch
-    for Kenya's cell guarantees the peer row and the headline above it agree
-    even when the DataMapper is unreachable.
+    Cache provider observations only. A request's accepted Kenya WEO anchor
+    overlays a copy and cannot leak into a later request without that anchor.
+    Failed or invalid provider reads are not cached; expired success is never
+    served as a replacement for a failed fresh read.
     """
-    now = time.time()
+    import copy
+    import math
 
-    # Cache holds the fetched column; the reference year is part of its
-    # identity, so a new IMF vintage does not serve last year's figures.
-    if (
-        _peers_cache["data"] is not None
-        and _peers_cache.get("reference_year") == reference_year
-        and (now - _peers_cache["ts"]) < _PEERS_CACHE_TTL
-    ):
-        cached = [dict(p) for p in _peers_cache["data"]]  # shallow copy
-        if kenya_debt_to_gdp is not None:
-            for p in cached:
-                if p["country"] == "Kenya":
-                    p["debt_to_gdp"] = round(kenya_debt_to_gdp, 1)
-                    p["debt_to_gdp_year"] = reference_year
-        return cached
-
-    # ── Fetch all indicators ──────────────────────────────────────
-    codes_str = ";".join(_EAC_COUNTRIES.keys())
-    debt_gdp: Dict[str, float] = {}
-    interest_pct_rev: Dict[str, float] = {}
-    external_pct_gni: Dict[str, float] = {}
-
-    # 1. IMF debt-to-GDP, pinned to the reference year.
-    #
-    # No reference year means the IMF WEO table is not seeded, so there is
-    # nothing that says which years are actuals and which are forecasts.
-    # Skip the fetch rather than guess: an unbounded call returns the 2031
-    # projection.
-    if reference_year is not None:
+    def number(value):
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            return None
         try:
-            debt_gdp = _imf_fetch_debt_to_gdp(reference_year)
-            _logger_peers.info(
-                "IMF debt-to-GDP %s: got data for %d countries",
-                reference_year,
-                len(debt_gdp),
+            return round(value, 1) if math.isfinite(value) and value >= 0 else None
+        except OverflowError:
+            return None
+
+    if reference_year is not None and (
+        type(reference_year) is not int or reference_year <= 0
+    ):
+        raise ValueError("A peer reference year must be a positive integer")
+
+    def overlay(rows):
+        rows = copy.deepcopy(rows)
+        if kenya_debt_to_gdp is not None and reference_year is not None:
+            kenya = rows[0]
+            value = number(kenya_debt_to_gdp)
+            kenya["debt_to_gdp"] = value
+            kenya["debt_to_gdp_year"] = reference_year if value is not None else None
+            kenya["debt_to_gdp_absent_reason"] = (
+                None if value is not None else "invalid_observation"
             )
-        except Exception as exc:
-            _logger_peers.debug("IMF API unavailable: %s", exc)
+            kenya["debt_to_gdp_source"] = (
+                source("KEN", "debt_to_gdp", "accepted_kenya_anchor")
+                if value is not None
+                else None
+            )
+        return rows
+
+    def source(iso, column, origin):
+        basis = _PEER_COLUMN_BASIS[column]
+        url = (
+            f"https://www.imf.org/external/datamapper/GGXWDG_NGDP@WEO/{iso}"
+            if column == "debt_to_gdp"
+            else f"https://api.worldbank.org/v2/country/{iso}/indicator/{basis['indicator']}?format=json"
+        )
+        return {
+            "publisher": basis["publisher"],
+            "indicator": basis["indicator"],
+            "url": url,
+            "origin": origin,
+        }
+
+    now = time.time()
+    if (
+        _peers_cache.get("contract") == "source_observations_v1"
+        and _peers_cache["data"] is not None
+        and _peers_cache.get("reference_year") == reference_year
+        and 0 <= now - _peers_cache["ts"] < _PEERS_CACHE_TTL
+    ):
+        return overlay(_peers_cache["data"])
+
+    observations = {}
+    failures = {}
+    if reference_year is None:
+        observations["debt_to_gdp"] = {}
+        failures["debt_to_gdp"] = "no_reference_year"
     else:
-        _logger_peers.info(
-            "IMF debt-to-GDP skipped — no reference year (WEO table not seeded)"
-        )
-    imf_sourced = set(debt_gdp)
-
-    # 2. World Bank: debt-to-GDP (fallback if IMF missed countries)
-    try:
-        wb_debt_gdp = _wb_fetch_indicator(_WB_INDICATORS["debt_to_gdp"], codes_str)
-        for iso, val in wb_debt_gdp.items():
-            if iso not in debt_gdp:
-                debt_gdp[iso] = round(val, 1)
-        _logger_peers.info(
-            "WB debt-to-GDP: got data for %d countries", len(wb_debt_gdp)
-        )
-    except Exception as exc:
-        _logger_peers.debug("WB debt-to-GDP unavailable: %s", exc)
-
-    # 3. World Bank: interest payments as % of revenue
-    try:
-        interest_pct_rev = _wb_fetch_indicator(
-            _WB_INDICATORS["interest_payments_pct_revenue"], codes_str
-        )
-        _logger_peers.info(
-            "WB interest/revenue: got data for %d countries", len(interest_pct_rev)
-        )
-    except Exception as exc:
-        _logger_peers.debug("WB interest/revenue unavailable: %s", exc)
-
-    # 4. World Bank: external debt as % of GNI
-    try:
-        external_pct_gni = _wb_fetch_indicator(
-            _WB_INDICATORS["external_debt_pct_gni"], codes_str
-        )
-        _logger_peers.info(
-            "WB external-debt%%GNI: got data for %d countries", len(external_pct_gni)
-        )
-    except Exception as exc:
-        _logger_peers.debug("WB external-debt%%GNI unavailable: %s", exc)
-
-    # ── Verified fallback values (updated Mar 2026) ───────────────
-    # Used ONLY when both APIs are unreachable for a given indicator.
-    # Only debt-to-GDP has a fallback, and only because it is the SAME measure
-    # the live APIs serve (general government gross debt, % of GDP).
-    #
-    # The other two fallback columns are gone. They carried KEN 57.6 / 52.3 —
-    # neither the headline's measure nor the World Bank series they stood in
-    # for, so the number in a given field silently changed *measure* depending
-    # on whether api.worldbank.org answered. A value on an undeclared basis is
-    # worse than no value: absence is visible, a wrong basis is not.
-    _fallback = {
-        "KEN": {"debt_to_gdp": 68.0},
-        "ETH": {"debt_to_gdp": 31.4},
-        "TZA": {"debt_to_gdp": 48.2},
-        "UGA": {"debt_to_gdp": 53.1},
-        "RWA": {"debt_to_gdp": 67.2},
-    }
-
-    # ── Assemble peers ────────────────────────────────────────────
-    peers = []
-    for iso, name in _EAC_COUNTRIES.items():
-        fb = _fallback.get(iso, {})
-
-        # Debt-to-GDP. Kenya's cell comes from the seeded IMF WEO table when
-        # that is available — same indicator, same reference year as its four
-        # comparators, and identical to the headline above the table. Every
-        # other country comes from the DataMapper at that same year, falling
-        # back to the World Bank series and then to the static values.
-        #
-        # ``debt_to_gdp_year`` is stamped only where the value really is the
-        # reference year. A null year marks a cell that came from a fallback
-        # on some other vintage, so a year mismatch inside the column is
-        # visible instead of implied.
-        d2g_year = None
-        if iso == "KEN" and kenya_debt_to_gdp is not None:
-            d2g = kenya_debt_to_gdp
-            d2g_year = reference_year
-        else:
-            d2g = debt_gdp.get(iso)
-            if d2g is not None and iso in imf_sourced:
-                d2g_year = reference_year
-            if d2g is None:
-                d2g = fb.get("debt_to_gdp")
-
-        # The World Bank series, under their own names. No fallback: an
-        # unreachable API is an absent value, not a value on another basis.
-        interest = interest_pct_rev.get(iso)
-        ext_gni = external_pct_gni.get(iso)
-
-        peers.append(
-            {
-                "country": name,
-                "debt_to_gdp": round(d2g, 1) if d2g is not None else None,
-                "debt_to_gdp_year": d2g_year,
-                # The headline's two measures have no peer series. They stayed
-                # as keys — dropping them would read as ``undefined`` to a
-                # caller rather than as a stated absence — but they carry
-                # nothing except the reason there is nothing.
-                "debt_service_to_revenue": None,
-                "debt_service_to_revenue_absent_reason": _PEER_ABSENT_REASONS[
-                    "debt_service_to_revenue"
-                ],
-                "external_debt_share": None,
-                "external_debt_share_absent_reason": _PEER_ABSENT_REASONS[
-                    "external_debt_share"
-                ],
-                "interest_payments_pct_revenue": (
-                    round(interest, 1) if interest is not None else None
-                ),
-                "external_debt_pct_gni": (
-                    round(ext_gni, 1) if ext_gni is not None else None
-                ),
+        try:
+            observations["debt_to_gdp"] = {
+                iso: {"value": value, "year": reference_year}
+                for iso, value in _imf_fetch_debt_to_gdp(reference_year).items()
             }
-        )
+        except ValueError as exc:
+            observations["debt_to_gdp"] = {}
+            failures["debt_to_gdp"] = "invalid_provider_response"
+            _logger_peers.warning("Invalid IMF peer observations: %s", exc)
+        except Exception as exc:
+            observations["debt_to_gdp"] = {}
+            failures["debt_to_gdp"] = "provider_unavailable"
+            _logger_peers.warning("IMF peer observations unavailable: %s", exc)
 
-    _peers_cache["ts"] = now
-    _peers_cache["data"] = peers
-    _peers_cache["reference_year"] = reference_year
-    _logger_peers.info(
-        "Regional peers updated: %d/%d countries have every published column",
-        sum(
-            1
-            for p in peers
-            if all(p.get(col) is not None for col in _PEER_COLUMN_BASIS)
-        ),
-        len(peers),
-    )
-    return peers
+    # WB central-government debt is not IMF general-government gross debt.
+    # It cannot fill the IMF column, even when the numbers happen to agree.
+    codes = ";".join(_EAC_COUNTRIES)
+    for column, indicator in _WB_INDICATORS.items():
+        try:
+            observations[column] = _wb_fetch_indicator(indicator, codes)
+        except ValueError as exc:
+            observations[column] = {}
+            failures[column] = "invalid_provider_response"
+            _logger_peers.warning("Invalid World Bank peer %s: %s", indicator, exc)
+        except Exception as exc:
+            observations[column] = {}
+            failures[column] = "provider_unavailable"
+            _logger_peers.warning("World Bank peer %s unavailable: %s", indicator, exc)
+
+    peers = []
+    invalid = False
+    for iso, name in _EAC_COUNTRIES.items():
+        row = {
+            "country": name,
+            "debt_service_to_revenue": None,
+            "debt_service_to_revenue_absent_reason": _PEER_ABSENT_REASONS[
+                "debt_service_to_revenue"
+            ],
+            "external_debt_share": None,
+            "external_debt_share_absent_reason": _PEER_ABSENT_REASONS[
+                "external_debt_share"
+            ],
+        }
+        for column in _PEER_COLUMN_BASIS:
+            observation = observations[column].get(iso)
+            value = number(observation["value"]) if observation is not None else None
+            reason = (
+                failures.get(column, "no_observation") if observation is None else None
+            )
+            if observation is not None and value is None:
+                reason = "invalid_observation"
+                invalid = True
+            row[column] = value
+            row[column + "_year"] = observation["year"] if value is not None else None
+            row[column + "_absent_reason"] = reason
+            row[column + "_source"] = (
+                source(iso, column, "provider") if value is not None else None
+            )
+        peers.append(row)
+
+    if (
+        all(reason == "no_reference_year" for reason in failures.values())
+        and not invalid
+    ):
+        _peers_cache.update(
+            ts=now,
+            data=copy.deepcopy(peers),
+            reference_year=reference_year,
+            contract="source_observations_v1",
+        )
+    else:
+        # Clear an expired or other-vintage success so recovery must be read.
+        _peers_cache.update(ts=0.0, data=None, reference_year=None)
+    return overlay(peers)
 
 
 @app.get("/api/v1/entities", response_model=List[EntityResponse])

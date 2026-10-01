@@ -149,3 +149,22 @@ describe('debt page financial claims (#289)', () => {
     }
   );
 });
+
+// The current page withdrew the peer comparison. API states must not restore
+// that strip, a peer average, or a zero debt-service claim through normalization.
+describe.each([
+  ['absent', { status: 'no_data', regional_peers: [{ country: 'Ethiopia', debt_to_gdp: null,
+    debt_to_gdp_year: null, debt_to_gdp_absent_reason: 'no_reference_year' }] }],
+  ['partial', { status: 'success', regional_peers: [{ country: 'Rwanda', debt_to_gdp: 0,
+    debt_to_gdp_year: 2025, interest_payments_pct_revenue: null }] }],
+  ['supported', { status: 'success', regional_peers: [{ country: 'Ethiopia', debt_to_gdp: 23,
+    debt_to_gdp_year: 2025, interest_payments_pct_revenue: 0, external_debt_pct_gni: 12 }] }],
+])('withdrawn regional comparison with %s API state', (_label, payload) => {
+  it('keeps the existing sourced headline and does not consume or render peers', async () => {
+    client.setQueryData(['debt', 'debt-sustainability'], payload);
+    await mount();
+    expect(ratioTile()).toHaveTextContent('69.3%');
+    expect(screen.queryByText(/EAC peer average|Service \/ Revenue|Ethiopia|Rwanda/)).not.toBeInTheDocument();
+    expect(mockGet.mock.calls.some(([url]) => String(url).includes('/debt/sustainability'))).toBe(false);
+  });
+});

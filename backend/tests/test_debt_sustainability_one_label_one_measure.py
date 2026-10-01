@@ -69,7 +69,10 @@ def _reset_peer_cache():
 @pytest.fixture()
 def world_bank_live():
     """Serve the real World Bank values without touching the network."""
-    with patch("main._wb_fetch_indicator", side_effect=lambda code, _c: WB_LIVE[code]), \
+    def observations(code, _countries):
+        return {iso: {"value": value, "year": 2024} for iso, value in WB_LIVE[code].items()}
+
+    with patch("main._wb_fetch_indicator", side_effect=observations), \
             patch("main._imf_fetch_debt_to_gdp", return_value={}):
         yield
 
@@ -215,7 +218,8 @@ def test_an_unreachable_world_bank_does_not_swap_in_a_different_measure(
 
     assert row["interest_payments_pct_revenue"] is None
     assert row["external_debt_pct_gni"] is None
-    assert row["debt_to_gdp"] is not None  # positive control: same-measure fallback
+    assert row["debt_to_gdp"] is None
+    assert row["debt_to_gdp_absent_reason"] == "no_reference_year"
 
 
 # ── 2. Projections must be published, not fitted ───────────────────────────

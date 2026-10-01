@@ -426,8 +426,31 @@ export interface PeerColumnBasis {
   reference_year?: number | null;
 }
 
+export type PeerAbsentReason =
+  | 'no_reference_year'
+  | 'no_observation'
+  | 'provider_unavailable'
+  | 'invalid_provider_response'
+  | 'invalid_observation';
+
+export interface PeerObservationSource {
+  publisher: string;
+  indicator: string;
+  url: string;
+  origin: 'provider' | 'accepted_kenya_anchor';
+}
+
 interface RegionalPeerColumns {
   country: string;
+  /** Additive metadata: older API versions may omit these fields. */
+  debt_to_gdp_absent_reason?: PeerAbsentReason | null;
+  debt_to_gdp_source?: PeerObservationSource | null;
+  interest_payments_pct_revenue_year?: number | null;
+  interest_payments_pct_revenue_absent_reason?: PeerAbsentReason | null;
+  interest_payments_pct_revenue_source?: PeerObservationSource | null;
+  external_debt_pct_gni_year?: number | null;
+  external_debt_pct_gni_absent_reason?: PeerAbsentReason | null;
+  external_debt_pct_gni_source?: PeerObservationSource | null;
   /**
    * Always null. Kenya's headline 77.6% is total debt service (principal +
    * interest) over revenue; no cross-country series measures that here, and
@@ -460,11 +483,9 @@ interface RegionalPeerColumns {
  * cell:
  *
  *   debt_to_gdp_year = <number>  the cell IS on the column's reference year
- *   debt_to_gdp_year = null      the cell came from a fallback series on a
- *                                vintage nobody recorded — NOT comparable
- *                                with the rows that carry a year
+ *   debt_to_gdp_year = null      no supported observation; the value is null
  *
- * A null year beside a real number is the thing to render, not to skip. The
+ * An absence carries a reason; it must never become a zero or static value. The
  * column previously carried each country's 2031 IMF *forecast* under a
  * present-tense label, because the DataMapper honours neither its country nor
  * its period filter and the old code took `max(year)`. Ethiopia read 27.0
@@ -478,7 +499,7 @@ interface RegionalPeerColumns {
 export type RegionalPeer = RegionalPeerColumns &
   (
     | { debt_to_gdp: number; debt_to_gdp_year: number }
-    | { debt_to_gdp: number | null; debt_to_gdp_year: null }
+    | { debt_to_gdp: null; debt_to_gdp_year: null }
   );
 
 export interface DebtProjection {

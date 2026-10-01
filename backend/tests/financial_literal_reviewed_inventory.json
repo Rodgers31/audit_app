@@ -1,6 +1,6 @@
 {
   "backend/main.py": {
-    "ast_sha256": "c3bfb46eddf56b1a14033811817326b856927400b39f78f333160f65d619950c",
+    "ast_sha256": "9262548068a3e0ac1aaf08e248f995cd7e0ed3be37ce558d5f53156e830c2b81",
     "sites": [
       {
         "signature": "'_MAX_COUNTY_BUDGET_KES' is published from typed-in numbers [50000000000]. Nothing measured it. Serve a sourced figure or serve nothing.",
@@ -25,36 +25,6 @@
         "reason": "documented legislative debt-anchor threshold, not a reported debt observation",
         "disposition": "reviewed contextual value",
         "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
-      },
-      {
-        "signature": "'debt_to_gdp' is published from typed-in numbers [68.0]. Nothing measured it. Serve a sourced figure or serve nothing.",
-        "reason": "shipping public static peer fallback; requires exact source/citation decision outside assigned product ownership",
-        "disposition": "unresolved typed finance",
-        "tracking": "https://github.com/Rodgers31/audit_app/issues/424"
-      },
-      {
-        "signature": "'debt_to_gdp' is published from typed-in numbers [31.4]. Nothing measured it. Serve a sourced figure or serve nothing.",
-        "reason": "shipping public static peer fallback; requires exact source/citation decision outside assigned product ownership",
-        "disposition": "unresolved typed finance",
-        "tracking": "https://github.com/Rodgers31/audit_app/issues/424"
-      },
-      {
-        "signature": "'debt_to_gdp' is published from typed-in numbers [48.2]. Nothing measured it. Serve a sourced figure or serve nothing.",
-        "reason": "shipping public static peer fallback; requires exact source/citation decision outside assigned product ownership",
-        "disposition": "unresolved typed finance",
-        "tracking": "https://github.com/Rodgers31/audit_app/issues/424"
-      },
-      {
-        "signature": "'debt_to_gdp' is published from typed-in numbers [53.1]. Nothing measured it. Serve a sourced figure or serve nothing.",
-        "reason": "shipping public static peer fallback; requires exact source/citation decision outside assigned product ownership",
-        "disposition": "unresolved typed finance",
-        "tracking": "https://github.com/Rodgers31/audit_app/issues/424"
-      },
-      {
-        "signature": "'debt_to_gdp' is published from typed-in numbers [67.2]. Nothing measured it. Serve a sourced figure or serve nothing.",
-        "reason": "shipping public static peer fallback; requires exact source/citation decision outside assigned product ownership",
-        "disposition": "unresolved typed finance",
-        "tracking": "https://github.com/Rodgers31/audit_app/issues/424"
       }
     ]
   },

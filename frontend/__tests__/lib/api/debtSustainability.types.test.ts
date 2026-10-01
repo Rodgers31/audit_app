@@ -81,11 +81,12 @@ const LIVE: DebtSustainabilityResponse = {
       external_debt_pct_gni: 93.9,
     },
     {
-      // A cell the IMF DataMapper did not return at the reference year, so it
-      // fell back to another series on a vintage nobody recorded.
+      // No IMF observation at the reference year. Another measure cannot fill it.
       country: 'Ethiopia',
-      debt_to_gdp: 43.1,
+      debt_to_gdp: null,
       debt_to_gdp_year: null,
+      debt_to_gdp_absent_reason: 'no_observation',
+      debt_to_gdp_source: null,
       debt_service_to_revenue: null,
       external_debt_share: null,
       interest_payments_pct_revenue: null,
@@ -132,7 +133,23 @@ const NO_DATA: DebtSustainabilityResponse = {
   projections: [],
   projections_source: null,
   projections_absent_reason: 'no_published_projection_seeded',
-  regional_peers: [],
+  regional_peers: ['Kenya', 'Ethiopia', 'Tanzania', 'Uganda', 'Rwanda'].map((country) => ({
+    country,
+    debt_to_gdp: null,
+    debt_to_gdp_year: null,
+    debt_to_gdp_absent_reason: 'no_reference_year' as const,
+    debt_to_gdp_source: null,
+    debt_service_to_revenue: null,
+    external_debt_share: null,
+    interest_payments_pct_revenue: null,
+    interest_payments_pct_revenue_year: null,
+    interest_payments_pct_revenue_absent_reason: 'no_observation' as const,
+    interest_payments_pct_revenue_source: null,
+    external_debt_pct_gni: null,
+    external_debt_pct_gni_year: null,
+    external_debt_pct_gni_absent_reason: 'no_observation' as const,
+    external_debt_pct_gni_source: null,
+  })),
   // `_peer_column_basis(None)` still names every column; the pinned one just
   // has no year to pin to.
   regional_peers_basis: {
@@ -234,9 +251,8 @@ describe('regional peers — the two renamed columns', () => {
  * label — Ethiopia at 27.0 against an actual 43.1. Nothing on the page could
  * have revealed that, because no row said which year it was on.
  *
- * #179 pins the column to one reference year and stamps each row that is
- * really on it. A null year beside a real number means a fallback on a vintage
- * nobody recorded — the cell to mark, not the cell to skip.
+ * The column is pinned to one reference year. Missing observations remain
+ * absent with a reason rather than a substitute on another measure or year.
  */
 describe('regional peers — debt-to-GDP carries its vintage', () => {
   it('stamps the year on rows that are on the reference year', () => {
@@ -246,11 +262,11 @@ describe('regional peers — debt-to-GDP carries its vintage', () => {
     expect(LIVE.regional_peers_basis!.debt_to_gdp.reference_year).toBe(2025);
   });
 
-  it('leaves the year null on a cell that fell back to another vintage', () => {
+  it('leaves a missing observation absent with its reason', () => {
     const ethiopia = LIVE.regional_peers[2];
-    // A real number whose year nobody recorded. It is NOT comparable with the
-    // rows above it, and this null is the only thing that says so.
-    expect(ethiopia.debt_to_gdp).toBe(43.1);
+    expect(ethiopia.debt_to_gdp).toBeNull();
+    expect(ethiopia.debt_to_gdp_absent_reason).toBe('no_observation');
+    expect(ethiopia.debt_to_gdp_source).toBeNull();
     expect(ethiopia.debt_to_gdp_year).toBeNull();
   });
 
@@ -269,7 +285,7 @@ describe('regional peers — debt-to-GDP carries its vintage', () => {
       (p) => p.debt_to_gdp !== null && p.debt_to_gdp_year !== ref,
     );
     expect(comparable.map((p) => p.country)).toEqual(['Kenya', 'Rwanda']);
-    expect(notComparable.map((p) => p.country)).toEqual(['Ethiopia']);
+    expect(notComparable.map((p) => p.country)).toEqual([]);
   });
 
   it('carries reference_year only on the column that is pinned', () => {
@@ -285,6 +301,8 @@ describe('regional peers — debt-to-GDP carries its vintage', () => {
     // No WEO table seeded: the IMF fetch is skipped entirely rather than
     // issuing the unbounded call that returned the 2031 projection.
     expect(NO_DATA.regional_peers_basis!.debt_to_gdp.reference_year).toBeNull();
+    expect(NO_DATA.regional_peers.every((row) => row.debt_to_gdp === null &&
+      row.debt_to_gdp_absent_reason === 'no_reference_year')).toBe(true);
   });
 });
 
@@ -292,10 +310,9 @@ describe('regional peers — the type forbids a vintage with no value', () => {
   it('accepts every shape the endpoint actually produces', () => {
     const rows: RegionalPeer[] = [
       { ...BARE, debt_to_gdp: 70.0, debt_to_gdp_year: 2025 },
-      { ...BARE, debt_to_gdp: 43.1, debt_to_gdp_year: null },
       { ...BARE, debt_to_gdp: null, debt_to_gdp_year: null },
     ];
-    expect(rows).toHaveLength(3);
+    expect(rows).toHaveLength(2);
   });
 
   it('rejects a year stamped on a cell with no figure', () => {
@@ -306,10 +323,25 @@ describe('regional peers — the type forbids a vintage with no value', () => {
     expect(impossible).toBeDefined();
   });
 
+  it('rejects a debt figure without a comparable observation year', () => {
+    // @ts-expect-error — unsupported legacy fallback shape.
+    const unsupported: RegionalPeer = { ...BARE, debt_to_gdp: 43.1, debt_to_gdp_year: null };
+    expect(unsupported).toBeDefined();
+  });
+
+  it('keeps a sourced zero distinct from absence', () => {
+    const zero: RegionalPeer = { ...BARE, debt_to_gdp: 0, debt_to_gdp_year: 2025,
+      debt_to_gdp_absent_reason: null,
+      debt_to_gdp_source: { publisher: 'IMF World Economic Outlook', indicator: 'GGXWDG_NGDP',
+        url: 'https://www.imf.org/external/datamapper/GGXWDG_NGDP@WEO/KEN', origin: 'provider' } };
+    expect(zero.debt_to_gdp).toBe(0);
+    expect(zero.debt_to_gdp_source?.indicator).toBe('GGXWDG_NGDP');
+  });
+
   it('still reads the value without narrowing', () => {
     // The union must not make ordinary consumption awkward, or a caller will
     // reach for `as any` and lose the guarantee.
     const values = LIVE.regional_peers.map((p) => p.debt_to_gdp);
-    expect(values).toEqual([70.0, 71.3, 43.1, null]);
+    expect(values).toEqual([70.0, 71.3, null, null]);
   });
 });
