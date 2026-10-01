@@ -14,7 +14,9 @@ def test_web_seeder_status_names_dedicated_economic_owner(client):
     assert "All data is fetched from live sources" not in body["note"]
 
 
-def test_pipeline_health_reports_retired_web_path_without_import_success(client):
+def test_pipeline_health_reports_retired_web_path_without_import_success(
+    client, pipeline_health_database
+):
     response = client.get("/api/v1/system/pipeline-health")
     assert response.status_code == 200
     body = response.json()
@@ -33,7 +35,9 @@ def test_pipeline_health_reports_retired_web_path_without_import_success(client)
     )
 
 
-def test_pipeline_health_keeps_ownership_when_web_status_unavailable(client, monkeypatch):
+def test_pipeline_health_keeps_ownership_when_web_status_unavailable(
+    client, monkeypatch, pipeline_health_database
+):
     seeder_module = importlib.import_module("services.auto_seeder")
 
     def fail_status():
@@ -49,7 +53,7 @@ def test_pipeline_health_keeps_ownership_when_web_status_unavailable(client, mon
 
 
 def test_missing_web_etl_module_reports_unavailable_without_cached_fallback(
-    client, monkeypatch
+    client, monkeypatch, pipeline_health_database
 ):
     real_import = importlib.import_module
 

@@ -257,7 +257,9 @@ def test_cancelled_loader_does_not_poison_following_request(memory_cache):
     assert calls == 2
 
 
-def test_pipeline_health_uses_short_shared_cache(client, monkeypatch):
+def test_pipeline_health_uses_short_shared_cache(
+    client, monkeypatch, pipeline_health_database
+):
     import httpx
     from starlette.responses import JSONResponse
 
