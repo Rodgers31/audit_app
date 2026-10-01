@@ -21,7 +21,7 @@ test. A row is now published only when it declares its side's publication.
 
 import pytest
 
-from models import Base, BudgetLine, DebtCategory, Entity, EntityType, Loan
+from models import Base, BudgetLine, DebtCategory, Entity, EntityType, Loan, SourceDocument
 
 
 @pytest.fixture()
@@ -97,6 +97,7 @@ class TestTheApiGate:
             entity=SimpleNamespace(type="county"),
             outstanding=amount,
             principal=amount,
+            currency="KES",
             provenance=(
                 [{"source": "bootstrap", "dataset": "enhanced_county_data.json"}]
                 if modelled
@@ -184,16 +185,37 @@ class TestTheApiGate:
 
         assert county_pending_bills(loans) is None
 
-    def test_sourced_rows_are_summed_and_modelled_ones_left_out(self):
+    def test_latest_sourced_stock_is_selected_and_modelled_ones_left_out(self):
         from services.publication_gate import county_pending_bills
 
+        older = self._loan(1_000_000, modelled=False)
+        older.provenance["as_at"] = "2025-06-30"
         loans = [
-            self._loan(1_000_000, modelled=False),
-            self._loan(500_000, modelled=False),
+            older,
+            self._loan(1_500_000, modelled=False),
             self._loan(416_834_280, modelled=True),
         ]
 
         assert county_pending_bills(loans) == 1_500_000
+
+    def test_same_date_competing_stocks_are_withheld(self):
+        from services.publication_gate import select_county_pending_bills
+
+        result = select_county_pending_bills([
+            self._loan(1_000_000, modelled=False),
+            self._loan(500_000, modelled=False),
+        ])
+        assert result["amount"] is None
+        assert result["absent_reason"] == "conflicting_same_date_pending_sources"
+
+    def test_a_declared_stock_without_kes_is_withheld(self):
+        from services.publication_gate import select_county_pending_bills
+
+        loan = self._loan(0, modelled=False)
+        del loan.currency
+        result = select_county_pending_bills([loan])
+        assert result["amount"] is None
+        assert result["absent_reason"] == "unsupported_pending_currency"
 
 
 class TestCountyDebtGate:
@@ -221,6 +243,13 @@ class TestCountyDebtGate:
             debt_category=category if category is not None else DebtCategory.OTHER,
             outstanding=amount,
             principal=amount,
+            currency="KES",
+            source_document=SourceDocument(
+                title="Synthetic county debt report",
+                publisher="Synthetic county publisher",
+                url="https://example.invalid/county-debt.pdf",
+                meta={"dataset_id": "county-debt"},
+            ),
             provenance=(
                 [{"source": "bootstrap", "dataset": "enhanced_county_data.json"}]
                 if modelled
@@ -237,6 +266,20 @@ class TestCountyDebtGate:
         import main
 
         assert main.county_debt_total([self._loan(450_065_025, modelled=True)]) is None
+
+    def test_a_debt_row_without_a_resolved_source_is_withheld(self):
+        from services.financial_publication import county_debt_summary
+
+        loan = self._loan(0, modelled=False)
+        loan.source_document = None
+        result = county_debt_summary([loan])
+        assert result["total_debt"] is None
+        assert result["total_debt_absent_reason"] == "no_source_document"
+
+    def test_a_sourced_zero_debt_row_is_published(self):
+        import main
+
+        assert main.county_debt_total([self._loan(0, modelled=False)]) == 0.0
 
     def test_a_county_with_no_debt_rows_is_absent_not_zero(self):
         import main
@@ -341,8 +384,14 @@ class TestListAndDetailAgreeOnDebt:
             lender="Equity Bank",
             outstanding=500_000_000,
             principal=500_000_000,
+            currency="KES",
             provenance=[{"dataset_id": "county-debt"}],
-            source_document=None,
+            source_document=SourceDocument(
+                title="Synthetic county debt report",
+                publisher="Synthetic county publisher",
+                url="https://example.invalid/county-debt.pdf",
+                meta={"dataset_id": "county-debt"},
+            ),
         )
 
         assert main.county_debt_total([loan]) == 500_000_000
