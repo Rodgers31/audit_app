@@ -265,3 +265,159 @@ def test_amount_query_count_stays_bounded_as_findings_grow(postgres_audits):
         assert "audits.amount is null" in text_queries[0]
     finally:
         event.remove(engine, "before_cursor_execute", record)
+
+
+def test_mixed_institution_ranking_and_report_scope(postgres_audits):
+    """Real PG/HTTP fixture from #401, also call the uncached function directly."""
+    import asyncio
+    import json
+    from pathlib import Path
+    from main import get_audit_statistics
+
+    add, response, engine = postgres_audits
+    Session = sessionmaker(bind=engine)
+    with Session() as db:
+        db.add(Country(id=2, iso_code="UGA", name="Uganda", currency="UGX",
+                       timezone="Africa/Kampala", default_locale="en_UG"))
+        db.flush()
+        db.add_all([
+            Entity(id=2, country_id=1, type=EntityType.MINISTRY,
+                   canonical_name="Synthetic Ministry", slug="ministry"),
+            Entity(id=3, country_id=2, type=EntityType.COUNTY,
+                   canonical_name="Foreign County", slug="foreign"),
+            Entity(id=4, country_id=1, type=EntityType.COUNTY,
+                   canonical_name="Withheld County", slug="withheld"),
+        ])
+        db.flush()
+        for entity_id, amount, page in [(1, 100, "p.7"), (1, 0, "p.8"),
+                                       (2, 200, "p.9"), (3, 300, "p.10"),
+                                       (4, 900, None)]:
+            db.add(Audit(entity_id=entity_id, period_id=1, source_document_id=1,
+                         page_ref=page, finding_text=f"Synthetic finding for entity {entity_id}",
+                         severity=Severity.CRITICAL, amount=Decimal(amount),
+                         created_at=datetime(2025, 9, entity_id, tzinfo=timezone.utc)))
+        db.commit()
+    result = response()
+    assert result.status_code == 200, result.text
+    body = result.json()
+    # Capture observable baseline and final responses for the handoff/UI probe.
+    if os.environ.get("ROUND7S3_RESPONSE_PATH"):
+        Path(os.environ["ROUND7S3_RESPONSE_PATH"]).write_text(json.dumps(body, indent=2))
+    assert body["total_findings"] == 4
+    assert body["total_amount_flagged"] == 600
+    assert body["findings_with_amount"] == 4
+    assert body["counties_audited"] == 1
+    assert body["withheld_findings"] == 1
+    assert body["top_flagged_counties"] == [{"county": "Test", "critical_count": 2}]
+    assert body["report_title"] == "Office of the Auditor General — Institution-wide Audit Findings"
+    assert body["_meta"]["entity_scope"] == "all"
+    assert "all countries" in body["_meta"]["scope_detail"]
+    assert "all covered fiscal periods" in body["_meta"]["scope_detail"]
+    assert {row["entity_name"] for row in body["recent_critical"]} == {
+        "Test County", "Synthetic Ministry", "Foreign County"}
+    assert all(row["fiscal_year"] == "FY2024/25" for row in body["recent_critical"])
+    assert sorted(row["amount"] for row in body["recent_critical"]) == [0, 100, 200, 300]
+
+    def get_test_db():
+        with Session() as db:
+            yield db
+
+    with patch("main.get_db", get_test_db):
+        direct = asyncio.run(get_audit_statistics.__wrapped__())
+    for key in ["top_flagged_counties", "recent_critical", "total_amount_flagged", "report_title"]:
+        assert direct[key] == body[key]
+
+
+def test_ranking_multiple_periods_missing_amount_and_bounded_queries(postgres_audits):
+    add, response, engine = postgres_audits
+    add(Decimal("0"), severity=Severity.CRITICAL)
+    Session = sessionmaker(bind=engine)
+    with Session() as db:
+        for index in range(2, 9):
+            db.add(FiscalPeriod(id=index, country_id=1, label=f"FY{2023-index}/{2024-index}",
+                               start_date=datetime(2023-index, 7, 1),
+                               end_date=datetime(2024-index, 6, 30)))
+        db.commit()
+    statements = []
+
+    def record(_conn, _cursor, sql, _params, _context, _many):
+        if sql.lstrip().lower().startswith("select"):
+            statements.append(sql)
+
+    event.listen(engine, "before_cursor_execute", record)
+    try:
+        assert response().status_code == 200
+        initial_count = len(statements)
+        with Session() as db:
+            db.add_all([Audit(entity_id=1, period_id=index, source_document_id=1,
+                              page_ref="p.12", finding_text="No amount stated",
+                              severity=Severity.CRITICAL) for index in range(2, 9)])
+            db.commit()
+        statements.clear()
+        body = response().json()
+        assert body["top_flagged_counties"] == [{"county": "Test", "critical_count": 8}]
+        assert body["counties_audited"] == 1
+        assert body["total_findings"] == 8
+        assert body["total_amount_flagged"] == 0
+        assert body["findings_with_amount"] == 1
+        assert body["findings_without_amount"] == 7
+        assert body["fiscal_year"] == "FY2024/25"
+        assert len(body["fiscal_years_covered"]) == 8
+        assert len(body["recent_critical"]) == 6
+        assert len(statements) == initial_count
+        print(f"Recent-period query bound: single={initial_count}, eight={len(statements)} SELECTs")
+    finally:
+        event.remove(engine, "before_cursor_execute", record)
+
+
+def test_empty_statistics_report_scope(postgres_audits):
+    _, response, _ = postgres_audits
+    body = response().json()
+    assert body["top_flagged_counties"] == []
+    assert body["recent_critical"] == []
+    assert body["total_findings"] == body["counties_audited"] == 0
+    assert body["total_amount_flagged"] is None
+    assert body["fiscal_year"] is None
+    assert body["fiscal_years_covered"] == []
+    assert body["_meta"]["entity_scope"] == "all"
+
+
+def test_county_ranking_filters_identity_before_the_top_five_limit(postgres_audits):
+    _, response, engine = postgres_audits
+    Session = sessionmaker(bind=engine)
+    with Session() as db:
+        db.add(Country(id=2, iso_code="UGA", name="Uganda", currency="UGX",
+                       timezone="Africa/Kampala", default_locale="en_UG"))
+        db.flush()
+        db.add_all([
+            Entity(id=index, country_id=1, type=EntityType.COUNTY,
+                   canonical_name=f"County {index}", slug=f"county-{index}")
+            for index in range(2, 8)
+        ] + [
+            Entity(id=8, country_id=1, type=EntityType.MINISTRY,
+                   canonical_name="Ministry dominates", slug="ministry"),
+            Entity(id=9, country_id=2, type=EntityType.COUNTY,
+                   canonical_name="Foreign dominates", slug="foreign"),
+            Entity(id=10, country_id=1, type=EntityType.COUNTY,
+                   canonical_name="Withheld dominates", slug="withheld"),
+        ])
+        db.flush()
+        for entity_id in range(1, 11):
+            count = 1 if entity_id < 8 else entity_id
+            for _ in range(count):
+                db.add(Audit(entity_id=entity_id, period_id=1, source_document_id=1,
+                             page_ref="p.7" if entity_id != 10 else None,
+                             finding_text="Synthetic finding", severity=Severity.CRITICAL,
+                             amount=Decimal("0")))
+        db.commit()
+    body = response().json()
+    assert body["top_flagged_counties"] == [
+        {"county": "Test" if index == 1 else f"County {index}", "critical_count": 1}
+        for index in range(1, 6)
+    ]
+    assert body["counties_audited"] == 7
+    assert body["total_findings"] == 24
+    assert body["total_amount_flagged"] == 0
+    assert body["findings_with_amount"] == 24
+    assert body["withheld_findings"] == 10
+    assert len(body["recent_critical"]) == 6

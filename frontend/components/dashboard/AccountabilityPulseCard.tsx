@@ -88,7 +88,7 @@ export default function AccountabilityPulseCard() {
               Finding Distribution
             </span>
             <span className='text-xs font-semibold text-gov-dark dark:text-white tabular-nums'>
-              {stats.total_findings || total} total
+              {stats.total_findings} total
             </span>
           </div>
           <div className='flex h-3 rounded-full overflow-hidden bg-neutral-border/20'>
@@ -161,7 +161,7 @@ export default function AccountabilityPulseCard() {
         {/* Top flagged counties */}
         <div className='mb-5'>
           <p className='text-[11px] text-neutral-muted font-medium uppercase tracking-wider mb-3'>
-            Most Flagged Counties
+            Most Flagged Kenyan Counties
           </p>
           <div className='space-y-2'>
             {topCounties.map((c: any, i: number) => (
@@ -193,7 +193,7 @@ export default function AccountabilityPulseCard() {
                 {recentCritical[0].finding}
               </p>
               <p className='text-[11px] text-neutral-muted mt-1'>
-                {recentCritical[0].county} · {recentCritical[0].fiscal_year}
+                {recentCritical[0].entity_name ?? recentCritical[0].county} · {recentCritical[0].fiscal_year}
               </p>
             </div>
           </div>

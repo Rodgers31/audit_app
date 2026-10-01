@@ -5214,8 +5214,8 @@ def _plain_kes_amount_in_audit_text(
 async def get_audit_statistics():
     """Aggregate institution-wide audit findings for the dashboard.
 
-    County coverage counts eligible Kenyan counties only; severity and amount
-    totals retain all eligible institutions from the Audit table.
+    County coverage and ranking count eligible Kenyan counties only; severity
+    and amount totals retain all eligible institutions from the Audit table.
     """
     if not DATABASE_AVAILABLE:
         raise HTTPException(status_code=503, detail="Database unavailable")
@@ -5244,26 +5244,32 @@ async def get_audit_statistics():
                 )
                 .join(DBEntity, DBAudit.entity_id == DBEntity.id)
                 .filter(publishable_audit_criterion())
-                .filter(DBAudit.severity == Severity.CRITICAL)
-                .group_by(DBEntity.canonical_name)
-                .order_by(func.count(DBAudit.id).desc())
+                .join(DBCountry, DBEntity.country_id == DBCountry.id)
+                .filter(
+                    DBAudit.severity == Severity.CRITICAL,
+                    DBEntity.type == EntityType.COUNTY,
+                    DBCountry.iso_code == "KEN",
+                )
+                .group_by(DBEntity.id, DBEntity.canonical_name)
+                .order_by(func.count(DBAudit.id).desc(), DBEntity.id.asc())
                 .limit(5)
                 .all()
             )
 
             # Recent critical findings (most recent 6)
             recent_critical = (
-                db.query(DBAudit, DBEntity.canonical_name)
+                db.query(DBAudit, DBEntity.canonical_name, DBFiscalPeriod.label)
                 .filter(publishable_audit_criterion())
                 .join(DBEntity, DBAudit.entity_id == DBEntity.id)
+                .outerjoin(DBFiscalPeriod, DBAudit.period_id == DBFiscalPeriod.id)
                 .filter(DBAudit.severity == Severity.CRITICAL)
-                .order_by(DBAudit.created_at.desc())
+                .order_by(DBAudit.created_at.desc(), DBAudit.id.desc())
                 .limit(6)
                 .all()
             )
 
             recent_items = []
-            for audit, county_name in recent_critical:
+            for audit, entity_name, period_label in recent_critical:
                 amount = None
                 amount_unavailable_reason = None
                 if audit.amount is not None:
@@ -5290,20 +5296,20 @@ async def get_audit_statistics():
                             amount_unavailable_reason = "non_finite_text_amount"
                     elif ambiguous_text:
                         amount_unavailable_reason = "ambiguous_text_amount"
-                period_label = ""
-                if audit.period and hasattr(audit.period, "label"):
-                    period_label = audit.period.label
                 recent_items.append(
                     {
                         "id": audit.id,
-                        "county": county_name.replace(" County", ""),
+                        # Keep the legacy key for existing readers; the neutral
+                        # name preserves institution identity for new consumers.
+                        "county": entity_name.replace(" County", ""),
+                        "entity_name": entity_name,
                         "finding": audit.finding_text,
                         "severity": (
                             audit.severity.value if audit.severity else "unknown"
                         ),
                         "amount": amount,
                         "amount_unavailable_reason": amount_unavailable_reason,
-                        "fiscal_year": period_label,
+                        "fiscal_year": period_label or "",
                         "date": (
                             audit.created_at.isoformat() if audit.created_at else None
                         ),
@@ -5446,7 +5452,7 @@ async def get_audit_statistics():
                     for name, count in top_flagged
                 ],
                 "recent_critical": recent_items,
-                "report_title": "Office of the Auditor General — County Audit Findings",
+                "report_title": "Office of the Auditor General — Institution-wide Audit Findings",
                 # NOTE: derived from the latest period actually present in the
                 # Audit table. Returns None when the table is empty so the UI
                 # can show an honest "no audit data yet" state instead of a
@@ -5455,7 +5461,13 @@ async def get_audit_statistics():
                 "fiscal_years_covered": fiscal_years_covered,
                 "_meta": _response_meta(
                     unit="kes",
-                    entity_scope="county",
+                    entity_scope="all",
+                    scope_detail=(
+                        "Findings, severity, finite amount totals and recent critical items "
+                        "include all institution types and all countries across all covered fiscal periods. "
+                        "County coverage and top_flagged_counties include eligible Kenyan COUNTY entities only. "
+                        "Fiscal year identifies the latest covered period; amount coverage is reported separately."
+                    ),
                     fiscal_period=latest_period_label,
                     covers_through=latest_period_label,
                     cache_ttl_seconds=3600,

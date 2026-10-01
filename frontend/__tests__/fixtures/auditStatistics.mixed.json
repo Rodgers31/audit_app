@@ -1,0 +1,88 @@
+{
+  "total_findings": 4,
+  "withheld_findings": 1,
+  "withheld_findings_by_reason": {
+    "source_document_has_no_url": 0,
+    "source_document_has_invalid_url": 0,
+    "finding_text_unreadable_cid": 0,
+    "no_page_reference": 1
+  },
+  "counties_audited": 1,
+  "total_counties": 47,
+  "total_amount_flagged": 600.0,
+  "total_amount_flagged_reason": null,
+  "findings_with_amount": 4,
+  "findings_with_invalid_amount": 0,
+  "findings_with_ambiguous_text_amount": 0,
+  "findings_without_amount": 0,
+  "by_severity": {
+    "critical": 4
+  },
+  "top_flagged_counties": [
+    {
+      "county": "Test",
+      "critical_count": 2
+    }
+  ],
+  "recent_critical": [
+    {
+      "id": 4,
+      "county": "Foreign",
+      "entity_name": "Foreign County",
+      "finding": "Synthetic finding for entity 3",
+      "severity": "critical",
+      "amount": 300.0,
+      "amount_unavailable_reason": null,
+      "fiscal_year": "FY2024/25",
+      "date": "2025-09-03T00:00:00"
+    },
+    {
+      "id": 3,
+      "county": "Synthetic Ministry",
+      "entity_name": "Synthetic Ministry",
+      "finding": "Synthetic finding for entity 2",
+      "severity": "critical",
+      "amount": 200.0,
+      "amount_unavailable_reason": null,
+      "fiscal_year": "FY2024/25",
+      "date": "2025-09-02T00:00:00"
+    },
+    {
+      "id": 2,
+      "county": "Test",
+      "entity_name": "Test County",
+      "finding": "Synthetic finding for entity 1",
+      "severity": "critical",
+      "amount": 0.0,
+      "amount_unavailable_reason": null,
+      "fiscal_year": "FY2024/25",
+      "date": "2025-09-01T00:00:00"
+    },
+    {
+      "id": 1,
+      "county": "Test",
+      "entity_name": "Test County",
+      "finding": "Synthetic finding for entity 1",
+      "severity": "critical",
+      "amount": 100.0,
+      "amount_unavailable_reason": null,
+      "fiscal_year": "FY2024/25",
+      "date": "2025-09-01T00:00:00"
+    }
+  ],
+  "report_title": "Office of the Auditor General \u2014 Institution-wide Audit Findings",
+  "fiscal_year": "FY2024/25",
+  "fiscal_years_covered": [
+    "FY2024/25"
+  ],
+  "_meta": {
+    "unit": "kes",
+    "entity_scope": "all",
+    "fiscal_period": "FY2024/25",
+    "scope_detail": "Findings, severity, finite amount totals and recent critical items include all institution types and all countries across all covered fiscal periods. County coverage and top_flagged_counties include eligible Kenyan COUNTY entities only. Fiscal year identifies the latest covered period; amount coverage is reported separately.",
+    "covers_through": "FY2024/25",
+    "cache_ttl_seconds": 3600,
+    "data_quality": "official"
+  },
+  "last_updated": "2025-09-01T00:00:00"
+}
