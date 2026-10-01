@@ -12,6 +12,7 @@ import random
 import re
 import smtplib
 import sys
+import threading
 import time
 from decimal import Decimal
 from email.mime.text import MIMEText
@@ -2290,25 +2291,21 @@ async def get_seeder_status() -> JSONResponse:
         )
 
 
-@app.get("/api/v1/system/pipeline-health")
-@response_cached(ttl=30, key_prefix="pipeline_health")
-async def get_pipeline_health(db: Session = Depends(get_db)) -> dict:
-    """
-    Comprehensive pipeline health dashboard.
+# One synchronous snapshot per process, including cancelled requests whose
+# worker is still running. The response cache coalesces normal identical misses;
+# this guard also bounds bypasses, new invalidation generations and event loops.
+_pipeline_health_worker_slot = threading.BoundedSemaphore(1)
+_pipeline_health_executor = concurrent.futures.ThreadPoolExecutor(
+    max_workers=1, thread_name_prefix="pipeline-health"
+)
 
-    Returns the full picture of:
-    - Database record counts and latest observation periods
-    - Web ETL module availability
-    - Auto-seeder status and next refresh times
-    - Dedicated economic ingestion ownership (not its job health)
-    - Any warnings or errors that need attention
-    """
-    import importlib
+
+def _pipeline_health_snapshot() -> dict:
+    """Read plain snapshot values with a session owned entirely by this thread."""
+    import copy
 
     alerts: list[dict] = []
-    sources: dict = {}
     db_stats: dict = {}
-    now = datetime.datetime.now(datetime.timezone.utc)
 
     # ── 1. Check the web worker's ETL dependency ──
     # The root KNBS extractor/parser belong to no active web economic path.
@@ -2340,7 +2337,7 @@ async def get_pipeline_health(db: Session = Depends(get_db)) -> dict:
     try:
         from services.auto_seeder import get_seeder_status as _get_status
 
-        seeder_info = _get_status()
+        seeder_info = copy.deepcopy(_get_status())
     except Exception as exc:
         alerts.append(
             {
@@ -2352,95 +2349,97 @@ async def get_pipeline_health(db: Session = Depends(get_db)) -> dict:
 
     # ── 3. Database record counts + freshness ──
     try:
-        from models import DebtCategory as _DebtCategory
+        from database import SessionLocal
 
-        entity_count = db.query(DBEntity).count()
-        county_count = (
-            db.query(DBEntity).filter(DBEntity.type == EntityType.COUNTY).count()
-        )
-        national_entity = (
-            db.query(DBEntity).filter(DBEntity.type == EntityType.NATIONAL).first()
-        )
-
-        db_stats["entities"] = {
-            "total": entity_count,
-            "counties": county_count,
-            "has_national": national_entity is not None,
-        }
-
-        # Population data
-        pop_count = db.query(DBPopulationData).count()
-        latest_pop = (
-            db.query(DBPopulationData).order_by(DBPopulationData.year.desc()).first()
-        )
-        db_stats["population"] = {
-            "records": pop_count,
-            "latest_year": latest_pop.year if latest_pop else None,
-        }
-
-        # Economic indicators
-        econ_count = db.query(DBEconomicIndicator).count()
-        latest_econ = (
-            db.query(DBEconomicIndicator)
-            .order_by(DBEconomicIndicator.indicator_date.desc())
-            .first()
-        )
-        db_stats["economic_indicators"] = {
-            "records": econ_count,
-            "latest_year": (
-                latest_econ.indicator_date.year
-                if latest_econ and latest_econ.indicator_date
-                else None
-            ),
-        }
-
-        # Debt categories (use Loan table — DebtCategory is an enum, not a table)
-        debt_categories = db.query(DBLoan.debt_category).distinct().count()
-        db_stats["debt_categories"] = {"records": debt_categories}
-
-        # Loans
-        loan_count = db.query(DBLoan).count()
-        db_stats["loans"] = {"records": loan_count}
-
-        # Source documents
-        doc_count = db.query(DBSourceDocument).count()
-        db_stats["source_documents"] = {"records": doc_count}
-
-        # Data quality checks
-        if county_count < 47:
-            alerts.append(
-                {
-                    "level": "warning",
-                    "source": "database",
-                    "message": f"Only {county_count}/47 counties in database.",
-                }
+        with SessionLocal() as db:
+            entity_count = db.query(DBEntity).count()
+            county_count = (
+                db.query(DBEntity).filter(DBEntity.type == EntityType.COUNTY).count()
             )
-        if pop_count == 0:
-            alerts.append(
-                {
-                    "level": "warning",
-                    "source": "population",
-                    "message": "No population records; check the dedicated population seeding job.",
-                }
+            national_entity = (
+                db.query(DBEntity).filter(DBEntity.type == EntityType.NATIONAL).first()
             )
-        if econ_count == 0:
-            alerts.append(
-                {
-                    "level": "warning",
-                    "source": "economic",
-                    "message": "No economic indicator records; check the dedicated economic_indicators seeding job.",
-                }
+
+            db_stats["entities"] = {
+                "total": entity_count,
+                "counties": county_count,
+                "has_national": national_entity is not None,
+            }
+
+            # Population data
+            pop_count = db.query(DBPopulationData).count()
+            latest_pop = (
+                db.query(DBPopulationData).order_by(DBPopulationData.year.desc()).first()
             )
-        if loan_count == 0:
-            alerts.append(
-                {
-                    "level": "warning",
-                    "source": "debt",
-                    "message": "No loan records in database. Bootstrap may not have run.",
-                }
+            db_stats["population"] = {
+                "records": pop_count,
+                "latest_year": latest_pop.year if latest_pop else None,
+            }
+
+            # Economic indicators
+            econ_count = db.query(DBEconomicIndicator).count()
+            latest_econ = (
+                db.query(DBEconomicIndicator)
+                .order_by(DBEconomicIndicator.indicator_date.desc())
+                .first()
             )
+            db_stats["economic_indicators"] = {
+                "records": econ_count,
+                "latest_year": (
+                    latest_econ.indicator_date.year
+                    if latest_econ and latest_econ.indicator_date
+                    else None
+                ),
+            }
+
+            # Debt categories (use Loan table — DebtCategory is an enum, not a table)
+            debt_categories = db.query(DBLoan.debt_category).distinct().count()
+            db_stats["debt_categories"] = {"records": debt_categories}
+
+            # Loans
+            loan_count = db.query(DBLoan).count()
+            db_stats["loans"] = {"records": loan_count}
+
+            # Source documents
+            doc_count = db.query(DBSourceDocument).count()
+            db_stats["source_documents"] = {"records": doc_count}
+
+            # Data quality checks
+            if county_count < 47:
+                alerts.append(
+                    {
+                        "level": "warning",
+                        "source": "database",
+                        "message": f"Only {county_count}/47 counties in database.",
+                    }
+                )
+            if pop_count == 0:
+                alerts.append(
+                    {
+                        "level": "warning",
+                        "source": "population",
+                        "message": "No population records; check the dedicated population seeding job.",
+                    }
+                )
+            if econ_count == 0:
+                alerts.append(
+                    {
+                        "level": "warning",
+                        "source": "economic",
+                        "message": "No economic indicator records; check the dedicated economic_indicators seeding job.",
+                    }
+                )
+            if loan_count == 0:
+                alerts.append(
+                    {
+                        "level": "warning",
+                        "source": "debt",
+                        "message": "No loan records in database. Bootstrap may not have run.",
+                    }
+                )
 
     except Exception as exc:
+        db_stats.clear()
         logger.error(f"Error checking database stats: {exc}")
         alerts.append(
             {
@@ -2450,9 +2449,61 @@ async def get_pipeline_health(db: Session = Depends(get_db)) -> dict:
             }
         )
 
-    # ── 4. Data source reachability (non-blocking quick check) ──
-    import httpx
+    return {
+        "alerts": alerts,
+        "database": db_stats,
+        "modules": module_status,
+        "auto_seeder": seeder_info,
+    }
 
+
+def _pipeline_health_snapshot_done(future: concurrent.futures.Future) -> None:
+    # Observe the physical worker completion, including queued-work cancellation.
+    # Cancelling an asyncio waiter cannot release capacity while SQL still runs.
+    _pipeline_health_worker_slot.release()
+    if not future.cancelled():
+        exc = future.exception()
+        if exc is not None:
+            logger.error(
+                "Pipeline health snapshot failed",
+                exc_info=(type(exc), exc, exc.__traceback__),
+            )
+
+
+def _observe_pipeline_health_waiter(future: asyncio.Future) -> None:
+    # shield() lets the worker finish after a caller cancels. Retrieve the
+    # asyncio wrapper's exception too; the physical completion callback logs it.
+    if not future.cancelled():
+        future.exception()
+
+
+@app.get("/api/v1/system/pipeline-health")
+@response_cached(ttl=30, key_prefix="pipeline_health")
+async def get_pipeline_health() -> dict:
+    """Report database, web ETL and source health without blocking the event loop."""
+    now = datetime.datetime.now(datetime.timezone.utc)
+    if not _pipeline_health_worker_slot.acquire(blocking=False):
+        raise HTTPException(
+            status_code=503,
+            detail="Pipeline health snapshot is still running; retry shortly.",
+            headers={"Retry-After": "1"},
+        )
+    try:
+        future = _pipeline_health_executor.submit(_pipeline_health_snapshot)
+    except BaseException:
+        _pipeline_health_worker_slot.release()
+        raise
+    future.add_done_callback(_pipeline_health_snapshot_done)
+    waiter = asyncio.wrap_future(future)
+    waiter.add_done_callback(_observe_pipeline_health_waiter)
+    snapshot = await asyncio.shield(waiter)
+    alerts = snapshot["alerts"]
+    db_stats = snapshot["database"]
+    module_status = snapshot["modules"]
+    seeder_info = snapshot["auto_seeder"]
+    sources: dict = {}
+
+    # ── 4. Data source reachability (non-blocking quick check) ──
     source_urls = {
         "knbs": {
             "url": "https://www.knbs.or.ke",
@@ -2490,9 +2541,7 @@ async def get_pipeline_health(db: Session = Depends(get_db)) -> dict:
                 "error": str(exc),
             }
 
-    import asyncio as _aio
-
-    source_results = await _aio.gather(
+    source_results = await asyncio.gather(
         *[_check_source(k, v) for k, v in source_urls.items()],
         return_exceptions=True,
     )
