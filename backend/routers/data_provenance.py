@@ -1,8 +1,8 @@
 """
-Data Provenance Router — provides verifiable source citations for all data.
+Data Provenance Router — registry, stored lineage and qualified citations.
 
-Every number on the site can be traced back to an official government source.
-This is critical for credibility: if users can verify the data, they trust it.
+A supported publisher is not evidence that an observation was checked.
+These endpoints do not fetch or validate source-document bytes.
 
 GET /api/v1/provenance/sources       — list all data sources with URLs
 GET /api/v1/provenance/verify/{table} — verify a specific data point
@@ -15,11 +15,11 @@ import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 from urllib.parse import parse_qs, unquote, urlsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import desc, func
 from sqlalchemy.orm import Session
 
@@ -67,8 +67,7 @@ router = APIRouter(prefix="/api/v1/provenance", tags=["Data Provenance"])
 logger = logging.getLogger(__name__)
 
 
-# ── Official Kenya government data sources ────────────────────────
-# These are the ONLY sources we cite. Every number must trace back here.
+# ── Supported publisher registry (not active use or verification) ──
 OFFICIAL_SOURCES = {
     "knbs": {
         "name": "Kenya National Bureau of Statistics (KNBS)",
@@ -185,7 +184,7 @@ OFFICIAL_SOURCES = {
             {
                 "name": "World Development Indicators",
                 "url": "https://data.worldbank.org/indicator?locations=KE",
-                "covers": "GDP (cross-validated), poverty rates, Gini coefficient",
+                "covers": "GDP, population, poverty rates, Gini coefficient",
                 "frequency": "Annual",
             },
         ],
@@ -201,6 +200,14 @@ class DataSourceInfo(BaseModel):
     name: str
     url: str
     datasets: List[Dict[str, str]]
+    scope: Literal["supported_publisher_registry"] = "supported_publisher_registry"
+    document_bytes_checked: Literal[False] = False
+
+
+class RepresentedPublisher(BaseModel):
+    source_id: str
+    name: str
+    row_count: int
 
 
 class TableHealth(BaseModel):
@@ -216,6 +223,16 @@ class TableHealth(BaseModel):
     # while its caption claimed to answer "is it current?".
     age_days: Optional[int] = None
     stale_after_days: Optional[int] = None
+    attribution_status: Literal[
+        "empty", "single_publisher", "mixed_publishers", "partial", "unresolved"
+    ] = "unresolved"
+    attribution_basis: Literal[
+        "coherent_observation_identity", "stored_document_links", "unavailable"
+    ] = "unavailable"
+    represented_publishers: List[RepresentedPublisher] = Field(default_factory=list)
+    unresolved_source_rows: int = 0
+    attribution_reasons: Dict[str, int] = Field(default_factory=dict)
+    document_bytes_checked: Literal[False] = False
 
 
 class ProvenanceHealthResponse(BaseModel):
@@ -223,7 +240,8 @@ class ProvenanceHealthResponse(BaseModel):
     tables: List[TableHealth]
     total_source_documents: int
     last_ingestion: Optional[str] = None
-    sources_cited: int
+    sources_cited: int  # distinct supported publishers represented in health cohorts
+    supported_publisher_count: int
     checked_at: str
 
 
@@ -838,14 +856,14 @@ def _fiscal_year_matches(column, year: int):
 @router.get(
     "/sources",
     response_model=List[DataSourceInfo],
-    summary="List All Official Data Sources",
+    summary="List Supported Publisher Registry",
 )
 async def list_data_sources():
     """
-    Returns all official government data sources used by AuditGava.
+    Return supported publisher coverage, independent of database contents.
 
-    Every data point on the site can be traced back to one of these sources.
-    This endpoint is public so citizens can independently verify our data.
+    Registry membership does not establish active lineage, cross-validation or
+    document-byte verification. Health reports the stored cohorts separately.
     """
     return [
         DataSourceInfo(
@@ -865,10 +883,10 @@ async def list_data_sources():
 # cycle plus a grace period is stale whatever its row count says.
 _STALE_AFTER_DAYS = {
     "entities": 3650,           # county list — changes only by constitutional amendment
-    "population_data": 3650,    # census
+    "population_data": 3650,    # existing table-wide budget; not publisher attribution
     "budget_lines": 180,        # CoB quarterly + lag
     "audits": 550,              # OAG annual + lag
-    "gdp_data": 550,            # KNBS Economic Survey, annual
+    "gdp_data": 550,            # existing annual table-wide budget
     "economic_indicators": 120,  # CPI monthly + lag
     "poverty_indices": 730,     # World Bank, irregular
     "loans": 240,               # CBK Statistical Bulletin, biannual + lag
@@ -941,6 +959,318 @@ def _apply_freshness(table: "TableHealth", db, model) -> "TableHealth":
     return table
 
 
+# Bounded aliases for registry attribution; unknown/composite labels do not
+# become a supported publisher by substring or by choosing the first agency.
+_PUBLISHER_ALIASES = {
+    "world bank": "worldbank",
+    "world bank open data": "worldbank",
+    "knbs": "knbs",
+    "kenya national bureau of statistics": "knbs",
+    "kenya national bureau of statistics (knbs)": "knbs",
+    "cbk": "cbk",
+    "central bank of kenya": "cbk",
+    "central bank of kenya (cbk)": "cbk",
+    "oag": "oag",
+    "office of the auditor general": "oag",
+    "office of the auditor general (oag)": "oag",
+    "cob": "cob",
+    "controller of budget": "cob",
+    "controller of budget (cob)": "cob",
+    "office of the controller of budget": "cob",
+    "office of the controller of budget (ocob)": "cob",
+    "national treasury": "treasury",
+    "national treasury & planning": "treasury",
+    "national treasury kenya": "treasury",
+    "national treasury of kenya": "treasury",
+}
+_PUBLISHER_HOSTS = {
+    "worldbank": {"api.worldbank.org", "data.worldbank.org"},
+    "knbs": {"knbs.or.ke"},
+    "cbk": {"centralbank.go.ke"},
+    "oag": {"oagkenya.go.ke"},
+    "cob": {"cob.go.ke"},
+    "treasury": {"treasury.go.ke"},
+}
+
+
+def _health_publisher_label(label):
+    if not isinstance(label, str):
+        return None
+    return " ".join(re.sub(r"[\u2010-\u2015-]", " ", label.strip().casefold()).split())
+
+
+def _health_publisher_id(label):
+    normalized = _health_publisher_label(label)
+    if normalized is None:
+        return None
+    if re.fullmatch(r"world bank development indicators \(\d{4}\)", normalized):
+        return "worldbank"
+    if re.fullmatch(r"(?:knbs|kenya) census \d{4}", normalized):
+        return "knbs"
+    return _PUBLISHER_ALIASES.get(normalized)
+
+
+def _health_document_reason(doc):
+    """Check stored identity only; no URL request, page or digest validation."""
+    if doc is None:
+        return "no resolvable source document"
+    if (
+        not isinstance(doc.title, str)
+        or not doc.title.strip()
+        or doc.meta is not None
+        and not isinstance(doc.meta, dict)
+    ):
+        return "missing or malformed document identity"
+    publisher_id = _health_publisher_id(doc.publisher)
+    if publisher_id is None:
+        return "unsupported or ambiguous document publisher"
+    if not safe_source_url(doc.url):
+        return "no safe source document URL"
+    host = urlsplit(doc.url).hostname
+    if not any(
+        host == domain or host.endswith("." + domain)
+        for domain in _PUBLISHER_HOSTS[publisher_id]
+    ):
+        return "conflicting document publisher and URL"
+    meta = doc.meta or {}
+    if (
+        "source" in meta
+        and _health_publisher_id(meta["source"]) != publisher_id
+        or "source_url" in meta
+        and meta["source_url"] != doc.url
+    ):
+        return "conflicting document publisher identity"
+    return None
+
+
+def _health_population_label_year_conflicts(label, year):
+    normalized = _health_publisher_label(label)
+    if normalized is None:
+        return False  # Unsupported labels are refused by the publisher check.
+    match = re.fullmatch(
+        r"(?:world bank development indicators \((\d{4})\)|(?:knbs|kenya) census (\d{4}))",
+        normalized,
+    )
+    return bool(match and int(next(v for v in match.groups() if v)) != year)
+
+
+def _health_population_reason(db, row, doc):
+    """Refuse malformed/contradictory declarations in the health inventory.
+
+    This supplements the accepted selected-row helper without changing its
+    verification contract. None of these stored checks validates source bytes.
+    """
+    if type(row.total_population) is not int or row.total_population < 0:
+        return "invalid population amount"
+    evidence = [row.meta]
+    publisher_id = _health_publisher_id(
+        doc.publisher
+        if doc
+        else (row.meta.get("source") if isinstance(row.meta, dict) else None)
+    )
+    url = (
+        doc.url
+        if doc
+        else (row.meta.get("source_url") if isinstance(row.meta, dict) else None)
+    )
+    if doc is not None:
+        country = db.query(Country).filter(Country.id == doc.country_id).first()
+        if country is None or country.iso_code != "KEN":
+            return "conflicting population country identity"
+        evidence.append(doc.meta)
+        if _health_population_label_year_conflicts(doc.publisher, row.year):
+            return "conflicting population document publisher-label year"
+        if re.search(r"\bGDP\b|gross domestic product", doc.title, re.I):
+            return "conflicting population document measure"
+    if row.entity_id is not None:
+        entity = db.query(Entity).filter(Entity.id == row.entity_id).first()
+        country = (
+            db.query(Country).filter(Country.id == entity.country_id).first()
+            if entity
+            else None
+        )
+        if (
+            entity is None
+            or country is None
+            or country.iso_code != "KEN"
+            or entity.type not in {EntityType.COUNTY, EntityType.NATIONAL}
+            or doc is not None
+            and entity.country_id != doc.country_id
+        ):
+            return "conflicting population entity identity"
+    if row.extraction_id is not None:
+        extraction = (
+            db.query(Extraction).filter(Extraction.id == row.extraction_id).first()
+        )
+        if (
+            doc is None
+            or extraction is None
+            or extraction.source_document_id != doc.id
+            or row.source_page is not None
+            and extraction.page_number != row.source_page
+            or not isinstance(extraction.extracted_json, dict)
+        ):
+            return "conflicting or malformed population extraction identity"
+        evidence.append(extraction.extracted_json)
+    supported_dataset = (
+        "SP.POP.TOTL" if publisher_id == "worldbank" else f"knbs_census_{row.year}"
+    )
+    for item in evidence:
+        if item is None:
+            continue
+        if not isinstance(item, dict):
+            return "malformed population source metadata"
+        source = item.get("source")
+        if "source" in item:
+            if _health_publisher_id(source) != publisher_id or publisher_id is None:
+                return "conflicting or ambiguous population publisher identity"
+            if _health_population_label_year_conflicts(source, row.year):
+                return "conflicting population source-label year"
+        if "source_url" in item and item["source_url"] != url:
+            return "conflicting population source URL identity"
+        for key, expected in (
+            ("year", row.year),
+            ("census_year", row.year),
+            ("entity_id", row.entity_id),
+            ("country_code", "KEN"),
+        ):
+            if key in item and (
+                type(item[key]) is not type(expected) or item[key] != expected
+            ):
+                return "conflicting population observation identity"
+        for key in ("total_population", "value"):
+            if key in item and (
+                type(item[key]) is not int or item[key] != row.total_population
+            ):
+                return "conflicting population amount identity"
+        declarations = [item]
+        for plural, singular in (
+            ("datasets", "dataset_id"),
+            ("indicators", "indicator"),
+            ("measures", "measure"),
+        ):
+            if plural in item:
+                values = item[plural]
+                if (
+                    not isinstance(values, list)
+                    or not values
+                    or any(not isinstance(v, str) for v in values)
+                ):
+                    return "malformed population evidence declarations"
+                declarations.extend({singular: value} for value in values)
+        for declaration in declarations:
+            for key in ("dataset_id", "dataset", "indicator"):
+                if key in declaration and declaration[key] != supported_dataset:
+                    return "conflicting population dataset identity"
+            if "measure" in declaration and (
+                not isinstance(declaration["measure"], str)
+                or declaration["measure"].strip().casefold()
+                not in {
+                    "population",
+                    "total population",
+                    "population, total",
+                    "population census",
+                }
+            ):
+                return "conflicting population measure identity"
+    return None
+
+
+def _attribute_health_cohort(table, db, model, cohort):
+    """Describe counted stored lineage without changing completeness/freshness.
+
+    GDP/population reuse their accepted observation identity helpers. Other
+    tables only inventory linked documents: no claim of measure/observation
+    validation. Explicit reasons account for every unattributed counted row.
+    """
+    counts = {}
+    reasons = {}
+
+    def add(publisher_id, reason, count=1):
+        target, key = (reasons, reason) if reason else (counts, publisher_id)
+        target[key] = target.get(key, 0) + count
+
+    if model in {GDPData, PopulationData}:
+        table.attribution_basis = "coherent_observation_identity"
+        for row in cohort:
+            reason = None
+            doc = None
+            if row.source_document_id is not None:
+                doc = (
+                    db.query(SourceDocument)
+                    .filter(SourceDocument.id == row.source_document_id)
+                    .first()
+                )
+                reason = _health_document_reason(doc)
+            if reason is None and model is PopulationData:
+                reason = _health_population_reason(db, row, doc)
+            evidence = DataPointVerification(
+                table=table.table, verification_status="unverified"
+            )
+            if reason is None:
+                attach = (
+                    _attach_gdp_evidence
+                    if model is GDPData
+                    else _attach_population_evidence
+                )
+                attach(evidence, db, row)
+                reason = evidence.reason
+            publisher_id = None
+            if reason is None and evidence.provenance_chain:
+                hint = evidence.provenance_chain[0]
+                if doc is not None and hint.get("source_document_id") != doc.id:
+                    reason = "conflicting observation source-document reference"
+                publisher_id = _health_publisher_id(hint.get("source"))
+                if publisher_id is None:
+                    reason = "unsupported or ambiguous observation publisher"
+            elif reason is None:
+                reason = "missing observation source identity"
+            add(publisher_id, reason)
+    elif hasattr(model, "source_document_id"):
+        table.attribution_basis = "stored_document_links"
+        # One grouped SQL query and one document lookup, independent of row count.
+        links = (
+            cohort.with_entities(model.source_document_id, func.count(model.id))
+            .group_by(model.source_document_id)
+            .all()
+        )
+        documents = {
+            doc.id: doc
+            for doc in db.query(SourceDocument).filter(
+                SourceDocument.id.in_([sid for sid, _ in links if sid is not None])
+            )
+        }
+        for source_id, count in links:
+            doc = documents.get(source_id)
+            reason = _health_document_reason(doc)
+            add(_health_publisher_id(doc.publisher) if doc else None, reason, count)
+    else:
+        table.attribution_basis = "unavailable"
+        if table.row_count:
+            add(None, "no row-level source-document attribution", table.row_count)
+
+    table.represented_publishers = [
+        RepresentedPublisher(
+            source_id=key, name=OFFICIAL_SOURCES[key]["name"], row_count=count
+        )
+        for key, count in sorted(counts.items())
+    ]
+    table.attribution_reasons = reasons
+    table.unresolved_source_rows = sum(reasons.values())
+    table.source = None
+    if table.row_count == 0:
+        table.attribution_status = "empty"
+    elif not counts:
+        table.attribution_status = "unresolved"
+    elif reasons:
+        table.attribution_status = "partial"
+    elif len(counts) > 1:
+        table.attribution_status = "mixed_publishers"
+    else:
+        table.attribution_status = "single_publisher"
+        table.source = table.represented_publishers[0].name
+
+
 @router.get(
     "/health",
     response_model=ProvenanceHealthResponse,
@@ -964,7 +1294,6 @@ async def get_data_health(db: Session = Depends(get_db)):
         table="entities",
         label="Counties",
         row_count=county_count,
-        source="KNBS Census 2019",
         status="healthy" if county_count >= 47 else "critical" if county_count == 0 else "degraded",
     ), db, Entity))
 
@@ -974,7 +1303,6 @@ async def get_data_health(db: Session = Depends(get_db)):
         table="budget_lines",
         label="Budget Lines",
         row_count=budget_count,
-        source="COB County Budget Reports",
         status="healthy" if budget_count >= 400 else "critical" if budget_count == 0 else "degraded",
     ), db, BudgetLine))
 
@@ -989,7 +1317,6 @@ async def get_data_health(db: Session = Depends(get_db)):
         table="audits",
         label="Audit Findings",
         row_count=audit_count,
-        source="OAG Audit Reports",
         status="healthy" if audits_with_year >= 50 else "degraded" if audit_count > 0 else "empty",
         notes=(
             f"{audits_with_year} publishable with audit_year; "
@@ -1005,7 +1332,6 @@ async def get_data_health(db: Session = Depends(get_db)):
         label="Population Data",
         row_count=pop_count,
         latest_date=f"Year {nat_pop.year}" if nat_pop else None,
-        source="KNBS Census 2019",
         status="healthy" if pop_count >= 48 and nat_pop else "degraded" if pop_count > 0 else "empty",
     ), db, PopulationData))
 
@@ -1017,7 +1343,6 @@ async def get_data_health(db: Session = Depends(get_db)):
         label="GDP Data",
         row_count=gdp_count,
         latest_date=f"Year {latest_gdp.year}" if latest_gdp else None,
-        source="KNBS Economic Survey",
         status="healthy" if gdp_count >= 5 else "degraded" if gdp_count > 0 else "empty",
     ), db, GDPData))
 
@@ -1029,7 +1354,6 @@ async def get_data_health(db: Session = Depends(get_db)):
         label="Economic Indicators",
         row_count=econ_count,
         latest_date=latest_econ.indicator_date.isoformat() if latest_econ else None,
-        source="KNBS / CBK",
         status="healthy" if econ_count >= 5 else "degraded" if econ_count > 0 else "empty",
     ), db, EconomicIndicator))
 
@@ -1039,7 +1363,6 @@ async def get_data_health(db: Session = Depends(get_db)):
         table="poverty_indices",
         label="Poverty Data",
         row_count=poverty_count,
-        source="KNBS / World Bank",
         status="healthy" if poverty_count >= 1 else "empty",
     ), db, PovertyIndex))
 
@@ -1049,7 +1372,6 @@ async def get_data_health(db: Session = Depends(get_db)):
         table="loans",
         label="Debt Records",
         row_count=loan_count,
-        source="CBK Public Debt Bulletin",
         status="healthy" if loan_count >= 50 else "degraded" if loan_count > 0 else "empty",
     ), db, Loan))
 
@@ -1059,7 +1381,6 @@ async def get_data_health(db: Session = Depends(get_db)):
         table="debt_timeline",
         label="Debt Timeline",
         row_count=debt_tl_count,
-        source="CBK Annual Reports",
         status="healthy" if debt_tl_count >= 5 else "degraded" if debt_tl_count > 0 else "empty",
     ), db, DebtTimeline))
 
@@ -1069,9 +1390,26 @@ async def get_data_health(db: Session = Depends(get_db)):
         table="fiscal_summaries",
         label="Fiscal Summaries",
         row_count=fiscal_count,
-        source="National Treasury BPS",
         status="healthy" if fiscal_count >= 3 else "degraded" if fiscal_count > 0 else "empty",
     ), db, FiscalSummary))
+
+    # Attribute the exact counted cohorts. Audit counts exclude withheld rows;
+    # county counts exclude noncounty entities. Counts/freshness never grade bytes.
+    cohorts = {
+        "entities": (Entity, db.query(Entity).filter(Entity.type == EntityType.COUNTY)),
+        "budget_lines": (BudgetLine, db.query(BudgetLine)),
+        "audits": (Audit, publishable_audits),
+        "population_data": (PopulationData, db.query(PopulationData)),
+        "gdp_data": (GDPData, db.query(GDPData)),
+        "economic_indicators": (EconomicIndicator, db.query(EconomicIndicator)),
+        "poverty_indices": (PovertyIndex, db.query(PovertyIndex)),
+        "loans": (Loan, db.query(Loan)),
+        "debt_timeline": (DebtTimeline, db.query(DebtTimeline)),
+        "fiscal_summaries": (FiscalSummary, db.query(FiscalSummary)),
+    }
+    for table in tables:
+        model, cohort = cohorts[table.table]
+        _attribute_health_cohort(table, db, model, cohort)
 
     # Overall stats
     source_doc_count = db.query(SourceDocument).count()
@@ -1098,7 +1436,11 @@ async def get_data_health(db: Session = Depends(get_db)):
         tables=tables,
         total_source_documents=source_doc_count,
         last_ingestion=latest_job.finished_at.isoformat() if latest_job and latest_job.finished_at else None,
-        sources_cited=len(OFFICIAL_SOURCES),
+        sources_cited=len({
+            publisher.source_id
+            for table in tables for publisher in table.represented_publishers
+        }),
+        supported_publisher_count=len(OFFICIAL_SOURCES),
         checked_at=datetime.now(timezone.utc).isoformat(),
     )
 

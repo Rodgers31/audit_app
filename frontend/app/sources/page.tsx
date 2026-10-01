@@ -1,9 +1,8 @@
 /**
  * Unified Data Sources page
  *
- * Every number on AuditGava traces back to a document published by a
- * Kenyan government agency. This page answers the first question every
- * critical reader asks: *where did you get this?*
+ * Displays the indexed-document manifest and stored dataset lineage.
+ * Publisher presence and freshness do not establish figure verification.
  */
 'use client';
 
@@ -35,7 +34,11 @@ interface TableHealth {
   table: string;
   label: string;
   row_count: number;
-  source: string;
+  source: string | null;
+  attribution_status?: 'empty' | 'single_publisher' | 'mixed_publishers' | 'partial' | 'unresolved';
+  attribution_basis?: 'coherent_observation_identity' | 'stored_document_links' | 'unavailable';
+  represented_publishers?: { source_id: string; name: string; row_count: number }[];
+  unresolved_source_rows?: number;
   status: string; // healthy | stale | degraded | critical | empty
   notes?: string | null;
   /** Days since the newest row changed, and the threshold it is judged
@@ -186,7 +189,7 @@ export default function SourcesPage() {
   return (
     <PageShell
       title='Where the data comes from'
-      subtitle='AuditGava aggregates what Kenyan government agencies already publish. Most figures here trace to a named document; where one does not, the page carrying it says so and names the method instead. No private sources, no opinion.'>
+      subtitle='AuditGava aggregates Kenyan public data from government agencies and international publishers. Most figures here trace to a named document; where one does not, the page carrying it says so and names the method instead. No private sources, no opinion.'>
       <div className='space-y-6'>
         {/* Hero stat strip */}
         <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border px-5 py-4 flex flex-wrap items-center gap-6'>
@@ -286,11 +289,12 @@ export default function SourcesPage() {
             <p className='text-xs text-gray-500 dark:text-neutral-muted/80 mb-4 max-w-2xl'>
               Each dataset behind the site: how many rows it holds, and how long
               since any of them changed. <strong>Current</strong> means the table
-              has enough rows AND has moved within its publisher&apos;s own
-              reporting cycle. <strong>Stale</strong> means it has stopped moving
+              has enough rows AND has moved within the table&apos;s freshness
+              budget. <strong>Stale</strong> means it has stopped moving
               — the rows are still there, but nothing new has arrived when
               something should have. Neither status checks whether a figure is
-              <em> correct</em>; that is what the source links are for.
+              <em> correct</em>. Stored lineage below describes recorded publisher
+              identity; it does not validate document bytes or cross-check figures.
             </p>
             <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'>
               {healthTables.map((tb) => {
@@ -315,8 +319,29 @@ export default function SourcesPage() {
                         rows
                       </span>
                     </div>
-                    <div className='text-[11px] text-gray-500 dark:text-neutral-muted/80 truncate'>
-                      {tb.source}
+                    <div className='text-[11px] text-gray-500 dark:text-neutral-muted/80'>
+                      {tb.attribution_status === 'empty' ? 'No stored rows to attribute'
+                        : tb.attribution_status === 'mixed_publishers' ? 'Mixed stored lineage'
+                        : tb.attribution_status === 'partial' ? 'Partial stored lineage'
+                        : tb.attribution_status === 'unresolved' ? 'Stored lineage unresolved'
+                        : tb.attribution_basis === 'stored_document_links' ? 'Linked document publisher'
+                        : tb.attribution_status === 'single_publisher' ? 'Stored observation lineage'
+                        : tb.source || 'Stored lineage unavailable'}
+                      {tb.attribution_basis === 'stored_document_links' && (
+                        <div>Linked documents only; observation evidence not assessed</div>
+                      )}
+                      {tb.represented_publishers?.map((publisher) => (
+                        <div key={publisher.source_id}>
+                          {publisher.name} · {publisher.row_count.toLocaleString()}{' '}
+                          {publisher.row_count === 1 ? 'row' : 'rows'}
+                        </div>
+                      ))}
+                      {tb.unresolved_source_rows != null && tb.unresolved_source_rows > 0 && (
+                        <div>
+                          {tb.unresolved_source_rows.toLocaleString()}{' '}
+                          {tb.unresolved_source_rows === 1 ? 'row' : 'rows'} without resolved lineage
+                        </div>
+                      )}
                     </div>
                     {tb.age_days != null && (
                       <div className='text-[11px] text-gray-400 dark:text-neutral-muted/70'>

@@ -1,0 +1,241 @@
+{
+  "empty": {
+    "tables": [
+      {
+        "table": "population_data",
+        "label": "Population Data",
+        "row_count": 0,
+        "latest_date": null,
+        "source": null,
+        "status": "empty",
+        "notes": null,
+        "age_days": null,
+        "stale_after_days": 3650,
+        "attribution_status": "empty",
+        "attribution_basis": "coherent_observation_identity",
+        "represented_publishers": [],
+        "unresolved_source_rows": 0,
+        "attribution_reasons": {},
+        "document_bytes_checked": false
+      },
+      {
+        "table": "gdp_data",
+        "label": "GDP Data",
+        "row_count": 0,
+        "latest_date": null,
+        "source": null,
+        "status": "empty",
+        "notes": null,
+        "age_days": null,
+        "stale_after_days": 550,
+        "attribution_status": "empty",
+        "attribution_basis": "coherent_observation_identity",
+        "represented_publishers": [],
+        "unresolved_source_rows": 0,
+        "attribution_reasons": {},
+        "document_bytes_checked": false
+      }
+    ]
+  },
+  "worldbank_zero": {
+    "tables": [
+      {
+        "table": "population_data",
+        "label": "Population Data",
+        "row_count": 0,
+        "latest_date": null,
+        "source": null,
+        "status": "empty",
+        "notes": null,
+        "age_days": null,
+        "stale_after_days": 3650,
+        "attribution_status": "empty",
+        "attribution_basis": "coherent_observation_identity",
+        "represented_publishers": [],
+        "unresolved_source_rows": 0,
+        "attribution_reasons": {},
+        "document_bytes_checked": false
+      },
+      {
+        "table": "gdp_data",
+        "label": "GDP Data",
+        "row_count": 1,
+        "latest_date": "Year 2022",
+        "source": "World Bank Open Data",
+        "status": "degraded",
+        "notes": null,
+        "age_days": 0,
+        "stale_after_days": 550,
+        "attribution_status": "single_publisher",
+        "attribution_basis": "coherent_observation_identity",
+        "represented_publishers": [
+          {
+            "source_id": "worldbank",
+            "name": "World Bank Open Data",
+            "row_count": 1
+          }
+        ],
+        "unresolved_source_rows": 0,
+        "attribution_reasons": {},
+        "document_bytes_checked": false
+      }
+    ]
+  },
+  "mixed": {
+    "tables": [
+      {
+        "table": "population_data",
+        "label": "Population Data",
+        "row_count": 0,
+        "latest_date": null,
+        "source": null,
+        "status": "empty",
+        "notes": null,
+        "age_days": null,
+        "stale_after_days": 3650,
+        "attribution_status": "empty",
+        "attribution_basis": "coherent_observation_identity",
+        "represented_publishers": [],
+        "unresolved_source_rows": 0,
+        "attribution_reasons": {},
+        "document_bytes_checked": false
+      },
+      {
+        "table": "gdp_data",
+        "label": "GDP Data",
+        "row_count": 2,
+        "latest_date": "Year 2024",
+        "source": null,
+        "status": "degraded",
+        "notes": null,
+        "age_days": 0,
+        "stale_after_days": 550,
+        "attribution_status": "mixed_publishers",
+        "attribution_basis": "coherent_observation_identity",
+        "represented_publishers": [
+          {
+            "source_id": "knbs",
+            "name": "Kenya National Bureau of Statistics (KNBS)",
+            "row_count": 1
+          },
+          {
+            "source_id": "worldbank",
+            "name": "World Bank Open Data",
+            "row_count": 1
+          }
+        ],
+        "unresolved_source_rows": 0,
+        "attribution_reasons": {},
+        "document_bytes_checked": false
+      }
+    ]
+  },
+  "partial_conflict": {
+    "tables": [
+      {
+        "table": "population_data",
+        "label": "Population Data",
+        "row_count": 0,
+        "latest_date": null,
+        "source": null,
+        "status": "empty",
+        "notes": null,
+        "age_days": null,
+        "stale_after_days": 3650,
+        "attribution_status": "empty",
+        "attribution_basis": "coherent_observation_identity",
+        "represented_publishers": [],
+        "unresolved_source_rows": 0,
+        "attribution_reasons": {},
+        "document_bytes_checked": false
+      },
+      {
+        "table": "gdp_data",
+        "label": "GDP Data",
+        "row_count": 3,
+        "latest_date": "Year 2025",
+        "source": null,
+        "status": "degraded",
+        "notes": null,
+        "age_days": 0,
+        "stale_after_days": 550,
+        "attribution_status": "partial",
+        "attribution_basis": "coherent_observation_identity",
+        "represented_publishers": [
+          {
+            "source_id": "knbs",
+            "name": "Kenya National Bureau of Statistics (KNBS)",
+            "row_count": 1
+          },
+          {
+            "source_id": "worldbank",
+            "name": "World Bank Open Data",
+            "row_count": 1
+          }
+        ],
+        "unresolved_source_rows": 1,
+        "attribution_reasons": {
+          "conflicting GDP dataset identity": 1
+        },
+        "document_bytes_checked": false
+      }
+    ]
+  },
+  "metadata_only_population": {
+    "tables": [
+      {
+        "table": "population_data",
+        "label": "Population Data",
+        "row_count": 1,
+        "latest_date": "Year 2019",
+        "source": "World Bank Open Data",
+        "status": "degraded",
+        "notes": null,
+        "age_days": 0,
+        "stale_after_days": 3650,
+        "attribution_status": "single_publisher",
+        "attribution_basis": "coherent_observation_identity",
+        "represented_publishers": [
+          {
+            "source_id": "worldbank",
+            "name": "World Bank Open Data",
+            "row_count": 1
+          }
+        ],
+        "unresolved_source_rows": 0,
+        "attribution_reasons": {},
+        "document_bytes_checked": false
+      },
+      {
+        "table": "gdp_data",
+        "label": "GDP Data",
+        "row_count": 3,
+        "latest_date": "Year 2025",
+        "source": null,
+        "status": "degraded",
+        "notes": null,
+        "age_days": 0,
+        "stale_after_days": 550,
+        "attribution_status": "partial",
+        "attribution_basis": "coherent_observation_identity",
+        "represented_publishers": [
+          {
+            "source_id": "knbs",
+            "name": "Kenya National Bureau of Statistics (KNBS)",
+            "row_count": 1
+          },
+          {
+            "source_id": "worldbank",
+            "name": "World Bank Open Data",
+            "row_count": 1
+          }
+        ],
+        "unresolved_source_rows": 1,
+        "attribution_reasons": {
+          "conflicting GDP dataset identity": 1
+        },
+        "document_bytes_checked": false
+      }
+    ]
+  }
+}
