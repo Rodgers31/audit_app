@@ -3,9 +3,7 @@ Additional reliable Kenya government data sources
 Focus on websites that are consistently accessible
 """
 
-import json
 import logging
-from datetime import datetime
 
 import requests
 
@@ -113,43 +111,3 @@ class AlternativeKenyaSources:
             sources.append(central_bank)
 
         return sources
-
-
-def get_mock_comprehensive_data():
-    """Get comprehensive mock data based on real Kenya government structure."""
-    return {
-        "counties": [
-            {"name": "Nairobi City", "budget": 35000000000, "population": 4500000},
-            {"name": "Kiambu", "budget": 12000000000, "population": 2400000},
-            {"name": "Nakuru", "budget": 15000000000, "population": 2162000},
-            {"name": "Mombasa", "budget": 18000000000, "population": 1300000},
-            {"name": "Machakos", "budget": 8000000000, "population": 1422000},
-        ],
-        "ministries": [
-            {"name": "Health", "allocation": 150000000000, "execution": 93.3},
-            {"name": "Education", "allocation": 300000000000, "execution": 95.0},
-            {"name": "Infrastructure", "allocation": 250000000000, "execution": 92.0},
-            {"name": "Interior", "allocation": 120000000000, "execution": 95.8},
-            {"name": "Agriculture", "allocation": 80000000000, "execution": 93.8},
-        ],
-        "recent_audits": [
-            {
-                "entity": "Ministry of Health",
-                "finding": "Budget variance of 15% in infrastructure projects",
-                "severity": "medium",
-                "amount": 22500000000,
-            },
-            {
-                "entity": "Ministry of Education",
-                "finding": "Minor documentation gaps in scholarship disbursements",
-                "severity": "low",
-                "amount": 5000000000,
-            },
-            {
-                "entity": "Nairobi City County",
-                "finding": "Delayed project implementation affecting 30% of budget",
-                "severity": "medium",
-                "amount": 10500000000,
-            },
-        ],
-    }

@@ -1,17 +1,14 @@
-"""
-Enhanced Kenya Government Data Pipeline
-Comprehensive data ingestion from all major Kenya government sources
+"""Source-access and document-link checks across four government publishers.
+
+No financial observations are extracted by this legacy checker.
 """
 
-import hashlib
 import json
 import logging
-import os
-import re
 import sys
 import time
 from datetime import datetime
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
@@ -21,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class ComprehensiveKenyaETL:
-    """Enhanced Kenya ETL pipeline for comprehensive government data."""
+    """Source checker; financial extraction is unavailable."""
 
     def __init__(self):
         self.results = {
@@ -371,235 +368,58 @@ class ComprehensiveKenyaETL:
             self.results["sources_checked"].append(error_result)
             return error_result
 
-    def extract_comprehensive_entities(self):
-        """Extract comprehensive government entities from all accessible sources."""
-        logger.info("🏛️  Extracting comprehensive government entities...")
-
-        # Enhanced entity data based on real Kenya government structure
-        comprehensive_entities = [
-            # Core Ministries
-            {
-                "name": "Ministry of Health",
-                "type": "ministry",
-                "code": "MOH",
-                "budget_allocation": 150000000000,  # 150B KES
-                "actual_spending": 140000000000,
-                "execution_rate": 93.3,
-                "source": "National Budget 2023/24",
-                "mandate": "Healthcare policy and service delivery",
-            },
-            {
-                "name": "Ministry of Education",
-                "type": "ministry",
-                "code": "MOE",
-                "budget_allocation": 300000000000,  # 300B KES
-                "actual_spending": 285000000000,
-                "execution_rate": 95.0,
-                "source": "National Budget 2023/24",
-                "mandate": "Education policy and curriculum development",
-            },
-            {
-                "name": "Ministry of Infrastructure, Housing and Urban Development",
-                "type": "ministry",
-                "code": "MIHUD",
-                "budget_allocation": 250000000000,  # 250B KES
-                "actual_spending": 230000000000,
-                "execution_rate": 92.0,
-                "source": "National Budget 2023/24",
-                "mandate": "Infrastructure development and housing",
-            },
-            {
-                "name": "Ministry of Interior and National Administration",
-                "type": "ministry",
-                "code": "MOINA",
-                "budget_allocation": 120000000000,
-                "actual_spending": 115000000000,
-                "execution_rate": 95.8,
-                "source": "National Budget 2023/24",
-                "mandate": "Internal security and administration",
-            },
-            {
-                "name": "Ministry of Agriculture and Livestock Development",
-                "type": "ministry",
-                "code": "MALD",
-                "budget_allocation": 80000000000,
-                "actual_spending": 75000000000,
-                "execution_rate": 93.8,
-                "source": "National Budget 2023/24",
-                "mandate": "Agricultural policy and food security",
-            },
-            # Constitutional Commissions
-            {
-                "name": "Kenya National Commission on Human Rights",
-                "type": "commission",
-                "code": "KNCHR",
-                "budget_allocation": 2500000000,
-                "actual_spending": 2300000000,
-                "execution_rate": 92.0,
-                "source": "Constitutional Commissions Budget",
-                "mandate": "Human rights protection and promotion",
-            },
-            {
-                "name": "Commission on Administrative Justice",
-                "type": "commission",
-                "code": "CAJ",
-                "budget_allocation": 1800000000,
-                "actual_spending": 1700000000,
-                "execution_rate": 94.4,
-                "source": "Constitutional Commissions Budget",
-                "mandate": "Administrative justice and ombudsman services",
-            },
-            # State Corporations
-            {
-                "name": "Kenya Electricity Generating Company",
-                "type": "state_corporation",
-                "code": "KENGEN",
-                "budget_allocation": 45000000000,
-                "actual_spending": 42000000000,
-                "execution_rate": 93.3,
-                "source": "State Corporations Budget",
-                "mandate": "Electricity generation",
-            },
-            {
-                "name": "Kenya Airways",
-                "type": "state_corporation",
-                "code": "KQ",
-                "budget_allocation": 15000000000,
-                "actual_spending": 14500000000,
-                "execution_rate": 96.7,
-                "source": "State Corporations Budget",
-                "mandate": "National carrier airline services",
-            },
-            # County Governments (Sample)
-            {
-                "name": "Nairobi City County",
-                "type": "county",
-                "code": "NCC",
-                "budget_allocation": 35000000000,
-                "actual_spending": 32000000000,
-                "execution_rate": 91.4,
-                "source": "County Budget 2023/24",
-                "mandate": "County government services for Nairobi",
-            },
-            {
-                "name": "Kiambu County",
-                "type": "county",
-                "code": "KIAMBU",
-                "budget_allocation": 12000000000,
-                "actual_spending": 11200000000,
-                "execution_rate": 93.3,
-                "source": "County Budget 2023/24",
-                "mandate": "County government services for Kiambu",
-            },
-        ]
-
-        self.results["entities_found"] = comprehensive_entities
-
-        # Calculate totals
-        total_allocation = sum(
-            entity["budget_allocation"] for entity in comprehensive_entities
-        )
-        total_spending = sum(
-            entity["actual_spending"] for entity in comprehensive_entities
-        )
-        avg_execution = (
-            total_spending / total_allocation * 100 if total_allocation > 0 else 0
-        )
-
-        logger.info(f"✅ Extracted {len(comprehensive_entities)} government entities")
-        logger.info(
-            f"   💰 Total allocation: {total_allocation/1_000_000_000:.1f}B KES"
-        )
-        logger.info(f"   💸 Total spending: {total_spending/1_000_000_000:.1f}B KES")
-        logger.info(f"   📊 Average execution rate: {avg_execution:.1f}%")
-
-        return comprehensive_entities
-
     def run_comprehensive_pipeline(self):
-        """Run the complete comprehensive ETL pipeline."""
-        logger.info("🚀 Starting Comprehensive Kenya Government Data ETL Pipeline")
-        logger.info("=" * 70)
-
-        # Test all data sources
-        treasury_result = self.test_treasury_comprehensive()
-        time.sleep(2)  # Be respectful to servers
-
-        auditor_result = self.test_auditor_general_enhanced()
-        time.sleep(2)
-
-        cob_result = self.test_controller_of_budget()
-        time.sleep(2)
-
-        parliament_result = self.test_parliament_budget_office()
-        time.sleep(2)
-
-        # Extract comprehensive entities
-        entities = self.extract_comprehensive_entities()
-
-        # Calculate comprehensive results
-        accessible_sources = len(
-            [s for s in self.results["sources_checked"] if s.get("accessible", False)]
-        )
-        total_documents = sum(
-            s.get("total_documents", 0)
-            for s in self.results["sources_checked"]
-            if s.get("accessible")
-        )
-
-        pipeline_results = {
-            "pipeline_status": "completed",
-            "timestamp": datetime.now().isoformat(),
-            "sources_tested": len(self.results["sources_checked"]),
-            "sources_accessible": accessible_sources,
-            "total_documents_found": total_documents,
-            "entities_extracted": len(self.results["entities_found"]),
-            "budget_allocation_total": sum(e["budget_allocation"] for e in entities),
-            "spending_total": sum(e["actual_spending"] for e in entities),
-            "errors_encountered": len(self.results["errors"]),
-            "detailed_results": self.results,
-            "data_quality_score": (
-                (accessible_sources / len(self.results["sources_checked"]) * 100)
-                if self.results["sources_checked"]
-                else 0
-            ),
+        """Check source access and discover links; no financial extraction exists."""
+        self.results = {
+            "documents_fetched": 0,
+            "entities_found": [],
+            "sources_checked": [],
+            "raw_data": [],
+            "errors": [],
         }
-
-        logger.info("=" * 70)
-        logger.info("🎯 Comprehensive ETL Pipeline Results:")
-        logger.info(f"   📊 Sources tested: {pipeline_results['sources_tested']}")
-        logger.info(
-            f"   ✅ Sources accessible: {pipeline_results['sources_accessible']}"
-        )
-        logger.info(
-            f"   📄 Total documents: {pipeline_results['total_documents_found']}"
-        )
-        logger.info(
-            f"   🏛️  Entities extracted: {pipeline_results['entities_extracted']}"
-        )
-        logger.info(
-            f"   💰 Total budget: {pipeline_results['budget_allocation_total']/1_000_000_000:.1f}B KES"
-        )
-        logger.info(
-            f"   📈 Data quality score: {pipeline_results['data_quality_score']:.1f}%"
-        )
-        logger.info(f"   ❌ Errors: {pipeline_results['errors_encountered']}")
-
-        return pipeline_results
+        sources = []
+        for check in (
+            self.test_treasury_comprehensive,
+            self.test_auditor_general_enhanced,
+            self.test_controller_of_budget,
+            self.test_parliament_budget_office,
+        ):
+            sources.append(check())
+            time.sleep(2)  # Preserve the legacy pause between publisher checks.
+        self.results["sources_checked"] = sources
+        failures = [s for s in sources if s.get("accessible") is not True]
+        self.results["errors"] = [
+            f"{s['source']}: {s.get('error', 'HTTP ' + str(s.get('status_code')))}"
+            for s in failures
+        ]
+        return {
+            "pipeline_status": (
+                "source_checks_failed" if failures else "source_checks_completed"
+            ),
+            "timestamp": datetime.now().isoformat(),
+            "sources_tested": len(sources),
+            "sources_accessible": len(sources) - len(failures),
+            "errors_encountered": len(failures),
+            "financial_data": None,
+            "financial_data_status": "not_extracted",
+            "detailed_results": self.results,
+        }
 
 
 def main():
-    """Run the comprehensive ETL pipeline."""
+    """Save source observations; HTTP/link discovery is not financial data."""
+    import argparse
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output", default="comprehensive_etl_results.json")
+    args = parser.parse_args()
     etl = ComprehensiveKenyaETL()
     results = etl.run_comprehensive_pipeline()
-
-    # Save comprehensive results
-    results_file = "comprehensive_etl_results.json"
-    with open(results_file, "w") as f:
+    with open(args.output, "w") as f:
         json.dump(results, f, indent=2)
-
-    print(f"\n📁 Comprehensive results saved to: {results_file}")
+    print(f"Source observations saved to: {args.output}; financial data not extracted")
     return results
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(1 if main()["errors_encountered"] else 0)
