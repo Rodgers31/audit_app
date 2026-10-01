@@ -1,0 +1,377 @@
+county_id,county,fiscal_year,institution,source_document_id,source_state,published_findings,source_url
+3,Nairobi County,2024/2025,executives,2542,complete,40,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+4,Mombasa County,2024/2025,executives,2542,complete,17,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+5,Kwale County,2024/2025,executives,2542,complete,16,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+6,Kilifi County,2024/2025,executives,2542,complete,29,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+7,Tana River County,2024/2025,executives,2542,complete,33,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+8,Lamu County,2024/2025,executives,2542,complete,16,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+9,Taita Taveta County,2024/2025,executives,2542,complete,18,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+10,Garissa County,2024/2025,executives,2542,complete,22,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+11,Wajir County,2024/2025,executives,2542,complete,38,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+12,Mandera County,2024/2025,executives,2542,complete,25,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+13,Marsabit County,2024/2025,executives,2542,complete,27,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+14,Isiolo County,2024/2025,executives,2542,complete,39,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+15,Meru County,2024/2025,executives,2542,complete,25,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+16,Tharaka Nithi County,2024/2025,executives,2542,complete,19,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+17,Embu County,2024/2025,executives,2542,complete,35,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+18,Kitui County,2024/2025,executives,2542,complete,15,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+19,Machakos County,2024/2025,executives,2542,complete,16,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+20,Makueni County,2024/2025,executives,2542,complete,9,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+21,Nyandarua County,2024/2025,executives,2542,complete,24,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+22,Nyeri County,2024/2025,executives,2542,complete,11,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+23,Kirinyaga County,2024/2025,executives,2542,complete,21,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+24,Murang'a County,2024/2025,executives,2542,complete,23,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+25,Kiambu County,2024/2025,executives,2542,complete,46,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+26,Turkana County,2024/2025,executives,2542,complete,17,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+27,West Pokot County,2024/2025,executives,2542,complete,29,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+28,Samburu County,2024/2025,executives,2542,complete,39,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+29,Trans Nzoia County,2024/2025,executives,2542,complete,24,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+30,Uasin Gishu County,2024/2025,executives,2542,complete,47,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+31,Elgeyo Marakwet County,2024/2025,executives,2542,complete,32,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+32,Nandi County,2024/2025,executives,2542,complete,32,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+33,Baringo County,2024/2025,executives,2542,complete,25,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+34,Laikipia County,2024/2025,executives,2542,complete,15,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+35,Nakuru County,2024/2025,executives,2542,complete,23,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+36,Narok County,2024/2025,executives,2542,complete,25,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+37,Kajiado County,2024/2025,executives,2542,complete,22,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+38,Kericho County,2024/2025,executives,2542,complete,51,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+39,Bomet County,2024/2025,executives,2542,complete,44,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+40,Kakamega County,2024/2025,executives,2542,complete,22,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+41,Vihiga County,2024/2025,executives,2542,complete,22,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+42,Bungoma County,2024/2025,executives,2542,complete,37,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+43,Busia County,2024/2025,executives,2542,complete,37,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+44,Siaya County,2024/2025,executives,2542,complete,37,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+45,Kisumu County,2024/2025,executives,2542,complete,28,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+46,Homa Bay County,2024/2025,executives,2542,complete,18,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+47,Migori County,2024/2025,executives,2542,complete,23,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+48,Kisii County,2024/2025,executives,2542,complete,26,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+49,Nyamira County,2024/2025,executives,2542,complete,30,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf
+3,Nairobi County,2024/2025,assemblies,2541,complete,10,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+4,Mombasa County,2024/2025,assemblies,2541,complete,3,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+5,Kwale County,2024/2025,assemblies,2541,complete,6,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+6,Kilifi County,2024/2025,assemblies,2541,complete,14,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+7,Tana River County,2024/2025,assemblies,2541,complete,10,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+8,Lamu County,2024/2025,assemblies,2541,complete,9,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+9,Taita Taveta County,2024/2025,assemblies,2541,complete,6,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+10,Garissa County,2024/2025,assemblies,2541,complete,15,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+11,Wajir County,2024/2025,assemblies,2541,complete,10,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+12,Mandera County,2024/2025,assemblies,2541,complete,8,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+13,Marsabit County,2024/2025,assemblies,2541,complete,15,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+14,Isiolo County,2024/2025,assemblies,2541,complete,17,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+15,Meru County,2024/2025,assemblies,2541,complete,7,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+16,Tharaka Nithi County,2024/2025,assemblies,2541,complete,14,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+17,Embu County,2024/2025,assemblies,2541,complete,13,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+18,Kitui County,2024/2025,assemblies,2541,complete,5,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+19,Machakos County,2024/2025,assemblies,2541,complete,7,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+20,Makueni County,2024/2025,assemblies,2541,complete,4,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+21,Nyandarua County,2024/2025,assemblies,2541,complete,14,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+22,Nyeri County,2024/2025,assemblies,2541,complete,16,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+23,Kirinyaga County,2024/2025,assemblies,2541,complete,9,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+24,Murang'a County,2024/2025,assemblies,2541,complete,11,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+25,Kiambu County,2024/2025,assemblies,2541,complete,22,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+26,Turkana County,2024/2025,assemblies,2541,complete,15,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+27,West Pokot County,2024/2025,assemblies,2541,complete,11,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+28,Samburu County,2024/2025,assemblies,2541,complete,27,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+29,Trans Nzoia County,2024/2025,assemblies,2541,complete,11,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+30,Uasin Gishu County,2024/2025,assemblies,2541,complete,22,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+31,Elgeyo Marakwet County,2024/2025,assemblies,2541,complete,10,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+32,Nandi County,2024/2025,assemblies,2541,complete,12,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+33,Baringo County,2024/2025,assemblies,2541,complete,14,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+34,Laikipia County,2024/2025,assemblies,2541,complete,21,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+35,Nakuru County,2024/2025,assemblies,2541,complete,17,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+36,Narok County,2024/2025,assemblies,2541,complete,14,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+37,Kajiado County,2024/2025,assemblies,2541,complete,8,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+38,Kericho County,2024/2025,assemblies,2541,complete,12,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+39,Bomet County,2024/2025,assemblies,2541,complete,9,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+40,Kakamega County,2024/2025,assemblies,2541,complete,13,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+41,Vihiga County,2024/2025,assemblies,2541,complete,13,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+42,Bungoma County,2024/2025,assemblies,2541,complete,8,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+43,Busia County,2024/2025,assemblies,2541,complete,16,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+44,Siaya County,2024/2025,assemblies,2541,complete,12,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+45,Kisumu County,2024/2025,assemblies,2541,complete,15,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+46,Homa Bay County,2024/2025,assemblies,2541,complete,12,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+47,Migori County,2024/2025,assemblies,2541,complete,17,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+48,Kisii County,2024/2025,assemblies,2541,complete,14,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+49,Nyamira County,2024/2025,assemblies,2541,complete,14,https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf
+3,Nairobi County,2023/2024,executives,2539,complete,45,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+4,Mombasa County,2023/2024,executives,2539,complete,16,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+5,Kwale County,2023/2024,executives,2539,complete,11,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+6,Kilifi County,2023/2024,executives,2539,complete,23,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+7,Tana River County,2023/2024,executives,2539,complete,30,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+8,Lamu County,2023/2024,executives,2539,complete,20,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+9,Taita Taveta County,2023/2024,executives,2539,complete,15,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+10,Garissa County,2023/2024,executives,2539,complete,19,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+11,Wajir County,2023/2024,executives,2539,complete,20,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+12,Mandera County,2023/2024,executives,2539,complete,20,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+13,Marsabit County,2023/2024,executives,2539,complete,24,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+14,Isiolo County,2023/2024,executives,2539,complete,17,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+15,Meru County,2023/2024,executives,2539,complete,18,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+16,Tharaka Nithi County,2023/2024,executives,2539,complete,18,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+17,Embu County,2023/2024,executives,2539,complete,19,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+18,Kitui County,2023/2024,executives,2539,complete,19,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+19,Machakos County,2023/2024,executives,2539,complete,23,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+20,Makueni County,2023/2024,executives,2539,complete,9,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+21,Nyandarua County,2023/2024,executives,2539,complete,29,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+22,Nyeri County,2023/2024,executives,2539,complete,21,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+23,Kirinyaga County,2023/2024,executives,2539,complete,14,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+24,Murang'a County,2023/2024,executives,2539,complete,11,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+25,Kiambu County,2023/2024,executives,2539,complete,31,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+26,Turkana County,2023/2024,executives,2539,complete,20,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+27,West Pokot County,2023/2024,executives,2539,complete,21,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+28,Samburu County,2023/2024,executives,2539,complete,14,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+29,Trans Nzoia County,2023/2024,executives,2539,complete,29,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+30,Uasin Gishu County,2023/2024,executives,2539,complete,33,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+31,Elgeyo Marakwet County,2023/2024,executives,2539,complete,24,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+32,Nandi County,2023/2024,executives,2539,complete,22,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+33,Baringo County,2023/2024,executives,2539,complete,25,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+34,Laikipia County,2023/2024,executives,2539,complete,21,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+35,Nakuru County,2023/2024,executives,2539,complete,38,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+36,Narok County,2023/2024,executives,2539,complete,31,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+37,Kajiado County,2023/2024,executives,2539,complete,21,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+38,Kericho County,2023/2024,executives,2539,complete,23,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+39,Bomet County,2023/2024,executives,2539,complete,21,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+40,Kakamega County,2023/2024,executives,2539,complete,15,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+41,Vihiga County,2023/2024,executives,2539,complete,26,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+42,Bungoma County,2023/2024,executives,2539,complete,21,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+43,Busia County,2023/2024,executives,2539,complete,31,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+44,Siaya County,2023/2024,executives,2539,complete,20,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+45,Kisumu County,2023/2024,executives,2539,complete,39,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+46,Homa Bay County,2023/2024,executives,2539,complete,23,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+47,Migori County,2023/2024,executives,2539,complete,20,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+48,Kisii County,2023/2024,executives,2539,complete,23,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+49,Nyamira County,2023/2024,executives,2539,complete,14,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf
+3,Nairobi County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+4,Mombasa County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+5,Kwale County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+6,Kilifi County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+7,Tana River County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+8,Lamu County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+9,Taita Taveta County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+10,Garissa County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+11,Wajir County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+12,Mandera County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+13,Marsabit County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+14,Isiolo County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+15,Meru County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+16,Tharaka Nithi County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+17,Embu County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+18,Kitui County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+19,Machakos County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+20,Makueni County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+21,Nyandarua County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+22,Nyeri County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+23,Kirinyaga County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+24,Murang'a County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+25,Kiambu County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+26,Turkana County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+27,West Pokot County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+28,Samburu County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+29,Trans Nzoia County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+30,Uasin Gishu County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+31,Elgeyo Marakwet County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+32,Nandi County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+33,Baringo County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+34,Laikipia County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+35,Nakuru County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+36,Narok County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+37,Kajiado County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+38,Kericho County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+39,Bomet County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+40,Kakamega County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+41,Vihiga County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+42,Bungoma County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+43,Busia County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+44,Siaya County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+45,Kisumu County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+46,Homa Bay County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+47,Migori County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+48,Kisii County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+49,Nyamira County,2023/2024,assemblies,2540,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf
+3,Nairobi County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+4,Mombasa County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+5,Kwale County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+6,Kilifi County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+7,Tana River County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+8,Lamu County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+9,Taita Taveta County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+10,Garissa County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+11,Wajir County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+12,Mandera County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+13,Marsabit County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+14,Isiolo County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+15,Meru County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+16,Tharaka Nithi County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+17,Embu County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+18,Kitui County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+19,Machakos County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+20,Makueni County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+21,Nyandarua County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+22,Nyeri County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+23,Kirinyaga County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+24,Murang'a County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+25,Kiambu County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+26,Turkana County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+27,West Pokot County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+28,Samburu County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+29,Trans Nzoia County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+30,Uasin Gishu County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+31,Elgeyo Marakwet County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+32,Nandi County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+33,Baringo County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+34,Laikipia County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+35,Nakuru County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+36,Narok County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+37,Kajiado County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+38,Kericho County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+39,Bomet County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+40,Kakamega County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+41,Vihiga County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+42,Bungoma County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+43,Busia County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+44,Siaya County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+45,Kisumu County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+46,Homa Bay County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+47,Migori County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+48,Kisii County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+49,Nyamira County,2022/2023,executives,2537,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf
+3,Nairobi County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+4,Mombasa County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+5,Kwale County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+6,Kilifi County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+7,Tana River County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+8,Lamu County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+9,Taita Taveta County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+10,Garissa County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+11,Wajir County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+12,Mandera County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+13,Marsabit County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+14,Isiolo County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+15,Meru County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+16,Tharaka Nithi County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+17,Embu County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+18,Kitui County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+19,Machakos County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+20,Makueni County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+21,Nyandarua County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+22,Nyeri County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+23,Kirinyaga County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+24,Murang'a County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+25,Kiambu County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+26,Turkana County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+27,West Pokot County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+28,Samburu County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+29,Trans Nzoia County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+30,Uasin Gishu County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+31,Elgeyo Marakwet County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+32,Nandi County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+33,Baringo County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+34,Laikipia County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+35,Nakuru County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+36,Narok County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+37,Kajiado County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+38,Kericho County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+39,Bomet County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+40,Kakamega County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+41,Vihiga County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+42,Bungoma County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+43,Busia County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+44,Siaya County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+45,Kisumu County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+46,Homa Bay County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+47,Migori County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+48,Kisii County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+49,Nyamira County,2022/2023,assemblies,2536,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf
+3,Nairobi County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+4,Mombasa County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+5,Kwale County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+6,Kilifi County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+7,Tana River County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+8,Lamu County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+9,Taita Taveta County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+10,Garissa County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+11,Wajir County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+12,Mandera County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+13,Marsabit County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+14,Isiolo County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+15,Meru County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+16,Tharaka Nithi County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+17,Embu County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+18,Kitui County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+19,Machakos County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+20,Makueni County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+21,Nyandarua County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+22,Nyeri County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+23,Kirinyaga County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+24,Murang'a County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+25,Kiambu County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+26,Turkana County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+27,West Pokot County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+28,Samburu County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+29,Trans Nzoia County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+30,Uasin Gishu County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+31,Elgeyo Marakwet County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+32,Nandi County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+33,Baringo County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+34,Laikipia County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+35,Nakuru County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+36,Narok County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+37,Kajiado County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+38,Kericho County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+39,Bomet County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+40,Kakamega County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+41,Vihiga County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+42,Bungoma County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+43,Busia County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+44,Siaya County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+45,Kisumu County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+46,Homa Bay County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+47,Migori County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+48,Kisii County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+49,Nyamira County,2021/2022,executives,2535,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf
+3,Nairobi County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+4,Mombasa County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+5,Kwale County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+6,Kilifi County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+7,Tana River County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+8,Lamu County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+9,Taita Taveta County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+10,Garissa County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+11,Wajir County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+12,Mandera County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+13,Marsabit County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+14,Isiolo County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+15,Meru County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+16,Tharaka Nithi County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+17,Embu County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+18,Kitui County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+19,Machakos County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+20,Makueni County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+21,Nyandarua County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+22,Nyeri County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+23,Kirinyaga County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+24,Murang'a County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+25,Kiambu County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+26,Turkana County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+27,West Pokot County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+28,Samburu County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+29,Trans Nzoia County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+30,Uasin Gishu County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+31,Elgeyo Marakwet County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+32,Nandi County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+33,Baringo County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+34,Laikipia County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+35,Nakuru County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+36,Narok County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+37,Kajiado County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+38,Kericho County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+39,Bomet County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+40,Kakamega County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+41,Vihiga County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+42,Bungoma County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+43,Busia County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+44,Siaya County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+45,Kisumu County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+46,Homa Bay County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+47,Migori County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+48,Kisii County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf
+49,Nyamira County,2021/2022,assemblies,2534,deferred_registered_not_fetched,0,https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf

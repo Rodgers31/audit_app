@@ -63,7 +63,7 @@ END $$;
     forward = (
         preamble
         + """DO $$ BEGIN
- IF EXISTS(SELECT 1 FROM entity_plan p LEFT JOIN entities e ON e.id=(p.x->>'id')::int WHERE e.id IS NULL OR e.metadata IS DISTINCT FROM p.x->'before' OR e.canonical_name IS DISTINCT FROM p.x->>'canonical_name') THEN
+ IF EXISTS(SELECT 1 FROM entity_plan p LEFT JOIN entities e ON e.id=(p.x->>'id')::int WHERE e.id IS NULL OR e.metadata IS DISTINCT FROM p.x->'before' OR e.canonical_name IS DISTINCT FROM p.x->>'canonical_name' OR (p.x ? 'slug' AND e.slug IS DISTINCT FROM p.x->>'slug')) THEN
   RAISE EXCEPTION 'Entity snapshot drift: refresh manifest and review again';
  END IF;
  IF EXISTS(SELECT 1 FROM audit_plan p LEFT JOIN audits a ON a.id=(p.x->>'id')::int WHERE a.id IS NULL OR to_jsonb(a) IS DISTINCT FROM p.x) THEN
@@ -82,7 +82,7 @@ ROLLBACK;
     recovery = (
         preamble
         + """DO $$ BEGIN
- IF EXISTS(SELECT 1 FROM entity_plan p LEFT JOIN entities e ON e.id=(p.x->>'id')::int WHERE e.id IS NULL OR e.metadata IS DISTINCT FROM p.x->'after') THEN
+ IF EXISTS(SELECT 1 FROM entity_plan p LEFT JOIN entities e ON e.id=(p.x->>'id')::int WHERE e.id IS NULL OR e.metadata IS DISTINCT FROM p.x->'after' OR e.canonical_name IS DISTINCT FROM p.x->>'canonical_name' OR (p.x ? 'slug' AND e.slug IS DISTINCT FROM p.x->>'slug')) THEN
   RAISE EXCEPTION 'Post-cleanup entity drift: do not overwrite newer data';
  END IF;
  IF EXISTS(SELECT 1 FROM audit_plan p JOIN audits a ON a.id=(p.x->>'id')::int) THEN

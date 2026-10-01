@@ -1,0 +1,112 @@
+{
+  "status": "PREPARED FOR EXACT REVIEW; NO PRODUCTION AUTHORIZATION",
+  "client_date": "2026-09-30",
+  "database_observed_utc": "2026-10-01T03:18:32.198331+00:00",
+  "base_sha": "31e4735720bd385bea90616f953649f937decf6f",
+  "production_writes": false,
+  "operations": {
+    "county_code_cells": 4,
+    "publisher_rows": [
+      1840,
+      2383
+    ],
+    "retired_metadata_keys": {
+      "economic_profile": 47,
+      "missing_funds_cases": 3,
+      "audit_summary": 8
+    },
+    "retired_audit_ids": [
+      870,
+      871,
+      872,
+      873,
+      874,
+      875,
+      876,
+      877,
+      878,
+      879,
+      880,
+      881,
+      882,
+      883,
+      884,
+      885,
+      886,
+      887,
+      888,
+      889,
+      890,
+      891,
+      892,
+      893,
+      894
+    ],
+    "population79_changes": 0,
+    "source_document_deletions": 0,
+    "project_array_deletions": 0,
+    "source1823_changes": 0,
+    "source2541_changes": 0
+  },
+  "required_before_execution": [
+    "release-owner exact refreshed-plan authorization",
+    "external backup identity/hash and successful full restore receipt",
+    "freeze competing writers; coordinate Session1 CPI and Session2 OAG packets",
+    "actual post-code full before-image recapture and drift review",
+    "fresh publisher/source hash comparison",
+    "separately approved cache/public acceptance steps"
+  ],
+  "local_checks": {
+    "cleanup_postgres": 30,
+    "publisher_postgres": 13,
+    "renderer_unit": 12,
+    "direct_hostile_guards": 6
+  },
+  "repository_files_sha256": {
+    "README.md": "05ff1acba4b14c03eca190c703bb01a6db9a4bcfe73e4a1ccb511d566317bab5",
+    "adjacent-findings.json": "d8d674fd2953bfc4128408086460854a54f21e77bc1b9f9a584daf25a8e4cf2a",
+    "adversarial-receipt.json": "4672fcc158813d1669d8d31d9690fef3f9004c9da89b9a128031bbc2927268bf",
+    "cleanup-after-codes-manifest.json": "520daf4b677aa9412716072a665be5bb0018262fa4224cf47fa81a261d831551",
+    "cleanup-current-manifest.json": "30823b069f568241ba6646fd6fee2f57918b2a03a185133b694205f6c2c8f3ce",
+    "cleanup-rehearsal.json": "e795c4b471f1927ad33832d119329c17d9f3adb162d9859137f797dad38bcc1e",
+    "county-code-proposal.json": "212213e4942c01e1b499fc09e498377056efa5adf497f530ea22014f5670dab7",
+    "county-code-recovery.sql": "83456602fc18b311abd246edc72965358a2b92dad6790becdcc86258c4ef9df1",
+    "county-code-source-receipt.json": "7f35f3bde215b99fd3c5cb19a364cf60897094a621347d3f92cbf0728b45ea65",
+    "county-codes.sql": "0301c1270c148beb21b56c76d98ae2305b841e6a02feff611b7cbea08ff63b95",
+    "local-resource-cleanup.json": "e86f5c5f01d73f6018f5be3bb28333f68b244fb206eeedaa53769b27ba45a26e",
+    "plan-summary.json": "eec774255a05cbb2da0175d2940f8bc5c1a113c2cd23aa785b182c9fd0e44911",
+    "population-79-acceptance.json": "bffb10678d8e0128e8d84b82a01b5deb9ce171488c25a962b0d23096b551dde4",
+    "production-readonly-receipt.json": "c201eba727ff0d253001818f623b71c014637688f9ca3f9be76efc1132c5efdf",
+    "public-source-receipt.json": "cf48ad8d0ce8efe4d2e04eb44722fec453ebfc28fc21c16b6d8ff6c0dffda9b9",
+    "public-source-walk.json": "27cc15285ee42341a2b3c4b6f6a32dcd3942312a043c9a45498a449b3f68b548",
+    "publisher-rehearsal.json": "fe938a8fbdc15904fe81c3aa6051d0e75634274369eca1e5c4dc26320e9733d1",
+    "retired-source-hash-receipt.json": "38a8c15ecac534b852d05b3913678d22d44b8d26e95c178ea9923d3b24feaa3f",
+    "source-publisher-proposal.json": "69d6a29c0fcdd4e3319d256859d4749c4c6f5b690a8e01c3dd4061d42857cb96",
+    "source-publisher-recovery.sql": "ad0c9e4bbaf287728c52690457c994045c52b62e0c291ea6f928384de1d6cb92",
+    "source-publishers.sql": "3df36234135d1a2935d15556277ed9b8cc0a0baf2ad3a1726149102d446af55a",
+    "source-walk-receipt.json": "92ca197daf40f38ddf55eaf5654d85a3cdb3b0e3ba6f4d4718c25a94e5794073"
+  },
+  "tool_sha256": {
+    "tools/prepare_legacy_evidence_cleanup.py": "ed3453b4e18045d46667bf29bde7987f9daa7d57231f93e8036f33b67476eef0",
+    "tools/verify_sourced_record_cleanup.py": "6dbe3f1949cd3cff52de072828649dcc590fd41537c2ba9c46cf9b9dc741c119"
+  },
+  "external_receipts_sha256": {
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_CAPTURE.py": "823c7d62ad4b0e42d8059b0462ef23038fd020164256b20487d3e39bf1d2a620",
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_PREPARE.py": "da1d75ac61ea2fab4796b404799091ed0edf07b6400d8a23fa2d19133ef78ad6",
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_PUBLIC_SOURCE.py": "b8fff397b56eac2308ea6c9c081f856c8b55be1d11294bbe6cb080193cfc3b73",
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_SOURCE_WALK.py": "6532579d786b319245613de1b920578e82b4cb34e934e96c8e9ba3c44916107d",
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_IDENTITY_PROBE.py": "6be83f48e913ad07bc12b866944cc44ca0d1f90ec19cbb35ed5fb834993bd486",
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_IDENTITY_RED.json": "5097ccd3417b53322f58d6104593958bed090f827ab03bd4f51fd80c55aea081",
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_IDENTITY_GREEN.json": "c40347b9bd947778a31e7462e1ce597b0c0665e992a2d5b59735e2c5d785b364",
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_PUBLISHER_REHEARSAL.py": "7576996758d0082c9b4527051bc9454bae3fae463701b31581a502f492bd13c2",
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_RENDERER_UNIT.log": "e7ffe1640b897b64112cecbea0911b670cafb745a54cf45999a5834b500c4d1e",
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_cleanup_current.sql": "ed1577b789bd6a07857b4fc0cb304a0d707a1f05001b3fbf6260d139fd69c8ce",
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_recover_current.sql": "dfe56bd621b5ef550f6266a63c18af71bd1cdaf5abf92069c8b0ae4118342c73",
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_cleanup_after-codes.sql": "ddcce87d996a50ee29ed228136b705e3f15c729798497ad5c884b5dff4d008b6",
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_recover_after-codes.sql": "566bf3f392b30140168a0e121f489f6ddcfcce43799cfd3f15c8cdbec1b76a0e",
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_ACTIONS_PERMISSION.json": "32700f5e09febdcc97d40b65c42a1c4b981b4b96af6eb1b8e87c932aba0a71ca",
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_ACTIONS_ci.yml.json": "6649823901ddd78e0a30596ad255d07e22fdc17c300db2991dd556ede5d7d95e",
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_ACTIONS_docker-build-deploy.yml.json": "a366f02ab7fad354698110c5ed333700e97c315c6dbc8f9c7c97366ab1a8848d",
+    "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_ACTIONS_seed.yml.json": "23ade5a2640ac003f1d24624b17fb476aff67396da001536e617494aa3c807a0"
+  }
+}

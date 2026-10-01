@@ -1,0 +1,70 @@
+{
+  "population79": {
+    "public_id": 79,
+    "database_id": 79,
+    "source_document_id": null,
+    "total": 51202827,
+    "male": 25485390,
+    "female": 25717437,
+    "basis": "World Bank2019 estimate, not census total",
+    "source_revision": "2026-07-13",
+    "source_values_agree": true,
+    "pdf_or_extraction": "not applicable to JSON time series",
+    "verification_endpoint_grade": "unverified",
+    "verification_endpoint_wrong_hint": "hardcoded KNBS Census2019"
+  },
+  "mandera26": {
+    "public_id": 26,
+    "database_id": 26,
+    "entity_id": 12,
+    "source_document_id": 2435,
+    "extraction_id": 4345,
+    "source_page": 17,
+    "printed_page": 7,
+    "total": 867457,
+    "male": 434976,
+    "female": 432444,
+    "intersex": 37,
+    "fresh_pdf_sha256": "740093a7e0d3a2f34bc85bebfe343c3b45e6b8401a394470f191d281b280ae4e",
+    "fresh_pdf_md5": "04ff63993e936a97f1a95436a735ae93",
+    "stored_pdf_md5": "04ff63993e936a97f1a95436a735ae93",
+    "visual_page_inspected": true,
+    "extraction_components_match_row": true,
+    "extraction_payload": {
+      "male": 434976,
+      "total": 867457,
+      "county": "Mandera",
+      "female": 432444,
+      "intersex": 37
+    }
+  },
+  "county_codes": [
+    {
+      "id": "009",
+      "name": "Mandera",
+      "code": "009"
+    },
+    {
+      "id": "047",
+      "name": "Mombasa",
+      "code": "001"
+    },
+    {
+      "id": "001",
+      "name": "Nairobi",
+      "code": "047"
+    }
+  ],
+  "projects": {
+    "current_arrays_preserved": 47,
+    "legacy_arrays_exact_matches": 0,
+    "latest_current_source_sha256": "5f5e4f97bbe2752957f284950d0ba90fcff4d47b35fc0ac96a9106ffb59821b3",
+    "current_source_content_not_refetched": "shared packet preserves arrays; no new project extraction or financial correction proposed",
+    "nairobi_reconciliation": "disagrees; existing230 explicitly documents source discrepancies"
+  },
+  "warnings": [
+    "Initial public mombasa002/mandera010 capture selected Kwale/Marsabit; corrected captures use stable public routes047 and009. These initial probes are labelled by URL, not evidence for Mombasa/Mandera.",
+    "No browser-rendered page inspected; executed public API/source walk only.",
+    "Source1718 TLS verification failed; retained without publisher change."
+  ]
+}
