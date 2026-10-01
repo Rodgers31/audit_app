@@ -53,8 +53,8 @@ _SOURCE_MODE: ContextVar[Dict[str, dict]] = ContextVar("seeding_source_mode")
 
 LIVE = "live"
 FIXTURE = "fixture"
-# Reached the publisher for a SECONDARY series while the figure this domain
-# actually publishes stayed on the fixture. Added after review on PR #136:
+# Reached the publisher for only part of the domain while another series
+# stayed on a fixture or last-valid rows. Added after review on PR #136:
 # revenue_by_source recorded LIVE when only the World Bank headline totals
 # refreshed, while the PAYE/VAT/Corporation/Excise/Customs breakdown — the
 # thing the domain exists to publish — was still the git-tracked file. The
@@ -174,18 +174,17 @@ def mark_fixture(domain: str, *, reason: str, detail: Optional[str] = None) -> N
 def mark_partial(
     domain: str, *, reason: str, detail: Optional[str] = None
 ) -> None:
-    """Record that the publisher was reached, but NOT for the headline figure.
+    """Record that only part of the domain refreshed from the publisher.
 
-    Use this wherever a run refreshes a supporting series while the domain's
-    published figure stays on a fixture. It is deliberately NOT ``mark_live``:
+    Use this when another series stays on a fixture or last-valid rows.
+    It is deliberately NOT ``mark_live``:
     ``is_stale`` returns True and the nightly reports WARN, so a permanently
     unavailable primary source cannot hide behind a working secondary one.
     """
     _store()[domain] = {"mode": PARTIAL, "reason": reason, "detail": detail}
     logger.warning(
-        "%s: data source = PARTIAL (reason=%s). A secondary series refreshed "
-        "from the publisher, but the figure this domain publishes is still a "
-        "fixture. %s",
+        "%s: data source = PARTIAL (reason=%s). Only part of the domain "
+        "refreshed from the publisher; other series remain unconfirmed. %s",
         domain,
         reason,
         detail or "",

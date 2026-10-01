@@ -26,6 +26,21 @@ of a contradictory historical record requires a separate source-supported review
 and explicit authorization. No automatic correction switch or backfill is added.
 Synthetic tests explicitly correct their own fixture before retrying.
 
+GDP and poverty fetches are independent checks. A poverty request/parse failure
+reports `Poverty fetch failed` in the domain and ingestion-job errors, preserves
+every last-valid poverty row, and permits valid GDP progress. It makes the combined
+source mode partial when GDP is live; GDP fixture provenance remains fixture. Both
+fetches failing or a domain write refusal records refused. A later successful
+check clears the prior attempt's failure. The newest incomplete GDP/poverty check
+warns even when an older run reached the publisher.
+
+Per-check `gdp_source` and `poverty_source` receipts describe the source attempt,
+not publication acceptance or an inferred edition. Poverty observations may be
+sparse: a missing supported measure remains NULL, a sourced zero remains zero,
+and a coherent empty response is a successful source check that changes/prunes
+no poverty rows. No annual poverty completeness floor is inferred. Dry-run jobs
+retain the same source/error verdict while rolling back observation writes.
+
 The caller owns the outer transaction. Source/observation refusal or late database
 failure rolls back all this domain's updates/inserts/pruning and resets its created
 and updated counts. Caller-owned changes outside the savepoint survive a refusal;
