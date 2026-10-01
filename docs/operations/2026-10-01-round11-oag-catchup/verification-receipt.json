@@ -1,0 +1,219 @@
+{
+  "scope": "local cached bytes and inherited matrix reconciliation; official HTML only",
+  "observed_at": "2026-10-01T23:53:55.658638+00:00",
+  "captured_http200_page_count": 5,
+  "new_http_get_count": 0,
+  "pdf_download_count": 0,
+  "database_connections": 0,
+  "cached_sources": [
+    {
+      "label": "2024/2025 executives",
+      "sha256": "033e2aa26aa77351ec46f062573f25ede47d3e3a99978aeacf9a66af5ba717a5",
+      "md5": "87d03cbfca0e51a9c4183f89f5c8067a",
+      "bytes": 13839205,
+      "pages": 688,
+      "cache_path": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_2_EVIDENCE_2026-09-30/offline/cache/pdfs/0c4b865fb0236d2e1284d2b958f4279dda807202a115c9dfa03fd5bf8dbfed00.pdf",
+      "title_excerpt_file": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND11_SESSION_3_EVIDENCE_2026-10-01/source-0-front-matter.txt",
+      "chapter_receipt_sha256": "9c7544895c8a62f7cb39b7baa5a4f88c65408df8f13af3a1285f97deb69cadba"
+    },
+    {
+      "label": "2024/2025 assemblies",
+      "sha256": "aa72b0a512fe01ce8f40b9ed8597bd78657a9f441a8daf4963b07e661104d896",
+      "md5": "f495cb595c81583af7d8bbd46e2279d6",
+      "bytes": 11446165,
+      "pages": 246,
+      "cache_path": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_2_EVIDENCE_2026-09-30/offline/cache/pdfs/8983b245250ec8d78f101a2cf33fd1da7a2a037bc69ab9b45fff4e9621fb5ecc.pdf",
+      "title_excerpt_file": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND11_SESSION_3_EVIDENCE_2026-10-01/source-1-front-matter.txt",
+      "chapter_receipt_sha256": "7693c966a3ebb37b5d628a817faa5732553df6f24948bb125fdb566fe7b370ba"
+    },
+    {
+      "label": "2023/2024 executives",
+      "sha256": "bf36d9e65b7403f9ce66eaf32890834f546ca3674c331a2d5f734f9e68c59bcd",
+      "md5": "0c0f7b1eb6f63d3b16d0720ed627da40",
+      "bytes": 34055119,
+      "pages": 555,
+      "cache_path": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_2_EVIDENCE_2026-09-30/offline/cache/pdfs/3200418ace8b38e2a1cfa18ce88b4c9e9b2ea39a93d1214bfe3a50da953115d5.pdf",
+      "title_excerpt_file": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND11_SESSION_3_EVIDENCE_2026-10-01/source-2-front-matter.txt",
+      "chapter_receipt_sha256": "816db11f293052eb004d491689251f1eb6adf8f35f95211627799ea33f34b3c0"
+    },
+    {
+      "label": "2023/2024 assemblies",
+      "sha256": "683fa522bf11eaa2b0bc2a9eef51eadc3d664d9a512d3af63cb6e9479820f8a2",
+      "md5": "15cd6108a0f08498a9e9f699430b365b",
+      "bytes": 32379711,
+      "pages": 217,
+      "cache_path": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_2_EVIDENCE_2026-09-30/offline/cache/pdfs/a8967ecc26a42064f7af6c51cf486c1d6d1b45396d9dbcec568c738401865ca1.pdf",
+      "title_excerpt_file": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND11_SESSION_3_EVIDENCE_2026-10-01/source-3-front-matter.txt",
+      "chapter_receipt_sha256": "2e6d77a97d1f22ad214e91e25a6986af779e9141294d78e4e070da27019ee4bf"
+    },
+    {
+      "label": "2022/2023 executives",
+      "sha256": "e873eb8a2f5b24366b4b847e529c832ef42d2aea02702a015597c6c406f9b953",
+      "md5": "f49345102b734ddc4825110e44ef9113",
+      "bytes": 8756083,
+      "pages": 504,
+      "cache_path": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_2_EVIDENCE_2026-09-30/offline/cache/pdfs/d77583f5544ff33de9bfa1e814afa254c5caef36bc1cc8322cf8bb400cb2938f.pdf",
+      "title_excerpt_file": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND11_SESSION_3_EVIDENCE_2026-10-01/source-4-front-matter.txt",
+      "chapter_receipt_sha256": "8a0f2f2e15275490c15ae478c84ddbb72100c4131aafe4cda6d212407db2c15a"
+    },
+    {
+      "label": "2022/2023 assemblies",
+      "sha256": "5c0ebf31a7cd6dc07558e55507b2b5228fb9a653e638a39abd72beffa46674cf",
+      "md5": "1e757ebf2480ab1959dd7e86e8fffddf",
+      "bytes": 7016269,
+      "pages": 219,
+      "cache_path": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_2_EVIDENCE_2026-09-30/offline/cache/pdfs/b4480251dbe808a143460e9714b7e16ac261ca0985bbebc02f6a051bed93e5e6.pdf",
+      "title_excerpt_file": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND11_SESSION_3_EVIDENCE_2026-10-01/source-5-front-matter.txt",
+      "chapter_receipt_sha256": "7eb4713feed422c609fe8e11e1f57a0c4d7d0c7edd5092731fac3b1bc25131fa"
+    },
+    {
+      "label": "2021/2022 executives",
+      "sha256": "0cc278f2ac0cc11be86b03dea6f7f7c97710c3f3903145716f403292967387fe",
+      "md5": "cda52424386d5ab6afae21a4dc9dcde7",
+      "bytes": 13149438,
+      "pages": 546,
+      "cache_path": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_2_EVIDENCE_2026-09-30/offline/cache/pdfs/4ced2cf61eec9482b75fa09033f9bf75f15d20686dde109d51371389c93cdbe7.pdf",
+      "title_excerpt_file": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND11_SESSION_3_EVIDENCE_2026-10-01/source-6-front-matter.txt",
+      "chapter_receipt_sha256": "83dcd8474418c8e0ad222b244004b608cbc4b58fc44dba05274e238aada96be8"
+    },
+    {
+      "label": "2021/2022 assemblies",
+      "sha256": "07db60417ab122a6082fea3ec4bf70b5038e7eb3554d1e9ca1f5fee0eae5d50c",
+      "md5": "6ac0f20f7a8bfe535775bccb1e81bdcc",
+      "bytes": 9976586,
+      "pages": 222,
+      "cache_path": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_2_EVIDENCE_2026-09-30/offline/cache/pdfs/26b85feee658971c284ccc6efdd33f17e3d67083317f384c93e1f0b8fa8035f7.pdf",
+      "title_excerpt_file": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND11_SESSION_3_EVIDENCE_2026-10-01/source-7-front-matter.txt",
+      "chapter_receipt_sha256": "68ee1e7177a83665db28406f329b1c3fd0ca6f95a65fe056037367067b12fc1b"
+    }
+  ],
+  "fresh_listing": [
+    {
+      "url": "https://www.oagkenya.go.ke/county-executives-assemblies-reports/",
+      "http_status": 200,
+      "sha256": "d560c44d4c591d649b03cc6c76f621329e5c401603d960732bada683a4951c5f",
+      "bytes": 89809,
+      "observed_at": "2026-10-01T23:52:35.971790+00:00",
+      "captured_file": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND11_SESSION_3_EVIDENCE_2026-10-01/official-page-0.html",
+      "headings": [
+        "County Executives & Assemblies Audit Reports"
+      ]
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/2024-2025-county-government-audit-reports/",
+      "http_status": 200,
+      "sha256": "d728ba985af81bcad69b53abd51bd9bab72d953253aab92c75e3b7c41a8c090b",
+      "bytes": 100353,
+      "observed_at": "2026-10-01T23:52:39.400795+00:00",
+      "captured_file": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND11_SESSION_3_EVIDENCE_2026-10-01/official-page-1.html",
+      "headings": [
+        "2024/2025 County Government Audit Reports"
+      ]
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/2023-2024-county-government-audit-reports/",
+      "http_status": 200,
+      "sha256": "b3b55e8ce29b9cda880e68caff49180b1866c02baa6d0283242327e688e15980",
+      "bytes": 100194,
+      "observed_at": "2026-10-01T23:52:41.829791+00:00",
+      "captured_file": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND11_SESSION_3_EVIDENCE_2026-10-01/official-page-2.html",
+      "headings": [
+        "2023/2024 County Government Audit Reports"
+      ]
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/2022-2023-county-government-audit-reports/",
+      "http_status": 200,
+      "sha256": "583d1a7d0adcc5131d754008fdf4febfd78b904485707091ab6d38679e71d55e",
+      "bytes": 99479,
+      "observed_at": "2026-10-01T23:52:44.337275+00:00",
+      "captured_file": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND11_SESSION_3_EVIDENCE_2026-10-01/official-page-3.html",
+      "headings": [
+        "2022/2023 County Government Audit Reports"
+      ]
+    },
+    {
+      "url": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "http_status": 200,
+      "sha256": "3fe36bed4700b6766d6cc9a7af0f986e697575e02c190bb8e9b6070ebe02aded",
+      "bytes": 149546,
+      "observed_at": "2026-10-01T23:52:46.951705+00:00",
+      "captured_file": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND11_SESSION_3_EVIDENCE_2026-10-01/official-page-4.html",
+      "headings": [
+        "2021/2022 County Government Audit Reports"
+      ]
+    }
+  ],
+  "source_manifest_sha256": "9388815ee8233d727558a2b47aef6bf3c4c6b6f1565dac22a4c8c10bbe9b6277",
+  "coverage_plan_sha256": "ee4c2c4918d2ff7e75fdd21dd60c4b65fcc734c6279c1b7037ba6292fc6375bb",
+  "matrix_reconciliation": {
+    "unique_cell_keys": 376,
+    "present": 141,
+    "missing": 235,
+    "findings": 2898,
+    "conditional_delta": 3709,
+    "conditional_after": 6607
+  },
+  "limits": [
+    "not a fresh production observation",
+    "cached source bytes only; live PDF replacement not ruled out",
+    "chapter completeness inherited; no new full extraction replay",
+    "no finding-row ID preservation proof newly executed"
+  ],
+  "existing_controls": {
+    "launcher": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND11_SESSION_3_EVIDENCE_2026-10-01/run_controls.py",
+    "log": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND11_SESSION_3_EVIDENCE_2026-10-01/controls-final.log",
+    "log_sha256": "5ccea464387c5c0287c7e9d63a8a6c5c68220f371817e189eb2fb4ca7b32e976",
+    "exit_code": 0,
+    "passed": 116,
+    "skipped": 0,
+    "warnings": 2,
+    "test_files": [
+      "backend/tests/test_audits_domain_county_ingest.py",
+      "backend/tests/test_county_audit_coverage_gate.py",
+      "backend/tests/test_county_coverage_adversarial.py"
+    ],
+    "fixture_database": "SQLite in-memory",
+    "application_database": "synthetic loopback:55473/round11_session3_20261001; engine do_connect refuses; never connected",
+    "dotenv_env_files": "disabled",
+    "outbound_http_tcp": "blocked",
+    "lifespan_seeder_warmup": "disabled",
+    "production_runtime_parity": false
+  },
+  "helper_failures": {
+    "initial_imports": "pypdf then fitz unavailable; no install",
+    "html_input": "bytearray rejected by BeautifulSoup; changed to bytes",
+    "url_assumption": "parent links relative and slashless; normalized URL+fragment for checks",
+    "final_assembly_exit_code": 0,
+    "raw_http_gets_including_helper_retry": 6,
+    "final_assembly_new_http_gets": 0,
+    "application_defect_asserted": false
+  },
+  "deferred_title_scope_review": [
+    {
+      "label": "2023/2024 assemblies",
+      "fiscal_year_and_institution_present_in_hash_bound_front_matter": true,
+      "front_matter_file": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND11_SESSION_3_EVIDENCE_2026-10-01/source-3-front-matter.txt"
+    },
+    {
+      "label": "2022/2023 executives",
+      "fiscal_year_and_institution_present_in_hash_bound_front_matter": true,
+      "front_matter_file": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND11_SESSION_3_EVIDENCE_2026-10-01/source-4-front-matter.txt"
+    },
+    {
+      "label": "2022/2023 assemblies",
+      "fiscal_year_and_institution_present_in_hash_bound_front_matter": true,
+      "front_matter_file": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND11_SESSION_3_EVIDENCE_2026-10-01/source-5-front-matter.txt"
+    },
+    {
+      "label": "2021/2022 executives",
+      "fiscal_year_and_institution_present_in_hash_bound_front_matter": true,
+      "front_matter_file": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND11_SESSION_3_EVIDENCE_2026-10-01/source-6-front-matter.txt"
+    },
+    {
+      "label": "2021/2022 assemblies",
+      "fiscal_year_and_institution_present_in_hash_bound_front_matter": true,
+      "front_matter_file": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND11_SESSION_3_EVIDENCE_2026-10-01/source-7-front-matter.txt"
+    }
+  ]
+}
