@@ -2052,10 +2052,18 @@ class KenyaDataPipeline:
                                     }
                                 )
 
-                        # GDP / GCP
+                        # GDP / GCP: a growth observation is not a level.
+                        if __package__:
+                            from .gdp_values import reported_gdp_level
+                        else:
+                            from gdp_values import reported_gdp_level
+
                         for gd in knbs_result.get("gdp_data", []) or []:
-                            gval = gd.get("gdp_value")
-                            if gval and float(gval) > 0:
+                            if not isinstance(gd, dict):
+                                logger.warning("Skipping malformed GDP transport row")
+                                continue
+                            gval = reported_gdp_level(gd.get("gdp_value"))
+                            if gval is not None:
                                 county = resolve_county_name(
                                     gd.get("county") or doc_info.get("county")
                                 )
@@ -2079,7 +2087,7 @@ class KenyaDataPipeline:
                                         "entity": entity,
                                         "year": gd.get("year") or doc_info.get("year"),
                                         "quarter": gd.get("quarter"),
-                                        "gdp_value": float(gd.get("gdp_value")),
+                                        "gdp_value": gval,
                                         "gdp_growth_rate": gd.get("growth_rate"),
                                         "currency": "KES",
                                         "source_page": gd.get("source_page"),

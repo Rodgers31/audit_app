@@ -537,44 +537,10 @@ def _is_debt_loan(loan) -> bool:
 
 
 def county_debt_total(loans) -> Optional[float]:
-    """A county's debt from SOURCED rows, or None when it has none.
+    """Selected instruments' outstanding balances; incomplete accounts are absent."""
+    from services.financial_publication import county_debt_summary
 
-    ``None`` is "nobody has published this county's debt" and must render as
-    absence. Zero would say the county owes nothing, which is a different
-    claim — and for 43 of the 47 it would be a claim made on no evidence at
-    all.
-
-    Until the modelled rows were removed, every county carried a
-    "County Government Debt" figure equal to a flat 15% of a budget that was
-    itself population x KSh 4,500 — the same ratio for the whole country. What
-    remains is genuinely sourced debt only.
-
-    Uses :func:`_is_debt_loan` rather than re-deriving the pending-bills rule,
-    which is what that function's docstring asks callers to do, and applies
-    :func:`county_debt_instrument_failure` so the LIST and DETAIL endpoints
-    cannot disagree. They did: the detail endpoint gated each row and the list
-    endpoint did not, so Nairobi read "13.1B" on /counties and "—" on its own
-    page. All four surviving county debt rows name the World Bank and cite
-    treasury.go.ke/public-debt/ — a section index, not a borrowing
-    authorisation — and the gate withholds them as
-    ``external_creditor_document_is_not_a_borrowing_authorisation``. That
-    verdict is the same on both pages now.
-    """
-    total = 0.0
-    found = False
-    for loan in loans or []:
-        if not _is_debt_loan(loan):
-            continue
-        if loan_is_modelled_fixture(loan):
-            continue
-        if county_debt_instrument_failure(loan):
-            continue
-        amount = getattr(loan, "outstanding", None) or getattr(loan, "principal", None)
-        if amount is None:
-            continue
-        total += float(amount)
-        found = True
-    return total if found else None
+    return county_debt_summary(loans)["total_debt"]
 
 
 #: The category the CBIRR own-source revenue rows are written under.
@@ -970,8 +936,7 @@ def county_debt_provenance_label(loans, total_debt: Optional[float]) -> str:
             "for this county"
         )
     debt = (
-        "County debt: not published — no county borrowing figure is traced to "
-        "a publication"
+        "County debt: selected outstanding balances are unavailable or incomplete"
         if total_debt is None
         else "County debt: loan rows with a source document"
     )
@@ -4273,7 +4238,12 @@ async def get_county_comprehensive(
                 _publishable_loans, _pending_reporting_day
             )
 
-            total_debt = county_debt_total(loans)
+            from services.financial_publication import (
+                county_debt_summary, county_debt_instrument_fields,
+            )
+
+            debt_summary = county_debt_summary(loans)
+            total_debt = debt_summary["total_debt"]
 
             # Same filter as total_debt above: pending bills are an arrears
             # balance, not borrowing, and they already have their own panel via
@@ -4289,11 +4259,12 @@ async def get_county_comprehensive(
                         "category": (
                             loan.debt_category.value if loan.debt_category else "other"
                         ),
-                        "principal": float(loan.principal or 0),
-                        "outstanding": float(loan.outstanding or 0),
-                        "interest_rate": (
-                            float(loan.interest_rate) if loan.interest_rate else None
-                        ),
+                        **county_debt_instrument_fields(loan),
+                        "currency": loan.currency,
+                        "source_document_id": loan.source_document_id,
+                        "page_ref": loan.page_ref,
+                        "basis": loan.basis.value if loan.basis else None,
+                        "provenance": loan.provenance,
                     }
                 )
 
@@ -4785,7 +4756,7 @@ async def get_county_comprehensive(
                 "revenue": _county_revenue_for_lines(budget_lines),
                 # Debt
                 "debt": {
-                    "total_debt": total_debt,
+                    **debt_summary,
                     "pending_bills": pending_bills,
                     # The day the figure is a stock on and what the report
                     # says about it, both from the rows behind it; null / []
@@ -4800,11 +4771,10 @@ async def get_county_comprehensive(
                             else None
                         ),
                     ),
-                    "debt_to_budget_ratio": (
-                        round(total_debt / total_allocated * 100, 1)
-                        if total_debt is not None and total_allocated > 0
-                        else None
-                    ),
+                    # Final budget publication computes this against the supported
+                    # account's exact period/currency, not the legacy rollup.
+                    "debt_to_budget_ratio": None,
+                    "debt_to_budget_ratio_absent_reason": "awaiting_budget_compatibility",
                     "per_capita_debt": per_capita_debt,
                     "breakdown": debt_breakdown,
                     # How many instrument rows the publication gate held back,
@@ -7698,7 +7668,7 @@ async def get_sources_summary():
                 "short": meta.get("short", ""),
                 "role": meta.get("role", ""),
                 "website": meta.get("website"),
-                "document_count": int(count or 0),
+                "document_count": int(count),  # SQL COUNT(id) for an existing publisher group.
                 "downloaded_documents": int(downloaded or 0),
                 "extracted_documents": int(extracted.get(pub, 0)),
                 "last_fetched": fetched.isoformat() if fetched else None,
@@ -8902,43 +8872,30 @@ async def get_budget_overview():
                 db.query(FSModel).order_by(FSModel.fiscal_year.asc()).all()
             )
             fiscal_years = []
+            fiscal_history_withheld = []
 
-            # This response declares fiscal_history_unit = "billion_kes";
-            # the table stores raw KES since the stage1 3a migration, so
-            # convert here to keep the declared unit truthful.
-            def _b(v) -> float:
-                return float(v or 0) / 1e9
+            from services.financial_publication import fiscal_history_entry
 
             for r in fiscal_rows:
-                entry = {
-                    "fiscal_year": r.fiscal_year,
-                    "appropriated_budget": _b(r.appropriated_budget),
-                    "total_revenue": _b(r.total_revenue),
-                    "tax_revenue": _b(r.tax_revenue),
-                    "non_tax_revenue": _b(r.non_tax_revenue),
-                    "total_borrowing": _b(r.total_borrowing),
-                    "borrowing_pct_of_budget": float(r.borrowing_pct_of_budget or 0),
-                    "debt_service_cost": _b(r.debt_service_cost),
-                    "development_spending": _b(r.development_spending),
-                    "recurrent_spending": _b(r.recurrent_spending),
-                    "county_allocation": _b(r.county_allocation),
-                }
-                # Only include years with substantially complete data —
-                # World Bank back-fill years often only have 1-2 fields.
-                key_fields = [
-                    entry["appropriated_budget"],
-                    entry["total_revenue"],
-                    entry["total_borrowing"],
-                    entry["county_allocation"],
-                ]
-                if sum(1 for v in key_fields if v > 0) >= 3:
+                entry = fiscal_history_entry(r)
+                # Keep the existing coverage threshold; zero is reported data.
+                key_fields = [entry[k] for k in (
+                    "appropriated_budget", "total_revenue", "total_borrowing",
+                    "county_allocation",
+                )]
+                if sum(v is not None for v in key_fields) >= 3:
                     fiscal_years.append(entry)
+                else:
+                    fiscal_history_withheld.append({
+                        "fiscal_year": r.fiscal_year,
+                        "reason": "unsupported_unit" if r.unit != "KES" else "insufficient_reported_fields",
+                        "source_unit": r.unit,
+                        "absent_reasons": entry["absent_reasons"],
+                    })
 
-            # The latest year with an enacted budget, as /fiscal/summary picks
-            # it (_current_fiscal_year): next year's Budget Summary arrives
-            # before its budget book and must not become the headline year.
             latest = next(
-                (e for e in reversed(fiscal_years) if e["appropriated_budget"] > 0),
+                (e for e in reversed(fiscal_years)
+                 if e["appropriated_budget"] is not None and e["appropriated_budget"] > 0),
                 fiscal_years[-1] if fiscal_years else {},
             )
 
@@ -9242,6 +9199,8 @@ async def get_budget_overview():
                 },
                 "sectors": sectors,
                 "fiscal_history": fiscal_years,
+                "fiscal_history_withheld": fiscal_history_withheld,
+                "fiscal_history_absent_reason": "no_supported_fiscal_history" if not fiscal_years else None,
                 "county_utilization": {
                     "top_5": county_utils[:5],
                     "bottom_5": (
@@ -12952,6 +12911,8 @@ async def get_budget_lines(
             query.order_by(DBBudgetLine.category).offset(skip).limit(limit).all()
         )
 
+        from services.financial_publication import monetary_fields
+
         items: List[Dict[str, Any]] = []
         for bl in budget_lines:
             items.append(
@@ -12959,9 +12920,9 @@ async def get_budget_lines(
                     "id": bl.id,
                     "category": bl.category,
                     "subcategory": bl.subcategory,
-                    "allocated_amount": float(bl.allocated_amount or 0),
-                    "actual_spent": float(bl.actual_spent or 0),
-                    "committed_amount": float(bl.committed_amount or 0),
+                    **monetary_fields(
+                        bl, ("allocated_amount", "actual_spent", "committed_amount")
+                    ),
                     "currency": bl.currency,
                     "entity_id": bl.entity_id,
                     "period_label": bl.period.label if bl.period else None,
@@ -13084,6 +13045,8 @@ async def search(
             }
         )
 
+    from services.financial_publication import monetary_fields
+
     # Search budget lines
     budget_query = db.query(DBBudgetLine).filter(
         or_(
@@ -13107,8 +13070,11 @@ async def search(
                 "type": "budget_line",
                 "category": bl.category,
                 "subcategory": bl.subcategory,
-                "allocated_amount": float(bl.allocated_amount or 0),
-                "actual_spent": float(bl.actual_spent or 0),
+                **monetary_fields(bl, ("allocated_amount", "actual_spent")),
+                "currency": bl.currency,
+                "entity_id": bl.entity_id,
+                "period_id": bl.period_id,
+                "source_document_id": bl.source_document_id,
                 "entity_name": bl.entity.canonical_name if bl.entity else None,
                 "period_label": bl.period.label if bl.period else None,
             }

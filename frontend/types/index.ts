@@ -188,7 +188,13 @@ export interface CountyComprehensive {
   };
   revenue: CountyRevenue;
   debt: {
-    total_debt: number;
+    total_debt: number | null;
+    total_debt_absent_reason?: string | null;
+    debt_currency?: 'KES' | null;
+    debt_accounting_basis?: 'selected_instrument_outstanding';
+    debt_basis?: 'actual' | null;
+    debt_as_at?: string | null;
+    debt_coverage?: 'selected_eligible_instruments_only';
     /** null when no publication states this county's pending bills — Nandi
      *  reported none to the Controller of Budget at 30 June 2026. */
     pending_bills: number | null;
@@ -208,15 +214,22 @@ export interface CountyComprehensive {
       as_at: string;
       table: string | null;
     } | null;
-    debt_to_budget_ratio: number;
+    debt_to_budget_ratio: number | null;
+    debt_to_budget_ratio_absent_reason?: string | null;
     /** null when the population or the debt is unknown. */
     per_capita_debt: number | null;
     breakdown: Array<{
       lender: string;
       category: string;
-      principal: number;
-      outstanding: number;
-      interest_rate?: number;
+      principal: number | null;
+      outstanding: number | null;
+      interest_rate?: number | null;
+      currency?: string;
+      source_document_id?: number;
+      page_ref?: string | null;
+      basis?: string | null;
+      provenance?: unknown;
+      absent_reasons?: Record<string, string>;
     }>;
   };
   audit: {

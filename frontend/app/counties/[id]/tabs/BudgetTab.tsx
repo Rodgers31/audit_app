@@ -151,7 +151,12 @@ export default function BudgetTab({ data }: { data: CountyComprehensive }) {
           </h3>
           <div className='space-y-3'>
             {debt.breakdown.map((d, i) => {
-              const pctOfTotal = debt.total_debt > 0 ? (d.outstanding / debt.total_debt) * 100 : 0;
+              const pctOfTotal =
+                typeof d.outstanding === 'number' && Number.isFinite(d.outstanding) && d.outstanding >= 0 &&
+                typeof debt.total_debt === 'number' && Number.isFinite(debt.total_debt) && debt.total_debt > 0 &&
+                d.outstanding <= debt.total_debt
+                  ? (d.outstanding / debt.total_debt) * 100
+                  : null;
               return (
                 <div key={i}>
                   <div className='flex items-center justify-between mb-1'>
@@ -162,12 +167,12 @@ export default function BudgetTab({ data }: { data: CountyComprehensive }) {
                       {fmtKES(d.outstanding)}
                     </span>
                   </div>
-                  <div className='h-2 bg-gray-100 dark:bg-surface-elevated rounded-full overflow-hidden'>
+                  {pctOfTotal != null && <div className='h-2 bg-gray-100 dark:bg-surface-elevated rounded-full overflow-hidden'>
                     <div
                       className='h-full rounded-full bg-red-400'
                       style={{ width: `${Math.min(pctOfTotal, 100)}%` }}
                     />
-                  </div>
+                  </div>}
                   <div className='text-[11px] text-gray-400 dark:text-neutral-muted/80 mt-0.5'>
                     {pct(pctOfTotal)} {t('county.budget.of_total_debt')}
                   </div>

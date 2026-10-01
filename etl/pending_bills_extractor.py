@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import math
 import os
 import re
 from datetime import datetime, timezone
@@ -68,6 +69,24 @@ PENDING_BILLS_PATTERNS = [
     re.compile(r"arrears", re.IGNORECASE),
     re.compile(r"outstanding\s+(?:payments?|bills?)", re.IGNORECASE),
 ]
+
+
+def _incompatible_pending_context(context: str, fiscal_year: str) -> bool:
+    """Reject explicitly incompatible currencies, periods and accounting bases."""
+    currencies = {m.upper() for m in re.findall(r"\b(KES|USD|EUR|GBP)\b", context, re.I)}
+    periods = {
+        (int(start), int(end) if len(end) == 4 else int(start[:2] + end))
+        for start, end in re.findall(r"\b(?:FY\s*)?((?:19|20)\d{2})[/-](\d{4}|\d{2})\b", context, re.I)
+    }
+    expected = re.search(r"((?:19|20)\d{2})/(\d{4}|\d{2})", fiscal_year)
+    expected_period = (int(expected[1]), int(expected[1]) + 1) if expected else None
+    lower = context.lower()
+    return (
+        bool(currencies - {"KES"})
+        or any(period != expected_period for period in periods)
+        or any(word in lower for word in ("projected", "modelled", "estimated"))
+        or ("cash" in lower and "accrual" in lower)
+    )
 
 
 class PendingBillsExtractor:
@@ -148,10 +167,9 @@ class PendingBillsExtractor:
         results["pending_bills"] = bills_data.get("bills", [])
         results["summary"] = bills_data.get("summary", {})
 
-        logger.info(
-            f"Extracted {len(results['pending_bills'])} pending bills entries "
-            f"totalling KES {results['summary'].get('grand_total', 0):,.0f}"
-        )
+        logger.info("Extracted %s pending bills entries; grand_total=%s absent_reason=%s",
+                    len(results["pending_bills"]), results["summary"].get("grand_total"),
+                    results["summary"].get("grand_total_absent_reason"))
         return results
 
     async def _discover_latest_report(
@@ -379,7 +397,7 @@ class PendingBillsExtractor:
         - Entity | Amount (KES) | Status | Verification
         """
         rows: list[dict[str, Any]] = []
-        if not table or len(table) < 2:
+        if not isinstance(table, (list, tuple)) or len(table) < 2 or not isinstance(table[0], (list, tuple)):
             return rows
 
         # Try to identify header row
@@ -414,7 +432,7 @@ class PendingBillsExtractor:
 
         if entity_col is None:
             # Try second row as header
-            if len(table) > 2:
+            if len(table) > 2 and isinstance(table[1], (list, tuple)):
                 header_row = table[1]
                 header_text = [
                     str(cell).lower().strip() if cell else "" for cell in header_row
@@ -438,7 +456,8 @@ class PendingBillsExtractor:
         data_start = 1 if entity_col is not None else 2
         for row_idx in range(data_start, len(table)):
             row = table[row_idx]
-            if not row or len(row) <= entity_col:
+            if not isinstance(row, (list, tuple)) or len(row) <= entity_col:
+                logger.warning("Skipping malformed pending-bill row %s", row_idx)
                 continue
 
             entity = str(row[entity_col] or "").strip()
@@ -472,11 +491,39 @@ class PendingBillsExtractor:
                 else None
             )
 
-            if total_val is None and eligible_val is None:
-                continue
-
-            if total_val is None and eligible_val is not None:
-                total_val = eligible_val + (ineligible_val or 0)
+            context = " ".join(header_text)
+            years = set(re.findall(r"\b(?:19|20)\d{2}\b", context))
+            fy_match = re.search(r"((?:19|20)\d{2})/(\d{2}|\d{4})", fiscal_year)
+            expected_years = {fy_match[1], str(int(fy_match[1]) + 1)} if fy_match else set()
+            amount_headers = [header_text[i] for i in (total_col, eligible_col, ineligible_col) if i is not None]
+            # Raw component values cannot be added across different printed
+            # scales or observation years, even within one fiscal-year range.
+            year_contexts = {tuple(sorted(re.findall(r"\b(?:19|20)\d{2}\b", h))) for h in amount_headers}
+            unit_contexts = {tuple(re.findall(r"\b(?:trillion|billion|million|thousand)\b", h)) for h in amount_headers}
+            year_contexts.discard(())
+            unit_contexts.discard(())
+            incompatible = (
+                _incompatible_pending_context(context, fiscal_year)
+                or bool(years - expected_years)
+                or len(year_contexts) > 1
+                or len(unit_contexts) > 1
+            )
+            reason = None
+            if incompatible:
+                total_val = None
+                reason = "incompatible_component_context"
+            elif total_val is None:
+                if eligible_val is not None and ineligible_val is not None:
+                    total_val = eligible_val + ineligible_val
+                    if not math.isfinite(total_val):
+                        total_val = None
+                        reason = "invalid_component_total"
+                else:
+                    reason = "incomplete_components"
+            elif eligible_val is not None and ineligible_val is not None:
+                if not math.isclose(total_val, eligible_val + ineligible_val, rel_tol=1e-9, abs_tol=0.01):
+                    total_val = None
+                    reason = "conflicting_components"
 
             rows.append(
                 {
@@ -484,7 +531,9 @@ class PendingBillsExtractor:
                     "entity_type": "national",
                     "category": "mda",
                     "fiscal_year": fiscal_year,
-                    "total_pending": total_val or 0,
+                    "total_pending": total_val,
+                    "total_pending_absent_reason": reason,
+                    "printed_zero": total_val == 0,
                     "eligible_pending": eligible_val,
                     "ineligible_pending": ineligible_val,
                 }
@@ -521,88 +570,80 @@ class PendingBillsExtractor:
             text = pdf.pages[page_idx].extract_text() or ""
             full_text += text + "\n"
 
-        # Amount extraction patterns (KES billions/millions)
-        def _find_amount(pattern: str) -> Optional[float]:
-            match = re.search(pattern, full_text, re.IGNORECASE)
-            if match:
-                amount_str = match.group(1).replace(",", "").strip()
-                try:
-                    val = float(amount_str)
-                    # Determine multiplier from context
-                    context = full_text[
-                        max(0, match.start() - 30) : match.end() + 30
-                    ].lower()
-                    if "trillion" in context:
-                        return val * 1e12
-                    elif "billion" in context:
-                        return val * 1e9
-                    elif "million" in context:
-                        return val * 1e6
-                    elif val < 100:
-                        # Likely billions
-                        return val * 1e9
-                    elif val < 100_000:
-                        # Likely millions
-                        return val * 1e6
-                    return val
-                except ValueError:
-                    pass
-            return None
+        # Require explicit institution and unit; a county-only sentence cannot
+        # stand in for a national observation, nor can nearby units scale it.
+        def component(scope):
+            pattern = (
+                scope + r"\s+pending\s+bills?\s+(?:amounted?\s+to|stood\s+at|of|totall?(?:ed|ing)?)"
+                r"\s*(?:KES|Ksh\.?|Kshs?\.?)?\s*([\d,\.]+)\s*(trillion|billion|million)\b"
+            )
+            values = set()
+            for match in re.finditer(pattern, full_text, re.I):
+                amount = self._parse_amount(match[1])
+                if amount is None:
+                    return None, "not_reported_or_invalid"
+                value = amount * {"trillion": 1e12, "billion": 1e9, "million": 1e6}[match[2].lower()]
+                if not math.isfinite(value):
+                    return None, "not_reported_or_invalid"
+                values.add(value)
+            if len(values) > 1:
+                return None, "conflicting_component_observations"
+            return (next(iter(values)), None) if values else (None, "not_reported_or_invalid")
 
-        # Look for national pending bills total
-        for pattern in [
-            r"(?:national\s+government\s+)?pending\s+bills?\s+(?:amounted?\s+to|stood\s+at|of|totall?(?:ed|ing)?)\s*(?:KES|Ksh\.?|Kshs?\.?)?\s*([\d,\.]+)",
-            r"(?:total\s+)?pending\s+bills?\s*(?:of|at|:)?\s*(?:KES|Ksh\.?|Kshs?\.?)?\s*([\d,\.]+)\s*(?:billion|million|trillion)",
-            r"(?:KES|Ksh\.?|Kshs?\.?)\s*([\d,\.]+)\s*(?:billion|million|trillion)?\s*(?:in\s+)?pending\s+bills?",
-        ]:
-            val = _find_amount(pattern)
-            if val and val > 1e6:
-                if summary["total_national"] is None:
-                    summary["total_national"] = val
-                    break
-
-        # Look for county pending bills
-        for pattern in [
-            r"county\s+(?:government\s+)?pending\s+bills?\s+(?:amounted?\s+to|stood\s+at|of)\s*(?:KES|Ksh\.?|Kshs?\.?)?\s*([\d,\.]+)",
-            r"county\s+.*?(?:KES|Ksh\.?|Kshs?\.?)\s*([\d,\.]+)\s*(?:billion|million|trillion)?\s*(?:in\s+)?pending",
-        ]:
-            val = _find_amount(pattern)
-            if val and val > 1e6:
-                if summary["total_county"] is None:
-                    summary["total_county"] = val
-                    break
-
-        # Look for date "as at" reference
-        date_match = re.search(
+        incompatible = _incompatible_pending_context(full_text, fiscal_year)
+        for key, scope in (("total_national", r"national\s+government"), ("total_county", r"county(?:\s+government)?")):
+            value, absent_reason = component(scope)
+            if incompatible:
+                value, absent_reason = None, "incompatible_component_context"
+            summary[key] = value
+            summary[key + "_absent_reason"] = absent_reason
+        summary["currency"] = None if incompatible else "KES"
+        date_matches = re.findall(
             r"as\s+at\s+(\w+\s+\d{1,2}[,]?\s+\d{4}|\d{1,2}\s+\w+\s+\d{4})",
-            full_text,
-            re.IGNORECASE,
+            full_text, re.I,
         )
-        if date_match:
-            summary["as_at_date"] = date_match.group(1).strip()
-
-        # Calculate grand total
-        national = summary.get("total_national") or 0
-        county = summary.get("total_county") or 0
-        if national or county:
-            summary["grand_total"] = national + county
+        dates = set()
+        invalid_date = False
+        for raw in date_matches:
+            parsed = False
+            for fmt in ("%d %B %Y", "%B %d, %Y", "%B %d %Y"):
+                try:
+                    dates.add(datetime.strptime(raw, fmt).date().isoformat())
+                    parsed = True
+                    break
+                except ValueError:
+                    continue
+            invalid_date |= not parsed
+        summary["as_at_date"] = next(iter(dates)) if len(dates) == 1 else None
+        national, county = summary["total_national"], summary["total_county"]
+        reason = "incomplete_components"
+        if national is not None and county is not None:
+            if len(dates) != 1 or not date_matches or invalid_date:
+                reason = "incompatible_or_missing_reporting_dates"
+            else:
+                total = national + county
+                if math.isfinite(total):
+                    summary["grand_total"] = total
+                    reason = None
+                else:
+                    reason = "invalid_component_total"
+        summary["grand_total_absent_reason"] = reason
 
         return summary
 
     @staticmethod
     def _parse_amount(value: Any) -> Optional[float]:
-        """Parse a string/number into a float amount."""
-        if value is None:
+        """Finite nonnegative amounts; commas/spaces must be thousands groups."""
+        if value is None or isinstance(value, bool):
             return None
-        s = str(value).strip().replace(",", "").replace(" ", "")
-        # Remove currency prefixes
-        s = re.sub(r"^(?:KES|Ksh\.?|Kshs?\.?)\s*", "", s, flags=re.IGNORECASE)
-        if not s or s == "-" or s.lower() in ("nil", "n/a", "none"):
+        if isinstance(value, (int, float)):
+            return float(value) if math.isfinite(value) and value >= 0 else None
+        s = str(value).strip()
+        s = re.sub(r"^(?:KES|Ksh\.?|Kshs?\.?)\s*", "", s, flags=re.I)
+        if not re.fullmatch(r"(?:\d+|\d{1,3}(?:[, ]\d{3})+)(?:\.\d+)?", s):
             return None
-        try:
-            return float(s)
-        except ValueError:
-            return None
+        amount = float(s.replace(",", "").replace(" ", ""))
+        return amount if math.isfinite(amount) and amount >= 0 else None
 
 
 # ── CLI entry point ──────────────────────────────────────────────────────
