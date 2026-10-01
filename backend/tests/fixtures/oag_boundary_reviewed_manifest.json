@@ -1,0 +1,95 @@
+{
+  "source_url": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf",
+  "source_sha256": "aa72b0a512fe01ce8f40b9ed8597bd78657a9f441a8daf4963b07e661104d896",
+  "source_scope": "FY2024/2025 county assemblies, 47 chapters, 582 findings",
+  "baseline_commit": "c76ad74877dcd29a284b548c928f59538553fa0f",
+  "baseline_extractor_version": 2,
+  "corrected_extractor_version": 3,
+  "observed_public_snapshot_sha256": "a732fe184e84a668c3035004920529e9275e55f0648a7925b81c81b9b7871365",
+  "changed_rows": [
+    {
+      "id": 5545,
+      "external_reference": "OAG-CV-2024/2025-A33-P453",
+      "entity_id": 36,
+      "audited_entity_name": "County Assembly of Narok",
+      "audit_year": 2025,
+      "period_id": 1,
+      "page_ref": "p.168",
+      "source_document_url": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf#page=168",
+      "source_pdf_page": 168,
+      "source_printed_page": 155,
+      "preserved_fields": {
+        "county_name": "Narok County",
+        "severity": "warning",
+        "query_type": "Report on Effectiveness of Internal Controls, Risk Management and Governance",
+        "amount": null,
+        "status": "published_report"
+      },
+      "before": {
+        "text": "Lack of an Approved Strategic Plan During the year under review, the County Assembly operated without an approved Strategic Plan to guide its operations, programs, and resource allocation. Strategic Plan is a critical tool for aligning institutional objectives with available resources and for ensuring long-term planning, performance monitoring, and accountability. In the circumstances, the County Assembly’s direction, institutional governance and decision-making framework could not be confirmed. List of Unresolved Prior Year Matters S/No. Audit Issues for 2023/2024 1. Variances Between Financial Statements and Bank Statement Transactions 2. Misclassification of Expenses 3. Payment in Internet Banking not in IFMIS 4. Voided Transactions-Payments 5. Irregular Maintenance of Manual Payroll 6. Legal Fess 7. Pending Accounts Payables 8. Budgetary Performance and Control 9. Non-Compliance with Number of Members 10. Irregular Payments of Transport Allowance 11. Regularity of Procurement and Award of Contract 12. Noncompliance with One Third Rule on Basic Salary Rule 13. Noncompliance with the Law on Settlement of Accounts Payables 14. Non-Remittance of Statutory Deductions 15. Noncompliance with Law on Non-Current Assets 16. Ward Expenses",
+        "sha256": "1e790d1579270439ce49cbb4572915f31c4d0c6efec4e14aa8d1fe2f6d369d85"
+      },
+      "after": {
+        "text": "Lack of an Approved Strategic Plan During the year under review, the County Assembly operated without an approved Strategic Plan to guide its operations, programs, and resource allocation. Strategic Plan is a critical tool for aligning institutional objectives with available resources and for ensuring long-term planning, performance monitoring, and accountability. In the circumstances, the County Assembly’s direction, institutional governance and decision-making framework could not be confirmed.",
+        "sha256": "6cd22e9b2e1ff7257d8cc88ac4d05eca3ba3f9ef68664fb23391c82e56913aba"
+      }
+    },
+    {
+      "id": 5679,
+      "external_reference": "OAG-CV-2024/2025-A44-P603",
+      "entity_id": 47,
+      "audited_entity_name": "County Assembly of Migori",
+      "audit_year": 2025,
+      "period_id": 1,
+      "page_ref": "p.221",
+      "source_document_url": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf#page=221",
+      "source_pdf_page": 221,
+      "source_printed_page": 208,
+      "preserved_fields": {
+        "county_name": "Migori County",
+        "severity": "warning",
+        "query_type": "Report on Effectiveness of Internal Controls, Risk Management and Governance",
+        "amount": null,
+        "status": "published_report"
+      },
+      "before": {
+        "text": "Weaknesses in Management of Cash and Cash Equivalents Review of the County Assembly’s cash books, bank statements, and other records revealed that the County Assembly operated and maintained one bank account. However, system-generated cash books, ledgers, signature specimens of the bank signatories were not provided for audit review. Further, the cash book entries were not correctly captured, monthly reconciliations were not done, cash books were not closed off and balances brought forward on monthly basis and approved cash floats for the standing imprest system was not provided. In the circumstances, the effectiveness of internal controls over cash and cash equivalents management could not be confirmed. List of Unresolved Prior Year Matters No. Audit Issues for 2023/2024 1 Inaccuracies in the Financial Statements 2 Compensation of Employees 3 Voided Transactions in IFMIS 4 Unsupported Cash Transfers 5 Unremitted Housing Levy Payroll Deductions 6 Staff Establishment and Payroll Records Non-Compliance with Provisions on Ethnicity Diversity, Affirmative Action on 7 Gender and Persons Living with Disabilities 8 Non-Adherence to One Third rule on Basic Salary Rule 9 Payment of Salaries Outside the IPPD System 10 Irregular Payment of Allowances to Employees on Acting Capacity No. Audit Issues for 2023/2024 11 Recruitment of Employees Non-Compliance with Fiscal Responsibility Principle on Compensation of 12 Employees Expenditure 13 Non-Compliance with the Law on Framework Contract Agreement 14 Avoidable Legal Fees 15 Unexplained Changes in the Payroll 16 Lack of Audit Committee and Unestablished Internal Audit Function",
+        "sha256": "60c5a322498e2a799bbfaf8534e9afa5d64fd8e6672041288bb48b1bde8a2bb4"
+      },
+      "after": {
+        "text": "Weaknesses in Management of Cash and Cash Equivalents Review of the County Assembly’s cash books, bank statements, and other records revealed that the County Assembly operated and maintained one bank account. However, system-generated cash books, ledgers, signature specimens of the bank signatories were not provided for audit review. Further, the cash book entries were not correctly captured, monthly reconciliations were not done, cash books were not closed off and balances brought forward on monthly basis and approved cash floats for the standing imprest system was not provided. In the circumstances, the effectiveness of internal controls over cash and cash equivalents management could not be confirmed.",
+        "sha256": "3deacd44d7da4ff894c99106cbfe5994cf2b7fa4d61e664d650b21448d2b5556"
+      }
+    },
+    {
+      "id": 5716,
+      "external_reference": "OAG-CV-2024/2025-A47-P645",
+      "entity_id": 3,
+      "audited_entity_name": "Nairobi City County Assembly",
+      "audit_year": 2025,
+      "period_id": 1,
+      "page_ref": "p.239",
+      "source_document_url": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf#page=239",
+      "source_pdf_page": 239,
+      "source_printed_page": 226,
+      "preserved_fields": {
+        "county_name": "Nairobi County",
+        "severity": "warning",
+        "query_type": "Report on Effectiveness of Internal Controls, Risk Management and Governance",
+        "amount": null,
+        "status": "published_report"
+      },
+      "before": {
+        "text": "Irregular Allocation of Official Transport Review of motor vehicle management records revealed that official transport was provided to the leadership of the County Assembly who do not qualify for official transport. This was contrary to Paragraph 3(a) of Gazette Notice 6518 dated 7 July, 2017 on other benefits and allowances which provides that the official transport will be provided to the Governor, Deputy Governor, County Assembly Speaker and Member of County Executive Committee. In the circumstances, the internal controls in management of motor vehicles could not be confirmed. List of Unresolved Prior Years Matters NO Audit Issues for 2019/2020 1. Presentation of Financial Statements 2. Unreconciled Compensation of Employees 3. Allowances to Members of County Assembly 4. Unsupported Use of Goods and Services 5. Unreconciled Outstanding Imprests 6. Lack of an Updated Fixed Assets Register 7. Pending Bills 8. Prior Year Grants 9. Budgeted Receipts Payments 10. Prior Year Adjustment 11. Total Payments 12. Budgetary Control and Performance 13. Irregularities in Compensation of Employees 14. High Wage Bill 15. Excessive Deductions on Staff Pay 16. Payments to Staff by County Executive of Nairobi 17. Domestic and Subsistence Allowances 18. Payment to County Assembly Forum 19. Unapproved Risk Management Policy No. Audit Issues for 2020/2021 1. Presentation of the Financial Statements 2. Inaccuracies in the Financial Statements 3. Statement of Assets and Liabilities 4. Statement of Comparison of Budget and Actual Amounts 5. Unsupported Payments on Committee Allowance 6. Communication Supplies and Services No. Audit Issues for 2020/2021 7. Legal Expenses 8. Foreign Travel and Subsistence 9. Acquisition of Assets – Overstatement of Assets Balance 10. Pending Accounts Payables 11. Irregular Promotions 12. Irregular Payment of Temporary wages 13. Unauthorized expenditure 14. Committee Sittings 15. Excessive Number of Participants in an MCAs Retreat 16. Failure to Adhere to the Board Appointment Requirement 17. Non-Compliance with the Law on Fiscal Responsibility 18. Unapproved Travel Refunds and Claims 19. Irregular Use of Direct Procurement Method 20. Outstanding Imprests 21. Irregular Payment to County Assembly Forum 22. Payment of Honoraria Allowance 23. Non-Remittance of Taxes 24. Failure to Maintain AIE Holders Register 25. Lack of an Updated Assets Register 26. Overlapping Committee Retreats 27. Un-Approved Training Plan 28. Failure to Adhere to the Approved Staff Establishment No. Audit Issues for 2021/2022 1. Inconsistencies in Statement of Comparison of Budget and Actual Amounts 2. Unsupported Prior Year Adjustments 3. Variance Between the Financial Statements and the Trial Balance 4. Variances Between the Financial Statements and Ledgers 5. Unsupported Expenditure 6. Unsupported and Unauthorized Compensation of Employees Expenditure 7. Undisclosed Contingent Liabilities 8. Unsupported use of Goods and Services 9. Irregular Procurement of Conference Facilities and Air Tickets 10. Domestic and Foreign Travel and Subsistence 11. Routine Maintenance of Other Assets 12. Inaccuracies in Legal Payments 13. Irregular Payment of Subscriptions 14. Rental of Produced Assets 15. Unauthorized Borrowings 16. Unsupported Cash and Cash Equivalents 17. Voided Transactions 18. Unsupported Payments 19. Budgetary Control and Performance No. Audit Issues for 2021/2022 20. Unsupported Pending Accounts Payable 21. Prior Year Audit Matters 22. Non-Compliance with the Fiscal Responsibilities Provisions - Wage Bill 23. Non-remittance of Statutory Deductions 24. Outstanding and Irregular Imprests 25. Lack of Approved Information Technology Security Policy and Disaster Recovery Plan 26. Payment of Salary Outside Payroll 27. Lack of an Updated Fixed Assets Register No. Audit Issues for 2022/2023 1. Variances between the Financial Statements and the Trial Balance 2. Variances between the Financial Statements and the Ledgers 3. Inaccuracies in the Statement of Receipts and Payments 4. Unsupported Expenditure on Use of Goods and Services 5. Unsupported Expenditure on Acquisition of Assets 6. Inaccuracies in the Statement of Comparison of Budget and Actual Amounts 7. Unsupported Prior Year Adjustments 8. Inaccuracy Statement of Cash Flows 9. Misclassification of Expenditure 10. Inaccuracies in Cash and Bank Balances 11. Undisclosed Motor Vehicle Reimbursements 12. Unsupported Other Operating Expenses 13. Unsupported Communication, Supplies and Services 14. Unsupported Domestic Travel and Services Subsistence 15. Unsupported Foreign Travel and Subsistence 16. Unsupported Accounts Payables 17. Unsupported Salary Advances 18. Budgetary Control and Performance 19. Non-Compliance with Fiscal Responsibility Principles 20. Irregularities in Recruitment of Members of Staff 21. Non-Remittance of Statutory Deductions 22. Irregular Payments to Services Providers Using Imprest 23. Irregular in Legal Contracts 24. Irregular Expenditure on Subscriptions 25. Non-Compliance with Ward Partisan Staffing Levels 26. Unutilized Speaker’s Residence No. Audit Issues for 2023/2024 27. Inaccuracies in the Financial Statements 28. Unsupported Legal Expenses 29. Unsupported Prior Year Adjustments 30. Pending Payables 31. Budget Control and Performance No. Audit Issues for 2023/2024 32. Receipt of Goods on Expired Local Purchase Order 33. Unsupported Procurement of Bulk Short Message Service (SMS 34. Non-Adherence to the One-Third Basic Salary Rule 35. Noncompliance with Fiscal Responsibility Principles",
+        "sha256": "2cac98980ea69e1b0e75dca77e8f190ea190f5c22f719e416365c9dd6e73fdcc"
+      },
+      "after": {
+        "text": "Irregular Allocation of Official Transport Review of motor vehicle management records revealed that official transport was provided to the leadership of the County Assembly who do not qualify for official transport. This was contrary to Paragraph 3(a) of Gazette Notice 6518 dated 7 July, 2017 on other benefits and allowances which provides that the official transport will be provided to the Governor, Deputy Governor, County Assembly Speaker and Member of County Executive Committee. In the circumstances, the internal controls in management of motor vehicles could not be confirmed.",
+        "sha256": "45ae72188a9f4475bdf206992532ccb53d3a01b66ab61191b12c880fbedfc077"
+      }
+    }
+  ],
+  "unchanged_finding_count": 579,
+  "repair_guard": "Before an authorized ingestion or stored-text update, require this exact PDF SHA256, the same three row IDs/references/periods/source links, and each before.text SHA256. Abort on any mismatch; preserve the row identities and all fields outside finding_text. Reconcile extractions and audits, then verify all three public texts and links.",
+  "production_write_performed": false
+}

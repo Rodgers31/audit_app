@@ -1,0 +1,491 @@
+{
+  "evidence": "Audit/extraction/source/period captured READ ONLY 2026-09-30; entity profile metadata omitted for synthetic disposable clone",
+  "rows": [
+    {
+      "audit": {
+        "id": 5545,
+        "entity_id": 36,
+        "period_id": 1,
+        "finding_text": "Lack of an Approved Strategic Plan During the year under review, the County Assembly operated without an approved Strategic Plan to guide its operations, programs, and resource allocation. Strategic Plan is a critical tool for aligning institutional objectives with available resources and for ensuring long-term planning, performance monitoring, and accountability. In the circumstances, the County Assembly\u2019s direction, institutional governance and decision-making framework could not be confirmed. List of Unresolved Prior Year Matters S/No. Audit Issues for 2023/2024 1. Variances Between Financial Statements and Bank Statement Transactions 2. Misclassification of Expenses 3. Payment in Internet Banking not in IFMIS 4. Voided Transactions-Payments 5. Irregular Maintenance of Manual Payroll 6. Legal Fess 7. Pending Accounts Payables 8. Budgetary Performance and Control 9. Non-Compliance with Number of Members 10. Irregular Payments of Transport Allowance 11. Regularity of Procurement and Award of Contract 12. Noncompliance with One Third Rule on Basic Salary Rule 13. Noncompliance with the Law on Settlement of Accounts Payables 14. Non-Remittance of Statutory Deductions 15. Noncompliance with Law on Non-Current Assets 16. Ward Expenses",
+        "severity": "WARNING",
+        "recommended_action": null,
+        "source_document_id": 2541,
+        "provenance": [
+          {
+            "title": "Lack of an Approved Strategic Plan",
+            "source": "oag_county_volume",
+            "amounts": [],
+            "auditee": "County Assembly of Narok",
+            "heading": "Basis for Conclusion",
+            "opinion": null,
+            "pdf_page": 168,
+            "reference": "OAG-CV-2024/2025-A33-P453",
+            "subreport": "REPORT ON EFFECTIVENESS OF INTERNAL CONTROLS, RISK MANAGEMENT",
+            "chapter_no": 33,
+            "source_md5": "f495cb595c81583af7d8bbd46e2279d6",
+            "source_url": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf",
+            "sub_section": null,
+            "volume_kind": "assemblies",
+            "printed_page": 155,
+            "extraction_id": 6023,
+            "extraction_method": "pdfplumber",
+            "fiscal_year_sources": [
+              "filename",
+              "oag_year_page",
+              "title_page"
+            ]
+          }
+        ],
+        "created_at": "2026-09-29T02:31:53.753955",
+        "validation_warnings": null,
+        "query_type": "REPORT ON EFFECTIVENESS OF INTERNAL CONTROLS, RISK MANAGEMENT",
+        "amount": null,
+        "status": "published_report",
+        "audit_opinion": null,
+        "audit_year": 2025,
+        "external_reference": "OAG-CV-2024/2025-A33-P453",
+        "management_response": null,
+        "follow_up_status": null,
+        "confidence_score": 0.9,
+        "extraction_id": 6023,
+        "page_ref": "p.168",
+        "source_hash": "a598d53ef78b73eb83c97c7c70edd3a06cb2e98397ee7c04a9c17a7f77e1052d",
+        "basis": "ACTUAL",
+        "publishable": true,
+        "quarantine_reason": null
+      },
+      "extraction": {
+        "id": 6023,
+        "source_document_id": 2541,
+        "page_number": 168,
+        "extracted_json": {
+          "title": "Lack of an Approved Strategic Plan",
+          "schema": "oag_county_volume/v1",
+          "amounts": [],
+          "auditee": "County Assembly of Narok",
+          "heading": "Basis for Conclusion",
+          "opinion": null,
+          "pdf_page": 168,
+          "severity": "WARNING",
+          "subreport": "REPORT ON EFFECTIVENESS OF INTERNAL CONTROLS, RISK MANAGEMENT",
+          "chapter_no": 33,
+          "county_name": "Narok",
+          "entity_name": "County Assembly of Narok",
+          "fiscal_year": "2024/2025",
+          "sub_section": null,
+          "volume_kind": "assemblies",
+          "finding_text": "Lack of an Approved Strategic Plan During the year under review, the County Assembly operated without an approved Strategic Plan to guide its operations, programs, and resource allocation. Strategic Plan is a critical tool for aligning institutional objectives with available resources and for ensuring long-term planning, performance monitoring, and accountability. In the circumstances, the County Assembly\u2019s direction, institutional governance and decision-making framework could not be confirmed. List of Unresolved Prior Year Matters S/No. Audit Issues for 2023/2024 1. Variances Between Financial Statements and Bank Statement Transactions 2. Misclassification of Expenses 3. Payment in Internet Banking not in IFMIS 4. Voided Transactions-Payments 5. Irregular Maintenance of Manual Payroll 6. Legal Fess 7. Pending Accounts Payables 8. Budgetary Performance and Control 9. Non-Compliance with Number of Members 10. Irregular Payments of Transport Allowance 11. Regularity of Procurement and Award of Contract 12. Noncompliance with One Third Rule on Basic Salary Rule 13. Noncompliance with the Law on Settlement of Accounts Payables 14. Non-Remittance of Statutory Deductions 15. Noncompliance with Law on Non-Current Assets 16. Ward Expenses",
+          "paragraph_no": 453,
+          "printed_page": 155,
+          "chapter_heading": "COUNTY ASSEMBLY OF NAROK \u2013 NO.33",
+          "extraction_method": "pdfplumber",
+          "fiscal_year_sources": [
+            "filename",
+            "oag_year_page",
+            "title_page"
+          ]
+        },
+        "extractor": "oag_county_volume",
+        "confidence": 0.9,
+        "created_at": "2026-09-29T02:31:44.824479"
+      },
+      "source": {
+        "id": 2541,
+        "country_id": 1,
+        "publisher": "Office of the Auditor-General",
+        "title": "AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf",
+        "url": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf",
+        "file_path": "data/seeding/cache/pdfs/8983b245250ec8d78f101a2cf33fd1da7a2a037bc69ab9b45fff4e9621fb5ecc.pdf",
+        "fetch_date": "2026-09-28T02:39:13.325551",
+        "md5": "f495cb595c81583af7d8bbd46e2279d6",
+        "doc_type": "AUDIT",
+        "metadata": {
+          "dataset_id": "oag_county_audits",
+          "registration": "discovered_not_fetched",
+          "extracted_md5": "f495cb595c81583af7d8bbd46e2279d6",
+          "oag_discovery": {
+            "kind": "assemblies",
+            "note": null,
+            "entity": null,
+            "found_on": "year_page",
+            "listed_at": "https://www.oagkenya.go.ke/2024-2025-county-government-audit-reports/",
+            "fiscal_year": "2024/2025"
+          },
+          "extraction_stats": {
+            "pages": 246,
+            "partial": false,
+            "refused": [],
+            "findings": 582,
+            "extractor": "oag_county_volume",
+            "ocr_pages": 1,
+            "fiscal_year": "2024/2025",
+            "volume_kind": "assemblies",
+            "rejected_cid": 0,
+            "contents_entries": 47,
+            "missing_counties": [],
+            "unreadable_pages": [
+              9
+            ],
+            "chapters_attributed": 47,
+            "fiscal_year_sources": [
+              "filename",
+              "oag_year_page",
+              "title_page"
+            ],
+            "chapters_with_no_finding": [],
+            "unreadable_chapter_pages": []
+          },
+          "last_extraction_attempt": {
+            "status": "complete"
+          }
+        },
+        "created_at": "2026-09-28T02:39:13.822362",
+        "status": "AVAILABLE",
+        "last_seen_at": "2026-09-29T02:31:20.991418",
+        "content_type": "application/pdf",
+        "http_status": 200,
+        "last_verified_at": "2026-09-29T02:31:20.970917"
+      },
+      "entity": {
+        "id": 36,
+        "country_id": 1,
+        "type": "COUNTY",
+        "canonical_name": "Narok County",
+        "slug": "narok-county",
+        "created_at": "2025-09-07T18:29:50.674673"
+      },
+      "period": {
+        "id": 1,
+        "country_id": 1,
+        "label": "FY2024/25",
+        "start_date": "2024-07-01T00:00:00",
+        "end_date": "2025-06-30T00:00:00",
+        "created_at": "2025-09-07T16:11:02.410085"
+      }
+    },
+    {
+      "audit": {
+        "id": 5679,
+        "entity_id": 47,
+        "period_id": 1,
+        "finding_text": "Weaknesses in Management of Cash and Cash Equivalents Review of the County Assembly\u2019s cash books, bank statements, and other records revealed that the County Assembly operated and maintained one bank account. However, system-generated cash books, ledgers, signature specimens of the bank signatories were not provided for audit review. Further, the cash book entries were not correctly captured, monthly reconciliations were not done, cash books were not closed off and balances brought forward on monthly basis and approved cash floats for the standing imprest system was not provided. In the circumstances, the effectiveness of internal controls over cash and cash equivalents management could not be confirmed. List of Unresolved Prior Year Matters No. Audit Issues for 2023/2024 1 Inaccuracies in the Financial Statements 2 Compensation of Employees 3 Voided Transactions in IFMIS 4 Unsupported Cash Transfers 5 Unremitted Housing Levy Payroll Deductions 6 Staff Establishment and Payroll Records Non-Compliance with Provisions on Ethnicity Diversity, Affirmative Action on 7 Gender and Persons Living with Disabilities 8 Non-Adherence to One Third rule on Basic Salary Rule 9 Payment of Salaries Outside the IPPD System 10 Irregular Payment of Allowances to Employees on Acting Capacity No. Audit Issues for 2023/2024 11 Recruitment of Employees Non-Compliance with Fiscal Responsibility Principle on Compensation of 12 Employees Expenditure 13 Non-Compliance with the Law on Framework Contract Agreement 14 Avoidable Legal Fees 15 Unexplained Changes in the Payroll 16 Lack of Audit Committee and Unestablished Internal Audit Function",
+        "severity": "WARNING",
+        "recommended_action": null,
+        "source_document_id": 2541,
+        "provenance": [
+          {
+            "title": "Weaknesses in Management of Cash and Cash Equivalents",
+            "source": "oag_county_volume",
+            "amounts": [],
+            "auditee": "County Assembly of Migori",
+            "heading": "Basis for Conclusion",
+            "opinion": null,
+            "pdf_page": 221,
+            "reference": "OAG-CV-2024/2025-A44-P603",
+            "subreport": "REPORT ON EFFECTIVENESS OF INTERNAL CONTROLS, RISK MANAGEMENT",
+            "chapter_no": 44,
+            "source_md5": "f495cb595c81583af7d8bbd46e2279d6",
+            "source_url": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf",
+            "sub_section": null,
+            "volume_kind": "assemblies",
+            "printed_page": 208,
+            "extraction_id": 6158,
+            "extraction_method": "pdfplumber",
+            "fiscal_year_sources": [
+              "filename",
+              "oag_year_page",
+              "title_page"
+            ]
+          }
+        ],
+        "created_at": "2026-09-29T02:31:53.753995",
+        "validation_warnings": null,
+        "query_type": "REPORT ON EFFECTIVENESS OF INTERNAL CONTROLS, RISK MANAGEMENT",
+        "amount": null,
+        "status": "published_report",
+        "audit_opinion": null,
+        "audit_year": 2025,
+        "external_reference": "OAG-CV-2024/2025-A44-P603",
+        "management_response": null,
+        "follow_up_status": null,
+        "confidence_score": 0.9,
+        "extraction_id": 6158,
+        "page_ref": "p.221",
+        "source_hash": "7fa5e1dd902e81ac5a06aabf0b7f89f720475bb1635cd28f43f6f7e3708f6fd6",
+        "basis": "ACTUAL",
+        "publishable": true,
+        "quarantine_reason": null
+      },
+      "extraction": {
+        "id": 6158,
+        "source_document_id": 2541,
+        "page_number": 221,
+        "extracted_json": {
+          "title": "Weaknesses in Management of Cash and Cash Equivalents",
+          "schema": "oag_county_volume/v1",
+          "amounts": [],
+          "auditee": "County Assembly of Migori",
+          "heading": "Basis for Conclusion",
+          "opinion": null,
+          "pdf_page": 221,
+          "severity": "WARNING",
+          "subreport": "REPORT ON EFFECTIVENESS OF INTERNAL CONTROLS, RISK MANAGEMENT",
+          "chapter_no": 44,
+          "county_name": "Migori",
+          "entity_name": "County Assembly of Migori",
+          "fiscal_year": "2024/2025",
+          "sub_section": null,
+          "volume_kind": "assemblies",
+          "finding_text": "Weaknesses in Management of Cash and Cash Equivalents Review of the County Assembly\u2019s cash books, bank statements, and other records revealed that the County Assembly operated and maintained one bank account. However, system-generated cash books, ledgers, signature specimens of the bank signatories were not provided for audit review. Further, the cash book entries were not correctly captured, monthly reconciliations were not done, cash books were not closed off and balances brought forward on monthly basis and approved cash floats for the standing imprest system was not provided. In the circumstances, the effectiveness of internal controls over cash and cash equivalents management could not be confirmed. List of Unresolved Prior Year Matters No. Audit Issues for 2023/2024 1 Inaccuracies in the Financial Statements 2 Compensation of Employees 3 Voided Transactions in IFMIS 4 Unsupported Cash Transfers 5 Unremitted Housing Levy Payroll Deductions 6 Staff Establishment and Payroll Records Non-Compliance with Provisions on Ethnicity Diversity, Affirmative Action on 7 Gender and Persons Living with Disabilities 8 Non-Adherence to One Third rule on Basic Salary Rule 9 Payment of Salaries Outside the IPPD System 10 Irregular Payment of Allowances to Employees on Acting Capacity No. Audit Issues for 2023/2024 11 Recruitment of Employees Non-Compliance with Fiscal Responsibility Principle on Compensation of 12 Employees Expenditure 13 Non-Compliance with the Law on Framework Contract Agreement 14 Avoidable Legal Fees 15 Unexplained Changes in the Payroll 16 Lack of Audit Committee and Unestablished Internal Audit Function",
+          "paragraph_no": 603,
+          "printed_page": 208,
+          "chapter_heading": "COUNTY ASSEMBLY OF MIGORI \u2013 NO.44",
+          "extraction_method": "pdfplumber",
+          "fiscal_year_sources": [
+            "filename",
+            "oag_year_page",
+            "title_page"
+          ]
+        },
+        "extractor": "oag_county_volume",
+        "confidence": 0.9,
+        "created_at": "2026-09-29T02:31:44.82452"
+      },
+      "source": {
+        "id": 2541,
+        "country_id": 1,
+        "publisher": "Office of the Auditor-General",
+        "title": "AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf",
+        "url": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf",
+        "file_path": "data/seeding/cache/pdfs/8983b245250ec8d78f101a2cf33fd1da7a2a037bc69ab9b45fff4e9621fb5ecc.pdf",
+        "fetch_date": "2026-09-28T02:39:13.325551",
+        "md5": "f495cb595c81583af7d8bbd46e2279d6",
+        "doc_type": "AUDIT",
+        "metadata": {
+          "dataset_id": "oag_county_audits",
+          "registration": "discovered_not_fetched",
+          "extracted_md5": "f495cb595c81583af7d8bbd46e2279d6",
+          "oag_discovery": {
+            "kind": "assemblies",
+            "note": null,
+            "entity": null,
+            "found_on": "year_page",
+            "listed_at": "https://www.oagkenya.go.ke/2024-2025-county-government-audit-reports/",
+            "fiscal_year": "2024/2025"
+          },
+          "extraction_stats": {
+            "pages": 246,
+            "partial": false,
+            "refused": [],
+            "findings": 582,
+            "extractor": "oag_county_volume",
+            "ocr_pages": 1,
+            "fiscal_year": "2024/2025",
+            "volume_kind": "assemblies",
+            "rejected_cid": 0,
+            "contents_entries": 47,
+            "missing_counties": [],
+            "unreadable_pages": [
+              9
+            ],
+            "chapters_attributed": 47,
+            "fiscal_year_sources": [
+              "filename",
+              "oag_year_page",
+              "title_page"
+            ],
+            "chapters_with_no_finding": [],
+            "unreadable_chapter_pages": []
+          },
+          "last_extraction_attempt": {
+            "status": "complete"
+          }
+        },
+        "created_at": "2026-09-28T02:39:13.822362",
+        "status": "AVAILABLE",
+        "last_seen_at": "2026-09-29T02:31:20.991418",
+        "content_type": "application/pdf",
+        "http_status": 200,
+        "last_verified_at": "2026-09-29T02:31:20.970917"
+      },
+      "entity": {
+        "id": 47,
+        "country_id": 1,
+        "type": "COUNTY",
+        "canonical_name": "Migori County",
+        "slug": "migori-county",
+        "created_at": "2025-09-07T18:30:21.058992"
+      },
+      "period": {
+        "id": 1,
+        "country_id": 1,
+        "label": "FY2024/25",
+        "start_date": "2024-07-01T00:00:00",
+        "end_date": "2025-06-30T00:00:00",
+        "created_at": "2025-09-07T16:11:02.410085"
+      }
+    },
+    {
+      "audit": {
+        "id": 5716,
+        "entity_id": 3,
+        "period_id": 1,
+        "finding_text": "Irregular Allocation of Official Transport Review of motor vehicle management records revealed that official transport was provided to the leadership of the County Assembly who do not qualify for official transport. This was contrary to Paragraph 3(a) of Gazette Notice 6518 dated 7 July, 2017 on other benefits and allowances which provides that the official transport will be provided to the Governor, Deputy Governor, County Assembly Speaker and Member of County Executive Committee. In the circumstances, the internal controls in management of motor vehicles could not be confirmed. List of Unresolved Prior Years Matters NO Audit Issues for 2019/2020 1. Presentation of Financial Statements 2. Unreconciled Compensation of Employees 3. Allowances to Members of County Assembly 4. Unsupported Use of Goods and Services 5. Unreconciled Outstanding Imprests 6. Lack of an Updated Fixed Assets Register 7. Pending Bills 8. Prior Year Grants 9. Budgeted Receipts Payments 10. Prior Year Adjustment 11. Total Payments 12. Budgetary Control and Performance 13. Irregularities in Compensation of Employees 14. High Wage Bill 15. Excessive Deductions on Staff Pay 16. Payments to Staff by County Executive of Nairobi 17. Domestic and Subsistence Allowances 18. Payment to County Assembly Forum 19. Unapproved Risk Management Policy No. Audit Issues for 2020/2021 1. Presentation of the Financial Statements 2. Inaccuracies in the Financial Statements 3. Statement of Assets and Liabilities 4. Statement of Comparison of Budget and Actual Amounts 5. Unsupported Payments on Committee Allowance 6. Communication Supplies and Services No. Audit Issues for 2020/2021 7. Legal Expenses 8. Foreign Travel and Subsistence 9. Acquisition of Assets \u2013 Overstatement of Assets Balance 10. Pending Accounts Payables 11. Irregular Promotions 12. Irregular Payment of Temporary wages 13. Unauthorized expenditure 14. Committee Sittings 15. Excessive Number of Participants in an MCAs Retreat 16. Failure to Adhere to the Board Appointment Requirement 17. Non-Compliance with the Law on Fiscal Responsibility 18. Unapproved Travel Refunds and Claims 19. Irregular Use of Direct Procurement Method 20. Outstanding Imprests 21. Irregular Payment to County Assembly Forum 22. Payment of Honoraria Allowance 23. Non-Remittance of Taxes 24. Failure to Maintain AIE Holders Register 25. Lack of an Updated Assets Register 26. Overlapping Committee Retreats 27. Un-Approved Training Plan 28. Failure to Adhere to the Approved Staff Establishment No. Audit Issues for 2021/2022 1. Inconsistencies in Statement of Comparison of Budget and Actual Amounts 2. Unsupported Prior Year Adjustments 3. Variance Between the Financial Statements and the Trial Balance 4. Variances Between the Financial Statements and Ledgers 5. Unsupported Expenditure 6. Unsupported and Unauthorized Compensation of Employees Expenditure 7. Undisclosed Contingent Liabilities 8. Unsupported use of Goods and Services 9. Irregular Procurement of Conference Facilities and Air Tickets 10. Domestic and Foreign Travel and Subsistence 11. Routine Maintenance of Other Assets 12. Inaccuracies in Legal Payments 13. Irregular Payment of Subscriptions 14. Rental of Produced Assets 15. Unauthorized Borrowings 16. Unsupported Cash and Cash Equivalents 17. Voided Transactions 18. Unsupported Payments 19. Budgetary Control and Performance No. Audit Issues for 2021/2022 20. Unsupported Pending Accounts Payable 21. Prior Year Audit Matters 22. Non-Compliance with the Fiscal Responsibilities Provisions - Wage Bill 23. Non-remittance of Statutory Deductions 24. Outstanding and Irregular Imprests 25. Lack of Approved Information Technology Security Policy and Disaster Recovery Plan 26. Payment of Salary Outside Payroll 27. Lack of an Updated Fixed Assets Register No. Audit Issues for 2022/2023 1. Variances between the Financial Statements and the Trial Balance 2. Variances between the Financial Statements and the Ledgers 3. Inaccuracies in the Statement of Receipts and Payments 4. Unsupported Expenditure on Use of Goods and Services 5. Unsupported Expenditure on Acquisition of Assets 6. Inaccuracies in the Statement of Comparison of Budget and Actual Amounts 7. Unsupported Prior Year Adjustments 8. Inaccuracy Statement of Cash Flows 9. Misclassification of Expenditure 10. Inaccuracies in Cash and Bank Balances 11. Undisclosed Motor Vehicle Reimbursements 12. Unsupported Other Operating Expenses 13. Unsupported Communication, Supplies and Services 14. Unsupported Domestic Travel and Services Subsistence 15. Unsupported Foreign Travel and Subsistence 16. Unsupported Accounts Payables 17. Unsupported Salary Advances 18. Budgetary Control and Performance 19. Non-Compliance with Fiscal Responsibility Principles 20. Irregularities in Recruitment of Members of Staff 21. Non-Remittance of Statutory Deductions 22. Irregular Payments to Services Providers Using Imprest 23. Irregular in Legal Contracts 24. Irregular Expenditure on Subscriptions 25. Non-Compliance with Ward Partisan Staffing Levels 26. Unutilized Speaker\u2019s Residence No. Audit Issues for 2023/2024 27. Inaccuracies in the Financial Statements 28. Unsupported Legal Expenses 29. Unsupported Prior Year Adjustments 30. Pending Payables 31. Budget Control and Performance No. Audit Issues for 2023/2024 32. Receipt of Goods on Expired Local Purchase Order 33. Unsupported Procurement of Bulk Short Message Service (SMS 34. Non-Adherence to the One-Third Basic Salary Rule 35. Noncompliance with Fiscal Responsibility Principles",
+        "severity": "WARNING",
+        "recommended_action": null,
+        "source_document_id": 2541,
+        "provenance": [
+          {
+            "title": "Irregular Allocation of Official Transport",
+            "source": "oag_county_volume",
+            "amounts": [],
+            "auditee": "Nairobi City County Assembly",
+            "heading": "Basis for Conclusion",
+            "opinion": null,
+            "pdf_page": 239,
+            "reference": "OAG-CV-2024/2025-A47-P645",
+            "subreport": "REPORT ON EFFECTIVENESS OF INTERNAL CONTROLS, RISK MANAGEMENT",
+            "chapter_no": 47,
+            "source_md5": "f495cb595c81583af7d8bbd46e2279d6",
+            "source_url": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf",
+            "sub_section": null,
+            "volume_kind": "assemblies",
+            "printed_page": 226,
+            "extraction_id": 6196,
+            "extraction_method": "pdfplumber",
+            "fiscal_year_sources": [
+              "filename",
+              "oag_year_page",
+              "title_page"
+            ]
+          }
+        ],
+        "created_at": "2026-09-29T02:31:53.754005",
+        "validation_warnings": null,
+        "query_type": "REPORT ON EFFECTIVENESS OF INTERNAL CONTROLS, RISK MANAGEMENT",
+        "amount": null,
+        "status": "published_report",
+        "audit_opinion": null,
+        "audit_year": 2025,
+        "external_reference": "OAG-CV-2024/2025-A47-P645",
+        "management_response": null,
+        "follow_up_status": null,
+        "confidence_score": 0.9,
+        "extraction_id": 6196,
+        "page_ref": "p.239",
+        "source_hash": "6037259542eaee9bb1185faa9b40676b8d13ad0e91b1c645616e5d9eff4448ee",
+        "basis": "ACTUAL",
+        "publishable": true,
+        "quarantine_reason": null
+      },
+      "extraction": {
+        "id": 6196,
+        "source_document_id": 2541,
+        "page_number": 239,
+        "extracted_json": {
+          "title": "Irregular Allocation of Official Transport",
+          "schema": "oag_county_volume/v1",
+          "amounts": [],
+          "auditee": "Nairobi City County Assembly",
+          "heading": "Basis for Conclusion",
+          "opinion": null,
+          "pdf_page": 239,
+          "severity": "WARNING",
+          "subreport": "REPORT ON EFFECTIVENESS OF INTERNAL CONTROLS, RISK MANAGEMENT",
+          "chapter_no": 47,
+          "county_name": "Nairobi",
+          "entity_name": "County Assembly of Nairobi",
+          "fiscal_year": "2024/2025",
+          "sub_section": null,
+          "volume_kind": "assemblies",
+          "finding_text": "Irregular Allocation of Official Transport Review of motor vehicle management records revealed that official transport was provided to the leadership of the County Assembly who do not qualify for official transport. This was contrary to Paragraph 3(a) of Gazette Notice 6518 dated 7 July, 2017 on other benefits and allowances which provides that the official transport will be provided to the Governor, Deputy Governor, County Assembly Speaker and Member of County Executive Committee. In the circumstances, the internal controls in management of motor vehicles could not be confirmed. List of Unresolved Prior Years Matters NO Audit Issues for 2019/2020 1. Presentation of Financial Statements 2. Unreconciled Compensation of Employees 3. Allowances to Members of County Assembly 4. Unsupported Use of Goods and Services 5. Unreconciled Outstanding Imprests 6. Lack of an Updated Fixed Assets Register 7. Pending Bills 8. Prior Year Grants 9. Budgeted Receipts Payments 10. Prior Year Adjustment 11. Total Payments 12. Budgetary Control and Performance 13. Irregularities in Compensation of Employees 14. High Wage Bill 15. Excessive Deductions on Staff Pay 16. Payments to Staff by County Executive of Nairobi 17. Domestic and Subsistence Allowances 18. Payment to County Assembly Forum 19. Unapproved Risk Management Policy No. Audit Issues for 2020/2021 1. Presentation of the Financial Statements 2. Inaccuracies in the Financial Statements 3. Statement of Assets and Liabilities 4. Statement of Comparison of Budget and Actual Amounts 5. Unsupported Payments on Committee Allowance 6. Communication Supplies and Services No. Audit Issues for 2020/2021 7. Legal Expenses 8. Foreign Travel and Subsistence 9. Acquisition of Assets \u2013 Overstatement of Assets Balance 10. Pending Accounts Payables 11. Irregular Promotions 12. Irregular Payment of Temporary wages 13. Unauthorized expenditure 14. Committee Sittings 15. Excessive Number of Participants in an MCAs Retreat 16. Failure to Adhere to the Board Appointment Requirement 17. Non-Compliance with the Law on Fiscal Responsibility 18. Unapproved Travel Refunds and Claims 19. Irregular Use of Direct Procurement Method 20. Outstanding Imprests 21. Irregular Payment to County Assembly Forum 22. Payment of Honoraria Allowance 23. Non-Remittance of Taxes 24. Failure to Maintain AIE Holders Register 25. Lack of an Updated Assets Register 26. Overlapping Committee Retreats 27. Un-Approved Training Plan 28. Failure to Adhere to the Approved Staff Establishment No. Audit Issues for 2021/2022 1. Inconsistencies in Statement of Comparison of Budget and Actual Amounts 2. Unsupported Prior Year Adjustments 3. Variance Between the Financial Statements and the Trial Balance 4. Variances Between the Financial Statements and Ledgers 5. Unsupported Expenditure 6. Unsupported and Unauthorized Compensation of Employees Expenditure 7. Undisclosed Contingent Liabilities 8. Unsupported use of Goods and Services 9. Irregular Procurement of Conference Facilities and Air Tickets 10. Domestic and Foreign Travel and Subsistence 11. Routine Maintenance of Other Assets 12. Inaccuracies in Legal Payments 13. Irregular Payment of Subscriptions 14. Rental of Produced Assets 15. Unauthorized Borrowings 16. Unsupported Cash and Cash Equivalents 17. Voided Transactions 18. Unsupported Payments 19. Budgetary Control and Performance No. Audit Issues for 2021/2022 20. Unsupported Pending Accounts Payable 21. Prior Year Audit Matters 22. Non-Compliance with the Fiscal Responsibilities Provisions - Wage Bill 23. Non-remittance of Statutory Deductions 24. Outstanding and Irregular Imprests 25. Lack of Approved Information Technology Security Policy and Disaster Recovery Plan 26. Payment of Salary Outside Payroll 27. Lack of an Updated Fixed Assets Register No. Audit Issues for 2022/2023 1. Variances between the Financial Statements and the Trial Balance 2. Variances between the Financial Statements and the Ledgers 3. Inaccuracies in the Statement of Receipts and Payments 4. Unsupported Expenditure on Use of Goods and Services 5. Unsupported Expenditure on Acquisition of Assets 6. Inaccuracies in the Statement of Comparison of Budget and Actual Amounts 7. Unsupported Prior Year Adjustments 8. Inaccuracy Statement of Cash Flows 9. Misclassification of Expenditure 10. Inaccuracies in Cash and Bank Balances 11. Undisclosed Motor Vehicle Reimbursements 12. Unsupported Other Operating Expenses 13. Unsupported Communication, Supplies and Services 14. Unsupported Domestic Travel and Services Subsistence 15. Unsupported Foreign Travel and Subsistence 16. Unsupported Accounts Payables 17. Unsupported Salary Advances 18. Budgetary Control and Performance 19. Non-Compliance with Fiscal Responsibility Principles 20. Irregularities in Recruitment of Members of Staff 21. Non-Remittance of Statutory Deductions 22. Irregular Payments to Services Providers Using Imprest 23. Irregular in Legal Contracts 24. Irregular Expenditure on Subscriptions 25. Non-Compliance with Ward Partisan Staffing Levels 26. Unutilized Speaker\u2019s Residence No. Audit Issues for 2023/2024 27. Inaccuracies in the Financial Statements 28. Unsupported Legal Expenses 29. Unsupported Prior Year Adjustments 30. Pending Payables 31. Budget Control and Performance No. Audit Issues for 2023/2024 32. Receipt of Goods on Expired Local Purchase Order 33. Unsupported Procurement of Bulk Short Message Service (SMS 34. Non-Adherence to the One-Third Basic Salary Rule 35. Noncompliance with Fiscal Responsibility Principles",
+          "paragraph_no": 645,
+          "printed_page": 226,
+          "chapter_heading": "NAIROBI CITY COUNTY ASSEMBLY \u2013 NO.47",
+          "extraction_method": "pdfplumber",
+          "fiscal_year_sources": [
+            "filename",
+            "oag_year_page",
+            "title_page"
+          ]
+        },
+        "extractor": "oag_county_volume",
+        "confidence": 0.9,
+        "created_at": "2026-09-29T02:31:44.824532"
+      },
+      "source": {
+        "id": 2541,
+        "country_id": 1,
+        "publisher": "Office of the Auditor-General",
+        "title": "AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf",
+        "url": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf",
+        "file_path": "data/seeding/cache/pdfs/8983b245250ec8d78f101a2cf33fd1da7a2a037bc69ab9b45fff4e9621fb5ecc.pdf",
+        "fetch_date": "2026-09-28T02:39:13.325551",
+        "md5": "f495cb595c81583af7d8bbd46e2279d6",
+        "doc_type": "AUDIT",
+        "metadata": {
+          "dataset_id": "oag_county_audits",
+          "registration": "discovered_not_fetched",
+          "extracted_md5": "f495cb595c81583af7d8bbd46e2279d6",
+          "oag_discovery": {
+            "kind": "assemblies",
+            "note": null,
+            "entity": null,
+            "found_on": "year_page",
+            "listed_at": "https://www.oagkenya.go.ke/2024-2025-county-government-audit-reports/",
+            "fiscal_year": "2024/2025"
+          },
+          "extraction_stats": {
+            "pages": 246,
+            "partial": false,
+            "refused": [],
+            "findings": 582,
+            "extractor": "oag_county_volume",
+            "ocr_pages": 1,
+            "fiscal_year": "2024/2025",
+            "volume_kind": "assemblies",
+            "rejected_cid": 0,
+            "contents_entries": 47,
+            "missing_counties": [],
+            "unreadable_pages": [
+              9
+            ],
+            "chapters_attributed": 47,
+            "fiscal_year_sources": [
+              "filename",
+              "oag_year_page",
+              "title_page"
+            ],
+            "chapters_with_no_finding": [],
+            "unreadable_chapter_pages": []
+          },
+          "last_extraction_attempt": {
+            "status": "complete"
+          }
+        },
+        "created_at": "2026-09-28T02:39:13.822362",
+        "status": "AVAILABLE",
+        "last_seen_at": "2026-09-29T02:31:20.991418",
+        "content_type": "application/pdf",
+        "http_status": 200,
+        "last_verified_at": "2026-09-29T02:31:20.970917"
+      },
+      "entity": {
+        "id": 3,
+        "country_id": 1,
+        "type": "COUNTY",
+        "canonical_name": "Nairobi County",
+        "slug": "nairobi-county",
+        "created_at": "2025-09-07T16:10:56.756183"
+      },
+      "period": {
+        "id": 1,
+        "country_id": 1,
+        "label": "FY2024/25",
+        "start_date": "2024-07-01T00:00:00",
+        "end_date": "2025-06-30T00:00:00",
+        "created_at": "2025-09-07T16:11:02.410085"
+      }
+    }
+  ]
+}
