@@ -299,6 +299,12 @@ class AutoSeeder:
             live_budgets[name] = budget.get("budget")
 
         with SessionLocal() as db:
+            # Required even when references already exist: a foreign namesake
+            # cannot certify that Kenyan reference work completed.
+            kenya = db.query(Country).filter(Country.iso_code == "KEN").first()
+            if kenya is None:
+                raise ValueError("Kenya country (KEN) is required for county references")
+
             counties_created = 0
             counties_updated = 0
 
@@ -314,6 +320,7 @@ class AutoSeeder:
                 existing = (
                     db.query(Entity)
                     .filter(
+                        Entity.country_id == kenya.id,
                         Entity.type == EntityType.COUNTY,
                         Entity.canonical_name == canonical,
                     )
@@ -343,11 +350,6 @@ class AutoSeeder:
                     existing.canonical_name = canonical
                     counties_updated += 1
                 else:
-                    # Get Kenya country for country_id
-                    kenya = db.query(Country).filter(Country.iso_code == "KEN").first()
-                    if not kenya:
-                        logger.error("[AUTO-SEEDER] Kenya country not found")
-                        return
                     slug = name.lower().replace(" ", "-").replace("'", "") + "-" + code
                     county_entity = Entity(
                         country_id=kenya.id,
@@ -368,19 +370,20 @@ class AutoSeeder:
     async def _ensure_national_entity(self):
         """Ensure national government entity exists."""
         with SessionLocal() as db:
+            kenya = db.query(Country).filter(Country.iso_code == "KEN").first()
+            if kenya is None:
+                raise ValueError("Kenya country (KEN) is required for national reference")
+
             existing = (
                 db.query(Entity)
                 .filter(
+                    Entity.country_id == kenya.id,
                     Entity.type == EntityType.NATIONAL,
                 )
                 .first()
             )
 
             if not existing:
-                kenya = db.query(Country).filter(Country.iso_code == "KEN").first()
-                if not kenya:
-                    logger.error("[AUTO-SEEDER] Kenya country not found")
-                    return
                 national = Entity(
                     country_id=kenya.id,
                     canonical_name="Republic of Kenya",

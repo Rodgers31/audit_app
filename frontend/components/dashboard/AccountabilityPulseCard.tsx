@@ -51,7 +51,7 @@ export default function AccountabilityPulseCard() {
       <div className='bg-gradient-to-r from-gov-copper/[0.06] via-gov-sand/40 to-transparent dark:from-surface-elevated/40 dark:via-surface-base/20 dark:to-transparent px-6 sm:px-8 pt-5 pb-4 border-b border-neutral-border/20'>
         <h3 className='font-display text-lg text-gov-dark dark:text-white mb-0.5'>Accountability Pulse</h3>
         <p className='text-xs text-neutral-muted'>
-          Audit findings across {stats.counties_audited || '--'} counties &amp; national government
+          Findings across public institutions · {stats.counties_audited ?? '--'} Kenyan counties covered
         </p>
       </div>
 

@@ -80,3 +80,11 @@ describe('audit statistics amount coverage', () => {
     expect(screen.queryByText('KES 50')).not.toBeInTheDocument();
   });
 });
+
+it('shows zero Kenyan county coverage separately from institution-wide findings', () => {
+  statistics = { ...base, counties_audited: 0 };
+  render(<AccountabilityPulseCard />);
+  expect(screen.getByText(/0 Kenyan counties covered/)).toBeInTheDocument();
+  expect(screen.getByText(/Findings across public institutions/)).toBeInTheDocument();
+  expect(screen.getByText(/3 total/)).toBeInTheDocument();
+});
