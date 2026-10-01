@@ -60,6 +60,8 @@ matter as one.
 from __future__ import annotations
 
 import logging
+import hashlib
+import json
 import re
 import time
 from decimal import Decimal
@@ -1316,3 +1318,146 @@ def county_debt_instrument_failure(loan, source_document=None) -> Optional[str]:
     if not any(word in haystack for word in _BORROWING_AUTHORISATION_EVIDENCE):
         return "external_creditor_document_is_not_a_borrowing_authorisation"
     return None
+
+
+def cpi_extraction_digest(payload) -> str:
+    """Bind the reviewed table payload to the hashed document declaration."""
+    return hashlib.sha256(
+        json.dumps(
+            payload,
+            sort_keys=True,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            allow_nan=False,
+        ).encode()
+    ).hexdigest()
+
+
+def economic_publication_failure(row, db) -> Optional[str]:
+    """CPI index publication requires an approved, matching source chain.
+
+    Other economic measures retain their existing publication policy; this
+    does not certify annual World Bank or monthly inflation source acceptance.
+    The reader checks stored evidence, not remote PDF availability or bytes.
+    """
+    from models import Country, Extraction
+    from decimal import InvalidOperation
+
+    try:
+        value = Decimal(str(row.value)) if type(row.value) is not bool else None
+    except (InvalidOperation, ValueError, TypeError):
+        value = None
+    if value is None or not value.is_finite():
+        return "non-finite economic value"
+    if row.indicator_type.lower() != "cpi":
+        return None
+    if row.publishable is not True:
+        return "CPI not approved for publication"
+    if row.quarantine_reason:
+        return "CPI quarantined"
+    meta = row.meta
+    if not isinstance(meta, dict) or meta.get("bootstrap"):
+        return "CPI missing reviewed measure"
+    if (
+        value < 0
+        or row.entity_id is not None
+        or row.unit != "index_2019_02_100"
+        or meta.get("base_period") != "2019-02"
+        or meta.get("frequency") != "monthly"
+        or meta.get("measure") != "overall consumer price index, February 2019 = 100"
+        or getattr(row.basis, "value", row.basis) not in {"actual", "ACTUAL"}
+    ):
+        return "CPI base or measure conflict"
+    source = (
+        db.get(SourceDocument, row.source_document_id)
+        if row.source_document_id
+        else None
+    )
+    if source is None:
+        return "CPI missing document"
+    try:
+        url = urlsplit(source.url or "")
+    except ValueError:
+        return "CPI unusable official document"
+    country = db.get(Country, source.country_id)
+    if (
+        source.publisher != "Kenya National Bureau of Statistics"
+        or getattr(source.status, "name", source.status) != "AVAILABLE"
+        or getattr(source.doc_type, "name", source.doc_type) != "REPORT"
+        or url.scheme != "https"
+        or url.netloc != "www.knbs.or.ke"
+        or not url.path.startswith("/wp-content/uploads/")
+        or not url.path.endswith(".pdf")
+        or url.query
+        or url.fragment
+        or source.content_type != "application/pdf"
+        or source.http_status != 200
+        or country is None
+        or country.iso_code != "KEN"
+    ):
+        return "CPI unusable official document"
+    source_meta = source.meta if isinstance(source.meta, dict) else {}
+    sha = source_meta.get("sha256")
+    if (
+        not isinstance(sha, str)
+        or not re.fullmatch(r"[0-9a-f]{64}", sha)
+        or row.source_hash != sha
+        or not isinstance(source.md5, str)
+        or not re.fullmatch(r"[0-9a-f]{32}", source.md5)
+    ):
+        return "CPI document hash conflict"
+    extraction = db.get(Extraction, row.extraction_id) if row.extraction_id else None
+    if (
+        extraction is None
+        or extraction.source_document_id != source.id
+        or type(row.source_page) is not int
+        or row.source_page <= 0
+        or extraction.page_number != row.source_page
+        or row.page_ref != f"p.{row.source_page} / Table 1"
+    ):
+        return "CPI missing matching page/extraction"
+    payload = extraction.extracted_json
+    if (
+        not isinstance(payload, dict)
+        or payload.get("base_period") != "February 2019 = 100"
+        or payload.get("measure") != "national overall CPI"
+        or payload.get("table") != "Table 1"
+        or not isinstance(payload.get("observations"), dict)
+    ):
+        return "CPI extraction measure conflict"
+    try:
+        payload_digest = cpi_extraction_digest(payload)
+    except (TypeError, ValueError):
+        return "CPI malformed extraction payload"
+    if source_meta.get("reviewed_table1_sha256") != payload_digest:
+        return "CPI reviewed extraction hash conflict"
+    observed = payload["observations"].get(row.indicator_date.date().isoformat())
+    try:
+        extracted_value = Decimal(str(observed)) if type(observed) is not bool else None
+    except (InvalidOperation, ValueError, TypeError):
+        extracted_value = None
+    if (
+        extracted_value is None
+        or not extracted_value.is_finite()
+        or extracted_value != value
+    ):
+        return "CPI extraction value conflict"
+    return None
+
+
+def economic_publication_rows(query, db, limit):
+    """Filter before the public limit; return reasons for examined omissions."""
+    if type(limit) is not int or not 1 <= limit <= 1000:
+        raise ValueError("economic publication limit must be 1..1000")
+    rows, withheld = [], {}
+    for row in query.yield_per(100):
+        reason = economic_publication_failure(row, db)
+        if reason:
+            withheld[reason] = withheld.get(reason, 0) + 1
+        else:
+            rows.append(row)
+            if len(rows) >= limit:
+                break
+    if withheld:
+        logger.warning("Withheld economic observations: %s", withheld)
+    return rows, withheld

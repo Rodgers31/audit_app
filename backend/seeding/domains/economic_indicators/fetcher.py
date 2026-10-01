@@ -348,6 +348,15 @@ def fetch_economic_payload(
         logger.warning("Failed to load economic indicators fixture: %s", exc)
         fixture_data = []
 
+    # CPI/cpi is an independently based monthly index, not WB cpi_index.
+    # Retire the unsupported supplement even when a remote fixture is used.
+    legacy_cpi = [r for r in fixture_data if isinstance(r, dict)
+                  and str(r.get("indicator_type", r.get("type", ""))).lower() == "cpi"]
+    if legacy_cpi:
+        errors.append("Withheld legacy CPI supplement; source-bound review required")
+        logger.error(errors[-1])
+        fixture_data = [r for r in fixture_data if r not in legacy_cpi]
+
     # Provenance is recorded at EVERY branch. Until 2026-08-29 this domain
     # recorded none, so the nightly reported "provenance unknown" — which the
     # staleness gate correctly refuses to read as healthy, but which also

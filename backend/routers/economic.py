@@ -15,7 +15,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import and_, desc, func
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
@@ -26,6 +26,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from cache.redis_cache import cached
 from provenance import vintage_iso
+from services.publication_gate import economic_publication_rows
 
 try:
     from database import get_db
@@ -117,6 +118,12 @@ class EconomicIndicatorResponse(BaseModel):
     confidence: Optional[float]
     source_document_id: Optional[int]
     created_at: str
+    measure: Optional[str] = None
+    base_period: Optional[str] = None
+    page_ref: Optional[str] = None
+    source_hash: Optional[str] = None
+    source_url: Optional[str] = None
+    publication_status: str = "not_checked_here"
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -148,6 +155,8 @@ class CountyEconomicProfile(BaseModel):
     latest_gcp: Optional[GDPResponse]
     latest_poverty: Optional[PovertyIndexResponse]
     economic_indicators: List[EconomicIndicatorResponse]
+    withheld_indicator_count: int = 0
+    indicator_publication_notes: List[str] = Field(default_factory=list)
     per_capita_gcp: Optional[float]
     population_growth_rate: Optional[float]
 
@@ -478,6 +487,25 @@ async def get_gdp(
     return response
 
 
+def _indicator_source_fields(row):
+    meta = row.meta if isinstance(row.meta, dict) else {}
+    labels = {}
+    for field in ("measure", "base_period"):
+        value = meta.get(field)
+        labels[field] = value if isinstance(value, str) else None
+        if value is not None and not isinstance(value, str):
+            logger.warning(
+                "Undeclared economic source field %s on row %s", field, row.id
+            )
+    return {
+        **labels,
+        "page_ref": row.page_ref,
+        "source_hash": row.source_hash,
+        "source_url": row.source_document.url if row.source_document else None,
+        "publication_status": "source_bound"
+        if row.indicator_type.lower() == "cpi"
+        else "not_checked_here",
+    }
 # ===== Economic Indicators Endpoints =====
 
 
@@ -487,6 +515,7 @@ async def get_gdp(
     summary="Get Economic Indicators",
 )
 async def get_economic_indicators(
+    response: Response = None,
     indicator_type: Optional[str] = Query(
         None,
         description="Filter by indicator type (CPI, PPI, inflation_rate, unemployment_rate)",
@@ -503,7 +532,7 @@ async def get_economic_indicators(
     min_confidence: float = Query(
         0.7, description="Minimum confidence score", ge=0, le=1
     ),
-    limit: int = Query(100, description="Maximum results to return", le=1000),
+    limit: int = Query(100, description="Maximum results to return", ge=1, le=1000),
     db: Session = Depends(get_db),
 ):
     """
@@ -556,7 +585,10 @@ async def get_economic_indicators(
         query = query.order_by(desc(EconomicIndicator.indicator_date))
 
         # Execute query with limit
-        results = query.limit(limit).all()
+        results, withheld = economic_publication_rows(query, db, limit)
+        if response is not None:
+            response.headers["X-Economic-Withheld-Count"] = str(sum(withheld.values()))
+            response.headers["X-Economic-Withheld-Reasons"] = "; ".join(sorted(withheld))
     except OperationalError as e:
         logger.error("Database connection error on /indicators: %s", e)
         raise HTTPException(status_code=503, detail="Database unavailable")
@@ -586,6 +618,7 @@ async def get_economic_indicators(
             entity_type = "national" if row.entity_id is None else "unknown"
         response.append(
             EconomicIndicatorResponse(
+                **_indicator_source_fields(row),
                 id=row.id,
                 indicator_type=row.indicator_type,
                 indicator_date=(
@@ -596,7 +629,7 @@ async def get_economic_indicators(
                 entity_name=entity_name,
                 entity_type=entity_type,
                 unit=row.unit,
-                confidence=float(row.confidence) if row.confidence else None,
+                confidence=float(row.confidence) if row.confidence is not None else None,
                 source_document_id=row.source_document_id,
                 created_at=row.created_at.isoformat() if row.created_at else "",
             )
@@ -885,7 +918,7 @@ async def get_county_economic_profile(
 
         # Get recent economic indicators (last 12 months)
         one_year_ago = datetime.now().replace(year=datetime.now().year - 1)
-        recent_indicators = (
+        indicator_query = (
             db.query(EconomicIndicator)
             .filter(
                 and_(
@@ -894,14 +927,14 @@ async def get_county_economic_profile(
                 )
             )
             .order_by(desc(EconomicIndicator.indicator_date))
-            .limit(20)
-            .all()
         )
+        recent_indicators, withheld = economic_publication_rows(indicator_query, db, 20)
 
         indicators_response = []
         for ind in recent_indicators:
             indicators_response.append(
                 EconomicIndicatorResponse(
+                    **_indicator_source_fields(ind),
                     id=ind.id,
                     indicator_type=ind.indicator_type,
                     indicator_date=(
@@ -909,10 +942,10 @@ async def get_county_economic_profile(
                     ),
                     value=float(ind.value),
                     entity_id=ind.entity_id,
-                    entity_name=county.name,
+                    entity_name=county.canonical_name,
                     entity_type="county",
                     unit=ind.unit,
-                    confidence=float(ind.confidence) if ind.confidence else None,
+                    confidence=float(ind.confidence) if ind.confidence is not None else None,
                     source_document_id=ind.source_document_id,
                     created_at=ind.created_at.isoformat() if ind.created_at else "",
                 )
@@ -947,6 +980,8 @@ async def get_county_economic_profile(
             latest_gcp=gcp_response,
             latest_poverty=poverty_response,
             economic_indicators=indicators_response,
+            withheld_indicator_count=sum(withheld.values()),
+            indicator_publication_notes=sorted(withheld),
             per_capita_gcp=per_capita_gcp,
             population_growth_rate=population_growth_rate,
         )

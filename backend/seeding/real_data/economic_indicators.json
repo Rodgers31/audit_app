@@ -58,15 +58,5 @@
     "source": "KNBS Economic Survey 2024",
     "data_quality": "official",
     "notes": "Nominal GDP in KES millions (13.896 trillion). Source: KNBS."
-  },
-  {
-    "indicator_type": "CPI",
-    "date": "2025-01-31",
-    "value": 143.08,
-    "unit": "index",
-    "source_url": "https://www.knbs.or.ke/consumer-price-indices/",
-    "source": "KNBS CPI January 2025",
-    "data_quality": "official",
-    "notes": "Consumer Price Index (Feb 2009 = 100). Source: KNBS."
   }
 ]
