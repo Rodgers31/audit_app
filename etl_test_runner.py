@@ -1,11 +1,10 @@
-"""
-Standalone ETL test runner for Kenya government data pipeline
-This bypasses the import issues and tests core functionality
+"""Source-access and document-link checks for Kenya government websites.
+
+No financial observations are extracted by this legacy checker.
 """
 
 import json
 import logging
-import os
 import sys
 from datetime import datetime
 
@@ -17,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class SimpleKenyaETL:
-    """Simplified Kenya ETL pipeline for testing and development."""
+    """Source checker; financial extraction is unavailable."""
 
     def __init__(self):
         self.results = {
@@ -132,99 +131,53 @@ class SimpleKenyaETL:
             self.results["sources_checked"].append(error_result)
             return error_result
 
-    def extract_sample_budget_data(self):
-        """Extract sample budget data from accessible sources."""
-        logger.info("Extracting sample budget data...")
-
-        # Mock extraction based on real patterns from Kenya government sites
-        sample_entities = [
-            {
-                "name": "Ministry of Health",
-                "type": "ministry",
-                "code": "MOH",
-                "budget_allocation": 150000000000,  # 150B KES
-                "source": "National Budget 2023/24",
-            },
-            {
-                "name": "Ministry of Education",
-                "type": "ministry",
-                "code": "MOE",
-                "budget_allocation": 300000000000,  # 300B KES
-                "source": "National Budget 2023/24",
-            },
-            {
-                "name": "Ministry of Infrastructure",
-                "type": "ministry",
-                "code": "MOI",
-                "budget_allocation": 250000000000,  # 250B KES
-                "source": "National Budget 2023/24",
-            },
-        ]
-
-        self.results["entities_found"] = sample_entities
-        self.results["documents_fetched"] = 1
-
-        logger.info(f"✅ Extracted {len(sample_entities)} government entities")
-        return sample_entities
-
     def run_full_pipeline(self):
-        """Run the complete ETL pipeline test."""
-        logger.info("🚀 Starting Kenya Government Data ETL Pipeline Test")
-        logger.info("=" * 60)
-
-        # Test all data sources
-        treasury_result = self.test_treasury_connection()
-        auditor_result = self.test_auditor_general_connection()
-
-        # Extract sample data
-        entities = self.extract_sample_budget_data()
-
-        # Compile results
-        pipeline_results = {
-            "pipeline_status": "completed",
-            "timestamp": datetime.now().isoformat(),
-            "sources_tested": len(self.results["sources_checked"]),
-            "sources_accessible": len(
-                [
-                    s
-                    for s in self.results["sources_checked"]
-                    if s.get("accessible", False)
-                ]
+        """Check source access and discover links; no financial extraction exists."""
+        self.results = {
+            "documents_fetched": 0,
+            "entities_found": [],
+            "sources_checked": [],
+            "raw_data": [],
+            "errors": [],
+        }
+        sources = [
+            self.test_treasury_connection(),
+            self.test_auditor_general_connection(),
+        ]
+        self.results["sources_checked"] = sources
+        failures = [s for s in sources if s.get("accessible") is not True]
+        self.results["errors"] = [
+            f"{s['source']}: {s.get('error', 'HTTP ' + str(s.get('status_code')))}"
+            for s in failures
+        ]
+        return {
+            "pipeline_status": (
+                "source_checks_failed" if failures else "source_checks_completed"
             ),
-            "entities_extracted": len(self.results["entities_found"]),
-            "documents_processed": self.results["documents_fetched"],
-            "errors_encountered": len(self.results["errors"]),
+            "timestamp": datetime.now().isoformat(),
+            "sources_tested": len(sources),
+            "sources_accessible": len(sources) - len(failures),
+            "errors_encountered": len(failures),
+            "financial_data": None,
+            "financial_data_status": "not_extracted",
             "detailed_results": self.results,
         }
 
-        logger.info("=" * 60)
-        logger.info("🎯 ETL Pipeline Test Results:")
-        logger.info(f"   📊 Sources tested: {pipeline_results['sources_tested']}")
-        logger.info(
-            f"   ✅ Sources accessible: {pipeline_results['sources_accessible']}"
-        )
-        logger.info(f"   🏛️  Entities found: {pipeline_results['entities_extracted']}")
-        logger.info(
-            f"   📄 Documents processed: {pipeline_results['documents_processed']}"
-        )
-        logger.info(f"   ❌ Errors: {pipeline_results['errors_encountered']}")
-
-        return pipeline_results
-
 
 def main():
-    """Run the ETL pipeline test."""
+    """Save source observations; HTTP/link discovery is not financial data."""
+    import argparse
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output", default="etl_test_results.json")
+    args = parser.parse_args()
     etl = SimpleKenyaETL()
     results = etl.run_full_pipeline()
-
-    # Save results to file
-    results_file = "etl_test_results.json"
-    with open(results_file, "w") as f:
+    with open(args.output, "w") as f:
         json.dump(results, f, indent=2)
-
-    print(f"\n📁 Detailed results saved to: {results_file}")
+    print(f"Source observations saved to: {args.output}; financial data not extracted")
     return results
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(1 if main()["errors_encountered"] else 0)
