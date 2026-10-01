@@ -234,7 +234,6 @@ SCANNED_MODULES = python_modules()
 # that owns it. Every site is listed in that issue.
 QUARANTINE_ISSUE = "#240"
 QUARANTINE: dict[str, int] = {
-    "backend/main.py": 3,  # #240 removes nine non-proxy sites; county transform remains.
     "main_comprehensive.py": 2,
     "main_enterprise.py": 2,
 }

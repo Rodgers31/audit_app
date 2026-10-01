@@ -4,8 +4,9 @@
 > (`apis/enhanced_county_analytics_api.py`, port 8003) described below was
 > deleted in issue #183 — it served hardcoded rankings of named counties and
 > four aggregates nothing measured. Everything it is credited with here is a
-> record of what existed then, not of what runs now. Note in particular that
-> `InternalAPIClient` in `backend/main.py` still holds a client for it.
+> record of what existed then, not of what runs now. The remaining
+> `InternalAPIClient` county consumers were removed under #302 on 2026-10-01;
+> the supported routes now publish database evidence.
 >
 > **Partly superseded, 2026-09-07.** The Modernized API (`apis/modernized_api.py`,
 > port 8004) is credited below with `/national/overview`, `/national/debt` and

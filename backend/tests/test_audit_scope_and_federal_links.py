@@ -134,8 +134,7 @@ def test_county_list_never_uses_findings_from_another_institution(
     # Known URL, no corresponding county entity: neither another county nor a
     # national ministry can become the requested county's result.
     absent = client.get("/api/v1/counties/003/audits/list")  # Kilifi has no entity
-    assert absent.status_code == 200, absent.text
-    assert absent.json() == {"total": 0, "page": 1, "limit": 20, "items": []}
+    assert absent.status_code == 404, absent.text
     assert client.get("/api/v1/counties/999/audits/list").status_code == 404
 
 
@@ -159,8 +158,7 @@ def test_county_list_requires_county_entity_type(
     _finding(db_session, misleading, seed_fiscal_period, doc, "Ministry finding")
     db_session.commit()
     response = client.get("/api/v1/counties/042/audits/list")
-    assert response.status_code == 200
-    assert response.json()["items"] == []
+    assert response.status_code == 404
 
 
 def test_county_list_does_not_borrow_a_foreign_same_named_county(
@@ -199,8 +197,7 @@ def test_county_list_does_not_borrow_a_foreign_same_named_county(
 
     for county_id in ("001", "code:047"):
         response = client.get(f"/api/v1/counties/{county_id}/audits/list")
-        assert response.status_code == 200, response.text
-        assert response.json()["items"] == []
+        assert response.status_code == 404, response.text
     for identifier in ("nairobi-foreign", str(foreign_county.id)):
         assert (
             client.get(f"/api/v1/counties/{identifier}/audits/list").status_code == 404

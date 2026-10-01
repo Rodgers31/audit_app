@@ -589,9 +589,6 @@ def test_real_county_readers_keep_legacy_official_slug_and_pk_identity(
 
     monkeypatch.setattr(main, "get_db", get_db)
     monkeypatch.setattr(main, "DATABASE_AVAILABLE", True)
-    monkeypatch.setattr(
-        main.InternalAPIClient, "get_county_data", AsyncMock(return_value=None)
-    )
     ids = snapshot(Session, ken)
     # Same stored PK, slug and historical URL must still resolve the same name.
     expected = {}

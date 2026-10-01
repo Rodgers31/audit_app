@@ -1,0 +1,265 @@
+{
+  "reported": {
+    "county_id": "mandera-county",
+    "county_name": "Mandera",
+    "budget_execution_rate": 50,
+    "revenue_2024": null,
+    "expenditure_breakdown": {},
+    "budget_allocation": {},
+    "fiscal_period": {
+      "id": 1,
+      "label": "FY2024/25",
+      "start_date": "2024-07-01T00:00:00",
+      "end_date": "2025-06-30T23:59:59.999999"
+    },
+    "sources": [
+      {
+        "id": 1,
+        "title": "County Budget Implementation Review Report FY2024/25",
+        "publisher": "Controller of Budget",
+        "url": "https://cob.go.ke/synthetic-session1.pdf",
+        "page_refs": [
+          "PDF pp. 7"
+        ]
+      }
+    ],
+    "accounting_basis": "reported_total",
+    "currency": "KES",
+    "absent_reasons": {},
+    "budget_source": "cob_cbirr",
+    "financial_summary": {
+      "fiscal_period": {
+        "id": 1,
+        "label": "FY2024/25",
+        "start_date": "2024-07-01T00:00:00",
+        "end_date": "2025-06-30T23:59:59.999999"
+      },
+      "total_allocation": 2000,
+      "total_spent": 1000,
+      "execution_rate": 50,
+      "accounting_basis": "reported_total",
+      "currency": "KES",
+      "sources": [
+        {
+          "id": 1,
+          "title": "County Budget Implementation Review Report FY2024/25",
+          "publisher": "Controller of Budget",
+          "url": "https://cob.go.ke/synthetic-session1.pdf",
+          "page_refs": [
+            "PDF pp. 7"
+          ]
+        }
+      ],
+      "absent_reasons": {},
+      "budget_lines_count": 1
+    },
+    "total_budget": 2000,
+    "budget_2025": 2000,
+    "total_spent": 1000,
+    "budget_utilization": 50
+  },
+  "zero": {
+    "county_id": "mandera-county",
+    "county_name": "Mandera",
+    "budget_execution_rate": null,
+    "revenue_2024": null,
+    "expenditure_breakdown": {},
+    "budget_allocation": {},
+    "fiscal_period": {
+      "id": 1,
+      "label": "FY2024/25",
+      "start_date": "2024-07-01T00:00:00",
+      "end_date": "2025-06-30T23:59:59.999999"
+    },
+    "sources": [
+      {
+        "id": 1,
+        "title": "County Budget Implementation Review Report FY2024/25",
+        "publisher": "Controller of Budget",
+        "url": "https://cob.go.ke/synthetic-session1.pdf",
+        "page_refs": [
+          "PDF pp. 7"
+        ]
+      }
+    ],
+    "accounting_basis": "reported_total",
+    "currency": "KES",
+    "absent_reasons": {
+      "execution_rate": "no_positive_allocation"
+    },
+    "budget_source": "cob_cbirr",
+    "financial_summary": {
+      "fiscal_period": {
+        "id": 1,
+        "label": "FY2024/25",
+        "start_date": "2024-07-01T00:00:00",
+        "end_date": "2025-06-30T23:59:59.999999"
+      },
+      "total_allocation": 0,
+      "total_spent": 0,
+      "execution_rate": null,
+      "accounting_basis": "reported_total",
+      "currency": "KES",
+      "sources": [
+        {
+          "id": 1,
+          "title": "County Budget Implementation Review Report FY2024/25",
+          "publisher": "Controller of Budget",
+          "url": "https://cob.go.ke/synthetic-session1.pdf",
+          "page_refs": [
+            "PDF pp. 7"
+          ]
+        }
+      ],
+      "absent_reasons": {
+        "execution_rate": "no_positive_allocation"
+      },
+      "budget_lines_count": 1
+    },
+    "total_budget": 0,
+    "budget_2025": 0,
+    "total_spent": 0,
+    "budget_utilization": null,
+    "financial_health": null,
+    "financial_health_score": null
+  },
+  "missing_spending": {
+    "county_id": "mandera-county",
+    "county_name": "Mandera",
+    "budget_execution_rate": null,
+    "revenue_2024": null,
+    "expenditure_breakdown": {},
+    "budget_allocation": {},
+    "fiscal_period": {
+      "id": 1,
+      "label": "FY2024/25",
+      "start_date": "2024-07-01T00:00:00",
+      "end_date": "2025-06-30T23:59:59.999999"
+    },
+    "sources": [
+      {
+        "id": 1,
+        "title": "County Budget Implementation Review Report FY2024/25",
+        "publisher": "Controller of Budget",
+        "url": "https://cob.go.ke/synthetic-session1.pdf",
+        "page_refs": [
+          "PDF pp. 7"
+        ]
+      }
+    ],
+    "accounting_basis": "reported_total",
+    "currency": "KES",
+    "absent_reasons": {
+      "total_spent": "spending_not_reported",
+      "execution_rate": "spending_not_reported"
+    },
+    "budget_source": "cob_cbirr",
+    "financial_summary": {
+      "fiscal_period": {
+        "id": 1,
+        "label": "FY2024/25",
+        "start_date": "2024-07-01T00:00:00",
+        "end_date": "2025-06-30T23:59:59.999999"
+      },
+      "total_allocation": 2000,
+      "total_spent": null,
+      "execution_rate": null,
+      "accounting_basis": "reported_total",
+      "currency": "KES",
+      "sources": [
+        {
+          "id": 1,
+          "title": "County Budget Implementation Review Report FY2024/25",
+          "publisher": "Controller of Budget",
+          "url": "https://cob.go.ke/synthetic-session1.pdf",
+          "page_refs": [
+            "PDF pp. 7"
+          ]
+        }
+      ],
+      "absent_reasons": {
+        "total_spent": "spending_not_reported",
+        "execution_rate": "spending_not_reported"
+      },
+      "budget_lines_count": 1
+    },
+    "total_budget": 2000,
+    "budget_2025": 2000,
+    "total_spent": null,
+    "budget_utilization": null,
+    "financial_health": null,
+    "financial_health_score": null
+  },
+  "withheld": {
+    "county_id": "mandera-county",
+    "county_name": "Mandera",
+    "budget_execution_rate": null,
+    "revenue_2024": null,
+    "expenditure_breakdown": {},
+    "budget_allocation": {},
+    "fiscal_period": {
+      "id": 1,
+      "label": "FY2024/25",
+      "start_date": "2024-07-01T00:00:00",
+      "end_date": "2025-06-30T23:59:59.999999"
+    },
+    "sources": [
+      {
+        "id": 1,
+        "title": "County Budget Implementation Review Report FY2024/25",
+        "publisher": "Controller of Budget",
+        "url": "https://cob.go.ke/synthetic-session1.pdf",
+        "page_refs": [
+          "PDF pp. 7"
+        ]
+      }
+    ],
+    "accounting_basis": "reported_total",
+    "currency": "KES",
+    "absent_reasons": {
+      "total_allocation": "not_reported_actuals",
+      "total_spent": "not_reported_actuals",
+      "execution_rate": "not_reported_actuals"
+    },
+    "budget_source": null,
+    "financial_summary": {
+      "fiscal_period": {
+        "id": 1,
+        "label": "FY2024/25",
+        "start_date": "2024-07-01T00:00:00",
+        "end_date": "2025-06-30T23:59:59.999999"
+      },
+      "total_allocation": null,
+      "total_spent": null,
+      "execution_rate": null,
+      "accounting_basis": "reported_total",
+      "currency": "KES",
+      "sources": [
+        {
+          "id": 1,
+          "title": "County Budget Implementation Review Report FY2024/25",
+          "publisher": "Controller of Budget",
+          "url": "https://cob.go.ke/synthetic-session1.pdf",
+          "page_refs": [
+            "PDF pp. 7"
+          ]
+        }
+      ],
+      "absent_reasons": {
+        "total_allocation": "not_reported_actuals",
+        "total_spent": "not_reported_actuals",
+        "execution_rate": "not_reported_actuals"
+      },
+      "budget_lines_count": 1
+    },
+    "total_budget": null,
+    "budget_2025": null,
+    "total_spent": null,
+    "budget_utilization": null,
+    "financial_health": null,
+    "financial_health_score": null,
+    "development_budget": null,
+    "recurrent_budget": null,
+    "sector_breakdown": {}
+  }
+}

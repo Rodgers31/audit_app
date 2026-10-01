@@ -38,8 +38,7 @@ export default function ApiHooksExamples() {
 
   // Example 5: Budget Allocation for Selected County
   const { data: budgetData, isLoading: isBudgetLoading } = useBudgetAllocation(
-    selectedCountyId,
-    '2024' // Current fiscal year
+    selectedCountyId
   );
 
   // Example 6: Latest Audit for Selected County
@@ -145,23 +144,20 @@ export default function ApiHooksExamples() {
                 <div className='flex justify-between'>
                   <span className='text-gray-600 dark:text-neutral-muted'>Total Budget:</span>
                   <span className='font-semibold'>
-                    KES {(budgetData.totalBudget / 1e9).toFixed(1)}B
+                    {budgetData.total_budget == null ? '—' : `KES ${(budgetData.total_budget / 1e9).toFixed(1)}B`}
                   </span>
                 </div>
                 <div className='flex justify-between'>
                   <span className='text-gray-600 dark:text-neutral-muted'>Total Spent:</span>
                   <span className='font-semibold'>
-                    KES {(budgetData.totalSpent / 1e9).toFixed(1)}B
+                    {budgetData.total_spent == null ? '—' : `KES ${(budgetData.total_spent / 1e9).toFixed(1)}B`}
                   </span>
                 </div>
-                <div className='space-y-2'>
-                  {budgetData.allocations?.slice(0, 5).map((allocation: any, index: number) => (
-                    <div key={index} className='flex justify-between text-sm'>
-                      <span className='text-gray-600 dark:text-neutral-muted'>{allocation.sector}:</span>
-                      <span>{allocation.percentage}%</span>
-                    </div>
-                  ))}
-                </div>
+                <p className='text-sm text-gray-500'>
+                  {budgetData.fiscal_period?.label ?? 'No supported fiscal period'}
+                  {budgetData.total_budget == null && ` · ${budgetData.absent_reasons.total_allocation}`}
+                  {budgetData.total_spent == null && ` · ${budgetData.absent_reasons.total_spent}`}
+                </p>
               </div>
             ) : (
               <p className='text-gray-500 dark:text-neutral-muted/80'>No budget data available</p>

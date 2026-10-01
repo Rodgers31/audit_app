@@ -174,17 +174,6 @@ def test_foreign_peer_cannot_change_kenyan_region_average(
 def test_county_audits_never_publish_foreign_namesake_without_kenyan_entity(
     client, db_session, seed_country, monkeypatch
 ):
-    async def absent(_county_name):
-        return None
-
-    for method in (
-        "get_county_data",
-        "get_county_audit_queries",
-        "get_missing_funds",
-        "get_cob_implementation",
-    ):
-        monkeypatch.setattr(f"main.InternalAPIClient.{method}", absent)
-
     tanzania = Country(
         iso_code="TZA",
         name="Tanzania",

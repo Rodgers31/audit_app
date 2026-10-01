@@ -225,38 +225,11 @@ def analyze_county_data():
     }
 
 
-def check_data_driven_analytics():
-    """Test the corrected data-driven analytics."""
-    print("🔍 TESTING CORRECTED DATA-DRIVEN ANALYTICS:")
-    print("-" * 50)
-
-    try:
-        from data_driven_analytics import DataDrivenGovernmentAnalytics
-
-        analytics = DataDrivenGovernmentAnalytics()
-
-        county_stats = analytics.get_actual_county_statistics()
-
-        print(f"✅ Analytics Results:")
-        print(f"   Total counties: {county_stats['total_counties']}")
-        print(f"   Data available: {county_stats['data_available']}")
-        print(f"   Total budget: KES {county_stats.get('total_county_budget', 0):,}")
-        print(
-            f"   Total population: {county_stats.get('total_county_population', 0):,}"
-        )
-        print(
-            f"   Average execution rate: {county_stats.get('average_execution_rate', 0):.1f}%"
-        )
-
-    except Exception as e:
-        print(f"❌ Error testing analytics: {e}")
-
-
 if __name__ == "__main__":
     # Run the analysis
     analysis_results = analyze_county_data()
     print()
-    check_data_driven_analytics()
+    print("Legacy county analytics withdrawn (#302); use the DB-backed county API.")
 
     # Summary
     print()

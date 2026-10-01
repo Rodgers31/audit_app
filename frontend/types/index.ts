@@ -380,7 +380,13 @@ export interface County {
   // Additional fields for county explorer
   governor?: string; // Governor name
   totalBudget?: number; // Total budget (computed from dev + recurrent)
-  totalDebt?: number; // Total debt (same as debt)
+  totalDebt?: number; // Selected eligible instrument outstanding, including reported zero
+  totalDebtAbsentReason?: string | null;
+  debtCurrency?: string | null;
+  debtAccountingBasis?: string;
+  debtBasis?: 'actual' | null;
+  debtAsAt?: string | null;
+  debtCoverage?: string;
   education?: number; // Education spending
   health?: number; // Health spending
   infrastructure?: number; // Infrastructure spending

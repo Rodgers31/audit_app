@@ -13,8 +13,8 @@ rule on ``/api/v1/counties`` and ``/api/v1/counties/{id}``. Three call sites in
   group it was never shown to belong to. The peer side of that bracket had the
   mirror-image defect: a peer with no census row also bucketed at 0, so
   counties of unknown size were averaged into ``<500k``'s flagged amounts;
-* ``transform_county_data_for_frontend`` — the enhanced-API fallback for
-  ``/api/v1/counties/{id}`` — returned ``population or 0``.
+* The retired enhanced-API fallback returned ``population or 0``. It is
+  withdrawn under #302; database failure now remains an HTTP failure.
 
 All 47 counties carry a KNBS 2019 census row today, so none of this is
 reachable in production. That is the reason to pin it: the path is walked the
@@ -272,74 +272,16 @@ class TestBracketPeersExcludeUncountedCounties:
         )
 
 
-class TestEnhancedFallbackPopulation:
-    """``transform_county_data_for_frontend`` — the enhanced-API fallback.
+class TestCountyDetailUnavailable:
+    """A broken DB cannot publish numbers from the retired enhanced API."""
 
-    Reached only when the DB path in ``/api/v1/counties/{id}`` raises. The
-    endpoint's DB path already answers ``null`` for an uncounted county; the
-    fallback answered 0, so one endpoint had two conventions for absence.
-    """
+    def test_endpoint_reports_failure_when_the_db_path_raises(self, client, monkeypatch):
+        def broken_db():
+            raise RuntimeError("Synthetic DB failure")
 
-    def test_absent_population_is_not_zero(self):
-        from main import transform_county_data_for_frontend
-
-        mapped = transform_county_data_for_frontend(
-            {
-                "county": "Kwale",
-                "basic_info": {"budget_2025": 3_900_690_000},
-                "financial_metrics": {},
-                "audit_information": {},
-            },
-            "002",
-        )
-        assert mapped["population"] is None, (
-            "the fallback manufactured "
-            f"population={mapped['population']!r} for a payload that carries "
-            "no population at all"
-        )
-
-    def test_present_population_is_passed_through(self):
-        from main import transform_county_data_for_frontend
-
-        mapped = transform_county_data_for_frontend(
-            {
-                "county": "Kwale",
-                "basic_info": {"population": 866_820},
-                "financial_metrics": {},
-                "audit_information": {},
-            },
-            "002",
-        )
-        assert mapped["population"] == 866_820
-
-    def test_endpoint_serves_the_fallback_when_the_db_path_raises(self, client):
-        """Proves the null reaches the wire, not just the transform."""
-        from unittest.mock import patch
-
-        async def _fake_county_data(county_name: str):
-            return {
-                "county": county_name,
-                "basic_info": {"budget_2025": 3_900_690_000},
-                "financial_metrics": {},
-                "audit_information": {},
-            }
-
-        def _boom():
-            raise RuntimeError("DB path unavailable")
-
-        with patch("main.get_db", _boom), patch(
-            "main.InternalAPIClient.get_county_data", _fake_county_data
-        ):
-            response = client.get("/api/v1/counties/002")
-
-        assert response.status_code == 200, response.text
-        body = response.json()
-        assert body["name"] == "Kwale"
-        assert body["population"] is None, (
-            "the enhanced-API fallback served "
-            f"population={body['population']!r} from a payload with no "
-            "population; the DB path on this same endpoint serves null"
-        )
+        monkeypatch.setattr("main.get_db", broken_db)
+        response = client.get("/api/v1/counties/002")
+        assert response.status_code == 500, response.text
 
 
 # The census figure bootstrap copies into entity.meta.metrics[FY] from

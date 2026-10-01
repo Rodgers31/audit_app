@@ -13,7 +13,7 @@ import {
   getNationalBudgetSummary,
   getSectorBudgetAllocation,
 } from '../api/budget';
-import { BudgetAllocationResponse } from '../api/types';
+import { BudgetAllocationResponse, BudgetComparisonAllocationResponse } from '../api/types';
 
 // Query keys for budget
 const QUERY_KEYS = {
@@ -31,7 +31,7 @@ const QUERY_KEYS = {
   enhanced: ['budget', 'enhanced'] as const,
 };
 
-// Get budget allocation for a county
+// Selected county account; fiscalYear is a legacy query, not a period selector.
 export const useBudgetAllocation = (
   countyId: string,
   fiscalYear?: string,
@@ -50,7 +50,7 @@ export const useBudgetAllocation = (
 export const useBudgetComparison = (
   countyIds: string[],
   fiscalYear?: string,
-  options?: Omit<UseQueryOptions<BudgetAllocationResponse[]>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<BudgetComparisonAllocationResponse[]>, 'queryKey' | 'queryFn'>
 ) => {
   return useQuery({
     queryKey: QUERY_KEYS.comparison(countyIds, fiscalYear),

@@ -30,10 +30,10 @@ def _route(code):
 
 @pytest.fixture(autouse=True)
 def no_enhanced_network(monkeypatch):
-    async def absent(_county_name):
-        return None
+    async def forbidden(*args, **kwargs):
+        raise AssertionError("County routes must never call the retired proxy")
 
-    monkeypatch.setattr("main.InternalAPIClient.get_county_data", absent)
+    monkeypatch.setattr("httpx.AsyncClient.get", forbidden)
 
 
 @pytest.fixture()

@@ -1,7 +1,6 @@
 """County audit list citations from synthetic published findings."""
 
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock
 
 import pytest
 
@@ -182,65 +181,9 @@ def test_county_audit_list_carries_only_parseable_pages_and_preserves_gates(
     assert wrong_period.json()["items"] == []
 
 
-def test_county_audit_list_fallback_uses_the_same_page_contract(client, monkeypatch):
+def test_county_audit_list_db_unavailable_does_not_publish_proxy_citations(client, monkeypatch):
     import main
 
     monkeypatch.setattr(main, "DATABASE_AVAILABLE", False)
-    monkeypatch.setattr(
-        main.InternalAPIClient,
-        "get_county_audit_queries",
-        AsyncMock(return_value=[
-            {
-                "id": "range",
-                "description": "Synthetic range finding",
-                "source": {"title": "Synthetic PDF", "url": PDF_URL, "page": "pp. 38–39"},
-            },
-            {
-                "id": "invalid",
-                "description": "Synthetic invalid page",
-                "source": {"title": "Synthetic PDF", "url": PDF_URL, "page": "p.-3"},
-            },
-            {
-                "id": "annex",
-                "description": "Synthetic annex locator",
-                "source": {"title": "Synthetic PDF", "url": PDF_URL, "page": "Annex VII"},
-            },
-            {
-                "id": "bad-roman",
-                "description": "Synthetic noncanonical Roman locator",
-                "source": {"title": "Synthetic PDF", "url": PDF_URL, "page": "Schedule VX"},
-            },
-            {
-                "id": "compact-schedule",
-                "description": "Synthetic compact schedule locator",
-                "source": {"title": "Synthetic PDF", "url": PDF_URL, "page": "Schedule12"},
-            },
-            {
-                "id": "unsafe-url",
-                "description": "Synthetic invalid URL",
-                "source": {"title": "Synthetic PDF", "url": "javascript:alert(1)", "page": "p. 2"},
-            },
-        ]),
-    )
-
     response = client.get("/api/v1/counties/001/audits/list")
-    assert response.status_code == 200, response.text
-    items = {item["id"]: item["source"] for item in response.json()["items"]}
-    assert items["range"]["page"] == 38
-    assert items["range"]["page_url"] == (
-        "https://example.invalid/synthetic-county-audit.pdf?download=1#zoom=100&page=38"
-    )
-    assert items["annex"]["page"] == "Annex VII"
-    assert items["annex"]["page_url"] == (
-        "https://example.invalid/synthetic-county-audit.pdf?download=1#zoom=100"
-    )
-    assert items["bad-roman"]["page"] is None
-    assert items["bad-roman"]["page_url"] == items["annex"]["page_url"]
-    assert items["compact-schedule"]["page"] == "Schedule12"
-    assert items["compact-schedule"]["page_url"] == items["annex"]["page_url"]
-    assert items["invalid"]["page"] is None
-    assert items["invalid"]["page_url"] == (
-        "https://example.invalid/synthetic-county-audit.pdf?download=1#zoom=100"
-    )
-    assert items["unsafe-url"]["page"] == 2
-    assert items["unsafe-url"]["page_url"] is None
+    assert response.status_code == 503, response.text
