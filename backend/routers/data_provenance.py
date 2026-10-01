@@ -14,6 +14,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from urllib.parse import unquote, urlsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
@@ -307,7 +308,7 @@ def _population_publisher_family(label):
     """Recognize population writer labels only for detecting contradictions."""
     if not isinstance(label, str):
         return None
-    label = label.casefold()
+    label = label.strip().casefold()
     if label.startswith("world bank"):
         return "worldbank"
     if label.startswith(("knbs", "kenya national bureau of statistics", "kenya census")):
@@ -347,14 +348,34 @@ def _attach_population_evidence(verification, db, record) -> None:
         census_year = meta.get("census_year")
         source_family = _population_publisher_family(source)
         document_family = _population_publisher_family(doc.publisher)
+        publisher_conflict = source is not None and (
+            not isinstance(source, str) or not source.strip()
+            or (source_family != document_family if source_family and document_family
+                else source.strip().casefold() != doc.publisher.strip().casefold())
+        )
+        supported_datasets = set()
+        if document_family == "worldbank" and record.entity_id is None:
+            supported_datasets.add("SP.POP.TOTL")
+        if document_family == "knbs":
+            supported_datasets.add(f"knbs_census_{record.year}")
+        document_meta = doc.meta if isinstance(doc.meta, dict) else {}
+        declared_datasets = [meta.get("dataset_id"),
+                             document_meta.get("dataset_id"),
+                             document_meta.get("indicator")]
+        document_url = urlsplit(doc.url)
+        document_path = unquote(document_url.path)
+        if (document_family == "worldbank"
+            and document_url.hostname in {"api.worldbank.org", "data.worldbank.org"}
+            and "/indicator/" in document_path):
+            declared_datasets.append(document_path.rsplit("/indicator/", 1)[1].rstrip("/"))
+        dataset_conflict = any(
+            value is not None and (
+                not isinstance(value, str) or value not in supported_datasets
+            ) for value in declared_datasets
+        )
         if (
             (source_url is not None and source_url != doc.url)
-            or (source is not None and not isinstance(source, str))
-            or (meta.get("dataset_id") is not None
-                and not isinstance(meta["dataset_id"], str))
-            or (source_family is not None and source_family != document_family)
-            or (meta.get("dataset_id") == "SP.POP.TOTL"
-                and document_family != "worldbank")
+            or publisher_conflict or dataset_conflict
             or (census_year is not None and
                 (type(census_year) is not int or census_year != record.year))
         ):

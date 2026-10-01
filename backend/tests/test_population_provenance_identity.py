@@ -201,7 +201,10 @@ def test_document_identity_does_not_require_a_metadata_label(population_db, popu
 @pytest.mark.parametrize("metadata", [[], "garbage", True,
     {"source_url": ["https://www.knbs.or.ke"]},
     {"census_year": True}, {"census_year": 2020},
-    {"source": "World Bank Development Indicators (2019)"}])
+    {"source": "World Bank Development Indicators (2019)"},
+    {"source": "National Treasury"}, {"source": ""}, {"source": " "},
+    {"dataset_id": "NY.GDP.MKTP.CN"}, {"dataset_id": "SP.POP.TOTL.MA.IN"},
+    {"dataset_id": ""}, {"dataset_id": "knbs_census_2020"}])
 def test_document_does_not_hide_conflicting_or_malformed_metadata(population_db, population_client, metadata):
     doc, _ = document(population_db)
     row(population_db, entity_id=1, meta=metadata, source_document_id=doc.id)
@@ -209,6 +212,53 @@ def test_document_does_not_hide_conflicting_or_malformed_metadata(population_db,
     assert body["verification_status"] == "unverified"
     assert body["provenance_chain"] == [] and body["source_url"] is None
     assert body["reason"]
+
+
+def test_document_preserves_consistent_explicit_census_identity(population_db, population_client):
+    doc, _ = document(population_db)
+    row(population_db, entity_id=1, meta={
+        "source": "KNBS Census 2019", "dataset_id": "knbs_census_2019",
+        "census_year": 2019,
+    }, source_document_id=doc.id)
+    body = verify(population_client, entity_id=1)
+    assert body["source_document"] == doc.title
+    assert body["provenance_chain"][0]["dataset"] == doc.title
+    assert body["verification_status"] == "publishable"
+
+
+def test_unknown_but_matching_document_publisher_is_not_a_conflict(population_db, population_client):
+    doc, _ = document(population_db)
+    doc.publisher = "National Treasury"
+    row(population_db, entity_id=1, meta={"source": " National Treasury "},
+        source_document_id=doc.id)
+    body = verify(population_client, entity_id=1)
+    assert body["verification_status"] == "publishable"
+    assert body["publisher"] == "National Treasury"
+
+
+def test_population_does_not_borrow_a_document_declared_for_gdp(population_db, population_client):
+    from seeding.domains.national_gdp import _ensure_gdp_source_document
+    doc = _ensure_gdp_source_document(population_db)
+    row(population_db, meta=WB_META, source_document_id=doc.id)
+    body = verify(population_client, year=2019)
+    assert body["verification_status"] == "unverified"
+    assert body["provenance_chain"] == [] and body["source_url"] is None
+    assert body["reason"] == "conflicting population source identity"
+
+
+@pytest.mark.parametrize("indicator,expected", [("NY.GDP.MKTP.CN", "unverified"),
+                                               ("SP.POP.TOTL", "publishable")])
+def test_document_indicator_url_is_part_of_population_identity(population_db, population_client, indicator, expected):
+    doc, _ = document(population_db)
+    doc.publisher = "World Bank"
+    doc.title = "World Bank indicator " + indicator
+    doc.url = "https://api.worldbank.org/v2/country/KEN/indicator/" + indicator
+    doc.meta = None
+    row(population_db, meta={"source": "World Bank", "dataset_id": "SP.POP.TOTL"},
+        source_document_id=doc.id)
+    body = verify(population_client, year=2019)
+    assert body["verification_status"] == expected
+    assert bool(body["provenance_chain"]) == (expected == "publishable")
 
 
 @pytest.mark.parametrize("field,value", [("url", None), ("url", "javascript:alert(1)"),
