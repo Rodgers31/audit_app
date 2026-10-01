@@ -130,7 +130,9 @@ def test_misgrouped_cash_without_zero_receivable_and_matching_accrual_is_refused
     assert _corroborated_misgrouped_cash(row, headers, 1) is None
 
 
-def test_kisumu_mangled_target_and_total_stay_withheld():
+def test_kisumu_clipped_target_digit_stays_with_its_total():
     streams, reason = county_revenue_receipts(_tables("Kisumu"))
-    assert streams is None
-    assert reason == "no_grand_total"
+    assert reason == ""
+    assert streams["Total"] == (
+        Decimal("16973318712"), Decimal("13360566017.46")
+    )
