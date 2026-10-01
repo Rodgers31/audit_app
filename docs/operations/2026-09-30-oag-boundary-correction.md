@@ -76,6 +76,20 @@ columns. Intervening new evidence makes recovery refuse rather than erase it.
    owner's normal secret mechanism. The tool never loads `.env`, never uses
    a default `DATABASE_URL`, and never prints the connection string. Do not
    paste production credentials into command receipts.
+   Remote TCP URLs must explicitly include exactly one `sslmode=require`,
+   `sslmode=verify-ca`, or `sslmode=verify-full`, matching the connection rules
+   in `docs/local-development.md`. No other query options or drivers are
+   accepted. The CLI pins the installed `psycopg2` driver for `postgres://`,
+   `postgresql://`, and `postgresql+psycopg2://` URLs and enforces the selected
+   TLS mode at the driver boundary with an 8s connection timeout. It pins
+   `gssencmode=disable` so the libpq GSS preference cannot replace TLS (see
+   [PostgreSQL connection options](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNECT-SSLMODE)). Use the
+   driver's normal trusted certificate configuration for verification modes.
+   Only exact loopback hosts (`localhost`, `127.0.0.1`, `::1`) may omit TLS;
+   their local address is pinned so `PGHOSTADDR` cannot redirect this exception
+   remotely. Explicit weak modes (`disable`, `allow`, `prefer`) are refused.
+   Both host and database must be explicit. CLI failures report only the
+   exception class, because driver error details can contain a connection URL.
 3. Prepare a **fresh read-only plan**. Review the complete diff and digest;
    source/row timestamps can drift, so do not reuse a stale observation blindly.
 
@@ -155,6 +169,17 @@ retirement review. This tool touches only document 2541's three reviewed rows.
   DML. Exact-comparison defects were independently reproduced red then green.
 - Full CLI prepare → dry-run → commit → recovery succeeded against a disposable
   PostgreSQL schema and restored the complete synthetic inventory.
+- Connection regression tests execute CLI parsing and the actual SQLAlchemy
+  engine/DBAPI boundary with network calls intercepted. They verify all three
+  remote TLS modes, driver pinning, loopback environment-redirect protection,
+  refusal of missing/weak TLS and unsupported options, and URL-free failures.
+  The revised CLI also completed prepare, dry-run, commit and recovery on
+  disposable PostgreSQL with conflicting `PGHOSTADDR`, `PGSSLMODE` and
+  `PGGSSENCMODE` values;
+  the full synthetic inventory was restored. The bounded follow-up passed
+  44 connection and affected persistence tests, including atomic rollback,
+  unrelated JSON-type preservation and future-loader/recovery controls.
+  These tests do not establish a remote TLS handshake or certificate validity.
 - No production write, seed, deletion, cache flush, deployment, GitHub Actions
   run, paid review or issue closure occurred. Tests do not establish power-loss
   durability or complete source accuracy outside the reviewed scope.

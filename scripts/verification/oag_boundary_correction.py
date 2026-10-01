@@ -18,6 +18,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from functools import lru_cache
 from pathlib import Path
+from urllib.parse import parse_qs, urlsplit
 
 from sqlalchemy import MetaData, Table, create_engine, select, text, update
 from sqlalchemy.engine import make_url
@@ -26,6 +27,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "backend"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import oag_prior_year_boundary_manifest as reviewed  # noqa: E402
+from db_url import with_explicit_driver  # noqa: E402
 from seeding.extractors.oag_blue_book import source_hash_of  # noqa: E402
 from seeding.oag_discovery import fiscal_year_in_name  # noqa: E402
 from services.audit_citations import audited_institution  # noqa: E402
@@ -300,6 +302,35 @@ def run(engine, pdf, manifest_path, *, plan=None, expected_plan_sha256=None,
                 connection.rollback()
 
 
+def cli_engine(raw):
+    """Accept only explicit TCP PostgreSQL and the documented TLS modes."""
+    try:
+        parsed = urlsplit(raw)
+        options = parse_qs(parsed.query, keep_blank_values=True, strict_parsing=True)
+        url = make_url(with_explicit_driver(raw))
+        if (url.drivername != "postgresql+psycopg2" or not parsed.hostname
+                or not url.host or not url.database or parsed.fragment):
+            raise ValueError
+        if set(options) - {"sslmode"}:
+            raise ValueError
+        modes = options.get("sslmode", [])
+        if modes and (len(modes) != 1 or modes[0] not in {"require", "verify-ca", "verify-full"}):
+            raise ValueError
+        loopback = url.host in {"localhost", "127.0.0.1", "::1"}
+        if not modes and not loopback:
+            raise ValueError
+    except Exception:
+        # Parsing errors can embed credentials; do not propagate their details.
+        raise ValueError("explicit PostgreSQL TCP URL with documented TLS required") from None
+    # libpq otherwise prefers GSS encryption even over sslmode=verify-full.
+    connect_args = {"connect_timeout": 8, "sslmode": modes[0] if modes else "disable",
+                    "gssencmode": "disable"}
+    if loopback:
+        # libpq PGHOSTADDR must not redirect the local no-TLS exception remotely.
+        connect_args["hostaddr"] = "::1" if url.host == "::1" else "127.0.0.1"
+    return create_engine(url.set(query={}), connect_args=connect_args)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--pdf", type=Path, required=True)
@@ -312,10 +343,7 @@ def main():
     args = parser.parse_args()
     # Dedicated explicit variable; never load .env or fall back to DATABASE_URL.
     raw = os.environ["OAG_BOUNDARY_DATABASE_URL"]
-    url = make_url(raw)
-    if url.get_backend_name() != "postgresql" or url.query:
-        raise ValueError("explicit PostgreSQL URL without query options required")
-    engine = create_engine(url, connect_args={"connect_timeout": 8})
+    engine = cli_engine(raw)
     try:
         plan = json.loads(args.plan.read_bytes()) if args.plan else None
         if plan and plan.get("schema") == "oag_boundary_recovery/v1":
@@ -331,5 +359,14 @@ def main():
         engine.dispose()
 
 
+def cli():
+    try:
+        main()
+    except Exception as exc:
+        # Driver failures may include a full DSN. Keep CLI diagnostics URL-free.
+        print(f"OAG boundary correction failed: {type(exc).__name__}", file=sys.stderr)
+        raise SystemExit(1) from None
+
+
 if __name__ == "__main__":
-    main()
+    cli()
