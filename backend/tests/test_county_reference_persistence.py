@@ -5,7 +5,7 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
-from threading import Event
+from threading import Event, current_thread
 from time import monotonic
 from uuid import uuid4
 from unittest.mock import AsyncMock
@@ -333,6 +333,176 @@ def test_newer_project_commit_is_read_under_reference_lock(pg_references, monkey
             source_writer.rollback()
     stored = snapshot(Session, ken)["Mombasa County"][3]
     assert {k: v for k, v in stored.items() if k != "county_reference"} == expected
+
+
+@pytest.mark.parametrize("first_writer", ["reference", "projects"])
+def test_reference_check_and_project_write_both_complete_with_legacy_id_order(
+    pg_references, monkeypatch, first_writer
+):
+    from seeding.domains.stalled_projects import writer as project_writer
+
+    engine, Session = pg_references
+    ken = country(Session)
+    with Session() as db:
+        next_id = 5
+        for code, name in module.KENYA_COUNTY_CODES.items():
+            if name == "Nairobi":
+                row_id = 3
+            elif name == "Mombasa":
+                row_id = 4
+            else:
+                row_id = next_id
+                next_id += 1
+            db.add(
+                Entity(
+                    id=row_id,
+                    country_id=ken,
+                    type=EntityType.COUNTY,
+                    canonical_name=f"{name} County",
+                    slug=f"stable-{code}",
+                    meta={
+                        "code": code,
+                        "county_reference": {
+                            "code": code,
+                            "source": "static_county_reference",
+                            "last_changed_at": "2025-01-01T00:00:00+00:00",
+                        },
+                        "stalled_projects": {"schema": 2, "rows": []},
+                        "unrelated": {"retain": True},
+                    },
+                )
+            )
+        db.commit()
+    before = snapshot(Session, ken)
+    worker = seeder(monkeypatch)
+    entered, release, second_started = Event(), Event(), Event()
+    state = {}
+    edition = {
+        "url": "https://example.test/new-edition.pdf",
+        "title": "Synthetic new project edition",
+        "as_of": "2026-09-30",
+        "sha256": "retain-new-source-hash",
+    }
+    counties = [
+        {
+            "county": project_writer.normalise_county(name),
+            "tables": [
+                {
+                    "caption": "Synthetic sourced project table",
+                    "rows": [
+                        {
+                            "project_name": f"New project in {name}",
+                            "source_page": 7,
+                            "estimated_value_kes": 0,
+                            "amount_paid_kes": 0,
+                        }
+                    ],
+                }
+            ],
+        }
+        for name in module.KENYA_COUNTY_CODES.values()
+    ]
+
+    def role():
+        return (
+            "reference" if current_thread().name.startswith("reference") else "projects"
+        )
+
+    def relevant(statement):
+        return "FOR UPDATE" in statement or statement.lower().lstrip().startswith(
+            "update entities"
+        )
+
+    def before_statement(connection, _cursor, statement, _params, _ctx, _many):
+        if relevant(statement) and role() != first_writer:
+            state[
+                "second_pid"
+            ] = connection.connection.driver_connection.get_backend_pid()
+            second_started.set()
+
+    def after_statement(_connection, _cursor, statement, _params, _ctx, _many):
+        if relevant(statement) and role() == first_writer and not entered.is_set():
+            entered.set()
+            assert release.wait(5), "first writer gate timed out"
+
+    def reference():
+        return asyncio.run(worker._seed_counties_live())
+
+    def projects():
+        with Session() as db:
+            return project_writer.write(counties, edition, db)
+
+    event.listen(engine, "before_cursor_execute", before_statement)
+    event.listen(engine, "after_cursor_execute", after_statement)
+    try:
+        with ThreadPoolExecutor(
+            max_workers=1, thread_name_prefix="reference"
+        ) as refs, ThreadPoolExecutor(
+            max_workers=1, thread_name_prefix="projects"
+        ) as sources:
+            try:
+                first = (
+                    refs.submit(reference)
+                    if first_writer == "reference"
+                    else sources.submit(projects)
+                )
+                assert entered.wait(3), "first writer did not take its database locks"
+                second = (
+                    sources.submit(projects)
+                    if first_writer == "reference"
+                    else refs.submit(reference)
+                )
+                assert second_started.wait(3)
+                deadline = monotonic() + 3
+                with engine.connect() as observer:
+                    while monotonic() < deadline:
+                        waiting = observer.execute(
+                            text(
+                                "SELECT wait_event_type FROM pg_stat_activity WHERE pid=:pid"
+                            ),
+                            {"pid": state["second_pid"]},
+                        ).scalar_one()
+                        observer.commit()
+                        if waiting == "Lock":
+                            break
+                        assert (
+                            not second.done()
+                        ), "competing writer bypassed database locks"
+                        Event().wait(0.01)
+                    else:
+                        pytest.fail(
+                            "did not observe the competing PostgreSQL writer waiting"
+                        )
+                release.set()
+                first_result = first.result(timeout=6)
+                second_result = second.result(timeout=6)
+            finally:
+                release.set()
+    finally:
+        event.remove(engine, "before_cursor_execute", before_statement)
+        event.remove(engine, "after_cursor_execute", after_statement)
+    reference_result, project_result = (
+        (first_result, second_result)
+        if first_writer == "reference"
+        else (second_result, first_result)
+    )
+    assert reference_result == {
+        "created": 0,
+        "updated": 0,
+        "unchanged": 47,
+        "reused": 47,
+    }
+    assert project_result == {"counties": 47, "rows": 47, "unmatched": []}
+    after = snapshot(Session, ken)
+    for name, (_, _, _, meta) in after.items():
+        assert after[name][:3] == before[name][:3]
+        assert meta["county_reference"] == before[name][3]["county_reference"]
+        assert meta["unrelated"] == {"retain": True}
+        project = meta["stalled_projects"]
+        assert project["source"]["sha256"] == edition["sha256"]
+        assert project["rows"][0]["source_url"] == edition["url"]
+        assert project["rows"][0]["source_page"] == 7
+        assert project["rows"][0]["estimated_value_kes"] == 0
 
 
 def test_new_references_have_no_unsourced_metrics_even_with_fetch_payload(

@@ -287,21 +287,34 @@ class AutoSeeder:
 
             counts = {"created": 0, "updated": 0, "unchanged": 0, "reused": 0}
 
-            for code, name in KENYA_COUNTY_CODES.items():
-                # Check if county entity exists
-                canonical = f"{name} County"
-                existing = (
-                    db.query(Entity)
-                    .filter(
-                        Entity.country_id == kenya.id,
-                        Entity.type == EntityType.COUNTY,
-                        Entity.canonical_name == canonical,
-                    )
-                    # Read the JSON under the write lock so a committed newer
-                    # source/project change cannot be lost by dict assignment.
-                    .with_for_update()
-                    .first()
+            # Acquire every existing reference lock in primary-key order, as
+            # SQLAlchemy's source/project writers flush their Entity updates.
+            # County-code order differs from stored IDs and can deadlock even
+            # when this check would leave all reference metadata unchanged.
+            # Read the JSON under these locks before merging a newer source
+            # commit. Only the 47 Kenyan reference names are in this query.
+            references = (
+                db.query(Entity)
+                .filter(
+                    Entity.country_id == kenya.id,
+                    Entity.type == EntityType.COUNTY,
+                    Entity.canonical_name.in_(
+                        [f"{name} County" for name in KENYA_COUNTY_CODES.values()]
+                    ),
                 )
+                .order_by(Entity.id)
+                .with_for_update()
+                .all()
+            )
+            by_name = {}
+            for reference_entity in references:
+                # Reuse one stored identity per name without modifying any
+                # duplicate identities, their slugs, metadata or foreign keys.
+                by_name.setdefault(reference_entity.canonical_name, reference_entity)
+
+            for code, name in KENYA_COUNTY_CODES.items():
+                canonical = f"{name} County"
+                existing = by_name.get(canonical)
                 if existing:
                     counts["reused"] += 1
                     if existing.meta is not None and not isinstance(
