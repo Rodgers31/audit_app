@@ -93,5 +93,5 @@ async def test_boot_dispatch_preserves_unrelated_domains(monkeypatch):
     monkeypatch.setattr(module.asyncio, "sleep", AsyncMock())
     await seeder.seed_all_domains()
     assert [c.args[0] for c in run.call_args_list] == [
-        "counties", "national_entity", "debt"
+        "counties", "national_entity"
     ]

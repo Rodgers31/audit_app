@@ -1,8 +1,8 @@
 """Lightweight web-worker refreshes and county reference creation.
 
-Population, officials and heavy document ingestion belong to the dedicated
-seeding runner. Its source-owning writers must not compete with web startup
-or periodic refreshes.
+Debt, economics, population, officials and heavy document ingestion belong to
+the dedicated seeding runner. Its source-owning writers must not compete with
+web startup or periodic refreshes.
 """
 
 import asyncio
@@ -28,7 +28,6 @@ logger = logging.getLogger("auto_seeder")
 # A thread or coroutine timeout cannot bound a parser's memory in this process.
 # Refresh schedule configuration (hours between refreshes)
 REFRESH_SCHEDULE = {
-    "debt": 24,  # Daily - CBK updates monthly but we check daily
     "counties": 168,  # Weekly - County reference refresh
 }
 
@@ -88,15 +87,11 @@ KENYA_COUNTY_CODES = {
 class AutoSeeder:
     """Schedule the web worker's lightweight reference refreshes."""
 
-    # Domains seeded synchronously at boot via seed_all_domains().
-    # Exposed as a class attribute so _initial_seed_and_loop can backfill
-    # last_refresh only for REFRESH_SCHEDULE domains that AREN'T in this
-    # set — preserving the existing retry-on-next-tick behaviour for
-    # boot-seeded domains that fail at startup.
+    # Reference domains attempted at boot; a failed scheduled domain remains
+    # due for retry on the next periodic tick.
     _BOOT_DOMAINS: tuple = (
         "counties",
         "national_entity",
-        "debt",
     )
 
     def __init__(self):
@@ -199,6 +194,8 @@ class AutoSeeder:
         """Check which domains need refresh and update them."""
         now = datetime.now(timezone.utc)
         logger.info("[AUTO-SEEDER] Checking for stale data...")
+        refreshed = False
+        failed = False
 
         for domain, refresh_hours in REFRESH_SCHEDULE.items():
             last = self.last_refresh.get(domain)
@@ -212,15 +209,19 @@ class AutoSeeder:
                     await self._seed_domain(domain)
                     self.last_refresh[domain] = now
                     self._record_domain_success(domain)
+                    refreshed = True
                 except Exception as e:
                     self._record_domain_failure(domain, e)
+                    failed = True
 
                 self._fetch_stats["total_fetches"] += 1
 
                 # Rate limiting between domain refreshes
                 await asyncio.sleep(5)
 
-        self._fetch_stats["last_full_refresh"] = now.isoformat()
+        # An idle check or failed refresh cannot certify completed work.
+        if refreshed and not failed:
+            self._fetch_stats["last_full_refresh"] = now.isoformat()
 
     async def seed_all_domains(self):
         """Run the web worker's registered reference refreshes."""
@@ -395,15 +396,10 @@ class AutoSeeder:
                 logger.info("[AUTO-SEEDER] National Government entity exists")
 
     async def _seed_debt_live(self):
-        """
-        National debt domain — SKIPPED.
-
-        bootstrap.py is the authoritative source for national sovereign debt
-        (CBK Public Debt Report, verified Apr 2025).  Live fetches risk
-        overwriting verified data with unstructured/partial totals.
-        """
-        logger.info("[AUTO-SEEDER] Debt domain skipped — bootstrap.py is authoritative")
-        return
+        """Refuse legacy callers; dedicated debt domains own sourced writes."""
+        raise ValueError(
+            "national_debt and debt_timeline are owned by the dedicated seeding runner"
+        )
 
     async def _seed_population_live(self):
         """Refuse legacy direct callers before fetching or touching the database."""
@@ -427,11 +423,14 @@ class AutoSeeder:
                 "domains": [
                     "audits",
                     "counties_budget",
+                    "debt_timeline",
                     "economic_indicators",
+                    "national_debt",
                     "pending_bills",
                     "stalled_projects",
                 ],
                 "runner": ".github/workflows/seed.yml (seeding.cli)",
+                "job_health": "not_checked_here",
             },
         }
 
