@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 from services.county_budget import (
     BUDGET_PROVENANCE_STAGE_LABELS,
 )
-from services.publication_gate import publishable_audit_criterion
+from services.audit_amounts import audit_amount_columns, audit_amount_result
 from services.entity_financials import financial_summary, summary_budget_source
 
 from database import get_db
@@ -123,6 +123,7 @@ def _build_stage(
     gap_from_prev: Optional[float] = None,
     gap_label: Optional[str] = None,
     data_unavailable: bool = False,
+    amount_coverage: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Build a single waterfall stage dict."""
     d: Dict[str, Any] = {
@@ -140,6 +141,8 @@ def _build_stage(
         d["gap_label"] = gap_label
     if data_unavailable:
         d["data_unavailable"] = True
+    if amount_coverage is not None:
+        d["amount_coverage"] = amount_coverage
     return d
 
 
@@ -282,6 +285,7 @@ def _money_flow_for_entity(
     # --- Allocated & Spent from BudgetLine ---
     # If no matching periods found, there's no data for this year
     if not period_ids:
+        _, coverage = audit_amount_result(reason="fiscal_period_not_found")
         return {
             "stages": [
                 # No source line: nothing was published, and an absent figure
@@ -291,8 +295,9 @@ def _money_flow_for_entity(
                 _build_stage("Spent", "Actual Expenditure", None,
                              gap_label="Unspent Funds", data_unavailable=True),
                 _build_stage("Flagged", "Auditor Flagged", None,
-                             gap_label="Irregular/Unsupported Expenditure", data_unavailable=True),
+                             gap_label="Amounts in Audit Findings", data_unavailable=True, amount_coverage=coverage),
             ],
+            "audit_amount_coverage": coverage,
             "total_waste_estimate": None,
             "efficiency_score": None,
             "budget_source": None,
@@ -337,13 +342,12 @@ def _money_flow_for_entity(
         budget_source = None
 
     # --- Audit flagged amounts ---
-    audit_q = db.query(func.sum(Audit.amount)).filter(
-        publishable_audit_criterion(),
-        Audit.entity_id == entity_id,
-        Audit.period_id.in_(period_ids),
+    flagged, coverage = audit_amount_result(
+        db.query(*audit_amount_columns()).filter(
+            Audit.entity_id == entity_id,
+            Audit.period_id.in_(period_ids),
+        ).one()
     )
-    flagged = audit_q.scalar()
-    flagged = float(flagged) if flagged is not None else None
 
     # --- Build stages ---
     # We surface three stages from data we ACTUALLY have:
@@ -388,8 +392,9 @@ def _money_flow_for_entity(
         label="Auditor Flagged",
         amount=flagged,
         gap_from_prev=None,
-        gap_label="Irregular/Unsupported Expenditure",
+        gap_label="Amounts in Audit Findings",
         data_unavailable=flagged is None,
+        amount_coverage=coverage,
     ))
 
     # --- Derived metrics ---
@@ -400,6 +405,7 @@ def _money_flow_for_entity(
     return {
         "stages": stages,
         "total_waste_estimate": flagged,
+        "audit_amount_coverage": coverage,
         "efficiency_score": efficiency,
         # Provenance — surfaced in the UI so every figure is traceable
         # back to an official Controller of Budget (CoB) publication.
@@ -477,7 +483,7 @@ async def national_money_flow(
         allocated = None
         spent = None
         source_doc_url = None
-        flagged = None
+        flagged, coverage = audit_amount_result(reason="fiscal_period_not_found")
         budget_source = None
     else:
         budget_q = db.query(BudgetLine).filter(
@@ -532,13 +538,12 @@ async def national_money_flow(
             budget_source = None
 
         # --- Aggregated audit flags ---
-        audit_q = db.query(func.sum(Audit.amount)).filter(
-            publishable_audit_criterion(),
-            Audit.entity_id.in_(entity_ids),
-            Audit.period_id.in_(period_ids),
+        flagged, coverage = audit_amount_result(
+            db.query(*audit_amount_columns()).filter(
+                Audit.entity_id.in_(entity_ids),
+                Audit.period_id.in_(period_ids),
+            ).one()
         )
-        flagged_raw = audit_q.scalar()
-        flagged = float(flagged_raw) if flagged_raw is not None else None
 
     # --- Build stages ---
     stages = []
@@ -574,8 +579,9 @@ async def national_money_flow(
         label="Auditor Flagged",
         amount=flagged,
         gap_from_prev=None,
-        gap_label="Irregular/Unsupported Expenditure",
+        gap_label="Amounts in Audit Findings",
         data_unavailable=flagged is None,
+        amount_coverage=coverage,
     ))
 
     efficiency = None
@@ -589,6 +595,7 @@ async def national_money_flow(
         "county_count": len(county_entities),
         "stages": stages,
         "total_waste_estimate": flagged,
+        "audit_amount_coverage": coverage,
         "efficiency_score": efficiency,
         "source_document_url": source_doc_url,
         # Which rows the pooled Allocated figure came from — "mixed" when the
@@ -633,6 +640,7 @@ async def all_counties_money_flow(
 
     # Short-circuit if no matching fiscal periods
     if not period_ids:
+        _, coverage = audit_amount_result(reason="fiscal_period_not_found")
         no_data_stages = [
             # No source line — nothing published has no provenance.
             _build_stage("Allocated", "Budget Allocation", None,
@@ -640,7 +648,7 @@ async def all_counties_money_flow(
             _build_stage("Spent", "Actual Expenditure", None,
                          gap_label="Unspent Funds", data_unavailable=True),
             _build_stage("Flagged", "Auditor Flagged", None,
-                         gap_label="Irregular/Unsupported Expenditure", data_unavailable=True),
+                         gap_label="Amounts in Audit Findings", data_unavailable=True, amount_coverage=coverage),
         ]
         return [
             {
@@ -649,6 +657,7 @@ async def all_counties_money_flow(
                 "fiscal_year": year,
                 "stages": no_data_stages,
                 "total_waste_estimate": None,
+                "audit_amount_coverage": coverage,
                 "efficiency_score": None,
                 "budget_source": None,
             }
@@ -685,21 +694,12 @@ async def all_counties_money_flow(
 
     # 3. Aggregate audit flagged amounts per entity in ONE query
     audit_rows = (
-        db.query(
-            Audit.entity_id,
-            func.sum(Audit.amount),
-        )
-        .filter(
-            publishable_audit_criterion(),
-            Audit.entity_id.in_(entity_ids),
-            Audit.period_id.in_(period_ids),
-        )
+        db.query(Audit.entity_id, *audit_amount_columns())
+        .filter(Audit.entity_id.in_(entity_ids), Audit.period_id.in_(period_ids))
         .group_by(Audit.entity_id)
         .all()
     )
-    flagged_map: Dict[int, float] = {
-        eid: float(amt) for eid, amt in audit_rows if amt is not None
-    }
+    flagged_map = {row[0]: audit_amount_result(row[1:]) for row in audit_rows}
 
     # 4. Build response for every county
     results = []
@@ -708,7 +708,7 @@ async def all_counties_money_flow(
         allocated = b.get("allocated")
         committed = b.get("committed")
         spent = b.get("spent")
-        flagged = flagged_map.get(eid)
+        flagged, coverage = flagged_map.get(eid, audit_amount_result())
         budget_source = b.get("source")
 
         stages: List[Dict[str, Any]] = []
@@ -731,8 +731,9 @@ async def all_counties_money_flow(
 
         stages.append(_build_stage(
             stage="Flagged", label="Auditor Flagged", amount=flagged,
-            gap_from_prev=None, gap_label="Irregular/Unsupported Expenditure",
+            gap_from_prev=None, gap_label="Amounts in Audit Findings",
             data_unavailable=flagged is None,
+            amount_coverage=coverage,
         ))
 
         efficiency = None
@@ -745,6 +746,7 @@ async def all_counties_money_flow(
             "fiscal_year": year,
             "stages": stages,
             "total_waste_estimate": flagged,
+            "audit_amount_coverage": coverage,
             "efficiency_score": efficiency,
             "budget_source": budget_source,
         })

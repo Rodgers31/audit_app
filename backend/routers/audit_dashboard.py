@@ -23,6 +23,7 @@ from sqlalchemy.orm import Session
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from cache.redis_cache import cached
+from services.audit_amounts import AuditAmountCoverage, audit_amount_columns, audit_amount_result
 from services.audit_opinions import opinion_facet, opinion_facet_by_year
 from services.oag_report_sections import canonical_section
 from services.audit_citations import (
@@ -67,6 +68,7 @@ class WithheldFigure(BaseModel):
 
     value: Optional[float] = None
     reason: Optional[str] = None
+    amount_coverage: Optional[AuditAmountCoverage] = None
 
 
 class WorstCounty(BaseModel):
@@ -145,7 +147,11 @@ class AuditSummaryResponse(BaseModel):
 class AuditTrendsResponse(BaseModel):
     years: List[int]
     findings_per_year: Dict[str, int]
-    amount_per_year: Dict[str, float]
+    amount_per_year: Dict[str, Optional[float]]
+    amount_coverage_per_year: Dict[str, AuditAmountCoverage]
+    amount_coverage: AuditAmountCoverage = Field(
+        ..., description="Amount coverage across matching findings with a recorded audit_year, including withheld rows."
+    )
     opinion_per_year: Optional[Dict[str, Dict[str, int]]] = Field(
         None,
         description=(
@@ -324,30 +330,26 @@ def _expenditure_class_criterion(name: str):
     return Audit.query_type.in_(_EXPENDITURE_CLASSES[name]["query_types"])
 
 
-def _expenditure_figure(name: str, matched: int, amount) -> WithheldFigure:
-    """The class total, or absence with the reason — never a manufactured zero.
-
-    Three cases, deliberately distinguished:
-
-    * **no finding carries the classification** → absence, with the reason.
-    * **findings carry it but none records an amount** → absence, saying so.
-      `SUM()` over all-NULL amounts is NULL; publishing 0 there would claim the
-      findings questioned nothing.
-    * **findings carry it and record amounts** → the sum, including a genuine
-      0.0 if that is what they add up to. A measured zero is publishable.
-    """
-    if not matched:
-        return WithheldFigure(value=None, reason=_EXPENDITURE_CLASSES[name]["reason"])
-    if amount is None:
-        return WithheldFigure(
-            value=None,
-            reason=(
-                f"not published: {matched} finding(s) are classified as {name} "
-                "expenditure but none records an amount, so there is no total "
-                "to publish."
-            ),
+def _expenditure_figure(name: str, row) -> WithheldFigure:
+    value, coverage = audit_amount_result(row)
+    if not coverage["total_findings"]:
+        reason = _EXPENDITURE_CLASSES[name]["reason"]
+    elif value is None:
+        reason = (
+            f"not published: {coverage['total_findings']} finding(s) are classified as {name} "
+            "expenditure but none records an amount that is finite, so there is no total "
+            f"to publish ({coverage['reason']})."
         )
-    return WithheldFigure(value=float(amount), reason=None)
+    elif coverage["status"] == "partial":
+        reason = (
+            f"partial subtotal: {coverage['findings_with_amount']} of "
+            f"{coverage['total_findings']} classified finding(s) record finite amounts; "
+            f"{coverage['findings_without_amount']} missing and "
+            f"{coverage['findings_with_invalid_amount']} invalid amount(s) are excluded."
+        )
+    else:
+        reason = None
+    return WithheldFigure(value=value, reason=reason, amount_coverage=coverage)
 
 
 # ===== Endpoints =====
@@ -372,27 +374,25 @@ async def get_audit_summary(db: Session = Depends(get_db)):
         # way" expressible — the sum alone cannot tell them apart, because
         # SUM() over no rows is NULL and the old `coalesce(..., 0)` spelled
         # that absence as a published zero.
+        eligible = publishable_audit_criterion()
         totals = db.query(
-            func.count(Audit.id),
-            func.count(Audit.id).filter(_expenditure_class_criterion(IRREGULAR)),
-            func.sum(
-                case((_expenditure_class_criterion(IRREGULAR), Audit.amount))
+            func.count(Audit.id).filter(eligible),
+            *audit_amount_columns(
+                and_(eligible, _expenditure_class_criterion(IRREGULAR)),
+                scope_criterion=_expenditure_class_criterion(IRREGULAR),
             ),
-            func.count(Audit.id).filter(_expenditure_class_criterion(UNSUPPORTED)),
-            func.sum(
-                case((_expenditure_class_criterion(UNSUPPORTED), Audit.amount))
+            *audit_amount_columns(
+                and_(eligible, _expenditure_class_criterion(UNSUPPORTED)),
+                scope_criterion=_expenditure_class_criterion(UNSUPPORTED),
             ),
-            func.min(Audit.audit_year),
-            func.max(Audit.audit_year),
-        ).filter(publishable_audit_criterion()).first()
+            func.min(Audit.audit_year).filter(eligible),
+            func.max(Audit.audit_year).filter(eligible),
+        ).one()
 
-        total_findings = totals[0] or 0
-        total_irregular = _expenditure_figure(IRREGULAR, totals[1] or 0, totals[2])
-        total_unsupported = _expenditure_figure(
-            UNSUPPORTED, totals[3] or 0, totals[4]
-        )
-        min_year = totals[5]
-        max_year = totals[6]
+        total_findings = totals[0]
+        total_irregular = _expenditure_figure(IRREGULAR, totals[1:6])
+        total_unsupported = _expenditure_figure(UNSUPPORTED, totals[6:11])
+        min_year, max_year = totals[11:13]
 
         # Findings by type
         # INDEX hint: CREATE INDEX ix_audits_query_type ON audits(query_type)
@@ -534,26 +534,27 @@ async def get_audit_trends(
         if query_type is not None:
             filters.append(_query_type_filter(db, query_type))
 
-        # Findings count per year — single SQL GROUP BY
-        # INDEX hint: CREATE INDEX ix_audits_year ON audits(audit_year)
-        findings_rows = (
-            db.query(Audit.audit_year, func.count(Audit.id))
-            .filter(publishable_audit_criterion())
-            .filter(*filters)
-            .group_by(Audit.audit_year)
-            .all()
-        )
-        findings_per_year = {str(yr): cnt for yr, cnt in findings_rows}
-
-        # Amount per year — single SQL GROUP BY
+        # Amount and coverage per year in one bounded SQL GROUP BY. Keep
+        # valid findings counted even when their stored amount is non-finite.
         amount_rows = (
-            db.query(Audit.audit_year, func.coalesce(func.sum(Audit.amount), 0))
-            .filter(publishable_audit_criterion())
+            db.query(Audit.audit_year, *audit_amount_columns())
             .filter(*filters)
             .group_by(Audit.audit_year)
             .all()
         )
-        amount_per_year = {str(yr): float(amt) for yr, amt in amount_rows}
+        amounts = {str(row[0]): audit_amount_result(row[1:]) for row in amount_rows
+                   if row[2] > 0}
+        # Preserve an overall empty/withheld-only distinction even when there
+        # is no publishable year to include in the public series. Reuse the
+        # grouped SQL results; no second scan or per-year query.
+        subtotals = [row[1] for row in amount_rows if row[1] is not None]
+        overall = (sum(subtotals) if subtotals else None,
+                   *(sum(row[index] for row in amount_rows) for index in range(2, 6)))
+        _, overall_coverage = audit_amount_result(overall)
+        amount_per_year = {year: result[0] for year, result in amounts.items()}
+        coverage_per_year = {year: result[1] for year, result in amounts.items()}
+        findings_per_year = {year: coverage["total_findings"]
+                             for year, coverage in coverage_per_year.items()}
 
         # Opinion breakdown per year — single SQL GROUP BY
         # INDEX hint: CREATE INDEX ix_audits_year_opinion ON audits(audit_year, audit_opinion)
@@ -582,6 +583,8 @@ async def get_audit_trends(
             years=years,
             findings_per_year=findings_per_year,
             amount_per_year=amount_per_year,
+            amount_coverage_per_year=coverage_per_year,
+            amount_coverage=overall_coverage,
             opinion_per_year=opinion_per_year,
             opinion_per_year_reason=opinion_reason,
         )

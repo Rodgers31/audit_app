@@ -1,4 +1,4 @@
-import type { MoneyFlowData } from '@/types';
+import type { AuditAmountCoverage, MoneyFlowData } from '@/types';
 
 /** Presentation only: amounts and efficiency are supplied by the existing money-flow API. */
 export type FlowTone = 'neutral' | 'allocation' | 'good' | 'fair' | 'low';
@@ -33,6 +33,7 @@ export function formatFlowKES(amount: number | null | undefined): string {
 }
 
 export interface MoneyFlowInsights {
+  audit_amount_coverage?: AuditAmountCoverage;
   allocated: number | null;
   spent: number | null;
   flagged: number | null;
@@ -42,6 +43,7 @@ export interface MoneyFlowInsights {
 }
 
 export interface CountyFlowRow {
+  audit_amount_coverage?: AuditAmountCoverage;
   county_id: string;
   county_name: string;
   efficiency_score: number | null;
@@ -63,4 +65,29 @@ export function isProjectedMoneyFlow(data: MoneyFlowData | null | undefined): bo
       ) &&
       data.efficiency_score == null
   );
+}
+
+/** Coverage follows the API; absence never means zero or an unpublished report. */
+export function auditAmountCoverageNote(coverage?: AuditAmountCoverage, lang = 'en'): string | null {
+  if (!coverage) return null;
+  if (lang === 'sw') {
+    if (coverage.reason === 'fiscal_period_not_found') return 'Kipindi cha fedha hakipatikani.';
+    if (coverage.reason === 'no_findings') return 'Hakuna matokeo ya ukaguzi yaliyorekodiwa kwa kipindi hiki.';
+    if (coverage.reason === 'no_publishable_findings') return 'Hakuna matokeo ya ukaguzi yenye marejeo yanayopatikana kwa kipindi hiki.';
+    const counts = `Matokeo ${coverage.findings_with_amount} kati ya ${coverage.total_findings} yana kiasi halali; kiasi ${coverage.findings_without_amount} hakipo na ${coverage.findings_with_invalid_amount} si halali.`;
+    return coverage.status === 'partial'
+      ? `Jumla ya sehemu: ${counts}`
+      : coverage.status === 'unavailable'
+        ? `Kiasi hakipatikani: ${counts}`
+        : `Kiasi kilichorekodiwa kinajumuisha matokeo yote ${coverage.total_findings} yenye marejeo.`;
+  }
+  if (coverage.reason === 'fiscal_period_not_found') return 'Fiscal period unavailable.';
+  if (coverage.reason === 'no_findings') return 'No audit findings recorded for this period.';
+  if (coverage.reason === 'no_publishable_findings') return 'No cited audit findings available for this period.';
+  const counts = `${coverage.findings_with_amount} of ${coverage.total_findings} cited findings have finite recorded amounts; ${coverage.findings_without_amount} missing and ${coverage.findings_with_invalid_amount} invalid amounts.`;
+  return coverage.status === 'partial'
+    ? `Partial subtotal: ${counts}`
+    : coverage.status === 'unavailable'
+      ? `Amount unavailable: ${counts}`
+      : `Recorded amounts cover all ${coverage.total_findings} cited findings.`;
 }

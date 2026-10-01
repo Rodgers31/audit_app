@@ -475,7 +475,18 @@ export interface AccountabilityScorecard {
   };
 }
 
+export interface AuditAmountCoverage {
+  status: 'complete' | 'partial' | 'unavailable';
+  reason: string | null;
+  total_findings: number;
+  findings_with_amount: number;
+  findings_without_amount: number;
+  findings_with_invalid_amount: number;
+  withheld_findings: number;
+}
+
 export interface MoneyFlowStage {
+  amount_coverage?: AuditAmountCoverage;
   stage: string;
   label: string;
   amount: number | null;
@@ -491,6 +502,7 @@ export interface MoneyFlowStage {
 }
 
 export interface MoneyFlowData {
+  audit_amount_coverage?: AuditAmountCoverage;
   county_id: number | null;
   county_name: string;
   fiscal_year: string;
