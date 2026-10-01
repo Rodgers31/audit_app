@@ -86,6 +86,7 @@ def test_full_coverage_discloses_all_weights_periods_and_observed_values(
     entity, period, source = health_county
     oag = SourceDocument(
         country_id=seed_country.id, title="Auditor-General county report",
+        meta={"extraction_stats": {"volume_kind": "executives"}},
         publisher="Office of the Auditor-General", url="https://oagkenya.go.ke/report.pdf",
         fetch_date=datetime(2026, 9, 1, tzinfo=timezone.utc),
         doc_type=DocumentType.AUDIT,
@@ -188,7 +189,7 @@ def test_cash_own_source_component_cites_the_cash_document(
     assert own["measurement_basis"] == "cash_receipts"
 
 
-def test_mixed_pending_stocks_disclose_all_periods_without_a_false_single_source(
+def test_pending_stocks_select_latest_date_and_compatible_budget(
     client, db_session, health_county
 ):
     entity, _, source = health_county
@@ -212,9 +213,9 @@ def test_mixed_pending_stocks_disclose_all_periods_without_a_false_single_source
         c for c in detail(client)["financial_health"]["components"]
         if c["name"] == "pending_bills"
     )
-    assert pending["observed"] == 22.5  # currently summed by the shared reader
-    assert pending["source_period"] is None
-    assert pending["source_periods"] == ["FY 2024/25", "FY 2025/26"]
-    assert pending["as_at"] is None
-    assert pending["source_url"] is None
-    assert pending["source_warning"] == "mixed_pending_periods"
+    assert pending["observed"] == 12.5
+    assert pending["source_period"] == "FY 2025/26"
+    assert pending["source_periods"] == []
+    assert pending["as_at"] == "2026-06-30"
+    assert pending["source_url"] == source.url
+    assert pending["source_warning"] is None

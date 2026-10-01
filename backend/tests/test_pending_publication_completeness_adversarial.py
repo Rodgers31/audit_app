@@ -226,7 +226,9 @@ def test_mixed_county_editions_never_form_a_county_or_combined_total(
     county.provenance = {**county.provenance, field: value}
     db_session.flush()
     kept, totals = _published(db_session)
-    assert len(kept) == 49
+    assert len(kept) == (48 if field == "as_at" else 49)
+    if field == "as_at":
+        assert totals["coverage"]["county_absent_reasons"]
     assert totals["national"] == 300_000_000_000
     assert totals["county"] is None
     assert totals["total"] is None
@@ -240,7 +242,8 @@ def test_47_rows_with_duplicate_county_identity_are_incomplete(
     counties[-1].entity_id = counties[0].entity_id
     db_session.flush()
     kept, totals = _published(db_session)
-    assert len(kept) == 49  # Mere row count is unchanged.
+    assert len(kept) == 47  # Competing evidence for one county is withheld.
+    assert "conflicting_same_date_pending_sources" in totals["coverage"]["county_absent_reasons"].values()
     assert totals["coverage"]["county_complete"] is False
     assert totals["county"] is None
     assert totals["total"] is None

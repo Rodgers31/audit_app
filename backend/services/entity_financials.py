@@ -7,7 +7,12 @@ from models import BudgetLine
 from sqlalchemy.orm import joinedload
 
 from services.county_budget import CLASSIFICATION_CATEGORIES, BUDGET_PROVENANCE_LABELS
-from services.publication_gate import _has_page_locator
+from services.publication_gate import _has_page_locator, pending_period_compatible
+
+
+def _budget_quality_label(value):
+    """Normalize string labels only; unknown JSON shapes remain unclassified."""
+    return value.strip().lower() if isinstance(value, str) else None
 
 
 def _amount(value):
@@ -25,7 +30,12 @@ def _amount(value):
 
 
 def budget_evidence_is_unreported(quarantine_reason, basis, provenance, source_meta):
-    """Inspect the fields needed to distinguish reported from modelled lines."""
+    """Reject explicit unreported evidence, without certifying unknown quality.
+
+    Missing, unrecognized and non-string quality labels retain their existing
+    unclassified behavior. This negative filter does not establish provenance;
+    the summary's separate source, period and accounting checks still apply.
+    """
     if quarantine_reason or getattr(basis, "value", basis) in {
         "modelled",
         "projected",
@@ -36,7 +46,7 @@ def budget_evidence_is_unreported(quarantine_reason, basis, provenance, source_m
     return any(
         isinstance(entry, dict)
         and (
-            str(entry.get("data_quality", "")).lower()
+            _budget_quality_label(entry.get("data_quality"))
             in {"modelled", "modeled", "estimated", "projected", "synthetic", "fixture"}
             or str(entry.get("dataset_id", "")).startswith(
                 ("bootstrap", "enhanced_county_data")
@@ -265,6 +275,16 @@ def publish_county_budget(payload, summary, *, comprehensive=False):
                 payload["debt"].get("pending_bills"),
             ),
         ]:
+            if key == "pending_bills_ratio":
+                selection = payload["debt"].get("pending_bills_selection") or {}
+                sources = selection.get("sources") or []
+                if len(sources) != 1 or not pending_period_compatible(
+                    selection.get("as_at"),
+                    sources[0].get("fiscal_year"),
+                    summary["fiscal_period"],
+                    budget_currency=summary["currency"],
+                ):
+                    amount = None
             payload[section][key] = (
                 amount / allocation * 100 if allocation and amount is not None else None
             )
