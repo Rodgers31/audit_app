@@ -13,12 +13,13 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 
 from models import (
     Country,
     DocumentType,
     GDPData,
+    FigureBasis,
     PovertyIndex,
     SourceDocument,
 )
@@ -229,6 +230,140 @@ def _ensure_source_document(session: Session) -> SourceDocument:
     return doc
 
 
+def _observation_metadata(
+    existing: GDPData | PovertyIndex | None,
+    doc: SourceDocument,
+    *,
+    year: int,
+    metadata: dict,
+    measures: tuple[str, ...],
+    units: tuple[str, ...],
+) -> dict:
+    """Refresh only an unclaimed or coherently claimed observation.
+
+    A fresh value is authority for this country's indicator/year, not permission
+    to relabel a contradictory historical citation (even when numbers agree).
+    Unrelated metadata and source publication vintage are never overwritten.
+    The API series cannot support PDF locators. Refusal is rolled back by run's
+    savepoint; the caller remains responsible for the outer commit.
+    """
+    if type(year) is not int or not 1 <= year <= 9999:
+        raise ValueError("Observation identity requires an integer calendar year")
+    coverage = doc.meta.get("covers_through_year")
+    if "covers_through_year" in doc.meta and (
+        type(coverage) is not int or not year <= coverage <= 9999
+    ):
+        raise ValueError(f"Source vintage does not cover observation year {year}")
+    if "publication_date" in doc.meta:
+        publication = doc.meta["publication_date"]
+        if not isinstance(publication, str):
+            raise ValueError("Source publication vintage must be an ISO date")
+        published_at = datetime.fromisoformat(publication.replace("Z", "+00:00"))
+        if published_at.year < year:
+            raise ValueError(f"Source publication predates observation year {year}")
+    if existing is None:
+        return metadata
+    if (
+        existing.entity_id is not None
+        or existing.basis not in (None, FigureBasis.ACTUAL)
+        or existing.year != year
+        or existing.source_document_id not in (None, doc.id)
+        or (
+            isinstance(existing, GDPData)
+            and (existing.currency != "KES" or existing.quarter is not None)
+        )
+        or any(
+            getattr(existing, key) is not None
+            for key in ("extraction_id", "source_page", "page_ref", "source_hash")
+        )
+        or (existing.meta is not None and not isinstance(existing.meta, dict))
+    ):
+        raise ValueError(
+            f"Observation identity conflicts with {existing.__tablename__} row {existing.id}"
+        )
+    prior = existing.meta or {}
+    declarations = {
+        "country": ("Kenya", "KEN", "KE"),
+        "country_code": ("KEN", "KE"),
+        "iso_code": ("KEN", "KE"),
+        "country_id": (doc.country_id,),
+        "currency": ("KES",),
+        "publisher": (doc.publisher,),
+        "source": (metadata["source"], doc.publisher, doc.title),
+        "source_url": (doc.url,),
+        "scope": ("national",),
+        "entity_id": (None,),
+        "measure": measures,
+        "units": units,
+        "year": (year,),
+        "data_year": (year,),
+        "quarter": (None,),
+        "basis": (None, "actual"),
+        "data_quality": ("official",),
+        "dataset_id": tuple(metadata.get("indicators", [metadata.get("indicator")])),
+    }
+    for key, allowed in declarations.items():
+        if key in prior and (
+            isinstance(prior[key], bool)
+            or (
+                key in ("country_id", "year", "data_year")
+                and type(prior[key]) is not int
+            )
+            or prior[key] not in allowed
+        ):
+            raise ValueError(
+                f"Observation identity conflicts on {key} for row {existing.id}"
+            )
+    for key in ("forecast", "is_projection", "is_estimate"):
+        if key in prior and (type(prior[key]) is not bool or prior[key]):
+            raise ValueError(
+                f"Observation basis conflicts on {key} for row {existing.id}"
+            )
+    # These declarations have one meaning on the writer's path. Compatible
+    # aliases above are preserved instead of silently canonicalised.
+    for key in (
+        "indicator",
+        "indicators",
+        "seeding_domain",
+        "gini_scale",
+        "extreme_poverty_rate_absent_reason",
+    ):
+        if key in prior and prior[key] != metadata.get(key):
+            raise ValueError(
+                f"Observation identity conflicts on {key} for row {existing.id}"
+            )
+    for key in ("publication_date", "source_publication_date", "covers_through_year"):
+        if key in prior:
+            source_key = "publication_date" if key == "source_publication_date" else key
+            if (
+                (key == "covers_through_year" and type(prior[key]) is not int)
+                or source_key not in doc.meta
+                or prior[key] != doc.meta[source_key]
+            ):
+                raise ValueError(
+                    f"Observation vintage conflicts on {key} for row {existing.id}"
+                )
+    return {**metadata, **prior}
+
+
+def _observation_value(
+    value, *, quantum: str, maximum: Decimal | None = None
+) -> Decimal | None:
+    """Keep withheld values distinct from zero; store at the column's scale."""
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        raise ValueError("Observation value must not be boolean")
+    number = Decimal(str(value))
+    if (
+        not number.is_finite()
+        or number < 0
+        or (maximum is not None and number > maximum)
+    ):
+        raise ValueError("Observation value outside supported measure")
+    return number.quantize(Decimal(quantum), rounding=ROUND_HALF_UP)
+
+
 @register_domain("national_gdp")
 def run(
     session: Session, settings: SeedingSettings, context: DomainRunContext
@@ -263,23 +398,36 @@ def run(
             errors.append(f"GDP fetch failed: {exc}")
 
         gdp_years = len(gdp_by_year)
-        # Record the data vintage (latest covered year) on the source doc so
-        # downstream endpoints can report an honest "as of", not the request
-        # time. See backend/provenance.py.
-        if gdp_by_year and isinstance(gdp_doc.meta, dict):
-            latest_gdp_year = max(gdp_by_year)
-            gdp_doc.meta = {
-                **gdp_doc.meta,
-                "publication_date": f"{latest_gdp_year}-12-31",
-                "covers_through_year": latest_gdp_year,
-            }
-            session.add(gdp_doc)
+        # Coverage is an observation year, not a publication date. Reuse
+        # shared documents unchanged; a live/fallback fetch cannot redate them.
         for year, gdp_kes in sorted(gdp_by_year.items()):
-            value = Decimal(str(gdp_kes))
+            value = _observation_value(gdp_kes, quantum="0.01")
+            if value is None:
+                raise ValueError("GDP observation must have a sourced value")
             existing = (
                 session.query(GDPData)
-                .filter(GDPData.entity_id.is_(None), GDPData.year == year)
-                .first()
+                .filter(
+                    GDPData.entity_id.is_(None),
+                    GDPData.year == year,
+                    GDPData.quarter.is_(None),
+                )
+                .one_or_none()
+            )
+            meta = _observation_metadata(
+                existing,
+                gdp_doc,
+                year=year,
+                metadata={
+                    "source": "World Bank NY.GDP.MKTP.CN",
+                    "seeding_domain": "national_gdp",
+                    "scope": "national",
+                    "data_quality": "official",
+                    "indicator": "NY.GDP.MKTP.CN",
+                    "units": "KES",
+                    "year": year,
+                },
+                measures=("GDP, current KES", "GDP, current LCU"),
+                units=("KES", "LCU"),
             )
             if existing is None:
                 session.execute(
@@ -290,21 +438,24 @@ def run(
                         source_document_id=gdp_doc.id,
                         confidence=Decimal("0.95"),
                         currency="KES",
-                        metadata={
-                            "source": "World Bank NY.GDP.MKTP.CN",
-                            "seeding_domain": "national_gdp",
-                            "scope": "national",
-                            "data_quality": "official",
-                        },
+                        metadata=meta,
                     )
                 )
                 created += 1
                 logger.info("Created NULL-entity GDP row for %d", year)
-            elif existing.gdp_value != value:
-                existing.gdp_value = value
-                existing.source_document_id = gdp_doc.id
-                session.add(existing)
-                updated += 1
+            else:
+                desired = {
+                    "gdp_value": value,
+                    "source_document_id": gdp_doc.id,
+                    "currency": "KES",
+                    "confidence": Decimal("0.95"),
+                    "meta": meta,
+                }
+                if any(getattr(existing, key) != val for key, val in desired.items()):
+                    for key, val in desired.items():
+                        setattr(existing, key, val)
+                    session.add(existing)
+                    updated += 1
 
         # Reconcile to the World Bank series: prune NULL-entity GDP rows for
         # any year BEYOND the latest authoritative actual. This removes a
@@ -328,6 +479,7 @@ def run(
                 .filter(
                     GDPData.entity_id.is_(None),
                     GDPData.year > latest_source_year,
+                    GDPData.quarter.is_(None),
                 )
                 .all()
             )
@@ -356,7 +508,9 @@ def run(
             )
             poverty_by_year = {}
 
-        poverty_doc = _ensure_poverty_source_document(session) if poverty_by_year else None
+        poverty_doc = (
+            _ensure_poverty_source_document(session) if poverty_by_year else None
+        )
 
         for year, values in poverty_by_year.items():
             existing = (
@@ -365,7 +519,7 @@ def run(
                     PovertyIndex.entity_id.is_(None),
                     PovertyIndex.year == year,
                 )
-                .first()
+                .one_or_none()
             )
             # extreme_poverty_rate is deliberately NULL — see
             # fetcher.EXTREME_POVERTY_OMITTED_REASON.
@@ -376,15 +530,43 @@ def run(
                     fetcher.EXTREME_POVERTY_OMITTED_REASON
                 ),
                 "gini_scale": "0-1 (World Bank reports 0-100; divided by 100)",
+                "indicators": ["SI.POV.NAHC", "SI.POV.GINI"],
+                "scope": "national",
+                "units": "percent and Gini 0-1",
+                "year": year,
             }
+            meta = _observation_metadata(
+                existing,
+                poverty_doc,
+                year=year,
+                metadata=meta,
+                measures=(
+                    "Poverty headcount at national poverty lines and Gini index",
+                ),
+                units=("percent and Gini 0-1",),
+            )
+            if (
+                not isinstance(values, dict)
+                or not values
+                or set(values) - {"headcount", "gini"}
+            ):
+                raise ValueError("Poverty observation requires supported measures")
+            headcount = _observation_value(
+                values.get("headcount"), quantum="0.01", maximum=Decimal("100")
+            )
+            gini = _observation_value(
+                values.get("gini"), quantum="0.001", maximum=Decimal("1")
+            )
+            if headcount is None and gini is None:
+                raise ValueError("Poverty observation has no sourced measure")
             if existing is None:
                 session.execute(
                     PovertyIndex.__table__.insert().values(
                         entity_id=None,
                         year=year,
-                        poverty_headcount_rate=values.get("headcount"),
+                        poverty_headcount_rate=headcount,
                         extreme_poverty_rate=None,
-                        gini_coefficient=values.get("gini"),
+                        gini_coefficient=gini,
                         source_document_id=poverty_doc.id,
                         confidence=Decimal("0.95"),
                         metadata=meta,
@@ -393,20 +575,17 @@ def run(
                 created += 1
                 logger.info("Created poverty index row for %d", year)
             else:
-                changed = False
-                if existing.poverty_headcount_rate != values.get("headcount"):
-                    existing.poverty_headcount_rate = values.get("headcount")
-                    changed = True
-                if existing.extreme_poverty_rate is not None:
-                    existing.extreme_poverty_rate = None
-                    changed = True
-                if existing.gini_coefficient != values.get("gini"):
-                    existing.gini_coefficient = values.get("gini")
-                    changed = True
-                if changed:
-                    existing.source_document_id = poverty_doc.id
-                    existing.confidence = Decimal("0.95")
-                    existing.meta = meta
+                desired = {
+                    "poverty_headcount_rate": headcount,
+                    "extreme_poverty_rate": None,
+                    "gini_coefficient": gini,
+                    "source_document_id": poverty_doc.id,
+                    "confidence": Decimal("0.95"),
+                    "meta": meta,
+                }
+                if any(getattr(existing, key) != val for key, val in desired.items()):
+                    for key, val in desired.items():
+                        setattr(existing, key, val)
                     session.add(existing)
                     updated += 1
 
