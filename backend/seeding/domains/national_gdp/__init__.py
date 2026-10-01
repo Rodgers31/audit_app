@@ -22,7 +22,7 @@ from models import (
     PovertyIndex,
     SourceDocument,
 )
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from ...config import SeedingSettings
@@ -48,25 +48,110 @@ logger = logging.getLogger("seeding.national_gdp")
 # 2019 or 2024. Poverty now comes from fetcher.fetch_kenya_poverty(), which
 # writes only years the World Bank actually observes.
 
+def _kenya_country(session: Session) -> Country:
+    """Refuse absent or conflicting Kenya identity; never borrow another row.
+
+    KEN is the bootstrap identity. KE is the ISO alpha-2 spelling used by
+    older callers. Both are explicit Kenya identities, but two such rows are
+    ambiguous. A Kenya name with another code is a conflict, not a fallback.
+    """
+    countries = session.scalars(
+        select(Country).where(
+            or_(
+                func.upper(func.trim(Country.iso_code)).in_(("KEN", "KE")),
+                func.lower(func.trim(Country.name)) == "kenya",
+            )
+        )
+    ).all()
+    if len(countries) != 1:
+        raise ValueError("Kenya source identity requires exactly one Kenya country")
+    country = countries[0]
+    if (
+        country.iso_code not in ("KEN", "KE")
+        or country.name.strip().casefold() != "kenya"
+        or country.currency != "KES"
+    ):
+        raise ValueError("Kenya source identity has conflicting country code, name or currency")
+    return country
+
+
+def _matching_source_document(
+    session: Session, *, url: str, publisher: str, title: str, metadata: dict,
+    measures: tuple[str, ...], units: tuple[str, ...], datasets: tuple[str, ...],
+) -> tuple[Country, SourceDocument | None]:
+    """Validate the writer's source contract without repairing shared rows.
+
+    Extra metadata (including publication vintage) is preserved. Missing or
+    contradictory required identity is a refusal, even at the same URL.
+    This checks stored identity, not the authenticity of publisher bytes.
+    """
+    country = _kenya_country(session)
+    docs = session.scalars(select(SourceDocument).where(SourceDocument.url == url)).all()
+    if len(docs) > 1:
+        raise ValueError(f"Kenya source identity is ambiguous for {url}")
+    doc = docs[0] if docs else None
+    if doc is not None:
+        # Optional declarations are evidence too: a matching URL/indicator
+        # cannot override a country, publisher or measure conflict. Absent
+        # optional fields stay absent; no metadata is filled in during reuse.
+        declarations = {
+            "country": ("Kenya", "KEN", "KE"),
+            "country_code": ("KEN", "KE"),
+            "iso_code": ("KEN", "KE"),
+            "country_id": (country.id,),
+            "currency": ("KES",),
+            "publisher": (publisher,),
+            "source": (publisher, title),
+            "scope": ("national",),
+            "entity_id": (None,),
+            "measure": measures,
+            "units": units,
+            "dataset_id": datasets,
+        }
+        if (
+            doc.country_id != country.id
+            or doc.publisher != publisher
+            or doc.title != title
+            or doc.doc_type != DocumentType.REPORT
+            or not isinstance(doc.meta, dict)
+            or any(doc.meta.get(key) != value for key, value in metadata.items())
+            or ("indicator" in doc.meta and doc.meta["indicator"] != metadata.get("indicator"))
+            or ("indicators" in doc.meta and doc.meta["indicators"] != metadata.get("indicators"))
+            or any(
+                key in doc.meta
+                and (
+                    isinstance(doc.meta[key], bool)
+                    or (key == "country_id" and not isinstance(doc.meta[key], int))
+                    or doc.meta[key] not in allowed
+                )
+                for key, allowed in declarations.items()
+            )
+        ):
+            raise ValueError(f"Kenya source identity conflicts with existing document {doc.id} at {url}")
+    return country, doc
+
+
 def _ensure_gdp_source_document(session: Session) -> SourceDocument:
     """Get or create the World Bank source document for national GDP."""
     url = "https://api.worldbank.org/v2/country/KEN/indicator/NY.GDP.MKTP.CN"
-    stmt = select(SourceDocument).where(SourceDocument.url == url)
-    doc = session.execute(stmt).scalar_one_or_none()
+    title = "World Bank — Kenya GDP, current LCU (NY.GDP.MKTP.CN)"
+    metadata = {"seeding_domain": "national_gdp", "indicator": "NY.GDP.MKTP.CN"}
+    country, doc = _matching_source_document(
+        session, url=url, publisher="World Bank", title=title, metadata=metadata,
+        measures=("GDP, current KES", "GDP, current LCU"),
+        units=("KES", "LCU"), datasets=("NY.GDP.MKTP.CN",),
+    )
     if doc is None:
-        country = session.execute(
-            select(Country).order_by(Country.id.asc())
-        ).scalar_one_or_none()
         doc = SourceDocument(
-            country_id=country.id if country else None,
+            country_id=country.id,
             publisher="World Bank",
-            title="World Bank — Kenya GDP, current LCU (NY.GDP.MKTP.CN)",
+            title=title,
             url=url,
             file_path=None,
             fetch_date=datetime.now(timezone.utc),
             doc_type=DocumentType.REPORT,
             md5=None,
-            meta={"seeding_domain": "national_gdp", "indicator": "NY.GDP.MKTP.CN"},
+            meta=metadata,
         )
         session.add(doc)
         session.flush()
@@ -88,29 +173,29 @@ def _ensure_poverty_source_document(session: Session) -> SourceDocument:
     so following the citation reaches the numbers.
     """
     url = "https://api.worldbank.org/v2/country/KEN/indicator/SI.POV.NAHC"
-    doc = session.execute(
-        select(SourceDocument).where(SourceDocument.url == url)
-    ).scalar_one_or_none()
+    title = (
+        "World Bank — Kenya poverty headcount at national poverty "
+        "lines (SI.POV.NAHC) and Gini index (SI.POV.GINI)"
+    )
+    metadata = {
+        "seeding_domain": "national_gdp", "indicators": ["SI.POV.NAHC", "SI.POV.GINI"]
+    }
+    country, doc = _matching_source_document(
+        session, url=url, publisher="World Bank", title=title, metadata=metadata,
+        measures=("Poverty headcount at national poverty lines and Gini index",),
+        units=("percent and Gini 0-1",), datasets=("SI.POV.NAHC", "SI.POV.GINI"),
+    )
     if doc is None:
-        country = session.execute(
-            select(Country).order_by(Country.id.asc())
-        ).scalar_one_or_none()
         doc = SourceDocument(
-            country_id=country.id if country else None,
+            country_id=country.id,
             publisher="World Bank",
-            title=(
-                "World Bank — Kenya poverty headcount at national poverty "
-                "lines (SI.POV.NAHC) and Gini index (SI.POV.GINI)"
-            ),
+            title=title,
             url=url,
             file_path=None,
             fetch_date=datetime.now(timezone.utc),
             doc_type=DocumentType.REPORT,
             md5=None,
-            meta={
-                "seeding_domain": "national_gdp",
-                "indicators": ["SI.POV.NAHC", "SI.POV.GINI"],
-            },
+            meta=metadata,
         )
         session.add(doc)
         session.flush()
@@ -120,22 +205,24 @@ def _ensure_poverty_source_document(session: Session) -> SourceDocument:
 def _ensure_source_document(session: Session) -> SourceDocument:
     """Get or create the source document for national poverty data."""
     url = "https://www.knbs.or.ke/economic-survey-2025/"
-    stmt = select(SourceDocument).where(SourceDocument.url == url)
-    doc = session.execute(stmt).scalar_one_or_none()
+    title = "KNBS Economic Survey 2025 & World Bank Poverty Data"
+    metadata = {"seeding_domain": "national_gdp"}
+    country, doc = _matching_source_document(
+        session, url=url, publisher="KNBS / World Bank", title=title, metadata=metadata,
+        measures=("Poverty headcount at national poverty lines and Gini index",),
+        units=("percent and Gini 0-1",), datasets=(),
+    )
     if doc is None:
-        country = session.execute(
-            select(Country).order_by(Country.id.asc())
-        ).scalar_one_or_none()
         doc = SourceDocument(
-            country_id=country.id if country else None,
+            country_id=country.id,
             publisher="KNBS / World Bank",
-            title="KNBS Economic Survey 2025 & World Bank Poverty Data",
+            title=title,
             url=url,
             file_path=None,
             fetch_date=datetime.now(timezone.utc),
             doc_type=DocumentType.REPORT,
             md5=None,
-            meta={"seeding_domain": "national_gdp"},
+            meta=metadata,
         )
         session.add(doc)
         session.flush()
@@ -153,8 +240,11 @@ def run(
 
     gdp_years = 0
     poverty_by_year: dict = {}
+    savepoint = None
     try:
-        doc = _ensure_source_document(session)
+        # The caller owns the outer transaction (including its ingestion job).
+        # A later poverty source refusal must also undo this run's GDP writes.
+        savepoint = session.begin_nested()
         gdp_doc = _ensure_gdp_source_document(session)
 
         # ── GDP records (entity_id=NULL) — fetched from the World Bank ─
@@ -343,7 +433,12 @@ def run(
                     sorted(r.year for r in unsourced),
                 )
 
+        savepoint.commit()
+
     except Exception as exc:
+        if savepoint is not None:
+            savepoint.rollback()
+        created = updated = 0
         logger.exception("national_gdp seeding failed: %s", exc)
         errors.append(str(exc))
 
