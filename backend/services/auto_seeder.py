@@ -7,6 +7,7 @@ web startup or periodic refreshes.
 
 import asyncio
 import logging
+from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 
@@ -110,6 +111,9 @@ class AutoSeeder:
         # county audit-status gap went unnoticed), so we alert loudly
         # after _ALERT_AFTER_FAILURES in a row.
         self._consecutive_failures: Dict[str, int] = {}
+        # Last committed reference result, not the current attempt or the
+        # freshness of source-owned financial/population observations.
+        self._county_reference_refresh: Optional[Dict[str, Any]] = None
 
     async def start(self):
         """Start the auto-seeder background task."""
@@ -262,93 +266,109 @@ class AutoSeeder:
         raise ValueError(f"{domain_name} is owned by the dedicated seeding runner")
 
     async def _seed_counties_live(self):
+        """Ensure Kenyan county references; dedicated domains own sourced data.
+
+        Only ``county_reference`` is refreshed on existing entities. The old
+        top-level code (and FY metrics codes) belong to the separately approved
+        stored correction; last_updated/data_source are shared source metadata.
+        Neither those fields nor population/budget/profiles may be overwritten
+        by a static reference check.
         """
-        Seed county entities with live data from KNBS/COB.
-
-        County codes are static (they don't change), but population
-        and budget data comes from live sources.
-        """
-        logger.info("[AUTO-SEEDER] Seeding counties...")
-
-        # Try to fetch live county data, but don't block if it fails
-        try:
-            # Set a timeout for the fetch to avoid blocking startup
-            knbs_counties, cob_budgets = await asyncio.wait_for(
-                self.aggregator.fetch_all_county_data(),
-                timeout=30.0,  # 30 second timeout
-            )
-        except asyncio.TimeoutError:
-            logger.warning(
-                "[AUTO-SEEDER] County data fetch timed out, using empty data"
-            )
-            knbs_counties, cob_budgets = [], []
-        except Exception as e:
-            logger.warning(
-                f"[AUTO-SEEDER] County data fetch failed: {e}, using empty data"
-            )
-            knbs_counties, cob_budgets = [], []  # Create lookup for live data
-        live_population = {}
-        live_budgets = {}
-
-        for county in knbs_counties:
-            name = county.get("name", "").lower()
-            live_population[name] = county.get("population")
-
-        for budget in cob_budgets:
-            name = budget.get("county", "").lower()
-            live_budgets[name] = budget.get("budget")
+        logger.info("[AUTO-SEEDER] Checking county references...")
 
         with SessionLocal() as db:
             # Required even when references already exist: a foreign namesake
             # cannot certify that Kenyan reference work completed.
             kenya = db.query(Country).filter(Country.iso_code == "KEN").first()
             if kenya is None:
-                raise ValueError("Kenya country (KEN) is required for county references")
-
-            counties_created = 0
-            counties_updated = 0
-
-            for code, name in KENYA_COUNTY_CODES.items():
-                name_lower = name.lower()
-
-                # Get live data if available
-                population = live_population.get(name_lower)
-                budget = live_budgets.get(name_lower)
-
-                # Check if county entity exists
-                canonical = f"{name} County"
-                existing = (
-                    db.query(Entity)
-                    .filter(
-                        Entity.country_id == kenya.id,
-                        Entity.type == EntityType.COUNTY,
-                        Entity.canonical_name == canonical,
-                    )
-                    .first()
+                raise ValueError(
+                    "Kenya country (KEN) is required for county references"
                 )
 
-                # Build metadata with whatever live data we have
-                county_meta = {
-                    "code": code,
-                    "last_updated": datetime.now(timezone.utc).isoformat(),
-                    "data_source": (
-                        "live_fetch" if population or budget else "pending_live_data"
+            counts = {"created": 0, "updated": 0, "unchanged": 0, "reused": 0}
+
+            # Acquire every existing reference lock in primary-key order, as
+            # SQLAlchemy's source/project writers flush their Entity updates.
+            # County-code order differs from stored IDs and can deadlock even
+            # when this check would leave all reference metadata unchanged.
+            # Read the JSON under these locks before merging a newer source
+            # commit. Only the 47 Kenyan reference names are in this query.
+            references = (
+                db.query(Entity)
+                .filter(
+                    Entity.country_id == kenya.id,
+                    Entity.type == EntityType.COUNTY,
+                    Entity.canonical_name.in_(
+                        [f"{name} County" for name in KENYA_COUNTY_CODES.values()]
                     ),
-                }
+                )
+                .order_by(Entity.id)
+                .with_for_update()
+                .all()
+            )
+            by_name = {}
+            for reference_entity in references:
+                # Reuse one stored identity per name without modifying any
+                # duplicate identities, their slugs, metadata or foreign keys.
+                by_name.setdefault(reference_entity.canonical_name, reference_entity)
 
-                if population:
-                    county_meta["population"] = population
-                if budget:
-                    county_meta["budget"] = budget
-
+            for code, name in KENYA_COUNTY_CODES.items():
+                canonical = f"{name} County"
+                existing = by_name.get(canonical)
                 if existing:
-                    # Update existing entity
-                    if existing.meta:
-                        existing.meta.update(county_meta)
+                    counts["reused"] += 1
+                    if existing.meta is not None and not isinstance(
+                        existing.meta, dict
+                    ):
+                        raise ValueError(
+                            f"Invalid county metadata for Entity {existing.id}"
+                        )
+                    meta = existing.meta if existing.meta is not None else {}
+                    reference = meta.get("county_reference", {})
+                    if not isinstance(reference, dict):
+                        raise ValueError(
+                            f"Invalid county reference metadata for Entity {existing.id}"
+                        )
+                    if "last_changed_at" in reference:
+                        stamp = reference["last_changed_at"]
+                        if not isinstance(stamp, str):
+                            raise ValueError(
+                                f"Invalid county reference metadata timestamp for Entity {existing.id}"
+                            )
+                        try:
+                            changed_at = datetime.fromisoformat(stamp)
+                        except ValueError as exc:
+                            raise ValueError(
+                                f"Invalid county reference metadata timestamp for Entity {existing.id}"
+                            ) from exc
+                        if changed_at.tzinfo is None or changed_at > datetime.now(
+                            timezone.utc
+                        ):
+                            raise ValueError(
+                                f"Invalid county reference metadata timestamp for Entity {existing.id}"
+                            )
+                    if (
+                        reference.get("code") == code
+                        and reference.get("source") == "static_county_reference"
+                        and reference.get("last_changed_at")
+                    ):
+                        counts["unchanged"] += 1
                     else:
-                        existing.meta = county_meta
-                    existing.canonical_name = canonical
-                    counties_updated += 1
+                        # Assign a new dict: SQLAlchemy does not track in-place
+                        # JSONB edits. Preserve all other keys, including retired
+                        # profiles until their reviewed cleanup is authorized.
+                        existing.meta = {
+                            **meta,
+                            "county_reference": {
+                                **reference,
+                                "code": code,
+                                "source": "static_county_reference",
+                                "last_changed_at": datetime.now(
+                                    timezone.utc
+                                ).isoformat(),
+                            },
+                        }
+                        counts["updated"] += 1
                 else:
                     slug = name.lower().replace(" ", "-").replace("'", "") + "-" + code
                     county_entity = Entity(
@@ -357,15 +377,35 @@ class AutoSeeder:
                         type=EntityType.COUNTY,
                         slug=slug,
                         alt_names=[name, canonical],
-                        meta=county_meta,
+                        meta={
+                            "code": code,
+                            "county_reference": {
+                                "code": code,
+                                "source": "static_county_reference",
+                                "last_changed_at": datetime.now(
+                                    timezone.utc
+                                ).isoformat(),
+                            },
+                        },
                     )
                     db.add(county_entity)
-                    counties_created += 1
+                    counts["created"] += 1
 
+            # Failure closes/rolls back the session and propagates to the boot
+            # or periodic failure ledger. Publish counts only after commit.
             db.commit()
+            self._county_reference_refresh = {
+                "last_completed_at": datetime.now(timezone.utc).isoformat(),
+                "counts": dict(counts),
+            }
             logger.info(
-                f"[AUTO-SEEDER] Counties: {counties_created} created, {counties_updated} updated"
+                "[AUTO-SEEDER] County references: %s created, %s updated, %s unchanged (%s reused)",
+                counts["created"],
+                counts["updated"],
+                counts["unchanged"],
+                counts["reused"],
             )
+            return counts
 
     async def _ensure_national_entity(self):
         """Ensure national government entity exists."""
@@ -421,6 +461,7 @@ class AutoSeeder:
             # Domains currently in a failure streak (cleared on success) —
             # non-empty means data is going stale; ≥3 has already alerted.
             "consecutive_failures": dict(self._consecutive_failures),
+            "county_reference_refresh": deepcopy(self._county_reference_refresh),
             "next_refresh": self._get_next_refresh_times(),
             "external_job_owner": {
                 "domains": [
