@@ -1,0 +1,183 @@
+{
+  "verified_at": "2026-10-01T03:36:09.609341+00:00",
+  "passed": true,
+  "production_writes": false,
+  "input_sha256": {
+    "cleanup-current-manifest.json": "30823b069f568241ba6646fd6fee2f57918b2a03a185133b694205f6c2c8f3ce",
+    "cleanup-after-codes-manifest.json": "520daf4b677aa9412716072a665be5bb0018262fa4224cf47fa81a261d831551",
+    "county-code-proposal.json": "212213e4942c01e1b499fc09e498377056efa5adf497f530ea22014f5670dab7",
+    "county-codes.sql": "0301c1270c148beb21b56c76d98ae2305b841e6a02feff611b7cbea08ff63b95",
+    "county-code-recovery.sql": "83456602fc18b311abd246edc72965358a2b92dad6790becdcc86258c4ef9df1",
+    "tools/verify_sourced_record_cleanup.py": "6dbe3f1949cd3cff52de072828649dcc590fd41537c2ba9c46cf9b9dc741c119",
+    "tools/prepare_legacy_evidence_cleanup.py": "ed3453b4e18045d46667bf29bde7987f9daa7d57231f93e8036f33b67476eef0"
+  },
+  "checks": [
+    {
+      "name": "captured audit and document before-images loaded exactly",
+      "passed": true
+    },
+    {
+      "name": "default cleanup script rolls back",
+      "passed": true
+    },
+    {
+      "name": "current cleanup changes only approved metadata keys and 25 audit rows",
+      "passed": true,
+      "county_rows": 47,
+      "retired_audit_rows": 25,
+      "synthetic_budget_rows_unchanged": 2
+    },
+    {
+      "name": "default recovery script rolls back",
+      "passed": true
+    },
+    {
+      "name": "current cleanup recovery restores exact complete baseline",
+      "passed": true
+    },
+    {
+      "name": "default county code script rolls back",
+      "passed": true
+    },
+    {
+      "name": "county code correction changes exactly four cells; IDs and FKs preserved",
+      "passed": true
+    },
+    {
+      "name": "stale pre-code cleanup manifest refuses corrected cells",
+      "passed": true,
+      "expected_error": "ERROR:  Entity snapshot drift: refresh manifest and review again\nCONTEXT:  PL/pgSQL function inline_code_block line 3 at RAISE",
+      "transaction_unchanged": true
+    },
+    {
+      "name": "projected cleanup keeps corrected cells and FK controls",
+      "passed": true
+    },
+    {
+      "name": "projected cleanup recovery restores exact post-code state",
+      "passed": true
+    },
+    {
+      "name": "default county code recovery rolls back",
+      "passed": true
+    },
+    {
+      "name": "county code recovery restores exact baseline",
+      "passed": true
+    },
+    {
+      "name": "cleanup refuses metadata drift",
+      "passed": true,
+      "expected_error": "ERROR:  Entity snapshot drift: refresh manifest and review again\nCONTEXT:  PL/pgSQL function inline_code_block line 3 at RAISE",
+      "transaction_unchanged": true
+    },
+    {
+      "name": "cleanup refuses source-document drift",
+      "passed": true,
+      "expected_error": "ERROR:  Retired source document drift: refresh provenance and review again\nCONTEXT:  PL/pgSQL function inline_code_block line 3 at RAISE",
+      "transaction_unchanged": true
+    },
+    {
+      "name": "cleanup refuses audit row drift",
+      "passed": true,
+      "expected_error": "ERROR:  Audit snapshot drift: refresh manifest and review again\nCONTEXT:  PL/pgSQL function inline_code_block line 6 at RAISE",
+      "transaction_unchanged": true
+    },
+    {
+      "name": "cleanup refuses new inbound audit FK",
+      "passed": true,
+      "expected_error": "ERROR:  Audit references changed: review relationships before cleanup or recovery\nCONTEXT:  PL/pgSQL function inline_code_block line 6 at RAISE",
+      "transaction_unchanged": true
+    },
+    {
+      "name": "county code forward refuses changed code cell",
+      "passed": true,
+      "expected_error": "ERROR:  Expected four metadata cells changed; regenerate and review\nCONTEXT:  PL/pgSQL function inline_code_block line 14 at RAISE",
+      "transaction_unchanged": true
+    },
+    {
+      "name": "county code forward guards all 47 identities",
+      "passed": true,
+      "expected_error": "ERROR:  County identity snapshot changed; regenerate and review\nCONTEXT:  PL/pgSQL function inline_code_block line 6 at RAISE",
+      "transaction_unchanged": true
+    },
+    {
+      "name": "cleanup recovery refuses changed county name",
+      "passed": true,
+      "expected_error": "ERROR:  Post-cleanup entity drift: do not overwrite newer data\nCONTEXT:  PL/pgSQL function inline_code_block line 3 at RAISE",
+      "transaction_unchanged": true
+    },
+    {
+      "name": "cleanup recovery refuses newer metadata",
+      "passed": true,
+      "expected_error": "ERROR:  Post-cleanup entity drift: do not overwrite newer data\nCONTEXT:  PL/pgSQL function inline_code_block line 3 at RAISE",
+      "transaction_unchanged": true
+    },
+    {
+      "name": "cleanup recovery refuses newer source document",
+      "passed": true,
+      "expected_error": "ERROR:  Retired source document drift: refresh provenance and review again\nCONTEXT:  PL/pgSQL function inline_code_block line 3 at RAISE",
+      "transaction_unchanged": true
+    },
+    {
+      "name": "cleanup recovery refuses new inbound audit FK",
+      "passed": true,
+      "expected_error": "ERROR:  Audit references changed: review relationships before cleanup or recovery\nCONTEXT:  PL/pgSQL function inline_code_block line 6 at RAISE",
+      "transaction_unchanged": true
+    },
+    {
+      "name": "cleanup recovery refuses occupied audit ID",
+      "passed": true,
+      "expected_error": "ERROR:  Audit IDs occupied: reconcile manually\nCONTEXT:  PL/pgSQL function inline_code_block line 6 at RAISE",
+      "transaction_unchanged": true
+    },
+    {
+      "name": "county code recovery refuses newer code cell",
+      "passed": true,
+      "expected_error": "ERROR:  Post-correction code cells changed; do not overwrite newer data\nCONTEXT:  PL/pgSQL function inline_code_block line 14 at RAISE",
+      "transaction_unchanged": true
+    },
+    {
+      "name": "county code recovery refuses changed county identity",
+      "passed": true,
+      "expected_error": "ERROR:  County identity snapshot changed; regenerate and review\nCONTEXT:  PL/pgSQL function inline_code_block line 6 at RAISE",
+      "transaction_unchanged": true
+    },
+    {
+      "name": "county code recovery preserves unrelated newer metadata",
+      "passed": true
+    },
+    {
+      "name": "cleanup refuses changed captured slug",
+      "passed": true,
+      "expected_error": "ERROR:  Entity snapshot drift: refresh manifest and review again\nCONTEXT:  PL/pgSQL function inline_code_block line 3 at RAISE",
+      "transaction_unchanged": true
+    },
+    {
+      "name": "cleanup recovery refuses changed captured slug",
+      "passed": true,
+      "expected_error": "ERROR:  Post-cleanup entity drift: do not overwrite newer data\nCONTEXT:  PL/pgSQL function inline_code_block line 3 at RAISE",
+      "transaction_unchanged": true
+    },
+    {
+      "name": "stale recovery refuses unrelated newer metadata",
+      "passed": true,
+      "expected_error": "ERROR:  Post-cleanup entity drift: do not overwrite newer data\nCONTEXT:  PL/pgSQL function inline_code_block line 3 at RAISE",
+      "transaction_unchanged": true
+    },
+    {
+      "name": "reviewed recovery preserves unrelated newer metadata",
+      "passed": true
+    }
+  ],
+  "scope": "Disposable local PostgreSQL; captured complete cleanup before-images, synthetic schema and related FK controls",
+  "limitations": [
+    "Not a full production schema/data restore, production execution, or authorization.",
+    "Synthetic related budget rows prove preservation for the exercised FKs; no claim about all production tables.",
+    "Current and projected manifests remain unapproved and must be recaptured after shared source refreshes.",
+    "County-code recovery changes only four paths and intentionally preserves unrelated newer metadata."
+  ],
+  "database": "sourced_cleanup_rehearsal_bb1a3734d9664dafb72dc7e67cb183c3",
+  "postgres_version": "PostgreSQL 17.11 (Debian 17.11-1.pgdg13+2) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit",
+  "disposable_database_removed": true
+}

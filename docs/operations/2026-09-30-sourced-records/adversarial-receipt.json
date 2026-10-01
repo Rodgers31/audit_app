@@ -1,0 +1,35 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "sql": "BEGIN; COMMIT;",
+      "refused": true
+    },
+    {
+      "sql": "ROLLBACK;\nROLLBACK;",
+      "refused": true
+    },
+    {
+      "sql": "BEGIN;\nROLLBACK;\nCOMMIT;",
+      "refused": true
+    },
+    {
+      "host": "production.example",
+      "port": 55463,
+      "refused": true
+    },
+    {
+      "host": "127.0.0.1",
+      "port": true,
+      "refused": true
+    },
+    {
+      "host": "127.0.0.1",
+      "port": 0,
+      "refused": true
+    }
+  ],
+  "no_extra_agent_sessions": "explicit session instruction forbids extra sessions; primary agent executed hostile probes",
+  "identity_red": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_IDENTITY_RED.json",
+  "identity_green": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_IDENTITY_GREEN.json"
+}

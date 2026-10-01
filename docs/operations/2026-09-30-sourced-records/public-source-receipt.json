@@ -1,0 +1,569 @@
+{
+  "population_2019": {
+    "url": "https://audit-app-4pwa.onrender.com/api/v1/economic/population?year=2019&limit=100",
+    "status": 200,
+    "sha256": "52cd18a51b73e76c9c57222713bb38aed94278936ef1e0659f344e89826b3f70",
+    "observed_at": "2026-10-01T03:13:52.304562+00:00",
+    "rows": [
+      {
+        "id": 79,
+        "entity_id": null,
+        "entity_name": null,
+        "entity_type": "national",
+        "year": 2019,
+        "total_population": 51202827,
+        "male_population": 25485390,
+        "female_population": 25717437,
+        "urban_population": null,
+        "rural_population": null,
+        "population_density": null,
+        "confidence": 1.0,
+        "source_document_id": null,
+        "created_at": "2026-03-25T23:12:41.680005"
+      },
+      {
+        "id": 64,
+        "entity_id": 73,
+        "entity_name": "National Government",
+        "entity_type": "national",
+        "year": 2019,
+        "total_population": 47564296,
+        "male_population": null,
+        "female_population": null,
+        "urban_population": null,
+        "rural_population": null,
+        "population_density": null,
+        "confidence": 0.95,
+        "source_document_id": 1823,
+        "created_at": "2026-02-18T02:20:00.914643"
+      },
+      {
+        "id": 26,
+        "entity_id": 12,
+        "entity_name": "Mandera County",
+        "entity_type": "county",
+        "year": 2019,
+        "total_population": 867457,
+        "male_population": 434976,
+        "female_population": 432444,
+        "urban_population": null,
+        "rural_population": null,
+        "population_density": null,
+        "confidence": 1.0,
+        "source_document_id": 2435,
+        "created_at": "2025-11-04T14:03:37.351107"
+      }
+    ]
+  },
+  "mandera_profile": {
+    "url": "https://audit-app-4pwa.onrender.com/api/v1/economic/counties/12/profile",
+    "status": 200,
+    "sha256": "ad84dc1062fae8d1af7407631cde07b57d41ca670cbac1804163e36280d1122d",
+    "observed_at": "2026-10-01T03:13:53.499072+00:00",
+    "body": {
+      "county_id": 12,
+      "county_name": "Mandera County",
+      "latest_population": {
+        "id": 26,
+        "entity_id": 12,
+        "entity_name": "Mandera County",
+        "entity_type": "county",
+        "year": 2019,
+        "total_population": 867457,
+        "male_population": 434976,
+        "female_population": 432444,
+        "urban_population": null,
+        "rural_population": null,
+        "population_density": null,
+        "confidence": 1.0,
+        "source_document_id": 2435,
+        "created_at": "2025-11-04T14:03:37.351107"
+      },
+      "latest_gcp": null,
+      "latest_poverty": null,
+      "economic_indicators": [],
+      "per_capita_gcp": null,
+      "population_growth_rate": null
+    }
+  },
+  "counties": {
+    "url": "https://audit-app-4pwa.onrender.com/api/v1/counties",
+    "status": 200,
+    "sha256": "aa01fe629c1dd6a152df893fcb1b1a4ca74c9c49fb630dc71f223d9d834343c2",
+    "observed_at": "2026-10-01T03:13:53.701600+00:00",
+    "rows": [
+      {
+        "id": "030",
+        "name": "Baringo",
+        "code": "030",
+        "population": 666763
+      },
+      {
+        "id": "036",
+        "name": "Bomet",
+        "code": "036",
+        "population": 875689
+      },
+      {
+        "id": "039",
+        "name": "Bungoma",
+        "code": "039",
+        "population": 1670570
+      },
+      {
+        "id": "040",
+        "name": "Busia",
+        "code": "040",
+        "population": 893681
+      },
+      {
+        "id": "028",
+        "name": "Elgeyo Marakwet",
+        "code": "028",
+        "population": 454480
+      },
+      {
+        "id": "014",
+        "name": "Embu",
+        "code": "014",
+        "population": 608599
+      },
+      {
+        "id": "007",
+        "name": "Garissa",
+        "code": "007",
+        "population": 841353
+      },
+      {
+        "id": "043",
+        "name": "Homa Bay",
+        "code": "043",
+        "population": 1131950
+      },
+      {
+        "id": "011",
+        "name": "Isiolo",
+        "code": "011",
+        "population": 268002
+      },
+      {
+        "id": "034",
+        "name": "Kajiado",
+        "code": "034",
+        "population": 1117840
+      },
+      {
+        "id": "037",
+        "name": "Kakamega",
+        "code": "037",
+        "population": 1867579
+      },
+      {
+        "id": "035",
+        "name": "Kericho",
+        "code": "035",
+        "population": 901777
+      },
+      {
+        "id": "022",
+        "name": "Kiambu",
+        "code": "022",
+        "population": 2417735
+      },
+      {
+        "id": "003",
+        "name": "Kilifi",
+        "code": "003",
+        "population": 1453787
+      },
+      {
+        "id": "020",
+        "name": "Kirinyaga",
+        "code": "020",
+        "population": 610411
+      },
+      {
+        "id": "045",
+        "name": "Kisii",
+        "code": "045",
+        "population": 1266860
+      },
+      {
+        "id": "042",
+        "name": "Kisumu",
+        "code": "042",
+        "population": 1155574
+      },
+      {
+        "id": "015",
+        "name": "Kitui",
+        "code": "015",
+        "population": 1136187
+      },
+      {
+        "id": "002",
+        "name": "Kwale",
+        "code": "002",
+        "population": 866820
+      },
+      {
+        "id": "031",
+        "name": "Laikipia",
+        "code": "031",
+        "population": 518560
+      },
+      {
+        "id": "005",
+        "name": "Lamu",
+        "code": "005",
+        "population": 143920
+      },
+      {
+        "id": "016",
+        "name": "Machakos",
+        "code": "016",
+        "population": 1421932
+      },
+      {
+        "id": "017",
+        "name": "Makueni",
+        "code": "017",
+        "population": 987653
+      },
+      {
+        "id": "009",
+        "name": "Mandera",
+        "code": "009",
+        "population": 867457
+      },
+      {
+        "id": "010",
+        "name": "Marsabit",
+        "code": "010",
+        "population": 459785
+      },
+      {
+        "id": "012",
+        "name": "Meru",
+        "code": "012",
+        "population": 1545714
+      },
+      {
+        "id": "044",
+        "name": "Migori",
+        "code": "044",
+        "population": 1116436
+      },
+      {
+        "id": "047",
+        "name": "Mombasa",
+        "code": "001",
+        "population": 1208333
+      },
+      {
+        "id": "021",
+        "name": "Murang'a",
+        "code": "021",
+        "population": 1056640
+      },
+      {
+        "id": "001",
+        "name": "Nairobi",
+        "code": "047",
+        "population": 4397073
+      },
+      {
+        "id": "032",
+        "name": "Nakuru",
+        "code": "032",
+        "population": 2162202
+      },
+      {
+        "id": "029",
+        "name": "Nandi",
+        "code": "029",
+        "population": 885711
+      },
+      {
+        "id": "033",
+        "name": "Narok",
+        "code": "033",
+        "population": 1157873
+      },
+      {
+        "id": "046",
+        "name": "Nyamira",
+        "code": "046",
+        "population": 605576
+      },
+      {
+        "id": "018",
+        "name": "Nyandarua",
+        "code": "018",
+        "population": 638289
+      },
+      {
+        "id": "019",
+        "name": "Nyeri",
+        "code": "019",
+        "population": 759164
+      },
+      {
+        "id": "025",
+        "name": "Samburu",
+        "code": "025",
+        "population": 310327
+      },
+      {
+        "id": "041",
+        "name": "Siaya",
+        "code": "041",
+        "population": 993183
+      },
+      {
+        "id": "006",
+        "name": "Taita Taveta",
+        "code": "006",
+        "population": 340671
+      },
+      {
+        "id": "004",
+        "name": "Tana River",
+        "code": "004",
+        "population": 315943
+      },
+      {
+        "id": "013",
+        "name": "Tharaka Nithi",
+        "code": "013",
+        "population": 393177
+      },
+      {
+        "id": "026",
+        "name": "Trans Nzoia",
+        "code": "026",
+        "population": 990341
+      },
+      {
+        "id": "023",
+        "name": "Turkana",
+        "code": "023",
+        "population": 926976
+      },
+      {
+        "id": "027",
+        "name": "Uasin Gishu",
+        "code": "027",
+        "population": 1163186
+      },
+      {
+        "id": "038",
+        "name": "Vihiga",
+        "code": "038",
+        "population": 590013
+      },
+      {
+        "id": "008",
+        "name": "Wajir",
+        "code": "008",
+        "population": 781263
+      },
+      {
+        "id": "024",
+        "name": "West Pokot",
+        "code": "024",
+        "population": 621241
+      }
+    ]
+  },
+  "mombasa": {
+    "url": "https://audit-app-4pwa.onrender.com/api/v1/counties/002/comprehensive",
+    "status": 200,
+    "sha256": "0b7d6e004440313b254b6963918aa14cbc798f4bebc60aea68cb639ff4ea88a6",
+    "observed_at": "2026-10-01T03:13:53.647224+00:00",
+    "selection": {
+      "id": "002",
+      "name": "Kwale",
+      "project_count": 3,
+      "reconciliation": "agrees",
+      "source": {
+        "url": "https://cob.go.ke/download/county-governments-budget-implementation-review-report-for-the-financial-year-2025-26/?wpdmdl=16482",
+        "as_of": "2026-06-30",
+        "title": "County Governments Budget Implementation Review Report",
+        "period": "annual",
+        "sha256": "5f5e4f97bbe2752957f284950d0ba90fcff4d47b35fc0ac96a9106ffb59821b3",
+        "wpdmdl": 16482,
+        "published": "August 2026",
+        "publisher": "Office of the Controller of Budget",
+        "fiscal_year": "FY2025/26",
+        "reported_by": "County treasury, as reported to the Controller of Budget (CBIRR)",
+        "server_fingerprint": "content-disposition=attachment;filename=\"CGBIRR FY 2025_26 August 2026 Final 5.pdf\""
+      }
+    }
+  },
+  "nairobi": {
+    "url": "https://audit-app-4pwa.onrender.com/api/v1/counties/001/comprehensive",
+    "status": 200,
+    "sha256": "6dc1c6a703c903ad5eb775e131fef323a343212195d2ce51e0f38b806c7730cb",
+    "observed_at": "2026-10-01T03:13:53.652439+00:00",
+    "selection": {
+      "id": "001",
+      "name": "Nairobi",
+      "project_count": 57,
+      "reconciliation": "disagrees",
+      "source": {
+        "url": "https://cob.go.ke/download/county-governments-budget-implementation-review-report-for-the-financial-year-2025-26/?wpdmdl=16482",
+        "as_of": "2026-06-30",
+        "title": "County Governments Budget Implementation Review Report",
+        "period": "annual",
+        "sha256": "5f5e4f97bbe2752957f284950d0ba90fcff4d47b35fc0ac96a9106ffb59821b3",
+        "wpdmdl": 16482,
+        "published": "August 2026",
+        "publisher": "Office of the Controller of Budget",
+        "fiscal_year": "FY2025/26",
+        "reported_by": "County treasury, as reported to the Controller of Budget (CBIRR)",
+        "server_fingerprint": "content-disposition=attachment;filename=\"CGBIRR FY 2025_26 August 2026 Final 5.pdf\""
+      }
+    }
+  },
+  "mandera": {
+    "url": "https://audit-app-4pwa.onrender.com/api/v1/counties/010/comprehensive",
+    "status": 200,
+    "sha256": "bb5a4d9e51e304885d16c6d00f5ba44c463e7cfe6c26bc92d72d5be2184c463d",
+    "observed_at": "2026-10-01T03:13:54.387922+00:00",
+    "selection": {
+      "id": "010",
+      "name": "Marsabit",
+      "project_count": null,
+      "reconciliation": "unverifiable",
+      "source": {
+        "url": "https://cob.go.ke/download/county-governments-budget-implementation-review-report-for-the-financial-year-2025-26/?wpdmdl=16482",
+        "as_of": "2026-06-30",
+        "title": "County Governments Budget Implementation Review Report",
+        "period": "annual",
+        "sha256": "5f5e4f97bbe2752957f284950d0ba90fcff4d47b35fc0ac96a9106ffb59821b3",
+        "wpdmdl": 16482,
+        "published": "August 2026",
+        "publisher": "Office of the Controller of Budget",
+        "fiscal_year": "FY2025/26",
+        "reported_by": "County treasury, as reported to the Controller of Budget (CBIRR)",
+        "server_fingerprint": "content-disposition=attachment;filename=\"CGBIRR FY 2025_26 August 2026 Final 5.pdf\""
+      }
+    }
+  },
+  "population_verify": {
+    "url": "https://audit-app-4pwa.onrender.com/api/v1/verify/population_data/79",
+    "status": 404,
+    "sha256": "37ec4665a8102d115ffd1ac20dae94c98b4dac64b0c1a68228aa2a531caeb35d",
+    "observed_at": "2026-10-01T03:13:54.245007+00:00",
+    "body": {
+      "detail": "Not Found"
+    }
+  },
+  "wb_total": {
+    "url": "https://api.worldbank.org/v2/country/KEN/indicator/SP.POP.TOTL?format=json&date=2019",
+    "status": 200,
+    "sha256": "64b141a1b3a1e40157a3d1f1b68aeb9992bb13bca19a079ee9bcb3a6c995ddea",
+    "observed_at": "2026-10-01T03:13:53.980555+00:00",
+    "response": [
+      {
+        "page": 1,
+        "pages": 1,
+        "per_page": 50,
+        "total": 1,
+        "sourceid": "2",
+        "lastupdated": "2026-07-13"
+      },
+      [
+        {
+          "indicator": {
+            "id": "SP.POP.TOTL",
+            "value": "Population, total"
+          },
+          "country": {
+            "id": "KE",
+            "value": "Kenya"
+          },
+          "countryiso3code": "KEN",
+          "date": "2019",
+          "value": 51202827,
+          "unit": "",
+          "obs_status": "",
+          "decimal": 0
+        }
+      ]
+    ]
+  },
+  "wb_male": {
+    "url": "https://api.worldbank.org/v2/country/KEN/indicator/SP.POP.TOTL.MA.IN?format=json&date=2019",
+    "status": 200,
+    "sha256": "ccd8d8657ebb565b5a777355832a2444e126948a609820e6a73521e481d7555d",
+    "observed_at": "2026-10-01T03:13:53.965008+00:00",
+    "response": [
+      {
+        "page": 1,
+        "pages": 1,
+        "per_page": 50,
+        "total": 1,
+        "sourceid": "2",
+        "lastupdated": "2026-07-13"
+      },
+      [
+        {
+          "indicator": {
+            "id": "SP.POP.TOTL.MA.IN",
+            "value": "Population, male"
+          },
+          "country": {
+            "id": "KE",
+            "value": "Kenya"
+          },
+          "countryiso3code": "KEN",
+          "date": "2019",
+          "value": 25485390,
+          "unit": "",
+          "obs_status": "",
+          "decimal": 0
+        }
+      ]
+    ]
+  },
+  "wb_female": {
+    "url": "https://api.worldbank.org/v2/country/KEN/indicator/SP.POP.TOTL.FE.IN?format=json&date=2019",
+    "status": 200,
+    "sha256": "b179458cbc2eb03d6e45395563ac29826f82bb93e6fb5559968d8145044f7238",
+    "observed_at": "2026-10-01T03:13:54.198564+00:00",
+    "response": [
+      {
+        "page": 1,
+        "pages": 1,
+        "per_page": 50,
+        "total": 1,
+        "sourceid": "2",
+        "lastupdated": "2026-07-13"
+      },
+      [
+        {
+          "indicator": {
+            "id": "SP.POP.TOTL.FE.IN",
+            "value": "Population, female"
+          },
+          "country": {
+            "id": "KE",
+            "value": "Kenya"
+          },
+          "countryiso3code": "KEN",
+          "date": "2019",
+          "value": 25717437,
+          "unit": "",
+          "obs_status": "",
+          "decimal": 0
+        }
+      ]
+    ]
+  },
+  "full_capture": {
+    "path": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_FULL_public-source-receipt.json",
+    "sha256": "60fe522a8f770f6bdb559a23b848a4a8e9ede600df220720dc0c8bfbb9a99eed"
+  }
+}

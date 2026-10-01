@@ -421,6 +421,11 @@ def main():
 
         for name, mutation, expected_error in (
             (
+                "changed county name",
+                "UPDATE entities SET canonical_name='changed identity' WHERE id=3;",
+                "Post-cleanup entity drift",
+            ),
+            (
                 "newer metadata",
                 "UPDATE entities SET metadata=metadata || '{\"new_source\":true}'::jsonb WHERE id=3;",
                 "Post-cleanup entity drift",
@@ -476,6 +481,52 @@ def main():
         ] = True
         check(
             "county code recovery preserves unrelated newer metadata",
+            snapshot(db) == baseline,
+        )
+        # New captures bind slugs too; old review manifests remain supported.
+        bound = copy.deepcopy(manifest)
+        identities = {e["id"]: e for e in proposal["identities"]}
+        for row in bound["entities"]:
+            row["slug"] = identities[row["id"]]["slug"]
+        bound_cleanup, bound_recover = map(committed, render(bound))
+        reset()
+        db.sql("UPDATE entities SET slug='changed identity' WHERE id=3;")
+        refusal(
+            "cleanup refuses changed captured slug",
+            bound_cleanup,
+            "Entity snapshot drift",
+        )
+        reset()
+        db.sql(bound_cleanup)
+        db.sql("UPDATE entities SET slug='changed identity' WHERE id=3;")
+        refusal(
+            "cleanup recovery refuses changed captured slug",
+            bound_recover,
+            "Post-cleanup entity drift",
+        )
+        baseline = reset()
+        db.sql(cleanup)
+        db.sql(
+            "UPDATE entities SET metadata=metadata || '{\"new_source\":true}'::jsonb WHERE id=3;"
+        )
+        refusal(
+            "stale recovery refuses unrelated newer metadata",
+            recover,
+            "Post-cleanup entity drift",
+        )
+        # Model an explicitly reviewed new recovery snapshot, never an automatic
+        # rebase of a live plan. Keep the new key in both guarded row images.
+        reviewed = copy.deepcopy(manifest)
+        row = next(e for e in reviewed["entities"] if e["id"] == 3)
+        row["before"]["new_source"] = True
+        row["after"]["new_source"] = True
+        _, reviewed_recovery = render(reviewed)
+        db.sql(committed(reviewed_recovery))
+        next(e for e in baseline["entities"] if e["id"] == 3)["metadata"][
+            "new_source"
+        ] = True
+        check(
+            "reviewed recovery preserves unrelated newer metadata",
             snapshot(db) == baseline,
         )
         receipt["passed"] = True

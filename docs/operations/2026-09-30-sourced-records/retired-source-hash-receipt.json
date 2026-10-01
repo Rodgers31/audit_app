@@ -1,0 +1,25 @@
+{
+  "retired_fixture_commit": "1bd397f398450245da83abc2e24502ab16ffb063",
+  "hashes": {
+    "backend/data/reference/oag_national_audit_data.json": {
+      "expected": "e1ac4396683caa15661807713aabc5d616dfd5fec1931998153cd0117ea5b8f7",
+      "actual": "e1ac4396683caa15661807713aabc5d616dfd5fec1931998153cd0117ea5b8f7",
+      "matches": true
+    },
+    "backend/seeding/real_data/stalled_projects.json": {
+      "expected": "dcf7d04bfdd8396c1f1c62c541ca43d3bca4cda4629fcdb1731912df1eba8855",
+      "actual": "dcf7d04bfdd8396c1f1c62c541ca43d3bca4cda4629fcdb1731912df1eba8855",
+      "matches": true
+    },
+    "backend/data/reference/enhanced_county_data.json": {
+      "expected": "b7e93f6358628a91417e57c13006e5279eb70a850ecd9501b3ff9f0bca608767",
+      "actual": "b7e93f6358628a91417e57c13006e5279eb70a850ecd9501b3ff9f0bca608767",
+      "matches": true
+    },
+    "backend/data/reference/oag_audit_data.json": {
+      "expected": "bba74732d5959b1f39e63757c6f3337409db706693529d58654255969a5790f3",
+      "actual": "bba74732d5959b1f39e63757c6f3337409db706693529d58654255969a5790f3",
+      "matches": true
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "new_issues_filed": false,
+  "duplicate_inventory_path": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_DUPLICATE_INVENTORY.json",
+  "candidate": {
+    "scope": "population provenance verification hint",
+    "endpoint": "https://audit-app-4pwa.onrender.com/api/v1/provenance/verify/population_data?year=2019",
+    "public_value": "51,202,827 (year 2019)",
+    "actual_row": 79,
+    "actual_source": "World Bank Development Indicators (2019)",
+    "returned_hint": "Kenya National Bureau of Statistics / Census2019",
+    "returned_grade": "unverified",
+    "impact": "Wrong reference hint accompanies an explicitly unverified World Bank observation; no success-grade claim or changed population value",
+    "source_location": "backend/routers/data_provenance.py:685",
+    "reproduction_receipt": "source-walk-receipt.json population_verify.response",
+    "duplicate_review": "Existing137 P1 covers provenance gaps broadly;292 covers row79 stored repair;190/204 are closed population-floor/scraper fixes. No exact dedicated hint issue title found across all 182 issues retrieved. Coordinator must inspect bodies/search comments before filing.",
+    "fix_here": false
+  },
+  "shared_ownership": {
+    "source1823": "CPI86/87 (Session1), GDP17/18 and population64 remain; never relabel or retire globally",
+    "source2541": "582 audits and582 extractions; Session2 owns correction rows; this packet changes neither",
+    "remaining_historical_sources": "1718 and1822 retained; scope319/274 covers these;1718 live URL TLS failure means no new attribution inferred"
+  }
+}

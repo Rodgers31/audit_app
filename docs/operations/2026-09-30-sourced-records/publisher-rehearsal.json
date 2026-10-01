@@ -1,0 +1,69 @@
+{
+  "observed_at": "2026-10-01T03:26:24.798775+00:00",
+  "production_writes": false,
+  "scope": "disposable PostgreSQL; full source document snapshots and synthetic FK tables with captured reference ids",
+  "passed": true,
+  "checks": [
+    {
+      "name": "default source-publisher forward rolls back",
+      "passed": true
+    },
+    {
+      "name": "commit changes exactly two publishers and preserves all reference ids",
+      "passed": true
+    },
+    {
+      "name": "default recovery rolls back",
+      "passed": true
+    },
+    {
+      "name": "exact recovery restores baseline",
+      "passed": true
+    },
+    {
+      "name": "exact commit refuses changed source hash",
+      "passed": true
+    },
+    {
+      "name": "exact commit refuses changed source URL",
+      "passed": true
+    },
+    {
+      "name": "exact commit refuses new source reference",
+      "passed": true
+    },
+    {
+      "name": "exact commit refuses new FK catalogue",
+      "passed": true
+    },
+    {
+      "name": "publisher recovery preserves unrelated newer metadata",
+      "passed": true
+    },
+    {
+      "name": "recovery refuses changed hash",
+      "passed": true
+    },
+    {
+      "name": "recovery refuses changed URL",
+      "passed": true
+    },
+    {
+      "name": "recovery refuses changed publisher",
+      "passed": true
+    },
+    {
+      "name": "recovery refuses changed references",
+      "passed": true
+    }
+  ],
+  "input_sha256": {
+    "production-readonly-receipt.json": "c201eba727ff0d253001818f623b71c014637688f9ca3f9be76efc1132c5efdf",
+    "source-publisher-proposal.json": "69d6a29c0fcdd4e3319d256859d4749c4c6f5b690a8e01c3dd4061d42857cb96",
+    "source-publishers.sql": "3df36234135d1a2935d15556277ed9b8cc0a0baf2ad3a1726149102d446af55a",
+    "source-publisher-recovery.sql": "ad0c9e4bbaf287728c52690457c994045c52b62e0c291ea6f928384de1d6cb92"
+  },
+  "harness_sha256": "7576996758d0082c9b4527051bc9454bae3fae463701b31581a502f492bd13c2",
+  "postgres_version": "PostgreSQL 17.11 (Debian 17.11-1.pgdg13+2) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit",
+  "disposable_database_removed": true
+}

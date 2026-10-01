@@ -1,0 +1,176 @@
+{
+  "status": "NO WRITE PROPOSED: production already equals prior reviewed World Bank after-image",
+  "observed_at": "2026-10-01T03:18:32.198331+00:00",
+  "before": {
+    "id": 79,
+    "year": 2019,
+    "basis": null,
+    "metadata": {
+      "source": "World Bank Development Indicators (2019)",
+      "dataset_id": "SP.POP.TOTL",
+      "source_url": "https://data.worldbank.org/indicator/SP.POP.TOTL?locations=KE"
+    },
+    "page_ref": null,
+    "entity_id": null,
+    "confidence": 1.0,
+    "created_at": "2026-03-25T23:12:41.680005",
+    "publishable": false,
+    "source_hash": null,
+    "source_page": null,
+    "extraction_id": null,
+    "male_population": 25485390,
+    "confidence_score": null,
+    "rural_population": null,
+    "total_population": 51202827,
+    "urban_population": null,
+    "female_population": 25717437,
+    "quarantine_reason": null,
+    "population_density": null,
+    "source_document_id": null
+  },
+  "after": {
+    "id": 79,
+    "year": 2019,
+    "basis": null,
+    "metadata": {
+      "source": "World Bank Development Indicators (2019)",
+      "dataset_id": "SP.POP.TOTL",
+      "source_url": "https://data.worldbank.org/indicator/SP.POP.TOTL?locations=KE"
+    },
+    "page_ref": null,
+    "entity_id": null,
+    "confidence": 1.0,
+    "created_at": "2026-03-25T23:12:41.680005",
+    "publishable": false,
+    "source_hash": null,
+    "source_page": null,
+    "extraction_id": null,
+    "male_population": 25485390,
+    "confidence_score": null,
+    "rural_population": null,
+    "total_population": 51202827,
+    "urban_population": null,
+    "female_population": 25717437,
+    "quarantine_reason": null,
+    "population_density": null,
+    "source_document_id": null
+  },
+  "source_responses": {
+    "wb_total": {
+      "url": "https://api.worldbank.org/v2/country/KEN/indicator/SP.POP.TOTL?format=json&date=2019",
+      "raw_sha256": "64b141a1b3a1e40157a3d1f1b68aeb9992bb13bca19a079ee9bcb3a6c995ddea",
+      "response": [
+        {
+          "page": 1,
+          "pages": 1,
+          "per_page": 50,
+          "total": 1,
+          "sourceid": "2",
+          "lastupdated": "2026-07-13"
+        },
+        [
+          {
+            "indicator": {
+              "id": "SP.POP.TOTL",
+              "value": "Population, total"
+            },
+            "country": {
+              "id": "KE",
+              "value": "Kenya"
+            },
+            "countryiso3code": "KEN",
+            "date": "2019",
+            "value": 51202827,
+            "unit": "",
+            "obs_status": "",
+            "decimal": 0
+          }
+        ]
+      ]
+    },
+    "wb_male": {
+      "url": "https://api.worldbank.org/v2/country/KEN/indicator/SP.POP.TOTL.MA.IN?format=json&date=2019",
+      "raw_sha256": "ccd8d8657ebb565b5a777355832a2444e126948a609820e6a73521e481d7555d",
+      "response": [
+        {
+          "page": 1,
+          "pages": 1,
+          "per_page": 50,
+          "total": 1,
+          "sourceid": "2",
+          "lastupdated": "2026-07-13"
+        },
+        [
+          {
+            "indicator": {
+              "id": "SP.POP.TOTL.MA.IN",
+              "value": "Population, male"
+            },
+            "country": {
+              "id": "KE",
+              "value": "Kenya"
+            },
+            "countryiso3code": "KEN",
+            "date": "2019",
+            "value": 25485390,
+            "unit": "",
+            "obs_status": "",
+            "decimal": 0
+          }
+        ]
+      ]
+    },
+    "wb_female": {
+      "url": "https://api.worldbank.org/v2/country/KEN/indicator/SP.POP.TOTL.FE.IN?format=json&date=2019",
+      "raw_sha256": "b179458cbc2eb03d6e45395563ac29826f82bb93e6fb5559968d8145044f7238",
+      "response": [
+        {
+          "page": 1,
+          "pages": 1,
+          "per_page": 50,
+          "total": 1,
+          "sourceid": "2",
+          "lastupdated": "2026-07-13"
+        },
+        [
+          {
+            "indicator": {
+              "id": "SP.POP.TOTL.FE.IN",
+              "value": "Population, female"
+            },
+            "country": {
+              "id": "KE",
+              "value": "Kenya"
+            },
+            "countryiso3code": "KEN",
+            "date": "2019",
+            "value": 25717437,
+            "unit": "",
+            "obs_status": "",
+            "decimal": 0
+          }
+        ]
+      ]
+    }
+  },
+  "prior_stale_repair_refused": true,
+  "recovery": "No repair executed by this session; do not restore the obsolete census/bootstrap before-image",
+  "shared_source1823_action": "retain unchanged; population64/GDP17,18/economic86,87 remain referenced",
+  "provenance_endpoint": {
+    "table": "population_data",
+    "value": "51,202,827 (year 2019)",
+    "source_document": null,
+    "source_url": null,
+    "publisher": null,
+    "fetch_date": null,
+    "provenance_chain": [
+      {
+        "source": "Kenya National Bureau of Statistics",
+        "dataset": "Census 2019",
+        "url": "https://www.knbs.or.ke/2019-kenya-population-and-housing-census-results/"
+      }
+    ],
+    "verification_status": "unverified",
+    "reason": "no resolvable source document"
+  }
+}

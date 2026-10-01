@@ -1,0 +1,19 @@
+{
+  "observed_at": "2026-10-01T03:18:32.198331+00:00",
+  "population79": "already corrected; no operation",
+  "retired_keys": {
+    "economic_profile": 47,
+    "missing_funds_cases": 3,
+    "audit_summary": 8
+  },
+  "source_backed_project_arrays_preserved": 47,
+  "historical_project_arrays_exact_matches": 0,
+  "legacy_audits_to_retire": 25,
+  "audit_drift_only": "quarantine_reason: source_document_has_no_url → retired_legacy_fixture",
+  "publisher_rows_to_correct": [
+    1840,
+    2383
+  ],
+  "code_cells": 4,
+  "all_source_documents_retained": true
+}

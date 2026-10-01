@@ -1,0 +1,7417 @@
+{
+  "observed_at": "2026-10-01T03:18:32.198331+00:00",
+  "production_writes": false,
+  "ceilings": {
+    "counties": 47,
+    "population_rows": 3,
+    "audits": 25,
+    "source_documents": 10,
+    "reference_ids_per_column": 15000,
+    "extraction_rows": 12,
+    "receipt_bytes": 2000000
+  },
+  "transaction_read_only": "on",
+  "isolation": "repeatable read",
+  "refused_insert_sqlstate": "25006",
+  "entities": [
+    {
+      "id": 3,
+      "slug": "nairobi-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T16:10:56.756183",
+      "canonical_name": "Nairobi County",
+      "metadata_canonical_sha256": "dc27ce5060af6e8f296c2c1ac0f1874b2926ade5cee273c09d5a851995f14f47"
+    },
+    {
+      "id": 4,
+      "slug": "mombasa-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T16:10:59.60208",
+      "canonical_name": "Mombasa County",
+      "metadata_canonical_sha256": "14c533ea84626ef8e3bdb66e1cf9625d716e6af26d8be9330e4f8ed15570026b"
+    },
+    {
+      "id": 5,
+      "slug": "kwale-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:28:25.189",
+      "canonical_name": "Kwale County",
+      "metadata_canonical_sha256": "67b9e46c60427ac60a17e11cbb8ae60fc343e31de53d027c50feab417046a643"
+    },
+    {
+      "id": 6,
+      "slug": "kilifi-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:28:27.961917",
+      "canonical_name": "Kilifi County",
+      "metadata_canonical_sha256": "1797b32c2495ed14f6b5d13fd51feaa9211d6f2815b69fc6960e7fef18ed0c36"
+    },
+    {
+      "id": 7,
+      "slug": "tana-river-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:28:30.72239",
+      "canonical_name": "Tana River County",
+      "metadata_canonical_sha256": "25c4ed9717f1b4d701ec6fe5b33abc13395dccbaa16ee6363e6e59b729f118fc"
+    },
+    {
+      "id": 8,
+      "slug": "lamu-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:28:33.548774",
+      "canonical_name": "Lamu County",
+      "metadata_canonical_sha256": "fe34d1a1fbec4eaa1381127e4494f657760bed7f5c24d793b6434c93fb716e8a"
+    },
+    {
+      "id": 9,
+      "slug": "taita-taveta-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:28:36.294229",
+      "canonical_name": "Taita Taveta County",
+      "metadata_canonical_sha256": "95ebd861441b5aac8d39d28099a8fc082f2856f0bab8b667ee018524c287aad9"
+    },
+    {
+      "id": 10,
+      "slug": "garissa-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:28:39.046189",
+      "canonical_name": "Garissa County",
+      "metadata_canonical_sha256": "d4f31c9438ee71706ec49ff67ec497d8ec96215b1eadac5248d97bae118ef04d"
+    },
+    {
+      "id": 11,
+      "slug": "wajir-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:28:41.789578",
+      "canonical_name": "Wajir County",
+      "metadata_canonical_sha256": "9b65f3b364feee8e8e233cf8085ce1309310e9df6f4ae66ad2a21d3c351d75e1"
+    },
+    {
+      "id": 12,
+      "slug": "mandera-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:28:44.546707",
+      "canonical_name": "Mandera County",
+      "metadata_canonical_sha256": "f7e96443e031688c1b28680f4c8fd05f40d8c881628e53099bf4e16b1d9a39ec"
+    },
+    {
+      "id": 13,
+      "slug": "marsabit-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:28:47.30032",
+      "canonical_name": "Marsabit County",
+      "metadata_canonical_sha256": "0f5046830ad6c038e953eb5a289ee9ec24bb32b2b58a1fed85a1897c16b5dd60"
+    },
+    {
+      "id": 14,
+      "slug": "isiolo-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:28:50.063073",
+      "canonical_name": "Isiolo County",
+      "metadata_canonical_sha256": "f47ae13223d659140646d4de537eab0f173fa2638a63d05dd09327ab585879b2"
+    },
+    {
+      "id": 15,
+      "slug": "meru-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:28:52.814061",
+      "canonical_name": "Meru County",
+      "metadata_canonical_sha256": "8ed0fa3df799880695228370832dc8d2ea65a56c2724f2d0793adedb0edb4477"
+    },
+    {
+      "id": 16,
+      "slug": "tharaka-nithi-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:28:55.548351",
+      "canonical_name": "Tharaka Nithi County",
+      "metadata_canonical_sha256": "dfa39e4d3d7df5bb5487815b0c94a19aba3cdccdb8e4e4b6e19e0b63b16c0c8f"
+    },
+    {
+      "id": 17,
+      "slug": "embu-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:28:58.289999",
+      "canonical_name": "Embu County",
+      "metadata_canonical_sha256": "921d1f0e379828b60244dad2ba0a08969243309d4075e6cafd4138c95f5860ad"
+    },
+    {
+      "id": 18,
+      "slug": "kitui-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:29:01.020201",
+      "canonical_name": "Kitui County",
+      "metadata_canonical_sha256": "f599bc55f137a24b6a8ae87b872c540703ddc520b933ae17e299e6d4ef18f755"
+    },
+    {
+      "id": 19,
+      "slug": "machakos-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:29:03.763262",
+      "canonical_name": "Machakos County",
+      "metadata_canonical_sha256": "58379aafee0ff858ef3a7b7d7ec0912bd09cf56caa495eeb940f49654e0379a1"
+    },
+    {
+      "id": 20,
+      "slug": "makueni-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:29:06.538996",
+      "canonical_name": "Makueni County",
+      "metadata_canonical_sha256": "cc4ca7eab2c17b3edaf7242723fd57f06acc6b0bddf838a34856eb4ce6aaafab"
+    },
+    {
+      "id": 21,
+      "slug": "nyandarua-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:29:09.303503",
+      "canonical_name": "Nyandarua County",
+      "metadata_canonical_sha256": "baf99ae61a66046453a87b5138ed3cb546d569a50cea3fbeb2afb206b3c140bc"
+    },
+    {
+      "id": 22,
+      "slug": "nyeri-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:29:12.055322",
+      "canonical_name": "Nyeri County",
+      "metadata_canonical_sha256": "4ec023c6bda0c0feacecdbe286fb103c33bf9bfdc27ef8240c65380e3f3c8ee1"
+    },
+    {
+      "id": 23,
+      "slug": "kirinyaga-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:29:14.795999",
+      "canonical_name": "Kirinyaga County",
+      "metadata_canonical_sha256": "05b041d13f7c8b1e5aad7e297d66d850b4b9d20b37e7fbc503d2ff4112e72139"
+    },
+    {
+      "id": 24,
+      "slug": "muranga-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:29:17.540233",
+      "canonical_name": "Murang'a County",
+      "metadata_canonical_sha256": "ce3ca1bb123d73fd3efc5f9eef980ecdcee36c700d505e891289111d0755926a"
+    },
+    {
+      "id": 25,
+      "slug": "kiambu-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:29:20.290743",
+      "canonical_name": "Kiambu County",
+      "metadata_canonical_sha256": "773581df62fb08dc264a8162361c8c0f804951c02580f38522dcf74a6921941e"
+    },
+    {
+      "id": 26,
+      "slug": "turkana-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:29:23.032364",
+      "canonical_name": "Turkana County",
+      "metadata_canonical_sha256": "2d6e958a8f83c3aacc61650b0b31460787a5655f4486b687d601bf5a56db6500"
+    },
+    {
+      "id": 27,
+      "slug": "west-pokot-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:29:25.767767",
+      "canonical_name": "West Pokot County",
+      "metadata_canonical_sha256": "b0dd3bfd8ee15b0aa02646e805f47863387a65028fb9bf2f42ee699b66e03277"
+    },
+    {
+      "id": 28,
+      "slug": "samburu-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:29:28.508024",
+      "canonical_name": "Samburu County",
+      "metadata_canonical_sha256": "dc2f8afa14075526703ac6b69525e0daf20a9625da8e7f2c1861f5a1b3ddb2d2"
+    },
+    {
+      "id": 29,
+      "slug": "trans-nzoia-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:29:31.257145",
+      "canonical_name": "Trans Nzoia County",
+      "metadata_canonical_sha256": "2ef3e84ba83b169af4a5680c22d223b8a81a94740c4d3eda4cb96af8f9436f42"
+    },
+    {
+      "id": 30,
+      "slug": "uasin-gishu-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:29:34.151975",
+      "canonical_name": "Uasin Gishu County",
+      "metadata_canonical_sha256": "32749e79f5ec7e342075f970f1b4c7f460f71e9d1b26cc52e89d62f5593bd9d2"
+    },
+    {
+      "id": 31,
+      "slug": "elgeyo-marakwet-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:29:36.929603",
+      "canonical_name": "Elgeyo Marakwet County",
+      "metadata_canonical_sha256": "51c0b98ffce6f0574852b7bdf5e55532098cd91eeb0658a95b773cc55508efb1"
+    },
+    {
+      "id": 32,
+      "slug": "nandi-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:29:39.679183",
+      "canonical_name": "Nandi County",
+      "metadata_canonical_sha256": "c0ef908b1d7efcf82aa9aa2c0e556b1f568963803ad1b37fa90cd17604277a5e"
+    },
+    {
+      "id": 33,
+      "slug": "baringo-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:29:42.422497",
+      "canonical_name": "Baringo County",
+      "metadata_canonical_sha256": "758e1ae3348ebd9734cf58e0d72e7f65e54d898f368e5767ae87bbb985fa2113"
+    },
+    {
+      "id": 34,
+      "slug": "laikipia-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:29:45.164659",
+      "canonical_name": "Laikipia County",
+      "metadata_canonical_sha256": "05f393179e6e80bbb0b0773e059c865e5fb72aa6b6025937bad05c37ab9b5f03"
+    },
+    {
+      "id": 35,
+      "slug": "nakuru-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:29:47.906391",
+      "canonical_name": "Nakuru County",
+      "metadata_canonical_sha256": "64578eb9802de8e7f7ae6365a1d4496050fb33664c4f7ee094c35ccc0896274a"
+    },
+    {
+      "id": 36,
+      "slug": "narok-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:29:50.674673",
+      "canonical_name": "Narok County",
+      "metadata_canonical_sha256": "67682bedc3f9f23843375b08b9d43adb446295de84603ba8d7ebc22760d3aedc"
+    },
+    {
+      "id": 37,
+      "slug": "kajiado-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:29:53.420769",
+      "canonical_name": "Kajiado County",
+      "metadata_canonical_sha256": "0650e7608f763e69c50186feb25aa2d7627a1d4cb53c87f03383a0c6d56cd7e9"
+    },
+    {
+      "id": 38,
+      "slug": "kericho-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:29:56.170879",
+      "canonical_name": "Kericho County",
+      "metadata_canonical_sha256": "d2ea1a384bc4b8fc31f15e5ef3ee2b95aa2fb6b9fd3b0bd1f5e11ba144e12d4b"
+    },
+    {
+      "id": 39,
+      "slug": "bomet-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:29:58.920677",
+      "canonical_name": "Bomet County",
+      "metadata_canonical_sha256": "d544c1795775029e67205e447f8ea366b2df22b706d4fe708d1efe0b92e8343c"
+    },
+    {
+      "id": 40,
+      "slug": "kakamega-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:30:01.676374",
+      "canonical_name": "Kakamega County",
+      "metadata_canonical_sha256": "01dd2f8fcbb6281c2986f9cd1d5224adea07e014c1d681c3b83b7b44ac95ac15"
+    },
+    {
+      "id": 41,
+      "slug": "vihiga-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:30:04.579935",
+      "canonical_name": "Vihiga County",
+      "metadata_canonical_sha256": "6ae067dc358113f33e611afcb59ade532905665dcfb1b75da9646c48b3460575"
+    },
+    {
+      "id": 42,
+      "slug": "bungoma-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:30:07.344777",
+      "canonical_name": "Bungoma County",
+      "metadata_canonical_sha256": "3755543a21d76132047a7597f89885928e4fe84a5ff35039b761d6ada46218db"
+    },
+    {
+      "id": 43,
+      "slug": "busia-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:30:10.102377",
+      "canonical_name": "Busia County",
+      "metadata_canonical_sha256": "5b53d24f92c818fe763406323823e9c51496ef8f245a1a4b4e9187d2fb6e906a"
+    },
+    {
+      "id": 44,
+      "slug": "siaya-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:30:12.836707",
+      "canonical_name": "Siaya County",
+      "metadata_canonical_sha256": "ca29f4a206d13aa65006c9bbe4cab0fb0b77007e9c450571de7d765cab302147"
+    },
+    {
+      "id": 45,
+      "slug": "kisumu-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:30:15.579347",
+      "canonical_name": "Kisumu County",
+      "metadata_canonical_sha256": "fe33f3e67f72a4c958a5f7e49bd26c42ee34694fc9bfb2f633bae8a37a165609"
+    },
+    {
+      "id": 46,
+      "slug": "homa-bay-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:30:18.322529",
+      "canonical_name": "Homa Bay County",
+      "metadata_canonical_sha256": "413142767e9193b064d8d43ca07d6752e95297b47330d309ec7240246642f9f1"
+    },
+    {
+      "id": 47,
+      "slug": "migori-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:30:21.058992",
+      "canonical_name": "Migori County",
+      "metadata_canonical_sha256": "da197244d342837a82e4ccb9e1dc42be7b945ed4332d87be100bac94dc5b6431"
+    },
+    {
+      "id": 48,
+      "slug": "kisii-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:30:23.792169",
+      "canonical_name": "Kisii County",
+      "metadata_canonical_sha256": "3cb73e7dfb25eee514609b46fed12ebeb99b4ebfeaf5c30620f38e94ba8af867"
+    },
+    {
+      "id": 49,
+      "slug": "nyamira-county",
+      "type": "COUNTY",
+      "alt_names": [
+        ""
+      ],
+      "country_id": 1,
+      "created_at": "2025-09-07T18:30:26.533584",
+      "canonical_name": "Nyamira County",
+      "metadata_canonical_sha256": "6695dcd58398bfcea389ecba3073f26b21fa014f4db7b5f669fddfad39d33612"
+    }
+  ],
+  "populations": [
+    {
+      "id": 26,
+      "year": 2019,
+      "basis": null,
+      "metadata": {
+        "table": "2.2",
+        "source_url": "https://www.knbs.or.ke/wp-content/uploads/2023/09/2019-Kenya-population-and-Housing-Census-Volume-1-Population-By-County-And-Sub-County.pdf",
+        "census_year": 2019,
+        "intersex_population": 37
+      },
+      "page_ref": "p. 17",
+      "entity_id": 12,
+      "confidence": 1.0,
+      "created_at": "2025-11-04T14:03:37.351107",
+      "publishable": false,
+      "source_hash": "740093a7e0d3a2f34bc85bebfe343c3b45e6b8401a394470f191d281b280ae4e",
+      "source_page": 17,
+      "extraction_id": 7244,
+      "male_population": 434976,
+      "confidence_score": null,
+      "rural_population": null,
+      "total_population": 867457,
+      "urban_population": null,
+      "female_population": 432444,
+      "quarantine_reason": null,
+      "population_density": null,
+      "source_document_id": 2435
+    },
+    {
+      "id": 64,
+      "year": 2019,
+      "basis": null,
+      "metadata": {
+        "source": "Kenya Census 2019",
+        "bootstrap": true
+      },
+      "page_ref": null,
+      "entity_id": 73,
+      "confidence": 0.95,
+      "created_at": "2026-02-18T02:20:00.914643",
+      "publishable": false,
+      "source_hash": null,
+      "source_page": null,
+      "extraction_id": null,
+      "male_population": null,
+      "confidence_score": null,
+      "rural_population": null,
+      "total_population": 47564296,
+      "urban_population": null,
+      "female_population": null,
+      "quarantine_reason": null,
+      "population_density": null,
+      "source_document_id": 1823
+    },
+    {
+      "id": 79,
+      "year": 2019,
+      "basis": null,
+      "metadata": {
+        "source": "World Bank Development Indicators (2019)",
+        "dataset_id": "SP.POP.TOTL",
+        "source_url": "https://data.worldbank.org/indicator/SP.POP.TOTL?locations=KE"
+      },
+      "page_ref": null,
+      "entity_id": null,
+      "confidence": 1.0,
+      "created_at": "2026-03-25T23:12:41.680005",
+      "publishable": false,
+      "source_hash": null,
+      "source_page": null,
+      "extraction_id": null,
+      "male_population": 25485390,
+      "confidence_score": null,
+      "rural_population": null,
+      "total_population": 51202827,
+      "urban_population": null,
+      "female_population": 25717437,
+      "quarantine_reason": null,
+      "population_density": null,
+      "source_document_id": null
+    }
+  ],
+  "documents": [
+    {
+      "id": 1707,
+      "md5": null,
+      "url": "https://fixtures.example/budgets",
+      "title": "County Budget Execution Summary",
+      "status": "AVAILABLE",
+      "doc_type": "BUDGET",
+      "metadata": {
+        "dataset_id": "fixture-budgets"
+      },
+      "file_path": null,
+      "publisher": "Controller of Budget",
+      "country_id": 1,
+      "created_at": "2025-11-02T03:04:49.328928",
+      "fetch_date": "2025-11-02T03:04:49.328928",
+      "http_status": null,
+      "content_type": null,
+      "last_seen_at": "2025-11-02T03:04:49.328928",
+      "last_verified_at": null
+    },
+    {
+      "id": 1718,
+      "md5": null,
+      "url": "https://www.crakenya.org/county-allocations/",
+      "title": "Estimated based on CRA Equitable Share FY 2023/24",
+      "status": "AVAILABLE",
+      "doc_type": "BUDGET",
+      "metadata": {
+        "data_quality": "estimated",
+        "source_label": "Estimated based on CRA Equitable Share FY 2023/24"
+      },
+      "file_path": null,
+      "publisher": "Controller of Budget",
+      "country_id": 1,
+      "created_at": "2025-11-09T21:39:32.113397",
+      "fetch_date": "2025-11-09T21:39:32.113397",
+      "http_status": null,
+      "content_type": null,
+      "last_seen_at": "2026-04-20T03:29:19.60125",
+      "last_verified_at": null
+    },
+    {
+      "id": 1822,
+      "md5": null,
+      "url": "https://www.treasury.go.ke/public-debt/",
+      "title": "CBK Public Debt - Live Data",
+      "status": "AVAILABLE",
+      "doc_type": "LOAN",
+      "metadata": {},
+      "file_path": null,
+      "publisher": "Central Bank of Kenya",
+      "country_id": 1,
+      "created_at": "2026-02-18T13:14:23.19333",
+      "fetch_date": "2026-02-18T09:30:16.818756",
+      "http_status": null,
+      "content_type": null,
+      "last_seen_at": "2026-02-18T13:14:23.19333",
+      "last_verified_at": null
+    },
+    {
+      "id": 1823,
+      "md5": null,
+      "url": null,
+      "title": "CBK Public Debt Report & KNBS Economic Survey 2025",
+      "status": "FAILED",
+      "doc_type": "LOAN",
+      "metadata": {
+        "scope": "national",
+        "source": "bootstrap",
+        "cbk_csv_latest": "Apr 2025",
+        "status_before_3c": "AVAILABLE"
+      },
+      "file_path": null,
+      "publisher": "Central Bank of Kenya / National Treasury",
+      "country_id": 1,
+      "created_at": "2026-02-18T13:42:10.423029",
+      "fetch_date": "2025-04-30T00:00:00",
+      "http_status": null,
+      "content_type": null,
+      "last_seen_at": "2026-02-18T13:42:10.423029",
+      "last_verified_at": null
+    },
+    {
+      "id": 1836,
+      "md5": null,
+      "url": null,
+      "title": "Report of the Auditor General on the Financial Statements of the National Government for FY 2023/2024",
+      "status": "FAILED",
+      "doc_type": "AUDIT",
+      "metadata": {
+        "scope": "national",
+        "source": "oag_national_audit_data.json",
+        "fiscal_year": "FY2023/24",
+        "opinion_type": "Qualified",
+        "key_statistics": {
+          "minor_findings": 3,
+          "total_findings": 25,
+          "critical_findings": 10,
+          "significant_findings": 12,
+          "total_amount_flagged_kes": 981300000000,
+          "total_ministries_audited": 21,
+          "recurring_issues_from_prior_year": 18,
+          "response_rate_to_previous_queries": "34%"
+        },
+        "auditor_general": "Nancy Gathungu, CPA",
+        "status_before_3c": "AVAILABLE",
+        "emphasis_of_matter": [
+          "Debt service costs consuming 62.8% of ordinary revenue",
+          "Deteriorating fiscal sustainability indicators",
+          "Recurring nature of audit findings from previous years"
+        ],
+        "basis_for_qualification": [
+          "Unexplained Consolidated Fund balance differences of KES 156.8 billion",
+          "Incomplete government property register affecting asset valuation",
+          "Unresolved pending bills of KES 589.7 billion",
+          "Unsupported expenditures across multiple votes"
+        ],
+        "total_amount_questioned": "KES 981.3B"
+      },
+      "file_path": null,
+      "publisher": "Office of the Auditor General",
+      "country_id": 1,
+      "created_at": "2026-02-20T06:39:06.296693",
+      "fetch_date": "2024-12-15T00:00:00",
+      "http_status": null,
+      "content_type": null,
+      "last_seen_at": "2026-02-20T06:39:06.296689",
+      "last_verified_at": null
+    },
+    {
+      "id": 1840,
+      "md5": null,
+      "url": "https://www.centralbank.go.ke/public-debt/",
+      "title": "CBK Public Debt Statistical Bulletin — April 2025",
+      "status": "AVAILABLE",
+      "doc_type": "LOAN",
+      "metadata": {},
+      "file_path": null,
+      "publisher": "National Treasury of Kenya",
+      "country_id": 1,
+      "created_at": "2026-02-21T22:52:00.252947",
+      "fetch_date": "2026-02-21T22:52:00.252161",
+      "http_status": null,
+      "content_type": null,
+      "last_seen_at": "2026-02-21T22:52:00.252944",
+      "last_verified_at": null
+    },
+    {
+      "id": 2383,
+      "md5": null,
+      "url": "https://www.treasury.go.ke/sites/default/files/2025-Budget-Review-and-Outlook-Paper-1.pdf",
+      "title": "Treasury BROP FY 2024/25",
+      "status": "AVAILABLE",
+      "doc_type": "REPORT",
+      "metadata": {},
+      "file_path": null,
+      "publisher": "Office of the Controller of Budget (OCOB)",
+      "country_id": 1,
+      "created_at": "2026-04-26T20:05:42.168416",
+      "fetch_date": "2026-04-26T20:05:42.167136",
+      "http_status": null,
+      "content_type": null,
+      "last_seen_at": "2026-04-26T20:05:42.168412",
+      "last_verified_at": null
+    },
+    {
+      "id": 2430,
+      "md5": null,
+      "url": "https://www.centralbank.go.ke/uploads/statistical_bulletin/107371226_Statistical%20Bulletin%20-%20December%202025.pdf",
+      "title": "Instrument register — CBK public debt statistics (domestic instruments: Statistical Bulletin, December 2025, Tables 4.1.3/4.1.4; external rows: April 2025 baseline, not yet re-sourced)",
+      "status": "AVAILABLE",
+      "doc_type": "LOAN",
+      "metadata": {},
+      "file_path": null,
+      "publisher": "Central Bank of Kenya",
+      "country_id": 1,
+      "created_at": "2026-09-05T02:42:40.037352",
+      "fetch_date": "2026-09-05T02:42:40.036174",
+      "http_status": null,
+      "content_type": null,
+      "last_seen_at": "2026-09-05T02:42:40.03735",
+      "last_verified_at": null
+    },
+    {
+      "id": 2435,
+      "md5": "04ff63993e936a97f1a95436a735ae93",
+      "url": "https://www.knbs.or.ke/wp-content/uploads/2023/09/2019-Kenya-population-and-Housing-Census-Volume-1-Population-By-County-And-Sub-County.pdf",
+      "title": "2019 Kenya Population and Housing Census Volume I: Population by County and Sub-County",
+      "status": "AVAILABLE",
+      "doc_type": "REPORT",
+      "metadata": {
+        "dataset_id": "knbs_census_2019"
+      },
+      "file_path": "data/seeding/cache/pdfs/d0b1c5f5f7effc641d1c0069360223f735eddd8cbece3a0d24381177d8db779d.pdf",
+      "publisher": "Kenya National Bureau of Statistics",
+      "country_id": 1,
+      "created_at": "2026-09-05T16:28:10.601814",
+      "fetch_date": "2026-09-05T16:28:10.598556",
+      "http_status": 200,
+      "content_type": "application/pdf",
+      "last_seen_at": "2026-09-29T02:46:06.901987",
+      "last_verified_at": "2026-09-23T02:42:27.262269"
+    },
+    {
+      "id": 2541,
+      "md5": "f495cb595c81583af7d8bbd46e2279d6",
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf",
+      "title": "AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf",
+      "status": "AVAILABLE",
+      "doc_type": "AUDIT",
+      "metadata": {
+        "dataset_id": "oag_county_audits",
+        "registration": "discovered_not_fetched",
+        "extracted_md5": "f495cb595c81583af7d8bbd46e2279d6",
+        "oag_discovery": {
+          "kind": "assemblies",
+          "note": null,
+          "entity": null,
+          "found_on": "year_page",
+          "listed_at": "https://www.oagkenya.go.ke/2024-2025-county-government-audit-reports/",
+          "fiscal_year": "2024/2025"
+        },
+        "extraction_stats": {
+          "pages": 246,
+          "partial": false,
+          "refused": [],
+          "findings": 582,
+          "extractor": "oag_county_volume",
+          "ocr_pages": 1,
+          "fiscal_year": "2024/2025",
+          "volume_kind": "assemblies",
+          "rejected_cid": 0,
+          "contents_entries": 47,
+          "missing_counties": [],
+          "unreadable_pages": [
+            9
+          ],
+          "chapters_attributed": 47,
+          "fiscal_year_sources": [
+            "filename",
+            "oag_year_page",
+            "title_page"
+          ],
+          "chapters_with_no_finding": [],
+          "unreadable_chapter_pages": []
+        },
+        "last_extraction_attempt": {
+          "status": "complete"
+        }
+      },
+      "file_path": "data/seeding/cache/pdfs/8983b245250ec8d78f101a2cf33fd1da7a2a037bc69ab9b45fff4e9621fb5ecc.pdf",
+      "publisher": "Office of the Auditor-General",
+      "country_id": 1,
+      "created_at": "2026-09-28T02:39:13.822362",
+      "fetch_date": "2026-09-28T02:39:13.325551",
+      "http_status": 200,
+      "content_type": "application/pdf",
+      "last_seen_at": "2026-09-29T02:31:20.991418",
+      "last_verified_at": "2026-09-29T02:31:20.970917"
+    }
+  ],
+  "audits": [
+    {
+      "id": 870,
+      "basis": null,
+      "amount": 589700000000.0,
+      "status": "unresolved",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 53,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.96316",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "unresolved",
+          "category": "fiscal_risk",
+          "query_type": "Pending Bills",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_001",
+          "report_section": "National Government Consolidated Accounts",
+          "severity_label": "high",
+          "amount_involved": "KES 589.7B"
+        }
+      ],
+      "query_type": "Pending Bills",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Accumulated pending bills of KES 589.7 billion remain unresolved across government ministries, departments and agencies, posing significant fiscal risk to ongoing service delivery",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "retired_legacy_fixture",
+      "external_reference": null,
+      "recommended_action": "The National Treasury should develop a comprehensive pending bills clearance strategy with prioritized payment schedules",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 871,
+      "basis": null,
+      "amount": 12300000000.0,
+      "status": "under_investigation",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 1,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963167",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "under_investigation",
+          "category": "procurement_issue",
+          "query_type": "Procurement Irregularities",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_002",
+          "report_section": "Ministry of Health Vote",
+          "severity_label": "high",
+          "amount_involved": "KES 12.3B"
+        }
+      ],
+      "query_type": "Procurement Irregularities",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Irregular procurement of medical supplies worth KES 12.3 billion without competitive bidding, including COVID-19 related emergency purchases that lacked proper documentation",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "retired_legacy_fixture",
+      "external_reference": null,
+      "recommended_action": "Ministry should provide full documentation for emergency procurements and ensure future compliance with PPDA Act 2015",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 872,
+      "basis": null,
+      "amount": 47800000000.0,
+      "status": "under_review",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 55,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963168",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "under_review",
+          "category": "expenditure_variance",
+          "query_type": "Cost Overruns",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_003",
+          "report_section": "Ministry of Roads and Transport Vote",
+          "severity_label": "high",
+          "amount_involved": "KES 47.8B"
+        }
+      ],
+      "query_type": "Cost Overruns",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Road construction project cost overruns totaling KES 47.8 billion across 23 major infrastructure projects, with some projects exceeding original estimates by over 200%",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "retired_legacy_fixture",
+      "external_reference": null,
+      "recommended_action": "Implement project cost management controls and conduct forensic audits on projects with overruns exceeding 50%",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 873,
+      "basis": null,
+      "amount": 8700000000.0,
+      "status": "disclaimer",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 51,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963169",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "disclaimer",
+          "category": "documentation_gap",
+          "query_type": "Unaccounted Expenditure",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_004",
+          "report_section": "Ministry of Defence Vote",
+          "severity_label": "high",
+          "amount_involved": "KES 8.7B"
+        }
+      ],
+      "query_type": "Unaccounted Expenditure",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Expenditure amounting to KES 8.7 billion classified under 'classified operations' lacked verifiable supporting documentation accessible to the Auditor General",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "retired_legacy_fixture",
+      "external_reference": null,
+      "recommended_action": "Establish secure audit arrangements for classified expenditure in line with Section 69 of the Public Finance Management Act",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 874,
+      "basis": null,
+      "amount": 6200000000.0,
+      "status": "pending_response",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 2,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.96317",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "pending_response",
+          "category": "documentation_gap",
+          "query_type": "Missing Documentation",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_005",
+          "report_section": "Ministry of Education Vote",
+          "severity_label": "medium",
+          "amount_involved": "KES 6.2B"
+        }
+      ],
+      "query_type": "Missing Documentation",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Grants to secondary schools and TVET institutions totaling KES 6.2 billion disbursed without adequate confirmation of receipt or utilization reports from beneficiary institutions",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "retired_legacy_fixture",
+      "external_reference": null,
+      "recommended_action": "Require mandatory utilization certificates before subsequent disbursements and conduct spot-check audits",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 875,
+      "basis": null,
+      "amount": 1170000000000.0,
+      "status": "ongoing_concern",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 53,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.96317",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "ongoing_concern",
+          "category": "fiscal_risk",
+          "query_type": "Debt Management",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_006",
+          "report_section": "Public Debt Management",
+          "severity_label": "high",
+          "amount_involved": "KES 1.17T"
+        }
+      ],
+      "query_type": "Debt Management",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "National debt service costs rose to KES 1.17 trillion (62.8% of ordinary revenue), threatening fiscal sustainability. External debt refinancing losses from currency depreciation amounted to KES 234 billion",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "retired_legacy_fixture",
+      "external_reference": null,
+      "recommended_action": "Diversify debt portfolio towards longer-tenor concessional borrowing and establish hedging mechanisms for foreign currency exposure",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 876,
+      "basis": null,
+      "amount": 3400000000.0,
+      "status": "under_investigation",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 50,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963171",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "under_investigation",
+          "category": "payroll_fraud",
+          "query_type": "Payroll Irregularities",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_007",
+          "report_section": "Ministry of Interior Vote",
+          "severity_label": "high",
+          "amount_involved": "KES 3.4B"
+        }
+      ],
+      "query_type": "Payroll Irregularities",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Ghost workers and irregular payroll entries costing KES 3.4 billion identified across National Police Service and Kenya Prisons Service payrolls",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "retired_legacy_fixture",
+      "external_reference": null,
+      "recommended_action": "Conduct biometric verification of all uniformed services personnel and integrate IPPD with IPRS for real-time validation",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 877,
+      "basis": null,
+      "amount": 9100000000.0,
+      "status": "under_investigation",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 54,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963172",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "under_investigation",
+          "category": "procurement_issue",
+          "query_type": "Subsidy Program Irregularities",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_008",
+          "report_section": "Ministry of Agriculture Vote",
+          "severity_label": "high",
+          "amount_involved": "KES 9.1B"
+        }
+      ],
+      "query_type": "Subsidy Program Irregularities",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Fertilizer subsidy programme disbursed KES 9.1 billion with significant irregularities including payments to unregistered farmers and inflated pricing by contracted suppliers",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "retired_legacy_fixture",
+      "external_reference": null,
+      "recommended_action": "Digitize farmer registration and implement e-voucher system to prevent diversion of subsidized inputs",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 878,
+      "basis": null,
+      "amount": 4600000000.0,
+      "status": "under_review",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 56,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963173",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "under_review",
+          "category": "revenue_shortfall",
+          "query_type": "Revenue Collection Gap",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_009",
+          "report_section": "Ministry of Energy Vote",
+          "severity_label": "medium",
+          "amount_involved": "KES 4.6B"
+        }
+      ],
+      "query_type": "Revenue Collection Gap",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Kenya Pipeline Company and National Oil Corporation revenue remittances to the Exchequer fell short by KES 4.6 billion against projected targets, with unreconciled pipeline throughput fees",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "retired_legacy_fixture",
+      "external_reference": null,
+      "recommended_action": "Automate revenue collection and remittance monitoring for all energy sector parastatals",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 879,
+      "basis": null,
+      "amount": 28300000000.0,
+      "status": "unresolved",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 57,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963173",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "unresolved",
+          "category": "project_delay",
+          "query_type": "Stalled Projects",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_010",
+          "report_section": "Ministry of Water Vote",
+          "severity_label": "medium",
+          "amount_involved": "KES 28.3B"
+        }
+      ],
+      "query_type": "Stalled Projects",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "14 water and irrigation projects worth KES 28.3 billion remained stalled or behind schedule, with accumulated idle costs and contractor claims totaling KES 5.7 billion",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "retired_legacy_fixture",
+      "external_reference": null,
+      "recommended_action": "Establish project monitoring dashboards and enforce liquidated damages clauses for delayed contractors",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 880,
+      "basis": null,
+      "amount": 7200000000.0,
+      "status": "under_review",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 60,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963174",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "under_review",
+          "category": "expenditure_variance",
+          "query_type": "ICT Project Overruns",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_011",
+          "report_section": "Ministry of ICT Vote",
+          "severity_label": "medium",
+          "amount_involved": "KES 7.2B"
+        }
+      ],
+      "query_type": "ICT Project Overruns",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Huduma Namba and Integrated National Management System projects exceeded budget by KES 7.2 billion with incomplete deliverables and vendor lock-in concerns",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "retired_legacy_fixture",
+      "external_reference": null,
+      "recommended_action": "Commission independent technology assessment and require open-standard compliance in all future ICT procurements",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 881,
+      "basis": null,
+      "amount": 2100000000.0,
+      "status": "pending_response",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 52,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963175",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "pending_response",
+          "category": "documentation_gap",
+          "query_type": "Embassy Expenditure",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_012",
+          "report_section": "Ministry of Foreign Affairs Vote",
+          "severity_label": "medium",
+          "amount_involved": "KES 2.1B"
+        }
+      ],
+      "query_type": "Embassy Expenditure",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "64 diplomatic missions had unexplained expenditure variances of KES 2.1 billion, with 12 missions failing to submit accounts for the entire fiscal year",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "retired_legacy_fixture",
+      "external_reference": null,
+      "recommended_action": "Deploy unified financial management systems across all missions and require quarterly reporting compliance",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 882,
+      "basis": null,
+      "amount": 1200000000000.0,
+      "status": "ongoing_concern",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 59,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963175",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "ongoing_concern",
+          "category": "asset_management",
+          "query_type": "Asset Management",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_013",
+          "report_section": "Ministry of Lands Vote",
+          "severity_label": "high",
+          "amount_involved": "KES 1.2T"
+        }
+      ],
+      "query_type": "Asset Management",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Government immovable property register remains incomplete — an estimated 40% of government-owned land parcels worth approximately KES 1.2 trillion lack updated title documentation",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "retired_legacy_fixture",
+      "external_reference": null,
+      "recommended_action": "Fast-track the National Land Information Management System digitization and conduct nationwide verification of government properties",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 883,
+      "basis": null,
+      "amount": 4800000000.0,
+      "status": "under_review",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 61,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963176",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "under_review",
+          "category": "programme_leakage",
+          "query_type": "Social Protection Leakage",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_014",
+          "report_section": "Ministry of Labour Vote",
+          "severity_label": "medium",
+          "amount_involved": "KES 4.8B"
+        }
+      ],
+      "query_type": "Social Protection Leakage",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Inua Jamii and cash transfer programmes had identified inclusion errors affecting 340,000 ineligible beneficiaries, with leakage estimated at KES 4.8 billion annually",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "retired_legacy_fixture",
+      "external_reference": null,
+      "recommended_action": "Implement biometric authentication for all social protection disbursements and conduct beneficiary re-registration",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 884,
+      "basis": null,
+      "amount": 1800000000.0,
+      "status": "noted",
+      "page_ref": null,
+      "severity": "INFO",
+      "entity_id": 68,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963177",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "noted",
+          "category": "infrastructure_deficit",
+          "query_type": "Facility Maintenance",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_015",
+          "report_section": "Correctional Services Vote",
+          "severity_label": "low",
+          "amount_involved": "KES 1.8B"
+        }
+      ],
+      "query_type": "Facility Maintenance",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Correctional facilities across the country have accumulated a maintenance backlog costing KES 1.8 billion, with 28 facilities rated as structurally compromised",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "retired_legacy_fixture",
+      "external_reference": null,
+      "recommended_action": "Develop a 5-year facility rehabilitation plan with allocated annual budget provisions",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 885,
+      "basis": null,
+      "amount": 3200000000.0,
+      "status": "under_review",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 62,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963177",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "under_review",
+          "category": "revenue_shortfall",
+          "query_type": "Revenue Leakage",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_016",
+          "report_section": "Ministry of Tourism Vote",
+          "severity_label": "medium",
+          "amount_involved": "KES 3.2B"
+        }
+      ],
+      "query_type": "Revenue Leakage",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "National parks and game reserves revenue collection shortfall of KES 3.2 billion due to outdated collection systems and unmonitored entry points",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "retired_legacy_fixture",
+      "external_reference": null,
+      "recommended_action": "Deploy electronic revenue collection at all park gates and automate reconciliation with KWS headquarters",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 886,
+      "basis": null,
+      "amount": 2900000000.0,
+      "status": "under_investigation",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 63,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963178",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "under_investigation",
+          "category": "fund_mismanagement",
+          "query_type": "Fund Mismanagement",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_017",
+          "report_section": "Ministry of Youth Vote",
+          "severity_label": "medium",
+          "amount_involved": "KES 2.9B"
+        }
+      ],
+      "query_type": "Fund Mismanagement",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Youth Enterprise Development Fund and Sports Fund disbursements totaling KES 2.9 billion lacked proper beneficiary verification and recovery mechanisms for non-performing loans",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "retired_legacy_fixture",
+      "external_reference": null,
+      "recommended_action": "Strengthen credit assessment processes and establish legal recovery framework for defaulting beneficiaries",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 887,
+      "basis": null,
+      "amount": 1400000000.0,
+      "status": "noted",
+      "page_ref": null,
+      "severity": "INFO",
+      "entity_id": 58,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963179",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "noted",
+          "category": "low_absorption",
+          "query_type": "Climate Fund Utilization",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_018",
+          "report_section": "Ministry of Environment Vote",
+          "severity_label": "low",
+          "amount_involved": "KES 1.4B"
+        }
+      ],
+      "query_type": "Climate Fund Utilization",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "National Climate Change Action Plan funds of KES 1.4 billion had low absorption rates (32%) with significant funds returned to Treasury unspent",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "retired_legacy_fixture",
+      "external_reference": null,
+      "recommended_action": "Build implementation capacity within the ministry and streamline climate fund disbursement procedures",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 888,
+      "basis": null,
+      "amount": 5300000000.0,
+      "status": "under_review",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 64,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963179",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "under_review",
+          "category": "programme_management",
+          "query_type": "ASAL Fund Irregularities",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_019",
+          "report_section": "Ministry of EAC and ASALs Vote",
+          "severity_label": "medium",
+          "amount_involved": "KES 5.3B"
+        }
+      ],
+      "query_type": "ASAL Fund Irregularities",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "ASAL development fund disbursements of KES 5.3 billion had inadequate monitoring and evaluation, with 60% of funded projects lacking completion reports",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "retired_legacy_fixture",
+      "external_reference": null,
+      "recommended_action": "Establish integrated M&E framework and require project completion certificates before final payment tranches",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 889,
+      "basis": null,
+      "amount": 2700000000.0,
+      "status": "under_review",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 65,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.96318",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "under_review",
+          "category": "revenue_shortfall",
+          "query_type": "Mineral Royalty Gaps",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_020",
+          "report_section": "Ministry of Mining Vote",
+          "severity_label": "medium",
+          "amount_involved": "KES 2.7B"
+        }
+      ],
+      "query_type": "Mineral Royalty Gaps",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Mineral royalty collections fell short by KES 2.7 billion against estimated potential, with inadequate monitoring of mining operations and under-declared production volumes",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "retired_legacy_fixture",
+      "external_reference": null,
+      "recommended_action": "Deploy real-time production monitoring systems at major mining sites and strengthen royalty audit capacity",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 890,
+      "basis": null,
+      "amount": 8400000000.0,
+      "status": "ongoing_concern",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 66,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.96318",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "ongoing_concern",
+          "category": "fund_sustainability",
+          "query_type": "MSME Fund Disbursement",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_021",
+          "report_section": "Ministry of Co-operatives Vote",
+          "severity_label": "medium",
+          "amount_involved": "KES 8.4B"
+        }
+      ],
+      "query_type": "MSME Fund Disbursement",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Hustler Fund and MSME development fund disbursements of KES 8.4 billion had repayment rates below 40%, threatening fund sustainability",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "retired_legacy_fixture",
+      "external_reference": null,
+      "recommended_action": "Implement credit scoring for disbursements and integrate with CRB for defaulter tracking",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 891,
+      "basis": null,
+      "amount": 2100000000.0,
+      "status": "noted",
+      "page_ref": null,
+      "severity": "INFO",
+      "entity_id": 67,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963181",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "noted",
+          "category": "low_absorption",
+          "query_type": "Gender Fund Utilization",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_022",
+          "report_section": "Ministry of Public Service Vote",
+          "severity_label": "low",
+          "amount_involved": "KES 2.1B"
+        }
+      ],
+      "query_type": "Gender Fund Utilization",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "National Gender and Equality Commission programmes spent only KES 890 million of KES 2.1 billion allocation, with procurement delays and poor project implementation",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "retired_legacy_fixture",
+      "external_reference": null,
+      "recommended_action": "Conduct capacity assessment and develop quarterly expenditure targets with management accountability",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 892,
+      "basis": null,
+      "amount": 34200000000.0,
+      "status": "under_investigation",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 53,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963182",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "under_investigation",
+          "category": "internal_controls",
+          "query_type": "IFMIS System Weaknesses",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_023",
+          "report_section": "National Government IT Controls",
+          "severity_label": "high",
+          "amount_involved": "KES 34.2B"
+        }
+      ],
+      "query_type": "IFMIS System Weaknesses",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "The Integrated Financial Management Information System (IFMIS) had 847 override transactions worth KES 34.2 billion where standard controls were bypassed without adequate justification",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "retired_legacy_fixture",
+      "external_reference": null,
+      "recommended_action": "Review and restrict override privileges, implement real-time monitoring of override transactions, and require dual authorization for all overrides above KES 10M",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 893,
+      "basis": null,
+      "amount": 156800000000.0,
+      "status": "ongoing_concern",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 53,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963182",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "ongoing_concern",
+          "category": "reconciliation_gap",
+          "query_type": "Consolidated Fund Reconciliation",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_024",
+          "report_section": "Consolidated Fund Statement",
+          "severity_label": "high",
+          "amount_involved": "KES 156.8B"
+        }
+      ],
+      "query_type": "Consolidated Fund Reconciliation",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "Material differences of KES 156.8 billion between CBK records and National Treasury records for the Consolidated Fund remain unexplained as at end of FY 2023/24",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "retired_legacy_fixture",
+      "external_reference": null,
+      "recommended_action": "Establish a dedicated reconciliation unit and complete monthly reconciliation with CBK within 30 days of period end",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    },
+    {
+      "id": 894,
+      "basis": null,
+      "amount": null,
+      "status": "official_opinion",
+      "page_ref": null,
+      "severity": "WARNING",
+      "entity_id": 73,
+      "period_id": 9,
+      "audit_year": 2023,
+      "created_at": "2026-04-20T02:38:30.963183",
+      "provenance": [
+        {
+          "scope": "national",
+          "source": "oag_national_audit_data.json",
+          "status": "official_opinion",
+          "category": "audit_opinion",
+          "query_type": "Overall Audit Opinion",
+          "date_raised": "2024-12-15",
+          "external_id": "NAT_025",
+          "report_section": "Auditor General's Report - Overall",
+          "severity_label": "high",
+          "amount_involved": "KES 0"
+        }
+      ],
+      "query_type": "Overall Audit Opinion",
+      "publishable": false,
+      "source_hash": null,
+      "finding_text": "The Auditor General issued a qualified opinion on the National Government financial statements for FY 2023/24, citing material misstatements in pending bills, payroll, and asset registers across multiple ministries",
+      "audit_opinion": null,
+      "extraction_id": null,
+      "confidence_score": null,
+      "follow_up_status": null,
+      "quarantine_reason": "retired_legacy_fixture",
+      "external_reference": null,
+      "recommended_action": "All accounting officers should address audit queries within the statutory 60-day response window and implement previous audit recommendations",
+      "source_document_id": 1836,
+      "management_response": null,
+      "validation_warnings": null
+    }
+  ],
+  "audit_inbound_constraints": [],
+  "source_references": [
+    {
+      "table": "audits",
+      "column": "source_document_id",
+      "rows": [
+        {
+          "id": 870,
+          "source_document_id": 1836
+        },
+        {
+          "id": 871,
+          "source_document_id": 1836
+        },
+        {
+          "id": 872,
+          "source_document_id": 1836
+        },
+        {
+          "id": 873,
+          "source_document_id": 1836
+        },
+        {
+          "id": 874,
+          "source_document_id": 1836
+        },
+        {
+          "id": 875,
+          "source_document_id": 1836
+        },
+        {
+          "id": 876,
+          "source_document_id": 1836
+        },
+        {
+          "id": 877,
+          "source_document_id": 1836
+        },
+        {
+          "id": 878,
+          "source_document_id": 1836
+        },
+        {
+          "id": 879,
+          "source_document_id": 1836
+        },
+        {
+          "id": 880,
+          "source_document_id": 1836
+        },
+        {
+          "id": 881,
+          "source_document_id": 1836
+        },
+        {
+          "id": 882,
+          "source_document_id": 1836
+        },
+        {
+          "id": 883,
+          "source_document_id": 1836
+        },
+        {
+          "id": 884,
+          "source_document_id": 1836
+        },
+        {
+          "id": 885,
+          "source_document_id": 1836
+        },
+        {
+          "id": 886,
+          "source_document_id": 1836
+        },
+        {
+          "id": 887,
+          "source_document_id": 1836
+        },
+        {
+          "id": 888,
+          "source_document_id": 1836
+        },
+        {
+          "id": 889,
+          "source_document_id": 1836
+        },
+        {
+          "id": 890,
+          "source_document_id": 1836
+        },
+        {
+          "id": 891,
+          "source_document_id": 1836
+        },
+        {
+          "id": 892,
+          "source_document_id": 1836
+        },
+        {
+          "id": 893,
+          "source_document_id": 1836
+        },
+        {
+          "id": 894,
+          "source_document_id": 1836
+        },
+        {
+          "id": 5135,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5136,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5137,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5138,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5139,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5140,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5141,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5142,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5143,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5144,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5145,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5146,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5147,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5148,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5149,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5150,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5151,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5152,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5153,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5154,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5155,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5156,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5157,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5158,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5159,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5160,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5161,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5162,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5163,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5164,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5165,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5166,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5167,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5168,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5169,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5170,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5171,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5172,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5173,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5174,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5175,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5176,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5177,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5178,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5179,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5180,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5181,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5182,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5183,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5184,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5185,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5186,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5187,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5188,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5189,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5190,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5191,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5192,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5193,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5194,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5195,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5196,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5197,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5198,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5199,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5200,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5201,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5202,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5203,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5204,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5205,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5206,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5207,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5208,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5209,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5210,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5211,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5212,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5213,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5214,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5215,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5216,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5217,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5218,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5219,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5220,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5221,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5222,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5223,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5224,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5225,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5226,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5227,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5228,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5229,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5230,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5231,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5232,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5233,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5234,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5235,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5236,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5237,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5238,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5239,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5240,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5241,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5242,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5243,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5244,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5245,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5246,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5247,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5248,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5249,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5250,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5251,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5252,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5253,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5254,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5255,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5256,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5257,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5258,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5259,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5260,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5261,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5262,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5263,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5264,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5265,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5266,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5267,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5268,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5269,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5270,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5271,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5272,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5273,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5274,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5275,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5276,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5277,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5278,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5279,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5280,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5281,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5282,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5283,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5284,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5285,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5286,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5287,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5288,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5289,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5290,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5291,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5292,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5293,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5294,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5295,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5296,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5297,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5298,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5299,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5300,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5301,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5302,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5303,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5304,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5305,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5306,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5307,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5308,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5309,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5310,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5311,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5312,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5313,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5314,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5315,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5316,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5317,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5318,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5319,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5320,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5321,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5322,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5323,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5324,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5325,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5326,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5327,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5328,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5329,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5330,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5331,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5332,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5333,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5334,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5335,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5336,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5337,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5338,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5339,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5340,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5341,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5342,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5343,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5344,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5345,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5346,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5347,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5348,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5349,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5350,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5351,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5352,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5353,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5354,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5355,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5356,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5357,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5358,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5359,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5360,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5361,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5362,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5363,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5364,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5365,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5366,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5367,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5368,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5369,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5370,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5371,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5372,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5373,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5374,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5375,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5376,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5377,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5378,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5379,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5380,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5381,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5382,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5383,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5384,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5385,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5386,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5387,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5388,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5389,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5390,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5391,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5392,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5393,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5394,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5395,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5396,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5397,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5398,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5399,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5400,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5401,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5402,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5403,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5404,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5405,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5406,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5407,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5408,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5409,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5410,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5411,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5412,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5413,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5414,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5415,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5416,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5417,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5418,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5419,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5420,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5421,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5422,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5423,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5424,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5425,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5426,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5427,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5428,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5429,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5430,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5431,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5432,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5433,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5434,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5435,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5436,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5437,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5438,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5439,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5440,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5441,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5442,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5443,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5444,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5445,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5446,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5447,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5448,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5449,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5450,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5451,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5452,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5453,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5454,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5455,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5456,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5457,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5458,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5459,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5460,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5461,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5462,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5463,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5464,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5465,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5466,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5467,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5468,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5469,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5470,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5471,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5472,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5473,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5474,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5475,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5476,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5477,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5478,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5479,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5480,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5481,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5482,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5483,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5484,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5485,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5486,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5487,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5488,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5489,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5490,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5491,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5492,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5493,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5494,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5495,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5496,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5497,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5498,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5499,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5500,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5501,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5502,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5503,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5504,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5505,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5506,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5507,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5508,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5509,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5510,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5511,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5512,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5513,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5514,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5515,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5516,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5517,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5518,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5519,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5520,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5521,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5522,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5523,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5524,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5525,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5526,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5527,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5528,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5529,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5530,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5531,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5532,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5533,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5534,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5535,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5536,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5537,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5538,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5539,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5540,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5541,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5542,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5543,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5544,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5545,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5546,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5547,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5548,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5549,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5550,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5551,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5552,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5553,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5554,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5555,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5556,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5557,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5558,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5559,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5560,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5561,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5562,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5563,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5564,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5565,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5566,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5567,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5568,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5569,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5570,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5571,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5572,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5573,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5574,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5575,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5576,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5577,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5578,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5579,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5580,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5581,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5582,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5583,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5584,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5585,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5586,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5587,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5588,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5589,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5590,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5591,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5592,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5593,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5594,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5595,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5596,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5597,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5598,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5599,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5600,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5601,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5602,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5603,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5604,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5605,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5606,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5607,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5608,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5609,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5610,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5611,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5612,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5613,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5614,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5615,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5616,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5617,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5618,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5619,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5620,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5621,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5622,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5623,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5624,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5625,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5626,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5627,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5628,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5629,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5630,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5631,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5632,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5633,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5634,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5635,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5636,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5637,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5638,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5639,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5640,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5641,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5642,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5643,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5644,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5645,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5646,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5647,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5648,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5649,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5650,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5651,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5652,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5653,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5654,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5655,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5656,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5657,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5658,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5659,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5660,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5661,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5662,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5663,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5664,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5665,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5666,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5667,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5668,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5669,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5670,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5671,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5672,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5673,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5674,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5675,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5676,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5677,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5678,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5679,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5680,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5681,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5682,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5683,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5684,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5685,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5686,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5687,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5688,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5689,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5690,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5691,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5692,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5693,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5694,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5695,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5696,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5697,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5698,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5699,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5700,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5701,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5702,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5703,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5704,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5705,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5706,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5707,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5708,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5709,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5710,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5711,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5712,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5713,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5714,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5715,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5716,
+          "source_document_id": 2541
+        }
+      ]
+    },
+    {
+      "table": "budget_lines",
+      "column": "source_document_id",
+      "rows": []
+    },
+    {
+      "table": "debt_instruments",
+      "column": "source_document_id",
+      "rows": []
+    },
+    {
+      "table": "debt_timeline",
+      "column": "source_document_id",
+      "rows": []
+    },
+    {
+      "table": "economic_indicators",
+      "column": "source_document_id",
+      "rows": [
+        {
+          "id": 86,
+          "source_document_id": 1823
+        },
+        {
+          "id": 87,
+          "source_document_id": 1823
+        }
+      ]
+    },
+    {
+      "table": "extractions",
+      "column": "source_document_id",
+      "rows": [
+        {
+          "id": 4329,
+          "source_document_id": 2435
+        },
+        {
+          "id": 4330,
+          "source_document_id": 2435
+        },
+        {
+          "id": 4331,
+          "source_document_id": 2435
+        },
+        {
+          "id": 4332,
+          "source_document_id": 2435
+        },
+        {
+          "id": 4333,
+          "source_document_id": 2435
+        },
+        {
+          "id": 4334,
+          "source_document_id": 2435
+        },
+        {
+          "id": 4335,
+          "source_document_id": 2435
+        },
+        {
+          "id": 4336,
+          "source_document_id": 2435
+        },
+        {
+          "id": 4337,
+          "source_document_id": 2435
+        },
+        {
+          "id": 4338,
+          "source_document_id": 2435
+        },
+        {
+          "id": 4339,
+          "source_document_id": 2435
+        },
+        {
+          "id": 4340,
+          "source_document_id": 2435
+        },
+        {
+          "id": 4341,
+          "source_document_id": 2435
+        },
+        {
+          "id": 4342,
+          "source_document_id": 2435
+        },
+        {
+          "id": 4343,
+          "source_document_id": 2435
+        },
+        {
+          "id": 4344,
+          "source_document_id": 2435
+        },
+        {
+          "id": 4345,
+          "source_document_id": 2435
+        },
+        {
+          "id": 5615,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5616,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5617,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5618,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5619,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5620,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5621,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5622,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5623,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5624,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5625,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5626,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5627,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5628,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5629,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5630,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5631,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5632,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5633,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5634,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5635,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5636,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5637,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5638,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5639,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5640,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5641,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5642,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5643,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5644,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5645,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5646,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5647,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5648,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5649,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5650,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5651,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5652,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5653,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5654,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5655,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5656,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5657,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5658,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5659,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5660,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5661,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5662,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5663,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5664,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5665,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5666,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5667,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5668,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5669,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5670,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5671,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5672,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5673,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5674,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5675,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5676,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5677,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5678,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5679,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5680,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5681,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5682,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5683,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5684,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5685,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5686,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5687,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5688,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5689,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5690,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5691,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5692,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5693,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5694,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5695,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5696,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5697,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5698,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5699,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5700,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5701,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5702,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5703,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5704,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5705,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5706,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5707,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5708,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5709,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5710,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5711,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5712,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5713,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5714,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5715,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5716,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5717,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5718,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5719,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5720,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5721,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5722,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5723,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5724,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5725,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5726,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5727,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5728,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5729,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5730,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5731,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5732,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5733,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5734,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5735,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5736,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5737,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5738,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5739,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5740,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5741,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5742,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5743,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5744,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5745,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5746,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5747,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5748,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5749,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5750,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5751,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5752,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5753,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5754,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5755,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5756,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5757,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5758,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5759,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5760,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5761,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5762,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5763,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5764,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5765,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5766,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5767,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5768,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5769,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5770,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5771,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5772,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5773,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5774,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5775,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5776,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5777,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5778,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5779,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5780,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5781,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5782,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5783,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5784,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5785,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5786,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5787,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5788,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5789,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5790,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5791,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5792,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5793,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5794,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5795,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5796,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5797,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5798,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5799,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5800,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5801,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5802,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5803,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5804,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5805,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5806,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5807,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5808,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5809,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5810,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5811,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5812,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5813,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5814,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5815,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5816,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5817,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5818,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5819,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5820,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5821,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5822,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5823,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5824,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5825,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5826,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5827,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5828,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5829,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5830,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5831,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5832,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5833,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5834,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5835,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5836,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5837,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5838,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5839,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5840,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5841,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5842,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5843,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5844,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5845,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5846,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5847,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5848,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5849,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5850,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5851,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5852,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5853,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5854,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5855,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5856,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5857,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5858,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5859,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5860,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5861,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5862,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5863,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5864,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5865,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5866,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5867,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5868,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5869,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5870,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5871,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5872,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5873,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5874,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5875,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5876,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5877,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5878,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5879,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5880,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5881,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5882,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5883,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5884,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5885,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5886,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5887,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5888,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5889,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5890,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5891,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5892,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5893,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5894,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5895,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5896,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5897,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5898,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5899,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5900,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5901,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5902,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5903,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5904,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5905,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5906,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5907,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5908,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5909,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5910,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5911,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5912,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5913,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5914,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5915,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5916,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5917,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5918,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5919,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5920,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5921,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5922,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5923,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5924,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5925,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5926,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5927,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5928,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5929,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5930,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5931,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5932,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5933,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5934,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5935,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5936,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5937,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5938,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5939,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5940,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5941,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5942,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5943,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5944,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5945,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5946,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5947,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5948,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5949,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5950,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5951,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5952,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5953,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5954,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5955,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5956,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5957,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5958,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5959,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5960,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5961,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5962,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5963,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5964,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5965,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5966,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5967,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5968,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5969,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5970,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5971,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5972,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5973,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5974,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5975,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5976,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5977,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5978,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5979,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5980,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5981,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5982,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5983,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5984,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5985,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5986,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5987,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5988,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5989,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5990,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5991,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5992,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5993,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5994,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5995,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5996,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5997,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5998,
+          "source_document_id": 2541
+        },
+        {
+          "id": 5999,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6000,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6001,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6002,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6003,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6004,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6005,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6006,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6007,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6008,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6009,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6010,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6011,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6012,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6013,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6014,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6015,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6016,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6017,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6018,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6019,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6020,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6021,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6022,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6023,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6024,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6025,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6026,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6027,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6028,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6029,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6030,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6031,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6032,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6033,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6034,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6035,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6036,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6037,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6038,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6039,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6040,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6041,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6042,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6043,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6044,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6045,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6046,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6047,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6048,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6049,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6050,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6051,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6052,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6053,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6054,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6055,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6056,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6057,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6058,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6059,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6060,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6061,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6062,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6063,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6064,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6065,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6066,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6067,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6068,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6069,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6070,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6071,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6072,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6073,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6074,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6075,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6076,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6077,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6078,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6079,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6080,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6081,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6082,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6083,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6084,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6085,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6086,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6087,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6088,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6089,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6090,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6091,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6092,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6093,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6094,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6095,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6096,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6097,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6098,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6099,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6100,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6101,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6102,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6103,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6104,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6105,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6106,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6107,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6108,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6109,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6110,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6111,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6112,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6113,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6114,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6115,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6116,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6117,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6118,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6119,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6120,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6121,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6122,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6123,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6124,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6125,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6126,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6127,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6128,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6129,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6130,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6131,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6132,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6133,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6134,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6135,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6136,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6137,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6138,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6139,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6140,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6141,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6142,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6143,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6144,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6145,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6146,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6147,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6148,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6149,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6150,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6151,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6152,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6153,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6154,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6155,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6156,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6157,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6158,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6159,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6160,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6161,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6162,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6163,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6164,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6165,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6166,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6167,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6168,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6169,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6170,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6171,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6172,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6173,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6174,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6175,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6176,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6177,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6178,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6179,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6180,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6181,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6182,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6183,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6184,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6185,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6186,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6187,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6188,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6189,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6190,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6191,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6192,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6193,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6194,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6195,
+          "source_document_id": 2541
+        },
+        {
+          "id": 6196,
+          "source_document_id": 2541
+        },
+        {
+          "id": 7244,
+          "source_document_id": 2435
+        }
+      ]
+    },
+    {
+      "table": "fiscal_summaries",
+      "column": "source_document_id",
+      "rows": []
+    },
+    {
+      "table": "gdp_data",
+      "column": "source_document_id",
+      "rows": [
+        {
+          "id": 17,
+          "source_document_id": 1823
+        },
+        {
+          "id": 18,
+          "source_document_id": 1823
+        }
+      ]
+    },
+    {
+      "table": "loans",
+      "column": "source_document_id",
+      "rows": [
+        {
+          "id": 381,
+          "source_document_id": 2430
+        },
+        {
+          "id": 383,
+          "source_document_id": 2430
+        },
+        {
+          "id": 384,
+          "source_document_id": 2430
+        },
+        {
+          "id": 426,
+          "source_document_id": 2383
+        },
+        {
+          "id": 439,
+          "source_document_id": 2430
+        }
+      ]
+    },
+    {
+      "table": "parliament_source_documents",
+      "column": "source_document_id",
+      "rows": []
+    },
+    {
+      "table": "population_data",
+      "column": "source_document_id",
+      "rows": [
+        {
+          "id": 17,
+          "source_document_id": 2435
+        },
+        {
+          "id": 18,
+          "source_document_id": 2435
+        },
+        {
+          "id": 19,
+          "source_document_id": 2435
+        },
+        {
+          "id": 20,
+          "source_document_id": 2435
+        },
+        {
+          "id": 21,
+          "source_document_id": 2435
+        },
+        {
+          "id": 22,
+          "source_document_id": 2435
+        },
+        {
+          "id": 23,
+          "source_document_id": 2435
+        },
+        {
+          "id": 24,
+          "source_document_id": 2435
+        },
+        {
+          "id": 25,
+          "source_document_id": 2435
+        },
+        {
+          "id": 26,
+          "source_document_id": 2435
+        },
+        {
+          "id": 27,
+          "source_document_id": 2435
+        },
+        {
+          "id": 28,
+          "source_document_id": 2435
+        },
+        {
+          "id": 29,
+          "source_document_id": 2435
+        },
+        {
+          "id": 30,
+          "source_document_id": 2435
+        },
+        {
+          "id": 31,
+          "source_document_id": 2435
+        },
+        {
+          "id": 32,
+          "source_document_id": 2435
+        },
+        {
+          "id": 33,
+          "source_document_id": 2435
+        },
+        {
+          "id": 34,
+          "source_document_id": 2435
+        },
+        {
+          "id": 35,
+          "source_document_id": 2435
+        },
+        {
+          "id": 36,
+          "source_document_id": 2435
+        },
+        {
+          "id": 37,
+          "source_document_id": 2435
+        },
+        {
+          "id": 38,
+          "source_document_id": 2435
+        },
+        {
+          "id": 39,
+          "source_document_id": 2435
+        },
+        {
+          "id": 40,
+          "source_document_id": 2435
+        },
+        {
+          "id": 41,
+          "source_document_id": 2435
+        },
+        {
+          "id": 42,
+          "source_document_id": 2435
+        },
+        {
+          "id": 43,
+          "source_document_id": 2435
+        },
+        {
+          "id": 44,
+          "source_document_id": 2435
+        },
+        {
+          "id": 45,
+          "source_document_id": 2435
+        },
+        {
+          "id": 46,
+          "source_document_id": 2435
+        },
+        {
+          "id": 47,
+          "source_document_id": 2435
+        },
+        {
+          "id": 48,
+          "source_document_id": 2435
+        },
+        {
+          "id": 49,
+          "source_document_id": 2435
+        },
+        {
+          "id": 50,
+          "source_document_id": 2435
+        },
+        {
+          "id": 51,
+          "source_document_id": 2435
+        },
+        {
+          "id": 52,
+          "source_document_id": 2435
+        },
+        {
+          "id": 53,
+          "source_document_id": 2435
+        },
+        {
+          "id": 54,
+          "source_document_id": 2435
+        },
+        {
+          "id": 55,
+          "source_document_id": 2435
+        },
+        {
+          "id": 56,
+          "source_document_id": 2435
+        },
+        {
+          "id": 57,
+          "source_document_id": 2435
+        },
+        {
+          "id": 58,
+          "source_document_id": 2435
+        },
+        {
+          "id": 59,
+          "source_document_id": 2435
+        },
+        {
+          "id": 60,
+          "source_document_id": 2435
+        },
+        {
+          "id": 61,
+          "source_document_id": 2435
+        },
+        {
+          "id": 62,
+          "source_document_id": 2435
+        },
+        {
+          "id": 63,
+          "source_document_id": 2435
+        },
+        {
+          "id": 64,
+          "source_document_id": 1823
+        }
+      ]
+    },
+    {
+      "table": "poverty_indices",
+      "column": "source_document_id",
+      "rows": []
+    },
+    {
+      "table": "revenue_by_source",
+      "column": "source_document_id",
+      "rows": []
+    }
+  ],
+  "extractions": [
+    {
+      "id": 4345,
+      "extractor": "knbs_census_population",
+      "confidence": 1.0,
+      "page_number": 17,
+      "extracted_json": {
+        "table": "2.2 Distribution of Population by Sex and County",
+        "checks": [
+          "male+female+intersex==total for all 47 counties",
+          "the national row reconciles too",
+          "the 47 county totals sum to the national 47,564,296",
+          "all 47 counties present, each exactly once",
+          "every county total inside [10,000, 20,000,000]"
+        ],
+        "counties": [
+          {
+            "male": 336322,
+            "total": 666763,
+            "county": "Baringo",
+            "female": 330428,
+            "intersex": 13
+          },
+          {
+            "male": 434287,
+            "total": 875689,
+            "county": "Bomet",
+            "female": 441379,
+            "intersex": 23
+          },
+          {
+            "male": 812146,
+            "total": 1670570,
+            "county": "Bungoma",
+            "female": 858389,
+            "intersex": 35
+          },
+          {
+            "male": 426252,
+            "total": 893681,
+            "county": "Busia",
+            "female": 467401,
+            "intersex": 28
+          },
+          {
+            "male": 227317,
+            "total": 454480,
+            "county": "Elgeyo Marakwet",
+            "female": 227151,
+            "intersex": 12
+          },
+          {
+            "male": 304208,
+            "total": 608599,
+            "county": "Embu",
+            "female": 304367,
+            "intersex": 24
+          },
+          {
+            "male": 458975,
+            "total": 841353,
+            "county": "Garissa",
+            "female": 382344,
+            "intersex": 34
+          },
+          {
+            "male": 539560,
+            "total": 1131950,
+            "county": "Homa Bay",
+            "female": 592367,
+            "intersex": 23
+          },
+          {
+            "male": 139510,
+            "total": 268002,
+            "county": "Isiolo",
+            "female": 128483,
+            "intersex": 9
+          },
+          {
+            "male": 557098,
+            "total": 1117840,
+            "county": "Kajiado",
+            "female": 560704,
+            "intersex": 38
+          },
+          {
+            "male": 897133,
+            "total": 1867579,
+            "county": "Kakamega",
+            "female": 970406,
+            "intersex": 40
+          },
+          {
+            "male": 450741,
+            "total": 901777,
+            "county": "Kericho",
+            "female": 451008,
+            "intersex": 28
+          },
+          {
+            "male": 1187146,
+            "total": 2417735,
+            "county": "Kiambu",
+            "female": 1230454,
+            "intersex": 135
+          },
+          {
+            "male": 704089,
+            "total": 1453787,
+            "county": "Kilifi",
+            "female": 749673,
+            "intersex": 25
+          },
+          {
+            "male": 302011,
+            "total": 610411,
+            "county": "Kirinyaga",
+            "female": 308369,
+            "intersex": 31
+          },
+          {
+            "male": 605784,
+            "total": 1266860,
+            "county": "Kisii",
+            "female": 661038,
+            "intersex": 38
+          },
+          {
+            "male": 560942,
+            "total": 1155574,
+            "county": "Kisumu",
+            "female": 594609,
+            "intersex": 23
+          },
+          {
+            "male": 549003,
+            "total": 1136187,
+            "county": "Kitui",
+            "female": 587151,
+            "intersex": 33
+          },
+          {
+            "male": 425121,
+            "total": 866820,
+            "county": "Kwale",
+            "female": 441681,
+            "intersex": 18
+          },
+          {
+            "male": 259440,
+            "total": 518560,
+            "county": "Laikipia",
+            "female": 259102,
+            "intersex": 18
+          },
+          {
+            "male": 76103,
+            "total": 143920,
+            "county": "Lamu",
+            "female": 67813,
+            "intersex": 4
+          },
+          {
+            "male": 710707,
+            "total": 1421932,
+            "county": "Machakos",
+            "female": 711191,
+            "intersex": 34
+          },
+          {
+            "male": 489691,
+            "total": 987653,
+            "county": "Makueni",
+            "female": 497942,
+            "intersex": 20
+          },
+          {
+            "male": 434976,
+            "total": 867457,
+            "county": "Mandera",
+            "female": 432444,
+            "intersex": 37
+          },
+          {
+            "male": 243548,
+            "total": 459785,
+            "county": "Marsabit",
+            "female": 216219,
+            "intersex": 18
+          },
+          {
+            "male": 767698,
+            "total": 1545714,
+            "county": "Meru",
+            "female": 777975,
+            "intersex": 41
+          },
+          {
+            "male": 536187,
+            "total": 1116436,
+            "county": "Migori",
+            "female": 580214,
+            "intersex": 35
+          },
+          {
+            "male": 610257,
+            "total": 1208333,
+            "county": "Mombasa",
+            "female": 598046,
+            "intersex": 30
+          },
+          {
+            "male": 523940,
+            "total": 1056640,
+            "county": "Murang'a",
+            "female": 532669,
+            "intersex": 31
+          },
+          {
+            "male": 2192452,
+            "total": 4397073,
+            "county": "Nairobi",
+            "female": 2204376,
+            "intersex": 245
+          },
+          {
+            "male": 1077272,
+            "total": 2162202,
+            "county": "Nakuru",
+            "female": 1084835,
+            "intersex": 95
+          },
+          {
+            "male": 441259,
+            "total": 885711,
+            "county": "Nandi",
+            "female": 444430,
+            "intersex": 22
+          },
+          {
+            "male": 579042,
+            "total": 1157873,
+            "county": "Narok",
+            "female": 578805,
+            "intersex": 26
+          },
+          {
+            "male": 290907,
+            "total": 605576,
+            "county": "Nyamira",
+            "female": 314656,
+            "intersex": 13
+          },
+          {
+            "male": 315022,
+            "total": 638289,
+            "county": "Nyandarua",
+            "female": 323247,
+            "intersex": 20
+          },
+          {
+            "male": 374288,
+            "total": 759164,
+            "county": "Nyeri",
+            "female": 384845,
+            "intersex": 31
+          },
+          {
+            "male": 156774,
+            "total": 310327,
+            "county": "Samburu",
+            "female": 153546,
+            "intersex": 7
+          },
+          {
+            "male": 471669,
+            "total": 993183,
+            "county": "Siaya",
+            "female": 521496,
+            "intersex": 18
+          },
+          {
+            "male": 173337,
+            "total": 340671,
+            "county": "Taita Taveta",
+            "female": 167327,
+            "intersex": 7
+          },
+          {
+            "male": 158550,
+            "total": 315943,
+            "county": "Tana River",
+            "female": 157391,
+            "intersex": 2
+          },
+          {
+            "male": 193764,
+            "total": 393177,
+            "county": "Tharaka Nithi",
+            "female": 199406,
+            "intersex": 7
+          },
+          {
+            "male": 489107,
+            "total": 990341,
+            "county": "Trans Nzoia",
+            "female": 501206,
+            "intersex": 28
+          },
+          {
+            "male": 478087,
+            "total": 926976,
+            "county": "Turkana",
+            "female": 448868,
+            "intersex": 21
+          },
+          {
+            "male": 580269,
+            "total": 1163186,
+            "county": "Uasin Gishu",
+            "female": 582889,
+            "intersex": 28
+          },
+          {
+            "male": 283678,
+            "total": 590013,
+            "county": "Vihiga",
+            "female": 306323,
+            "intersex": 12
+          },
+          {
+            "male": 415374,
+            "total": 781263,
+            "county": "Wajir",
+            "female": 365840,
+            "intersex": 49
+          },
+          {
+            "male": 307013,
+            "total": 621241,
+            "county": "West Pokot",
+            "female": 314213,
+            "intersex": 15
+          }
+        ],
+        "census_year": 2019,
+        "national_total": 47564296
+      },
+      "source_document_id": 2435
+    }
+  ],
+  "rollback_completed": true,
+  "complete_entity_metadata": "cleanup-current-manifest.json entities.before; full captured receipt also retained at full_capture.path",
+  "full_capture": {
+    "path": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_FULL_production-readonly-receipt.json",
+    "sha256": "3705593520de3cba6aedd3eb2613e234e5a8e61910cd54e08b856d55c076c8bf"
+  }
+}

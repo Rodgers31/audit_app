@@ -1,0 +1,149 @@
+{
+  "census": {
+    "url": "https://www.knbs.or.ke/wp-content/uploads/2023/09/2019-Kenya-population-and-Housing-Census-Volume-1-Population-By-County-And-Sub-County.pdf",
+    "error_class": null,
+    "status": 200,
+    "transport": "curl system trust, verified TLS; no insecure flag",
+    "sha256": "740093a7e0d3a2f34bc85bebfe343c3b45e6b8401a394470f191d281b280ae4e",
+    "md5": "04ff63993e936a97f1a95436a735ae93",
+    "bytes": 947484,
+    "local_path": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_census.pdf",
+    "observed_at": "2026-10-01T03:19:08.260287+00:00"
+  },
+  "brop2383": {
+    "url": "https://www.treasury.go.ke/sites/default/files/2025-Budget-Review-and-Outlook-Paper-1.pdf",
+    "final_url": "https://www.treasury.go.ke/sites/default/files/2025-Budget-Review-and-Outlook-Paper-1.pdf",
+    "status": 200,
+    "bytes": 2613350,
+    "sha256": "e0479eca5a318aa97d6daf11672880433b7d6a4686a09fa3d4895e09d93cf1f4",
+    "md5": "36a7f146480a6269a9d4d95553285ef1",
+    "observed_at": "2026-10-01T03:16:25.923994+00:00",
+    "local_path": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_brop2383.pdf"
+  },
+  "cbk1840": {
+    "url": "https://www.centralbank.go.ke/public-debt/",
+    "final_url": "https://www.centralbank.go.ke/public-debt/",
+    "status": 200,
+    "bytes": 126757,
+    "sha256": "d4df55165b9bb0081054ce999261c5d1ef67c681c9da1955b83d29453a9bbc90",
+    "md5": "3681cff63575530773e949d296951ca8",
+    "observed_at": "2026-10-01T03:16:30.918037+00:00",
+    "content_scope": "Central Bank of Kenya public debt landing page; historical April 2025 bulletin not established from this page"
+  },
+  "cra1718": {
+    "url": "https://www.crakenya.org/county-allocations/",
+    "error_class": "SSLError"
+  },
+  "mombasa": {
+    "url": "https://audit-app-4pwa.onrender.com/api/v1/counties/047/comprehensive",
+    "final_url": "https://audit-app-4pwa.onrender.com/api/v1/counties/047/comprehensive",
+    "status": 200,
+    "bytes": 100407,
+    "sha256": "7ca65acc39d68b2dc2888ec1185bd6900bda3e3702470f7c2bc1aa7c2d93026b",
+    "md5": "bdbc7bc2964d4c5c27ef2ee3d1495b36",
+    "observed_at": "2026-10-01T03:16:22.777649+00:00",
+    "selection": {
+      "id": "047",
+      "name": "Mombasa",
+      "projects": null,
+      "reconciliation": "unverifiable",
+      "source": {
+        "url": "https://cob.go.ke/download/county-governments-budget-implementation-review-report-for-the-financial-year-2025-26/?wpdmdl=16482",
+        "as_of": "2026-06-30",
+        "title": "County Governments Budget Implementation Review Report",
+        "period": "annual",
+        "sha256": "5f5e4f97bbe2752957f284950d0ba90fcff4d47b35fc0ac96a9106ffb59821b3",
+        "wpdmdl": 16482,
+        "published": "August 2026",
+        "publisher": "Office of the Controller of Budget",
+        "fiscal_year": "FY2025/26",
+        "reported_by": "County treasury, as reported to the Controller of Budget (CBIRR)",
+        "server_fingerprint": "content-disposition=attachment;filename=\"CGBIRR FY 2025_26 August 2026 Final 5.pdf\""
+      }
+    }
+  },
+  "mandera": {
+    "url": "https://audit-app-4pwa.onrender.com/api/v1/counties/009/comprehensive",
+    "final_url": "https://audit-app-4pwa.onrender.com/api/v1/counties/009/comprehensive",
+    "status": 200,
+    "bytes": 121223,
+    "sha256": "47d9888facef48f324852ea3e49f3665fd2fca4ea65ab01af7dfc455df2cc734",
+    "md5": "11e8fb4b04aef48f738c5c7927221335",
+    "observed_at": "2026-10-01T03:16:23.122738+00:00",
+    "selection": {
+      "id": "009",
+      "name": "Mandera",
+      "projects": null,
+      "reconciliation": "unverifiable",
+      "source": {
+        "url": "https://cob.go.ke/download/county-governments-budget-implementation-review-report-for-the-financial-year-2025-26/?wpdmdl=16482",
+        "as_of": "2026-06-30",
+        "title": "County Governments Budget Implementation Review Report",
+        "period": "annual",
+        "sha256": "5f5e4f97bbe2752957f284950d0ba90fcff4d47b35fc0ac96a9106ffb59821b3",
+        "wpdmdl": 16482,
+        "published": "August 2026",
+        "publisher": "Office of the Controller of Budget",
+        "fiscal_year": "FY2025/26",
+        "reported_by": "County treasury, as reported to the Controller of Budget (CBIRR)",
+        "server_fingerprint": "content-disposition=attachment;filename=\"CGBIRR FY 2025_26 August 2026 Final 5.pdf\""
+      }
+    }
+  },
+  "population_verify": {
+    "url": "https://audit-app-4pwa.onrender.com/api/v1/provenance/verify/population_data?year=2019",
+    "final_url": "https://audit-app-4pwa.onrender.com/api/v1/provenance/verify/population_data?year=2019",
+    "status": 200,
+    "bytes": 387,
+    "sha256": "fa9557a9d6bdb7e996aa98530a5992503d4f52a111401ade41dace234ed0cd5d",
+    "md5": "fdf39192b9a8358db9da99473c1f2b44",
+    "observed_at": "2026-10-01T03:16:23.565155+00:00",
+    "response": {
+      "table": "population_data",
+      "value": "51,202,827 (year 2019)",
+      "source_document": null,
+      "source_url": null,
+      "publisher": null,
+      "fetch_date": null,
+      "provenance_chain": [
+        {
+          "source": "Kenya National Bureau of Statistics",
+          "dataset": "Census 2019",
+          "url": "https://www.knbs.or.ke/2019-kenya-population-and-housing-census-results/"
+        }
+      ],
+      "verification_status": "unverified",
+      "reason": "no resolvable source document"
+    }
+  },
+  "mandera_verify": {
+    "url": "https://audit-app-4pwa.onrender.com/api/v1/provenance/verify/population_data?entity_id=12&year=2019",
+    "final_url": "https://audit-app-4pwa.onrender.com/api/v1/provenance/verify/population_data?entity_id=12&year=2019",
+    "status": 200,
+    "bytes": 833,
+    "sha256": "8227750cca4d351b0d287640b159a483f5a0faaa5bafcca3e2515448a037d45b",
+    "md5": "d0e3362937307fff3c859410dfbac5b9",
+    "observed_at": "2026-10-01T03:16:23.748492+00:00",
+    "response": {
+      "table": "population_data",
+      "value": "867,457 (year 2019)",
+      "source_document": "2019 Kenya Population and Housing Census Volume I: Population by County and Sub-County",
+      "source_url": "https://www.knbs.or.ke/wp-content/uploads/2023/09/2019-Kenya-population-and-Housing-Census-Volume-1-Population-By-County-And-Sub-County.pdf",
+      "publisher": "Kenya National Bureau of Statistics",
+      "fetch_date": "2026-09-05T16:28:10.598556",
+      "provenance_chain": [
+        {
+          "source": "Kenya National Bureau of Statistics",
+          "dataset": "Census 2019",
+          "url": "https://www.knbs.or.ke/2019-kenya-population-and-housing-census-results/"
+        }
+      ],
+      "verification_status": "publishable",
+      "reason": "resolves to a source document; the document itself has not been fetched or validated by this endpoint; an md5 is on file for the document, so a reissue would be detectable once the file is re-fetched"
+    }
+  },
+  "full_capture": {
+    "path": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND6_SESSION_3_FULL_source-walk-receipt.json",
+    "sha256": "c04eeb1f6369bffbe1e12a6a1f3f29500bd1d9447a44695017beb1ee6a50d5b2"
+  }
+}
