@@ -241,11 +241,14 @@ def test_preloaded_projects_preserve_newer_reference_and_other_metadata(
 
 @pytest.mark.parametrize("operation", ["write", "clear", "legacy_clear"])
 @pytest.mark.parametrize("first_writer", ["reference", "projects"])
+@pytest.mark.parametrize("mixed", [False, True])
 def test_both_start_orders_preserve_committed_namespaces(
-    pg_projects, operation, first_writer
+    pg_projects, operation, first_writer, mixed
 ):
     engine, Session = pg_projects
     protected = controls(engine)
+    if mixed:
+        add_excluded(Session)
     before = snapshot(Session)
     worker = references.AutoSeeder()
     entered, release, second_started = Event(), Event(), Event()
@@ -274,7 +277,7 @@ def test_both_start_orders_preserve_committed_namespaces(
     def project_operation():
         with Session() as db:
             held = db.query(Entity).all()
-            assert len(held) == 47
+            assert len(held) == len(before)
             return run_operation(db, operation)
 
     event.listen(engine, "before_cursor_execute", observe_before)
@@ -328,6 +331,9 @@ def test_both_start_orders_preserve_committed_namespaces(
         event.remove(engine, "after_cursor_execute", observe_after)
     after = snapshot(Session)
     for pk, row in after.items():
+        if pk >= 1000:
+            assert row == before[pk]
+            continue
         assert row[:3] == before[pk][:3]
         assert row[3]["county_reference"]["source"] == "static_county_reference"
         assert {
@@ -569,3 +575,283 @@ def test_actual_cli_records_project_commit_refusal_and_retry(
             r[3][writer.OWNED_PREFIX] == before[pk][3][writer.OWNED_PREFIX]
             for pk, r in snapshot(Session).items()
         )
+
+
+def add_excluded(Session, foreign_id=100):
+    """Names/codes/slugs alone cannot claim Kenya's official county identity."""
+    with Session() as db:
+        ken = db.query(Country).filter_by(iso_code="KEN").one()
+        foreign = Country(
+            id=foreign_id,
+            iso_code="SYN",
+            name="Kenya",
+            currency="XYZ",
+            timezone="UTC",
+            default_locale="en_US",
+        )
+        db.add(foreign)
+        db.flush()
+        cases = [
+            (foreign.id, EntityType.COUNTY, "Nairobi County", "nairobi-001"),
+            (foreign.id, EntityType.COUNTY, "Mombasa County", "mombasa-047"),
+            (ken.id, EntityType.COUNTY, "Nairobi County Assembly", "nairobi-047"),
+            (ken.id, EntityType.AGENCY, "Nairobi County", "agency-nairobi"),
+            (ken.id, EntityType.COUNTY, "Nairob County", "typo-nairobi"),
+            (ken.id, EntityType.COUNTY, "Unknown institution", "unknown-047"),
+            (ken.id, EntityType.COUNTY, "", "nairobi-county"),
+        ]
+        for pk, (country_id, entity_type, name, slug) in enumerate(cases, 1000):
+            db.add(
+                Entity(
+                    id=pk,
+                    country_id=country_id,
+                    type=entity_type,
+                    canonical_name=name,
+                    slug=slug,
+                    meta={
+                        "county_reference": {"code": "047"},
+                        "stalled_projects": {
+                            "schema": 2,
+                            "source": {"sha256": "excluded-edition"},
+                            "rows": [
+                                {
+                                    "project_name": "Excluded source-backed project",
+                                    "source_url": "https://example.test/foreign.pdf",
+                                    "source_page": 9,
+                                }
+                            ],
+                        },
+                        "stalled_projects_count": 1,
+                        "foreign": {"values": [0, None, False]},
+                    },
+                )
+            )
+        db.commit()
+
+
+@pytest.mark.parametrize("operation", ["write", "clear", "legacy_clear", "edition"])
+@pytest.mark.parametrize("kenya_id,foreign_id", [(100, 200), (200, 100)])
+@pytest.mark.parametrize("dry_run", [False, True])
+def test_all_operations_use_kenya_official_identity(
+    pg_projects, operation, kenya_id, foreign_id, dry_run
+):
+    engine, Session = pg_projects
+    protected = controls(engine)
+    with Session() as db:
+        old = db.query(Country).filter_by(iso_code="KEN").one()
+        old.iso_code = "OLD"
+        db.flush()
+        ken = Country(
+            id=kenya_id,
+            iso_code="KEN",
+            name="Synthetic Kenya",
+            currency="KES",
+            timezone="Africa/Nairobi",
+            default_locale="en_KE",
+        )
+        db.add(ken)
+        db.flush()
+        for entity in db.query(Entity):
+            entity.country_id = ken.id
+        db.commit()
+    add_excluded(Session, foreign_id)
+    before = snapshot(Session)
+    with Session() as db:
+        if operation == "edition":
+            assert writer.published_edition(db) == {"sha256": "old"}
+        else:
+            result = run_operation(db, operation, dry_run=dry_run)
+            assert result == (
+                {"counties": 47, "rows": 47, "unmatched": []}
+                if operation == "write"
+                else {"entities": 47, "keys": 94 if operation == "clear" else 47}
+            )
+    after = snapshot(Session)
+    assert {pk: row for pk, row in after.items() if pk >= 1000} == {
+        pk: row for pk, row in before.items() if pk >= 1000
+    }
+    assert controls(engine) == protected
+    for pk, row in after.items():
+        if pk >= 1000:
+            continue
+        assert row[:3] == before[pk][:3]
+        if operation == "edition" or dry_run:
+            assert row == before[pk]
+        elif operation == "write":
+            assert row[3][writer.OWNED_PREFIX]["rows"][0]["estimated_value_kes"] == 0
+            assert row[3][writer.OWNED_PREFIX]["rows"][0]["amount_paid_kes"] is None
+            assert row[3][writer.OWNED_PREFIX]["source"]["sha256"] == EDITION["sha256"]
+        elif operation == "clear":
+            assert not writer.owned_keys(row[3])
+        else:
+            assert row[3][writer.OWNED_PREFIX] == before[pk][3][writer.OWNED_PREFIX]
+            assert "stalled_projects_count" not in row[3]
+        assert {
+            k: v for k, v in row[3].items() if not k.startswith(writer.OWNED_PREFIX)
+        } == {
+            k: v
+            for k, v in before[pk][3].items()
+            if not k.startswith(writer.OWNED_PREFIX)
+        }
+
+
+@pytest.mark.parametrize("operation", ["write", "clear", "legacy_clear", "edition"])
+def test_missing_kenya_refuses_without_borrowing_country(pg_projects, operation):
+    engine, Session = pg_projects
+    with Session() as db:
+        ken = db.query(Country).filter_by(iso_code="KEN").one()
+        ken.iso_code = "SYN"
+        ken.name = "Kenya"
+        db.commit()
+    before, protected = snapshot(Session), controls(engine)
+    with Session() as db:
+        with pytest.raises(ValueError, match="Kenya.*KEN"):
+            writer.published_edition(db) if operation == "edition" else run_operation(
+                db, operation
+            )
+    assert snapshot(Session) == before and controls(engine) == protected
+
+
+@pytest.mark.parametrize("operation", ["write", "clear", "legacy_clear", "edition"])
+def test_duplicate_official_identity_refuses_atomically(pg_projects, operation):
+    engine, Session = pg_projects
+    with Session() as db:
+        ken = db.query(Country).filter_by(iso_code="KEN").one()
+        db.add(
+            Entity(
+                id=2000,
+                country_id=ken.id,
+                type=EntityType.COUNTY,
+                canonical_name="Nairobi City County",
+                slug="duplicate-nairobi",
+                meta={"stalled_projects_count": 3},
+            )
+        )
+        db.commit()
+    before, protected = snapshot(Session), controls(engine)
+    with Session() as db:
+        with pytest.raises(ValueError, match="Ambiguous.*047"):
+            writer.published_edition(db) if operation == "edition" else run_operation(
+                db, operation
+            )
+        db.rollback()
+        db.commit()
+    assert snapshot(Session) == before and controls(engine) == protected
+
+
+def test_only_excluded_editions_cannot_certify_kenya(pg_projects):
+    _, Session = pg_projects
+    add_excluded(Session)
+    with Session() as db:
+        for entity in db.query(Entity).filter(Entity.id < 1000):
+            entity.meta = {
+                k: v
+                for k, v in entity.meta.items()
+                if not k.startswith(writer.OWNED_PREFIX)
+            }
+        db.commit()
+    with Session() as db:
+        assert writer.published_edition(db) is None
+
+
+def test_official_aliases_preserve_legacy_pk_slug_and_projects(pg_projects):
+    from main import _resolve_county_entity
+
+    _, Session = pg_projects
+    with Session() as db:
+        for entity in db.query(Entity):
+            source_county = next(
+                c
+                for c in incoming()
+                if c["county"] == writer.normalise_county(entity.canonical_name)
+            )
+            entity.meta = {
+                **entity.meta,
+                writer.OWNED_PREFIX: writer.build_county_block(source_county, EDITION),
+            }
+        db.get(Entity, 3).canonical_name = "Nairobi City County"
+        db.get(Entity, 3).slug = "nairobi-001"
+        db.get(Entity, 4).slug = "mombasa-047"
+        db.query(Entity).filter_by(
+            canonical_name="Tharaka Nithi County"
+        ).one().canonical_name = "Tharaka-Nithi County"
+        db.query(Entity).filter_by(
+            canonical_name="Murang'a County"
+        ).one().canonical_name = "Murang’a County"
+        db.commit()
+    before = snapshot(Session)
+    with Session() as db:
+        for route, pk in [
+            ("001", 3),
+            ("047", 4),
+            ("code:047", 3),
+            ("code:001", 4),
+            ("nairobi-001", 3),
+            ("mombasa-047", 4),
+        ]:
+            assert _resolve_county_entity(db, route).id == pk
+        assert run_operation(db, "legacy_clear") == {"entities": 47, "keys": 47}
+    after = snapshot(Session)
+    for pk in before:
+        assert after[pk][:3] == before[pk][:3]
+        assert after[pk][3][writer.OWNED_PREFIX] == before[pk][3][writer.OWNED_PREFIX]
+    with Session() as db:
+        assert run_operation(db, "write") == {
+            "counties": 47,
+            "rows": 47,
+            "unmatched": [],
+        }
+
+
+def test_edition_refreshes_stale_identity_map(pg_projects):
+    _, Session = pg_projects
+    with Session() as stale:
+        held = stale.query(Entity).all()
+        assert held[0].meta[writer.OWNED_PREFIX]["source"] == {"sha256": "old"}
+        with Session() as fresh:
+            run_operation(fresh, "clear")
+        assert writer.published_edition(stale) is None
+
+
+@pytest.mark.parametrize("operation", ["write", "clear", "legacy_clear", "edition"])
+@pytest.mark.parametrize("pending", ["id", "iso", "new", "delete"])
+@pytest.mark.parametrize("dry_run", [False, True])
+def test_pending_country_cannot_borrow_or_commit_identity(
+    pg_projects, operation, pending, dry_run
+):
+    engine, Session = pg_projects
+    add_excluded(Session)
+    before, protected = snapshot(Session), controls(engine)
+    with Session() as db:
+        ken = db.query(Country).filter_by(iso_code="KEN").one()
+        if pending == "id":
+            ken.id = 100  # Existing foreign country's PK.
+        elif pending == "iso":
+            ken.iso_code = "OLD"
+        elif pending == "new":
+            db.add(
+                Country(
+                    iso_code="NEW",
+                    name="Pending country",
+                    currency="XYZ",
+                    timezone="UTC",
+                    default_locale="en_US",
+                )
+            )
+        else:
+            db.delete(ken)
+        with pytest.raises(ValueError, match="pending.*Country"):
+            if operation == "edition":
+                writer.published_edition(db)
+            else:
+                run_operation(db, operation, dry_run=dry_run)
+        if dry_run or operation == "edition":
+            assert db.dirty or db.new or db.deleted  # Read refusal keeps caller work.
+        else:
+            assert not db.dirty and not db.new and not db.deleted
+        db.rollback()
+        db.commit()
+    assert snapshot(Session) == before and controls(engine) == protected
+    with Session() as db:
+        assert db.query(Country).filter_by(iso_code="KEN").one().id == 1
+        assert db.query(Country).count() == 2

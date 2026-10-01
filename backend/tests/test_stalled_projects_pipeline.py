@@ -287,9 +287,10 @@ class TestWriteAndServe:
                               canonical_name="Kericho County", slug="kericho-035", meta={}))
         db_session.delete(counties["Trans Nzoia"])
         db_session.commit()
-        stats = _write(db_session)
-        assert stats["unmatched"] == ["Trans Nzoia"]
-        assert stats["rows"] == 6 + 10  # Kericho once, Kakamega; not Kericho twice
+        # Ambiguous official identity now refuses the entire batch rather than
+        # mutating two rows while a deduplicated counter claims one county.
+        with pytest.raises(ValueError, match="Ambiguous.*035"):
+            _write(db_session)
 
     def test_invented_records_do_not_survive_a_live_write(self, client, db_session, counties):
         _write(db_session)

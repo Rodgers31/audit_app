@@ -89,6 +89,7 @@ def _seed_national(
             extra={"error": str(exc)},
         )
         errors.append(f"Parse failed: {exc}")
+        _mark_live_run_partial("national_pending_bills_parse_failed", exc)
         return 0, 0, 0
 
     logger.info(f"Parsed {len(records)} pending bills records")
@@ -109,6 +110,7 @@ def _seed_national(
             extra={"error": str(exc)},
         )
         errors.append(f"Write failed: {exc}")
+        _mark_live_run_partial("national_pending_bills_write_failed", exc)
         return len(records), 0, 0
     return len(records), created, updated
 
@@ -145,7 +147,13 @@ def _seed_counties(
     if payload is None:
         return 0, 0, 0
 
-    county_records = parser.parse_pending_bills_payload(payload)
+    try:
+        county_records = parser.parse_pending_bills_payload(payload)
+    except Exception as exc:
+        logger.exception("County pending bills: parse failed")
+        errors.append(f"County pending bills parse failed: {exc}")
+        _mark_live_run_partial("county_payables_parse_failed", exc)
+        return 0, 0, 0
     try:
         created, updated = writer.write_pending_bills(
             session=session,
@@ -162,12 +170,22 @@ def _seed_counties(
         errors.append(f"County pending bills write failed: {exc}")
         if fresh_get("pending_bills").get("mode") == LIVE:
             mark_partial(
-                "pending_bills", reason="county_payables_write_failed",
+                "pending_bills",
+                reason="county_payables_write_failed",
                 detail=str(exc)[:200],
             )
         return len(county_records), 0, 0
     logger.info(
-        "County pending bills: %d counties from %s", len(county_records),
+        "County pending bills: %d counties from %s",
+        len(county_records),
         payload.get("source_url"),
     )
     return len(county_records), created, updated
+
+
+def _mark_live_run_partial(reason: str, exc: Exception) -> None:
+    """A successful fetch cannot certify a refused parse or write as LIVE."""
+    from ...freshness import LIVE, get, mark_partial
+
+    if get("pending_bills").get("mode") == LIVE:
+        mark_partial("pending_bills", reason=reason, detail=str(exc)[:200])
