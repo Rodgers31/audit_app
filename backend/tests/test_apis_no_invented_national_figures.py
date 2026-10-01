@@ -1,4 +1,4 @@
-"""No module under ``apis/``, ``analysis/`` or ``extractors/`` may type in a
+"""No module in the source tree may type in a
 public-finance figure.
 
 On 2026-09-07, ``apis/data_driven_analytics.py`` — and its byte-identical twin
@@ -57,7 +57,7 @@ It does not here — ``pytest-randomly`` is not installed and
 ``os.environ.get("PYTHONHASHSEED")`` is ``None`` under this runner. The
 conclusion was right for the weaker reason.)
 
-THE RULE. A module under ``apis/``, ``analysis/`` or ``extractors/`` may not
+THE RULE. A module anywhere in the tree may not
 publish a numeric literal under a name that denotes a measured public-finance quantity — a debt,
 a budget, a revenue, an allocation, a ratio, a rate, a share, a score. If the
 figure is measured, it comes from the data; if it is typed, it is invented. This
@@ -87,8 +87,11 @@ WHAT IS NOT A FIGURE, and why each exemption is safe:
   measurement. The zero case has its own rule already:
   ``local/no-zero-fallback-on-published-figure`` (7b5d366).
 * ``1`` and ``100`` — an identity and a percentage base.
-* exact powers of ten from 1000 up — unit conversion (``/ 1_000_000_000`` to
+* integer powers of ten from 1000 up, and floating powers only as arithmetic
+  factors/divisors — unit conversion (``/ 1_000_000_000`` to
   billions). 11500000000000 is not one; 1000000000 is.
+* schema precision, query limits, comparison operands and constants used
+  exclusively as direct comparison thresholds — structure, not measurement.
 * slice bounds (``rankings[:5]``) and the ``ndigits`` of ``round(x, 2)`` — list
   length and display precision are structure, not quantity.
 
@@ -131,12 +134,11 @@ from pathlib import Path
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-SCANNED_ROOTS = (
-    REPO_ROOT / "apis",
-    REPO_ROOT / "analysis",
-    REPO_ROOT / "extractors",
-)
+from tests._repo_tree import REPO_ROOT, python_modules, rel as _rel
+from tests._guard_suppression import suppressed
+
+# Shared traversal includes new roots and fails on parse errors.
+SCANNED_ROOTS = (REPO_ROOT,)
 
 # A label names a measured public-finance quantity if it mentions what the
 # figure is ABOUT ...
@@ -175,9 +177,9 @@ SUPPRESSION = "figure-literal-ok:"
 
 def _is_unit_conversion(value: int | float) -> bool:
     """True for an exact power of ten from 1000 up (``/ 1_000_000_000``)."""
-    if not isinstance(value, int) or value < 1000:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1000:
         return False
-    digits = str(value)
+    digits = str(int(value))
     return digits[0] == "1" and set(digits[1:]) <= {"0"}
 
 
@@ -202,6 +204,86 @@ def _structural_literals(tree: ast.AST) -> set[int]:
     printed. Neither asserts anything about public money.
     """
     ids: set[int] = set()
+    parents = {
+        id(child): parent
+        for parent in ast.walk(tree)
+        for child in ast.iter_child_nodes(parent)
+    }
+    for assignment in ast.walk(tree):
+        if isinstance(assignment, ast.Assign) and len(assignment.targets) == 1:
+            target, value = assignment.targets[0], assignment.value
+        elif isinstance(assignment, ast.AnnAssign):
+            target, value = assignment.target, assignment.value
+        else:
+            continue
+        if not isinstance(target, ast.Name) or value is None:
+            continue
+        uses = [
+            n
+            for n in ast.walk(tree)
+            if isinstance(n, ast.Name)
+            and isinstance(n.ctx, ast.Load)
+            and n.id == target.id
+        ]
+        if (
+            isinstance(value, ast.Constant)
+            and type(value.value) in (int, float)
+            and uses
+            and all(isinstance(parents.get(id(n)), ast.Compare) for n in uses)
+        ):
+            ids.update(id(n) for n in ast.walk(value))
+    for node in ast.walk(tree):
+        # Indices, annotations/schema declarations and query/window arguments
+        # describe structure. Clamp/coercion/get defaults can create figures.
+        if isinstance(node, ast.Compare):
+            ids.update(
+                id(n)
+                for n in [node.left, *node.comparators]
+                if isinstance(n, ast.Constant)
+            )
+        elif isinstance(node, ast.Subscript):
+            ids.update(id(n) for n in ast.walk(node.slice))
+        elif isinstance(node, ast.BinOp) and isinstance(node.op, (ast.Div, ast.Mult)):
+            for operand in (
+                (node.right,)
+                if isinstance(node.op, ast.Div)
+                else (node.left, node.right)
+            ):
+                if (
+                    isinstance(operand, ast.Constant)
+                    and isinstance(operand.value, float)
+                    and operand.value.is_integer()
+                    and _is_unit_conversion(int(operand.value))
+                ):
+                    ids.add(id(operand))
+        elif isinstance(node, ast.Call):
+            name = (
+                node.func.id
+                if isinstance(node.func, ast.Name)
+                else getattr(node.func, "attr", "")
+            )
+            if name in {
+                "Column",
+                "Numeric",
+                "String",
+                "Float",
+                "Integer",
+                "mapped_column",
+                "limit",
+                "offset",
+                "group",
+                "datetime",
+                "timedelta",
+            }:
+                for arg in [
+                    *node.args,
+                    *(
+                        kw.value
+                        for kw in node.keywords
+                        if kw.arg not in {"default", "server_default"}
+                    ),
+                ]:
+                    ids.update(id(n) for n in ast.walk(arg))
     for node in ast.walk(tree):
         if isinstance(node, ast.Slice):
             for part in (node.lower, node.upper, node.step):
@@ -242,19 +324,6 @@ def _labelled_values(tree: ast.AST) -> list[tuple[str, ast.AST]]:
     return pairs
 
 
-def _suppressed(source_lines: list[str], node: ast.AST) -> bool:
-    """True if a ``figure-literal-ok:`` comment WITH A REASON covers node."""
-    start = max(1, getattr(node, "lineno", 1) - 1)
-    end = getattr(node, "end_lineno", None) or getattr(node, "lineno", 1)
-    for lineno in range(start, end + 1):
-        line = source_lines[lineno - 1] if lineno <= len(source_lines) else ""
-        if SUPPRESSION in line:
-            reason = line.split(SUPPRESSION, 1)[1].strip()
-            if reason:
-                return True
-    return False
-
-
 def _year_keys(node: ast.Dict) -> list[str] | None:
     """The dict's keys as year strings, or None if they are not all years."""
     if not node.keys:
@@ -283,7 +352,19 @@ def find_invented_figures(source: str, where: str = "<source>") -> list[str]:
     lines = source.splitlines()
     findings: list[str] = []
 
-    for label, value in _labelled_values(tree):
+    # A container is not a second publication site for every leaf. Its
+    # string-keyed children and any year series are scanned independently.
+    labelled = [
+        (label, value)
+        for label, value in _labelled_values(tree)
+        if not isinstance(value, ast.Dict)
+    ]
+    sites = [v for label, v in labelled if _names_a_measured_quantity(label)] + [
+        n for n in ast.walk(tree) if isinstance(n, ast.Dict) and _year_keys(n)
+    ]
+    suppressed_values = [v for v in sites if suppressed(lines, v, SUPPRESSION, sites)]
+    suppressed_ids = {id(n) for v in suppressed_values for n in ast.walk(v)}
+    for label, value in labelled:
         if not _names_a_measured_quantity(label):
             continue
         literals = [
@@ -292,10 +373,11 @@ def find_invented_figures(source: str, where: str = "<source>") -> list[str]:
             if isinstance(node, ast.Constant)
             and _is_figure(node.value)
             and id(node) not in structural
+            and id(node) not in suppressed_ids
         ]
         if not literals:
             continue
-        if _suppressed(lines, value):
+        if suppressed(lines, value, SUPPRESSION, sites):
             continue
         findings.append(
             f"{where}:{value.lineno}: {label!r} is published from typed-in "
@@ -316,7 +398,7 @@ def find_invented_figures(source: str, where: str = "<source>") -> list[str]:
         ]
         if len(series) < 3:
             continue
-        if _suppressed(lines, node):
+        if suppressed(lines, node, SUPPRESSION, sites):
             continue
         findings.append(
             f"{where}:{node.lineno}: a hand-typed time series "
@@ -327,16 +409,7 @@ def find_invented_figures(source: str, where: str = "<source>") -> list[str]:
     return findings
 
 
-def _modules(root: Path) -> list[Path]:
-    """Every module under ``root``. Recursive: ``extractors/`` has subpackages."""
-    return sorted(root.rglob("*.py")) if root.is_dir() else []
-
-
-SCANNED_MODULES = [m for root in SCANNED_ROOTS for m in _modules(root)]
-
-
-def _rel(module: Path) -> str:
-    return module.relative_to(REPO_ROOT).as_posix()
+SCANNED_MODULES = python_modules()
 
 
 # Modules that carry this defect and are NOT this change's to fix. Each entry
@@ -361,11 +434,11 @@ def test_the_scanned_directories_are_where_we_think_they_are():
     """
     surviving = [root for root in SCANNED_ROOTS if root.is_dir()]
     if not surviving:
-        pytest.skip("every scanned root has been removed — nothing to guard")
+        pytest.fail("repository source root is absent")
     for root in surviving:
-        assert _modules(root), (
-            f"{root.name}/ exists but holds no .py files — its scan would be vacuous"
-        )
+        assert python_modules(
+            root
+        ), f"{root.name}/ exists but holds no .py files — its scan would be vacuous"
     assert SCANNED_MODULES, "no modules collected — the sweep would be silent"
 
 
@@ -376,7 +449,7 @@ def test_the_detector_catches_the_payload_it_was_written_for():
     its twin under ``analysis/``. If the detector ever stops flagging it, the
     scan over the real tree is worthless and this test says so.
     """
-    known_bad = '''
+    known_bad = """
 def get_current_national_debt(self):
     current_debt = {
         "total_debt": 11500000000000,
@@ -404,57 +477,60 @@ def _calculate_debt_trend(self):
         "2023": 10200000000000,
         "2024": 11500000000000,
     }
-'''
+"""
     findings = find_invented_figures(known_bad, "known_bad.py")
     blob = "\n".join(findings)
     assert "'total_debt'" in blob, f"the 11.5T headline slipped through: {findings}"
-    assert "'external_percentage'" in blob, f"the 60/40 split slipped through: {findings}"
+    assert (
+        "'external_percentage'" in blob
+    ), f"the 60/40 split slipped through: {findings}"
     assert "'debt_to_gdp_ratio'" in blob, f"the 70.2 ratio slipped through: {findings}"
-    assert "hand-typed time series" in blob, f"the 2020–2024 curve slipped through: {findings}"
+    assert (
+        "hand-typed time series" in blob
+    ), f"the 2020–2024 curve slipped through: {findings}"
 
     # Renaming the key must not get past it — the series is the claim.
     renamed = known_bad.replace("total_debt", "headline_number").replace(
         "debt_to_gdp_ratio", "ratio_a"
     )
-    assert find_invented_figures(renamed, "renamed.py"), (
-        "renaming every key defeated the guard"
-    )
+    assert find_invented_figures(
+        renamed, "renamed.py"
+    ), "renaming every key defeated the guard"
 
     # The randomised ministry figures: literals buried inside a clamp.
-    hashed = '''
+    hashed = """
 ministry_performance[ministry] = {
     "execution_rate": min(95, max(60, 75 + (ministry_hash % 25) - 12)),
     "performance_score": min(100, max(50, 70 + (ministry_hash % 30) - 15)),
     "data_derivation": "calculated_from_actual_budget_data",
 }
-'''
+"""
     hashed_findings = find_invented_figures(hashed, "hashed.py")
-    assert any("execution_rate" in f for f in hashed_findings), (
-        f"a figure wrapped in min()/max() got through: {hashed_findings}"
-    )
-    assert any("performance_score" in f for f in hashed_findings), (
-        f"a figure wrapped in min()/max() got through: {hashed_findings}"
-    )
+    assert any(
+        "execution_rate" in f for f in hashed_findings
+    ), f"a figure wrapped in min()/max() got through: {hashed_findings}"
+    assert any(
+        "performance_score" in f for f in hashed_findings
+    ), f"a figure wrapped in min()/max() got through: {hashed_findings}"
 
     # Arithmetic on typed factors — the #178/#179 shape.
-    arithmetic = '''
+    arithmetic = """
 collection_rate = 87.5
 revenue_target = national_budget * 0.75
 revenue_breakdown = {"tax_revenue": actual_revenue * 0.80}
-'''
+"""
     arithmetic_findings = find_invented_figures(arithmetic, "arithmetic.py")
     flagged = {f.split("'")[1] for f in arithmetic_findings}
     assert flagged == {
         "collection_rate",
         "revenue_target",
-        "revenue_breakdown",
         "tax_revenue",
     }, f"typed factors are still typed figures: {arithmetic_findings}"
 
 
 def test_the_detector_leaves_measured_code_alone():
     """Negative control. Reading a figure out of the data must stay legal."""
-    measured = '''
+    measured = """
 total_debt = sum(row["outstanding"] for row in loans)
 debt_to_gdp_ratio = total_debt / gdp
 budget_2025 = county_info.get("budget_2025", 0)
@@ -464,21 +540,21 @@ for county in counties:
 budget_allocation_billions = ministry["budget_allocation"] / 1000000000
 top_budget = rankings.get("by_budget_size", [])[:5]
 average_missing_ratio = round(sum(ratios) / len(ratios), 2)
-'''
-    assert not find_invented_figures(measured, "measured.py"), (
-        find_invented_figures(measured, "measured.py")
+"""
+    assert not find_invented_figures(measured, "measured.py"), find_invented_figures(
+        measured, "measured.py"
     )
 
     # A figure that carries its source in writing is not invented.
-    sourced = '''
+    sourced = """
 debt = {
     # figure-literal-ok: CBK Statistical Bulletin Dec 2025, Table 4.1.3 (PDF p.56)
     "total_debt": 10925300000000,
 }
-'''
-    assert not find_invented_figures(sourced, "sourced.py"), (
-        "a suppression with a written reason must be honoured"
-    )
+"""
+    assert not find_invented_figures(
+        sourced, "sourced.py"
+    ), "a suppression with a written reason must be honoured"
 
     # ... but a bare suppression with no reason is not a source.
     unreasoned = sourced.replace(
@@ -486,19 +562,12 @@ debt = {
         "Table 4.1.3 (PDF p.56)",
         "# figure-literal-ok:",
     )
-    assert find_invented_figures(unreasoned, "unreasoned.py"), (
-        "an empty suppression bought silence for free"
-    )
+    assert find_invented_figures(
+        unreasoned, "unreasoned.py"
+    ), "an empty suppression bought silence for free"
 
 
-@pytest.mark.parametrize(
-    "relative_path,expected,reason",
-    [(path, count, why) for path, (count, why) in sorted(QUARANTINE.items())],
-    ids=sorted(QUARANTINE),
-)
-def test_quarantined_modules_still_carry_their_figures(
-    relative_path: str, expected: int, reason: str
-):
+def _assert_quarantined_figure_module(relative_path: str, expected: int, reason: str):
     """The reverse ratchet. A quarantine that outlives its debt is a lie.
 
     Clean one of these files and this fails, telling you to delete its entry.
@@ -511,9 +580,7 @@ def test_quarantined_modules_still_carry_their_figures(
             f"{relative_path} is gone but is still quarantined. Delete its "
             f"QUARANTINE entry. It was held for: {reason}"
         )
-    findings = find_invented_figures(
-        module.read_text(encoding="utf-8"), relative_path
-    )
+    findings = find_invented_figures(module.read_text(encoding="utf-8"), relative_path)
     assert len(findings) == expected, "\n".join(
         [
             f"{relative_path} was quarantined with {expected} known figure(s) "
@@ -526,7 +593,11 @@ def test_quarantined_modules_still_carry_their_figures(
     )
 
 
-@pytest.mark.skipif(not SCANNED_MODULES, reason="the scanned roots hold no modules")
+def test_quarantined_modules_still_carry_their_figures():
+    for path, (count, reason) in sorted(QUARANTINE.items()):
+        _assert_quarantined_figure_module(path, count, reason)
+
+
 @pytest.mark.parametrize(
     "module",
     [m for m in SCANNED_MODULES if _rel(m) not in QUARANTINE],
@@ -534,4 +605,6 @@ def test_quarantined_modules_still_carry_their_figures(
 )
 def test_no_module_publishes_an_invented_figure(module: Path):
     findings = find_invented_figures(module.read_text(encoding="utf-8"), _rel(module))
-    assert not findings, "\n".join(["invented public-finance figures found:", *findings])
+    assert not findings, "\n".join(
+        ["invented public-finance figures found:", *findings]
+    )

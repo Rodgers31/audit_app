@@ -76,7 +76,11 @@ class FakeRedisClient:
         return True
 
     def info(self):
-        return {"connected_clients": 1, "used_memory_human": "1M", "uptime_in_seconds": 1}
+        return {
+            "connected_clients": 1,
+            "used_memory_human": "1M",
+            "uptime_in_seconds": 1,
+        }
 
 
 @pytest.fixture()
@@ -191,7 +195,7 @@ class TestModelReturningEndpointsAreCached:
 
 
 class TestSerialisationFailureIsReportable:
-    """"Redis is down" and "this value can never be cached" must not look alike.
+    """ "Redis is down" and "this value can never be cached" must not look alike.
 
     The first is transient and self-healing. The second is permanent and needs
     a code change. Reporting both as ``Cache set error`` is why this ran
@@ -636,6 +640,24 @@ def _wipe(db_session):
     db_session.commit()
 
 
+def _snapshot(db_session):
+    from models import Base
+
+    return [
+        (table, [dict(row) for row in db_session.execute(table.select()).mappings()])
+        for table in Base.metadata.sorted_tables
+    ]
+
+
+def _restore(db_session, snapshot):
+    # Owned test fixture only; this never operates on application settings.
+    _wipe(db_session)
+    for table, rows in snapshot:
+        if rows:
+            db_session.execute(table.insert(), rows)
+    db_session.commit()
+
+
 def _cached_get_routes(app):
     return [
         r
@@ -663,7 +685,7 @@ def _url_for(path):
 def _sweep(client, redis_client, caplog, routes):
     """Request every route once with every cache empty.
 
-    Returns ``{path: (status, body, normalised_text, refusals)}``. A refusal
+    Returns ``{path: (status, body, normalised_text, refusals, table_reads)}``. A refusal
     is read from the cache's own ``unserialisable_values`` counter, on every
     RedisCache instance (routers/money_flow.py keeps a private one), and from
     its log line, so neither channel going quiet can hide one.
@@ -671,14 +693,39 @@ def _sweep(client, redis_client, caplog, routes):
     import main
     from cache.redis_cache import RedisCache
 
+    from sqlalchemy import event
+    from sqlalchemy.engine import Engine
+    from models import Base
+
+    # Observe real reads of fixture tables. A changing response from a route
+    # that never consults the seeded database is not branch evidence.
+    table_names = set(Base.metadata.tables)
     answers = {}
     for route in sorted(routes, key=lambda r: r.path):
         main.clear_all_caches()
         redis_client.store.clear()
         caplog.clear()
         before = {id(c): c._unserialisable_values for c in RedisCache._instances}
-        with caplog.at_level(logging.ERROR, logger="cache.redis_cache"):
-            resp = client.get(_url_for(route.path))
+        reads = set()
+
+        def record_read(conn, cursor, statement, parameters, context, executemany):
+            if statement.lstrip().upper().startswith("SELECT"):
+                for table in table_names:
+                    if re.search(
+                        r"\b(?:FROM|JOIN)\s+(?:[\w]+\.)?[\"]?"
+                        + re.escape(table)
+                        + r"[\"]?\b",
+                        statement,
+                        re.IGNORECASE,
+                    ):
+                        reads.add(table)
+
+        event.listen(Engine, "before_cursor_execute", record_read)
+        try:
+            with caplog.at_level(logging.ERROR, logger="cache.redis_cache"):
+                resp = client.get(_url_for(route.path))
+        finally:
+            event.remove(Engine, "before_cursor_execute", record_read)
         refusals = [
             c._last_unserialisable
             for c in RedisCache._instances
@@ -698,13 +745,43 @@ def _sweep(client, redis_client, caplog, routes):
             body,
             _TIMESTAMP.sub("<ts>", resp.text),
             refusals,
+            frozenset(reads),
         )
     return answers
 
 
-def _empty_branch_reason(seeded, empty):
-    """Why a seeded answer is not evidence of a populated branch, or None."""
-    status, body, text, _ = seeded
+def _empty_branch_reason(
+    seeded,
+    empty,
+    seeded_repeat=None,
+    empty_repeat=None,
+    restored=None,
+    restored_repeat=None,
+):
+    """Refuse unobserved reads, unstable responses and irreversible contrasts.
+
+    Six controlled observations are bounded branch evidence; they do not prove
+    financial/source correctness or defeat deliberately state-synchronized code.
+    """
+    if any(
+        control is None
+        for control in (seeded_repeat, empty_repeat, restored, restored_repeat)
+    ):
+        return "repeat controls absent: branch coverage is unproven"
+    for state, first, repeat in (
+        ("seeded", seeded, seeded_repeat),
+        ("empty", empty, empty_repeat),
+        ("restored", restored, restored_repeat),
+    ):
+        if (first[0], first[2]) != (repeat[0], repeat[2]):
+            return f"unstable {state} body: repeated same-state controls disagree"
+    if (seeded[0], seeded[2]) != (restored[0], restored[2]):
+        return "restored seed body disagrees: response change does not follow fixture state"
+    if len(seeded) < 5 or not seeded[4] or len(empty) < 5 or not empty[4]:
+        return (
+            "fixture-table read absent: response differences do not prove a data branch"
+        )
+    status, body, text = seeded[:3]
     if status != 200:
         return f"HTTP {status}"
     if isinstance(body, dict):
@@ -790,15 +867,28 @@ class TestNoCachedRouteSilentlyFailsToSerialise:
             f"{sorted(stale_config)}"
         )
 
+        snapshot = _snapshot(db_session)
         seeded = _sweep(client, redis_client, caplog, routes)
+        seeded_repeat = _sweep(client, redis_client, caplog, routes)
         _wipe(db_session)
         empty = _sweep(client, redis_client, caplog, routes)
+        empty_repeat = _sweep(client, redis_client, caplog, routes)
+        _restore(db_session, snapshot)
+        restored = _sweep(client, redis_client, caplog, routes)
+        restored_repeat = _sweep(client, redis_client, caplog, routes)
 
         refusals = [
             (f"{p} ({state})", m)
-            for state, answers in (("seeded", seeded), ("empty", empty))
-            for p, (*_, found) in answers.items()
-            for m in found
+            for state, answers in (
+                ("seeded", seeded),
+                ("seeded_repeat", seeded_repeat),
+                ("empty", empty),
+                ("empty_repeat", empty_repeat),
+                ("restored", restored),
+                ("restored_repeat", restored_repeat),
+            )
+            for p, answer in answers.items()
+            for m in answer[3]
         ]
         assert (
             not refusals
@@ -809,7 +899,17 @@ class TestNoCachedRouteSilentlyFailsToSerialise:
         empty_reasons = {
             p: reason
             for p in seeded
-            if (reason := _empty_branch_reason(seeded[p], empty[p])) is not None
+            if (
+                reason := _empty_branch_reason(
+                    seeded[p],
+                    empty[p],
+                    seeded_repeat[p],
+                    empty_repeat[p],
+                    restored[p],
+                    restored_repeat[p],
+                )
+            )
+            is not None
         }
         report = _report(seeded, empty_reasons)
         print(f"\ncached-route sweep, scenario {scenario}:\n{report}")
@@ -873,9 +973,15 @@ class TestNoCachedRouteSilentlyFailsToSerialise:
             routes = [r for r in _cached_get_routes(main.app) if r.path == path]
             assert len(routes) == 1, "the route walk did not find the mounted probe"
 
+            snapshot = _snapshot(db_session)
             seeded = _sweep(client, redis_client, caplog, routes)
+            seeded_repeat = _sweep(client, redis_client, caplog, routes)
             _wipe(db_session)
             empty = _sweep(client, redis_client, caplog, routes)
+            empty_repeat = _sweep(client, redis_client, caplog, routes)
+            _restore(db_session, snapshot)
+            restored = _sweep(client, redis_client, caplog, routes)
+            restored_repeat = _sweep(client, redis_client, caplog, routes)
         finally:
             main.app.router.routes[:] = [
                 r for r in main.app.router.routes if getattr(r, "path", None) != path
@@ -883,13 +989,31 @@ class TestNoCachedRouteSilentlyFailsToSerialise:
 
         assert seeded[path][0] == 200
         assert (
-            _empty_branch_reason(seeded[path], empty[path]) is None
+            _empty_branch_reason(
+                seeded[path],
+                empty[path],
+                seeded_repeat[path],
+                empty_repeat[path],
+                restored[path],
+                restored_repeat[path],
+            )
+            is None
         ), "the seeded answer should count as populated"
         assert any(
             "datetime" in m for m in seeded[path][3]
         ), f"the sweep did not see the datetime refusal: {seeded[path][3]!r}"
         assert empty[path][3] == [], "the empty branch is serialisable"
-        assert _empty_branch_reason(empty[path], empty[path]) == 'status="no_data"'
+        assert (
+            _empty_branch_reason(
+                empty[path],
+                empty[path],
+                empty_repeat[path],
+                empty_repeat[path],
+                empty[path],
+                empty_repeat[path],
+            )
+            == 'status="no_data"'
+        )
 
 
 class TestCachedAndUncachedBodiesAreIdentical:

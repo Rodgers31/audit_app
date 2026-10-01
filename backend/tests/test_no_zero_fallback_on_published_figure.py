@@ -24,10 +24,12 @@ fallback shapes, each optionally wrapped in ``float``/``int``/``round``/
 * ``getattr(obj, "key", 0)``
 * ``value or 0``
 
-Two publishing positions:
+Publishing positions:
 
 * the value of a string-keyed entry in a dict literal — the response payload,
   a record handed to a writer;
+* formatted values in a response dict/keyword or returned caption, including
+  nested f-strings and arithmetic around the fallback; format widths are structure;
 * a keyword argument — ``CountySummary(loans_received=...)``, a model built
   for the response.
 
@@ -40,6 +42,8 @@ vocabulary is the ESLint rule's ``PUBLISHED_FIELD`` list, plus ``funds``,
 The fix is the shape ``/budget/national`` already uses: publish ``None`` and a
 reason (``budget_split_absent_reason``), so a reader can tell "measured, and it
 was zero" from "not measured".
+
+Ordinary literal reported zero is legal; this detects missing-value fallbacks.
 
 WHAT THIS CANNOT SEE — stated so that a green run does not imply more:
 
@@ -74,6 +78,7 @@ from pathlib import Path
 
 import pytest
 
+from tests._guard_suppression import suppressed
 from tests._repo_tree import REPO_ROOT, python_modules, rel as _rel
 
 SUPPRESSION = "zero-fallback-ok:"
@@ -105,7 +110,7 @@ def _snake(name: str) -> str:
 def _names_a_figure(name: str | None) -> bool:
     if not name or name.startswith("_"):
         return False
-    return bool(PUBLISHED_FIELD.search(_snake(name)))
+    return bool(PUBLISHED_FIELD.search(re.sub(r"[^a-z0-9_]+", "_", _snake(name))))
 
 
 def _is_zero(node: ast.AST) -> bool:
@@ -159,7 +164,11 @@ def _zero_fallback(value: ast.AST) -> tuple[str | None, str] | None:
         and _is_zero(node.args[1])
     ):
         key = node.args[0]
-        field = key.value if isinstance(key, ast.Constant) and isinstance(key.value, str) else None
+        field = (
+            key.value
+            if isinstance(key, ast.Constant) and isinstance(key.value, str)
+            else None
+        )
         return field, ".get(key, 0)"
     if (
         isinstance(node, ast.Call)
@@ -169,22 +178,19 @@ def _zero_fallback(value: ast.AST) -> tuple[str | None, str] | None:
         and _is_zero(node.args[2])
     ):
         attr = node.args[1]
-        field = attr.value if isinstance(attr, ast.Constant) and isinstance(attr.value, str) else None
+        field = (
+            attr.value
+            if isinstance(attr, ast.Constant) and isinstance(attr.value, str)
+            else None
+        )
         return field, "getattr(obj, key, 0)"
-    if isinstance(node, ast.BoolOp) and isinstance(node.op, ast.Or) and _is_zero(node.values[-1]):
+    if (
+        isinstance(node, ast.BoolOp)
+        and isinstance(node.op, ast.Or)
+        and _is_zero(node.values[-1])
+    ):
         return _field_of(node.values[-2]), "... or 0"
     return None
-
-
-def _suppressed(lines: list[str], node: ast.AST) -> bool:
-    """True if a ``zero-fallback-ok:`` comment WITH A REASON covers node."""
-    start = max(1, node.lineno - 1)
-    end = getattr(node, "end_lineno", None) or node.lineno
-    for lineno in range(start, end + 1):
-        line = lines[lineno - 1] if lineno <= len(lines) else ""
-        if SUPPRESSION in line and line.split(SUPPRESSION, 1)[1].strip():
-            return True
-    return False
 
 
 def find_zero_fallbacks(source: str, where: str = "<source>") -> list[str]:
@@ -205,6 +211,43 @@ def find_zero_fallbacks(source: str, where: str = "<source>") -> list[str]:
         elif isinstance(node, ast.Call):
             published.extend((kw.arg, kw.value) for kw in node.keywords if kw.arg)
 
+    # Formatted public output is a publishing position too. Inspect each
+    # formatted value, retaining the response label and the visible caption.
+    formatted = []
+    owners = {}
+
+    def formatted_values(label, string, owner=None):
+        owner = owner if owner is not None else string
+        caption = " ".join(
+            n.value
+            for n in string.values
+            if isinstance(n, ast.Constant) and isinstance(n.value, str)
+        )
+        for part in string.values:
+            if isinstance(part, ast.FormattedValue):
+                if isinstance(part.value, ast.JoinedStr):
+                    yield from formatted_values(
+                        label + " " + caption, part.value, owner
+                    )
+                else:
+                    # Arithmetic/coercion around a fallback still publishes it.
+                    # Format-spec widths are structure, not the amount.
+                    for candidate in ast.walk(part.value):
+                        if (
+                            candidate is _unwrap(candidate)
+                            and _zero_fallback(candidate) is not None
+                        ):
+                            owners[id(candidate)] = owner
+                            yield label + " " + caption, candidate
+
+    for label, value in published:
+        if isinstance(value, ast.JoinedStr):
+            formatted.extend(formatted_values(label, value))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Return) and isinstance(node.value, ast.JoinedStr):
+            formatted.extend(formatted_values("", node.value))
+    published.extend(formatted)
+    sites = [value for _, value in published] + list(owners.values())
     findings = []
     for label, value in published:
         hit = _zero_fallback(value)
@@ -213,7 +256,10 @@ def find_zero_fallbacks(source: str, where: str = "<source>") -> list[str]:
         field, shape = hit
         if not (_names_a_figure(label) or _names_a_figure(field)):
             continue
-        if _suppressed(lines, value):
+        if suppressed(lines, value, SUPPRESSION, sites) or (
+            id(value) in owners
+            and suppressed(lines, owners[id(value)], SUPPRESSION, sites)
+        ):
             continue
         text = lines[value.lineno - 1].strip()
         if len(text) > 90:
@@ -233,10 +279,7 @@ SCANNED_MODULES = python_modules()
 # without the count coming down. Nothing may be added here without an issue
 # that owns it. Every site is listed in that issue.
 QUARANTINE_ISSUE = "#240"
-QUARANTINE: dict[str, int] = {
-    "main_comprehensive.py": 2,
-    "main_enterprise.py": 2,
-}
+QUARANTINE: dict[str, int] = {}
 
 
 def test_the_sweep_is_not_empty():
@@ -244,14 +287,14 @@ def test_the_sweep_is_not_empty():
     assert "backend/main.py" in scanned, "the sweep does not reach the shipping API"
     # apis/county_analytics_api.py, the #207 file, was withdrawn with its
     # routes (#278); the sweep must still reach the apis/ layer it lived in.
-    assert any(p.startswith("apis/") for p in scanned), (
-        "the sweep misses apis/, where the #207 fallbacks lived"
-    )
+    assert any(
+        p.startswith("apis/") for p in scanned
+    ), "the sweep misses apis/, where the #207 fallbacks lived"
 
 
 def test_the_detector_catches_the_payload_it_was_written_for():
     """Positive control: ``apis/county_analytics_api.py`` as it stood (#207)."""
-    known_bad = '''
+    known_bad = """
 summary = county_data.get("analytics_summary", {})
 payload = {
     "total_counties": 47,
@@ -260,7 +303,7 @@ payload = {
     "average_financial_health": summary.get("average_financial_health", 0),
 }
 row = CountySummary(loans_received=data.get("loans_received", 0))
-'''
+"""
     findings = find_zero_fallbacks(known_bad, "known_bad.py")
     blob = "\n".join(findings)
     assert len(findings) == 4, findings
@@ -275,7 +318,7 @@ row = CountySummary(loans_received=data.get("loans_received", 0))
 
 
 def test_every_fallback_shape_and_position_is_seen():
-    shapes = '''
+    shapes = """
 out = {
     "principal": float(loan.principal or 0),
     "outstanding": round(getattr(loan, "outstanding", 0.0), 2),
@@ -283,7 +326,7 @@ out = {
     "published_as": row.get("amount_kes", 0),
 }
 record = Model(total_pending=total_val or 0, gdp_value=int(gdp or 0))
-'''
+"""
     findings = find_zero_fallbacks(shapes, "shapes.py")
     assert len(findings) == 6, findings
 
@@ -296,12 +339,14 @@ record = Model(total_pending=total_val or 0, gdp_value=int(gdp or 0))
 
     # An empty suppression buys nothing.
     unreasoned = 'x = {"total": d.get("total", 0)}  # zero-fallback-ok:'
-    assert find_zero_fallbacks(unreasoned, "c.py"), "an empty suppression bought silence"
+    assert find_zero_fallbacks(
+        unreasoned, "c.py"
+    ), "an empty suppression bought silence"
 
 
 def test_the_detector_leaves_absence_and_machinery_alone():
     """Negative control. These publish no zero, or no figure."""
-    legal = '''
+    legal = """
 out = {
     "total": summary.get("total"),
     "total_absent_reason": None if "total" in summary else "not_in_source",
@@ -316,8 +361,10 @@ out = {
 running = sum(float(b.amount or 0) for b in rows)
 total = row.amount or 0
 call(timeout=cfg.get("timeout", 0), _private_total=x or 0)
-'''
-    assert not find_zero_fallbacks(legal, "legal.py"), find_zero_fallbacks(legal, "legal.py")
+"""
+    assert not find_zero_fallbacks(legal, "legal.py"), find_zero_fallbacks(
+        legal, "legal.py"
+    )
 
     signed = (
         "x = {\n"
@@ -325,15 +372,12 @@ call(timeout=cfg.get("timeout", 0), _private_total=x or 0)
         '    "document_count": by_agency.get(agency, 0),\n'
         "}\n"
     )
-    assert not find_zero_fallbacks(signed, "signed.py"), "a written reason must be honoured"
+    assert not find_zero_fallbacks(
+        signed, "signed.py"
+    ), "a written reason must be honoured"
 
 
-@pytest.mark.parametrize(
-    "relative_path,expected",
-    sorted(QUARANTINE.items()),
-    ids=sorted(QUARANTINE),
-)
-def test_quarantined_modules_still_carry_their_debt(relative_path: str, expected: int):
+def _assert_quarantined_module(relative_path: str, expected: int):
     """The reverse ratchet. A quarantine that outlives its debt is a lie."""
     module = REPO_ROOT / relative_path
     if not module.is_file():
@@ -348,6 +392,11 @@ def test_quarantined_modules_still_carry_their_debt(relative_path: str, expected
             *findings,
         ]
     )
+
+
+def test_quarantined_modules_still_carry_their_debt():
+    for path, count in sorted(QUARANTINE.items()):
+        _assert_quarantined_module(path, count)
 
 
 @pytest.mark.parametrize(

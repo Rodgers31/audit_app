@@ -1,4 +1,4 @@
-"""No module that serves HTTP may read ``enhanced_county_data.json``, directly
+"""No module that serves HTTP may read the three known modelled county files, directly
 or through a module it imports, except through a gate that withholds what the
 file models.
 
@@ -51,25 +51,23 @@ defect (a route reading only the Census population would be flagged too, and
 would need a written reason) and it is still narrower than "nothing modelled
 is ever published", for the reasons under BLIND SPOTS.
 
-THE RULE. A module "reaches" the file if it holds a string constant naming
-``enhanced_county_data`` (docstrings excluded, comments are not constants), or
-imports a repo module that reaches it. A module that registers a route with a
-decorator (``@app.get``, ``@router.post``, ``@bp.route`` ...) or a registration
-call (``add_api_route``, ``add_url_rule``) may not reach it,
-except through a module in ``GATES``, where the walk stops. Each gate names the
-tests that prove it withholds what the file models.
+THE RULE. Follow referenced functions, constants and import aliases from route
+handlers and executed module initialization. The known modelled filename stems
+are enhanced_county_data, official_county_budget_data and ultimate_etl_results.
+A named reader in GATES stops the walk; other functions and exported paths in
+the same module remain visible. Registration calls and named decorator aliases
+participate. This is a conservative reference graph, not full Python dataflow.
 
 BLIND SPOTS, in writing:
 
 * A filename assembled at runtime (``"enhanced_county" + "_data.json"``, or read
-  from config) is not a constant, so it is not seen.
+  from config) is not a constant, so it may not be seen.
 * Data laundered through the database. ``backend/bootstrap.py`` writes this
   file into tables; after that, a route reads a table, not the file. That hop
   is the gates' job, and ``GATES`` names the tests that hold them to it.
 * An import this resolver cannot map to a file: ``importlib``, ``__import__``,
-  ``sys.path`` manipulation to an unusual root, or a star-import of a package
-  whose ``__init__`` re-exports from elsewhere is followed only as far as the
-  ``__init__`` itself.
+  ``sys.path`` manipulation to an unusual root, or a dynamic attribute/method selected at runtime. Static wildcard
+  re-exports and ordinary aliases are followed. Class references are conservative.
 * Anything outside Python. A committed document can publish the same ranking
   (``docs/COUNTY_API_README.md`` did, with Mombasa at number one) and no
   source scan of ``.py`` files will see it.
@@ -92,13 +90,28 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MODELLED_FILE_STEM = "enhanced_county_data"
-MODELLED_FILE = REPO_ROOT / "backend" / "data" / "reference" / "enhanced_county_data.json"
+MODELLED_FILE_STEMS = (
+    MODELLED_FILE_STEM,
+    "official_county_budget_data",
+    "ultimate_etl_results",
+)
+MODELLED_FILE = (
+    REPO_ROOT / "backend" / "data" / "reference" / "enhanced_county_data.json"
+)
 
 #: Directories that are not this repo's source. Pruned by name at any depth.
 #: A virtualenv is recognised by its ``pyvenv.cfg``, whatever it is called.
 ENVIRONMENT_DIR_NAMES = frozenset(
-    {".git", "node_modules", "__pycache__", ".pytest_cache", ".mypy_cache",
-     ".ruff_cache", ".next", ".claude"}
+    {
+        ".git",
+        "node_modules",
+        "__pycache__",
+        ".pytest_cache",
+        ".mypy_cache",
+        ".ruff_cache",
+        ".next",
+        ".claude",
+    }
 )
 
 #: This repo's source, skipped on purpose.
@@ -110,9 +123,11 @@ REPO_EXCLUSIONS = {
     ),
 }
 
-#: Modules a route may reach the file THROUGH. The walk stops here.
+#: Exact named readers a route may reach the file THROUGH. Module siblings
+#: and raw exported path constants do not inherit these gates.
 GATES: dict[str, dict] = {
     "backend/bootstrap.py": {
+        "functions": ("initialize_reference_data", "bootstrap_provenance"),
         "reason": (
             "reads the file into the database and withholds the fields it "
             "models: _MODELLED_COUNTY_METRICS never reaches entity.meta, and the "
@@ -125,6 +140,7 @@ GATES: dict[str, dict] = {
         ),
     },
     "backend/services/publication_gate.py": {
+        "functions": ("loan_is_modelled_fixture",),
         "reason": (
             "names the file only as the provenance stamp it REFUSES: "
             "loan_is_modelled_fixture() excludes bootstrap's modelled rows "
@@ -135,6 +151,7 @@ GATES: dict[str, dict] = {
         ),
     },
     "backend/services/entity_financials.py": {
+        "functions": ("budget_evidence_is_unreported",),
         "reason": (
             "names the file only to refuse its provenance stamp in source "
             "or row metadata; financial_summary withholds these modelled "
@@ -169,9 +186,15 @@ HTTP_REGISTRATION_CALLS = frozenset({"add_api_route", "add_route", "add_url_rule
 def _docstring_ids(tree: ast.AST) -> set[int]:
     ids: set[int] = set()
     for node in ast.walk(tree):
-        if isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+        if isinstance(
+            node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)
+        ):
             body = node.body
-            if body and isinstance(body[0], ast.Expr) and isinstance(body[0].value, ast.Constant):
+            if (
+                body
+                and isinstance(body[0], ast.Expr)
+                and isinstance(body[0].value, ast.Constant)
+            ):
                 ids.add(id(body[0].value))
     return ids
 
@@ -182,7 +205,7 @@ def names_the_file(tree: ast.AST) -> bool:
     return any(
         isinstance(node, ast.Constant)
         and isinstance(node.value, str)
-        and MODELLED_FILE_STEM in node.value
+        and any(stem in node.value for stem in MODELLED_FILE_STEMS)
         and id(node) not in docstrings
         for node in ast.walk(tree)
     )
@@ -204,7 +227,23 @@ def registers_a_route(tree: ast.AST) -> bool:
                     and dec.func.attr in HTTP_DECORATORS
                 ):
                     return True
-    return False
+    # A named decorator can be an alias for app.get("/...").
+    aliases = {
+        n.targets[0].id
+        for n in ast.walk(tree)
+        if isinstance(n, ast.Assign)
+        and len(n.targets) == 1
+        and isinstance(n.targets[0], ast.Name)
+        and isinstance(n.value, ast.Call)
+        and isinstance(n.value.func, ast.Attribute)
+        and n.value.func.attr in HTTP_DECORATORS
+    }
+    return any(
+        isinstance(d, ast.Name) and d.id in aliases
+        for n in ast.walk(tree)
+        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
+        for d in n.decorator_list
+    )
 
 
 def _candidates(base: Path, dotted: str) -> list[Path]:
@@ -240,7 +279,10 @@ def imported_files(module: Path, tree: ast.AST, root: Path) -> set[Path]:
                 search = bases
             head = node.module or ""
             names = [(search, head)]
-            names += [(search, f"{head}.{alias.name}" if head else alias.name) for alias in node.names]
+            names += [
+                (search, f"{head}.{alias.name}" if head else alias.name)
+                for alias in node.names
+            ]
         for search, dotted in names:
             for base in search:
                 for candidate in _candidates(base, dotted):
@@ -256,7 +298,8 @@ def python_modules(root: Path) -> list[Path]:
     for dirpath, dirnames, filenames in os.walk(root):
         here = Path(dirpath)
         dirnames[:] = [
-            d for d in dirnames
+            d
+            for d in dirnames
             if d not in ENVIRONMENT_DIR_NAMES
             and not (here / d / "pyvenv.cfg").exists()
             and (here / d).relative_to(root).as_posix() not in REPO_EXCLUSIONS
@@ -266,63 +309,231 @@ def python_modules(root: Path) -> list[Path]:
 
 
 class Graph:
-    """Every module under ``root``: what it imports, whether it names the file,
-    whether it serves a route."""
+    """Resolve referenced symbols, so importing a gate cannot exempt its PATH.
 
-    def __init__(self, root: Path, modules: list[Path] | None = None):
+    This is a conservative static reference graph, not full Python dataflow.
+    Local/class helpers and module-level loads participate; unrelated imports
+    do not make every route in a module a reader.
+    """
+
+    def __init__(self, root: Path):
         self.root = root.resolve()
-        self.modules = modules if modules is not None else python_modules(self.root)
-        self.imports: dict[Path, set[Path]] = {}
-        self.names_file: set[Path] = set()
-        self.routes: set[Path] = set()
-        self.unparseable: list[str] = []
-        for module in self.modules:
+        self.unparseable = []
+        self.routes = set()
+        self.names_file = set()
+        self.nodes = {}
+        self.bindings = {}
+        self.locals = {}
+        self.stars = {}
+        self.route_symbols = {}
+        for module in python_modules(self.root):
+            module = module.resolve()
             try:
-                tree = ast.parse(module.read_text(encoding="utf-8"), filename=str(module))
-            except (SyntaxError, UnicodeDecodeError) as exc:
+                tree = ast.parse(module.read_text(encoding="utf-8"))
+            except (SyntaxError, ValueError) as exc:
                 self.unparseable.append(f"{self.rel(module)}: {exc}")
                 continue
-            self.imports[module] = imported_files(module, tree, self.root)
             if names_the_file(tree):
                 self.names_file.add(module)
+            bindings = {}
+            self.bindings[module] = bindings
+            self.stars[module] = set()
+            aliases = {
+                n.targets[0].id
+                for n in tree.body
+                if isinstance(n, ast.Assign)
+                and len(n.targets) == 1
+                and isinstance(n.targets[0], ast.Name)
+                and isinstance(n.value, ast.Call)
+                and isinstance(n.value.func, ast.Attribute)
+                and n.value.func.attr in HTTP_DECORATORS
+            }
+            bare = []
+            for node in tree.body:
+                if isinstance(
+                    node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+                ):
+                    self.nodes[(module, node.name)] = node
+                    bindings[node.name] = (module, node.name)
+                    if registers_a_route(
+                        ast.Module(body=[node], type_ignores=[])
+                    ) or any(
+                        isinstance(d, ast.Name) and d.id in aliases
+                        for d in getattr(node, "decorator_list", ())
+                    ):
+                        self.route_symbols.setdefault(module, set()).add(node.name)
+                elif isinstance(node, (ast.Assign, ast.AnnAssign)):
+                    targets = (
+                        node.targets if isinstance(node, ast.Assign) else [node.target]
+                    )
+                    for target in targets:
+                        for name in ast.walk(target):
+                            if isinstance(name, ast.Name):
+                                self.nodes[(module, name.id)] = node.value
+                                bindings[name.id] = (module, name.id)
+                elif not isinstance(node, (ast.Import, ast.ImportFrom)):
+                    bare.append(node)
+                    for name in ast.walk(node):
+                        if isinstance(name, ast.Name) and isinstance(
+                            name.ctx, ast.Store
+                        ):
+                            bindings[name.id] = (module, "@module")
+            self.nodes[(module, "@module")] = ast.Module(body=bare, type_ignores=[])
             if registers_a_route(tree):
                 self.routes.add(module)
+                # Registration calls reference their handler via @module.
+                if any(
+                    isinstance(n, ast.Call)
+                    and isinstance(n.func, ast.Attribute)
+                    and n.func.attr in HTTP_REGISTRATION_CALLS
+                    for n in ast.walk(tree)
+                ):
+                    self.route_symbols.setdefault(module, set()).add("@module")
+
+            # Scope imports to the function/class containing them. An unused
+            # helper's import must not overwrite a route's global binding.
+            def import_bindings(nodes, destination, stars):
+                for node in nodes:
+                    if isinstance(node, ast.ImportFrom):
+                        files = imported_files(
+                            module, ast.Module(body=[node], type_ignores=[]), self.root
+                        )
+                        for alias in node.names:
+                            if alias.name == "*":
+                                stars.update(files)
+                                continue
+                            for path in sorted(files):
+                                destination[alias.asname or alias.name] = (
+                                    path,
+                                    "*" if path.stem == alias.name else alias.name,
+                                )
+                    elif isinstance(node, ast.Import):
+                        for alias in node.names:
+                            files = imported_files(
+                                module,
+                                ast.Module(
+                                    body=[ast.Import(names=[alias])], type_ignores=[]
+                                ),
+                                self.root,
+                            )
+                            for path in sorted(files):
+                                destination[alias.asname or alias.name] = (path, "*")
+                    elif not isinstance(
+                        node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+                    ):
+                        # Top-level conditional/try imports are still global.
+                        import_bindings(ast.iter_child_nodes(node), destination, stars)
+
+            import_bindings(tree.body, bindings, self.stars[module])
+            for key, node in list(self.nodes.items()):
+                if key[0] == module and isinstance(
+                    node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+                ):
+                    local = {}
+                    local_stars = set()
+                    import_bindings(node.body, local, local_stars)
+                    self.locals[key] = local
+        self.edges = {}
+        self.readers = set()
+        for key, node in self.nodes.items():
+            if node is None:
+                continue
+            if names_the_file(node):
+                self.readers.add(key)
+            module, _ = key
+            references = set()
+            scope = dict(self.bindings[module])
+            scope.update(self.locals.get(key, {}))
+
+            def dotted(n):
+                if isinstance(n, ast.Name):
+                    return n.id
+                if isinstance(n, ast.Attribute):
+                    head = dotted(n.value)
+                    return head + "." + n.attr if head else None
+                return None
+
+            prefixes = {
+                id(n.value) for n in ast.walk(node) if isinstance(n, ast.Attribute)
+            }
+            for n in ast.walk(node):
+                if id(n) in prefixes:
+                    continue
+                if not isinstance(n, (ast.Name, ast.Attribute)) or not isinstance(
+                    n.ctx, ast.Load
+                ):
+                    continue
+                name = dotted(n)
+                if name is None:
+                    continue
+                matching = [
+                    bound
+                    for bound in scope
+                    if name == bound or name.startswith(bound + ".")
+                ]
+                if matching:
+                    bound = max(matching, key=len)
+                    path, symbol = scope[bound]
+                    if symbol == "*" and name != bound:
+                        symbol = name[len(bound) + 1 :].split(".")[0]
+                    references.add((path, symbol))
+                elif isinstance(n, ast.Name):
+                    references.update(
+                        (path, name) for path in self.stars.get(module, ())
+                    )
+            self.edges[key] = references
 
     def rel(self, path: Path) -> str:
         return path.resolve().relative_to(self.root).as_posix()
 
     def chain_to_file(self, start: Path, gates: set[str]) -> list[str] | None:
-        """The import chain from ``start`` to a module naming the file, or None.
-
-        Breadth-first, so the chain reported is a shortest one. A gate is never
-        entered: reaching the file through it is the sanctioned route.
-        """
-        start = start.resolve()
-        parent: dict[Path, Path | None] = {start: None}
-        queue = [start]
+        queue = [
+            (start.resolve(), name)
+            for name in sorted(
+                self.route_symbols.get(start.resolve(), set()) | {"@module"}
+            )
+        ]
+        parents = {key: None for key in queue}
         while queue:
             current = queue.pop(0)
-            if current in self.names_file:
+            path, symbol = current
+            # Only a named reader function is a gate. Constants, aliases,
+            # siblings and routes added inside that module remain scanned.
+            if self.rel(path) in gates and symbol in GATES.get(self.rel(path), {}).get(
+                "functions", ()
+            ):
+                continue
+            if current in self.readers:
                 chain = []
-                node: Path | None = current
-                while node is not None:
-                    chain.append(self.rel(node))
-                    node = parent[node]
+                key = current
+                while key is not None:
+                    rel = self.rel(key[0])
+                    if not chain or chain[-1] != rel:
+                        chain.append(rel)
+                    key = parents[key]
                 return list(reversed(chain))
-            for nxt in sorted(self.imports.get(current, ())):
-                if nxt in parent or self.rel(nxt) in gates:
-                    continue
-                parent[nxt] = current
-                queue.append(nxt)
+            if symbol == "*":
+                following = [k for k in self.nodes if k[0] == path]
+            else:
+                # Re-exported names continue through that module's bindings.
+                following = list(self.edges.get(current, ()))
+                binding = self.bindings.get(path, {}).get(symbol)
+                if binding and binding != current:
+                    following.append(binding)
+                if current not in self.nodes and not binding:
+                    following.extend((p, symbol) for p in self.stars.get(path, ()))
+            for nxt in sorted(following):
+                if nxt not in parents:
+                    parents[nxt] = current
+                    queue.append(nxt)
         return None
 
     def offending_routes(self, gates: set[str]) -> dict[str, list[str]]:
-        out = {}
-        for module in sorted(self.routes):
-            chain = self.chain_to_file(module, gates)
-            if chain is not None:
-                out[self.rel(module)] = chain
-        return out
+        return {
+            self.rel(module): chain
+            for module in sorted(self.routes)
+            if (chain := self.chain_to_file(module, gates)) is not None
+        }
 
 
 # --------------------------------------------------------------------------
@@ -350,11 +561,17 @@ def test_the_premise_missing_funds_is_two_percent_of_a_modelled_budget():
         assert r["budget_2025"] == pytest.approx(
             r["population"] * 4500 * r["economic_factor"], abs=1
         ), name
-        assert r["data_source"] == "realistic_estimate" and r["needs_verification"] is True, name
+        assert (
+            r["data_source"] == "realistic_estimate" and r["needs_verification"] is True
+        ), name
 
-    by_missing = sorted(records, key=lambda n: records[n]["missing_funds"], reverse=True)
+    by_missing = sorted(
+        records, key=lambda n: records[n]["missing_funds"], reverse=True
+    )
     by_budget = sorted(records, key=lambda n: records[n]["budget_2025"], reverse=True)
-    assert by_missing == by_budget, "the 'worst offenders' order is the budget-model order"
+    assert (
+        by_missing == by_budget
+    ), "the 'worst offenders' order is the budget-model order"
 
 
 def test_the_premise_the_file_models_more_than_bootstraps_list_names():
@@ -368,7 +585,9 @@ def test_the_premise_the_file_models_more_than_bootstraps_list_names():
     assert {r["debt_to_budget_ratio"] for r in records.values()} == {15.0}
     assert {r["pending_bills_ratio"] for r in records.values()} == {8.0}
     for name, r in records.items():
-        assert r["per_capita_budget"] == pytest.approx(4500 * r["economic_factor"]), name
+        assert r["per_capita_budget"] == pytest.approx(
+            4500 * r["economic_factor"]
+        ), name
 
     # audit_rating, financial_health_score and budget_execution_rate are read
     # off the same hand-set economic_factor that scales the budget. No auditor
@@ -382,20 +601,34 @@ def test_the_premise_the_file_models_more_than_bootstraps_list_names():
 
     for name, r in records.items():
         assert (
-            r["audit_rating"], r["financial_health_score"], r["budget_execution_rate"]
+            r["audit_rating"],
+            r["financial_health_score"],
+            r["budget_execution_rate"],
         ) == graded(r["economic_factor"]), name
-    assert Counter(r["audit_rating"] for r in records.values()) == {"B": 40, "B+": 3, "A-": 4}
+    assert Counter(r["audit_rating"] for r in records.values()) == {
+        "B": 40,
+        "B+": 3,
+        "A-": 4,
+    }
 
     bootstrap = ast.parse((REPO_ROOT / "backend" / "bootstrap.py").read_text())
     listed = next(
         ast.literal_eval(node.value)
         for node in ast.walk(bootstrap)
         if isinstance(node, ast.Assign)
-        and any(isinstance(t, ast.Name) and t.id == "_MODELLED_COUNTY_METRICS" for t in node.targets)
+        and any(
+            isinstance(t, ast.Name) and t.id == "_MODELLED_COUNTY_METRICS"
+            for t in node.targets
+        )
     )
     assert "missing_funds" in listed
-    assert not {"audit_rating", "financial_health_score", "budget_execution_rate",
-                "debt_to_budget_ratio", "per_capita_budget"} & set(listed)
+    assert not {
+        "audit_rating",
+        "financial_health_score",
+        "budget_execution_rate",
+        "debt_to_budget_ratio",
+        "per_capita_budget",
+    } & set(listed)
 
 
 # --------------------------------------------------------------------------
@@ -403,7 +636,7 @@ def test_the_premise_the_file_models_more_than_bootstraps_list_names():
 # --------------------------------------------------------------------------
 
 #: The route this guard was written for, as it stood before withdrawal.
-WITHDRAWN_ROUTE = '''
+WITHDRAWN_ROUTE = """
 import json
 from fastapi import FastAPI
 
@@ -426,7 +659,7 @@ async def get_missing_funds_analysis():
         "worst_offenders": county_missing_funds[:10],
         "summary": f"Total of {total_missing:,.0f} KES missing",
     }
-'''
+"""
 
 
 def _tree(tmp_path: Path, files: dict[str, str]) -> Graph:
@@ -455,17 +688,27 @@ def test_the_detector_follows_imports_to_the_reader(tmp_path):
         {
             "apis/route_a.py": route.format(imp="from analytics_helper import helper"),
             "apis/analytics_helper.py": reader,
-            "backend/routers/route_b.py": route.format(imp="from services.county_reader import helper"),
+            "backend/routers/route_b.py": route.format(
+                imp="from services.county_reader import helper"
+            ),
             "backend/routers/__init__.py": "",
             "backend/services/__init__.py": "",
             "backend/services/county_reader.py": reader,
-            "backend/routers/route_c.py": route.format(imp="from ..services.county_reader import helper"),
+            "backend/routers/route_c.py": route.format(
+                imp="from ..services.county_reader import helper"
+            ),
         },
     )
     assert graph.offending_routes(set()) == {
         "apis/route_a.py": ["apis/route_a.py", "apis/analytics_helper.py"],
-        "backend/routers/route_b.py": ["backend/routers/route_b.py", "backend/services/county_reader.py"],
-        "backend/routers/route_c.py": ["backend/routers/route_c.py", "backend/services/county_reader.py"],
+        "backend/routers/route_b.py": [
+            "backend/routers/route_b.py",
+            "backend/services/county_reader.py",
+        ],
+        "backend/routers/route_c.py": [
+            "backend/routers/route_c.py",
+            "backend/services/county_reader.py",
+        ],
     }
 
 
@@ -474,8 +717,8 @@ def test_the_detector_stops_at_a_gate_and_ignores_prose(tmp_path):
         tmp_path,
         {
             # Reaches the file only through the gate: sanctioned.
-            "backend/main.py": 'from fastapi import FastAPI\napp = FastAPI()\nfrom bootstrap import load\n\n@app.get("/")\ndef root():\n    return load()\n',
-            "backend/bootstrap.py": 'PATH = "enhanced_county_data.json"\ndef load():\n    return {}\n',
+            "backend/main.py": 'from fastapi import FastAPI\napp = FastAPI()\nfrom bootstrap import initialize_reference_data\n\n@app.get("/")\ndef root():\n    return initialize_reference_data()\n',
+            "backend/bootstrap.py": 'PATH = "enhanced_county_data.json"\ndef initialize_reference_data():\n    return PATH\n',
             # Mentions it in a docstring and a comment only.
             "apis/prose.py": '"""Once read enhanced_county_data.json."""\nfrom fastapi import FastAPI\napp = FastAPI()\n# enhanced_county_data.json is gone\n\n@app.get("/")\ndef root():\n    """Not from enhanced_county_data.json."""\n    return {}\n',
             # Registers its route without a decorator.
@@ -506,9 +749,13 @@ ROUTE_MODULES = sorted(GRAPH.rel(m) for m in GRAPH.routes)
 def test_the_sweep_is_not_vacuous():
     """An empty sweep must never read as a pass."""
     assert not GRAPH.unparseable, GRAPH.unparseable
-    assert "backend/main.py" in ROUTE_MODULES, "route detection is blind to the shipping app"
+    assert (
+        "backend/main.py" in ROUTE_MODULES
+    ), "route detection is blind to the shipping app"
     readers = {GRAPH.rel(m) for m in GRAPH.names_file}
-    assert set(GATES) <= readers, "a gate no longer names the file; see test_every_gate_is_live"
+    assert (
+        set(GATES) <= readers
+    ), "a gate no longer names the file; see test_every_gate_is_live"
     # The shipping app does reach the file, through bootstrap. If this stops
     # being true the gate list is protecting nothing and should be re-read.
     assert GRAPH.offending_routes(set()).get("backend/main.py"), (
@@ -531,22 +778,30 @@ def test_no_route_reaches_the_modelled_file(module):
     )
 
 
-@pytest.mark.parametrize("module", sorted(KNOWN_OFFENDERS))
-def test_every_known_offender_still_offends(module):
+def _assert_known_offender(module):
     assert module in OFFENDING, (
         f"{module} no longer reaches the file — delete its KNOWN_OFFENDERS entry "
         "so it cannot cover whatever lands at that path next"
     )
 
 
+def test_every_known_offender_still_offends():
+    for module in sorted(KNOWN_OFFENDERS):
+        _assert_known_offender(module)
+
+
 @pytest.mark.parametrize("gate", sorted(GATES))
 def test_every_gate_is_live(gate):
     path = REPO_ROOT / gate
     assert path.is_file(), f"gate {gate} no longer exists"
-    assert path.resolve() in GRAPH.names_file, (
-        f"gate {gate} no longer names the file — the exemption covers nothing"
-    )
+    assert (
+        path.resolve() in GRAPH.names_file
+    ), f"gate {gate} no longer names the file — the exemption covers nothing"
     entry = GATES[gate]
     assert entry["reason"].strip()
+    assert entry["functions"]
+    assert all(
+        (path.resolve(), name) in GRAPH.nodes for name in entry["functions"]
+    ), "a named gate reader is gone"
     for proof in entry["proven_by"]:
         assert (REPO_ROOT / proof).is_file(), f"{gate}'s proof {proof} is gone"

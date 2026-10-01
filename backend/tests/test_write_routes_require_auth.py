@@ -108,24 +108,43 @@ REMOVED_BY_OPEN_PR: dict = {}
 
 
 def _mounted_write_routes(application=app) -> list[tuple[str, str, object, object]]:
-    """(method, path, endpoint, dependant) for every write route FastAPI serves."""
-    if iter_route_contexts is not None:
-        contexts = iter_route_contexts(application.routes)
-    else:
-        contexts = (r for r in application.routes if isinstance(r, APIRoute))
-    out = []
-    for ctx in contexts:
-        dependant = getattr(ctx, "dependant", None)
-        if dependant is None:  # docs/openapi Starlette routes, mounts
-            continue
-        for method in sorted((ctx.methods or set()) - READ_METHODS):
-            out.append((method, ctx.path, ctx.endpoint, dependant))
-    return out
+    """Every effective write surface, including mounts and WebSockets.
+
+    A Starlette route without a FastAPI dependant remains visible and ungated;
+    an opaque mount requires an explicit, behavior-proven exception.
+    """
+    from starlette.routing import Mount, Route, WebSocketRoute
+
+    def walk(routes, prefix=""):
+        contexts = (
+            iter_route_contexts(routes) if iter_route_contexts is not None else routes
+        )
+        for ctx in contexts:
+            route = getattr(ctx, "route", ctx)
+            path = prefix + getattr(ctx, "path", getattr(route, "path", ""))
+            if isinstance(route, Mount):
+                children = getattr(route.app, "routes", None)
+                if children is None:
+                    yield ("ANY", path + "/{path:path}", route.app, None)
+                else:
+                    yield from walk(children, path)
+                continue
+            dependant = getattr(ctx, "dependant", getattr(route, "dependant", None))
+            endpoint = getattr(ctx, "endpoint", getattr(route, "endpoint", None))
+            methods = getattr(ctx, "methods", getattr(route, "methods", None))
+            if methods is None:
+                methods = {"ANY"} if isinstance(route, Route) else set()
+            if isinstance(route, WebSocketRoute):
+                methods = {"WEBSOCKET"}
+            for method in sorted(set(methods) - READ_METHODS):
+                yield (method, path, endpoint, dependant)
+
+    return list(walk(application.routes))
 
 
 def _dependency_calls(dependant) -> list:
     calls = []
-    for sub in dependant.dependencies:
+    for sub in getattr(dependant, "dependencies", ()):
         calls.append(sub.call)
         calls.extend(_dependency_calls(sub))
     return calls
@@ -285,7 +304,9 @@ def test_anonymous_post_cannot_start_etl(client, path):
         f"anonymous POST {path} returned {response.status_code}: "
         f"{response.text[:200]}"
     )
-    assert pipeline_cls.call_count == 0, f"anonymous POST {path} built a KenyaDataPipeline"
+    assert (
+        pipeline_cls.call_count == 0
+    ), f"anonymous POST {path} built a KenyaDataPipeline"
     assert runner_cls.call_count == 0, f"anonymous POST {path} ran SimpleKenyaETL"
 
 
@@ -310,7 +331,9 @@ def test_unverified_bearer_cannot_start_admin_etl_run(client):
 
 
 @pytest.mark.parametrize("method, path", sorted(SIGNED_WRITE_ROUTES))
-def test_signed_write_routes_refuse_an_unsigned_request(client, monkeypatch, method, path):
+def test_signed_write_routes_refuse_an_unsigned_request(
+    client, monkeypatch, method, path
+):
     """A signed route is exempt from the session rule only if it checks the signature."""
     if (method, path) not in {(m, p) for m, p, _, _ in _mounted_write_routes()}:
         pytest.skip(f"{method} {path} is not mounted on this tree")
@@ -318,7 +341,9 @@ def test_signed_write_routes_refuse_an_unsigned_request(client, monkeypatch, met
 
     handler_module = importlib.import_module("routers.cache_invalidation")
     ran = []
-    monkeypatch.setattr(handler_module, "invalidate_all", lambda *a, **k: ran.append(1) or {})
+    monkeypatch.setattr(
+        handler_module, "invalidate_all", lambda *a, **k: ran.append(1) or {}
+    )
 
     # A FRESH timestamp, so the only thing that can refuse these is the
     # signature check. (A stale ts is refused by the replay check too, which
@@ -331,7 +356,9 @@ def test_signed_write_routes_refuse_an_unsigned_request(client, monkeypatch, met
     # Secret configured: no signature, and a wrong one, are both refused.
     monkeypatch.setenv("REVALIDATE_SECRET", "test-secret-not-a-real-one")
     unsigned = client.request(method, path, content=body)
-    wrong = client.request(method, path, content=body, headers={"x-revalidate-signature": "0" * 64})
+    wrong = client.request(
+        method, path, content=body, headers={"x-revalidate-signature": "0" * 64}
+    )
     # Secret unset: the endpoint is disabled rather than open.
     monkeypatch.delenv("REVALIDATE_SECRET")
     disabled = client.request(method, path, content=body)
@@ -340,5 +367,7 @@ def test_signed_write_routes_refuse_an_unsigned_request(client, monkeypatch, met
         assert response.status_code == 401, response.text
         assert response.json()["detail"]["error"] == "invalid_signature", response.text
     assert disabled.status_code == 503, disabled.text
-    assert disabled.json()["detail"]["error"] == "invalidation_not_configured", disabled.text
+    assert (
+        disabled.json()["detail"]["error"] == "invalidation_not_configured"
+    ), disabled.text
     assert ran == [], "an unsigned request reached invalidate_all()"

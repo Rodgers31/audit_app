@@ -216,6 +216,7 @@ async def get_agencies_status():
         AgencyStatus(
             agency="National Treasury",
             status="operational",
+            # zero-fallback-ok: SQL GROUP BY count omits an agency with no report rows; its measured count is zero
             document_count=summary["by_agency"].get("National Treasury", 0),
             reliability="Good",
             last_successful_extraction="2025-08-24T11:51:15",
@@ -223,6 +224,7 @@ async def get_agencies_status():
         AgencyStatus(
             agency="Kenya National Bureau of Statistics",
             status="operational",
+            # zero-fallback-ok: SQL GROUP BY count omits an agency with no report rows; its measured count is zero
             document_count=summary["by_agency"].get(
                 "Kenya National Bureau of Statistics", 0
             ),
