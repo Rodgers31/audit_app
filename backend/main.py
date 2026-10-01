@@ -2986,6 +2986,8 @@ def _audit_is_display_grade(audit) -> bool:
     and to derive a county's audit_status from. Fabricated or modelled
     rows (identified via provenance) are excluded so a transparency site
     never renders a synthetic finding as an audit opinion."""
+    from services.publication_gate import normalize_audit_identity
+
     provenance = audit.provenance
     if isinstance(provenance, dict):
         # JSONB provenance is dict-shaped for some writers/older rows
@@ -2998,10 +3000,10 @@ def _audit_is_display_grade(audit) -> bool:
     for entry in provenance:
         if not isinstance(entry, dict):
             continue
-        dataset_id = str(entry.get("dataset_id") or "")
+        dataset_id = normalize_audit_identity(entry.get("dataset_id"))
         if dataset_id.startswith(_FABRICATED_AUDIT_DATASET_PREFIXES):
             return False
-        quality = str(entry.get("data_quality") or "").lower()
+        quality = normalize_audit_identity(entry.get("data_quality")).lower()
         if quality in _NON_OFFICIAL_QUALITIES:
             return False
     return True
