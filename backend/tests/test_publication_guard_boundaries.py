@@ -73,6 +73,82 @@ def test_literals_in_publishing_calls_are_seen(source):
     assert figures.find_invented_figures(source)
 
 
+def test_explicit_remote_endpoint_is_not_a_local_advertisement():
+    source = 'source = {"base_url": "https://libraryir.parliament.go.ke", "api_endpoint": "/server/api"}'
+    assert endpoints.find_unserved_advertisements(source, set()) == []
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        'source = {"base_url": "/external", "api_endpoint": "/server/api"}',
+        'source = {"base_url": "https:///missing-host", "api_endpoint": "/server/api"}',
+        'source = {"base_url": "ftp://external.example", "api_endpoint": "/server/api"}',
+        'source = {"base_url": "http://localhost:8000", "api_endpoint": "/server/api"}',
+        'source = {"base_url": "http://127.0.0.1:8000", "api_endpoint": "/server/api"}',
+        'source = {"base_url": "http://127.1", "api_endpoint": "/server/api"}',
+        'source = {"base_url": "http://127.0.0.1.", "api_endpoint": "/server/api"}',
+        'source = {"base_url": "http://0177.0.0.1", "api_endpoint": "/server/api"}',
+        'source = {"base_url": "http://0x7f.0.0.1", "api_endpoint": "/server/api"}',
+        'source = {"base_url": "http://2130706433", "api_endpoint": "/server/api"}',
+        'source = {"base_url": "http://0x7f000001", "api_endpoint": "/server/api"}',
+        'source = {"base_url": "http://[::ffff:127.0.0.1]", "api_endpoint": "/server/api"}',
+        'source = {"base_url": "http://[::1]:8000", "api_endpoint": "/server/api"}',
+        'source = {"base_url": "http://0.0.0.0:8000", "api_endpoint": "/server/api"}',
+        'source = {"base_url": "https://not a host", "api_endpoint": "/server/api"}',
+        'source = {"base_url": "https://external..example", "api_endpoint": "/server/api"}',
+        'source = {"base_url": "https://external.example:bad", "api_endpoint": "/server/api"}',
+        'source = {"base_url": "https://external.example", "base_url": "/local", "api_endpoint": "/server/api"}',
+        'source = {"base_url": "https://external.example", **unknown, "api_endpoint": "/server/api"}',
+        'key = "base_url"\nsource = {"base_url": "https://external.example", key: "/local", "api_endpoint": "/server/api"}',
+        'sources = [{"base_url": "https://external.example"}, {"api_endpoint": "/server/api"}]',
+        'source = {"base_url": "https://external.example", "local": {"api_endpoint": "/server/api"}}',
+        'source = {"base_url": remote_url, "api_endpoint": "/server/api"}',
+    ],
+)
+def test_remote_endpoint_context_does_not_waive_local_or_unknown_paths(source):
+    assert len(endpoints.find_unserved_advertisements(source, set())) == 1
+
+
+def test_reviewed_figure_inventory_keeps_raw_detection_and_exact_context():
+    import ast
+    import hashlib
+
+    source = "budget = 1234\n"
+    entry = {
+        "ast_sha256": hashlib.sha256(
+            ast.dump(ast.parse(source), include_attributes=False).encode()
+        ).hexdigest(),
+        "sites": [
+            {
+                "signature": figures.find_invented_figures(source)[0].split(": ", 1)[1],
+                "reason": "Controlled existing unresolved typed amount; detection must remain visible",
+                "disposition": "unresolved typed finance",
+                "tracking": "https://github.com/Rodgers31/audit_app/issues/301",
+            }
+        ],
+    }
+    assert figures.find_invented_figures(source)
+    figures._assert_reviewed_figure_source(source, "control.py", entry)
+    figures._assert_reviewed_figure_source(
+        "budget = 1234  # formatting only\n", "control.py", entry
+    )
+    for changed in (
+        "budget = 1235\n",  # changed amount
+        "budget = measured\n",  # removed debt must retire its inventory entry
+        "budget = 1234\ndebt = 5678\n",  # new site
+        "budget = 1234\npublish(budget)\n",  # same literal, changed use context
+        "budget = 1234  # figure-literal-ok: new suppression\n",
+        "",  # deleted contents
+    ):
+        with pytest.raises(AssertionError):
+            figures._assert_reviewed_figure_source(changed, "control.py", entry)
+    for key in ("reason", "tracking", "disposition"):
+        broken = {**entry, "sites": [{**entry["sites"][0], key: ""}]}
+        with pytest.raises(AssertionError):
+            figures._assert_reviewed_figure_source(source, "control.py", broken)
+
+
 @pytest.mark.parametrize(
     "source",
     [

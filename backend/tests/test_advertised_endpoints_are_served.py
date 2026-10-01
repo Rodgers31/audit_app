@@ -52,6 +52,9 @@ difference is what the author called the variable.
 
 Traversal covers the shared whole-tree source set; parse errors fail closed.
 This is a static decorator registry, not proof that a deployed app mounts a route.
+Relative paths with a directly attached, valid remote HTTP(S) ``base_url``
+belong to that explicit other service. This context is not inherited by nested
+or neighboring mappings and does not cover local or dynamically replaced URLs.
 
 WHAT IS NOT CHECKED, deliberately. ``ready_for_ui: True`` in the block above is
 a literal that cannot become False whatever the run found, and it is the last
@@ -75,8 +78,10 @@ service is a legitimate reason; writing it down is the point.
 from __future__ import annotations
 
 import ast
+import ipaddress
 import re
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import pytest
 
@@ -139,6 +144,11 @@ def find_advertised_paths(
     for node in ast.walk(tree):
         if not isinstance(node, ast.Dict):
             continue
+        # A directly attached absolute remote base URL identifies the service
+        # owning these relative paths. Do not infer it from siblings, outer
+        # containers, variables or an invalid/local URL.
+        if _has_explicit_remote_base(node):
+            continue
         for key, value in zip(node.keys, node.values):
             if not (isinstance(key, ast.Constant) and isinstance(key.value, str)):
                 continue
@@ -159,6 +169,64 @@ def find_advertised_paths(
                     continue
                 advertised.append((match.group(1), element.lineno))
     return advertised
+
+
+def _has_explicit_remote_base(node: ast.Dict) -> bool:
+    if any(not isinstance(key, ast.Constant) for key in node.keys):
+        # Unpacking and computed keys may replace the URL at runtime.
+        return False
+    base_keys = [
+        key
+        for key in node.keys
+        if isinstance(key, ast.Constant) and key.value == "base_url"
+    ]
+    if len(base_keys) != 1:
+        return False  # duplicate keys are ambiguous source context
+    for key, value in zip(node.keys, node.values):
+        if not (
+            isinstance(key, ast.Constant)
+            and key.value == "base_url"
+            and isinstance(value, ast.Constant)
+            and isinstance(value.value, str)
+        ):
+            continue
+        try:
+            url = urlsplit(value.value)
+            host = url.hostname
+            if url.scheme not in {"http", "https"} or not host:
+                continue
+            host = host.rstrip(".")
+            if host.lower() == "localhost" or host.lower().endswith(".localhost"):
+                continue
+            try:
+                address = ipaddress.ip_address(host)
+                address = getattr(address, "ipv4_mapped", None) or address
+                if address.is_loopback or address.is_unspecified:
+                    continue
+            except ValueError:
+                labels = host.split(".")
+                # HTTP clients may interpret short, octal or hexadecimal IPv4
+                # forms as addresses. Refuse ambiguous numeric DNS labels
+                # instead of letting a legacy loopback form claim remoteness.
+                # This is lexical/local parsing; it performs no DNS lookup.
+                if all(
+                    re.fullmatch(r"(?:[0-9]+|0[xX][0-9a-fA-F]+)", label)
+                    for label in labels
+                ):
+                    continue
+                if len(labels) < 2 or any(
+                    not re.fullmatch(
+                        r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?", label
+                    )
+                    for label in labels
+                ):
+                    continue
+            # Accessing port also refuses malformed netlocs such as :abc.
+            url.port
+        except ValueError:
+            continue
+        return True
+    return False
 
 
 def find_unserved_advertisements(

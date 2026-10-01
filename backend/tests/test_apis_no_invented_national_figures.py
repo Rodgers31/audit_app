@@ -1,5 +1,9 @@
-"""No module in the source tree may type in a
-public-finance figure.
+"""Detect typed public-finance figures throughout the source tree.
+
+The regression gate also inventories exact reviewed pre-existing sites from
+Round 9, with their use context, reasons and linked followups. Raw detection
+still returns those sites. A green gate means no unreviewed site or context
+drift; 47 existing typed-finance sites remain unresolved under #301 and #424.
 
 On 2026-09-07, ``apis/data_driven_analytics.py`` — and its byte-identical twin
 ``analysis/data_driven_analytics.py`` (md5 ``e0713a40054986c9c0ca51d99c4f406c``)
@@ -75,11 +79,10 @@ series and is barred on its own, whatever key it hangs under. That is the shape
 a guard over ``apis/`` alone would go green on cleaning one of them while the
 invented debt series stayed in the repo under ``analysis/``.
 
-NOTE WHAT THIS GUARD IS AND IS NOT ASSERTING. Both modules still exist and are
-still scanned — six methods were removed from them, not the files. So a green
-run here means the surviving code is clean, not that the code went away. That
-is the point: a test that a path does not exist pins the symptom, and this one
-keeps biting on the pattern wherever it reappears.
+Both original modules still exist and are scanned; six methods were removed
+from them. The detector keeps biting on the pattern wherever it reappears.
+Round 9's reviewed inventory changes the regression gate's acceptance to no
+unreviewed drift, while preserving the raw findings and unresolved followups.
 
 WHAT IS NOT A FIGURE, and why each exemption is safe:
 
@@ -130,6 +133,8 @@ difference.
 from __future__ import annotations
 
 import ast
+import hashlib
+import json
 from pathlib import Path
 
 import pytest
@@ -424,6 +429,61 @@ SCANNED_MODULES = python_modules()
 # withdrawn and the file now goes through the sweep below like any other.
 QUARANTINE: dict[str, tuple[int, str]] = {}
 
+# Round 9's whole-tree expansion exposed pre-existing sites outside the former
+# traversal. Keep RAW detection intact. This regression inventory records
+# reviewed contextual values and unresolved typed finance separately, with a
+# reason and tracking issue for every site. Passing the gate means no drift;
+# it does not certify these existing observations as sourced or resolved.
+# Pin the entire module AST as context: a literal gaining a caller, publication
+# use, or fallback branch within that module must be reviewed again. Formatting and
+# ordinary comments may change, but a changed suppression changes raw findings.
+REVIEWED_FIGURE_INVENTORY = json.loads(
+    Path(__file__)
+    .with_name("financial_literal_reviewed_inventory.json")
+    .read_text(encoding="utf-8")
+)
+
+
+def _assert_reviewed_figure_source(source, relative_path, entry, findings=None):
+    digest = hashlib.sha256(
+        ast.dump(ast.parse(source), include_attributes=False).encode("utf-8")
+    ).hexdigest()
+    assert digest == entry["ast_sha256"], (
+        f"{relative_path}: reviewed figure use context changed. Re-review each "
+        "site; do not refresh the inventory merely to obtain a green gate."
+    )
+    sites = entry["sites"]
+    assert sites, f"{relative_path}: an empty inventory entry is stale"
+    for site in sites:
+        assert site["reason"].strip(), f"{relative_path}: site has no review reason"
+        assert site["disposition"] in {
+            "reviewed contextual value",
+            "unresolved typed finance",
+        }, f"{relative_path}: site has no reviewed disposition"
+        assert (
+            site["tracking"].startswith(
+                "https://github.com/Rodgers31/audit_app/issues/"
+            )
+            and site["tracking"].rsplit("/", 1)[-1].isdigit()
+        ), f"{relative_path}: site has no tracking issue"
+    if findings is None:
+        findings = find_invented_figures(source, relative_path)
+    signatures = [finding.split(": ", 1)[1] for finding in findings]
+    assert signatures == [site["signature"] for site in sites], (
+        f"{relative_path}: raw figure sites changed. Retire resolved entries; "
+        "review additions, changed values and changed suppressions.\n"
+        + "\n".join(findings)
+    )
+
+
+def test_reviewed_figure_inventory_still_has_every_owned_module():
+    scanned = {_rel(path) for path in SCANNED_MODULES}
+    for relative_path in REVIEWED_FIGURE_INVENTORY:
+        assert relative_path in scanned, (
+            f"{relative_path}: reviewed module was deleted or left the scan. "
+            "Retire its exact inventory instead of silently exempting a path."
+        )
+
 
 def test_the_scanned_directories_are_where_we_think_they_are():
     """Anti-vacuity: an empty sweep must never read as a pass.
@@ -443,7 +503,7 @@ def test_the_scanned_directories_are_where_we_think_they_are():
 
 
 def test_the_detector_catches_the_payload_it_was_written_for():
-    """Positive control. Proves a green run below means clean, not blind.
+    """Positive control. Proves raw detection remains active.
 
     This is the block removed from ``apis/data_driven_analytics.py:50-92`` and
     its twin under ``analysis/``. If the detector ever stops flagging it, the
@@ -603,8 +663,15 @@ def test_quarantined_modules_still_carry_their_figures():
     [m for m in SCANNED_MODULES if _rel(m) not in QUARANTINE],
     ids=[_rel(m) for m in SCANNED_MODULES if _rel(m) not in QUARANTINE] or ["none"],
 )
-def test_no_module_publishes_an_invented_figure(module: Path):
-    findings = find_invented_figures(module.read_text(encoding="utf-8"), _rel(module))
+def test_no_module_adds_an_unreviewed_invented_figure(module: Path):
+    source = module.read_text(encoding="utf-8")
+    relative_path = _rel(module)
+    findings = find_invented_figures(source, relative_path)
+    if relative_path in REVIEWED_FIGURE_INVENTORY:
+        _assert_reviewed_figure_source(
+            source, relative_path, REVIEWED_FIGURE_INVENTORY[relative_path], findings
+        )
+        return
     assert not findings, "\n".join(
         ["invented public-finance figures found:", *findings]
     )
