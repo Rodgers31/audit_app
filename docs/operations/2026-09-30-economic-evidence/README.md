@@ -1,6 +1,7 @@
 # Economic source acceptance and web debt status — 30 September 2026
 
-This is a review-only source correction proposal and a local status repair. No
+This section records Round 5 receipts and its review-only proposal/status repair;
+the Round 6 follow-up below supersedes the pending fixture/publication work. No
 production update, deletion, seed, dispatch, secret edit, baseline change, push
 or PR was performed. Repository Actions remain disabled. Issue bodies and
 comments for #389, #380 and #293 were read on this date; #390's completed
@@ -79,8 +80,9 @@ values and units coherently, allocates or reuses exact PDF source/extraction
 records, records Table 1/page/hash/basis, and replaces stale provenance. It
 leaves shared documents 1715/1823 intact. It also proposes a prerequisite
 fixture correction, because the dedicated supplement still supplies 143.08
-and February 2009. **Nothing in the proposal has been applied**, including the
-fixture edit. Fresh preflight, review, disposable PostgreSQL rehearsal and
+and February 2009. **At Round 5 delivery nothing in the proposal had been applied**, including
+the fixture edit. Round 6 retires that fixture supplement instead; production
+rows remain unchanged. Fresh preflight, review, disposable PostgreSQL rehearsal and
 release approval are required. Rollback is full before-image restoration
 conditioned on matching the actual approved after-image; restoration would
 reintroduce unsupported observations and requires withholding/review.
@@ -174,3 +176,14 @@ Full command outputs, source PDFs/page images, read-only receipts, Docker
 probe, and adversarial probes are in the external Session 5 receipt directory
 referenced by the coordinator handoff; no publisher PDFs or full Actions
 logs are committed here.
+
+## Round 6 follow-up
+
+The CPI supplement is now retired, CPI readers enforce source-bound publication,
+and the exact proposal has an executable guarded PostgreSQL correction/recovery
+rehearsal. This is local prevention and preparation; production remains untouched.
+See [cpi-execution.md](cpi-execution.md) for the chosen action, source/table digest
+contract, exact-plan authorization boundary, commands and recovery procedure, and
+[inflation-history-reconciliation.md](inflation-history-reconciliation.md) for the
+separate unresolved historical measure/identity evidence. The earlier fixture
+replacement proposal remains recorded as an alternative; retirement was chosen.

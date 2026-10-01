@@ -137,6 +137,13 @@ def persist_economic_records(
     for record in records:
         stats.processed += 1
 
+        if record.indicator_type.lower() == "cpi":
+            msg = "Refused legacy CPI supplement: use source-bound reviewed correction"
+            logger.error(msg)
+            stats.errors.append(msg)
+            stats.skipped += 1
+            continue
+
         entity, entity_error = _resolve_entity(session, record)
         if entity_error:
             stats.errors.append(entity_error)

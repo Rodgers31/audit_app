@@ -1,0 +1,127 @@
+{
+  "status": "captured selected tuples; NOT full original preimages or restored history",
+  "receipt_sha256": "f855343034713878b47bf2bf5f86b8485416920e2aa3ed7b4d5eca60ced1f10e",
+  "rows": [
+    {
+      "id": 98,
+      "observation_date": "2025-12-31",
+      "value": 4.1,
+      "entity_id": null,
+      "source_document_id": 1856,
+      "publisher": "World Bank",
+      "url": "https://data.worldbank.org/indicator/FP.CPI.TOTL.ZG?locations=KE",
+      "measure": "CPI inflation, annual average",
+      "source_label": "World Bank, World Development Indicators"
+    },
+    {
+      "id": 26,
+      "observation_date": "2024-12-31",
+      "value": 4.5,
+      "entity_id": null,
+      "source_document_id": 1856,
+      "publisher": "World Bank",
+      "url": "https://data.worldbank.org/indicator/FP.CPI.TOTL.ZG?locations=KE",
+      "measure": "CPI inflation, annual average",
+      "source_label": "World Bank, World Development Indicators"
+    },
+    {
+      "id": 27,
+      "observation_date": "2023-12-31",
+      "value": 7.7,
+      "entity_id": null,
+      "source_document_id": 1856,
+      "publisher": "World Bank",
+      "url": "https://data.worldbank.org/indicator/FP.CPI.TOTL.ZG?locations=KE",
+      "measure": "CPI inflation, annual average",
+      "source_label": "World Bank, World Development Indicators"
+    },
+    {
+      "id": 28,
+      "observation_date": "2022-12-31",
+      "value": 7.7,
+      "entity_id": null,
+      "source_document_id": 1856,
+      "publisher": "World Bank",
+      "url": "https://data.worldbank.org/indicator/FP.CPI.TOTL.ZG?locations=KE",
+      "measure": "CPI inflation, annual average",
+      "source_label": "World Bank, World Development Indicators"
+    },
+    {
+      "id": 29,
+      "observation_date": "2021-12-31",
+      "value": 6.1,
+      "entity_id": null,
+      "source_document_id": 1856,
+      "publisher": "World Bank",
+      "url": "https://data.worldbank.org/indicator/FP.CPI.TOTL.ZG?locations=KE",
+      "measure": "CPI inflation, annual average",
+      "source_label": "World Bank, World Development Indicators"
+    },
+    {
+      "id": 30,
+      "observation_date": "2020-12-31",
+      "value": 5.4,
+      "entity_id": null,
+      "source_document_id": 1856,
+      "publisher": "World Bank",
+      "url": "https://data.worldbank.org/indicator/FP.CPI.TOTL.ZG?locations=KE",
+      "measure": "CPI inflation, annual average",
+      "source_label": "World Bank, World Development Indicators"
+    },
+    {
+      "id": 31,
+      "observation_date": "2019-12-31",
+      "value": 5.2,
+      "entity_id": null,
+      "source_document_id": 1856,
+      "publisher": "World Bank",
+      "url": "https://data.worldbank.org/indicator/FP.CPI.TOTL.ZG?locations=KE",
+      "measure": "CPI inflation, annual average",
+      "source_label": "World Bank, World Development Indicators"
+    },
+    {
+      "id": 32,
+      "observation_date": "2018-12-31",
+      "value": 4.7,
+      "entity_id": null,
+      "source_document_id": 1856,
+      "publisher": "World Bank",
+      "url": "https://data.worldbank.org/indicator/FP.CPI.TOTL.ZG?locations=KE",
+      "measure": "CPI inflation, annual average",
+      "source_label": "World Bank, World Development Indicators"
+    },
+    {
+      "id": 33,
+      "observation_date": "2017-12-31",
+      "value": 8,
+      "entity_id": null,
+      "source_document_id": 1856,
+      "publisher": "World Bank",
+      "url": "https://data.worldbank.org/indicator/FP.CPI.TOTL.ZG?locations=KE",
+      "measure": "CPI inflation, annual average",
+      "source_label": "World Bank, World Development Indicators"
+    },
+    {
+      "id": 34,
+      "observation_date": "2016-12-31",
+      "value": 6.3,
+      "entity_id": null,
+      "source_document_id": 1856,
+      "publisher": "World Bank",
+      "url": "https://data.worldbank.org/indicator/FP.CPI.TOTL.ZG?locations=KE",
+      "measure": "CPI inflation, annual average",
+      "source_label": "World Bank, World Development Indicators"
+    },
+    {
+      "id": 35,
+      "observation_date": "2015-12-31",
+      "value": 6.6,
+      "entity_id": null,
+      "source_document_id": 1856,
+      "publisher": "World Bank",
+      "url": "https://data.worldbank.org/indicator/FP.CPI.TOTL.ZG?locations=KE",
+      "measure": "CPI inflation, annual average",
+      "source_label": "World Bank, World Development Indicators"
+    }
+  ]
+}

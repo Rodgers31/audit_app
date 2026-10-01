@@ -139,7 +139,8 @@
       "http_status": 200,
       "page_number": 2,
       "table": "Table 1: Overall CPI and Rates of Inflation",
-      "base_period": "February 2019 = 100"
+      "base_period": "February 2019 = 100",
+      "reviewed_table1_sha256": "0577f0362fd19087721e96f7bd5a535ecb3dc0315b12bb0779ccb6ba4e5a3fbd"
     },
     "knbs_dec2024": {
       "allocate_or_reuse_by_url": true,
@@ -154,7 +155,8 @@
       "http_status": 200,
       "page_number": 2,
       "table": "Table 1: Overall CPI and Rates of Inflation",
-      "base_period": "February 2019 = 100"
+      "base_period": "February 2019 = 100",
+      "reviewed_table1_sha256": "9a2bd449a20ab609dfb5e547ec6280c5f0b8386be20543b03729a92e9efa2177"
     }
   },
   "extractions_to_allocate": {
@@ -248,7 +250,7 @@
         "source_hash": "ca9654579a2a0b8d14301de005cea70f1db2943c8d40cb111be3b8b1e0ccd44d",
         "confidence_score": null,
         "basis": "ACTUAL",
-        "publishable": false,
+        "publishable": true,
         "quarantine_reason": null
       },
       "invariant": "Preserve exact case/type/date/entity/id and created_at. No merge, deletion or rescaling."
@@ -311,7 +313,7 @@
         "source_hash": "ca9654579a2a0b8d14301de005cea70f1db2943c8d40cb111be3b8b1e0ccd44d",
         "confidence_score": null,
         "basis": "ACTUAL",
-        "publishable": false,
+        "publishable": true,
         "quarantine_reason": null
       },
       "invariant": "Preserve exact case/type/date/entity/id and created_at. No merge, deletion or rescaling."
@@ -374,7 +376,7 @@
         "source_hash": "75e6f741704874180edd8378ec6219c5920f15082496e6bf47aa00e0f7570614",
         "confidence_score": null,
         "basis": "ACTUAL",
-        "publishable": false,
+        "publishable": true,
         "quarantine_reason": null
       },
       "invariant": "Preserve exact case/type/date/entity/id and created_at. No merge, deletion or rescaling."
@@ -408,7 +410,9 @@
       "page_ref": "p.2 / Table 1",
       "source_hash": "ca9654579a2a0b8d14301de005cea70f1db2943c8d40cb111be3b8b1e0ccd44d"
     },
-    "reason": "Otherwise the dedicated fixture supplement will reapply unsupported 143.08/basis to lowercase cpi row 67."
+    "reason": "Otherwise the dedicated fixture supplement will reapply unsupported 143.08/basis to lowercase cpi row 67.",
+    "chosen_action": "Retire CPI supplement; dedicated writer refuses legacy CPI inputs. Preserve separately based WB cpi_index.",
+    "deployed_file_sha256": "a4b779ee8c90babdf3a8f6d114f3f16d14b653b3670bce76b2da0cecb10612e3"
   },
   "unchanged_sources": [
     1715,
@@ -496,7 +500,7 @@
     ]
   },
   "release_requirements": [
-    "Do not execute this manifest in this development session.",
+    "Do not execute against production without separate exact-plan authorization. Disposable PostgreSQL rehearsal is authorized.",
     "Recapture all three full row preimages and the source PDF bytes; require exact row and hash equality or renewed review.",
     "Reuse any existing document/extraction matching the exact PDF/hash/page; do not guess assigned IDs.",
     "Keep uppercase CPI, lowercase cpi and World Bank cpi_index (2010=100) separate.",

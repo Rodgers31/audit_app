@@ -117,20 +117,20 @@ def test_bootstrap_does_not_fill_absent_cpi_with_literal(db_session, seed_source
     assert db_session.query(EconomicIndicator).count() == 0
 
 
-def test_dedicated_cpi_writer_keeps_value_measure_and_source_together(
+def test_dedicated_wb_index_writer_keeps_value_measure_and_source_together(
     db_session, seed_country, seed_source_doc
 ):
     record = parse_economic_payload(
         [
             {
-                "indicator_type": "CPI",
-                "date": "2025-01-31",
+                "indicator_type": "cpi_index",
+                "date": "2025-12-31",
                 "value": "155",
-                "unit": "index_2019_100",
-                "source_url": "https://example.org/synthetic-cpi-release",
+                "unit": "index_2010_100",
+                "source_url": "https://example.org/synthetic-wb-index-release",
                 "source": "Synthetic independent release",
                 "publisher": "Synthetic publisher",
-                "measure": "index (2019=100)",
+                "measure": "index (2010=100)",
             }
         ]
     )
@@ -143,15 +143,15 @@ def test_dedicated_cpi_writer_keeps_value_measure_and_source_together(
     db_session.flush()
     assert (stats.created, stats.updated, stats.errors) == (1, 0, [])
     row = db_session.query(EconomicIndicator).one()
-    assert row.indicator_type == "cpi"
+    assert row.indicator_type == "cpi_index"
     source = row.source_document
     assert (row.value, row.unit, row.meta["measure"]) == (
         Decimal("155"),
-        "index_2019_100",
-        "index (2019=100)",
+        "index_2010_100",
+        "index (2010=100)",
     )
     assert (source.url, source.publisher) == (
-        "https://example.org/synthetic-cpi-release",
+        "https://example.org/synthetic-wb-index-release",
         "Synthetic publisher",
     )
 
@@ -162,9 +162,9 @@ def test_dedicated_cpi_writer_keeps_value_measure_and_source_together(
     assert db_session.query(EconomicIndicator).count() == 1
     assert (row.value, row.unit, row.source_document_id, row.meta["measure"]) == (
         Decimal("155"),
-        "index_2019_100",
+        "index_2010_100",
         source.id,
-        "index (2019=100)",
+        "index (2010=100)",
     )
 
 
