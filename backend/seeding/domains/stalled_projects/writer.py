@@ -30,6 +30,8 @@ import logging
 from contextlib import contextmanager
 from typing import Any, Dict, List, Optional
 
+from services.county_identity import OFFICIAL_COUNTY_CODES, official_county_code
+
 from .cob_parser import MONEY_FIELDS, REPORTED_BY, normalise_county
 
 logger = logging.getLogger(__name__)
@@ -49,35 +51,61 @@ def _is_current(meta: dict | None) -> bool:
 
 
 def _counties(db_session: Any):
-    from models import Entity, EntityType
+    from models import Country, Entity, EntityType
 
-    return db_session.query(Entity).filter(Entity.type == EntityType.COUNTY)
+    kenya = db_session.query(Country).filter(Country.iso_code == "KEN").one_or_none()
+    if kenya is None:
+        raise ValueError("Kenya country (KEN) is required for stalled projects")
+    return db_session.query(Entity).filter(
+        Entity.country_id == kenya.id, Entity.type == EntityType.COUNTY
+    )
+
+
+def _official_counties(entities):
+    """Use governance identity, never a fuzzy caption, slug or legacy code.
+
+    Stored code metadata and Nairobi/Mombasa route IDs can predate the
+    official-code correction. They are not identity authority. Resolve the
+    current locked canonical name instead, and refuse duplicate identities
+    before any owned mutation or edition claim.
+    """
+    counties = []
+    seen = set()
+    for entity in entities:
+        code = official_county_code(entity.canonical_name)
+        if code is None:
+            continue
+        if code in seen:
+            raise ValueError(f"Ambiguous official Kenyan county identity {code}")
+        seen.add(code)
+        counties.append(entity)
+    return counties
 
 
 @contextmanager
 def _project_transaction(db_session: Any, dry_run: bool):
     """Read current JSON under ordered locks for the owned mutation.
 
-    An unflushed Entity edit is ambiguous: refreshing would discard it, while
-    autoflush could persist a stale whole-JSON before we acquire locks. Refuse
-    it rather than silently choosing either beforeimage. Callers must finish
-    their Entity work before entering this domain's transaction.
+    Unflushed Entity/Country edits are ambiguous: refreshing would discard
+    them, while autoflush could persist stale JSON or alter Kenya's identity
+    before we acquire locks. Refuse rather than choosing either beforeimage.
+    Callers must finish that work before entering this domain's transaction.
     """
-    from models import Entity
+    from models import Country, Entity
 
     try:
         with db_session.no_autoflush:
             pending = set(db_session.new) | set(db_session.deleted) | {
                 obj for obj in db_session.dirty if db_session.is_modified(obj)
             }
-            if any(isinstance(obj, Entity) for obj in pending):
-                raise ValueError("stalled_projects refuses pending Entity changes")
+            if any(isinstance(obj, (Entity, Country)) for obj in pending):
+                raise ValueError("stalled_projects refuses pending Entity or Country changes")
             query = _counties(db_session).order_by(Entity.id).populate_existing()
             if not dry_run:
                 # Same ordering as the reference writer. populate_existing is
                 # essential: FOR UPDATE alone reuses stale identity-map JSON.
                 query = query.with_for_update()
-            entities = query.all()
+            entities = _official_counties(query.all())
             for entity in entities:
                 if entity.meta is not None and not isinstance(entity.meta, dict):
                     raise ValueError(f"Invalid county metadata for Entity {entity.id}")
@@ -93,7 +121,7 @@ def _project_transaction(db_session: Any, dry_run: bool):
 
 
 def clear_owned_keys(db_session: Any, dry_run: bool = False, *, legacy_only: bool = False) -> dict:
-    """Remove this domain's keys from every county's meta.
+    """Remove this domain's keys from official Kenyan counties' metadata.
 
     ``legacy_only`` keeps a county's current (schema 2, COB-sourced) block
     and removes only what predates it — the invented fixture's list and its
@@ -127,10 +155,15 @@ def clear_owned_keys(db_session: Any, dry_run: bool = False, *, legacy_only: boo
 
 
 def published_edition(db_session: Any) -> Optional[Dict[str, Any]]:
-    """The edition currently in the database, from any county that holds one."""
-    for entity in _counties(db_session):
-        if _is_current(entity.meta):
-            return entity.meta[OWNED_PREFIX].get("source")
+    """The current edition held by an eligible official Kenyan county.
+
+    Refresh stale identity-map JSON using the same scope/refusal boundary as
+    dry-run mutations. This is a read snapshot, not a source-verification gate.
+    """
+    with _project_transaction(db_session, dry_run=True) as entities:
+        for entity in entities:
+            if _is_current(entity.meta):
+                return entity.meta[OWNED_PREFIX].get("source")
     return None
 
 
@@ -274,31 +307,26 @@ def write(
     nothing about: a county that had a table last quarter and has none now
     must not keep last quarter's rows under this quarter's date.
     """
-    # Matched on the county NAME, not the slug. Production's slugs are
-    # "nairobi-county"; a freshly bootstrapped database's are "nairobi-047"
-    # (bootstrap.py builds them from the county code). Keyed on slug, every
-    # write to a new environment would have matched nothing, silently.
+    # Source captions have already been normalised by the parser. Entity
+    # identity uses the governance service, not that parser's fuzzy matching.
+    # Slugs, primary keys and historical route-code metadata stay untouched.
     by_name = {c["county"]: c for c in counties}
     written = 0
     rows = 0
     unmatched = set(by_name)
     with _project_transaction(db_session, dry_run) as entities:
         for entity in entities:
-            name = normalise_county(entity.canonical_name or "") or normalise_county(
-                (entity.slug or "").rsplit("-", 1)[0]
+            name = normalise_county(
+                OFFICIAL_COUNTY_CODES[official_county_code(entity.canonical_name)]
             )
             county = by_name.get(name) if name else None
             meta = {k: v for k, v in (entity.meta or {}).items() if not k.startswith(OWNED_PREFIX)}
             if county is not None:
                 block = build_county_block(county, edition)
                 meta[OWNED_PREFIX] = block
-                if name in unmatched:
-                    # Counted once per county. A stale duplicate entity gets the
-                    # same block, but must not add rows: doubled counts covered
-                    # for a county that matched no entity at all.
-                    unmatched.discard(name)
-                    written += 1
-                    rows += len(block["rows"])
+                unmatched.discard(name)
+                written += 1
+                rows += len(block["rows"])
             if dry_run:
                 continue
             if meta != (entity.meta or {}):
