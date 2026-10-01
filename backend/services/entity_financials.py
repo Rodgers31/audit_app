@@ -285,9 +285,14 @@ def publish_county_budget(payload, summary, *, comprehensive=False):
                     budget_currency=summary["currency"],
                 ):
                     amount = None
-            payload[section][key] = (
-                amount / allocation * 100 if allocation and amount is not None else None
-            )
+            if key == "debt_to_budget_ratio":
+                from services.financial_publication import county_debt_budget_ratio
+
+                payload["debt"].update(county_debt_budget_ratio(payload["debt"], summary))
+            else:
+                payload[section][key] = (
+                    amount / allocation * 100 if allocation and amount is not None else None
+                )
         if not allocation or spent is None:
             for key in ("health_score", "grade", "debt_sustainability"):
                 payload["financial_summary"][key] = None

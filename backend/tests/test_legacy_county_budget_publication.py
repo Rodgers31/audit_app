@@ -462,8 +462,7 @@ def test_db_unavailable_or_failed_cannot_publish_proxy_estimates(
     async def forbidden(*args, **kwargs):
         raise AssertionError("Retired proxy must never be consulted")
 
-    monkeypatch.setattr(main.InternalAPIClient, "get_county_financial_data", forbidden)
-    monkeypatch.setattr(main.InternalAPIClient, "get_county_data", forbidden)
+    monkeypatch.setattr("httpx.AsyncClient.get", forbidden)
     monkeypatch.setattr(main, "DATABASE_AVAILABLE", False)
     assert legacy_client.get("/api/v1/counties/009/budget").status_code == 503
     monkeypatch.setattr(main, "DATABASE_AVAILABLE", True)

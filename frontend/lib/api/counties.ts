@@ -48,8 +48,14 @@ interface BackendCountyResponse {
   revenue?: CountyRevenue;
   pending_bills?: number | null;
   // Debt
-  debt?: number;
-  total_debt?: number;
+  debt?: number | null;
+  total_debt?: number | null;
+  total_debt_absent_reason?: string | null;
+  debt_currency?: string | null;
+  debt_accounting_basis?: string;
+  debt_basis?: 'actual' | null;
+  debt_as_at?: string | null;
+  debt_coverage?: string;
   // Economic
   gdp?: number | null;
   // Audit issues
@@ -67,37 +73,11 @@ interface BackendCountyResponse {
   };
 }
 
-/**
- * First figure the API actually published, or `undefined` when it published
- * none. Never 0 — this is the whole point.
- *
- * "The API did not publish this figure" and "the figure is zero" are different
- * claims, and collapsing the first into the second here made them
- * indistinguishable to every component downstream: an absent `money_received`
- * became a funding-gap alert for the county's entire budget, an absent debt
- * became a confident "0.0% debt ratio", and an absent budget became a county
- * allocated nothing.
- *
- * A zero arriving FROM the API is treated as absence too, deliberately. Every
- * field this is used on is a SUM over rows on the backend — budget lines for
- * `total_budget`, loan rows for `total_debt` — so 0.0 is an empty aggregate,
- * not a measured zero. No county is allocated nothing (all 47 receive an
- * equitable share by constitutional formula) and none has been shown to owe
- * exactly nothing, so treating 0 as absence loses no real figure while
- * stopping the UI from stating one the source never made. Non-finite values
- * are rejected for the same reason: NaN is not a figure either.
- */
-/**
- * A figure the API reported, keeping a genuine zero.
- *
- * The counterpart to `publishedAmount`: that one drops zeros because the
- * fields it guards are backend SUMs, where 0 means "nothing aggregated". This
- * one guards a field the backend now nulls explicitly when no source
- * published a figure, so 0 can be taken at face value.
- */
+/** A reported figure, including zero. The API explicitly withholds absence. */
 const reportedAmount = (v: number | null | undefined): number | undefined =>
   typeof v === 'number' && Number.isFinite(v) ? v : undefined;
 
+// Legacy budget aliases still lack the supported summary contract.
 const publishedAmount = (...candidates: Array<number | null | undefined>): number | undefined => {
   for (const v of candidates) {
     if (typeof v === 'number' && Number.isFinite(v) && v !== 0) return v;
@@ -112,7 +92,10 @@ export const transformCountyData = (bc: BackendCountyResponse): County => {
   const budget = bc.financial_summary
     ? reportedAmount(bc.financial_summary.total_allocation)
     : publishedAmount(bc.total_budget, bc.budget_2025);
-  const debt = publishedAmount(bc.total_debt, bc.debt);
+  // A declared current total is authoritative, including zero or withheld
+  // null. Only an omitted field may use the historical alias.
+  const reportedDebt = reportedAmount(bc.total_debt !== undefined ? bc.total_debt : bc.debt);
+  const debt = reportedDebt !== undefined && reportedDebt >= 0 ? reportedDebt : undefined;
 
   // Fiscal grade — from the backend's financial-health index, NOT an audit
   // opinion. Kept in its own field so the UI can never present a computed
@@ -196,6 +179,12 @@ export const transformCountyData = (bc: BackendCountyResponse): County => {
     })),
     totalBudget: budget,
     totalDebt: debt,
+    totalDebtAbsentReason: bc.total_debt_absent_reason,
+    debtCurrency: bc.debt_currency,
+    debtAccountingBasis: bc.debt_accounting_basis,
+    debtBasis: bc.debt_basis,
+    debtAsAt: bc.debt_as_at,
+    debtCoverage: bc.debt_coverage,
     education: sectorVal('Education'),
     health: sectorVal('Health Services') || sectorVal('Health'),
     infrastructure: sectorVal('Roads and Public Works') || sectorVal('Infrastructure'),

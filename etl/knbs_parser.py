@@ -6,6 +6,7 @@ Extracts population data, GDP figures, inflation rates, poverty indices, and oth
 
 import io
 import logging
+import math
 import re
 from dataclasses import dataclass
 from datetime import datetime
@@ -132,12 +133,13 @@ class PopulationData:
 class GDPData:
     """Data class for GDP data."""
 
-    gdp_value: float
+    gdp_value: Optional[float]
     year: int
     quarter: Optional[str] = None
     growth_rate: Optional[float] = None
     county: Optional[str] = None  # For Gross County Product
     source_page: Optional[int] = None
+    gdp_absent_reason: Optional[str] = None
 
 
 class KNBSParser:
@@ -738,9 +740,10 @@ class KNBSParser:
                     logger.debug(f"Failed to parse GDP from: {val_str} - {e}")
                     continue
 
-        if gdp_value or growth_rate:
+        if gdp_value is not None or growth_rate is not None:
             return GDPData(
-                gdp_value=gdp_value or 0,
+                gdp_value=gdp_value,
+                gdp_absent_reason="level_not_reported" if gdp_value is None else None,
                 year=year or datetime.now().year,
                 quarter=quarter,
                 growth_rate=growth_rate,
@@ -1098,7 +1101,14 @@ class KNBSParser:
         self, table: List[List], extracted_data: Dict, metadata: Dict
     ):
         """Extract GDP data from a table."""
+        if __package__:
+            from .gdp_values import reported_gdp_level
+        else:
+            from gdp_values import reported_gdp_level
         try:
+            if not isinstance(table, (list, tuple)) or not table or not isinstance(table[0], (list, tuple)):
+                logger.warning("Unsupported GDP table shape")
+                return
             headers = [str(h).lower().strip() if h else "" for h in table[0]]
 
             def parse_year(cell: Any) -> Optional[int]:
@@ -1121,7 +1131,6 @@ class KNBSParser:
                 text = str(value).strip()
                 if not text:
                     return None
-                text = text.replace(",", "").replace(" ", "")
                 text = text.replace("\u2212", "-").replace("–", "-")
                 negative = False
                 if text.startswith("(") and text.endswith(")"):
@@ -1132,16 +1141,20 @@ class KNBSParser:
                 if not re.search(r"\d", text):
                     return None
                 try:
-                    number = float(text)
+                    number = reported_gdp_level(text)
                 except ValueError:
+                    return None
+                if number is None:
                     return None
                 if negative:
                     number *= -1
-                return number
+                return number if math.isfinite(number) and number >= 0 else None
 
             # Map columns to explicit year values when tables are arranged by activity x years
             column_year_map: Dict[int, int] = {}
             for row in table[: min(len(table), 4)]:
+                if not isinstance(row, (list, tuple)):
+                    continue
                 for idx, cell in enumerate(row):
                     year = parse_year(cell)
                     if year is not None and idx not in column_year_map:
@@ -1158,10 +1171,10 @@ class KNBSParser:
                     year_col = i
                 elif "quarter" in header or "q1" in header or "q2" in header:
                     quarter_col = i
+                elif "growth" in header:
+                    growth_col = i
                 elif "gdp" in header or "gross domestic" in header:
                     gdp_col = i
-                elif "growth" in header and gdp_col is None:
-                    growth_col = i
 
             # Handle multi-year Gross County Product tables without explicit GDP columns
             if gdp_col is None and growth_col is None and column_year_map:
@@ -1212,6 +1225,9 @@ class KNBSParser:
                 county_name = metadata.get("county")
 
                 for row in table[1:]:
+                    if not isinstance(row, (list, tuple)):
+                        logger.warning("Skipping malformed GCP row")
+                        continue
                     label = build_label(row)
                     if not label:
                         continue
@@ -1231,12 +1247,15 @@ class KNBSParser:
                         if numeric_value is None:
                             continue
                         gdp_value = numeric_value * unit_multiplier
+                        if not math.isfinite(gdp_value):
+                            continue
                         gdp_data = {
                             "gdp_value": gdp_value,
                             "year": year,
                             "quarter": None,
                             "growth_rate": None,
                             "county": county_name,
+                            "source_page": metadata.get("source_page"),
                         }
                         extracted_data["gdp_data"].append(gdp_data)
                         logger.info(
@@ -1250,6 +1269,9 @@ class KNBSParser:
 
             if gdp_col is not None or growth_col is not None:
                 for row in table[1:]:
+                    if not isinstance(row, (list, tuple)):
+                        logger.warning("Skipping malformed GDP row")
+                        continue
                     try:
                         # Get year
                         year = metadata.get("year")
@@ -1267,14 +1289,13 @@ class KNBSParser:
                         # Get GDP value
                         gdp_value = None
                         if gdp_col is not None and len(row) > gdp_col:
-                            gdp_str = (
-                                str(row[gdp_col])
-                                .replace(",", "")
-                                .replace(" ", "")
-                                .strip()
-                            )
                             try:
-                                gdp_value = float(gdp_str)
+                                gdp_value = clean_numeric(row[gdp_col])
+                                if gdp_value is None:
+                                    raise ValueError("Invalid GDP level")
+                                if isinstance(row[gdp_col], bool) or not math.isfinite(gdp_value) or gdp_value < 0:
+                                    gdp_value = None
+                                    raise ValueError("Invalid GDP level")
                                 # Assume billions if value is small
                                 if gdp_value < 1000:
                                     gdp_value = gdp_value * 1_000_000_000
@@ -1287,20 +1308,23 @@ class KNBSParser:
                             growth_str = str(row[growth_col]).replace("%", "").strip()
                             try:
                                 growth_rate = float(growth_str)
+                                if isinstance(row[growth_col], bool) or not math.isfinite(growth_rate):
+                                    growth_rate = None
                             except:
                                 pass
 
-                        if gdp_value or growth_rate:
+                        if gdp_value is not None or growth_rate is not None:
                             gdp_data = {
-                                "gdp_value": gdp_value or 0,
+                                "gdp_value": gdp_value,
+                                "gdp_absent_reason": "level_not_reported" if gdp_value is None else None,
                                 "year": year,
                                 "quarter": quarter,
                                 "growth_rate": growth_rate,
+                                "source_page": metadata.get("source_page"),
                             }
                             extracted_data["gdp_data"].append(gdp_data)
-                            logger.info(
-                                f"💰 Extracted from table: GDP {gdp_value/1e9:.2f}B ({year}{'-'+quarter if quarter else ''})"
-                            )
+                            logger.info("Extracted GDP table row: level=%s growth=%s year=%s quarter=%s",
+                                        gdp_value, growth_rate, year, quarter)
                     except Exception as e:
                         continue
 

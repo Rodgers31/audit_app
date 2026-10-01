@@ -6,8 +6,8 @@ reach runs on Render and caches responses in three layers:
 * **Redis**, when ``REDIS_URL`` is set. Shared by every worker.
 * **In-process memory**, in each gunicorn worker: ``RedisCache._memory_cache``
   (which is what production actually uses, since production has no Redis),
-  the per-endpoint fallback dicts in ``main.cached`` and
-  ``routers.money_flow._cached``, and ``main.InternalAPIClient._cache``.
+  the per-endpoint fallback dicts in ``main.cached``
+  and ``routers.money_flow._cached``.
 
 An HTTP call lands on ONE worker. That worker can clear Redis and its own
 memory, but not a sibling's. So it also rewrites a **generation marker**, a

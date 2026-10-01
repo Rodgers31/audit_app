@@ -280,14 +280,7 @@ _SWEEP_QUERY = {
 #: Cached routes that answer from an empty branch EVEN WITH representative
 #: rows seeded, and why no seed can change that. Every entry is a route this
 #: guard cannot vouch for, so each needs a reason a reviewer can check.
-_EMPTY_BRANCH_ALLOWLIST = {
-    "/api/v1/counties/{county_id}/financial": (
-        "has no database branch. get_county_financial_data only proxies "
-        "InternalAPIClient (httpx to ENHANCED_COUNTY_API_BASE), so it answers "
-        "the same with or without rows; the test network guard refuses the "
-        "call and it 404s"
-    ),
-}
+_EMPTY_BRANCH_ALLOWLIST = {}
 
 #: Which branch each pending-bills route must have answered from, per
 #: scenario. Those two routes used to read a ``pending_bills`` table first and

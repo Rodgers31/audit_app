@@ -587,42 +587,41 @@ def test_real_county_readers_keep_legacy_official_slug_and_pk_identity(
         with Session() as db:
             yield db
 
-    monkeypatch.setattr(main, "get_db", get_db)
-    monkeypatch.setattr(main, "DATABASE_AVAILABLE", True)
-    monkeypatch.setattr(
-        main.InternalAPIClient, "get_county_data", AsyncMock(return_value=None)
-    )
-    ids = snapshot(Session, ken)
-    # Same stored PK, slug and historical URL must still resolve the same name.
-    expected = {}
-    for name, official, legacy in [
-        ("Mombasa", "001", "047"),
-        ("Nairobi", "047", "001"),
-    ]:
-        row_id, slug, _, _ = ids[f"{name} County"]
-        for identifier in (str(row_id), slug, legacy, f"code:{official}"):
-            expected[f"/api/v1/counties/{identifier}"] = (name, official)
-        expected[f"/api/v1/counties/code/{official}"] = (name, official)
-    before_response = {}
-    for refresh in (False, True):
-        if refresh:
-            asyncio.run(worker._seed_counties_live())
-        main.clear_all_caches()
-        for route, (name, official) in expected.items():
-            response = client.get(route)
-            assert response.status_code == 200, (route, response.text)
-            body = response.json()
-            assert (body["name"], body["code"]) == (name, official)
+    # Restore nested reader patches before the client fixture restores its DB provider.
+    with monkeypatch.context() as reader_patch:
+        reader_patch.setattr(main, "get_db", get_db)
+        reader_patch.setattr(main, "DATABASE_AVAILABLE", True)
+        ids = snapshot(Session, ken)
+        # Same stored PK, slug and historical URL must still resolve the same name.
+        expected = {}
+        for name, official, legacy in [
+            ("Mombasa", "001", "047"),
+            ("Nairobi", "047", "001"),
+        ]:
+            row_id, slug, _, _ = ids[f"{name} County"]
+            for identifier in (str(row_id), slug, legacy, f"code:{official}"):
+                expected[f"/api/v1/counties/{identifier}"] = (name, official)
+            expected[f"/api/v1/counties/code/{official}"] = (name, official)
+        before_response = {}
+        for refresh in (False, True):
             if refresh:
-                assert body["id"] == before_response[route]
-            else:
-                before_response[route] = body["id"]
-    assert (
-        snapshot(Session, ken)["Mombasa County"][3]["metrics"]["FY2024/25"][
-            "county_code"
-        ]
-        == "047"
-    )
+                asyncio.run(worker._seed_counties_live())
+            main.clear_all_caches()
+            for route, (name, official) in expected.items():
+                response = client.get(route)
+                assert response.status_code == 200, (route, response.text)
+                body = response.json()
+                assert (body["name"], body["code"]) == (name, official)
+                if refresh:
+                    assert body["id"] == before_response[route]
+                else:
+                    before_response[route] = body["id"]
+        assert (
+            snapshot(Session, ken)["Mombasa County"][3]["metrics"]["FY2024/25"][
+                "county_code"
+            ]
+            == "047"
+        )
 
 
 @pytest.mark.parametrize("metadata", [None, {}])

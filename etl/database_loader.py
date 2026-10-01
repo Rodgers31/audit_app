@@ -630,12 +630,17 @@ class DatabaseLoader:
     async def _load_gdp_item(
         self, db, item: Dict[str, Any], source_doc_id: int, country_id: int
     ):
-        """Insert GDP row (national or county) if value present and > 0; dedupe on (entity, year, quarter)."""
-        val = item.get("gdp_value")
+        """Insert an explicit finite GDP/GCP level, including reported zero; dedupe."""
+        if __package__:
+            from .gdp_values import reported_gdp_level
+        else:
+            from gdp_values import reported_gdp_level
+
+        val = reported_gdp_level(item.get("gdp_value"))
         year = item.get("year")
         quarter = item.get("quarter")
-        if not val or (isinstance(val, (int, float)) and float(val) <= 0):
-            logger.debug("Skipping gdp item with missing/zero value")
+        if val is None:
+            logger.warning("Skipping GDP item with missing or invalid reported level")
             return
 
         entity_info = item.get("entity") or {

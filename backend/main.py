@@ -18,7 +18,7 @@ from email.mime.text import MIMEText
 from email.utils import formatdate
 from typing import Any, Dict, List, Optional, Tuple
 
-import httpx  # For internal API calls
+import httpx
 import uvicorn
 from config.settings import settings
 from services.audit_derived import derive_unaccounted_cases
@@ -328,16 +328,15 @@ def _check_plausibility(
         )
 
 
-def _latest_county_period(db) -> Optional[int]:
+def _latest_county_period(db, *, official_counties_only=False) -> Optional[int]:
     """Return the period_id of the latest FiscalPeriod that has county BudgetLines.
 
     This ensures sector/budget queries are scoped to a single fiscal year and
     only include county-level data — never national budget lines or aggregate rows.
+    The overview requests the same Kenyan official-county scope as its totals.
     Returns None if no county budget lines exist.
     """
-    from sqlalchemy import func as _fn
-
-    row = (
+    query = (
         db.query(DBBudgetLine.period_id)
         .join(DBEntity, DBBudgetLine.entity_id == DBEntity.id)
         .join(DBFiscalPeriod, DBBudgetLine.period_id == DBFiscalPeriod.id)
@@ -351,18 +350,24 @@ def _latest_county_period(db) -> Optional[int]:
             DBFiscalPeriod.end_date.desc(),
             DBFiscalPeriod.id.desc(),
         )
-        .limit(1)
-        .first()
     )
+    if official_counties_only:
+        query = query.join(DBCountry, DBEntity.country_id == DBCountry.id).filter(DBCountry.iso_code == "KEN")
+        rows = query.with_entities(DBBudgetLine.period_id, DBEntity.canonical_name).all()
+        return next((period_id for period_id, name in rows if official_county_code(name)), None)
+    row = query.limit(1).first()
     return row[0] if row else None
 
 
-def _county_period_rollup(db, period_id: Optional[int]):
+def _county_period_rollup(db, period_id: Optional[int], *, reject_incomplete=False):
     """Every county's budget in one period, each through the shared split rule.
 
     Returns ``(per_county, sector_lines)``: ``per_county`` maps entity id to
     ``(canonical_name, allocated, spent)``, and ``sector_lines`` are the
     additive sector rows across all counties.
+
+    The overview opts into refusal of incomplete/invalid consumed amounts;
+    a successful complete aggregate cannot silently substitute missing money.
 
     ``/budget/overview`` and ``/countries/{id}/summary`` summed every county
     row in the period except the literal category "Total Budget". A period
@@ -384,9 +389,31 @@ def _county_period_rollup(db, period_id: Optional[int]):
         .filter(DBEntity.type == EntityType.COUNTY)
         .filter(DBBudgetLine.period_id == period_id)
     )
+    if reject_incomplete:
+        q = q.join(DBCountry, DBEntity.country_id == DBCountry.id).filter(DBCountry.iso_code == "KEN")
     lines_by_entity: Dict[int, List[Any]] = {}
     names: Dict[int, str] = {}
     for line, name in q.all():
+        if reject_incomplete:
+            if official_county_code(name) is None:
+                continue
+            category = (line.category or "").strip().lower()
+            consumed = category not in _NON_SECTOR_CATEGORIES and not (
+                category in _CLASSIFICATION_CATEGORIES and line.subcategory
+            )
+            if consumed:
+                for field in ("allocated_amount", "actual_spent"):
+                    value = getattr(line, field)
+                    try:
+                        number = float(value) if value is not None and not isinstance(value, bool) else None
+                    except (TypeError, ValueError, OverflowError):
+                        number = None
+                    if number is None or not math.isfinite(number) or number < 0:
+                        raise HTTPException(status_code=503, detail={
+                            "reason": "incomplete_or_invalid_county_amount",
+                            "entity_id": line.entity_id,
+                            "field": field,
+                        })
         lines_by_entity.setdefault(line.entity_id, []).append(line)
         names[line.entity_id] = name
     per_county: Dict[int, Tuple[str, float, float]] = {}
@@ -537,44 +564,10 @@ def _is_debt_loan(loan) -> bool:
 
 
 def county_debt_total(loans) -> Optional[float]:
-    """A county's debt from SOURCED rows, or None when it has none.
+    """Selected instruments' outstanding balances; incomplete accounts are absent."""
+    from services.financial_publication import county_debt_summary
 
-    ``None`` is "nobody has published this county's debt" and must render as
-    absence. Zero would say the county owes nothing, which is a different
-    claim — and for 43 of the 47 it would be a claim made on no evidence at
-    all.
-
-    Until the modelled rows were removed, every county carried a
-    "County Government Debt" figure equal to a flat 15% of a budget that was
-    itself population x KSh 4,500 — the same ratio for the whole country. What
-    remains is genuinely sourced debt only.
-
-    Uses :func:`_is_debt_loan` rather than re-deriving the pending-bills rule,
-    which is what that function's docstring asks callers to do, and applies
-    :func:`county_debt_instrument_failure` so the LIST and DETAIL endpoints
-    cannot disagree. They did: the detail endpoint gated each row and the list
-    endpoint did not, so Nairobi read "13.1B" on /counties and "—" on its own
-    page. All four surviving county debt rows name the World Bank and cite
-    treasury.go.ke/public-debt/ — a section index, not a borrowing
-    authorisation — and the gate withholds them as
-    ``external_creditor_document_is_not_a_borrowing_authorisation``. That
-    verdict is the same on both pages now.
-    """
-    total = 0.0
-    found = False
-    for loan in loans or []:
-        if not _is_debt_loan(loan):
-            continue
-        if loan_is_modelled_fixture(loan):
-            continue
-        if county_debt_instrument_failure(loan):
-            continue
-        amount = getattr(loan, "outstanding", None) or getattr(loan, "principal", None)
-        if amount is None:
-            continue
-        total += float(amount)
-        found = True
-    return total if found else None
+    return county_debt_summary(loans)["total_debt"]
 
 
 #: The category the CBIRR own-source revenue rows are written under.
@@ -970,8 +963,7 @@ def county_debt_provenance_label(loans, total_debt: Optional[float]) -> str:
             "for this county"
         )
     debt = (
-        "County debt: not published — no county borrowing figure is traced to "
-        "a publication"
+        "County debt: selected outstanding balances are unavailable or incomplete"
         if total_debt is None
         else "County debt: loan rows with a source document"
     )
@@ -1515,226 +1507,6 @@ COUNTY_REGIONS = {
     "046": "Nyanza",
 }
 
-# Enhanced County Analytics API base URL
-ENHANCED_COUNTY_API_BASE = os.getenv(
-    "ENHANCED_COUNTY_API_BASE", "http://localhost:8003"
-)
-
-
-class InternalAPIClient:
-    """Client for making internal API calls to other services"""
-
-    # simple in-memory TTL cache to reduce flakiness and repeated fetches during a session
-    _cache: Dict[str, Dict[str, Any]] = {}
-    _ttl_seconds = 6 * 60 * 60  # 6 hours
-    # Hard cap so the cache can't grow unbounded under traffic that hits
-    # many distinct keys (e.g. all 47 county detail endpoints in one
-    # session). Mirrors the bound used by RedisCache._memory_cache_max_size
-    # in cache/redis_cache.py.
-    _max_size = 1024
-
-    @classmethod
-    def _cache_get(cls, key: str):
-        rec = cls._cache.get(key)
-        if not rec:
-            return None
-        if time.time() - rec["ts"] > cls._ttl_seconds:
-            cls._cache.pop(key, None)
-            return None
-        return rec["value"]
-
-    @classmethod
-    def _cache_set(cls, key: str, value: Any):
-        # Evict expired entries first; if still at cap, drop the oldest
-        # by insertion order (Py 3.7+ dicts preserve it). This matches
-        # the eviction behaviour in cache/redis_cache.py.
-        if len(cls._cache) >= cls._max_size:
-            now = time.time()
-            for k in [
-                k for k, rec in cls._cache.items()
-                if now - rec["ts"] > cls._ttl_seconds
-            ]:
-                cls._cache.pop(k, None)
-            while len(cls._cache) >= cls._max_size:
-                oldest = next(iter(cls._cache))
-                cls._cache.pop(oldest, None)
-        cls._cache[key] = {"value": value, "ts": time.time()}
-
-    @staticmethod
-    async def get_county_data(county_name: str) -> Optional[Dict]:
-        """Fetch county data from Enhanced County Analytics API"""
-        try:
-            cache_key = f"county_data:{county_name}"
-            cached = InternalAPIClient._cache_get(cache_key)
-            if cached is not None:
-                return cached
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    f"{ENHANCED_COUNTY_API_BASE}/counties/{county_name}"
-                )
-                if response.status_code == 200:
-                    data = response.json()
-                    InternalAPIClient._cache_set(cache_key, data)
-                    return data
-                return None
-        except Exception as e:
-            logging.error(f"Error fetching county data for {county_name}: {e}")
-            return None
-
-    @staticmethod
-    async def get_all_counties() -> Optional[List[Dict]]:
-        """Fetch all counties data from Enhanced County Analytics API"""
-        try:
-            cache_key = "counties:all"
-            cached = InternalAPIClient._cache_get(cache_key)
-            if cached is not None:
-                return cached
-            async with httpx.AsyncClient() as client:
-                response = await client.get(f"{ENHANCED_COUNTY_API_BASE}/counties/all")
-                if response.status_code == 200:
-                    data = response.json()
-                    InternalAPIClient._cache_set(cache_key, data)
-                    return data
-                return None
-        except Exception as e:
-            logging.error(f"Error fetching all counties data: {e}")
-            return None
-
-    @staticmethod
-    async def get_county_financial_data(county_name: str) -> Optional[Dict]:
-        """Fetch county financial data from Enhanced County Analytics API"""
-        try:
-            cache_key = f"county_financial:{county_name}"
-            cached = InternalAPIClient._cache_get(cache_key)
-            if cached is not None:
-                return cached
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    f"{ENHANCED_COUNTY_API_BASE}/counties/{county_name}/financial"
-                )
-                if response.status_code == 200:
-                    data = response.json()
-                    InternalAPIClient._cache_set(cache_key, data)
-                    return data
-                return None
-        except Exception as e:
-            logging.error(f"Error fetching financial data for {county_name}: {e}")
-            return None
-
-    @staticmethod
-    async def get_county_audit_queries(county_name: str) -> Optional[List[Dict]]:
-        """Fetch all audit queries for a county from Enhanced API"""
-        try:
-            cache_key = f"audit_queries:{county_name}"
-            cached = InternalAPIClient._cache_get(cache_key)
-            if cached is not None:
-                return cached
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    f"{ENHANCED_COUNTY_API_BASE}/audit/county/{county_name}"
-                )
-                if response.status_code == 200:
-                    data = response.json()
-                    InternalAPIClient._cache_set(cache_key, data)
-                    return data
-                return None
-        except Exception as e:
-            logging.error(f"Error fetching audit queries for {county_name}: {e}")
-            return None
-
-    @staticmethod
-    async def get_missing_funds(county_name: str) -> Optional[List[Dict]]:
-        """Fetch missing funds cases for a county from Enhanced API"""
-        try:
-            cache_key = f"missing_funds:{county_name}"
-            cached = InternalAPIClient._cache_get(cache_key)
-            if cached is not None:
-                return cached
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    f"{ENHANCED_COUNTY_API_BASE}/audit/missing-funds",
-                    params={"county": county_name},
-                )
-                if response.status_code == 200:
-                    data = response.json()
-                    InternalAPIClient._cache_set(cache_key, data)
-                    return data
-                return None
-        except Exception as e:
-            logging.error(f"Error fetching missing funds for {county_name}: {e}")
-            return None
-
-    @staticmethod
-    async def get_cob_implementation(county_name: str) -> Optional[Dict]:
-        """Fetch COB implementation info for a county from Enhanced API"""
-        try:
-            cache_key = f"cob_impl:{county_name}"
-            cached = InternalAPIClient._cache_get(cache_key)
-            if cached is not None:
-                return cached
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    f"{ENHANCED_COUNTY_API_BASE}/counties/{county_name}/cob-implementation"
-                )
-                if response.status_code == 200:
-                    data = response.json()
-                    InternalAPIClient._cache_set(cache_key, data)
-                    return data
-                return None
-        except Exception as e:
-            logging.error(f"Error fetching COB implementation for {county_name}: {e}")
-            return None
-
-
-def transform_county_data_for_frontend(backend_data: Dict, county_id: str) -> Dict:
-    """Transform backend county data to match frontend expectations"""
-    if not backend_data:
-        return {"id": county_id}
-
-    # Extract data from the actual API response structure
-    basic_info = backend_data.get("basic_info", {})
-    financial_metrics = backend_data.get("financial_metrics", {})
-    audit_info = backend_data.get("audit_information", {})
-
-    # Derive commonly used fields for the frontend
-    name = backend_data.get("county", "")
-    # Absence stays absence on this path too. The DB path in
-    # /api/v1/counties/{id} answers null for a county with no census row; this
-    # fallback answered 0, so one endpoint carried two conventions depending on
-    # which path served the request. `or` is not used here because it treats a
-    # source-stated 0 as a missing key.
-    population = basic_info.get("population")
-    if population is None:
-        population = backend_data.get("population")
-    budget_2025 = basic_info.get("budget_2025") or backend_data.get("budget_2025", 0)
-    revenue_2024 = basic_info.get("revenue_2024") or backend_data.get("revenue_2024", 0)
-
-    return {
-        "id": county_id,
-        "name": name,
-        "population": population,
-        # Commonly referenced budget fields in the UI
-        "budget_2025": budget_2025 or 0,
-        "totalBudget": budget_2025 or 0,
-        # Optional UI fields with safe defaults
-        "audit_rating": audit_info.get("audit_rating")
-        or backend_data.get("audit_rating"),
-        "financial_health_score": financial_metrics.get("financial_health_score")
-        or backend_data.get("financial_health_score"),
-        "budgetUtilization": financial_metrics.get("budget_execution_rate"),
-        "pendingBills": financial_metrics.get("pending_bills"),
-        "developmentBudget": backend_data.get("development_budget"),
-        "recurrentBudget": backend_data.get("recurrent_budget"),
-        "education": backend_data.get("education"),
-        "health": backend_data.get("health"),
-        "infrastructure": backend_data.get("infrastructure"),
-        # Keep projects if available
-        "projects": backend_data.get("development_projects", []),
-        # Keep raw values occasionally used elsewhere
-        "revenue_2024": revenue_2024 or 0,
-    }
-
-
 # Model imports - temporarily disabled due to database issues
 # from models import (
 #     Allocation, Annotation, Audit, BudgetLine, Country,
@@ -1842,6 +1614,9 @@ class AuditListItem(BaseModel):
     status: Optional[str] = None
     category: Optional[str] = None
     amountLabel: Optional[str] = None
+    amount: Optional[float] = None
+    amount_unavailable_reason: Optional[str] = None
+    audited_entity_name: Optional[str] = None
     fiscal_year: Optional[str] = None
     source: Dict[str, Any]
 
@@ -1851,6 +1626,8 @@ class AuditListResponse(BaseModel):
     page: int
     limit: int
     items: List[AuditListItem]
+    findings_reason: Optional[str] = None
+    withheld_findings: int = 0
 
 
 # ── Application lifecycle ─────────────────────────────────────────────
@@ -2307,12 +2084,6 @@ def _clear_endpoint_mem_caches() -> int:
     return dropped
 
 
-def _clear_internal_api_cache() -> int:
-    dropped = len(InternalAPIClient._cache)
-    InternalAPIClient._cache.clear()
-    return dropped
-
-
 # The nightly's signed invalidation call (issue #231) clears these in every
 # worker. _peers_cache is deliberately absent: it holds live World Bank / IMF
 # figures, not anything the seed writes. See cache/invalidation.py.
@@ -2320,7 +2091,6 @@ try:
     from cache.invalidation import register_local_cache
 
     register_local_cache("main.endpoint_memory", _clear_endpoint_mem_caches)
-    register_local_cache("main.internal_api_client", _clear_internal_api_cache)
 except Exception as e:  # pragma: no cover - import-time wiring
     logger.error(f"Cache invalidation registry unavailable: {e}")
 
@@ -3262,8 +3032,19 @@ def _latest_county_actuals_period_ids(db) -> Optional[List[int]]:
     return [latest.id] if latest else None
 
 
-# Consolidated County Endpoints - Using Enhanced County Analytics API
+def county_database_required(function):
+    """Reject a known DB outage before reading a cached county response."""
+    @functools.wraps(function)
+    async def checked(*args, **kwargs):
+        if not DATABASE_AVAILABLE:
+            raise HTTPException(status_code=503, detail="Database unavailable")
+        return await function(*args, **kwargs)
+    return checked
+
+
+# County endpoints publish the shared database account.
 @app.get("/api/v1/counties")
+@county_database_required
 @cached(key_prefix="counties:all", ttl=3600)  # Cache for 1 hour
 async def get_counties(fiscal_year: Optional[str] = None):
     """Get all counties from database with full financial breakdown.
@@ -3289,10 +3070,11 @@ async def get_counties(fiscal_year: Optional[str] = None):
             # Query county entities
             q = (
                 db.query(DBEntity)
-                .filter(DBEntity.type == EntityType.COUNTY)
+                .join(DBCountry, DBEntity.country_id == DBCountry.id)
+                .filter(DBEntity.type == EntityType.COUNTY, DBCountry.iso_code == "KEN")
                 .order_by(DBEntity.canonical_name)
             )
-            entities = q.all()
+            entities = [e for e in q.all() if official_county_code(e.canonical_name)]
 
             if not entities:
                 raise HTTPException(
@@ -3516,7 +3298,10 @@ async def get_counties(fiscal_year: Optional[str] = None):
                             )
                         )
 
-                total_debt = county_debt_total(loans)
+                from services.financial_publication import county_debt_summary
+
+                debt_summary = county_debt_summary(loans)
+                total_debt = debt_summary["total_debt"]
 
                 # The CoB year-end per-county figure, through the one reader
                 # every endpoint shares (services/publication_gate.py). A rung
@@ -3634,7 +3419,7 @@ async def get_counties(fiscal_year: Optional[str] = None):
                             loans, pending_bills, reporting_date=_pending_reporting_day
                         ),
                         "debt": total_debt,
-                        "total_debt": total_debt,
+                        **debt_summary,
                         "gdp": float(gdp_data.gdp_value) if gdp_data else None,
                         "financial_health_score": health_score,
                         "financial_health": _health,
@@ -3765,314 +3550,306 @@ async def get_county_by_official_code(code: str, fiscal_year: Optional[str] = No
 
 
 @app.get("/api/v1/counties/{county_id}")
+@county_database_required
 @cached(key_prefix="county", ttl=1800)  # Cache for 30 minutes
 async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
     """Get detailed information for a specific county (DB-first, enriched)."""
-    if DATABASE_AVAILABLE:
-        try:
-            with next(get_db()) as db:
-                e = _resolve_county_entity(db, county_id)
-                # Unknown id → 404. Previously an unresolvable id skipped
-                # the name filter and q.first() served the FIRST county's
-                # data (Mombasa) under any garbage id with a 200.
-                if not e:
-                    raise HTTPException(
-                        status_code=404,
-                        detail=f"County '{county_id}' not found",
-                    )
-                if e:
-                    name = e.canonical_name.removesuffix(" County")
-                    # Resolve fiscal period — same logic as list endpoint
-                    period_ids = None
-                    if fiscal_year:
-                        # Same guard as the list endpoint — this block carried
-                        # the same silent widen-to-all-periods fallback.
-                        period_ids = _resolve_requested_county_period_ids(
-                            db, fiscal_year
-                        )
-                    else:
-                        # Latest fiscal period WITH county actuals — same
-                        # honesty rule as the list endpoint (newest-by-
-                        # start-date picked spend-less projection periods).
-                        period_ids = _latest_county_actuals_period_ids(db)
+    if not DATABASE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Database unavailable")
 
-                    pop_data = (
-                        db.query(DBPopulationData)
-                        .filter(DBPopulationData.entity_id == e.id)
-                        .order_by(DBPopulationData.year.desc())
+    try:
+        with next(get_db()) as db:
+            e = _resolve_county_entity(db, county_id)
+            # Unknown id → 404. Previously an unresolvable id skipped
+            # the name filter and q.first() served the FIRST county's
+            # data (Mombasa) under any garbage id with a 200.
+            if not e or official_county_code(e.canonical_name) is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"County '{county_id}' not found",
+                )
+            if e:
+                name = e.canonical_name.removesuffix(" County")
+                # Resolve fiscal period — same logic as list endpoint
+                period_ids = None
+                if fiscal_year:
+                    # Same guard as the list endpoint — this block carried
+                    # the same silent widen-to-all-periods fallback.
+                    period_ids = _resolve_requested_county_period_ids(
+                        db, fiscal_year
+                    )
+                else:
+                    # Latest fiscal period WITH county actuals — same
+                    # honesty rule as the list endpoint (newest-by-
+                    # start-date picked spend-less projection periods).
+                    period_ids = _latest_county_actuals_period_ids(db)
+
+                pop_data = (
+                    db.query(DBPopulationData)
+                    .filter(DBPopulationData.entity_id == e.id)
+                    .order_by(DBPopulationData.year.desc())
+                    .first()
+                )
+
+                bl_query = db.query(DBBudgetLine).filter(
+                    DBBudgetLine.entity_id == e.id
+                )
+                if period_ids:
+                    bl_query = bl_query.filter(
+                        DBBudgetLine.period_id.in_(period_ids)
+                    )
+                budget_lines = bl_query.all()
+
+                # Same classification-vs-sector split as the list
+                # endpoint: CoB BIRR Total/Development/Recurrent rows
+                # are whole-budget aggregates (real data), sector
+                # lines are the additive (modelled) split — summing
+                # both triple-counts the budget.
+                sector_lines = []
+                class_by_cat: dict = {}
+                for bl in budget_lines:
+                    cat_key = (bl.category or "").strip().lower()
+                    if cat_key in _CLASSIFICATION_CATEGORIES:
+                        if not bl.subcategory:
+                            agg = class_by_cat.setdefault(
+                                cat_key, {"allocated": 0.0, "spent": 0.0}
+                            )
+                            agg["allocated"] += float(bl.allocated_amount or 0)
+                            agg["spent"] += float(bl.actual_spent or 0)
+                        continue
+                    sector_lines.append(bl)
+
+                if class_by_cat.get("total", {}).get("allocated"):
+                    total_allocated = class_by_cat["total"]["allocated"]
+                    total_spent = class_by_cat["total"]["spent"]
+                else:
+                    total_allocated = sum(
+                        float(b.allocated_amount or 0) for b in sector_lines
+                    )
+                    total_spent = sum(
+                        float(b.actual_spent or 0) for b in sector_lines
+                    )
+
+                sector_breakdown = {}
+                development_total = class_by_cat.get("development", {}).get(
+                    "allocated", 0.0
+                )
+                recurrent_total = class_by_cat.get("recurrent", {}).get(
+                    "allocated", 0.0
+                )
+                keyword_dev = 0.0
+                keyword_rec = 0.0
+                for bl in sector_lines:
+                    cat = (bl.category or "Other").strip()
+                    amt = float(bl.allocated_amount or 0)
+                    spent = float(bl.actual_spent or 0)
+                    sector_breakdown.setdefault(
+                        cat, {"allocated": 0.0, "spent": 0.0}
+                    )
+                    sector_breakdown[cat]["allocated"] += amt
+                    sector_breakdown[cat]["spent"] += spent
+                    cat_lower = cat.lower()
+                    if any(
+                        kw in cat_lower
+                        for kw in [
+                            "development",
+                            "capital",
+                            "infrastructure",
+                            "construction",
+                            "project",
+                        ]
+                    ):
+                        keyword_dev += amt
+                    else:
+                        keyword_rec += amt
+
+                if development_total == 0:
+                    development_total = keyword_dev
+                    if recurrent_total == 0:
+                        recurrent_total = keyword_rec
+
+                _pending_reporting_day = county_pending_reporting_date(db)
+                loans = county_loans_at_reporting_date(
+                    db.query(DBLoan).filter(DBLoan.entity_id == e.id).all(),
+                    _pending_reporting_day,
+                )
+                from services.financial_publication import county_debt_summary
+
+                debt_summary = county_debt_summary(loans)
+                total_debt = debt_summary["total_debt"]
+
+                # Same reader as the list and /comprehensive.
+                pending_bills = county_pending_bills(loans)
+
+                # Display-grade audits only — this endpoint previously
+                # served the fabricated fixture findings (template
+                # text, dataset oag-audit-aq*) as real OAG data on
+                # county detail pages.
+                audits = [
+                    a
+                    for a in (
+                        db.query(DBAudit)
+                        .filter(publishable_audit_criterion())
+                        .filter(DBAudit.entity_id == e.id)
+                        .order_by(DBAudit.created_at.desc())
+                        .all()
+                    )
+                    if _audit_is_display_grade(a)
+                ]
+                latest_audit = audits[0] if audits else None
+
+                audit_issues = []
+                for a in audits[:10]:
+                    audit_issues.append(
+                        {
+                            "id": str(a.id),
+                            "type": "financial",
+                            "severity": (
+                                a.severity.value if a.severity else "medium"
+                            ),
+                            "description": (a.finding_text or "")[:200],
+                            "status": "open",
+                        }
+                    )
+
+                _audit_signal = county_audit_signals(
+                    db, [e.id], display_grade=_audit_is_display_grade
+                )[e.id]
+                audit_status = _audit_signal["status"]
+                audit_rating = _audit_signal["severity"] or ""
+
+                # One disclosed composite, shared by all three endpoints — see
+                # county_financial_health. The formula this replaces was a piecewise
+                # transform of utilisation alone, so the "health" score printed the
+                # Budget Utilisation figure a second time.
+                from services.entity_financials import financial_summary
+
+                _published_budget = financial_summary(
+                    budget_lines, budget_lines[0].period if budget_lines else None
+                )
+                _health = county_financial_health(
+                    total_allocated=_published_budget["total_allocation"],
+                    total_spent=_published_budget["total_spent"],
+                    pending_bills=pending_bills
+                    if pending_budget_compatible(
+                        loans,
+                        _published_budget["fiscal_period"],
+                        budget_currency=_published_budget["currency"],
+                    )
+                    else None,
+                    audit_status=audit_status,
+                    own_source_target=county_own_source_target(budget_lines),
+                    own_source_actual=county_own_source_revenue(budget_lines),
+                )
+                health_score = _health["score"] if _health else None
+
+                meta = e.meta or {}
+                metrics = _resolve_fy_metrics(meta, fiscal_year)
+                # Absent stays absent — see county_own_source_revenue.
+                revenue_collection = county_own_source_revenue(budget_lines)
+                # Withheld — see the same field in GET /counties.
+                money_received = None
+
+                gdp_data = None
+                try:
+                    from models import GDPData as _GDPData
+
+                    gdp_data = (
+                        db.query(_GDPData)
+                        .filter(_GDPData.entity_id == e.id)
+                        .order_by(_GDPData.year.desc())
                         .first()
                     )
+                except Exception:
+                    pass
 
-                    bl_query = db.query(DBBudgetLine).filter(
-                        DBBudgetLine.entity_id == e.id
-                    )
-                    if period_ids:
-                        bl_query = bl_query.filter(
-                            DBBudgetLine.period_id.in_(period_ids)
-                        )
-                    budget_lines = bl_query.all()
+                cname = (e.canonical_name or "").replace(" County", "")
+                coords = COUNTY_COORDINATES.get(
+                    legacy_county_route_id(e.canonical_name)
+                )
 
-                    # Same classification-vs-sector split as the list
-                    # endpoint: CoB BIRR Total/Development/Recurrent rows
-                    # are whole-budget aggregates (real data), sector
-                    # lines are the additive (modelled) split — summing
-                    # both triple-counts the budget.
-                    sector_lines = []
-                    class_by_cat: dict = {}
-                    for bl in budget_lines:
-                        cat_key = (bl.category or "").strip().lower()
-                        if cat_key in _CLASSIFICATION_CATEGORIES:
-                            if not bl.subcategory:
-                                agg = class_by_cat.setdefault(
-                                    cat_key, {"allocated": 0.0, "spent": 0.0}
-                                )
-                                agg["allocated"] += float(bl.allocated_amount or 0)
-                                agg["spent"] += float(bl.actual_spent or 0)
-                            continue
-                        sector_lines.append(bl)
+                last_audit_date = None
+                last_audit_date = _audit_signal.get("period_end")
 
-                    if class_by_cat.get("total", {}).get("allocated"):
-                        total_allocated = class_by_cat["total"]["allocated"]
-                        total_spent = class_by_cat["total"]["spent"]
-                    else:
-                        total_allocated = sum(
-                            float(b.allocated_amount or 0) for b in sector_lines
-                        )
-                        total_spent = sum(
-                            float(b.actual_spent or 0) for b in sector_lines
-                        )
-
-                    sector_breakdown = {}
-                    development_total = class_by_cat.get("development", {}).get(
-                        "allocated", 0.0
-                    )
-                    recurrent_total = class_by_cat.get("recurrent", {}).get(
-                        "allocated", 0.0
-                    )
-                    keyword_dev = 0.0
-                    keyword_rec = 0.0
-                    for bl in sector_lines:
-                        cat = (bl.category or "Other").strip()
-                        amt = float(bl.allocated_amount or 0)
-                        spent = float(bl.actual_spent or 0)
-                        sector_breakdown.setdefault(
-                            cat, {"allocated": 0.0, "spent": 0.0}
-                        )
-                        sector_breakdown[cat]["allocated"] += amt
-                        sector_breakdown[cat]["spent"] += spent
-                        cat_lower = cat.lower()
-                        if any(
-                            kw in cat_lower
-                            for kw in [
-                                "development",
-                                "capital",
-                                "infrastructure",
-                                "construction",
-                                "project",
-                            ]
-                        ):
-                            keyword_dev += amt
-                        else:
-                            keyword_rec += amt
-
-                    if development_total == 0:
-                        development_total = keyword_dev
-                        if recurrent_total == 0:
-                            recurrent_total = keyword_rec
-
-                    _pending_reporting_day = county_pending_reporting_date(db)
-                    loans = county_loans_at_reporting_date(
-                        db.query(DBLoan).filter(DBLoan.entity_id == e.id).all(),
-                        _pending_reporting_day,
-                    )
-                    total_debt = county_debt_total(loans)
-
-                    # Same reader as the list and /comprehensive.
-                    pending_bills = county_pending_bills(loans)
-
-                    # Display-grade audits only — this endpoint previously
-                    # served the fabricated fixture findings (template
-                    # text, dataset oag-audit-aq*) as real OAG data on
-                    # county detail pages.
-                    audits = [
-                        a
-                        for a in (
-                            db.query(DBAudit)
-                            .filter(publishable_audit_criterion())
-                            .filter(DBAudit.entity_id == e.id)
-                            .order_by(DBAudit.created_at.desc())
-                            .all()
-                        )
-                        if _audit_is_display_grade(a)
-                    ]
-                    latest_audit = audits[0] if audits else None
-
-                    audit_issues = []
-                    for a in audits[:10]:
-                        audit_issues.append(
-                            {
-                                "id": str(a.id),
-                                "type": "financial",
-                                "severity": (
-                                    a.severity.value if a.severity else "medium"
-                                ),
-                                "description": (a.finding_text or "")[:200],
-                                "status": "open",
-                            }
-                        )
-
-                    _audit_signal = county_audit_signals(
-                        db, [e.id], display_grade=_audit_is_display_grade
-                    )[e.id]
-                    audit_status = _audit_signal["status"]
-                    audit_rating = _audit_signal["severity"] or ""
-
-                    # One disclosed composite, shared by all three endpoints — see
-                    # county_financial_health. The formula this replaces was a piecewise
-                    # transform of utilisation alone, so the "health" score printed the
-                    # Budget Utilisation figure a second time.
-                    from services.entity_financials import financial_summary
-
-                    _published_budget = financial_summary(
-                        budget_lines, budget_lines[0].period if budget_lines else None
-                    )
-                    _health = county_financial_health(
-                        total_allocated=_published_budget["total_allocation"],
-                        total_spent=_published_budget["total_spent"],
-                        pending_bills=pending_bills
-                        if pending_budget_compatible(
-                            loans,
-                            _published_budget["fiscal_period"],
-                            budget_currency=_published_budget["currency"],
-                        )
-                        else None,
-                        audit_status=audit_status,
-                        own_source_target=county_own_source_target(budget_lines),
-                        own_source_actual=county_own_source_revenue(budget_lines),
-                    )
-                    health_score = _health["score"] if _health else None
-
-                    meta = e.meta or {}
-                    metrics = _resolve_fy_metrics(meta, fiscal_year)
-                    # Absent stays absent — see county_own_source_revenue.
-                    revenue_collection = county_own_source_revenue(budget_lines)
-                    # Withheld — see the same field in GET /counties.
-                    money_received = None
-
-                    gdp_data = None
-                    try:
-                        from models import GDPData as _GDPData
-
-                        gdp_data = (
-                            db.query(_GDPData)
-                            .filter(_GDPData.entity_id == e.id)
-                            .order_by(_GDPData.year.desc())
-                            .first()
-                        )
-                    except Exception:
-                        pass
-
-                    cname = (e.canonical_name or "").replace(" County", "")
-                    coords = COUNTY_COORDINATES.get(
-                        legacy_county_route_id(e.canonical_name)
-                    )
-
-                    last_audit_date = None
-                    last_audit_date = _audit_signal.get("period_end")
-
-                    if development_total == 0 and total_allocated > 0:
-                        dev_from_meta = float(metrics.get("development_budget", 0))
-                        if dev_from_meta > 0:
-                            development_total = dev_from_meta
-                            recurrent_total = float(
-                                metrics.get(
-                                    "recurrent_budget", total_allocated - dev_from_meta
-                                )
+                if development_total == 0 and total_allocated > 0:
+                    dev_from_meta = float(metrics.get("development_budget", 0))
+                    if dev_from_meta > 0:
+                        development_total = dev_from_meta
+                        recurrent_total = float(
+                            metrics.get(
+                                "recurrent_budget", total_allocated - dev_from_meta
                             )
+                        )
 
-                    payload = {
-                        "id": county_id,
-                        "name": cname,
-                        "code": official_county_code(e.canonical_name),
-                        "coordinates": coords,
-                        # Absent stays absent — same rule as the list
-                        # endpoint above and the comprehensive one below.
-                        "population": (pop_data.total_population if pop_data else None),
-                        "budget_2025": total_allocated,
-                        "total_budget": total_allocated,
-                        "total_spent": total_spent,
-                        "budget_utilization": round(
-                            (
-                                (total_spent / total_allocated * 100)
-                                if total_allocated > 0
-                                else 0
-                            ),
-                            1,
+                payload = {
+                    "id": county_id,
+                    "name": cname,
+                    "code": official_county_code(e.canonical_name),
+                    "coordinates": coords,
+                    # Absent stays absent — same rule as the list
+                    # endpoint above and the comprehensive one below.
+                    "population": (pop_data.total_population if pop_data else None),
+                    "budget_2025": total_allocated,
+                    "total_budget": total_allocated,
+                    "total_spent": total_spent,
+                    "budget_utilization": round(
+                        (
+                            (total_spent / total_allocated * 100)
+                            if total_allocated > 0
+                            else 0
                         ),
-                        # Whether this row's budget is the Controller of
-                        # Budget's own CBIRR aggregate or the CRA model —
-                        # same rule as the list and /comprehensive, so a
-                        # caller cannot get three answers for one county.
-                        # null when nothing was published: absence has no
-                        # source, and naming one would describe no figure.
-                        "budget_source": _budget_provenance(
-                            class_by_cat, total_allocated
-                        ),
-                        "development_budget": development_total,
-                        "recurrent_budget": recurrent_total,
-                        "sector_breakdown": sector_breakdown,
-                        "money_received": money_received,
-                        "revenue_collection": revenue_collection,
-                        "revenue": _county_revenue_for_lines(budget_lines),
-                        "pending_bills": pending_bills,
-                        **_county_pending_bills_fields(
-                            loans, pending_bills, reporting_date=_pending_reporting_day
-                        ),
-                        "debt": total_debt,
-                        "total_debt": total_debt,
-                        "gdp": float(gdp_data.gdp_value) if gdp_data else None,
-                        "financial_health_score": health_score,
-                        "financial_health": _health,
-                        "audit_rating": audit_rating,
-                        "audit_status": audit_status,
-                        "audit_signal": _audit_signal,
-                        "last_audit_date": last_audit_date,
-                        "last_audit_date_basis": "audited_period_end",
-                        "audit_issues": audit_issues,
-                        "audit_findings_count": len(audits),
-                    }
-                    from services.entity_financials import (
-                        financial_summary,
-                        publish_county_budget,
-                    )
+                        1,
+                    ),
+                    # Whether this row's budget is the Controller of
+                    # Budget's own CBIRR aggregate or the CRA model —
+                    # same rule as the list and /comprehensive, so a
+                    # caller cannot get three answers for one county.
+                    # null when nothing was published: absence has no
+                    # source, and naming one would describe no figure.
+                    "budget_source": _budget_provenance(
+                        class_by_cat, total_allocated
+                    ),
+                    "development_budget": development_total,
+                    "recurrent_budget": recurrent_total,
+                    "sector_breakdown": sector_breakdown,
+                    "money_received": money_received,
+                    "revenue_collection": revenue_collection,
+                    "revenue": _county_revenue_for_lines(budget_lines),
+                    "pending_bills": pending_bills,
+                    **_county_pending_bills_fields(
+                        loans, pending_bills, reporting_date=_pending_reporting_day
+                    ),
+                    "debt": total_debt,
+                    **debt_summary,
+                    "gdp": float(gdp_data.gdp_value) if gdp_data else None,
+                    "financial_health_score": health_score,
+                    "financial_health": _health,
+                    "audit_rating": audit_rating,
+                    "audit_status": audit_status,
+                    "audit_signal": _audit_signal,
+                    "last_audit_date": last_audit_date,
+                    "last_audit_date_basis": "audited_period_end",
+                    "audit_issues": audit_issues,
+                    "audit_findings_count": len(audits),
+                }
+                from services.entity_financials import (
+                    financial_summary,
+                    publish_county_budget,
+                )
 
-                    return publish_county_budget(
-                        payload,
-                        financial_summary(
-                            budget_lines,
-                            budget_lines[0].period if budget_lines else None,
-                        ),
-                    )
-        except HTTPException:
-            # Deliberate 404s (unknown county id) must reach the client,
-            # not be swallowed into the fallback path below.
-            raise
-        except Exception as exc:
-            logging.error(f"DB county details failed, falling back: {exc}")
-
-    # Fallback: Enhanced API
-    try:
-        county_name = _resolve_county_name(county_id)
-        if not county_name:
-            raise HTTPException(status_code=404, detail="County not found")
-        backend_data = await InternalAPIClient.get_county_data(county_name)
-        if not backend_data:
-            raise HTTPException(status_code=404, detail="County data not available")
-        return transform_county_data_for_frontend(backend_data, county_id)
+                return publish_county_budget(
+                    payload,
+                    financial_summary(
+                        budget_lines,
+                        budget_lines[0].period if budget_lines else None,
+                    ),
+                )
     except HTTPException:
+        # Deliberate 404s (unknown county id) must reach the client,
+        # not be swallowed into the fallback path below.
         raise
-    except Exception as e:
-        logging.error(f"Error fetching county {county_id}: {e}")
+    except Exception as exc:
+        logging.exception("DB county details failed for %s", county_id)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -4273,7 +4050,12 @@ async def get_county_comprehensive(
                 _publishable_loans, _pending_reporting_day
             )
 
-            total_debt = county_debt_total(loans)
+            from services.financial_publication import (
+                county_debt_summary, county_debt_instrument_fields,
+            )
+
+            debt_summary = county_debt_summary(loans)
+            total_debt = debt_summary["total_debt"]
 
             # Same filter as total_debt above: pending bills are an arrears
             # balance, not borrowing, and they already have their own panel via
@@ -4289,11 +4071,12 @@ async def get_county_comprehensive(
                         "category": (
                             loan.debt_category.value if loan.debt_category else "other"
                         ),
-                        "principal": float(loan.principal or 0),
-                        "outstanding": float(loan.outstanding or 0),
-                        "interest_rate": (
-                            float(loan.interest_rate) if loan.interest_rate else None
-                        ),
+                        **county_debt_instrument_fields(loan),
+                        "currency": loan.currency,
+                        "source_document_id": loan.source_document_id,
+                        "page_ref": loan.page_ref,
+                        "basis": loan.basis.value if loan.basis else None,
+                        "provenance": loan.provenance,
                     }
                 )
 
@@ -4785,7 +4568,7 @@ async def get_county_comprehensive(
                 "revenue": _county_revenue_for_lines(budget_lines),
                 # Debt
                 "debt": {
-                    "total_debt": total_debt,
+                    **debt_summary,
                     "pending_bills": pending_bills,
                     # The day the figure is a stock on and what the report
                     # says about it, both from the rows behind it; null / []
@@ -4800,11 +4583,10 @@ async def get_county_comprehensive(
                             else None
                         ),
                     ),
-                    "debt_to_budget_ratio": (
-                        round(total_debt / total_allocated * 100, 1)
-                        if total_debt is not None and total_allocated > 0
-                        else None
-                    ),
+                    # Final budget publication computes this against the supported
+                    # account's exact period/currency, not the legacy rollup.
+                    "debt_to_budget_ratio": None,
+                    "debt_to_budget_ratio_absent_reason": "awaiting_budget_compatibility",
                     "per_capita_debt": per_capita_debt,
                     "breakdown": debt_breakdown,
                     # How many instrument rows the publication gate held back,
@@ -4940,38 +4722,20 @@ async def get_county_comprehensive(
 
 
 @app.get("/api/v1/counties/{county_id}/financial")
-@cached(key_prefix="county:financial", ttl=1800)  # Cache for 30 minutes
+@county_database_required
+@cached(key_prefix="county:financial", ttl=1800)
 async def get_county_financial_data(county_id: str):
-    """Get financial data for a specific county"""
-    try:
-        # Convert frontend ID to backend name
-        county_name = _resolve_county_name(county_id)
-        if not county_name:
-            raise HTTPException(status_code=404, detail="County not found")
+    """The selected source-supported county account, including explained absence.
 
-        # Fetch from Enhanced County Analytics API
-        backend_data = await InternalAPIClient.get_county_financial_data(county_name)
-
-        if not backend_data:
-            # Try the general county endpoint as fallback
-            backend_data = await InternalAPIClient.get_county_data(county_name)
-            if backend_data:
-                backend_data = backend_data.get("financial_data", {})
-
-        if not backend_data:
-            raise HTTPException(status_code=404, detail="Financial data not available")
-
-        return {
-            "county_id": county_id,
-            "county_name": county_name,
-            "financial_data": backend_data,
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logging.error(f"Error fetching financial data for county {county_id}: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+    Like /budget, this selects the supported period and does not interpret an
+    optional fiscal_year query as a requested account. No analytics proxy runs.
+    """
+    account = await get_county_budget(county_id)
+    return {
+        "county_id": county_id,
+        "county_name": account["county_name"],
+        "financial_data": account["financial_summary"],
+    }
 
 
 @app.get("/api/v1/counties/{county_id}/budget")
@@ -4981,6 +4745,8 @@ async def get_county_budget(county_id: str):
     Historical field names are retained as aliases; the financial summary
     carries the actual period, source, accounting basis and absence reasons.
     The retired analytics proxy cannot supply a reported budget.
+    This route selects the supported period; fiscal_year query parameters are
+    not interpreted. Read fiscal_period for the actual selected account.
     """
     if not DATABASE_AVAILABLE:
         raise HTTPException(status_code=503, detail="Database unavailable")
@@ -4990,7 +4756,7 @@ async def get_county_budget(county_id: str):
     try:
         with next(get_db()) as db:
             entity = _resolve_county_entity(db, county_id)
-            if entity is None:
+            if entity is None or official_county_code(entity.canonical_name) is None:
                 raise HTTPException(status_code=404, detail="County not found")
             budget_lines = _entity_period_budget_query(db, entity.id).all()
             summary = financial_summary(
@@ -6077,295 +5843,171 @@ async def _federal_audits_payload():
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.get("/api/v1/counties/{county_id}/audits")
-@cached(key_prefix="county:audits", ttl=3600)  # Cache for 1 hour
-async def get_county_audits(county_id: str):
-    """Get audit information for a specific county from database."""
-    county_name = _resolve_county_name(county_id)
-    if not county_name:
+def _county_audit_scope(db, county_id):
+    """Resolve one Kenyan county; absence of findings is not a missing identity."""
+    if not DATABASE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+    entity = _resolve_county_entity(db, county_id)
+    if entity is None or official_county_code(entity.canonical_name) is None:
         raise HTTPException(status_code=404, detail="County not found")
+    query = db.query(DBAudit).filter(DBAudit.entity_id == entity.id)
+    return entity, query
 
-    # Query database first
-    if DATABASE_AVAILABLE:
-        try:
-            with next(get_db()) as db:
-                entity = _resolve_county_entity(db, county_id)
 
-                if entity:
-                    county_name = entity.canonical_name.removesuffix(" County")
-                    # Query audits from database
-                    audits = (
-                        db.query(DBAudit)
-                        .filter(publishable_audit_criterion())
-                        .filter(DBAudit.entity_id == entity.id)
-                        .order_by(DBAudit.created_at.desc())
-                        .all()
-                    )
+def _county_audit_item(audit, county_name):
+    """Preserve report identity and citation; never infer money from prose."""
+    from services.audit_citations import audited_institution
 
-                    if audits:
-                        # Build response from database audits
-                        audit_queries = []
-                        by_severity: Dict[str, int] = {}
-                        total_amount = 0.0
+    provenance = audit.provenance
+    first = provenance[0] if isinstance(provenance, list) and provenance else provenance
+    meta = first if isinstance(first, dict) else {}
+    doc = audit.source_document
+    page = citation_page(audit.page_ref)
+    invalid = isinstance(audit.amount, bool)
+    value = float(audit.amount) if audit.amount is not None and not invalid else None
+    invalid = invalid or (value is not None and not math.isfinite(value))
+    amount = None if invalid else value
+    # These facets are labels, not numeric evidence. Unexpected JSON shapes
+    # remain absent rather than becoming truthy statuses or classifications.
+    def label(key):
+        value = meta.get(key)
+        return value if isinstance(value, str) and value.strip() else None
 
-                        for audit in audits:
-                            severity = (
-                                audit.severity.value if audit.severity else "unknown"
-                            )
-                            by_severity[severity] = by_severity.get(severity, 0) + 1
+    return {
+        "id": audit.id,
+        "description": audit.finding_text,
+        "severity": audit.severity.value if audit.severity else None,
+        "status": audit.status or label("status"),
+        "category": label("category"),
+        "amountLabel": str(amount) if amount is not None else None,
+        "amount": amount,
+        "amount_unavailable_reason": "invalid_stored_amount" if invalid else "no_amount_recorded" if amount is None else None,
+        "fiscal_year": audit.period.label if audit.period else None,
+        "audited_entity_name": audited_institution(meta, county_name=county_name, document_meta=doc.meta if doc else None),
+        "source": {
+            "id": doc.id if doc else None,
+            "title": doc.title if doc else None,
+            "publisher": doc.publisher if doc else None,
+            "url": doc.url if doc else None,
+            "page": page,
+            "page_url": report_page_url(doc.url if doc else None, page, clear_stale_page=True),
+            "table_index": None,
+        },
+    }
 
-                            # Extract amount from finding_text if present
-                            amount = 0.0
-                            if audit.finding_text:
-                                import re
 
-                                match = re.search(r"KES\s*([\d,]+)", audit.finding_text)
-                                if match:
-                                    try:
-                                        amount = float(match.group(1).replace(",", ""))
-                                    except:
-                                        pass
-                            total_amount += amount
+def _county_audit_rows(query):
+    return query.options(joinedload(DBAudit.source_document), joinedload(DBAudit.period)).filter(
+        publishable_audit_criterion()
+    ).order_by(DBAudit.created_at.desc(), DBAudit.id.desc()).all()
 
-                            # Get fiscal period label if available
-                            period_label = ""
-                            if audit.period:
-                                period_label = (
-                                    audit.period.label
-                                    if hasattr(audit.period, "label")
-                                    else ""
-                                )
 
-                            audit_queries.append(
-                                {
-                                    "id": audit.id,
-                                    "finding": audit.finding_text,
-                                    "severity": severity,
-                                    "recommendation": audit.recommended_action,
-                                    "fiscal_year": period_label,
-                                    "amount_involved": amount,
-                                    "date_raised": (
-                                        audit.created_at.isoformat()
-                                        if audit.created_at
-                                        else None
-                                    ),
-                                }
-                            )
+def _county_findings_reason(published, withheld):
+    return None if published else "awaiting_sourced_data" if withheld else "no_findings_recorded"
 
-                        return {
-                            "county_id": county_id,
-                            "county_name": county_name,
-                            "data_source": "database",
-                            "summary": {
-                                "queries_count": len(audits),
-                                "total_amount_involved": total_amount,
-                                "by_severity": by_severity,
-                                "by_status": {},
-                                "by_category": {},
-                            },
-                            "top_recent": audit_queries[:5],
-                            "queries": audit_queries,
-                            "missing_funds": {
-                                "count": 0,
-                                "total_amount": 0,
-                                "cases": [],
-                            },
-                            "cob_implementation": {},
-                            "kpis": {},
-                        }
-        except Exception as e:
-            logging.error(f"DB audit query failed for {county_id}: {e}")
 
-    # Fallback to external API if DB fails or has no data
+@app.get("/api/v1/counties/{county_id}/audits")
+@county_database_required
+@cached(key_prefix="county:audits", ttl=3600)
+async def get_county_audits(county_id: str):
+    """Published findings for this county, with bounded stored-amount coverage.
+
+    A finding amount can describe a balance or an unsupported payment. It is
+    not a claim of theft or proven loss. Missing-funds/COB analytics from the
+    retired service remain explicitly unavailable.
+    """
+    if not DATABASE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+    from services.audit_amounts import audit_amount_columns, audit_amount_result
+    from services.publication_gate import retired_audit_fixture_criterion
+
     try:
-        # Fetch data from Enhanced API
-        county_details, ext_audit_queries, missing_funds, cob_impl = (
-            await InternalAPIClient.get_county_data(county_name),
-            await InternalAPIClient.get_county_audit_queries(county_name),
-            await InternalAPIClient.get_missing_funds(county_name),
-            await InternalAPIClient.get_cob_implementation(county_name),
-        )
-
-        if not county_details and not ext_audit_queries:
-            raise HTTPException(
-                status_code=404, detail="County audit data not available"
+        with next(get_db()) as db:
+            entity, query = _county_audit_scope(db, county_id)
+            county_name = entity.canonical_name.removesuffix(" County")
+            audits = _county_audit_rows(query)
+            total_amount, coverage = audit_amount_result(
+                db.query(*audit_amount_columns(scope_criterion=~retired_audit_fixture_criterion())).filter(DBAudit.entity_id == entity.id).one()
             )
-
-        # Safe defaults
-        ext_audit_queries = ext_audit_queries or []
-        missing_funds = missing_funds or []
-        audit_info = (
-            county_details.get("audit_information", {}) if county_details else {}
-        )
-        financial_metrics = (
-            county_details.get("financial_metrics", {}) if county_details else {}
-        )
-
-        # Helper to parse KES amount strings
-        def parse_amount(amount_str: Any) -> float:
-            try:
-                if amount_str is None:
-                    return 0.0
-                if isinstance(amount_str, (int, float)):
-                    return float(amount_str)
-                s = str(amount_str).upper().replace("KES", "").strip()
-                s = s.replace(",", "")
-                if s.endswith("B"):
-                    return float(s[:-1]) * 1_000_000_000
-                if s.endswith("M"):
-                    return float(s[:-1]) * 1_000_000
-                return float(s)
-            except Exception:
-                return 0.0
-
-        # Aggregate audit queries
-        total_amount = sum(
-            parse_amount(q.get("amount_involved")) for q in ext_audit_queries
-        )
-        by_severity: Dict[str, int] = {}
-        by_status: Dict[str, int] = {}
-        by_category: Dict[str, int] = {}
-        for q in ext_audit_queries:
-            by_severity[q.get("severity", "unknown")] = (
-                by_severity.get(q.get("severity", "unknown"), 0) + 1
-            )
-            by_status[q.get("status", "unknown")] = (
-                by_status.get(q.get("status", "unknown"), 0) + 1
-            )
-            by_category[q.get("category", "other")] = (
-                by_category.get(q.get("category", "other"), 0) + 1
-            )
-
-        def _date_key(q: Dict) -> str:
-            return q.get("date_raised", "0000-01-01")
-
-        top_recent = sorted(ext_audit_queries, key=_date_key, reverse=True)[:5]
-
-        # Missing funds aggregation
-        missing_total = sum(parse_amount(c.get("amount")) for c in missing_funds)
-        notable_cases = [
-            {
-                "case_id": c.get("case_id"),
-                "description": c.get("description"),
-                "amount": parse_amount(c.get("amount")),
-                "amount_label": c.get("amount"),
-                "period": c.get("period"),
-                "status": c.get("status"),
-            }
-            for c in missing_funds
-        ]
-
-        # COB implementation
-        cob_summary = {
-            "coverage": {
-                "mentioned_in_report": False,
-                "context_length": 0,
-                "analysis_depth": "Low",
-            },
-            "issues": [],
-            "budget_implementation": {},
-        }
-        if cob_impl:
-            cov = cob_impl.get("cob_coverage", {})
-            cob_summary = {
-                "coverage": {
-                    "mentioned_in_report": cov.get("mentioned_in_report", False),
-                    "context_length": cov.get("context_length", 0),
-                    "analysis_depth": cov.get("analysis_depth", "Low"),
+            queries = []
+            by_severity, by_status, by_category = {}, {}, {}
+            for audit in audits:
+                item = _county_audit_item(audit, county_name)
+                for counts, key in ((by_severity, "severity"), (by_status, "status"), (by_category, "category")):
+                    facet = item[key] or "unknown"
+                    counts[facet] = counts.get(facet, 0) + 1
+                queries.append({
+                    **item,
+                    "finding": item["description"],
+                    "recommendation": audit.recommended_action,
+                    "amount_involved": item["amount"],
+                    "date_raised": audit.created_at.isoformat() if audit.created_at else None,
+                })
+            withheld = coverage["withheld_findings"]
+            return {
+                "county_id": county_id,
+                "county_name": county_name,
+                "country": "KEN",
+                "currency": "KES",
+                "data_source": "database",
+                "summary": {
+                    "queries_count": len(queries),
+                    "total_amount_involved": total_amount,
+                    "amount_coverage": coverage,
+                    "by_severity": by_severity,
+                    "by_status": by_status,
+                    "by_category": by_category,
                 },
-                "issues": cob_impl.get("implementation_issues", []),
-                "budget_implementation": cob_impl.get("budget_implementation", {}),
+                "top_recent": queries[:5],
+                "queries": queries,
+                "withheld_findings": withheld,
+                "findings_reason": _county_findings_reason(queries, withheld),
+                "fiscal_years_covered": sorted({q["fiscal_year"] for q in queries if q["fiscal_year"]}),
+                "missing_funds": {"count": None, "total_amount": None, "cases": [], "absent_reason": "not_published_by_this_account"},
+                "cob_implementation": {"absent_reason": "not_published_by_this_account"},
+                "kpis": {},
             }
-
-        response = {
-            "county_id": county_id,
-            "county_name": county_name,
-            "data_source": "external_api",
-            "summary": {
-                "queries_count": len(ext_audit_queries),
-                "total_amount_involved": total_amount,
-                "by_severity": by_severity,
-                "by_status": by_status,
-                "by_category": by_category,
-            },
-            "top_recent": top_recent,
-            "queries": ext_audit_queries,
-            "missing_funds": {
-                "count": len(missing_funds),
-                "total_amount": missing_total,
-                "cases": notable_cases,
-            },
-            "cob_implementation": cob_summary,
-            "kpis": {
-                "budget_execution_rate": financial_metrics.get("budget_execution_rate"),
-                "pending_bills": financial_metrics.get("pending_bills"),
-                "financial_health_score": financial_metrics.get(
-                    "financial_health_score"
-                ),
-            },
-        }
-
-        return response
-
     except HTTPException:
         raise
-    except Exception as e:
-        logging.error(f"Error fetching audit info for county {county_id}: {e}")
+    except Exception:
+        logging.exception("Error fetching audit info for county %s", county_id)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @app.get("/api/v1/counties/{county_id}/audits/history")
 async def get_county_audits_history(county_id: str):
-    """Historical audit queries grouped by fiscal year with quick aggregates."""
+    """Group the same publishable county findings by their stored fiscal period.
+
+    Import timestamps never stand in for an audited fiscal year.
+    """
+    if not DATABASE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Database unavailable")
     try:
-        county_name = _resolve_county_name(county_id)
-        if not county_name:
-            raise HTTPException(status_code=404, detail="County not found")
-
-        audit_queries = await InternalAPIClient.get_county_audit_queries(county_name)
-        audit_queries = audit_queries or []
-
-        # Group by year if available on 'period' or 'date_raised'
-        def year_of(q: Dict) -> str:
-            p = q.get("period") or q.get("fiscal_year") or q.get("fiscal_period")
-            if isinstance(p, str) and re.search(r"\d{4}/\d{2}", p):
-                return p
-            d = q.get("date_raised")
-            if isinstance(d, str) and len(d) >= 4 and d[:4].isdigit():
-                y = int(d[:4])
-                return f"FY{y}/{str((y+1))[-2:]}"
-            return "Unknown"
-
-        groups: Dict[str, List[Dict]] = {}
-        for q in audit_queries:
-            y = year_of(q)
-            groups.setdefault(y, []).append(q)
-
-        by_year = []
-        for y, qs in sorted(groups.items(), reverse=True):
-            by_status: Dict[str, int] = {}
-            for q in qs:
-                by_status[q.get("status", "unknown")] = (
-                    by_status.get(q.get("status", "unknown"), 0) + 1
-                )
-            by_year.append(
-                {
-                    "fiscal_year": y,
-                    "count": len(qs),
-                    "by_status": by_status,
-                }
-            )
-
-        return {
-            "county_id": county_id,
-            "county_name": county_name,
-            "years": by_year,
-            "total": len(audit_queries),
-        }
+        with next(get_db()) as db:
+            entity, query = _county_audit_scope(db, county_id)
+            county_name = entity.canonical_name.removesuffix(" County")
+            audits = _county_audit_rows(query)
+            groups = {}
+            for audit in audits:
+                item = _county_audit_item(audit, county_name)
+                period = item["fiscal_year"] or "Unknown"
+                group = groups.setdefault(period, {"fiscal_year": period, "count": 0, "by_status": {}})
+                group["count"] += 1
+                status = item["status"] or "unknown"
+                group["by_status"][status] = group["by_status"].get(status, 0) + 1
+            withheld = count_withheld_audits(db, entity_id=entity.id)
+            return {
+                "county_id": county_id,
+                "county_name": county_name,
+                "years": [groups[key] for key in sorted(groups, reverse=True)],
+                "total": len(audits),
+                "withheld_findings": withheld,
+                "findings_reason": _county_findings_reason(audits, withheld),
+            }
     except HTTPException:
         raise
-    except Exception as e:
-        logging.error(f"Error fetching audit history for county {county_id}: {e}")
+    except Exception:
+        logging.exception("Error fetching audit history for county %s", county_id)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -6374,184 +6016,42 @@ async def list_county_audits(
     county_id: str,
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
-    year: Optional[str] = Query(None, description="Fiscal year e.g. FY2022/23"),
+    year: Optional[str] = Query(None, description="Stored fiscal year label e.g. FY2022/23"),
     status: Optional[str] = Query(None),
     severity: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
-    """Paginated audit queries with filters. DB-backed when available; falls back to Enhanced API."""
+    """Paginated county findings; same publication and identity scope as history."""
     try:
-        from services.county_identity import OFFICIAL_COUNTY_CODES
-
-        cid = str(county_id or "").strip()
-        county_name = (
-            OFFICIAL_COUNTY_CODES.get(cid[5:])
-            if cid.startswith("code:")
-            else _resolve_county_name(cid, db)
-        )
-        if not county_name:
-            raise HTTPException(status_code=404, detail="County not found")
-
-        # DB-backed path
-        if DATABASE_AVAILABLE and DBAudit and DBEntity and db:
-            county_entity = _resolve_county_entity(db, cid)
-
-            if county_entity is None:
-                return {"total": 0, "page": page, "limit": limit, "items": []}
-
-            # Bind to the exact Kenyan county entity resolved from this URL.
-            # A namesake in another country or a ministry must not supply it.
-            query = (
-                db.query(DBAudit)
-                .options(
-                    joinedload(DBAudit.source_document), joinedload(DBAudit.period)
-                )
-                .filter(publishable_audit_criterion())
-                .filter(DBAudit.entity_id == county_entity.id)
-            )
-
-            if year and DBFiscalPeriod:
-                query = query.join(
-                    DBFiscalPeriod, DBAudit.period_id == DBFiscalPeriod.id
-                ).filter(DBFiscalPeriod.label == year)
-
-            if severity:
-                severity_lookup = None
-                try:
-                    severity_lookup = Severity[severity.upper()]
-                except KeyError:
-                    severity_lookup = None
-                if severity_lookup:
-                    query = query.filter(DBAudit.severity == severity_lookup)
-
-            all_audits = query.order_by(DBAudit.created_at.desc()).all()
-
-            filtered_audits: List[Any] = []
-            for audit in all_audits:
-                provenance = audit.provenance or []
-                status_value = None
-                if provenance and isinstance(provenance, list):
-                    first_entry = provenance[0] or {}
-                    if isinstance(first_entry, dict):
-                        status_value = first_entry.get("status")
-                if status and status_value:
-                    if status_value.lower() != status.lower():
-                        continue
-                elif status and not status_value:
-                    # If a status filter is provided but audit lacks status metadata, skip it
-                    continue
-                filtered_audits.append(audit)
-
-            total = len(filtered_audits)
-            start = (page - 1) * limit
-            end = start + limit
-            audits = filtered_audits[start:end]
-
-            items: List[Dict[str, Any]] = []
-            for audit in audits:
-                doc = (
-                    audit.source_document if hasattr(audit, "source_document") else None
-                )
-                source_url = doc.url if doc else None
-                source_page = citation_page(audit.page_ref)
-                provenance = audit.provenance or []
-                status_value = None
-                category_value = None
-                amount_value = None
-                if provenance and isinstance(provenance, list):
-                    first_entry = provenance[0] or {}
-                    if isinstance(first_entry, dict):
-                        status_value = first_entry.get("status")
-                        category_value = first_entry.get("category")
-                        amount_value = first_entry.get("amount_involved")
-
-                items.append(
-                    {
-                        "id": audit.id,
-                        "description": audit.finding_text,
-                        "severity": audit.severity.value if audit.severity else None,
-                        "status": status_value,
-                        "category": category_value,
-                        "amountLabel": amount_value,
-                        "fiscal_year": audit.period.label if audit.period else None,
-                        "source": {
-                            "title": doc.title if doc else None,
-                            "url": source_url,
-                            "page": source_page,
-                            "page_url": report_page_url(
-                                source_url, source_page, clear_stale_page=True
-                            ),
-                            "table_index": None,
-                        },
-                    }
-                )
-
-            return {"total": total, "page": page, "limit": limit, "items": items}
-
-        # Fallback path: Enhanced API data filtered in-memory
-        audit_queries = await InternalAPIClient.get_county_audit_queries(county_name)
-        items = audit_queries or []
-
-        def to_year(q: Dict) -> str:
-            p = q.get("period") or q.get("fiscal_year") or q.get("fiscal_period")
-            if isinstance(p, str) and re.search(r"\d{4}/\d{2}", p):
-                return p
-            d = q.get("date_raised")
-            if isinstance(d, str) and len(d) >= 4 and d[:4].isdigit():
-                y = int(d[:4])
-                return f"FY{y}/{str((y+1))[-2:]}"
-            return "Unknown"
-
+        entity, query = _county_audit_scope(db, county_id)
         if year:
-            items = [q for q in items if to_year(q) == year]
-        if status:
-            items = [
-                q for q in items if str(q.get("status", "")).lower() == status.lower()
-            ]
+            query = query.join(DBFiscalPeriod, DBAudit.period_id == DBFiscalPeriod.id).filter(DBFiscalPeriod.label == year)
         if severity:
-            items = [
-                q
-                for q in items
-                if str(q.get("severity", "")).lower() == severity.lower()
-            ]
+            try:
+                severity_value = Severity[severity.upper()]
+            except KeyError:
+                raise HTTPException(status_code=422, detail="Unknown audit severity")
+            query = query.filter(DBAudit.severity == severity_value)
+        county_name = entity.canonical_name.removesuffix(" County")
+        items = [_county_audit_item(a, county_name) for a in _county_audit_rows(query)]
+        if status:
+            items = [item for item in items if (item["status"] or "").casefold() == status.casefold()]
+        # Withheld count belongs to the entity/period/severity scope, before
+        # the status facet (withheld metadata is not a publishable status).
+        from services.publication_gate import retired_audit_fixture_criterion
 
-        total = len(items)
+        withheld = query.filter(~publishable_audit_criterion(), ~retired_audit_fixture_criterion()).count()
         start = (page - 1) * limit
-        end = start + limit
-        page_items = items[start:end]
-
-        def map_item(q: Dict, idx: int) -> Dict[str, Any]:
-            prov = q.get("provenance") or {}
-            source = q.get("source") or {}
-            url = source.get("url") or q.get("document_url")
-            source_page = citation_page(prov.get("page") or source.get("page"))
-            return {
-                "id": q.get("id") or f"{county_id}-{start+idx}",
-                "description": q.get("description")
-                or q.get("finding")
-                or q.get("text"),
-                "severity": q.get("severity"),
-                "status": q.get("status"),
-                "category": q.get("category"),
-                "amountLabel": q.get("amount_involved") or q.get("amount"),
-                "fiscal_year": to_year(q),
-                "source": {
-                    "title": source.get("title"),
-                    "url": url,
-                    "page": source_page,
-                    "page_url": report_page_url(
-                        url, source_page, clear_stale_page=True
-                    ),
-                    "table_index": prov.get("table_index") or source.get("table_index"),
-                },
-            }
-
-        mapped = [map_item(q, i) for i, q in enumerate(page_items)]
-        return {"total": total, "page": page, "limit": limit, "items": mapped}
+        return {
+            "total": len(items), "page": page, "limit": limit,
+            "items": items[start:start + limit],
+            "withheld_findings": withheld,
+            "findings_reason": _county_findings_reason(items, withheld),
+        }
     except HTTPException:
         raise
-    except Exception as e:
-        logging.error(f"Error listing audit queries for {county_id}: {e}")
+    except Exception:
+        logging.exception("Error listing audit queries for %s", county_id)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -7698,7 +7198,7 @@ async def get_sources_summary():
                 "short": meta.get("short", ""),
                 "role": meta.get("role", ""),
                 "website": meta.get("website"),
-                "document_count": int(count or 0),
+                "document_count": int(count),  # SQL COUNT(id) for an existing publisher group.
                 "downloaded_documents": int(downloaded or 0),
                 "extracted_documents": int(extracted.get(pub, 0)),
                 "last_fetched": fetched.isoformat() if fetched else None,
@@ -8846,7 +8346,7 @@ async def get_budget_overview():
 
         with next(get_db()) as db:
             # ── Resolve latest county fiscal period ─────────────
-            county_period_id = _latest_county_period(db)
+            county_period_id = _latest_county_period(db, official_counties_only=True)
             period_label = None
             if county_period_id:
                 _fp = db.query(DBFiscalPeriod).get(county_period_id)
@@ -8855,7 +8355,7 @@ async def get_budget_overview():
             # ── County totals and sectors (county-only, latest FY) ─────
             # Totals per county through the shared split rule, sectors from
             # the additive sector rows only — see _county_period_rollup.
-            per_county, sector_lines = _county_period_rollup(db, county_period_id)
+            per_county, sector_lines = _county_period_rollup(db, county_period_id, reject_incomplete=True)
             merged: dict = {}
             for bl in sector_lines:
                 cat = bl.category
@@ -8870,6 +8370,11 @@ async def get_budget_overview():
             # both the CBIRR total and a modelled sector split, the two need
             # not agree, and percentages of the wrong base would not add to 100.
             sector_total = sum(v["allocated"] for v in merged.values())
+            aggregates = [total_allocated, total_spent, sector_total]
+            aggregates.extend(value for entry in merged.values() for value in entry.values())
+            aggregates.extend(value for _name, allocated, spent in per_county.values() for value in (allocated, spent))
+            if any(not math.isfinite(value) or value < 0 for value in aggregates):
+                raise HTTPException(status_code=503, detail={"reason": "invalid_county_aggregate"})
 
             sectors = []
             for name in SECTOR_ORDER:
@@ -8902,43 +8407,30 @@ async def get_budget_overview():
                 db.query(FSModel).order_by(FSModel.fiscal_year.asc()).all()
             )
             fiscal_years = []
+            fiscal_history_withheld = []
 
-            # This response declares fiscal_history_unit = "billion_kes";
-            # the table stores raw KES since the stage1 3a migration, so
-            # convert here to keep the declared unit truthful.
-            def _b(v) -> float:
-                return float(v or 0) / 1e9
+            from services.financial_publication import fiscal_history_entry
 
             for r in fiscal_rows:
-                entry = {
-                    "fiscal_year": r.fiscal_year,
-                    "appropriated_budget": _b(r.appropriated_budget),
-                    "total_revenue": _b(r.total_revenue),
-                    "tax_revenue": _b(r.tax_revenue),
-                    "non_tax_revenue": _b(r.non_tax_revenue),
-                    "total_borrowing": _b(r.total_borrowing),
-                    "borrowing_pct_of_budget": float(r.borrowing_pct_of_budget or 0),
-                    "debt_service_cost": _b(r.debt_service_cost),
-                    "development_spending": _b(r.development_spending),
-                    "recurrent_spending": _b(r.recurrent_spending),
-                    "county_allocation": _b(r.county_allocation),
-                }
-                # Only include years with substantially complete data —
-                # World Bank back-fill years often only have 1-2 fields.
-                key_fields = [
-                    entry["appropriated_budget"],
-                    entry["total_revenue"],
-                    entry["total_borrowing"],
-                    entry["county_allocation"],
-                ]
-                if sum(1 for v in key_fields if v > 0) >= 3:
+                entry = fiscal_history_entry(r)
+                # Keep the existing coverage threshold; zero is reported data.
+                key_fields = [entry[k] for k in (
+                    "appropriated_budget", "total_revenue", "total_borrowing",
+                    "county_allocation",
+                )]
+                if sum(v is not None for v in key_fields) >= 3:
                     fiscal_years.append(entry)
+                else:
+                    fiscal_history_withheld.append({
+                        "fiscal_year": r.fiscal_year,
+                        "reason": "unsupported_unit" if r.unit != "KES" else "insufficient_reported_fields",
+                        "source_unit": r.unit,
+                        "absent_reasons": entry["absent_reasons"],
+                    })
 
-            # The latest year with an enacted budget, as /fiscal/summary picks
-            # it (_current_fiscal_year): next year's Budget Summary arrives
-            # before its budget book and must not become the headline year.
             latest = next(
-                (e for e in reversed(fiscal_years) if e["appropriated_budget"] > 0),
+                (e for e in reversed(fiscal_years)
+                 if e["appropriated_budget"] is not None and e["appropriated_budget"] > 0),
                 fiscal_years[-1] if fiscal_years else {},
             )
 
@@ -9242,6 +8734,8 @@ async def get_budget_overview():
                 },
                 "sectors": sectors,
                 "fiscal_history": fiscal_years,
+                "fiscal_history_withheld": fiscal_history_withheld,
+                "fiscal_history_absent_reason": "no_supported_fiscal_history" if not fiscal_years else None,
                 "county_utilization": {
                     "top_5": county_utils[:5],
                     "bottom_5": (
@@ -12952,6 +12446,8 @@ async def get_budget_lines(
             query.order_by(DBBudgetLine.category).offset(skip).limit(limit).all()
         )
 
+        from services.financial_publication import monetary_fields
+
         items: List[Dict[str, Any]] = []
         for bl in budget_lines:
             items.append(
@@ -12959,9 +12455,9 @@ async def get_budget_lines(
                     "id": bl.id,
                     "category": bl.category,
                     "subcategory": bl.subcategory,
-                    "allocated_amount": float(bl.allocated_amount or 0),
-                    "actual_spent": float(bl.actual_spent or 0),
-                    "committed_amount": float(bl.committed_amount or 0),
+                    **monetary_fields(
+                        bl, ("allocated_amount", "actual_spent", "committed_amount")
+                    ),
                     "currency": bl.currency,
                     "entity_id": bl.entity_id,
                     "period_label": bl.period.label if bl.period else None,
@@ -13084,6 +12580,8 @@ async def search(
             }
         )
 
+    from services.financial_publication import monetary_fields
+
     # Search budget lines
     budget_query = db.query(DBBudgetLine).filter(
         or_(
@@ -13107,8 +12605,11 @@ async def search(
                 "type": "budget_line",
                 "category": bl.category,
                 "subcategory": bl.subcategory,
-                "allocated_amount": float(bl.allocated_amount or 0),
-                "actual_spent": float(bl.actual_spent or 0),
+                **monetary_fields(bl, ("allocated_amount", "actual_spent")),
+                "currency": bl.currency,
+                "entity_id": bl.entity_id,
+                "period_id": bl.period_id,
+                "source_document_id": bl.source_document_id,
                 "entity_name": bl.entity.canonical_name if bl.entity else None,
                 "period_label": bl.period.label if bl.period else None,
             }

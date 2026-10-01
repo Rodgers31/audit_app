@@ -128,14 +128,14 @@ function AuditReportsList() {
 ```tsx
 function CountyDashboard({ countyId }: { countyId: string }) {
   const { data: county } = useCounty(countyId);
-  const { data: budget } = useBudgetAllocation(countyId, '2024');
+  const { data: budget } = useBudgetAllocation(countyId);
   const { data: latestAudit } = useLatestCountyAudit(countyId);
   const { data: debtData } = useCountyDebtData(countyId);
 
   return (
     <div>
       <h1>{county?.name} County Dashboard</h1>
-      <div>Budget: {budget?.totalBudget}</div>
+      <div>Budget: {budget?.total_budget ?? '—'}</div>
       <div>Audit Status: {latestAudit?.auditStatus}</div>
       <div>Total Debt: {debtData?.totalDebt}</div>
     </div>
@@ -232,3 +232,9 @@ lib/
 4. **Add Error Boundaries**: Implement error boundaries for better error handling
 
 Your API integration is now **complete and production-ready**! 🚀
+
+County budget allocation uses the flat `/counties/{id}/budget` account. The legacy
+`fiscalYear` argument is retained, but the backend does not interpret it as a
+period selector. Read `fiscal_period` for the selected supported account,
+`financial_summary` for its source and accounting basis, and `absent_reasons`
+for null amounts. Reported zero stays zero; no allocation breakdown is invented.
