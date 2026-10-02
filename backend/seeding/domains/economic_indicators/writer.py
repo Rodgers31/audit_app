@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import calendar
+import copy
+import enum
 import logging
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
+from decimal import Decimal
 from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 from models import Country, DocumentType, EconomicIndicator, Entity, SourceDocument
-from sqlalchemy import and_, select
+from sqlalchemy import and_, inspect, select
 from sqlalchemy.orm import Session
 
 from ...config import SeedingSettings
@@ -200,6 +203,41 @@ def persist_economic_records(
 MAX_SUPERSEDED_PER_TYPE = 12
 
 
+def _before_image(row: object) -> dict:
+    """Copy mapped columns before retirement, retaining exact numeric values."""
+    result = {}
+    for attribute in inspect(type(row)).column_attrs:
+        value = getattr(row, attribute.key)
+        if isinstance(value, (date, datetime)):
+            value = value.isoformat()
+        elif isinstance(value, Decimal):
+            value = str(value)
+        elif isinstance(value, enum.Enum):
+            value = value.value
+        result[attribute.columns[0].name] = copy.deepcopy(value)
+    return result
+
+
+def _has_source_evidence(row: EconomicIndicator) -> bool:
+    """Calendar coverage cannot authorize retiring a different sourced measure.
+
+    Only unsourced legacy rows with empty metadata or a sole bootstrap marker
+    retain the automatic retirement policy. A bootstrap flag cannot override
+    a source association or other metadata, whose semantics may be unknown.
+    """
+    if row.meta is not None and not isinstance(row.meta, dict):
+        return True
+    meta = row.meta or {}
+    return bool(
+        row.source_document_id is not None
+        or row.extraction_id is not None
+        or row.source_page is not None
+        or row.page_ref is not None
+        or row.source_hash is not None
+        or any(key != "bootstrap" for key in meta)
+    )
+
+
 def remove_superseded_rows(
     session: Session,
     coverage: Dict[str, Set[str]],
@@ -212,9 +250,11 @@ def remove_superseded_rows(
     date inside that span cannot be an observation of the owner's measure.
     A missing observation at a valid period end is insufficient evidence for
     deletion: a partial source response can omit a legitimate stored row.
+    Source-bound off-cycle observations also require explicit source review;
+    another publisher's calendar does not establish their measurement period.
 
     Returns ``(removed, errors)``: ``(type, date, value)`` per deleted row,
-    and errors for malformed coverage or a sweep exceeding
+    and errors for source-review refusals, malformed coverage or a sweep exceeding
     :data:`MAX_SUPERSEDED_PER_TYPE`. Malformed coverage refuses all deletion;
     an over-limit type is left intact. Refusals reach the job row.
 
@@ -265,6 +305,14 @@ def remove_superseded_rows(
             else row_day.day != calendar.monthrange(row_day.year, row_day.month)[1]
         )
         if is_off_cycle and superseded_by_live(row.indicator_type, day, coverage):
+            if _has_source_evidence(row):
+                msg = (
+                    f"Preserved {row.indicator_type} row {row.id} at {day}: "
+                    "source review required before off-cycle retirement"
+                )
+                logger.warning(msg)
+                errors.append(msg)
+                continue
             doomed.setdefault(row.indicator_type, []).append(row)
     for kind, victims in sorted(doomed.items()):
         if len(victims) > MAX_SUPERSEDED_PER_TYPE:
@@ -288,8 +336,12 @@ def remove_superseded_rows(
                     "stored_value": str(row.value),
                     "entity_id": row.entity_id,
                     "source_document_id": row.source_document_id,
+                    "before_image": _before_image(row),
                 })
-            logger.info("Removed superseded %s %s = %s", kind, day, row.value)
+            # The CLI commits these images in the same transaction as deletion.
+            # This message records intent, not an independently observed commit.
+            logger.info("Retiring superseded %s row %s at %s = %s (pending commit)",
+                        kind, row.id, day, row.value)
             session.delete(row)
     return removed, errors
 

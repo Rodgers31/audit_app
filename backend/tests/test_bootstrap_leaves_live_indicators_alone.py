@@ -113,6 +113,25 @@ def test_bootstrap_waits_for_live_coverage_before_retiring_legacy_rows(
         receipts=receipts,
     )
     db_session.flush()
+    # A generic bootstrap flag cannot establish that its source-linked rows
+    # are safe to retire. Keep the exact evidence until source review.
+    assert removed == []
+    assert len(errors) == 2 and all("source review" in error for error in errors)
+    assert receipts == []
+    assert {row.id for row in _rows(db_session, "inflation_rate")} == original_ids
+
+    # Positive retirement control: genuinely unsourced legacy literals retain
+    # the automatic policy, with a full before-image per removed identity.
+    for row in _rows(db_session, "inflation_rate"):
+        row.source_document_id = None
+        row.meta = {"bootstrap": True}
+    db_session.flush()
+    removed, errors = writer.remove_superseded_rows(
+        db_session,
+        {"inflation_rate": {"2023-12-31", "2024-12-31", "2025-12-31"}},
+        receipts=receipts,
+    )
+    db_session.flush()
     assert errors == []
     assert sorted(removed) == [
         ("inflation_rate", "2024-06-30", 4.6),
@@ -120,9 +139,11 @@ def test_bootstrap_waits_for_live_coverage_before_retiring_legacy_rows(
     ]
     assert {receipt["id"] for receipt in receipts} == original_ids
     assert all(
-        receipt["source_document_id"] == seed_source_doc.id
+        receipt["source_document_id"] is None
         for receipt in receipts
     )
+    assert all(receipt["before_image"]["metadata"] == {"bootstrap": True}
+               for receipt in receipts)
     assert sorted(receipt["date"] for receipt in receipts) == [
         "2024-06-30", "2025-01-31"
     ]
