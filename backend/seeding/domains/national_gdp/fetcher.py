@@ -34,6 +34,35 @@ _WB_GDP_URL = (
 _FIXTURE_URL = "file://seeding/real_data/national_gdp.json"
 
 
+def _raw_number(value: Any, *, maximum: Decimal | None = None) -> Decimal:
+    """Validate the source value before coercion can erase its type or bounds.
+
+    GDP is nonnegative raw KES with no inferred economic ceiling. Both poverty
+    indicators are nonnegative percentages on the publisher's 0–100 scale.
+    JSON null is handled by the caller as an absent observation, never zero.
+    """
+    if isinstance(value, bool) or not isinstance(value, (int, float, Decimal)):
+        raise ValueError("Source observation must be a non-boolean number")
+    number = Decimal(str(value))
+    if (
+        not number.is_finite()
+        or number < 0
+        or (maximum is not None and number > maximum)
+    ):
+        raise ValueError("Source observation outside supported measure")
+    return number
+
+
+def _source_rows(rows: Any, *, year_key: str, value_key: str) -> list[dict]:
+    """A missing value field is malformed; an explicit null is withheld."""
+    if not isinstance(rows, list):
+        raise ValueError("Source data element is not a list")
+    for row in rows:
+        if not isinstance(row, dict) or year_key not in row or value_key not in row:
+            raise ValueError("Malformed source observation")
+    return rows
+
+
 def _parse_wb_gdp(payload: Any) -> Dict[int, int]:
     """Parse a World Bank API response into ``{year: gdp_in_raw_kes}``.
 
@@ -42,14 +71,13 @@ def _parse_wb_gdp(payload: Any) -> Dict[int, int]:
     """
     if not isinstance(payload, list) or len(payload) < 2:
         raise ValueError("Unexpected World Bank API response format")
-    data_array = payload[1]
-    if not isinstance(data_array, list):
-        raise ValueError("World Bank data element is not a list")
+    data_array = _source_rows(payload[1], year_key="date", value_key="value")
 
     gdp_by_year: Dict[int, int] = {}
     for item in data_array:
-        if item.get("value") is not None:
-            gdp_by_year[int(item["date"])] = int(round(item["value"]))  # raw KES
+        if item["value"] is not None:
+            number = _raw_number(item["value"])
+            gdp_by_year[int(item["date"])] = int(round(number))  # raw KES
     return gdp_by_year
 
 
@@ -86,18 +114,23 @@ def fetch_national_gdp_kes(
                 return gdp
             logger.warning("World Bank GDP API returned no values; using fixture")
             fallback_reason = "worldbank_returned_nothing"
-        except Exception as exc:  # network / shape / parse — degrade gracefully
+        except ValueError as exc:
+            logger.warning("World Bank GDP API response invalid, using fixture: %s", exc)
+            fallback_reason = f"worldbank_invalid_response({type(exc).__name__})"
+        except Exception as exc:  # network / transport — degrade gracefully
             logger.warning("World Bank GDP API unavailable, using fixture: %s", exc)
             fallback_reason = f"worldbank_unreachable({type(exc).__name__})"
 
     fixture = load_json_resource(
         url=_FIXTURE_URL, client=client, logger=logger, label="national_gdp"
     )
-    rows = fixture.get("gdp", []) if isinstance(fixture, dict) else []
+    if not isinstance(fixture, dict) or "gdp" not in fixture:
+        raise ValueError("Malformed national GDP fixture")
+    rows = _source_rows(fixture["gdp"], year_key="year", value_key="gdp_kes")
     gdp_by_year = {
-        int(r["year"]): int(r["gdp_kes"])
+        int(r["year"]): int(_raw_number(r["gdp_kes"]))
         for r in rows
-        if r.get("gdp_kes") is not None
+        if r["gdp_kes"] is not None
     }
     if not gdp_by_year:
         mark_fixture(
@@ -167,16 +200,14 @@ EXTREME_POVERTY_OMITTED_REASON = (
 
 
 def _parse_wb_series(payload: Any) -> Dict[int, float]:
-    """``{year: value}`` for the observed years of one World Bank indicator."""
+    """``{year: value}`` for observed poverty indicators, raw scale 0–100."""
     if not isinstance(payload, list) or len(payload) < 2:
         raise ValueError("Unexpected World Bank API response format")
-    rows = payload[1]
-    if not isinstance(rows, list):
-        raise ValueError("World Bank data element is not a list")
+    rows = _source_rows(payload[1], year_key="date", value_key="value")
     return {
-        int(item["date"]): float(item["value"])
+        int(item["date"]): float(_raw_number(item["value"], maximum=Decimal("100")))
         for item in rows
-        if item.get("value") is not None
+        if item["value"] is not None
     }
 
 
