@@ -1,0 +1,243 @@
+{
+  "schema": "round11_oag_catchup_readiness/v1",
+  "prepared_date": "2026-10-01",
+  "issue": "https://github.com/Rodgers31/audit_app/issues/234",
+  "pinned_base": "355c057a6138ed47212a5aab865f4bdf26a02177",
+  "purpose": "readiness only; no authorization or production acceptance",
+  "inherited_observation": {
+    "observed_at": "2026-10-01T03:15:02.595642+00:00",
+    "chicago_time": "2026-09-30 22:15:02 CDT",
+    "job_id": 3176,
+    "coverage_cells": 141,
+    "required_cells": 376,
+    "newer_county_findings": 2898,
+    "freshly_recaptured": false
+  },
+  "inputs": [
+    {
+      "path": "docs/verification/2026-09-27-oag-coverage/accepted-source-manifest.json",
+      "sha256": "62f26e0d93c8a3a25e1f2ae813c362aa0e10908e0ffff33fd496342674cf1dab"
+    },
+    {
+      "path": "docs/verification/2026-09-30-round6-oag/source-coverage-matrix.csv",
+      "sha256": "86ed39b886345c122528012f754fd609fd8d9940cd516b390a4e112e70df083f"
+    },
+    {
+      "path": "docs/verification/2026-09-30-round6-oag/county-coverage-matrix.csv",
+      "sha256": "696f9867f98d2941a26f7e522f2831298a080a6bc827bc354a9c767da15b1aca"
+    },
+    {
+      "path": "docs/verification/2026-09-27-oag-coverage/coverage-matrix.csv",
+      "sha256": "1999da92735573ae4b01c1f82bd58f2f05570c2dfaeb1e4db287bdab9bdc7e65"
+    }
+  ],
+  "deferred_sources": [
+    {
+      "label": "2023/2024 assemblies",
+      "fiscal_year": "2023/2024",
+      "audit_year": 2024,
+      "fiscal_period": {
+        "label": "FY2023/24",
+        "start_date": "2023-07-01",
+        "end_date": "2024-06-30"
+      },
+      "institution": "assemblies",
+      "source_url": "https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf",
+      "sha256": "683fa522bf11eaa2b0bc2a9eef51eadc3d664d9a512d3af63cb6e9479820f8a2",
+      "md5": "15cd6108a0f08498a9e9f699430b365b",
+      "inherited_production_source_document_id": 2540,
+      "inherited_state": "deferred_registered_not_fetched",
+      "inherited_published_findings": 0,
+      "accepted_local_findings": 541,
+      "pdf_pages": 217,
+      "expected_chapters": 47,
+      "listed_at": "https://www.oagkenya.go.ke/2023-2024-county-government-audit-reports/",
+      "fiscal_year_authority": "year_page plus hash-bound PDF title; filename alone insufficient",
+      "inherited_chapter_receipt": "docs/verification/2026-09-27-oag-coverage/final-replay/volume-3.json",
+      "chapter_receipt_sha256": "2e6d77a97d1f22ad214e91e25a6986af779e9141294d78e4e070da27019ee4bf",
+      "chapter_verification": "inherited complete exact-byte replay; not freshly reparsed",
+      "cached_pdf_sha256_rechecked_at": "2026-10-01T23:53:55.658638+00:00",
+      "live_pdf_bytes_rechecked": false,
+      "execution_order": 1,
+      "expected_new_coverage_cells": 47
+    },
+    {
+      "label": "2022/2023 executives",
+      "fiscal_year": "2022/2023",
+      "audit_year": 2023,
+      "fiscal_period": {
+        "label": "FY2022/23",
+        "start_date": "2022-07-01",
+        "end_date": "2023-06-30"
+      },
+      "institution": "executives",
+      "source_url": "https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf",
+      "sha256": "e873eb8a2f5b24366b4b847e529c832ef42d2aea02702a015597c6c406f9b953",
+      "md5": "f49345102b734ddc4825110e44ef9113",
+      "inherited_production_source_document_id": 2537,
+      "inherited_state": "deferred_registered_not_fetched",
+      "inherited_published_findings": 0,
+      "accepted_local_findings": 1041,
+      "pdf_pages": 504,
+      "expected_chapters": 47,
+      "listed_at": "https://www.oagkenya.go.ke/2022-2023-county-government-audit-reports/",
+      "fiscal_year_authority": "year_page plus hash-bound PDF title; filename alone insufficient",
+      "inherited_chapter_receipt": "docs/verification/2026-09-27-oag-coverage/final-replay/volume-4.json",
+      "chapter_receipt_sha256": "8a0f2f2e15275490c15ae478c84ddbb72100c4131aafe4cda6d212407db2c15a",
+      "chapter_verification": "inherited complete exact-byte replay; not freshly reparsed",
+      "cached_pdf_sha256_rechecked_at": "2026-10-01T23:53:55.658638+00:00",
+      "live_pdf_bytes_rechecked": false,
+      "execution_order": 2,
+      "expected_new_coverage_cells": 47
+    },
+    {
+      "label": "2022/2023 assemblies",
+      "fiscal_year": "2022/2023",
+      "audit_year": 2023,
+      "fiscal_period": {
+        "label": "FY2022/23",
+        "start_date": "2022-07-01",
+        "end_date": "2023-06-30"
+      },
+      "institution": "assemblies",
+      "source_url": "https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf",
+      "sha256": "5c0ebf31a7cd6dc07558e55507b2b5228fb9a653e638a39abd72beffa46674cf",
+      "md5": "1e757ebf2480ab1959dd7e86e8fffddf",
+      "inherited_production_source_document_id": 2536,
+      "inherited_state": "deferred_registered_not_fetched",
+      "inherited_published_findings": 0,
+      "accepted_local_findings": 513,
+      "pdf_pages": 219,
+      "expected_chapters": 47,
+      "listed_at": "https://www.oagkenya.go.ke/2022-2023-county-government-audit-reports/",
+      "fiscal_year_authority": "year_page plus hash-bound PDF title; filename alone insufficient",
+      "inherited_chapter_receipt": "docs/verification/2026-09-27-oag-coverage/final-replay/volume-5.json",
+      "chapter_receipt_sha256": "7eb4713feed422c609fe8e11e1f57a0c4d7d0c7edd5092731fac3b1bc25131fa",
+      "chapter_verification": "inherited complete exact-byte replay; not freshly reparsed",
+      "cached_pdf_sha256_rechecked_at": "2026-10-01T23:53:55.658638+00:00",
+      "live_pdf_bytes_rechecked": false,
+      "execution_order": 3,
+      "expected_new_coverage_cells": 47
+    },
+    {
+      "label": "2021/2022 executives",
+      "fiscal_year": "2021/2022",
+      "audit_year": 2022,
+      "fiscal_period": {
+        "label": "FY2021/22",
+        "start_date": "2021-07-01",
+        "end_date": "2022-06-30"
+      },
+      "institution": "executives",
+      "source_url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf",
+      "sha256": "0cc278f2ac0cc11be86b03dea6f7f7c97710c3f3903145716f403292967387fe",
+      "md5": "cda52424386d5ab6afae21a4dc9dcde7",
+      "inherited_production_source_document_id": 2535,
+      "inherited_state": "deferred_registered_not_fetched",
+      "inherited_published_findings": 0,
+      "accepted_local_findings": 1082,
+      "pdf_pages": 546,
+      "expected_chapters": 47,
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "fiscal_year_authority": "year_page plus hash-bound PDF title; filename alone insufficient",
+      "inherited_chapter_receipt": "docs/verification/2026-09-27-oag-coverage/final-replay/volume-6.json",
+      "chapter_receipt_sha256": "83dcd8474418c8e0ad222b244004b608cbc4b58fc44dba05274e238aada96be8",
+      "chapter_verification": "inherited complete exact-byte replay; not freshly reparsed",
+      "cached_pdf_sha256_rechecked_at": "2026-10-01T23:53:55.658638+00:00",
+      "live_pdf_bytes_rechecked": false,
+      "execution_order": 4,
+      "expected_new_coverage_cells": 47
+    },
+    {
+      "label": "2021/2022 assemblies",
+      "fiscal_year": "2021/2022",
+      "audit_year": 2022,
+      "fiscal_period": {
+        "label": "FY2021/22",
+        "start_date": "2021-07-01",
+        "end_date": "2022-06-30"
+      },
+      "institution": "assemblies",
+      "source_url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf",
+      "sha256": "07db60417ab122a6082fea3ec4bf70b5038e7eb3554d1e9ca1f5fee0eae5d50c",
+      "md5": "6ac0f20f7a8bfe535775bccb1e81bdcc",
+      "inherited_production_source_document_id": 2534,
+      "inherited_state": "deferred_registered_not_fetched",
+      "inherited_published_findings": 0,
+      "accepted_local_findings": 532,
+      "pdf_pages": 222,
+      "expected_chapters": 47,
+      "listed_at": "https://www.oagkenya.go.ke/2021-2022-county-government-audit-reports/",
+      "fiscal_year_authority": "year_page plus hash-bound PDF title; filename alone insufficient",
+      "inherited_chapter_receipt": "docs/verification/2026-09-27-oag-coverage/final-replay/volume-7.json",
+      "chapter_receipt_sha256": "68ee1e7177a83665db28406f329b1c3fd0ca6f95a65fe056037367067b12fc1b",
+      "chapter_verification": "inherited complete exact-byte replay; not freshly reparsed",
+      "cached_pdf_sha256_rechecked_at": "2026-10-01T23:53:55.658638+00:00",
+      "live_pdf_bytes_rechecked": false,
+      "execution_order": 5,
+      "expected_new_coverage_cells": 47
+    }
+  ],
+  "preserved_current_sources": [
+    2542,
+    2541,
+    2539
+  ],
+  "conditional_comparison": {
+    "new_findings": 3709,
+    "new_coverage_cells": 235,
+    "after_newer_findings": 6607,
+    "after_coverage_cells": 376,
+    "basis": "sum of exact accepted county/year/institution matrix rows; same source editions; fresh baseline required",
+    "global_audit_total": null,
+    "prospective_audit_or_extraction_ids": null
+  },
+  "mutation_tables": [
+    "source_documents",
+    "extractions",
+    "audits",
+    "ingestion_jobs"
+  ],
+  "related_identity_tables": [
+    "countries",
+    "entities",
+    "fiscal_periods"
+  ],
+  "independent_operations": {
+    "source2541_boundary_correction": {
+      "issue": 379,
+      "audit_ids": [
+        5545,
+        5679,
+        5716
+      ],
+      "extraction_ids": [
+        6023,
+        6158,
+        6196
+      ],
+      "status": "separate exact-plan authorization; preserve before-state until then"
+    },
+    "source2392_reconciliation": {
+      "proposed_retirements": 335,
+      "proposed_revisions": 2,
+      "approved": false
+    },
+    "protected_source_documents": [
+      1823,
+      2541
+    ],
+    "protected_population": {
+      "row_id": 79,
+      "value": 51202827
+    }
+  },
+  "acceptance": {
+    "live_catchup_executed": false,
+    "fresh_live_coverage": false,
+    "full_validation": false,
+    "signed_refresh": false,
+    "first_rendered_observation": false,
+    "issue234_closable": false
+  }
+}

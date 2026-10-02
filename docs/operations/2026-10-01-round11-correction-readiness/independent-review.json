@@ -1,0 +1,51 @@
+{
+  "reviewer": "Independent adversarial packet reviewer; GPT-6.1 Sol/high inherited",
+  "checkout": "/Users/roger/.codex/worktrees/audit-release-verification/audit_app",
+  "branch": "codex/round11-production-correction-readiness",
+  "head": "355c057a6138ed47212a5aab865f4bdf26a02177",
+  "tree": "57d55dfdb1c01b04f92297edd02ff6a78a8e4cbf",
+  "repository_edits": false,
+  "live_database_connections": false,
+  "credentials_read": false,
+  "github_actions_settings_mutations": false,
+  "documents_reviewed": [
+    "decision-ledger.json",
+    "README.md",
+    "approval-and-recapture.md",
+    "backup-and-restore.md"
+  ],
+  "executed_controls": {
+    "repository_bank_hashes": 22,
+    "tool_hashes": 2,
+    "external_receipt_hashes": 17,
+    "full_transport_hash": 1,
+    "complete_metadata_matches": 47,
+    "project_preservation": "all47 in both current and projected cleanup images",
+    "code_projection": "exact4cells in each before/after image; no other metadata delta",
+    "renderer_positive": 2,
+    "renderer_hostile_refusals": 4,
+    "schema_probe_positive": 2,
+    "schema_probe_hostile_refusals": 3,
+    "actual_api_jq_good": 1,
+    "actual_api_jq_hostile_refusals": 4,
+    "actual_frontend_jq_good": 1,
+    "actual_frontend_jq_hostile_refusals": 5
+  },
+  "finding": "No new actionable fail-open or inferred production authorization found in reviewed Session4 packet. Inherited CPI prose contains two obsolete claims, identified to author for explicit supersession without repinning bank.",
+  "obsolete_banked_prose": [
+    "cpi-execution.md incorrectly says population79 uses source1823; full newer receipt shows row79 source_document_id=None and source1823 population64(entity73).",
+    "Pinned cpi-correction-proposal release_requirements predates current prevention and says indicators ignore publication flag; current economic reader uses shared source-bound gate."
+  ],
+  "limits": [
+    "Offline verification only; no fresh deployed data/configuration/source/public/browser acceptance.",
+    "AST-extracted schema probe uses synthetic catalog results; it does not prove actual schema deployment or ORM queries.",
+    "Actual jq gates execute with synthetic JSON; no signed webhook/cache request or workflow run.",
+    "Renderer controls prove input rejection/rollback SQL generation only; banked PostgreSQL rehearsals were not rerun and no full backup/restore was attempted.",
+    "README receipt claims rely on author evidence; parent must bind final bank-index/verification receipt hashes and independent probe output before commit."
+  ],
+  "reproduction": "Run bundled python -I ROUND11_SESSION_4_REVIEW_PROBES.py with workdir explicitly assigned checkout; script imports only stdlib and standalone renderer via runpy, makes no database or network connection.",
+  "reexecuted_combined_probe_exit_code": 0,
+  "probe_file_sha256": "58381d69eaff8ccf0548003d43b51f1c8e1eaee7dcc2c4710b2e35c31ff8243b",
+  "parent_reproduced_probe_exit_code": 0,
+  "parent_reproduced_probe_output": "PASS independent bank/hash/preservation/renderer/schema/workflow controls"
+}

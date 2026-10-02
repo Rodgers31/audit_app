@@ -1,0 +1,310 @@
+{
+  "kind": "offline_source_reconciliation",
+  "production_published": false,
+  "production_observation": "not performed; September29 nightly is inherited issue-comment evidence",
+  "verified_base_commit": "355c057a6138ed47212a5aab865f4bdf26a02177",
+  "verified_base_tree": "57d55dfdb1c01b04f92297edd02ff6a78a8e4cbf",
+  "date": "2026-10-01",
+  "source": {
+    "publisher": "Office of the Controller of Budget",
+    "reported_by": "County Treasuries",
+    "title": "County Governments Budget Implementation Review Report",
+    "fiscal_year": "FY2025/26",
+    "period": "annual",
+    "as_of": "2026-06-30",
+    "cover_publication": "August 2026",
+    "official_page_created": "2026-09-25",
+    "official_page_updated": "2026-09-25",
+    "http_response_date_utc": "2026-10-01T23:43:47Z",
+    "url": "https://cob.go.ke/download/county-governments-budget-implementation-review-report-for-the-financial-year-2025-26/?wpdmdl=16482",
+    "wpdmdl": 16482,
+    "sha256": "5f5e4f97bbe2752957f284950d0ba90fcff4d47b35fc0ac96a9106ffb59821b3",
+    "bytes": 53561211,
+    "filename": "CGBIRR FY 2025_26 August 2026 Final 5.pdf",
+    "pages": 935,
+    "fresh_download_equals_retained": true,
+    "edition_search_result": "no later annual edition/corrigendum located in bounded official listing/page/search; not exhaustive proof of absence"
+  },
+  "runtime": {
+    "pdfplumber": "0.11.10",
+    "pdfminer.six": "20260107",
+    "pypdfium2": "5.11.0",
+    "SQLAlchemy": "2.0.51"
+  },
+  "cash": {
+    "candidates": 468,
+    "budgets": 47,
+    "cash_totals": 43,
+    "all_468_candidates_equal_banked_final": true,
+    "all_47_coverage_statuses_equal_banked_final": true,
+    "cases": [
+      {
+        "county": "Kwale",
+        "table": "3.285",
+        "pdf_pages": [
+          385,
+          386,
+          387
+        ],
+        "printed_pages": [
+          351,
+          352,
+          353
+        ],
+        "measure": "actual_cash_receipts_including_opening_balance",
+        "unit": "KES",
+        "publication_decision": "continue_withholding",
+        "parser_refusal": "streams_do_not_sum_to_grand_total (out by 59,814,318.00)",
+        "observed_source_arithmetic": {
+          "observed_cash_section_subtotals": [
+            "1770505972",
+            "9078699643",
+            "3167878534",
+            "367738513",
+            "483394506"
+          ],
+          "printed_cash_total": "14808402850",
+          "observed_section_sum": "14868217168",
+          "section_sum_minus_printed_total": "59814318"
+        },
+        "alternate_source": {
+          "figure": "3.107",
+          "pdf_page": 388,
+          "basis": "mixes accrual grant/OSR figures with separately displayed opening/refund balances; not corroboration of column B"
+        },
+        "replacement_total_kes": null,
+        "required_resolution": "official corrected same-period/same-measure cells or explicit authoritative clarification; checksum-pin and revalidate all accepted controls"
+      },
+      {
+        "county": "Migori",
+        "table": "3.412",
+        "pdf_pages": [
+          546,
+          547,
+          548,
+          549
+        ],
+        "printed_pages": [
+          512,
+          513,
+          514,
+          515
+        ],
+        "measure": "actual_cash_receipts_including_opening_balance",
+        "unit": "KES",
+        "publication_decision": "continue_withholding",
+        "parser_refusal": "a_section_has_two_subtotals",
+        "observed_source_arithmetic": {
+          "observed_grants_subtotals": [
+            "3684754",
+            "630968493"
+          ],
+          "other_nested_grants_subtotal_printed": "-",
+          "other_nested_grants_subtotal_kes": null,
+          "chart_grants_million": "1075.93",
+          "known_subtotals_sum": "634653247",
+          "chart_minus_known_subtotals": "441276753.00"
+        },
+        "alternate_source": {
+          "figure": "3.154",
+          "pdf_page": 549,
+          "basis": "describes receipts; grants1075.93mn conflicts with column B known subtotals634.653247mn"
+        },
+        "replacement_total_kes": null,
+        "required_resolution": "official corrected same-period/same-measure cells or explicit authoritative clarification; checksum-pin and revalidate all accepted controls"
+      },
+      {
+        "county": "Nyeri",
+        "table": "3.546",
+        "pdf_pages": [
+          712,
+          713
+        ],
+        "printed_pages": [
+          678,
+          679
+        ],
+        "measure": "actual_cash_receipts_including_opening_balance",
+        "unit": "KES",
+        "publication_decision": "continue_withholding",
+        "parser_refusal": "unobserved_receipts_cell",
+        "observed_source_arithmetic": {
+          "cash_equitable_share": "6985132673",
+          "target_equitable_share": "6896132673",
+          "cash_osr_heading": "746508377",
+          "closing_cash_osr_subtotal": null,
+          "printed_cash_total": "8952037562",
+          "narrative_total_billion": "8.58",
+          "chart_equitable_share_million": "6896.13",
+          "cash_grants_subtotal": "935332347",
+          "opening_cash_subtotal": "285064165",
+          "table_equitable_minus_target": "89000000",
+          "target_equitable_plus_grants_osr_excluding_opening": "8577973397"
+        },
+        "alternate_source": {
+          "figure": "3.208",
+          "pdf_page": 714,
+          "basis": "equitable share6896.13mn follows target6896132673, not actual6985132673; does not fill blank subtotal"
+        },
+        "replacement_total_kes": null,
+        "required_resolution": "official corrected same-period/same-measure cells or explicit authoritative clarification; checksum-pin and revalidate all accepted controls"
+      },
+      {
+        "county": "Samburu",
+        "table": "3.560",
+        "pdf_pages": [
+          729,
+          730
+        ],
+        "printed_pages": [
+          695,
+          696
+        ],
+        "measure": "actual_cash_receipts_including_opening_balance",
+        "unit": "KES",
+        "publication_decision": "continue_withholding",
+        "parser_refusal": "streams_do_not_sum_to_grand_total (out by 24,413)",
+        "observed_source_arithmetic": {
+          "observed_cash_section_subtotals": [
+            "4023196",
+            "6336970364",
+            "873402185",
+            "336831634",
+            "117112417"
+          ],
+          "printed_cash_total": "7668364209",
+          "known_grants_items": [
+            "905744",
+            "17795016",
+            "246130311",
+            "70503589",
+            "157498182",
+            "32943040",
+            "35000000",
+            "26000000",
+            "141979713",
+            "7446000",
+            "26000000",
+            "41094477",
+            "35250118",
+            "60855995"
+          ],
+          "printed_grants_subtotal": "873402185",
+          "observed_section_sum": "7668339796",
+          "section_sum_minus_printed_total": "-24413",
+          "known_grants_sum": "899402185",
+          "known_grants_sum_minus_subtotal": "26000000"
+        },
+        "alternate_source": {
+          "figure": "3.214",
+          "pdf_page": 731,
+          "basis": "rounded opening4.05mn conflicts with table4.023196mn; rounded grants873.40mn repeats subtotal, does not resolve items"
+        },
+        "replacement_total_kes": null,
+        "required_resolution": "official corrected same-period/same-measure cells or explicit authoritative clarification; checksum-pin and revalidate all accepted controls"
+      }
+    ]
+  },
+  "projects": {
+    "detail_rows": 168,
+    "table_captions": 20,
+    "county_records": 47,
+    "as_of": "2026-06-30",
+    "national_reported_count": 189,
+    "table_2_6_total_count": 189,
+    "observed_numeric_count_cells": 21,
+    "observed_numeric_count_sum": 188,
+    "table_2_6_count_blank_county": "Trans Nzoia",
+    "national_count_minus_parsed_rows": 21,
+    "recoverable_missing_records_proven": false,
+    "row_count_conflicts": [
+      {
+        "county": "Elgeyo Marakwet",
+        "detail_rows": 1,
+        "summary_count": 2,
+        "table_2_6_count": 2,
+        "summary_pdf_page": 139,
+        "table_pages": [
+          139
+        ]
+      },
+      {
+        "county": "Kakamega",
+        "detail_rows": 10,
+        "summary_count": 26,
+        "table_2_6_count": 26,
+        "summary_pdf_page": 248,
+        "table_pages": [
+          248,
+          249
+        ]
+      },
+      {
+        "county": "Kilifi",
+        "detail_rows": 9,
+        "summary_count": 10,
+        "table_2_6_count": 10,
+        "summary_pdf_page": 322,
+        "table_pages": [
+          322,
+          323
+        ]
+      },
+      {
+        "county": "Lamu",
+        "detail_rows": 3,
+        "summary_count": 4,
+        "table_2_6_count": 4,
+        "summary_pdf_page": 431,
+        "table_pages": [
+          431,
+          432
+        ]
+      },
+      {
+        "county": "Nyamira",
+        "detail_rows": 0,
+        "summary_count": 1,
+        "table_2_6_count": 1,
+        "summary_pdf_page": 686,
+        "table_pages": []
+      },
+      {
+        "county": "Siaya",
+        "detail_rows": 0,
+        "summary_count": 1,
+        "table_2_6_count": 1,
+        "summary_pdf_page": 758,
+        "table_pages": []
+      }
+    ],
+    "statuses_all_47": {
+      "agrees_with_gaps": 4,
+      "unverifiable": 25,
+      "disagrees": 9,
+      "agrees": 9
+    },
+    "unit_conflicts": [
+      {
+        "county": "Trans Nzoia",
+        "fields": [
+          "estimated_value_kes"
+        ]
+      }
+    ],
+    "coverage_csv": "2026-10-01-round11-project-source-coverage.csv",
+    "source_proven_parser_defects_found": 0,
+    "investigated_scope": "four cash refusals, national project summary and six count-conflict counties plus Trans Nzoia; complete parser replay and local positive controls; not exhaustive parser audit",
+    "decision": "preserve existing source-backed rows and qualifications; do not create rows from residuals or infer IDs/OAG matches"
+  },
+  "evidence_files": {
+    "ROUND11_SESSION_2_PROJECTS.json": "604dac0d2bd95c3c41bacbd98a2150704705177296138268096f6ff8867624ee",
+    "ROUND11_SESSION_2_CASH_REPLAY.json": "72c7bd7090572482af31c9b49c13179eb8e8360a5720e003e0729243c7fbaece",
+    "ROUND11_SESSION_2_PROJECT_COVERAGE.csv": "1b3773c198079db9a277a045546105776f31d478ebc75571505ba1fb56a5d2b5",
+    "ROUND11_SESSION_2_ARITHMETIC.json": "4cff4300a555bf4017fd21edbc7c70947152ccd00f7f8ba7ef83fb2d9267e5b4",
+    "ROUND11_SESSION_2_LISTING.html": "d61d49ee40292117f1e680e704f13601f5b292c6b13213d91146be3fa4eaa1b0",
+    "ROUND11_SESSION_2_DOWNLOAD_PAGE.html": "0bfd73861be9d001a07a404d7cac5b7db35e7956eb33a3babdd1276b42d54fb0",
+    "ROUND11_SESSION_2_ISSUE230.json": "0b93a3c50d278faafadd1252f8eb382a720ff2aabb9a375be2cc85be627bf02e",
+    "ROUND11_SESSION_2_ISSUE299.json": "25c4e7eb6d5a7f74cb60d9612ca1aef4e63161bd0060e76c819a552bf6b1ca07"
+  }
+}
