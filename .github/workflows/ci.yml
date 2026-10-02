@@ -69,6 +69,7 @@ jobs:
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=venv,__pycache__,.git
 
       - name: Run Core Backend Tests (REQUIRED)
+        id: backend_tests
         run: |
           cd backend
           # Run unit tests (exclude integration tests that require real DB)
@@ -84,6 +85,7 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}/backend
 
       - name: Check Test Coverage Threshold
+        id: local_coverage
         continue-on-error: true
         run: |
           cd backend
@@ -94,11 +96,39 @@ jobs:
             echo "⚠️ No coverage.xml found, skipping check"
           fi
 
-      - name: Upload coverage reports
+      - name: Test optional coverage reporting
+        run: python -m unittest discover -s .github/scripts/tests -p test_coverage_upload.py -v
+
+      - name: Prepare optional Codecov upload
+        id: coverage_upload_prepare
+        continue-on-error: true
+        run: python .github/scripts/coverage_upload.py prepare
+        env:
+          CODECOV_UPLOAD_ENABLED: ${{ vars.CODECOV_UPLOAD_ENABLED }}
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Attempt optional Codecov upload (hosted report unverified)
+        id: coverage_upload
+        if: steps.coverage_upload_prepare.outputs.status == 'ready'
+        continue-on-error: true
         uses: codecov/codecov-action@v5
         with:
           files: backend/coverage.xml
-          fail_ci_if_error: false
+          disable_search: true
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+          override_commit: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Report optional hosted coverage outcome
+        if: always()
+        run: python .github/scripts/coverage_upload.py report
+        env:
+          UPLOAD_STATUS: ${{ steps.coverage_upload_prepare.outputs.status }}
+          # outcome preserves failure before continue-on-error rewrites conclusion.
+          UPLOAD_OUTCOME: ${{ steps.coverage_upload.outcome }}
+          COVERAGE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+          TEST_OUTCOME: ${{ steps.backend_tests.outcome }}
+          LOCAL_COVERAGE_OUTCOME: ${{ steps.local_coverage.outcome }}
 
       - name: Validate API Health Check
         run: |
