@@ -292,7 +292,7 @@ def build_stalled_projects_block(
 
 def _narrative_projection(edition: dict, county_name: Optional[str] = None) -> dict:
     """Qualified observations shared by both table paths; never join or sum."""
-    from seeding.domains.stalled_projects.cob_parser import validate_bound_narratives
+    from seeding.domains.stalled_projects.cob_parser import NARRATIVE_SOURCE, validate_bound_narratives
 
     base = {
         "schema_version": 1,
@@ -307,6 +307,9 @@ def _narrative_projection(edition: dict, county_name: Optional[str] = None) -> d
         return dict(base, status="absent", reason="not_ingested")
     if type(edition.get("schema")) is not int or edition.get("schema") != 2:
         return dict(base, status="refused", reason="incompatible_county_block_schema")
+    source = edition.get("source")
+    if not isinstance(source, dict) or source.get("publisher") != NARRATIVE_SOURCE["publisher"]:
+        return dict(base, status="refused", reason="narrative_source_publisher_mismatch")
     county = None
     if county_name is not None:
         from services.county_identity import OFFICIAL_COUNTY_CODES, official_county_code
@@ -315,7 +318,7 @@ def _narrative_projection(edition: dict, county_name: Optional[str] = None) -> d
         if code is None:
             return dict(base, status="refused", reason="unresolved_county_identity")
         county = OFFICIAL_COUNTY_CODES[code]
-    collection = validate_bound_narratives(edition["narratives"], edition.get("source"), county)
+    collection = validate_bound_narratives(edition["narratives"], source, county)
     if collection["status"] != "accepted":
         return dict(base, status="refused", reason=collection["reason"])
     corpus = collection["corpus"]

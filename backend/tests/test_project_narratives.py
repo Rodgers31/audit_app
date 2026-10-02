@@ -413,6 +413,49 @@ def test_api_rejects_an_observation_transplanted_to_another_county(
     assert projection["reason"] == "narrative_county_mismatch"
 
 
+@pytest.mark.parametrize("publisher", [None, "", "Office of the Auditor-General", True, [], {}])
+def test_conflicting_stored_publisher_refuses_narratives_only(monkeypatch, tmp_path, publisher):
+    stored = blocks(monkeypatch, tmp_path)["Nyamira"]
+    stored["rows"] = [dict(
+        project_name="table control",
+        source_url=FX["source"]["url"],
+        source_page=686,
+        as_of="2026-06-30",
+        reported_by=cp.REPORTED_BY,
+        estimated_value_kes=0,
+        amount_paid_kes=7,
+    )]
+    control = build_stalled_projects_block(stored, county_name="Nyamira County")
+    assert control["narratives"]["status"] == "accepted"
+    stored["source"]["publisher"] = publisher
+    out = build_stalled_projects_block(stored, county_name="Nyamira County")
+    assert out["narratives"]["status"] == "refused"
+    assert out["narratives"]["reason"] == "narrative_source_publisher_mismatch"
+    assert out["narratives"]["observations"] == []
+    assert out["projects"] == control["projects"]
+    assert out["count"] == 1 and out["total_amount_paid"] == 7
+
+
+def test_api_rejects_conflicting_narrative_source_publisher(
+    monkeypatch, tmp_path, db_session, seed_country, client
+):
+    from models import Entity, EntityType
+
+    stored = blocks(monkeypatch, tmp_path)["Nyamira"]
+    stored["source"]["publisher"] = "Office of the Auditor-General"
+    db_session.add(Entity(
+        id=845, country_id=seed_country.id, type=EntityType.COUNTY,
+        canonical_name="Nyamira County", slug="nyamira",
+        meta={"stalled_projects": stored},
+    ))
+    db_session.commit()
+    response = client.get("/api/v1/counties/845/comprehensive")
+    assert response.status_code == 200
+    projection = response.json()["stalled_projects"]["narratives"]
+    assert projection["status"] == "refused"
+    assert projection["reason"] == "narrative_source_publisher_mismatch"
+
+
 @pytest.mark.parametrize(
     "old,new", [("26.65", "26.6- 5"), ("34.38", "34.3- 8"), ("2026", "202- 6")]
 )

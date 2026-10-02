@@ -142,6 +142,12 @@ comparison, including source units, dates, measure semantics and all keys.
 Structural validity alone never establishes source authority. Documentary
 historical examples and arbitrary well-shaped observations are not accepted.
 
+The read projection also requires the surrounding stored source publisher to
+match the pinned Controller of Budget publisher; conflicting or missing stored
+publisher metadata refuses only the optional narratives. The writer already
+assigns that publisher from its owned source contract. This does not infer a
+new title rule or suppress existing valid table evidence.
+
 `cob_parser.parse_bounded_narratives` requires the pinned PDF SHA-256,
 FY2025/26 annual edition and 935 pages, exact one-based page and county chapter,
 county Treasury attribution and following department-section anchor. Only PDF
@@ -184,7 +190,7 @@ observations, while existing valid tables remain visible. Reasons include:
   `narrative_source_edition_mismatch`, `invalid_narrative_evidence`,
   `narrative_passage_binding_mismatch`, `narrative_shape_or_source_binding_mismatch`;
 - `incompatible_county_block_schema`, `unresolved_county_identity`,
-  `narrative_county_mismatch`. Invalid nested types/serialization also carry a
+  `narrative_county_mismatch`, `narrative_source_publisher_mismatch`. Invalid nested types/serialization also carry a
   diagnostic refusal rather than an empty accepted collection.
 
 Historical candidates remain empty with
