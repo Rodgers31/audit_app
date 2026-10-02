@@ -31,6 +31,8 @@ export interface DebtServicePoint {
   year: string | null;
   /** Debt service in KES, or null when the year has no published figure. */
   service: number | null;
+  /** Revenue in KES; retained to explain withheld ratios in the readable table. */
+  revenue: number | null;
   /** Percent of revenue, or null when either input is absent. */
   ratio: number | null;
 }
@@ -46,6 +48,7 @@ export function buildDebtServiceSeries(years: FiscalYearRow[]): DebtServicePoint
     return {
       year: y?.fiscal_year ?? null,
       service,
+      revenue,
       // Guarded on revenue > 0 as well as presence: a zero denominator is a
       // division artefact, not a share.
       ratio: service != null && revenue != null && revenue > 0 ? (service / revenue) * 100 : null,
