@@ -13,16 +13,12 @@ import type { TranslationKey } from '@/lib/i18n/messages';
  *   <h3>Debt-to-GDP Ratio <InfoTip term="debt-to-gdp" /></h3>
  *   <th>Eligible <InfoTip term="eligible-bills" size={12} /></th>
  *
- * English-only explanations live in GLOSSARY. Translated explanations use
+ * Unused English fallback explanations live in GLOSSARY. Active explanations use
  * keys from the shared language catalog.
  */
 
 const GLOSSARY: Record<string, { title: string; body: string }> = {
   // ── Debt terms ────────────────────────────────────────
-  'debt-to-gdp': {
-    title: 'Debt-to-GDP Ratio',
-    body: 'This shows the country\'s total debt as a percentage of its annual economic output (GDP). A higher ratio means the country owes more relative to what it earns. Kenya\'s PFM Act anchors public debt at 55% of GDP in present-value terms — a ceiling aligned with the IMF\'s LIC-DSF benchmark for medium-capacity performers.',
-  },
   'debt-service': {
     title: 'Debt Service Cost',
     body: 'The amount the government pays each year just to service its debts — this includes interest payments and loan repayments. It does not include the original loan amount (principal). Higher debt service means less money available for public services.',
@@ -30,14 +26,6 @@ const GLOSSARY: Record<string, { title: string; body: string }> = {
   'debt-service-to-revenue': {
     title: 'Debt Service to Revenue',
     body: 'For every shilling the government collects in revenue, this shows how much goes to paying off debts. For example, 45% means 45 cents of every shilling goes to debt payments. Above 30% is considered concerning.',
-  },
-  'external-debt': {
-    title: 'External Debt',
-    body: 'Money the government owes to foreign lenders — including international organizations (like the World Bank and IMF), other countries (bilateral loans), and foreign banks or bondholders. This debt is usually in foreign currencies like USD, EUR, or JPY.',
-  },
-  'domestic-debt': {
-    title: 'Domestic Debt',
-    body: 'Money the government owes to lenders within Kenya — mainly through Treasury Bonds (long-term) and Treasury Bills (short-term) bought by local banks, pension funds, and investors. This debt is in Kenyan Shillings.',
   },
   'external-debt-share': {
     title: 'External Debt Share',
@@ -50,22 +38,6 @@ const GLOSSARY: Record<string, { title: string; body: string }> = {
   'principal': {
     title: 'Principal',
     body: 'The original amount borrowed, before any interest is added. For example, if the government borrows KES 100 billion, the principal is KES 100 billion.',
-  },
-  'outstanding': {
-    title: 'Outstanding Balance',
-    body: 'How much of a loan is still unpaid. This includes the remaining principal that hasn\'t been repaid yet. It decreases as the government makes payments.',
-  },
-  'multilateral': {
-    title: 'Multilateral Lender',
-    body: 'International organizations funded by multiple countries, like the World Bank, IMF, or African Development Bank. They typically offer lower interest rates and longer repayment periods than commercial lenders.',
-  },
-  'bilateral': {
-    title: 'Bilateral Lender',
-    body: 'Loans from one country to another — for example, China, Japan, or France lending directly to Kenya. Terms vary by country, and these loans often come with conditions or are tied to specific projects.',
-  },
-  'commercial': {
-    title: 'Commercial Lender',
-    body: 'Loans from private banks and financial markets, including Eurobonds (bonds sold to international investors). These carry higher interest rates but give the government more flexibility in how the money is used.',
   },
   'treasury-bonds': {
     title: 'Treasury Bonds',
@@ -89,28 +61,12 @@ const GLOSSARY: Record<string, { title: string; body: string }> = {
     title: 'Ineligible Pending Bills',
     body: 'Bills that failed verification checks. They may have incomplete paperwork, disputed amounts, expired contracts, or procurement irregularities. These cannot be paid until the issues are resolved.',
   },
-  'pending-bills': {
-    title: 'Pending Bills',
-    body: 'Unpaid invoices that the government owes to suppliers, contractors, and staff. These are real obligations — the work was done or goods delivered, but the government hasn\'t paid yet. They carry no interest but damage supplier trust and economic activity.',
-  },
   'aging-analysis': {
     title: 'Aging Analysis',
     body: 'Shows how long pending bills have been waiting for payment. Bills in the "180d+" bucket have been unpaid for over 6 months. Older bills indicate worse cash flow management and greater supplier hardship.',
   },
 
   // ── Budget & fiscal terms ─────────────────────────────
-  'budget-execution': {
-    title: 'Budget Execution Rate',
-    body: 'The percentage of an approved budget that was actually spent. For example, if a county was allocated KES 10 billion but only spent KES 7 billion, its execution rate is 70%. Low rates may indicate poor planning or corruption.',
-  },
-  'development-spending': {
-    title: 'Development Spending',
-    body: 'Money spent on building things that last — roads, hospitals, schools, water systems, etc. Under Kenya\'s PFM Act, borrowed money should only fund development, not day-to-day operations like salaries.',
-  },
-  'recurrent-spending': {
-    title: 'Recurrent Spending',
-    body: 'Day-to-day government running costs — salaries, office rent, fuel, supplies, and other operational expenses. These expenses repeat every year, unlike development projects which are one-time investments.',
-  },
   'appropriated-budget': {
     title: 'Appropriated Budget',
     body: 'The total amount of money that Parliament has approved for the government to spend in a fiscal year. This is the legal spending limit — the government cannot spend more than this without additional approval.',
@@ -133,10 +89,6 @@ const GLOSSARY: Record<string, { title: string; body: string }> = {
   },
 
   // ── Audit terms ───────────────────────────────────────
-  'audit-clean': {
-    title: 'Clean Audit Opinion',
-    body: 'The best possible result — the Auditor General found that the financial statements are accurate and money was spent according to the law. Think of it as a clean bill of health for public finances.',
-  },
   'audit-qualified': {
     title: 'Qualified Audit Opinion',
     body: 'The Auditor General found some problems — certain expenses couldn\'t be verified or some rules weren\'t followed — but the issues aren\'t severe enough to reject the entire financial report.',
@@ -173,6 +125,19 @@ const GLOSSARY: Record<string, { title: string; body: string }> = {
 };
 
 const TRANSLATED_GLOSSARY: Record<string, { title: TranslationKey; body: TranslationKey }> = {
+  'debt-to-gdp': { title: 'glossary.debt_to_gdp.title', body: 'glossary.debt_to_gdp.body' },
+  'external-debt': { title: 'glossary.external_debt.title', body: 'glossary.external_debt.body' },
+  'domestic-debt': { title: 'glossary.domestic_debt.title', body: 'glossary.domestic_debt.body' },
+  'pending-bills': { title: 'glossary.pending_bills.title', body: 'glossary.pending_bills.body' },
+  'budget-execution': { title: 'glossary.budget_execution.title', body: 'glossary.budget_execution.body' },
+  'audit-clean': { title: 'glossary.audit_clean.title', body: 'glossary.audit_clean.body' },
+  'outstanding': { title: 'glossary.outstanding.title', body: 'glossary.outstanding.body' },
+  'multilateral': { title: 'glossary.multilateral.title', body: 'glossary.multilateral.body' },
+  'bilateral': { title: 'glossary.bilateral.title', body: 'glossary.bilateral.body' },
+  'commercial': { title: 'glossary.commercial.title', body: 'glossary.commercial.body' },
+  'development-spending': { title: 'glossary.development_spending.title', body: 'glossary.development_spending.body' },
+  'recurrent-spending': { title: 'glossary.recurrent_spending.title', body: 'glossary.recurrent_spending.body' },
+
   'financial-health': {
     title: 'county.healthmodal.title',
     body: 'glossary.financial_health.body',
@@ -195,10 +160,12 @@ export default function InfoTip({ term, size = 14, className = '' }: InfoTipProp
   const btnRef = useRef<HTMLButtonElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const translatedKeys = TRANSLATED_GLOSSARY[term];
+  const translatedKeys = Object.prototype.hasOwnProperty.call(TRANSLATED_GLOSSARY, term)
+    ? TRANSLATED_GLOSSARY[term]
+    : undefined;
   const entry = translatedKeys
     ? { title: t(translatedKeys.title), body: t(translatedKeys.body) }
-    : GLOSSARY[term];
+    : Object.prototype.hasOwnProperty.call(GLOSSARY, term) ? GLOSSARY[term] : undefined;
 
   const clearClose = () => {
     if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; }
@@ -238,6 +205,7 @@ export default function InfoTip({ term, size = 14, className = '' }: InfoTipProp
     return () => document.removeEventListener('keydown', handler);
   }, [open]);
 
+  // Unknown terms have no explanation to offer; omit the optional help control.
   if (!entry) return null;
 
   // Compute tooltip position: above the button, centered horizontally.

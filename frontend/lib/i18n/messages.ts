@@ -1330,6 +1330,128 @@ export const MESSAGES = {
   'county.sources.debt': { en: 'Debt', sw: 'Deni', plain: 'Debt' },
   'county.sources.population': { en: 'Population', sw: 'Idadi ya Watu', plain: 'People' },
 
+  // Active contextual glossary terms. Swahili drafts await competent review (#307).
+  'glossary.debt_to_gdp.title': {
+    en: "Debt-to-GDP Ratio",
+    sw: "Uwiano wa Deni kwa Pato la Taifa",
+    plain: "Debt compared with the economy",
+  },
+  'glossary.debt_to_gdp.body': {
+    en: "Debt as a percentage of annual economic output (GDP), using the debt measure and period stated beside the figure. Nominal debt and present-value debt are different measures; compare ratios or benchmarks only on the same basis. A higher ratio alone does not establish debt distress.",
+    sw: "Deni kama asilimia ya pato la uchumi kwa mwaka (GDP), kwa kipimo cha deni na kipindi kilichoelezwa karibu na takwimu. Deni la thamani ya kawaida na deni la thamani ya sasa ni vipimo tofauti; linganisha uwiano au viwango vya marejeo kwa msingi mmoja. Uwiano mkubwa pekee hauthibitishi matatizo ya ulipaji wa deni.",
+    plain: "Debt compared with what the economy produces in a year. Check the date and how debt was measured. The amount owed today and the present value of future payments are different, so comparisons need the same measure. This ratio alone cannot tell us whether debts can be paid.",
+  },
+  'glossary.external_debt.title': {
+    en: "External Debt",
+    sw: "Deni la Nje",
+    plain: "Debt to lenders abroad",
+  },
+  'glossary.external_debt.body': {
+    en: "Government debt classified as external in the cited source, including international organisations, other governments and private lenders abroad. It is often in foreign currencies, but currency alone does not determine the classification. Read the source date and coverage before comparing totals.",
+    sw: "Deni la serikali lililoainishwa kuwa la nje katika chanzo kilichotajwa, likijumuisha mashirika ya kimataifa, serikali nyingine na wakopeshaji binafsi wa nje. Mara nyingi ni la sarafu za kigeni, lakini sarafu pekee haiamui uainishaji. Angalia tarehe na wigo wa chanzo kabla ya kulinganisha jumla.",
+    plain: "Money the government owes to lenders abroad, as grouped by the source. This can include international bodies, other governments and private lenders. It is often owed in foreign currencies. Check the date and what the source covers before comparing amounts.",
+  },
+  'glossary.domestic_debt.title': {
+    en: "Domestic Debt",
+    sw: "Deni la Ndani",
+    plain: "Debt to lenders in Kenya",
+  },
+  'glossary.domestic_debt.body': {
+    en: "Government debt classified as domestic in the cited source, mainly Treasury bonds and bills held through the domestic market. It is generally reported in Kenyan shillings. Use the stated source date and coverage; a partial register is not necessarily the full national debt stock.",
+    sw: "Deni la serikali lililoainishwa kuwa la ndani katika chanzo kilichotajwa, hasa hati fungani na hati za muda mfupi za Hazina katika soko la ndani. Kwa kawaida huripotiwa kwa shilingi za Kenya. Tumia tarehe na wigo wa chanzo; rejista yenye sehemu ya taarifa si lazima iwe jumla ya deni la taifa.",
+    plain: "Money the government borrows in Kenya, mainly through Treasury bonds and bills. Amounts are usually shown in Kenyan shillings. Check the date and what is included: a list covering only some debt is not the whole national total.",
+  },
+  'glossary.pending_bills.title': {
+    en: "Pending Bills",
+    sw: "Bili Ambazo Hazijalipwa",
+    plain: "Unpaid bills",
+  },
+  'glossary.pending_bills.body': {
+    en: "Unpaid amounts reported as pending bills at a stated date. These are separate from borrowed debt and may include claims still subject to verification or dispute. Check the source, institution, reporting date and notes. Missing information is not zero, and snapshots from different dates must not be added together.",
+    sw: "Kiasi ambacho hakijalipwa na kimeripotiwa kama bili ambazo hazijalipwa hadi tarehe iliyotajwa. Hizi ni tofauti na deni la mikopo na zinaweza kujumuisha madai yanayosubiri uhakiki au yenye mgogoro. Angalia chanzo, taasisi, tarehe ya ripoti na maelezo. Taarifa kutopatikana si sawa na sifuri; usijumlishe takwimu za tarehe tofauti.",
+    plain: "Bills reported as unpaid on a given date. They are separate from money borrowed. Some claims may still need checks or be disputed. Check who reported them, the date and any notes. Missing information is not zero. Do not add figures from different dates as if they were separate bills.",
+  },
+  'glossary.budget_execution.title': {
+    en: "Budget Execution Rate",
+    sw: "Kiwango cha Matumizi ya Bajeti",
+    plain: "Share of the budget spent",
+  },
+  'glossary.budget_execution.body': {
+    en: "Reported spending divided by the approved budget for the same institution and reporting period. If KES 7 billion is spent from a KES 10 billion budget, the rate is 70%. A low rate alone does not prove corruption; delays, funding shortfalls or incomplete reporting may affect it. Missing figures are not zero.",
+    sw: "Matumizi yaliyoripotiwa yakigawanywa kwa bajeti iliyoidhinishwa kwa taasisi na kipindi kimoja cha ripoti. Matumizi ya KES bilioni 7 kutoka bajeti ya KES bilioni 10 ni 70%. Kiwango cha chini pekee hakithibitishi ufisadi; ucheleweshaji, upungufu wa fedha au taarifa zisizokamilika vinaweza kukiathiri. Takwimu kukosekana si sifuri.",
+    plain: "How much of the approved budget was spent by the same body in the same period. Spending KES 7 billion from a KES 10 billion budget means 70%. A low rate does not by itself prove corruption. Delays, less funding or missing reports can affect it. Missing figures are not zero.",
+  },
+  'glossary.audit_clean.title': {
+    en: "Clean Audit Opinion",
+    sw: "Maoni ya Ukaguzi Yasiyo na Masharti",
+    plain: "Clean audit opinion",
+  },
+  'glossary.audit_clean.body': {
+    en: "An unqualified or unmodified opinion concerns the financial statements of the audited institution and period: they are fairly presented in all material respects under the applicable reporting framework. It is not a guarantee that every transaction was lawful or that no fraud, theft or loss occurred. Findings and compliance conclusions must be read separately.",
+    sw: "Maoni ya ukaguzi yasiyo na masharti yanahusu taarifa za fedha za taasisi na kipindi kilichokaguliwa: zimewasilishwa kwa usahihi katika mambo yote muhimu kwa mfumo husika wa utoaji taarifa. Si hakikisho kwamba kila muamala ulikuwa halali au kwamba hakukuwa na udanganyifu, wizi au upotevu. Hoja za ukaguzi na hitimisho kuhusu uzingatiaji wa sheria zisomwe kando.",
+    plain: "A clean opinion means the audited accounts fairly show the finances of that body for that period, allowing for what matters to the accounts. It does not promise that every payment followed the law or that there was no fraud, theft or loss. Read the findings and checks on legal compliance too.",
+  },
+  'glossary.outstanding.title': {
+    en: "Outstanding Balance",
+    sw: "Salio la Deni",
+    plain: "Amount still owed",
+  },
+  'glossary.outstanding.body': {
+    en: "The amount still owed at the source reporting date, on the basis used by that source. A register line may combine debt for a creditor or instrument type rather than represent one loan agreement. Missing balances or incomplete coverage are not zero debt.",
+    sw: "Kiasi ambacho bado kinadaiwa hadi tarehe ya ripoti, kwa msingi unaotumiwa na chanzo hicho. Mstari wa rejista unaweza kuunganisha deni la wadai au aina ya hati badala ya kuwa mkataba mmoja wa mkopo. Salio kukosekana au taarifa kutokamilika si deni la sifuri.",
+    plain: "How much is still owed on the date shown by the source. One row can group debt by creditor or type of borrowing, rather than show one loan agreement. Missing amounts or a list covering only some debt do not mean nothing is owed.",
+  },
+  'glossary.multilateral.title': {
+    en: "Multilateral Lender",
+    sw: "Mkopeshaji wa Kimataifa wa Nchi Nyingi",
+    plain: "Lender backed by several countries",
+  },
+  'glossary.multilateral.body': {
+    en: "An international institution backed by several countries, such as the World Bank, IMF or African Development Bank. Rates, repayment periods and conditions depend on the agreement. A creditor line may group several agreements.",
+    sw: "Taasisi ya kimataifa inayoungwa mkono na nchi nyingi, kama Benki ya Dunia, IMF au Benki ya Maendeleo ya Afrika. Riba, muda wa ulipaji na masharti hutegemea mkataba. Mstari wa mdai unaweza kuunganisha mikataba kadhaa.",
+    plain: "A body backed by several countries, such as the World Bank, IMF or African Development Bank. The agreement sets the interest, repayment dates and conditions. One creditor row may cover several agreements.",
+  },
+  'glossary.bilateral.title': {
+    en: "Bilateral Lender",
+    sw: "Mkopeshaji wa Nchi Moja",
+    plain: "Lender from another government",
+  },
+  'glossary.bilateral.body': {
+    en: "Another government lending to Kenya, directly or through its lending agencies. The agreement sets rates, repayment periods and any project conditions. A creditor-country line can group several loans; it is not necessarily one agreement.",
+    sw: "Serikali nyingine inayoikopesha Kenya moja kwa moja au kupitia taasisi zake za mikopo. Mkataba huweka riba, muda wa ulipaji na masharti ya mradi. Mstari wa nchi mdai unaweza kuunganisha mikopo kadhaa; si lazima uwe mkataba mmoja.",
+    plain: "Another government that lends to Kenya, itself or through its lending bodies. Each agreement sets the interest, repayment dates and conditions. A row for one country can cover several loans.",
+  },
+  'glossary.commercial.title': {
+    en: "Commercial Lender",
+    sw: "Mkopeshaji wa Kibiashara",
+    plain: "Private lender",
+  },
+  'glossary.commercial.body': {
+    en: "Private banks or investors lending on commercial terms, including holders of international bonds such as Eurobonds. Rates, repayment periods and conditions depend on the agreement or instrument. A register line may group several obligations.",
+    sw: "Benki binafsi au wawekezaji wanaokopesha kwa masharti ya kibiashara, wakiwemo wenye hati fungani za kimataifa kama Eurobond. Riba, muda wa ulipaji na masharti hutegemea mkataba au hati. Mstari wa rejista unaweza kuunganisha madeni kadhaa.",
+    plain: "Private banks or investors that lend money, including buyers of international bonds such as Eurobonds. The agreement or bond sets the interest, repayment dates and conditions. One row may group several debts.",
+  },
+  'glossary.development_spending.title': {
+    en: "Development Spending",
+    sw: "Matumizi ya Maendeleo",
+    plain: "Spending on long-term projects",
+  },
+  'glossary.development_spending.body': {
+    en: "Spending classified as development in the source budget, such as roads, hospitals or water systems. Check whether the figure is an allocation or actual spending and which institution and period it covers. Spending alone does not establish that a project was completed or delivered value.",
+    sw: "Matumizi yaliyoainishwa kuwa ya maendeleo katika bajeti ya chanzo, kama barabara, hospitali au mifumo ya maji. Angalia kama takwimu ni fedha zilizotengwa au zilizotumika na taasisi na kipindi inachohusu. Matumizi pekee hayathibitishi kwamba miradi imekamilika au imetoa thamani.",
+    plain: "Money classed in the budget as spending on long-term projects, such as roads, hospitals or water systems. Check whether it is planned money or money actually spent, and who and when it covers. Spending money does not by itself show that a project is finished or useful.",
+  },
+  'glossary.recurrent_spending.title': {
+    en: "Recurrent Spending",
+    sw: "Matumizi ya Kawaida",
+    plain: "Day-to-day spending",
+  },
+  'glossary.recurrent_spending.body': {
+    en: "Spending classified as recurrent in the source budget: running costs such as salaries, rent, fuel and supplies. Check whether the figure is an allocation or actual spending for the stated institution and period. This classification alone does not establish waste or efficiency.",
+    sw: "Matumizi yaliyoainishwa kuwa ya kawaida katika bajeti ya chanzo: gharama za uendeshaji kama mishahara, kodi ya majengo, mafuta na vifaa. Angalia kama ni fedha zilizotengwa au zilizotumika kwa taasisi na kipindi kilichotajwa. Uainishaji huu pekee hauthibitishi ubadhirifu au ufanisi.",
+    plain: "Day-to-day running costs such as salaries, rent, fuel and supplies, as grouped by the budget source. Check whether the money is planned or actually spent, and for which body and period. This label alone does not tell us whether the money was wasted or used well.",
+  },
+
   // Contextual glossary help for the county financial-health score
   'glossary.info_label': { en: 'What is {title}?', sw: '{title} ni nini?', plain: 'What does {title} mean?' },
   'glossary.financial_health.body': {
