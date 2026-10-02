@@ -1,29 +1,16 @@
 import { expect, test } from '@playwright/test';
-import { registerApiMocks } from './utils/mockApi';
-
-test.beforeEach(async ({ page }) => {
-  await registerApiMocks(page);
-});
 
 test('audit reports page filters and search', async ({ page }) => {
-  await page.goto('/reports');
-
-  await expect(page.getByText('Audit Reports Made Simple')).toBeVisible();
-
-  // Toggle report type
-  await page.getByRole('button', { name: /Federal Reports/i }).click();
-  await expect(page.getByText(/Major National Projects/i)).toBeVisible();
-  await page.getByRole('button', { name: /County Reports/i }).click();
-
-  // Use status filter - use heading role to avoid strict mode violation
-  await expect(page.getByRole('heading', { name: /Filter by Audit Status/i })).toBeVisible();
-
-  // Search for Nairobi
-  const search = page.getByPlaceholder('Search for a county...');
-  await search.fill('Nairobi');
-
-  // Expect Nairobi county card heading to appear (use role to avoid strict mode)
-  await expect(
-    page.getByRole('heading', { name: 'Nairobi County County', exact: true })
-  ).toBeVisible();
+  await page.goto('/audits');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Audit Findings');
+  await expect(page.locator('table').last().locator('tbody tr')).toHaveCount(20);
+  await expect(page.locator('table').last().locator('tbody')).toContainText('KES 1.0M');
+  const severity = page.getByText('Severity', { exact: true }).locator('..').getByRole('combobox');
+  const response = page.waitForResponse(r => new URL(r.url()).pathname === '/api/v1/audit/findings' && new URL(r.url()).searchParams.get('severity') === 'Critical');
+  await severity.selectOption('Critical');
+  expect((await response).ok()).toBe(true);
+  await expect(page.getByText('No findings match your filters.', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
+  await expect(page.locator('table').last().locator('tbody tr')).toHaveCount(20);
+  await expect(page.locator('table').last().locator('tbody')).toContainText('KES 1.0M');
 });

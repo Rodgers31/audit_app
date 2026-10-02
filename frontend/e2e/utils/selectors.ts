@@ -94,16 +94,8 @@ export const waterfall = {
     page.getByRole('link', { name: /CoB.*Budget Implementation Review/i }).first(),
 };
 
-/* ═══════════ Convenience: wait until the app's core scaffolding is ready.
- *
- * Next.js hydrates progressively; tests that click something 50ms after
- * `page.goto` often hit a pre-hydration DOM and the click is a no-op.
- * This helper waits for the nav to be both visible AND interactive.
- */
+/** Wait for the visible page shell; this does not certify hydration. */
 export async function waitForAppReady(page: Page): Promise<void> {
   await page.waitForLoadState('domcontentloaded');
-  // Nav link in the header is the earliest-rendered interactive element
-  // on every page; once it responds to hover the app is hydrated.
-  const home = nav.counties(page);
-  await home.waitFor({ state: 'visible', timeout: 15_000 });
+  await page.getByRole('banner').waitFor({ state: 'visible', timeout: 15_000 });
 }

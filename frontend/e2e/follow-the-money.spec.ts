@@ -79,7 +79,7 @@ test.describe('Follow the Money — waterfall shape', () => {
     await expect(source).toBeVisible({ timeout: 10_000 });
     const href = await source.getAttribute('href');
     expect(href).toBe(flow.source_document_url);
-    expect(href).toMatch(/^https:\/\/cob\.go\.ke\//);
+    expect(href).toBe('https://example.invalid/auditgava-local-budget.pdf');
     // Make sure it opens in a new tab (external link convention)
     await expect(source).toHaveAttribute('target', '_blank');
     await expect(source).toHaveAttribute('rel', /noopener/);
@@ -330,7 +330,7 @@ test.describe('Follow the Money — efficiency + provenance', () => {
     await waitForAppReady(page);
     await countyTabs.followTheMoney(page).click();
 
-    await expect(page.getByText(/%/)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('60%', { exact: true })).toBeVisible();
     await expect(
       page.getByText(/Good Efficiency|Fair Efficiency|Low Efficiency/i).first()
     ).toBeVisible();

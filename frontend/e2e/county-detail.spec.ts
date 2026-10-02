@@ -22,10 +22,10 @@ test.describe('/counties/[id] — hero', () => {
     );
 
     // Quick KPI strip — labels are static, values render post-hydrate
-    const kpiLabels = ['Budget', 'Execution', 'Total Debt', 'Pending Bills', 'Audit Issues', 'Stalled'];
+    const kpiLabels = ['Budget', 'Execution', 'Total Debt', 'Pending Bills', 'Audit Issues'];
     for (const label of kpiLabels) {
       await expect(
-        page.locator('div').filter({ hasText: new RegExp(`^${label}$`) }).first()
+        page.getByText(label, { exact: true }).first()
       ).toBeVisible({ timeout: 15_000 });
     }
 
@@ -41,7 +41,7 @@ test.describe('/counties/[id] — tabs', () => {
     await waitForAppReady(page);
   });
 
-  test('all six tabs are clickable and do not throw', async ({ page }) => {
+  test('all five published tabs are clickable and do not throw', async ({ page }) => {
     const consoleErrors: string[] = [];
     page.on('pageerror', (err) => consoleErrors.push(err.message));
 
@@ -51,7 +51,6 @@ test.describe('/counties/[id] — tabs', () => {
       countyTabs.budgetDebt,
       countyTabs.auditFindings,
       countyTabs.accountability,
-      countyTabs.projects,
     ];
     for (const tab of tabs) {
       await tab(page).click();
@@ -66,8 +65,10 @@ test.describe('/counties/[id] — tabs', () => {
   });
 
   test('clicking Budget & Debt scrolls to the tab bar, not the footer', async ({ page }) => {
+    await expect(page.getByText('Budget', { exact: true }).first()).toBeVisible();
     // Scroll way down first so the footer is in view.
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
     const beforeY = await page.evaluate(() => window.scrollY);
     expect(beforeY).toBeGreaterThan(300);
 

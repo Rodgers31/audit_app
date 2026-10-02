@@ -94,6 +94,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Set up Python for browser API fixtures
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install browser API fixture dependencies
+        run: python -m pip install -r backend/requirements.txt
+
       - name: Use Node.js 22
         uses: actions/setup-node@v6
         with:
@@ -134,14 +144,16 @@ jobs:
           PLAYWRIGHT_BASE_URL: http://localhost:3000
           PORT: 3000
           CI: true
-        run: npx playwright test --project=chromium --reporter=list
+        run: npm run test:e2e:legacy
 
       - name: Upload E2E Test Results
         if: failure()
         uses: actions/upload-artifact@v5
         with:
           name: e2e-test-results-prod
-          path: frontend/playwright-report/
+          path: |
+            frontend/legacy-report/
+            frontend/legacy-results/
           retention-days: 7
 
   # Quality Gate - All tests must pass

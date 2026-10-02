@@ -3,22 +3,26 @@
  *
  * Lists findings the Auditor-General's report itself heads "Unaccounted …" or
  * "Loss of Funds", each linked to its page (issue #233). It publishes no money
- * total in any state. These tests assert the correct behaviour whether or not
- * the API currently lists any finding.
+ * total in any state. Explicit synthetic responses exercise both populated and empty states.
  */
 import { expect, test } from '@playwright/test';
 import { pageShell, waitForAppReady } from './utils/selectors';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const PATH = '/accountability/unaccounted-funds';
 
-/** Asked of the API, not the DOM: a DOM probe races the in-flight fetch. */
-async function listedCount(request: import('@playwright/test').APIRequestContext) {
-  const res = await request.get(`${API_BASE}/api/v1/accountability/missing-funds`);
-  expect(res.ok()).toBeTruthy();
-  const body = await res.json();
-  expect(body.total_amount).toBeNull();
-  return body.total_cases as number;
+async function findings(page: import('@playwright/test').Page, populated: boolean) {
+  const cases = populated ? [{ finding_id: 901, entity: 'Synthetic County Assembly', entity_type: 'county',
+    county_name: 'Synthetic County', county_slug: 'synthetic-county',
+    title: 'Unaccounted test assets', excerpt: 'Explicit synthetic browser finding.',
+    heading: 'Basis for Qualified Opinion', fiscal_year: 'FY2025/26', page_ref: 'p.2',
+    source: { document_id: 901, title: 'Synthetic report', url: 'https://example.invalid/report.pdf',
+      page_url: 'https://example.invalid/report.pdf#page=2' } }] : [];
+  await page.route('**/api/v1/accountability/missing-funds*', r => r.fulfill({ json: {
+    basis: 'oag_finding_title', total_amount: null, total_amount_reason: 'no_amount_extracted',
+    total_cases: cases.length, affected_counties: cases.length, affected_national_entities: 0,
+    fiscal_years: populated ? ['FY2025/26'] : [], cases,
+    reason: populated ? null : 'no_matching_findings', withheld: { count: 0, by_reason: {} },
+  } }));
 }
 
 test.describe(PATH, () => {
@@ -44,20 +48,20 @@ test.describe(PATH, () => {
     expect(body).not.toMatch(/missing/i);
   });
 
-  test('every listed finding links to a page of its report', async ({ page, request }) => {
+  test('every listed finding links to a page of its report', async ({ page }) => {
+    await findings(page, true);
     await page.goto(PATH);
     await waitForAppReady(page);
-    const n = await listedCount(request);
-    if (n === 0) test.skip(true, 'no finding listed on this dataset');
-    await expect(page.locator('article')).toHaveCount(n, { timeout: 15_000 });
+    await expect(page.locator('article')).toHaveCount(1, { timeout: 15_000 });
     const links = page.locator('article a[href*="#page="]');
-    expect(await links.count()).toBeGreaterThan(0);
+    await expect(links).toHaveCount(1);
+    await expect(links).toHaveAttribute('href', 'https://example.invalid/report.pdf#page=2');
   });
 
-  test('the empty state explains itself and does not imply a clean bill of health', async ({ page, request }) => {
+  test('the empty state explains itself and does not imply a clean bill of health', async ({ page }) => {
+    await findings(page, false);
     await page.goto(PATH);
     await waitForAppReady(page);
-    if ((await listedCount(request)) > 0) test.skip(true, 'findings are listed; nothing to assert');
     await expect(page.getByText(/not a finding that public money is fully accounted for/i)).toBeVisible();
     await expect(page.getByPlaceholder(/Search by county/i)).toHaveCount(0);
   });
