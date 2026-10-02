@@ -35,7 +35,7 @@ export interface RevSource {
   absent_reason?: string | null;
   source_absent_reason?: string | null;
   measure?: string | null;
-  source?: { url?: string; data_url?: string; period?: string; retrieved_at?: string | null; publication_date?: string | null; reconciliation?: string; stated_amount_billion_kes?: string } | null;
+  source?: { url?: string; data_url?: string; version?: string; period?: string; retrieved_at?: string | null; publication_date?: string | null; reconciliation?: string; stated_amount_billion_kes?: string } | null;
 }
 
 // Derived historical values remain labelled. The mixed-basis residual and
@@ -124,6 +124,35 @@ function sourceUrl(source?: { data_url?: string; url?: string } | null): string 
     } catch { /* Try the other locator before reporting absence. */ }
   }
   return undefined;
+}
+
+function recordedText(value: unknown): string | undefined {
+  return typeof value === 'string' ? value.trim() || undefined : undefined;
+}
+
+/** A missing locator does not erase the observation's recorded qualifications. */
+function SourceQualification({ source, absentReason }: {
+  source: RevSource['source'];
+  absentReason?: string | null;
+}) {
+  const url = sourceUrl(source);
+  const version = recordedText(source?.version);
+  const period = recordedText(source?.period);
+  const publication = recordedText(source?.publication_date);
+  const retrieved = recordedText(source?.retrieved_at);
+  const stated = recordedText(source?.stated_amount_billion_kes);
+  const reconciliation = recordedText(source?.reconciliation);
+  return <>
+    {url ? <a className='underline' href={url}>Source version</a> : <span>{absentReason || 'Source URL unavailable.'}</span>}
+    {source && <>
+      {version && <> · edition {version}</>}
+      {period && <> · source period {period}</>}
+      {stated && <> · stated KES {stated}B</>}
+      {retrieved && <> · retrieved {retrieved.slice(0, 10)}</>}
+      {publication ? <> · published {publication.slice(0, 10)}</> : ' · publication date unavailable'}
+      {reconciliation && <> · {reconciliation}</>}
+    </>}
+  </>;
 }
 
 function fmtB(v?: number | null): string {
@@ -305,10 +334,7 @@ export default function RevenueMix({ revenueBySource }: Props) {
         {(latest.sources ?? []).filter((s) => s.category === 'total' && s.amount != null).map((s) => (
           <p key={s.revenue_type}>{s.revenue_type}: KES {fmtB(s.amount)}
             {s.basis === 'published' ? ' · publisher-stated' : ' · source basis unconfirmed'}
-            {sourceUrl(s.source) ? <a className='underline ml-1' href={sourceUrl(s.source)}>Source version</a> : ' · source version unavailable'}
-            {s.source?.stated_amount_billion_kes && <> · stated KES {s.source.stated_amount_billion_kes}B</>}
-            {s.source?.retrieved_at && <> · retrieved {s.source.retrieved_at.slice(0, 10)}</>}
-            {s.source?.reconciliation && <> · {s.source.reconciliation}</>}
+            {' · '}<SourceQualification source={s.source} absentReason={s.source_absent_reason} />
           </p>
         ))}
       </div>
@@ -316,7 +342,6 @@ export default function RevenueMix({ revenueBySource }: Props) {
       {/* Source cards */}
       <div className='mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5'>
         {rows.map((r) => {
-          const documentUrl = sourceUrl(r.source);
           const isHover = hoverKey === r.key;
           const yoyUp = r.yoy != null && r.yoy > 0.5;
           const yoyDown = r.yoy != null && r.yoy < -0.5;
@@ -369,13 +394,9 @@ export default function RevenueMix({ revenueBySource }: Props) {
                     </span>
                   )}
                 </div>
-                {!documentUrl && <p className='text-[11px] text-neutral-muted mt-1'>{r.sourceAbsent || 'Source version and observation date unavailable.'}</p>}
-                {documentUrl && r.source && <p className='text-[11px] text-neutral-muted mt-1'>
-                  <a className='underline' href={documentUrl}>Source version</a>
-                  {r.source.stated_amount_billion_kes && <> · stated KES {r.source.stated_amount_billion_kes}B</>}
-                  {r.source.retrieved_at && <> · retrieved {r.source.retrieved_at.slice(0, 10)}</>}
-                  {r.source.reconciliation && <> · {r.source.reconciliation}</>}
-                </p>}
+                <p className='text-[11px] text-neutral-muted mt-1'>
+                  <SourceQualification source={r.source} absentReason={r.sourceAbsent} />
+                </p>
                 {/* Mini multi-year bar */}
                 {r.series.length > 1 && (
                   <div className='mt-2 flex items-end gap-1 h-6'>

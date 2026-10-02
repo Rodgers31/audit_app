@@ -12,6 +12,11 @@ def revenue_source_row(row):
     unsupported = row.revenue_type == "Other Tax Revenue" and meta.get("basis") != "published"
     reason = RESIDUAL_REASON if unsupported else meta.get("absent_reason")
     source = meta.get("source") if isinstance(meta.get("source"), dict) else None
+    # Locator presence says nothing about whether an edition/date was recorded.
+    has_source_url = source and any(
+        isinstance(source.get(key), str) and source[key].strip()
+        for key in ("url", "data_url")
+    )
     return {
         "revenue_type": row.revenue_type, "category": row.category,
         "basis": meta.get("basis"), "basis_note": meta.get("notes"),
@@ -24,7 +29,7 @@ def revenue_source_row(row):
         "absent_reason": reason,
         "source_document_id": row.source_document_id,
         "source": source,
-        "source_absent_reason": None if source and isinstance(source.get("url"), str) and source["url"].strip() else "Source version and observation date are not recorded for this row.",
+        "source_absent_reason": None if has_source_url else "Source URL is not recorded for this row.",
         "measure": meta.get("measure") or (
             "Customs departmental collections, including agency levies"
             if row.revenue_type == "Customs & Import Duty" else row.revenue_type

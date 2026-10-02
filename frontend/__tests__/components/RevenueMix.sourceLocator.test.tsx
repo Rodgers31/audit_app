@@ -53,7 +53,7 @@ describe('RevenueMix source URL publication boundary', () => {
   it('shows a default absence explanation for a legacy source with no URL or reason', () => {
     const card = renderSource({ period: 'FY 2025/26' });
     expect(card.queryByText('Source version')).not.toBeInTheDocument();
-    expect(card.getByText(/source.*unavailable/i)).toBeInTheDocument();
+    expect(card.getByText('Source URL unavailable.')).toBeInTheDocument();
   });
 
   it.each([
@@ -89,10 +89,10 @@ describe('RevenueMix publisher totals use the same URL boundary', () => {
     expect(total).toHaveTextContent('publisher-stated');
     if (url) {
       expect(within(total).getByRole('link', { name: 'Source version' })).toHaveAttribute('href', url);
-      expect(total).not.toHaveTextContent('source version unavailable');
+      expect(total).not.toHaveTextContent('Source URL unavailable.');
     } else {
       expect(within(total).queryByRole('link')).not.toBeInTheDocument();
-      expect(total).toHaveTextContent('source version unavailable');
+      expect(total).toHaveTextContent('Source URL unavailable.');
     }
   });
 });

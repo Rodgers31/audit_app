@@ -34,6 +34,93 @@ REVENUE_RECEIPTS_CATEGORY = "Revenue Receipts"
 REVENUE_RECEIPTS_TOTAL = "Total"
 
 
+def county_cash_refusal(budget_lines):
+    """Read an unambiguous cash refusal from the linked budget Total's evidence.
+
+    Provenance is an append/dedupe history, not an authoritative last-write
+    pointer. Conflicting coverage/editions cannot establish a current reason.
+    This qualifies absence only; it never authorizes an amount or a ratio.
+    """
+    totals = [
+        line
+        for line in budget_lines or []
+        if (line.category or "").strip().lower() == "total" and not line.subcategory
+    ]
+    if len(totals) != 1:
+        return None
+    line = totals[0]
+    source = getattr(line, "source_document", None)
+    period = getattr(line, "period", None)
+    provenance = getattr(line, "provenance", None)
+    if (
+        line.currency != "KES"
+        or not source
+        or not period
+        or not getattr(source, "id", None)
+        or source.id != line.source_document_id
+        or not isinstance(provenance, list)
+        or not provenance
+        or not all(isinstance(entry, dict) for entry in provenance)
+        or "revenue_coverage" not in provenance[-1]
+    ):
+        return None
+    entries = [entry for entry in provenance if "revenue_coverage" in entry]
+    first = entries[0]
+    digest = first.get("artifact_sha256")
+    source_meta = getattr(source, "meta", None)
+    if (
+        not isinstance(digest, str)
+        or len(digest) != 64
+        or any(char not in "0123456789abcdef" for char in digest)
+        or not isinstance(source_meta, dict)
+        or source_meta.get("sha256") != digest
+    ):
+        return None
+    coverage = first["revenue_coverage"]
+    if not isinstance(coverage, dict):
+        return None
+    pages, reason = coverage.get("pages"), coverage.get("reason")
+    if (
+        coverage.get("status") != "withheld"
+        or coverage.get("basis") != "cash_receipts_including_opening_balance"
+        or not isinstance(reason, str)
+        or not reason.strip()
+        or not isinstance(pages, list)
+        or not pages
+        or not all(type(page) is int and page > 0 for page in pages)
+    ):
+        return None
+    if any(
+        entry.get("data_quality") != "official"
+        or not entry.get("source_label")
+        or entry.get("source_label") != getattr(source, "title", None)
+        or entry.get("revenue_coverage") != coverage
+        or entry.get("artifact_sha256") != first.get("artifact_sha256")
+        for entry in entries
+    ):
+        return None
+    return {
+        "reason": reason,
+        "fiscal_year": period.label,
+        "context": (
+            line.entity_id,
+            line.period_id,
+            line.currency,
+            line.source_document_id,
+        ),
+        "source": {
+            "id": source.id,
+            "url": source.url,
+            "pages": pages,
+            "publisher": source.publisher,
+            "title": source.title,
+            "basis": coverage["basis"],
+            "unit": "KES",
+            "artifact_sha256": first.get("artifact_sha256"),
+        },
+    }
+
+
 def split_classification_and_sector_lines(budget_lines):
     """Split CoB BIRR classification rows from additive sector rows.
 
