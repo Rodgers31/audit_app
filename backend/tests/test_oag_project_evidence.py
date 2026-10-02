@@ -18,6 +18,71 @@ FX_PATH = Path(__file__).parent / "fixtures/oag_nyamira_historical.json"
 CTX = DomainRunContext(since=None, dry_run=False)
 
 
+@pytest.mark.parametrize("change", ["unchanged", "bytes", "document_title"])
+def test_cached_county_dispatch_revalidates_fetched_artifact(
+    db_session, seed_country, tmp_path, monkeypatch, change
+):
+    """The registered parser's cached shortcut must obey the read boundary."""
+    from seeding.extractors.oag_county_audit import extract_county_audit
+    from seeding.extractors.reconciliation import IncompleteExtraction
+    from test_oag_county_volume import _hand_made_pdf
+
+    path = tmp_path / "cached.pdf"
+    _hand_made_pdf(path)
+    settings = SeedingSettings(
+        storage_path=tmp_path / "storage", cache_path=tmp_path / "cache"
+    )
+    doc = fetch(db_session, seed_country, settings, path, monkeypatch)
+    binding = dict(
+        schema_version=1,
+        artifact=copy.deepcopy(doc.meta["pdf_artifact_v1"]),
+        extractor="oag_county_volume",
+        text_visibility="visible_only",
+        pdf_pages=1,
+    )
+    row = Extraction(
+        source_document_id=doc.id,
+        page_number=1,
+        extractor="oag_county_volume",
+        confidence=0.9,
+        extracted_json={"pdf_artifact_binding_v1": binding},
+    )
+    db_session.add(row)
+    doc.meta = dict(doc.meta, extracted_md5=doc.md5)
+    db_session.flush()
+    before = copy.deepcopy(row.extracted_json)
+    metadata = copy.deepcopy(doc.meta)
+
+    def no_page_read(*a, **k):
+        pytest.fail("cached dispatch should validate identity without parsing pages")
+
+    monkeypatch.setattr(cv, "read_pages", no_page_read)
+    monkeypatch.setattr(cv, "read_head", no_page_read)
+    if change == "bytes":
+        # Another cache consumer can replace the path after fetch but before
+        # the registered parser enters its already-current shortcut.
+        path.write_bytes(
+            path.read_bytes().replace(b"VISIBLE PAGE TEXT", b"REISSUED CONTENT")
+        )
+    elif change == "document_title":
+        doc.title = "A different document association"
+    if change == "unchanged":
+        assert (
+            extract_county_audit(db_session, doc, settings)["reason"]
+            == "already_extracted"
+        )
+    else:
+        message = (
+            "PDF bytes changed since fetch"
+            if change == "bytes"
+            else "invalid PDF artifact/document association"
+        )
+        with pytest.raises(IncompleteExtraction, match=message):
+            extract_county_audit(db_session, doc, settings)
+    assert row.extracted_json == before
+    assert doc.meta == metadata
+
+
 @pytest.mark.parametrize("legacy", [True, False])
 def test_cached_volume_check_avoids_full_finding_transfer(historical_world, legacy):
     """Cached checks need a scalar or bindings, never complete finding rows."""
