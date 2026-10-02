@@ -25,6 +25,43 @@ logger = logging.getLogger("seeding.national_debt.writer")
 #: For creating a document whose payload declares no publisher. Never used to
 #: correct an existing one (issue #274).
 _DEFAULT_PUBLISHER = "National Treasury of Kenya"
+_DISPLAY_TITLE_KEY = "national_debt_title_is_display_fallback"
+
+
+def _source_identity(
+    record: DebtRecord, *, record_number: int | None = None
+) -> tuple[str | None, str | None]:
+    """Validate identity without touching the session or the caller's record.
+
+    Recorded locators include HTTP(S), file URLs and retained local paths.
+    This is an identity check, not a new network/scheme policy. An absent
+    locator requires a declared title; a display fallback cannot supply it.
+    Never echo raw inputs: configured locators may contain credentials.
+    """
+    where = f" at record #{record_number}" if record_number is not None else ""
+
+    def label(value, field):
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise ValueError(
+                f"Debt source identity refused{where}: {field} must be text or absent"
+            )
+        value = value.strip()
+        if not value.isprintable() and value:
+            raise ValueError(
+                f"Debt source identity refused{where}: {field} contains nonprinting characters"
+            )
+        return value or None
+
+    url = label(record.source_url, "source_url")
+    title = label(record.source_title, "source_title")
+    if url is None and title is None:
+        raise ValueError(
+            f"Debt source identity refused{where}: provide a nonblank recorded locator "
+            "or a declared source_title"
+        )
+    return url, title
 
 
 def _get_or_create_entity(
@@ -66,7 +103,8 @@ def _get_or_create_source_document(
     session: Session, record: DebtRecord
 ) -> SourceDocument:
     """Get or create source document for the debt bulletin."""
-    doc = (
+    source_url, source_title = _source_identity(record)
+    candidates = (
         session.query(SourceDocument)
         .filter(
             (
@@ -75,17 +113,46 @@ def _get_or_create_source_document(
                 # Do not unquote reserved characters (e.g. %2F), which can
                 # identify a different resource, or match by an edition title.
                 func.replace(SourceDocument.url, " ", "%20")
-                == record.source_url.replace(" ", "%20")
-                if record.source_url
-                else SourceDocument.title == record.source_title
+                == source_url.replace(" ", "%20")
+                if source_url
+                else SourceDocument.title == source_title
             ),
             SourceDocument.doc_type == DocumentType.LOAN,
         )
         .order_by(SourceDocument.id)
-        .first()
     )
+    if source_url:
+        doc = candidates.first()
+    else:
+        # Newly generated display titles are not declarations, even when a
+        # later real title has exactly that spelling. Legacy unmarked titles
+        # retain their existing identity; no historical backfill is inferred.
+        doc = next(
+            (
+                candidate
+                for candidate in candidates
+                if not (
+                    isinstance(candidate.meta, dict)
+                    and candidate.meta.get(_DISPLAY_TITLE_KEY) is True
+                )
+            ),
+            None,
+        )
 
     if doc:
+        if (
+            source_url
+            and source_title
+            and isinstance(doc.meta, dict)
+            and doc.meta.get(_DISPLAY_TITLE_KEY) is True
+        ):
+            # A declaration attached to the SAME locator can replace its
+            # display-only title without changing the document's stable ID.
+            doc.title = source_title
+            doc.meta = {**doc.meta, _DISPLAY_TITLE_KEY: False}
+            # SessionLocal disables autoflush. A later title-only record in
+            # this same valid batch must see the declaration just accepted.
+            session.flush()
         # The CBK bulletins were filed under the National Treasury default
         # because the fixture declared no publisher, and nothing here ever
         # looked at an existing document again (issue #274). Only a
@@ -107,13 +174,14 @@ def _get_or_create_source_document(
         raise ValueError("Kenya country not found. Run bootstrap_data.py first.")
 
     # Create new source document
-    logger.info(f"Creating source document: {record.source_title}")
+    logger.info("Creating source document for identified debt record")
     doc = SourceDocument(
         country_id=kenya.id,
         publisher=record.publisher or _DEFAULT_PUBLISHER,
-        title=record.source_title or "National Treasury Debt Bulletin",
+        title=source_title or "National Treasury Debt Bulletin",
         doc_type=DocumentType.LOAN,
-        url=record.source_url,
+        url=source_url,
+        meta={_DISPLAY_TITLE_KEY: source_title is None},
         fetch_date=datetime.now(timezone.utc),
     )
     session.add(doc)
@@ -320,6 +388,12 @@ def write_debt_records(
     Returns:
         Tuple of (created_count, updated_count)
     """
+    # Preflight the ENTIRE batch before queries/autoflush, source/publisher
+    # changes, reconciliation, subset deletion or lender deduplication. A
+    # later unidentified row must leave even caller-owned pending edits alone.
+    for number, record in enumerate(records, start=1):
+        _source_identity(record, record_number=number)
+
     created = 0
     updated = 0
 

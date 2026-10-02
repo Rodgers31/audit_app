@@ -41,9 +41,12 @@ cached output.
 from __future__ import annotations
 
 import difflib
+import hashlib
+import json
 import logging
 import re
 from datetime import date
+from decimal import Decimal
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
@@ -1025,6 +1028,347 @@ def _text_table_2_6(pages: Sequence[str], start: int) -> List[Tuple[int, List[st
     return rows
 
 
+# Only these retained annual passages have a local ingestion decision.
+# Keep helpers and binding evidence here: parser_digest hashes this entire file.
+NARRATIVE_SOURCE = {
+    "url": "https://cob.go.ke/download/county-governments-budget-implementation-review-report-for-the-financial-year-2025-26/?wpdmdl=16482",
+    "sha256": "5f5e4f97bbe2752957f284950d0ba90fcff4d47b35fc0ac96a9106ffb59821b3",
+    "pages": 935,
+    "fiscal_year": "2025/2026",
+    "publisher": "Office of the Controller of Budget",
+    "scope": "annual",
+}
+NARRATIVE_EVIDENCE = {
+    "nyamira-summary": {
+        "source_ref": "cob_annual",
+        "pdf_page": 686,
+        "printed_page": 652,
+        "paragraph": None,
+        "anchor": "county stalled-development summary",
+        "excerpt": "The County reported one stalled development project as of 30 June 2026, with an estimated value of\nKshs.34.38 million, of which Kshs.26.62 million has already been paid.",
+    },
+    "nyamira-named": {
+        "source_ref": "cob_annual",
+        "pdf_page": 686,
+        "printed_page": 652,
+        "paragraph": None,
+        "anchor": "named Speaker’s Residence narrative",
+        "excerpt": "The stalled project was the County Assembly Speaker’s Residence in Bonyamatuta Ward, which was start-\ned in February 2023. It was estimated at Kshs.34.38 million, with Kshs.26.65 million paid as of 30 June\n2026, and reported at 77 per cent completion. There was no budget allocation to complete the Speaker’s\nresidence, and the County Assembly needs to allocate funds to complete the project.",
+    },
+    "siaya-named": {
+        "source_ref": "cob_annual",
+        "pdf_page": 758,
+        "printed_page": 724,
+        "paragraph": None,
+        "anchor": "named Nyamonye narrative",
+        "excerpt": "The County reported 1 stalled development project as of 30 June 2026, with an estimated value of\nKshs.1.88 million, of which Kshs.3.72 million has already been paid. The stalled project is the completion\nof Nyamonye Juakali, located in Yimbo East, which is currently under investigation.",
+    },
+}
+
+
+def _source_sha256(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            h.update(block)
+    return h.hexdigest()
+
+
+def _narrative_text(text: str) -> str:
+    # Only PDF typography/whitespace is normalized, never wording or numbers.
+    return re.sub(r"([A-Za-z])- ([A-Za-z])", r"\1\2", clean(text))
+
+
+def _narrative_date(value: str, precision: str = "day") -> dict:
+    pattern = r"\d{4}-\d{2}-\d{2}" if precision == "day" else r"\d{4}-\d{2}"
+    if (
+        precision not in {"day", "month"}
+        or not isinstance(value, str)
+        or not re.fullmatch(pattern, value)
+    ):
+        raise ValueError("invalid_narrative_date")
+    date.fromisoformat(value if precision == "day" else value + "-01")
+    return {"value": value, "precision": precision, "reason": None}
+
+
+def _narrative_statement(
+    literal: str, source_unit: str, evidence_ref: str, scope: str, as_of: dict
+) -> dict:
+    if not isinstance(literal, str) or not re.fullmatch(
+        r"(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d+)?", literal
+    ):
+        raise ValueError("invalid_source_decimal")
+    if source_unit not in {"KES", "KES_million", "percent"}:
+        raise ValueError("invalid_source_unit")
+    n = Decimal(literal.replace(",", "")) * (1000000 if source_unit == "KES_million" else 1)
+    if source_unit == "percent":
+        if n > 100:
+            raise ValueError("invalid_progress")
+        value = int(n) if n == n.to_integral_value() else float(n)
+    else:
+        if n != n.to_integral_value():
+            raise ValueError("fractional_KES_not_supported")
+        value = int(n)
+    return {
+        "value": value,
+        "unit": "percent" if source_unit == "percent" else "KES",
+        "source_value": literal,
+        "source_unit": source_unit,
+        "evidence_ref": evidence_ref,
+        "scope": scope,
+        "as_of": as_of,
+    }
+
+
+def _narrative_corpus(county: str, excerpts: dict) -> dict:
+    """Derive the observation from an already bound bounded passage, not a row template."""
+    nyamira = county == "Nyamira"
+    if county not in {"Nyamira", "Siaya"}:
+        raise ValueError("unapproved_narrative_county")
+    named = "nyamira-named" if nyamira else "siaya-named"
+    text = _narrative_text(excerpts[named])
+    evidence = {k: dict(NARRATIVE_EVIDENCE[k], excerpt=v) for k, v in excerpts.items()}
+    at = _narrative_date(parse_as_of(re.search(r"as of (30 June\s+2026)", text).group(1)))
+    money = re.findall(r"Kshs\.([\d,.]+) million", text)
+
+    def stated(value):
+        return {"state": "stated", "value": value, "reason": None}
+
+    def missing(state, reason):
+        return {"state": state, "value": None, "reason": reason}
+
+    measures = {
+        k: {
+            "state": "absent",
+            "reason": "Not stated in the bounded annual passage.",
+            "statements": [],
+        }
+        for k in ("estimated_value", "contract_sum", "paid", "payable", "completion_pct")
+    }
+
+    def statement(literal, unit="KES_million", ref=named, scope="named_project"):
+        return _narrative_statement(literal, unit, ref, scope, at)
+
+    def slot(statements, conflict=False):
+        return {
+            "state": "conflicting" if conflict else "stated",
+            "reason": "Named payment differs from the same-date singleton county summary; no winner selected."
+            if conflict
+            else None,
+            "statements": statements,
+        }
+
+    measures["estimated_value"] = slot([statement(money[0])])
+    paid = [statement(money[1])]
+    milestones = []
+    if nyamira:
+        summary = _narrative_text(excerpts["nyamira-summary"])
+        paid.append(
+            statement(
+                re.findall(r"Kshs\.([\d,.]+) million", summary)[1],
+                ref="nyamira-summary",
+                scope="county_summary_one_project",
+            )
+        )
+        measures["completion_pct"] = slot(
+            [statement(re.search(r"(\d+) per cent completion", text).group(1), "percent")]
+        )
+        commencement = re.search(r"started in ([A-Za-z]+) (\d{4})", text)
+        commencement_month = f"{commencement.group(2)}-{_MONTHS[commencement.group(1).lower()]:02d}"
+        milestones = [
+            {
+                "kind": "commencement",
+                "date": _narrative_date(commencement_month, "month"),
+                "evidence_ref": named,
+            }
+        ]
+        name = re.search(r"project was the (.*?) in Bonyamatuta Ward", text).group(1)
+        location = re.search(r"Residence in (.*?), which", text).group(1)
+        institution = stated("Nyamira County Assembly")
+    else:
+        # Keep the exact line break in the printed name, independent of scalar parsing.
+        name = re.search(r"project is the (.*?), located", excerpts[named], re.S).group(1).strip()
+        location = re.search(r"located in (.*?), which", text).group(1)
+        institution = missing(
+            "unknown", "The bounded narrative does not identify the implementing institution."
+        )
+    measures["paid"] = slot(paid, conflict=nyamira)
+    observation = {
+        "observation_id": county.lower() + "-cob-annual",
+        "county": {"official_code": "046" if nyamira else "041", "name": county},
+        "name_as_printed": name,
+        "location": stated(location),
+        "reporting_body": stated(county + " County"),
+        "implementing_institution": institution,
+        "tender_reference": missing(
+            "absent", "No shared tender or contract identifier is stated in the bounded narrative."
+        ),
+        "source_ref": "cob_annual",
+        "fiscal_year": "2025/2026",
+        "scope": "annual",
+        "named_evidence_ref": named,
+        "measures": measures,
+        "milestones": milestones,
+        "status": {
+            "classification": "reported_stalled" if nyamira else "under_investigation",
+            "evidence_ref": named,
+            "as_of": at,
+        },
+    }
+    return {
+        "schema_version": 1,
+        "decision": "accepted_for_local_implementation",
+        "sources": {"cob_annual": dict(NARRATIVE_SOURCE)},
+        "evidence": evidence,
+        "observations": [observation],
+        "relationships": [],
+    }
+
+
+def narrative_refusal(reason: str) -> dict:
+    return {"schema_version": 1, "status": "refused", "reason": reason, "corpus": None}
+
+
+def parse_bounded_narratives(pages: Sequence[str], edition: dict, sha256: str) -> dict:
+    """Two exact anchors only. Refusal is optional evidence, never a table refusal."""
+    result = {}
+    doc = Document(pages)
+    chapters = find_chapters(doc)
+    edition_ok = (
+        sha256 == NARRATIVE_SOURCE["sha256"]
+        and edition.get("fiscal_year") == "FY2025/26"
+        and edition.get("period") == "annual"
+        and edition.get("pages") == NARRATIVE_SOURCE["pages"]
+    )
+    for county, keys, page, section in (
+        ("Nyamira", ("nyamira-summary", "nyamira-named"), 686, "3.34.16"),
+        ("Siaya", ("siaya-named",), 758, "3.38.16"),
+    ):
+        reason = None
+        if not edition_ok:
+            reason = "unapproved_source_hash_or_edition"
+        elif len(pages) < page or county not in chapters:
+            reason = "missing_page_or_county_chapter"
+        else:
+            raw = pages[page - 1]
+            start, end = chapters[county]
+            offset = doc.starts[page - 1] + doc.pages[page - 1].find("The County reported")
+            if (
+                not start <= offset < end
+                or "Source: " + county + " County Treasury" not in raw
+                or section not in raw
+            ):
+                reason = "county_page_context_mismatch"
+            else:
+                excerpts = {}
+                for i, key in enumerate(keys):
+                    # The first line has extraction-specific spacing; use its opening sentence.
+                    opening = (
+                        "The stalled project was"
+                        if key == "nyamira-named"
+                        else "The County reported"
+                    )
+                    a = raw.find(opening)
+                    closing = "The stalled project was" if i + 1 < len(keys) else section
+                    b = raw.find(closing, a + len(opening)) if a >= 0 else -1
+                    if a < 0 or b < 0:
+                        reason = "missing_bounded_passage"
+                        break
+                    excerpt = raw[a:b].strip()
+                    if _narrative_text(excerpt) != _narrative_text(
+                        NARRATIVE_EVIDENCE[key]["excerpt"]
+                    ):
+                        reason = "changed_bounded_passage"
+                        break
+                    excerpts[key] = excerpt
+                if reason is None:
+                    result[county] = {
+                        "schema_version": 1,
+                        "status": "accepted",
+                        "reason": None,
+                        "corpus": _narrative_corpus(county, excerpts),
+                    }
+        if reason is not None:
+            logger.warning("stalled_projects narratives: %s refused: %s", county, reason)
+            result[county] = narrative_refusal(reason)
+    return result
+
+
+def validate_bound_narratives(value: Any, edition: Any, county: Optional[str] = None) -> dict:
+    """Strict read/write boundary: a shaped object is not source authority.
+
+    Re-derive this bounded corpus from its retained evidence and require exact,
+    typed JSON equality. Refuse changed names, measures, states, refs or unknown
+    keys. Old schema-2 blocks without this optional collection remain readable.
+    """
+    try:
+        if (
+            type(value) is not dict
+            or set(value) != {"schema_version", "status", "reason", "corpus"}
+            or type(value["schema_version"]) is not int
+            or value["schema_version"] != 1
+        ):
+            raise ValueError("invalid_narrative_envelope")
+        if value["status"] == "refused":
+            if (
+                value["corpus"] is not None
+                or not isinstance(value["reason"], str)
+                or not value["reason"].strip()
+            ):
+                raise ValueError("invalid_narrative_refusal")
+            return dict(value)
+        if value["status"] != "accepted" or value["reason"] is not None:
+            raise ValueError("invalid_narrative_status")
+        if type(edition) is not dict or any(
+            edition.get(k) != v
+            for k, v in {
+                "sha256": NARRATIVE_SOURCE["sha256"],
+                "url": NARRATIVE_SOURCE["url"],
+                "fiscal_year": "FY2025/26",
+                "period": "annual",
+            }.items()
+        ):
+            raise ValueError("narrative_source_edition_mismatch")
+        corpus = value["corpus"]
+        # JSON serialization rejects hostile nonfinite values; canonical equality
+        # also distinguishes bool/int, absent/zero and unknown/stated.
+        encoded = json.dumps(corpus, sort_keys=True, ensure_ascii=False, allow_nan=False)
+        observation = corpus["observations"][0]
+        name = observation["county"]["name"]
+        if county is not None and county != name:
+            raise ValueError("narrative_county_mismatch")
+        keys = {"nyamira-summary", "nyamira-named"} if name == "Nyamira" else {"siaya-named"}
+        if type(corpus["evidence"]) is not dict or set(corpus["evidence"]) != keys:
+            raise ValueError("invalid_narrative_evidence")
+        excerpts = {}
+        for k in keys:
+            e = corpus["evidence"][k]
+            if (
+                type(e) is not dict
+                or type(e.get("excerpt")) is not str
+                or _narrative_text(e["excerpt"])
+                != _narrative_text(NARRATIVE_EVIDENCE[k]["excerpt"])
+            ):
+                raise ValueError("narrative_passage_binding_mismatch")
+            excerpts[k] = e["excerpt"]
+        expected = _narrative_corpus(name, excerpts)
+        if encoded != json.dumps(expected, sort_keys=True, ensure_ascii=False, allow_nan=False):
+            raise ValueError("narrative_shape_or_source_binding_mismatch")
+        # Return a freshly derived copy, never a mutable reference into JSONB.
+        return {"schema_version": 1, "status": "accepted", "reason": None, "corpus": expected}
+    except (
+        ValueError,
+        TypeError,
+        KeyError,
+        IndexError,
+        AttributeError,
+        OverflowError,
+        RecursionError,
+    ) as exc:
+        logger.warning("stalled_projects narratives refused: %s", exc)
+        return narrative_refusal(str(exc))
+
+
 class CbirrStalledProjectsParser:
     """``CbirrStalledProjectsParser(path).parse()`` -> list of records.
 
@@ -1130,6 +1474,11 @@ class CbirrStalledProjectsParser:
         if t26:
             for county, entry in t26["counties"].items():
                 counties.setdefault(county, {"county": county})["table_2_6"] = entry
+
+        narratives = parse_bounded_narratives(pages, edition, _source_sha256(self.pdf_path))
+        for county, collection in narratives.items():
+            if county in counties:
+                counties[county]["narratives"] = collection
 
         records: List[Dict[str, Any]] = [dict(edition, kind="edition", unplaced_captions=unplaced)]
         for county in sorted(counties):

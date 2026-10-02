@@ -60,6 +60,13 @@ def _declared(value: Any) -> str | None:
     return value.strip() or None
 
 
+def _source_or_inherited(value: Any, inherited: Any) -> Any:
+    """Inherit absent labels/locators, but retain malformed values for refusal."""
+    if value is None or (isinstance(value, str) and not value.strip()):
+        return inherited
+    return value
+
+
 def parse_debt_payload(payload: dict[str, Any]) -> list[DebtRecord]:
     """
     Parse debt payload into structured records.
@@ -91,7 +98,8 @@ def parse_debt_payload(payload: dict[str, Any]) -> list[DebtRecord]:
     records: list[DebtRecord] = []
     loans_data = payload.get("loans", [])
     source_url = payload.get("source_url")
-    source_title = payload.get("source_title", "National Treasury Debt Bulletin")
+    # A display fallback is not a publisher's declaration of source identity.
+    source_title = payload.get("source_title")
     # Who published the payload's own source. It belongs to ``source_url``, so
     # a row inherits it only when it inherits that URL too (issue #274).
     payload_publisher = _declared(payload.get("publisher"))
@@ -117,6 +125,13 @@ def parse_debt_payload(payload: dict[str, Any]) -> list[DebtRecord]:
             if loan_data.get("interest_rate") is not None:
                 interest_rate = Decimal(str(loan_data["interest_rate"]))
 
+            row_source_url = _source_or_inherited(
+                loan_data.get("source_url"), source_url
+            )
+            row_source_title = _source_or_inherited(
+                loan_data.get("source_title"),
+                source_title if row_source_url == source_url else None,
+            )
             record = DebtRecord(
                 entity_name=loan_data["entity_name"],
                 entity_type=loan_data["entity_type"],
@@ -129,15 +144,11 @@ def parse_debt_payload(payload: dict[str, Any]) -> list[DebtRecord]:
                 # A row's own source wins over the payload's. The IDS creditor
                 # rows are World Bank data merged into a CBK-sourced payload;
                 # without this they persisted as if CBK had published them.
-                source_url=loan_data.get("source_url") or source_url,
-                source_title=loan_data.get("source_title") or source_title,
+                source_url=row_source_url,
+                source_title=row_source_title,
                 publisher=(
                     _declared(loan_data.get("publisher"))
-                    or (
-                        payload_publisher
-                        if (loan_data.get("source_url") or source_url) == source_url
-                        else None
-                    )
+                    or (payload_publisher if row_source_url == source_url else None)
                 ),
                 debt_category=loan_data.get("debt_category"),
                 interest_rate=interest_rate,

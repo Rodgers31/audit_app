@@ -1,0 +1,36 @@
+{
+  "source": {
+    "url": "https://cob.go.ke/download/county-governments-budget-implementation-review-report-for-the-financial-year-2025-26/?wpdmdl=16482",
+    "sha256": "5f5e4f97bbe2752957f284950d0ba90fcff4d47b35fc0ac96a9106ffb59821b3",
+    "pages": 935,
+    "fiscal_year": "2025/2026",
+    "publisher": "Office of the Controller of Budget",
+    "scope": "annual"
+  },
+  "evidence": {
+    "nyamira-summary": {
+      "source_ref": "cob_annual",
+      "pdf_page": 686,
+      "printed_page": 652,
+      "paragraph": null,
+      "anchor": "county stalled-development summary",
+      "excerpt": "The County reported one stalled development project as of 30 June 2026, with an estimated value of\nKshs.34.38 million, of which Kshs.26.62 million has already been paid."
+    },
+    "nyamira-named": {
+      "source_ref": "cob_annual",
+      "pdf_page": 686,
+      "printed_page": 652,
+      "paragraph": null,
+      "anchor": "named Speaker’s Residence narrative",
+      "excerpt": "The stalled project was the County Assembly Speaker’s Residence in Bonyamatuta Ward, which was start-\ned in February 2023. It was estimated at Kshs.34.38 million, with Kshs.26.65 million paid as of 30 June\n2026, and reported at 77 per cent completion. There was no budget allocation to complete the Speaker’s\nresidence, and the County Assembly needs to allocate funds to complete the project."
+    },
+    "siaya-named": {
+      "source_ref": "cob_annual",
+      "pdf_page": 758,
+      "printed_page": 724,
+      "paragraph": null,
+      "anchor": "named Nyamonye narrative",
+      "excerpt": "The County reported 1 stalled development project as of 30 June 2026, with an estimated value of\nKshs.1.88 million, of which Kshs.3.72 million has already been paid. The stalled project is the completion\nof Nyamonye Juakali, located in Yimbo East, which is currently under investigation."
+    }
+  }
+}
