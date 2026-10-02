@@ -460,17 +460,21 @@ def already_extracted(session, doc) -> int:
 
     if not doc.md5 or (doc.meta or {}).get("extracted_md5") != doc.md5:
         return 0
-    rows = session.query(Extraction).filter_by(
-        source_document_id=doc.id, extractor=EXTRACTOR_ID
-    ).all()
+    filters = (
+        Extraction.source_document_id == doc.id,
+        Extraction.extractor == EXTRACTOR_ID,
+    )
+    if ARTIFACT_KEY not in (doc.meta or {}):
+        return session.query(Extraction.id).filter(*filters).count()
     # A normal future fetch/re-extraction may establish binding; an old
     # document-level MD5 stamp alone must not skip that extraction boundary.
-    if ARTIFACT_KEY in (doc.meta or {}):
-        artifact = artifact_for_document(doc)
-        if any(not valid_binding((r.extracted_json or {}).get(BINDING_KEY))
-               or r.extracted_json[BINDING_KEY]["artifact"] != artifact for r in rows):
-            return 0
-    return len(rows)
+    # Select only the binding: full finding text is unnecessary for this gate.
+    bindings = session.query(Extraction.extracted_json[BINDING_KEY]).filter(*filters).all()
+    artifact = artifact_for_document(doc)
+    if any(not valid_binding(binding) or binding["artifact"] != artifact
+           for (binding,) in bindings):
+        return 0
+    return len(bindings)
 
 
 def extract_county_volume(session, doc, settings, *, known_counties: Dict[str, str], review=None) -> dict:

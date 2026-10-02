@@ -18,6 +18,75 @@ FX_PATH = Path(__file__).parent / "fixtures/oag_nyamira_historical.json"
 CTX = DomainRunContext(since=None, dry_run=False)
 
 
+@pytest.mark.parametrize("legacy", [True, False])
+def test_cached_volume_check_avoids_full_finding_transfer(historical_world, legacy):
+    """Cached checks need a scalar or bindings, never complete finding rows."""
+    from types import SimpleNamespace
+    from sqlalchemy import event
+    from seeding.pdf_artifact import ARTIFACT_KEY
+
+    session, doc, _ = historical_world
+    metadata = dict(doc.meta, extracted_md5=doc.md5)
+    if legacy:
+        metadata.pop(ARTIFACT_KEY)
+    doc.meta = metadata
+    session.flush()
+    snapshot = SimpleNamespace(id=doc.id, md5=doc.md5, meta=copy.deepcopy(metadata))
+    session.expunge_all()
+    loaded, columns = [], []
+
+    def capture_row(current_session, row):
+        if isinstance(row, Extraction):
+            loaded.append(row)
+
+    def capture_columns(conn, cursor, statement, parameters, context, executemany):
+        columns.extend(item[0] for item in (cursor.description or []))
+
+    event.listen(session, "loaded_as_persistent", capture_row)
+    event.listen(session.bind, "after_cursor_execute", capture_columns)
+    try:
+        assert cv.already_extracted(session, snapshot) == 2
+    finally:
+        event.remove(session, "loaded_as_persistent", capture_row)
+        event.remove(session.bind, "after_cursor_execute", capture_columns)
+    assert not loaded, "skip check materialized full Extraction objects"
+    assert "extractions_extracted_json" not in columns
+
+
+@pytest.mark.parametrize("state", [
+    "legacy_current", "legacy_stale", "bound_current", "bound_missing",
+    "bound_invalid", "bound_artifact_mismatch", "bound_no_rows",
+])
+def test_cached_volume_projection_preserves_binding_decisions(historical_world, state):
+    from types import SimpleNamespace
+    from seeding.pdf_artifact import ARTIFACT_KEY, BINDING_KEY
+
+    session, doc, _ = historical_world
+    metadata = dict(doc.meta, extracted_md5=doc.md5)
+    if state.startswith("legacy"):
+        metadata.pop(ARTIFACT_KEY)
+    if state == "legacy_stale":
+        metadata["extracted_md5"] = "0" * 32
+    doc.meta = metadata
+    if state in ("bound_missing", "bound_invalid", "bound_artifact_mismatch"):
+        row = session.query(Extraction).first()
+        payload = copy.deepcopy(row.extracted_json)
+        if state == "bound_missing":
+            payload.pop(BINDING_KEY)
+        elif state == "bound_invalid":
+            payload[BINDING_KEY] = ["malformed"]
+        else:
+            payload[BINDING_KEY]["artifact"]["sha256"] = "1" * 64
+        row.extracted_json = payload
+    session.flush()
+    snapshot = SimpleNamespace(
+        id=99999 if state == "bound_no_rows" else doc.id,
+        md5=doc.md5, meta=copy.deepcopy(metadata),
+    )
+    expected = 2 if state in ("legacy_current", "bound_current") else 0
+    assert cv.already_extracted(session, snapshot) == expected
+
+
 def fetch(session, country, settings, path, monkeypatch, url=None):
     fx = json.loads(FX_PATH.read_text())
     monkeypatch.setattr(

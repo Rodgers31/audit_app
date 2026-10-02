@@ -5,8 +5,9 @@
 Reviewed local author commit `4021e8d924040482bb4ba1007946dbbfd3341fea`,
 tree `23a8eedce2a24a7525ffbff17af8968b409f7e6d`, against merged main
 `829268cafb45f68b807d67e54de3b065eb87681e`. The consolidation checkout contains
-that exact author tree. This receipt adds documentation only; tested backend tree
-is `cc53b1dc7344aff97a2fc23185c11a2fee8506c9`.
+that exact author tree before the coordinator's final query correction below.
+Initial tested backend tree was `cc53b1dc7344aff97a2fc23185c11a2fee8506c9`;
+the final393-test selection covers the subsequent query correction and nine tests.
 
 Normal successful fetch retains validated PDF-byte identity. The county-volume
 extractor binds each supported extraction to the actual artifact used, validates
@@ -38,7 +39,8 @@ Retained external evidence directory:
 
 | Receipt | Executed outcome |
 | --- | --- |
-| `ROUND15_COORDINATOR_VERIFIED.log` | Final17-file regression selection: exit0,384 passed,0 skips,3 existing warnings,11.37s; application-engine attempts0. |
+| `ROUND15_COORDINATOR_VERIFIED.log` | Initial17-file regression selection: exit0,384 passed,0 skips,3 existing warnings,11.37s; application-engine attempts0. |
+| `ROUND15_COORDINATOR_FINAL_VERIFIED.log` | Final17-file selection after query correction: exit0,393 passed,0 skips,3 existing warnings,11.39s; application-engine attempts0. |
 | `ROUND15_COORDINATOR_BASELINE_5.log` | Original tracked modules from starting main rebound in memory: exit1,5 failed,50 deselected,0 skips; engine attempts0. Missing candidate/binding, changed-byte refusal, unchecked sidecar and old-bound MD5 replay controls are genuinely sensitive to the original code. |
 | `ROUND15_COORDINATOR_RETAINED_PIPELINE.log` | Actual retained217-page PDF through existing mock-network fetcher, visible reader, reconciliation, loader and comprehensive API: exit0,1 passed,34.20s,engine attempts0. |
 | Critical flake8 and diff checks | `--select E9,F63,F7,F82` on changed Python modules/tests and `git diff --check` both exit0. |
@@ -67,7 +69,8 @@ Source SHA256:
 `683fa522bf11eaa2b0bc2a9eef51eadc3d664d9a512d3af63cb6e9479820f8a2`;
 MD5 `15cd6108a0f08498a9e9f699430b365b`;32,379,711 bytes.
 Coordinator recomputed every entry in the author's four-source and54-artifact
-receipts with zero mismatches; overlapping receipt entries are not unique files.
+receipts:58 distinct files, zero mismatches. Final coordinator changes are
+separately covered by final code/commit and independent query receipts.
 
 ## Independent review and findings
 
@@ -87,9 +90,36 @@ The reviewer did not repeat full PDF extraction or PostgreSQL concurrency.
 
 Session discoveries are covered and fixed within existing #230: missing byte/
 individual evidence binding, the bound-extraction replay attribution boundary,
-malformed optional paragraph/title refusal and county API resilience. No distinct
-unresolved issue was reproduced, so no duplicate ticket is created. Source/payment/
-institution uncertainty and production requirements remain tracked separately.
+malformed optional paragraph/title refusal and county API resilience. A subsequent
+concrete query regression was reproduced, filed separately as #444 and fixed
+before the final push. Source/payment/institution uncertainty and production
+requirements remain tracked separately.
+
+### Final cached-query correction — #444
+
+The new `already_extracted` had replaced a legacy scalar count with full Extraction
+ORM loading. Independent actual SQLite execution selected seven columns and
+materialized both findings for legacy and bound inputs. In the two-row fixture,
+full JSON serialization was3769 bytes for legacy/5145 for bound, including2373
+finding-text bytes; a bound-only projection was1318 bytes and a legacy count is
+scalar2. These are local serialization/query measurements, not wire bytes,
+production prevalence or billing attribution.
+
+The coordinator restored a scalar legacy count and selects only the versioned JSON
+binding for bound rows. Existing valid/stale/missing/invalid/mismatched/empty
+decisions remain unchanged. Two repository transfer controls were executed before
+the fix: exit1,2 failed,62 deselected,engine attempts0 (`QUERY_RED.log`). The final
+393 selection includes these passing plus seven decision controls. Independent
+actual patched-module verification: exit0,9 passed,2 deselected,engine attempts0.
+Final extractor SHA256:
+`4395805ecc1de25fe31bf59f82349968018980878868e614b58d23e4d677d43b`.
+
+Exact SQL, tested prototype, first code-sensitive reds, final actual-code command,
+script/module hashes and cleanup are in
+`ROUND15_COORDINATOR_QUERY_REVIEW_RECEIPT.md`. PostgreSQL projection compiled;
+PostgreSQL runtime was not executed. Search for `already_extracted` found no issue;
+the `extraction payload` match #379 is a distinct source text-boundary defect.
+This new pre-release regression is addressed by this PR and #444 may close on merge.
 
 ## Closure and remaining acceptance
 
