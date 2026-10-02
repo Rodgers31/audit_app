@@ -1,21 +1,22 @@
-# Proposed project narrative contract — Round13
+# Accepted local project narrative contract — Round14
 
-**Maintainer decision proposed:** accept named narratives as a separate collection
-of source observations, with no automatic projection into project detail rows,
-counts, financial totals or OAG verification. This document and the
-[source-bound examples](round13-project-narratives.examples.json) are a review
-proposal for [#230](https://github.com/Rodgers31/audit_app/issues/230), not an
-approved runtime schema, ingestion instruction or permission to expose Projects.
+The owner accepted the bounded local contract on **2 October 2026**. Runtime
+implementation covers exactly two retained CoB FY2025/26 narrative anchors,
+Nyamira and Siaya, as separate source observations. It does not authorize
+production replay, public Projects rendering, automatic OAG corroboration,
+aggregate union or closure of [#230](https://github.com/Rodgers31/audit_app/issues/230).
+The [comparative examples](round13-project-narratives.examples.json) preserve
+an illustrative historical OAG observation; they are documentary examples,
+not accepted runtime ingestion records.
 
-The current parser reconciles captioned detail-table rows
-(`backend/seeding/domains/stalled_projects/cob_parser.py:1137–1142`); the writer
-constructs its `rows` from those tables (`writer.py:212–220`). Narrative support
-would extend that scope. A dropped table row has not been demonstrated.
-[Round11](../verification/2026-10-01-round11-county-source-reconciliation.md)
-retains 168 detail rows across 47 county records, 188 observed summary counts
-and a stated 189 total. Those inherited cardinalities have different bases;
-189−168 is not authority to create 21 records. No parser, writer, stored array,
-metadata, service, exposure gate or source acceptance changes in this proposal.
+The parser, writer and comprehensive county API now carry a separately
+versioned optional collection inside the existing **schema-2** county block.
+Captioned table rows, their counts and financial aggregates retain their existing
+basis. The retained annual replay compares all prior records and public totals
+against the initial parser. There are 168 detail rows across 47 county records;
+the numeric Table 2.6 county counts sum to 188, its stated total and national prose
+say 189, and county summary prose independently sums to 189. These different
+bases do not authorize creating rows.
 
 ## Terms and minimum schema
 
@@ -32,7 +33,7 @@ are a small source-bound corpus, not permission to ingest every narrative.
 
 | Object | Required content |
 | --- | --- |
-| Corpus | `schema_version: 1`, `decision: proposed_for_maintainer_review`, nonempty `sources`, `evidence`, `observations`; `relationships` may be empty. |
+| Corpus | `schema_version: 1`, documentary `decision: accepted_contract_examples_only` (runtime `accepted_for_local_implementation`), nonempty `sources`, `evidence`, `observations`; `relationships` may be empty. |
 | Source | Official PDF URL, SHA-256 of retained bytes, positive integer page count, fiscal year `YYYY/YYYY`, scope `annual` or `audit_year`, publisher. Cover month and website publication/download dates are edition metadata, never observation dates. |
 | Evidence | Source reference, one-based PDF and printed page, paragraph string or explicit `null` for unnumbered CoB prose, nonempty section anchor and exact retained excerpt including line breaks. Paragraph plus source/page is a locator, not an invented OAG case ID. |
 | Observation | Opaque local `observation_id`, official county code/name, exact `name_as_printed`, `location`, `reporting_body`, `implementing_institution`, `tender_reference`, source reference, fiscal year/scope, named evidence reference, five measure slots, milestones, status. |
@@ -67,8 +68,9 @@ fabricator. Do not silently skip malformed observations in a success verdict.
 
 The examples contain three observations, sourced from the
 [Round12 comparison manifest](../verification/2026-10-01-round12-project-scope-corroboration.json).
-“Accepted” here means faithful to the retained source, including uncertainties;
-it does not mean approved for public integration.
+“Accepted” here means faithful to the retained source, including uncertainties.
+Only the two CoB annual observations are locally implemented; the historical
+example remains documentary and is not injected into ingestion or API output.
 
 - **Nyamira annual:** CoB SHA `5f5e4f97bbe2752957f284950d0ba90fcff4d47b35fc0ac96a9106ffb59821b3`,
   PDF686 / printed652 / unnumbered named paragraph. County Assembly Speaker’s
@@ -106,9 +108,9 @@ unresolved prior issue without fresh residence money; paragraph632's
 KES367million offices block is another project. Siaya's Nyabera Primary School
 ECDE block (paragraph1134) is another name and period. Neither can supply a
 Nyamonye institution, OAG match, payment or loss. Their exact identities/locators
-remain in the Round12 bank; this proposal does not repeat that search.
+remain in the Round12 bank; this implementation does not repeat that search.
 
-| Input/projection | Proposed outcome |
+| Input/projection | Bounded outcome |
 | --- | --- |
 | Siaya institution explicitly unknown with reason | Accept observation; no institutional join. |
 | Missing institution key or inferred “Executive” | Refuse, even if the rest is well-shaped. |
@@ -120,49 +122,91 @@ remain in the Round12 bank; this proposal does not repeat that search.
 | Empty/malformed payload, wrong schema, bool, NaN, infinities, negative money/progress or progress >100 | Refuse visibly, without empty-success fallback. |
 | Explicit source-backed zero versus absent/withheld/unknown/conflicting | Preserve stated zero; refuse coercion of any missing state to zero. |
 
-## Coexistence, counts and bounded next implementation
+## Runtime storage, refusal and API compatibility
 
-If the maintainer accepts this contract, add a separate versioned `narratives`
-collection inside a future county block, leaving `rows`, table evidence,
-`summary`, `table_2_6`, reconciliation, withheld fields and later metadata intact.
-Do not append to today's detail arrays or reuse their public `count`/money totals.
-Expose separate narrative-observation cardinality only after a separately
-approved service contract; multiple statements and an older observation are
-not distinct projects. A named narrative that may overlap a detail row needs an
-explicit reviewed identity mapping. Unresolved overlap means no combined count,
-no union-by-name and no narrative-derived national total. Extraction cardinality
-zero remains separate from a publisher's reported count of one.
+`narratives` is optional within `stalled_projects.schema: 2`; the writer's
+`_is_current` and legacy-only cleanup continue to recognize old and new blocks.
+No schema migration or production replay is implied. A present collection is
+an exact-key envelope:
 
-A future plan, requiring authorization before implementation:
+```json
+{"schema_version": 1, "status": "accepted", "reason": null, "corpus": "the source-bound corpus object"}
+```
 
-1. Maintainer accepts/revises the five state meanings, separate collection,
-   singleton-summary comparison scope and candidate-only OAG relationship.
-   Decide whether public rendering may show unresolved/unknown observations,
-   labelled as such; conflict scalars remain null. No exposure approval follows
-   merely from approving a storage contract.
-2. Implement only the two known CoB named passage anchors in the self-contained
-   parser, under the edition hash/period boundary and its parser-digest cache
-   invalidation. No universal narrative heuristic. Tests first: exact passages,
-   both paid statements, absent institution, source revision/wrong edition,
-   unknown overlap and corrupt shapes; run genuine red/green controls.
-3. Extend the writer with an explicit schema/version decision and preservation
-   tests under its existing locked transaction. Preserve every existing row,
-   cash refusal, source array, unrelated/later metadata and legacy route mapping.
-   Define migration/read compatibility before any write; no production replay,
-   seed or cache refresh follows from local tests.
-4. Independently review a narrow service projection. Use existing OAG ingestion
-   records, never a second fetcher or a fuzzy automatic join. If historical
-   candidates are exposed later, show source fiscal year, actual observation
-   date and identity uncertainty; never `oag_verified` for current CoB values.
-5. Obtain exact source clarification for the annual paid conflict and any
-   definitive identity/implementing-institution claim. Coordinator separately
-   handles authorized cleanup, production provenance/API/rendered acceptance,
-   competent human review and final Projects exposure approval. Keep #230 open.
+A refusal uses `status: refused`, a nonempty `reason`, and `corpus: null`.
+Accepted county corpora each have one annual observation, one CoB source, their
+own exact retained evidence and an empty relationship list. `schema_version: 1`
+is independent of the county block's schema2. The two-anchor validator
+re-derives the corpus from bound evidence and requires exact typed JSON
+comparison, including source units, dates, measure semantics and all keys.
+Structural validity alone never establishes source authority. Documentary
+historical examples and arbitrary well-shaped observations are not accepted.
 
-This session executes only an external source/schema example validator and
-adversarial controls. Prior full-PDF extraction and application tests are
-inherited evidence, not rerun or production certification. The exact scripts,
-results, independent review, commit/tree and cleanup are recorded in
-`ROUND13_SESSION_2_HANDOFF.md` beside the Round13 briefs. No fresh public request,
-PDF download, application import, database connection or runtime patch is needed
-to make this contract decision reviewable.
+`cob_parser.parse_bounded_narratives` requires the pinned PDF SHA-256,
+FY2025/26 annual edition and 935 pages, exact one-based page and county chapter,
+county Treasury attribution and following department-section anchor. Only PDF
+whitespace and word hyphenation are normalized for comparison; the actual
+extracted excerpt, including its line breaks, is retained. Changed or missing
+passages qualify only this optional collection, preserving unrelated tables.
+All binding constants and helpers remain in the parser's source file, so the
+existing content/parser/library-digest cache invalidates their changes.
+
+The writer validates again against the downloaded edition and county identity.
+It keeps the existing ordered-lock/refresh/commit boundary, replaces known
+edition fields and retains unknown later extension metadata on current blocks.
+An older accepted collection cannot survive as an extension when the next
+edition has no narratives. Unrelated Entity metadata and route IDs are kept.
+
+`build_stalled_projects_block` returns a qualified `narratives` projection in
+both the empty-table and populated-table paths. The comprehensive county caller
+passes its canonical name, resolved using official county identity, to refuse
+cross-county transplants. Direct service calls may omit that external identity
+for backward compatibility; the observation's explicit official county remains
+in the projection. Legacy route mappings 047=Mombasa/001=Nairobi are unchanged.
+
+The projection contains `schema_version`, `status`, `reason`, separate
+`observations`, `sources`, `evidence`, `historical_identity_candidates`,
+`historical_candidate_reason` and `qualification`. Each accepted observation
+has `scalar_measures`: a stated measure supplies its value (including explicit
+zero); conflicting/absent/unknown/withheld measures supply null. Nyamira paid
+has two scoped statements and a null scalar. Siaya has no institution inference,
+clamping, loss subtraction or verification label. The table `count`, contracted
+value and paid total exclude all narratives. No combined count or national
+narrative total is defined, and observations never enter `_link`'s name matching.
+
+Absent optional collections yield `status: absent`, `reason: not_ingested`.
+Malformed collections yield `status: refused` with an explicit reason and no
+observations, while existing valid tables remain visible. Reasons include:
+
+- `unapproved_source_hash_or_edition`, `missing_page_or_county_chapter`,
+  `county_page_context_mismatch`, `missing_bounded_passage`, `changed_bounded_passage`;
+- `invalid_narrative_envelope`, `invalid_narrative_refusal`, `invalid_narrative_status`,
+  `narrative_source_edition_mismatch`, `invalid_narrative_evidence`,
+  `narrative_passage_binding_mismatch`, `narrative_shape_or_source_binding_mismatch`;
+- `incompatible_county_block_schema`, `unresolved_county_identity`,
+  `narrative_county_mismatch`. Invalid nested types/serialization also carry a
+  diagnostic refusal rather than an empty accepted collection.
+
+Historical candidates remain empty with
+`ingested_oag_projection_lacks_required_source_hash_and_exact_evidence`. The
+actual existing `stalled_oag_findings` projection supplies report URL, title,
+page/paragraph, period and text, but not the pinned SHA-256/exact retained
+locator set needed by this contract. A name match alone cannot supply that
+missing authority. No historical record is hardcoded, no new fetcher is added,
+and existing table-row OAG behavior stays on its current path.
+
+## Evidence and remaining owner decisions
+
+The shipped tests exercise real parser → writer → service/API behavior with
+source-shaped extraction-boundary fixtures, decimal/date/type attacks,
+refusals, old schema2 blocks, source digest cache reuse/invalidation and metadata
+preservation. A separate retained full-PDF replay compares baseline and final
+parser records and financial/count projections without downloading sources.
+External Round14 receipts distinguish executed checks from prior evidence and
+record the PostgreSQL-only skips. SQLite fixtures are not production PostgreSQL
+persistence/concurrency acceptance.
+
+Source clarification for Nyamira's annual paid conflict, definitive historical
+identity and Siaya institution attribution remain external inputs. Root owns
+any separately authorized legacy cleanup, production provenance/API/rendered
+acceptance, language review and final Projects exposure decision. Keep #230 open.

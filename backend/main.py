@@ -4476,6 +4476,7 @@ async def get_county_comprehensive(
             stalled_block = build_stalled_projects_block(
                 _stored_meta.get("stalled_projects"),
                 oag_findings=stalled_oag_findings(audits, _extracted),
+                county_name=entity.canonical_name,
             )
 
             # --- Revenue ---

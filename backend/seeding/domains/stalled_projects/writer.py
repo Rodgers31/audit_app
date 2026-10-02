@@ -32,7 +32,7 @@ from typing import Any, Dict, List, Optional
 
 from services.county_identity import OFFICIAL_COUNTY_CODES, official_county_code
 
-from .cob_parser import MONEY_FIELDS, REPORTED_BY, normalise_county
+from .cob_parser import MONEY_FIELDS, REPORTED_BY, normalise_county, validate_bound_narratives
 
 logger = logging.getLogger(__name__)
 
@@ -259,7 +259,7 @@ def build_county_block(county: Dict[str, Any], edition: Dict[str, Any]) -> Dict[
             dict(t, total=_scrub_total(t.get("total")), rows=t.get("rows"))
             for t in tables
         ]
-    return {
+    block = {
         "schema": SCHEMA,
         "source": {
             "publisher": PUBLISHER,
@@ -293,6 +293,11 @@ def build_county_block(county: Dict[str, Any], edition: Dict[str, Any]) -> Dict[
         "reconciliation": reconciliation,
         "withheld_fields": withheld,
     }
+    if "narratives" in county:
+        block["narratives"] = validate_bound_narratives(
+            county["narratives"], edition, county.get("county")
+        )
+    return block
 
 
 def write(
@@ -323,6 +328,12 @@ def write(
             meta = {k: v for k, v in (entity.meta or {}).items() if not k.startswith(OWNED_PREFIX)}
             if county is not None:
                 block = build_county_block(county, edition)
+                previous = (entity.meta or {}).get(OWNED_PREFIX)
+                if isinstance(previous, dict) and previous.get("schema") == SCHEMA:
+                    # Retain later extension metadata, while replacing every
+                    # known edition-owned field (including optional narratives).
+                    known = set(block) | {"narratives"}
+                    block = {**{k: v for k, v in previous.items() if k not in known}, **block}
                 meta[OWNED_PREFIX] = block
                 unmatched.discard(name)
                 written += 1

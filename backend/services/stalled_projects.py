@@ -218,7 +218,10 @@ def _link(rows: List[dict], findings: List[dict]) -> Tuple[Dict[int, List[dict]]
 
 
 def build_stalled_projects_block(
-    stored: Any, oag_findings: Optional[List[Dict[str, Any]]] = None
+    stored: Any,
+    oag_findings: Optional[List[Dict[str, Any]]] = None,
+    *,
+    county_name: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Return the ``stalled_projects`` block for one county."""
     rows, edition = _stored_rows(stored)
@@ -253,6 +256,7 @@ def build_stalled_projects_block(
         "oag_findings": oag_only,
         "withheld": {"count": sum(withheld.values()), "by_reason": withheld},
     }
+    base["narratives"] = _narrative_projection(edition, county_name)
 
     if not published:
         if edition.get("tables"):
@@ -284,6 +288,52 @@ def build_stalled_projects_block(
         "reason": None,
         **base,
     }
+
+
+def _narrative_projection(edition: dict, county_name: Optional[str] = None) -> dict:
+    """Qualified observations shared by both table paths; never join or sum."""
+    from seeding.domains.stalled_projects.cob_parser import validate_bound_narratives
+
+    base = {
+        "schema_version": 1,
+        "observations": [],
+        "sources": {},
+        "evidence": {},
+        "historical_identity_candidates": [],
+        "historical_candidate_reason": "ingested_oag_projection_lacks_required_source_hash_and_exact_evidence",
+        "qualification": "Source observations only; no combined count, financial total or current audit verification.",
+    }
+    if "narratives" not in edition:
+        return dict(base, status="absent", reason="not_ingested")
+    if type(edition.get("schema")) is not int or edition.get("schema") != 2:
+        return dict(base, status="refused", reason="incompatible_county_block_schema")
+    county = None
+    if county_name is not None:
+        from services.county_identity import OFFICIAL_COUNTY_CODES, official_county_code
+
+        code = official_county_code(county_name)
+        if code is None:
+            return dict(base, status="refused", reason="unresolved_county_identity")
+        county = OFFICIAL_COUNTY_CODES[code]
+    collection = validate_bound_narratives(edition["narratives"], edition.get("source"), county)
+    if collection["status"] != "accepted":
+        return dict(base, status="refused", reason=collection["reason"])
+    corpus = collection["corpus"]
+    observations = []
+    for observation in corpus["observations"]:
+        scalars = {
+            key: measure["statements"][0]["value"] if measure["state"] == "stated" else None
+            for key, measure in observation["measures"].items()
+        }
+        observations.append(dict(observation, scalar_measures=scalars))
+    return dict(
+        base,
+        status="accepted",
+        reason=None,
+        observations=observations,
+        sources=corpus["sources"],
+        evidence=corpus["evidence"],
+    )
 
 
 __all__ = [
