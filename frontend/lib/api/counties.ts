@@ -85,8 +85,28 @@ const publishedAmount = (...candidates: Array<number | null | undefined>): numbe
   return undefined;
 };
 
-// Transform backend county data to frontend County type
-export const transformCountyData = (bc: BackendCountyResponse): County => {
+/** Required identity shared by the list, legacy detail and comprehensive detail.
+ * Reject the response as a whole: inventing a name or dropping one bad row
+ * would publish a plausible but incomplete county report. Keep route IDs
+ * verbatim; official county-code metadata uses a separate namespace.
+ */
+function assertCountyIdentity(value: unknown): asserts value is { id: string; name: string } {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('Invalid county response: expected a county object');
+  }
+  const county = value as Record<string, unknown>;
+  for (const field of ['id', 'name'] as const) {
+    if (typeof county[field] !== 'string' || county[field].trim().length === 0) {
+      throw new Error(`Invalid county response: ${field} must be a nonblank string`);
+    }
+  }
+}
+
+// Financial/provenance fields retain their existing transformations. This
+// boundary validates required identity, not completeness of financial coverage.
+export const transformCountyData = (value: unknown): County => {
+  assertCountyIdentity(value);
+  const bc = value as BackendCountyResponse;
   // Use real coordinates from backend; undefined if not provided (do not default to Nairobi)
   const coordinates: [number, number] | undefined = bc.coordinates || undefined;
   const budget = bc.financial_summary
@@ -191,8 +211,12 @@ export const transformCountyData = (bc: BackendCountyResponse): County => {
   };
 };
 
-// Get all counties with optional filtering
-export const getCounties = async (filters?: CountyFilters, signal?: AbortSignal): Promise<County[]> => {
+// Raw county list shared by transformed readers and the comparison's SSR/client
+// readers. Only identity is validated; each reader retains its financial schema.
+export const getCountyList = async <T extends { id: string; name: string } = BackendCountyResponse>(
+  filters?: CountyFilters,
+  signal?: AbortSignal
+): Promise<T[]> => {
   const queryParams: Record<string, any> = {};
 
   if (filters?.search) queryParams.search = filters.search;
@@ -207,15 +231,22 @@ export const getCounties = async (filters?: CountyFilters, signal?: AbortSignal)
   if (filters?.limit) queryParams.limit = filters.limit;
 
   const url = buildUrlWithParams(COUNTIES_ENDPOINTS.LIST, queryParams);
-  const response = await apiGet<BackendCountyResponse[]>(apiClient, url, signal);
+  const response = await apiGet<T[]>(apiClient, url, signal);
 
-  // Transform backend data to frontend County type
-  return response.data.map(transformCountyData);
+  if (!Array.isArray(response.data)) {
+    throw new Error('Invalid county response: expected a county list');
+  }
+  for (const county of response.data) assertCountyIdentity(county);
+  return response.data;
 };
+
+// Get all counties with optional filtering and the existing financial mapping.
+export const getCounties = async (filters?: CountyFilters, signal?: AbortSignal): Promise<County[]> =>
+  (await getCountyList(filters, signal)).map(transformCountyData);
 
 // Get single county by ID
 export const getCounty = async (id: string, signal?: AbortSignal): Promise<County> => {
-  const response = await apiGet<BackendCountyResponse>(apiClient, COUNTIES_ENDPOINTS.GET_BY_ID(id), signal);
+  const response = await apiGet<unknown>(apiClient, COUNTIES_ENDPOINTS.GET_BY_ID(id), signal);
   return transformCountyData(response.data);
 };
 
@@ -310,6 +341,7 @@ export const getCountyComprehensive = async (
   const base = COUNTIES_ENDPOINTS.COMPREHENSIVE(id);
   const url = fiscalYear ? buildUrlWithParams(base, { fiscal_year: fiscalYear }) : base;
   const response = await apiGet<CountyComprehensive>(apiClient, url, signal);
+  assertCountyIdentity(response.data);
   return response.data;
 };
 

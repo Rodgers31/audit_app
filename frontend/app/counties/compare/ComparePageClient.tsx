@@ -10,7 +10,7 @@
 
 import PageShell from '@/components/layout/PageShell';
 import ModelledDataNote from '@/components/ModelledDataNote';
-import api from '@/lib/api/axios';
+import { getCountyList } from '@/lib/api/counties';
 import { useLang } from '@/lib/i18n/LangProvider';
 import type { TranslationKey } from '@/lib/i18n/messages';
 import type { BudgetSource } from '@/types';
@@ -207,7 +207,7 @@ function CompareRow({ label, values, highlight, sublabel }: RowProps) {
 export function useCompareCounties() {
   return useQuery<CountySummary[]>({
     queryKey: compareCountiesKey(),
-    queryFn: async ({ signal }) => (await api.get<CountySummary[]>('/counties?limit=50', { signal })).data,
+    queryFn: ({ signal }) => getCountyList<CountySummary>({ limit: 50 }, signal),
     staleTime: SSR_HYDRATED_STALE_TIME_MS, // read from SSR state; see ./isr
   });
 }
@@ -304,7 +304,7 @@ function CompareContent() {
     return ['', ''];
   });
 
-  const { data: all, isLoading } = useCompareCounties();
+  const { data: all, isLoading, error, refetch } = useCompareCounties();
 
   const byId = useMemo(() => {
     const m: Record<string, CountySummary> = {};
@@ -351,7 +351,16 @@ function CompareContent() {
         </div>
       )}
 
-      {!isLoading && all && (
+      {error && (
+        <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-8 text-center space-y-3'>
+          <p role='alert'>{t('counties.error.title')}</p>
+          <button type='button' onClick={() => refetch()} className='rounded-lg bg-gov-forest text-white px-4 py-3'>
+            {t('counties.header.retry')}
+          </button>
+        </div>
+      )}
+
+      {!isLoading && !error && all && (
         <>
           <ComparePicker
             all={all}
