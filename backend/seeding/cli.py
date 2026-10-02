@@ -356,6 +356,11 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
 
                 if dry_run:
                     finished_at_dry = datetime.now(timezone.utc)
+                    # Keep the source/result receipts before rollback expires
+                    # the ORM job. Dry-run jobs must retain failure telemetry.
+                    dry_metadata = dict(job.meta or {})
+                    dry_status = job.status
+                    dry_errors = list(job.errors or [])
                     session.rollback()
                     logger.info(
                         "Dry run - rolled back all changes", extra={"domain": domain}
@@ -365,16 +370,11 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
                     # ran). Persist the final status in a separate session so
                     # the record doesn't stay orphaned in RUNNING state.
                     if job_id:
-                        final_status = (
-                            IngestionStatus.COMPLETED_WITH_ERRORS
-                            if result and result.errors
-                            else IngestionStatus.COMPLETED
-                        )
                         try:
                             with SessionLocal() as status_session:
                                 dry_job = status_session.get(IngestionJob, job_id)
                                 if dry_job:
-                                    dry_job.status = final_status
+                                    dry_job.status = dry_status
                                     dry_job.finished_at = finished_at_dry
                                     dry_job.items_processed = (
                                         result.items_processed if result else 0
@@ -385,7 +385,8 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
                                     dry_job.items_updated = (
                                         result.items_updated if result else 0
                                     )
-                                    dry_job.errors = result.errors if result else []
+                                    dry_job.errors = dry_errors
+                                    dry_job.meta = dry_metadata
                                     status_session.commit()
                         except Exception:  # pragma: no cover - best-effort
                             logger.warning(

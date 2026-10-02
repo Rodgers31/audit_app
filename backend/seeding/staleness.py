@@ -1018,6 +1018,24 @@ def check_ingestion_freshness(
                     f"the site is serving the previous seed's data.",
                 )
             )
+        elif domain == "national_gdp" and latest_modes - {"live"}:
+            # This domain has independent GDP and poverty checks. Older GDP
+            # live runs cannot conceal the latest poverty failure (or vice
+            # versa). PARTIAL retains last-valid rows, not necessarily a file.
+            reasons = sorted({
+                _job_text(j, "source_fallback_reason")
+                for j in latest_jobs if _job_text(j, "source_fallback_reason")
+            })
+            details = sorted({
+                _job_text(j, "source_detail")
+                for j in latest_jobs if _job_text(j, "source_detail")
+            })
+            findings.append(Finding(
+                WARN, f"{domain} ingestion",
+                "newest GDP/poverty source check is incomplete: "
+                + (", ".join(reasons) or "source unconfirmed")
+                + (f" — {'; '.join(details)}" if details else ""),
+            ))
         elif "live" not in modes and "partial" in modes:
             # Reached the publisher for a secondary series only. Not OK: the
             # figure this domain publishes did not move. See freshness.PARTIAL.
@@ -1318,6 +1336,14 @@ def hollow_run_findings(jobs: Iterable) -> List[Finding]:
                 )
             )
         elif mode == "partial":
+            if domain == "national_gdp":
+                findings.append(Finding(
+                    WARN, label,
+                    f"GDP/poverty source check incomplete (reason={reason or 'unrecorded'}); "
+                    "the unrefreshed series retains its previous rows. "
+                    + (_job_text(job, "source_detail") or ""),
+                ))
+                continue
             findings.append(
                 Finding(
                     WARN,

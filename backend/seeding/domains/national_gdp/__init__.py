@@ -27,6 +27,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from ...config import SeedingSettings
+from ... import freshness
 from ...http_client import create_http_client
 from ...registries import register_domain
 from ...types import DomainRunContext, DomainRunResult
@@ -368,10 +369,15 @@ def _observation_value(
 def run(
     session: Session, settings: SeedingSettings, context: DomainRunContext
 ) -> DomainRunResult:
+    # Direct handler callers and retries need the same per-run isolation as
+    # the CLI: an earlier live check cannot certify this attempt.
+    freshness.reset("national_gdp")
     started_at = datetime.now(timezone.utc)
     created = 0
     updated = 0
     errors: list[str] = []
+    metadata: dict = {}
+    gdp_failed = poverty_failed = False
 
     gdp_years = 0
     poverty_by_year: dict = {}
@@ -396,6 +402,14 @@ def run(
             )
             gdp_by_year = {}
             errors.append(f"GDP fetch failed: {exc}")
+            gdp_failed = True
+
+        metadata["gdp_source"] = dict(freshness.get("national_gdp"))
+        if gdp_failed:
+            metadata["gdp_source"] = {
+                "mode": freshness.REFUSED, "reason": "gdp_fetch_failed",
+                "detail": errors[-1] + "; keeping existing GDP rows",
+            }
 
         gdp_years = len(gdp_by_year)
         # Coverage is an observation year, not a publication date. Reuse
@@ -507,6 +521,24 @@ def run(
                 exc,
             )
             poverty_by_year = {}
+            poverty_failed = True
+            errors.append(f"Poverty fetch failed: {exc}")
+            metadata["poverty_source"] = {
+                "mode": freshness.REFUSED,
+                "reason": "poverty_fetch_failed",
+                "detail": f"{type(exc).__name__}: {exc}; keeping existing poverty rows",
+            }
+        else:
+            # A coherent empty response and a missing measure are observations
+            # of absence, not provider failures. No annual completeness floor.
+            metadata["poverty_source"] = {
+                "mode": freshness.LIVE,
+                "observed_years": sorted(poverty_by_year),
+                "detail": (
+                    "World Bank SI.POV.NAHC/SI.POV.GINI: "
+                    f"{len(poverty_by_year)} observed year(s)"
+                ),
+            }
 
         poverty_doc = (
             _ensure_poverty_source_document(session) if poverty_by_year else None
@@ -612,7 +644,35 @@ def run(
                     sorted(r.year for r in unsourced),
                 )
 
-        savepoint.commit()
+        if gdp_failed and poverty_failed:
+            # Neither source authorized a write. Undo a newly created GDP
+            # source scaffold too, so REFUSED really writes nothing.
+            savepoint.rollback()
+        else:
+            savepoint.commit()
+        # Record the combined source verdict only after the domain savepoint
+        # succeeds. A GDP live check cannot certify a failed poverty check.
+        gdp_source = metadata["gdp_source"]
+        detail = "; ".join(filter(None, [
+            gdp_source.get("detail"), metadata["poverty_source"].get("detail"),
+        ]))
+        if gdp_failed and poverty_failed:
+            freshness.mark_refused(
+                "national_gdp", reason="source_fetch_failed", detail=detail,
+            )
+        elif gdp_source["mode"] == freshness.FIXTURE:
+            freshness.mark_fixture(
+                "national_gdp", reason=gdp_source["reason"], detail=detail,
+            )
+        elif gdp_source["mode"] == freshness.LIVE and not poverty_failed:
+            freshness.mark_live("national_gdp", detail=detail)
+        else:
+            freshness.mark_partial(
+                "national_gdp",
+                reason=("poverty_fetch_failed" if poverty_failed
+                        else "gdp_source_unconfirmed"),
+                detail=detail,
+            )
 
     except Exception as exc:
         if savepoint is not None:
@@ -620,6 +680,9 @@ def run(
         created = updated = 0
         logger.exception("national_gdp seeding failed: %s", exc)
         errors.append(str(exc))
+        freshness.mark_refused(
+            "national_gdp", reason="domain_write_refused", detail=str(exc),
+        )
 
     processed = gdp_years + len(poverty_by_year)
     logger.info(
@@ -638,7 +701,7 @@ def run(
         items_updated=updated,
         dry_run=context.dry_run,
         errors=errors,
-        metadata={},
+        metadata=metadata,
     )
 
 
