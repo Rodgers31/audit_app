@@ -113,7 +113,23 @@ test.describe('Learn Page Accessibility', () => {
     await page.keyboard.press('Tab');
     await expect(page.getByRole('link', { name: 'Skip to main content' })).toBeFocused();
   });
-  // Strengthened heading-structure check requires one h1; the current Learn
-  // route has two. Preserve the original case name as a quarantine under #291.
-  test.fixme('learn page has proper headings structure', async () => {});
+  test('learn page has proper headings structure', async ({ page }) => {
+    // Learn currently keeps English copy in all three supported language modes.
+    // Check the real hierarchy without inventing unreviewed translations.
+    await page.goto('/learn');
+    for (const name of ['EN', 'SW', 'Aa']) {
+      const language = page.getByRole('radio', { name, exact: true });
+      await language.click();
+      await expect(language).toHaveAttribute('aria-checked', 'true');
+      await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText('Learning Hub');
+      await expect(page.getByRole('heading', { level: 2, name: 'Understand Kenya’s money, law & power' })).toBeVisible();
+      for (const name of ['The Constitution, as a book you can actually read', 'Keep learning', 'Popular questions', 'Ready to put your knowledge to use?']) {
+        await expect(page.getByRole('heading', { level: 2, name, exact: true })).toBeVisible();
+      }
+      await expect(page.getByRole('heading', { level: 3, name: 'Read the law that shapes every shilling' })).toBeVisible();
+      await expect(page.getByRole('heading', { level: 3, name: 'Civic quiz', exact: true })).toBeVisible();
+      await expect(page.getByRole('searchbox', { name: 'Search civic topics or the Constitution' })).toBeVisible();
+    }
+  });
 });
