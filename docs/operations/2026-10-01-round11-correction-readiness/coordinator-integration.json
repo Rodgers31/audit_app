@@ -1,0 +1,177 @@
+{
+  "schema": "round11_coordinator_integration/v1",
+  "prepared_date": "2026-10-01",
+  "reviewed_base_commit": "464231371825fdbf358e214ecc6d6f0de8168111",
+  "status": "LOCAL_HANDOFF_INTEGRATED_REVIEW_ONLY_NO_PRODUCTION_AUTHORITY",
+  "original_session4": {
+    "commit": "6bcbd1834e0659c11ce71568b7f214965bc68d3b",
+    "packet_index_path": "docs/operations/2026-10-01-round11-correction-readiness/packet-index.json",
+    "packet_index_sha256": "df327ade7a71290466ce18c8e4aef0fce32f87447b4b1ec0ff3a1f54e56934a7",
+    "readiness_envelope_sha256": "330b8a6bb05c20c342f8519f86ddd88cb7778ab1470a022ee6c66884245796c9",
+    "recorded_session3_status": "not_present_at_finalization;coordinator integration dependency explicitly retained",
+    "original_documents_rewritten": false
+  },
+  "session3_inputs": {
+    "commit": "94db7136196a7df7d05013cfbe3093456b906c8d",
+    "final_handoff": {
+      "external_path": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND11_SESSION_3_HANDOFF_2026-10-01.md",
+      "sha256": "609de2ec76d72d99c583597ab95204a6b841d56399959915888a4d4431cdbe1b"
+    },
+    "manifest": {
+      "path": "docs/operations/2026-10-01-round11-oag-catchup/manifest.json",
+      "sha256": "9388815ee8233d727558a2b47aef6bf3c4c6b6f1565dac22a4c8c10bbe9b6277"
+    },
+    "coverage_plan": {
+      "path": "docs/operations/2026-10-01-round11-oag-catchup/coverage-plan.csv",
+      "sha256": "ee4c2c4918d2ff7e75fdd21dd60c4b65fcc734c6279c1b7037ba6292fc6375bb"
+    },
+    "local_interface_accepted": true,
+    "production_baseline_refreshed": false
+  },
+  "deferred_sources": [
+    {
+      "execution_order": 1,
+      "label": "2023/2024 assemblies",
+      "fiscal_year": "2023/2024",
+      "audit_year": 2024,
+      "institution": "assemblies",
+      "inherited_production_source_document_id": 2540,
+      "source_url": "https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf",
+      "sha256": "683fa522bf11eaa2b0bc2a9eef51eadc3d664d9a512d3af63cb6e9479820f8a2",
+      "accepted_local_findings": 541,
+      "expected_new_coverage_cells": 47
+    },
+    {
+      "execution_order": 2,
+      "label": "2022/2023 executives",
+      "fiscal_year": "2022/2023",
+      "audit_year": 2023,
+      "institution": "executives",
+      "inherited_production_source_document_id": 2537,
+      "source_url": "https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf",
+      "sha256": "e873eb8a2f5b24366b4b847e529c832ef42d2aea02702a015597c6c406f9b953",
+      "accepted_local_findings": 1041,
+      "expected_new_coverage_cells": 47
+    },
+    {
+      "execution_order": 3,
+      "label": "2022/2023 assemblies",
+      "fiscal_year": "2022/2023",
+      "audit_year": 2023,
+      "institution": "assemblies",
+      "inherited_production_source_document_id": 2536,
+      "source_url": "https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf",
+      "sha256": "5c0ebf31a7cd6dc07558e55507b2b5228fb9a653e638a39abd72beffa46674cf",
+      "accepted_local_findings": 513,
+      "expected_new_coverage_cells": 47
+    },
+    {
+      "execution_order": 4,
+      "label": "2021/2022 executives",
+      "fiscal_year": "2021/2022",
+      "audit_year": 2022,
+      "institution": "executives",
+      "inherited_production_source_document_id": 2535,
+      "source_url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf",
+      "sha256": "0cc278f2ac0cc11be86b03dea6f7f7c97710c3f3903145716f403292967387fe",
+      "accepted_local_findings": 1082,
+      "expected_new_coverage_cells": 47
+    },
+    {
+      "execution_order": 5,
+      "label": "2021/2022 assemblies",
+      "fiscal_year": "2021/2022",
+      "audit_year": 2022,
+      "institution": "assemblies",
+      "inherited_production_source_document_id": 2534,
+      "source_url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf",
+      "sha256": "07db60417ab122a6082fea3ec4bf70b5038e7eb3554d1e9ca1f5fee0eae5d50c",
+      "accepted_local_findings": 532,
+      "expected_new_coverage_cells": 47
+    }
+  ],
+  "inherited_observation": {
+    "observed_at": "2026-10-01T03:15:02.595642+00:00",
+    "chicago_time": "2026-09-30 22:15:02 CDT",
+    "job_id": 3176,
+    "coverage_cells": 141,
+    "required_cells": 376,
+    "newer_county_findings": 2898,
+    "freshly_recaptured": false
+  },
+  "conditional_comparison": {
+    "new_findings": 3709,
+    "new_coverage_cells": 235,
+    "after_newer_findings": 6607,
+    "after_coverage_cells": 376,
+    "basis": "sum of exact accepted county/year/institution matrix rows; same source editions; fresh baseline required",
+    "global_audit_total": null,
+    "prospective_audit_or_extraction_ids": null
+  },
+  "preservation": {
+    "current_oag_source_document_ids": [
+      2542,
+      2541,
+      2539
+    ],
+    "protected_source_documents": [
+      1823,
+      2541
+    ],
+    "protected_population": {
+      "row_id": 79,
+      "value": 51202827,
+      "write_authorized": false
+    },
+    "protected_oag_text_correction": {
+      "issue": 379,
+      "audit_ids": [
+        5545,
+        5679,
+        5716
+      ],
+      "extraction_ids": [
+        6023,
+        6158,
+        6196
+      ],
+      "status": "separate exact-plan authorization; preserve before-state until then"
+    },
+    "current_source_backed_project_arrays": "Preserve all 47 arrays and every later companion metadata field; preservation does not certify disputed amounts.",
+    "public_county_route_ids": "Mombasa 047 and Nairobi 001 remain compatibility identifiers; official code metadata correction is separate.",
+    "source2392_reconciliation": {
+      "proposed_retirements": 335,
+      "proposed_revisions": 2,
+      "approved": false
+    },
+    "legacy_sources2395_2396": "Unreadable-page refusals remain separate; no acceptance stamp or guard removal."
+  },
+  "remaining_gates": [
+    "Owner verifies deployed code/schema/runtime settings and approves competing-writer freeze.",
+    "Full backup and isolated restore proof, complete fresh source/identity/reference recapture, exact plan and recovery review, then distinct owner authorization.",
+    "Prefer separately approved source2541 text correction before catch-up; otherwise recapture its complete exact plan after catch-up.",
+    "OAG/CPI corrections, publisher-only correction, then four county-code metadata cells are separately approved and serialized.",
+    "Actual post-code recapture and renewed exact cleanup forward/recovery authorization; projected after-state is insufficient.",
+    "Five-volume catch-up requires fresh source-byte verification, complete per-source identities and preservation, limits/resume/recovery, and deployed OCR/budget parity.",
+    "A domain=audits invocation is not an exact-five-source allowlist and can include national/legacy eligible sources; review actual execution scope.",
+    "Source/actor/authorization history for #347, account access for #378, shared signing configuration and final Actions approval remain outstanding.",
+    "Successful full validated seed, signed API invalidation, exact frontend path acknowledgement and actual first source/API/browser observation are required for release acceptance."
+  ],
+  "acceptance": {
+    "fresh_production_capture": false,
+    "production_correction_authorized": false,
+    "production_correction_executed": false,
+    "live_catchup_executed": false,
+    "full_validation": false,
+    "signed_refresh": false,
+    "first_rendered_observation": false,
+    "actions_enabled_or_dispatched": false,
+    "original_production_acceptance_issues_closable": false
+  },
+  "evidence_limits": [
+    "This addendum integrates the completed local handoff and unchanged committed source manifest. It is not a new execution plan or production approval.",
+    "The original Session4 statement that Session3 was absent when prepared remains true as a dated worker receipt; its local coordinator dependency is resolved here.",
+    "Conditional 6607 findings concern the newer county subset, not a global audit total or allocated audit/extraction IDs.",
+    "Cached PDF/source receipts and earlier production captures remain dated evidence; this coordinator check did not re-fetch or access production."
+  ]
+}
