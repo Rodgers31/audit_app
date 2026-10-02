@@ -28,9 +28,11 @@ interface CountyShapeProps {
   fill: string;
   hoverFill: string;
   isActive: boolean;
+  isExpanded: boolean;
   onEnter: (geoName: string, county: County | undefined, e?: React.MouseEvent) => void;
   onLeave: () => void;
   onSelect: (county: County) => void;
+  onKeyboardSelect: (county: County, path: SVGPathElement) => void;
 }
 
 /**
@@ -49,9 +51,11 @@ const CountyShape = memo(function CountyShape({
   fill,
   hoverFill,
   isActive,
+  isExpanded,
   onEnter,
   onLeave,
   onSelect,
+  onKeyboardSelect,
 }: CountyShapeProps) {
   return (
     <g
@@ -63,6 +67,11 @@ const CountyShape = memo(function CountyShape({
       }}>
       <Geography
         geography={geo}
+        className='home-county-shape'
+        role={county ? 'button' : undefined}
+        aria-label={county?.name}
+        aria-expanded={county ? isExpanded : undefined}
+        tabIndex={county ? 0 : -1}
         onMouseEnter={(e) => onEnter(geoName, county, e as any)}
         // Anchor is pinned at the cursor's ENTRY point to
         // the county and does not follow mousemove. If we
@@ -72,6 +81,11 @@ const CountyShape = memo(function CountyShape({
         // lets the user slide straight into the card.
         onMouseLeave={onLeave}
         onClick={() => county && onSelect(county)}
+        onKeyDown={(e) => {
+          if (!county || (e.key !== 'Enter' && e.key !== ' ')) return;
+          e.preventDefault();
+          if (!e.repeat) onKeyboardSelect(county, e.currentTarget);
+        }}
         style={{
           default: {
             fill,
@@ -138,6 +152,11 @@ export default function InteractiveKenyaMap({
   const [showTooltip, setShowTooltip] = useState(false);
   const [visualMode, setVisualMode] = useState<'focus' | 'overview'>('overview');
   const [isMapHovered, setIsMapHovered] = useState(false);
+  const [isMapFocused, setIsMapFocused] = useState(false);
+  const [keyboardTooltip, setKeyboardTooltip] = useState(false);
+  const [keyboardFocusRequest, setKeyboardFocusRequest] = useState(0);
+  const keyboardTooltipRef = useRef(false);
+  const keyboardOriginRef = useRef<SVGPathElement | null>(null);
   // Track coarse-pointer / touch state as React state so tooltip re-renders
   // pick up the close button when the user resizes across the breakpoint.
   const [isTouch, setIsTouch] = useState(false);
@@ -256,6 +275,7 @@ export default function InteractiveKenyaMap({
    * so exhaustive deps cost nothing and stale-closure hazards are out. */
   const handleCountyMouseEnter = useCallback(
     (countyName: string, county: County | undefined, e?: React.MouseEvent) => {
+      if (keyboardTooltipRef.current) return;
       if (hideTimeoutRef.current) {
         clearTimeout(hideTimeoutRef.current);
         hideTimeoutRef.current = null;
@@ -276,6 +296,7 @@ export default function InteractiveKenyaMap({
     !!window.matchMedia?.('(pointer: coarse)').matches;
 
   const handleCountyMouseLeave = useCallback(() => {
+    if (keyboardTooltipRef.current) return;
     // On touch the tooltip is user-dismissed (via the close button or
     // by tapping another county). Skipping the auto-hide linger gives
     // the user time to read the content — previously the tooltip would
@@ -310,6 +331,7 @@ export default function InteractiveKenyaMap({
     }
   };
   const handleOverlayMouseLeave = () => {
+    if (keyboardTooltipRef.current) return;
     // See handleCountyMouseLeave — on touch the tooltip stays open until
     // the user taps the close button or another county.
     if (isTouchNow()) return;
@@ -324,11 +346,11 @@ export default function InteractiveKenyaMap({
     }, 1200);
   };
 
-  /** Explicit tooltip dismiss, triggered by the close button on touch
-   * devices. Clears hover-state + tooltip visibility but leaves
+  /** Explicit tooltip dismiss for touch and keyboard users. Clears
+   * hover-state + tooltip visibility but leaves
    * selectedCounty alone so the panel and pill still reflect what was
    * tapped. */
-  const handleTooltipClose = () => {
+  const handleTooltipClose = (restoreFocus = true) => {
     if (hideTimeoutRef.current) {
       clearTimeout(hideTimeoutRef.current);
       hideTimeoutRef.current = null;
@@ -338,6 +360,12 @@ export default function InteractiveKenyaMap({
     setHoveredAnchor(null);
     setShowTooltip(false);
     if (onCountyHover) onCountyHover(null);
+    const returnToOrigin = keyboardTooltipRef.current && restoreFocus;
+    keyboardTooltipRef.current = false;
+    setKeyboardTooltip(false);
+    if (returnToOrigin) {
+      keyboardOriginRef.current?.focus({ preventScroll: true });
+    }
   };
 
   /* ── auto-rotate ──
@@ -346,7 +374,7 @@ export default function InteractiveKenyaMap({
    * phone was a major INP contributor. Touch users drive the panel by
    * tapping counties instead. Also disabled under prefers-reduced-motion. */
   useEffect(() => {
-    if (selectedCounty || isInteractingWithDetails || isMapHovered || !counties?.length) return;
+    if (selectedCounty || isInteractingWithDetails || isMapHovered || isMapFocused || !counties?.length) return;
     if (isTouch) return;
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
     const id = setInterval(() => {
@@ -357,6 +385,7 @@ export default function InteractiveKenyaMap({
     selectedCounty,
     isInteractingWithDetails,
     isMapHovered,
+    isMapFocused,
     currentCountyIndex,
     onCountyIndexChange,
     counties,
@@ -373,11 +402,40 @@ export default function InteractiveKenyaMap({
   /* ── derived ── */
   const handleCountyClick = useCallback(
     (county: County) => {
+      if (keyboardTooltipRef.current) {
+        keyboardTooltipRef.current = false;
+        setKeyboardTooltip(false);
+        setHoveredAnchor(null);
+      }
+      // Pointer focus can blur a keyboard card before this click arrives.
+      // Selection must open the selected county even when hover was suppressed.
+      setHoveredCounty(county.name);
+      setShowTooltip(true);
+      onCountyHover?.(county);
       onCountySelect(county);
       const idx = (countiesRef.current ?? []).findIndex((c) => c.id === county.id);
       if (idx >= 0) onCountyIndexChange(idx);
     },
-    [onCountySelect, onCountyIndexChange]
+    [onCountySelect, onCountyIndexChange, onCountyHover]
+  );
+
+  const handleKeyboardSelect = useCallback(
+    (county: County, path: SVGPathElement) => {
+      handleCountyClick(county);
+      if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
+      keyboardOriginRef.current = path;
+      keyboardTooltipRef.current = true;
+      setKeyboardTooltip(true);
+      // AnimatePresence may still be exiting the same county's card. A new
+      // request also focuses that retained DOM node when it is reopened.
+      setKeyboardFocusRequest((request) => request + 1);
+      setHoveredCounty(county.name);
+      setHoveredAnchor(null);
+      setShowTooltip(true);
+      onCountyHover?.(county);
+    },
+    [handleCountyClick, onCountyHover]
   );
 
   /* Resolve geo name → County once per county-data change and cache it.
@@ -415,7 +473,19 @@ export default function InteractiveKenyaMap({
       className={`relative w-full h-full flex flex-col ${className}`}
       style={{ minHeight: '620px' }}
       onMouseEnter={() => setIsMapHovered(true)}
-      onMouseLeave={() => setIsMapHovered(false)}>
+      onMouseLeave={() => setIsMapHovered(false)}
+      onFocusCapture={() => setIsMapFocused(true)}
+      onBlurCapture={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) setIsMapFocused(false);
+      }}>
+      <style jsx global>{`
+        .home-county-shape:focus-visible {
+          outline: 2px solid #0f1a12 !important;
+          outline-offset: 3px;
+          stroke: #fff !important;
+          stroke-width: 3px !important;
+        }
+      `}</style>
       {/* ═══════════ Header Bar ═══════════ */}
       <div className='flex flex-wrap items-center justify-between gap-3 mb-3'>
         {/* Title */}
@@ -475,7 +545,7 @@ export default function InteractiveKenyaMap({
       <div
         ref={mapContainerRef}
         className='relative w-full flex-1 rounded-xl overflow-hidden border border-white/30'
-        role="application"
+        role="group"
         aria-label={t('home.map.aria_label')}
         style={{ minHeight: 560 }}>
         {/* Subtle radial vignette overlay */}
@@ -547,7 +617,10 @@ export default function InteractiveKenyaMap({
                   geo.properties?.NAME ||
                   geo.properties?.name ||
                   '';
-                const county = resolveCounty(geoCountyName);
+                // Empty geography names must not hit the matcher's substring
+                // fallback (every string includes the empty string).
+                const matchedCounty = geoCountyName.trim() ? resolveCounty(geoCountyName) : undefined;
+                const county = matchedCounty?.name?.trim() ? matchedCounty : undefined;
                 // The auto-rotate county only counts as "active" (scale-up +
                 // glow + thick stroke) when nothing else is taking focus.
                 // Hovering any county suppresses it so we never have two
@@ -578,9 +651,11 @@ export default function InteractiveKenyaMap({
                     })}
                     hoverFill={getCountyHoverFill(county)}
                     isActive={isActive}
+                    isExpanded={showTooltip && hoveredCounty != null && resolveCounty(hoveredCounty)?.id === county?.id}
                     onEnter={handleCountyMouseEnter}
                     onLeave={handleCountyMouseLeave}
                     onSelect={handleCountyClick}
+                    onKeyboardSelect={handleKeyboardSelect}
                   />
                 );
               })
@@ -604,17 +679,20 @@ export default function InteractiveKenyaMap({
                   onMouseEnter={handleOverlayMouseEnter}
                   onMouseLeave={handleOverlayMouseLeave}
                   onCountyClick={handleCountyClick}
+                  focusOnOpen={keyboardTooltip}
+                  focusRequest={keyboardFocusRequest}
+                  onKeyboardDismiss={() => handleTooltipClose()}
+                  onFocusLeave={() => {
+                    if (keyboardTooltipRef.current) handleTooltipClose(false);
+                  }}
                   // Desktop hover only: position the card at the cursor
                   // so the user can slide straight up into it. Omitting
                   // the prop on touch falls back to the center-top
                   // placement where the fixed close button is reachable.
                   anchor={!isTouch && hoveredAnchor ? hoveredAnchor : undefined}
-                  // Only show the close button on coarse-pointer devices.
-                  // Desktop users already have hover-dismiss, and a close
-                  // button there would just be noise. `isTouch` is tracked
-                  // as state so window-resize across breakpoints updates
-                  // the UI.
-                  onClose={isTouch ? handleTooltipClose : undefined}
+                  // Pointer-only desktop hover keeps its existing appearance.
+                  // Touch and keyboard cards need an explicit close control.
+                  onClose={isTouch || keyboardTooltip ? () => handleTooltipClose() : undefined}
                 />
               ) : null;
             })()}

@@ -16,6 +16,7 @@ import {
   X,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useEffect, useRef } from 'react';
 import { countyDebtRatio, countyFundingGap } from './MapUtilities';
 
 interface MapTooltipProps {
@@ -24,9 +25,12 @@ interface MapTooltipProps {
   onMouseLeave: () => void;
   onCountyClick: (county: County) => void;
   /** When provided, renders an explicit close (X) button in the tooltip
-   * corner. Used on touch devices where auto-dismiss-on-mouseleave would
-   * close the tooltip before the user has time to read it. */
+   * corner. Touch and keyboard cards persist until dismissed. */
   onClose?: () => void;
+  focusOnOpen?: boolean;
+  focusRequest?: number;
+  onKeyboardDismiss?: () => void;
+  onFocusLeave?: () => void;
   /** Cursor (or county centroid) anchor, in map-container local
    * coordinates. When set, the tooltip positions ITSELF just above/
    * beside the anchor — the user can slide the cursor up into the card
@@ -143,8 +147,16 @@ export default function MapTooltip({
   onMouseLeave,
   onCountyClick,
   onClose,
+  focusOnOpen = false,
+  focusRequest = 0,
+  onKeyboardDismiss,
+  onFocusLeave,
   anchor,
 }: MapTooltipProps) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (focusOnOpen) cardRef.current?.focus({ preventScroll: true });
+  }, [focusOnOpen, focusRequest, county.id]);
   const status = county.auditStatus || 'pending';
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
 
@@ -191,8 +203,8 @@ export default function MapTooltip({
       style={positionStyle}
       className={
         anchored
-          ? 'absolute z-50'
-          : 'absolute z-50 top-[18%] left-1/2'
+          ? 'absolute z-50 w-72 max-w-[calc(100%-2rem)]'
+          : 'absolute z-50 top-[18%] left-1/2 w-72 max-w-[calc(100%-2rem)]'
       }>
       {/* Invisible hit-area so mouse doesn't lose hover in the gap.
           Wider than TIP_GAP by design: the card is "easy to catch"
@@ -209,13 +221,30 @@ export default function MapTooltip({
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
         onClick={() => onCountyClick(county)}
-        // Width caps at 18rem on wide screens but shrinks to leave 1rem
-        // of viewport margin on either side so the tooltip never clips
-        // off the right edge on mobile. Content inside uses truncate /
+        ref={cardRef}
+        role='region'
+        aria-label={county.name}
+        tabIndex={-1}
+        onKeyDown={(e) => {
+          // The first Space down activates the county and moves focus here;
+          // its held-key repeats must not start scrolling the page.
+          if (focusOnOpen && e.key === ' ' && e.repeat) e.preventDefault();
+          if (e.key === 'Escape' && onKeyboardDismiss) {
+            e.preventDefault();
+            e.stopPropagation();
+            onKeyboardDismiss();
+          }
+        }}
+        onBlur={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget)) onFocusLeave?.();
+        }}
+        // The wrapper caps width at 18rem and leaves 1rem of MAP-container
+        // margin on each side; viewport width alone can exceed this clipped
+        // container on mobile. Content inside uses truncate /
         // min-w-0 so labels reflow instead of overflowing the card.
         // `overflow-hidden` clips the status-stripe to the rounded-xl
         // corners so the accent doesn't square off the top edge.
-        className='relative w-[min(18rem,calc(100vw-2rem))] rounded-xl bg-gradient-to-br from-white via-white to-gov-sand/30 dark:from-surface-elevated dark:via-surface-base dark:to-surface-elevated backdrop-blur-xl border border-white/60 dark:border-neutral-border shadow-[0_10px_40px_rgba(15,23,42,0.14)] overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-[0_14px_48px_rgba(15,23,42,0.20)] hover:-translate-y-0.5'>
+        className='relative w-full rounded-xl bg-gradient-to-br from-white via-white to-gov-sand/30 dark:from-surface-elevated dark:via-surface-base dark:to-surface-elevated backdrop-blur-xl border border-white/60 dark:border-neutral-border shadow-[0_10px_40px_rgba(15,23,42,0.14)] overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-[0_14px_48px_rgba(15,23,42,0.20)] hover:-translate-y-0.5'>
         {/* ── Status-colour stripe — visual cue for audit state before
             the reader parses the chip. Pending = gray (neutral). */}
         <div className={`h-1 w-full ${cfg.stripe}`} />
