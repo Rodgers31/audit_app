@@ -842,3 +842,43 @@ def test_commit_rolls_back_allocated_context_changed_by_updates(
         )
     assert tool.encoded(inventory(clone)) == tool.encoded(before)
     assert intent.exists() and not Path(str(intent) + ".resolved.json").exists()
+
+
+@pytest.mark.parametrize("damage", ["omitted", "replaced"])
+@pytest.mark.parametrize("commit", [False, True])
+def test_rehashed_recovery_cannot_discard_reviewed_shared_source_context(
+    clone, tmp_path, damage, commit
+):
+    _, receipt = apply(clone, tmp_path)
+    source_id = receipt["plan"]["original_sources"][0]["id"]
+    source = clone[1]["source_documents"]
+    with clone[0].begin() as c:
+        c.execute(
+            update(source).where(source.c.id == source_id).values(
+                title="synthetic intervening source title"
+            )
+        )
+    before = inventory(clone)
+    # The intact receipt detects this drift. Rehashing a replacement receipt
+    # must not make the manifest's original shared-source requirements optional.
+    with pytest.raises(ValueError, match="source drift"):
+        tool.run(
+            clone[0], MANIFEST, clone[2], recover_receipt=receipt,
+            expected_sha256=tool.digest(receipt),
+        )
+    if damage == "omitted":
+        receipt["plan"]["original_sources"] = []
+    else:
+        receipt["plan"]["original_sources"][0] = next(
+            row for row in before["source_documents"] if row["id"] == source_id
+        )
+    receipt["plan_sha256"] = tool.digest(receipt["plan"])
+    intent = tmp_path / "rehashed-inverse.json"
+    with pytest.raises(ValueError):
+        tool.run(
+            clone[0], MANIFEST, clone[2], recover_receipt=receipt,
+            expected_sha256=tool.digest(receipt), commit=commit,
+            receipt_path=intent,
+        )
+    assert tool.encoded(inventory(clone)) == tool.encoded(before)
+    assert not intent.exists()

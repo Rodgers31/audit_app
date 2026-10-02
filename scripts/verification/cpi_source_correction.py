@@ -482,6 +482,17 @@ def recover(connection, tables, manifest, receipt, *, commit, receipt_path):
     for row in receipt["after"]:
         assert_exact_identity(connection, tables["economic_indicators"], row)
     candidates(connection, tables, manifest)
+    # Recovery must retain the reviewed shared-source scope too. A digest
+    # supplied alongside an edited receipt cannot replace its source authority.
+    originals = plan.get("original_sources")
+    if not isinstance(originals, list) or encoded(
+        [row.get("id") if isinstance(row, dict) else None for row in originals]
+    ) != encoded(manifest["unchanged_sources"]):
+        raise ValueError("recovery original shared source scope mismatch")
+    for actual, expected in zip(
+        originals, manifest["before_evidence"]["sources"], strict=True
+    ):
+        subset_matches(actual, expected)
     assert_original_context(connection, tables, plan)
     # Do not trust a caller-supplied before-image, even with a caller-supplied digest.
     for actual, u in zip(plan["before"], manifest["updates"], strict=True):
