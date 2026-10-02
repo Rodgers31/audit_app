@@ -32,6 +32,10 @@
  *   3. THE HAZARD the fix creates — hydrating server HTML (rendered without a
  *      query) in a browser whose URL has one.
  *
+ * Round17 (#291) aligns normalization with the original browser contract:
+ * an out-of-range page clamps to the last page. The added normalization and
+ * simultaneous-navigation cases were seen red before their respective fixes.
+ *
  * `useSearchParams` is mocked because the real one needs Next's app-router
  * context. The static-prerender mock throws an error carrying the same
  * `digest` Next's `BailoutToCSRError` carries; that it reproduces the real
@@ -125,6 +129,10 @@ jest.mock('@/lib/react-query', () => ({
   useCountyFiscalYears: () => ({ data: undefined, isLoading: false, error: null }),
 }));
 
+// Freshness is an independent API-backed widget; pagination fixtures must not
+// start unrelated HTTP reads or query retry timers while rendering the page.
+jest.mock('@/components/DataFreshnessBadge', () => ({ __esModule: true, default: () => null }));
+
 // eslint-disable-next-line import/first
 import CountiesPageClient from '@/app/counties/CountiesPageClient';
 
@@ -177,6 +185,7 @@ function pageButton(n: number): HTMLElement {
 }
 
 beforeEach(() => {
+  (global as unknown as { __COUNTIES__: County[] }).__COUNTIES__ = COUNTIES;
   mockNavigation.staticPrerender = false;
   mockNavigation.replace.mockClear();
   mockNavigation.push.mockClear();
@@ -186,7 +195,7 @@ beforeEach(() => {
 
 /* ── 1. regression guards: the URL state as it already works ────────── */
 
-describe('/counties URL state — regression guards (green before and after the fix)', () => {
+describe('/counties URL state — normalization and regression guards', () => {
   it('opens on page 1 when the URL carries no query', () => {
     renderExplorer();
     expect(rankedNames()).toEqual(PAGE_1);
@@ -204,14 +213,67 @@ describe('/counties URL state — regression guards (green before and after the 
     expect(rankedNames()).toEqual(NAMES);
   });
 
-  it('sends an out-of-range ?p= back to page 1 and cleans the URL', () => {
-    // Not "clamps to the last page", whatever the render-time clamp's comment
-    // says: the empty-page effect sees pageFromUrl > totalPages and resets.
-    // Pinned as it behaves, because that is what readers get today.
-    goTo('/counties?p=99');
+  it('clamps an out-of-range ?p= to the last page and preserves other query parameters', () => {
+    goTo('/counties?p=99&from=test');
     renderExplorer();
-    expect(rankedNames()).toEqual(PAGE_1);
-    expect(mockNavigation.replace).toHaveBeenLastCalledWith('/counties', { scroll: false });
+    expect(rankedNames()).toEqual(PAGE_3);
+    expect(mockNavigation.replace).toHaveBeenLastCalledWith('/counties?p=3&from=test', { scroll: false });
+    expect(window.location.search).toBe('?p=3&from=test');
+  });
+
+  it('clamps to the last remaining page when a new county list has only two pages', () => {
+    goTo('/counties?p=3');
+    const { rerender } = renderExplorer();
+    (global as unknown as { __COUNTIES__: County[] }).__COUNTIES__ = COUNTIES.slice(0, 15);
+    rerender(<React.StrictMode><Page client={newClient()} /></React.StrictMode>);
+    expect(rankedNames()).toEqual(NAMES.slice(10, 15));
+    expect(window.location.search).toBe('?p=2');
+  });
+
+  it.each([1, 2])('preserves a new valid page %s when navigation and a smaller list arrive together', (next) => {
+    goTo('/counties?p=3');
+    const { rerender } = renderExplorer();
+    // Next navigation updates searchParams without a popstate. Its sync
+    // effect and the smaller list's normalization effect share this commit.
+    goTo(`/counties?p=${next}&from=navigation`);
+    (global as unknown as { __COUNTIES__: County[] }).__COUNTIES__ = COUNTIES.slice(0, 15);
+    rerender(<React.StrictMode><Page client={newClient()} /></React.StrictMode>);
+    expect(rankedNames()).toEqual(NAMES.slice((next - 1) * 10, Math.min(next * 10, 15)));
+    expect(window.location.search).toBe(`?p=${next}&from=navigation`);
+    expect(mockNavigation.replace).not.toHaveBeenCalled();
+  });
+
+  it('preserves a new View All navigation when a smaller list arrives in the same commit', () => {
+    goTo('/counties?p=3');
+    const { rerender } = renderExplorer();
+    goTo('/counties?view=all&from=navigation');
+    (global as unknown as { __COUNTIES__: County[] }).__COUNTIES__ = COUNTIES.slice(0, 15);
+    rerender(<React.StrictMode><Page client={newClient()} /></React.StrictMode>);
+    expect(rankedNames()).toEqual(NAMES.slice(0, 15));
+    expect(window.location.search).toBe('?view=all&from=navigation');
+    expect(mockNavigation.replace).not.toHaveBeenCalled();
+  });
+
+  it('keeps the requested page while search has zero matches, then restores it when cleared', () => {
+    goTo('/counties?p=3');
+    renderExplorer();
+    const search = screen.getByRole('searchbox', { name: 'Search County' });
+    fireEvent.change(search, { target: { value: 'no-such-county' } });
+    expect(rankedNames()).toEqual([]);
+    expect(window.location.search).toBe('?p=3');
+    expect(mockNavigation.replace).not.toHaveBeenCalled();
+    fireEvent.change(search, { target: { value: '' } });
+    expect(rankedNames()).toEqual(PAGE_3);
+  });
+
+  it('does not normalize an irrelevant page in View All mode', () => {
+    goTo('/counties?view=all&p=99');
+    renderExplorer();
+    expect(rankedNames()).toEqual(NAMES);
+    expect(mockNavigation.replace).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: /show paginated/i }));
+    expect(rankedNames()).toEqual(PAGE_3);
+    expect(window.location.search).toBe('?p=3');
   });
 
   it('writes ?p=N with router.replace when a page is picked, and shows that page', () => {
@@ -267,7 +329,7 @@ describe('/counties URL state — regression guards (green before and after the 
     expect(rankedNames()).toEqual(PAGE_1);
   });
 
-  it('drops back to page 1 when a filter leaves the current page empty', () => {
+  it('normalizes to page 1 when search leaves only one page of results', () => {
     goTo('/counties?p=3');
     renderExplorer();
     expect(rankedNames()).toEqual(PAGE_3);

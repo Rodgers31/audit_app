@@ -7,7 +7,7 @@
  * useRouter, local state, Suspense).
  */
 import { Metadata } from 'next';
-import api from '@/lib/api/axios';
+import { getCountyList } from '@/lib/api/counties';
 import { getQueryClient } from '@/lib/react-query/getQueryClient';
 import { prefetchWithTimeout } from '@/lib/react-query/prefetchWithTimeout';
 import { compareCountiesKey } from '@/lib/react-query/useCounties';
@@ -48,7 +48,7 @@ export default async function ComparePage() {
           // Shared factory, not a literal: the client hook and the Suspense
           // fallback that reserves its space both read this exact key.
           queryKey: compareCountiesKey(),
-          queryFn: async ({ signal }) => (await api.get('/counties?limit=50', { signal })).data,
+          queryFn: ({ signal }) => getCountyList({ limit: 50 }, signal),
         }),
       ]),
       SSR_TIMEOUT_MS

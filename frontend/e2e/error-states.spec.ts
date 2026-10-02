@@ -61,10 +61,23 @@ test.describe('Error States - Invalid Data', () => {
     await countyResponse(page, r => r.fulfill({ contentType: 'application/json', body: 'INVALID JSON {' }));
     await expect(page.getByText(countyError).first()).toBeVisible();
   });
-  // A response lacking County.name reaches the current list's localeCompare
-  // and renders the React error boundary. Exact invalid-schema case retained
-  // under #291 for coordinator tracking; never count it as a successful read.
-  test.fixme('handles missing required fields in API response', async () => {});
+  test('handles missing required fields in API response', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', e => errors.push(e.message));
+    await countyResponse(page, async route => {
+      const response = await route.fetch();
+      expect(response.status()).toBe(200);
+      const counties = await response.json();
+      expect(counties).toHaveLength(47);
+      delete counties[0].name;
+      await route.fulfill({ json: counties });
+    });
+    await expect(page.getByText(countyError).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: /Try Again|Retry/i })).toBeVisible();
+    await expect(page.locator('table tbody tr')).toHaveCount(0);
+    await expect(page.getByRole('banner')).toBeVisible();
+    expect(errors).toEqual([]);
+  });
   test('handles negative or invalid numeric values', async ({ page, request }) => {
     const res = await request.get('/api/v1/counties/001'); expect(res.ok()).toBe(true);
     const county = await res.json();

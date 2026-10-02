@@ -138,7 +138,7 @@ export default function LearnHero({ onSearchSubmit, onArticleSelect }: LearnHero
             <span className='truncate'>Civic learning · plain-language explainers</span>
           </motion.div>
 
-          <motion.h1
+          <motion.h2
             id='learn-hero-heading'
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
@@ -148,7 +148,7 @@ export default function LearnHero({ onSearchSubmit, onArticleSelect }: LearnHero
             <span className='block text-gov-gold'>
               money, law &amp; power
             </span>
-          </motion.h1>
+          </motion.h2>
 
           <motion.p
             initial={{ opacity: 0, y: 18 }}

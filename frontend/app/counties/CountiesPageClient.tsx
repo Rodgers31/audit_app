@@ -1212,14 +1212,17 @@ function CountyRankingsTable({
     [showAll, pathname, router]
   );
 
-  // If the filter changes and the current page no longer has rows,
-  // drop back to page 1. Do NOT write the URL on mount — that would
-  // strip `?p=N` during back-navigation from the detail page.
+  // Normalize an out-of-range URL to the same last page the table renders,
+  // including when filters or a new period shrink the list. Leave valid
+  // pages, View All and empty results alone so navigation state survives.
   useEffect(() => {
-    if (pageFromUrl > totalPages && totalPages >= 1) {
-      setPage(1);
+    // SearchParamsChange may be syncing a new navigation in this same commit.
+    // Do not let the old local mirrors overwrite its newly requested URL.
+    if (pageFromUrl !== readPageFromUrl() || showAll !== readShowAllFromUrl()) return;
+    if (!showAll && pageFromUrl > totalPages && totalPages >= 1) {
+      setPage(page);
     }
-  }, [totalPages, pageFromUrl, setPage]);
+  }, [totalPages, pageFromUrl, page, showAll, setPage, readPageFromUrl, readShowAllFromUrl]);
 
   const pageNums = useMemo(() => {
     const nums: number[] = [];

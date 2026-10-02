@@ -130,13 +130,68 @@ test.describe('Chart Accessibility', () => {
     await expect(page.getByRole('heading', { name: 'The FY 2025/26 budget, visualised', exact: true })).toBeVisible();
     await expect(page.getByText('Interest on debt', { exact: true }).last().locator('../..')).toContainText('KES 30B');
   });
-  // Current cost chart has no accessible application role or keyboard
-  // handler. Preserve these original accessibility contracts under #291.
-  test.fixme('charts have ARIA labels', async () => {});
-  // No chart-to-table toggle exists. The county rankings table is exercised by
-  // the original county cases; do not certify an absent feature. #291.
-  test.fixme('chart data is available in table format', async () => {});
-  test.fixme('charts support keyboard navigation', async () => {});
+  test('charts have ARIA labels', async ({ page }) => {
+    await registerApiMocks(page); await page.goto('/debt');
+    const figure = page.getByRole('figure', { name: 'The cost of debt over time', exact: true });
+    await expect(figure).toBeVisible();
+    await expect(figure).toHaveAccessibleDescription(/Annual debt service.*share of revenue.*Read chart data/);
+    await expect(figure.getByRole('img', { name: 'Debt service and service / revenue by fiscal year', exact: true })).toBeVisible();
+  });
+  test('chart data is available in table format', async ({ page }) => {
+    await registerApiMocks(page); await page.goto('/debt');
+    const figure = page.getByRole('figure', { name: 'The cost of debt over time', exact: true });
+    await figure.locator('summary').click();
+    const table = figure.getByRole('table', { name: 'Debt cost observations by fiscal year', exact: true });
+    await expect(table).toBeVisible();
+    await expect(table.getByRole('columnheader')).toHaveText(['Fiscal year', 'Debt service (KES)', 'Revenue (KES)', 'Service / revenue (%)']);
+    // Independently supplied fixture API values, not values derived from the UI.
+    await expect(table.locator('tbody tr')).toHaveText([
+      'FY 2024/2550,000,000,000100,000,000,00050.0%',
+      'FY 2025/2650,000,000,000100,000,000,00050.0%',
+    ]);
+  });
+  test('charts support keyboard navigation', async ({ page }) => {
+    await registerApiMocks(page); await page.goto('/debt');
+    const figure = page.getByRole('figure', { name: 'The cost of debt over time', exact: true });
+    const summary = figure.locator('summary');
+    await summary.focus();
+    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('Tab');
+    await expect(summary).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(figure.getByRole('table')).toBeVisible();
+    await expect(figure).toMatchAriaSnapshot(`
+      - figure "The cost of debt over time":
+        - heading "The cost of debt over time" [level=2]
+        - paragraph: /Annual debt service.*/
+        - img "Debt service and service / revenue by fiscal year"
+        - group:
+          - text: Read chart data
+          - table "Debt cost observations by fiscal year":
+            - caption: Debt cost observations by fiscal year
+            - rowgroup:
+              - row "Fiscal year Debt service (KES) Revenue (KES) Service / revenue (%)":
+                - columnheader "Fiscal year"
+                - columnheader "Debt service (KES)"
+                - columnheader "Revenue (KES)"
+                - columnheader "Service / revenue (%)"
+            - rowgroup:
+              - row "FY 2024/25 50,000,000,000 100,000,000,000 50.0%":
+                - rowheader "FY 2024/25"
+                - cell "50,000,000,000"
+                - cell "100,000,000,000"
+                - cell "50.0%"
+              - row "FY 2025/26 50,000,000,000 100,000,000,000 50.0%":
+                - rowheader "FY 2025/26"
+                - cell "50,000,000,000"
+                - cell "100,000,000,000"
+                - cell "50.0%"
+    `);
+    await page.keyboard.press('Space');
+    await expect(figure.getByRole('table')).toBeHidden();
+    await page.keyboard.press('Tab');
+    await expect(summary).not.toBeFocused();
+  });
 });
 
 test.describe('Chart Performance', () => {
