@@ -27,6 +27,7 @@ from sqlalchemy.orm import Session
 from .config import SeedingSettings
 from .http_client import PdfDownloadError, SeedingHttpClient
 from .pdf_download import get_or_download_pdf
+from .pdf_artifact import ARTIFACT_KEY, file_identity, valid_artifact
 
 logger = logging.getLogger("seeding.fetch_documents")
 
@@ -107,6 +108,7 @@ def fetch_document(
             ),
             max_bytes=settings.pdf_download_max_bytes,
         )
+        actual_identity = file_identity(pdf_path)
     except PdfDownloadError as exc:
         meta = dict(doc.meta or {})
         meta["fetch_error"] = str(exc)[:500]
@@ -118,12 +120,13 @@ def fetch_document(
         logger.warning("Fetch FAILED for %s: %s", url, exc)
         raise
 
-    new_md5 = _md5_of_file(pdf_path)
+    new_md5 = actual_identity["md5"]
     now = datetime.now(timezone.utc)
     # A cache hit skips the network, so "verified now" would overstate.
     # The sidecar records when the bytes actually came off the wire; use
     # that as the verification instant.
     verified_at = now
+    identity_verified_at = None
     try:
         import json as _json
         import time as _time
@@ -137,6 +140,13 @@ def fetch_document(
             )
         )
         verified_at = datetime.fromtimestamp(created, tz=timezone.utc)
+        sidecar = _json.loads(meta_path.read_text(encoding="utf-8"))
+        # The timestamp is download context only when the sidecar names these
+        # exact bytes. A cache filename or unchecked digest is not identity.
+        if (sidecar.get("sha256") == actual_identity["sha256"]
+                and type(sidecar.get("created_at")) in (int, float)
+                and 0 < created <= now.timestamp()):
+            identity_verified_at = verified_at.isoformat()
     except Exception:  # sidecar missing/corrupt: fall back to now
         pass
 
@@ -164,6 +174,28 @@ def fetch_document(
         doc.meta = meta
         doc.title = title
 
+    meta = dict(doc.meta or {})
+    artifact = {
+        "schema_version": 1, **actual_identity,
+        "source_document_id": doc.id, "source_url": doc.url,
+        "report_title": doc.title, "publisher": doc.publisher,
+        "validation": "pdf_magic_and_final_eof",
+        "verification_time": identity_verified_at,
+        "verification_time_reason": None if identity_verified_at else "download_time_not_available",
+    }
+    previous = meta.get(ARTIFACT_KEY)
+    # Revalidating the same bytes must not invalidate individual bindings
+    # merely because a later download has another acquisition timestamp.
+    identity_fields = set(artifact) - {"verification_time", "verification_time_reason"}
+    if valid_artifact(previous) and all(previous[k] == artifact[k] for k in identity_fields):
+        artifact = previous
+    if isinstance(previous, dict) and previous != artifact:
+        history = list(meta.get("previous_pdf_artifacts_v1") or [])
+        if previous not in history:
+            history.append(previous)
+        meta["previous_pdf_artifacts_v1"] = history
+    meta[ARTIFACT_KEY] = artifact
+    doc.meta = meta
     doc.md5 = new_md5
     doc.file_path = str(pdf_path)
     doc.content_type = (

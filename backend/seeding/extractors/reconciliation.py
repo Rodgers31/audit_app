@@ -85,6 +85,13 @@ def row_changed(old, new):
 
 
 def validate_candidates(doc, extractor_id, rows, key):
+    from ..pdf_artifact import BINDING_KEY, extraction_artifact, valid_binding
+
+    artifact = None
+    if extractor_id == "oag_county_volume" and any(
+        isinstance(r.extracted_json, dict) and BINDING_KEY in r.extracted_json for r in rows
+    ):
+        artifact = extraction_artifact(doc)
     seen = set()
     for row in rows:
         payload = row.extracted_json
@@ -94,6 +101,14 @@ def validate_candidates(doc, extractor_id, rows, key):
             )
         if not isinstance(payload, dict):
             raise IncompleteExtraction("candidate payload is not an object")
+        if BINDING_KEY in payload:
+            binding = payload[BINDING_KEY]
+            if (not valid_binding(binding) or artifact is None
+                    or binding["artifact"] != artifact
+                    or row.extractor != binding["extractor"]
+                    or type(payload.get("pdf_page")) is not int
+                    or payload["pdf_page"] > binding["pdf_pages"]):
+                raise IncompleteExtraction("candidate PDF artifact binding is invalid")
         for name in ("title", "finding_text", "entity_name", "fiscal_year"):
             if not isinstance(payload.get(name), str) or not payload[name].strip():
                 raise IncompleteExtraction(f"candidate lacks {name}")
@@ -153,6 +168,8 @@ def validate_candidates(doc, extractor_id, rows, key):
 
 def _meaning(row):
     # Page movements in a complete reissue do not change a finding's content.
+    # Artifact binding is acquisition context validated at the actual read;
+    # a hash-only addition does not revise the finding meaning or its stable key.
     # Keep amount, attribution, fiscal period, text, opinion and confidence in
     # this comparison: a count or an apparently complete PDF cannot verify them.
     value = _row(row)
@@ -162,7 +179,7 @@ def _meaning(row):
         "payload": {
             k: v
             for k, v in value["payload"].items()
-            if k not in ("pdf_page", "printed_page")
+            if k not in ("pdf_page", "printed_page", "pdf_artifact_binding_v1")
         },
     }
 
