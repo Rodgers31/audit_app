@@ -259,6 +259,7 @@ interface FollowTheMoneyProps {
 }
 
 export default function FollowTheMoney({ data, isLoading, compact }: FollowTheMoneyProps) {
+  const { t } = useLang();
   const maxAmount = useMemo(() => {
     if (!data?.stages) return 0;
     // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- Math.max over stage amounts to scale the chart axis
@@ -267,18 +268,18 @@ export default function FollowTheMoney({ data, isLoading, compact }: FollowTheMo
 
   if (isLoading) {
     return (
-      <div className='flex items-center justify-center py-16'>
-        <Loader2 className='w-6 h-6 animate-spin text-gov-sage' />
-        <span className='ml-3 text-gov-dark/60 dark:text-white/60 font-medium'>Tracing the money...</span>
+      <div role='status' className='flex items-center justify-center py-16'>
+        <Loader2 aria-hidden='true' className='w-6 h-6 shrink-0 animate-spin text-gov-sage' />
+        <span className='ml-3 text-gov-dark/60 dark:text-white/60 font-medium'>{t('county.money.loading_read')}</span>
       </div>
     );
   }
 
   if (!data || !data.stages || data.stages.length === 0) {
     return (
-      <div className='text-center py-12 text-gray-400 dark:text-neutral-muted/80'>
-        <AlertTriangle size={28} className='mx-auto mb-2 text-gray-300 dark:text-neutral-muted/60' />
-        <p className='text-sm'>No money flow data available for this period.</p>
+      <div role='status' className='text-center py-12 text-gray-600 dark:text-neutral-muted'>
+        <AlertTriangle aria-hidden='true' size={28} className='mx-auto mb-2 text-gray-400 dark:text-neutral-muted/60' />
+        <p className='text-sm'>{t('county.money.empty')}</p>
       </div>
     );
   }

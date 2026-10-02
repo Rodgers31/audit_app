@@ -1352,6 +1352,13 @@ export const MESSAGES = {
   // Follow the money tab
   'county.money.header_prefix': { en: 'Follow the Money', sw: 'Fuatilia Pesa', plain: 'Follow the Money' },
   'county.money.subtitle': { en: 'Trace how public funds flow from allocation to expenditure', sw: 'Fuatilia jinsi pesa za umma zinavyosafiri kutoka zilivyotengwa hadi zilivyotumika', plain: 'See how public money moves from planned to spent' },
+  'county.money.loading_years': { en: 'Loading reporting periods...', sw: 'Inapakia vipindi vya ripoti...', plain: 'Loading reporting periods...' },
+  'county.money.years_error': { en: 'Could not load reporting periods. Try again to choose a period.', sw: 'Imeshindikana kupakia vipindi vya ripoti. Jaribu tena ili uchague kipindi.', plain: 'We could not load reporting periods. Try again to choose a period.' },
+  'county.money.years_unavailable': { en: 'No reporting periods are available for money flow.', sw: 'Hakuna vipindi vya ripoti vinavyopatikana kwa mtiririko wa pesa.', plain: 'No reporting periods are available for money flow.' },
+  'county.money.loading_read': { en: 'Tracing the money...', sw: 'Inafuatilia pesa...', plain: 'Loading money flow...' },
+  'county.money.read_error': { en: 'Could not load money flow for this period. Try again.', sw: 'Imeshindikana kupakia mtiririko wa pesa kwa kipindi hiki. Jaribu tena.', plain: 'We could not load money flow for this period. Try again.' },
+  'county.money.empty': { en: 'No money flow data available for this period.', sw: 'Hakuna data ya mtiririko wa pesa inayopatikana kwa kipindi hiki.', plain: 'No money flow data is available for this period.' },
+  'county.money.retry': { en: 'Try again', sw: 'Jaribu tena', plain: 'Try again' },
 
   // Sources footer
   'county.sources.prefix': { en: 'Sources:', sw: 'Vyanzo:', plain: 'Sources:' },

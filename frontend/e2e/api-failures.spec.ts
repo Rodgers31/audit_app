@@ -3,26 +3,43 @@ import { countyResponse } from './utils/countyResponse';
 
 for (const path of ['/counties', '/counties/001', '/sources', '/accountability/unaccounted-funds', '/debt', '/budget']) {
   test(`${path} — handles failed browser reads without certifying unavailable data`, async ({ page }) => {
-    test.fixme(path === '/counties/001', 'Failed lazy Follow the Money reads render a blank panel without an unavailable state; #291 follow-up.');
     const errors: string[] = []; page.on('pageerror', err => errors.push(err.message));
     let calls = 0;
     if (path === '/counties') {
       await countyResponse(page, route => route.fulfill({ status: 500, json: { detail: 'Synthetic failed read' } }));
       await expect(page.getByText('Failed to load counties', { exact: true })).toBeVisible();
+    } else if (path === '/counties/001') {
+      // Fail only the consumed lazy endpoint; county/year prerequisites succeed.
+      const endpoint = '/api/v1/counties/001/money-flow';
+      let failed = true;
+      await page.route(url => url.pathname === endpoint, route => {
+        calls++;
+        return failed
+          ? route.fulfill({ status: 500, json: { detail: 'Synthetic failed money-flow read' } })
+          : route.continue();
+      });
+      await page.goto(path);
+      await page.getByRole('button', { name: 'Follow the Money', exact: true }).click();
+      await expect.poll(() => calls).toBe(1);
+      const unavailable = page.locator('[class*="moneyReport"]').getByRole('alert');
+      await expect(unavailable).toContainText('Could not load money flow for this period.');
+      await expect(page.getByText('No money flow data available for this period.')).toHaveCount(0);
+      await expect(page.getByText('KES 10.00B', { exact: true })).toBeVisible();
+      await expect(page.getByRole('combobox', { name: 'Fiscal year', exact: true })).toHaveValue('FY2025/26 9M');
+      failed = false;
+      await unavailable.getByRole('button', { name: 'Try again' }).click();
+      await expect(page.getByText('Budget Allocation', { exact: true }).locator('..')).toContainText('KES 10.00B');
+      await expect(page.getByText(/procurement-encumbered|earmarked for contracts/i)).toBeVisible();
+      await expect(unavailable).toHaveCount(0);
+      expect(calls).toBe(2);
     } else {
       await page.route('**/api/v1/**', route => {
         calls++;
         return route.fulfill({ status: 500, json: { detail: 'Synthetic failed read' } });
       });
       await page.goto(path);
-      if (path === '/counties/001') await page.getByRole('button', { name: 'Follow the Money', exact: true }).click();
       await expect.poll(() => calls).toBeGreaterThan(0);
-      if (path === '/counties/001') {
-        // Successful SSR overview remains valid; failed lazy panel must not
-        // silently render a blank panel as a successful financial read.
-        await expect(page.getByText('KES 10.00B', { exact: true })).toBeVisible();
-        await expect(page.getByRole('heading', { name: /Follow the Money/i })).toBeVisible();
-      } else if (path === '/budget') {
+      if (path === '/budget') {
         // The successful SSR fiscal record stays visible; the failed freshness
         // read must remain unknown. Browser routing cannot replace SSR data.
         await expect(page.getByRole('heading', { name: 'KES 180B approved for FY 2025/26' })).toBeVisible();

@@ -348,3 +348,116 @@ test.describe('Follow the Money — efficiency + provenance', () => {
     ).toBeVisible({ timeout: 10_000 });
   });
 });
+
+// Pin the mounted data-read contract via the supported deep link. The active
+// shell-click committed-note regression above separately covers lazy selection (#450).
+test.describe('Follow the Money — read states', () => {
+  for (const [lang, tabName, failedMessage, loadingMessage, emptyMessage, retryName] of [
+    ['en', 'Follow the Money', 'Could not load money flow for this period.', 'Tracing the money...', 'No money flow data available for this period.', 'Try again'],
+    ['sw', 'Fuatilia Pesa', 'Imeshindikana kupakia mtiririko wa pesa kwa kipindi hiki.', 'Inafuatilia pesa...', 'Hakuna data ya mtiririko wa pesa inayopatikana kwa kipindi hiki.', 'Jaribu tena'],
+    ['plain', 'Follow the Money', 'We could not load money flow for this period.', 'Loading money flow...', 'No money flow data is available for this period.', 'Try again'],
+  ] as const) {
+    for (const width of [375, 1280]) {
+      test(`${lang} at ${width}px distinguishes failed, pending and successful absence reads`, async ({ page, request }, testInfo) => {
+        await page.setViewportSize({ width, height: 900 });
+        await page.addInitScript(value => localStorage.setItem('auditgava-lang', value), lang);
+        const { metadata } = await reportedYears(request);
+        const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
+        let calls = 0;
+        let retrying = false;
+        let release!: () => void;
+        const pending = new Promise<void>(resolve => { release = resolve; });
+        await page.route(url => url.pathname === `/api/v1/counties/${COUNTY_ID}/money-flow`, async route => {
+          calls++;
+          if (!retrying) return route.fulfill({ status: 500, json: { detail: 'Synthetic failed read' } });
+          // A gated successful empty response is different from a failed read.
+          await pending;
+          const response = await route.fetch();
+          const flow: MoneyFlowData = await response.json();
+          await route.fulfill({ response, json: { ...flow, stages: [] } });
+        });
+        await page.goto(`/counties/${COUNTY_ID}?tab=money`);
+        await waitForAppReady(page);
+        await expect(page.getByRole('button', { name: tabName, exact: true })).toHaveAttribute('aria-pressed', 'true');
+        const panel = page.locator('[class*="moneyReport"]');
+        await expect(panel.getByRole('alert')).toContainText(failedMessage);
+        await expect(panel.getByText(emptyMessage, { exact: true })).toHaveCount(0);
+        await expect(panel.locator('[data-money-stage]')).toHaveCount(0);
+        expect(calls).toBe(1);
+        const picker = panel.getByRole('combobox', { name: 'Fiscal year', exact: true });
+        await expect(picker).toHaveValue(metadata.default!);
+        const retry = panel.getByRole('button', { name: retryName, exact: true });
+        await retry.focus();
+        await expect(retry).toBeFocused();
+        const box = await retry.boundingBox();
+        expect(box!.height).toBeGreaterThanOrEqual(44);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+        await testInfo.attach('money-flow-error', { body: await panel.screenshot(), contentType: 'image/png' });
+        retrying = true;
+        await retry.press('Enter');
+        await expect(panel.getByRole('status')).toContainText(loadingMessage);
+        await expect(panel.getByRole('button', { name: retryName, exact: true })).toHaveCount(0);
+        expect(calls).toBe(2);
+        release();
+        await expect(panel.getByRole('status')).toContainText(emptyMessage);
+        await expect(panel.getByRole('alert')).toHaveCount(0);
+        await expect(panel.locator('[data-money-stage]')).toHaveCount(0);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+        await testInfo.attach('money-flow-empty', { body: await panel.screenshot(), contentType: 'image/png' });
+        expect(errors).toEqual([]);
+      });
+    }
+  }
+});
+
+for (const width of [375, 1280]) {
+  test(`Follow the Money at ${width}px waits for discovery and recovers failed reporting periods`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    let release!: () => void;
+    const pending = new Promise<void>(resolve => { release = resolve; });
+    let yearsCalls = 0;
+    let moneyCalls = 0;
+    page.on('request', req => { if (new URL(req.url()).pathname === `/api/v1/counties/${COUNTY_ID}/money-flow`) moneyCalls++; });
+    await page.route(url => url.pathname === '/api/v1/counties/fiscal-years', async route => {
+      yearsCalls++;
+      if (yearsCalls === 1) {
+        await pending;
+        await route.fulfill({ status: 500, json: { detail: 'Synthetic discovery failure' } });
+      } else await route.continue();
+    });
+    await page.goto(`/counties/${COUNTY_ID}?tab=money`);
+    await waitForAppReady(page);
+    await expect(countyTabs.followTheMoney(page)).toHaveAttribute('aria-pressed', 'true');
+    const panel = page.locator('[class*="moneyReport"]');
+    await expect(panel.getByRole('status')).toContainText('Loading reporting periods...');
+    expect(moneyCalls).toBe(0);
+    await expect(panel.getByRole('combobox')).toHaveCount(0);
+    release();
+    await expect(panel.getByRole('alert')).toContainText('Could not load reporting periods.');
+    expect(moneyCalls).toBe(0);
+    await expect(panel.getByText('No money flow data available for this period.')).toHaveCount(0);
+    await panel.getByRole('button', { name: 'Try again' }).click();
+    await expect(panel.getByText(/procurement-encumbered/)).toBeVisible();
+    await expect(panel.getByRole('combobox')).toHaveValue('FY2025/26 9M');
+    expect(yearsCalls).toBe(2);
+    expect(moneyCalls).toBe(1);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  });
+
+  test(`Follow the Money at ${width}px explains unavailable reporting periods without a money read`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    let moneyCalls = 0;
+    page.on('request', req => { if (new URL(req.url()).pathname === `/api/v1/counties/${COUNTY_ID}/money-flow`) moneyCalls++; });
+    await page.route(url => url.pathname === '/api/v1/counties/fiscal-years', route => route.fulfill({ json: { default: null, years: [] } }));
+    await page.goto(`/counties/${COUNTY_ID}?tab=money`);
+    await waitForAppReady(page);
+    await expect(countyTabs.followTheMoney(page)).toHaveAttribute('aria-pressed', 'true');
+    const panel = page.locator('[class*="moneyReport"]');
+    await expect(panel.getByRole('status')).toContainText('No reporting periods are available for money flow.');
+    await expect(panel.getByRole('combobox')).toHaveCount(0);
+    await expect(panel.getByRole('alert')).toHaveCount(0);
+    await expect(panel.getByText('No money flow data available for this period.')).toHaveCount(0);
+    expect(moneyCalls).toBe(0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  });
+}

@@ -15,7 +15,8 @@ import { useCountyFiscalYears } from '@/lib/react-query';
 import { useCountyMoneyFlow } from '@/lib/react-query/useMoneyFlow';
 import { moneyFlowDefaultYear } from '@/lib/utils';
 import { CountyComprehensive } from '@/types';
-import { useState } from 'react';
+import { AlertTriangle, Loader2 } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
 
 export default function MoneyFlowTab({ data: countyData }: { data: CountyComprehensive }) {
   const { t } = useLang();
@@ -30,7 +31,8 @@ export default function MoneyFlowTab({ data: countyData }: { data: CountyCompreh
   // FY2025/26 while Budget & Debt two clicks away showed FY2024/25, for the
   // same county, with nothing saying they differed. The page's own resolved
   // year now leads; the reader's selection still wins over it.
-  const { data: fiscalYearsMeta } = useCountyFiscalYears();
+  const fiscalYears = useCountyFiscalYears();
+  const fiscalYearsMeta = fiscalYears.data;
   const years = fiscalYearsMeta?.years.map((y) => y.label) ?? [];
   const [pickedYear, setPickedYear] = useState<string | undefined>(undefined);
   const selectedYear = moneyFlowDefaultYear(
@@ -41,7 +43,46 @@ export default function MoneyFlowTab({ data: countyData }: { data: CountyCompreh
 
   // '' keeps the query disabled (useCountyMoneyFlow gates on !!year) until the
   // year list says which period to ask for — one fetch, for the right year.
-  const { data, isLoading } = useCountyMoneyFlow(countyData.id, selectedYear ?? '');
+  const hasPeriod = !!selectedYear && years.includes(selectedYear);
+  const moneyFlow = useCountyMoneyFlow(countyData.id, selectedYear ?? '', {
+    enabled: fiscalYears.isSuccess && hasPeriod && !!countyData.id,
+  });
+
+  // Query pending includes the disabled state: it is not a successful empty read.
+  // Keep discovery and transport failures separate from a report with no stages.
+  let content: ReactNode;
+  if (fiscalYears.isError) {
+    content = (
+      <ReadError
+        message={t('county.money.years_error')}
+        retrying={fiscalYears.isFetching}
+        onRetry={() => { void fiscalYears.refetch({ cancelRefetch: false }); }}
+      />
+    );
+  } else if (fiscalYears.isPending) {
+    content = (
+      <div role='status' className='flex items-center justify-center py-16'>
+        <Loader2 aria-hidden='true' className='w-6 h-6 shrink-0 animate-spin text-gov-sage' />
+        <span className='ml-3 text-sm text-gray-600 dark:text-neutral-muted'>{t('county.money.loading_years')}</span>
+      </div>
+    );
+  } else if (!hasPeriod) {
+    content = (
+      <p role='status' className='py-12 text-center text-sm text-gray-600 dark:text-neutral-muted'>
+        {t('county.money.years_unavailable')}
+      </p>
+    );
+  } else if (moneyFlow.isError) {
+    content = (
+      <ReadError
+        message={t('county.money.read_error')}
+        retrying={moneyFlow.isFetching}
+        onRetry={() => { void moneyFlow.refetch({ cancelRefetch: false }); }}
+      />
+    );
+  } else {
+    content = <FollowTheMoney data={moneyFlow.data} isLoading={moneyFlow.isPending} />;
+  }
 
   return (
     <div className={styles.moneyReport}>
@@ -61,13 +102,31 @@ export default function MoneyFlowTab({ data: countyData }: { data: CountyCompreh
         </div>
         {/* No selector until the API says which years exist — an empty
             dropdown is a control claiming choices it does not have. */}
-        {years.length > 0 && selectedYear && (
+        {hasPeriod && selectedYear && (
           <YearSelector value={selectedYear} onChange={setPickedYear} years={years} />
         )}
       </div>
 
       {/* The visualization itself renders its own cards — no wrapper */}
-      <FollowTheMoney data={data} isLoading={isLoading} />
+      {content}
+    </div>
+  );
+}
+
+function ReadError({ message, retrying, onRetry }: {
+  message: string;
+  retrying: boolean;
+  onRetry: () => void;
+}) {
+  const { t } = useLang();
+  return (
+    <div role='alert' aria-busy={retrying} className='py-12 text-center text-gray-700 dark:text-neutral-text'>
+      <AlertTriangle aria-hidden='true' size={28} className='mx-auto mb-2 text-amber-600 dark:text-amber-400' />
+      <p className='text-sm'>{message}</p>
+      <button type='button' onClick={onRetry} disabled={retrying}
+        className='mt-3 min-h-11 rounded-lg border border-gray-300 dark:border-white/20 px-4 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gov-forest disabled:opacity-60'>
+        {t('county.money.retry')}
+      </button>
     </div>
   );
 }
