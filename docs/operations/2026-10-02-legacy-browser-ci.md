@@ -88,25 +88,34 @@ no timeout, retry or new quarantine conceals the failure.
 
 | File | Exact case | Reason |
 | --- | --- | --- |
-| api-failures.spec.ts | /counties/001 — handles failed browser reads without certifying unavailable data | A failed money-flow endpoint is shown as no data for the period; query error state is discarded. Broad all-endpoint failures can also disable the query. |
 | charts.spec.ts | chart legend is interactive | Current county rankings table/map has no interactive chart legend. |
 | charts.spec.ts | debt chart segments are clickable | Current debt chart has no segment drilldown. |
 | charts.spec.ts | county chart tooltips show category details | Total-only source rows provide no sector split; totals and honest absence are checked separately. |
 | charts.spec.ts | chart zoom controls work | No zoom controls exist. |
-| charts.spec.ts | charts have ARIA labels | Cost chart SVG has no accessible application role/name. |
-| charts.spec.ts | chart data is available in table format | No chart-to-table toggle exists; county tables are tested independently. |
-| charts.spec.ts | charts support keyboard navigation | Cost chart has no keyboard activation handler. |
-| error-states.spec.ts | handles missing required fields in API response | Missing County.name reaches sorting/rendering without schema validation. |
 | home-map.spec.ts | map integrates with county slider | The former quick slider is no longer mounted. |
-| home-map.spec.ts | map is keyboard navigable | Geographic paths have pointer handlers but no keyboard activation. |
 | learn.spec.ts | video cards are displayed | Current routes mount no video gallery. |
 | learn.spec.ts | clicking video card opens modal | No video modal exists. |
 | learn.spec.ts | video category filter works | No video category control exists. |
 | learn.spec.ts | story cards can be expanded | Current stories are static prose. |
 | learn.spec.ts | action steps are interactive | Current action steps are static prose. |
-| learn.spec.ts | learn page has proper headings structure | Strengthened single-h1 check discovers two h1 elements; the old test only checked the first heading's visibility. |
 | static-pages.spec.ts | /status — renders with a page heading matching /Status|ETL|Ingestion/i | Authenticated operator route redirects without an operator-auth fixture. |
-| user-flows.spec.ts | clamp out-of-range page to last valid page | Current page-reset effect returns page 1 instead of clamped page 5. |
+
+Round17 restores eight supported cases: money-flow failure feedback, county
+response validation, map keyboard activation, three debt-chart accessibility
+cases, Learn headings and last-page normalization. The remaining table contains
+**11 named quarantines** for removed controls or the operator-auth fixture gap.
+
+The coordinator ran the canonical production Next.js build and synthetic FastAPI
+readers on the combined Round17 code: **241 passed, 11 skipped, zero unexpected
+failures and zero flaky results**, with retries disabled (252 cases, 26 files;
+2 October 2026, 20:16:12 UTC). Eight restored cases and the active committed-note
+and tab-history assertions passed. This single passing run does not resolve
+**#450**: the session retained additional code-loading stalls and did not establish
+a cause or product fix. Earlier failing receipts above remain historical evidence.
+
+Actions remained disabled. This is local Chromium evidence, not the automatic
+hosted final run required by #291. No Firefox/WebKit or human screen-reader
+certification is claimed.
 
 Issue #291 can close after consolidation and verified automatic final CI, with
 the named quarantines documented. It does not require a production data write or
