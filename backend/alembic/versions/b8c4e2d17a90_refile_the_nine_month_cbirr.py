@@ -137,7 +137,8 @@ def upgrade():
         print(
             f"nine-month CBIRR (document {doc_id}): moved {moved} county row(s) "
             f"{WRONG_LABEL} -> {RIGHT_LABEL}; {left} row(s) left in "
-            f"{WRONG_LABEL} because the target already held that key"
+            f"{WRONG_LABEL} because the target already held that key; "
+            "changes are in the current transaction, pending commit"
         )
 
 
