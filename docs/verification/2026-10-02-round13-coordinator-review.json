@@ -1,0 +1,56 @@
+{
+  "base": "c71666b7d29dceffa3f684ed3c9a4db03bbded0d",
+  "tested_head": "e283521c230dbc811d93bebb8e2e4b10f2c79f84",
+  "tested_tree": "51ce280d152221e1dfca9e9ff79dec8f2a78d530",
+  "backend_passed": 95,
+  "frontend_passed": 58,
+  "frontend_suites": 6,
+  "skipped": 0,
+  "configured_engine_connections": 0,
+  "database_fixture": "isolated SQLite",
+  "tsc": 0,
+  "eslint": 0,
+  "local_reviews_accepted": true,
+  "actions_authorized": false,
+  "production_acceptance": false,
+  "human_swahili_approval": false,
+  "fully_closable_existing_issues": [],
+  "new_confirmed_unfiled_issues": [],
+  "existing_discovery_issue_scopes": [
+    299,
+    298,
+    230,
+    307,
+    372
+  ],
+  "artifact_receipts": {
+    "ROUND13_COORDINATOR_BACKEND.log": {
+      "sha256": "f785525346b9e206780438f8d264bd019f66cf2d045b9f0d583fc85cd5651df6",
+      "exit": 0
+    },
+    "ROUND13_COORDINATOR_FRONTEND.log": {
+      "sha256": "b0efcedfa385b1f52546fe9cc9111cf41043004f526ca1c708d0975fb6b9ef07",
+      "exit": 0
+    },
+    "ROUND13_COORDINATOR_TYPES.log": {
+      "sha256": "31420f7782fab9827f3e3312b67c92e4b82d7597a3c1a9bd3804cd0614c3bcf2",
+      "exit": 0
+    },
+    "ROUND13_COORDINATOR_LINT.log": {
+      "sha256": "21519df1fd7968acd1cb99f4176bf723c1103e2f742b11ed834051bcc73ef42e",
+      "exit": 0
+    },
+    "ROUND13_ROOT_COUNTY_REVIEW_REPORT.md": {
+      "sha256": "c9e3dc941835e21d3ea9229f3fff78c7a0b36718f0edfcae17828f7a92caeefc"
+    },
+    "ROUND13_ROOT_COUNTY_REVIEW_PROBE.json": {
+      "sha256": "6fa3878584e4bcf10c37b43fbf15ad7d5f6e3f3dc90c7147ed56239c1fa22808"
+    },
+    "ROUND13_ROOT_CONTRACT_REVIEW_receipt.json": {
+      "sha256": "1ed4924e476c44d2626d9be3a64cb34b03080b0a5a17c623428408f5e3237ea9"
+    },
+    "ROUND13_COORDINATOR_ADOPTION_CHECK.json": {
+      "sha256": "00dd63936ae58ab5440e867d9c17cbe854ed53aceb01f266c0d33cb6b7553049"
+    }
+  }
+}
