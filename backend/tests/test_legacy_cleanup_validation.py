@@ -36,6 +36,18 @@ def _malformed(kind):
         manifest["delete_audits"][0]["extraction_id"] = 777
     elif kind == "new_page_link":
         manifest["delete_audits"][0]["page_ref"] = "p.2"
+    elif kind == "retained_nested_number_becomes_boolean":
+        entity = manifest["entities"][0]
+        entity["before"]["source_projects"] = [{"paid": 1, "verified": False}]
+        entity["after"]["source_projects"] = [{"paid": True, "verified": False}]
+    elif kind == "retained_nested_boolean_becomes_number":
+        entity = manifest["entities"][0]
+        entity["before"]["source_projects"] = [{"paid": 0, "verified": False}]
+        entity["after"]["source_projects"] = [{"paid": 0, "verified": 0}]
+    elif kind == "retained_nested_integer_becomes_float":
+        entity = manifest["entities"][0]
+        entity["before"]["source_projects"] = [{"paid": 1}]
+        entity["after"]["source_projects"] = [{"paid": 1.0}]
     else:
         raise ValueError(kind)
     return manifest
@@ -47,6 +59,9 @@ INVALID = [
     "wrong_document",
     "new_extraction_link",
     "new_page_link",
+    "retained_nested_number_becomes_boolean",
+    "retained_nested_boolean_becomes_number",
+    "retained_nested_integer_becomes_float",
 ]
 
 
