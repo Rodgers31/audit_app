@@ -88,6 +88,12 @@ export interface CountyRevenue {
   source: string | null;
   sources?: Array<{ id: number | null; url: string | null; page_ref: string | null; measure: string }>;
   total_revenue_absent_reason: string | null;
+  total_revenue_absence_source?: {
+    id: number; url: string | null; pages: number[];
+    publisher: string | null; title: string | null;
+    basis: 'cash_receipts_including_opening_balance'; unit: 'KES';
+    artifact_sha256: string | null;
+  } | null;
 }
 
 /** Where an official's name came from. */

@@ -16,6 +16,24 @@ export function countyOwnSourceRevenueLabel(
 export function countyRevenueNotes(revenue: CountyRevenue, format: (n: number) => string, t: Translate): string[] {
   const notes: string[] = [];
   if (revenue.fiscal_year) notes.push(revenue.fiscal_year);
+  if (revenue.total_revenue == null) {
+    const reason = revenue.total_revenue_absent_reason;
+    const explanation = reason?.startsWith('streams_do_not_sum_to_grand_total') ||
+      reason === 'cbirr_revenue_streams_do_not_sum_to_total'
+      ? 'county.revenue.streams_conflict'
+      : reason === 'a_section_has_two_subtotals'
+        ? 'county.revenue.subtotals_ambiguous'
+        : reason === 'unobserved_receipts_cell'
+          ? 'county.revenue.missing_cell'
+          : 'county.revenue.no_reconciled_table';
+    notes.push(`${t('county.revenue.total_unavailable')} ${t(explanation)}`);
+    const source = revenue.total_revenue_absence_source;
+    const publisher = source?.publisher;
+    if (source?.pages.length && publisher) {
+      notes.push(t('county.revenue.refusal_source').replace(/\{(publisher|pages)\}/g,
+        (_, key) => key === 'publisher' ? publisher : source.pages.join(', ')));
+    }
+  }
   if (revenue.local_revenue != null) {
     const label = countyOwnSourceRevenueLabel(revenue, t);
     const amount = format(revenue.local_revenue);

@@ -51,6 +51,7 @@ from services.stalled_projects import (
 from services.county_budget import (
     REVENUE_RECEIPTS_CATEGORY,
     REVENUE_RECEIPTS_TOTAL,
+    county_cash_refusal,
 )
 from services.audit_citations import audited_institution, citation_page, extraction_payload, report_page_url
 from services.audit_derived import derive_federal_headline, derive_unaccounted_cases
@@ -646,6 +647,15 @@ def _county_revenue_for_lines(budget_lines):
     )
     if reason:
         block["total_revenue_absent_reason"] = reason
+    # Refused chapters have no cash rows. Their named reason is retained on
+    # the budget Total; never use it to replace a current cash validation error
+    # or attach it to a summary from another period/document.
+    refusal = county_cash_refusal(budget_lines) if not cash else None
+    block["total_revenue_absence_source"] = None
+    if refusal and (not comparable or context(comparable[0]) == refusal["context"]):
+        block["total_revenue_absent_reason"] = refusal["reason"]
+        block["total_revenue_absence_source"] = refusal["source"]
+        block["fiscal_year"] = refusal["fiscal_year"]
     block["sources"] = [
         {
             "id": getattr(line, "source_document_id", None),

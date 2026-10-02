@@ -1131,6 +1131,36 @@ export const MESSAGES = {
     sw: 'Fedha zilizopokelewa na salio la mwanzo',
     plain: 'Money received plus the balance at the start',
   },
+  'county.revenue.total_unavailable': {
+    en: 'Total cash receipts unavailable.',
+    sw: 'Jumla ya fedha zilizopokelewa haipatikani.',
+    plain: 'The total money received is unavailable.',
+  },
+  'county.revenue.streams_conflict': {
+    en: 'Cash receipt streams do not reconcile to the printed total.',
+    sw: 'Vipengele vya fedha zilizopokelewa havilingani na jumla iliyochapishwa.',
+    plain: 'The amounts received do not add up to the total in the report.',
+  },
+  'county.revenue.subtotals_ambiguous': {
+    en: 'Cash receipt subtotals are ambiguous.',
+    sw: 'Jumla ndogo za fedha zilizopokelewa haziko wazi.',
+    plain: 'The report has conflicting subtotals for money received.',
+  },
+  'county.revenue.missing_cell': {
+    en: 'A required cash receipt cell is missing.',
+    sw: 'Kisanduku kinachohitajika cha fedha zilizopokelewa hakina taarifa.',
+    plain: 'An amount needed to check the total is missing from the report.',
+  },
+  'county.revenue.no_reconciled_table': {
+    en: 'No reconciled cash receipt table is available.',
+    sw: 'Hakuna jedwali la fedha zilizopokelewa ambalo jumla zake zimethibitishwa.',
+    plain: 'There is no table of money received with a total we can check.',
+  },
+  'county.revenue.refusal_source': {
+    en: '{publisher}, PDF pages {pages}',
+    sw: '{publisher}, kurasa za PDF {pages}',
+    plain: '{publisher}, pages {pages} in the PDF',
+  },
   'county.overview.kpi.total_revenue': { en: 'Total Revenue', sw: 'Mapato Jumla', plain: 'Total Money In' },
   'county.overview.kpi.local_prefix': { en: 'Local:', sw: 'Ya ndani:', plain: 'Local:' },
   'county.overview.kpi.census': { en: 'Census', sw: 'Sensa', plain: 'Census' },
