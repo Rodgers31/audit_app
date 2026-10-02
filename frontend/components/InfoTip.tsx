@@ -1,7 +1,7 @@
 'use client';
 
 import { Info } from 'lucide-react';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { useLang } from '@/lib/i18n/LangProvider';
 import type { TranslationKey } from '@/lib/i18n/messages';
@@ -155,6 +155,7 @@ interface InfoTipProps {
 
 export default function InfoTip({ term, size = 14, className = '' }: InfoTipProps) {
   const { t } = useLang();
+  const tooltipId = useId();
   const [open, setOpen] = useState(false);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -208,6 +209,9 @@ export default function InfoTip({ term, size = 14, className = '' }: InfoTipProp
   // Unknown terms have no explanation to offer; omit the optional help control.
   if (!entry) return null;
 
+  // The description reference and its portal must appear and disappear together.
+  const tooltipVisible = open && rect !== null && typeof document !== 'undefined';
+
   // Compute tooltip position: above the button, centered horizontally.
   // If too close to top of viewport, show below instead.
   const getStyle = (): React.CSSProperties => {
@@ -235,6 +239,7 @@ export default function InfoTip({ term, size = 14, className = '' }: InfoTipProp
         aria-label={translatedKeys
           ? t('glossary.info_label').replace('{title}', entry.title)
           : `What is ${entry.title}?`}
+        aria-describedby={tooltipVisible ? tooltipId : undefined}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -252,9 +257,10 @@ export default function InfoTip({ term, size = 14, className = '' }: InfoTipProp
       >
         <Info size={size} />
       </button>
-      {open && rect && typeof document !== 'undefined' && createPortal(
+      {tooltipVisible && createPortal(
         <div
           ref={tooltipRef}
+          id={tooltipId}
           role='tooltip'
           onMouseEnter={clearClose}
           onMouseLeave={scheduleClose}
