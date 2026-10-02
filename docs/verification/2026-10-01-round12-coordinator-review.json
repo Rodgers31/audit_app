@@ -1,0 +1,127 @@
+{
+  "generated_at_utc": "2026-10-02T03:25:17.305847+00:00",
+  "generated_by": "/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND12_COORDINATOR_RECEIPT.py",
+  "generator_sha256": "a1f52bb50d6a7c4df4ee337be3acf41be3304e95128de23b070244fd3d83660b",
+  "base_main": "d0c1766ff5018720d4843d57bb571edd671b7965",
+  "reviewed_worker_commits": {
+    "1": "b9336544dbb58ff589a681dfd42d3037072c930e",
+    "2": "1f2367e10aa44c03a3f22baa4db43e2ee250af32",
+    "3": "240057aeb1716cd57054e2746522606525c49b5c",
+    "4": "16e796f9ff0a693beaa94ae1ee0213eba4d3af8c",
+    "5": "05d5af8f7f349e8e3a1ed39c2689f74268584240",
+    "6": "d2809dbd205f71c602a6c335bb876c41b78165dc",
+    "7": null,
+    "8": null
+  },
+  "file_sha256": {
+    "docs/verification/2026-10-01-round12-county-cash-source-decisions.md": "2c1860c6fc5d35cb8e976bbb27ff2d93905526a62697cfb212581c3d0e28d92d",
+    "docs/verification/2026-10-01-round12-project-scope-corroboration.md": "7d70307d9fff98de3667075f9792259c74acd9f6def281afe595110fa3de372d",
+    "docs/verification/2026-10-01-round12-project-scope-corroboration.json": "99b13d9db9196988e360fc944dc52b690c5b2701d9f78304cc7dd10a93233138",
+    "docs/verification/2026-10-01-round12-kra-chronology.md": "12710549daec6378cde718d13d55fb00d5216a8b69a6dab8a9c6142283279a71",
+    "docs/verification/2026-10-01-round12-coordinator-review.md": "b455ed1bfaa9c22340aa2d1905d017b0f3d90eca9ea94e725bcd286ad9571780"
+  },
+  "executed_receipts": {
+    "ROUND12_COORDINATOR_integrated.log": {
+      "sha256": "249d78b8de3903ef600a9e83beef63d66ac6c37c345ceae0cf823ba167da4860",
+      "marker": "233 passed"
+    },
+    "ROUND12_COORDINATOR_captured_publisher.log": {
+      "sha256": "5a7e037b84604b6d904a5f0039b00c2485b6b49c46f9ccee599950e655e0fbe4",
+      "marker": "2 passed"
+    },
+    "ROUND12_COORDINATOR_frontend_integrated.log": {
+      "sha256": "9dbd349768cf2975deef4f6a3c6e6a7acdeca226a18edb440f9cc49b45604bc1",
+      "marker": "Tests:       115 passed, 115 total"
+    },
+    "ROUND12_COORDINATOR_frontend_typecheck.log": {
+      "sha256": "2832fe7889ac6df412a72e3e30ae0a2541576815e5dd8f2cdb5081568d72b445",
+      "marker": "ACTUAL_EXIT_CODE=0"
+    },
+    "ROUND12_COORDINATOR_COUNTY_CHECK.log": {
+      "sha256": "a809de48990e6e9e6a8411e91937c3b5112ab94643b8d8894ca7fa8e6522db5f",
+      "marker": "replacement_totals"
+    },
+    "ROUND12_COORDINATOR_PROJECT_CHECK.log": {
+      "sha256": "ad5e1e2261f9af6c63d73fecc1d83686cb86c6e67bf30a33e7b6a5c967c766a3",
+      "marker": "PASS:"
+    },
+    "ROUND12_COORDINATOR_KRA_CHECK.log": {
+      "sha256": "8db4eed1e6a0d32747e24e9190276946df0aedf1c2c7087d64350b6b49f0c168",
+      "marker": "59"
+    },
+    "ROUND12_COORDINATOR_EVIDENCE_CHECK.json": {
+      "sha256": "9c4a1ea50c90ca41dd6ccf8694cb43adb6f1597233aaf8d7f8164724afdde144",
+      "passed": true,
+      "check_count": 82
+    },
+    "ROUND12_TOOLTIP_BROWSER_REVIEW/final_receipt.json": {
+      "sha256": "1eb962effb85b59c9879f6563f4c10d58f0a869d9d7854cc062be81957fbc5bf",
+      "passed": true,
+      "check_count": 17
+    }
+  },
+  "merged_code_subtrees": {
+    "backend": {
+      "tested_branch": "codex/round12-consolidated-backend",
+      "tested_object": "61fa4162581ba689efc60b84d003d2e3f88558e8",
+      "merged_object": "61fa4162581ba689efc60b84d003d2e3f88558e8"
+    },
+    "frontend": {
+      "tested_branch": "codex/round12-tooltip-accessibility",
+      "tested_object": "11b72f556b809a0e2821936d683634ebfd6909f2",
+      "merged_object": "11b72f556b809a0e2821936d683634ebfd6909f2"
+    }
+  },
+  "merged_code_prs": {
+    "437": {
+      "headRefOid": "d08e39ae139dc29aa9ef184cc5552b78722b1358",
+      "mergeCommit": {
+        "oid": "6377e2ad6fc041c779e6197c465467a8f3810a20"
+      },
+      "mergedAt": "2026-10-02T03:18:17Z",
+      "state": "MERGED"
+    },
+    "438": {
+      "headRefOid": "438cea5d2459dd51e5de8ae02849a18402e1b50e",
+      "mergeCommit": {
+        "oid": "d0c1766ff5018720d4843d57bb571edd671b7965"
+      },
+      "mergedAt": "2026-10-02T03:19:54Z",
+      "state": "MERGED"
+    }
+  },
+  "issue_bank_sha256": "0e9daa109829b785fcbd445286883caa734060273c56fa2f6695ca2b4b503107",
+  "bank_issue_count": 200,
+  "bank_open_before": 22,
+  "closure_scope": [
+    433,
+    321,
+    434
+  ],
+  "new_confirmed_issue_count": 0,
+  "issue_closures": {
+    "433": {
+      "closedAt": "2026-10-02T03:18:18Z",
+      "number": 433,
+      "state": "CLOSED",
+      "url": "https://github.com/Rodgers31/audit_app/issues/433"
+    },
+    "321": {
+      "closedAt": "2026-10-02T03:18:19Z",
+      "number": 321,
+      "state": "CLOSED",
+      "url": "https://github.com/Rodgers31/audit_app/issues/321"
+    },
+    "434": {
+      "closedAt": "2026-10-02T03:19:55Z",
+      "number": 434,
+      "state": "CLOSED",
+      "url": "https://github.com/Rodgers31/audit_app/issues/434"
+    }
+  },
+  "issue_closure_capture_sha256": "ec101d6b8c619d1cd6aad812556d65e0fdecde7613b880373f2f7503e4b4c7fc",
+  "actions_enabled": false,
+  "production_data_or_configuration_write": false,
+  "production_release_acceptance": false,
+  "speech_screen_reader_acceptance": false
+}
