@@ -71,7 +71,12 @@ def _cached(key_prefix: str, ttl: int = 1800):
 
         @functools.wraps(fn)
         async def wrapper(*args, **kwargs):
-            parts = [key_prefix]
+            from cache.invalidation import generation_identity
+
+            # Keep the generation captured before the load in its key. A
+            # response finishing after invalidation may only fill its old
+            # generation, which refreshed requests cannot read.
+            parts = [key_prefix, f"generation:{generation_identity()}"]
             for k, v in kwargs.items():
                 if k not in ("db", "request", "background_tasks"):
                     parts.append(f"{k}:{v}")
