@@ -560,6 +560,12 @@ def _county_volume_dispatch(session, doc, settings) -> Optional[dict]:
 
     done = already_extracted(session, doc)
     if done:
+        from ..pdf_artifact import extraction_artifact
+
+        # The registered parser returns before extract_county_volume's read
+        # boundary on this shortcut. Validate fetched identity here too: the
+        # cache path or document association may have changed since fetch.
+        extraction_artifact(doc)
         logger.info(
             "oag_county_audit: %s already extracted as a county volume at md5 %s "
             "(%d rows) — skipping the page read",
