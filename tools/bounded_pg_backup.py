@@ -402,6 +402,13 @@ CATALOG_ARRAYS = {'schemas':3, 'relations':8, 'columns':10, 'constraints':5,
     'extensions':7, 'roles':11, 'memberships':6, 'large_object_metadata':3,
     'large_objects':4, 'sequence_definitions':9, 'tablespaces':4}
 
+# Catalog identities must be meaningful and unique even when both inputs have
+# the same damage. Equality alone cannot turn malformed evidence into a pass.
+CATALOG_IDENTITIES = {'schemas':1, 'relations':2, 'columns':3, 'constraints':3,
+    'indexes':3, 'policies':3, 'triggers':3, 'routines':3, 'views':2,
+    'extensions':1, 'roles':1, 'memberships':3, 'large_object_metadata':1,
+    'large_objects':2, 'sequence_definitions':2, 'tablespaces':1}
+
 
 def validate_inventory(records):
     if not isinstance(records, list) or not records or not isinstance(records[0], dict):
@@ -415,6 +422,25 @@ def validate_inventory(records):
             continue
         if not isinstance(rows, list) or not rows or any(not isinstance(row,list) or len(row)!=width for row in rows):
             raise Refusal('inventory_empty_or_malformed')
+        identities = set()
+        for row in rows:
+            identity = tuple(row[:CATALOG_IDENTITIES[key]])
+            if key in ('large_object_metadata', 'large_objects'):
+                # PostgreSQL json_build_array renders OIDs as decimal strings.
+                # Keep their actual type for the later exact comparison.
+                oid = identity[0]
+                valid = (type(oid) is int and oid > 0 or isinstance(oid, str)
+                         and re.fullmatch(r'[1-9][0-9]*', oid) is not None)
+                if key == 'large_objects':
+                    valid = valid and type(identity[1]) is int and identity[1] >= 0
+            else:
+                valid = all(isinstance(value, str) and (value or key == 'routines' and i == 2)
+                            for i, value in enumerate(identity))
+            if not valid:
+                raise Refusal('inventory_empty_or_malformed')
+            if identity in identities:
+                raise Refusal('inventory_duplicate_identity')
+            identities.add(identity)
     if catalog['database_acl'] is not None and not isinstance(catalog['database_acl'], list):
         raise Refusal('inventory_empty_or_malformed')
     expected = set()

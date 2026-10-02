@@ -20,6 +20,41 @@ spec.loader.exec_module(backup)
 
 
 class BoundaryTests(unittest.TestCase):
+    @staticmethod
+    def catalog_inventory():
+        catalog = {key: None for key in backup.CATALOG_ARRAYS}
+        catalog.update(kind='catalog', database_acl=None,
+            schemas=[['public', 'postgres', None]],
+            relations=[['public', 'fixture', 'r', 'postgres', None, False, False, None]],
+            columns=[['public', 'fixture', 'id', 1, 'integer', True, '', '', None, None]],
+            roles=[['postgres', True, True, True, True, True, True, True, -1, None, None]],
+            extensions=[['plpgsql', '1.0', 'pg_catalog', 'postgres', False, None, None]],
+            tablespaces=[['pg_default', 'postgres', None, None]])
+        return [catalog, {'kind': 'table', 'schema': 'public', 'name': 'fixture',
+                          'count': 0, 'sha256': '0' * 64}]
+
+    def test_identical_null_catalog_metadata_is_not_valid_inventory(self):
+        records = self.catalog_inventory()
+        for key in ('schemas', 'columns', 'roles', 'extensions', 'tablespaces'):
+            records[0][key] = [[None] * backup.CATALOG_ARRAYS[key]]
+        with self.assertRaises(backup.Refusal):
+            backup.compare_inventory(records, records)
+
+    def test_identical_duplicate_catalog_relation_is_not_valid_inventory(self):
+        records = self.catalog_inventory()
+        records[0]['relations'].append(records[0]['relations'][0].copy())
+        with self.assertRaises(backup.Refusal):
+            backup.compare_inventory(records, records)
+
+    def test_large_object_catalog_preserves_postgresql_oid_strings(self):
+        records = self.catalog_inventory()
+        records[0]['large_object_metadata'] = [['76543', 'postgres', None]]
+        records[0]['large_objects'] = [['76543', 0, '0' * 64, 4]]
+        self.assertEqual(backup.compare_inventory(records, records)['tables'], 1)
+        records[0]['large_object_metadata'][0][0] = True
+        with self.assertRaises(backup.Refusal):
+            backup.compare_inventory(records, records)
+
     def test_hostile_numeric_bounds_refuse_direct_calls(self):
         for value in (None, True, False, 0, -1, float('nan'), float('inf'), '300', 301):
             with self.subTest(value=repr(value)), self.assertRaises(backup.Refusal):
