@@ -229,6 +229,39 @@ def load_blue_book_extractions(
     county volume creates 500-1,300 findings, at ~0.1s a round trip to
     production.
     """
+    from .scope import (
+        parse_manifest,
+        verify_registered,
+        verify_fetched,
+        verify_extraction_evidence,
+        AuditSourceScopeError,
+    )
+
+    source_entries = parse_manifest(context.audits_source_manifest)
+    if source_entries is not None:
+        entry = next((e for e in source_entries if e["source_url"] == doc.url), None)
+        if entry is None:
+            raise AuditSourceScopeError("loader offered an unlisted source")
+        from ...source_registry import SOURCE_REGISTRY
+        from models import DocumentType
+
+        dataset = SOURCE_REGISTRY["oag_county_audits"]
+        verify_registered(
+            session,
+            [entry],
+            country_id=doc.country_id,
+            publisher=dataset.publisher,
+            doc_type=DocumentType[dataset.doc_type],
+        )
+        verify_fetched(
+            doc,
+            entry,
+            country_id=doc.country_id,
+            publisher=dataset.publisher,
+            doc_type=DocumentType[dataset.doc_type],
+        )
+        verify_extraction_evidence(session, doc, entry)
+
     fresh = set(fresh_extraction_ids)
     stats = PersistenceStats()
     # Lookup caches for this document. Scoped per call, not module-level, so
@@ -456,7 +489,10 @@ def load_blue_book_extractions(
     if not context.dry_run:
         from services.publication_gate import backfill_publishable_audits
 
-        backfill_publishable_audits(session)
+        if source_entries is None:
+            backfill_publishable_audits(session)
+        else:
+            backfill_publishable_audits(session, source_document_ids=[doc.id])
 
     logger.info(
         "Loaded blue-book extractions for doc %s: %d created, %d updated, "

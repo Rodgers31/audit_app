@@ -191,6 +191,27 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
         logger.error("Domain validation failed", extra={"error": str(exc)})
         return 1
 
+    from .domains.audits.scope import (
+        read_manifest,
+        parse_manifest,
+        receipt_for,
+        AuditSourceScopeError,
+    )
+
+    try:
+        manifest_path = getattr(args, "audits_source_manifest", None)
+        source_manifest = (
+            read_manifest(manifest_path) if manifest_path is not None else None
+        )
+        source_entries = parse_manifest(source_manifest)
+        if source_entries is not None and (args.all or list(domains) != ["audits"]):
+            raise AuditSourceScopeError(
+                "--audits-source-manifest requires only --domain audits"
+            )
+    except AuditSourceScopeError as exc:
+        logger.error("Audit source scope refused: %s", exc)
+        return 1
+
     if not domains:
         logger.warning("No domains registered - nothing to do")
         return 0
@@ -256,6 +277,14 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
         # Set inside the try once we know the time left; referenced in the
         # except handler, so it must exist even if we fail before computing it.
         global_capped = False
+        context = DomainRunContext(
+            since=since,
+            dry_run=dry_run,
+            audits_source_manifest=source_manifest,
+            audits_source_receipt=receipt_for(source_entries)
+            if source_entries is not None
+            else None,
+        )
 
         _ensure_db_sessionlocal()
         assert SessionLocal is not None  # for type-checkers
@@ -274,7 +303,14 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
                     items_created=0,
                     items_updated=0,
                     errors=[],
-                    meta={"since": since.isoformat() if since else None},
+                    meta={
+                        "since": since.isoformat() if since else None,
+                        **(
+                            {"audit_source_scope": context.audits_source_receipt}
+                            if context.audits_source_receipt is not None
+                            else {}
+                        ),
+                    },
                 )
                 session.add(job)
                 session.flush()
@@ -287,7 +323,7 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
                 # returns None, leaving no trace of the failed domain run.
                 session.commit()
 
-                context = DomainRunContext(since=since, dry_run=dry_run, job_id=job_id)
+                context.job_id = job_id
 
                 # Per-domain timeout so one stuck domain (e.g. a stalled
                 # PDF parse in counties_budget) can't take down the whole
@@ -309,6 +345,11 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
 
                 with _domain_timeout(domain_budget):
                     result = handler(session=session, settings=settings, context=context)
+
+                if context.audits_source_receipt is not None:
+                    receipt = context.audits_source_receipt
+                    if receipt["deferred"] or receipt["refused"]:
+                        status = 1
 
                 # Update job with results
                 job.finished_at = datetime.now(timezone.utc)
@@ -433,6 +474,11 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
                                     # reported success.
                                     stopped_job.status = IngestionStatus.FAILED
                                     stopped_job.finished_at = datetime.now(timezone.utc)
+                                    if context.audits_source_receipt is not None:
+                                        stopped_job.meta = {
+                                            **(stopped_job.meta or {}),
+                                            "audit_source_scope": context.audits_source_receipt,
+                                        }
                                     stopped_job.errors = [
                                         "stopped: global seed budget exhausted"
                                     ]
@@ -463,6 +509,11 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
                                 failed_job.status = IngestionStatus.FAILED
                                 failed_job.finished_at = datetime.now(timezone.utc)
                                 failed_job.errors = [str(exc)]
+                                if context.audits_source_receipt is not None:
+                                    failed_job.meta = {
+                                        **(failed_job.meta or {}),
+                                        "audit_source_scope": context.audits_source_receipt,
+                                    }
                                 # A run that discovered a newer edition and then
                                 # failed is the case the edition gate exists
                                 # for; keep what it saw.
@@ -520,6 +571,11 @@ def build_parser() -> argparse.ArgumentParser:
     seed_parser.add_argument(
         "--since",
         help="ISO timestamp or YYYY-MM-DD to limit ingestion to recent records",
+    )
+    seed_parser.add_argument(
+        "--audits-source-manifest",
+        type=Path,
+        help="Restrict audits to the exact reviewed five-edition readiness manifest (not live approval)",
     )
     seed_parser.add_argument(
         "--config",
