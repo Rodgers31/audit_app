@@ -17,9 +17,14 @@ def render(manifest):
     ) != len(audits):
         raise ValueError("duplicate row ids")
     for e in entities:
-        if e["after"] != {
+        retained = {
             k: v for k, v in e["before"].items() if k not in e["remove_keys"]
-        }:
+        }
+        # Python equality treats true == 1 and 1 == 1.0. Compare encoded JSON
+        # so removing approved keys cannot also change a retained value's type.
+        if json.dumps(e["after"], sort_keys=True, allow_nan=False) != json.dumps(
+            retained, sort_keys=True, allow_nan=False
+        ):
             raise ValueError("entity after-image must only remove the approved keys")
     for a in audits:
         if not (
