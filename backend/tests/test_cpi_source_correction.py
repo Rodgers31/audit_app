@@ -720,3 +720,125 @@ def test_empty_publication_identity_cannot_certify_success(clone):
     with clone[0].connect() as c:
         with pytest.raises(ValueError):
             tool.assert_publication(c, [])
+
+
+def test_commit_refuses_shared_source_json_type_change(clone, tmp_path):
+    with clone[0].begin() as c:
+        c.execute(text("ALTER TABLE source_documents ADD COLUMN retained_extra jsonb"))
+        c.execute(text(
+            "UPDATE source_documents SET retained_extra="
+            "jsonb_build_object('verified', true) WHERE id=1823"
+        ))
+        c.execute(text(
+            "CREATE FUNCTION cpi_type_drift() RETURNS trigger LANGUAGE plpgsql AS $$ "
+            "BEGIN IF NEW.id=87 THEN UPDATE source_documents SET retained_extra="
+            "jsonb_build_object('verified', 1) WHERE id=1823; END IF; RETURN NEW; END $$"
+        ))
+        c.execute(text(
+            "CREATE TRIGGER cpi_type_drift AFTER UPDATE ON economic_indicators "
+            "FOR EACH ROW EXECUTE FUNCTION cpi_type_drift()"
+        ))
+    with clone[0].connect() as c:
+        clone[1].update(tool.tables_for(c))
+    plan = prepared(clone)
+    before = inventory(clone)
+    intent = tmp_path / "type-drift.json"
+    with pytest.raises(ValueError, match="original shared source drift"):
+        tool.run(
+            clone[0], MANIFEST, clone[2], plan=plan,
+            expected_sha256=tool.digest(plan), commit=True, receipt_path=intent,
+        )
+    assert tool.encoded(inventory(clone)) == tool.encoded(before)
+    assert intent.exists() and not Path(str(intent) + ".resolved.json").exists()
+
+
+def test_recovery_refuses_retained_json_numeric_type_change(clone, tmp_path):
+    _, receipt = apply(clone, tmp_path)
+    with clone[0].begin() as c:
+        c.execute(
+            update(clone[1]["economic_indicators"])
+            .where(clone[1]["economic_indicators"].c.id == 67)
+            .values(retained_extra={"original": 67.0})
+        )
+    before = inventory(clone)
+    intent = tmp_path / "numeric-type-recovery.json"
+    with pytest.raises(ValueError, match="recovery full after-image drift"):
+        tool.run(
+            clone[0], MANIFEST, clone[2], recover_receipt=receipt,
+            expected_sha256=tool.digest(receipt), commit=True, receipt_path=intent,
+        )
+    assert tool.encoded(inventory(clone)) == tool.encoded(before)
+    assert not intent.exists()
+
+
+@pytest.mark.parametrize(
+    "table,target", [("source_documents", 1823), ("countries", 1), ("extractions", None)]
+)
+def test_recovery_rolls_back_protected_context_changed_by_inverse(
+    clone, tmp_path, table, target
+):
+    with clone[0].begin() as c:
+        c.execute(text(
+            f"ALTER TABLE {table} ADD COLUMN retained_context jsonb "
+            "DEFAULT jsonb_build_object('guard', false)"
+        ))
+    with clone[0].connect() as c:
+        clone[1].update(tool.tables_for(c))
+    _, receipt = apply(clone, tmp_path)
+    if target is None:
+        target = receipt["allocations"]["extractions"][0]["id"]
+    with clone[0].begin() as c:
+        c.execute(text(
+            "CREATE FUNCTION cpi_inverse_context() RETURNS trigger LANGUAGE plpgsql AS $$ "
+            "BEGIN IF NEW.id=87 AND NEW.unit='index' THEN "
+            f"UPDATE {table} SET retained_context=jsonb_build_object('guard', 0) "
+            f"WHERE id={target}; END IF; RETURN NEW; END $$"
+        ))
+        c.execute(text(
+            "CREATE TRIGGER cpi_inverse_context AFTER UPDATE ON economic_indicators "
+            "FOR EACH ROW EXECUTE FUNCTION cpi_inverse_context()"
+        ))
+    before = inventory(clone)
+    intent = tmp_path / "inverse-context.json"
+    with pytest.raises(ValueError, match="context drift|source drift|allocated evidence drift"):
+        tool.run(
+            clone[0], MANIFEST, clone[2], recover_receipt=receipt,
+            expected_sha256=tool.digest(receipt), commit=True, receipt_path=intent,
+        )
+    assert tool.encoded(inventory(clone)) == tool.encoded(before)
+    assert intent.exists()
+
+
+@pytest.mark.parametrize(
+    "table,reference", [("source_documents", "source_document_id"), ("extractions", "extraction_id")]
+)
+def test_commit_rolls_back_allocated_context_changed_by_updates(
+    clone, tmp_path, table, reference
+):
+    with clone[0].begin() as c:
+        c.execute(text(
+            f"ALTER TABLE {table} ADD COLUMN retained_context jsonb "
+            "DEFAULT jsonb_build_object('guard', false)"
+        ))
+        c.execute(text(
+            "CREATE FUNCTION cpi_forward_context() RETURNS trigger LANGUAGE plpgsql AS $$ "
+            "BEGIN IF NEW.id=87 THEN "
+            f"UPDATE {table} SET retained_context=jsonb_build_object('guard', 0) "
+            f"WHERE id=NEW.{reference}; END IF; RETURN NEW; END $$"
+        ))
+        c.execute(text(
+            "CREATE TRIGGER cpi_forward_context AFTER UPDATE ON economic_indicators "
+            "FOR EACH ROW EXECUTE FUNCTION cpi_forward_context()"
+        ))
+    with clone[0].connect() as c:
+        clone[1].update(tool.tables_for(c))
+    plan = prepared(clone)
+    before = inventory(clone)
+    intent = tmp_path / "forward-context.json"
+    with pytest.raises(ValueError, match="postwrite allocated evidence drift"):
+        tool.run(
+            clone[0], MANIFEST, clone[2], plan=plan,
+            expected_sha256=tool.digest(plan), commit=True, receipt_path=intent,
+        )
+    assert tool.encoded(inventory(clone)) == tool.encoded(before)
+    assert intent.exists() and not Path(str(intent) + ".resolved.json").exists()
