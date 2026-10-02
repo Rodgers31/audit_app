@@ -384,7 +384,7 @@ def count_withheld_audits(db, entity_id=None, entity_types=None) -> int:
     return q.scalar() or 0
 
 
-def backfill_publishable_audits(session) -> Dict[str, int]:
+def backfill_publishable_audits(session, *, source_document_ids=None) -> Dict[str, int]:
     """Write the gate's verdict into ``audits.publishable`` — same predicate.
 
     The Layer-4 loader calls this after inserting rows, and the Stage-1
@@ -396,7 +396,11 @@ def backfill_publishable_audits(session) -> Dict[str, int]:
     from *which* clause failed, so an operator can see why a row is held
     without re-deriving the predicate by hand.
 
-    Returns ``{"published": n, "withheld": n}``.
+    ``source_document_ids`` bounds both writes and reported counts for an
+    explicitly scoped loader. None retains the ordinary whole-table behavior;
+    this restriction does not alter the publication predicate.
+
+    Returns ``{"published": n, "withheld": n}`` for the requested scope.
     """
     from sqlalchemy import update
 
@@ -409,7 +413,20 @@ def backfill_publishable_audits(session) -> Dict[str, int]:
     # instead of making the next reader derive it.
     started = time.monotonic()
 
-    crit = publishable_audit_criterion()
+    scope = True
+    if source_document_ids is not None:
+        if (
+            not isinstance(source_document_ids, (list, tuple))
+            or not source_document_ids
+            or any(type(i) is not int or i <= 0 for i in source_document_ids)
+            or len(source_document_ids) != len(set(source_document_ids))
+        ):
+            raise ValueError(
+                "publication backfill scope requires distinct positive source IDs"
+            )
+        scope = Audit.source_document_id.in_(source_document_ids)
+
+    crit = sa_and(scope, publishable_audit_criterion())
     # Which clause failed? In order: missing URL, invalid URL, text integrity,
     # then the locator. A row can fail more than one; the earliest reason wins,
     # and the buckets are disjoint so no row is
@@ -421,11 +438,11 @@ def backfill_publishable_audits(session) -> Dict[str, int]:
     readable = _finding_text_is_readable()
     located = _has_page_locator_criterion(Audit.page_ref)
 
-    retired = retired_audit_fixture_criterion()
-    no_url = sa_and(~retired, ~has_url)
-    invalid_url = sa_and(~retired, has_url, ~resolvable)
-    unreadable = sa_and(~retired, resolvable, ~readable)
-    unlocated = sa_and(~retired, resolvable, readable, ~located)
+    retired = sa_and(scope, retired_audit_fixture_criterion())
+    no_url = sa_and(scope, ~retired, ~has_url)
+    invalid_url = sa_and(scope, ~retired, has_url, ~resolvable)
+    unreadable = sa_and(scope, ~retired, resolvable, ~readable)
+    unlocated = sa_and(scope, ~retired, resolvable, readable, ~located)
 
     # The counts describe the TABLE, so they are read, not inferred from how
     # many rows this particular call happened to write. Previously they were

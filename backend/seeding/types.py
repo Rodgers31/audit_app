@@ -16,6 +16,9 @@ class DomainRunContext:
     since: Optional[datetime]
     dry_run: bool
     job_id: Optional[int] = None
+    # Explicit execution input; never sourced from scheduled environment defaults.
+    audits_source_manifest: Optional[bytes] = None
+    audits_source_receipt: Optional[Dict[str, Any]] = None
 
 
 class DomainRunResult(BaseModel):

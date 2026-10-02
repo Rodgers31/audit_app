@@ -37,6 +37,7 @@ Nothing here invents a URL.
 from __future__ import annotations
 
 import logging
+from copy import deepcopy
 import time
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
@@ -160,7 +161,12 @@ def _record_scheduled_attempt(session: Session, doc) -> None:
 
 
 def register_discovered_documents(
-    session: Session, *, country_id: int, dataset: SourceDataset, discovery
+    session: Session,
+    *,
+    country_id: int,
+    dataset: SourceDataset,
+    discovery,
+    source_manifest=None,
 ) -> Dict[str, int]:
     """Record every discovered county document in ``source_documents``.
 
@@ -174,6 +180,36 @@ def register_discovered_documents(
     extracting both would publish every finding twice.
     """
     from models import DocumentStatus, DocumentType, SourceDocument
+
+    from .scope import parse_manifest, verify_registered, AuditSourceScopeError
+
+    entries = parse_manifest(source_manifest)
+    if entries is not None:
+        if dataset != SOURCE_REGISTRY["oag_county_audits"]:
+            raise AuditSourceScopeError(
+                "registration requires the county audits dataset"
+            )
+        allowed = {e["source_url"] for e in entries}
+        offered = [d.url for d in discovery.documents]
+        if len(offered) != len(set(offered)) or set(offered) != allowed:
+            raise AuditSourceScopeError(
+                "registration offered an unlisted or duplicate source"
+            )
+        expected = {e["source_url"]: e for e in entries}
+        if any(
+            d.fiscal_year != expected[d.url]["fiscal_year"]
+            or d.kind != expected[d.url]["institution"]
+            or d.listed_at != expected[d.url]["listed_at"]
+            for d in discovery.documents
+        ):
+            raise AuditSourceScopeError("registration offered a different edition")
+        verify_registered(
+            session,
+            entries,
+            country_id=country_id,
+            publisher=dataset.publisher,
+            doc_type=DocumentType[dataset.doc_type],
+        )
 
     by_url = {
         d.url: d
@@ -253,6 +289,40 @@ def _discovered_urls(client, dataset: SourceDataset) -> tuple[List[str], dict]:
 def run(
     session: Session, settings: SeedingSettings, context: DomainRunContext
 ) -> DomainRunResult:
+    from .scope import (
+        parse_manifest,
+        discovery_for,
+        receipt_for,
+        verify_registered,
+        verify_fetched,
+        verify_extractions,
+        AuditSourceScopeError,
+    )
+
+    # Validate at the handler boundary too: embedded callers do not pass argparse.
+    source_entries = parse_manifest(context.audits_source_manifest)
+    selected = (
+        {e["source_url"]: e for e in source_entries}
+        if source_entries is not None
+        else None
+    )
+    if source_entries is not None:
+        context.audits_source_receipt = receipt_for(source_entries)
+    scope_receipt = context.audits_source_receipt if selected is not None else None
+
+    def bank():
+        if scope_receipt is not None and context.job_id is not None:
+            from models import IngestionJob
+
+            job = session.get(IngestionJob, context.job_id)
+            if job is None:
+                raise AuditSourceScopeError("scoped ingestion job disappeared")
+            job.meta = {
+                **(job.meta or {}),
+                "audit_source_scope": deepcopy(scope_receipt),
+            }
+        session.commit()
+
     started_at = datetime.now(timezone.utc)
     errors: List[str] = []
     created = updated = processed = skipped = 0
@@ -294,6 +364,17 @@ def run(
     from ...fetch_documents import fetch_document
     from .loader import load_blue_book_extractions
 
+    if selected is not None:
+        dataset = SOURCE_REGISTRY["oag_county_audits"]
+        verify_registered(
+            session,
+            source_entries,
+            country_id=country.id,
+            publisher=dataset.publisher,
+            doc_type=DocumentType[dataset.doc_type],
+        )
+        metadata["audit_source_scope"] = scope_receipt
+
     domain_start = time.monotonic()
     volume_urls: Dict[str, dict] = {}
     volume_report: Optional[dict] = None
@@ -302,32 +383,54 @@ def run(
     with create_http_client(settings) as client:
         # New county volumes get first use of the bounded window. National
         # and older county retries then share the remaining start slots.
-        for phase in ("county_volumes", "older_documents"):
+        for phase in (
+            ("county_volumes",)
+            if selected is not None
+            else ("county_volumes", "older_documents")
+        ):
             dataset_id = (
                 "oag_county_audits" if phase == "county_volumes" else "oag_national_audits"
             )
             dataset = SOURCE_REGISTRY[dataset_id]
             parser = get_parser(dataset.parser_id)
 
-            known = _known_document_urls(session, dataset)
+            known = (
+                [] if selected is not None else _known_document_urls(session, dataset)
+            )
             if phase == "county_volumes":
-                discovery = discover_county_audit_documents(client)
-                metadata["oag_county_discovery"] = discovery.as_meta()
+                discovery = (
+                    discovery_for(source_entries)
+                    if selected is not None
+                    else discover_county_audit_documents(client)
+                )
+                metadata["oag_county_discovery"] = (
+                    {
+                        "status": "not_performed_source_bounded",
+                        "inventory_basis": "reviewed_retained_manifest",
+                    }
+                    if selected is not None
+                    else discovery.as_meta()
+                )
                 # An unreadable listing is not "OAG published nothing". Name it,
                 # so the run reads COMPLETED_WITH_ERRORS rather than clean.
                 errors.extend(
                     f"OAG county discovery: {e}" for e in discovery.errors
                 )
                 if not context.dry_run:
-                    metadata["oag_county_registration"] = (
-                        register_discovered_documents(
-                            session,
-                            country_id=country.id,
-                            dataset=dataset,
-                            discovery=discovery,
-                        )
+                    metadata["oag_county_registration"] = register_discovered_documents(
+                        session,
+                        country_id=country.id,
+                        dataset=dataset,
+                        discovery=discovery,
+                        source_manifest=context.audits_source_manifest,
                     )
-                volume_urls = _registered_volumes(session) if not context.dry_run else {}
+                if selected is not None and not context.dry_run:
+                    bank()  # only selected registrations/job receipt survive first-fetch timeout
+                volume_urls = (
+                    _registered_volumes(session)
+                    if selected is None and not context.dry_run
+                    else {}
+                )
                 for vol in discovery.volumes():
                     volume_urls[vol.url] = vol.as_meta()
                 ordered_volumes = sorted(
@@ -398,6 +501,10 @@ def run(
                     "partial": [],
                 }
                 candidates = [(dataset_id, url) for url in candidates]
+                if selected is not None:
+                    volume_report[
+                        "inventory_basis"
+                    ] = "reviewed_retained_manifest_not_live_discovery"
             else:
                 if (
                     not context.dry_run
@@ -471,6 +578,8 @@ def run(
                         # A current volume may still require a PDF cache read.
                         # Do not keep starting them after the cutoff either.
                         volume_report["deferred"].append(label)
+                        if scope_receipt is not None:
+                            scope_receipt["deferred"].append(url)
                         continue
                 elif elapsed >= settings.audits_county_start_budget_seconds:
                     metadata["deferred_documents"].append(
@@ -517,28 +626,52 @@ def run(
                         session.add(registered)
                     _record_scheduled_attempt(session, registered)
                 try:
-                    doc = fetch_document(
-                        session,
-                        client,
-                        settings,
-                        url=url,
-                        country_id=country.id,
-                        publisher=dataset.publisher,
-                        title=url.rsplit("/", 1)[-1],
-                        doc_type=DocumentType[dataset.doc_type],
-                        dataset_id=dataset_id,
-                        max_seconds=(
-                            settings.audits_volume_download_timeout_seconds
-                            if is_volume
-                            else None
-                        ),
-                    )
+                    if scope_receipt is not None:
+                        if url not in selected or dataset_id != "oag_county_audits":
+                            raise AuditSourceScopeError(
+                                "candidate escaped selected source scope"
+                            )
+                        scope_receipt["attempted"].append(url)
+                    from contextlib import nullcontext
+
+                    with session.begin_nested() if selected is not None else nullcontext():
+                        doc = fetch_document(
+                            session,
+                            client,
+                            settings,
+                            url=url,
+                            country_id=country.id,
+                            publisher=dataset.publisher,
+                            title=url.rsplit("/", 1)[-1],
+                            doc_type=DocumentType[dataset.doc_type],
+                            dataset_id=dataset_id,
+                            max_seconds=(
+                                settings.audits_volume_download_timeout_seconds
+                                if is_volume
+                                else None
+                            ),
+                        )
+                        if selected is not None:
+                            verify_fetched(
+                                doc,
+                                selected[url],
+                                country_id=country.id,
+                                publisher=dataset.publisher,
+                                doc_type=DocumentType[dataset.doc_type],
+                            )
                 except Exception as exc:
+                    if scope_receipt is not None:
+                        scope_receipt["refused"].append(
+                            {"url": url, "reason": str(exc)}
+                        )
+                        raise AuditSourceScopeError(
+                            f"scoped fetch refused: {url}: {exc}"
+                        ) from exc
                     errors.append(f"fetch failed for {url}: {exc}")
                     if is_volume:
                         volume_report["failed"].append(f"{label}: fetch: {str(exc)[:160]}")
                         # The FAILED status and fetch_error are worth keeping.
-                        session.commit()
+                        bank()
                     continue
 
                 doc_stat = {"dataset": dataset_id, "doc_id": doc.id, "url": url}
@@ -546,13 +679,42 @@ def run(
                     try:
                         from ...extractors.reconciliation import extract_and_load
 
+                        def scoped_parser(session, doc, settings):
+                            stats = parser(session, doc, settings)
+                            verify_extractions(session, doc, selected[url], stats)
+                            return stats
+
+                        def scoped_loader(session, doc, settings, context, **kwargs):
+                            stats = load_blue_book_extractions(
+                                session, doc, settings, context, **kwargs
+                            )
+                            if stats.errors or stats.skipped:
+                                raise AuditSourceScopeError(
+                                    f"scoped load incomplete: {label}"
+                                )
+                            return stats
+
                         ext_stats, load_stats = extract_and_load(
-                            session, doc, settings, context, parser, load_blue_book_extractions
+                            session,
+                            doc,
+                            settings,
+                            context,
+                            scoped_parser if selected is not None else parser,
+                            scoped_loader
+                            if selected is not None
+                            else load_blue_book_extractions,
                         )
                         doc_stat["extractions"] = ext_stats
                         if ext_stats.get("partial"):
                             errors.append(f"document {doc.id}: partial extraction; coverage incomplete")
                     except QuarantinedDocument as exc:
+                        if scope_receipt is not None:
+                            scope_receipt["refused"].append(
+                                {"url": url, "reason": str(exc)}
+                            )
+                            raise AuditSourceScopeError(
+                                f"scoped extraction refused: {label}: {exc}"
+                            ) from exc
                         # A document the parser deliberately refused — a
                         # thematic or performance audit with no auditee, say.
                         # That is a SKIP with a reason, not an extraction
@@ -585,10 +747,18 @@ def run(
                             volume_report["failed"].append(
                                 f"{label}: {type(exc).__name__}: {str(exc)[:160]}"
                             )
+                        if scope_receipt is not None:
+                            scope_receipt["refused"].append(
+                                {"url": url, "reason": str(exc)}
+                            )
+                            bank()
+                            raise AuditSourceScopeError(
+                                f"scoped extraction refused: {label}: {exc}"
+                            ) from exc
                         # Keep the failed-attempt receipt even if a later PDF
                         # exhausts the domain timeout. It never accepts the
                         # candidate extraction or overrides the review gate.
-                        session.commit()
+                        bank()
                         continue
                     processed += load_stats.processed
                     created += load_stats.created
@@ -619,28 +789,45 @@ def run(
                         doc_stat["extraction_outcome"] = "invalid"
                         errors.append(reason)
                         volume_report["failed"].append(reason)
-                        session.commit()
+                        if scope_receipt is not None:
+                            scope_receipt["refused"].append(
+                                {"url": url, "reason": reason}
+                            )
+                            bank()
+                            raise AuditSourceScopeError(reason)
+                        bank()
                         continue
                 if not is_volume and _extracted_something(ext):
                     # Bank it, as each volume is banked below. A change to the
                     # Blue Book walk re-reads national or FY2020/21 evidence.
                     # A later timeout must not make that work repeat nightly.
-                    session.commit()
+                    bank()
                 if is_volume:
                     if ext.get("partial") or (parser is not None and (load_stats.errors or load_stats.skipped)):
                         volume_report["partial"].append(label)
-                        session.commit()
+                        if scope_receipt is not None:
+                            scope_receipt["refused"].append(
+                                {"url": url, "reason": "partial load"}
+                            )
+                            bank()
+                            raise AuditSourceScopeError(f"scoped load partial: {label}")
+                        bank()
                     elif ext.get("reason") == "already_extracted":
                         volume_report["already_current"].append(label)
+                        if scope_receipt is not None:
+                            scope_receipt["already_current"].append(url)
+                            bank()
                     else:
                         volume_report["processed"].append(
                             f"{label}: {ext.get('created', 0)} finding(s)"
                         )
+                        if scope_receipt is not None:
+                            scope_receipt["processed"].append(url)
                         # Bank this volume. The CLI commits once, at the end,
                         # and rolls the whole domain back on a timeout, so
                         # without this a run that ran out of time mid-backlog
                         # would keep nothing and the next would start over.
-                        session.commit()
+                        bank()
 
     # Provenance: the audits domain is "live" only if at least one document
     # was actually fetched AND extracted this run. Registering a document
