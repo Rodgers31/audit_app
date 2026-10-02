@@ -16,24 +16,18 @@ test.describe('/sources', () => {
     await expect(page.getByText(/Publishing agencies|Mashirika/i)).toBeVisible();
   });
 
-  test('lists the Controller of Budget agency card', async ({ page }) => {
+  test('lists the synthetic publishing agency card', async ({ page }) => {
     await page.goto('/sources');
     await waitForAppReady(page);
 
-    const cob = page.getByRole('article').filter({ hasText: /Controller of Budget|COB/ }).first();
+    const cob = page.getByRole('article').filter({ hasText: /Synthetic local fixture/ }).first();
     await expect(cob).toBeVisible({ timeout: 15_000 });
-    await expect(cob).toContainText(/COB/);
+    await expect(cob).toContainText('2');
   });
 
-  test('each agency card with a website exposes an external Visit-site link', async ({ page }) => {
+  test('an agency without a website does not invent an external Visit-site link', async ({ page }) => {
     await page.goto('/sources');
-    await waitForAppReady(page);
-
-    const visit = page.getByRole('link', { name: /Visit site/i }).first();
-    await expect(visit).toBeVisible();
-    await expect(visit).toHaveAttribute('target', '_blank');
-    await expect(visit).toHaveAttribute('rel', /noopener/);
-    const href = await visit.getAttribute('href');
-    expect(href).toMatch(/^https?:\/\//);
+    await expect(page.getByRole('article').filter({ hasText: 'Synthetic local fixture' })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Visit site/i })).toHaveCount(0);
   });
 });

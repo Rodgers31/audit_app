@@ -134,14 +134,16 @@ jobs:
           PLAYWRIGHT_BASE_URL: http://localhost:3000
           PORT: 3000
           CI: true
-        run: npx playwright test --project=chromium --reporter=list
+        run: npm run test:e2e:legacy
 
       - name: Upload E2E Test Results
         if: failure()
         uses: actions/upload-artifact@v5
         with:
           name: e2e-test-results-prod
-          path: frontend/playwright-report/
+          path: |
+            frontend/legacy-report/
+            frontend/legacy-results/
           retention-days: 7
 
   # Quality Gate - All tests must pass

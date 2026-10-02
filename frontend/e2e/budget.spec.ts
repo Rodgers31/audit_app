@@ -1,29 +1,12 @@
 import { expect, test } from '@playwright/test';
-import { registerApiMocks } from './utils/mockApi';
-
-test.beforeEach(async ({ page }) => {
-  await registerApiMocks(page);
-});
 
 test('budget page filter toggles and chart renders', async ({ page }) => {
   await page.goto('/budget');
-  await page.waitForTimeout(5000);
-
-  // Check if page loaded
-  const mainContent = page.locator('main');
-  await expect(mainContent).toBeVisible({ timeout: 15000 });
-
-  // Check if budget period selector exists
-  const periodSelector = page.getByText('Choose Budget Period');
-
-  if ((await periodSelector.count()) > 0) {
-    await expect(periodSelector).toBeVisible();
-
-    // Try clicking filter options if they exist
-    const budgetButton = page.getByRole('button', { name: /2024 Budget/i });
-    if ((await budgetButton.count()) > 0) {
-      await budgetButton.click();
-      await page.waitForTimeout(1000);
-    }
-  }
+  await expect(page.getByRole('heading', { name: 'KES 180B approved for FY 2025/26' })).toBeVisible();
+  await expect(page.getByText('Spending & net lending KES 150B', { exact: true })).toBeVisible();
+  await expect(page.getByText('Tax revenue', { exact: true }).first().locator('..')).toContainText('80B');
+  await expect(page.locator('.recharts-wrapper').first()).toBeVisible();
+  await page.getByRole('button', { name: 'FY2024/25', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'KES 150B approved for FY 2024/25' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'KES 180B approved for FY 2025/26' })).toHaveCount(0);
 });

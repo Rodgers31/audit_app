@@ -6,7 +6,7 @@ const criticalRoutes = [
   { path: '/budget', title: /Budget/i },
   { path: '/counties', title: /Counties|County/i },
   { path: '/debt', title: /Debt|Liabilities/i },
-  { path: '/reports', title: /Reports/i },
+  { path: '/audits', title: /Audit/i },
 ];
 
 test.describe('Frontend smoke', () => {

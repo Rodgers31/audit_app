@@ -12,7 +12,8 @@
     "test:watch": "jest --watch",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "e2e:install": "playwright install --with-deps"
+    "e2e:install": "playwright install --with-deps",
+    "test:e2e:legacy": "node scripts/run-legacy-e2e.mjs"
   },
   "dependencies": {
     "@heroicons/react": "^2.0.0",

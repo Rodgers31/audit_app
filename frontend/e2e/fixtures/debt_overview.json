@@ -1,16 +1,15 @@
 {
+  "status": "success",
+  "synthetic": true,
   "data": {
-    "total_debt": 11500,
-    "debt_to_gdp_ratio": 70.2,
-    "debt_breakdown": {
-      "domestic_debt": 4600,
-      "external_debt": 6900,
-      "domestic_percentage": 40.0,
-      "external_percentage": 60.0
-    },
-    "debt_sustainability": {
-      "risk_level": "High",
-      "debt_service_ratio": 37.0
-    }
+    "total_outstanding": 12000000000000,
+    "gdp": 20000000000000,
+    "debt_to_gdp_ratio": 60,
+    "debt_to_gdp_year": 2025,
+    "debt_to_gdp_basis": "Synthetic nominal observation",
+    "debt_to_gdp_source": "Synthetic browser fixture",
+    "categories": {},
+    "summary": {},
+    "debt_sustainability": {}
   }
 }

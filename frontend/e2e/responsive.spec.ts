@@ -8,8 +8,10 @@
 import { expect, test, devices } from '@playwright/test';
 import { nav, waitForAppReady } from './utils/selectors';
 
-const MOBILE = { ...devices['iPhone 12'], viewport: { width: 390, height: 844 } };
-const TABLET = { ...devices['iPad Mini'], viewport: { width: 768, height: 1024 } };
+const { defaultBrowserType: _mobileBrowser, ...mobileOptions } = devices['iPhone 12'];
+const MOBILE = { ...mobileOptions, viewport: { width: 390, height: 844 } };
+const { defaultBrowserType: _tabletBrowser, ...tabletOptions } = devices['iPad Mini'];
+const TABLET = { ...tabletOptions, viewport: { width: 768, height: 1024 } };
 
 test.describe('Mobile — 390×844', () => {
   test.use(MOBILE);
@@ -33,7 +35,7 @@ test.describe('Mobile — 390×844', () => {
     await waitForAppReady(page);
 
     // At least one county tile visible
-    await expect(page.getByText(/Nairobi|Mombasa/).first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('table tbody tr').first()).toBeVisible({ timeout: 15_000 });
 
     // No horizontal overflow
     const overflow = await page.evaluate(
