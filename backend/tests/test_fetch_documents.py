@@ -30,7 +30,7 @@ def settings(tmp_path):
 
 def _fake_pdf(tmp_path: Path, content: bytes = b"%PDF-1.7 fake body") -> Path:
     p = tmp_path / "fake.pdf"
-    p.write_bytes(content)
+    p.write_bytes(content + b"\n%%EOF\n")
     return p
 
 
@@ -103,7 +103,7 @@ class TestFetchDocument:
         old_md5 = doc.md5
 
         reissued = tmp_path / "reissued.pdf"
-        reissued.write_bytes(b"%PDF-1.7 the publisher changed the file")
+        reissued.write_bytes(b"%PDF-1.7 the publisher changed the file\n%%EOF\n")
         with patch(
             "seeding.fetch_documents.get_or_download_pdf", return_value=reissued
         ):

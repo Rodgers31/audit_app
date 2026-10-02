@@ -2,7 +2,9 @@
 
 The owner accepted the bounded local contract on **2 October 2026**. Runtime
 implementation covers exactly two retained CoB FY2025/26 narrative anchors,
-Nyamira and Siaya, as separate source observations. It does not authorize
+Nyamira and Siaya, as separate source observations. Round15 also projects the
+bounded older Nyamira OAG observation when actual ingested records prove its
+artifact and exact evidence context. It does not authorize
 production replay, public Projects rendering, automatic OAG corroboration,
 aggregate union or closure of [#230](https://github.com/Rodgers31/audit_app/issues/230).
 The [comparative examples](round13-project-narratives.examples.json) preserve
@@ -69,8 +71,9 @@ fabricator. Do not silently skip malformed observations in a success verdict.
 The examples contain three observations, sourced from the
 [Round12 comparison manifest](../verification/2026-10-01-round12-project-scope-corroboration.json).
 “Accepted” here means faithful to the retained source, including uncertainties.
-Only the two CoB annual observations are locally implemented; the historical
-example remains documentary and is not injected into ingestion or API output.
+The two CoB annual observations are locally implemented. Round15 additionally
+supports the historical Nyamira observation from actual bound ingested OAG
+records; the documentary example is never injected into ingestion or API output.
 
 - **Nyamira annual:** CoB SHA `5f5e4f97bbe2752957f284950d0ba90fcff4d47b35fc0ac96a9106ffb59821b3`,
   PDF686 / printed652 / unnumbered named paragraph. County Assembly Speaker’s
@@ -193,13 +196,69 @@ observations, while existing valid tables remain visible. Reasons include:
   `narrative_county_mismatch`, `narrative_source_publisher_mismatch`. Invalid nested types/serialization also carry a
   diagnostic refusal rather than an empty accepted collection.
 
-Historical candidates remain empty with
-`ingested_oag_projection_lacks_required_source_hash_and_exact_evidence`. The
-actual existing `stalled_oag_findings` projection supplies report URL, title,
-page/paragraph, period and text, but not the pinned SHA-256/exact retained
-locator set needed by this contract. A name match alone cannot supply that
-missing authority. No historical record is hardcoded, no new fetcher is added,
-and existing table-row OAG behavior stays on its current path.
+## Round15 artifact identity and historical read contract
+
+`SourceDocument.meta.pdf_artifact_v1` records SHA-256 and MD5 of the actual
+PDF bytes, byte size, source document/URL/report/publisher association and the
+existing PDF magic/final-EOF validation. It contains no private file path.
+Download verification time is recorded only when the downloader sidecar names
+those exact hashed bytes and a valid past timestamp; otherwise it is null with
+`download_time_not_available`. The existing document cache verification timing
+is preserved. A same-byte re-download preserves artifact identity; a changed
+edition retains the earlier artifact in `previous_pdf_artifacts_v1`. Unrelated
+metadata and later separately versioned keys survive.
+
+The normal county-volume extractor verifies the actual file against this identity
+before and after its visible-only page read. Each newly read finding carries
+`extracted_json.pdf_artifact_binding_v1`: the artifact snapshot, extractor,
+visible-text rule and actual PDF page count. Missing legacy binding remains
+absent. The document's latest hash, MD5 extraction stamp, URL/cache filename or
+an example cannot backfill it. A future normal complete re-extraction may establish
+binding in place; an incomplete reissue cannot relabel older findings.
+The loader retains each supported extraction's artifact in Audit provenance.
+`Audit.source_hash` remains the canonical extraction-JSON SHA-256, including
+binding; it is separate from the PDF-byte SHA-256 and has no self-reference.
+Hash-only binding changes preserve stable extraction IDs and Audit references,
+while meaning changes/retirements retain the source-reviewed reconciliation gate.
+The existing extraction/load transaction rolls bindings back on loader failure.
+
+The comprehensive caller passes the already batched Extraction and SourceDocument
+records and requested canonical county to the stalled-project service. The
+publishable/display-grade filters remain in place. Historical projection requires
+consistent document status/source/type/identity, extraction source/extractor,
+canonical JSON hash, Audit source/text/page/entity/period, provenance binding,
+visible text, exact chapter/institution and pinned edition/page/paragraph/full
+finding-text context. The pinned full-text checksums are refusal guards over
+actual visible-text extraction, never documentary records to insert.
+
+Only Nyamira's FY2023/24 Assembly paragraph537 (PDF207/printed193) is accepted
+as the primary historical residence observation. Paragraph533 (PDF205/printed191,
+continued on PDF206) supplies payable only when it independently passes all guards
+and belongs to that same artifact. Missing/ambiguous payable is absent with a
+null scalar, not zero. The historical contract/payment/progress/date statements
+are derived from the actual bound text. Contract observation date and payable
+observation date stay unknown; status/inspection keeps month precision. There
+is no source-publication date inference.
+
+The `narratives` projection adds separately sourced `historical_observations`,
+`historical_sources`, `historical_evidence`, `historical_evidence_status` and
+`historical_refusals`. Candidates use the existing candidate-only decision,
+explicit institution/name/commencement-month/rounded-contract/progress comparison
+basis and missing ward/shared-tender evidence. Annual fields, table counts and
+money totals are unchanged. The old `_link` table matching remains separate and
+its existing label is not strengthened. OAG findings gain optional
+`artifact_evidence` with available context or an explicit unavailability reason.
+No sensitive credential-bearing URL or filesystem path is exported by this
+extension.
+
+Legacy direct calls without supplied historical records retain the prior
+`ingested_oag_projection_lacks_required_source_hash_and_exact_evidence` limitation.
+The actual comprehensive path returns explicit historical unavailability when
+required records are absent, malformed, changed or ambiguous; it preserves valid
+annual/table evidence. Siaya has `no_approved_historical_candidate_for_county`,
+retaining its unknown institution and investigation. An unavailable annual
+collection yields `annual_narrative_unavailable` even if older evidence exists.
+No historical source example creates an OAG row. Projects remains hidden.
 
 ## Evidence and remaining owner decisions
 

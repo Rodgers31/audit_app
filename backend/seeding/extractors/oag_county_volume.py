@@ -456,16 +456,21 @@ def already_extracted(session, doc) -> int:
     """
     from models import Extraction
 
+    from ..pdf_artifact import ARTIFACT_KEY, BINDING_KEY, artifact_for_document, valid_binding
+
     if not doc.md5 or (doc.meta or {}).get("extracted_md5") != doc.md5:
         return 0
-    return (
-        session.query(Extraction)
-        .filter(
-            Extraction.source_document_id == doc.id,
-            Extraction.extractor == EXTRACTOR_ID,
-        )
-        .count()
-    )
+    rows = session.query(Extraction).filter_by(
+        source_document_id=doc.id, extractor=EXTRACTOR_ID
+    ).all()
+    # A normal future fetch/re-extraction may establish binding; an old
+    # document-level MD5 stamp alone must not skip that extraction boundary.
+    if ARTIFACT_KEY in (doc.meta or {}):
+        artifact = artifact_for_document(doc)
+        if any(not valid_binding((r.extracted_json or {}).get(BINDING_KEY))
+               or r.extracted_json[BINDING_KEY]["artifact"] != artifact for r in rows):
+            return 0
+    return len(rows)
 
 
 def extract_county_volume(session, doc, settings, *, known_counties: Dict[str, str], review=None) -> dict:
@@ -487,6 +492,9 @@ def extract_county_volume(session, doc, settings, *, known_counties: Dict[str, s
             "no county entities held, so no chapter can be attributed",
         )
 
+    from ..pdf_artifact import BINDING_KEY, extraction_artifact
+
+    artifact = extraction_artifact(doc)
     existing = already_extracted(session, doc)
     if existing:
         return {
@@ -503,6 +511,10 @@ def extract_county_volume(session, doc, settings, *, known_counties: Dict[str, s
         ocr_max_pages=getattr(settings, "audits_ocr_max_pages", 30),
         visible_only=True,
     )
+    # Refuse a cache/file replacement during the page read before mutating rows.
+    if extraction_artifact(doc) != artifact:
+        from .reconciliation import IncompleteExtraction
+        raise IncompleteExtraction("PDF artifact changed during extraction")
     if not looks_like_county_volume(pages):
         # Discovery named it a volume from its filename and year page. The
         # bytes disagree, and the bytes win.
@@ -553,6 +565,12 @@ def extract_county_volume(session, doc, settings, *, known_counties: Dict[str, s
             county=county,
             printed_page=printed.get(f.pdf_page),
         )
+        if artifact is not None:
+            payload[BINDING_KEY] = {
+                "schema_version": 1, "artifact": artifact,
+                "extractor": EXTRACTOR_ID, "text_visibility": "visible_only",
+                "pdf_pages": len(pages),
+            }
         # No source_hash inside the payload: the loader hashes the payload
         # onto audits.source_hash, and a hash stored inside the thing it
         # hashes could never be re-checked against it.

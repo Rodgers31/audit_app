@@ -18,3 +18,15 @@ _Avoid_: Debt total
 
 **Pending bills**: Unpaid obligations reported separately from borrowing instruments.
 _Avoid_: Loan principal
+
+# Project source observations
+
+**PDF artifact identity**: The identity of one validated edition's actual document bytes, recorded with its source association. A download URL or cache filename does not identify those bytes.
+
+**Extraction binding**: Evidence that an individual finding was read from a particular PDF artifact. The source document's latest edition cannot establish an older finding's binding.
+
+**Extraction JSON hash**: A checksum of one finding's stored extraction content. It does not identify the PDF bytes.
+
+**Historical project observation**: One publisher's project statements from an older reporting period, each retaining its own measure, locator and observation date precision.
+
+**Historical identity candidate**: A qualified comparison of separately sourced observations for human consideration. It does not confirm project identity, combine measures, reconcile payments or verify current status.

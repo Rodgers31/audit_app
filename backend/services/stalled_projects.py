@@ -140,7 +140,8 @@ def _terms(text: str) -> set:
     return {w.strip("'’") for w in words if len(w) > 2 and w not in _STOP}
 
 
-def stalled_oag_findings(audits: Iterable[Any], extracted: Dict[int, dict]) -> List[Dict[str, Any]]:
+def stalled_oag_findings(audits: Iterable[Any], extracted: Dict[int, dict], *,
+                         extraction_records=None, documents=None, county_name=None) -> List[Dict[str, Any]]:
     """Published OAG findings about projects that did not finish.
 
     ``audits`` must already be publishable (``publishable_audit_criterion``)
@@ -150,17 +151,32 @@ def stalled_oag_findings(audits: Iterable[Any], extracted: Dict[int, dict]) -> L
     out: List[Dict[str, Any]] = []
     for a in audits:
         ext = extracted.get(getattr(a, "extraction_id", None) or -1) or {}
+        if not isinstance(ext, dict):
+            continue  # Malformed optional finding must not suppress county evidence.
         prov = a.provenance[0] if isinstance(a.provenance, list) and a.provenance else {}
         prov = prov if isinstance(prov, dict) else {}
-        title = ext.get("title") or prov.get("title")
+        raw_title = ext.get("title")
+        if raw_title is not None and not isinstance(raw_title, str):
+            continue
+        title = raw_title or prov.get("title")
         text = a.finding_text or ""
+        if (title is not None and not isinstance(title, str)) or not isinstance(text, str):
+            continue
         haystack = title or text[:400]
         if not _STALLED_RE.search(haystack) or not _PROJECT_RE.search(title or text):
             continue
-        doc = getattr(a, "source_document", None)
+        doc = documents.get(a.source_document_id) if documents is not None else getattr(a, "source_document", None)
         url = getattr(doc, "url", None)
-        if not isinstance(url, str) or not url.startswith(("http://", "https://")):
+        from seeding.pdf_artifact import safe_public_url
+        if not safe_public_url(url):
             continue
+        context = None
+        context_reason = "extraction_artifact_binding_absent"
+        if extraction_records is not None:
+            from services.oag_project_evidence import bound_context
+            context, context_reason = bound_context(
+                a, extraction_records.get(a.extraction_id), doc, county_name
+            )
         out.append(
             {
                 "speaker": "Auditor-General",
@@ -173,6 +189,8 @@ def stalled_oag_findings(audits: Iterable[Any], extracted: Dict[int, dict]) -> L
                 "heading": title,
                 "text": text,
                 "audit_id": a.id,
+                "artifact_evidence": {"status": "available" if context else "unavailable",
+                                      "reason": context_reason, "context": context},
             }
         )
     return out
@@ -222,6 +240,7 @@ def build_stalled_projects_block(
     oag_findings: Optional[List[Dict[str, Any]]] = None,
     *,
     county_name: Optional[str] = None,
+    historical_audits=None, historical_extractions=None, historical_documents=None,
 ) -> Dict[str, Any]:
     """Return the ``stalled_projects`` block for one county."""
     rows, edition = _stored_rows(stored)
@@ -257,6 +276,12 @@ def build_stalled_projects_block(
         "withheld": {"count": sum(withheld.values()), "by_reason": withheld},
     }
     base["narratives"] = _narrative_projection(edition, county_name)
+    if historical_audits is not None:
+        from services.oag_project_evidence import historical_projection, attach_historical
+        historical = historical_projection(
+            historical_audits, historical_extractions or {}, historical_documents or {}, county_name
+        )
+        attach_historical(base["narratives"], historical)
 
     if not published:
         if edition.get("tables"):

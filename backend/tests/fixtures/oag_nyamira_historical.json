@@ -1,0 +1,110 @@
+{
+  "source_url": "https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf",
+  "sha256": "683fa522bf11eaa2b0bc2a9eef51eadc3d664d9a512d3af63cb6e9479820f8a2",
+  "pages": 217,
+  "payloads": [
+    {
+      "schema": "oag_county_volume/v1",
+      "volume_kind": "assemblies",
+      "chapter_no": 46,
+      "auditee": "County Assembly of Nyamira",
+      "chapter_heading": "COUNTY ASSEMBLY OF NYAMIRA – NO.46",
+      "entity_name": "County Assembly of Nyamira",
+      "county_name": "Nyamira",
+      "fiscal_year": "2023/2024",
+      "fiscal_year_sources": [
+        "title_page"
+      ],
+      "paragraph_no": 533,
+      "title": "Pending Account Payables",
+      "finding_text": "Pending Account Payables Other disclosures Notes 1 and 2 to the financial statements reflects pending account payables and pending staff payables totalling Kshs.67,565,097 and Kshs.52,621,498 respectively. The outstanding amounts include payables balance of Kshs.45,231,445 in respect of construction of an office block and Kshs.2,457,540 in respect of construction the Speaker’s residence. The office block project had a brought forward balance from 2022/2023 financial year of Kshs.39,855,551 which ought to have been paid as a first charge. This was contrary to Regulation 41(2) of the Public Finance management (County Governments) Regulations, 2015 which requires debt service payments to be a first charge on the County Revenue Fund and the Accounting Officer shall ensure this is done to the extent possible that the county government does not default on debt obligations. Failure to settle bills during the year to which they relate distorts the financial statements for that year and consequently adversely affect the provisions for the subsequent year to which they have to be charged. My opinion is not modified in respect of these matters.",
+      "pdf_page": 205,
+      "printed_page": 191,
+      "subreport": "REPORT ON THE FINANCIAL STATEMENTS",
+      "opinion": null,
+      "heading": "Emphasis of Matter",
+      "sub_section": null,
+      "severity": "INFO",
+      "amounts": [
+        67565097.0,
+        52621498.0,
+        45231445.0,
+        2457540.0,
+        39855551.0
+      ],
+      "extraction_method": "pdfplumber"
+    },
+    {
+      "schema": "oag_county_volume/v1",
+      "volume_kind": "assemblies",
+      "chapter_no": 46,
+      "auditee": "County Assembly of Nyamira",
+      "chapter_heading": "COUNTY ASSEMBLY OF NYAMIRA – NO.46",
+      "entity_name": "County Assembly of Nyamira",
+      "county_name": "Nyamira",
+      "fiscal_year": "2023/2024",
+      "fiscal_year_sources": [
+        "title_page"
+      ],
+      "paragraph_no": 537,
+      "title": "Delayed Completion of Speaker’s Residence",
+      "finding_text": "Delayed Completion of Speaker’s Residence The County Assembly entered into a contract with a local contractor to construct the Speaker’s residence at a contract price amount of Kshs.34,377,805. The contract commenced on 06 February, 2023 with an expected completion date of 06 August, 2024. However, the project remained incomplete one month after the scheduled completion date and the contract period had not been extended. Further, the performance bond from a local bank provided by the contractor expired on 7 February, 2024 and had not been renewed. Review of Project Status report issued on 28 May, 2024 revealed that the construction was 77% complete and payments totalling Kshs.24,158,208 had been made representing 70% of contract price. Physical inspection undertaken in September, 2024 revealed that the contactor was on site and construction was still in progress. However, internal and external finishes, plumbing, tiling, electrical works, interior fittings and painting were still not completed. Further, the contractor used cyprus door frames instead of mahogany door frames as was specified in the Bills of Quantities. In the circumstances, value for money may not be realized from the delayed works.",
+      "pdf_page": 207,
+      "printed_page": 193,
+      "subreport": "REPORT ON LAWFULNESS AND EFFECTIVENESS IN USE OF PUBLIC",
+      "opinion": null,
+      "heading": "Basis for Conclusion",
+      "sub_section": null,
+      "severity": "WARNING",
+      "amounts": [
+        34377805.0,
+        24158208.0
+      ],
+      "extraction_method": "pdfplumber"
+    }
+  ],
+  "page_texts": [
+    {
+      "page_number": 1,
+      "text": "Enhancing Accountability\n(cid:31)(cid:30)(cid:29)(cid:28)(cid:27)(cid:26)(cid:25)(cid:24)(cid:23)(cid:23)(cid:22)(cid:21)(cid:20)(cid:19)(cid:18)(cid:22)(cid:23)\nAUDITOR-GENERAL’S REPORT\nCONTACTS ON THE COUNTY GOVERNMENTS\n3rd Floor, Anniversary Towers,University Way, Nairobi\nPhone: +254 020 3214000 | Email: info@oagkenya.go.ke | Website: https://www.oagkenya.go.ke/ COUNTY ASSEMBLIES 2023-2024\nOffice of the Auditor-General Kenya oagkenya @OAG_Kenya VOLUME 2\nAUDITOR-GENERAL’S\nREPORT\nON\nTHE\nCOUNTY\nGOVERNMENTS\n-\nCOUNTY\nASSEMBLIES\n2023-2024\nVOLUME\n2",
+      "method": "rejected"
+    },
+    {
+      "page_number": 2,
+      "text": "VISION\nMaking a difference in the lives and\nlivelihoods of the Kenyan people\nMISSION\nAudit services that impact on effective and\nsustainable service delivery\nOUR CORE VALUES\nIntegrity • Credibility • Relevance •\nAccountability • Independence",
+      "method": "pdfplumber"
+    },
+    {
+      "page_number": 3,
+      "text": "AUDITOR-GENERAL’S REPORT\nON\nTHE COUNTY GOVERNMENTS\nFOR\nTHE YEAR 2023-2024\nVOLUME 2 - COUNTY ASSEMBLIES",
+      "method": "pdfplumber"
+    },
+    {
+      "page_number": 205,
+      "text": "COUNTY ASSEMBLY OF NYAMIRA – NO.46\nREPORT ON THE FINANCIAL STATEMENTS\nBasis for Qualified Opinion\n531. Unsupported Legal Expenses\nThe statement of receipts and payments and as disclosed in Note 3 to the financial\nstatements reflect use of goods and services amounting to Kshs.248,837,687. The\namount includes other operating expenses totalling Kshs.17,678,007 out of which an\namount of Kshs.4,659,674 was in respect to legal fees. Review of records revealed that\nthe County Assembly engaged private legal firms to represent the County Assembly in\nten (10) matters without the approval of the County Executive Committee. This was\ncontrary to Section 16(1) of the Office of the County Attorney Act, 2020 which specifies a\ndepartment or public entity established within a county executive shall not engage the\nservices of a consultant to render any legal services relating to the functions of the County\nAttorney without the approval of the County Executive Committee.\nFurther, service level agreements, the itemised instructions given to the lawyers on the\nservices required, copies of judgements, evidence that the legal firms actually\nrepresented the County Assembly, dates of commencement of the lawsuits and progress\nreports of the cases and certified valuation certificates on which the legal fees were based\nwere not provided for audit.\nIn the circumstances, the accuracy and completeness of the legal expenses amount of\nKshs.4,659,674 could not be confirmed.\nEmphasis of Matter\n532. Budgetary Control and Performance\nThe statement of comparison of budget and actual amounts reflects final receipts budget\nand actual on a comparable basis amounting to Kshs.914,979,149 and Kshs.767,033,615\nrespectively resulting in under-funding of Kshs.147,945,534 or 16% of the budget.\nHowever, the County Assembly spent Kshs.777,838,864 against actual receipts of\nKshs.767,033,615 resulting to an over-expenditure of Kshs.10,805,249 of the actual\nreceipts. The source of the excess expenditure over receipts has not been explained.\nThe under-funding affected implementation of the planned activities and may have\nimpacted negatively on service delivery to the Public.\n533. Pending Account Payables\nOther disclosures Notes 1 and 2 to the financial statements reflects pending account\npayables and pending staff payables totalling Kshs.67,565,097 and Kshs.52,621,498\nrespectively. The outstanding amounts include payables balance of Kshs.45,231,445 in\nrespect of construction of an office block and Kshs.2,457,540 in respect of construction\nthe Speaker’s residence. The office block project had a brought forward balance from\n2022/2023 financial year of Kshs.39,855,551 which ought to have been paid as a first\n191",
+      "method": "pdfplumber"
+    },
+    {
+      "page_number": 206,
+      "text": "charge. This was contrary to Regulation 41(2) of the Public Finance management (County\nGovernments) Regulations, 2015 which requires debt service payments to be a first\ncharge on the County Revenue Fund and the Accounting Officer shall ensure this is done\nto the extent possible that the county government does not default on debt obligations.\nFailure to settle bills during the year to which they relate distorts the financial statements\nfor that year and consequently adversely affect the provisions for the subsequent year to\nwhich they have to be charged.\nMy opinion is not modified in respect of these matters.\nOther Matter\n534. Unresolved Prior Year Matters\nIn the audit report of the previous year, several issues were raised under the Report on\nthe Financial Statements and Report on Lawfulness and Effectiveness in Use of Public\nResources. However, the issues remained unresolved as at 30 June, 2024.\nREPORT ON LAWFULNESS AND EFFECTIVENESS IN USE OF PUBLIC\nRESOURCES\nBasis for Conclusion\n535. Unremitted Statutory Deduction\nThe pending staff payables includes Pay As You Earn (PAYE) deductions for May and\nJune, 2024 amount of Kshs.11,822,958, NHIF amount of Kshs.301,000 and loan\ndeductions and other deductions totalling Kshs.21,192,200 which had not been remitted\nto the beneficiary institutions as at 30 June, 2024. This was contrary to Income Tax Act\nCAP 470 and Section 19(1) of the Employment Act, 2007 which allows an employer to\ndeduct from employee’s salary any amount as a contribution to any fund or scheme\napproved by the Commissioner for Labour to which the employee has agreed to\ncontribute to. Failure to remit statutory deductions on time may result in the County\nAssembly incurring interests and penalties.\nIn the circumstances, Management was in breach of the law.\n536. Delayed Construction of County Assembly Offices\nAs previously reported, the County Assembly entered into a contract for the construction\nof a modern office block (5 storied building) that would host offices of the County\nAssembly and staff besides provision of other supporting amenities. The contract sum\nwas Kshs.367,000,000 and the works commenced on 3 July, 2018 with expected\ncompletion date of 30 June, 2021. However, the completion date has been severally\nrevised with the latest completion date set for 7 March, 2025. The scope of works included\nthe construction of an office block, installation of lifts, waste water management, civil\nworks and other associated works. Physical inspection of the project in September, 2024\nrevealed completed works which included the casting of the 1st floor to 5th floor roof slab,\noffices partitions, plastering and skimming works, external walling, painting, aluminium\n192",
+      "method": "pdfplumber"
+    },
+    {
+      "page_number": 207,
+      "text": "windows fixing, mechanical and electrical works and procurement of finishes material.\nHowever, review of records revealed that although the contractor was on site, 88% of\nworks were certified and Kshs.224,678,748 paid leaving a balance of Kshs.45,231,445\nas further disclosed in Annexure 1 to the financial statements.\nIn the circumstances, value for money may not be realized from the delayed works.\n537. Delayed Completion of Speaker’s Residence\nThe County Assembly entered into a contract with a local contractor to construct the\nSpeaker’s residence at a contract price amount of Kshs.34,377,805. The contract\ncommenced on 06 February, 2023 with an expected completion date of 06 August, 2024.\nHowever, the project remained incomplete one month after the scheduled completion\ndate and the contract period had not been extended. Further, the performance bond from\na local bank provided by the contractor expired on 7 February, 2024 and had not been\nrenewed.\nReview of Project Status report issued on 28 May, 2024 revealed that the construction\nwas 77% complete and payments totalling Kshs.24,158,208 had been made representing\n70% of contract price. Physical inspection undertaken in September, 2024 revealed that\nthe contactor was on site and construction was still in progress. However, internal and\nexternal finishes, plumbing, tiling, electrical works, interior fittings and painting were still\nnot completed. Further, the contractor used cyprus door frames instead of mahogany\ndoor frames as was specified in the Bills of Quantities.\nIn the circumstances, value for money may not be realized from the delayed works.\n538. Non-Compliance with the National Cohesion and Integration Act, 2008\nReview of the payroll revealed that over ninety-nine percent (99%) of the one hundred\nand fourteen staff were from the dominant ethnic community in the County. This was\ncontrary to Section 7(2) of the National Cohesion and Integration Act, 2008 which\nprovides that no public establishment shall have more than one-third of its staff from the\nsame ethnic community in the County.\n539. Non-Compliance with One-Third Rule on Basic Salary\nReview of the payroll revealed that thirty-four (34) employees had salary deductions in\nexcess of two-thirds of their basic salary. This was contrary to Section D22(2) of the\nCounty Public Service Human Resource Manual and Section 19(3) of the Employment\nAct, 2007 which requires that the total amount of deductions which may be deducted by\nan employer from the salary and wages of the employee at any one time shall not exceed\ntwo-thirds of the basic pay.\nIn the circumstances, Management was in breach of the law.\n193",
+      "method": "pdfplumber"
+    },
+    {
+      "page_number": 208,
+      "text": "540. Overpayment of Salary Market Adjustment\nReview of payroll records revealed Member County Assembly (MCA) Majority/Minority\nLeader, Deputy Speaker and Speaker were paid monthly salary market adjustments of\nKshs.12,750, Kshs.26,625 and Kshs.130,210 respectively for the months of July 2023,\nAugust 2023 and October 2023. This was contrary to Gazette notice No 10350 dated 9\nAugust, 2023 which indicated the monthly remuneration structure for state officers in the\nCounty Assembly for implementation in the financial year 2023/2024 was Kshs.11,972\nfor MCA, minority/majority leader Kshs.26,530, Deputy Speaker Kshs.32,689 and\nKshs.134,801 for the Speaker.\nIn the circumstances, Management was in breach of the law.\n541. Irregular Purchase of Office Furniture\nReview of procurement records revealed that the County Assembly paid an amount of\nKshs.20,851,336 for supply of office furniture to eighteen (18) firms. Management split\nthe procurements in quotations. The pending accounts payables further reflect an amount\nof Kshs.13,296,860 payable to nine (9) firms, remained unsettled. This was contrary to\nSection 43(1) of Public Procurement and Asset Disposal Act, 2015. Further, no evidence\nwas provided that the enterprises were registered with The National Treasury and the\nadvertisement relating to an open tender under a preference and reservations scheme\nstated the tender was open to small and micro enterprises and to disadvantaged groups\nregistered with The National Treasury or regions, as appropriate.\nIn the circumstances, Management was in breach of the law.\nREPORT ON EFFECTIVENESS OF INTERNAL CONTROLS, RISK MANAGEMENT\nAND GOVERNANCE\nBasis for Conclusion\n542. Lack of Approved Disaster Recovery and IT Strategic plans\nReview of the County Assembly’s ICT environment revealed that the ICT strategic plan\nexpired in 2022 and a new ICT strategic plan had not been developed. Further, the County\nAssembly had not developed a Disaster Recovery Plan or Business Continuity Plans to\nensure that County Assembly is able to respond to disaster or other emergencies\naffecting information systems and minimize the effect on business operations. In the\nabsence of the plans, the operations of the County Assembly would be disrupted on\noccurrence of unfavorable events.\nIn the circumstances, the existence of effective internal controls and risk management in\nthe mitigation of disruption of County Assembly operations could not be confirmed.\n194",
+      "method": "pdfplumber"
+    },
+    {
+      "page_number": 209,
+      "text": "543. Failure to Maintain Assets Register\nAnnex 3 to the financial statements on summary of current assets register reflects a\nbalance totalling Kshs.642,609,831 in respect of various assets held by the County\nAssembly. However, the assets register was not updated and lacked identification or\nserial numbers, acquisition date, description of the asset, location, class and cost of the\nacquisition. The assets were also not tagged to ensure that proper control systems exist\nfor assets and that movement and conditions of assets can be tracked. Further, the\nCounty Assembly had not taken over and or reported assets and liabilities inherited from\nthe defunct Local Authorities.\nIn the circumstances, safe custody and accountability of County Assembly’s assets could\nnot be confirmed.\n544. Ineffective Internal Audit and Audit Committee\nThe County Assembly had an Internal Audit Department and an Audit Committee in place.\nHowever, Management did not provide quarterly or annual internal audit reports and\nfollow-up on the implementation of the recommendations by internal and external\nauditors.\nIn the circumstances, the effectiveness of Internal Audit Department and Audit Committee\ncould not be confirmed.\n195",
+      "method": "pdfplumber"
+    }
+  ],
+  "md5": "15cd6108a0f08498a9e9f699430b365b",
+  "size_bytes": 32379711
+}

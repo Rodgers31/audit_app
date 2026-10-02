@@ -4161,6 +4161,7 @@ async def get_county_comprehensive(
             # The finding's own heading, for the "key challenges" labels.
             _finding_titles: Dict[int, str] = {}
             _extracted: Dict[int, dict] = {}
+            _extraction_records = {}
             _ext_ids = [a.extraction_id for a in audits if a.extraction_id]
             if _ext_ids:
                 from models import Extraction as _DBExtraction
@@ -4168,6 +4169,7 @@ async def get_county_comprehensive(
                 for _ext in db.query(_DBExtraction).filter(
                     _DBExtraction.id.in_(_ext_ids)
                 ):
+                    _extraction_records[_ext.id] = _ext
                     _extracted[_ext.id] = extraction_payload(_ext.extracted_json)
                     _title = _extracted[_ext.id].get("title")
                     if _title:
@@ -4475,7 +4477,12 @@ async def get_county_comprehensive(
             _stored_meta = entity.meta if isinstance(entity.meta, dict) else {}
             stalled_block = build_stalled_projects_block(
                 _stored_meta.get("stalled_projects"),
-                oag_findings=stalled_oag_findings(audits, _extracted),
+                oag_findings=stalled_oag_findings(
+                    audits, _extracted, extraction_records=_extraction_records,
+                    documents=_audit_docs, county_name=entity.canonical_name,
+                ),
+                historical_audits=audits, historical_extractions=_extraction_records,
+                historical_documents=_audit_docs,
                 county_name=entity.canonical_name,
             )
 

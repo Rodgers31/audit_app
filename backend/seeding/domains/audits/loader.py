@@ -341,11 +341,17 @@ def load_blue_book_extractions(
             reference = f"OAG-BB-{fy}-V{vote}-P{para}"
         page_ref = f"p.{payload.get('pdf_page')}"
 
+        from ...pdf_artifact import BINDING_KEY, valid_binding
+
+        binding = payload.get(BINDING_KEY)
+        # Older extractions keep their own artifact, even after a reissue.
+        # Missing legacy binding is explicit absence, never filled from doc.
+        bound_artifact = binding["artifact"] if valid_binding(binding) else None
         prov_entry = {
             "source": ext.extractor,
             "reference": reference,
             "source_url": doc.url,
-            "source_md5": doc.md5,
+            "source_md5": bound_artifact["md5"] if bound_artifact else doc.md5,
             "pdf_page": payload.get("pdf_page"),
             "printed_page": payload.get("printed_page"),
             "subreport": payload.get("subreport"),
@@ -357,6 +363,8 @@ def load_blue_book_extractions(
             "extraction_id": ext.id,
             "extraction_method": payload.get("extraction_method"),
         }
+        if bound_artifact is not None:
+            prov_entry[BINDING_KEY] = binding
         if county_volume:
             prov_entry.update(
                 volume_kind=payload.get("volume_kind"),
