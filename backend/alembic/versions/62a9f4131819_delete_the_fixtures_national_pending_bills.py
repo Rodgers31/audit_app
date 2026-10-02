@@ -117,7 +117,8 @@ def upgrade():
     total = sum(float(r[2] or 0) for r in rows)
     print(
         f"pending-bills fixture national rows: deleted {deleted} "
-        f"(ids {ids}, KSh {total / 1e9:,.1f}bn)"
+        f"(ids {ids}, KSh {total / 1e9:,.1f}bn); "
+        "changes are in the current transaction, pending commit"
     )
 
 
