@@ -104,6 +104,8 @@ def snapshot(connection, tables, ids):
 
 def subset_matches(actual, expected):
     # Captured timestamp strings use spaces; reflected datetimes use ISO T.
+    # Python equality collapses JSON true/1 and integer/float differences;
+    # all evidence comparisons must preserve the exact encoded value types.
     expected = copy.deepcopy(expected)
     for field in (
         "indicator_date",
@@ -114,7 +116,10 @@ def subset_matches(actual, expected):
     ):
         if expected.get(field):
             expected[field] = datetime.fromisoformat(expected[field]).isoformat()
-    if any(actual.get(k) != v for k, v in expected.items()):
+    if any(
+        k not in actual or encoded(actual[k]) != encoded(v)
+        for k, v in expected.items()
+    ):
         raise ValueError("captured row/source preimage drift")
 
 
@@ -213,7 +218,7 @@ def candidates(connection, tables, manifest):
             ext = normalized(dict(matches_x[0]))
             if (
                 ext["extractor"] != payload["extractor"]
-                or ext["extracted_json"] != payload["extracted_json"]
+                or encoded(ext["extracted_json"]) != encoded(payload["extracted_json"])
                 or ext["confidence"] is not None
             ):
                 raise ValueError("existing reviewed extraction conflict")
@@ -252,7 +257,7 @@ def assert_original_context(connection, tables, plan):
                 .one()
             )
         )
-        if actual != row:
+        if encoded(actual) != encoded(row):
             raise ValueError("original shared source drift")
     country = tables["countries"]
     actual = normalized(
@@ -262,8 +267,25 @@ def assert_original_context(connection, tables, plan):
             .one()
         )
     )
-    if actual != plan["country"]:
+    if encoded(actual) != encoded(plan["country"]):
         raise ValueError("original country context drift")
+
+
+def assert_allocated_context(
+    connection, tables, allocations, *, message="recovery allocated evidence drift"
+):
+    for name in ("source_documents", "extractions"):
+        table = tables[name]
+        for row in allocations[name]:
+            current = normalized(
+                dict(
+                    connection.execute(select(table).where(table.c.id == row["id"]))
+                    .mappings()
+                    .one()
+                )
+            )
+            if encoded(current) != encoded(row):
+                raise ValueError(message)
 
 
 def make_plan(connection, tables, manifest):
@@ -426,6 +448,9 @@ def apply(connection, tables, manifest, plan, receipt_path):
     if encoded(actual) != encoded(target):
         raise ValueError("postwrite snapshot drift; rolled back")
     assert_original_context(connection, tables, plan)
+    assert_allocated_context(
+        connection, tables, allocated, message="postwrite allocated evidence drift"
+    )
     assert_publication(connection, [r["id"] for r in target])
     resolved = dict(
         schema="cpi_correction_recovery/v1",
@@ -450,9 +475,9 @@ def recover(connection, tables, manifest, receipt, *, commit, receipt_path):
     ):
         raise ValueError("recovery plan identity mismatch")
     ids = [u["row_id"] for u in manifest["updates"]]
-    if [r["id"] for r in receipt["after"]] != ids or snapshot(
-        connection, tables, ids
-    ) != receipt["after"]:
+    if [r["id"] for r in receipt["after"]] != ids or encoded(
+        snapshot(connection, tables, ids)
+    ) != encoded(receipt["after"]):
         raise ValueError("recovery full after-image drift")
     for row in receipt["after"]:
         assert_exact_identity(connection, tables["economic_indicators"], row)
@@ -468,7 +493,7 @@ def recover(connection, tables, manifest, receipt, *, commit, receipt_path):
         for field in ("indicator_date", "created_at"):
             symbolic[field] = datetime.fromisoformat(symbolic[field]).isoformat()
         restored.append(symbolic)
-    if restored != plan["after"]:
+    if encoded(restored) != encoded(plan["after"]):
         raise ValueError("recovery canonical plan mismatch")
     # Validate the resolved IDs against the canonical source/extraction references.
     docs = {r["url"]: r for r in receipt["allocations"]["source_documents"]}
@@ -491,37 +516,28 @@ def recover(connection, tables, manifest, receipt, *, commit, receipt_path):
             or doc["country_id"] != 1
             or ext["source_document_id"] != doc["id"]
             or ext["page_number"] != 2
-            or ext["extracted_json"] != payload["extracted_json"]
+            or encoded(ext["extracted_json"]) != encoded(payload["extracted_json"])
         ):
             raise ValueError("recovery source/extraction allocation conflict")
         symbolic = copy.deepcopy(symbolic)
         symbolic["source_document_id"] = doc["id"]
         symbolic["extraction_id"] = ext["id"]
-        if symbolic != after:
+        if encoded(symbolic) != encoded(after):
             raise ValueError("recovery resolved canonical after mismatch")
-    for name in ("source_documents", "extractions"):
-        t = tables[name]
-        for row in receipt["allocations"][name]:
-            current = normalized(
-                dict(
-                    connection.execute(select(t).where(t.c.id == row["id"]))
-                    .mappings()
-                    .one()
-                )
-            )
-            if current != row:
-                raise ValueError("recovery allocated evidence drift")
+    assert_allocated_context(connection, tables, receipt["allocations"])
     s = tables["source_documents"]
     for row in plan["original_sources"]:
         if (
-            normalized(
-                dict(
-                    connection.execute(select(s).where(s.c.id == row["id"]))
-                    .mappings()
-                    .one()
+            encoded(
+                normalized(
+                    dict(
+                        connection.execute(select(s).where(s.c.id == row["id"]))
+                        .mappings()
+                        .one()
+                    )
                 )
             )
-            != row
+            != encoded(row)
         ):
             raise ValueError("recovery shared source drift")
     assert_publication(connection, ids)
@@ -544,8 +560,13 @@ def recover(connection, tables, manifest, receipt, *, commit, receipt_path):
                 .where(tables["economic_indicators"].c.id == row["id"])
                 .values(**values)
             )
-        if snapshot(connection, tables, ids) != plan["before"]:
+        if encoded(snapshot(connection, tables, ids)) != encoded(plan["before"]):
             raise ValueError("recovery postwrite drift; rolled back")
+        # Inverse updates may fire triggers too. Check the protected full
+        # context again before commit, so recovery cannot mutate shared or
+        # retained archival evidence while restoring the three observations.
+        assert_original_context(connection, tables, plan)
+        assert_allocated_context(connection, tables, receipt["allocations"])
     return dict(
         direction="recover",
         outcome="committed" if commit else "read_only_dry_run",

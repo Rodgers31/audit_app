@@ -88,6 +88,9 @@ ROLLBACK;
  IF EXISTS(SELECT 1 FROM audit_plan p JOIN audits a ON a.id=(p.x->>'id')::int) THEN
   RAISE EXCEPTION 'Audit IDs occupied: reconcile manually';
  END IF;
+ IF EXISTS(SELECT 1 FROM audits WHERE source_document_id=1836) THEN
+  RAISE EXCEPTION 'Document 1836 post-cleanup coverage changed: refresh recovery plan';
+ END IF;
 END $$;
 UPDATE entities e SET metadata=p.x->'before' FROM entity_plan p WHERE e.id=(p.x->>'id')::int RETURNING e.id;
 INSERT INTO audits SELECT (jsonb_populate_record(NULL::audits, p.x)).* FROM audit_plan p RETURNING id;

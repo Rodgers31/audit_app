@@ -252,6 +252,9 @@ def main():
     }
     receipt_path = args.receipt or args.artifacts / "cleanup-rehearsal.json"
     receipt = {
+        "generated_by": str(Path(__file__).relative_to(ROOT)),
+        "generator_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
         "verified_at": datetime.now(timezone.utc).isoformat(),
         "passed": False,
         "production_writes": False,
@@ -359,16 +362,33 @@ def main():
             cleanup,
             "Entity snapshot drift",
         )
+        # Re-read the actual disposable DB after the code mutation. This is a
+        # local sequencing control, never a post-change production capture.
+        recaptured = copy.deepcopy(manifest)
+        by_id = {row["id"]: row for row in corrected["entities"]}
+        for row in recaptured["entities"]:
+            row["before"] = by_id[row["id"]]["metadata"]
+            row["after"] = {
+                key: value
+                for key, value in row["before"].items()
+                if key not in row["remove_keys"]
+            }
+        check(
+            "actual local post-code recapture agrees with inherited projection",
+            recaptured["entities"] == projected["entities"],
+            scope="Disposable local state only; not production approval",
+        )
+        after_cleanup, after_recover = map(committed, render(recaptured))
         db.sql(after_cleanup)
         check(
-            "projected cleanup keeps corrected cells and FK controls",
+            "recaptured local cleanup keeps corrected cells and FK controls",
             snapshot(db)["budget_lines"] == baseline["budget_lines"]
             and snapshot(db)["foreign_keys"] == baseline["foreign_keys"]
             and not snapshot(db)["audits"],
         )
         db.sql(after_recover)
         check(
-            "projected cleanup recovery restores exact post-code state",
+            "recaptured local cleanup recovery restores exact post-code state",
             snapshot(db) == corrected,
         )
         db.sql(paths["county-code-recovery.sql"].read_text())
@@ -441,6 +461,11 @@ def main():
                 "Audit references changed",
             ),
             (
+                "new audit outside retired IDs on document 1836",
+                f"INSERT INTO audits SELECT * FROM jsonb_populate_record(NULL::audits, {literal({**manifest['delete_audits'][0], 'id': 900001})});",
+                "Document 1836 post-cleanup coverage changed",
+            ),
+            (
                 "occupied audit ID",
                 f"INSERT INTO audits SELECT * FROM jsonb_populate_record(NULL::audits, {literal(manifest['delete_audits'][0])});",
                 "Audit IDs occupied",
@@ -450,6 +475,27 @@ def main():
             db.sql(cleanup)
             db.sql(mutation)
             refusal("cleanup recovery refuses " + name, recover, expected_error)
+
+        baseline = reset()
+        db.sql(cleanup)
+        unrelated_document = {**manifest["retired_source_document"], "id": 900003}
+        unrelated_audit = {
+            **manifest["delete_audits"][0],
+            "id": 900001,
+            "source_document_id": unrelated_document["id"],
+        }
+        db.sql(
+            f"INSERT INTO source_documents SELECT * FROM jsonb_populate_record(NULL::source_documents, {literal(unrelated_document)});"
+            f"INSERT INTO audits SELECT * FROM jsonb_populate_record(NULL::audits, {literal(unrelated_audit)});"
+        )
+        db.sql(recover)
+        expected = copy.deepcopy(baseline)
+        expected["source_documents"].append(unrelated_document)
+        expected["audits"].append(unrelated_audit)
+        check(
+            "cleanup recovery preserves a new audit on an unrelated source",
+            snapshot(db) == expected,
+        )
 
         for name, mutation, expected_error in (
             (
@@ -543,6 +589,15 @@ def main():
                 receipt["database_cleanup_error"] = str(exc)
         receipt_path.parent.mkdir(parents=True, exist_ok=True)
         receipt_path.write_text(json.dumps(receipt, indent=2) + "\n")
+        written = json.loads(receipt_path.read_text())
+        require(
+            written["generator_sha256"] == receipt["generator_sha256"],
+            "Receipt generator provenance lost",
+        )
+        require(
+            written["passed"] == receipt["passed"],
+            "Receipt verdict changed during write",
+        )
         print(
             json.dumps(
                 {

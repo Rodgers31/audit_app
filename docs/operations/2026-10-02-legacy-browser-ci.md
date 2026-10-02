@@ -77,6 +77,15 @@ requires the actual control to be visible; browser printing is a valid export.
 The isolated Docker frontend job also installs the newly required Python API
 fixture dependencies, independently of the separate backend job's runner.
 
+Coordinator's combined run: **170 passed, 19 named quarantines, one unexpected
+failure**, with no retries. The restored export assertion passed. The active
+committed-amount-note case instead observed the county tab remaining on its
+code-loading fallback without making a money-flow request. Its trace is retained
+under **#450**; the preceding full run passed that case, and five focused review
+runs subsequently passed. The cause is unconfirmed; this is not a green full-suite
+claim. Tab production code is unchanged by this batch. The assertion stays active:
+no timeout, retry or new quarantine conceals the failure.
+
 | File | Exact case | Reason |
 | --- | --- | --- |
 | api-failures.spec.ts | /counties/001 — handles failed browser reads without certifying unavailable data | A failed money-flow endpoint is shown as no data for the period; query error state is discarded. Broad all-endpoint failures can also disable the query. |
