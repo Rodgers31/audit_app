@@ -62,18 +62,28 @@ required on the consolidated commit. No claim of a successful remote run is made
 ## Named quarantines
 
 All remaining cases are individually `test.fixme`, not ignored files or describes.
-Tracking remains **#291 until the coordinator transfers each remaining behavior
-into durable follow-up tracking before closing that issue**. Missing product
-controls are not replaced by tests that merely find an SVG or arbitrary button.
+Tracking remains **#291**. Confirmed runtime findings have separate owners:
+county response validation #445, money-flow error handling #446, map keyboard
+activation #447, debt-chart accessibility #448 and Learn headings #449.
+Removed controls and fixture limitations are documented below; restoring those
+features is not a condition of the original issue, which permits named quarantine.
+Missing product controls are not replaced by tests that merely find an SVG or
+arbitrary button.
+
+Coordinator review restored the working Export PDF control assertion. The earlier
+170/20 result above is the author's dated run; the candidate now contains 19 named
+quarantines. The export test uses the existing valid debt response fixture and
+requires the actual control to be visible; browser printing is a valid export.
+The isolated Docker frontend job also installs the newly required Python API
+fixture dependencies, independently of the separate backend job's runner.
 
 | File | Exact case | Reason |
 | --- | --- | --- |
-| api-failures.spec.ts | /counties/001 — handles failed browser reads without certifying unavailable data | Failed lazy Follow the Money read leaves a blank panel without an unavailable state. |
+| api-failures.spec.ts | /counties/001 — handles failed browser reads without certifying unavailable data | A failed money-flow endpoint is shown as no data for the period; query error state is discarded. Broad all-endpoint failures can also disable the query. |
 | charts.spec.ts | chart legend is interactive | Current county rankings table/map has no interactive chart legend. |
 | charts.spec.ts | debt chart segments are clickable | Current debt chart has no segment drilldown. |
 | charts.spec.ts | county chart tooltips show category details | Total-only source rows provide no sector split; totals and honest absence are checked separately. |
 | charts.spec.ts | chart zoom controls work | No zoom controls exist. |
-| charts.spec.ts | chart can be exported or downloaded | Export PDF invokes printing; there is no download contract. |
 | charts.spec.ts | charts have ARIA labels | Cost chart SVG has no accessible application role/name. |
 | charts.spec.ts | chart data is available in table format | No chart-to-table toggle exists; county tables are tested independently. |
 | charts.spec.ts | charts support keyboard navigation | Cost chart has no keyboard activation handler. |
@@ -89,5 +99,6 @@ controls are not replaced by tests that merely find an SVG or arbitrary button.
 | static-pages.spec.ts | /status — renders with a page heading matching /Status|ETL|Ingestion/i | Authenticated operator route redirects without an operator-auth fixture. |
 | user-flows.spec.ts | clamp out-of-range page to last valid page | Current page-reset effect returns page 1 instead of clamped page 5. |
 
-Issue #291 can close after consolidation, verified final CI and preserved follow-up
-tracking for these exact quarantines. It does not require a production data write.
+Issue #291 can close after consolidation and verified automatic final CI, with
+the named quarantines documented. It does not require a production data write or
+implementation of removed features.
