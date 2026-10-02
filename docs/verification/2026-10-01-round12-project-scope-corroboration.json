@@ -1,0 +1,235 @@
+{
+  "kind": "bounded_offline_project_identity_comparison",
+  "date_chicago": "2026-10-01",
+  "issue": 230,
+  "production_observation": false,
+  "code_or_data_change": false,
+  "decision": "historical_identity_candidate_only; no new project row or automatic OAG link",
+  "sources": {
+    "cob_annual": {
+      "url": "https://cob.go.ke/download/county-governments-budget-implementation-review-report-for-the-financial-year-2025-26/?wpdmdl=16482",
+      "sha256": "5f5e4f97bbe2752957f284950d0ba90fcff4d47b35fc0ac96a9106ffb59821b3",
+      "pages": 935,
+      "fiscal_year": "2025/2026",
+      "institution": "county-reported"
+    },
+    "oag_assembly_2024": {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf",
+      "sha256": "683fa522bf11eaa2b0bc2a9eef51eadc3d664d9a512d3af63cb6e9479820f8a2",
+      "pages": 217,
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies"
+    },
+    "oag_assembly_2025": {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf",
+      "sha256": "aa72b0a512fe01ce8f40b9ed8597bd78657a9f441a8daf4963b07e661104d896",
+      "pages": 246,
+      "fiscal_year": "2024/2025",
+      "institution": "assemblies"
+    },
+    "oag_executive_2025": {
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf",
+      "sha256": "033e2aa26aa77351ec46f062573f25ede47d3e3a99978aeacf9a66af5ba717a5",
+      "pages": 688,
+      "fiscal_year": "2024/2025",
+      "institution": "executives"
+    }
+  },
+  "checked_page_ranges": [
+    {
+      "source": "cob_annual",
+      "first": 44,
+      "last": 45
+    },
+    {
+      "source": "cob_annual",
+      "first": 686,
+      "last": 686
+    },
+    {
+      "source": "cob_annual",
+      "first": 758,
+      "last": 758
+    },
+    {
+      "source": "oag_assembly_2024",
+      "first": 205,
+      "last": 209
+    },
+    {
+      "source": "oag_assembly_2025",
+      "first": 229,
+      "last": 233
+    },
+    {
+      "source": "oag_executive_2025",
+      "first": 542,
+      "last": 555
+    },
+    {
+      "source": "oag_executive_2025",
+      "first": 604,
+      "last": 618
+    },
+    {
+      "source": "oag_assembly_2025",
+      "first": 200,
+      "last": 203
+    }
+  ],
+  "observations": {
+    "nyamira": {
+      "cob_pdf_page": 686,
+      "cob_as_of": "2026-06-30",
+      "implementing_institution": "County Assembly (explicit narrative)",
+      "estimated_value_kes": 34380000,
+      "summary_paid_kes": 26620000,
+      "named_narrative_paid_kes": 26650000,
+      "oag_historical_identity_candidate": {
+        "source": "oag_assembly_2024",
+        "pdf_page": 207,
+        "printed_page": 193,
+        "paragraph": "537",
+        "contract_sum_kes": 34377805,
+        "contract_start": "2023-02-06",
+        "expected_completion": "2024-08-06",
+        "status_report_date": "2024-05-28",
+        "completion_pct": 77,
+        "paid_kes": 24158208,
+        "inspection_month": "2024-09",
+        "ward_or_shared_tender_id_in_paragraph": null,
+        "identity_inference": "likely historical identity from institution/name/start/rounded contract/progress; not definitive or same-period amount corroboration"
+      },
+      "pending_payable_distinct_measure": {
+        "source": "oag_assembly_2024",
+        "pdf_page": 205,
+        "printed_page": 191,
+        "paragraph": "533",
+        "amount_kes": 2457540
+      },
+      "next_year_prior_issue": {
+        "source": "oag_assembly_2025",
+        "pdf_pages": [
+          229,
+          230
+        ],
+        "printed_pages": [
+          216,
+          217
+        ],
+        "paragraph": "621",
+        "fresh_residence_amount_kes": null
+      },
+      "distinct_offices_block": {
+        "source": "oag_assembly_2025",
+        "pdf_pages": [
+          232,
+          233
+        ],
+        "paragraph": "632",
+        "contract_sum_kes": 367000000
+      },
+      "source_resolution": "paid conflict unresolved; older amounts not substituted",
+      "older_mixed_basis_arithmetic_only": {
+        "paid_plus_pending_kes": 26615748,
+        "rounded_millions": "26.62",
+        "does_not_establish_later_payment_or_annual_paid_value": true
+      }
+    },
+    "siaya": {
+      "cob_pdf_page": 758,
+      "cob_as_of": "2026-06-30",
+      "project": "completion of Nyamonye Juakali",
+      "location": "Yimbo East",
+      "implementing_institution": null,
+      "institution_null_reason": "not explicit in named narrative; no inference from adjacent table",
+      "value_kes": 1880000,
+      "paid_kes": 3720000,
+      "reported_status": "under investigation",
+      "oag_named_match_in_checked_chapters": "not located",
+      "distinct_positive_control": {
+        "source": "oag_executive_2025",
+        "pdf_page": 548,
+        "printed_page": 535,
+        "paragraph": "1134",
+        "project": "Nyabera Primary School ECDE block",
+        "contract_sum_kes": 4307957,
+        "stalled_observation_month": "2025-07"
+      },
+      "source_resolution": "no exact OAG or same-period corroboration established"
+    }
+  },
+  "fresh_public_gets": {
+    "cob_annual_page": {
+      "url": "https://cob.go.ke/download/county-governments-budget-implementation-review-report-for-the-financial-year-2025-26/",
+      "final_url": "https://cob.go.ke/download/county-governments-budget-implementation-review-report-for-the-financial-year-2025-26/",
+      "status": 200,
+      "headers": {
+        "Date": "Fri, 02 Oct 2026 02:39:17 GMT",
+        "Link": "<https://cob.go.ke/wp-json/>; rel=\"https://api.w.org/\", <https://cob.go.ke/?p=16482>; rel=shortlink",
+        "Content-Type": "text/html; charset=UTF-8"
+      },
+      "sha256": "10c6fe65ffc22a9f0cd410c3ebd2de2a3bd35bbe53bd650f8141d46515134cd8",
+      "bytes": 93719,
+      "retrieved_at_utc": "2026-10-02T02:39:20.950918+00:00"
+    },
+    "cob_listing": {
+      "url": "https://cob.go.ke/publications/consolidated-county-reviews/",
+      "final_url": "https://cob.go.ke/publications/consolidated-county-reviews/",
+      "status": 200,
+      "headers": {
+        "Date": "Fri, 02 Oct 2026 02:39:17 GMT",
+        "Link": "<https://cob.go.ke/wp-json/>; rel=\"https://api.w.org/\", <https://cob.go.ke/?p=62>; rel=shortlink",
+        "Content-Type": "text/html; charset=UTF-8"
+      },
+      "sha256": "1ab3e3be8ea2281e11e3ea76479880ba1edda59cee5014d575e3592dd30c497a",
+      "bytes": 87467,
+      "retrieved_at_utc": "2026-10-02T02:39:21.167898+00:00"
+    },
+    "oag_listing": {
+      "url": "https://www.oagkenya.go.ke/2024-2025-county-government-audit-reports/",
+      "final_url": "https://www.oagkenya.go.ke/2024-2025-county-government-audit-reports/",
+      "status": 200,
+      "headers": {
+        "Date": "Fri, 02 Oct 2026 02:39:17 GMT",
+        "Link": "<https://www.oagkenya.go.ke/wp-json/>; rel=\"https://api.w.org/\", <https://www.oagkenya.go.ke/wp-json/wp/v2/pages/21406>; rel=\"alternate\"; title=\"JSON\"; type=\"application/json\", <https://www.oagkenya.go.ke/?p=21406>; rel=shortlink",
+        "Content-Type": "text/html; charset=UTF-8"
+      },
+      "sha256": "64bbfd17c157a243279ef58b798c9b3a6000b84e9a51778843cb0691057e7fef",
+      "bytes": 100353,
+      "retrieved_at_utc": "2026-10-02T02:39:20.919095+00:00"
+    }
+  },
+  "pdf_freshness_limit": "retained bank hashes verified; remote PDF bytes not redownloaded this round",
+  "inherited_not_reexecuted": {
+    "detail_rows": 168,
+    "county_records": 47,
+    "observed_summary_counts_sum": 188,
+    "reported_total": 189
+  },
+  "artifact_sha256": {
+    "cob_annual_page.html": "10c6fe65ffc22a9f0cd410c3ebd2de2a3bd35bbe53bd650f8141d46515134cd8",
+    "cob_annual_page_response.json": "e12673b31debc51e9d0d708537a1db783f122d28f7fa0164495458d5aaf7538f",
+    "cob_annual_pdf_44-45.txt": "9a917c6e3ca1648e0dea1830265f09e159bbb6ff5fd18b6573070102df578418",
+    "cob_annual_pdf_686-686.txt": "a39619b4be958aaa83b075609518c5eee53c97885cbb2f6abc74eda2423a66ac",
+    "cob_annual_pdf_686.png": "0396f1cacf275fbf220c2a369a65263a0676ac27065f623d91b65e0c125fed74",
+    "cob_annual_pdf_758-758.txt": "69fd02c7ae2244811aeddc8d1e74b3719a1ab02c096d01b835b78e03aca0ead4",
+    "cob_annual_pdf_758.png": "3da9c66e9e18543b951480b566eb67c1266211fc8cf4db71b5e039b1cf94fdc2",
+    "cob_listing.html": "1ab3e3be8ea2281e11e3ea76479880ba1edda59cee5014d575e3592dd30c497a",
+    "cob_listing_response.json": "598b129ae3ed8f696dd7a1d955c505b2fef35397f9f34938faef8e44d1fe1639",
+    "oag_assembly_2024_pdf_205-209.txt": "15890d0fdb5991bfb3f5c7bf174cb9185e94c867c6062e0738c51ffeabb7ccc1",
+    "oag_assembly_2024_pdf_207.png": "6a43a68f1233260ff453b929c73f15336f75618457bafb50ba1b937494696ed3",
+    "oag_assembly_2025_pdf_200-203.txt": "0729ea8d6061e70144422e7090cebaa163474877405b5639d17ffa1a987049c7",
+    "oag_assembly_2025_pdf_229-233.txt": "8c128cc1b41ce0c7b4832fa8839dcb93672b226853aae64898f9725c5a3074d1",
+    "oag_assembly_2025_pdf_230.png": "2579c18cdd6eee395b0a56a2a07fcb0c1cee0016138113a238dc8b40bb69e080",
+    "oag_executive_2025_pdf_542-555.txt": "dd8fb999b44d23e66311a50663e399c90e56c4164aa300f0feff85c3088b9809",
+    "oag_executive_2025_pdf_548.png": "9f783b99003e34ab63d73f82a2352fe190c194a1c4e23e9a59cbb3feb3f07b88",
+    "oag_executive_2025_pdf_604-618.txt": "b0a3a9446523ff6294d7ae63644d018ee5597ff9c01b64795dabb5d33a59464d",
+    "oag_executive_2025_pdf_607.png": "aad0e50f69848420d98866557f8d627871f13b1cc3056a7ece875ffd9e04c853",
+    "oag_executive_2025_pdf_608.png": "fcd3b98ae14d7188a331f775478db5ac10faac4f64becbc3402328169db57bfd",
+    "oag_executive_2025_pdf_609.png": "208383b5f7d648ada97ddd5c26d2a3ad6bb29571d61dff5cb66841557bc5311f",
+    "oag_listing.html": "64bbfd17c157a243279ef58b798c9b3a6000b84e9a51778843cb0691057e7fef",
+    "oag_listing_response.json": "20ce750a251c43124da8c29accc6f045604ff357d1dea86f31f87b068ae0f699",
+    "source_receipt.json": "cfa04435f416e45209369f8b14739ecf77199f6ec0fd89d7096384e9e4a0258d"
+  }
+}
