@@ -72,14 +72,12 @@ test.describe('Back-navigation state preservation', () => {
     await expect(firstRank).toHaveText(/21/);
   });
 
-  // Confirmed legacy behavior: the effect resets ?p=99 to page 1 rather than
-  // retaining the clamped last page. Preserve the failing contract under #291.
-  test.fixme('clamp out-of-range page to last valid page', async ({ page }) => {
+  test('clamp out-of-range page to last valid page', async ({ page }) => {
     // 47 counties / 10 per page = 5 pages. Page 99 should fall back to 5.
     await page.goto('/counties?p=99');
     await waitForAppReady(page);
 
-    // Either URL is rewritten to ?p=5 OR the content shows page 5 anyway
+    await expect(page).toHaveURL(/[?&]p=5(?:&|$)/);
     await expect(page.getByText(/Showing\s+41[–\-]47\s+of|Showing\s+41[–\-]\d+\s+of/)).toBeVisible({
       timeout: 15_000,
     });
