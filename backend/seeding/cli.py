@@ -204,6 +204,11 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
             read_manifest(manifest_path) if manifest_path is not None else None
         )
         source_entries = parse_manifest(source_manifest)
+        observe_listing = getattr(args, "audits_observe_listing", False)
+        if observe_listing and source_entries is None:
+            raise AuditSourceScopeError(
+                "--audits-observe-listing requires --audits-source-manifest"
+            )
         if source_entries is not None and (args.all or list(domains) != ["audits"]):
             raise AuditSourceScopeError(
                 "--audits-source-manifest requires only --domain audits"
@@ -218,6 +223,9 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
 
     since = _parse_since(args.since)
     dry_run = settings.dry_run_default if args.dry_run is None else args.dry_run
+    if observe_listing and dry_run:
+        logger.error("--audits-observe-listing requires --no-dry-run")
+        return 1
 
     status = 0
 
@@ -281,6 +289,7 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
             since=since,
             dry_run=dry_run,
             audits_source_manifest=source_manifest,
+            audits_observe_listing=observe_listing,
             audits_source_receipt=receipt_for(source_entries)
             if source_entries is not None
             else None,
@@ -576,6 +585,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--audits-source-manifest",
         type=Path,
         help="Restrict audits to the exact reviewed five-edition readiness manifest (not live approval)",
+    )
+    seed_parser.add_argument(
+        "--audits-observe-listing",
+        action="store_true",
+        help="Observe current county year pages and verify adopted unselected volumes; requires bounded manifest",
     )
     seed_parser.add_argument(
         "--config",

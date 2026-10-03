@@ -301,6 +301,14 @@ def run(
 
     # Validate at the handler boundary too: embedded callers do not pass argparse.
     source_entries = parse_manifest(context.audits_source_manifest)
+    if (
+        type(context.audits_observe_listing) is not bool
+        or context.audits_observe_listing
+        and (source_entries is None or context.dry_run)
+    ):
+        raise AuditSourceScopeError(
+            "listing observation requires a non-dry bounded audits run"
+        )
     selected = (
         {e["source_url"]: e for e in source_entries}
         if source_entries is not None
@@ -320,6 +328,11 @@ def run(
             job.meta = {
                 **(job.meta or {}),
                 "audit_source_scope": deepcopy(scope_receipt),
+                **{
+                    key: deepcopy(metadata[key])
+                    for key in ("oag_county_discovery", "oag_county_observation")
+                    if key in metadata
+                },
             }
         session.commit()
 
@@ -380,7 +393,43 @@ def run(
     volume_report: Optional[dict] = None
     legacy_candidates: List[str] = []
 
+    observation = None
     with create_http_client(settings) as client:
+        if context.audits_observe_listing:
+            from .observation import observe_listing, verify_adopted_volume
+
+            # Fresh HTML observations must bypass the optional HTTP body cache.
+            with create_http_client(
+                settings.model_copy(update={"http_cache_enabled": False})
+            ) as observer:
+                observed_discovery, observation = observe_listing(observer)
+            metadata["oag_county_discovery"] = observed_discovery.as_meta()
+            metadata["oag_county_observation"] = observation
+            bank()
+            offered = {d.url: d for d in observed_discovery.volumes()}
+            from ...county_audit_coverage import _discovered_volume_labels
+
+            if (
+                observed_discovery.errors
+                or _discovered_volume_labels(observation["discovery"]) is None
+                or not set(selected).issubset(offered)
+            ):
+                raise AuditSourceScopeError(
+                    "publisher listing incomplete or selected editions changed"
+                )
+            for url, vol in offered.items():
+                if url in selected:
+                    if (vol.fiscal_year, vol.kind, vol.listed_at) != (
+                        selected[url]["fiscal_year"],
+                        selected[url]["institution"],
+                        selected[url]["listed_at"],
+                    ):
+                        raise AuditSourceScopeError(
+                            "selected publisher edition changed"
+                        )
+                else:
+                    observation["adopted"].append(verify_adopted_volume(session, vol))
+            bank()
         # New county volumes get first use of the bounded window. National
         # and older county retries then share the remaining start slots.
         for phase in (
@@ -403,14 +452,15 @@ def run(
                     if selected is not None
                     else discover_county_audit_documents(client)
                 )
-                metadata["oag_county_discovery"] = (
-                    {
-                        "status": "not_performed_source_bounded",
-                        "inventory_basis": "reviewed_retained_manifest",
-                    }
-                    if selected is not None
-                    else discovery.as_meta()
-                )
+                if not context.audits_observe_listing:
+                    metadata["oag_county_discovery"] = (
+                        {
+                            "status": "not_performed_source_bounded",
+                            "inventory_basis": "reviewed_retained_manifest",
+                        }
+                        if selected is not None
+                        else discovery.as_meta()
+                    )
                 # An unreadable listing is not "OAG published nothing". Name it,
                 # so the run reads COMPLETED_WITH_ERRORS rather than clean.
                 errors.extend(
@@ -835,6 +885,15 @@ def run(
     from ...freshness import mark_fixture, mark_live
 
     if volume_report is not None:
+        if observation is not None:
+            volume_report[
+                "inventory_basis"
+            ] = "live_publisher_year_pages_plus_verified_adopted_state"
+            volume_report["already_current"].extend(
+                f"{proof['fiscal_year']} {proof['institution']}: verified adopted retained edition"
+                for proof in observation["adopted"]
+            )
+            volume_report["discovered"] += len(observation["adopted"])
         metadata["county_volumes"] = volume_report
         logger.info(
             "oag_county_audits volumes: %d discovered; %d processed this run, "
