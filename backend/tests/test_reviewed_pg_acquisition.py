@@ -16,6 +16,19 @@ spec = importlib.util.spec_from_file_location('reviewed', ROOT / 'tools/reviewed
 tool = importlib.util.module_from_spec(spec); spec.loader.exec_module(tool)
 
 
+def prerequisites():
+    return dict(kind='recovery_prerequisites', readonly='on', isolation='repeatable read',
+        activity_counts=dict(clients=0, active_clients=0, client_transactions=0,
+            assigned_client_xids=0, background_workers=0, assigned_background_xids=0),
+        database_properties=dict(name='postgres', owner='postgres', encoding='UTF8', locale_provider='i',
+            collate='en_US.UTF-8', ctype='en_US.UTF-8', locale='en-US', icu_rules=None,
+            collation_version='153.121', connection_limit=-1, allow_connections=True,
+            tablespace='pg_default', acl=None),
+        database_role_settings=None,
+        system_schema_acls=[['information_schema', 'supabase_admin', None], ['pg_catalog', 'supabase_admin', None]],
+        system_relation_acls=None, system_column_acls=None, system_routine_acls=None, parameter_acls=None)
+
+
 class ReviewBoundaryTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix=tool.PREFIX)
@@ -145,7 +158,7 @@ class ReviewBoundaryTests(unittest.TestCase):
             if 'sh' in argv:
                 (self.directory/'abort').write_text('transport_exceeded')
                 return b'0\n0\n'
-            return b'{}\n'
+            return b'{}\n' + json.dumps(prerequisites()).encode() + b'\n'
         with patch.object(tool,'exporter',exporter), patch.object(tool.backup,'run',child), \
              patch.object(tool.backup,'validate_inventory'), self.assertRaises(tool.Refusal):
             tool.capture('round19_s1_test',self.directory,self.request['identity'],1,1024)
@@ -175,7 +188,7 @@ class ReviewBoundaryTests(unittest.TestCase):
             extensions=[['plpgsql', '1.0', 'pg_catalog', 'postgres', False, None, None]],
             tablespaces=[['pg_default', 'postgres', None, None]])
         raw = '\n'.join(json.dumps(r) for r in [catalog, dict(kind='table', schema='public',
-            name='fixture', count=0, sha256='a'*64)]).encode()
+            name='fixture', count=0, sha256='a'*64), prerequisites()]).encode()
         @contextlib.contextmanager
         def exporter(*args): yield {**self.request['identity'], 'snapshot': '0001-0001-1'}
         for index, roles in enumerate((b'', b' \t\r\n', b'-- reviewed role dump header\n')):
@@ -198,9 +211,65 @@ class ReviewBoundaryTests(unittest.TestCase):
                 if roles.strip():
                     self.assertEqual(result['status'], 'acquired_inputs_restore_and_completeness_pending')
                     self.assertFalse(result['backup_verified'])
+                    self.assertIn('recovery_prerequisites.json', result['artifacts'])
+                    self.assertEqual(json.loads((output/'recovery_prerequisites.json').read_text()), prerequisites())
                 else:
                     self.assertEqual(result['status'], 'failed')
                     self.assertFalse(output.exists())
+
+    def test_recovery_configuration_changes_reject_restore(self):
+        import copy
+        before = prerequisites()
+        for key, value in [('locale', 'fr-FR'), ('encoding', 'SQL_ASCII'), ('owner', 'other'),
+                           ('collation_version', 'wrong'), ('acl', ['other=C/postgres'])]:
+            after = copy.deepcopy(before); after['database_properties'][key] = value
+            with self.subTest(key=key), self.assertRaises(tool.Refusal):
+                tool.compare_recovery_prerequisites(before, after)
+        after = copy.deepcopy(before); after['database_role_settings'] = [[None, 'postgres', ['statement_timeout=1s']]]
+        with self.assertRaises(tool.Refusal): tool.compare_recovery_prerequisites(before, after)
+
+    def test_recovery_missing_and_malformed_configuration_refused(self):
+        import copy
+        before = prerequisites()
+        for key in before:
+            value = copy.deepcopy(before); del value[key]
+            with self.subTest(missing=key), self.assertRaises(tool.Refusal): tool.validate_recovery_prerequisites(value)
+        for value in (None, {}, [], True):
+            with self.subTest(value=value), self.assertRaises(tool.Refusal): tool.validate_recovery_prerequisites(value)
+        for count in (True, -1, float('nan'), float('inf')):
+            value = copy.deepcopy(before); value['activity_counts']['clients'] = count
+            with self.subTest(count=count), self.assertRaises(tool.Refusal): tool.validate_recovery_prerequisites(value)
+        for rows in (None, [], [['pg_catalog', 'supabase_admin', None]]):
+            value = copy.deepcopy(before); value['system_schema_acls'] = rows
+            with self.subTest(schemas=rows), self.assertRaises(tool.Refusal): tool.validate_recovery_prerequisites(value)
+
+    def test_activity_changes_do_not_mask_configuration_comparison(self):
+        after = prerequisites(); after['activity_counts']['background_workers'] = 8
+        tool.compare_recovery_prerequisites(prerequisites(), after)
+
+    def test_optional_system_acl_objects_compare_and_duplicates_refuse(self):
+        import copy
+        before = prerequisites()
+        before['system_routine_acls'] = [['pg_catalog', 'fixture', '', 'supabase_admin', ['postgres=X/supabase_admin']]]
+        tool.validate_recovery_prerequisites(before)
+        after = copy.deepcopy(before); after['system_routine_acls'][0][-1] = []
+        with self.assertRaises(tool.Refusal): tool.compare_recovery_prerequisites(before, after)
+        after = copy.deepcopy(before); after['system_routine_acls'] *= 2
+        with self.assertRaises(tool.Refusal): tool.validate_recovery_prerequisites(after)
+
+    def test_independently_found_invalid_durable_fields_refuse_even_identical_compare(self):
+        import copy
+        cases = []
+        for key in ('icu_rules', 'collation_version'):
+            value = prerequisites(); value['database_properties'][key] = 'invalid\x00text'; cases.append(value)
+        for key, row in (
+            ('system_relation_acls', ['pg_catalog', 'fixture', 'r', 'supabase_admin', None]),
+            ('system_column_acls', ['pg_catalog', 'fixture', 'id', None]),
+            ('system_routine_acls', ['pg_catalog', 'fixture', '', 'supabase_admin', None])):
+            value = prerequisites(); value[key] = [row]; cases.append(value)
+        for value in cases:
+            with self.subTest(value=value), self.assertRaises(tool.Refusal): tool.validate_recovery_prerequisites(value)
+            with self.subTest(compare=value), self.assertRaises(tool.Refusal): tool.compare_recovery_prerequisites(value, copy.deepcopy(value))
 
 
 if __name__ == '__main__':
