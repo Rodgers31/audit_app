@@ -26,9 +26,9 @@ import math
 import os
 import time
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Response
 
-from cache.invalidation import InvalidationError, invalidate_all
+from cache.invalidation import InvalidationError, generation_status, invalidate_all
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +41,7 @@ def _refuse(status: int, error: str, **extra) -> HTTPException:
     return HTTPException(status_code=status, detail={"error": error, **extra})
 
 
-@router.post("/cache/invalidate")
-async def invalidate_caches(request: Request):
+async def _signed_body(request: Request) -> dict:
     secret = os.getenv("REVALIDATE_SECRET") or ""
     if not secret:
         raise _refuse(503, "invalidation_not_configured")
@@ -55,6 +54,8 @@ async def invalidate_caches(request: Request):
 
     try:
         body = json.loads(raw or b"{}")
+        if not isinstance(body, dict):
+            raise TypeError("body must be an object")
         ts = body["ts"]
         if isinstance(ts, bool) or not isinstance(ts, (int, float)):
             raise TypeError("ts must be a number")
@@ -66,6 +67,23 @@ async def invalidate_caches(request: Request):
     skew = abs(time.time() - ts)
     if skew > MAX_SKEW_SECONDS:
         raise _refuse(401, "stale_request", skew_seconds=int(skew))
+    return body
+
+
+@router.post("/cache/status")
+async def cache_status(request: Request, response: Response):
+    """Signed per-worker observation for the release acceptance experiment."""
+    await _signed_body(request)
+    response.headers["Cache-Control"] = "no-store"
+    try:
+        return generation_status()
+    except InvalidationError as exc:
+        raise _refuse(500, exc.reason)
+
+
+@router.post("/cache/invalidate")
+async def invalidate_caches(request: Request):
+    body = await _signed_body(request)
 
     try:
         result = invalidate_all()
