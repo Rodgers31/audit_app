@@ -2,6 +2,7 @@
 
 import { ArrowUpRight, Mail, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
+import FooterSocialLinks from './FooterSocialLinks';
 
 const FOOTER_LINKS = [
   { label: 'Data & sources', href: '/sources' },
@@ -30,6 +31,7 @@ export default function Footer() {
               <ShieldCheck className='h-4 w-4' aria-hidden='true' />
               Evidence first · sources remain visible
             </p>
+            <FooterSocialLinks />
           </div>
 
           <nav aria-label='Footer navigation'>
