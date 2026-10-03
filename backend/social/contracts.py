@@ -32,7 +32,10 @@ class StrictModel(BaseModel):
                 raise ValueError("Timestamps must include a timezone")
             return value.astimezone(timezone.utc)
         if isinstance(value, dict):
-            canonical_json(value)
+            try:
+                canonical_json(value)
+            except (TypeError, ValueError):
+                raise ValueError("Use JSON objects containing finite JSON values") from None
         return value
 
 
@@ -251,6 +254,15 @@ class ResolvedPostPayload(StrictModel):
     evidence_hash: Hash
     content_hash: Hash
 
+    _link = field_validator("link")(https_url)
+
+    @field_validator("external_account_id")
+    @classmethod
+    def nonblank_identity(cls, value):
+        if not value.strip():
+            raise ValueError("An external account identity cannot be blank")
+        return value
+
 
 class ValidationIssue(StrictModel):
     code: StrictStr
@@ -301,6 +313,15 @@ class OperationResult(StrictModel):
     receipt: dict[str, Any] = Field(default_factory=dict)
     next_action_at: Union[datetime, None] = None
     retry_safe: StrictBool = False
+
+    _remote_url = field_validator("remote_url")(https_url)
+
+    @field_validator("primary_remote_id", "confirmation_kind")
+    @classmethod
+    def nonblank_public_proof(cls, value):
+        if value is not None and not value.strip():
+            raise ValueError("Public identity and confirmation cannot be blank")
+        return value
 
 
 class ReconciliationResult(StrictModel):

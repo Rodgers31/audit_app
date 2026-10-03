@@ -474,7 +474,19 @@ class SocialService:
         controls = self.db.get(SocialControls, 1)
         heart = self.db.scalar(select(SocialWorkerHeartbeat).order_by(SocialWorkerHeartbeat.heartbeat_at.desc()).limit(1))
         now = self.now()
-        worker_state = "unavailable" if not heart else "stale" if (now - utc(heart.heartbeat_at)).total_seconds() > 150 else heart.state
+        worker_state = "unavailable"
+        if heart and heart.state in {"active", "idle", "stopped"}:
+            age = (now - utc(heart.heartbeat_at)).total_seconds()
+            scan_age = (now - utc(heart.last_scan_at)).total_seconds() if heart.last_scan_at else None
+            fresh_limit = 45 if heart.state == "active" else 150
+            if age < -5 or (scan_age is not None and scan_age < -5):
+                worker_state = "unavailable"
+            elif age > fresh_limit or (scan_age is not None and scan_age > fresh_limit):
+                worker_state = "stale"
+            elif heart.state in {"active", "idle"} and scan_age is None:
+                worker_state = "unavailable"
+            else:
+                worker_state = heart.state
         counts = dict(self.db.execute(select(SocialPostTarget.state, func.count()).group_by(SocialPostTarget.state)).all())
         return {"publishing_enabled": bool(controls and controls.publishing_enabled), "controls_version": controls.version if controls else 1, "worker": {"state": worker_state, "heartbeat_at": iso(heart.heartbeat_at) if heart else None, "last_scan_at": iso(heart.last_scan_at) if heart else None}, "queue_counts": counts, "adapters_available": sorted(self.available_adapters), "media_upload_available": False, "generation_enabled": False, "auto_approve_enabled": False, "auto_schedule_enabled": False, "auto_publish_enabled": False}
 

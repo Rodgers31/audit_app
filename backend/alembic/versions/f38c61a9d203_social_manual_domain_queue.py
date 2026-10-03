@@ -259,7 +259,7 @@ def upgrade():
         CONSTRAINT uq_social_target_account UNIQUE (publication_id, account_id),
         CONSTRAINT ck_social_target_state CHECK (state IN ('ready','queued','claimed','dispatching','processing','retry_wait','reconciling','blocked','published','failed','outcome_unknown','cancelled')),
         CONSTRAINT ck_social_target_counters CHECK (submit_count >= 0 AND submit_count <= 5 AND lease_epoch >= 0),
-        CONSTRAINT ck_social_target_published_proof CHECK (state <> 'published' OR (primary_remote_id IS NOT NULL AND confirmation_kind IS NOT NULL AND published_at IS NOT NULL AND visibility_state = 'public')),
+        CONSTRAINT ck_social_target_published_proof CHECK (state <> 'published' OR (primary_remote_id IS NOT NULL AND length(trim(primary_remote_id)) > 0 AND confirmation_kind IS NOT NULL AND length(trim(confirmation_kind)) > 0 AND published_at IS NOT NULL AND visibility_state = 'public')),
         FOREIGN KEY(publication_id) REFERENCES social_publications (id),
         FOREIGN KEY(account_id) REFERENCES social_accounts (id)
     )

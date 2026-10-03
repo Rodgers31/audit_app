@@ -118,3 +118,13 @@ def test_malformed_capabilities_fail_closed(db, snapshot):
     result = validate_document(db, draft_body((row,)).document, {}, {"facebook"})
     assert not result.valid
     assert any(e.code == "ACCOUNT_UNAVAILABLE" for e in result.targets[0].errors)
+
+
+def test_public_proof_rejects_whitespace_and_unsafe_provider_url():
+    for fields in [{"primary_remote_id": " "}, {"confirmation_kind": "\t "}, {"remote_url": "javascript:alert(1)"}, {"remote_url": "https://user:token@example.org/post"}]:
+        with pytest.raises(ValidationError):
+            OperationResult(outcome="confirmed_success", visibility_state="public", **fields)
+    with pytest.raises(ValidationError):
+        OperationResult(outcome="ambiguous", checkpoint={"bytes": b"private"})
+    value = OperationResult(outcome="confirmed_success", primary_remote_id="opaque/id-9223372036854775808", confirmation_kind="provider_receipt", remote_url="https://example.org/post")
+    assert value.primary_remote_id == "opaque/id-9223372036854775808"

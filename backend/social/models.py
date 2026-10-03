@@ -205,7 +205,7 @@ class SocialPostTarget(Base):
         UniqueConstraint("publication_id", "account_id", name="uq_social_target_account"),
         CheckConstraint("state IN ('ready','queued','claimed','dispatching','processing','retry_wait','reconciling','blocked','published','failed','outcome_unknown','cancelled')", name="ck_social_target_state"),
         CheckConstraint("submit_count >= 0 AND submit_count <= 5 AND lease_epoch >= 0", name="ck_social_target_counters"),
-        CheckConstraint("state <> 'published' OR (primary_remote_id IS NOT NULL AND confirmation_kind IS NOT NULL AND published_at IS NOT NULL AND visibility_state = 'public')", name="ck_social_target_published_proof"),
+        CheckConstraint("state <> 'published' OR (primary_remote_id IS NOT NULL AND length(trim(primary_remote_id)) > 0 AND confirmation_kind IS NOT NULL AND length(trim(confirmation_kind)) > 0 AND published_at IS NOT NULL AND visibility_state = 'public')", name="ck_social_target_published_proof"),
         Index("uq_social_target_remote", "account_id", "primary_remote_id", unique=True, postgresql_where=text("primary_remote_id IS NOT NULL"), sqlite_where=text("primary_remote_id IS NOT NULL")),
         Index("ix_social_target_due", "next_action_at", "id", postgresql_where=text("state IN ('queued','retry_wait','processing','reconciling')"), sqlite_where=text("state IN ('queued','retry_wait','processing','reconciling')")),
         Index("ix_social_target_expired_lease", "lease_expires_at", postgresql_where=text("lease_token IS NOT NULL"), sqlite_where=text("lease_token IS NOT NULL")),

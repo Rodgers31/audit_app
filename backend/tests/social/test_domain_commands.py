@@ -224,3 +224,13 @@ def test_safe_retry_only_requeues_failed_destination(db):
     assert result["delivery_status"] == "partially_published"
     with pytest.raises(SocialError, match="RETRY_NOT_SAFE"):
         call(db, retry, lambda s: s.retry(successful.id, retry), route="retry")
+
+
+@pytest.mark.parametrize("state, heartbeat_age, scan_age, expected", [("healthy", -8640000, None, "unavailable"), ("active", -8640000, 0, "unavailable"), ("active", 0, None, "unavailable"), ("active", 90, 90, "stale"), ("idle", 90, 90, "idle"), ("idle", 180, 180, "stale"), ("stopped", 0, None, "stopped")])
+def test_worker_health_requires_real_recent_scan_and_known_state(db, state, heartbeat_age, scan_age, expected):
+    from datetime import timedelta
+    from social.models import SocialWorkerHeartbeat
+    now = SocialService(db).now()
+    db.add(SocialWorkerHeartbeat(worker_id=uuid4(), deployment_version="fixture", started_at=now, heartbeat_at=now-timedelta(seconds=heartbeat_age), last_scan_at=now-timedelta(seconds=scan_age) if scan_age is not None else None, active_claims=0, state=state))
+    db.commit()
+    assert SocialService(db).status()["worker"]["state"] == expected
