@@ -2,6 +2,8 @@
 
 Feature branch `codex/social-media-assets`, baseline `db1930b`. Shared HTTP prerequisite `8a5ed880` was cherry-picked as distinguishable commit `8ddf343`; parent integrates only the later feature commit. No live storage/configuration/provider publishing is enabled. Parent owns shared registration, requirements, migration ordering, status/navigation and Composer/Overrides wiring.
 
+Integrator update: shared registry, status, sequential migration and Composer/Overrides wiring are completed in PR492. Its combined534 backend/373 UI verification and remaining gates are in [MEDIA_INTEGRATION_ACCEPTANCE.md](MEDIA_INTEGRATION_ACCEPTANCE.md). The feature-only receipts below are historical, not the current integrated failure state.
+
 ## HTTP contract
 
 All paths under `/api/v1/admin/social/media` require existing Supabase administrator authorization, private/no-store and structured social errors/request IDs. Sync routes use existing request-scoped get_db. The child imports the shared http_boundary rather than another router.

@@ -2,6 +2,8 @@
 
 Started 2026-10-03. This ledger supplements the [frozen contract](BATCH_1_CONTRACT.md); the engineering blueprint remains the target specification.
 
+The reviewed foundation is now merged through PRs485/486. This file retains the historical batch1 evidence; [BATCH_2_STATUS.md](BATCH_2_STATUS.md) records accepted merge identities, current PRs and next priorities.
+
 ## Tracking and ownership
 
 | Work | Tracking | Branch | Agent settings |
