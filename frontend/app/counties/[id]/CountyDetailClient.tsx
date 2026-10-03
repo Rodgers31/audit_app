@@ -37,7 +37,7 @@ import {
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import SmartBackLink from '@/lib/navigation/SmartBackLink';
-import { usePathname, useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { fmtKES, fmtLabel, fmtPop, hasIngestedAudit, pct, Tab } from './shared';
 import TabSkeleton from './tabs/TabSkeleton';
@@ -602,8 +602,6 @@ function SourcesFooter() {
 export default function CountyDetailClient() {
   const { t } = useLang();
   const params = useParams();
-  const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
   const countyId = params.id as string;
   // Respect ?fy=... from the listing so the Health badge matches the column
@@ -630,30 +628,33 @@ export default function CountyDetailClient() {
   // Prefetch accountability so the hero can show the grade immediately
   const { data: acctData } = useCountyAccountability(countyId);
 
-  const initialTab = (searchParams.get('tab') as Tab) || 'overview';
-  const validTabs: Tab[] = ['overview', 'money', 'budget', 'audit', 'accountability'];
-  const [tab, setTab] = useState<Tab>(validTabs.includes(initialTab) ? initialTab : 'overview');
+  const requestedTab = searchParams.get('tab');
+  const urlTab: Tab = TABS.some(({ id }) => id === requestedTab) ? requestedTab as Tab : 'overview';
+  const [tab, setTab] = useState<Tab>(urlTab);
+  useEffect(() => setTab(urlTab), [urlTab]);
   const [showHealthModal, setShowHealthModal] = useState(false);
   const closeHealthModal = useCallback(() => setShowHealthModal(false), []);
 
   // Sync the active tab to the URL so reload / share-link / browser-back
   // all restore the user's place. `?tab=overview` is the default and is
   // omitted to keep the URL clean; any other tab is written as a query
-  // param via `router.replace` (no history entry — tab switching
-  // shouldn't clutter the back-button stack).
+  // param via Next's integrated History API, without adding a history entry.
+  // The tab is client state; only `fy` is an input to the server page. A
+  // router navigation here unnecessarily suspends on a new Flight stream and
+  // can strand the resolved lazy tab when that stream loses its render retry.
   const tabBarRef = useRef<HTMLDivElement | null>(null);
   const handleTabChange = useCallback(
     (next: Tab) => {
       setTab(next);
-      // Mirror the tab into the URL.
-      const current = new URLSearchParams(Array.from(searchParams.entries()));
+      // Read the current URL so rapid selections preserve the latest query
+      // state and hash, even before useSearchParams has observed the last one.
+      const current = new URL(window.location.href);
       if (next === 'overview') {
-        current.delete('tab');
+        current.searchParams.delete('tab');
       } else {
-        current.set('tab', next);
+        current.searchParams.set('tab', next);
       }
-      const qs = current.toString();
-      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+      window.history.replaceState(null, '', `${current.pathname}${current.search}${current.hash}`);
 
       // Scroll the tab bar into view. Without this, the browser preserves
       // pixel-offset scroll position — if the user was deep into Overview
@@ -665,7 +666,7 @@ export default function CountyDetailClient() {
         });
       });
     },
-    [pathname, router, searchParams]
+    []
   );
 
   /* Loading */
