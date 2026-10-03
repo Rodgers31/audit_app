@@ -660,3 +660,54 @@ def test_consumer_rejects_a_coherent_receipt_omitting_a_reviewed_year(adopted):
     receipt["pages"] = [p for p in receipt["pages"] if "2024-2025" not in p["url"]]
     receipt["adopted"] = [p for p in receipt["adopted"] if p["fiscal_year"] != missing]
     assert obs.observation_gaps(db, meta)
+
+
+@pytest.mark.parametrize("roundtrip", ["sorted_json", "reversed_year_map", "reversed_proofs"])
+def test_adopted_proofs_survive_json_object_key_reordering(adopted, roundtrip):
+    import json
+
+    db, meta = adopted
+    if roundtrip == "sorted_json":
+        meta = json.loads(json.dumps(meta, sort_keys=True))
+    elif roundtrip == "reversed_year_map":
+        inventory = meta["oag_county_discovery"]["volumes_by_fiscal_year"]
+        reordered = dict(reversed(list(inventory.items())))
+        meta["oag_county_discovery"]["volumes_by_fiscal_year"] = reordered
+        meta["oag_county_observation"]["discovery"]["volumes_by_fiscal_year"] = reordered
+    else:
+        meta["oag_county_observation"]["adopted"].reverse()
+    job(db, meta)
+    receipt = county_audit_coverage_receipt(db)
+    assert receipt["run_gaps"] == []
+    assert len(receipt["cells"]) == 376
+    assert coverage_verdict(receipt)[0] == "OK"
+
+
+@pytest.mark.parametrize("mutation", ["duplicate", "missing", "extra", "non_list", "non_mapping", "url_missing", "url_list", "state_hash", "extra_field", "float_chapters", "float_source_id"])
+def test_url_bound_adopted_proofs_require_unique_complete_typed_evidence(adopted, mutation):
+    db, meta = adopted
+    proofs = meta["oag_county_observation"]["adopted"]
+    if mutation == "duplicate":
+        proofs[1] = copy.deepcopy(proofs[0])
+    elif mutation == "missing":
+        proofs.pop()
+    elif mutation == "extra":
+        proofs.append({**proofs[0], "url": "https://example.com/extra.pdf"})
+    elif mutation == "non_list":
+        meta["oag_county_observation"]["adopted"] = {p["url"]: p for p in proofs}
+    elif mutation == "non_mapping":
+        proofs[0] = None
+    elif mutation == "url_missing":
+        proofs[0].pop("url")
+    elif mutation == "url_list":
+        proofs[0]["url"] = []
+    elif mutation == "state_hash":
+        proofs[0]["state_sha256"] = "0" * 64
+    elif mutation == "extra_field":
+        proofs[0]["unreviewed"] = "extra"
+    elif mutation == "float_chapters":
+        proofs[0]["chapters"] = 47.0
+    else:
+        proofs[0]["source_document_id"] = float(proofs[0]["source_document_id"])
+    job(db, meta)
+    assert check_county_audit_coverage(db)[0].level != "OK"

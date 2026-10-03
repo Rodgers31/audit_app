@@ -172,6 +172,7 @@ def county_audit_coverage_receipt(session):
             break
     listed = [fy for fy in listing if fy >= FIRST_INGESTED_FISCAL_YEAR]
     counties = session.query(Entity).filter(Entity.type == EntityType.COUNTY).order_by(Entity.id).all()
+    counties_by_id = {county.id: county for county in counties}
     counts, documents = Counter(), {}
     known_counties = _known_counties(session)
     incomplete_documents = {}
@@ -179,14 +180,24 @@ def county_audit_coverage_receipt(session):
     source_state = {}
     unidentified = 0
     geographic = {}
-    rows = (session.query(Audit, Entity, Extraction, SourceDocument)
+    # Keep the same eligibility joins and publication gate, but transfer
+    # shared county/source context once instead of repeating it per finding.
+    rows = (session.query(Audit, Extraction)
             .join(Entity, Entity.id == Audit.entity_id)
             .outerjoin(Extraction, Extraction.id == Audit.extraction_id)
             .join(SourceDocument, SourceDocument.id == Audit.source_document_id)
             .filter(Entity.type == EntityType.COUNTY, Audit.publishable.is_(True),
                     publishable_audit_criterion()).all())
+    source_ids = {audit.source_document_id for audit, _ in rows}
+    sources_by_id = {
+        source.id: source
+        for source in session.query(SourceDocument)
+        .filter(SourceDocument.id.in_(sorted(source_ids))).all()
+    } if source_ids else {}
     seen = set()
-    for audit, county, ext, doc in rows:
+    for audit, ext in rows:
+        county = counties_by_id[audit.entity_id]
+        doc = sources_by_id[audit.source_document_id]
         if audit.audit_year is not None:
             geographic.setdefault(audit.audit_year, set()).add(county.id)
         if doc.id not in source_state:

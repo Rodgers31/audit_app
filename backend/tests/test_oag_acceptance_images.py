@@ -224,3 +224,58 @@ def test_real_fetch_writer_title_and_metadata_upsert_is_supported(monkeypatch, t
     assert after["sources"][url]["metadata"]["previous_titles"] == ["older", "Retained publisher title"]
     assert after["sources"][url]["metadata"]["independent_review"] == {"owner": "kept"}
     assert after["sources"][url]["metadata"]["fetch_error"] == "old failure"
+
+
+def _capture_cli(monkeypatch, tmp_path, result):
+    from contextlib import nullcontext
+    from types import SimpleNamespace
+
+    tmp_path.chmod(0o700)
+    output = tmp_path / "new-image.json"
+    images.validate_image(result)
+    assert images.compare(result, result, require_coverage=True)["preservation_passed"]
+    connection = SimpleNamespace(execute=lambda *a, **k: None, rollback=lambda: None)
+    engine = SimpleNamespace(connect=lambda: nullcontext(connection), dispose=lambda: None)
+    monkeypatch.setattr(images.boundary, "cli_engine", lambda raw: engine)
+    monkeypatch.setattr(images, "capture", lambda *a, **k: result)
+    monkeypatch.setenv("OAG_ACCEPTANCE_DATABASE_URL", "postgresql://local-test-only@127.0.0.1/local")
+    monkeypatch.setattr(sys, "argv", ["oag_acceptance_images.py", "--output", str(output), "capture", "--stage", "catchup", "--operation", "synthetic-write-readback-seam", "--coverage"])
+    return output
+
+
+def test_capture_cli_writes_and_reads_healthy_coverage_with_integer_year_keys(monkeypatch, tmp_path):
+    result = covered(image())
+    counts = result["coverage"]["receipt"]["counties_by_year"]
+    result["coverage"]["receipt"]["counties_by_year"] = {int(k): v for k, v in counts.items()}
+    output = _capture_cli(monkeypatch, tmp_path, result)
+    assert images.main() == 0
+    readback = json.loads(output.read_bytes())
+    assert readback["coverage"]["receipt"]["counties_by_year"] == counts
+    assert images.same(readback, result)
+    assert images.compare(readback, readback, require_coverage=True)["preservation_passed"]
+    assert output.stat().st_mode & 0o077 == 0
+    with pytest.raises(ValueError, match="new receipt"):
+        images.main()
+
+
+@pytest.mark.parametrize("mutation", ["float_count", "boolean_source_id", "state_hash"])
+def test_capture_cli_refuses_typed_or_value_tampering_on_readback(monkeypatch, tmp_path, mutation):
+    result = covered(image())
+    output = _capture_cli(monkeypatch, tmp_path, result)
+    durable_save = images.boundary.save_new
+
+    def tampered_save(path, value):
+        durable_save(path, value)
+        saved = json.loads(path.read_bytes())
+        if mutation == "float_count":
+            saved["protected"]["audits"]["count"] = 8.0
+        elif mutation == "boolean_source_id":
+            next(s for s in saved["sources"].values() if s["id"] == 1)["id"] = True
+        else:
+            saved["edition_proofs"][0]["state_sha256"] = "9" * 64
+        path.write_text(json.dumps(saved))
+
+    monkeypatch.setattr(images.boundary, "save_new", tampered_save)
+    with pytest.raises(ValueError, match="receipt readback differs"):
+        images.main()
+    assert output.exists()
