@@ -29,6 +29,36 @@ def test_engine_has_two_connections_and_zero_overflow():
         engine.dispose()
 
 
+@pytest.mark.parametrize("driver", ["postgresql+asyncpg", "postgresql+psycopg", "postgresql+pg8000", "postgresql+unknown"])
+def test_config_rejects_unsupported_or_async_driver_before_engine_startup(driver):
+    with pytest.raises(ValueError, match="psycopg2"):
+        WorkerConfig(driver+"://localhost/social_worker_test")
+
+
+@pytest.mark.parametrize("driver", ["postgresql", "postgresql+psycopg2"])
+def test_supported_worker_driver_is_explicit_psycopg2(driver):
+    engine = create_worker_engine(WorkerConfig(driver+"://localhost/social_worker_test"))
+    try:
+        assert engine.url.drivername == "postgresql+psycopg2"
+        assert engine.dialect.driver == "psycopg2"
+    finally:
+        engine.dispose()
+
+
+def test_cli_rejects_async_driver_without_opening_engine_or_logging_dsn(monkeypatch,caplog):
+    from social.worker import __main__ as cli
+    opened=[]
+    def forbidden_engine(config):
+        opened.append(config)
+        raise AssertionError("Invalid configuration must not open an engine")
+    monkeypatch.setattr(cli,"create_worker_engine",forbidden_engine)
+    with caplog.at_level(logging.ERROR):
+        assert cli.main(["--database-url","postgresql+asyncpg://user:SECRET_TOKEN@localhost/social_worker_test","--once"]) == 1
+    assert not opened
+    assert "WORKER_UNAVAILABLE" in caplog.text
+    assert "SECRET_TOKEN" not in caplog.text and "asyncpg://" not in caplog.text
+
+
 def test_structured_log_excludes_sensitive_unapproved_fields(caplog):
     logger = logging.getLogger("social.worker.test")
     with caplog.at_level(logging.INFO):

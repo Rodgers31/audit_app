@@ -21,6 +21,8 @@ from .policy import bounded_json, retry_decision, validate_plan
 from ..validation import validate_document
 
 ACTIONABLE_STATES = ("queued", "retry_wait", "processing", "reconciling")
+READ_BUDGET_LIMIT = 100
+READ_BUDGET_WINDOW_SECONDS = 86400
 REQUIRED_TABLES = (
     "social_controls", "social_accounts", "social_posts", "social_post_revisions",
     "social_publications", "social_post_targets", "social_publish_attempts",
@@ -190,6 +192,20 @@ class QueueRepository:
                 # permits status reads, but never implicitly authorizes spending.
                 self._transition(conn, claim, target, "blocked", "BUDGET_RESERVATION_UNAVAILABLE")
                 return None
+            if not mutating:
+                resume_at = self._read_budget_resume_at(conn, claim, now)
+                if resume_at is not None:
+                    # A budget is a temporary admission restriction, not evidence
+                    # about an accepted mutation. Keep its checkpoint and hold,
+                    # and reserve no new operation until a read leaves the window.
+                    waiting_state = (claim.previous_state if claim.previous_state in ("processing", "reconciling")
+                                     else "reconciling" if operation == "reconcile" else "processing")
+                    if waiting_state == "reconciling":
+                        self._hold_account(conn, claim)
+                    self._transition(conn, claim, target, waiting_state, "STATUS_CHECK_LIMIT",
+                                     delay=max(0.01, (resume_at-now).total_seconds()),
+                                     next_action="reconcile" if waiting_state == "reconciling" else "poll")
+                    return None
             if mutating:
                 if expected_capability_hash is not None and canonical_hash(account["capability_snapshot"]) != expected_capability_hash:
                     self._transition(conn, claim, target, "blocked", "CAPABILITY_CHANGED")
@@ -238,7 +254,7 @@ class QueueRepository:
                 VALUES (CAST(:attempt AS uuid),CAST(:id AS uuid),:sequence,CAST(:operation_id AS uuid),
                         :operation,:fingerprint,:epoch,
                         CASE WHEN :public THEN clock_timestamp() ELSE NULL END,'intent',CAST(:receipt AS jsonb),
-                        :cost,'not_required',now())
+                        :cost,'not_required',clock_timestamp())
             """), {**self._params(claim), "attempt": str(uuid4()), "sequence": sequence,
                     "operation_id": str(operation_id), "operation": operation,
                     "fingerprint": request_fingerprint, "public": publication_capable,
@@ -501,11 +517,22 @@ class QueueRepository:
 
     def read_budget_exhausted(self, claim):
         with self.engine.connect() as conn:
-            row = conn.execute(text("""
-                SELECT COUNT(*) >= 100 OR MIN(created_at) <= now()-make_interval(secs => :seconds)
-                FROM social_publish_attempts WHERE target_id=CAST(:id AS uuid)
-            """), {**self._params(claim), "seconds": self.config.retry_lifetime_seconds}).scalar()
-        return bool(row)
+            now = conn.execute(text("SELECT clock_timestamp()")).scalar_one()
+            return self._read_budget_resume_at(conn, claim, now) is not None
+
+    def _read_budget_resume_at(self, conn, claim, now):
+        # The target/time index bounds the scan to one target's rolling window.
+        # The 100th newest read determines when fewer than 100 remain, including
+        # imported history with more than 100 reads. Intents count even if their
+        # result was lost; mutation/upload history never consumes this budget.
+        return conn.execute(text("""
+            SELECT created_at+make_interval(secs => :seconds)
+            FROM social_publish_attempts
+            WHERE target_id=CAST(:id AS uuid) AND operation IN ('poll','reconcile')
+              AND created_at > :now-make_interval(secs => :seconds)
+            ORDER BY created_at DESC OFFSET :offset LIMIT 1
+        """), {**self._params(claim), "now": now,
+                "seconds": READ_BUDGET_WINDOW_SECONDS, "offset": READ_BUDGET_LIMIT-1}).scalar()
 
     def heartbeat(self, *, state: str, active_claims: int, scanned: bool = False,
                   success: bool = False, error_code: str | None = None):

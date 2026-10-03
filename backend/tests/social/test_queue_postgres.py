@@ -169,6 +169,132 @@ def run_claim(repo, adapter=None):
     asyncio.run(execute())
 
 
+def read_history(engine, target_id, *, count=100, age_seconds=60):
+    """Completed reads are charged even when they observed no final result."""
+    with engine.begin() as conn:
+        conn.execute(text("""
+            INSERT INTO social_publish_attempts
+                (id,target_id,sequence,operation_id,operation,request_fingerprint,lease_epoch,outcome,receipt,
+                 estimated_cost_microusd,cost_reservation_state,completed_at,created_at)
+            SELECT gen_random_uuid(),CAST(:id AS uuid),start.sequence+n,gen_random_uuid(),
+                   'poll',repeat('a',64),0,'ambiguous',
+                   jsonb_build_object('intent',jsonb_build_object('publication_capable',false,
+                       'mutating',false,'safe_replay_class','read_only')),
+                   0,'not_required',clock_timestamp(),clock_timestamp()-make_interval(secs => :age)
+            FROM generate_series(1,:count) AS n
+            CROSS JOIN (SELECT COALESCE(MAX(sequence),0) AS sequence
+                        FROM social_publish_attempts WHERE target_id=CAST(:id AS uuid)) AS start
+        """), {"id":target_id,"count":count,"age":age_seconds})
+
+
+def test_old_mutation_history_does_not_permanently_strand_reconciliation(engine):
+    ids = seed(engine)
+    target_id = ids["targets"][0]
+    repo = repository(engine)
+    fake = FakeAdapter(results=[TimeoutError("ambiguous")],reconcile_result=ReconciliationResult(
+        outcome="confirmed_published",evidence={"match":"exact"},
+        result=OperationResult(outcome="confirmed_success",primary_remote_id="existing",
+                               visibility_state="public",confirmation_kind="verified")))
+    run_claim(repo,fake)
+    with engine.begin() as conn:
+        conn.execute(text("UPDATE social_publish_attempts SET created_at=clock_timestamp()-interval '25 hours' WHERE target_id=:id"), {"id":target_id})
+        conn.execute(text("UPDATE social_publications SET retry_deadline=clock_timestamp()-interval '1 second' WHERE id=:id"), {"id":ids["publication"]})
+    read_history(engine,target_id,age_seconds=25*3600)
+    due_now(engine,target_id)
+    run_claim(repo,fake)
+    assert row(engine,target_id)["state"] == "published"
+    assert fake.calls == 1 and fake.reconciliations == 1
+
+
+@pytest.mark.parametrize("state", ["processing", "reconciling"])
+def test_exhausted_read_budget_defers_checkpoint_then_recovers_after_window(engine,state):
+    ids = seed(engine,checkpoint={"upload_id":"preserved"})
+    target_id = ids["targets"][0]
+    public_result = OperationResult(outcome="confirmed_success",primary_remote_id="existing",
+                                   visibility_state="public",confirmation_kind="verified")
+    first = (OperationResult(outcome="processing",checkpoint={"upload_id":"preserved","processing_id":"container"})
+             if state == "processing" else TimeoutError("ambiguous"))
+    fake = FakeAdapter(results=[first,public_result],reconcile_result=ReconciliationResult(
+        outcome="confirmed_published",evidence={"match":"exact"},result=public_result))
+    repo = repository(engine)
+    run_claim(repo,fake)
+    before = row(engine,target_id)
+    assert before["state"] == state
+    read_history(engine,target_id)
+    due_now(engine,target_id)
+    run_claim(repo,fake)
+    waiting = row(engine,target_id)
+    assert waiting["state"] == state
+    assert waiting["checkpoint"] == before["checkpoint"]
+    assert waiting["submit_count"] == 1
+    assert waiting["lease_token"] is None
+    assert waiting["next_action"] == ("poll" if state == "processing" else "reconcile")
+    assert waiting["error_code"] == "STATUS_CHECK_LIMIT"
+    assert timedelta(hours=23) < waiting["next_action_at"]-datetime.now(timezone.utc) <= timedelta(hours=24)
+    assert fake.calls == 1 and fake.reconciliations == 0
+    with engine.connect() as conn:
+        hold=conn.execute(text("SELECT hold_reason FROM social_accounts WHERE id=:id"),{"id":ids["accounts"][0]}).scalar_one()
+        assert bool(hold) == (state == "reconciling")
+        assert conn.execute(text("SELECT COUNT(*) FROM social_publish_attempts WHERE target_id=:id"),{"id":target_id}).scalar_one() == 101
+    # Move only read timestamps beyond the window; no sleep or real provider.
+    with engine.begin() as conn:
+        conn.execute(text("UPDATE social_publish_attempts SET created_at=clock_timestamp()-interval '25 hours' WHERE target_id=:id AND operation IN ('poll','reconcile')"),{"id":target_id})
+    due_now(engine,target_id)
+    run_claim(repo,fake)
+    final = row(engine,target_id)
+    assert final["state"] == "published" and final["submit_count"] == 1
+    assert fake.calls == (2 if state == "processing" else 1)
+    assert fake.reconciliations == (1 if state == "reconciling" else 0)
+
+
+def test_direct_read_permit_cannot_bypass_exhausted_budget(engine):
+    ids = seed(engine,state="processing",checkpoint={"processing_id":"container"})
+    target_id = ids["targets"][0]
+    repo = repository(engine)
+    read_history(engine,target_id)
+    claim = repo.claim_due()[0]
+    assert intent(repo,claim,public=False,operation="poll",replay="read_only") is None
+    assert row(engine,target_id)["state"] == "processing"
+    assert row(engine,target_id)["next_action_at"] > datetime.now(timezone.utc)
+
+
+def test_read_budget_excludes_old_reads_and_mutations_but_counts_unfinished_read_intent(engine):
+    ids = seed(engine,state="processing",checkpoint={"processing_id":"container"})
+    target_id = ids["targets"][0]
+    read_history(engine,target_id,age_seconds=25*3600)
+    with engine.begin() as conn:
+        conn.execute(text("UPDATE social_publish_attempts SET operation='upload',created_at=clock_timestamp() WHERE target_id=:id AND sequence=1"),{"id":target_id})
+    read_history(engine,target_id,count=99)
+    repo = repository(engine)
+    claim = repo.claim_due()[0]
+    assert not repo.read_budget_exhausted(claim)
+    assert intent(repo,claim,public=False,operation="poll",replay="read_only") is not None
+    assert repo.read_budget_exhausted(claim)
+    assert row(engine,target_id)["submit_count"] == 0
+
+
+def test_read_window_is_independent_of_shorter_public_retry_lifetime(engine):
+    ids = seed(engine,state="processing",checkpoint={"processing_id":"container"})
+    target_id = ids["targets"][0]
+    read_history(engine,target_id,age_seconds=300)
+    repo = repository(engine,retry_lifetime_seconds=60)
+    claim = repo.claim_due()[0]
+    assert intent(repo,claim,public=False,operation="poll",replay="read_only") is None
+    assert row(engine,target_id)["next_action_at"]-datetime.now(timezone.utc) > timedelta(hours=23)
+
+
+def test_imported_over_budget_history_waits_until_fewer_than_100_reads_remain(engine):
+    ids = seed(engine,state="processing",checkpoint={"processing_id":"container"})
+    target_id = ids["targets"][0]
+    read_history(engine,target_id,count=15,age_seconds=2*3600)
+    read_history(engine,target_id,count=100,age_seconds=60)
+    repo = repository(engine)
+    claim = repo.claim_due()[0]
+    assert intent(repo,claim,public=False,operation="poll",replay="read_only") is None
+    # Expiring just the oldest 15 would still leave 100 reads in the window.
+    assert row(engine,target_id)["next_action_at"]-datetime.now(timezone.utc) > timedelta(hours=23)
+
+
 def test_empty_queue_minimal_query_and_idle_heartbeat(engine):
     repo = repository(engine)
     statements = []

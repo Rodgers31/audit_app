@@ -146,9 +146,6 @@ class SocialWorker:
             validate_plan(plan, snapshot["checkpoint"])
             if not 0 < plan.timeout_seconds < self.config.lease_seconds:
                 raise ValueError("Adapter timeout must be shorter than claim lease")
-            if plan.safe_replay_class == "read_only" and await self.db(self.repository.read_budget_exhausted, claim):
-                await self.db(self.repository.abandon, claim, state="outcome_unknown", code="STATUS_CHECK_LIMIT")
-                return
             intent = await self.db(
                 self.repository.begin_operation, claim, operation_id=plan.operation_id,
                 operation=plan.operation, publication_capable=plan.publication_capable,

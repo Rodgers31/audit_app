@@ -36,6 +36,8 @@ class WorkerConfig:
         url = make_url(self.database_url)
         if url.get_backend_name() != "postgresql":
             raise ValueError("The durable worker requires PostgreSQL")
+        if url.drivername not in ("postgresql", "postgresql+psycopg2"):
+            raise ValueError("The synchronous worker requires the psycopg2 PostgreSQL driver")
         if self.external_slots not in (1, 2):
             raise ValueError("Worker permits at most two external operations")
         if not 0 < self.renewal_seconds < self.lease_seconds:
