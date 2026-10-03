@@ -162,12 +162,21 @@ def bump_generation() -> str:
     Raises ``InvalidationError`` when the marker cannot be written. If the
     other workers cannot be told, the call has not worked.
     """
+    token, _ = _publish_generation()
+    return token
+
+
+def _publish_generation() -> Tuple[str, Tuple[int, int, int]]:
+    """Return the identity of OUR published file, not a competing bump."""
     token = uuid.uuid4().hex
     path = marker_path()
     tmp = f"{path}.{os.getpid()}.{token[:8]}.tmp"
     try:
         with open(tmp, "w") as fh:
             fh.write(token)
+            fh.flush()
+            st = os.fstat(fh.fileno())
+            identity = (st.st_ino, st.st_mtime_ns, st.st_size)
         os.replace(tmp, path)
     except OSError as exc:
         try:
@@ -177,7 +186,7 @@ def bump_generation() -> str:
         raise InvalidationError(
             "generation_marker_unwritable", f"{path}: {exc}"
         ) from exc
-    return token
+    return token, identity
 
 
 def sync_generation() -> bool:
@@ -202,12 +211,47 @@ def sync_generation() -> bool:
         if _seen_initialised and token == _seen:
             return False
         first = not _seen_initialised
-        _seen, _seen_initialised = token, True
         if first:
+            _seen, _seen_initialised = token, True
             return False
         counts = clear_local_caches()
+        # A failed callback leaves this generation unacknowledged. The next
+        # request retries rather than permanently keeping a partially stale cache.
+        _seen, _seen_initialised = token, True
     logger.info("cache generation changed; cleared this worker's caches: %s", counts)
     return True
+
+
+def generation_status() -> Dict[str, object]:
+    """Observe this worker's actual adoption, without writing a marker.
+
+    Like ordinary request middleware, this may clear local caches after a bump.
+    An unreadable marker or failed clear cannot certify successful adoption.
+    A concurrent bump may produce synchronised=False; callers must retry and
+    compare the non-null identity to the original invalidation acknowledgement.
+    """
+    try:
+        sync_generation()
+        with _lock:
+            observed = _stat_token()
+            adopted = _seen
+            initialised = _seen_initialised
+    except OSError as exc:
+        raise InvalidationError(
+            "generation_marker_unreadable", "Cannot observe the shared marker"
+        ) from exc
+    except Exception as exc:
+        raise InvalidationError(
+            "local_invalidation_failed", "This worker could not clear its caches"
+        ) from exc
+    return {
+        "pid": os.getpid(),
+        "commit": os.getenv("RENDER_GIT_COMMIT"),
+        "marker_path": marker_path(),
+        "observed_identity": observed,
+        "adopted_identity": adopted,
+        "synchronised": initialised and observed == adopted,
+    }
 
 
 def invalidate_all() -> Dict[str, object]:
@@ -218,13 +262,18 @@ def invalidate_all() -> Dict[str, object]:
     redis_result = clear_redis()
     with _lock:
         local = clear_local_caches()
-        generation = bump_generation()
+        generation, published_identity = _publish_generation()
+        if _stat_token() != published_identity:
+            raise InvalidationError(
+                "generation_marker_changed", "Published marker disappeared or was replaced"
+            )
         # This worker is already clean; do not clear it again on its next
         # request.
-        _seen, _seen_initialised = _stat_token(), True
+        _seen, _seen_initialised = published_identity, True
     return {
         "redis": redis_result,
         "local": {"cleared_entries": sum(local.values()), "by_cache": local},
         "generation": generation,
+        "marker_identity": published_identity,
         "pid": os.getpid(),
     }

@@ -64,6 +64,16 @@ def _run_gaps(job):
     if not isinstance(job.meta, dict):
         return ["newest audits run has malformed metadata"]
     gaps = []
+    if (
+        (
+            "audit_source_scope" in meta
+            or _mapping(meta.get("county_volumes")).get("inventory_basis")
+            == "live_publisher_year_pages_plus_verified_adopted_state"
+        )
+        and "oag_county_observation" not in meta
+        and _mapping(meta.get("oag_county_discovery")).get("listing_fiscal_years")
+    ):
+        gaps.append("source-bounded inventory lacks qualified county observation")
     discovery = meta.get("oag_county_discovery")
     inventory = None
     if not isinstance(discovery, dict) or _years(discovery.get("listing_fiscal_years")) is None:
@@ -145,6 +155,7 @@ def _run_gaps(job):
 
 def county_audit_coverage_receipt(session):
     from models import Audit, DocumentStatus, Entity, EntityType, Extraction, IngestionJob, SourceDocument
+    from .domains.audits.observation import observation_gaps
     from services.audit_citations import audited_institution, extraction_payload, page_number
     from services.publication_gate import publishable_audit_criterion
     from .extractors.oag_county_audit import _known_counties
@@ -253,7 +264,10 @@ def county_audit_coverage_receipt(session):
         "county_count": len(counties), "expected_county_count": COUNTY_COUNT,
         "cells": cells, "unattributed_findings": unidentified,
         "counties_by_year": {year: len(ids) for year, ids in geographic.items()},
-        "run_gaps": _run_gaps(jobs[0] if jobs else None) + [
+        "run_gaps": _run_gaps(jobs[0] if jobs else None) + (
+            observation_gaps(session, jobs[0].meta)
+            if jobs and isinstance(jobs[0].meta, dict) and "oag_county_observation" in jobs[0].meta else []
+        ) + [
             f"document {doc_id}: {reason}" for doc_id, reason in sorted(invalid_documents.items())
         ] + [
             f"document {doc_id}: {reason}" for doc_id, reason in sorted(incomplete_documents.items())

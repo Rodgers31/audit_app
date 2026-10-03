@@ -19,6 +19,7 @@ class DomainRunContext:
     # Explicit execution input; never sourced from scheduled environment defaults.
     audits_source_manifest: Optional[bytes] = None
     audits_source_receipt: Optional[Dict[str, Any]] = None
+    audits_observe_listing: bool = False
 
 
 class DomainRunResult(BaseModel):
