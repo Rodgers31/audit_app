@@ -61,7 +61,11 @@ Two local harness failures were retained and corrected: insufficient memory in
 the proof-only container and an omitted read-only password-file mount. Neither
 result was treated as an accepted production operation or an application defect.
 The accepted actual operators used the pinned sources, TLS and6GiB local proof
-containers. Strict overall coverage acceptance is still required below.
+containers. Actual strict read-only coverage now returnsOK:376 positive cells,
+zero unattributed findings and no run gaps, against actual stored state and
+all eight retained hash-verified PDFs. Receipt SHA256:
+`2a6ab42afa7a88dbe1a23cfa485567d0ff9d825aef542a0268b1fa0e172cee1e`.
+Runtime artifact/release acceptance remains required below.
 
 ## Six supported cash sets adopted (#299)
 
@@ -104,7 +108,13 @@ it was rerun with all explicit inputs and returned37passed.
 The final after-capture independently matched all15 committed table digests and
 all28 sequence entries, and read all six cash totals and43 supported county cash
 sets. Two read-only capture-harness SQL mistakes were corrected before this
-accepted receipt; neither mutated data. API/rendered publication is pending.
+accepted receipt; neither mutated data. Actual47-county API and all six rendered county pages now verify the six
+cash totals. All41 unaffected revenue blocks and all47 summary OSR sets match
+the retained prior response. API receipt SHA256:
+`5d657820080d9e825e236c544a933e48e70bd408a1b53db8135000621c6a6130`;
+preservation/rendered receipt SHA256:
+`8794e23d7bc8fac8c6a0622df4d665c351de1b479e8c59a6cc99732a96e6f164`.
+These results use the existing deployment, without a claimed signed refresh.
 Kwale, Migori, Nyeri and Samburu remain withheld for their original report
 conflicts/incomplete cells. This operation does not close those source questions.
 
@@ -135,7 +145,24 @@ initial probe joined stored rows, so it did not establish12 public sources.
 [#472](https://github.com/Rodgers31/audit_app/issues/472) records the distinct
 artifact lifecycle failure. The session was sent back to implement explicit,
 bounded, hash-verified artifact preparation and validation-runner integration.
-Do not close234 or472 merely because the metadata correction committed.
+The packaged preparer is explicit/default-preview, checks the unchanged reviewed
+eight/eleven-source authority and current Source identity in a read-only
+transaction, and installs only exact official SHA256/MD5 bytes with bounds and
+exclusive atomic writes. The separate validation runner now restores the PDF
+cache and explicitly prepares county bytes before the unchanged FULL body.
+
+Independent execution found a real FIFO hang before the regular-file check.
+The incremental fix opens nonblocking; the failing old subprocess timed out,
+and the repaired path promptly refuses and preserves the FIFO. The final
+independent gate passed25 controls, including actual CLI/backend-only execution,
+strict-consumer boundary, current Source drift, directory/file/staging races and
+FIFO installation races. Root independently ran the final44 cache controls;
+all passed. Final helper SHA256:
+`03fbba91eb3745884630274e625f3a9bb9734885c1783f854664406648640e90`.
+
+Actual cold Render preparation, strict retained-byte coverage and protected
+before/after acceptance remain required. Do not close234 or472 merely because
+metadata correction or local tests passed.
 
 ## Recovery and remaining release requirements
 
@@ -144,9 +171,23 @@ SupabasePG17.6 logical restore are assessed alongside exact retained preimages,
 durable intents and proven scoped inverses. No fresh full backup is claimed for
 these later operations; no full infrastructure disaster recovery is claimed.
 
+The actual unchanged shipping FULL validator completed with exit0, zero critical
+errors and three named warnings. It added only completed20-entry census job3240;
+all15 protected fact tables, existing whole job hashes, migration revision and
+all sequence configuration/called/value state were preserved, apart from the
+sole census sequence +1. Receipt SHA256:
+`9b62ddcc6c7cb0315e9a21d82e086642c3578c35c8eccaa65b8d944aa297619b`.
+Its wrapper passed11 independent receipt/control checks after repairing timeout
+and malformed20-count acceptance gaps, before actual execution.
+
+The remaining warnings concern unrecorded national discovery on the deliberately
+scoped county run, superseded bootstrap fixtures, and Learning Hub fixtures by
+design. The older FY2020/21 coverage warning is resolved. This is actual database
+acceptance using real retained local PDFs, not a hosted Actions or Render run.
+
 Before closure: deploy the verified consolidated code, restore exact reviewed
-artifacts, run strict coverage and the actual operational FULL validator, guard
-its sole census write, sign backend/worker/frontend refresh and verify actual
+artifacts and verify strict runtime coverage, then sign backend/worker/frontend
+refresh and verify actual
 API/rendered source inventory/cash states. Actions remains OFF. The proposed
 final PR verification jobs have an aggregate100runner-minute timeout bound;
 enabling/running that batch still requires the owner's separate approval.
