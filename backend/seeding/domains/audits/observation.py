@@ -44,6 +44,23 @@ def _digest(value):
     ).hexdigest()
 
 
+def _adopted_by_url(proofs):
+    """Bind complete proofs to unique URLs independently of JSON object order."""
+    if not isinstance(proofs, list):
+        raise AuditSourceScopeError("adopted proof collection malformed")
+    by_url = {}
+    for proof in proofs:
+        if not isinstance(proof, dict) or not isinstance(proof.get("url"), str) or not proof["url"]:
+            raise AuditSourceScopeError("adopted proof identity malformed")
+        if proof["url"] in by_url:
+            raise AuditSourceScopeError("duplicate adopted proof URL")
+        # Stored observations are JSON evidence, never caller-defined objects
+        # whose string conversion could impersonate a reviewed value.
+        json.dumps(proof, allow_nan=False)
+        by_url[proof["url"]] = proof
+    return by_url
+
+
 def _require_reviewed_inventory(inventory):
     expected = {
         (edition["fiscal_year"], edition["url"])
@@ -479,7 +496,9 @@ def observation_gaps(session, meta, *, now=None):
                     ),
                 )
             )
-        if receipt.get("adopted") != expected:
+        # JSONB may reorder the discovery's object keys. List order is not a
+        # source identity; compare all typed fields under their exact URLs.
+        if _digest(_adopted_by_url(receipt.get("adopted"))) != _digest(_adopted_by_url(expected)):
             raise AuditSourceScopeError(
                 "observed adopted state changed or lacks full outcome evidence"
             )

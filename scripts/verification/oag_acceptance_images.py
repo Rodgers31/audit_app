@@ -421,7 +421,9 @@ def main():
     # The boundary helper durably creates new files. Set restrictive umask first.
     os.umask(0o077)
     boundary.save_new(args.output, result)
-    if json.loads(args.output.read_bytes()) != result:
+    # JSON object keys become strings on disk. Compare canonical encoded
+    # evidence while keeping numeric and boolean value types distinct.
+    if not same(json.loads(args.output.read_bytes()), result):
         raise ValueError("receipt readback differs")
     print(json.dumps({"receipt_sha256": file_sha(args.output), "stage": result["stage"],
                       "preservation_passed": result.get("preservation_passed", "capture_only")}))
