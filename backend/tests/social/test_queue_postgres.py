@@ -875,3 +875,110 @@ def test_claim_audit_does_not_deadlock_against_account_then_target_lock_order(en
         assert audit["details"]["publication_id"] == str(ids["publication"])
     finally:
         sqlalchemy_event.remove(engine,"before_cursor_execute",observe)
+
+
+def test_failed_incomplete_absence_lookup_never_authorizes_resend(engine):
+    ids = seed(engine)
+    repo = repository(engine)
+    fake = FakeAdapter(results=[TimeoutError("uncertain publication")],reconcile_result=ReconciliationResult(
+        outcome="definitively_unpublished",evidence={"lookup_succeeded":False,"complete":False,"matches":[]}))
+    run_claim(repo,fake)
+    due_now(engine,ids["targets"][0]); run_claim(repo,fake)
+    target=row(engine,ids["targets"][0])
+    assert target["state"] == "outcome_unknown"
+    assert target["submit_count"] == 1 and fake.calls == 1 and repo.claim_due() == []
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT hold_reason FROM social_accounts")).scalar_one() is not None
+
+
+@pytest.mark.parametrize("kind",["provider_definitive_status","confirmed_not_sent"])
+def test_verified_complete_original_mutation_absence_proof_allows_bounded_retry(engine,kind):
+    ids = seed(engine)
+    repo = repository(engine)
+    class ProvedAbsentAdapter(FakeAdapter):
+        async def reconcile(self,payload,checkpoint,attempt):
+            self.reconciliations += 1
+            return ReconciliationResult(outcome="definitively_unpublished",absence_proof={
+                "kind":kind,"verified":True,"coverage_complete":True,
+                "account_id":payload.account_id,"operation_id":attempt["operation_id"]})
+    fake = ProvedAbsentAdapter(results=[TimeoutError("uncertain")])
+    run_claim(repo,fake)
+    due_now(engine,ids["targets"][0]); run_claim(repo,fake)
+    target=row(engine,ids["targets"][0])
+    assert target["state"] == "retry_wait" and target["submit_count"] == 1
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT hold_reason FROM social_accounts")).scalar_one() is None
+        proof=conn.execute(text("SELECT receipt->'absence_proof' FROM social_publish_attempts WHERE operation='reconcile'")).scalar_one()
+    assert proof["kind"] == kind and proof["verified"] is True and proof["coverage_complete"] is True
+    fake.results.append(OperationResult(outcome="confirmed_success",primary_remote_id="safe-retry",visibility_state="public",confirmation_kind="receipt"))
+    due_now(engine,ids["targets"][0]); run_claim(repo,fake)
+    assert fake.calls == 2 and row(engine,ids["targets"][0])["state"] == "published"
+
+
+@pytest.mark.parametrize("mismatch",["account_id","operation_id"])
+def test_absence_proof_for_wrong_account_or_operation_stays_unknown(engine,mismatch):
+    ids=seed(engine)
+    repo=repository(engine)
+    class WrongProofAdapter(FakeAdapter):
+        async def reconcile(self,payload,checkpoint,attempt):
+            proof={"kind":"confirmed_not_sent","verified":True,"coverage_complete":True,
+                   "account_id":payload.account_id,"operation_id":attempt["operation_id"]}
+            proof[mismatch]=uuid4()
+            return ReconciliationResult(outcome="definitively_unpublished",absence_proof=proof)
+    fake=WrongProofAdapter(results=[TimeoutError("uncertain")])
+    run_claim(repo,fake)
+    due_now(engine,ids["targets"][0]); run_claim(repo,fake)
+    assert row(engine,ids["targets"][0])["state"] == "outcome_unknown" and fake.calls == 1
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT hold_reason FROM social_accounts")).scalar_one() is not None
+
+
+@pytest.mark.parametrize("field,value",[("verified",False),("coverage_complete",False),("verified",1),("kind","incomplete_page_lookup")])
+def test_malformed_absence_proof_completes_read_as_unknown_without_resend(engine,field,value):
+    ids=seed(engine)
+    repo=repository(engine)
+    class MalformedProofAdapter(FakeAdapter):
+        async def reconcile(self,payload,checkpoint,attempt):
+            proof={"kind":"confirmed_not_sent","verified":True,"coverage_complete":True,
+                   "account_id":str(payload.account_id),"operation_id":str(attempt["operation_id"])}
+            proof[field]=value
+            return {"outcome":"definitively_unpublished","absence_proof":proof}
+    fake=MalformedProofAdapter(results=[TimeoutError("uncertain")])
+    run_claim(repo,fake)
+    due_now(engine,ids["targets"][0]); run_claim(repo,fake)
+    target=row(engine,ids["targets"][0])
+    assert target["state"] == "outcome_unknown" and target["error_code"] == "INVALID_RECONCILIATION_PROOF"
+    assert target["lease_token"] is None and fake.calls == 1
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT completed_at FROM social_publish_attempts WHERE operation='reconcile'")).scalar_one() is not None
+
+
+def test_repository_reconciliation_retry_cannot_use_generic_truthy_evidence(engine):
+    ids=seed(engine)
+    repo=repository(engine)
+    original=repo.claim_due()[0]
+    intent(repo,original)
+    expire(engine,original.target_id); repo.recover_expired()
+    claim=repo.claim_due()[0]
+    read=intent(repo,claim,public=False,operation="reconcile",replay="read_only")
+    assert repo.finish(claim,read,state="retry_wait",outcome="definite_failure",checkpoint={},remote_refs={},
+        receipt={"retry_safe":True,"reconciliation_evidence":{"complete":False}},delay=0,next_action="publish")
+    assert row(engine,ids["targets"][0])["state"] == "outcome_unknown" and repo.claim_due() == []
+
+
+def test_verified_absence_releases_account_hold_even_when_retry_deadline_exhausted(engine):
+    ids=seed(engine)
+    repo=repository(engine)
+    class ProvenAbsent(FakeAdapter):
+        async def reconcile(self,payload,checkpoint,attempt):
+            return ReconciliationResult(outcome="definitively_unpublished",absence_proof={
+                "kind":"confirmed_not_sent","verified":True,"coverage_complete":True,
+                "account_id":payload.account_id,"operation_id":attempt["operation_id"]})
+    fake=ProvenAbsent(results=[TimeoutError("uncertain")])
+    run_claim(repo,fake)
+    with engine.begin() as conn:
+        conn.execute(text("UPDATE social_publications SET retry_deadline=clock_timestamp()-interval '1 second'"))
+    due_now(engine,ids["targets"][0]); run_claim(repo,fake)
+    assert row(engine,ids["targets"][0])["state"] == "blocked" and fake.calls == 1
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT hold_reason FROM social_accounts")).scalar_one() is None

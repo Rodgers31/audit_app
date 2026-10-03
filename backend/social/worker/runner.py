@@ -9,7 +9,7 @@ import time
 from uuid import uuid4
 
 from ..contracts import (
-    CapabilitySet, OperationPlan, OperationResult, ReconciliationResult,
+    CapabilitySet, DefinitiveAbsenceProof, OperationPlan, OperationResult, ReconciliationResult,
     ResolvedPostPayload, ValidationResult, canonical_hash,
 )
 from .logging import event
@@ -184,7 +184,15 @@ class SocialWorker:
             # Persist outside the exception classifier: DB failure after acceptance
             # must retain the original durable intent, never invent an unsent result.
             if reconciling:
-                reconciliation = ReconciliationResult.model_validate(remote)
+                try:
+                    reconciliation = ReconciliationResult.model_validate(remote)
+                except (ValueError, TypeError):
+                    # Invalid/false absence proof is an unknown outcome, rather
+                    # than an incomplete read intent or permission to resubmit.
+                    result = OperationResult(outcome="ambiguous", error_code="INVALID_RECONCILIATION_PROOF")
+                    await self._save(claim, intent, snapshot, result, state="outcome_unknown",
+                                     duration_ms=int((time.monotonic()-started)*1000))
+                    return
                 await self._reconciliation(claim, intent, snapshot, reconciliation, started)
             else:
                 result = OperationResult.model_validate(remote)
@@ -251,11 +259,24 @@ class SocialWorker:
     async def _reconciliation(self, claim, intent, snapshot, reconciliation, started):
         bounded_json(reconciliation.evidence)
         result = reconciliation.result or OperationResult(outcome="ambiguous", error_code="RECONCILIATION_REQUIRED")
+        absence_proof = None
+        if reconciliation.absence_proof is not None:
+            try:
+                absence_proof = DefinitiveAbsenceProof.model_validate(reconciliation.absence_proof.model_dump(mode="json"))
+            except (ValueError, TypeError, AttributeError):
+                pass
+        original = snapshot["last_attempt"]
+        valid_absence = bool(absence_proof and original and
+            (original["receipt"] or {}).get("intent", {}).get("mutating") is True and
+            absence_proof.verified is True and absence_proof.coverage_complete is True and
+            str(absence_proof.account_id) == str(snapshot["account_id"]) and
+            str(absence_proof.operation_id) == str(original["operation_id"]))
         if reconciliation.outcome == "confirmed_published" and self._confirmed(result):
             state, action, delay = "published", None, None
         elif reconciliation.outcome == "definitively_unpublished":
-            # Only positive adapter evidence permits a new public submission.
-            if not reconciliation.evidence:
+            # Generic evidence can describe failed/incomplete lookup. Resending
+            # needs positive typed proof bound to this original mutation/account.
+            if not valid_absence:
                 state, action, delay = "outcome_unknown", None, None
             else:
                 safe = OperationResult(outcome="definite_failure", error_code="NOT_SENT", retry_safe=True,
@@ -272,7 +293,8 @@ class SocialWorker:
             state, action, delay = "outcome_unknown", None, None
         await self._save(claim, intent, snapshot, result, state=state, next_action=action,
                          delay=delay, duration_ms=int((time.monotonic()-started)*1000),
-                         extra_receipt={"reconciliation_evidence": reconciliation.evidence})
+                         extra_receipt={"reconciliation_evidence": reconciliation.evidence,
+                                        "absence_proof": absence_proof.model_dump(mode="json") if valid_absence else None})
 
     @staticmethod
     def _delay(next_at, snapshot, default):

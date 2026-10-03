@@ -16,7 +16,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from .config import WorkerConfig
-from ..contracts import CapabilitySet, OperationPlan, PostDocument, ResolvedPostPayload, canonical_hash
+from ..contracts import CapabilitySet, DefinitiveAbsenceProof, OperationPlan, PostDocument, ResolvedPostPayload, canonical_hash
 from .policy import bounded_json, retry_decision, validate_plan
 from ..validation import validate_document
 
@@ -382,6 +382,9 @@ class QueueRepository:
                 self._audit(conn, claim, "late_operation_evidence", None, None,
                             {"operation_id": intent.operation_id, "outcome": outcome})
                 return False
+            valid_absence = self._absence_proof_matches(conn, claim, receipt) if completed["operation"] == "reconcile" else False
+            if state == "retry_wait" and completed["operation"] == "reconcile" and not valid_absence:
+                state, error_code, next_action, delay = "outcome_unknown", "INVALID_RECONCILIATION_PROOF", None, None
             publication_operation = (completed["dispatch_started_at"] is not None and
                                      completed["receipt"].get("intent", {}).get("publication_capable") is True)
             if state == "published" and not (outcome == "confirmed_success" and isinstance(remote_id, str) and remote_id.strip() and isinstance(confirmation_kind, str) and confirmation_kind.strip() and visibility_state == "public" and
@@ -401,7 +404,7 @@ class QueueRepository:
                     "confirmation": confirmation_kind})
             if state in ("reconciling", "outcome_unknown"):
                 self._hold_account(conn, claim)
-            elif state == "published" or (state == "retry_wait" and (receipt or {}).get("reconciliation_evidence")):
+            elif state == "published" or (valid_absence and state in ("retry_wait", "blocked", "failed")):
                 self._clear_hold(conn, claim)
             self._transition(conn, claim, target, state, error_code, delay, next_action)
             return True
@@ -416,6 +419,18 @@ class QueueRepository:
 
     def _hold_account(self, conn, claim):
         conn.execute(text("UPDATE social_accounts SET hold_reason=:hold,updated_at=now() WHERE id=CAST(:account AS uuid) AND (hold_reason IS NULL OR hold_reason=:hold)"), {**self._params(claim), "hold": "RECONCILIATION_REQUIRED:"+claim.target_id})
+
+    def _absence_proof_matches(self, conn, claim, receipt):
+        try:
+            proof = DefinitiveAbsenceProof.model_validate((receipt or {}).get("absence_proof"))
+        except (ValueError, TypeError):
+            return False
+        original = conn.execute(text("""
+            SELECT operation_id FROM social_publish_attempts WHERE target_id=CAST(:id AS uuid)
+              AND receipt->'intent'->>'mutating'='true' ORDER BY sequence DESC LIMIT 1
+        """), self._params(claim)).scalar()
+        return (proof.verified is True and proof.coverage_complete is True and
+                str(proof.account_id) == claim.account_id and str(proof.operation_id) == str(original))
 
     def _clear_hold(self, conn, claim):
         conn.execute(text("UPDATE social_accounts SET hold_reason=NULL,updated_at=now() WHERE id=CAST(:account AS uuid) AND hold_reason=:hold"), {**self._params(claim), "hold": "RECONCILIATION_REQUIRED:"+claim.target_id})
