@@ -125,7 +125,7 @@ def _identity(fd):
 
 def _verify(cache_fd, name, expected):
     try:
-        fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=cache_fd)
+        fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=cache_fd)
     except FileNotFoundError:
         return None
     try:

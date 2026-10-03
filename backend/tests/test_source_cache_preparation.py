@@ -515,3 +515,35 @@ def test_staging_locator_swapped_at_link_cannot_install_bad_file_or_sidecar(
             cache.prepare_sources(docs, root=tmp_path, fetch=True, client=client)
     assert not path.exists() and not path.with_suffix(".json").exists()
     assert not list(path.parent.glob(".retained-*"))
+
+
+def test_fifo_at_retained_locator_is_refused_without_blocking(tmp_path):
+    import os
+    import subprocess
+    import sys
+
+    os.mkfifo(tmp_path / "retained.pdf")
+    script = """
+import os, sys
+from seeding.source_cache import _verify, SourceCacheRefused
+fd = os.open(sys.argv[1], os.O_RDONLY | os.O_DIRECTORY)
+try:
+    try:
+        _verify(fd, "retained.pdf", {"sha256": "0" * 64, "md5": "0" * 32})
+    except SourceCacheRefused as exc:
+        assert "regular file" in str(exc)
+    else:
+        raise AssertionError("FIFO accepted as retained PDF")
+finally:
+    os.close(fd)
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", script, str(tmp_path)],
+        cwd=Path(__file__).resolve().parents[1],
+        env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+        capture_output=True,
+        text=True,
+        timeout=3,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert (tmp_path / "retained.pdf").is_fifo()
