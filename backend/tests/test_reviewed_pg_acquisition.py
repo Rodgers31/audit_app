@@ -201,6 +201,7 @@ class ReviewBoundaryTests(unittest.TestCase):
                 if 'pg_dumpall' in argv: return roles
                 if 'pg_dump' in argv:
                     dump = captured/'database.dump'; dump.write_bytes(b'PGDMPfixture'); dump.chmod(0o600)
+                    return b''
                 if 'sh' in argv and argv[1] == 'exec': return b'0 0'
                 return b''
             output = self.directory/('roles_bundle_'+str(index))
@@ -216,6 +217,37 @@ class ReviewBoundaryTests(unittest.TestCase):
                 else:
                     self.assertEqual(result['status'], 'failed')
                     self.assertFalse(output.exists())
+
+    def test_capture_failure_retains_private_diagnostics_without_credentials(self):
+        args = self.credentials(); p, h = self.write(self.request); output = self.directory/'failed_bundle'
+        def capture(client, directory, *args):
+            (directory/'counter').write_text('12345\n')
+            (directory/'exporter.stderr').write_text('private child diagnostic')
+            raise tool.Refusal('capture_fixture_failure')
+        with patch.object(tool.backup, 'run', return_value=b''), patch.object(tool, 'capture', capture), patch.object(tool, 'remove'):
+            result = tool.acquire_reviewed(p, h, *args[1:], output)
+        self.assertEqual(result['status'], 'failed'); self.assertFalse(output.exists())
+        diagnostic = Path(result['diagnostics_directory'])
+        self.assertEqual(diagnostic.stat().st_mode & 0o777, 0o700)
+        self.assertEqual((diagnostic/'counter').read_text(), '12345\n')
+        self.assertEqual(json.loads((diagnostic/'failure.json').read_text())['private_exception'], 'capture_fixture_failure')
+        self.assertFalse(any((diagnostic/name).exists() for name in ('pgpass', 'pg_service.conf', 'root.crt')))
+        self.assertTrue(all(p.stat().st_mode & 0o777 == 0o600 for p in diagnostic.iterdir()))
+
+    def test_publication_permission_failure_retains_archive_and_fails_closed(self):
+        args = self.credentials(); p, h = self.write(self.request); output = self.directory/'public_dump_bundle'
+        def capture(client, directory, *args):
+            archive = directory/'database.dump'; archive.write_bytes(b'PGDMPprivatefixture'); archive.chmod(0o644)
+            return {'snapshot_shared': True, 'transport_bytes': 12345}
+        with patch.object(tool.backup, 'run', return_value=b''), patch.object(tool, 'capture', capture), patch.object(tool, 'remove'), patch.object(tool.backup, 'inspect_archive') as inspect:
+            result = tool.acquire_reviewed(p, h, *args[1:], output)
+        inspect.assert_not_called(); self.assertFalse(output.exists())
+        self.assertEqual(result['status'], 'failed'); self.assertNotIn('snapshot_shared', result)
+        self.assertNotIn('private_regular_0600_file_required', json.dumps(result))
+        diagnostic = Path(result['diagnostics_directory'])
+        self.assertEqual((diagnostic/'database.dump').stat().st_mode & 0o777, 0o600)
+        self.assertEqual((diagnostic/'database.dump').read_bytes(), b'PGDMPprivatefixture')
+        self.assertEqual(json.loads((diagnostic/'failure.json').read_text())['private_exception'], 'private_regular_0600_file_required')
 
     def test_recovery_configuration_changes_reject_restore(self):
         import copy
