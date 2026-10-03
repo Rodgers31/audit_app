@@ -1,0 +1,254 @@
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<div id="ag-social-plan" class="viz-carousel" aria-label="AuditGava social admin layout options">
+  <section data-variant="Queue and preview" aria-label="Queue and preview layout">
+    <div class="ag-product" data-layout="queue">
+      <header class="ag-topbar">
+        <div class="ag-wordmark"><span class="ag-ledger" aria-hidden="true"><b></b><b></b><b></b></span><span>AuditGava<small>Public money · evidence first</small></span></div>
+        <span class="ag-admin-label">ADMIN WORKSPACE</span>
+      </header>
+      <nav class="ag-admin-nav" aria-label="Proposed admin navigation">
+        <span>Overview</span><span>Users</span><span>Ingestion</span><span>ETL Schedule</span><span>Audit Log</span><span class="ag-active"><i data-lucide="send" aria-hidden="true"></i>Social</span><span>Pipeline Status</span>
+      </nav>
+      <div class="ag-hero">
+        <div><span class="ag-eyebrow">PUBLISHING & ACCOUNTABILITY</span><h1>Social publishing</h1><p>Review the evidence. Shape the message. Choose where it goes.</p></div>
+        <button class="ag-button ag-pause cursor-interaction" type="button"><i data-lucide="pause" aria-hidden="true"></i><span>Pause publishing</span></button>
+      </div>
+      <main class="ag-main">
+        <div class="ag-plan-label"><i data-lucide="pencil-ruler" aria-hidden="true"></i>Planning preview · sample drafts and example delivery states · no live publishing</div>
+        <nav class="ag-social-nav" aria-label="Social sections">
+          <button class="ag-tab cursor-interaction" type="button" data-view="pending" aria-pressed="true">Pending review <span class="ag-count">3</span></button>
+          <button class="ag-tab cursor-interaction" type="button" data-view="scheduled" aria-pressed="false">Scheduled</button>
+          <button class="ag-tab cursor-interaction" type="button" data-view="history" aria-pressed="false">History</button>
+          <button class="ag-tab cursor-interaction" type="button" data-view="accounts" aria-pressed="false">Accounts</button>
+          <button class="ag-tab cursor-interaction" type="button" data-view="automation" aria-pressed="false">Automation</button>
+        </nav>
+        <section class="ag-view" data-panel="pending">
+          <div class="ag-section-intro"><span><strong>Manual approval</strong> is the default</span><span class="ag-muted">Nothing publishes just because an ingestion job finishes.</span></div>
+          <div class="ag-focus-picker" hidden><label>Review a draft <select class="ag-draft-select"><option value="explainer">What does unsupported expenditure mean?</option><option value="availability">A new county report is available</option><option value="debt">Public debt change detected</option></select></label></div>
+          <div class="ag-review-grid">
+            <aside class="ag-queue" aria-label="Sample pending drafts">
+              <button class="ag-draft cursor-interaction" type="button" data-draft="explainer" aria-pressed="true"><span class="ag-tag">EXPLAINER</span><strong>What does unsupported expenditure mean?</strong><span>Reviewed template · educational card</span><span class="ag-draft-state"><i data-lucide="circle-check" aria-hidden="true"></i>Ready for human review</span></button>
+              <button class="ag-draft cursor-interaction" type="button" data-draft="availability" aria-pressed="false"><span class="ag-tag">DATASET UPDATE</span><strong>A new county report is available</strong><span>Detected from committed data</span><span class="ag-draft-state"><i data-lucide="file-search" aria-hidden="true"></i>Confirm source and reporting period</span></button>
+              <button class="ag-draft cursor-interaction" type="button" data-draft="debt" aria-pressed="false"><span class="ag-tag">SIGNIFICANT CHANGE</span><strong>Public debt change detected</strong><span>Comparison requires validation</span><span class="ag-draft-state ag-warning"><i data-lucide="triangle-alert" aria-hidden="true"></i>Blocked: units and basis unresolved</span></button>
+            </aside>
+            <article class="ag-editor" aria-label="Draft review workspace">
+              <div class="ag-editor-heading"><div><span class="ag-tag ag-content-type">EXPLAINER</span><h2 class="ag-draft-title">What does unsupported expenditure mean?</h2></div><span class="ag-badge ag-editor-state">Pending review</span></div>
+              <div class="ag-editor-body">
+                <details class="ag-evidence" open><summary><i data-lucide="shield-check" aria-hidden="true"></i>Evidence & factual checks <span class="ag-evidence-label">Template review</span></summary><div class="ag-evidence-content"><dl><div><dt>Source</dt><dd class="ag-source">Reviewed glossary template · illustrative</dd></div><div><dt>Reporting period</dt><dd class="ag-period">Not applicable to this explainer</dd></div><div><dt>Verification</dt><dd class="ag-verification">No financial amount asserted. Human review required.</dd></div></dl><p class="ag-source-extract">“Unsupported” concerns documentation. The wording must not equate it with proven theft.</p></div></details>
+                <div class="ag-target-group"><span class="ag-field-label">Publish to</span><div class="ag-targets"><label><input type="checkbox" data-target="Facebook" checked> Facebook</label><label><input type="checkbox" data-target="Instagram" checked> Instagram</label><label><input type="checkbox" data-target="Threads" checked> Threads</label><label><input type="checkbox" data-target="X"> X</label><label class="ag-unavailable"><input type="checkbox" disabled> TikTok · eligibility check</label></div></div>
+                <div class="ag-platform-nav" aria-label="Platform preview"><button type="button" class="cursor-interaction" data-platform="Facebook" aria-pressed="true">Facebook</button><button type="button" class="cursor-interaction" data-platform="Instagram" aria-pressed="false">Instagram</button><button type="button" class="cursor-interaction" data-platform="Threads" aria-pressed="false">Threads</button><button type="button" class="cursor-interaction" data-platform="X" aria-pressed="false">X</button><button type="button" class="cursor-interaction" data-platform="TikTok" aria-pressed="false">TikTok</button></div>
+                <div class="ag-composer-grid">
+                  <div class="ag-compose"><label class="ag-field-label">Platform wording<textarea class="ag-copy" rows="6"></textarea></label><div class="ag-copy-meta"><span class="ag-char-count"></span><span class="ag-format-note">Context + source link</span></div><p class="ag-edit-note">Editing approved wording would require a new approval.</p></div>
+                  <div class="ag-preview" aria-label="Proposed post preview"><div class="ag-preview-account"><span class="ag-avatar">AG</span><span><strong>AuditGava</strong><small class="ag-preview-handle">@AuditGava · Facebook preview</small></span></div><div class="ag-media-card" hidden><span>AUDITGAVA EXPLAINS</span><strong class="ag-card-title">Unsupported expenditure</strong><p class="ag-card-subtitle">Missing evidence is a finding.<br>It is not proof of theft.</p><small>Source context belongs with the card</small></div><p class="ag-preview-copy"></p><div class="ag-preview-footer"><i data-lucide="external-link" aria-hidden="true"></i>auditgava.com · use the relevant data page</div></div>
+                </div>
+                <div class="ag-tiktok-note" hidden><i data-lucide="video" aria-hidden="true"></i><div><strong>TikTok needs photo or video content.</strong><p>Verify Business API/provider eligibility and preview/consent requirements first. Offer a downloadable publishing package while that is unresolved.</p></div></div>
+                <label class="ag-review-confirm"><input type="checkbox" class="ag-confirm"> I reviewed the evidence and the wording for the selected platforms.</label>
+                <div class="ag-schedule-field" hidden><label class="ag-field-label">Publish time · Africa/Nairobi<input class="ag-schedule-time" type="datetime-local"></label><small>Store UTC; display the selected timezone. Recheck facts before dispatch.</small></div>
+                <div class="ag-actions"><button class="ag-button ag-primary ag-approve cursor-interaction" type="button" disabled><i data-lucide="check" aria-hidden="true"></i>Approve & publish</button><button class="ag-button ag-schedule cursor-interaction" type="button"><i data-lucide="calendar-clock" aria-hidden="true"></i>Schedule</button><button class="ag-button ag-reject cursor-interaction" type="button">Reject</button><button class="ag-button ag-save cursor-interaction" type="button">Save draft</button></div>
+                <p class="ag-draft-result ag-muted" role="status" aria-live="polite">Review the draft to enable approval. All actions here are simulated.</p>
+              </div>
+            </article>
+          </div>
+        </section>
+        <section class="ag-view" data-panel="scheduled" hidden><div class="ag-panel-heading"><h2>Scheduled posts</h2><span class="ag-badge">Final checks at publish time</span></div><div class="ag-scheduled-list"><div class="ag-empty"><i data-lucide="calendar-days" aria-hidden="true"></i><strong>No sample post scheduled yet</strong><span>Choose Schedule while reviewing a draft to explore this state.</span></div></div><div class="ag-small-note">An approved revision is locked to its wording, media and selected accounts. A change returns it to review.</div></section>
+        <section class="ag-view" data-panel="history" hidden><div class="ag-panel-heading"><h2>Delivery history</h2><span class="ag-muted">Illustrative partial failure</span></div><article class="ag-history-row"><div><span class="ag-tag">EXAMPLE RECEIPT</span><h3>Public-finance explainer</h3><p>One post intent, separate results for every destination.</p></div><div class="ag-receipts"><span>Facebook <b>Published</b></span><span class="ag-failed-receipt">Instagram <b>Failed · media unavailable</b></span><span>Threads <b>Published</b></span></div><button type="button" class="ag-button ag-retry cursor-interaction">Retry Instagram only</button><p class="ag-history-result" role="status" aria-live="polite">Keep successful posts. Reconcile uncertain results before retrying.</p></article><div class="ag-small-note">A provider accepting an upload does not always mean the post is public. “Processing”, “Unknown outcome” and “Needs reconnect” must stay visible.</div></section>
+        <section class="ag-view" data-panel="accounts" hidden><div class="ag-panel-heading"><h2>Connected accounts</h2><span class="ag-badge">OAuth comes after profile setup</span></div><p class="ag-muted">The social profiles are configured. API authorization has not been established by that setup.</p><div class="ag-account-list"><div><strong>Facebook</strong><span>AuditGava Page · @AuditGava</span><b>API not connected</b><button type="button" class="ag-button ag-connect cursor-interaction">Connect</button></div><div><strong>Instagram</strong><span>@auditgava · business profile</span><b>API not connected</b><button type="button" class="ag-button ag-connect cursor-interaction">Connect</button></div><div><strong>Threads</strong><span>@auditgava · separate authorization</span><b>API not connected</b><button type="button" class="ag-button ag-connect cursor-interaction">Connect</button></div><div><strong>X</strong><span>@AuditGava · API budget needed</span><b>API not connected</b><button type="button" class="ag-button ag-connect cursor-interaction">Connect</button></div><div><strong>TikTok</strong><span>@auditgava · Business API/provider route</span><b>Eligibility review</b><button type="button" class="ag-button ag-connect cursor-interaction">Review route</button></div></div><p class="ag-account-result" role="status" aria-live="polite">Future connections show account ID, scopes, token health and reconnect actions. Tokens remain server-side.</p></section>
+        <section class="ag-view" data-panel="automation" hidden><div class="ag-panel-heading"><h2>Approval policies</h2><span class="ag-badge ag-policy-badge">Manual approval</span></div><div class="ag-policy-grid"><div class="ag-policy-panel"><label class="ag-field-label">Publishing mode<select class="ag-mode"><option value="manual">Manual approval · initial default</option><option value="shadow">Shadow mode · recommend, never publish</option><option value="selective">Selective automation · future pilot</option></select></label><p class="ag-mode-description">Every generated post enters Pending review.</p><fieldset><legend>Future template allowlist</legend><label><input type="checkbox" class="ag-allowlist" disabled> Newly verified dataset available</label><label><input type="checkbox" class="ag-allowlist" disabled> Reviewed glossary template</label><label><input type="checkbox" disabled> Audit findings and allegations · always review</label><label><input type="checkbox" disabled> Sensitive comparisons and corrections · always review</label></fieldset></div><div class="ag-policy-panel"><h3>Required safeguards</h3><ul><li>Verified source, units, basis and reporting period</li><li>Real change, significance threshold and duplicate checks</li><li>Freshness and validation checked again before posting</li><li>Per-account cadence, quotas and spending limits</li><li>Platform eligibility and consent requirements</li><li>Versioned approval and full delivery audit trail</li></ul><div class="ag-limit-fields"><label>Daily ceiling per account<input type="number" value="2" min="0" max="10"></label><label>Minimum interval, hours<input type="number" value="6" min="1" max="24"></label></div><small>Illustrative pilot limits, subject to an agreed policy.</small></div></div><div class="ag-policy-result" role="status" aria-live="polite">Automation is off. No TikTok unattended publishing is assumed.</div></section>
+        <div class="ag-global-status" role="status" aria-live="polite"></div>
+      </main>
+    </div>
+  </section>
+  <section data-variant="Focused review" aria-label="Focused review layout" hidden></section>
+</div>
+<style>
+  #ag-social-plan { width:100%; }
+  #ag-social-plan > section { min-height:1190px; }
+  #ag-social-plan .ag-product { --ag-bg:light-dark(#FBFAF6,#101B14);--ag-paper:light-dark(#FFFFFF,#1c2921);--ag-ink:light-dark(#162c21,#f1f4ee);--ag-secondary:light-dark(#526158,#b6c4ba);--ag-line:light-dark(#dce2d9,#3b4b40);--ag-soft:light-dark(#f1f4ef,#25372c);--ag-forest:light-dark(#174A34,#9bcab1);--ag-button-bg:light-dark(#174A34,#9bcab1);--ag-button-ink:light-dark(#ffffff,#12291e);--ag-gold:light-dark(#8A6320,#e6bd6e);--ag-header:light-dark(#101B14,#0b140e);--ag-header-ink:light-dark(#f8faf5,#f8faf5);--ag-alert:light-dark(#8d3d30,#eea394);--ag-highlight:light-dark(#f8f0df,#40361f);background:var(--ag-bg);color:var(--ag-ink);font:14px/1.5 'Public Sans',system-ui,sans-serif;min-width:0; }
+  #ag-social-plan .ag-product * { box-sizing:border-box; }
+  #ag-social-plan .ag-product [hidden] { display:none!important; }
+  #ag-social-plan .ag-product h1,#ag-social-plan .ag-product h2,#ag-social-plan .ag-product h3,#ag-social-plan .ag-product p { margin:0; }
+  #ag-social-plan .ag-product button,#ag-social-plan .ag-product input,#ag-social-plan .ag-product select,#ag-social-plan .ag-product textarea { font:inherit; }
+  #ag-social-plan .ag-product button { color:inherit; }
+  #ag-social-plan .ag-product i,#ag-social-plan .ag-product svg { width:16px;height:16px;flex-shrink:0; }
+  #ag-social-plan .ag-topbar { padding:18px 26px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--ag-header);color:var(--ag-header-ink);border-bottom:1px solid var(--ag-line); }
+  #ag-social-plan .ag-wordmark { display:flex;align-items:center;gap:11px;font-size:23px;font-weight:600;letter-spacing:-.6px; }
+  #ag-social-plan .ag-wordmark small { display:block;font-size:10px;font-weight:400;letter-spacing:.7px;color:var(--ag-header-ink);opacity:.75; }
+  #ag-social-plan .ag-ledger { display:flex;flex-direction:column;gap:5px;width:24px; }
+  #ag-social-plan .ag-ledger b { height:2px;background:currentColor; }
+  #ag-social-plan .ag-ledger b:nth-child(2) { width:18px; }
+  #ag-social-plan .ag-admin-label { font-size:11px;letter-spacing:1.5px;opacity:.8; }
+  #ag-social-plan .ag-admin-nav { display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:10px 25px;background:var(--ag-header);color:var(--ag-header-ink);font-size:11px; }
+  #ag-social-plan .ag-admin-nav > span { display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:20px;opacity:.75; }
+  #ag-social-plan .ag-admin-nav .ag-active { background:var(--ag-highlight);color:var(--ag-gold);opacity:1; }
+  #ag-social-plan .ag-hero { display:flex;justify-content:space-between;align-items:center;gap:14px;padding:28px 26px;background:var(--ag-header);color:var(--ag-header-ink); }
+  #ag-social-plan .ag-eyebrow { font-size:10px;letter-spacing:1.5px;color:var(--ag-header-ink);opacity:.75; }
+  #ag-social-plan .ag-hero h1 { font:600 40px/1.1 'Barlow Condensed',sans-serif;margin:6px 0 9px;letter-spacing:.2px; }
+  #ag-social-plan .ag-hero p { font-size:12px;opacity:.8; }
+  #ag-social-plan .ag-product .ag-button { display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:38px;padding:8px 12px;border:1px solid var(--ag-line);border-radius:6px;background:var(--ag-paper);color:var(--ag-ink);font-size:12px;font-weight:500; }
+  #ag-social-plan .ag-button:disabled { opacity:.5; }
+  #ag-social-plan .ag-product .ag-primary { background:var(--ag-button-bg);color:var(--ag-button-ink);border-color:var(--ag-button-bg); }
+  #ag-social-plan .ag-pause { flex-shrink:0; }
+  #ag-social-plan .ag-main { padding:19px 24px 28px; }
+  #ag-social-plan .ag-plan-label { display:flex;align-items:center;gap:7px;color:var(--ag-secondary);font-size:11px;padding-bottom:16px; }
+  #ag-social-plan .ag-social-nav { display:flex;flex-wrap:wrap;gap:5px;border-bottom:1px solid var(--ag-line);padding-bottom:9px;margin-bottom:19px; }
+  #ag-social-plan .ag-tab { display:flex;align-items:center;gap:8px;border:0;border-radius:5px;padding:8px 12px;background:transparent;font-size:12px;min-height:36px; }
+  #ag-social-plan .ag-tab[aria-pressed="true"] { background:var(--ag-soft);color:var(--ag-forest);font-weight:600; }
+  #ag-social-plan .ag-count { padding:0 6px;border-radius:4px;background:var(--ag-paper);font-size:11px; }
+  #ag-social-plan .ag-section-intro { display:flex;justify-content:space-between;flex-wrap:wrap;gap:5px;font-size:11px;padding-bottom:14px; }
+  #ag-social-plan .ag-muted { color:var(--ag-secondary); }
+  #ag-social-plan .ag-review-grid { display:grid;grid-template-columns:minmax(210px,.85fr) minmax(0,2fr);gap:16px;align-items:start; }
+  #ag-social-plan .ag-queue { display:grid;gap:9px; }
+  #ag-social-plan .ag-draft { text-align:left;display:flex;flex-direction:column;gap:8px;border:1px solid var(--ag-line);padding:15px;border-radius:8px;background:var(--ag-paper);min-width:0; }
+  #ag-social-plan .ag-draft[aria-pressed="true"] { border-color:var(--ag-forest);background:var(--ag-soft); }
+  #ag-social-plan .ag-tag { font-size:10px;letter-spacing:1px;color:var(--ag-forest);font-weight:600; }
+  #ag-social-plan .ag-draft strong { font-size:15px;line-height:1.4; }
+  #ag-social-plan .ag-draft > span:not(.ag-tag) { font-size:11px;color:var(--ag-secondary); }
+  #ag-social-plan .ag-draft-state { display:flex;align-items:flex-start;gap:5px;margin-top:5px; }
+  #ag-social-plan .ag-product .ag-warning { color:var(--ag-alert); }
+  #ag-social-plan .ag-editor { background:var(--ag-paper);border:1px solid var(--ag-line);border-radius:8px;overflow:hidden; }
+  #ag-social-plan .ag-editor-heading { display:flex;align-items:start;justify-content:space-between;gap:9px;padding:17px 18px;border-bottom:1px solid var(--ag-line); }
+  #ag-social-plan .ag-editor-heading h2 { font:500 25px/1.15 'Barlow Condensed',sans-serif;margin-top:5px; }
+  #ag-social-plan .ag-badge { color:var(--ag-secondary);background:var(--ag-soft);padding:4px 8px;border-radius:4px;font-size:10px;white-space:nowrap; }
+  #ag-social-plan .ag-editor-body { padding:16px 18px; }
+  #ag-social-plan .ag-evidence { border:1px solid var(--ag-line);background:var(--ag-soft);border-radius:6px;margin-bottom:17px; }
+  #ag-social-plan .ag-evidence summary { display:flex;align-items:center;gap:7px;font-size:11px;padding:10px;font-weight:500;list-style:none; }
+  #ag-social-plan .ag-evidence-label { margin-left:auto;color:var(--ag-secondary);font-size:10px; }
+  #ag-social-plan .ag-evidence-content { padding:0 11px 11px; }
+  #ag-social-plan .ag-evidence dl { margin:0;display:grid;gap:6px;font-size:10px; }
+  #ag-social-plan .ag-evidence dl div { display:grid;grid-template-columns:105px minmax(0,1fr);gap:6px; }
+  #ag-social-plan .ag-evidence dt { color:var(--ag-secondary); }
+  #ag-social-plan .ag-evidence dd { margin:0; }
+  #ag-social-plan .ag-source-extract { font-size:11px;margin-top:10px!important;border-left:2px solid var(--ag-forest);padding-left:9px; }
+  #ag-social-plan .ag-field-label { display:block;font-size:11px;font-weight:500; }
+  #ag-social-plan .ag-targets { display:flex;flex-wrap:wrap;gap:9px 12px;margin:8px 0 15px;font-size:11px; }
+  #ag-social-plan .ag-targets label { display:flex;align-items:center;gap:4px; }
+  #ag-social-plan .ag-product input[type="checkbox"] { accent-color:var(--ag-forest); }
+  #ag-social-plan .ag-unavailable { color:var(--ag-secondary); }
+  #ag-social-plan .ag-platform-nav { display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--ag-line);margin-bottom:15px;padding-bottom:8px; }
+  #ag-social-plan .ag-platform-nav button { border:0;background:transparent;border-radius:4px;padding:5px 8px;font-size:10px;min-height:30px; }
+  #ag-social-plan .ag-platform-nav button[aria-pressed="true"] { background:var(--ag-soft);color:var(--ag-forest);font-weight:600; }
+  #ag-social-plan .ag-composer-grid { display:grid;grid-template-columns:minmax(0,1fr);gap:14px; }
+  #ag-social-plan .ag-product textarea,#ag-social-plan .ag-product select,#ag-social-plan .ag-product input[type="datetime-local"],#ag-social-plan .ag-product input[type="number"] { background:var(--ag-paper);color:var(--ag-ink);border:1px solid var(--ag-line);border-radius:5px;padding:9px;width:100%;max-width:100%; }
+  #ag-social-plan .ag-copy { display:block;resize:vertical;min-height:118px;margin-top:6px;font-size:12px!important;line-height:1.6!important; }
+  #ag-social-plan .ag-copy-meta { display:flex;justify-content:space-between;gap:6px;font-size:10px;color:var(--ag-secondary);margin-top:6px; }
+  #ag-social-plan .ag-edit-note { color:var(--ag-secondary);font-size:10px;margin-top:6px!important; }
+  #ag-social-plan .ag-preview { padding:13px;border:1px solid var(--ag-line);border-radius:6px;background:var(--ag-bg); }
+  #ag-social-plan .ag-preview-account { display:flex;gap:8px;align-items:center;margin-bottom:11px;font-size:11px; }
+  #ag-social-plan .ag-avatar { display:grid;place-items:center;width:31px;height:31px;border-radius:50%;background:var(--ag-button-bg);color:var(--ag-button-ink);font-size:10px; }
+  #ag-social-plan .ag-preview-account small { display:block;font-size:10px;color:var(--ag-secondary); }
+  #ag-social-plan .ag-preview-copy { font-size:11px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere; }
+  #ag-social-plan .ag-preview-footer { display:flex;align-items:center;gap:6px;color:var(--ag-secondary);font-size:10px;padding-top:10px; }
+  #ag-social-plan .ag-media-card { padding:23px 18px;background:var(--ag-button-bg);color:var(--ag-button-ink);margin-bottom:12px; }
+  #ag-social-plan .ag-media-card > span { font-size:9px;letter-spacing:1.5px; }
+  #ag-social-plan .ag-media-card strong { display:block;font:500 30px/1.12 'Barlow Condensed',sans-serif;margin:13px 0 10px; }
+  #ag-social-plan .ag-media-card p { font-size:12px; }
+  #ag-social-plan .ag-media-card small { display:block;font-size:9px;opacity:.85;margin-top:19px; }
+  #ag-social-plan .ag-review-confirm { display:flex;align-items:start;gap:7px;margin:16px 0 12px;font-size:11px; }
+  #ag-social-plan .ag-review-confirm input { margin-top:3px; }
+  #ag-social-plan .ag-actions { display:flex;flex-wrap:wrap;gap:7px; }
+  #ag-social-plan .ag-draft-result { font-size:11px;margin-top:11px!important;min-height:18px; }
+  #ag-social-plan .ag-tiktok-note { display:flex;align-items:start;gap:8px;padding:11px;background:var(--ag-highlight);font-size:11px;border-radius:5px;margin-top:13px; }
+  #ag-social-plan .ag-tiktok-note p { margin-top:4px; }
+  #ag-social-plan .ag-schedule-field { margin:12px 0; }
+  #ag-social-plan .ag-schedule-field input { margin:6px 0; }
+  #ag-social-plan .ag-schedule-field small { font-size:10px;color:var(--ag-secondary); }
+  #ag-social-plan .ag-panel-heading { display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 18px;font-size:11px; }
+  #ag-social-plan .ag-panel-heading h2 { font:500 30px/1.15 'Barlow Condensed',sans-serif; }
+  #ag-social-plan .ag-empty { padding:52px 16px;display:flex;flex-direction:column;align-items:center;gap:10px;border:1px solid var(--ag-line);background:var(--ag-paper);border-radius:8px;text-align:center;font-size:12px; }
+  #ag-social-plan .ag-empty > span { color:var(--ag-secondary);font-size:11px; }
+  #ag-social-plan .ag-small-note { color:var(--ag-secondary);font-size:11px;margin-top:16px; }
+  #ag-social-plan .ag-history-row { padding:20px;background:var(--ag-paper);border:1px solid var(--ag-line);border-radius:8px;font-size:12px; }
+  #ag-social-plan .ag-history-row h3 { margin:6px 0;font-size:18px; }
+  #ag-social-plan .ag-history-row p { font-size:11px;color:var(--ag-secondary); }
+  #ag-social-plan .ag-receipts { display:flex;flex-direction:column;gap:8px;margin:18px 0; }
+  #ag-social-plan .ag-receipts span { display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid var(--ag-line);padding-bottom:6px;font-size:11px; }
+  #ag-social-plan .ag-receipts b { font-weight:500;color:var(--ag-forest); }
+  #ag-social-plan .ag-failed-receipt b { color:var(--ag-alert); }
+  #ag-social-plan .ag-history-result { margin-top:12px!important; }
+  #ag-social-plan .ag-account-list { display:grid;margin-top:18px; }
+  #ag-social-plan .ag-account-list > div { display:grid;grid-template-columns:90px minmax(0,1fr) 120px 98px;gap:12px;align-items:center;padding:16px 0;border-bottom:1px solid var(--ag-line);font-size:11px; }
+  #ag-social-plan .ag-account-list b { font-weight:500;color:var(--ag-secondary); }
+  #ag-social-plan .ag-account-result { font-size:11px;color:var(--ag-secondary);margin-top:18px!important; }
+  #ag-social-plan .ag-policy-grid { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:17px; }
+  #ag-social-plan .ag-policy-panel { background:var(--ag-paper);border:1px solid var(--ag-line);border-radius:8px;padding:18px; }
+  #ag-social-plan .ag-policy-panel select { margin-top:8px; }
+  #ag-social-plan .ag-mode-description { font-size:11px;color:var(--ag-secondary);margin-top:12px!important; }
+  #ag-social-plan .ag-policy-panel fieldset { border:0;padding:0;margin:20px 0 0; }
+  #ag-social-plan .ag-policy-panel legend { font-size:12px;font-weight:500;margin-bottom:9px; }
+  #ag-social-plan .ag-policy-panel fieldset label { display:flex;gap:6px;align-items:start;font-size:11px;margin:12px 0; }
+  #ag-social-plan .ag-policy-panel h3 { font-size:15px; }
+  #ag-social-plan .ag-policy-panel ul { padding-left:17px;font-size:11px;line-height:1.7; }
+  #ag-social-plan .ag-limit-fields { display:flex;gap:14px;margin-top:16px; }
+  #ag-social-plan .ag-limit-fields label { font-size:10px;flex:1; }
+  #ag-social-plan .ag-limit-fields input { margin-top:5px; }
+  #ag-social-plan .ag-policy-panel small { display:block;font-size:10px;color:var(--ag-secondary);margin-top:9px; }
+  #ag-social-plan .ag-policy-result { font-size:12px;margin-top:19px;background:var(--ag-soft);padding:13px;border-radius:5px; }
+  #ag-social-plan .ag-global-status { font-size:11px;color:var(--ag-alert);margin-top:15px; }
+  #ag-social-plan .ag-focus-picker { margin-bottom:14px; }
+  #ag-social-plan .ag-focus-picker label { display:flex;align-items:center;gap:12px;font-size:12px; }
+  #ag-social-plan .ag-focus-picker select { width:auto;max-width:100%; }
+  #ag-social-plan [data-layout="focused"] .ag-queue { display:none; }
+  #ag-social-plan [data-layout="focused"] .ag-review-grid { grid-template-columns:minmax(0,1fr); }
+  #ag-social-plan [data-layout="focused"] .ag-composer-grid { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+  #ag-social-plan [data-layout="focused"] .ag-copy { min-height:184px; }
+  #ag-social-plan .ag-dense .ag-main { padding-top:12px; }
+  #ag-social-plan .ag-dense .ag-editor-body { padding:12px 16px; }
+  #ag-social-plan .ag-wordmark small,#ag-social-plan .ag-eyebrow,#ag-social-plan .ag-tag,#ag-social-plan .ag-badge,#ag-social-plan .ag-evidence dl,#ag-social-plan .ag-evidence-label,#ag-social-plan .ag-platform-nav button,#ag-social-plan .ag-copy-meta,#ag-social-plan .ag-edit-note,#ag-social-plan .ag-preview-account small,#ag-social-plan .ag-preview-footer,#ag-social-plan .ag-media-card > span,#ag-social-plan .ag-media-card small,#ag-social-plan .ag-schedule-field small,#ag-social-plan .ag-limit-fields label,#ag-social-plan .ag-policy-panel small { font-size:11px; }
+  @media(max-width:700px) { #ag-social-plan > section { min-height:1350px; } #ag-social-plan .ag-review-grid { grid-template-columns:minmax(0,1fr); } #ag-social-plan .ag-queue { grid-template-columns:repeat(3,minmax(0,1fr)); } #ag-social-plan .ag-draft { padding:11px; } #ag-social-plan .ag-draft strong { font-size:12px; } #ag-social-plan .ag-draft-state { display:none; } #ag-social-plan .ag-policy-grid { grid-template-columns:minmax(0,1fr); } #ag-social-plan .ag-admin-label { display:none; } #ag-social-plan .ag-account-list > div { grid-template-columns:90px minmax(0,1fr); } #ag-social-plan .ag-account-list .ag-button { justify-self:start; } }
+  @media(max-width:450px) { #ag-social-plan > section { min-height:1570px; } #ag-social-plan .ag-main { padding:14px 12px 22px; } #ag-social-plan .ag-hero { padding:22px 15px;align-items:start;flex-direction:column; } #ag-social-plan .ag-topbar { padding:16px; } #ag-social-plan .ag-admin-nav { padding:10px; } #ag-social-plan .ag-hero h1 { font-size:34px; } #ag-social-plan .ag-queue { grid-template-columns:minmax(0,1fr); } #ag-social-plan .ag-draft { gap:4px; } #ag-social-plan .ag-draft > span:not(.ag-tag) { display:none; } #ag-social-plan .ag-editor-heading { flex-wrap:wrap; } #ag-social-plan .ag-editor-body { padding:14px 12px; } #ag-social-plan .ag-evidence-label { display:none; } #ag-social-plan .ag-evidence dl div { grid-template-columns:minmax(0,1fr);gap:0; } #ag-social-plan [data-layout="focused"] .ag-composer-grid { grid-template-columns:minmax(0,1fr); } #ag-social-plan .ag-focus-picker label { flex-direction:column;align-items:stretch;gap:5px; } #ag-social-plan .ag-product textarea,#ag-social-plan .ag-product select,#ag-social-plan .ag-product input:not([type="checkbox"]) { font-size:16px!important; } }
+  @media(pointer:coarse) { #ag-social-plan .ag-product button { min-height:44px; } #ag-social-plan .ag-targets label { min-height:44px; } }
+</style>
+<script>
+(() => {
+  const root = document.getElementById('ag-social-plan');
+  const first = root.querySelector('.ag-product');
+  const second = first.cloneNode(true);
+  second.dataset.layout = 'focused';
+  second.querySelector('.ag-focus-picker').hidden = false;
+  root.querySelector('[data-variant="Focused review"]').append(second);
+  const variants = ['Queue and preview', 'Focused review'];
+  const sample = {
+    explainer: {title:'What does unsupported expenditure mean?',type:'EXPLAINER',source:'Reviewed glossary template · illustrative',period:'Not applicable to this explainer',verification:'No financial amount asserted. Human review required.',extract:'“Unsupported” concerns documentation. The wording must not equate it with proven theft.',card:'Unsupported expenditure',subtitle:'Missing evidence is a finding. It is not proof of theft.',blocked:false,texts:{Facebook:'What does “unsupported expenditure” mean?\n\nIt means the auditor did not receive sufficient supporting documents for the spending examined. It should not automatically be described as money stolen. Read the finding, its period and the source context before drawing conclusions.\n\nExplore public-finance explainers: auditgava.com',Instagram:'Unsupported expenditure: what does it mean?\n\nThe auditor needs evidence supporting the spending. Missing documentation is a finding, but it is not automatically proof of theft.\n\nSave this explainer. Explore more at auditgava.com.',Threads:'“Unsupported expenditure” means the auditor lacked sufficient supporting documents. It is a finding, not automatic proof of theft. Always read the reporting period and source context. More explainers: auditgava.com',X:'What does “unsupported expenditure” mean? Insufficient supporting documents for the auditor — not automatic proof of theft. Read the finding and source context. Explore: auditgava.com',TikTok:'Sample 25-second script:\nHook: What does unsupported expenditure actually mean?\nExplain: The auditor needs documents supporting the spending.\nContext: Missing evidence is a finding, not automatic proof of theft.\nClose: Read the source and reporting period.'}},
+    availability: {title:'A new county report is available',type:'DATASET UPDATE',source:'Official county report · document and page to be verified',period:'[County] · [fiscal year] · placeholder',verification:'Blocked until publisher, document hash and reporting period are verified.',extract:'Sample template only. No actual newly published report is asserted here.',card:'A new report, easier to explore',subtitle:'County, reporting period and source must be confirmed.',blocked:true,texts:{Facebook:'New [fiscal year] financial data for [county] is available to explore on AuditGava.\n\nSource: [verified publisher and report]. This is a template; the county, period and deep link still need verification.',Instagram:'New report: [county], [fiscal year].\n\nExplore the source and reporting period on AuditGava. [Verified link required]',Threads:'[County] · [fiscal year]: a new report is available to explore. [Verified source and deep link required]',X:'New [county] report for [fiscal year]. Explore: [verified AuditGava link]',TikTok:'Sample concept: three cards showing the county, reporting period and where to explore the report. Verify the source before rendering.'}},
+    debt: {title:'Public debt change detected',type:'SIGNIFICANT CHANGE',source:'Debt observations · comparison evidence unresolved',period:'[Current period] vs [previous comparable period]',verification:'Blocked: currency scale, accounting basis and comparable coverage unresolved.',extract:'Do not call an ingestion update count a debt increase. Compare committed, like-for-like observations.',card:'Debt comparison needs context',subtitle:'Same units. Same basis. Comparable reporting periods.',blocked:true,texts:{Facebook:'Draft withheld: validate the debt observations, units, basis and reporting periods before describing any change.',Instagram:'Chart withheld until the comparison is validated. Do not render unverified amounts.',Threads:'Draft withheld pending a verified like-for-like debt comparison.',X:'Draft withheld: the comparison is not yet verified.',TikTok:'Video withheld until the figures and comparison basis are validated.'}}
+  };
+  const platformMeta = {Facebook:{limit:null,note:'Context + source link'},Instagram:{limit:2200,note:'Visual card + caption'},Threads:{limit:500,note:'Concise context + source link'},X:{limit:280,note:'Short update + source link'},TikTok:{limit:null,note:'Photo/video + consent workflow'}};
+  const saved = window.openai?.widgetState?.privateContent || {};
+  const controllers = [];
+  function persist() { if(window.openai?.setWidgetState) window.openai.setWidgetState({modelContent:{selectedLayouts:controllers.map(c => ({layout:c.name,section:c.state.view,draft:c.state.draft,platform:c.state.platform,approvalMode:c.state.mode}))},privateContent:{views:controllers.map(c=>({view:c.state.view,draft:c.state.draft,platform:c.state.platform,mode:c.state.mode}))}}).catch(()=>{}); }
+  for (const [index, app] of [first,second].entries()) {
+    const previous = saved.views?.[index] || {};
+    const state = {view:['pending','scheduled','history','accounts','automation'].includes(previous.view)?previous.view:'pending',draft:sample[previous.draft]?previous.draft:'explainer',platform:platformMeta[previous.platform]?previous.platform:'Facebook',mode:['manual','shadow','selective'].includes(previous.mode)?previous.mode:'manual',paused:false,scheduling:false,confirmed:false,scheduled:[],texts:structuredClone(sample),edited:false};
+    const q = selector => app.querySelector(selector);
+    const qa = selector => [...app.querySelectorAll(selector)];
+    function renderView() { qa('[data-panel]').forEach(p=>p.hidden=p.dataset.panel!==state.view);qa('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===state.view))); }
+    function renderApproval() { const selected=qa('[data-target]:checked').length;const tooLong=platformMeta[state.platform].limit && q('.ag-copy').value.length>platformMeta[state.platform].limit;q('.ag-approve').disabled=!state.confirmed||sample[state.draft].blocked||state.paused||!selected||Boolean(tooLong)||state.platform==='TikTok'; }
+    function renderCopy() { const text=state.texts[state.draft].texts[state.platform];q('.ag-copy').value=text;q('.ag-preview-copy').textContent=text;q('.ag-char-count').textContent=`${text.length} characters${platformMeta[state.platform].limit?` / ${platformMeta[state.platform].limit}`:''}`;q('.ag-format-note').textContent=platformMeta[state.platform].note;q('.ag-preview-handle').textContent=`@AuditGava · ${state.platform} preview`;q('.ag-media-card').hidden=state.platform!=='Instagram';q('.ag-tiktok-note').hidden=state.platform!=='TikTok';q('.ag-preview').hidden=state.platform==='TikTok';qa('[data-platform]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.platform===state.platform)));renderApproval(); }
+    function renderDraft() { const draft=sample[state.draft];q('.ag-content-type').textContent=draft.type;q('.ag-draft-title').textContent=draft.title;q('.ag-source').textContent=draft.source;q('.ag-period').textContent=draft.period;q('.ag-verification').textContent=draft.verification;q('.ag-source-extract').textContent=draft.extract;q('.ag-card-title').textContent=draft.card;q('.ag-card-subtitle').textContent=draft.subtitle;q('.ag-evidence-label').textContent=draft.blocked?'Verification required':'Template review';q('.ag-editor-state').textContent=draft.blocked?'Blocked':'Pending review';q('.ag-confirm').checked=false;state.confirmed=false;state.scheduling=false;q('.ag-schedule-field').hidden=true;q('.ag-approve').lastChild.textContent='Approve & publish';qa('[data-draft]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.draft===state.draft)));q('.ag-draft-select').value=state.draft;q('.ag-draft-result').textContent=draft.blocked?'Approval blocked until the evidence checks pass.':'Review the draft to enable approval. All actions here are simulated.';renderCopy(); }
+    function renderPolicy() { q('.ag-mode').value=state.mode;const desc={manual:'Every generated post enters Pending review.',shadow:'Rules recommend approval. Humans still decide and publish.',selective:'Only allowlisted templates may qualify. Audit findings stay in review.'};q('.ag-mode-description').textContent=desc[state.mode];q('.ag-policy-badge').textContent={manual:'Manual approval',shadow:'Shadow mode',selective:'Future selective pilot'}[state.mode];qa('.ag-allowlist').forEach(b=>b.disabled=state.mode==='manual');q('.ag-policy-result').textContent=state.mode==='manual'?'Automation is off. No TikTok unattended publishing is assumed.':state.mode==='shadow'?'Shadow mode simulates decisions only. No automatic publishing.':'Future pilot only: verified facts, caps and a recorded policy approval remain mandatory. TikTok requires a separately confirmed permitted workflow.'; }
+    function renderPause() { q('.ag-pause span').textContent=state.paused?'Resume publishing':'Pause publishing';q('.ag-global-status').textContent=state.paused?'Demo pause active: workers would stop new dispatches. Already accepted remote posts require reconciliation or cancellation where supported.':'';renderApproval(); }
+    function showResult(message) { q('.ag-draft-result').textContent=message; }
+    qa('[data-view]').forEach(b=>b.addEventListener('click',()=>{state.view=b.dataset.view;renderView();persist();}));
+    qa('[data-draft]').forEach(b=>b.addEventListener('click',()=>{state.draft=b.dataset.draft;renderDraft();persist();}));
+    q('.ag-draft-select').addEventListener('change',e=>{state.draft=e.target.value;renderDraft();persist();});
+    qa('[data-platform]').forEach(b=>b.addEventListener('click',()=>{state.platform=b.dataset.platform;renderCopy();persist();}));
+    qa('[data-target]').forEach(b=>b.addEventListener('change',()=>{state.confirmed=false;q('.ag-confirm').checked=false;renderApproval();showResult('Targets changed. Review the selected variants before approving.');}));
+    q('.ag-copy').addEventListener('input',e=>{state.texts[state.draft].texts[state.platform]=e.target.value;state.confirmed=false;q('.ag-confirm').checked=false;q('.ag-preview-copy').textContent=e.target.value;q('.ag-char-count').textContent=`${e.target.value.length} characters${platformMeta[state.platform].limit?` / ${platformMeta[state.platform].limit}`:''}`;q('.ag-editor-state').textContent='Edited · review required';renderApproval();});
+    q('.ag-confirm').addEventListener('change',e=>{state.confirmed=e.target.checked;renderApproval();});
+    q('.ag-schedule').addEventListener('click',()=>{state.scheduling=!state.scheduling;q('.ag-schedule-field').hidden=!state.scheduling;q('.ag-approve').lastChild.textContent=state.scheduling?'Approve & schedule':'Approve & publish';showResult(state.scheduling?'Choose a Nairobi publish time. Approval still requires source review.':'Immediate publishing would queue separate deliveries for the selected accounts.');});
+    q('.ag-approve').addEventListener('click',()=>{if(q('.ag-approve').disabled)return;const targets=qa('[data-target]:checked').map(i=>i.dataset.target);if(state.scheduling&&!q('.ag-schedule-time').value){showResult('Select a publish time before scheduling.');return;}q('.ag-editor-state').textContent=state.scheduling?'Scheduled · example':'Approved · example';if(state.scheduling){const item={title:sample[state.draft].title,when:q('.ag-schedule-time').value,targets};state.scheduled.push(item);const container=q('.ag-scheduled-list');container.replaceChildren();state.scheduled.forEach(s=>{const row=document.createElement('article');row.className='ag-history-row';const title=document.createElement('h3');title.textContent=s.title;const detail=document.createElement('p');detail.textContent=`${s.when.replace('T',' ')} · Africa/Nairobi · ${s.targets.join(', ')}`;row.append(title,detail);container.append(row);});showResult('Demo: approval and schedule would be saved together. See Scheduled.');}else{showResult(`Demo: approved revision would enter the delivery queue for ${targets.join(', ')}. No network request was made.`);}state.confirmed=false;q('.ag-confirm').checked=false;renderApproval();persist();});
+    q('.ag-reject').addEventListener('click',()=>{q('.ag-editor-state').textContent='Rejected · example';state.confirmed=false;q('.ag-confirm').checked=false;renderApproval();showResult('Demo: draft rejected. No platform delivery would be created.');});
+    q('.ag-save').addEventListener('click',()=>{showResult('Demo: wording would be saved as a new draft revision. Nothing would be posted.');persist();});
+    q('.ag-pause').addEventListener('click',()=>{state.paused=!state.paused;renderPause();persist();});
+    q('.ag-mode').addEventListener('change',e=>{state.mode=e.target.value;renderPolicy();persist();});
+    qa('.ag-allowlist').forEach(b=>b.addEventListener('change',()=>{q('.ag-policy-result').textContent='Demo allowlist updated. Eligibility, validation and publish-time safety checks still apply.';persist();}));
+    qa('.ag-connect').forEach(b=>b.addEventListener('click',()=>{q('.ag-account-result').textContent='Preview only: this would start a server-owned OAuth or eligibility flow, then confirm the intended AuditGava account and granted permissions. No connection was started.';}));
+    q('.ag-retry').addEventListener('click',()=>{q('.ag-history-result').textContent='Demo: only the failed Instagram delivery would be retried after media validation. Facebook and Threads would remain untouched.';});
+    renderView();renderDraft();renderPolicy();renderPause();
+    const design={compact:false,evidenceOpen:true};
+    if(globalThis.Tweak){const tweak=new Tweak({container:app,onChange:()=>{app.classList.toggle('ag-dense',design.compact);q('.ag-evidence').open=design.evidenceOpen;}});tweak.addToggle(design,'compact',{label:'Compact spacing'});tweak.addToggle(design,'evidenceOpen',{label:'Expand evidence by default'});}
+    controllers.push({name:variants[index],state,restore:(next)=>{if(['pending','scheduled','history','accounts','automation'].includes(next.view))state.view=next.view;if(sample[next.draft])state.draft=next.draft;if(platformMeta[next.platform])state.platform=next.platform;if(['manual','shadow','selective'].includes(next.mode))state.mode=next.mode;renderView();renderDraft();renderPolicy();}});
+  }
+  window.addEventListener('openai:set_globals',event=>{const next=event.detail?.globals?.widgetState?.privateContent?.views;if(Array.isArray(next))controllers.forEach((c,i)=>{if(next[i])c.restore(next[i]);});});
+})();
+</script>
