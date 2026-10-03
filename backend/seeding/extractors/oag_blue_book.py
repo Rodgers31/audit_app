@@ -35,6 +35,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import math
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -140,7 +141,7 @@ _FY_SPAN_RE = re.compile(r"(20\d{2})\s*[/_–-]\s*(20\d{2}|\d{2})")
 class PageText:
     page_number: int  # 1-based PDF page number
     text: str
-    method: str  # "pdfplumber" | "ocr" | "rejected"
+    method: str  # "pdfplumber" | "ocr" | "blank" | "rejected"
 
 
 @dataclass
@@ -560,6 +561,125 @@ def parse_blue_book(pages: List[PageText], source_url: str) -> BlueBookResult:
 
 
 # ── PDF I/O (thin, impure shell around the pure parser) ──────────────
+def _has_only_background_operators(page) -> bool:
+    """Reject painting instructions pdfplumber may omit from its objects.
+
+    In particular shadings and pattern fills can draw visible information
+    without producing a text/image/curve object. Only plain color, rectangle
+    fill and harmless graphics state instructions can certify a background.
+    """
+    from pdfminer.pdfinterp import PDFContentParser
+    from pdfminer.pdftypes import resolve1
+    from pdfminer.psparser import PSEOF, PSKeyword, PSLiteral, literal_name
+
+    expected_numbers = {b"g": 1, b"rg": 3, b"k": 4, b"re": 4}
+    operands = []
+    try:
+        # PDFContentParser can consume an unterminated inline image/string
+        # then signal EOF without emitting an object. Certify the entire raw
+        # stream lexically first; no binary/string/inline-image syntax belongs
+        # to this tiny background grammar. Parser EOF alone is not proof.
+        token = re.compile(
+            rb"(?:[-+]?(?:\d+(?:\.\d*)?|\.\d+)|/[A-Za-z0-9_]+|"
+            rb"rg|re|gs|g|k|f\*?|q|Q)(?=[ \t\r\n\f]|$)"
+        )
+        for stream in page.page_obj.contents:
+            raw = resolve1(stream).get_data()
+            if len(raw) > 65536:
+                return False
+            raw = re.sub(rb"%[^\r\n]*", b" ", raw)
+            position = 0
+            while position < len(raw):
+                if raw[position:position + 1] in b" \t\r\n\f":
+                    position += 1
+                    continue
+                match = token.match(raw, position)
+                if match is None:
+                    return False
+                position = match.end()
+        parser = PDFContentParser(page.page_obj.contents)
+        resources = resolve1(page.page_obj.resources) or {}
+        states = resolve1(resources.get("ExtGState", {}))
+        while True:
+            try:
+                _, item = parser.nextobject()
+            except PSEOF:
+                return not operands
+            if not isinstance(item, PSKeyword):
+                operands.append(item)
+                continue
+            op = item.name
+            if op in expected_numbers:
+                if len(operands) != expected_numbers[op] or any(
+                    type(value) not in (int, float) or not math.isfinite(value)
+                    for value in operands
+                ):
+                    return False
+                if op != b"re" and any(not 0 <= value <= 1 for value in operands):
+                    return False
+            elif op == b"gs":
+                if len(operands) != 1 or not isinstance(operands[0], PSLiteral):
+                    return False
+                state = resolve1(states[literal_name(operands[0])])
+                # The actual FY2020/21 covers use this standard state. A
+                # soft mask or transfer function could paint image evidence.
+                allowed = {"Type", "AIS", "BM", "CA", "OP", "OPM", "SA", "SMask", "ca", "op"}
+                if not isinstance(state, dict) or set(state) - allowed:
+                    return False
+                for key, value in state.items():
+                    if key in ("Type", "BM", "SMask"):
+                        if not isinstance(value, PSLiteral) or literal_name(value) != {
+                            "Type": "ExtGState", "BM": "Normal", "SMask": "None"
+                        }[key]:
+                            return False
+                    elif key in ("AIS", "OP", "SA", "op"):
+                        if type(value) is not bool:
+                            return False
+                    elif type(value) not in (int, float) or not math.isfinite(value) or not 0 <= value <= 1:
+                        return False
+            elif op in (b"f", b"f*", b"q", b"Q"):
+                if operands:
+                    return False
+            else:
+                return False
+            operands = []
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return False
+
+
+def _is_plain_background(page) -> bool:
+    """Prove a page has no text, image, annotation or complex drawing.
+
+    FY2020/21 back covers are a sole uniform filled rectangle. OCR correctly
+    returns no text there; that is not an unreadable evidence page. Inspect
+    the original page, even when the caller crops its text to the visible box.
+    Scans, curves, lines, partial rectangles and unknown objects fail closed.
+    """
+    if page.annots or not _has_only_background_operators(page):
+        return False
+    objects = {kind: items for kind, items in page.objects.items() if items}
+    if not objects:
+        return True
+    if set(objects) != {"rect"} or len(objects["rect"]) != 1:
+        return False
+    rect = objects["rect"][0]
+    if rect.get("fill") is not True or rect.get("stroke") is not False:
+        return False
+    color = rect.get("non_stroking_color")
+    components = color if isinstance(color, (tuple, list)) else [color]
+    if len(components) not in (1, 3, 4) or any(
+        type(value) not in (int, float) or not math.isfinite(value)
+        or not 0 <= value <= 1 for value in components
+    ):
+        return False
+    bounds = [rect.get(name) for name in ("x0", "top", "x1", "bottom")]
+    if any(type(value) not in (int, float) or not math.isfinite(value) for value in bounds):
+        return False
+    # The actual covers leave a 0.159pt trim margin (less than one pixel at
+    # the 200dpi OCR resolution). A small rectangle cannot certify the page.
+    return all(abs(value - edge) <= 0.5 for value, edge in zip(bounds, page.bbox))
+
+
 def read_pages(
     pdf_path: Path,
     *,
@@ -571,7 +691,9 @@ def read_pages(
 
     A page whose embedded text is empty or >20% ``(cid:`` is re-read via
     OCR (pdf2image + pytesseract) when enabled; if it still fails the
-    integrity check it is marked ``rejected`` and contributes nothing.
+    integrity check it is marked ``rejected`` and contributes nothing. A page
+    proven to have no content beyond a plain background is ``blank`` and
+    needs no OCR; empty text alone does not establish that proof.
 
     ``visible_only`` drops glyphs drawn outside the page's box before reading.
     The FY2021/22 county volumes carry the PREVIOUS page's entire text
@@ -590,7 +712,9 @@ def read_pages(
             source = page.within_bbox(page.bbox) if visible_only else page
             text = source.extract_text() or ""
             method = "pdfplumber"
-            if not text.strip() or cid_ratio(text) > CID_REJECT_RATIO:
+            if not text.strip() and _is_plain_background(page):
+                method = "blank"
+            elif not text.strip() or cid_ratio(text) > CID_REJECT_RATIO:
                 if ocr_enabled and ocr_used < ocr_max_pages:
                     ocr_text = _ocr_page(pdf_path, i + 1)
                     ocr_used += 1

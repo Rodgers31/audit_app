@@ -750,6 +750,24 @@ jobs:
           cache: 'pip'
       - run: pip install --upgrade pip && pip install -r backend/requirements.txt
 
+      # Validation runs on a separate runner: the seed job's filesystem is
+      # absent here. Restore its official byte cache, then prepare missing
+      # reviewed county editions explicitly before read-only FULL gates.
+      - name: Restore retained source PDFs for validation
+        uses: actions/cache/restore@v4
+        with:
+          path: backend/data/seeding/cache/pdfs
+          key: seed-pdf-validation-${{ github.run_id }}
+          restore-keys: |
+            seed-pdf-cache-
+
+      - name: Prepare reviewed retained county-source bytes
+        run: |
+          cd backend
+          python -m seeding.source_cache \
+            --database-url-env DATABASE_URL --profile county --fetch \
+            --receipt ../retained-source-cache-validation.json
+
       - name: Validate seeded data
         run: |
           cd backend

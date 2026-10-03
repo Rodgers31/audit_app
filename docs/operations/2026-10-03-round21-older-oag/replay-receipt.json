@@ -1,0 +1,175 @@
+{
+  "schema": "round21_older_oag_real_replay_receipt/v1",
+  "scope": "Local source proof only; production state remains unmodified",
+  "base_commit": "b19a69a5082a6f931dabb4b642903ff373260581",
+  "runtime": {
+    "python": "Python 3.12.14",
+    "tesseract": "5.5.0",
+    "pdfplumber": "0.11.10",
+    "language": "List of available languages in \"/usr/share/tesseract-ocr/5/tessdata/\" (2):\neng\nosd\n",
+    "minimum_isolated_memory_gib": 6,
+    "independent_observed_rss_gib": 3.74,
+    "initial_2gib_attempt": {
+      "exit_code": 137,
+      "phase": "setup",
+      "interpretation": "Consistent with memory kill; OOMKilled flag not captured because container used --rm",
+      "database_connection": false,
+      "production_writes": false,
+      "failure_receipt_retained_by_coordinator": true
+    }
+  },
+  "reader_sha256": "61f17532e8ad92e40fb265f542fa719f6aa387a720bef4e47df2dc1612cfda1a",
+  "fresh_packet_sha256": "a985d2934f3882b447cf45d2e2463e66c9a0233ea3e99352ee0195066806e292",
+  "tests": {
+    "baseline": "2 failed, 16 passed",
+    "hardened": "21 passed",
+    "focused": "160 passed, 0 skipped",
+    "root_independent": "19 controls passed at reader 61f17532e8ad92e40fb265f542fa719f6aa387a720bef4e47df2dc1612cfda1a",
+    "operator": "21 passed, 0 skipped; synthetic source proof/manifest only; owned PostgreSQL17",
+    "combined_before_final_two_operator_controls": "178 passed, 0 skipped",
+    "independent_operator": {
+      "cases": 79,
+      "healthy": 6,
+      "refusals": 73,
+      "operator_sha256": "e6c1cac0c416ae64a3388ae165113d9bbd6fe4c01330d61045a76e80e63a02e1",
+      "manifest_sha256": "25c967eda9143bb8be38f82a1f01754ee9962654ca249142f722eb1a5d0f26e0",
+      "actual_pages": 701,
+      "exact_payloads": 1498,
+      "source_proof_sha256": "b8921947d14d5ee35b4b22636a4239add16d8a46819512ee67178f3f30d6e5a7",
+      "receipt": "A/latest/ROUND21_OLDER_COMPLETION_ADVERSARIAL.json",
+      "receipt_sha256": "1d1bc067ef177a1ead7ea1c38829f850fcb1c8cab24e8a81e0677881fa6b98ab",
+      "checks": [
+        "default rollback",
+        "forward commit",
+        "guarded inverse",
+        "all 15 protected tables and sequences preserved",
+        "concurrent writer blocked",
+        "trigger side effect rolled back"
+      ]
+    }
+  },
+  "sources": [
+    {
+      "acquisition": {
+        "source_id": 2395,
+        "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/02/REPORT-OF-THE-AUDITOR-GENERAL-FOR-THE-COUNTY-GOVERNMENTS-FOR-THE-YEAR-2020-2021-_VOLUME-I-COUNTY-EXECUTIVES.pdf",
+        "expected_md5": "f82bd20b45bb54ca6857ddd93a6a16ec",
+        "expected_sha256": "15a1f266881cd897e168bd21f53216e7e204c5fba5af32ce2888ba67b5606504",
+        "http_status": 200,
+        "final_url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/02/REPORT-OF-THE-AUDITOR-GENERAL-FOR-THE-COUNTY-GOVERNMENTS-FOR-THE-YEAR-2020-2021-_VOLUME-I-COUNTY-EXECUTIVES.pdf",
+        "content_type": "application/pdf",
+        "bytes": 7969551,
+        "md5": "f82bd20b45bb54ca6857ddd93a6a16ec",
+        "sha256": "15a1f266881cd897e168bd21f53216e7e204c5fba5af32ce2888ba67b5606504",
+        "pdf_header": true,
+        "matches_pinned_bytes": true,
+        "elapsed_seconds": 4.062
+      },
+      "final_replay": {
+        "source_id": 2395,
+        "sha256": "15a1f266881cd897e168bd21f53216e7e204c5fba5af32ce2888ba67b5606504",
+        "md5": "f82bd20b45bb54ca6857ddd93a6a16ec",
+        "pages": 469,
+        "blank_pages": [
+          469
+        ],
+        "ocr_pages": [
+          465
+        ],
+        "rejected_pages": [],
+        "findings": 986,
+        "votes_seen": 47,
+        "skipped_votes": [],
+        "cid_rejected_findings": 0,
+        "fiscal_year": "2020/2021",
+        "candidate_json_sha256": "cd44f440988afd9821cf92686750dd1ee65b24265d4b63b2ecbeb8a4f994aa24",
+        "elapsed_seconds": 65.648
+      },
+      "comparison": {
+        "source_id": 2395,
+        "old_extraction_count": 986,
+        "candidate_count": 986,
+        "retire": [],
+        "insert": [],
+        "revised_rows": [],
+        "old_duplicate_keys": 0,
+        "candidate_duplicate_keys": 0
+      },
+      "artifacts": {
+        "2395-native-pages.json": "b2df4520a8216a15b745db14c31d68ae6b69f85b49efaa595ebfcc9727ca48d1",
+        "2395-ocr-pages.json": "30cb29f033372ed8a07710bdfe60426fb43c71d6fbb69ee1d95f19ea47ce57e7",
+        "2395-candidate-payloads.json": "04dd4c6ef459a9d8ff310ceac11ffb5507b8c97f71b225383b3d76139bf8b5f4",
+        "2395-p465.png": "4b84a8e0cd3316ed56e66b4da39a6b25335c6a3eb5e9ed8eb90ba31ac5289474",
+        "2395-p469.png": "3a65f79defe2b061b290723cc54caa26a0d25d431c9791ebf67132086a04a3a5"
+      }
+    },
+    {
+      "acquisition": {
+        "source_id": 2396,
+        "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/02/REPORT-OF-THE-AUDITOR-GENERAL-FOR-THE-COUNTY-GOVERNMENTS-FOR-THE-YEAR-2020-2021-_VOLUME-II-COUNTY-ASSEMBLIES.pdf",
+        "expected_md5": "cfa6f5c4f517309aed1cf353e9086014",
+        "expected_sha256": "34b11075b4855e341802dd81bacc4b0f6dc4093ebb15b4c6bb00c0ad6c5a6614",
+        "http_status": 200,
+        "final_url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/02/REPORT-OF-THE-AUDITOR-GENERAL-FOR-THE-COUNTY-GOVERNMENTS-FOR-THE-YEAR-2020-2021-_VOLUME-II-COUNTY-ASSEMBLIES.pdf",
+        "content_type": "application/pdf",
+        "bytes": 6938538,
+        "md5": "cfa6f5c4f517309aed1cf353e9086014",
+        "sha256": "34b11075b4855e341802dd81bacc4b0f6dc4093ebb15b4c6bb00c0ad6c5a6614",
+        "pdf_header": true,
+        "matches_pinned_bytes": true,
+        "elapsed_seconds": 3.254
+      },
+      "final_replay": {
+        "source_id": 2396,
+        "sha256": "34b11075b4855e341802dd81bacc4b0f6dc4093ebb15b4c6bb00c0ad6c5a6614",
+        "md5": "cfa6f5c4f517309aed1cf353e9086014",
+        "pages": 232,
+        "blank_pages": [
+          232
+        ],
+        "ocr_pages": [
+          227
+        ],
+        "rejected_pages": [],
+        "findings": 512,
+        "votes_seen": 47,
+        "skipped_votes": [],
+        "cid_rejected_findings": 0,
+        "fiscal_year": "2020/2021",
+        "candidate_json_sha256": "f23e781b569aecab4f3e00502e7fd1a0631c617f313f3494c3fadfc03782ec78",
+        "elapsed_seconds": 49.952
+      },
+      "comparison": {
+        "source_id": 2396,
+        "old_extraction_count": 512,
+        "candidate_count": 512,
+        "retire": [],
+        "insert": [],
+        "revised_rows": [],
+        "old_duplicate_keys": 0,
+        "candidate_duplicate_keys": 0
+      },
+      "artifacts": {
+        "2396-native-pages.json": "dd06f1f49460224fe2e207690d2b19f5d2a80913b20a375046eb542d0fe7b99b",
+        "2396-ocr-pages.json": "ec0ab2120b74fd0bcce3358671f89a4527f8fe2120df5fe543f261aa12f11816",
+        "2396-candidate-payloads.json": "4ca165eef379495f61093e54b3510e5d16efd0eb3dbf21ab3984832e4476968a",
+        "2396-p227.png": "f03a1a770007a0013fa0f8673bb56ce0b8573552b185c212f70a0a6ba6b36cbe",
+        "2396-p232.png": "3a65f79defe2b061b290723cc54caa26a0d25d431c9791ebf67132086a04a3a5"
+      }
+    }
+  ],
+  "direct_real_cover_ocr": {
+    "command": "_ocr_page(Path(\"/proof/2395.pdf\"),469); _ocr_page(Path(\"/proof/2396.pdf\"),232)",
+    "outputs": {
+      "2395/469": "",
+      "2396/232": ""
+    },
+    "log_sha256": "ffcd7efe3a9435ecea83ac129a846691c2a8ea0acd11146e6426063c27767fb6"
+  },
+  "operator_source_proof": {
+    "schema": "oag_older_complete_source_proof/v1",
+    "sha256": "b8921947d14d5ee35b4b22636a4239add16d8a46819512ee67178f3f30d6e5a7",
+    "actual_full_reader": true,
+    "artifact_file_sha256": "38a49840d6b689e6efdc03eaae82fb31b96ca3df639d4a04b6b1ea4f54a0e471"
+  }
+}

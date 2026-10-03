@@ -1,0 +1,105 @@
+{
+  "git_commit": "ec7706c8395d8ccf4dc86e9a9af7a1c0d9cc0777",
+  "historical_fixture": {
+    "blob_sha256": "dcbb5e6c14df773851d67fe14e4fbfd5057d79a40d965b6184663700749454a4",
+    "path": "backend/seeding/fixtures/budgets.json",
+    "record": {
+      "fields": {
+        "actual_amount": 1185000000,
+        "allocated_amount": 1250000000,
+        "category": "Health",
+        "currency": "KES",
+        "dataset_id": "fixture-budgets",
+        "end_date": "2024-06-30",
+        "entity": "Nairobi City County",
+        "entity_slug": "nairobi-county",
+        "period_label": "FY2023/2024",
+        "source_url": "https://fixtures.example/budgets",
+        "start_date": "2023-07-01",
+        "subcategory": "Primary Care"
+      }
+    }
+  },
+  "historical_generator": {
+    "blob_sha256": "46b3c08def69d2105e42c1fe563b65aa87906bc5850294558eb9001b3d36f747",
+    "county_count": 47,
+    "data_quality_values": [
+      "estimated"
+    ],
+    "generated_file_sha256": "3f6b8cba2782192b7704fc117f512bb8e25c552f05ac4f3c61883903b896787f",
+    "path": "backend/seeding/domains/counties_budget/real_budget_fetcher.py",
+    "replayed_count": 470,
+    "sample": {
+      "actual_spent": 4625591998.76,
+      "allocated_amount": 5441872939.72,
+      "category": "Health Services",
+      "committed_amount": 5006523104.54,
+      "data_quality": "estimated",
+      "end_date": "2024-06-30",
+      "entity": "Nairobi",
+      "entity_slug": "nairobi-county",
+      "fiscal_year": "2023/2024",
+      "notes": "Allocation estimated using CRA formula (50% population-based, 50% equal share). Total county allocation: 21.77B KES",
+      "source": "Estimated based on CRA Equitable Share FY 2023/24",
+      "source_url": "https://www.crakenya.org/county-allocations/",
+      "start_date": "2023-07-01"
+    },
+    "source_labels": [
+      "Estimated based on CRA Equitable Share FY 2023/24"
+    ],
+    "source_urls": [
+      "https://www.crakenya.org/county-allocations/"
+    ]
+  },
+  "limits": [
+    "The provided production image is dated evidence; it is not a fresh execution preflight.",
+    "Retained Git history starts after the rows creation dates; it proves matching origins and writer behavior, not the actual November2025 invocation.",
+    "Replay runs historical computation in an owned temporary directory with no HTTP calls or database connection.",
+    "No modelled amount is certified as CRA, CoB or KNBS publication evidence."
+  ],
+  "provided_packet_sha256": "4dd4e17e95f800f25fa56ffc1bc382bb997f161c24e402a5b36541e221e41e65",
+  "schema": "source_disposition_origin_receipt/v1",
+  "source_images": [
+    {
+      "content_type": null,
+      "country_id": 1,
+      "created_at": "2025-11-02T03:04:49.328928",
+      "doc_type": "BUDGET",
+      "fetch_date": "2025-11-02T03:04:49.328928",
+      "file_path": null,
+      "http_status": null,
+      "id": 1707,
+      "last_seen_at": "2025-11-02T03:04:49.328928",
+      "last_verified_at": null,
+      "md5": null,
+      "metadata": {
+        "dataset_id": "fixture-budgets"
+      },
+      "publisher": "Controller of Budget",
+      "status": "AVAILABLE",
+      "title": "County Budget Execution Summary",
+      "url": "https://fixtures.example/budgets"
+    },
+    {
+      "content_type": null,
+      "country_id": 1,
+      "created_at": "2025-11-09T21:39:32.113397",
+      "doc_type": "BUDGET",
+      "fetch_date": "2025-11-09T21:39:32.113397",
+      "file_path": null,
+      "http_status": null,
+      "id": 1718,
+      "last_seen_at": "2026-04-20T03:29:19.60125",
+      "last_verified_at": null,
+      "md5": null,
+      "metadata": {
+        "data_quality": "estimated",
+        "source_label": "Estimated based on CRA Equitable Share FY 2023/24"
+      },
+      "publisher": "Controller of Budget",
+      "status": "AVAILABLE",
+      "title": "Estimated based on CRA Equitable Share FY 2023/24",
+      "url": "https://www.crakenya.org/county-allocations/"
+    }
+  ]
+}

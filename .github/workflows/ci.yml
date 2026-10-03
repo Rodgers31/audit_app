@@ -314,6 +314,7 @@ jobs:
 
   # Quality Gate - All tests must pass before deployment
   quality-gate:
+    timeout-minutes: 5
     runs-on: ubuntu-latest
     needs: [test-backend, test-frontend, test-browser, test-browser-legacy, test-etl, security-scan]
     if: always()

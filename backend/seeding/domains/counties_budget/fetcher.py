@@ -525,6 +525,79 @@ def _discover_latest_county_birr_pdf(
     )
 
 
+def convert_county_pdf_records(
+    parsed_records: List[Dict[str, Any]], pdf_url: str, artifact_sha256: str | None
+) -> List[Dict[str, Any]]:
+    """Convert actual CBIRR producer output without downloading or caching.
+
+    Shared by the live fetcher and source-bound local adoption planning, so
+    amounts, accounting bases, periods and provenance use the same mapping.
+    """
+    from .parser import _to_decimal
+
+    budget_records: List[Dict[str, Any]] = []
+    dropped_no_fy = 0
+    for record in parsed_records:
+        county = record.get("county", "Unknown")
+        entity_slug = slugify_entity(county)
+        fy = record.get("fiscal_year") or ""
+        sub_period = record.get("quarter")
+
+        start_iso, end_iso = _derive_period_dates(fy, sub_period)
+        if not start_iso or not end_iso:
+            dropped_no_fy += 1
+            continue
+        # "2025/26 9M": the report's own period, sub-period and all. A
+        # nine-month CBIRR filed under the bare year would share a period
+        # with — and be overwritten by — the annual report.
+        period_label = f"{fy} {sub_period}" if sub_period else fy
+
+        allocated = _to_decimal(record.get("allocated"))
+        absorbed = _to_decimal(record.get("absorbed"))
+
+        if record.get("amounts_in") != "kes":
+            # Chapter 2 aggregates are printed in KSh millions. The
+            # Chapter 3 revenue tables are printed in shillings, and a
+            # small stream (a KSh 50,000 refund) scaled here would become
+            # KSh 50 billion.
+            if allocated is not None:
+                allocated = _birr_amount_to_kes(float(allocated))
+            if absorbed is not None:
+                absorbed = _birr_amount_to_kes(float(absorbed))
+
+        budget_records.append({
+            "entity_slug": entity_slug,
+            "entity": f"{county} County",
+            "fiscal_year": fy,
+            "period_label": period_label,
+            "start_date": start_iso,
+            "end_date": end_iso,
+            "category": record.get("category", "Total"),
+            "subcategory": record.get("subcategory"),
+            "allocated_amount": float(allocated) if allocated is not None else None,
+            # IMPORTANT: parser reads "actual_amount" or "actual";
+            # the old "actual_spent" key was silently dropped.
+            "actual_amount": float(absorbed) if absorbed is not None else None,
+            "committed_amount": None,
+            "currency": "KES",
+            "source_label": f"Controller of Budget County BIRR FY{period_label}",
+            "source_url": pdf_url,
+            "data_quality": "official",
+            "notes": record.get("notes"),
+            "page_ref": record.get("page_ref"),
+            "artifact_sha256": artifact_sha256,
+            "revenue_coverage": record.get("revenue_coverage"),
+        })
+
+    if dropped_no_fy:
+        logger.warning(
+            "Dropped %d COB records with un-parseable fiscal_year label",
+            dropped_no_fy,
+        )
+
+    return budget_records
+
+
 def _download_and_parse_county_pdf(
     client: SeedingHttpClient, pdf_url: str, settings: SeedingSettings
 ) -> Optional[List[Dict[str, Any]]]:
@@ -609,75 +682,9 @@ def _download_and_parse_county_pdf(
             logger.warning("CoBQuarterlyReportParser returned no records")
             return None
 
-        # Convert to the budget parser's expected schema. Three pipeline
-        # invariants enforced here (silently-wrong before April-2026):
-        #   * key "actual_amount" — parser.py reads that; "actual_spent"
-        #     was silently dropped.
-        #   * start_date / end_date — parser.py requires ISO dates and
-        #     drops the record otherwise (Kenya FY = Jul 1 → Jun 30).
-        #   * period_label — parser falls back to fiscal_year but we
-        #     set it explicitly so the normalized label is canonical.
-        budget_records: List[Dict[str, Any]] = []
-        dropped_no_fy = 0
-        for record in parsed_records:
-            county = record.get("county", "Unknown")
-            entity_slug = slugify_entity(county)
-            fy = record.get("fiscal_year") or ""
-            sub_period = record.get("quarter")
-
-            start_iso, end_iso = _derive_period_dates(fy, sub_period)
-            if not start_iso or not end_iso:
-                dropped_no_fy += 1
-                continue
-            # "2025/26 9M": the report's own period, sub-period and all. A
-            # nine-month CBIRR filed under the bare year would share a period
-            # with — and be overwritten by — the annual report.
-            period_label = f"{fy} {sub_period}" if sub_period else fy
-
-            allocated = _to_decimal(record.get("allocated"))
-            absorbed = _to_decimal(record.get("absorbed"))
-
-            if record.get("amounts_in") != "kes":
-                # Chapter 2 aggregates are printed in KSh millions. The
-                # Chapter 3 revenue tables are printed in shillings, and a
-                # small stream (a KSh 50,000 refund) scaled here would become
-                # KSh 50 billion.
-                if allocated is not None:
-                    allocated = _birr_amount_to_kes(float(allocated))
-                if absorbed is not None:
-                    absorbed = _birr_amount_to_kes(float(absorbed))
-
-            budget_records.append({
-                "entity_slug": entity_slug,
-                "entity": f"{county} County",
-                "fiscal_year": fy,
-                "period_label": period_label,
-                "start_date": start_iso,
-                "end_date": end_iso,
-                "category": record.get("category", "Total"),
-                "subcategory": record.get("subcategory"),
-                "allocated_amount": float(allocated) if allocated is not None else None,
-                # IMPORTANT: parser reads "actual_amount" or "actual";
-                # the old "actual_spent" key was silently dropped.
-                "actual_amount": float(absorbed) if absorbed is not None else None,
-                "committed_amount": None,
-                "currency": "KES",
-                "source_label": f"Controller of Budget County BIRR FY{period_label}",
-                "source_url": pdf_url,
-                "data_quality": "official",
-                "notes": record.get("notes"),
-                "page_ref": record.get("page_ref"),
-                "artifact_sha256": getattr(downloaded, "sha256", None),
-                "revenue_coverage": record.get("revenue_coverage"),
-            })
-
-        if dropped_no_fy:
-            logger.warning(
-                "Dropped %d COB records with un-parseable fiscal_year label",
-                dropped_no_fy,
-            )
-
-        return budget_records if budget_records else None
+        return convert_county_pdf_records(
+            parsed_records, pdf_url, getattr(downloaded, "sha256", None)
+        ) or None
 
     except ImportError:
         logger.warning(

@@ -1,0 +1,20 @@
+[
+  {
+    "url": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-NATIONAL-GOVERNMENT-2024-2025.pdf",
+    "sha256": "d8c72b4fbda2c920f30f79b3e0554f9965165735d220a810e6ae3994e2dbf899",
+    "md5": "7e6a6850102a3cadcba38e1f7af9cae3",
+    "authority": "independent reviewed exact-byte OAG replay; no re-extraction/adoption authorization"
+  },
+  {
+    "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/02/REPORT-OF-THE-AUDITOR-GENERAL-FOR-THE-COUNTY-GOVERNMENTS-FOR-THE-YEAR-2020-2021-_VOLUME-I-COUNTY-EXECUTIVES.pdf",
+    "sha256": "15a1f266881cd897e168bd21f53216e7e204c5fba5af32ce2888ba67b5606504",
+    "md5": "f82bd20b45bb54ca6857ddd93a6a16ec",
+    "authority": "independent reviewed exact-byte OAG replay; no re-extraction/adoption authorization"
+  },
+  {
+    "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/02/REPORT-OF-THE-AUDITOR-GENERAL-FOR-THE-COUNTY-GOVERNMENTS-FOR-THE-YEAR-2020-2021-_VOLUME-II-COUNTY-ASSEMBLIES.pdf",
+    "sha256": "34b11075b4855e341802dd81bacc4b0f6dc4093ebb15b4c6bb00c0ad6c5a6614",
+    "md5": "cfa6f5c4f517309aed1cf353e9086014",
+    "authority": "independent reviewed exact-byte OAG replay; no re-extraction/adoption authorization"
+  }
+]

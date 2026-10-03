@@ -1,0 +1,1082 @@
+{
+  "captured_utc": "2026-10-03T14:47:50.079456+00:00",
+  "foreign_keys": [
+    {
+      "conname": "annotations_user_id_fkey",
+      "definition": "FOREIGN KEY (user_id) REFERENCES users(id)",
+      "from_table": "annotations",
+      "to_table": "users"
+    },
+    {
+      "conname": "audits_entity_id_fkey",
+      "definition": "FOREIGN KEY (entity_id) REFERENCES entities(id)",
+      "from_table": "audits",
+      "to_table": "entities"
+    },
+    {
+      "conname": "audits_period_id_fkey",
+      "definition": "FOREIGN KEY (period_id) REFERENCES fiscal_periods(id)",
+      "from_table": "audits",
+      "to_table": "fiscal_periods"
+    },
+    {
+      "conname": "audits_source_document_id_fkey",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id)",
+      "from_table": "audits",
+      "to_table": "source_documents"
+    },
+    {
+      "conname": "budget_lines_entity_id_fkey",
+      "definition": "FOREIGN KEY (entity_id) REFERENCES entities(id)",
+      "from_table": "budget_lines",
+      "to_table": "entities"
+    },
+    {
+      "conname": "budget_lines_period_id_fkey",
+      "definition": "FOREIGN KEY (period_id) REFERENCES fiscal_periods(id)",
+      "from_table": "budget_lines",
+      "to_table": "fiscal_periods"
+    },
+    {
+      "conname": "budget_lines_source_document_id_fkey",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id)",
+      "from_table": "budget_lines",
+      "to_table": "source_documents"
+    },
+    {
+      "conname": "data_alerts_user_id_fkey",
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+      "from_table": "data_alerts",
+      "to_table": "auth.users"
+    },
+    {
+      "conname": "debt_instruments_extraction_id_fkey",
+      "definition": "FOREIGN KEY (extraction_id) REFERENCES extractions(id)",
+      "from_table": "debt_instruments",
+      "to_table": "extractions"
+    },
+    {
+      "conname": "debt_instruments_source_document_id_fkey",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id)",
+      "from_table": "debt_instruments",
+      "to_table": "source_documents"
+    },
+    {
+      "conname": "debt_timeline_source_document_id_fkey",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id)",
+      "from_table": "debt_timeline",
+      "to_table": "source_documents"
+    },
+    {
+      "conname": "economic_indicators_entity_id_fkey",
+      "definition": "FOREIGN KEY (entity_id) REFERENCES entities(id) ON DELETE SET NULL",
+      "from_table": "economic_indicators",
+      "to_table": "entities"
+    },
+    {
+      "conname": "economic_indicators_source_document_id_fkey",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id) ON DELETE SET NULL",
+      "from_table": "economic_indicators",
+      "to_table": "source_documents"
+    },
+    {
+      "conname": "entities_country_id_fkey",
+      "definition": "FOREIGN KEY (country_id) REFERENCES countries(id)",
+      "from_table": "entities",
+      "to_table": "countries"
+    },
+    {
+      "conname": "extractions_source_document_id_fkey",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id)",
+      "from_table": "extractions",
+      "to_table": "source_documents"
+    },
+    {
+      "conname": "fiscal_periods_country_id_fkey",
+      "definition": "FOREIGN KEY (country_id) REFERENCES countries(id)",
+      "from_table": "fiscal_periods",
+      "to_table": "countries"
+    },
+    {
+      "conname": "fiscal_summaries_source_document_id_fkey",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id)",
+      "from_table": "fiscal_summaries",
+      "to_table": "source_documents"
+    },
+    {
+      "conname": "fk_audits_extraction_id_extractions",
+      "definition": "FOREIGN KEY (extraction_id) REFERENCES extractions(id)",
+      "from_table": "audits",
+      "to_table": "extractions"
+    },
+    {
+      "conname": "fk_budget_lines_extraction_id_extractions",
+      "definition": "FOREIGN KEY (extraction_id) REFERENCES extractions(id)",
+      "from_table": "budget_lines",
+      "to_table": "extractions"
+    },
+    {
+      "conname": "fk_debt_timeline_extraction_id_extractions",
+      "definition": "FOREIGN KEY (extraction_id) REFERENCES extractions(id)",
+      "from_table": "debt_timeline",
+      "to_table": "extractions"
+    },
+    {
+      "conname": "fk_economic_indicators_extraction_id_extractions",
+      "definition": "FOREIGN KEY (extraction_id) REFERENCES extractions(id)",
+      "from_table": "economic_indicators",
+      "to_table": "extractions"
+    },
+    {
+      "conname": "fk_fiscal_summaries_extraction_id_extractions",
+      "definition": "FOREIGN KEY (extraction_id) REFERENCES extractions(id)",
+      "from_table": "fiscal_summaries",
+      "to_table": "extractions"
+    },
+    {
+      "conname": "fk_gdp_data_extraction_id_extractions",
+      "definition": "FOREIGN KEY (extraction_id) REFERENCES extractions(id)",
+      "from_table": "gdp_data",
+      "to_table": "extractions"
+    },
+    {
+      "conname": "fk_loans_extraction_id_extractions",
+      "definition": "FOREIGN KEY (extraction_id) REFERENCES extractions(id)",
+      "from_table": "loans",
+      "to_table": "extractions"
+    },
+    {
+      "conname": "fk_population_data_extraction_id_extractions",
+      "definition": "FOREIGN KEY (extraction_id) REFERENCES extractions(id)",
+      "from_table": "population_data",
+      "to_table": "extractions"
+    },
+    {
+      "conname": "fk_poverty_indices_extraction_id_extractions",
+      "definition": "FOREIGN KEY (extraction_id) REFERENCES extractions(id)",
+      "from_table": "poverty_indices",
+      "to_table": "extractions"
+    },
+    {
+      "conname": "fk_revenue_by_source_extraction_id_extractions",
+      "definition": "FOREIGN KEY (extraction_id) REFERENCES extractions(id)",
+      "from_table": "revenue_by_source",
+      "to_table": "extractions"
+    },
+    {
+      "conname": "gdp_data_entity_id_fkey",
+      "definition": "FOREIGN KEY (entity_id) REFERENCES entities(id) ON DELETE SET NULL",
+      "from_table": "gdp_data",
+      "to_table": "entities"
+    },
+    {
+      "conname": "gdp_data_source_document_id_fkey",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id) ON DELETE SET NULL",
+      "from_table": "gdp_data",
+      "to_table": "source_documents"
+    },
+    {
+      "conname": "loans_entity_id_fkey",
+      "definition": "FOREIGN KEY (entity_id) REFERENCES entities(id)",
+      "from_table": "loans",
+      "to_table": "entities"
+    },
+    {
+      "conname": "loans_source_document_id_fkey",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id)",
+      "from_table": "loans",
+      "to_table": "source_documents"
+    },
+    {
+      "conname": "parliament_source_documents_source_document_id_fkey",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id)",
+      "from_table": "parliament_source_documents",
+      "to_table": "source_documents"
+    },
+    {
+      "conname": "population_data_entity_id_fkey",
+      "definition": "FOREIGN KEY (entity_id) REFERENCES entities(id) ON DELETE SET NULL",
+      "from_table": "population_data",
+      "to_table": "entities"
+    },
+    {
+      "conname": "population_data_source_document_id_fkey",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id) ON DELETE SET NULL",
+      "from_table": "population_data",
+      "to_table": "source_documents"
+    },
+    {
+      "conname": "poverty_indices_entity_id_fkey",
+      "definition": "FOREIGN KEY (entity_id) REFERENCES entities(id) ON DELETE SET NULL",
+      "from_table": "poverty_indices",
+      "to_table": "entities"
+    },
+    {
+      "conname": "poverty_indices_source_document_id_fkey",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id) ON DELETE SET NULL",
+      "from_table": "poverty_indices",
+      "to_table": "source_documents"
+    },
+    {
+      "conname": "profiles_id_fkey",
+      "definition": "FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE",
+      "from_table": "profiles",
+      "to_table": "auth.users"
+    },
+    {
+      "conname": "revenue_by_source_source_document_id_fkey",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id)",
+      "from_table": "revenue_by_source",
+      "to_table": "source_documents"
+    },
+    {
+      "conname": "source_documents_country_id_fkey",
+      "definition": "FOREIGN KEY (country_id) REFERENCES countries(id)",
+      "from_table": "source_documents",
+      "to_table": "countries"
+    },
+    {
+      "conname": "user_question_answers_question_id_fkey",
+      "definition": "FOREIGN KEY (question_id) REFERENCES quick_questions(id)",
+      "from_table": "user_question_answers",
+      "to_table": "quick_questions"
+    },
+    {
+      "conname": "user_question_answers_user_id_fkey",
+      "definition": "FOREIGN KEY (user_id) REFERENCES users(id)",
+      "from_table": "user_question_answers",
+      "to_table": "users"
+    },
+    {
+      "conname": "watchlist_items_user_id_fkey",
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+      "from_table": "watchlist_items",
+      "to_table": "auth.users"
+    }
+  ],
+  "logical_candidates": [
+    {
+      "classification": "unrelated_numeric_fact",
+      "column": "extracted_json",
+      "matched_path": "extracted_json.finding_text",
+      "reason": "Isiolo county staff headcount1707; source_document_id2539.",
+      "row_id": 6398,
+      "table": "extractions",
+      "whole_image_canonical_sha256": "530ebaa07acb09251fc66004d3d42eaa10ee7ac09d83484e46e7a1c6ed572572"
+    },
+    {
+      "classification": "historical_audit_ids",
+      "column": "metadata",
+      "matched_path": "metadata.documents[0].extraction_attempt.proposal.audit_ids[804]",
+      "reason": "Audit ID1707 in retained source2392 reconciliation proposal; not source ID.",
+      "row_id": 3156,
+      "table": "ingestion_jobs",
+      "whole_image_canonical_sha256": "3467d2588b866f0a9c68e7686c4e2db8dffc2fa22ebfe454c477652396ac3fb1"
+    },
+    {
+      "classification": "historical_audit_ids",
+      "column": "metadata",
+      "matched_path": "metadata.last_extraction_attempt.proposal.audit_ids[804]",
+      "reason": "Audit ID1707 in retained national reconciliation proposal; not source ID.",
+      "row_id": 2392,
+      "table": "source_documents",
+      "whole_image_canonical_sha256": "575854ea0a768928ddb58f3455900ba2180c0f7cf52b3db90c71f9fa4e4f96a9"
+    }
+  ],
+  "logical_matches": [],
+  "logical_scan_columns": [
+    {
+      "column": "payload",
+      "table": "admin_audit_log"
+    },
+    {
+      "column": "provenance",
+      "table": "audits"
+    },
+    {
+      "column": "validation_warnings",
+      "table": "audits"
+    },
+    {
+      "column": "provenance",
+      "table": "budget_lines"
+    },
+    {
+      "column": "validation_warnings",
+      "table": "budget_lines"
+    },
+    {
+      "column": "metadata",
+      "table": "countries"
+    },
+    {
+      "column": "metadata",
+      "table": "debt_instruments"
+    },
+    {
+      "column": "metadata",
+      "table": "debt_timeline"
+    },
+    {
+      "column": "metadata",
+      "table": "economic_indicators"
+    },
+    {
+      "column": "alt_names",
+      "table": "entities"
+    },
+    {
+      "column": "metadata",
+      "table": "entities"
+    },
+    {
+      "column": "extracted_json",
+      "table": "extractions"
+    },
+    {
+      "column": "metadata",
+      "table": "fiscal_summaries"
+    },
+    {
+      "column": "metadata",
+      "table": "gdp_data"
+    },
+    {
+      "column": "errors",
+      "table": "ingestion_jobs"
+    },
+    {
+      "column": "metadata",
+      "table": "ingestion_jobs"
+    },
+    {
+      "column": "provenance",
+      "table": "loans"
+    },
+    {
+      "column": "metadata",
+      "table": "newsletter_subscribers"
+    },
+    {
+      "column": "metadata",
+      "table": "parliament_source_documents"
+    },
+    {
+      "column": "metadata",
+      "table": "population_data"
+    },
+    {
+      "column": "metadata",
+      "table": "poverty_indices"
+    },
+    {
+      "column": "tags",
+      "table": "quick_questions"
+    },
+    {
+      "column": "metadata",
+      "table": "revenue_by_source"
+    },
+    {
+      "column": "metadata",
+      "table": "source_documents"
+    },
+    {
+      "column": "roles",
+      "table": "users"
+    },
+    {
+      "column": "validation_errors",
+      "table": "validation_failures"
+    },
+    {
+      "column": "validation_warnings",
+      "table": "validation_failures"
+    },
+    {
+      "column": "raw_data",
+      "table": "validation_failures"
+    },
+    {
+      "column": "metadata",
+      "table": "validation_failures"
+    },
+    {
+      "column": "metadata",
+      "table": "watchlist_items"
+    }
+  ],
+  "parent_capture_sha256": "20c505ef5b6244464f59905385b50328ff1d54ea8999ad5b9862b9cc2b85ef76",
+  "protected": {
+    "audits": {
+      "count": 8920,
+      "sha256": "25e4bda0d9cd6996dc3ee772e5a38d9b008c2677c0f89603cb1c6cb3442baea8"
+    },
+    "budget_lines": {
+      "count": 2565,
+      "sha256": "3ccf8950cb2f5b45e0c78769442956e3b92aa5cd46bdfead0ee42ce4055e0622"
+    },
+    "debt_instruments": {
+      "count": 56,
+      "sha256": "0b1346a21ee05a3d21f646d4e2e2ef67510a616da4fe2ce9fc10c8bb5f5f28a7"
+    },
+    "debt_timeline": {
+      "count": 13,
+      "sha256": "5cff132e10b4aa27d30f2c847d52572215c633ee9497ff3943b6c69ea4d25e1a"
+    },
+    "economic_indicators": {
+      "count": 325,
+      "sha256": "7ac64d1c89cba6502c7d460c8a275ba71f2e11afe9939bd39617f9bc2177baba"
+    },
+    "entities": {
+      "count": 125,
+      "sha256": "11fb167bdf9073bf340d812639e1e472b17e3db887201087a64172b6f02c6621"
+    },
+    "extractions": {
+      "count": 8949,
+      "sha256": "b3f3e6c525aa5851c287b2c2236c58fb445ffa84ab2e6e641b9c4d6bbc736760"
+    },
+    "fiscal_summaries": {
+      "count": 29,
+      "sha256": "5e1e857c07e30a2738e34a75825ee43fa647eeae9cbcee81e7aef8017e512a12"
+    },
+    "gdp_data": {
+      "count": 73,
+      "sha256": "a7c6643c8e4137663ba560a65dcf454608401f4efaeafc79dce9585c5f424990"
+    },
+    "loans": {
+      "count": 100,
+      "sha256": "e4dc0e63c3938d5118b253972138c4f4dfe824ad166768292300907677183aa9"
+    },
+    "parliament_source_documents": {
+      "count": 497,
+      "sha256": "82c80acda91eef557fc3c1ab30addc72a77e1f6b85ba9a8c44d63aafdc56cf82"
+    },
+    "population_data": {
+      "count": 64,
+      "sha256": "59e26e1aad1b80c97374cf82ed2e68939770d5018e66adcbc950784317de139a"
+    },
+    "poverty_indices": {
+      "count": 8,
+      "sha256": "6a8fcfb6d9130ca221466e4580313313f2f8e11132cabd7117fa82f0026600c6"
+    },
+    "revenue_by_source": {
+      "count": 52,
+      "sha256": "80d24d959b477b563d86652df4d472d25dd8bec755617f67a517c9f3f2a47ed1"
+    },
+    "source_documents": {
+      "count": 2442,
+      "sha256": "940af7945297900aaf218b3dd36cde4341a56322e8ccdfbea81bdd6d02ffcbe8"
+    }
+  },
+  "query_receipts": [
+    {
+      "label": "four_sources",
+      "rows": 4,
+      "sql_sha256": "3dcded6deb4d59903cce514e89f979f5cdc30fe036c47aff7be2b8c075687ca8"
+    },
+    {
+      "label": "column_catalog",
+      "rows": 403,
+      "sql_sha256": "6f19cfccef0c56a12fbbb42e2545011a90464ef3e0528d1b6d26c1034a753784"
+    },
+    {
+      "label": "fk_catalog",
+      "rows": 42,
+      "sql_sha256": "0a3b60f3138e55e2e36316e7fbd17e34bf84eca4e41cdc97f4c34c6788754c74"
+    },
+    {
+      "label": "source_refs:audits",
+      "rows": 0,
+      "sql_sha256": "4f89ac37ec3a5495124fa52d996f467a2dd3b1325c210429fbf627d549090ec9"
+    },
+    {
+      "label": "source_refs:budget_lines",
+      "rows": 0,
+      "sql_sha256": "4d317602d1b1b9042dde9bbba6be35ec7e6deef9f8e916b59a85a3939854d19f"
+    },
+    {
+      "label": "source_refs:debt_instruments",
+      "rows": 0,
+      "sql_sha256": "6565547db059f06865ebd892d3848f90e86580a1ef920f2ff0b37f6e24ac1711"
+    },
+    {
+      "label": "source_refs:debt_timeline",
+      "rows": 0,
+      "sql_sha256": "23ba61ed0773c68dbccfd150b2f56d676b980ea114af3a7977f13ff5b4c2c43a"
+    },
+    {
+      "label": "source_refs:economic_indicators",
+      "rows": 0,
+      "sql_sha256": "2a33941e7dad1f36d69f99300b36d762300c35cb319c3e63aa56e38f13189e96"
+    },
+    {
+      "label": "source_refs:extractions",
+      "rows": 0,
+      "sql_sha256": "0e279897704063a72e6d57ce8c80d75a5669db42b2f7d94697f595e9640a6a49"
+    },
+    {
+      "label": "source_refs:fiscal_summaries",
+      "rows": 0,
+      "sql_sha256": "de197e4fc4d7691a48dccaccdde6b9d44dd451427d479ae65a033b8f1a9a7282"
+    },
+    {
+      "label": "source_refs:gdp_data",
+      "rows": 0,
+      "sql_sha256": "0d4992a5fca72c5b6d01fe925e7cb2af523eb98a7b016eb5d63655a034bac2c7"
+    },
+    {
+      "label": "source_refs:loans",
+      "rows": 0,
+      "sql_sha256": "498115c427c60f83fb7d3cdec6e11ad925ca106232cd5320ca11a3cdd1ba2f8b"
+    },
+    {
+      "label": "source_refs:parliament_source_documents",
+      "rows": 0,
+      "sql_sha256": "03b48bfbae9e284254f6522bbca9e70dd48590d5368dd9a3f8f70b52501705b0"
+    },
+    {
+      "label": "source_refs:population_data",
+      "rows": 0,
+      "sql_sha256": "d6838b9140900fe572491174c852924c12e5bfe63da590c949027474e1314b96"
+    },
+    {
+      "label": "source_refs:poverty_indices",
+      "rows": 0,
+      "sql_sha256": "2157543551ed60ea08b9033135d3626f9fbe390554071dc4edd5f1429f73176d"
+    },
+    {
+      "label": "source_refs:revenue_by_source",
+      "rows": 0,
+      "sql_sha256": "7522956206e2ec8ed4921232b4c5f7d7edb35e3b827176db0fe6f5637b0b18da"
+    },
+    {
+      "label": "logical:admin_audit_log.payload",
+      "rows": 0,
+      "sql_sha256": "c978e5e1fd4d4086496180d638a74cffda92fd4afcd4d1e5a1eb37f9030be799"
+    },
+    {
+      "label": "logical:audits.provenance",
+      "rows": 0,
+      "sql_sha256": "a211419db914dd0c84fe9c9dfacf00aba7658f54261864caf126c007bcef6325"
+    },
+    {
+      "label": "logical:audits.validation_warnings",
+      "rows": 0,
+      "sql_sha256": "134efed20dde830fe248e792dd6da0c3b216a01c22e9f67adf52f158a5355bfc"
+    },
+    {
+      "label": "logical:budget_lines.provenance",
+      "rows": 0,
+      "sql_sha256": "a3a06de739085528db5a51f9322619a8e2e9306c751566480d0f3e98a408f648"
+    },
+    {
+      "label": "logical:budget_lines.validation_warnings",
+      "rows": 0,
+      "sql_sha256": "c247c6d00100ee2b63b235b6b443b532ae11d18d2a637aebc4828ecce72af2d2"
+    },
+    {
+      "label": "logical:countries.metadata",
+      "rows": 0,
+      "sql_sha256": "6edbb68ea77fe18d1d9f32e5996881820c0f30b8421b93c15a9047442316a913"
+    },
+    {
+      "label": "logical:debt_instruments.metadata",
+      "rows": 0,
+      "sql_sha256": "cb8cffb996154a359ff032d41bab80b7329da5424b44ad803e9b34f6953f0ba0"
+    },
+    {
+      "label": "logical:debt_timeline.metadata",
+      "rows": 0,
+      "sql_sha256": "1557e5e7223a65157a86b60f9275674de423ec3d9253feba8a906af733556451"
+    },
+    {
+      "label": "logical:economic_indicators.metadata",
+      "rows": 0,
+      "sql_sha256": "d1f5906bce3e47ad8f072fdb060949266661a47a3e4476c4971ba7260efd6f06"
+    },
+    {
+      "label": "logical:entities.alt_names",
+      "rows": 0,
+      "sql_sha256": "8e4c0b98ef09c78aa677312bacd3eee537e5426efd45ddfe1198e7a031ef4e83"
+    },
+    {
+      "label": "logical:entities.metadata",
+      "rows": 0,
+      "sql_sha256": "8363057657e04ee53a98dcd70533efa45bf6be2d406f20d9f5ee1eaee7e3f3b1"
+    },
+    {
+      "label": "logical:extractions.extracted_json",
+      "rows": 1,
+      "sql_sha256": "eeaba1ec861e2f968a1c859073c6a0ea794c2fed9e4dfaa66cc2842c5f8de3db"
+    },
+    {
+      "label": "logical:fiscal_summaries.metadata",
+      "rows": 0,
+      "sql_sha256": "a08d5747b793d7f67932975a38b02e8805040575bdda8eb509da9c7b89607d1b"
+    },
+    {
+      "label": "logical:gdp_data.metadata",
+      "rows": 0,
+      "sql_sha256": "f71e40f3e1de84a22a0bd91649c25a1c43762cd871da5171b027424700d9153e"
+    },
+    {
+      "label": "logical:ingestion_jobs.errors",
+      "rows": 0,
+      "sql_sha256": "471b617001273f34c1339be428c9489e27b08c1d8e676e5c229b1f7714eaad4c"
+    },
+    {
+      "label": "logical:ingestion_jobs.metadata",
+      "rows": 1,
+      "sql_sha256": "7e990fb2d1a8e25e467e48c4a18750a1ef13fa7cf9d38aeb408a27ca2eec1656"
+    },
+    {
+      "label": "logical:loans.provenance",
+      "rows": 0,
+      "sql_sha256": "b55fda7c30e8caa23ce5671f38f140ba403db41d6288a3cf32a0d97cfaff748c"
+    },
+    {
+      "label": "logical:newsletter_subscribers.metadata",
+      "rows": 0,
+      "sql_sha256": "5a41c2b1ac1cbb9ac875ca6292d27ff216c66971e52a9bd61fc2b7469593c951"
+    },
+    {
+      "label": "logical:parliament_source_documents.metadata",
+      "rows": 0,
+      "sql_sha256": "e6533a959596beac06f6baef0186c06d133170b8373758962b6095ea4a05a0ed"
+    },
+    {
+      "label": "logical:population_data.metadata",
+      "rows": 0,
+      "sql_sha256": "d01cb7d00240ae957fedbee2673b2766ca9082ced9b728a5f705dadcf148e9c3"
+    },
+    {
+      "label": "logical:poverty_indices.metadata",
+      "rows": 0,
+      "sql_sha256": "87a0ddc350c02729fae710c499150cc097acb9b39d66e8bd0b0714be6270e848"
+    },
+    {
+      "label": "logical:quick_questions.tags",
+      "rows": 0,
+      "sql_sha256": "afa690eaf9a95d20d7f04aad9a3f2306620da2511d54b27c4b84d80d9da56a63"
+    },
+    {
+      "label": "logical:revenue_by_source.metadata",
+      "rows": 0,
+      "sql_sha256": "0f10742acceffc45ad0ba740820dbccfd5710feee9cf799bb5f50f538e9b5e1a"
+    },
+    {
+      "label": "logical:source_documents.metadata",
+      "rows": 1,
+      "sql_sha256": "974b072283fe4ba2ec9a9d1f3a3b8852d32f3665dedee407ad8702789fafaee3"
+    },
+    {
+      "label": "logical:users.roles",
+      "rows": 0,
+      "sql_sha256": "5c2c724845c590befae05a746f732dc0aa523a77e42c5d28bff6959ddb1e9862"
+    },
+    {
+      "label": "logical:validation_failures.validation_errors",
+      "rows": 0,
+      "sql_sha256": "5bc83b7c3fc0165f21ab27463e52f0d666969cb37ce3895546770703e62a8728"
+    },
+    {
+      "label": "logical:validation_failures.validation_warnings",
+      "rows": 0,
+      "sql_sha256": "ba94f26ef490f37eb0efe32bcd7e2a439406c7f6913b641c6ab4ce6cf11f2b50"
+    },
+    {
+      "label": "logical:validation_failures.raw_data",
+      "rows": 0,
+      "sql_sha256": "186f4a5a9e2facda455169c9ca32d64fd6bc3d9118ddfe634ec80f1f59fe5166"
+    },
+    {
+      "label": "logical:validation_failures.metadata",
+      "rows": 0,
+      "sql_sha256": "ceba4b6f3a4f8c433ebff91352fa2002c8f4a200487739a8bc830a7f56a22ad1"
+    },
+    {
+      "label": "logical:watchlist_items.metadata",
+      "rows": 0,
+      "sql_sha256": "8a43b2ebc3d22dda2a963ee74d6943d7370b38c1d6ff978b7bdc78013586c5bd"
+    },
+    {
+      "label": "older_audits",
+      "rows": 1498,
+      "sql_sha256": "36aa36570dc29ed47bf71ba17cd1a6701db43ceef4e68a76ac5d93565c8bf850"
+    },
+    {
+      "label": "older_extractions",
+      "rows": 1498,
+      "sql_sha256": "3b7a3341a0fee7b5a42ac93b607a53913dae987185b00dcc50410336c5b527e0"
+    },
+    {
+      "label": "county_identities",
+      "rows": 47,
+      "sql_sha256": "ad4e5ad25e8cae4c85dc289bf8c387264fdf28d2dc66239ffc525421f4bb7742"
+    },
+    {
+      "label": "cash_case_lines",
+      "rows": 0,
+      "sql_sha256": "fb040f9fe2ec5fd040f9ef3d6d43ef1434cd7543adeb6818fa0747e528b363a2"
+    },
+    {
+      "label": "kra_rows",
+      "rows": 52,
+      "sql_sha256": "811522744afc562be0ec12f88c8aee71de4b3b90473ed8f5448d4fa616762cc9"
+    },
+    {
+      "label": "financial_sources",
+      "rows": 5,
+      "sql_sha256": "dc21dac2cdbb73d0241b07b20c5feb500b8c8f92ce183ea0b8cb576eaaa9de04"
+    },
+    {
+      "label": "financial_extractions",
+      "rows": 0,
+      "sql_sha256": "d8ab4c3e5787b3438e6f9395003c335829933ba8b9e2f322bc2bfc638f9d64b5"
+    },
+    {
+      "label": "protected:entities",
+      "rows": 1,
+      "sql_sha256": "62c2822e368d818d39114b5cf9907513fa5b445410b5188b5ec690c92c1f07c7"
+    },
+    {
+      "label": "protected:audits",
+      "rows": 1,
+      "sql_sha256": "a49ef04bbe276257f225a12b128467e65e678d36b7a60296fc6a18cb22f69adb"
+    },
+    {
+      "label": "protected:source_documents",
+      "rows": 1,
+      "sql_sha256": "98eb82a5a652e493cf63cd6283cf57bc9354fcf8cdbeb541f259db76cdf3200b"
+    },
+    {
+      "label": "protected:budget_lines",
+      "rows": 1,
+      "sql_sha256": "ecf3ff4d9bd250b557fb3f6194d5dba5c6b304adc40319488368b42604112e18"
+    },
+    {
+      "label": "protected:debt_instruments",
+      "rows": 1,
+      "sql_sha256": "44de8e25f88d12462e41a92854b49a96714bca1bf478099d8e00cadf3fa9143d"
+    },
+    {
+      "label": "protected:debt_timeline",
+      "rows": 1,
+      "sql_sha256": "2e8bf38a87ff7ad5282cfea6d6fadf636f883e5e8e0efb5cd99a6ed1953edb48"
+    },
+    {
+      "label": "protected:economic_indicators",
+      "rows": 1,
+      "sql_sha256": "c1dc76b3987ec46a178b85f3680ae506bbe3a1a96bb7b41f8d2423471171a4f2"
+    },
+    {
+      "label": "protected:extractions",
+      "rows": 1,
+      "sql_sha256": "294f0fcb0b4a7f0ba677b6dc103665f3dfbcd5282eb84844a050e2af8c5b25fe"
+    },
+    {
+      "label": "protected:fiscal_summaries",
+      "rows": 1,
+      "sql_sha256": "2c14d37bf569201bcb163a279e76dd76505507149f7664cca949b974c1ce2054"
+    },
+    {
+      "label": "protected:gdp_data",
+      "rows": 1,
+      "sql_sha256": "6bdf7140a8e55323d5e12d87d196e629c73d0723458fe007a174f081c04774d4"
+    },
+    {
+      "label": "protected:loans",
+      "rows": 1,
+      "sql_sha256": "4f13afd95132786805cf98b5462b397f6c53ece0f0207bb8ba14f816b56bc5e4"
+    },
+    {
+      "label": "protected:parliament_source_documents",
+      "rows": 1,
+      "sql_sha256": "d429eb0bb94dd975a4aaa79ad2a337f41a04ad466331f158c1db93236ffedc86"
+    },
+    {
+      "label": "protected:population_data",
+      "rows": 1,
+      "sql_sha256": "eb359022227768e4e5cf2ce1c9bc858e9ea7a349871bf1bd0bcf384edf7d6244"
+    },
+    {
+      "label": "protected:poverty_indices",
+      "rows": 1,
+      "sql_sha256": "44aeb670fa52713ee1a2f2459c3dd6e8eda0d738cc83c276f1d83ff250af0f28"
+    },
+    {
+      "label": "protected:revenue_by_source",
+      "rows": 1,
+      "sql_sha256": "80d5236513908a5a494731c0106c94c191efa141ecae15805fb447aab2138d9b"
+    },
+    {
+      "label": "sequence_catalog",
+      "rows": 28,
+      "sql_sha256": "5205762141c5b1efdb52f557c8036ab0331740f896af961b5531eda7b0ba8092"
+    }
+  ],
+  "readonly_identity": [
+    "postgres",
+    "postgres",
+    "17.6",
+    "on",
+    "repeatable read"
+  ],
+  "refused_insert_sqlstate": "25006",
+  "schema": "source_disposition_capture/v1",
+  "scope": "Fresh actual root capture refined by exact semantic candidate review. No source ID or URL dependencies found; unrelated headcount/audit ID candidates are retained. Review-only; final operator preflight still required.",
+  "sequences": [
+    {
+      "last_value": null,
+      "schemaname": "public",
+      "sequencename": "admin_audit_log_id_seq"
+    },
+    {
+      "last_value": null,
+      "schemaname": "public",
+      "sequencename": "annotations_id_seq"
+    },
+    {
+      "last_value": 10472,
+      "schemaname": "public",
+      "sequencename": "audits_id_seq"
+    },
+    {
+      "last_value": 4869,
+      "schemaname": "public",
+      "sequencename": "budget_lines_id_seq"
+    },
+    {
+      "last_value": 1,
+      "schemaname": "public",
+      "sequencename": "countries_id_seq"
+    },
+    {
+      "last_value": null,
+      "schemaname": "public",
+      "sequencename": "data_alerts_id_seq"
+    },
+    {
+      "last_value": 168,
+      "schemaname": "public",
+      "sequencename": "debt_instruments_id_seq"
+    },
+    {
+      "last_value": 13,
+      "schemaname": "public",
+      "sequencename": "debt_timeline_id_seq"
+    },
+    {
+      "last_value": 348,
+      "schemaname": "public",
+      "sequencename": "economic_indicators_id_seq"
+    },
+    {
+      "last_value": 167,
+      "schemaname": "public",
+      "sequencename": "entities_id_seq"
+    },
+    {
+      "last_value": 10955,
+      "schemaname": "public",
+      "sequencename": "extractions_id_seq"
+    },
+    {
+      "last_value": 19,
+      "schemaname": "public",
+      "sequencename": "fiscal_periods_id_seq"
+    },
+    {
+      "last_value": 29,
+      "schemaname": "public",
+      "sequencename": "fiscal_summaries_id_seq"
+    },
+    {
+      "last_value": 82,
+      "schemaname": "public",
+      "sequencename": "gdp_data_id_seq"
+    },
+    {
+      "last_value": 34780,
+      "schemaname": "public",
+      "sequencename": "imf_weo_observations_id_seq"
+    },
+    {
+      "last_value": 3239,
+      "schemaname": "public",
+      "sequencename": "ingestion_jobs_id_seq"
+    },
+    {
+      "last_value": 567,
+      "schemaname": "public",
+      "sequencename": "loans_id_seq"
+    },
+    {
+      "last_value": 4,
+      "schemaname": "public",
+      "sequencename": "newsletter_subscribers_id_seq"
+    },
+    {
+      "last_value": 497,
+      "schemaname": "public",
+      "sequencename": "parliament_source_documents_id_seq"
+    },
+    {
+      "last_value": 85,
+      "schemaname": "public",
+      "sequencename": "population_data_id_seq"
+    },
+    {
+      "last_value": 10,
+      "schemaname": "public",
+      "sequencename": "poverty_indices_id_seq"
+    },
+    {
+      "last_value": 10,
+      "schemaname": "public",
+      "sequencename": "quick_questions_id_seq"
+    },
+    {
+      "last_value": 109,
+      "schemaname": "public",
+      "sequencename": "revenue_by_source_id_seq"
+    },
+    {
+      "last_value": 2552,
+      "schemaname": "public",
+      "sequencename": "source_documents_id_seq"
+    },
+    {
+      "last_value": null,
+      "schemaname": "public",
+      "sequencename": "user_question_answers_id_seq"
+    },
+    {
+      "last_value": null,
+      "schemaname": "public",
+      "sequencename": "users_id_seq"
+    },
+    {
+      "last_value": null,
+      "schemaname": "public",
+      "sequencename": "validation_failures_id_seq"
+    },
+    {
+      "last_value": null,
+      "schemaname": "public",
+      "sequencename": "watchlist_items_id_seq"
+    }
+  ],
+  "source_references": [
+    {
+      "column": "source_document_id",
+      "rows": [],
+      "table": "audits"
+    },
+    {
+      "column": "source_document_id",
+      "rows": [],
+      "table": "budget_lines"
+    },
+    {
+      "column": "source_document_id",
+      "rows": [],
+      "table": "debt_instruments"
+    },
+    {
+      "column": "source_document_id",
+      "rows": [],
+      "table": "debt_timeline"
+    },
+    {
+      "column": "source_document_id",
+      "rows": [],
+      "table": "economic_indicators"
+    },
+    {
+      "column": "source_document_id",
+      "rows": [],
+      "table": "extractions"
+    },
+    {
+      "column": "source_document_id",
+      "rows": [],
+      "table": "fiscal_summaries"
+    },
+    {
+      "column": "source_document_id",
+      "rows": [],
+      "table": "gdp_data"
+    },
+    {
+      "column": "source_document_id",
+      "rows": [],
+      "table": "loans"
+    },
+    {
+      "column": "source_document_id",
+      "rows": [],
+      "table": "parliament_source_documents"
+    },
+    {
+      "column": "source_document_id",
+      "rows": [],
+      "table": "population_data"
+    },
+    {
+      "column": "source_document_id",
+      "rows": [],
+      "table": "poverty_indices"
+    },
+    {
+      "column": "source_document_id",
+      "rows": [],
+      "table": "revenue_by_source"
+    }
+  ],
+  "sources": [
+    {
+      "content_type": null,
+      "country_id": 1,
+      "created_at": "2025-11-02T03:04:49.328928",
+      "doc_type": "BUDGET",
+      "fetch_date": "2025-11-02T03:04:49.328928",
+      "file_path": null,
+      "http_status": null,
+      "id": 1707,
+      "last_seen_at": "2025-11-02T03:04:49.328928",
+      "last_verified_at": null,
+      "md5": null,
+      "metadata": {
+        "dataset_id": "fixture-budgets"
+      },
+      "publisher": "Controller of Budget",
+      "status": "AVAILABLE",
+      "title": "County Budget Execution Summary",
+      "url": "https://fixtures.example/budgets"
+    },
+    {
+      "content_type": null,
+      "country_id": 1,
+      "created_at": "2025-11-09T21:39:32.113397",
+      "doc_type": "BUDGET",
+      "fetch_date": "2025-11-09T21:39:32.113397",
+      "file_path": null,
+      "http_status": null,
+      "id": 1718,
+      "last_seen_at": "2026-04-20T03:29:19.60125",
+      "last_verified_at": null,
+      "md5": null,
+      "metadata": {
+        "data_quality": "estimated",
+        "source_label": "Estimated based on CRA Equitable Share FY 2023/24"
+      },
+      "publisher": "Controller of Budget",
+      "status": "AVAILABLE",
+      "title": "Estimated based on CRA Equitable Share FY 2023/24",
+      "url": "https://www.crakenya.org/county-allocations/"
+    }
+  ],
+  "started_utc": "2026-10-03T14:47:21.630122+00:00"
+}
