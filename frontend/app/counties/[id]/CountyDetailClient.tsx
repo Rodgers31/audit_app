@@ -41,6 +41,7 @@ import { usePathname, useParams, useRouter, useSearchParams } from 'next/navigat
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { fmtKES, fmtLabel, fmtPop, hasIngestedAudit, pct, Tab } from './shared';
 import TabSkeleton from './tabs/TabSkeleton';
+import TabErrorBoundary from './tabs/TabErrorBoundary';
 import styles from '../CountyExperience.module.css';
 import { gradeSignal, SignalMark } from '../CountySignals';
 import { FINANCIAL_HEALTH_BANDS, financialHealthBand } from '@/lib/counties/financialHealth';
@@ -879,7 +880,9 @@ export default function CountyDetailClient() {
             </nav>
           </div>
           <div className={styles.reportBody}>
-            <TabContent data={data} />
+            <TabErrorBoundary key={`${countyId}:${tab}`} tab={tab}>
+              <TabContent data={data} />
+            </TabErrorBoundary>
           </div>
           <SourcesFooter />
         </div>

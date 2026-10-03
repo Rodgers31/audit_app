@@ -1359,6 +1359,8 @@ export const MESSAGES = {
   'county.money.read_error': { en: 'Could not load money flow for this period. Try again.', sw: 'Imeshindikana kupakia mtiririko wa pesa kwa kipindi hiki. Jaribu tena.', plain: 'We could not load money flow for this period. Try again.' },
   'county.money.empty': { en: 'No money flow data available for this period.', sw: 'Hakuna data ya mtiririko wa pesa inayopatikana kwa kipindi hiki.', plain: 'No money flow data is available for this period.' },
   'county.money.retry': { en: 'Try again', sw: 'Jaribu tena', plain: 'Try again' },
+  'county.tab.load_error': { en: 'Could not load this section.', sw: 'Imeshindikana kupakia sehemu hii.', plain: 'We could not open this section.' },
+  'county.tab.reload': { en: 'Reload section', sw: 'Pakia sehemu tena', plain: 'Reload section' },
 
   // Sources footer
   'county.sources.prefix': { en: 'Sources:', sw: 'Vyanzo:', plain: 'Sources:' },
