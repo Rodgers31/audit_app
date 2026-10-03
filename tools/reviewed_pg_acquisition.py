@@ -386,7 +386,10 @@ def capture(client, directory, expected_identity, wall_seconds, transport_bytes)
         if not roles.strip():
             raise Refusal('roles_dump_empty')
         (directory / 'roles.sql').write_bytes(roles); (directory / 'roles.sql').chmod(0o600)
-        dump = backup.run(['docker', 'exec', client, 'pg_dump', '--dbname=service=' + SERVICE,
+        # docker exec starts a new process: PID1's umask does not apply here.
+        # Set permissions before opening the archive, preserving every argv byte.
+        dump = backup.run(['docker', 'exec', client, 'sh', '-c', 'umask 077; exec "$@"',
+                           'private_dump', 'pg_dump', '--dbname=service=' + SERVICE,
                            '--format=custom', '--snapshot=' + snapshot, '--lock-wait-timeout=5s',
                            '--file=/backup/database.dump'], timeout=max(.1, deadline - time.monotonic()))
         if dump:
@@ -410,10 +413,31 @@ def capture(client, directory, expected_identity, wall_seconds, transport_bytes)
             'elapsed_seconds': round(wall_seconds - (deadline - time.monotonic()), 6)}
 
 
+def retain_failure(directory, output, result, exception=None):
+    """Keep private diagnostics without publishing a valid bundle or credentials."""
+    failure = output.with_name(output.name + '_failed')
+    failure.mkdir(mode=0o700)
+    names = ('counter', 'abort', 'exporter.stderr', 'database.dump', 'inventory.json',
+             'roles.sql', 'recovery_prerequisites.json')
+    for name in names:
+        source = directory / name
+        if source.is_file() and not source.is_symlink():
+            # Create the destination privately before copying any sensitive bytes.
+            descriptor = os.open(failure / name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            with os.fdopen(descriptor, 'wb') as target, source.open('rb') as handle:
+                shutil.copyfileobj(handle, target)
+    diagnostic = {**result, 'backup_verified': False,
+                  'private_exception': None if exception is None else str(exception)}
+    backup.write_new(failure / 'failure.json', diagnostic)
+    return str(failure)
+
+
 def acquire_reviewed(request_file, approved_sha256, service_file, pgpass_file, ca_file, output):
     request = read_request(request_file, approved_sha256)
     output = Path(output).absolute()
-    if output.exists() or output.is_symlink() or not output.parent.is_dir() or output.parent.stat().st_mode & 0o077:
+    if (output.exists() or output.is_symlink() or output.with_name(output.name + '_failed').exists()
+            or output.with_name(output.name + '_failed').is_symlink()
+            or not output.parent.is_dir() or output.parent.stat().st_mode & 0o077):
         raise Refusal('new_private_output_directory_required')
     client = PREFIX + 'acquire_' + uuid.uuid4().hex[:12]
     result = {**provenance(), 'status': 'failed', 'production': True, 'backup_verified': False,
@@ -423,6 +447,7 @@ def acquire_reviewed(request_file, approved_sha256, service_file, pgpass_file, c
         directory = Path(temp); directory.chmod(0o700)
         stage_credentials(directory, service_file, pgpass_file, ca_file, request)
         began = time.monotonic()
+        private_exception = None
         try:
             # Fresh namespace; no published ports, host mounts, inherited secrets,
             # provider entrypoint or app. Only its own eth0 can be shut down.
@@ -434,39 +459,53 @@ def acquire_reviewed(request_file, approved_sha256, service_file, pgpass_file, c
                 '--entrypoint', 'sh', backup.SUPABASE_IMAGE, '-c', SUPERVISOR, 'supervisor',
                 str(request['transport_abort_bytes']), str(math_ceil(request['wall_seconds']))])
             result.update(capture(client, directory, request['identity'], request['wall_seconds'], request['transport_abort_bytes']))
-        except (Refusal, OSError, ValueError, TypeError, subprocess.TimeoutExpired):
+        except (Refusal, OSError, ValueError, TypeError, subprocess.TimeoutExpired) as exception:
+            private_exception = exception
             result['reason'] = 'acquisition_refused_private_diagnostics_required'
         finally:
             # Failure of daemon removal is an error, never an acquired receipt.
-            remove(client)
+            try:
+                remove(client)
+            except (Refusal, OSError, ValueError, TypeError) as exception:
+                result.pop('snapshot_shared', None)
+                result['diagnostics_directory'] = retain_failure(directory, output, result, exception)
+                raise
         if (directory / 'abort').exists() or time.monotonic() - began >= request['wall_seconds']:
             result.pop('snapshot_shared', None)
             result['reason'] = 'acquisition_budget_aborted'
         # Only after all connections ended and removal succeeded. No credential
         # files/stderr/exporter snapshot are moved into the recovery bundle.
-        if 'snapshot_shared' in result:
-            with tempfile.TemporaryDirectory(prefix=PREFIX + 'publish_', dir=output.parent) as staged:
-                staged = Path(staged); staged.chmod(0o700)
-                for n in ['database.dump', 'inventory.json', 'roles.sql', 'recovery_prerequisites.json']:
-                    p = directory / n; backup.private_file(p)
-                    shutil.copyfile(p, staged / n); (staged / n).chmod(0o600)
-                backup.inspect_archive(staged / 'database.dump')
-                result['artifacts'] = {n: {'sha256': backup.sha256(staged / n), 'bytes': (staged / n).stat().st_size}
-                                       for n in ['database.dump', 'inventory.json', 'roles.sql', 'recovery_prerequisites.json']}
-                result['status'] = 'acquired_inputs_restore_and_completeness_pending'
-                backup.write_new(staged / 'receipt.json', result)
-                readback = json.loads((staged / 'receipt.json').read_text())
-                if readback['generator_sha256'] != backup.sha256(__file__):
-                    raise Refusal('receipt_provenance_readback')
-                # mkdir is exclusive; contents published only after successful
-                # capture/removal/inspection. A failed copy cleans only ours.
-                output.mkdir(mode=0o700)
-                try:
-                    for p in staged.iterdir():
-                        os.link(p, output / p.name)
-                except OSError:
-                    shutil.rmtree(output)
-                    raise
+        try:
+            if 'snapshot_shared' in result:
+              with tempfile.TemporaryDirectory(prefix=PREFIX + 'publish_', dir=output.parent) as staged:
+                  staged = Path(staged); staged.chmod(0o700)
+                  for n in ['database.dump', 'inventory.json', 'roles.sql', 'recovery_prerequisites.json']:
+                      p = directory / n; backup.private_file(p)
+                      shutil.copyfile(p, staged / n); (staged / n).chmod(0o600)
+                  backup.inspect_archive(staged / 'database.dump')
+                  result['artifacts'] = {n: {'sha256': backup.sha256(staged / n), 'bytes': (staged / n).stat().st_size}
+                                         for n in ['database.dump', 'inventory.json', 'roles.sql', 'recovery_prerequisites.json']}
+                  result['status'] = 'acquired_inputs_restore_and_completeness_pending'
+                  backup.write_new(staged / 'receipt.json', result)
+                  readback = json.loads((staged / 'receipt.json').read_text())
+                  if readback['generator_sha256'] != backup.sha256(__file__):
+                      raise Refusal('receipt_provenance_readback')
+                  # mkdir is exclusive; contents published only after successful
+                  # capture/removal/inspection. A failed copy cleans only ours.
+                  output.mkdir(mode=0o700)
+                  try:
+                      for p in staged.iterdir():
+                          os.link(p, output / p.name)
+                  except OSError:
+                      shutil.rmtree(output)
+                      raise
+        except (Refusal, OSError, ValueError, TypeError) as exception:
+            private_exception = exception
+            result['status'] = 'failed'
+            result.pop('snapshot_shared', None)
+            result['reason'] = 'publication_refused_private_diagnostics_required'
+        if result['status'] == 'failed':
+            result['diagnostics_directory'] = retain_failure(directory, output, result, private_exception)
     return result
 
 
