@@ -111,6 +111,7 @@ class AdminUser:
     id: str  # Supabase user UUID (the JWT ``sub``)
     email: Optional[str]
     roles: List[str]
+    session_id: Optional[str] = None
 
 
 def _decode_supabase_jwt(token: str) -> dict:
@@ -230,7 +231,9 @@ def get_current_user(
         )
 
     email, roles = _fetch_roles(user_id)
-    return AdminUser(id=user_id, email=email or claims.get("email"), roles=roles)
+    session_id = claims.get("session_id")
+    return AdminUser(id=user_id, email=email or claims.get("email"), roles=roles,
+                     session_id=session_id if isinstance(session_id, str) else None)
 
 
 def require_admin(current_user: AdminUser = Depends(get_current_user)) -> AdminUser:
