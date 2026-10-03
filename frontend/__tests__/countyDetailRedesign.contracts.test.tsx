@@ -8,9 +8,7 @@ import MERU from './fixtures/meru-comprehensive.json';
 
 let mockData: CountyComprehensive;
 let mockSearch = new URLSearchParams();
-const mockReplace = jest.fn((url: string, _options?: { scroll: boolean }) => {
-  mockSearch = new URL(url, 'http://localhost').searchParams;
-});
+const mockReplace = jest.fn();
 const mockComprehensive = jest.fn();
 let mockAccountability: {
   accountability_grade: string | null;
@@ -20,7 +18,7 @@ let mockAccountability: {
 jest.mock('next/navigation', () => ({
   useParams: () => ({ id: '012' }),
   usePathname: () => '/counties/012',
-  useSearchParams: () => mockSearch,
+  useSearchParams: () => new URLSearchParams(window.location.search),
   useRouter: () => ({ replace: mockReplace, back: jest.fn() }),
 }));
 jest.mock('@/lib/react-query/useCounties', () => ({
@@ -61,6 +59,7 @@ jest.mock(
 );
 
 function renderPage() {
+  window.history.replaceState(null, '', `/counties/012?${mockSearch.toString()}#source-anchor`);
   return render(
     <LangProvider>
       <CountyDetailClient />
@@ -124,6 +123,7 @@ it('keeps a sourced zero audit findings count visible', () => {
 
 it('opens all five tabs, preserving fy and origin in the URL', () => {
   renderPage();
+  const historyLength = window.history.length;
   const cases: [string, string | null][] = [
     ['Follow the Money', 'money'],
     ['Budget & Debt', 'budget'],
@@ -135,13 +135,15 @@ it('opens all five tabs, preserving fy and origin in the URL', () => {
     const button = screen.getByRole('button', { name: label });
     fireEvent.click(button);
     expect(button).toHaveAttribute('aria-pressed', 'true');
-    const [url, options] = mockReplace.mock.calls.at(-1)!;
-    const query = new URL(url, 'http://localhost').searchParams;
+    const url = new URL(window.location.href);
+    const query = url.searchParams;
     expect(query.get('tab')).toBe(tab);
     expect(query.get('fy')).toBe('FY2025/26 9M');
     expect(query.get('from')).toBe('transparency');
-    expect(options).toEqual({ scroll: false });
+    expect(url.hash).toBe('#source-anchor');
+    expect(window.history.length).toBe(historyLength);
   }
+  expect(mockReplace).not.toHaveBeenCalled();
 });
 
 it('restores a valid tab on first render and lets the audit grade update the URL', () => {
@@ -156,9 +158,10 @@ it('restores a valid tab on first render and lets the audit grade update the URL
     'aria-pressed',
     'true'
   );
-  expect(mockSearch.get('tab')).toBe('accountability');
-  expect(mockSearch.get('fy')).toBe('FY2025/26 9M');
-  expect(mockSearch.get('from')).toBe('transparency');
+  const query = new URL(window.location.href).searchParams;
+  expect(query.get('tab')).toBe('accountability');
+  expect(query.get('fy')).toBe('FY2025/26 9M');
+  expect(query.get('from')).toBe('transparency');
 });
 
 it('falls back from unsupported tabs and stale fiscal years', () => {
