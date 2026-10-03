@@ -1,6 +1,6 @@
 """Run directly with unittest and an allowlisted environment; no app/bootstrap.
 
-Real PostgreSQL 17/Docker controls use only round18_s1 resources and port 5591.
+Real PostgreSQL 17/Docker controls use only owned round19_s1 resources; no host port.
 """
 import contextlib
 import importlib.util
@@ -27,6 +27,7 @@ class BoundaryTests(unittest.TestCase):
             schemas=[['public', 'postgres', None]],
             relations=[['public', 'fixture', 'r', 'postgres', None, False, False, None]],
             columns=[['public', 'fixture', 'id', 1, 'integer', True, '', '', None, None]],
+            types=[['public','fixture','c','postgres',None,None,False,None,'fixture',None]],
             roles=[['postgres', True, True, True, True, True, True, True, -1, None, None]],
             extensions=[['plpgsql', '1.0', 'pg_catalog', 'postgres', False, None, None]],
             tablespaces=[['pg_default', 'postgres', None, None]])
@@ -54,6 +55,42 @@ class BoundaryTests(unittest.TestCase):
         records[0]['large_object_metadata'][0][0] = True
         with self.assertRaises(backup.Refusal):
             backup.compare_inventory(records, records)
+
+    def test_extension_config_requires_logical_table_identity_and_condition_pair(self):
+        records = self.catalog_inventory()
+        records[0]['extensions'].append(['fixture_extension','1.0','public','postgres',False,
+                                        ['public.fixture'], ['']])
+        self.assertEqual(backup.compare_inventory(records, records)['tables'],1)
+        for config,conditions in [([1234],['']),(['public.fixture'],[]),([],[]),([None],['']),(['public.fixture'],[None]),(None,['']),(['public.fixture'],None)]:
+            with self.subTest(config=config,conditions=conditions):
+                records[0]['extensions'][-1][5:] = [config,conditions]
+                with self.assertRaises(backup.Refusal): backup.compare_inventory(records,records)
+
+    def test_enum_and_range_definitions_cannot_be_missing_on_both_sides(self):
+        for kind,field in [('e','enum_labels'),('r','range_definitions')]:
+            records=self.catalog_inventory()
+            records[0]['types'].append(['public','fixture_type',kind,'postgres',None,None,False,None,None,None])
+            with self.subTest(kind=kind), self.assertRaises(backup.Refusal): backup.compare_inventory(records,records)
+        records=self.catalog_inventory()
+        records[0]['types'].append(['public','fixture_type','e','postgres',None,None,False,None,None,None])
+        records[0]['enum_labels']=[['public','fixture_type',1,''],['public','fixture_type',2,'zero']]
+        self.assertEqual(backup.compare_inventory(records,records)['tables'],1)
+
+    def test_identical_malformed_extended_catalog_values_refuse(self):
+        import copy
+        base=self.catalog_inventory()
+        base[0]['types'].append(['public','state','e','postgres',None,None,False,None,None,None])
+        base[0]['enum_labels']=[['public','state',1,''],['public','state',2,'zero']]
+        for mutation in ('kind','boolean_sort','duplicate_sort','acl','publication','orphan_publication'):
+            records=copy.deepcopy(base)
+            if mutation=='kind': records[0]['types'][1][2]=True;records[0]['enum_labels']=None
+            elif mutation=='boolean_sort': records[0]['enum_labels'][0][2]=True
+            elif mutation=='duplicate_sort': records[0]['enum_labels'][1][2]=1
+            elif mutation=='acl': records[0]['default_acls']=[['postgres',None,'r',True]]
+            elif mutation=='publication': records[0]['publications']=[['pub','postgres',True]]
+            else: records[0]['publication_relations']=[['absent','public','fixture',None,None]]
+            with self.subTest(mutation=mutation), self.assertRaises(backup.Refusal):
+                backup.compare_inventory(records,records)
 
     def test_hostile_numeric_bounds_refuse_direct_calls(self):
         for value in (None, True, False, 0, -1, float('nan'), float('inf'), '300', 301):

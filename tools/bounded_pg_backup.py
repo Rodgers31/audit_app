@@ -20,7 +20,8 @@ import time
 import uuid
 
 IMAGE = 'postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675'
-PREFIX = 'round18_s1_'
+SUPABASE_IMAGE = 'public.ecr.aws/supabase/postgres@sha256:21ab971149317ea9cd12a8126fe4ebb34def08c8972956b0958cba0924409dab'
+PREFIX = 'round19_s1_'
 MAX_WALL = 300
 MAX_BYTES = 256 * 1024 * 1024
 ENV = {'PATH': '/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin', 'PYTHONDONTWRITEBYTECODE': '1'}
@@ -52,7 +53,7 @@ def run(argv, *, timeout=10, input=None):
 
 
 def owned(name):
-    if not isinstance(name, str) or not re.fullmatch(r'round18_s1_[a-z0-9_]+', name):
+    if not isinstance(name, str) or not re.fullmatch(r'round(?:18|19)_s1_[a-z0-9_]+', name):
         raise Refusal('unowned_resource')
     return name
 
@@ -363,14 +364,39 @@ SELECT json_build_object('kind','catalog','schemas',
  'triggers',(SELECT json_agg(json_build_array(n.nspname,c.relname,t.tgname,t.tgenabled,pg_get_triggerdef(t.oid)) ORDER BY n.nspname,c.relname,t.tgname) FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE NOT t.tgisinternal AND n.nspname !~ '^pg_' AND n.nspname <> 'information_schema'),
  'routines',(SELECT json_agg(json_build_array(n.nspname,p.proname,pg_get_function_identity_arguments(p.oid),pg_get_userbyid(p.proowner),p.proacl,p.proconfig,pg_get_functiondef(p.oid)) ORDER BY n.nspname,p.proname,pg_get_function_identity_arguments(p.oid)) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE p.prokind IN ('f','p') AND n.nspname !~ '^pg_' AND n.nspname <> 'information_schema'),
  'views',(SELECT json_agg(json_build_array(n.nspname,c.relname,pg_get_viewdef(c.oid)) ORDER BY n.nspname,c.relname) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.relkind IN ('v','m') AND n.nspname !~ '^pg_' AND n.nspname <> 'information_schema'),
- 'extensions',(SELECT json_agg(json_build_array(e.extname,e.extversion,n.nspname,pg_get_userbyid(e.extowner),e.extrelocatable,e.extconfig,e.extcondition) ORDER BY e.extname) FROM pg_extension e JOIN pg_namespace n ON n.oid=e.extnamespace),
+ 'extensions',(SELECT json_agg(json_build_array(e.extname,e.extversion,n.nspname,pg_get_userbyid(e.extowner),e.extrelocatable,
+   (SELECT array_agg(format('%I.%I',cn.nspname,c.relname) ORDER BY config.ordinality) FROM unnest(e.extconfig) WITH ORDINALITY config(oid,ordinality) JOIN pg_class c ON c.oid=config.oid JOIN pg_namespace cn ON cn.oid=c.relnamespace),
+   e.extcondition) ORDER BY e.extname) FROM pg_extension e JOIN pg_namespace n ON n.oid=e.extnamespace),
  'roles',(SELECT json_agg(json_build_array(rolname,rolsuper,rolinherit,rolcreaterole,rolcreatedb,rolcanlogin,rolreplication,rolbypassrls,rolconnlimit,rolvaliduntil,rolconfig) ORDER BY rolname) FROM pg_roles),
  'memberships',(SELECT json_agg(json_build_array(pg_get_userbyid(roleid),pg_get_userbyid(member),pg_get_userbyid(grantor),admin_option,inherit_option,set_option) ORDER BY pg_get_userbyid(roleid),pg_get_userbyid(member)) FROM pg_auth_members),
  'large_object_metadata',(SELECT json_agg(json_build_array(oid,pg_get_userbyid(lomowner),lomacl) ORDER BY oid) FROM pg_largeobject_metadata),
  'large_objects',(SELECT json_agg(json_build_array(loid,pageno,encode(sha256(data),'hex'),octet_length(data)) ORDER BY loid,pageno) FROM pg_largeobject),
  'sequence_definitions',(SELECT json_agg(json_build_array(n.nspname,c.relname,format_type(s.seqtypid,NULL),s.seqstart,s.seqincrement,s.seqmax,s.seqmin,s.seqcache,s.seqcycle) ORDER BY n.nspname,c.relname) FROM pg_sequence s JOIN pg_class c ON c.oid=s.seqrelid JOIN pg_namespace n ON n.oid=c.relnamespace),
  'database_acl',(SELECT datacl FROM pg_database WHERE datname=current_database()),
- 'tablespaces',(SELECT json_agg(json_build_array(spcname,pg_get_userbyid(spcowner),spcacl,spcoptions) ORDER BY spcname) FROM pg_tablespace));
+ 'tablespaces',(SELECT json_agg(json_build_array(spcname,pg_get_userbyid(spcowner),spcacl,spcoptions) ORDER BY spcname) FROM pg_tablespace),
+ 'types',(SELECT json_agg(json_build_array(n.nspname,t.typname,t.typtype,pg_get_userbyid(t.typowner),t.typacl,
+   CASE WHEN t.typbasetype<>0 THEN format_type(t.typbasetype,t.typtypmod) END,t.typnotnull,t.typdefault,
+   CASE WHEN t.typrelid<>0 THEN t.typrelid::regclass::text END,
+   CASE WHEN t.typcollation<>0 THEN t.typcollation::regcollation::text END) ORDER BY n.nspname,t.typname)
+   FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname !~ '^pg_' AND n.nspname<>'information_schema'),
+ 'enum_labels',(SELECT json_agg(json_build_array(n.nspname,t.typname,e.enumsortorder,e.enumlabel) ORDER BY n.nspname,t.typname,e.enumsortorder)
+   FROM pg_enum e JOIN pg_type t ON t.oid=e.enumtypid JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname !~ '^pg_' AND n.nspname<>'information_schema'),
+ 'domain_constraints',(SELECT json_agg(json_build_array(n.nspname,t.typname,c.conname,c.convalidated,pg_get_constraintdef(c.oid)) ORDER BY n.nspname,t.typname,c.conname)
+   FROM pg_constraint c JOIN pg_type t ON t.oid=c.contypid JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname !~ '^pg_' AND n.nspname<>'information_schema'),
+ 'range_definitions',(SELECT json_agg(json_build_array(n.nspname,t.typname,format_type(r.rngsubtype,NULL),
+   CASE WHEN r.rngcollation<>0 THEN r.rngcollation::regcollation::text END,
+   format('%I.%I',opn.nspname,op.opcname),r.rngcanonical::regproc::text,r.rngsubdiff::regproc::text,format_type(r.rngmultitypid,NULL)) ORDER BY n.nspname,t.typname)
+   FROM pg_range r JOIN pg_type t ON t.oid=r.rngtypid JOIN pg_namespace n ON n.oid=t.typnamespace JOIN pg_opclass op ON op.oid=r.rngsubopc JOIN pg_namespace opn ON opn.oid=op.opcnamespace
+   WHERE n.nspname !~ '^pg_' AND n.nspname<>'information_schema'),
+ 'collations',(SELECT json_agg(json_build_array(n.nspname,c.collname,pg_get_userbyid(c.collowner),to_jsonb(c)-'oid'-'collnamespace'-'collowner') ORDER BY n.nspname,c.collname)
+   FROM pg_collation c JOIN pg_namespace n ON n.oid=c.collnamespace WHERE n.nspname !~ '^pg_' AND n.nspname<>'information_schema'),
+ 'default_acls',(SELECT json_agg(json_build_array(pg_get_userbyid(d.defaclrole),n.nspname,d.defaclobjtype,d.defaclacl) ORDER BY pg_get_userbyid(d.defaclrole),n.nspname,d.defaclobjtype)
+   FROM pg_default_acl d LEFT JOIN pg_namespace n ON n.oid=d.defaclnamespace),
+ 'publications',(SELECT json_agg(json_build_array(p.pubname,pg_get_userbyid(p.pubowner),to_jsonb(p)-'oid'-'pubowner') ORDER BY p.pubname) FROM pg_publication p),
+ 'publication_relations',(SELECT json_agg(json_build_array(p.pubname,n.nspname,c.relname,
+   (SELECT array_agg(a.attname ORDER BY a.attnum) FROM pg_attribute a WHERE a.attrelid=c.oid AND a.attnum=ANY(r.prattrs)),pg_get_expr(r.prqual,r.prrelid)) ORDER BY p.pubname,n.nspname,c.relname)
+   FROM pg_publication_rel r JOIN pg_publication p ON p.oid=r.prpubid JOIN pg_class c ON c.oid=r.prrelid JOIN pg_namespace n ON n.oid=c.relnamespace),
+ 'publication_schemas',(SELECT json_agg(json_build_array(p.pubname,n.nspname) ORDER BY p.pubname,n.nspname) FROM pg_publication_namespace pn JOIN pg_publication p ON p.oid=pn.pnpubid JOIN pg_namespace n ON n.oid=pn.pnnspid));
 SELECT format($q$SELECT json_build_object('kind','table','schema',%L,'name',%L,'count',count(*),'sha256',encode(sha256(convert_to(coalesce(string_agg(length(row_text)::text || ':' || row_text,'' ORDER BY row_text),''),'UTF8')),'hex')) FROM (SELECT to_jsonb(t)::text AS row_text FROM %I.%I t) rows;$q$,n.nspname,c.relname,n.nspname,c.relname)
 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
 WHERE c.relkind IN ('r','m') AND n.nspname !~ '^pg_' AND n.nspname <> 'information_schema' ORDER BY n.nspname,c.relname
@@ -400,14 +426,20 @@ def inventory_local(container, snapshot=None):
 CATALOG_ARRAYS = {'schemas':3, 'relations':8, 'columns':10, 'constraints':5,
     'indexes':4, 'policies':8, 'triggers':5, 'routines':7, 'views':3,
     'extensions':7, 'roles':11, 'memberships':6, 'large_object_metadata':3,
-    'large_objects':4, 'sequence_definitions':9, 'tablespaces':4}
+    'large_objects':4, 'sequence_definitions':9, 'tablespaces':4,
+    'types':10, 'enum_labels':4, 'domain_constraints':5, 'range_definitions':8,
+    'collations':4, 'default_acls':4, 'publications':3, 'publication_relations':5,
+    'publication_schemas':2}
 
 # Catalog identities must be meaningful and unique even when both inputs have
 # the same damage. Equality alone cannot turn malformed evidence into a pass.
 CATALOG_IDENTITIES = {'schemas':1, 'relations':2, 'columns':3, 'constraints':3,
     'indexes':3, 'policies':3, 'triggers':3, 'routines':3, 'views':2,
     'extensions':1, 'roles':1, 'memberships':3, 'large_object_metadata':1,
-    'large_objects':2, 'sequence_definitions':2, 'tablespaces':1}
+    'large_objects':2, 'sequence_definitions':2, 'tablespaces':1,
+    'types':2, 'enum_labels':2, 'domain_constraints':3, 'range_definitions':2,
+    'collations':2, 'default_acls':3, 'publications':1, 'publication_relations':3,
+    'publication_schemas':2}
 
 
 def validate_inventory(records):
@@ -418,13 +450,63 @@ def validate_inventory(records):
         raise Refusal('inventory_empty_or_malformed')
     for key, width in CATALOG_ARRAYS.items():
         rows = catalog[key]
-        if rows is None and key not in {'schemas','relations','columns','roles','extensions','tablespaces'}:
+        if rows is None and key not in {'schemas','relations','columns','roles','extensions','tablespaces','types'}:
             continue
         if not isinstance(rows, list) or not rows or any(not isinstance(row,list) or len(row)!=width for row in rows):
             raise Refusal('inventory_empty_or_malformed')
         identities = set()
+        enum_orders = set()
         for row in rows:
+            def string(value):
+                return isinstance(value,str) and bool(value)
+            def optional_string(value):
+                return value is None or isinstance(value,str)
+            def acl(value):
+                return value is None or isinstance(value,list) and all(string(v) for v in value)
+            valid_shape = True
+            if key == 'types':
+                valid_shape = (row[2] in ('b','c','d','e','m','p','r') and string(row[3]) and acl(row[4])
+                    and optional_string(row[5]) and type(row[6]) is bool
+                    and all(optional_string(v) for v in row[7:])
+                    and (row[2]!='d' or string(row[5])))
+            elif key == 'enum_labels':
+                valid_shape = type(row[2]) in (int,float) and math.isfinite(row[2]) and isinstance(row[3],str)
+                order = row[0],row[1],row[2]
+                if not valid_shape or order in enum_orders:
+                    raise Refusal('inventory_enum_order_malformed')
+                enum_orders.add(order)
+            elif key == 'domain_constraints':
+                valid_shape = type(row[3]) is bool and string(row[4])
+            elif key == 'range_definitions':
+                valid_shape = string(row[2]) and optional_string(row[3]) and all(string(v) for v in row[4:])
+            elif key == 'collations':
+                d = row[3]
+                valid_shape = (string(row[2]) and isinstance(d,dict) and d.get('collname')==row[1]
+                    and d.get('collprovider') in ('d','c','i','b') and type(d.get('collisdeterministic')) is bool
+                    and type(d.get('collencoding')) is int)
+            elif key == 'default_acls':
+                valid_shape = isinstance(row[3],list) and all(string(v) for v in row[3])
+            elif key == 'publications':
+                d = row[2]
+                valid_shape = (string(row[1]) and isinstance(d,dict) and d.get('pubname')==row[0]
+                    and all(type(d.get(k)) is bool for k in ('puballtables','pubinsert','pubupdate','pubdelete','pubtruncate','pubviaroot')))
+            elif key == 'publication_relations':
+                valid_shape = ((row[3] is None or isinstance(row[3],list) and all(string(v) for v in row[3])
+                    and len(row[3])==len(set(row[3]))) and optional_string(row[4]))
+            if not valid_shape:
+                raise Refusal('inventory_catalog_value_malformed')
+            if key == 'extensions':
+                if ((row[5] is None) != (row[6] is None)):
+                    raise Refusal('inventory_extension_config_malformed')
+                if row[5] is not None and (not isinstance(row[5], list) or not row[5]
+                        or not all(isinstance(v, str) and v for v in row[5])
+                        or not isinstance(row[6], list) or len(row[5]) != len(row[6])
+                        or not all(isinstance(v, str) for v in row[6])):
+                    raise Refusal('inventory_extension_config_malformed')
             identity = tuple(row[:CATALOG_IDENTITIES[key]])
+            if key == 'enum_labels':
+                # Two labels on one enum share schema/type; label is its identity.
+                identity = row[0], row[1], row[3]
             if key in ('large_object_metadata', 'large_objects'):
                 # PostgreSQL json_build_array renders OIDs as decimal strings.
                 # Keep their actual type for the later exact comparison.
@@ -434,13 +516,28 @@ def validate_inventory(records):
                 if key == 'large_objects':
                     valid = valid and type(identity[1]) is int and identity[1] >= 0
             else:
-                valid = all(isinstance(value, str) and (value or key == 'routines' and i == 2)
+                valid = all(key == 'default_acls' and i == 1 and value is None or
+                            isinstance(value, str) and (value or key in ('routines','enum_labels') and i == 2)
                             for i, value in enumerate(identity))
             if not valid:
                 raise Refusal('inventory_empty_or_malformed')
             if identity in identities:
                 raise Refusal('inventory_duplicate_identity')
             identities.add(identity)
+    expected_enums = {(r[0],r[1]) for r in catalog['types'] if r[2]=='e'}
+    actual_enums = {(r[0],r[1]) for r in catalog['enum_labels'] or []}
+    expected_ranges = {(r[0],r[1]) for r in catalog['types'] if r[2]=='r'}
+    actual_ranges = {(r[0],r[1]) for r in catalog['range_definitions'] or []}
+    if expected_enums != actual_enums or expected_ranges != actual_ranges:
+        raise Refusal('inventory_type_coverage_mismatch')
+    domains = {(r[0],r[1]) for r in catalog['types'] if r[2]=='d'}
+    publications = {r[0] for r in catalog['publications'] or []}
+    relations = {(r[0],r[1]) for r in catalog['relations']}
+    schemas = {r[0] for r in catalog['schemas']}
+    if (any((r[0],r[1]) not in domains for r in catalog['domain_constraints'] or [])
+            or any(r[0] not in publications or (r[1],r[2]) not in relations for r in catalog['publication_relations'] or [])
+            or any(r[0] not in publications or r[1] not in schemas for r in catalog['publication_schemas'] or [])):
+        raise Refusal('inventory_catalog_reference_mismatch')
     if catalog['database_acl'] is not None and not isinstance(catalog['database_acl'], list):
         raise Refusal('inventory_empty_or_malformed')
     expected = set()
