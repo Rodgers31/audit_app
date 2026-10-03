@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any, Dict, Iterable, List, Optional
@@ -44,6 +44,7 @@ class BudgetRecord:
     page_ref: Optional[str] = None
     artifact_sha256: Optional[str] = None
     revenue_coverage: Optional[Dict[str, Any]] = None
+    source_evidence: list = field(default_factory=list)
 
 
 def _iter_records(payload: Any) -> Iterable[Dict[str, Any]]:
@@ -165,6 +166,7 @@ def parse_budget_payload(payload: Dict[str, Any]) -> List[BudgetRecord]:
             revenue_coverage=(
                 raw["revenue_coverage"] if isinstance(raw.get("revenue_coverage"), dict) else None
             ),
+            source_evidence=raw.get("source_evidence") or [],
         )
         normalized.append(record)
 

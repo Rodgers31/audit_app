@@ -35,6 +35,7 @@ class PendingBillRecord:
     source_page: Optional[int] = None
     #: What the report says about this figure, as ``{"code": ..., ...}``.
     reader_notes: list = field(default_factory=list)
+    source_evidence: list = field(default_factory=list)
 
 
 def parse_pending_bills_payload(
@@ -155,6 +156,7 @@ def parse_pending_bills_payload(
                 as_at=item.get("as_at"),
                 source_table=item.get("table"),
                 source_page=item.get("page"),
+                source_evidence=item.get("source_evidence") or [],
                 reader_notes=reader_notes,
             )
         )

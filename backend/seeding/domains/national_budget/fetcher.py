@@ -297,6 +297,23 @@ def _fetch_annual_sector_expenditure(
         return [], "no_sector_passed_verification"
 
     records = build_expenditure_records(result, report)
+    from ...pdf_evidence import receipt_for_pdf, cell_evidence, seal_pdf_observations
+    receipt = receipt_for_pdf(client, settings, pdf_path, report.url, "cob-annual-sector-v1")
+    evidence = []
+    for row, sector in zip(records, result.accepted):
+        cells = []
+        for measure, raw, column in (("allocated_amount", sector.total.gross, "Revised Gross"),
+                                     ("actual_spent", sector.total.expenditure, "Expenditure")):
+            locator = dict(sector.total_locator, cell=f"Sector Summary / Total / {column}") if sector.total_locator else None
+            cells.append(cell_evidence(receipt=receipt, identity={
+                "measure": measure, "entity_id": None, "geography": "KEN",
+                "period": report.fiscal_year, "unit": "KES", "basis": "actual",
+                "dimensions": {"category": row["category"], "subcategory": row["subcategory"], "line_type": None}},
+                raw_value=raw, value=row[measure], raw_unit="KES billion", factor="1000000000",
+                locator=locator, unit_checked=sector.unit_checked, rounding=0))
+        row["provenance_extra"]["source_evidence"] = cells
+        evidence.extend(cells)
+    seal_pdf_observations(evidence)
     coverage = result.coverage()
     status = (
         f"promoted:{len(accepted)}/{coverage['sectors_expected']} sectors "
@@ -448,6 +465,8 @@ def _download_and_parse_ng_pdf(
         # the sector level, not Expenditure — see pdf_parser.py
         # docstring).
         budget_records: List[Dict[str, Any]] = []
+        from ...pdf_evidence import receipt_for_pdf, cell_evidence, seal_pdf_observations
+        receipt = receipt_for_pdf(client, settings, pdf_path, pdf_url, "cob-sector-exchequer-v1")
         for r in sectoral_records:
             budget_records.append(
                 {
@@ -479,6 +498,20 @@ def _download_and_parse_ng_pdf(
                     ),
                 }
             )
+            row = budget_records[-1]
+            cells = getattr(r, "source_cells", None) or {}
+            evidence = []
+            for measure, cell in cells.items():
+                evidence.append(cell_evidence(receipt=receipt, identity={
+                    "measure": measure, "entity_id": None, "geography": "KEN",
+                    "period": period.label, "unit": "KES", "basis": "actual",
+                    "dimensions": {"category": r.sector, "subcategory": r.subcategory, "line_type": None}},
+                    raw_value=cell["raw_value"], value=row[measure], raw_unit="KES billion", factor="1000000000",
+                    locator=cell["locator"], unit_checked=cell["unit_checked"]))
+            if evidence:
+                row["provenance_extra"]["source_evidence"] = evidence
+
+        seal_pdf_observations([e for row in budget_records for e in row["provenance_extra"].get("source_evidence", [])])
 
         return budget_records or None
 

@@ -42,6 +42,21 @@ from ...http_client import SeedingHttpClient
 
 logger = logging.getLogger("seeding.national_debt.cbk_bulletin")
 
+
+class _PdfBody(bytes):
+    """Actual acquired bytes with metadata, preserving the bytes parser API."""
+
+
+class _PdfPageText(str):
+    """Actual page text with its physical PDF page, not a report page guess."""
+
+
+def _located_text(text, page):
+    result = _PdfPageText(text)
+    result.page = page
+    result.unit_checked = bool(re.search(r"(?:shillings|KES|Kshs?)[\s.()]*million", text, re.I))
+    return result
+
 # The page text begins:
 #   "Table 4.1.4: Composition of Government Gross Domestic Debt"
 # We anchor on the substring after the table number so a future
@@ -177,6 +192,23 @@ def fetch_domestic_debt_from_cbk_bulletin(
         values=values,
         source_url=url,
     )
+    receipt = getattr(pdf_bytes, "receipt", None)
+    if receipt is not None:
+        from ...pdf_evidence import cell_evidence, seal_pdf_observations
+        evidence = []
+        for loan in loans:
+            column = next(c for c, lender, _category in _COLUMN_MAPPINGS if lender == loan["lender"])
+            loan["measurement_period"] = measurement_date.strftime("%Y-%m")
+            locator = {"page": page_text.page, "table": _TABLE_TITLE_ANCHOR,
+                       "cell": f"{loan['measurement_period']} / column {column + 1}: {loan['lender']}"} if hasattr(page_text, "page") else None
+            loan["source_evidence"] = [cell_evidence(receipt=receipt, identity={
+                "measure": "outstanding", "entity_id": None, "geography": "KEN",
+                "period": loan["measurement_period"], "unit": "KES", "basis": "actual",
+                "dimensions": {"lender": loan["lender"], "debt_category": loan["debt_category"]}},
+                raw_value=values[column], value=loan["outstanding"], raw_unit="KES million", factor="1000000",
+                locator=locator, unit_checked=getattr(page_text, "unit_checked", False), rounding=0)]
+            evidence.extend(loan["source_evidence"])
+        seal_pdf_observations(evidence)
     logger.info(
         "CBK bulletin parsed %d domestic-debt rows (latest: %s)",
         len(loans), measurement_date.isoformat(),
@@ -188,19 +220,27 @@ def _download_pdf(client: SeedingHttpClient, url: str) -> bytes:
     """Fetch PDF bytes. ``file://`` URLs are read from disk so tests
     and offline runs don't need a live HTTP path."""
     if url.startswith("file://"):
-        return Path(url[len("file://"):]).read_bytes()
+        path = Path(url[len("file://"):])
+        body = _PdfBody(path.read_bytes())
+        from ...pdf_evidence import receipt_for_pdf
+        body.receipt = receipt_for_pdf(client, getattr(client, "_settings", None), path, url, "cbk-debt-bulletin-v1")
+        return body
     response = client.get(url, raise_for_status=True)
-    return response.content
+    body = _PdfBody(response.content)
+    from ...pdf_evidence import receipt_for_response
+    if hasattr(response, "request"):
+        body.receipt = receipt_for_response(client, response, "cbk-debt-bulletin-v1")
+    return body
 
 
 def _extract_domestic_debt_page_text(pdf_bytes: bytes) -> Optional[str]:
     """Walk pages, return the first one whose text contains the
     Table 4.1.4 anchor. Returns ``None`` if no page matches."""
     with pdfplumber.open(BytesIO(pdf_bytes)) as pdf:
-        for page in pdf.pages:
+        for number, page in enumerate(pdf.pages, 1):
             text = page.extract_text() or ""
             if _TABLE_TITLE_ANCHOR in text:
-                return text
+                return _located_text(text, number)
     return None
 
 
@@ -329,12 +369,12 @@ def _find_public_debt_page_text(pdf_bytes: bytes) -> Optional[str]:
     survives pagination changes between editions.
     """
     with pdfplumber.open(BytesIO(pdf_bytes)) as pdf:
-        for page in pdf.pages:
+        for number, page in enumerate(pdf.pages, 1):
             text = page.extract_text() or ""
             if "4.1.3" not in text:
                 continue
             if parse_public_debt_table(text):
-                return text
+                return _located_text(text, number)
     return None
 
 
@@ -427,6 +467,22 @@ def fetch_public_debt_timeline_from_cbk_bulletin(
         return {}
 
     parsed = parse_public_debt_table(page_text)
+    receipt = getattr(pdf_bytes, "receipt", None)
+    if receipt is not None:
+        from ...pdf_evidence import cell_evidence, seal_pdf_observations
+        evidence = []
+        for year, row in parsed.items():
+            row["source_evidence"] = []
+            for measure in ("external", "domestic", "total"):
+                locator = {"page": page_text.page, "table": "4.1.3 Deficit Financing and Public Debt",
+                           "cell": f"{year}-{int(row['as_of_month']):02d} / {measure}"} if hasattr(page_text, "page") else None
+                row["source_evidence"].append(cell_evidence(receipt=receipt, identity={
+                    "measure": measure, "entity_id": None, "geography": "KEN", "period": str(year),
+                    "unit": "KES", "basis": "actual", "dimensions": {}},
+                    raw_value=row[measure] / _MILLION, value=row[measure], raw_unit="KES million", factor="1000000",
+                    locator=locator, unit_checked=getattr(page_text, "unit_checked", False)))
+            evidence.extend(row["source_evidence"])
+        seal_pdf_observations(evidence)
     if parsed:
         newest = max(parsed)
         logger.info(

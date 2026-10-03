@@ -77,7 +77,7 @@ class TableNotFoundError(PDFParserError):
     pass
 
 
-def extract_all_tables(pdf_path: Path) -> List[ExtractedTable]:
+def extract_all_tables(pdf_path: Path, *, pages: Optional[List[int]] = None) -> List[ExtractedTable]:
     """
     Extract all tables from a PDF document.
 
@@ -99,6 +99,8 @@ def extract_all_tables(pdf_path: Path) -> List[ExtractedTable]:
     try:
         with pdfplumber.open(pdf_path) as pdf:
             for page_num, page in enumerate(pdf.pages, start=1):
+                if pages is not None and page_num not in pages:
+                    continue
                 page_tables = page.extract_tables()
 
                 for table_idx, table_data in enumerate(page_tables):
@@ -1463,6 +1465,7 @@ class CoBQuarterlyReportParser:
         self.tables: List[ExtractedTable] = []
         self._period: Optional[Tuple[Optional[str], Optional[str]]] = None
         self.revenue_coverage: Dict[str, Dict[str, Any]] = {}
+        self._row_sources = None
 
     def parse(self) -> List[Dict[str, Any]]:
         """
@@ -1507,6 +1510,7 @@ class CoBQuarterlyReportParser:
                 cannot be located — other categories are optional.
         """
         self.tables = extract_all_tables(self.pdf_path)
+        self._row_sources = None
 
         # ── Primary path: invariant-anchored, validator-driven ─────
         # COB reword the table headers every couple of vintages
@@ -1765,6 +1769,33 @@ class CoBQuarterlyReportParser:
 
         return records
 
+    @staticmethod
+    def _cash_total_cells(tables, target, actual):
+        """Only direct Grand Total cells; stream sums need operand evidence.
+
+        Cash B is selected by its own header. An accrual D column or the
+        chapter summary cannot stand in for the receipts cell.
+        """
+        found = []
+        for table in tables:
+            headers = [_cell_text(c) for c in table.headers]
+            cash_columns = [i for i, header in enumerate(headers) if _is_cash_revenue_header(header)]
+            targets = [i for i, header in enumerate(headers) if "annual" in header or "target" in header]
+            if len(cash_columns) != 1 or len(targets) != 1:
+                continue
+            cash, allocation = cash_columns[0], targets[0]
+            for number, row in enumerate(table.rows, 1):
+                if len(row) <= max(cash, allocation) or "grand total" not in _cell_text("".join(row[:allocation])):
+                    continue
+                if _kes_cell(row[cash]) != actual or (target is not None and _kes_cell(row[allocation]) != target):
+                    continue
+                found.append({measure: {"raw_value": str(value), "raw_token": row[column], "raw_unit": "KES",
+                    "unit_checked": "ksh" in headers[column] or "kes" in headers[column],
+                    "locator": {"page": table.page_number, "table": f"pdfplumber table {table.table_index + 1}",
+                                "cell": f"Grand Total / row {number} / column {column + 1}: {table.headers[column]}"}}
+                    for measure, column, value in (("allocated_amount", allocation, target), ("actual_spent", cash, actual)) if value is not None})
+        return found[0] if len(found) == 1 else {}
+
     def _extract_own_source_revenue(self) -> List[Dict[str, Any]]:
         """Table 2.1 — "Own Source Revenue Collection", per county.
 
@@ -1914,6 +1945,7 @@ class CoBQuarterlyReportParser:
                         "quarter": self._extract_quarter(),
                         "fiscal_year": self._extract_fiscal_year(),
                         "page_ref": "PDF pp. " + ", ".join(map(str, source_pages)),
+                        "_pdf_cells": self._cash_total_cells(tables, target, actual) if stream == REVENUE_TOTAL else {},
                     }
                 )
         reconciled = len(grouped) - len(refused)
@@ -2018,12 +2050,38 @@ class CoBQuarterlyReportParser:
                         "currency": currency,
                         "quarter": self._extract_quarter(),
                         "fiscal_year": self._extract_fiscal_year(),
+                        "_pdf_cells": self._source_cells(row, {"allocated_amount": allocated_col, "actual_spent": absorbed_col}),
                     }
                 )
             except (IndexError, ValueError) as e:
                 logger.warning("Failed to parse row %s: %s", row, e)
                 continue
         return out
+
+    def _source_cells(self, row, columns):
+        """Locate the original row even when the selected table was stitched.
+
+        Ambiguous or reconstructed rows get no locator; the first page of a
+        stitched table is never used as a substitute for the actual cell page.
+        """
+        if self._row_sources is None:
+            self._row_sources = {}
+            for original in self.tables:
+                table = flatten_grouped_headers(original)
+                for number, candidate in enumerate(table.rows, 1):
+                    self._row_sources.setdefault(tuple(candidate), []).append((table, number, candidate))
+        matches = self._row_sources.get(tuple(row), [])
+        if len(matches) != 1:
+            return {}
+        table, number, candidate = matches[0]
+        units = "million" in " ".join(table.headers).lower()
+        return {measure: {"raw_value": str(parse_currency(candidate[column])[0]),
+                          "raw_token": candidate[column], "raw_unit": "KES million",
+                          "unit_checked": units,
+                          "locator": {"page": table.page_number, "table": f"pdfplumber table {table.table_index + 1}",
+                                      "cell": f"{candidate[0]} / row {number} / column {column + 1}: {table.headers[column]}"}}
+                for measure, column in columns.items() if column < len(candidate)
+                and parse_currency(candidate[column])[0] is not None}
 
     def _rows_to_records(
         self,
@@ -2060,6 +2118,7 @@ class CoBQuarterlyReportParser:
                     "currency": currency,
                     "quarter": self._extract_quarter(),
                     "fiscal_year": self._extract_fiscal_year(),
+                    "_pdf_cells": self._source_cells(row, {"allocated_amount": 1, "actual_spent": 2}),
                 }
                 out.append(record)
             except (IndexError, ValueError) as e:
@@ -2304,6 +2363,7 @@ def county_payables_rows(
                 "page": page,
                 "cob_marked_inconsistent": marked,
                 "cells": dict(zip(_PAYABLES_COLUMNS, values)),
+                "unit_checked": "million" in "".join((c or "") for c in table[0]).lower().replace("-", "").replace("\n", ""),
             }
     return rows, printed_total
 
@@ -2335,6 +2395,7 @@ def classify_payables_row(row: Dict[str, Any]) -> Dict[str, Any]:
         ),
         "status": "reported",
         "withheld_reason": None,
+        "unit_checked": row.get("unit_checked", False),
     }
     if not total_printed:
         if exec_printed or asm_printed:

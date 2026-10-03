@@ -232,6 +232,10 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
     def head(self, url: str, **kwargs: Any) -> httpx.Response:
         return self.request("HEAD", url, **kwargs)
 
+    def download_receipt(self, url: str) -> Optional[dict]:
+        """Receipt for a completed full response from this client's last download."""
+        return getattr(self, "_download_receipts", {}).get(url)
+
     def download_to_file(
         self,
         url: str,
@@ -303,6 +307,10 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
         replaced by the two checks above, which run on every resume.
         """
         dest = Path(dest_path)
+        if not hasattr(self, "_download_receipts"):
+            self._download_receipts = {}
+        self._download_receipts.pop(url, None)
+        full_response = None
         base_headers = dict(headers or {})
         # Fail a dead connection fast (no bytes at all / no handshake), but let
         # a slow steady stream run up to the wall-clock cap the loop enforces.
@@ -490,6 +498,10 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
                                             f"cap: {url}"
                                         )
                                     handle.write(chunk)
+                            # A single complete decoded body is distinct from
+                            # assembled ranges or a stream interrupted at EOF.
+                            if mode == "wb" and response.status_code == 200:
+                                full_response = (response.status_code, dict(response.headers), response.request)
                     # iter_bytes() ran to completion => the server closed the
                     # body normally, so we have the whole document.
                     complete = True
@@ -537,6 +549,23 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
 
             written = _on_disk()
             os.replace(tmp, dest)
+            if full_response is not None:
+                from services.receipt_store import LocalReceiptStore
+                from services.response_receipts import capture_response
+
+                status, response_headers, request = full_response
+                store = getattr(self, "receipt_store", None)
+                if store is None:
+                    store = LocalReceiptStore(Path(self._settings.storage_path) / "response-receipts")
+                # iter_bytes() already decoded transfer content. Reusing the
+                # encoding header would make httpx decompress these bytes twice.
+                decoded_headers = {k: v for k, v in response_headers.items() if k.lower() not in ("content-encoding", "content-length")}
+                receipt = capture_response(httpx.Response(status, headers=decoded_headers,
+                    content=dest.read_bytes(), request=request), store, source_kind="pdf")
+                receipt["content_encoding"] = response_headers.get("content-encoding")
+                receipt["request_url"] = str(request.url)
+                receipt["digest_scope"] = "decoded_stream_body"
+                self._download_receipts[url] = receipt
         except PdfDownloadIncomplete:
             # Deliberately KEEP a resumable partial: it is the progress this
             # mechanism exists to preserve.

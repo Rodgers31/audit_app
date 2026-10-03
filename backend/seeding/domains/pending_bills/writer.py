@@ -221,6 +221,13 @@ def _write_pending_bills(
             provenance["page"] = record.source_page
         if record.reader_notes:
             provenance["reader_notes"] = [dict(n) for n in record.reader_notes]
+        if record.source_evidence and not dry_run:
+            from ...pdf_evidence import bind_pdf_evidence
+            provenance["source_evidence"] = bind_pdf_evidence(session, source_doc, record.source_evidence,
+                identity={"entity_id": entity.id, "geography": entity.canonical_name if writes_county else "KEN",
+                          "period": record.as_at, "unit": "KES", "basis": "actual",
+                          "dimensions": {"lender": lender_name, "debt_category": "pending_bills"}},
+                values={"outstanding": record.total_pending})
 
         if existing:
             if not dry_run:

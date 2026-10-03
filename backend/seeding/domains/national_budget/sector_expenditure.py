@@ -174,6 +174,8 @@ class SectorResult:
     accepted: bool = False
     split_published: bool = False
     problems: List[str] = field(default_factory=list)
+    total_locator: Optional[Dict[str, object]] = None
+    unit_checked: bool = False
 
 
 @dataclass
@@ -407,6 +409,7 @@ def parse_sector_expenditure(pages: Mapping[int, str]) -> AnnualSectorExpenditur
                 summary_page = p
             joined += "\n" + chunk
         result.summary_page = summary_page
+        result.unit_checked = bool(re.search(r"(?:Kshs?|KES)[\s.()]*B(?:illion|n)\b", joined, re.I))
 
         start = joined.find("Sector Summary")
         if start == -1:
@@ -419,6 +422,19 @@ def parse_sector_expenditure(pages: Mapping[int, str]) -> AnnualSectorExpenditur
         result.development = rows.get("development")
         result.recurrent = rows.get("recurrent")
         result.total = rows.get("total")
+        # The header can be on the preceding page. Bind the amount to the
+        # page that actually contains this complete Total row, not the header.
+        for p in window:
+            chunk = _strip_running_lines(pages[p] or "")
+            marker = chunk.find("Sector Summary")
+            if marker >= 0:
+                chunk = chunk[marker + len("Sector Summary"):]
+            if "Source:" in chunk:
+                chunk = chunk.split("Source:", 1)[0]
+            if result.total is not None and _parse_summary_block(chunk).get("total") == result.total:
+                result.total_locator = {"page": p, "table": table,
+                                        "cell": "Sector Summary / Total"}
+                break
 
         # Prose: usually the paragraph before the table (possibly a page
         # earlier); FY 2024/25 puts National Security's after its summary.
