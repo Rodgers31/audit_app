@@ -154,7 +154,7 @@ cache and explicitly prepares county bytes before the unchanged FULL body.
 Independent execution found a real FIFO hang before the regular-file check.
 The incremental fix opens nonblocking; the failing old subprocess timed out,
 and the repaired path promptly refuses and preserves the FIFO. The final
-independent gate passed25 controls, including actual CLI/backend-only execution,
+independent gate passed26 controls, including actual CLI/backend-only execution,
 strict-consumer boundary, current Source drift, directory/file/staging races and
 FIFO installation races. Root independently ran the final44 cache controls;
 all passed. Final helper SHA256:
