@@ -105,6 +105,7 @@ test('global pause gates valid posts while draft saving remains available', asyn
   fireEvent.click(screen.getByRole('button', { name: 'Save & validate' }));
   await screen.findByText(/All selected destinations passed/);
   expect(screen.getByRole('button', { name: 'Publish now' })).toBeDisabled();
+  fireEvent.change(screen.getByLabelText('Internal title'), { target: { value: 'An edited draft during the publishing pause' } });
   expect(screen.getByRole('button', { name: 'Save draft' })).toBeEnabled();
   expect(screen.getByText(/Publishing is paused/)).toBeInTheDocument();
 });
@@ -144,7 +145,7 @@ test.each(['publish', 'schedule'])('approve then validate then %s uses the appro
       savedPost = post({ editorial_state: 'approved', version: 2, targets: [target('ready')], publication: { id: '00000000-0000-4000-8000-000000000060', revision_id: p.revision_id, scheduled_for: null, version: 1, approved_at: '2026-10-03T12:00:00Z' } });
       return { data: savedPost };
     }
-    return { data: { post_id: p.id, publication_id: savedPost.publication!.id, status: 'queued', scheduled_for: action === 'schedule' ? '2027-01-05T07:00:00Z' : null, targets: [{ id: target('queued').id, account_id: facebookId, platform: 'facebook', status: 'queued' }] } };
+    return { data: { post_id: p.id, publication_id: savedPost.publication!.id, status: 'queued', scheduled_for: action === 'schedule' ? '2027-01-05T07:00:00Z' : '2026-10-03T12:00:00Z', status_url: `/api/v1/admin/social/posts/${p.id}/status`, targets: [{ id: target('queued').id, account_id: facebookId, platform: 'facebook', status: 'queued' }] } };
   });
   mount(p);
   fireEvent.click(screen.getByRole('button', { name: 'Save & validate' }));

@@ -18,17 +18,22 @@ export function SocialSystemStrip({ status, error, refresh }: { status?: SocialS
   const controls = useSocialMutation();
   const [now, setNow] = useState(() => Date.now());
   const heartbeat = status?.worker.heartbeat_at;
+  const scan = status?.worker.last_scan_at;
+  const health = status?.worker.state;
+  const freshnessLimit = health === 'active' ? 45_000 : 150_000;
   useEffect(() => {
     const update = () => setNow(Date.now());
     update();
-    const expiry = heartbeat ? Date.parse(heartbeat) + 195_000 - Date.now() : NaN;
-    const timer = Number.isFinite(expiry) && expiry > 0 && expiry < 195_001 ? window.setTimeout(update, expiry) : undefined;
+    const timestamps = [heartbeat, scan].filter((value): value is string => !!value).map(Date.parse);
+    const expiry = Math.min(...timestamps) + freshnessLimit + 1 - Date.now();
+    const timer = Number.isFinite(expiry) && expiry > 0 ? window.setTimeout(update, expiry) : undefined;
     document.addEventListener('visibilitychange', update);
     return () => { if (timer !== undefined) window.clearTimeout(timer); document.removeEventListener('visibilitychange', update); };
-  }, [heartbeat]);
+  }, [heartbeat, scan, freshnessLimit]);
   const age = heartbeat ? now - Date.parse(heartbeat) : NaN;
-  const fresh = Number.isFinite(age) && age >= 0 && age < 195_000;
-  const health = status?.worker.state;
+  const scanAge = scan ? now - Date.parse(scan) : NaN;
+  const withinLimit = (value: number) => Number.isFinite(value) && value >= -5_000 && value <= freshnessLimit;
+  const fresh = ['active', 'idle', 'stopped'].includes(health ?? '') && withinLimit(age) && (health === 'stopped' && scan === null || withinLimit(scanAge));
   async function changeControls() {
     if (!status) return;
     try {

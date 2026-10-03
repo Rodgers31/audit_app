@@ -33,6 +33,7 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
   const [acknowledged, setAcknowledged] = useState<string[]>([]);
   const [attested, setAttested] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
+  const [resumeReason, setResumeReason] = useState('');
   const [discard, setDiscard] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [localTime, setLocalTime] = useState('');
@@ -46,7 +47,9 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
   const effectivePost = latestPost && post && latestPost.version >= post.version ? latestPost : post;
   const delivery = useSocialDeliveryStatus(effectivePost);
   const currentPublication = effectivePost?.publication;
-  const readyAuthorization = !!currentPublication && effectivePost?.editorial_state === 'approved' && currentPublication.revision_id === post?.revision_id && !currentPublication.scheduled_for && effectivePost.targets.length === input.document.targets.length && effectivePost.targets.length > 0 && input.document.targets.every(selected => effectivePost.targets.filter(t => t.account_id === selected.account_id && t.state === 'ready').length === 1);
+  const authorizationMatches = !!currentPublication && effectivePost?.editorial_state === 'approved' && currentPublication.revision_id === post?.revision_id && effectivePost.targets.length === input.document.targets.length && effectivePost.targets.length > 0 && new Set(effectivePost.targets.map(t => t.id)).size === effectivePost.targets.length && input.document.targets.every(selected => effectivePost.targets.filter(t => t.account_id === selected.account_id && t.platform === accounts.find(a => a.id === selected.account_id)?.platform).length === 1);
+  const readyAuthorization = authorizationMatches && !currentPublication?.scheduled_for && effectivePost!.targets.every(t => t.state === 'ready');
+  const cancelledAuthorization = authorizationMatches && effectivePost!.targets.every(t => t.state === 'cancelled');
   const civil = useMemo(() => resolveCivilTime(localTime, timezone), [localTime, timezone]);
   const selectedTime = civil.candidates.length === 1 ? civil.candidates[0] : civil.candidates.find(c => c.offset === offsetChoice);
   const stale = !!(latestPost && post && latestPost.version > post.version);
@@ -57,14 +60,22 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
   // Never accept a valid=true envelope that omits/duplicates a selected destination.
   const selectedIds = input.document.targets.map(t => t.account_id);
   const distinctSelection = new Set(selectedIds).size === selectedIds.length;
+  const hasContentChanges = !post || draftFingerprint(post) !== draftFingerprint(input);
   const allValid = !!valid?.valid && distinctSelection && input.document.targets.length > 0 && valid.errors.length === 0 && valid.targets.length === input.document.targets.length && input.document.targets.every(t => {
     const connected = accounts.find(a => a.id === t.account_id);
-    return !!connected && connected.publishing_enabled && connected.connection_state === 'connected' && valid.targets.filter(v => v.account_id === t.account_id && v.platform === connected.platform && v.valid && v.errors.length === 0).length === 1;
+    const content = resolveContent(input.document.master, t);
+    return !!connected && connected.publishing_enabled && connected.connection_state === 'connected' && valid.targets.filter(v => {
+      const preview = v.resolved_preview;
+      return v.account_id === t.account_id && v.platform === connected.platform && v.valid && v.errors.length === 0 && preview && preview.account_id === t.account_id && preview.platform === connected.platform && preview.format === t.format && preview.text === content.text && preview.link === content.link && JSON.stringify(preview.hashtags) === JSON.stringify(content.hashtags) && preview.assets.length === content.media.length && preview.assets.every((asset, i) => asset.asset_id === content.media[i].asset_id && asset.caption_asset_id === content.media[i].caption_asset_id && (content.media[i].alt_text == null || asset.alt_text === content.media[i].alt_text));
+    }).length === 1;
   });
   const warnings = valid ? [...valid.warnings, ...valid.targets.flatMap(t => t.warnings)] : [];
   const warningCodes = Array.from(new Set(warnings.map(w => w.code)));
   const warningsAccepted = warningCodes.every(code => acknowledged.includes(code));
-  const canPublish = !busy && !locked && accountsAvailable && system?.publishing_enabled === true && allValid && warningsAccepted && (!currentPublication || readyAuthorization);
+  const publicationGates = !busy && !locked && accountsAvailable && system?.publishing_enabled === true && allValid && warningsAccepted && ['draft', 'pending_review', 'approved'].includes(post?.editorial_state ?? '');
+  const canPublish = publicationGates && (!currentPublication || readyAuthorization);
+  const canResume = publicationGates && cancelledAuthorization && !!resumeReason.trim();
+  const canSubmit = !busy && !locked && !stale && (!post || hasContentChanges || ['draft', 'rejected'].includes(post.editorial_state));
 
   useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
   useEffect(() => {
@@ -103,6 +114,7 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
     if (!saved.document.targets.some(t => t.account_id === activeAccount)) setActiveAccount(saved.document.targets[0]?.account_id ?? '');
   }
   async function save(): Promise<SocialPost> {
+    if (post && !hasContentChanges) { if (dirty) adopt(post); return post; }
     const saved = await mutation.run(post ? `/posts/${encodeURIComponent(post.id)}` : '/posts', post ? { ...input, expected_version: post.version } : input, value => {
       const result = decodePost(value);
       if (post && (result.id !== post.id || result.version <= post.version || result.revision_id === post.revision_id)) throw new SocialApiError('INVALID_RESPONSE', 'The save did not confirm a new revision of this post. Your local edits remain here; refresh before continuing.');
@@ -137,18 +149,44 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
       const body: PublishInput = { expected_version: post.version, revision_id: post.revision_id, acknowledged_warning_codes: acknowledged, ...(attested ? { review_attestation: { facts_checked: true, sources_checked: true } } : {}) };
       if (scheduled && (!selectedTime || Date.parse(selectedTime.utc) <= Date.now())) throw new SocialApiError('INVALID_SCHEDULE_TIME', 'Choose a future, unambiguous schedule time.');
       const result = await mutation.run(`/posts/${encodeURIComponent(post.id)}/${scheduled ? 'schedule' : 'publish'}`, scheduled ? { ...body, schedule: { local_time: localTime.length === 16 ? `${localTime}:00` : localTime, timezone, utc_offset: selectedTime!.offset } } : body, value => {
-        const receipt = decodePublication(value);
-        if (receipt.post_id !== post.id || receipt.targets.length !== selectedIds.length || new Set(receipt.targets.map(t => t.id)).size !== selectedIds.length || !selectedIds.every(id => receipt.targets.filter(t => t.account_id === id && t.platform === accounts.find(a => a.id === id)?.platform && t.status === 'queued').length === 1) || (scheduled ? Date.parse(receipt.scheduled_for ?? '') !== Date.parse(selectedTime!.utc) : receipt.scheduled_for !== null)) throw new SocialApiError('INVALID_RESPONSE', 'The publication receipt did not confirm the exact post, schedule and every selected destination. Refresh results before continuing; the original command key is preserved.');
-        return receipt;
+        return acceptedReceipt(value, scheduled ? selectedTime!.utc : undefined);
       }, { postId: post.id });
       setValidation(undefined); setMessage(`${scheduled ? 'Schedule' : 'Publication'} accepted for ${result.targets.length} destination(s). The worker reports each delivery separately; nothing is marked published here.`);
     });
   }
+  function acceptedReceipt(value: unknown, expectedSchedule?: string) {
+    const receipt = decodePublication(value);
+    const authorizedTargets = currentPublication ? effectivePost?.targets : undefined;
+    const stableAuthorization = !currentPublication || receipt.publication_id === currentPublication.id && !!authorizedTargets && receipt.targets.every(t => authorizedTargets.filter(authorized => authorized.id === t.id && authorized.account_id === t.account_id && authorized.platform === t.platform).length === 1);
+    if (!post || receipt.post_id !== post.id || receipt.targets.length !== selectedIds.length || new Set(receipt.targets.map(t => t.id)).size !== selectedIds.length || !selectedIds.every(id => receipt.targets.filter(t => t.account_id === id && t.platform === accounts.find(a => a.id === id)?.platform && t.status === 'queued').length === 1) || !stableAuthorization || !Number.isFinite(Date.parse(receipt.scheduled_for ?? '')) || (expectedSchedule && Date.parse(receipt.scheduled_for!) !== Date.parse(expectedSchedule))) throw new SocialApiError('INVALID_RESPONSE', 'The publication receipt did not confirm the exact post, authorization, schedule and every selected destination. Refresh results before continuing; the original command key is preserved.');
+    return receipt;
+  }
+  async function resume() {
+    if (!post || !canResume) return;
+    await perform(async () => {
+      const originalDue = currentPublication?.scheduled_for ? Date.parse(currentPublication.scheduled_for) : undefined;
+      const body = { expected_version: post.version, revision_id: post.revision_id, acknowledged_warning_codes: acknowledged, reason: resumeReason.trim(), ...(attested ? { review_attestation: { facts_checked: true, sources_checked: true } } : {}) };
+      const result = await mutation.run(`/posts/${encodeURIComponent(post.id)}/resume`, body, value => {
+        const receipt = acceptedReceipt(value);
+        const confirmedAt = Date.now(), resumedDue = Date.parse(receipt.scheduled_for!);
+        // Target work uses max(now, original due), while the receipt may retain
+        // the original schedule. A future schedule can expire during the call.
+        if (originalDue !== undefined && (!Number.isFinite(originalDue) || (originalDue > confirmedAt ? resumedDue !== originalDue : resumedDue < originalDue || resumedDue > confirmedAt + 5_000))) throw new SocialApiError('INVALID_RESPONSE', 'The resume receipt changed the original future schedule or returned an unrelated overdue due time. The original command key was preserved.');
+        return receipt;
+      }, { postId: post.id });
+      setValidation(undefined); setMessage(`Resume accepted for ${result.targets.length} destination(s). Review each delivery result; nothing is marked published here.`);
+    });
+  }
   async function editorial(action: 'submit' | 'approve' | 'reject' | 'cancel' | 'duplicate') {
+    if (action === 'submit' && !canSubmit) return;
     await perform(async () => {
       const saved = !post || dirty ? await save() : post;
       const body = { expected_version: saved.version, ...(action === 'approve' ? { revision_id: saved.revision_id, ...(attested ? { review_attestation: { facts_checked: true, sources_checked: true } } : {}) } : {}), ...(action === 'reject' ? { reason: rejectReason } : {}) };
-      const result = await mutation.run(`/posts/${encodeURIComponent(saved.id)}/${action}`, body, decodePost, { postId: saved.id });
+      const result = await mutation.run(`/posts/${encodeURIComponent(saved.id)}/${action}`, body, value => {
+        const detail = decodePost(value);
+        if (action !== 'duplicate' && detail.id !== saved.id) throw new SocialApiError('INVALID_RESPONSE', 'The command response belongs to another post. Your draft and the original command key were preserved.');
+        return detail;
+      }, { postId: saved.id });
       if (action === 'duplicate') { onSaved?.(result); if (!onSaved) window.location.assign(`/admin/social/${result.id}`); }
       else adopt(result);
       setMessage(action === 'cancel' ? 'Cancellation recorded. Accepted or in-flight remote requests may still complete; review each result.' : action === 'approve' ? 'This exact revision is approved. Publication is a separate command.' : action === 'submit' ? 'Draft submitted for human review.' : action === 'reject' ? 'Draft rejected; the reason is recorded.' : 'New manual draft created.');
@@ -157,7 +195,7 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
   const latestResults = latestPost && post && latestPost.version >= post.version ? latestPost.targets : post?.targets ?? [];
   // PageShell animates its content with a transform. A body portal keeps mobile
   // fixed controls attached to the viewport instead of that containing block.
-  const primaryActions = !locked && <div className={`${styles.actionBar} ${isMobile ? styles.floatingActions : ''}`}><button type='button' className={styles.button} disabled={busy} onClick={() => perform(async () => { const saved = await save(); setMessage('Draft saved. Nothing has been queued for publication.'); if (!initialPost) onSaved?.(saved); })}>Save draft</button><button type='button' className={`${styles.button} ${styles.primary}`} disabled={!canPublish} onClick={() => publish(false)}>Publish now</button></div>;
+  const primaryActions = !locked && <div className={`${styles.actionBar} ${isMobile ? styles.floatingActions : ''}`}><button type='button' className={styles.button} disabled={busy || stale || (!!post && !dirty)} onClick={() => perform(async () => { const saved = await save(); setMessage(hasContentChanges ? 'Draft saved. Nothing has been queued for publication.' : 'Saved content is unchanged. The current revision and authorization were kept.'); if (!initialPost) onSaved?.(saved); })}>Save draft</button><button type='button' className={`${styles.button} ${styles.primary}`} disabled={!canPublish} onClick={() => publish(false)}>Publish now</button></div>;
 
   return <article className={styles.editor} aria-label='Social post composer'>
     <div className={styles.editorHeading}><div><span className={styles.tag}>{post?.origin_type ?? 'Manual'} · {input.content_type || 'Content'}</span><h2>{post ? input.title || 'Untitled draft' : 'Create a manual post'}</h2></div><span className={styles.badge}>{busy ? 'Saving / checking…' : dirty ? 'Unsaved edits' : post ? `${post.editorial_state.replaceAll('_', ' ')} · revision ${post.version}` : 'Draft · not saved'}</span></div>
@@ -201,11 +239,12 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
     </div>
     <div className={styles.footer}>
       <p className={styles.muted}>{system ? system.publishing_enabled ? 'Publishing enabled. Backend gates are checked again for every command.' : 'Publishing is paused. Draft saving and review remain available.' : 'Publishing status unavailable. Draft saving remains available.'}</p>
-      {!locked && <><label className={styles.reviewCheck}><input type='checkbox' checked={attested} disabled={busy} onChange={e => setAttested(e.target.checked)} />I checked the facts and sources. This attestation is required when the server identifies sensitive content.</label><div className={styles.actions}><button type='button' className={styles.button} disabled={busy || stale} onClick={validate}>Save & validate</button><button type='button' className={styles.button} disabled={busy || stale || post?.editorial_state === 'pending_review'} onClick={() => editorial('submit')}>Submit for review</button></div>
+      {!locked && <><label className={styles.reviewCheck}><input type='checkbox' checked={attested} disabled={busy} onChange={e => setAttested(e.target.checked)} />I checked the facts and sources. This attestation is required when the server identifies sensitive content.</label><div className={styles.actions}><button type='button' className={styles.button} disabled={busy || stale} onClick={validate}>Save & validate</button><button type='button' className={styles.button} disabled={!canSubmit} onClick={() => editorial('submit')}>Submit for review</button></div>
         {!allValid && <p className={styles.muted}>Save & validate the current revision to enable publication. No invalid destination will be silently omitted.</p>}
         <div className={styles.actions}><button type='button' className={styles.button} disabled={busy || (!!currentPublication && !readyAuthorization)} aria-expanded={scheduleOpen} onClick={() => setScheduleOpen(!scheduleOpen)}>Schedule</button>{post?.editorial_state === 'pending_review' && <button type='button' className={styles.button} disabled={busy || !allValid} onClick={() => editorial('approve')}>Approve revision</button>}</div>
         {scheduleOpen && <div className={styles.schedule}><h3>One schedule for all selected accounts</h3><div className={styles.twoFields}><label>Local publish time<input type='datetime-local' value={localTime} disabled={busy} onChange={e => { setLocalTime(e.target.value); setOffsetChoice(''); }} /></label><label>IANA timezone<input value={timezone} disabled={busy} onChange={e => { setTimezone(e.target.value); setOffsetChoice(''); }} /></label></div>{civil.error && <p className={styles.notice} role='alert'>{civil.error}</p>}{civil.candidates.length > 1 && <label>UTC offset (this local time occurs twice)<select value={offsetChoice} disabled={busy} onChange={e => setOffsetChoice(e.target.value)}><option value=''>Choose the intended occurrence</option>{civil.candidates.map(c => <option key={c.offset} value={c.offset}>{c.offset} · {c.utc}</option>)}</select></label>}{selectedTime && <p>UTC preview: {selectedTime.utc} · offset {selectedTime.offset}</p>}<button type='button' className={`${styles.button} ${styles.primary}`} disabled={!canPublish || !selectedTime || Date.parse(selectedTime.utc) <= Date.now()} onClick={() => publish(true)}>Confirm schedule</button><p className={styles.muted}>The server rejects invalid, ambiguous or past times. A scheduled target still requires publishing gates to be enabled when due.</p></div>}
         {post?.editorial_state === 'pending_review' && <div className={styles.fields}><label>Reason to reject<input value={rejectReason} disabled={busy} onChange={e => setRejectReason(e.target.value)} /></label><button type='button' className={styles.button} disabled={busy || stale || dirty || !rejectReason.trim()} onClick={() => editorial('reject')}>Reject draft</button></div>}
+        {cancelledAuthorization && <div className={styles.fields}><label>Reason to resume<input value={resumeReason} disabled={busy} onChange={e => setResumeReason(e.target.value)} /></label><button type='button' className={styles.button} disabled={!canResume} onClick={resume}>Resume unsent deliveries</button><p className={styles.muted}>The server checks that every destination is unchanged, unsent and within its original deadlines. Future schedules are kept; expired or attempted deliveries require a new draft.</p></div>}
       </>}
       {post && <div className={styles.actions}>{currentPublication && <button type='button' className={styles.button} disabled={busy || stale || dirty} onClick={() => editorial('cancel')}>Cancel unsent deliveries</button>}<button type='button' className={styles.button} disabled={busy || dirty || stale} onClick={() => editorial('duplicate')}>Duplicate as new manual draft</button></div>}
     </div>

@@ -25,6 +25,12 @@ export function useSocialPosts(page: number, state?: EditorialState, active = tr
 export function hasActiveDelivery(post: SocialSummary | undefined) {
   return !!post?.targets.some(t => ['queued', 'claimed', 'dispatching', 'processing', 'retry_wait', 'reconciling'].includes(t.state));
 }
+function inconsistentStatus(compact: SocialSummary, current: SocialSummary | undefined) {
+  return !!current && (compact.id !== current.id || compact.version < current.version || (compact.version === current.version && compact.revision_id !== current.revision_id));
+}
+function statusError() {
+  return new SocialApiError('INVALID_RESPONSE', 'Delivery status is stale or refers to an inconsistent revision. The current document and results were preserved; refresh the full revision.');
+}
 export function useSocialPost(id: string | undefined) {
   const { enabled, actor } = useSocialAccess();
   return useQuery({
@@ -36,7 +42,7 @@ export function useSocialPost(id: string | undefined) {
 export function useSocialDeliveryStatus(post: SocialPost | undefined) {
   const { enabled, actor } = useSocialAccess();
   const qc = useQueryClient();
-  const requestedVersion = useRef<{ id: string; version: number } | undefined>(undefined);
+  const requestedVersions = useRef(new Map<string, number>());
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const update = () => setVisible(document.visibilityState !== 'hidden');
@@ -44,32 +50,47 @@ export function useSocialDeliveryStatus(post: SocialPost | undefined) {
     return () => document.removeEventListener('visibilitychange', update);
   }, []);
   const status = useQuery({
-    queryKey: socialKeys.status(actor, post?.id ?? ''), queryFn: ({ signal }) => socialApi.postStatus(post!.id, signal),
-    enabled: enabled && visible && hasActiveDelivery(post), staleTime: 15_000, gcTime: 60_000, retry: false,
+    queryKey: socialKeys.status(actor, post?.id ?? ''),
+    queryFn: async ({ signal }) => {
+      const id = post!.id;
+      const compact = await socialApi.postStatus(id, signal);
+      // Read this actor's latest values after the request completes. A full
+      // refresh or a prior compact response may have advanced meanwhile.
+      const current = qc.getQueryData<SocialPost>(socialKeys.detail(actor, id)) ?? post;
+      const previous = qc.getQueryData<SocialSummary>(socialKeys.status(actor, id));
+      if (compact.id !== id || inconsistentStatus(compact, current) || inconsistentStatus(compact, previous)) throw statusError();
+      return compact;
+    },
+    // A contract failure stays stopped across visibility changes/rerenders.
+    // The returned refetch still permits an explicit administrator retry.
+    enabled: query => enabled && visible && hasActiveDelivery(post) && !query.state.error,
+    staleTime: 15_000, gcTime: 60_000, retry: false,
     refetchOnWindowFocus: false, refetchIntervalInBackground: false,
     refetchInterval: query => {
       const compact = query.state.data;
       if (!visible || query.state.error || !post) return false;
-      if (compact?.version === post.version && compact.revision_id !== post.revision_id) return false;
-      return hasActiveDelivery(!compact || compact.version < post.version ? post : compact) ? 15_000 : false;
+      if (compact && inconsistentStatus(compact, post)) return false;
+      return hasActiveDelivery(compact ?? post) ? 15_000 : false;
     },
   });
   useEffect(() => {
     const compact = status.data;
-    if (!compact || !post || compact.id !== post.id) return;
+    if (status.error || !compact || !post || compact.id !== post.id) return;
     const key = socialKeys.detail(actor, compact.id);
     const detail = qc.getQueryData<SocialPost>(key);
     if (!detail) return;
     if (compact.version === detail.version && compact.revision_id === detail.revision_id) {
       // Only delivery fields change. Never replace a document/revision with a summary.
       qc.setQueryData(key, { ...detail, targets: compact.targets, delivery_status: compact.delivery_status, updated_at: compact.updated_at });
-    } else if (compact.version > detail.version && (requestedVersion.current?.id !== compact.id || requestedVersion.current.version !== compact.version)) {
-      requestedVersion.current = { id: compact.id, version: compact.version };
+    } else if (compact.version > detail.version) {
+      const scope = JSON.stringify([actor, compact.id]);
+      if ((requestedVersions.current.get(scope) ?? 0) >= compact.version) return;
+      requestedVersions.current.set(scope, compact.version);
       void qc.invalidateQueries({ queryKey: key, exact: true });
     }
-  }, [status.data, post?.id, actor, qc]);
-  const inconsistent = status.data && post && status.data.version === post.version && status.data.revision_id !== post.revision_id;
-  return { ...status, error: inconsistent ? new SocialApiError('INVALID_RESPONSE', 'Delivery status refers to a different revision at the same version. The current document and results were preserved; refresh the full revision.') : status.error };
+  }, [status.data, status.error, post?.id, actor, qc]);
+  const inconsistent = status.data && post && inconsistentStatus(status.data, post);
+  return { ...status, error: status.error ?? (inconsistent ? statusError() : null) };
 }
 export function useSocialAccounts() {
   const { enabled, actor } = useSocialAccess();
@@ -104,7 +125,7 @@ export function useSocialMutation() {
       }
       if (c.postId) await qc.invalidateQueries({ queryKey: socialKeys.status(c.actor, c.postId), exact: true });
       if (c.path !== '/controls') await qc.invalidateQueries({ queryKey: socialKeys.lists(c.actor) });
-      if (c.path === '/controls' || /\/(publish|schedule|cancel|retry)$/.test(c.path)) {
+      if (c.path === '/controls' || /\/(publish|schedule|cancel|retry|resume)$/.test(c.path)) {
         await qc.invalidateQueries({ queryKey: [...socialKeys.root(c.actor), 'system'], exact: true });
       }
     },

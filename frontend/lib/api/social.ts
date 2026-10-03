@@ -42,9 +42,20 @@ export interface SocialCapabilities {
   verified_at: string | null; adapter_available: boolean;
 }
 export interface SocialIssue { code: string; field: string; message: string; account_id?: string }
+export interface InspectedAsset {
+  asset_id: string; sha256: string; mime_type: string; byte_size: number;
+  width: number | null; height: number | null; duration_ms: number | null;
+  alt_text: string | null; caption_asset_id: string | null; caption_sha256: string | null;
+}
+export interface ResolvedPostPayload {
+  schema_version: 1; account_id: string; platform: SocialPlatform; api_product: string;
+  external_account_id: string; format: SocialFormat; text: string; link: string | null;
+  hashtags: string[]; assets: InspectedAsset[]; visibility: 'public'; disclosures: string[];
+  capability_version: string; evidence_hash: string; content_hash: string;
+}
 export interface TargetValidation {
   account_id: string; platform: SocialPlatform | null; valid: boolean;
-  errors: SocialIssue[]; warnings: SocialIssue[]; resolved_preview: Record<string, unknown> | null;
+  errors: SocialIssue[]; warnings: SocialIssue[]; resolved_preview: ResolvedPostPayload | null;
 }
 export interface SocialValidation { valid: boolean; rules_version: string; targets: TargetValidation[]; errors: SocialIssue[]; warnings: SocialIssue[] }
 export interface SocialControls {
@@ -55,7 +66,7 @@ export interface SocialSystemStatus extends Omit<SocialControls, 'version'> {
   controls_version: number; worker: { state: string; heartbeat_at: string | null; last_scan_at: string | null };
   queue_counts: Record<string, number>; adapters_available: string[]; media_upload_available: false;
 }
-export interface SocialPublication { post_id: string; publication_id: string; status: string; scheduled_for: string | null; targets: Array<{ id: string; account_id: string; platform: SocialPlatform; status: string }> }
+export interface SocialPublication { post_id: string; publication_id: string; status: 'queued'; scheduled_for: string | null; targets: Array<{ id: string; account_id: string; platform: SocialPlatform; status: TargetState }>; status_url: string }
 export interface SocialDraftInput { title: string; content_type: string; document: SocialDocument; references: SocialReference[] }
 export interface VersionInput { expected_version: number }
 export interface ApprovalInput extends VersionInput { revision_id: string; review_attestation?: { facts_checked: boolean; sources_checked: boolean } }
@@ -74,6 +85,24 @@ function str(v: unknown): string { if (typeof v !== 'string') throw contractErro
 function bool(v: unknown): boolean { if (typeof v !== 'boolean') throw contractError(); return v; }
 function integer(v: unknown, min = 1): number { if (typeof v !== 'number' || !Number.isSafeInteger(v) || v < min) throw contractError(); return v; }
 function nullable(v: unknown): string | null { return v === null ? null : str(v); }
+function uuid(v: unknown): string { const s = str(v); if (s.length !== 36 || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)) throw contractError(); return s.toLowerCase(); }
+function hash(v: unknown): string { const s = str(v); if (s.length !== 64 || !/^[0-9a-f]{64}$/.test(s)) throw contractError(); return s; }
+function nullableInteger(v: unknown): number | null { return v === null ? null : integer(v); }
+function boundedText(v: unknown, max: number, min = 0): string { const s = str(v), length = Array.from(s).length; if (length < min || length > max) throw contractError(); return s; }
+/** Serialized StrictModel payloads include defaults and reject unknown fields. */
+function exactObject(v: unknown, fields: readonly string[]): Obj {
+  const o = obj(v);
+  if (Object.keys(o).some(key => !fields.includes(key)) || fields.some(key => !Object.prototype.hasOwnProperty.call(o, key))) throw contractError();
+  return o;
+}
+function resolvedLink(v: unknown): string | null {
+  if (v === null) return null;
+  const s = str(v);
+  if (/[\s\u0085\u001c-\u001f]/.test(s) || !/^https:\/\/[^/?#\\]+(?:[/?#]|$)/i.test(s)) throw contractError();
+  try { const url = new URL(s); if (url.protocol !== 'https:' || !url.hostname || url.username || url.password) throw contractError(); }
+  catch { throw contractError(); }
+  return s;
+}
 function oneOf<T extends string>(v: unknown, choices: readonly T[]): T { const s = str(v); if (!choices.includes(s as T)) throw contractError(); return s as T; }
 function contractError() { return new SocialApiError('INVALID_RESPONSE', 'The social service returned an unexpected response. Refresh or contact the administrator; no success has been assumed.'); }
 const formats: SocialFormat[] = ['text', 'image', 'carousel', 'video', 'reel'];
@@ -108,8 +137,26 @@ export function decodePost(v: unknown): SocialPost {
   return { ...decodeSummary(o), document: decodeDocument(o.document), references: arr(o.references).map(item => { const r = obj(item); return { url: str(r.url), ...(r.label === undefined ? {} : { label: nullable(r.label) }) }; }), publication: p && { id: str(p.id), revision_id: str(p.revision_id), scheduled_for: nullable(p.scheduled_for), version: integer(p.version), approved_at: nullable(p.approved_at) }, ...(cancellation === undefined ? {} : { cancellation: cancellation === null ? null : { in_flight_target_ids: arr(cancellation.in_flight_target_ids).map(str), message: str(cancellation.message) } }) };
 }
 function issues(v: unknown): SocialIssue[] { return arr(v).map(item => { const o = obj(item); return { code: str(o.code), field: str(o.field), message: str(o.message), ...(typeof o.account_id === 'string' ? { account_id: o.account_id } : {}) }; }); }
+export function decodeInspectedAsset(v: unknown): InspectedAsset {
+  const o = exactObject(v, ['asset_id', 'sha256', 'mime_type', 'byte_size', 'width', 'height', 'duration_ms', 'alt_text', 'caption_asset_id', 'caption_sha256']);
+  return { asset_id: uuid(o.asset_id), sha256: hash(o.sha256), mime_type: str(o.mime_type), byte_size: integer(o.byte_size), width: nullableInteger(o.width), height: nullableInteger(o.height), duration_ms: nullableInteger(o.duration_ms), alt_text: nullable(o.alt_text), caption_asset_id: o.caption_asset_id === null ? null : uuid(o.caption_asset_id), caption_sha256: o.caption_sha256 === null ? null : hash(o.caption_sha256) };
+}
+export function decodeResolvedPostPayload(v: unknown): ResolvedPostPayload {
+  const o = exactObject(v, ['schema_version', 'account_id', 'platform', 'api_product', 'external_account_id', 'format', 'text', 'link', 'hashtags', 'assets', 'visibility', 'disclosures', 'capability_version', 'evidence_hash', 'content_hash']);
+  if (o.schema_version !== 1) throw contractError();
+  const external_account_id = str(o.external_account_id);
+  if (!external_account_id.trim()) throw contractError();
+  const hashtags = arr(o.hashtags);
+  if (hashtags.length > 50) throw contractError();
+  return { schema_version: 1, account_id: uuid(o.account_id), platform: oneOf(o.platform, SOCIAL_PLATFORMS), api_product: str(o.api_product), external_account_id, format: oneOf(o.format, formats), text: boundedText(o.text, 20_000), link: resolvedLink(o.link), hashtags: hashtags.map(value => boundedText(value, 100, 1)), assets: arr(o.assets).map(decodeInspectedAsset), visibility: oneOf(o.visibility, ['public']), disclosures: arr(o.disclosures).map(str), capability_version: str(o.capability_version), evidence_hash: hash(o.evidence_hash), content_hash: hash(o.content_hash) };
+}
 export function decodeValidation(v: unknown): SocialValidation {
-  const o = obj(v); return { valid: bool(o.valid), rules_version: str(o.rules_version), errors: issues(o.errors), warnings: issues(o.warnings), targets: arr(o.targets).map(item => { const t = obj(item); return { account_id: str(t.account_id), platform: t.platform === null ? null : oneOf(t.platform, SOCIAL_PLATFORMS), valid: bool(t.valid), errors: issues(t.errors), warnings: issues(t.warnings), resolved_preview: t.resolved_preview === null ? null : obj(t.resolved_preview) }; }) };
+  const o = obj(v); return { valid: bool(o.valid), rules_version: oneOf(o.rules_version, ['social-v1']), errors: issues(o.errors), warnings: issues(o.warnings), targets: arr(o.targets).map(item => {
+    const t = obj(item), account_id = uuid(t.account_id), platform = t.platform === null ? null : oneOf(t.platform, SOCIAL_PLATFORMS), valid = bool(t.valid);
+    const resolved_preview = t.resolved_preview === null ? null : decodeResolvedPostPayload(t.resolved_preview);
+    if ((valid && !resolved_preview) || (resolved_preview && (resolved_preview.account_id !== account_id || resolved_preview.platform !== platform))) throw contractError();
+    return { account_id, platform, valid, errors: issues(t.errors), warnings: issues(t.warnings), resolved_preview };
+  }) };
 }
 function falseFlag(v: unknown): false { if (v !== false) throw contractError(); return false; }
 function disabledAutomation(o: Obj) { return { generation_enabled: falseFlag(o.generation_enabled), auto_approve_enabled: falseFlag(o.auto_approve_enabled), auto_schedule_enabled: falseFlag(o.auto_schedule_enabled), auto_publish_enabled: falseFlag(o.auto_publish_enabled) }; }
@@ -123,7 +170,9 @@ function decodeCapabilities(v: unknown): SocialCapabilities {
   return { rules_version: str(o.rules_version), provider_api_version: str(o.provider_api_version), eligible: bool(o.eligible), supported_formats: arr(o.supported_formats).map(f => oneOf(f, formats)), feature_states: Object.fromEntries(Object.entries(obj(o.feature_states)).map(([k, state]) => [k, str(state)])), limits: Object.fromEntries(Object.entries(obj(o.limits)).map(([k, limit]) => [k, limit === null ? null : integer(limit, 0)])), granted_scopes: arr(o.granted_scopes).map(str), required_scopes: arr(o.required_scopes).map(str), price_class: oneOf(o.price_class, ['free', 'paid', 'unverified']), source_links: arr(o.source_links).map(str), verified_at: nullable(o.verified_at), adapter_available: bool(o.adapter_available) };
 }
 export function decodePublication(v: unknown): SocialPublication {
-  const o = obj(v); return { post_id: str(o.post_id), publication_id: str(o.publication_id), status: oneOf(o.status, ['queued']), scheduled_for: nullable(o.scheduled_for), targets: arr(o.targets).map(item => { const t = obj(item); return { id: str(t.id), account_id: str(t.account_id), platform: oneOf(t.platform, SOCIAL_PLATFORMS), status: oneOf(t.status, targetStates) }; }) };
+  const o = obj(v), post_id = uuid(o.post_id), status_url = str(o.status_url);
+  if (status_url !== `/api/v1/admin/social/posts/${post_id}/status`) throw contractError();
+  return { post_id, publication_id: uuid(o.publication_id), status: oneOf(o.status, ['queued']), scheduled_for: nullable(o.scheduled_for), targets: arr(o.targets).map(item => { const t = obj(item); return { id: uuid(t.id), account_id: uuid(t.account_id), platform: oneOf(t.platform, SOCIAL_PLATFORMS), status: oneOf(t.status, targetStates) }; }), status_url };
 }
 export function toSocialError(error: unknown): SocialApiError {
   if (error instanceof SocialApiError) return error;

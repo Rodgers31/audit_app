@@ -1,6 +1,6 @@
 'use client';
 
-import { decodePost, SocialAccount, SocialTarget } from '@/lib/api/social';
+import { decodePost, SocialAccount, SocialApiError, SocialTarget } from '@/lib/api/social';
 import { useSocialMutation } from '@/lib/hooks/useSocial';
 import { useState } from 'react';
 import { SocialErrorBanner } from './SocialNotice';
@@ -14,7 +14,11 @@ export default function SocialResults({ targets, accounts, postId }: { targets: 
   async function retry(id: string) {
     setMessage('');
     try {
-      await mutation.run(`/targets/${encodeURIComponent(id)}/retry`, { reason: reasons[id] }, decodePost, { postId });
+      await mutation.run(`/targets/${encodeURIComponent(id)}/retry`, { reason: reasons[id] }, value => {
+        const result = decodePost(value);
+        if (result.id !== postId) throw new SocialApiError('INVALID_RESPONSE', 'The retry response belongs to another post. Refresh this post before continuing; the original command key is preserved.');
+        return result;
+      }, { postId });
       setMessage('Retry command accepted. Delivery is confirmed only by the updated destination result.');
     } catch { /* The typed mutation banner retains the failure. */ }
   }

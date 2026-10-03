@@ -1,13 +1,15 @@
 import { MediaReference } from '@/lib/api/social';
+import { useId } from 'react';
 import styles from './social.module.css';
 
 export default function SocialMedia({ media, onChange, label }: { media: MediaReference[]; onChange: (media: MediaReference[]) => void; label: string }) {
+  const descriptionId = useId();
   function move(index: number, delta: number) {
     const next = [...media]; [next[index], next[index + delta]] = [next[index + delta], next[index]]; onChange(next);
   }
   return <div className={styles.fields}>
-    <div className={styles.actions}><button type='button' className={styles.button} disabled aria-describedby='social-media-unavailable'>Upload media</button><button type='button' className={styles.button} disabled aria-describedby='social-media-unavailable'>Choose from library</button></div>
-    <p className={styles.muted} id={label === 'Master' ? 'social-media-unavailable' : undefined}>Media uploads and the storage library are unavailable in this batch. Existing asset references are retained and checked by the server.</p>
+    <div className={styles.actions}><button type='button' className={styles.button} disabled aria-describedby={descriptionId}>Upload media</button><button type='button' className={styles.button} disabled aria-describedby={descriptionId}>Choose from library</button></div>
+    <p className={styles.muted} id={descriptionId}>Media uploads and the storage library are unavailable in this batch. Existing asset references are retained and checked by the server.</p>
     {!media.length && <p className={styles.muted}>No media references selected.</p>}
     <ol className={styles.mediaList}>{media.map((asset, index) => <li className={styles.mediaItem} key={`${asset.asset_id}-${index}`}>
       <span className={styles.mediaId}>{index + 1}. Asset {asset.asset_id}</span>

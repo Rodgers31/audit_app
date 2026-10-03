@@ -43,8 +43,8 @@ export function targetHints(master: SocialContent, target: DocumentTarget, accou
   return hints;
 }
 export function httpsUrl(value: string | null | undefined): string | undefined {
-  if (!value) return undefined;
-  try { const url = new URL(value); return url.protocol === 'https:' ? url.href : undefined; } catch { return undefined; }
+  if (!value || /[\s\u0085\u001c-\u001f]/.test(value) || !/^https:\/\/[^/?#\\]+(?:[/?#]|$)/i.test(value)) return undefined;
+  try { const url = new URL(value); return url.protocol === 'https:' && url.hostname && !url.username && !url.password ? url.href : undefined; } catch { return undefined; }
 }
 
 export interface CivilCandidate { utc: string; offset: string }

@@ -29,7 +29,7 @@ test.each(['empty', 'partial', 'duplicate', 'different post'])('a %s publication
   const base = post();
   const p = post({ document: { ...base.document, targets: [base.document.targets[0], { account_id: instagramId, format: 'image', overrides: {} }] } });
   const targets = [target('queued'), target('queued', 'instagram')].map(t => ({ id: t.id, account_id: t.account_id, platform: t.platform, status: 'queued' }));
-  const receipt = { post_id: p.id, publication_id: '00000000-0000-4000-8000-000000000060', status: 'queued', scheduled_for: null, targets };
+  const receipt = { post_id: p.id, publication_id: '00000000-0000-4000-8000-000000000060', status: 'queued', scheduled_for: '2026-10-03T12:00:00Z', status_url: `/api/v1/admin/social/posts/${p.id}/status`, targets };
   if (attack === 'empty') receipt.targets = [];
   if (attack === 'partial') receipt.targets = targets.slice(0, 1);
   if (attack === 'duplicate') receipt.targets = [targets[0], { ...targets[0], id: '00000000-0000-4000-8000-000000000052' }];
@@ -39,7 +39,7 @@ test.each(['empty', 'partial', 'duplicate', 'different post'])('a %s publication
   fireEvent.click(screen.getByRole('button', { name: 'Save & validate' }));
   await waitFor(() => expect(screen.getByRole('button', { name: 'Publish now' })).toBeEnabled());
   fireEvent.click(screen.getByRole('button', { name: 'Publish now' }));
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Save draft' })).toBeEnabled());
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Save & validate' })).toBeEnabled());
   expect(send.mock.calls.some(c => c[0].endsWith('/publish'))).toBe(true);
   expect(screen.queryByText(/Publication accepted/)).not.toBeInTheDocument();
   expect(screen.getByRole('alert')).toHaveTextContent(/INVALID RESPONSE/);

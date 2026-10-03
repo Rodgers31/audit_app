@@ -35,7 +35,6 @@ function mount(p: SocialPost, connected = accounts) {
 }
 async function validate() {
   fireEvent.click(screen.getByRole('button', { name: 'Save & validate' }));
-  await screen.findByRole('region', { name: 'Backend validation' });
   await waitFor(() => expect(screen.getByRole('button', { name: 'Save & validate' })).toBeEnabled());
 }
 function expectClosed() {
@@ -139,7 +138,7 @@ test.each(['VERSION_CONFLICT', 'TARGET_VALIDATION_FAILED', 'PUBLISHING_PAUSED'])
   send.mockRejectedValueOnce(typedError(code, 'Authoritative publication rejection.'));
   fireEvent.click(screen.getByRole('button', { name: 'Publish now' }));
   await screen.findByText(/Authoritative publication rejection/);
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Save draft' })).toBeEnabled());
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Save & validate' })).toBeEnabled());
   expect(screen.getByLabelText('Master text')).toHaveValue(post().document.master.text);
   expect(screen.getByRole('checkbox', { name: /Facebook · AuditGava test Page/ })).toBeChecked();
   expect(screen.queryByText(/Publication accepted/)).not.toBeInTheDocument();

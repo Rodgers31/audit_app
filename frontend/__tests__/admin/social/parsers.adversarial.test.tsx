@@ -177,9 +177,9 @@ test.each([null, '2026-10-03T11:00:00Z', '2026-10-03T13:00:00Z', 'not-a-time'])(
 test('a once-fresh heartbeat becomes stale while the page is idle', async () => {
   jest.useFakeTimers({ now: new Date('2026-10-03T12:00:00Z') });
   const qc = client();
-  render(<QueryClientProvider client={qc}><SocialSystemStrip status={{ ...system, worker: { state: 'healthy', heartbeat_at: '2026-10-03T12:00:00Z', last_scan_at: null } }} refresh={jest.fn()} /></QueryClientProvider>);
-  expect(screen.getByText('Worker: healthy')).toBeInTheDocument();
-  await act(async () => { jest.advanceTimersByTime(195_001); });
-  expect(screen.queryByText('Worker: healthy')).not.toBeInTheDocument();
+  render(<QueryClientProvider client={qc}><SocialSystemStrip status={{ ...system, worker: { state: 'active', heartbeat_at: '2026-10-03T12:00:00Z', last_scan_at: '2026-10-03T12:00:00Z' } }} refresh={jest.fn()} /></QueryClientProvider>);
+  expect(screen.getByText('Worker: active')).toBeInTheDocument();
+  await act(async () => { jest.advanceTimersByTime(45_001); });
+  expect(screen.queryByText('Worker: active')).not.toBeInTheDocument();
   expect(screen.getByText('Worker heartbeat stale or unavailable')).toBeInTheDocument();
 });

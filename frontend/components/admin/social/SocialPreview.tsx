@@ -7,7 +7,7 @@ export default function SocialPreview({ master, target, account, validation }: {
   const resolved = validation?.resolved_preview;
   const text = typeof resolved?.text === 'string' ? resolved.text : content.text;
   const link = resolved && ('link' in resolved) ? (typeof resolved.link === 'string' ? resolved.link : null) : content.link;
-  const inspected = Array.isArray(resolved?.assets) ? resolved.assets.filter((asset): asset is Record<string, unknown> => !!asset && typeof asset === 'object' && !Array.isArray(asset)) : [];
+  const inspected = resolved?.assets ?? [];
   return <section className={styles.preview} aria-label='Resolved post preview'>
     <div className={styles.previewAccount}><span className={styles.avatar} aria-hidden='true'>AG</span><div><strong>{account?.display_name ?? 'Master content'}</strong><p className={styles.muted}>{account ? `${account.handle ?? 'Handle unavailable'} · ${platformLabels[account.platform]}` : 'Select a connected account to preview its version'}</p></div></div>
     {content.media.length > 0 && <ul className={styles.mediaList} aria-label='Preview media references'>{content.media.map((asset, index) => {
