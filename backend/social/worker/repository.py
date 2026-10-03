@@ -100,7 +100,9 @@ class QueueRepository:
             for claim in claims:
                 self._audit(conn, claim, "target_claimed", claim.previous_state,
                             "claimed" if claim.previous_state in ("queued", "retry_wait")
-                            else claim.previous_state)
+                            else claim.previous_state,
+                            {"account_id": claim.account_id, "publication_id": claim.publication_id,
+                             "lease_epoch": claim.epoch}, related_fks=False)
             return claims
 
     def next_due_delay(self, ceiling: float) -> float:
@@ -507,17 +509,17 @@ class QueueRepository:
                     "active": active_claims, "state": state, "error": error_code,
                     "scanned": scanned, "success": success})
 
-    def _audit(self, conn, claim, action, previous, new, details=None):
+    def _audit(self, conn, claim, action, previous, new, details=None, *, related_fks=True):
         conn.execute(text("""
             INSERT INTO social_audit_events (id,post_id,target_id,account_id,actor_kind,
                 action,previous_state,new_state,details,request_id,created_at)
             VALUES (CAST(:audit AS uuid),
-                (SELECT post_id FROM social_publications WHERE id=CAST(:publication AS uuid)),
-                CAST(:id AS uuid),CAST(:account AS uuid),'worker',:action,:previous,:new,
+                CASE WHEN :related THEN (SELECT post_id FROM social_publications WHERE id=CAST(:publication AS uuid)) ELSE NULL END,
+                CAST(:id AS uuid),CASE WHEN :related THEN CAST(:account AS uuid) ELSE NULL END,'worker',:action,:previous,:new,
                 CAST(:details AS jsonb),:worker,now())
         """), {**self._params(claim), "audit": str(uuid4()), "action": action,
                 "previous": previous, "new": new, "details": _json(details or {}),
-                "worker": self.worker_id})
+                "worker": self.worker_id, "related": related_fks})
 
     @staticmethod
     def _params(claim):

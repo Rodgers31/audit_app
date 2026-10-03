@@ -842,3 +842,36 @@ def test_lease_identity_cannot_be_forged_to_lock_a_different_authorization(engin
     with pytest.raises(LeaseLost):
         intent(repo,forged)
     assert row(engine,claim.target_id)["submit_count"] == 0
+
+
+def test_claim_audit_does_not_deadlock_against_account_then_target_lock_order(engine):
+    ids = seed(engine)
+    repo = repository(engine)
+    auditing = threading.Event()
+    def observe(conn,cursor,statement,parameters,context,executemany):
+        if "INSERT INTO social_audit_events" in statement:
+            auditing.set()
+    sqlalchemy_event.listen(engine,"before_cursor_execute",observe)
+    try:
+        with engine.connect() as blocker:
+            transaction = blocker.begin()
+            blocker.execute(text("SET LOCAL deadlock_timeout='100ms'"))
+            blocker.execute(text("SET LOCAL lock_timeout='2s'"))
+            blocker.execute(text("SELECT id FROM social_accounts WHERE id=:id FOR UPDATE"),{"id":ids["accounts"][0]})
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                pending = pool.submit(repo.claim_due)
+                assert auditing.wait(timeout=2)
+                # Permit/cancel ordering is already holding the account row; a
+                # claim owns target first, so cross-row audit FKs must not wait.
+                time.sleep(0.05)
+                blocker.execute(text("SELECT id FROM social_post_targets WHERE id=:id FOR UPDATE"),{"id":ids["targets"][0]})
+                transaction.commit()
+                assert len(pending.result(timeout=3)) == 1
+        with engine.connect() as conn:
+            audit = conn.execute(text("SELECT post_id,account_id,target_id,details FROM social_audit_events WHERE action='target_claimed'")).mappings().one()
+        assert audit["post_id"] is None and audit["account_id"] is None
+        assert audit["target_id"] == ids["targets"][0]
+        assert audit["details"]["account_id"] == str(ids["accounts"][0])
+        assert audit["details"]["publication_id"] == str(ids["publication"])
+    finally:
+        sqlalchemy_event.remove(engine,"before_cursor_execute",observe)

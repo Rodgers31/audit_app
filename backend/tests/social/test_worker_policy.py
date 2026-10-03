@@ -58,7 +58,7 @@ def test_direct_retry_policy_rejects_hostile_submission_count(count):
 
 def test_whitespace_metadata_is_not_positive_confirmation():
     from social.worker.runner import SocialWorker
-    assert not SocialWorker._confirmed(OperationResult(outcome="confirmed_success",primary_remote_id=" ",
+    assert not SocialWorker._confirmed(OperationResult.model_construct(outcome="confirmed_success",primary_remote_id=" ",
         visibility_state="public",confirmation_kind=" "))
 
 
