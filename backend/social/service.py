@@ -1,0 +1,483 @@
+"""Transactional manual commands. No external network or automatic approval."""
+from __future__ import annotations
+
+from datetime import datetime, timedelta, timezone
+from typing import Callable
+from uuid import UUID, uuid4
+
+from sqlalchemy import func, select, text
+from sqlalchemy.orm import Session
+
+from .contracts import PostDocument, canonical_hash
+from .models import (SocialAccount, SocialAuditEvent, SocialCommandReceipt, SocialControls, SocialMediaAsset, SocialPost, SocialPostRevision, SocialPostTarget, SocialPublication, SocialPublishAttempt, SocialRevisionAsset, SocialWorkerHeartbeat)
+from .telemetry import log_event
+from .validation import all_asset_ids, capability_for, resolve_schedule, validate_document
+
+
+class SocialError(Exception):
+    def __init__(self, code, message, status=409, *, field_errors=(), target_errors=(), retryable=False):
+        self.code, self.message, self.status = code, message, status
+        self.field_errors, self.target_errors, self.retryable = field_errors, target_errors, retryable
+        super().__init__(code)
+
+    def detail(self, request_id):
+        return {"code": self.code, "message": self.message, "field_errors": list(self.field_errors), "target_errors": list(self.target_errors), "retryable": self.retryable, "request_id": str(request_id)}
+
+
+def utc(value):
+    return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value.astimezone(timezone.utc)
+
+
+def iso(value):
+    return utc(value).isoformat().replace("+00:00", "Z") if value is not None else None
+
+
+def document_json(document):
+    value = document.model_dump(mode="json")
+    for index, target in enumerate(document.targets):
+        value["targets"][index]["overrides"] = target.overrides.model_dump(mode="json", exclude_unset=True)
+    return value
+
+
+SENSITIVE_CATEGORIES = frozenset({"debt_update", "budget_update", "audit_finding", "financial_claim", "correction", "allegation", "reputational_claim"})
+INFLIGHT = frozenset({"dispatching", "processing", "reconciling", "outcome_unknown", "published"})
+
+
+class SocialService:
+    def __init__(self, db: Session, *, available_adapters=frozenset()):
+        self.db = db
+        self.available_adapters = frozenset(available_adapters)
+        self.actor = None
+        self.request_id = None
+
+    def now(self):
+        return utc(self.db.scalar(select(func.now())))
+
+    def command(self, *, actor: UUID, route: str, key: UUID, body, request_id: UUID, action: Callable, status=200):
+        """Receipt, mutation and audit share one transaction; PG lock serializes keys."""
+        self.actor, self.request_id = actor, request_id
+        request_hash = canonical_hash(body)
+        with self.db.begin():
+            if self.db.bind.dialect.name == "postgresql":
+                lock_value = int(canonical_hash([str(actor), route, str(key)])[:16], 16)
+                if lock_value >= 2**63:
+                    lock_value -= 2**64
+                self.db.execute(text("SELECT pg_advisory_xact_lock(:key)"), {"key": lock_value})
+            receipt = self.db.scalar(select(SocialCommandReceipt).where(SocialCommandReceipt.actor_key == str(actor), SocialCommandReceipt.route_key == route, SocialCommandReceipt.idempotency_key == key))
+            if receipt:
+                if receipt.request_hash != request_hash:
+                    raise SocialError("IDEMPOTENCY_CONFLICT", "This command key was already used with different input.")
+                return receipt.http_status, receipt.response
+            result = action()
+            self.db.flush()
+            now = self.now()
+            resource_id = result.get("id") or result.get("post_id")
+            self.db.add(SocialCommandReceipt(actor_key=str(actor), route_key=route, idempotency_key=key, request_hash=request_hash, resource_id=UUID(resource_id) if resource_id else None, http_status=status, response=result, expires_at=now + timedelta(days=30)))
+            self.db.flush()
+        log_event("social.command_committed", request_id=request_id, post_id=resource_id, action=route, result="committed")
+        return status, result
+
+    def audit(self, action, *, post=None, target=None, previous=None, new=None, reason=None, details=None):
+        self.db.add(SocialAuditEvent(post_id=post.id if post else None, target_id=target.id if target else None, account_id=target.account_id if target else None, actor_id=self.actor, actor_kind="admin", action=action, previous_state=previous, new_state=new, reason=reason, details=details or {}, request_id=str(self.request_id)))
+
+    def _post(self, post_id):
+        post = self.db.get(SocialPost, post_id)
+        if not post:
+            raise SocialError("NOT_FOUND", "This social post was not found.", 404)
+        return post
+
+    def _revision(self, post):
+        revision = self.db.get(SocialPostRevision, post.current_revision_id)
+        if not revision or revision.post_id != post.id:
+            raise SocialError("SOCIAL_SCHEMA_UNAVAILABLE", "This draft revision is unavailable. Ask an administrator to verify the social schema.", 503)
+        return revision
+
+    def _publication(self, post):
+        return self.db.scalar(select(SocialPublication).where(SocialPublication.post_id == post.id, SocialPublication.revoked_at.is_(None)))
+
+    def _targets(self, publication):
+        return list(self.db.scalars(select(SocialPostTarget).where(SocialPostTarget.publication_id == publication.id).order_by(SocialPostTarget.id))) if publication else []
+
+    def _locked(self, post_id, expected_version):
+        post = self._post(post_id)
+        revision = self._revision(post)
+        publication = self._publication(post)
+        accounts = {t.account_id for t in PostDocument.model_validate(revision.document).targets}
+        if publication:
+            accounts.update(t.account_id for t in self._targets(publication))
+        # Same order as worker dispatch permits: controls, accounts, publication, targets.
+        self.db.scalar(select(SocialControls).where(SocialControls.id == 1).with_for_update())
+        if accounts:
+            list(self.db.scalars(select(SocialAccount).where(SocialAccount.id.in_(accounts)).order_by(SocialAccount.id).with_for_update()))
+        if publication:
+            publication = self.db.scalar(select(SocialPublication).where(SocialPublication.id == publication.id).with_for_update().execution_options(populate_existing=True))
+            list(self.db.scalars(select(SocialPostTarget).where(SocialPostTarget.publication_id == publication.id).order_by(SocialPostTarget.id).with_for_update().execution_options(populate_existing=True)))
+        post = self.db.scalar(select(SocialPost).where(SocialPost.id == post_id).with_for_update().execution_options(populate_existing=True))
+        if post.row_version != expected_version:
+            raise SocialError("VERSION_CONFLICT", "This post changed. Refresh it before continuing.")
+        return post, self._revision(post), self._publication(post)
+
+    def _touch(self, post):
+        post.row_version += 1
+        post.updated_at = self.now()
+
+    def _new_revision(self, post, document, references, revision_no):
+        ids = all_asset_ids(document)
+        existing = set(self.db.scalars(select(SocialMediaAsset.id).where(SocialMediaAsset.id.in_(ids)))) if ids else set()
+        if ids != existing:
+            raise SocialError("TARGET_VALIDATION_FAILED", "One or more referenced media assets do not exist.", 422)
+        evidence = {"references": [r.model_dump(mode="json") if hasattr(r, "model_dump") else r for r in references]}
+        value = document_json(document)
+        revision = SocialPostRevision(id=uuid4(), post_id=post.id, revision_no=revision_no, document=value, content_hash=canonical_hash({"document": value, "evidence_snapshot": evidence}), evidence_snapshot=evidence, created_by=self.actor)
+        self.db.add(revision)
+        self.db.flush()
+        for asset_id in sorted(ids):
+            self.db.add(SocialRevisionAsset(revision_id=revision.id, asset_id=asset_id))
+        post.current_revision_id = revision.id
+        return revision
+
+    def create(self, body, *, duplicated_from=None):
+        post = SocialPost(id=uuid4(), origin_type="manual", creation_method="duplicate" if duplicated_from else "admin", title=body.title, content_type=body.content_type, editorial_state="draft", duplicated_from_id=duplicated_from, created_by=self.actor)
+        self.db.add(post)
+        self.db.flush()
+        revision = self._new_revision(post, body.document, body.references, 1)
+        self.audit("post.duplicated" if duplicated_from else "post.created", post=post, new="draft", details={"revision_id": str(revision.id), "content_hash": revision.content_hash})
+        self.db.flush()
+        return self.detail(post.id)
+
+    def _dispatched(self, publication):
+        if not publication:
+            return False
+        return bool(self.db.scalar(select(SocialPublishAttempt.id).join(SocialPostTarget, SocialPublishAttempt.target_id == SocialPostTarget.id).where(SocialPostTarget.publication_id == publication.id, SocialPublishAttempt.dispatch_started_at.is_not(None)).limit(1))) or any(t.state in INFLIGHT or t.submit_count > 0 for t in self._targets(publication))
+
+    def patch(self, post_id, body):
+        post, old, publication = self._locked(post_id, body.expected_version)
+        # Past revisions are checked as well: revocation cannot reopen dispatched content.
+        pubs = list(self.db.scalars(select(SocialPublication).where(SocialPublication.post_id == post.id)))
+        if any(self._dispatched(p) for p in pubs):
+            raise SocialError("CONTENT_LOCKED", "Dispatch has started. Duplicate this post to make a correction.")
+        if not body.model_fields_set - {"expected_version"}:
+            raise SocialError("INVALID_REQUEST", "Provide at least one editable field.", 422)
+        previous = post.editorial_state
+        if publication:
+            publication.revoked_at = self.now()
+            publication.version += 1
+            publication.updated_at = self.now()
+            for target in self._targets(publication):
+                target.state, target.next_action, target.next_action_at = "cancelled", None, None
+                target.lease_owner = target.lease_token = target.lease_expires_at = None
+                target.updated_at = self.now()
+            self.db.flush()  # clear the active-publication unique index before future approvals.
+        if body.title is not None:
+            post.title = body.title
+        if body.content_type is not None:
+            post.content_type = body.content_type
+        document = body.document if body.document is not None else PostDocument.model_validate(old.document)
+        references = body.references if body.references is not None else old.evidence_snapshot["references"]
+        new = self._new_revision(post, document, references, old.revision_no + 1)
+        post.editorial_state = "draft"
+        self._touch(post)
+        self.audit("post.revised", post=post, previous=previous, new="draft", details={"revision_id": str(new.id), "previous_revision_id": str(old.id)})
+        self.db.flush()
+        return self.detail(post.id)
+
+    def validate(self, post_id, body):
+        post = self._post(post_id)
+        if body.expected_version is not None and post.row_version != body.expected_version:
+            raise SocialError("VERSION_CONFLICT", "This post changed. Refresh it before validating.")
+        revision = self._revision(post)
+        return validate_document(self.db, PostDocument.model_validate(revision.document), revision.evidence_snapshot, self.available_adapters).model_dump(mode="json")
+
+    def submit(self, post_id, body):
+        post, revision, publication = self._locked(post_id, body.expected_version)
+        if post.editorial_state not in {"draft", "rejected"}:
+            raise SocialError("INVALID_STATE", "Only a draft or rejected post can be submitted for review.")
+        previous = post.editorial_state
+        post.editorial_state = "pending_review"
+        self._touch(post)
+        self.audit("post.submitted", post=post, previous=previous, new=post.editorial_state, details={"revision_id": str(revision.id)})
+        self.db.flush()
+        return self.detail(post.id)
+
+    def _validate_authorization(self, post, revision, body):
+        if revision.id != body.revision_id:
+            raise SocialError("VERSION_CONFLICT", "The selected revision changed. Refresh before approval.")
+        if post.editorial_state not in {"draft", "pending_review", "approved"}:
+            raise SocialError("INVALID_STATE", "Revise this rejected or archived post before authorizing it.")
+        if post.origin_type == "generated" or post.content_type in SENSITIVE_CATEGORIES:
+            attestation = body.review_attestation
+            if not attestation or not attestation.facts_checked or not attestation.sources_checked or not revision.evidence_snapshot.get("references"):
+                raise SocialError("REVIEW_ATTESTATION_REQUIRED", "Verify the financial facts and references, then attest to the review.", 422)
+        actual_hash = canonical_hash({"document": revision.document, "evidence_snapshot": revision.evidence_snapshot})
+        if actual_hash != revision.content_hash:
+            raise SocialError("REVISION_INTEGRITY_FAILED", "The immutable revision hash does not match its content.", 503)
+        result = validate_document(self.db, PostDocument.model_validate(revision.document), revision.evidence_snapshot, self.available_adapters)
+        if not result.valid:
+            raise SocialError("TARGET_VALIDATION_FAILED", "Every selected destination must be valid before authorization.", 422, field_errors=[e.model_dump(mode="json") for e in result.errors], target_errors=[{"account_id": str(t.account_id), **e.model_dump(mode="json")} for t in result.targets for e in t.errors])
+        return result
+
+    def _authorize(self, post, revision, publication, body, validation):
+        if publication:
+            if publication.revision_id != revision.id or publication.approved_hash != revision.content_hash:
+                raise SocialError("VERSION_CONFLICT", "The active authorization does not match this revision.")
+            if publication.cancel_requested_at:
+                raise SocialError("INVALID_STATE", "This publication was cancelled. Create a new revision or duplicate it.")
+            return publication
+        now = self.now()
+        publication = SocialPublication(id=uuid4(), post_id=post.id, revision_id=revision.id, authorization_kind="human", approved_by=self.actor, approved_at=now, approved_hash=revision.content_hash)
+        self.db.add(publication)
+        self.db.flush()
+        for result in validation.targets:
+            payload = result.resolved_preview
+            self.db.add(SocialPostTarget(id=uuid4(), publication_id=publication.id, account_id=result.account_id, resolved_payload=payload.model_dump(mode="json"), payload_hash=payload.content_hash, capability_version=payload.capability_version, state="ready"))
+        previous = post.editorial_state
+        post.editorial_state = "approved"
+        self.audit("post.approved", post=post, previous=previous, new="approved", details={"publication_id": str(publication.id), "revision_id": str(revision.id), "content_hash": revision.content_hash, "attestation": body.review_attestation.model_dump() if body.review_attestation else None})
+        self.db.flush()
+        return publication
+
+    def approve(self, post_id, body):
+        post, revision, publication = self._locked(post_id, body.expected_version)
+        result = self._validate_authorization(post, revision, body)
+        self._authorize(post, revision, publication, body, result)
+        self._touch(post)
+        self.db.flush()
+        return self.detail(post.id)
+
+    def reject(self, post_id, body):
+        post, revision, publication = self._locked(post_id, body.expected_version)
+        if post.editorial_state != "pending_review":
+            raise SocialError("INVALID_STATE", "Only a post pending review can be rejected.")
+        post.editorial_state = "rejected"
+        self._touch(post)
+        self.audit("post.rejected", post=post, previous="pending_review", new="rejected", reason=body.reason)
+        self.db.flush()
+        return self.detail(post.id)
+
+    def publish(self, post_id, body, *, scheduled=False):
+        post, revision, publication = self._locked(post_id, body.expected_version)
+        controls = self.db.get(SocialControls, 1)
+        if not controls or not controls.publishing_enabled:
+            raise SocialError("PUBLISHING_PAUSED", "Publishing is paused. Your draft is preserved.")
+        result = self._validate_authorization(post, revision, body)
+        codes = {w.code for target in result.targets for w in target.warnings} | {w.code for w in result.warnings}
+        if not codes.issubset(set(body.acknowledged_warning_codes)):
+            raise SocialError("WARNINGS_NOT_ACKNOWLEDGED", "Review and acknowledge every publication warning.", 422)
+        if any(controls.platform_controls.get(t.platform, {}).get("publishing_enabled") is False for t in result.targets):
+            raise SocialError("PUBLISHING_PAUSED", "One selected platform is paused. All targets remain unqueued.")
+        if any(t.platform == "x" for t in result.targets) and controls.budget_controls.get("x_budget_microusd", 0) <= 0:
+            raise SocialError("BUDGET_UNAVAILABLE", "X publishing requires an explicitly approved API budget.")
+        now = self.now()
+        try:
+            due = resolve_schedule(body.schedule, now) if scheduled else now
+        except ValueError:
+            raise SocialError("INVALID_SCHEDULE_TIME", "Choose a future civil time and matching timezone offset.", 422) from None
+        publication = self._authorize(post, revision, publication, body, result)
+        if publication.dispatch_requested_at is not None:
+            if scheduled and due != utc(publication.scheduled_for):
+                raise SocialError("INVALID_STATE", "This revision is already queued with another schedule. Cancel it and revise the draft before scheduling again.")
+            return self.accepted(post, publication)
+        # Use the frozen approved targets; never silently replace the selected subset.
+        frozen = {t.account_id: t for t in self._targets(publication)}
+        if set(frozen) != {t.account_id for t in result.targets}:
+            raise SocialError("REVISION_INTEGRITY_FAILED", "Approved destinations do not match the selected revision.", 503)
+        for validated in result.targets:
+            target = frozen[validated.account_id]
+            if target.payload_hash != validated.resolved_preview.content_hash:
+                raise SocialError("REVISION_INTEGRITY_FAILED", "The account or media changed after approval. Create and approve a new revision.")
+        publication.scheduled_for = due
+        publication.schedule_timezone = body.schedule.timezone if scheduled else "UTC"
+        publication.requested_local_time = body.schedule.local_time if scheduled else due.replace(tzinfo=None).isoformat()
+        publication.start_deadline = due + timedelta(hours=1)
+        publication.retry_deadline = due + timedelta(hours=24)
+        publication.dispatch_requested_at = now
+        publication.version += 1
+        publication.updated_at = now
+        for target in frozen.values():
+            target.state, target.next_action, target.next_action_at = "queued", "publish", due
+            target.updated_at = now
+        self._touch(post)
+        self.audit("post.scheduled" if scheduled else "post.publish_requested", post=post, previous="ready", new="queued", details={"publication_id": str(publication.id), "scheduled_for": iso(due), "timezone": publication.schedule_timezone})
+        self.db.flush()
+        return self.accepted(post, publication)
+
+    def cancel(self, post_id, body):
+        post, revision, publication = self._locked(post_id, body.expected_version)
+        inflight = []
+        if publication:
+            now = self.now()
+            publication.cancel_requested_at = now
+            publication.version += 1
+            publication.updated_at = now
+            for target in self._targets(publication):
+                if target.state in INFLIGHT or target.submit_count > 0:
+                    inflight.append(str(target.id))
+                elif target.state not in {"failed", "cancelled"}:
+                    target.state, target.next_action, target.next_action_at = "cancelled", None, None
+                    target.lease_owner = target.lease_token = target.lease_expires_at = None
+                    target.updated_at = now
+        self._touch(post)
+        self.audit("post.cancel_requested", post=post, details={"publication_id": str(publication.id) if publication else None, "in_flight_target_ids": inflight})
+        self.db.flush()
+        detail = self.detail(post.id)
+        detail["cancellation"] = {"in_flight_target_ids": inflight, "message": "Requests already in flight may still complete." if inflight else "Unsent targets are cancelled."}
+        return detail
+
+    def duplicate(self, post_id, body):
+        from .contracts import CreatePost
+        post, revision, publication = self._locked(post_id, body.expected_version)
+        return self.create(CreatePost(title=post.title, content_type=post.content_type, document=PostDocument.model_validate(revision.document), references=revision.evidence_snapshot.get("references", [])), duplicated_from=post.id)
+
+    def retry(self, target_id, body):
+        initial = self.db.get(SocialPostTarget, target_id)
+        if not initial:
+            raise SocialError("NOT_FOUND", "This destination was not found.", 404)
+        controls = self.db.scalar(select(SocialControls).where(SocialControls.id == 1).with_for_update())
+        account = self.db.scalar(select(SocialAccount).where(SocialAccount.id == initial.account_id).with_for_update())
+        publication = self.db.scalar(select(SocialPublication).where(SocialPublication.id == initial.publication_id).with_for_update())
+        target = self.db.scalar(select(SocialPostTarget).where(SocialPostTarget.id == target_id).with_for_update().execution_options(populate_existing=True))
+        if target.state in {"outcome_unknown", "reconciling", "dispatching", "processing"}:
+            raise SocialError("RECONCILIATION_REQUIRED", "The prior send may have been accepted. Reconcile it before any retry.")
+        if target.state != "failed" or target.primary_remote_id or target.published_at:
+            raise SocialError("RETRY_NOT_SAFE", "Only an eligible failed destination can be retried.")
+        latest = self.db.scalar(select(SocialPublishAttempt).where(SocialPublishAttempt.target_id == target.id).order_by(SocialPublishAttempt.sequence.desc()).limit(1))
+        receipt = latest.receipt if latest and isinstance(latest.receipt, dict) else {}
+        if not latest or latest.outcome != "definite_failure" or receipt.get("retry_safe") is not True:
+            raise SocialError("RETRY_NOT_SAFE", "The recorded operation does not establish a safe retry.")
+        now = self.now()
+        if publication.revoked_at or publication.cancel_requested_at or target.submit_count >= 5 or (publication.retry_deadline and now >= utc(publication.retry_deadline)) or (publication.content_valid_until and now >= utc(publication.content_valid_until)):
+            raise SocialError("RETRY_NOT_SAFE", "This authorization is cancelled, expired or exhausted. Review a new draft.")
+        if not controls or not controls.publishing_enabled:
+            raise SocialError("PUBLISHING_PAUSED", "Publishing is paused; retry remains unqueued.")
+        caps = capability_for(account, self.available_adapters)
+        if account.connection_state != "connected" or not account.publishing_enabled or account.hold_reason or not caps.eligible:
+            raise SocialError("ACCOUNT_UNAVAILABLE", "Reconnect and validate the failed account before retry.")
+        if not caps.adapter_available:
+            raise SocialError("ADAPTER_NOT_AVAILABLE", "The platform adapter is unavailable in this batch.")
+        if controls.platform_controls.get(account.platform, {}).get("publishing_enabled") is False:
+            raise SocialError("PUBLISHING_PAUSED", "This platform is paused; retry remains unqueued.")
+        if account.platform == "x" and controls.budget_controls.get("x_budget_microusd", 0) <= 0:
+            raise SocialError("BUDGET_UNAVAILABLE", "X retry requires an explicitly approved API budget.")
+        revision = self.db.get(SocialPostRevision, publication.revision_id)
+        document = PostDocument.model_validate(revision.document)
+        selected = tuple(t for t in document.targets if t.account_id == target.account_id)
+        if len(selected) != 1:
+            raise SocialError("REVISION_INTEGRITY_FAILED", "The failed destination is absent from its authorized revision.", 503)
+        validation = validate_document(self.db, document.model_copy(update={"targets": selected}), revision.evidence_snapshot, self.available_adapters)
+        if not validation.valid:
+            raise SocialError("TARGET_VALIDATION_FAILED", "The failed destination needs revalidation before retry.", 422, target_errors=[{"account_id": str(t.account_id), **e.model_dump(mode="json")} for t in validation.targets for e in t.errors])
+        if validation.targets[0].resolved_preview.content_hash != target.payload_hash:
+            raise SocialError("REVISION_INTEGRITY_FAILED", "The failed destination's account or media changed. Create and approve a new revision.")
+        post = self._post(publication.post_id)
+        target.state, target.next_action, target.next_action_at = "retry_wait", "publish", now
+        target.error_code = target.safe_error_message = None
+        target.updated_at = now
+        self._touch(post)
+        self.audit("target.retry_requested", post=post, target=target, previous="failed", new="retry_wait", reason=body.reason)
+        self.db.flush()
+        return self.detail(post.id)
+
+    def controls(self, body):
+        controls = self.db.scalar(select(SocialControls).where(SocialControls.id == 1).with_for_update())
+        if not controls:
+            if self.db.bind.dialect.name == "postgresql":
+                self.db.execute(text("SELECT pg_advisory_xact_lock(6384952001)"))
+                controls = self.db.scalar(select(SocialControls).where(SocialControls.id == 1).with_for_update())
+            if not controls:
+                controls = SocialControls(id=1, version=1)
+                self.db.add(controls)
+                self.db.flush()
+        if controls.version != body.expected_version:
+            raise SocialError("VERSION_CONFLICT", "Publishing controls changed. Refresh before updating.")
+        controls.publishing_enabled = body.publishing_enabled
+        controls.version += 1
+        controls.updated_by, controls.updated_at = self.actor, self.now()
+        self.audit("controls.updated", reason=body.reason, details={"publishing_enabled": controls.publishing_enabled, "version": controls.version})
+        self.db.flush()
+        return {"version": controls.version, "publishing_enabled": controls.publishing_enabled, "generation_enabled": False, "auto_approve_enabled": False, "auto_schedule_enabled": False, "auto_publish_enabled": False}
+
+    def _target_dto(self, target):
+        return {"id": str(target.id), "account_id": str(target.account_id), "platform": target.resolved_payload["platform"], "state": target.state, "remote_url": target.remote_url, "safe_error_message": target.safe_error_message, "next_action_at": iso(target.next_action_at), "published_at": iso(target.published_at)}
+
+    def _delivery(self, targets, publication):
+        states = {t.state for t in targets}
+        if not states or states == {"ready"}:
+            return "not_requested"
+        if states & {"outcome_unknown", "reconciling"}:
+            return "needs_attention"
+        if states == {"published"}:
+            return "published"
+        if "published" in states:
+            return "partially_published"
+        if states == {"cancelled"}:
+            return "cancelled"
+        if states <= {"failed", "cancelled"}:
+            return "failed"
+        if "blocked" in states:
+            return "needs_attention"
+        if states & {"claimed", "dispatching", "processing", "retry_wait"}:
+            return "publishing"
+        if publication and publication.scheduled_for and utc(publication.scheduled_for) > self.now():
+            return "scheduled"
+        return "queued"
+
+    def _summary(self, post, publication, targets):
+        return {"id": str(post.id), "title": post.title, "content_type": post.content_type, "origin_type": post.origin_type, "editorial_state": post.editorial_state, "delivery_status": self._delivery(targets, publication), "version": post.row_version, "revision_id": str(post.current_revision_id), "created_at": iso(post.created_at), "updated_at": iso(post.updated_at), "targets": [self._target_dto(t) for t in targets]}
+
+    def detail(self, post_id):
+        post = self._post(post_id)
+        revision = self._revision(post)
+        publication = self._publication(post)
+        result = self._summary(post, publication, self._targets(publication))
+        result.update(document=revision.document, references=revision.evidence_snapshot.get("references", []), publication={"id": str(publication.id), "revision_id": str(publication.revision_id), "scheduled_for": iso(publication.scheduled_for), "version": publication.version, "approved_at": iso(publication.approved_at)} if publication else None)
+        return result
+
+    def posts(self, page=1, page_size=20, editorial_state=None):
+        condition = [SocialPost.editorial_state == editorial_state] if editorial_state else []
+        total = self.db.scalar(select(func.count()).select_from(SocialPost).where(*condition))
+        # Fetch compact columns only: list queries never load revision/attempt bodies.
+        posts = list(self.db.scalars(select(SocialPost).where(*condition).order_by(SocialPost.updated_at.desc(), SocialPost.id).offset((page - 1) * page_size).limit(page_size)))
+        ids = [p.id for p in posts]
+        pubs = {p.post_id: p for p in self.db.scalars(select(SocialPublication).where(SocialPublication.post_id.in_(ids), SocialPublication.revoked_at.is_(None)))} if ids else {}
+        pub_ids = [p.id for p in pubs.values()]
+        grouped = self._compact_targets(pub_ids)
+        return {"posts": [self._summary(p, pubs.get(p.id), grouped.get(pubs[p.id].id, []) if p.id in pubs else []) for p in posts], "total": total, "page": page, "page_size": page_size, "has_more": page * page_size < total}
+
+    def _compact_targets(self, publication_ids):
+        # Explicit projection excludes resolved payloads, receipts and checkpoints.
+        rows = self.db.execute(select(SocialPostTarget.id, SocialPostTarget.publication_id, SocialPostTarget.account_id, SocialAccount.platform, SocialPostTarget.state, SocialPostTarget.remote_url, SocialPostTarget.safe_error_message, SocialPostTarget.next_action_at, SocialPostTarget.published_at).join(SocialAccount, SocialPostTarget.account_id == SocialAccount.id).where(SocialPostTarget.publication_id.in_(publication_ids))).all() if publication_ids else []
+        from types import SimpleNamespace
+        grouped = {}
+        for row in rows:
+            item = SimpleNamespace(**row._mapping, resolved_payload={"platform": row.platform})
+            grouped.setdefault(row.publication_id, []).append(item)
+        return grouped
+
+    def summary(self, post_id):
+        post = self._post(post_id)
+        # Only schedule timing is needed to derive delivery, no revision/evidence load.
+        row = self.db.execute(select(SocialPublication.id, SocialPublication.scheduled_for).where(SocialPublication.post_id == post.id, SocialPublication.revoked_at.is_(None))).first()
+        from types import SimpleNamespace
+        publication = SimpleNamespace(**row._mapping) if row else None
+        targets = self._compact_targets([row.id]).get(row.id, []) if row else []
+        return self._summary(post, publication, targets)
+
+    def accounts(self):
+        accounts = self.db.scalars(select(SocialAccount).order_by(SocialAccount.display_name, SocialAccount.id).limit(100))
+        return {"accounts": [{"id": str(a.id), "platform": a.platform, "display_name": a.display_name, "handle": a.handle, "profile_url": a.profile_url, "connection_state": a.connection_state, "publishing_enabled": a.publishing_enabled, "capabilities": capability_for(a, self.available_adapters).model_dump(mode="json")} for a in accounts]}
+
+    def platforms(self):
+        from .contracts import CapabilitySet
+        return {"platforms": [{"platform": platform, "capabilities": CapabilitySet().model_dump(mode="json")} for platform in ("facebook", "instagram", "threads", "x", "tiktok")]}
+
+    def status(self):
+        controls = self.db.get(SocialControls, 1)
+        heart = self.db.scalar(select(SocialWorkerHeartbeat).order_by(SocialWorkerHeartbeat.heartbeat_at.desc()).limit(1))
+        now = self.now()
+        worker_state = "unavailable" if not heart else "stale" if (now - utc(heart.heartbeat_at)).total_seconds() > 150 else heart.state
+        counts = dict(self.db.execute(select(SocialPostTarget.state, func.count()).group_by(SocialPostTarget.state)).all())
+        return {"publishing_enabled": bool(controls and controls.publishing_enabled), "controls_version": controls.version if controls else 1, "worker": {"state": worker_state, "heartbeat_at": iso(heart.heartbeat_at) if heart else None, "last_scan_at": iso(heart.last_scan_at) if heart else None}, "queue_counts": counts, "adapters_available": sorted(self.available_adapters), "media_upload_available": False, "generation_enabled": False, "auto_approve_enabled": False, "auto_schedule_enabled": False, "auto_publish_enabled": False}
+
+    def accepted(self, post, publication):
+        targets = self._targets(publication)
+        return {"post_id": str(post.id), "publication_id": str(publication.id), "status": "queued", "scheduled_for": iso(publication.scheduled_for), "targets": [{"id": str(t.id), "account_id": str(t.account_id), "platform": t.resolved_payload["platform"], "status": t.state} for t in targets], "status_url": f"/api/v1/admin/social/posts/{post.id}"}

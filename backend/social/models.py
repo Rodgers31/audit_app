@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from sqlalchemy import (BigInteger, Boolean, CheckConstraint, Column, DateTime, ForeignKey, ForeignKeyConstraint, Index, Integer, JSON, Numeric, SmallInteger, String, Text, UniqueConstraint, Uuid, event, func, inspect, text)
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from models import Base
 
 J = JSON().with_variant(JSONB(), "postgresql")
@@ -120,7 +120,7 @@ class SocialAccount(Base):
     profile_url = Column(Text)
     credential_id = Column(Uuid(as_uuid=True))  # Staged FK when OAuth/encrypted credentials land.
     connection_state = Column(Text, nullable=False, default="unverified")
-    granted_scopes = Column(J, nullable=False, default=list)  # portable JSON array; no secret material.
+    granted_scopes = Column(JSON().with_variant(ARRAY(Text()), "postgresql"), nullable=False, default=list)
     capability_snapshot = Column(J, nullable=False, default=dict)
     capabilities_checked_at = Column(TZ)
     last_api_success_at = Column(TZ)
@@ -205,6 +205,7 @@ class SocialPostTarget(Base):
         UniqueConstraint("publication_id", "account_id", name="uq_social_target_account"),
         CheckConstraint("state IN ('ready','queued','claimed','dispatching','processing','retry_wait','reconciling','blocked','published','failed','outcome_unknown','cancelled')", name="ck_social_target_state"),
         CheckConstraint("submit_count >= 0 AND submit_count <= 5 AND lease_epoch >= 0", name="ck_social_target_counters"),
+        CheckConstraint("state <> 'published' OR (primary_remote_id IS NOT NULL AND confirmation_kind IS NOT NULL AND published_at IS NOT NULL AND visibility_state = 'public')", name="ck_social_target_published_proof"),
         Index("uq_social_target_remote", "account_id", "primary_remote_id", unique=True, postgresql_where=text("primary_remote_id IS NOT NULL"), sqlite_where=text("primary_remote_id IS NOT NULL")),
         Index("ix_social_target_due", "next_action_at", "id", postgresql_where=text("state IN ('queued','retry_wait','processing','reconciling')"), sqlite_where=text("state IN ('queued','retry_wait','processing','reconciling')")),
         Index("ix_social_target_expired_lease", "lease_expires_at", postgresql_where=text("lease_token IS NOT NULL"), sqlite_where=text("lease_token IS NOT NULL")),
@@ -315,3 +316,21 @@ def immutable_payload(mapper, connection, target):
 
 
 SOCIAL_TABLES = tuple(table for table in Base.metadata.sorted_tables if table.name.startswith("social_"))
+
+
+@event.listens_for(SocialPublication, "before_update")
+def immutable_authorization(mapper, connection, target):
+    state = inspect(target)
+    for key in ("post_id", "revision_id", "authorization_kind", "approved_by", "approved_at", "policy_id", "policy_version", "approved_hash"):
+        if state.attrs[key].history.has_changes():
+            raise ValueError("Social authorization is immutable")
+
+
+@event.listens_for(SocialMediaAsset, "before_update")
+def immutable_ready_asset(mapper, connection, target):
+    state = inspect(target)
+    original = state.attrs.state.history.deleted
+    if (original and original[0] == "ready") or (not original and target.state == "ready"):
+        for key in ("storage_provider", "bucket", "storage_key", "sha256", "mime_type", "byte_size", "width", "height", "duration_ms", "frame_rate", "codec_metadata"):
+            if state.attrs[key].history.has_changes():
+                raise ValueError("Inspected ready asset bytes and identity are immutable")

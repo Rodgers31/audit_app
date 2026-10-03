@@ -3,12 +3,12 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import datetime
-from typing import Annotated, Any, Literal
+from datetime import datetime, timezone
+from typing import Annotated, Any, Literal, Union
 from urllib.parse import urlsplit
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, StringConstraints, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, StringConstraints, field_validator, model_serializer
 
 Platform = Literal["facebook", "instagram", "threads", "x", "tiktok"]
 PostFormat = Literal["text", "image", "carousel", "video", "reel"]
@@ -24,6 +24,17 @@ Hash = Annotated[str, StringConstraints(strict=True, pattern=r"^[0-9a-f]{64}$")]
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, allow_inf_nan=False)
 
+    @field_validator("*", mode="after")
+    @classmethod
+    def strict_time_and_json(cls, value):
+        if isinstance(value, datetime):
+            if value.tzinfo is None or value.utcoffset() is None:
+                raise ValueError("Timestamps must include a timezone")
+            return value.astimezone(timezone.utc)
+        if isinstance(value, dict):
+            canonical_json(value)
+        return value
+
 
 def canonical_json(value: Any) -> str:
     if isinstance(value, BaseModel):
@@ -35,7 +46,7 @@ def canonical_hash(value: Any) -> str:
     return hashlib.sha256(canonical_json(value).encode("utf-8")).hexdigest()
 
 
-def https_url(value: str | None) -> str | None:
+def https_url(value: Union[str, None]) -> Union[str, None]:
     if value is None:
         return None
     parsed = urlsplit(value)
@@ -46,8 +57,8 @@ def https_url(value: str | None) -> str | None:
 
 class MediaReference(StrictModel):
     asset_id: UUID
-    alt_text: Annotated[str, StringConstraints(strict=True, max_length=2000)] | None = None
-    caption_asset_id: UUID | None = None
+    alt_text: Union[Annotated[str, StringConstraints(strict=True, max_length=2000)], None] = None
+    caption_asset_id: Union[UUID, None] = None
 
 
 Hashtags = Annotated[tuple[Annotated[str, StringConstraints(strict=True, min_length=1, max_length=100)], ...], Field(max_length=50)]
@@ -56,7 +67,7 @@ Media = Annotated[tuple[MediaReference, ...], Field(max_length=35)]
 
 class MasterContent(StrictModel):
     text: BoundedText = ""
-    link: Annotated[str, StringConstraints(strict=True, max_length=2048)] | None = None
+    link: Union[Annotated[str, StringConstraints(strict=True, max_length=2048)], None] = None
     hashtags: Hashtags = ()
     media: Media = ()
 
@@ -70,7 +81,7 @@ class TextOverride(StrictModel):
 
 class LinkOverride(StrictModel):
     mode: Literal["replace"]
-    value: Annotated[str, StringConstraints(strict=True, max_length=2048)] | None
+    value: Union[Annotated[str, StringConstraints(strict=True, max_length=2048)], None]
     _link = field_validator("value")(https_url)
 
 
@@ -85,10 +96,10 @@ class MediaOverride(StrictModel):
 
 
 class SparseOverrides(StrictModel):
-    text: TextOverride | None = None
-    link: LinkOverride | None = None
-    hashtags: HashtagOverride | None = None
-    media: MediaOverride | None = None
+    text: Union[TextOverride, None] = None
+    link: Union[LinkOverride, None] = None
+    hashtags: Union[HashtagOverride, None] = None
+    media: Union[MediaOverride, None] = None
 
     @field_validator("text", "link", "hashtags", "media", mode="before")
     @classmethod
@@ -96,6 +107,11 @@ class SparseOverrides(StrictModel):
         if value is None:
             raise ValueError("Remove the override key to inherit; explicit null overrides are invalid")
         return value
+
+
+    @model_serializer(mode="wrap")
+    def serialize_sparse(self, handler):
+        return {key: value for key, value in handler(self).items() if key in self.model_fields_set}
 
 
 class DocumentTarget(StrictModel):
@@ -119,7 +135,7 @@ class PostDocument(StrictModel):
 
 class Reference(StrictModel):
     url: Annotated[str, StringConstraints(strict=True, max_length=2048)]
-    label: Annotated[str, StringConstraints(strict=True, max_length=300)] | None = None
+    label: Union[Annotated[str, StringConstraints(strict=True, max_length=300)], None] = None
     _url = field_validator("url")(https_url)
 
 
@@ -132,10 +148,10 @@ class CreatePost(StrictModel):
 
 class PatchPost(StrictModel):
     expected_version: PositiveVersion
-    title: Annotated[str, StringConstraints(strict=True, strip_whitespace=True, min_length=1, max_length=300)] | None = None
-    content_type: Annotated[str, StringConstraints(strict=True, pattern=r"^[a-z][a-z0-9_]{0,63}$")] | None = None
-    document: PostDocument | None = None
-    references: Annotated[tuple[Reference, ...], Field(max_length=30)] | None = None
+    title: Union[Annotated[str, StringConstraints(strict=True, strip_whitespace=True, min_length=1, max_length=300)], None] = None
+    content_type: Union[Annotated[str, StringConstraints(strict=True, pattern='^[a-z][a-z0-9_]{0,63}$')], None] = None
+    document: Union[PostDocument, None] = None
+    references: Union[Annotated[tuple[Reference, ...], Field(max_length=30)], None] = None
 
     @field_validator("title", "content_type", "document", "references", mode="before")
     @classmethod
@@ -150,7 +166,7 @@ class VersionCommand(StrictModel):
 
 
 class ValidateCommand(StrictModel):
-    expected_version: PositiveVersion | None = None
+    expected_version: Union[PositiveVersion, None] = None
 
 
 class ReviewAttestation(StrictModel):
@@ -160,7 +176,7 @@ class ReviewAttestation(StrictModel):
 
 class ApproveCommand(VersionCommand):
     revision_id: UUID
-    review_attestation: ReviewAttestation | None = None
+    review_attestation: Union[ReviewAttestation, None] = None
 
 
 class RejectCommand(VersionCommand):
@@ -196,12 +212,12 @@ class CapabilitySet(StrictModel):
     eligible: StrictBool = False
     supported_formats: tuple[PostFormat, ...] = ()
     feature_states: dict[StrictStr, FeatureState] = Field(default_factory=lambda: {"publishing": "unverified", "media_upload": "unsupported"})
-    limits: dict[StrictStr, Annotated[int, Field(strict=True, ge=0)] | None] = Field(default_factory=dict)
+    limits: dict[StrictStr, Union[Annotated[int, Field(strict=True, ge=0)], None]] = Field(default_factory=dict)
     granted_scopes: tuple[StrictStr, ...] = ()
     required_scopes: tuple[StrictStr, ...] = ()
     price_class: Literal["free", "paid", "unverified"] = "unverified"
     source_links: tuple[StrictStr, ...] = ()
-    verified_at: datetime | None = None
+    verified_at: Union[datetime, None] = None
     adapter_available: StrictBool = False
 
 
@@ -210,12 +226,12 @@ class InspectedAsset(StrictModel):
     sha256: Hash
     mime_type: StrictStr
     byte_size: Annotated[int, Field(strict=True, gt=0)]
-    width: Annotated[int, Field(strict=True, gt=0)] | None = None
-    height: Annotated[int, Field(strict=True, gt=0)] | None = None
-    duration_ms: Annotated[int, Field(strict=True, gt=0)] | None = None
-    alt_text: StrictStr | None = None
-    caption_asset_id: UUID | None = None
-    caption_sha256: Hash | None = None
+    width: Union[Annotated[int, Field(strict=True, gt=0)], None] = None
+    height: Union[Annotated[int, Field(strict=True, gt=0)], None] = None
+    duration_ms: Union[Annotated[int, Field(strict=True, gt=0)], None] = None
+    alt_text: Union[StrictStr, None] = None
+    caption_asset_id: Union[UUID, None] = None
+    caption_sha256: Union[Hash, None] = None
 
 
 class ResolvedPostPayload(StrictModel):
@@ -226,7 +242,7 @@ class ResolvedPostPayload(StrictModel):
     external_account_id: StrictStr
     format: PostFormat
     text: BoundedText
-    link: StrictStr | None = None
+    link: Union[StrictStr, None] = None
     hashtags: Hashtags = ()
     assets: tuple[InspectedAsset, ...] = ()
     visibility: Literal["public"] = "public"
@@ -244,11 +260,11 @@ class ValidationIssue(StrictModel):
 
 class TargetValidation(StrictModel):
     account_id: UUID
-    platform: Platform | None = None
+    platform: Union[Platform, None] = None
     valid: StrictBool
     errors: tuple[ValidationIssue, ...] = ()
     warnings: tuple[ValidationIssue, ...] = ()
-    resolved_preview: ResolvedPostPayload | None = None
+    resolved_preview: Union[ResolvedPostPayload, None] = None
 
 
 class ValidationResult(StrictModel):
@@ -272,37 +288,37 @@ class OperationPlan(StrictModel):
 class OperationResult(StrictModel):
     outcome: Literal["confirmed_success", "processing", "definite_failure", "ambiguous"]
     remote_refs: dict[str, Any] = Field(default_factory=dict)
-    primary_remote_id: StrictStr | None = None
-    remote_url: StrictStr | None = None
+    primary_remote_id: Union[StrictStr, None] = None
+    remote_url: Union[StrictStr, None] = None
     visibility_state: Literal["unknown", "public", "private", "manual_action"] = "unknown"
-    confirmation_kind: StrictStr | None = None
-    error_code: StrictStr | None = None
-    safe_error_message: StrictStr | None = None
-    provider_request_id: StrictStr | None = None
-    http_status: Annotated[int, Field(strict=True, ge=100, le=599)] | None = None
-    provider_code: StrictStr | None = None
+    confirmation_kind: Union[StrictStr, None] = None
+    error_code: Union[StrictStr, None] = None
+    safe_error_message: Union[StrictStr, None] = None
+    provider_request_id: Union[StrictStr, None] = None
+    http_status: Union[Annotated[int, Field(strict=True, ge=100, le=599)], None] = None
+    provider_code: Union[StrictStr, None] = None
     checkpoint: dict[str, Any] = Field(default_factory=dict)
     receipt: dict[str, Any] = Field(default_factory=dict)
-    next_action_at: datetime | None = None
+    next_action_at: Union[datetime, None] = None
     retry_safe: StrictBool = False
 
 
 class ReconciliationResult(StrictModel):
     outcome: Literal["confirmed_published", "definitively_unpublished", "still_processing", "unknown"]
     evidence: dict[str, Any] = Field(default_factory=dict)
-    result: OperationResult | None = None
-    next_action_at: datetime | None = None
+    result: Union[OperationResult, None] = None
+    next_action_at: Union[datetime, None] = None
 
 
 class RetryDecision(StrictModel):
     action: Literal["retry", "block", "fail", "reconcile"]
     reason: StrictStr
-    next_action_at: datetime | None = None
+    next_action_at: Union[datetime, None] = None
 
 
 class CredentialUpdate(StrictModel):
     prior_version: PositiveVersion
     bundle: dict[str, Any]
     scopes: tuple[StrictStr, ...] = ()
-    access_expires_at: datetime | None = None
-    refresh_expires_at: datetime | None = None
+    access_expires_at: Union[datetime, None] = None
+    refresh_expires_at: Union[datetime, None] = None

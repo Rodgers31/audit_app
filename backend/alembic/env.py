@@ -23,6 +23,7 @@ if load_dotenv is not None:
 
 from db_url import with_explicit_driver
 from models import Base
+from social import models as social_models  # register additive social metadata
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
