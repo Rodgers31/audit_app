@@ -46,3 +46,23 @@ def test_operation_boundary_contract_cannot_hide_public_send():
     with pytest.raises(ValueError):
         validate_plan(OperationPlan(operation_id=uuid4(),operation="publish",publication_capable=True,
                                     safe_replay_class="requires_reconciliation",checkpoint={"different":1}), {})
+
+
+@pytest.mark.parametrize("count",[True,-1,float("nan")])
+def test_direct_retry_policy_rejects_hostile_submission_count(count):
+    now = datetime.now(timezone.utc)
+    with pytest.raises(ValueError):
+        retry_decision(OperationResult(outcome="definite_failure",error_code="NOT_SENT",retry_safe=True),
+            now=now,submit_count=count,first_started_at=now,retry_deadline=now+timedelta(hours=24),content_valid_until=None)
+
+
+def test_whitespace_metadata_is_not_positive_confirmation():
+    from social.worker.runner import SocialWorker
+    assert not SocialWorker._confirmed(OperationResult(outcome="confirmed_success",primary_remote_id=" ",
+        visibility_state="public",confirmation_kind=" "))
+
+
+@pytest.mark.parametrize("ceiling",[True,0,-1,float("nan"),float("inf"),65537])
+def test_json_ceiling_direct_call_cannot_override_global_bound(ceiling):
+    with pytest.raises(ValueError):
+        bounded_json({"large":"x"*100000},max_bytes=ceiling)

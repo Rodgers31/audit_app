@@ -65,7 +65,7 @@ def seed(engine, *, count=1, same_account=False, paused=False, state="queued", c
         post = SocialPost(id=ids["post"], title="Test", content_type="announcement", editorial_state="approved")
         db.add(post)
         db.flush()
-        document = {"schema_version": 1, "master": {"text": "fixture", "link": None, "hashtags": [], "media": []}, "targets": []}
+        document = {"schema_version": 1, "master": {"text": "fixture", "link": None, "hashtags": [], "media": []}, "targets": [{"account_id":str(account_id),"format":"text","overrides":{}} for account_id in ids["accounts"]]}
         evidence = {"references": []}
         revision_hash = canonical_hash({"document": document, "evidence_snapshot": evidence})
         db.add(SocialPostRevision(id=ids["revision"], post_id=post.id, revision_no=1,
@@ -428,7 +428,7 @@ def test_submissions_are_bounded_to_five(engine):
 def test_content_capability_and_media_gates_fail_closed(engine):
     ids = seed(engine)
     with engine.begin() as conn:
-        conn.execute(text("UPDATE social_accounts SET granted_scopes='[]'::jsonb"))
+        conn.execute(SocialAccount.__table__.update().values(granted_scopes=[]))
     fake = FakeAdapter()
     run_claim(repository(engine), fake)
     assert fake.calls == 0
@@ -707,4 +707,138 @@ def test_charged_status_read_is_blocked_without_budget_reservation(engine):
         mutating=False,safe_replay_class="read_only",request_fingerprint="a"*64,
         checkpoint_input={"processing_id":"paid-job"},estimated_cost_microusd=1) is None
     assert row(engine,claim.target_id)["error_code"] == "BUDGET_RESERVATION_UNAVAILABLE"
+    assert row(engine,claim.target_id)["submit_count"] == 0
+
+
+def test_worker_failure_receipt_allows_real_domain_retry_command(engine):
+    from social.contracts import CreatePost,ControlsCommand,PublishCommand,RetryCommand
+    from social.service import SocialService
+    account_id = uuid4()
+    caps = CapabilitySet(eligible=True,supported_formats=("text",),feature_states={"publishing":"supported"},
+                         price_class="free",adapter_available=True,provider_api_version="fake-v1")
+    with Session(engine) as db:
+        db.add(SocialAccount(id=account_id,platform="facebook",api_product="fake",connection_method="fixture",
+            external_account_id="API-compatible",display_name="Fixture",connection_state="connected",
+            publishing_enabled=True,granted_scopes=[],capability_snapshot=caps.model_dump(mode="json")))
+        db.commit()
+        svc = SocialService(db,available_adapters={"facebook"})
+        actor = uuid4()
+        def command(body,action,route):
+            return svc.command(actor=actor,route=route,key=uuid4(),request_id=uuid4(),
+                body=body.model_dump(mode="json"),action=action)[1]
+        body = CreatePost(title="Receipt compatibility",document={"master":{"text":"Verified test"},
+            "targets":[{"account_id":account_id,"format":"text"}]})
+        created = command(body,lambda:svc.create(body),"posts.create")
+        controls = ControlsCommand(expected_version=1,publishing_enabled=True,reason="Explicit fake test")
+        command(controls,lambda:svc.controls(controls),"controls.update")
+        publish = PublishCommand(expected_version=1,revision_id=created["revision_id"])
+        accepted = command(publish,lambda:svc.publish(created["id"],publish),"posts.publish")
+    target_id = accepted["targets"][0]["id"]
+    repo = repository(engine)
+    adapter = FakeAdapter(results=[OperationResult(outcome="definite_failure",error_code="INVALID_MEDIA",retry_safe=True)])
+    run_claim(repo,adapter)
+    assert row(engine,target_id)["state"] == "failed"
+    with Session(engine) as db:
+        svc = SocialService(db,available_adapters={"facebook"})
+        retry = RetryCommand(reason="Known-safe destination retry")
+        status,result = svc.command(actor=actor,route="targets.retry",key=uuid4(),request_id=uuid4(),
+            body=retry.model_dump(mode="json"),action=lambda:svc.retry(target_id,retry))
+    assert status == 200 and result["targets"][0]["state"] == "retry_wait"
+    adapter.results.append(OperationResult(outcome="confirmed_success",primary_remote_id="after-manual-retry",visibility_state="public",confirmation_kind="receipt"))
+    run_claim(repo,adapter)
+    assert row(engine,target_id)["state"] == "published" and adapter.calls == 2
+
+
+def test_contradictory_validation_verdict_is_not_a_publication_permission(engine):
+    from social.contracts import ValidationIssue
+    ids = seed(engine)
+    class ContradictoryAdapter(FakeAdapter):
+        def validate(self,payload,capabilities):
+            return ValidationResult(valid=True,errors=(ValidationIssue(code="INVALID",field="text",message="Invalid"),))
+    fake = ContradictoryAdapter()
+    run_claim(repository(engine),fake)
+    assert fake.calls == 0 and row(engine,ids["targets"][0])["state"] == "failed"
+
+
+def test_duplicate_unresolved_public_permit_on_same_claim_is_rejected(engine):
+    seed(engine)
+    repo = repository(engine)
+    claim = repo.claim_due()[0]
+    assert intent(repo,claim)
+    from social.worker.repository import GateRejected
+    with pytest.raises(GateRejected,match="OPERATION_ALREADY_STARTED"):
+        intent(repo,claim)
+    assert row(engine,claim.target_id)["submit_count"] == 1
+
+
+def test_direct_finish_rejects_whitespace_public_evidence(engine):
+    seed(engine)
+    repo = repository(engine)
+    claim = repo.claim_due()[0]
+    public = intent(repo,claim)
+    with pytest.raises(ValueError):
+        repo.finish(claim,public,state="published",outcome="confirmed_success",checkpoint={},remote_refs={},
+            remote_id=" ",visibility_state="public",confirmation_kind=" ")
+    assert row(engine,claim.target_id)["state"] == "dispatching"
+
+
+def test_unselected_account_with_self_consistent_unapproved_payload_has_no_permit(engine):
+    ids = seed(engine)
+    account_id,target_id = uuid4(),uuid4()
+    with Session(engine) as db:
+        account = db.get(SocialAccount,ids["accounts"][0])
+        db.add(SocialAccount(id=account_id,platform=account.platform,api_product="fake",connection_method="fixture",
+            external_account_id="unauthorized-B",display_name="B",connection_state="connected",publishing_enabled=True,
+            granted_scopes=["publish"],capability_snapshot=account.capability_snapshot))
+        db.flush()
+        payload = ResolvedPostPayload(account_id=account_id,platform="facebook",api_product="fake",
+            external_account_id="unauthorized-B",format="text",text="UNAPPROVED DIFFERENT COPY",
+            evidence_hash="f"*64,content_hash="0"*64)
+        payload = payload.model_copy(update={"content_hash":canonical_hash(payload.model_dump(mode="json",exclude={"content_hash"}))})
+        db.add(SocialPostTarget(id=target_id,publication_id=ids["publication"],account_id=account_id,
+            resolved_payload=payload.model_dump(mode="json"),payload_hash=payload.content_hash,capability_version="social-v1",
+            state="queued",next_action="publish",next_action_at=datetime.now(timezone.utc)))
+        db.commit()
+    repo = repository(engine)
+    claim = next(c for c in repo.claim_due(2) if c.target_id == str(target_id))
+    assert intent(repo,claim) is None
+    assert row(engine,target_id)["error_code"] == "TARGET_NOT_AUTHORIZED"
+    assert row(engine,target_id)["submit_count"] == 0
+
+
+@pytest.mark.parametrize("field,value",[("text","UNAPPROVED COPY"),("evidence_hash","f"*64),("hashtags",["unapproved"])])
+def test_selected_target_payload_must_match_approved_revision_even_with_valid_hash(engine,field,value):
+    ids = seed(engine)
+    target = row(engine,ids["targets"][0])
+    payload = dict(target["resolved_payload"])
+    payload[field] = value
+    payload["content_hash"] = canonical_hash({k:v for k,v in payload.items() if k != "content_hash"})
+    with engine.begin() as conn:
+        # create_all fixture intentionally has no migration trigger; this attacks
+        # the worker itself, even if a privileged writer bypassed schema guards.
+        conn.execute(SocialPostTarget.__table__.update().where(SocialPostTarget.id == target["id"]).values(
+            resolved_payload=payload,payload_hash=payload["content_hash"]))
+    repo = repository(engine)
+    assert intent(repo,repo.claim_due()[0]) is None
+    assert row(engine,target["id"])["error_code"] == "PAYLOAD_REVISION_MISMATCH"
+
+
+def test_other_selected_account_failure_does_not_block_independent_valid_permit(engine):
+    ids = seed(engine,count=2)
+    with engine.begin() as conn:
+        conn.execute(SocialAccount.__table__.update().where(SocialAccount.id == ids["accounts"][1]).values(connection_state="revoked"))
+    repo = repository(engine)
+    valid = next(c for c in repo.claim_due(2) if c.account_id == str(ids["accounts"][0]))
+    assert intent(repo,valid) is not None
+
+
+@pytest.mark.parametrize("field",["account_id","publication_id"])
+def test_lease_identity_cannot_be_forged_to_lock_a_different_authorization(engine,field):
+    from dataclasses import replace
+    seed(engine)
+    repo = repository(engine)
+    claim = repo.claim_due()[0]
+    forged = replace(claim,**{field:str(uuid4())})
+    with pytest.raises(LeaseLost):
+        intent(repo,forged)
     assert row(engine,claim.target_id)["submit_count"] == 0

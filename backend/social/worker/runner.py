@@ -139,7 +139,7 @@ class SocialWorker:
                     return
                 if claim.previous_state != "processing":
                     validation = ValidationResult.model_validate(adapter.validate(payload, capabilities))
-                    if not validation.valid:
+                    if not validation.valid or validation.errors or any(not target.valid or target.errors for target in validation.targets):
                         await self.db(self.repository.abandon, claim, state="failed", code="TARGET_VALIDATION_FAILED")
                         return
                 plan = OperationPlan.model_validate(adapter.next_operation(payload, snapshot["checkpoint"]))
@@ -218,7 +218,8 @@ class SocialWorker:
     @staticmethod
     def _confirmed(result):
         return (result.outcome == "confirmed_success" and result.visibility_state == "public"
-                and bool(result.primary_remote_id) and bool(result.confirmation_kind))
+                and bool(result.primary_remote_id and result.primary_remote_id.strip())
+                and bool(result.confirmation_kind and result.confirmation_kind.strip()))
 
     async def _result(self, claim, intent, snapshot, plan, result, started):
         bounded_json(result.checkpoint)

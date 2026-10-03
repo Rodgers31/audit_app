@@ -4,6 +4,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 import json
 import random
+import math
 
 from ..contracts import OperationPlan, OperationResult, RetryDecision
 
@@ -13,6 +14,8 @@ RETRY_CODES = frozenset({"TEMPORARY_REJECTION", "RATE_LIMITED", "NOT_SENT", "CON
 
 
 def bounded_json(value, *, max_bytes=65536):
+    if type(max_bytes) is not int or not 1 <= max_bytes <= 65536:
+        raise ValueError("JSON ceiling must be a positive bounded integer")
     if not isinstance(value, dict):
         raise ValueError("Checkpoint/receipt must be an object")
     def check(item, depth=0):
@@ -51,6 +54,19 @@ def retry_decision(result: OperationResult, *, now: datetime, submit_count: int,
                    first_started_at: datetime, retry_deadline: datetime | None,
                    content_valid_until: datetime | None, max_submissions=5,
                    lifetime_seconds=86400, random_fraction=None) -> RetryDecision:
+    if type(submit_count) is not int or not 0 <= submit_count <= 5:
+        raise ValueError("Submission count must be an integer between zero and five")
+    if type(max_submissions) is not int or not 1 <= max_submissions <= 5:
+        raise ValueError("Submission limit must be bounded to five")
+    if type(lifetime_seconds) is not int or not 0 < lifetime_seconds <= 86400:
+        raise ValueError("Retry lifetime must be bounded to 24 hours")
+    for value in (now, first_started_at, retry_deadline, content_valid_until):
+        if value is not None and (not isinstance(value, datetime) or value.tzinfo is None or value.utcoffset() is None):
+            raise ValueError("Retry times must be timezone-aware datetimes")
+    if not isinstance(now, datetime) or not isinstance(first_started_at, datetime) or first_started_at > now:
+        raise ValueError("Retry origin cannot be absent or in the future")
+    if random_fraction is not None and (isinstance(random_fraction, bool) or not isinstance(random_fraction, (float, int)) or not math.isfinite(random_fraction) or not 0 <= random_fraction <= 1):
+        raise ValueError("Jitter fraction must be finite and between zero and one")
     if result.outcome == "ambiguous":
         return RetryDecision(action="reconcile", reason="ACCEPTANCE_UNCERTAIN")
     if result.error_code in BLOCK_CODES:

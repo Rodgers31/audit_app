@@ -50,3 +50,13 @@ def test_structured_log_excludes_sensitive_unapproved_fields(caplog):
 def test_direct_config_guards_reject_hostile_numeric_values(setting):
     with pytest.raises(ValueError):
         WorkerConfig("postgresql://localhost/social_test", **setting)
+
+
+def test_cli_requires_explicit_database_and_never_uses_database_url_environment(monkeypatch,capsys):
+    from social.worker.__main__ import main
+    monkeypatch.setenv("DATABASE_URL","postgresql://secret-production.invalid/forbidden")
+    with pytest.raises(SystemExit) as stopped:
+        main([])
+    assert stopped.value.code == 2
+    output = capsys.readouterr()
+    assert "--database-url" in output.err and "secret-production" not in output.err

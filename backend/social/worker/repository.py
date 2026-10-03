@@ -13,10 +13,12 @@ from uuid import UUID, uuid4
 
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Session
 
 from .config import WorkerConfig
-from ..contracts import CapabilitySet, OperationPlan, ResolvedPostPayload, canonical_hash
+from ..contracts import CapabilitySet, OperationPlan, PostDocument, ResolvedPostPayload, canonical_hash
 from .policy import bounded_json, retry_decision, validate_plan
+from ..validation import validate_document
 
 ACTIONABLE_STATES = ("queued", "retry_wait", "processing", "reconciling")
 REQUIRED_TABLES = (
@@ -154,7 +156,8 @@ class QueueRepository:
         return controls, account, publication, target
 
     def _current(self, conn, claim, target):
-        if target is None or str(target["lease_token"]) != claim.token or target["lease_epoch"] != claim.epoch:
+        if (target is None or str(target["lease_token"]) != claim.token or target["lease_epoch"] != claim.epoch
+                or str(target["account_id"]) != claim.account_id or str(target["publication_id"]) != claim.publication_id):
             raise LeaseLost()
         now = conn.execute(text("SELECT clock_timestamp()")).scalar_one()
         if target["lease_expires_at"] is None or target["lease_expires_at"] <= now:
@@ -175,6 +178,9 @@ class QueueRepository:
         with self.engine.begin() as conn:
             controls, account, pub, target = self._locked(conn, claim)
             now = self._current(conn, claim, target)
+            pending = conn.execute(text("SELECT operation_id FROM social_publish_attempts WHERE target_id=CAST(:id AS uuid) AND lease_epoch=:epoch AND completed_at IS NULL LIMIT 1"), self._params(claim)).scalar()
+            if pending is not None:
+                raise GateRejected("OPERATION_ALREADY_STARTED")
             if target["checkpoint"] != checkpoint_input:
                 raise GateRejected("CHECKPOINT_CONFLICT")
             if estimated_cost_microusd:
@@ -260,9 +266,12 @@ class QueueRepository:
             return "ACCOUNT_UNAVAILABLE"
         if not pub["approved_at"] or (pub["authorization_kind"] == "human" and not pub["approved_by"]):
             return "AUTHORIZATION_INVALID"
-        revision = conn.execute(text("SELECT content_hash FROM social_post_revisions WHERE id=CAST(:revision AS uuid)"),
-                                {"revision": str(pub["revision_id"])}).scalar()
-        if revision != pub["approved_hash"]:
+        revision = conn.execute(text("SELECT post_id,document,evidence_snapshot,content_hash FROM social_post_revisions WHERE id=CAST(:revision AS uuid)"),
+                                {"revision": str(pub["revision_id"])}).mappings().first()
+        if not revision or str(revision["post_id"]) != str(pub["post_id"]):
+            return "AUTHORIZATION_OWNERSHIP_MISMATCH"
+        actual_revision_hash = canonical_hash({"document": revision["document"], "evidence_snapshot": revision["evidence_snapshot"]})
+        if revision["content_hash"] != pub["approved_hash"] or actual_revision_hash != pub["approved_hash"]:
             return "AUTHORIZATION_HASH_MISMATCH"
         try:
             payload = ResolvedPostPayload.model_validate(target["resolved_payload"])
@@ -288,6 +297,22 @@ class QueueRepository:
             return "BUDGET_RESERVATION_UNAVAILABLE"
         if target["capability_version"] != capability.rules_version or payload.capability_version != capability.rules_version:
             return "CAPABILITY_VERSION_CHANGED"
+        try:
+            document = PostDocument.model_validate(revision["document"])
+            selected = tuple(t for t in document.targets if str(t.account_id) == str(account["id"]))
+            if len(selected) != 1:
+                return "TARGET_NOT_AUTHORIZED"
+            # Validate just this destination: another selected account's failure
+            # cannot erase this target's independent authorized outcome.
+            with Session(bind=conn, join_transaction_mode="rollback_only") as session:
+                validation = validate_document(session, document.model_copy(update={"targets": selected}),
+                                               revision["evidence_snapshot"], {account["platform"]})
+            if not validation.valid or validation.targets[0].resolved_preview is None:
+                return "TARGET_VALIDATION_FAILED"
+            if validation.targets[0].resolved_preview.model_dump(mode="json") != payload.model_dump(mode="json"):
+                return "PAYLOAD_REVISION_MISMATCH"
+        except (ValueError, TypeError):
+            return "TARGET_DATA_INVALID"
         for asset in payload.assets:
             row = conn.execute(text("SELECT state,deleted_at,sha256,mime_type,byte_size FROM social_media_assets WHERE id=CAST(:asset AS uuid)"), {"asset": str(asset.asset_id)}).mappings().first()
             if not row or row["state"] != "ready" or row["deleted_at"] or row["sha256"] != asset.sha256 or row["mime_type"] != asset.mime_type or row["byte_size"] != asset.byte_size:
@@ -357,7 +382,7 @@ class QueueRepository:
                 return False
             publication_operation = (completed["dispatch_started_at"] is not None and
                                      completed["receipt"].get("intent", {}).get("publication_capable") is True)
-            if state == "published" and not (outcome == "confirmed_success" and remote_id and confirmation_kind and visibility_state == "public" and
+            if state == "published" and not (outcome == "confirmed_success" and isinstance(remote_id, str) and remote_id.strip() and isinstance(confirmation_kind, str) and confirmation_kind.strip() and visibility_state == "public" and
                                               (publication_operation or completed["operation"] in ("poll", "reconcile"))):
                 raise ValueError("Publication requires a publication/status operation and confirmed public identity/receipt")
             conn.execute(text("""
