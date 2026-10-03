@@ -30,7 +30,7 @@ def connection_pg_engine():
     with admin.begin() as connection:connection.execute(text('CREATE SCHEMA '+schema))
     engine=create_engine(url,pool_size=3,max_overflow=0,connect_args={'options':'-csearch_path='+schema+' -cstatement_timeout=5000 -clock_timeout=5000'})
     try:
-        Base.metadata.create_all(engine,tables=SOCIAL_TABLES+CONNECTION_TABLES)
+        Base.metadata.create_all(engine,tables=SOCIAL_TABLES)
         yield engine
     finally:
         engine.dispose()

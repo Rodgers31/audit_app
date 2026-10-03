@@ -214,3 +214,11 @@ def get_status(svc: Service):
 @router.patch('/controls', response_model=ControlsDTO)
 def set_controls(request: Request, body: ControlsCommand, svc: Service, admin: Admin, key: IdempotencyKey):
     return command(request, svc, admin, key, body, lambda: svc.controls(body))
+
+# Feature routers already have their complete public prefix. Aggregate beside
+# the editorial router rather than nesting under its prefix a second time.
+from .connections.api import router as connection_router
+_editorial_router = router
+router = APIRouter()
+router.include_router(_editorial_router)
+router.include_router(connection_router)

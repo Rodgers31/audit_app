@@ -30,7 +30,7 @@ def db():
     @event.listens_for(engine, 'connect')
     def fk(conn, _):
         conn.execute('PRAGMA foreign_keys=ON')
-    Base.metadata.create_all(engine, tables=SOCIAL_TABLES + CONNECTION_TABLES)
+    Base.metadata.create_all(engine, tables=SOCIAL_TABLES)
     with Session(engine, expire_on_commit=False) as session:
         yield session
     engine.dispose()
