@@ -1,6 +1,7 @@
 """Explicit isolated fake object store; never imported by runtime code."""
 from dataclasses import replace
 import hashlib
+import shutil
 from io import BytesIO
 from uuid import uuid4
 
@@ -67,7 +68,7 @@ def media_db():
 
 @pytest.fixture
 def media(media_db):
-    config = MediaConfig(enabled=True, endpoint=ENDPOINT, bucket='media-test', access_key='test', secret_key='test', ffprobe_path='/opt/homebrew/bin/ffprobe')
+    config = MediaConfig(enabled=True, endpoint=ENDPOINT, bucket='media-test', access_key='test', secret_key='test', ffprobe_path=shutil.which('ffprobe'))
     storage = FakeStorage()
     runtime = MediaRuntime(config, storage, LocalInspector(config))
     return MediaService(media_db, runtime), storage

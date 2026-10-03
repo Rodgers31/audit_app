@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import struct
 import subprocess
+import shutil
 from types import SimpleNamespace
 import zlib
 
@@ -13,6 +14,9 @@ from social.media.config import MediaConfig
 from social.media import inspection
 from social.media.inspection import InspectionFailure, LocalInspector
 
+
+FFPROBE = Path(shutil.which('ffprobe') or '/unavailable/test/ffprobe')
+FFMPEG = Path(shutil.which('ffmpeg') or '/unavailable/test/ffmpeg')
 
 def png_bytes():
     def chunk(kind, data):
@@ -260,8 +264,8 @@ def test_executable_but_broken_video_inspector_is_not_advertised(tmp_path, monke
 
 @pytest.fixture
 def actual_mp4(tmp_path, readonly_real_child):
-    ffmpeg = Path('/opt/homebrew/bin/ffmpeg')
-    ffprobe = Path('/opt/homebrew/bin/ffprobe')
+    ffmpeg = FFMPEG
+    ffprobe = FFPROBE
     if not ffmpeg.is_file() or not ffprobe.is_file():
         pytest.skip('Read-only installed ffmpeg/ffprobe unavailable')
     path = tmp_path / 'local-fixture.mp4'
@@ -271,7 +275,7 @@ def actual_mp4(tmp_path, readonly_real_child):
 
 
 def test_actual_mp4_has_positive_inspected_evidence(actual_mp4):
-    result = LocalInspector(MediaConfig(ffprobe_path='/opt/homebrew/bin/ffprobe')).inspect(actual_mp4, 'video/mp4', actual_mp4.stat().st_size)
+    result = LocalInspector(MediaConfig(ffprobe_path=str(FFPROBE))).inspect(actual_mp4, 'video/mp4', actual_mp4.stat().st_size)
     assert (result.width, result.height, result.mime_type) == (16, 16, 'video/mp4')
     assert 0 < result.duration_ms <= 120000 and 0 < result.frame_rate <= 120
     assert result.codec_metadata['video_codec'] == 'h264'
@@ -282,7 +286,7 @@ def test_actual_header_only_and_truncated_mp4_are_not_ready(fake_mp4, actual_mp4
     broken.write_bytes(actual_mp4.read_bytes()[:100])
     for path in (fake_mp4, broken):
         with pytest.raises(InspectionFailure):
-            LocalInspector(MediaConfig(ffprobe_path='/opt/homebrew/bin/ffprobe')).inspect(path, 'video/mp4', path.stat().st_size)
+            LocalInspector(MediaConfig(ffprobe_path=str(FFPROBE))).inspect(path, 'video/mp4', path.stat().st_size)
 
 
 def test_actual_corrupt_h264_packets_cannot_be_ready(actual_mp4, tmp_path):
@@ -295,14 +299,14 @@ def test_actual_corrupt_h264_packets_cannot_be_ready(actual_mp4, tmp_path):
     corrupt = tmp_path / 'corrupted-packets.mp4'
     corrupt.write_bytes(body)
     try:
-        result = LocalInspector(MediaConfig(ffprobe_path='/opt/homebrew/bin/ffprobe')).inspect(corrupt, 'video/mp4', len(body))
+        result = LocalInspector(MediaConfig(ffprobe_path=str(FFPROBE))).inspect(corrupt, 'video/mp4', len(body))
     except InspectionFailure:
         return
     pytest.fail(f'Corrupt H.264 bytes returned ready metadata: {result!r}')
 
 
 def packet_ranges(path, selection):
-    result = subprocess.run(['/opt/homebrew/bin/ffprobe', '-v', 'error', '-select_streams', selection, '-show_packets', '-show_entries', 'packet=pos,size', '-of', 'json', str(path)], capture_output=True, timeout=5, check=False)
+    result = subprocess.run([str(FFPROBE), '-v', 'error', '-select_streams', selection, '-show_packets', '-show_entries', 'packet=pos,size', '-of', 'json', str(path)], capture_output=True, timeout=5, check=False)
     assert result.returncode == 0, 'The installed parser could not enumerate fixture packets'
     return [(int(packet['pos']), int(packet['size'])) for packet in json.loads(result.stdout)['packets']]
 
@@ -318,7 +322,7 @@ def test_actual_one_corrupt_h264_packet_among_good_packets_is_not_ready(actual_m
     path = tmp_path / f'one-bad-video-packet-{index}.mp4'
     path.write_bytes(body)
     with pytest.raises(InspectionFailure):
-        LocalInspector(MediaConfig(ffprobe_path='/opt/homebrew/bin/ffprobe')).inspect(path, 'video/mp4', len(body))
+        LocalInspector(MediaConfig(ffprobe_path=str(FFPROBE))).inspect(path, 'video/mp4', len(body))
 
 
 def test_actual_missing_final_h264_packet_cannot_pass_after_a_good_first_frame(actual_mp4, tmp_path):
@@ -328,23 +332,25 @@ def test_actual_missing_final_h264_packet_cannot_pass_after_a_good_first_frame(a
     path = tmp_path / 'missing-final-video-packet.mp4'
     path.write_bytes(body)
     try:
-        result = LocalInspector(MediaConfig(ffprobe_path='/opt/homebrew/bin/ffprobe')).inspect(path, 'video/mp4', len(body))
+        result = LocalInspector(MediaConfig(ffprobe_path=str(FFPROBE))).inspect(path, 'video/mp4', len(body))
     except InspectionFailure:
         return
-    probe = subprocess.run(['/opt/homebrew/bin/ffprobe', '-v', 'error', '-count_frames', '-count_packets', '-show_entries', 'stream=nb_frames,nb_read_frames,nb_read_packets', '-of', 'json', str(path)], capture_output=True, timeout=5, check=False)
+    probe = subprocess.run([str(FFPROBE), '-v', 'error', '-count_frames', '-count_packets', '-show_entries', 'stream=nb_frames,nb_read_frames,nb_read_packets', '-of', 'json', str(path)], capture_output=True, timeout=5, check=False)
     pytest.fail(f'Missing final H.264 packet returned ready metadata: {result!r}; container counts: {probe.stdout.decode()}')
 
 
 @pytest.fixture
 def actual_av_mp4(tmp_path, readonly_real_child):
+    if not FFMPEG.is_file() or not FFPROBE.is_file():
+        pytest.skip('Read-only installed ffmpeg/ffprobe unavailable')
     path = tmp_path / 'local-video-audio-fixture.mp4'
-    result = subprocess.run(['/opt/homebrew/bin/ffmpeg', '-nostdin', '-loglevel', 'error', '-f', 'lavfi', '-i', 'color=c=black:s=16x16:r=2', '-f', 'lavfi', '-i', 'sine=frequency=440:sample_rate=48000', '-t', '1', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-shortest', '-movflags', '+faststart', str(path)], capture_output=True, timeout=15, check=False)
+    result = subprocess.run([str(FFMPEG), '-nostdin', '-loglevel', 'error', '-f', 'lavfi', '-i', 'color=c=black:s=16x16:r=2', '-f', 'lavfi', '-i', 'sine=frequency=440:sample_rate=48000', '-t', '1', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-shortest', '-movflags', '+faststart', str(path)], capture_output=True, timeout=15, check=False)
     assert result.returncode == 0, 'The installed encoder could not make an isolated H.264/AAC fixture'
     return path
 
 
 def test_actual_h264_and_aac_have_positive_decoding_evidence(actual_av_mp4):
-    result = LocalInspector(MediaConfig(ffprobe_path='/opt/homebrew/bin/ffprobe')).inspect(actual_av_mp4, 'video/mp4', actual_av_mp4.stat().st_size)
+    result = LocalInspector(MediaConfig(ffprobe_path=str(FFPROBE))).inspect(actual_av_mp4, 'video/mp4', actual_av_mp4.stat().st_size)
     assert result.codec_metadata == {'video_codec': 'h264', 'audio_codec': 'aac'}
     assert result.width == result.height == 16 and result.duration_ms > 0
 
@@ -358,7 +364,7 @@ def test_actual_corrupt_aac_with_good_h264_video_is_not_ready(actual_av_mp4, tmp
     path = tmp_path / 'one-bad-audio-packet.mp4'
     path.write_bytes(body)
     with pytest.raises(InspectionFailure):
-        LocalInspector(MediaConfig(ffprobe_path='/opt/homebrew/bin/ffprobe')).inspect(path, 'video/mp4', len(body))
+        LocalInspector(MediaConfig(ffprobe_path=str(FFPROBE))).inspect(path, 'video/mp4', len(body))
 
 
 def test_actual_missing_final_aac_packet_cannot_pass_with_complete_good_video(actual_av_mp4, tmp_path):
@@ -371,8 +377,8 @@ def test_actual_missing_final_aac_packet_cannot_pass_with_complete_good_video(ac
     path = tmp_path / 'missing-final-audio-packet.mp4'
     path.write_bytes(body)
     try:
-        result = LocalInspector(MediaConfig(ffprobe_path='/opt/homebrew/bin/ffprobe')).inspect(path, 'video/mp4', len(body))
+        result = LocalInspector(MediaConfig(ffprobe_path=str(FFPROBE))).inspect(path, 'video/mp4', len(body))
     except InspectionFailure:
         return
-    probe = subprocess.run(['/opt/homebrew/bin/ffprobe', '-v', 'error', '-count_frames', '-count_packets', '-show_entries', 'stream=codec_type,nb_frames,nb_read_frames,nb_read_packets', '-of', 'json', str(path)], capture_output=True, timeout=5, check=False)
+    probe = subprocess.run([str(FFPROBE), '-v', 'error', '-count_frames', '-count_packets', '-show_entries', 'stream=codec_type,nb_frames,nb_read_frames,nb_read_packets', '-of', 'json', str(path)], capture_output=True, timeout=5, check=False)
     pytest.fail(f'Missing final AAC packet returned ready metadata: {result!r}; container counts: {probe.stdout.decode()}')

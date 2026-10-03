@@ -4,7 +4,7 @@ import { resolveContent } from './socialDocument';
 import SocialMedia from './SocialMedia';
 import styles from './social.module.css';
 
-export default function SocialOverrides({ target, master, onChange }: { target: DocumentTarget; master: SocialContent; onChange: (target: DocumentTarget) => void }) {
+export default function SocialOverrides({ target, master, onChange, contextKey, onMediaBusyChange }: { target: DocumentTarget; master: SocialContent; onChange: (target: DocumentTarget) => void; contextKey?: string; onMediaBusyChange?: (busy: boolean) => void }) {
   const resolved = resolveContent(master, target);
   const [rawHashtags, setRawHashtags] = useState<{ account: string; value: string }>();
   const hashtagText = rawHashtags?.account === target.account_id && JSON.stringify(rawHashtags.value.split(/\s+/).filter(Boolean)) === JSON.stringify(resolved.hashtags) ? rawHashtags.value : resolved.hashtags.join(' ');
@@ -17,7 +17,7 @@ export default function SocialOverrides({ target, master, onChange }: { target: 
       {target.overrides[field] && field === 'text' && <label>Account text<textarea rows={5} value={resolved.text} onChange={e => replace('text', e.target.value)} /></label>}
       {target.overrides[field] && field === 'link' && <label>Account URL<input type='url' value={resolved.link ?? ''} onChange={e => replace('link', e.target.value || null)} /><span className={styles.muted}>An empty URL intentionally removes the master link.</span></label>}
       {target.overrides[field] && field === 'hashtags' && <label>Account hashtags<input value={hashtagText} onChange={e => { setRawHashtags({ account: target.account_id, value: e.target.value }); replace('hashtags', e.target.value.split(/\s+/).filter(Boolean)); }} /><span className={styles.muted}>An empty list intentionally removes master hashtags.</span></label>}
-      {target.overrides[field] && field === 'media' && <SocialMedia label='Account' media={resolved.media} onChange={value => replace('media', value)} />}
+      {target.overrides[field] && field === 'media' && <SocialMedia key={target.account_id} label='Account' contextKey={`${contextKey ?? 'editor'}:account:${target.account_id}`} onBusyChange={onMediaBusyChange} media={resolved.media} onChange={value => replace('media', value)} />}
     </div>)}
   </section>;
 }

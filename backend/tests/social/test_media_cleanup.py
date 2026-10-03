@@ -2,11 +2,13 @@
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 import threading
+import os
 from uuid import uuid4
 
 import pytest
 from sqlalchemy import create_engine, select, text
 from sqlalchemy.orm import Session
+from sqlalchemy.engine import make_url
 
 from social.media.models import SocialMediaBudget, SocialMediaUpload
 from social.media.service import MediaService
@@ -19,7 +21,12 @@ from test_media_support import ACTOR, intent, media, media_db, png, upload_ready
 @pytest.fixture
 def media_pg(media):
     # Explicit dedicated local test database; no dotenv/default app DSN.
-    url='postgresql+psycopg2://postgres:social_local_test@127.0.0.1:62124/social_worker_test'
+    dsn = os.getenv('SOCIAL_WORKER_TEST_DATABASE_URL')
+    if not dsn:
+        pytest.skip('Set SOCIAL_WORKER_TEST_DATABASE_URL for the isolated media PostgreSQL lane')
+    url = make_url(dsn)
+    if url.get_backend_name() != 'postgresql' or url.host not in {'localhost', '127.0.0.1', '::1'} or url.database != 'social_worker_test' or url.port != 62124:
+        pytest.fail('Media PostgreSQL tests require the assigned loopback social_worker_test database on port 62124')
     schema='media_race_'+uuid4().hex
     admin=create_engine(url,pool_size=1,max_overflow=0,hide_parameters=True)
     with admin.begin() as conn: conn.execute(text('CREATE SCHEMA '+schema))
