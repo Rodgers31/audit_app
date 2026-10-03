@@ -57,7 +57,8 @@ class SocialService:
         self.request_id = None
 
     def now(self):
-        return utc(self.db.scalar(select(func.now())))
+        clock = func.clock_timestamp() if self.db.bind.dialect.name == "postgresql" else func.now()
+        return utc(self.db.scalar(select(clock)))
 
     def command(self, *, actor: UUID, route: str, key: UUID, body, request_id: UUID, action: Callable, status=200):
         """Receipt, mutation and audit share one transaction; PG lock serializes keys."""
@@ -263,8 +264,8 @@ class SocialService:
         self.db.flush()
         return self.detail(post.id)
 
-    def publish(self, post_id, body, *, scheduled=False):
-        post, revision, publication = self._locked(post_id, body.expected_version)
+    def _publishing_gates(self, post, revision, body):
+        """All outbound admin commands use the same current policy gates."""
         controls = self.db.get(SocialControls, 1)
         if not controls or not controls.publishing_enabled:
             raise SocialError("PUBLISHING_PAUSED", "Publishing is paused. Your draft is preserved.")
@@ -276,6 +277,11 @@ class SocialService:
             raise SocialError("PUBLISHING_PAUSED", "One selected platform is paused. All targets remain unqueued.")
         if any(t.platform == "x" for t in result.targets) and controls.budget_controls.get("x_budget_microusd", 0) <= 0:
             raise SocialError("BUDGET_UNAVAILABLE", "X publishing requires an explicitly approved API budget.")
+        return result
+
+    def publish(self, post_id, body, *, scheduled=False):
+        post, revision, publication = self._locked(post_id, body.expected_version)
+        result = self._publishing_gates(post, revision, body)
         now = self.now()
         try:
             due = resolve_schedule(body.schedule, now) if scheduled else now
@@ -331,6 +337,45 @@ class SocialService:
         detail = self.detail(post.id)
         detail["cancellation"] = {"in_flight_target_ids": inflight, "message": "Requests already in flight may still complete." if inflight else "Unsent targets are cancelled."}
         return detail
+
+    def resume(self, post_id, body):
+        """Resume only unchanged, cancelled work with no external operations."""
+        post, revision, publication = self._locked(post_id, body.expected_version)
+        if not publication or not publication.cancel_requested_at or publication.revoked_at:
+            raise SocialError("INVALID_STATE", "Only a cancelled, active authorization can resume.")
+        targets = self._targets(publication)
+        attempted = self.db.scalar(select(SocialPublishAttempt.id).join(SocialPostTarget, SocialPublishAttempt.target_id == SocialPostTarget.id).where(SocialPostTarget.publication_id == publication.id).limit(1))
+        if attempted or self._dispatched(publication):
+            raise SocialError("CONTENT_LOCKED", "An external operation started. Duplicate and review a new post instead.")
+        if not targets or any(t.state != "cancelled" for t in targets):
+            raise SocialError("INVALID_STATE", "Every destination must be cancelled and unsent before resume.")
+        now = self.now()
+        if any(deadline and now >= utc(deadline) for deadline in (publication.start_deadline, publication.retry_deadline, publication.content_valid_until)):
+            raise SocialError("AUTHORIZATION_EXPIRED", "This authorization expired. Create and review a new revision.")
+        result = self._publishing_gates(post, revision, body)
+        if publication.revision_id != revision.id or publication.approved_hash != revision.content_hash:
+            raise SocialError("REVISION_INTEGRITY_FAILED", "The original authorization does not match this revision.", 503)
+        frozen = {t.account_id: t for t in targets}
+        if set(frozen) != {t.account_id for t in result.targets} or any(frozen[v.account_id].payload_hash != v.resolved_preview.content_hash for v in result.targets):
+            raise SocialError("REVISION_INTEGRITY_FAILED", "Destinations or media changed. Create and review a new revision.")
+        due = max(now, utc(publication.scheduled_for)) if publication.scheduled_for else now
+        publication.cancel_requested_at = None
+        if publication.dispatch_requested_at is None:
+            publication.dispatch_requested_at = now
+            publication.scheduled_for = due
+            publication.schedule_timezone = "UTC"
+            publication.requested_local_time = due.replace(tzinfo=None).isoformat()
+            publication.start_deadline = due + timedelta(hours=1)
+            publication.retry_deadline = due + timedelta(hours=24)
+        publication.version += 1
+        publication.updated_at = now
+        for target in targets:
+            target.state, target.next_action, target.next_action_at = "queued", "publish", due
+            target.updated_at = now
+        self._touch(post)
+        self.audit("post.resumed", post=post, previous="cancelled", new="queued", reason=body.reason, details={"publication_id": str(publication.id), "scheduled_for": iso(due), "revision_id": str(revision.id)})
+        self.db.flush()
+        return self.accepted(post, publication)
 
     def duplicate(self, post_id, body):
         from .contracts import CreatePost

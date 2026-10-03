@@ -30,7 +30,7 @@ Local integration tests use a newly created, resource-bounded PostgreSQL 16 cont
 
 ## Review/merge checkpoint
 
-Open tested PRs for owner review. Address valid owner/bot comments based on reproductions and code evidence. Do not merge before the user's review checkpoint. Close linked feature issues when accepted code merges; keep the roadmap open for later batches. Do not claim hosted CI passed while repository Actions is disabled by another workstream.
+Open tested PRs for owner review. Address valid owner/bot comments based on reproductions and code evidence. The owner has now authorized merging after those fixes and approved the next three priorities. Close linked feature issues when accepted code merges; keep the roadmap open for later batches. Do not claim hosted CI passed while repository Actions is disabled by another workstream.
 
 ## Implemented boundaries
 
@@ -71,7 +71,7 @@ The UI companion branch retains its detailed `UI_HANDOFF.md`, screenshot fixture
 
 1. [#481 — Supabase egress reduction](https://github.com/Rodgers31/audit_app/issues/481): measure current shared-pooler result traffic and address overfetch before enabling more background workloads. Keep Supabase; social queue reads are already compact/adaptive but do not repair existing traffic.
 2. [#482 — Inspected media uploads/library](https://github.com/Rodgers31/audit_app/issues/482): build authenticated bounded uploads, server-side byte inspection and storage access. Keep bytes outside PostgreSQL and settle video egress/hosting choices first.
-3. [#483 — Meta OAuth and credentials](https://github.com/Rodgers31/audit_app/issues/483): tested server-only authorization and encrypted token bundles; exact Page/Instagram asset discovery. Live OAuth/account permission changes remain a separate operational step.
+3. [#483 — Meta OAuth and credentials](https://github.com/Rodgers31/audit_app/issues/483): future implementation of server-only authorization, encrypted token bundles and exact Page/Instagram asset discovery, with fake-flow tests required before completion. These components are not implemented or tested in batch 1. Live OAuth/account permission changes remain a separate operational step.
 4. Add reviewed Facebook/Instagram real adapters after media and credential contracts, then Threads. Keep X API fees and TikTok app-use-case eligibility as explicit gates; no claim that browser profile setup supplies API authorization.
 5. Apply the reviewed migration and provision the separate worker only after an authorized deployment/cost review. Initial real generated content still requires human approval. Generation, automatic approval, automatic scheduling and automatic publication are not activated by this batch.
 
@@ -79,4 +79,4 @@ Existing `.github/workflows/docker-build-deploy.yml` and `seed.yml` run `alembic
 
 [#484 — Global delivery filters and schedule management](https://github.com/Rodgers31/audit_app/issues/484) retains the known first-batch browsing limitation: scheduled/history views filter the current compact page and label their counts accordingly. A later API contract adds correct global delivery pagination, exact schedule metadata and safe reschedule controls instead of fetching every document into the browser.
 
-Feature issues #477–#479 close only when their accepted PRs merge. The epic #476 remains open for the roadmap. Review branches are `codex/social-publishing-core` (base main) and `codex/social-admin-composer` (base core); the PR bodies and linked issue timelines record their exact review URLs and final heads. Review the core first, then retarget/rebase the companion UI after the accepted core merges. No PR is merged during this checkpoint.
+Feature issues #477–#479 close only when their accepted PRs merge. The epic #476 remains open for the roadmap. Review branches are `codex/social-publishing-core` (base main) and `codex/social-admin-composer` (initial base core); the PR timelines record final heads and merge state. Review the core first, then retarget/rebase the companion UI after the accepted core merges. See [the review evidence](REVIEW_485_486.md) for verified findings and current local checks.

@@ -88,6 +88,7 @@ Base `/api/v1/admin/social`. Existing `require_admin` identities/roles, UUID act
 | POST `/posts/{id}/publish` | expected_version, revision_id, acknowledged_warning_codes, optional attestation + key | 202 publication/target IDs |
 | POST `/posts/{id}/schedule` | publish fields + schedule `{local_time,timezone,utc_offset}` + key | 202 publication/target IDs |
 | POST `/posts/{id}/cancel` | expected_version + key | Detail and in-flight limitation |
+| POST `/posts/{id}/resume` | PublishCommand + reason + key | 202; same cancelled authorization/targets, only before any external operation and original expiry |
 | POST `/posts/{id}/duplicate` | expected_version + key | 201 new manual draft; no authorization/results |
 | POST `/targets/{id}/retry` | reason + key | Only known-safe failed destination; no replay of success/unknown |
 | GET `/accounts` | — | `{ "accounts": [] }` or actual identities |
@@ -100,6 +101,8 @@ Base `/api/v1/admin/social`. Existing `require_admin` identities/roles, UUID act
 During active delivery, the UI polls the compact status endpoint while visible. It fetches full detail initially, on explicit refresh, or once when the revision version changes; repeated status polls do not resend the document/evidence. Read-only provider polling can continue during a publishing pause so accepted remote work can be reconciled. A paused unsent target retains its queue intent with a delayed database due time; resume rechecks authorization and freshness instead of blindly sending an overdue post.
 
 Publication receipts point `status_url` to `/api/v1/admin/social/posts/{id}/status`; this is the compact polling resource, while the post-detail endpoint remains the explicit full-document read.
+
+Cancellation is distinct from a global publishing pause. Resuming a cancelled authorization is an explicit audited command, preserves its revision/target identities and future schedule, and cannot extend existing start/retry/freshness deadlines. Any external attempt or ambiguous/published destination prevents this transition; Duplicate/new review remains the correction path. This review refinement implements the blueprint's cancellation/resume invariant without introducing another publication row.
 
 Errors: `{ "detail": { "code", "message", "field_errors": [], "target_errors": [], "retryable": false, "request_id": "UUID" } }`. Codes include NOT_FOUND, VERSION_CONFLICT, IDEMPOTENCY_CONFLICT, TARGET_VALIDATION_FAILED, PUBLISHING_PAUSED, RECONCILIATION_REQUIRED, INVALID_SCHEDULE_TIME, ACCOUNT_UNAVAILABLE, ADAPTER_NOT_AVAILABLE, SOCIAL_SCHEMA_UNAVAILABLE. Unexpected DB failure is 503/500 with safe actionable error, never an empty successful list.
 

@@ -1,8 +1,4 @@
-import os
 from uuid import UUID, uuid4
-
-# Explicit isolated local config before importing the existing DB dependency.
-os.environ["DATABASE_URL"] = "postgresql+psycopg2://postgres:social_local_test@127.0.0.1:62124/social_domain_test"
 
 import pytest
 from fastapi import FastAPI

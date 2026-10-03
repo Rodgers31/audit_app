@@ -200,6 +200,10 @@ class ScheduleCommand(PublishCommand):
     schedule: ScheduleTime
 
 
+class ResumeCommand(PublishCommand):
+    reason: Reason
+
+
 class RetryCommand(StrictModel):
     reason: Reason
 

@@ -3,7 +3,6 @@ from typing import Union
 from datetime import datetime
 from typing import Annotated, Literal
 from uuid import UUID, uuid4
-from database import get_db
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -12,8 +11,13 @@ from pydantic import Field, ValidationError
 from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import StaleDataError
-from supabase_auth import AdminUser, require_admin
-from .contracts import ApproveCommand, CapabilitySet, ControlsCommand, CreatePost, EditorialState, PatchPost, Platform, PostDocument, PublishCommand, Reference, RejectCommand, RetryCommand, ScheduleCommand, StrictModel, TargetState, ValidateCommand, ValidationResult, VersionCommand
+if __package__ == "backend.social":
+    from ..database import get_db
+    from ..supabase_auth import AdminUser, require_admin
+else:
+    from database import get_db
+    from supabase_auth import AdminUser, require_admin
+from .contracts import ApproveCommand, CapabilitySet, ControlsCommand, CreatePost, EditorialState, PatchPost, Platform, PostDocument, PublishCommand, Reference, RejectCommand, ResumeCommand, RetryCommand, ScheduleCommand, StrictModel, TargetState, ValidateCommand, ValidationResult, VersionCommand
 from .service import SocialError, SocialService
 from .telemetry import log_event
 NO_STORE = {'Cache-Control': 'private, no-store'}
@@ -235,6 +239,10 @@ def schedule_post(post_id: UUID, request: Request, body: ScheduleCommand, svc: S
 @router.post('/posts/{post_id}/cancel', response_model=PostDetail)
 def cancel_post(post_id: UUID, request: Request, body: VersionCommand, svc: Service, admin: Admin, key: IdempotencyKey):
     return command(request, svc, admin, key, body, lambda: svc.cancel(post_id, body))
+
+@router.post('/posts/{post_id}/resume', response_model=PublicationAccepted, status_code=202)
+def resume_post(post_id: UUID, request: Request, body: ResumeCommand, svc: Service, admin: Admin, key: IdempotencyKey):
+    return command(request, svc, admin, key, body, lambda: svc.resume(post_id, body), 202)
 
 @router.post('/posts/{post_id}/duplicate', response_model=PostDetail, status_code=201)
 def duplicate_post(post_id: UUID, request: Request, body: VersionCommand, svc: Service, admin: Admin, key: IdempotencyKey):

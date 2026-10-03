@@ -4,7 +4,10 @@ from uuid import uuid4
 
 from sqlalchemy import (BigInteger, Boolean, CheckConstraint, Column, DateTime, ForeignKey, ForeignKeyConstraint, Index, Integer, JSON, Numeric, SmallInteger, String, Text, UniqueConstraint, Uuid, event, func, inspect, text)
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
-from models import Base
+if __package__ == "backend.social":
+    from ..models import Base
+else:
+    from models import Base
 
 J = JSON().with_variant(JSONB(), "postgresql")
 TZ = DateTime(timezone=True)
