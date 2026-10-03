@@ -50,9 +50,14 @@ from jose import JWTError, jwt
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-import supabase_admin
-from database import get_db
-from models import User
+if __package__:
+    from . import supabase_admin
+    from .database import get_db
+    from .models import User
+else:
+    import supabase_admin
+    from database import get_db
+    from models import User
 
 _security = HTTPBearer(auto_error=True)
 

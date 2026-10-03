@@ -1903,6 +1903,13 @@ except Exception as e:
     logger.warning(f"Security middleware not active: {e}")
 
 # Include routers
+from social.api import router as social_admin_router
+from social.http_policy import SocialNoStoreMiddleware
+
+app.add_middleware(SocialNoStoreMiddleware)
+app.include_router(social_admin_router)
+logger.info("Social admin router registered at /api/v1/admin/social")
+
 try:
     from routers.etl_admin import router as etl_admin_router
 
