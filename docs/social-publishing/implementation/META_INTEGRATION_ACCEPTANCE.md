@@ -22,7 +22,7 @@ Actual migration tests verify RLS, PUBLIC privilege removal, the account foreign
 
 A socket-denied full `main` import mounts the connection and editorial endpoints without entering application lifespan. This is an import/registration smoke test, not a deployed OAuth or provider validation.
 
-Final combined test counts are recorded in the batch status and PR description after the feature's final review fixes. Hosted Actions remain disabled by the existing workflow; no CI policy was changed.
+The final combined social suite passed **266 backend tests** on disposable loopback PostgreSQL and **278 frontend tests across 16 suites**. TypeScript and scoped ESLint passed. The Meta migration is the single Alembic head. Hosted Actions remain disabled by the existing workflow; no CI policy was changed. These checks do not prove live provider access or deployed callback behavior.
 
 ## Operational gates
 
