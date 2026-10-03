@@ -42,7 +42,7 @@ Two adversarial reviewers executed the parsers/hooks and publishing gates. Their
 
 ## Integration boundaries
 
-No remaining UI implementation blocker. The integrator must add the shared admin-navigation link and combine this branch with the matching domain/worker commits, including the compact status route. Runtime DTOs were checked against the domain agent's `api.py`/`contracts.py` with explicit integrator authorization: nullable reference label/media alt text/unavailable validation platform, capabilities, controls, worker metadata, cancellation and retry-detail DTOs are aligned.
+No remaining UI implementation blocker. The integrator added the shared Social Media admin-navigation link and rebased this branch onto the combined domain/worker core, including the compact status route. Runtime DTOs were checked against the domain agent's `api.py`/`contracts.py` with explicit integrator authorization: nullable reference label/media alt text/unavailable validation platform, capabilities, controls, worker metadata, cancellation and retry-detail DTOs are aligned.
 
 Publishing remains off by default on the server. Actual OAuth accounts, media storage/uploads, live provider adapters, generation/automation, production migration/hosting and deployment remain later work. No production mock data, shared auth/middleware/Axios/package edits, primary checkout modifications, existing-server changes, live social/auth API calls, dependency installs, push, PR or merge were performed. No production Next build or live-route end-to-end check was attempted; the parent integration owns those checks.
 
