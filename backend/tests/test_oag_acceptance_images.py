@@ -13,10 +13,13 @@ from seeding.extractors.oag_blue_book import source_hash_of
 
 
 def image(stage="catchup"):
-    sources = {url: {"id": i + 1, "url": url, "country_id": 1, "publisher": "Office of the Auditor-General", "doc_type": "AUDIT"}
+    sources = {url: {**dict.fromkeys(images.model_columns()["source_documents"]), "id": i + 1, "url": url, "country_id": 1, "publisher": "Office of the Auditor-General", "doc_type": "AUDIT", "title": "Retained publisher title", "metadata": {}}
                for i, url in enumerate(images.accepted_editions())}
     selected = {e["source_url"] for e in images.parse_manifest(images.read_manifest(ROOT / images.PINS[1]))}
     rows = json.loads((ROOT / "backend/tests/fixtures/oag_boundary_correction_before.json").read_bytes())["rows"]
+    columns = images.model_columns()
+    for table, key in (("audits", "audit"), ("extractions", "extraction")):
+        columns[table] = set(rows[0][key])
     return {"schema": "oag_acceptance_image/v1", "stage": stage, "operation": "synthetic-independent-comparison",
             "captured_at": "2026-10-03T00:00:00+00:00", "generator_sha256": images.file_sha(images.__file__),
             "pins": {p: images.file_sha(ROOT / p) for p in images.PINS},
@@ -24,7 +27,7 @@ def image(stage="catchup"):
             "source_country": {"id": 1, "iso_code": "KEN"},
             "county_identities": {str(c): f"Synthetic county {c}" for c in range(1, 48)},
             "sources": sources, "selected_ids": sorted(sources[u]["id"] for u in selected),
-            "protected": {t: {"columns": [[c, "text", "pg_catalog", "text", "YES"] for c in sorted(images.model_columns()[t])], "count": 8, "sha256": "1" * 64} for t in images.TABLES},
+            "protected": {t: {"columns": [[c, "text", "pg_catalog", "text", "YES"] for c in sorted(columns[t])], "count": 8, "sha256": "1" * 64} for t in images.TABLES},
             "trim_rows": {t: [r[k] for r in rows] for t, k in (("audits", "audit"), ("extractions", "extraction"))}}
 
 
@@ -70,7 +73,10 @@ def test_exact_reviewed_trim_changes_only_text_and_json_hash():
 def test_every_protected_table_and_full_schema_change_is_visible(table, field, value):
     before = image(); after = copy.deepcopy(before)
     after["protected"][table][field] = after["protected"][table][field] + [["extra", "text", "pg_catalog", "text", "YES"]] if field == "columns" else value
-    assert not images.compare(before, after)["preservation_passed"]
+    if field == "columns" and table in ("source_documents", "audits", "extractions"):
+        with pytest.raises(ValueError): images.compare(before, after)
+    else:
+        assert not images.compare(before, after)["preservation_passed"]
 
 
 @pytest.mark.parametrize("attack", ["missing_table", "zero_count", "boolean_count", "bad_hash", "missing_source", "duplicate_source", "boolean_id", "bad_selected", "lost_trim", "producer", "pin", "transaction", "empty_operation"])
@@ -135,3 +141,86 @@ def test_incomplete_schema_image_and_reversed_time_and_wrong_stage_refuse():
     with pytest.raises(ValueError): images.compare(before, copy.deepcopy(before))
     before, after, plan = trim_pair()
     with pytest.raises(ValueError): images.compare(before, after, plan=plan, expected_plan_sha256=images.boundary.digest(plan), require_coverage=True)
+
+
+def test_selected_source_title_and_unrelated_metadata_cannot_be_lost_by_rehashing():
+    before = image()
+    url = next(u for u, s in before["sources"].items() if s["id"] in before["selected_ids"])
+    before["sources"][url].update(title="Retained publisher title", metadata={"independent_review": {"owner": "retained-owner", "hash": "retained-hash"}})
+    after = covered(copy.deepcopy(before))
+    after["sources"][url].update(title="Unreviewed replacement title", metadata={})
+    next(p for p in after["edition_proofs"] if p["url"] == url)["state_sha256"] = "9" * 64
+    assert not images.compare(before, after, require_coverage=True)["preservation_passed"]
+
+
+@pytest.mark.parametrize("table", ["sources", "audits", "extractions"])
+def test_matching_sparse_catchup_rows_are_not_full_images(table):
+    before = image()
+    if table == "sources":
+        before["sources"] = {u: {k: v for k, v in s.items() if k != "title"} for u, s in before["sources"].items()}
+    else:
+        before["trim_rows"][table] = [{"id": r["id"]} for r in before["trim_rows"][table]]
+    with pytest.raises(ValueError): images.compare(before, covered(copy.deepcopy(before)), require_coverage=True)
+
+
+@pytest.mark.parametrize("field", ["county_count", "expected_county_count"])
+def test_float_47_is_not_an_integer_count(field):
+    before = image(); after = covered(copy.deepcopy(before))
+    after["coverage"]["receipt"][field] = 47.0
+    assert not images.compare(before, after, require_coverage=True)["preservation_passed"]
+
+
+@pytest.mark.parametrize("attack", ["created_at", "fetch_date", "unrelated_value", "unrelated_deleted", "unrelated_added", "registration", "previous_md5", "title_history", "owned_deleted", "artifact_history"])
+def test_selected_full_source_preserves_unowned_columns_keys_and_histories(attack):
+    before = image()
+    url = next(u for u, s in before["sources"].items() if s["id"] in before["selected_ids"])
+    old = before["sources"][url]
+    old["metadata"] = {"independent_review": {"owner": "kept"}, "registration": "discovered_not_fetched",
+                       "previous_md5": "original", "previous_titles": ["older"],
+                       "dataset_id": "oag_county_audits", "previous_pdf_artifacts_v1": [{"retained": "history"}]}
+    after = covered(copy.deepcopy(before)); new = after["sources"][url]; meta = new["metadata"]
+    if attack in ("created_at", "fetch_date"): new[attack] = "2026-10-03T00:00:00"
+    elif attack == "unrelated_value": meta["independent_review"]["owner"] = "changed"
+    elif attack == "unrelated_deleted": meta.pop("independent_review")
+    elif attack == "unrelated_added": meta["unreviewed"] = True
+    elif attack == "registration": meta.pop("registration")
+    elif attack == "previous_md5": meta["previous_md5"] = "changed"
+    elif attack == "title_history":
+        new["title"] = url.rsplit("/", 1)[-1]; meta["previous_titles"] = [old["title"]]
+    elif attack == "owned_deleted": meta.pop("dataset_id")
+    else: meta["previous_pdf_artifacts_v1"] = []
+    next(p for p in after["edition_proofs"] if p["url"] == url)["state_sha256"] = "9" * 64
+    assert not images.compare(before, after, require_coverage=True)["preservation_passed"]
+
+
+def test_real_fetch_writer_title_and_metadata_upsert_is_supported(monkeypatch, tmp_path):
+    """Run the writer itself; fake transport/byte identity, never its mutations."""
+    from models import SourceDocument, DocumentType, DocumentStatus
+    from seeding.config import SeedingSettings
+    import seeding.fetch_documents as fetcher
+    before = image()
+    url = next(u for u, s in before["sources"].items() if s["id"] in before["selected_ids"])
+    entry = images.accepted_editions()[url]
+    old = before["sources"][url]
+    old.update(md5=entry["md5"], status="FAILED", fetch_date="2026-10-01T00:00:00",
+               metadata={"independent_review": {"owner": "kept"}, "previous_titles": ["older"], "fetch_error": "old failure"})
+    from datetime import datetime
+    doc = SourceDocument(**{("meta" if k == "metadata" else k): copy.deepcopy(v) for k, v in old.items()})
+    doc.doc_type = DocumentType.AUDIT; doc.status = DocumentStatus.FAILED
+    doc.fetch_date = datetime.fromisoformat(old["fetch_date"])
+    class WriterSession:
+        def execute(self, query): return self
+        def scalar_one_or_none(self): return doc
+        def flush(self): pass
+    pdf = tmp_path / "synthetic.pdf"; pdf.write_bytes(b"%PDF-1.7\nsynthetic transport seam\n%%EOF\n")
+    monkeypatch.setattr(fetcher, "get_or_download_pdf", lambda *a, **k: pdf)
+    monkeypatch.setattr(fetcher, "file_identity", lambda p: {"md5": entry["md5"], "sha256": entry["sha256"], "size_bytes": pdf.stat().st_size})
+    fetcher.fetch_document(WriterSession(), object(), SeedingSettings(storage_path=tmp_path, cache_path=tmp_path / "cache"),
+                           url=url, country_id=1, publisher=doc.publisher, title=url.rsplit("/", 1)[-1],
+                           doc_type=DocumentType.AUDIT, dataset_id="oag_county_audits")
+    after = copy.deepcopy(before)
+    after["sources"][url] = images.boundary.normalized({k: (getattr(doc, k).name if k in ("status", "doc_type") else getattr(doc, "meta" if k == "metadata" else k)) for k in old})
+    assert images.compare(before, after)["preservation_passed"]
+    assert after["sources"][url]["metadata"]["previous_titles"] == ["older", "Retained publisher title"]
+    assert after["sources"][url]["metadata"]["independent_review"] == {"owner": "kept"}
+    assert after["sources"][url]["metadata"]["fetch_error"] == "old failure"

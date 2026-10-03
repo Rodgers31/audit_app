@@ -76,7 +76,14 @@ and the actual coverage consumer. It requires376 distinct cells matching the act
 47 Kenyan counties, four reviewed years and both institutions. Protected catch-up
 rows exclude only the five actual selected source IDs; national2392,
 legacy2395/2396, HomaBay2391, current2539/2541/2542 and every unrelated row remain
-covered. Hashes prove comparison under trusted operator capture, not authentication
+covered. The eight captured source rows and six trim rows must contain every
+reflected column. Selected source rows are compared separately against the exact
+pinned registration/fetch writer transitions: immutable columns and unowned
+metadata must survive; canonical title changes require the corresponding history
+append; changed parser/artifact metadata must match its reviewed meaning. A
+selected-source hash exclusion does not permit arbitrary row or metadata changes.
+County coverage counts must be integers. Hashes prove comparison under trusted
+operator capture, not authentication
 against arbitrary rewritten receipts. SQL aggregates scan the protected tables on
 the server; measure actual time/transfer rather than claiming a quota bound.
 

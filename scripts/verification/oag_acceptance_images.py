@@ -10,6 +10,7 @@ import argparse
 import copy
 import hashlib
 import json
+import mimetypes
 import os
 import re
 import sys
@@ -35,7 +36,104 @@ PINS = ("backend/tests/fixtures/oag_boundary_reviewed_manifest.json",
         "backend/seeding/domains/audits/accepted-source-manifest.json",
         "backend/seeding/domains/audits/observation.py",
         "backend/seeding/county_audit_coverage.py",
+        "backend/seeding/domains/audits/__init__.py",
+        "backend/seeding/domains/audits/scope.py",
+        "backend/seeding/oag_discovery.py",
+        "backend/seeding/fetch_documents.py",
+        "backend/seeding/pdf_artifact.py",
+        "backend/seeding/extractors/oag_county_volume.py",
+        "backend/seeding/extractors/reconciliation.py",
         "scripts/verification/oag_boundary_correction.py")
+
+# Only the pinned selected-volume path owns these columns/whole metadata keys.
+# Reissue and reconciliation-review keys are deliberately outside this scope.
+SOURCE_COLUMNS = frozenset({"title", "file_path", "md5", "status", "content_type",
+                            "http_status", "last_verified_at", "last_seen_at", "metadata"})
+SOURCE_META = frozenset({"dataset_id", "oag_discovery", "extracted_md5", "extraction_stats",
+                        "last_extraction_attempt", "pdf_artifact_v1",
+                        "previous_pdf_artifacts_v1", "previous_titles"})
+STATS_KEYS = frozenset({"extractor", "findings", "fiscal_year", "fiscal_year_sources",
+                       "volume_kind", "contents_entries", "chapters_attributed",
+                       "chapters_with_no_finding", "refused", "rejected_cid", "pages",
+                       "ocr_pages", "partial", "unreadable_pages",
+                       "unreadable_chapter_pages", "missing_counties"})
+
+
+def same(left, right):
+    """JSON column equality includes numeric/boolean types and missing keys."""
+    return boundary.encoded(left) == boundary.encoded(right)
+
+
+def source_transition(old, new, entry):
+    """Check the actual scoped writers against the immutable full before-row."""
+    if not same({k: v for k, v in old.items() if k not in SOURCE_COLUMNS},
+                {k: v for k, v in new.items() if k not in SOURCE_COLUMNS}):
+        return False
+    a, b = old["metadata"], new["metadata"]
+    if a is None: a = {}
+    if b is None: b = {}
+    if not isinstance(a, dict) or not isinstance(b, dict):
+        return False
+    if not same({k: v for k, v in a.items() if k not in SOURCE_META},
+                {k: v for k, v in b.items() if k not in SOURCE_META}):
+        return False
+    # Presence is compared separately: deleting an owned key is not an update.
+    changed = {k for k in SOURCE_META if not same({k: a[k]} if k in a else {}, {k: b[k]} if k in b else {})}
+    if any(k not in b for k in changed):
+        return False
+    expected = {"md5": entry["md5"], "status": "AVAILABLE", "http_status": 200,
+                "content_type": mimetypes.guess_type(new["url"])[0] or "application/pdf"}
+    if any(not same(old[k], new[k]) and not same(new[k], v) for k, v in expected.items()):
+        return False
+    if not same(old["file_path"], new["file_path"]) and (not isinstance(new["file_path"], str) or not new["file_path"].strip()):
+        return False
+    for key in ("last_seen_at", "last_verified_at"):
+        if not same(old[key], new[key]):
+            try:
+                if not isinstance(new[key], str): return False
+                datetime.fromisoformat(new[key])
+            except ValueError:
+                return False
+    if not same(old["title"], new["title"]):
+        history = a.get("previous_titles", [])
+        if (new["title"] != new["url"].rsplit("/", 1)[-1] or not isinstance(history, list)
+                or not same(b.get("previous_titles"), history + [old["title"]])):
+            return False
+    elif "previous_titles" in changed:
+        return False
+    facts = od.OagDocument(new["url"], entry["fiscal_year"], entry["institution"], "year_page", entry["listed_at"]).as_meta()
+    for key, value in (("dataset_id", "oag_county_audits"), ("oag_discovery", facts),
+                       ("extracted_md5", entry["md5"]), ("last_extraction_attempt", {"status": "complete"})):
+        if key in changed and not same(b[key], value):
+            return False
+    if "extraction_stats" in changed:
+        stats = b["extraction_stats"]
+        if (not isinstance(stats, dict) or set(stats) != STATS_KEYS
+                or stats.get("extractor") != "oag_county_volume" or stats.get("partial") is not False
+                or stats.get("fiscal_year") != entry["fiscal_year"] or stats.get("volume_kind") != entry["institution"]
+                or type(stats.get("findings")) is not int or stats["findings"] <= 0
+                or any(type(stats.get(k)) is not int or stats[k] != v for k, v in
+                       (("contents_entries", 47), ("chapters_attributed", 47), ("pages", entry["pdf_pages"]), ("rejected_cid", 0)))
+                or any(stats.get(k) != [] for k in ("chapters_with_no_finding", "refused", "unreadable_chapter_pages", "missing_counties"))):
+            return False
+    if "pdf_artifact_v1" in changed:
+        from seeding.pdf_artifact import valid_artifact
+        artifact = b["pdf_artifact_v1"]
+        if (not valid_artifact(artifact) or any(not same(artifact[k], v) for k, v in
+                (("md5", entry["md5"]), ("sha256", entry["sha256"]), ("source_document_id", new["id"]),
+                 ("source_url", new["url"]), ("report_title", new["title"]), ("publisher", new["publisher"])))):
+            return False
+        previous = a.get("pdf_artifact_v1")
+        if isinstance(previous, dict) and not same(previous, artifact):
+            history = a.get("previous_pdf_artifacts_v1") or []
+            if not isinstance(history, list): return False
+            expected_history = history if previous in history else history + [previous]
+            if not same(b.get("previous_pdf_artifacts_v1"), expected_history): return False
+        elif "previous_pdf_artifacts_v1" in changed:
+            return False
+    elif "previous_pdf_artifacts_v1" in changed:
+        return False
+    return True
 
 
 def file_sha(path):
@@ -148,6 +246,9 @@ def validate_image(image):
     sources = image.get("sources")
     if not isinstance(sources, dict) or set(sources) != set(editions):
         raise ValueError("missing reviewed edition source")
+    source_columns = {c[0] for c in image["protected"]["source_documents"]["columns"]}
+    if any(not isinstance(v, dict) or set(v) != source_columns for v in sources.values()):
+        raise ValueError("source row is not the exact full schema image")
     if any(not isinstance(v, dict) or type(v.get("id")) is not int or v["id"] <= 0 or v.get("url") != k for k, v in sources.items()):
         raise ValueError("invalid edition source identity")
     if (any(type(s.get("country_id")) is not int or s["country_id"] <= 0
@@ -176,6 +277,9 @@ def validate_image(image):
         values = rows[table]
         if not isinstance(values, list) or any(not isinstance(v, dict) or type(v.get("id")) is not int for v in values) or sorted(v["id"] for v in values) != sorted(expected):
             raise ValueError("wrong trim identities")
+        columns = {c[0] for c in image["protected"][table]["columns"]}
+        if any(set(v) != columns for v in values):
+            raise ValueError("trim row is not the exact full schema image")
 
 
 def compare(before, after, *, plan=None, expected_plan_sha256=None, require_coverage=False):
@@ -190,10 +294,14 @@ def compare(before, after, *, plan=None, expected_plan_sha256=None, require_cove
     if datetime.fromisoformat(after["captured_at"]) < datetime.fromisoformat(before["captured_at"]):
         raise ValueError("after-image predates before-image")
     gaps = [f"protected {t} changed" for t in TABLES if before["protected"][t] != after["protected"][t]]
+    selected = {e["source_url"]: e for e in parse_manifest(read_manifest(ROOT / PINS[1]))}
     for url, old in before["sources"].items():
         new = after["sources"][url]
-        if any(old.get(k) != new.get(k) for k in ("id", "url", "country_id", "publisher", "doc_type")):
-            gaps.append("reviewed source identity changed")
+        if before["stage"] == "catchup" and url in selected:
+            if not source_transition(old, new, selected[url]):
+                gaps.append(f"selected source changed outside scoped writer transitions: {old['id']}")
+        elif not same(old, new):
+            gaps.append(f"unselected source full row changed: {old['id']}")
     if before["stage"] == "trim":
         if not isinstance(plan, dict) or boundary.digest(plan) != expected_plan_sha256 or plan.get("schema") != "oag_boundary_correction/v1":
             raise ValueError("exact reviewed trim plan required")
@@ -247,8 +355,8 @@ def compare(before, after, *, plan=None, expected_plan_sha256=None, require_cove
                 expected = {(c, fy, role) for c in counties for fy in years for role in ("executives", "assemblies")}
                 from seeding.county_audit_coverage import coverage_verdict
                 if (not isinstance(receipt.get("required_years"), list) or len(receipt["required_years"]) != len(years)
-                        or set(receipt["required_years"]) != years or receipt.get("county_count") != 47
-                        or receipt.get("expected_county_count") != 47
+                        or set(receipt["required_years"]) != years or type(receipt.get("county_count")) is not int or receipt["county_count"] != 47
+                        or type(receipt.get("expected_county_count")) is not int or receipt["expected_county_count"] != 47
                         or counties != {int(i) for i in after["county_identities"]}
                         or any(c["county"] != after["county_identities"][str(c["county_id"])] for c in cells)
                         or keys != expected or len(keys) != 376 or coverage_verdict(receipt)[0] != "OK"):
