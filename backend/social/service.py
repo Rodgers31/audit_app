@@ -32,6 +32,12 @@ def iso(value):
     return utc(value).isoformat().replace("+00:00", "Z") if value is not None else None
 
 
+def require_positive_version(value):
+    """Protect internal callers as well as the strict HTTP request schemas."""
+    if type(value) is not int or value < 1:
+        raise SocialError("INVALID_REQUEST", "Expected version must be a positive integer.", 422)
+
+
 def document_json(document):
     value = document.model_dump(mode="json")
     for index, target in enumerate(document.targets):
@@ -99,6 +105,7 @@ class SocialService:
         return list(self.db.scalars(select(SocialPostTarget).where(SocialPostTarget.publication_id == publication.id).order_by(SocialPostTarget.id))) if publication else []
 
     def _locked(self, post_id, expected_version):
+        require_positive_version(expected_version)
         post = self._post(post_id)
         revision = self._revision(post)
         publication = self._publication(post)
@@ -182,6 +189,8 @@ class SocialService:
         return self.detail(post.id)
 
     def validate(self, post_id, body):
+        if body.expected_version is not None:
+            require_positive_version(body.expected_version)
         post = self._post(post_id)
         if body.expected_version is not None and post.row_version != body.expected_version:
             raise SocialError("VERSION_CONFLICT", "This post changed. Refresh it before validating.")
@@ -378,6 +387,7 @@ class SocialService:
         return self.detail(post.id)
 
     def controls(self, body):
+        require_positive_version(body.expected_version)
         controls = self.db.scalar(select(SocialControls).where(SocialControls.id == 1).with_for_update())
         if not controls:
             if self.db.bind.dialect.name == "postgresql":
@@ -492,4 +502,4 @@ class SocialService:
 
     def accepted(self, post, publication):
         targets = self._targets(publication)
-        return {"post_id": str(post.id), "publication_id": str(publication.id), "status": "queued", "scheduled_for": iso(publication.scheduled_for), "targets": [{"id": str(t.id), "account_id": str(t.account_id), "platform": t.resolved_payload["platform"], "status": t.state} for t in targets], "status_url": f"/api/v1/admin/social/posts/{post.id}"}
+        return {"post_id": str(post.id), "publication_id": str(publication.id), "status": "queued", "scheduled_for": iso(publication.scheduled_for), "targets": [{"id": str(t.id), "account_id": str(t.account_id), "platform": t.resolved_payload["platform"], "status": t.state} for t in targets], "status_url": f"/api/v1/admin/social/posts/{post.id}/status"}

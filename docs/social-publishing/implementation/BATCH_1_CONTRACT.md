@@ -79,6 +79,7 @@ Base `/api/v1/admin/social`. Existing `require_admin` identities/roles, UUID act
 | GET `/posts` | page/page_size<=100, optional editorial_state | Compact list |
 | POST `/posts` | Create + `Idempotency-Key` UUID | 201 detail |
 | GET `/posts/{id}` | — | Detail or 404 |
+| GET `/posts/{id}/status` | — | Compact summary/target status; no document/evidence/media payload |
 | PATCH `/posts/{id}` | Patch + key | Detail/new revision |
 | POST `/posts/{id}/validate` | optional expected_version | Validation without state mutation |
 | POST `/posts/{id}/submit` | expected_version + key | Pending-review detail |
@@ -96,6 +97,10 @@ Base `/api/v1/admin/social`. Existing `require_admin` identities/roles, UUID act
 
 `delivery_status` is derived; it is not an independent contradictory post field. Publication accepts all selected valid accounts atomically or none. Default global pause yields 409 `PUBLISHING_PAUSED`, preserves drafts. Scheduled dispatch only executes if the global/account gate is enabled when due.
 
+During active delivery, the UI polls the compact status endpoint while visible. It fetches full detail initially, on explicit refresh, or once when the revision version changes; repeated status polls do not resend the document/evidence. Read-only provider polling can continue during a publishing pause so accepted remote work can be reconciled. A paused unsent target retains its queue intent with a delayed database due time; resume rechecks authorization and freshness instead of blindly sending an overdue post.
+
+Publication receipts point `status_url` to `/api/v1/admin/social/posts/{id}/status`; this is the compact polling resource, while the post-detail endpoint remains the explicit full-document read.
+
 Errors: `{ "detail": { "code", "message", "field_errors": [], "target_errors": [], "retryable": false, "request_id": "UUID" } }`. Codes include NOT_FOUND, VERSION_CONFLICT, IDEMPOTENCY_CONFLICT, TARGET_VALIDATION_FAILED, PUBLISHING_PAUSED, RECONCILIATION_REQUIRED, INVALID_SCHEDULE_TIME, ACCOUNT_UNAVAILABLE, ADAPTER_NOT_AVAILABLE, SOCIAL_SCHEMA_UNAVAILABLE. Unexpected DB failure is 503/500 with safe actionable error, never an empty successful list.
 
 Command receipt, mutation, revision/publication/targets and audit record commit atomically. Same actor/route/key and body returns original resource IDs; changed body conflicts. Domain uniqueness prevents repeated publication even with a new HTTP key. Use one active publication/post and one publication/revision. Financial review attestation required for generated/sensitive categories, not every manual ordinary announcement. Initial external create cannot set generated origin.
@@ -109,6 +114,12 @@ Worker can use SQLAlchemy Core SQL against the frozen table names until ORM code
 One worker, two external slots, one mutating operation/account, two DB connections, no overflow. Active scan 5s/idle30s, heartbeat active15s/idle60s, lease120s renewed20s. Five max submissions, bounded24h retry lifetime, content-validity and late-start deadlines authoritative. Status polls do not count as another public submission. Empty queues, expired leases and malformed checkpoints must be executed in tests.
 
 No operational data is seeded automatically. Tests explicitly insert fake accounts/assets/controls. CLI runtime has no real provider adapters in batch1, reports that truthfully, and must not mark a target published without a positive adapter result/receipt.
+
+Adapter execution is stateless: `execute(payload, operation, credential, media_access)` receives the immutable resolved payload explicitly. A mutating permit rehashes and binds the revision/evidence, selected account and exact resolved target content; a target's self-consistent hash alone is insufficient. One unresolved mutating intent per lease prevents a second permit before completion.
+
+Reconciliation never interprets a nonempty evidence dictionary as proof of absence. `DefinitiveAbsenceProof` requires `kind=provider_definitive_status|confirmed_not_sent`, strict `verified=true`, strict `coverage_complete=true`, the exact account UUID and the original mutating operation UUID. A missing, contradictory, incomplete or differently bound proof leaves the outcome unknown and the account held. Generic evidence is audit context only. Published proof requires a nonblank remote identity and confirmation kind, public visibility and a confirmed-success result.
+
+Claim-only audit records avoid backward foreign-key locks on accounts/posts: they retain the already-locked target reference and place account/publication identities in compact event details. Other mutation audits retain ordinary foreign keys after the controls/account/publication/target locks. Lease and claim audit still commit atomically.
 
 ## Logging and verification
 
