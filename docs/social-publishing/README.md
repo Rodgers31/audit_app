@@ -2,7 +2,7 @@
 
 Consolidated **2026-10-03**. This directory preserves the account work, product decisions, approved visual direction, SDK research and engineering design previously held in the conversation and local task artifacts.
 
-**Status: foundation PRs485/486 are merged; the approved egress, Meta-connection and inspected-media batch is in owner review.** The [current batch ledger](implementation/BATCH_2_STATUS.md) distinguishes merged code, tested PRs and remaining operational gates. Read the historical [batch1 ledger](implementation/BATCH_1_STATUS.md) for its original slice. Live storage/OAuth, real publishing adapters, deployment and automatic approval remain gated.
+**Status: foundation PRs #485/#486 are merged; the approved egress, Meta-connection and inspected-media batch is in owner review.** The [current batch ledger](implementation/BATCH_2_STATUS.md) distinguishes merged code, tested PRs and remaining operational gates. Read the historical [batch 1 ledger](implementation/BATCH_1_STATUS.md) for its original slice. Live storage/OAuth, real publishing adapters, deployment and automatic approval remain gated.
 
 ## Read in this order
 
@@ -12,7 +12,7 @@ Consolidated **2026-10-03**. This directory preserves the account work, product 
 4. [Account setup and branding](ACCOUNT_SETUP_AND_BRANDING.md) — what was actually configured and what remains unverified.
 5. [Content and video strategy](CONTENT_AND_VIDEO_STRATEGY.md) — fact provenance, recurring formats, platform variants and lightweight video direction.
 6. [Approved admin concept](design-reference/README.md) — preserved visual artifact; detailed current behavior is specified in the blueprint.
-7. [Current implementation/review ledger](implementation/BATCH_2_STATUS.md) and [batch2 ownership contract](implementation/BATCH_2_CONTRACT.md).
+7. [Current implementation/review ledger](implementation/BATCH_2_STATUS.md) and [batch 2 ownership contract](implementation/BATCH_2_CONTRACT.md).
 8. [Batch 1 contract](implementation/BATCH_1_CONTRACT.md) and [verification/review ledger](implementation/BATCH_1_STATUS.md) — exact implementation slice, APIs, defaults, tests and remaining gates.
 
 ## Decisions to retain

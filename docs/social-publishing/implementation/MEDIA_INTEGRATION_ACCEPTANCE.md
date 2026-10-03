@@ -28,7 +28,7 @@ An independent reviewer reran six hostile cleanup/transport cases against the in
 - Final test-fixture portability update: **259 media tests passed**. PostgreSQL is opt-in through the existing explicitly assigned test DSN and rejects non-loopback/unassigned destinations before connecting; native video fixtures discover existing tools instead of assuming a Mac path. Missing native tools skip the native acceptance lane rather than install dependencies or fabricate evidence.
 - Combined frontend: **373 passed across 20 suites**. TypeScript and scoped ESLint passed. The earlier permanently-unavailable bare media fixture now uses its actual query provider/runtime response.
 - Single Alembic head and socket-denied full app route-registration smoke passed without entering application lifespan.
-- Actual component markup rendered at 1440, 768, 390 and 320 pixels: no horizontal overflow, controls labelled, buttons at least44px and visible3px keyboard focus. External requests were blocked. Interactions run in Jest; these screenshots are not authenticated application or live CORS acceptance.
+- Actual component markup rendered at 1440, 768, 390 and 320 pixels: no horizontal overflow, controls labelled, buttons at least 44px and visible 3px keyboard focus. External requests were blocked. Interactions run in Jest; these screenshots are not authenticated application or live CORS acceptance.
 
 ## Operational gates and remaining work
 
