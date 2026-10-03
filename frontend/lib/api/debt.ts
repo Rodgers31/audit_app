@@ -1,6 +1,7 @@
 /**
  * Debt API service
  */
+import type { Qualifications } from '@/lib/evidence/qualification';
 import { apiClient } from './axios';
 import { apiGet } from './request';
 import { COUNTIES_ENDPOINTS, DEBT_ENDPOINTS, buildUrlWithParams } from './endpoints';
@@ -136,6 +137,9 @@ export interface FigureSource {
  * They used to be `"0.00%"` / `0` for 45 of 48 rows.
  */
 export interface NationalLoan {
+  id?: number;
+  record_id?: number;
+  qualifications?: Qualifications;
   lender: string;
   lender_type: string;
   principal: string;
@@ -207,6 +211,7 @@ export const getNationalLoans = async (signal?: AbortSignal): Promise<NationalLo
 
 // Get historical debt timeline (year-by-year external/domestic breakdown)
 export interface DebtTimelineEntry {
+  qualifications?: Qualifications;
   year: number;
   external: number;
   domestic: number;

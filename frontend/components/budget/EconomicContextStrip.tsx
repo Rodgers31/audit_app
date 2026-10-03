@@ -11,10 +11,14 @@
  * because this is supporting context, not the main story.
  */
 
+import FigureEvidence from '@/components/evidence/FigureEvidence';
 import { motion } from 'framer-motion';
 import { Activity, Building2, Gauge, TrendingUp, Users } from 'lucide-react';
 
+import type { Qualifications } from '@/lib/evidence/qualification';
+
 export interface EconomicContext {
+  qualifications?: Record<string, Qualifications>;
   fiscal_year?: string;
   gdp_billion_kes?: number;
   gdp_as_of?: string | null;
@@ -39,7 +43,7 @@ interface Props {
 }
 
 function fmtT(billionKES?: number): string {
-  if (billionKES == null || billionKES <= 0) return '—';
+  if (billionKES == null || !Number.isFinite(billionKES)) return '—';
   if (billionKES >= 1000) return `${(billionKES / 1000).toFixed(2)}T`;
   return `${billionKES.toFixed(0)}B`;
 }
@@ -60,7 +64,7 @@ function caption(...parts: (string | null | undefined)[]): string {
 }
 
 export default function EconomicContextStrip({ ctx }: Props) {
-  if (!ctx || !ctx.gdp_billion_kes) return null;
+  if (!ctx) return null;
 
   // Every caption is the row's own declared provenance (issue #232). The
   // inflation caption used to fall back to the literal "KNBS Consumer Price
@@ -81,6 +85,7 @@ export default function EconomicContextStrip({ ctx }: Props) {
     {
       icon: TrendingUp,
       label: 'GDP',
+      qualifications: { ...ctx.qualifications?.gdp, ...ctx.qualifications?.gdp_growth },
       value: `KES ${fmtT(ctx.gdp_billion_kes)}`,
       sub: gdpSub,
       note: gdpNote,
@@ -89,6 +94,7 @@ export default function EconomicContextStrip({ ctx }: Props) {
     {
       icon: Gauge,
       label: 'Budget / GDP',
+      qualifications: undefined,
       value: pct(ctx.budget_to_gdp_pct),
       sub: `Revenue / GDP ${pct(ctx.revenue_to_gdp_pct)}`,
       note: '',
@@ -97,6 +103,7 @@ export default function EconomicContextStrip({ ctx }: Props) {
     {
       icon: Activity,
       label: 'Inflation',
+      qualifications: ctx.qualifications?.inflation,
       value: pct(ctx.inflation_pct),
       sub: inflationSub,
       note: ctx.inflation_source ?? '',
@@ -133,7 +140,7 @@ export default function EconomicContextStrip({ ctx }: Props) {
       </div>
 
       <div className='grid grid-cols-1 sm:grid-cols-3 gap-2.5'>
-        {cards.map(({ icon: Icon, label, value, sub, note, accent }) => (
+        {cards.map(({ icon: Icon, label, value, sub, note, accent, qualifications }) => (
           <div
             key={label}
             className='rounded-xl border border-neutral-border/30 bg-white dark:bg-surface-base p-4 flex items-start gap-3'>
@@ -152,6 +159,7 @@ export default function EconomicContextStrip({ ctx }: Props) {
               <div className='text-[11px] text-neutral-muted leading-tight mt-0.5'>
                 {sub}
               </div>
+              <FigureEvidence label={label} qualifications={qualifications} />
               {note ? (
                 <div className='text-[10px] text-neutral-muted/80 leading-tight mt-1'>
                   {note}

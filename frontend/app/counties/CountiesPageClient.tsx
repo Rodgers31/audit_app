@@ -1,5 +1,6 @@
 'use client';
 
+import FigureEvidence from '@/components/evidence/FigureEvidence';
 import DataFreshnessBadge from '@/components/DataFreshnessBadge';
 import ModelledDataNote from '@/components/ModelledDataNote';
 import InfoTip from '@/components/InfoTip';
@@ -1372,6 +1373,7 @@ function CountyRankingsTable({
                       className='block text-sm text-gray-700 dark:text-neutral-muted tabular-nums font-medium hover:text-gov-forest dark:text-emerald-100 transition-colors'>
                       {fmtKESorDash(budget)}
                     </Link>
+                    <FigureEvidence label={`${county.name} budget`} rows={county.figureQualifications?.budget_lines} table="budget_lines" />
                   </td>
                   <td data-label={t('counties.rankings.col_execution')} className='py-3 px-3'>
                     <Link

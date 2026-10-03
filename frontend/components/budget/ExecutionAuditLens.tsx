@@ -17,11 +17,15 @@
  * in-year funding squeeze (cash rationing by Treasury).
  */
 
+import FigureEvidence from '@/components/evidence/FigureEvidence';
 import { motion } from 'framer-motion';
 import { AlertTriangle, ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import type { Qualifications } from '@/lib/evidence/qualification';
+
 export interface ExecutionRow {
+  qualifications?: Qualifications;
   sector: string;
   allocated: number; // KES — revised gross estimates (see ExecutionMeasure)
   spent: number; // KES — actual expenditure
@@ -306,6 +310,7 @@ export default function ExecutionAuditLens({ rows, fiscalYear, source, coverage,
                   }`}
                 />
               </button>
+              <div className='px-4'><FigureEvidence label={`${r.sector} allocation and expenditure`} qualifications={r.qualifications} /></div>
               {isOpen && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}

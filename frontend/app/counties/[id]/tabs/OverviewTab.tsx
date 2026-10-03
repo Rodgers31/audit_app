@@ -1,5 +1,6 @@
 'use client';
 
+import FigureEvidence from '@/components/evidence/FigureEvidence';
 import styles from '../../CountyExperience.module.css';
 import { severityTone, SignalMark } from '../../CountySignals';
 
@@ -181,6 +182,7 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
   return (
     <div className='space-y-6'>
       <ModelledDataNote className={styles.provenance} budgetSource={budget.source} />
+      <FigureEvidence label='county budget observations' rows={budget.figure_qualifications} table='budget_lines' />
       {/* Hero row: Budget execution as a magazine-style feature */}
       <div className='grid grid-cols-1 lg:grid-cols-5 gap-5'>
         {/* Budget execution — large, editorial */}
@@ -347,6 +349,8 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
       {/* Missing funds banner */}
       <UnaccountedFindings cases={missing_funds.cases} />
 
+      {economic_profile.latest_gcp && <div className={styles.section}><h3 className='font-semibold'>Gross county product · {economic_profile.latest_gcp.year}{economic_profile.latest_gcp.quarter ? ` · ${economic_profile.latest_gcp.quarter}` : ''}</h3><p>{economic_profile.latest_gcp.gdp_value == null ? 'Not published' : `${economic_profile.latest_gcp.currency} ${economic_profile.latest_gcp.gdp_value.toLocaleString('en-KE')}`}</p><FigureEvidence label='gross county product' qualifications={economic_profile.latest_gcp.qualifications} table='gdp_data' recordId={economic_profile.latest_gcp.record_id} /></div>}
+      {economic_profile.latest_poverty && <div className={styles.section}><h3 className='font-semibold'>Poverty observations · {economic_profile.latest_poverty.year}</h3><p>Poverty headcount: {economic_profile.latest_poverty.poverty_headcount_rate == null ? 'Not published' : `${economic_profile.latest_poverty.poverty_headcount_rate}%`}</p><p>Extreme poverty: {economic_profile.latest_poverty.extreme_poverty_rate == null ? 'Not published' : `${economic_profile.latest_poverty.extreme_poverty_rate}%`}</p><p>Gini coefficient: {economic_profile.latest_poverty.gini_coefficient ?? 'Not published'}</p><FigureEvidence label='poverty observations' qualifications={economic_profile.latest_poverty.qualifications} table='poverty_indices' recordId={economic_profile.latest_poverty.record_id} /></div>}
       {/* About this county */}
       <div className={styles.section}>
         <h3 className='text-sm font-semibold text-gray-800 dark:text-neutral-text mb-3'>

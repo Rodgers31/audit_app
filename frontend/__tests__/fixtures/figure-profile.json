@@ -1,0 +1,564 @@
+{
+  "id": "1",
+  "name": "Nairobi",
+  "slug": "nairobi",
+  "coordinates": [
+    36.8219,
+    -1.2921
+  ],
+  "demographics": {
+    "population": null,
+    "population_year": null,
+    "male_population": null,
+    "female_population": null,
+    "urban_population": null,
+    "rural_population": null,
+    "population_density": null
+  },
+  "governor": null,
+  "deputy_governor": null,
+  "officials_source": {
+    "governor": null,
+    "deputy_governor": null
+  },
+  "economic_profile": {
+    "latest_gcp": {
+      "id": 2,
+      "record_id": 2,
+      "entity_id": 1,
+      "year": 2024,
+      "quarter": null,
+      "gdp_value": 0.0,
+      "gdp_growth_rate": null,
+      "currency": "KES",
+      "source_document_id": 3,
+      "qualifications": {
+        "gdp_value": {
+          "status": "verified",
+          "reason": "retained_source_and_observation_matched",
+          "source_kind": "api",
+          "identity": {
+            "measure": "gdp_value",
+            "entity_id": 1,
+            "geography": "Nairobi",
+            "period": "2024",
+            "unit": "KES",
+            "basis": "current_prices",
+            "dimensions": {}
+          },
+          "source_document_id": 3,
+          "source_url": "https://api.worldbank.org/v2/country/KEN/indicator/NY.GDP.MKTP.CN",
+          "publisher": "World Bank",
+          "receipt_id": 8,
+          "digest": "5c02afc419751e8957c5feecea36efbeb35191a79ab895eb228b86682f41a05f",
+          "locator": {
+            "json_path": "$.observation"
+          },
+          "document_bytes_checked": true,
+          "value_checked": true
+        },
+        "gdp_growth_rate": {
+          "status": "unavailable",
+          "reason": "value_not_reported",
+          "source_kind": "unknown",
+          "identity": {
+            "measure": "gdp_growth_rate",
+            "entity_id": 1,
+            "geography": "Nairobi",
+            "period": "2024",
+            "unit": "percent",
+            "basis": "current_prices",
+            "dimensions": {}
+          },
+          "source_document_id": 3,
+          "source_url": "https://api.worldbank.org/v2/country/KEN/indicator/NY.GDP.MKTP.CN",
+          "publisher": "World Bank",
+          "receipt_id": null,
+          "digest": null,
+          "locator": null,
+          "document_bytes_checked": false,
+          "value_checked": false
+        }
+      }
+    },
+    "latest_poverty": {
+      "id": 2,
+      "record_id": 2,
+      "entity_id": 1,
+      "year": 2024,
+      "source_document_id": 8,
+      "qualifications": {
+        "poverty_headcount_rate": {
+          "status": "verified",
+          "reason": "retained_source_and_observation_matched",
+          "source_kind": "api",
+          "identity": {
+            "measure": "poverty_headcount_rate",
+            "entity_id": 1,
+            "geography": "Nairobi",
+            "period": "2024",
+            "unit": "percent",
+            "basis": "actual",
+            "dimensions": {}
+          },
+          "source_document_id": 8,
+          "source_url": "https://www.centralbank.go.ke/data",
+          "publisher": "Central Bank of Kenya",
+          "receipt_id": 9,
+          "digest": "eae06ba547f789a6aa44af0514241bac4420dc4c555bc0d80355c8edac0793e7",
+          "locator": {
+            "json_path": "$.observation"
+          },
+          "document_bytes_checked": true,
+          "value_checked": true
+        },
+        "extreme_poverty_rate": {
+          "status": "unavailable",
+          "reason": "value_not_reported",
+          "source_kind": "unknown",
+          "identity": {
+            "measure": "extreme_poverty_rate",
+            "entity_id": 1,
+            "geography": "Nairobi",
+            "period": "2024",
+            "unit": "percent",
+            "basis": "actual",
+            "dimensions": {}
+          },
+          "source_document_id": 8,
+          "source_url": "https://www.centralbank.go.ke/data",
+          "publisher": "Central Bank of Kenya",
+          "receipt_id": null,
+          "digest": null,
+          "locator": null,
+          "document_bytes_checked": false,
+          "value_checked": false
+        },
+        "gini_coefficient": {
+          "status": "unavailable",
+          "reason": "value_not_reported",
+          "source_kind": "unknown",
+          "identity": {
+            "measure": "gini_coefficient",
+            "entity_id": 1,
+            "geography": "Nairobi",
+            "period": "2024",
+            "unit": "coefficient",
+            "basis": "actual",
+            "dimensions": {}
+          },
+          "source_document_id": 8,
+          "source_url": "https://www.centralbank.go.ke/data",
+          "publisher": "Central Bank of Kenya",
+          "receipt_id": null,
+          "digest": null,
+          "locator": null,
+          "document_bytes_checked": false,
+          "value_checked": false
+        }
+      },
+      "poverty_headcount_rate": 0.0,
+      "extreme_poverty_rate": null,
+      "gini_coefficient": null
+    },
+    "economic_base": null,
+    "major_issues": [],
+    "major_issues_source": null
+  },
+  "budget": {
+    "figure_qualifications": {
+      "1": {
+        "allocated_amount": {
+          "status": "verified",
+          "reason": "retained_source_and_observation_matched",
+          "source_kind": "api",
+          "identity": {
+            "measure": "allocated_amount",
+            "entity_id": 1,
+            "geography": "Nairobi",
+            "period": "FY2024/25",
+            "unit": "KES",
+            "basis": "actual",
+            "dimensions": {
+              "category": "Total",
+              "subcategory": null,
+              "line_type": null
+            }
+          },
+          "source_document_id": 1,
+          "source_url": "https://www.centralbank.go.ke/data",
+          "publisher": "Central Bank of Kenya",
+          "receipt_id": 1,
+          "digest": "61c74b4e9e02ae1ad6820c5383d42d6d7e90a04fb88394f4b8e53266e7fe4fb8",
+          "locator": {
+            "json_path": "$.observation"
+          },
+          "document_bytes_checked": true,
+          "value_checked": true
+        },
+        "actual_spent": {
+          "status": "unavailable",
+          "reason": "value_not_reported",
+          "source_kind": "unknown",
+          "identity": {
+            "measure": "actual_spent",
+            "entity_id": 1,
+            "geography": "Nairobi",
+            "period": "FY2024/25",
+            "unit": "KES",
+            "basis": "actual",
+            "dimensions": {
+              "category": "Total",
+              "subcategory": null,
+              "line_type": null
+            }
+          },
+          "source_document_id": 1,
+          "source_url": "https://www.centralbank.go.ke/data",
+          "publisher": "Central Bank of Kenya",
+          "receipt_id": null,
+          "digest": null,
+          "locator": null,
+          "document_bytes_checked": false,
+          "value_checked": false
+        },
+        "committed_amount": {
+          "status": "unavailable",
+          "reason": "value_not_reported",
+          "source_kind": "unknown",
+          "identity": {
+            "measure": "committed_amount",
+            "entity_id": 1,
+            "geography": "Nairobi",
+            "period": "FY2024/25",
+            "unit": "KES",
+            "basis": "actual",
+            "dimensions": {
+              "category": "Total",
+              "subcategory": null,
+              "line_type": null
+            }
+          },
+          "source_document_id": 1,
+          "source_url": "https://www.centralbank.go.ke/data",
+          "publisher": "Central Bank of Kenya",
+          "receipt_id": null,
+          "digest": null,
+          "locator": null,
+          "document_bytes_checked": false,
+          "value_checked": false
+        }
+      }
+    },
+    "total_allocated": 0.0,
+    "total_spent": null,
+    "utilization_rate": null,
+    "development_budget": 0.0,
+    "recurrent_budget": 0.0,
+    "per_capita_budget": null,
+    "sector_breakdown": {},
+    "fiscal_year": "FY2024/25",
+    "source": null,
+    "fiscal_period": {
+      "id": 1,
+      "label": "FY2024/25",
+      "start_date": "2024-07-01T00:00:00",
+      "end_date": "2025-06-30T00:00:00"
+    },
+    "sources": [
+      {
+        "id": 1,
+        "title": "Observed official estimate",
+        "publisher": "Central Bank of Kenya",
+        "url": "https://www.centralbank.go.ke/data",
+        "page_refs": []
+      }
+    ],
+    "accounting_basis": "reported_total",
+    "absent_reasons": {
+      "total_spent": "spending_not_reported",
+      "execution_rate": "spending_not_reported"
+    }
+  },
+  "revenue": {
+    "total_revenue": null,
+    "total_revenue_target": null,
+    "equitable_share": null,
+    "equitable_share_target": null,
+    "additional_allocations": null,
+    "local_revenue": null,
+    "local_revenue_basis": null,
+    "summary_table_own_source_revenue": null,
+    "summary_table_own_source_target": null,
+    "summary_table_basis": null,
+    "total_revenue_basis": null,
+    "own_source_target": null,
+    "streams": [],
+    "fiscal_year": null,
+    "source": null,
+    "total_revenue_absent_reason": "no_reconciled_cbirr_revenue_table",
+    "own_source_disagreement": null,
+    "total_revenue_absence_source": null,
+    "sources": []
+  },
+  "debt": {
+    "total_debt": 0.0,
+    "total_debt_absent_reason": null,
+    "debt_currency": "KES",
+    "debt_accounting_basis": "selected_instrument_outstanding",
+    "debt_as_at": "2024-01-01",
+    "debt_basis": null,
+    "debt_coverage": "selected_eligible_instruments_only",
+    "pending_bills": null,
+    "pending_bills_selection": {
+      "amount": null,
+      "as_at": null,
+      "absent_reason": "not_reported_at_latest_date",
+      "sources": [],
+      "source_count": 0,
+      "sources_truncated": false
+    },
+    "pending_bills_as_at": null,
+    "pending_bills_source": null,
+    "pending_bills_notes": [],
+    "pending_bills_absence": null,
+    "debt_to_budget_ratio": null,
+    "debt_to_budget_ratio_absent_reason": "zero_budget_denominator",
+    "per_capita_debt": null,
+    "breakdown": [
+      {
+        "lender": "Official creditor",
+        "category": "other",
+        "principal": 0.0,
+        "outstanding": 0.0,
+        "absent_reasons": {
+          "interest_rate": "not_reported"
+        },
+        "interest_rate": null,
+        "currency": "KES",
+        "source_document_id": 2,
+        "page_ref": null,
+        "basis": null,
+        "provenance": [
+          {
+            "as_at": "2024-01-01",
+            "source_evidence": [
+              {
+                "version": 1,
+                "source_kind": "api",
+                "identity": {
+                  "measure": "outstanding",
+                  "entity_id": 1,
+                  "geography": "Nairobi",
+                  "period": "2024-01-01",
+                  "unit": "KES",
+                  "basis": "actual",
+                  "dimensions": {
+                    "lender": "Official creditor",
+                    "debt_category": "other"
+                  }
+                },
+                "receipt": {
+                  "extraction_id": 2,
+                  "digest": "57161618dcb295c9c2db3889fe8e26e547dfbc6451c17ee9f9c0b63893a45dc4"
+                },
+                "raw_value": "0",
+                "raw_unit": "KES",
+                "value": "0",
+                "unit": "KES",
+                "locator": {
+                  "json_path": "$.observation"
+                },
+                "transformation": {
+                  "operation": "identity"
+                },
+                "checks": {
+                  "identity": true,
+                  "value": true,
+                  "transport": true,
+                  "bytes": true,
+                  "locator": true
+                },
+                "reconciliation": {
+                  "status": "matched"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "withheld": null
+  },
+  "audit": {
+    "status": "pending",
+    "signal": {
+      "status": "pending",
+      "severity": null,
+      "source_period": null,
+      "period_end": null,
+      "source_url": null,
+      "sources": [],
+      "source_count": 0,
+      "sources_truncated": false,
+      "institution": null,
+      "measurement_basis": "finding_severity",
+      "official_opinion": false,
+      "selection_policy": "latest_executive_fiscal_year_maximum_severity",
+      "excluded": {},
+      "absent_reason": "no_publishable_audit_signal"
+    },
+    "grade": null,
+    "health_score": null,
+    "findings_count": 0,
+    "total_amount_involved": null,
+    "total_amount_involved_reason": "awaiting_sourced_data",
+    "by_severity": {
+      "info": 0,
+      "warning": 0,
+      "critical": 0
+    },
+    "findings": []
+  },
+  "health_history": [],
+  "health_history_absent_reason": "dated_health_components_unavailable",
+  "budget_execution_history": [
+    {
+      "fiscal_period": {
+        "id": 1,
+        "label": "FY2024/25",
+        "start_date": "2024-07-01T00:00:00",
+        "end_date": "2025-06-30T00:00:00"
+      },
+      "total_allocation": 0.0,
+      "total_spent": null,
+      "execution_rate": null,
+      "accounting_basis": "reported_total",
+      "currency": "KES",
+      "sources": [
+        {
+          "id": 1,
+          "title": "Observed official estimate",
+          "publisher": "Central Bank of Kenya",
+          "url": "https://www.centralbank.go.ke/data",
+          "page_refs": []
+        }
+      ],
+      "absent_reasons": {
+        "total_spent": "spending_not_reported",
+        "execution_rate": "spending_not_reported"
+      },
+      "budget_lines_count": 1
+    }
+  ],
+  "missing_funds": {
+    "basis": "oag_finding_title",
+    "total_amount": null,
+    "total_amount_reason": "no_amount_extracted",
+    "cases_count": 0,
+    "cases": [],
+    "reason": "no_matching_findings",
+    "withheld": {
+      "count": 0,
+      "by_reason": {}
+    }
+  },
+  "stalled_projects": {
+    "count": null,
+    "total_contracted_value": null,
+    "total_contracted_value_rows": 0,
+    "total_amount_paid": null,
+    "total_amount_paid_rows": 0,
+    "projects": [],
+    "reason": "no_evidence_backed_source",
+    "source": null,
+    "cob_statements": null,
+    "reconciliation": null,
+    "withheld_fields": [],
+    "oag_findings": [],
+    "withheld": {
+      "count": 0,
+      "by_reason": {}
+    },
+    "narratives": {
+      "schema_version": 1,
+      "observations": [],
+      "sources": {},
+      "evidence": {},
+      "historical_identity_candidates": [],
+      "historical_candidate_reason": "annual_narrative_unavailable",
+      "qualification": "Source observations only; no combined count, financial total or current audit verification.",
+      "status": "absent",
+      "reason": "not_ingested",
+      "historical_observations": [],
+      "historical_sources": {},
+      "historical_evidence": {},
+      "historical_evidence_status": "unavailable",
+      "historical_refusals": []
+    }
+  },
+  "financial_summary": {
+    "health_score": null,
+    "grade": null,
+    "budget_execution_rate": null,
+    "pending_bills_ratio": null,
+    "debt_sustainability": null
+  },
+  "financial_health": {
+    "score": null,
+    "grade": null,
+    "audit_signal": {
+      "status": "pending",
+      "severity": null,
+      "source_period": null,
+      "period_end": null,
+      "source_url": null,
+      "sources": [],
+      "source_count": 0,
+      "sources_truncated": false,
+      "institution": null,
+      "measurement_basis": "finding_severity",
+      "official_opinion": false,
+      "selection_policy": "latest_executive_fiscal_year_maximum_severity",
+      "excluded": {},
+      "absent_reason": "no_publishable_audit_signal"
+    },
+    "selection_policy": "latest_common_pending_date_and_latest_executive_audit_period",
+    "weighting": "audit_opinion_weighted",
+    "weights": {
+      "audit_opinion": 3,
+      "budget_absorption": 1,
+      "own_source_revenue": 1,
+      "pending_bills": 1
+    },
+    "effective_weight": 0,
+    "components": [],
+    "available_inputs": [],
+    "unavailable_inputs": [
+      {
+        "name": "audit_opinion",
+        "reason": "no_publishable_audit_signal"
+      },
+      {
+        "name": "budget_absorption",
+        "reason": "spending_not_reported"
+      },
+      {
+        "name": "own_source_revenue",
+        "reason": "target_not_reported"
+      },
+      {
+        "name": "pending_bills",
+        "reason": "budget_unavailable"
+      }
+    ],
+    "minimum_components": 2,
+    "absent_reason": "fewer_than_two_components"
+  },
+  "data_sources": {
+    "budget": "Central Bank of Kenya \u2014 Observed official estimate",
+    "audit": "Office of the Auditor General - County Government Audit Reports",
+    "debt": "Pending bills: no Controller of Budget year-end figure is published for this county. County debt: loan rows with a source document.",
+    "population": "Kenya National Bureau of Statistics (KNBS) Census 2019"
+  }
+}

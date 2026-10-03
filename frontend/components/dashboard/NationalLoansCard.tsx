@@ -1,5 +1,6 @@
 'use client';
 
+import FigureEvidence from '@/components/evidence/FigureEvidence';
 import InfoTip from '@/components/InfoTip';
 import { SkeletonTable } from '@/components/ui/Skeleton';
 import { NationalLoan } from '@/lib/api/debt';
@@ -178,7 +179,7 @@ export default function NationalLoansCard() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.4, delay: 0.05 * i }}
-                className='flex items-center gap-2 rounded-lg border border-neutral-border/25 bg-white/40 dark:bg-surface-elevated hover:bg-gov-sand/30 transition-colors px-3 py-2'>
+                className='flex flex-wrap items-center gap-2 rounded-lg border border-neutral-border/25 bg-white/40 dark:bg-surface-elevated hover:bg-gov-sand/30 transition-colors px-3 py-2'>
                 <span className='text-sm leading-none flex-shrink-0' suppressHydrationWarning>
                   {lenderEmoji(loan.lender)}
                 </span>
@@ -228,6 +229,7 @@ export default function NationalLoansCard() {
                     </>
                   );
                 })()}
+                <div className='w-full min-w-0'><FigureEvidence label={shortLender(loan.lender)} qualifications={loan.qualifications} table='loans' recordId={loan.record_id ?? loan.id} /></div>
               </motion.div>
             );
           })}

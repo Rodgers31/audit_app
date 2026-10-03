@@ -1,5 +1,6 @@
 'use client';
 
+import FigureEvidence from '@/components/evidence/FigureEvidence';
 import styles from '../../CountyExperience.module.css';
 
 /**
@@ -92,6 +93,7 @@ export default function BudgetTab({ data }: { data: CountyComprehensive }) {
   return (
     <div className='space-y-5'>
       <ModelledDataNote className={styles.provenance} budgetSource={budget.source} />
+      <FigureEvidence label='county budget observations' rows={budget.figure_qualifications} table='budget_lines' />
       {/* Top-level budget stats */}
       <div className={styles.section}>
         <h3 className='text-sm font-semibold text-gray-800 dark:text-neutral-text mb-4'>
